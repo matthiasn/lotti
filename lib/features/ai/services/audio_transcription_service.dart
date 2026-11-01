@@ -148,7 +148,7 @@ class AudioTranscriptionService {
           if (candidate == null) return true; // keep orphans, fail later
           return !(candidate.inferenceProviderType ==
                   InferenceProviderType.mistral &&
-              _isRealtimeOnlyModel(m.providerModelId));
+              isRealtimeOnlyTranscriptionModel(m.providerModelId));
         })
         .toList();
 
@@ -551,5 +551,5 @@ final Provider<AudioTranscriptionService> audioTranscriptionServiceProvider =
 
 /// Matches Mistral model IDs that only serve the WebSocket realtime API
 /// (e.g. `voxtral-mini-transcribe-realtime-2602`); they cannot batch-​transcribe.
-bool _isRealtimeOnlyModel(String model) =>
+bool isRealtimeOnlyTranscriptionModel(String model) =>
     model.contains('transcribe-realtime');

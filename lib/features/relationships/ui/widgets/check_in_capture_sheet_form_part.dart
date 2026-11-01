@@ -189,7 +189,9 @@ extension _CheckInCaptureFormActions on _CheckInCaptureFormState {
   }) async {
     final CheckInTranscriptionRoute? route;
     try {
-      route = await transcription.route();
+      route = await transcription.route(
+        relationshipId: widget.relationshipId,
+      );
     } catch (exception, stackTrace) {
       _logger.error(
         LogDomain.speech,

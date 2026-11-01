@@ -14,6 +14,55 @@ void main() {
     final provider2 = testInferenceProvider(id: 'p2');
 
     test(
+      'the transcript correction route is the post-processing route, only '
+      'when its model can call the correction tool',
+      () {
+        final caller = testAiModel(
+          id: 'caller',
+        ).copyWith(supportsFunctionCalling: true);
+        final mute = testAiModel(id: 'mute');
+        ResolvedProfile withSlot(
+          AiConfigModel? model, {
+          bool unavailable = false,
+          bool disabled = false,
+        }) => ResolvedProfile(
+          thinkingModelId: 'thinking',
+          thinkingProvider: provider1,
+          thinkingModel: caller,
+          audioPostProcessingModelId: model?.providerModelId,
+          audioPostProcessingProvider: model == null ? null : provider2,
+          audioPostProcessingModel: model,
+          audioPostProcessingModelUnavailable: unavailable,
+          audioPostProcessingDisabled: disabled,
+        );
+
+        final ownSlot = withSlot(caller).transcriptCorrectionRoute!;
+        expect(ownSlot.provider, provider2);
+        expect(ownSlot.model, same(caller));
+        // An unset slot falls back to the thinking route.
+        expect(withSlot(null).transcriptCorrectionRoute!.provider, provider1);
+
+        expect(withSlot(mute).transcriptCorrectionRoute, isNull);
+        expect(
+          withSlot(caller, unavailable: true).transcriptCorrectionRoute,
+          isNull,
+        );
+        expect(
+          withSlot(caller, disabled: true).transcriptCorrectionRoute,
+          isNull,
+        );
+        expect(
+          ResolvedProfile(
+            thinkingModelId: 'thinking',
+            thinkingProvider: provider1,
+          ).transcriptCorrectionRoute,
+          isNull,
+          reason: 'no model row to judge, so nothing corrects',
+        );
+      },
+    );
+
+    test(
       'chat route identity and failure state survive thinking replacement',
       () {
         final chat = testAiModel(id: 'chat-row');

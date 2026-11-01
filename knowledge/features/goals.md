@@ -5,7 +5,7 @@ description: Goal-driven agents — the deterministic Phase A tier evaluating cr
 resource: ../../lib/features/goals
 tags: [goals, agents, runtime, wake, evaluation]
 status: draft
-generated: { by: claude-code/opus-5.5, at: 2026-09-24T14:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-11-01T12:00:00Z }
 stale_after: 2027-02-22
 sources:
   - id: goals-src
@@ -1647,7 +1647,11 @@ handler would retract it; that wiring is a follow-up.
   interactive inference is running, output fencing fails the wake so the
   durable user turn remains retryable instead of completing without a reply.
   The chat composer reuses the shared `chatRecorderControllerProvider` (the
-  same recorder the task-agent evolution chat uses) for voice input: a mic
+  same recorder the task-agent evolution chat uses) for voice input, on the
+  goal's transcription profile: `goalDictationProvider` hands the composer the
+  goal entry's `subjectDictationProvider` route and its dictionary correction,
+  so spoken words never go to a discovered model. The charter sheet's Dictate
+  uses the same pair. Voice input shows a mic
   trailing icon, waveform with cancel/stop, streaming partial transcript, and
   auto-fill on completion. The waveform (`WaveformBars`) is drawn the way a
   phone's voice composer draws one: unframed in the composer's row, thin
@@ -2019,12 +2023,18 @@ Invariants worth not breaking:
   stopped from the sidebar's Stop button or the floating indicator after the
   sheet was dismissed — those reach `AudioRecorderController.stop` without the
   composer ever hearing back.
-- **A category-less recording still resolves a model.** `triggerSkillProvider`
-  ends transcription on `ProfileAutomationService.resolveDirectTranscription`,
-  which picks a configured speech-to-text model with no profile involved. A
-  goal check-in has no task and no category, so without that step every
-  surface — the AI popup, the timeline's Retry, the fallback above — declined
-  it for "no profile configured".
+- **A check-in transcribes through a profile the user chose.** The recording
+  inherits the goal's category, and when no automated skill owns its
+  transcription it takes the
+  [transcription profile](ai/profile-resolution.md#the-transcription-profile):
+  the category's profile, else the device's Settings default, whichever owns
+  a transcription slot (`ProfileAutomationService.resolveTranscriptionFallback`
+  on the trigger's path, the same rule inside `tryTranscribe`). Only when
+  neither can transcribe does it end on the direct model fallback. Without the
+  profile step, every check-in whose category automated nothing went straight
+  to that fallback, whose provider ranking puts the on-device engine first —
+  minutes per recording and the reported crashes, on a model the user never
+  picked.
 - **A declined run is a failed run, visibly — including a run never started.**
   `triggerSkillProvider` writes both halves of the failed state before
   returning: the live inference status and a localized message, and a failed

@@ -83,11 +83,11 @@ void main() {
         );
         addTearDown(scoped.dispose);
         final service = scoped.read(profileAutomationServiceProvider);
-        expect(await service.hasDirectTranscriptionFallback(), isFalse);
+        expect(await service.hasTranscriptionFallback(), isFalse);
         installed = true;
-        expect(await service.hasDirectTranscriptionFallback(), isTrue);
+        expect(await service.hasTranscriptionFallback(), isTrue);
         installed = false;
-        expect(await service.hasDirectTranscriptionFallback(), isFalse);
+        expect(await service.hasTranscriptionFallback(), isFalse);
         verify(() => models.isAvailable('tiny')).called(3);
       },
     );

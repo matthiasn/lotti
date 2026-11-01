@@ -4,12 +4,12 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/ai/helpers/profile_automation_resolver.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/services/profile_automation_service.dart';
 import 'package:lotti/features/ai/services/skill_inference_runner.dart';
 import 'package:lotti/features/ai/skills/built_in_skills.dart';
 import 'package:lotti/features/ai/state/profile_automation_providers.dart';
-import 'package:lotti/features/ai/util/profile_resolver.dart';
 import 'package:lotti/features/relationships/model/relationship_speech_terms.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/service/person_recording_summarizer.dart';
@@ -64,8 +64,11 @@ typedef CheckInTranscriptionRoute = ({String model, String provider});
 /// Two jobs, because they are one decision: whether anything *can* transcribe
 /// for a person, and getting the words once they have spoken.
 ///
-/// Uses only the system's selected default inference profile and its
-/// transcription slot. The words are corrected against the person's known
+/// Transcribes through the transcription slot of the profile
+/// [ProfileAutomationResolver.resolveTranscriptionProfile] picks for the
+/// person's category: the category's profile when it can transcribe, else the
+/// device's Settings default — the same rule a goal's check-ins follow, so no
+/// model is ever chosen here. The words are corrected against the person's known
 /// terms ([relationshipKnownTerms]) plus the category speech dictionary, so
 /// a name the provider mishears still lands spelled the way the user writes
 /// it: by sound and spelling, and — on a speech-to-text engine — by the
@@ -74,7 +77,8 @@ typedef CheckInTranscriptionRoute = ({String model, String provider});
 /// words are offered once that is done. The recording sheet disables its
 /// automatic trigger for
 /// this capture, so this explicit request owns the one transcription run.
-/// There is no subject/category resolution or model-discovery fallback.
+/// There is no model-discovery fallback: a person whose category and default
+/// profile cannot transcribe is offered typing instead.
 ///
 /// The check-in stays user-authored (ADR 0038): this only *offers* the words.
 /// Nothing it returns is saved without the user pressing save.
@@ -82,7 +86,7 @@ class CheckInTranscriptionService {
   const CheckInTranscriptionService(
     this._journalDb,
     this._updateNotifications,
-    this._profileResolver,
+    this._automationResolver,
     this._runner,
     this._relationshipRepository,
     this._domainLogger, [
@@ -91,7 +95,7 @@ class CheckInTranscriptionService {
 
   final JournalDb _journalDb;
   final UpdateNotifications _updateNotifications;
-  final ProfileResolver _profileResolver;
+  final ProfileAutomationResolver _automationResolver;
   final SkillInferenceRunner _runner;
   final RelationshipRepository _relationshipRepository;
 
@@ -102,34 +106,61 @@ class CheckInTranscriptionService {
   /// words are in; null where nothing summarizes.
   final PersonRecordingSummarizer? _summarizer;
 
-  /// Whether the selected system default has a usable transcription slot.
-  Future<bool> canTranscribe() async => await _resolveProfile() != null;
+  /// Whether anything can transcribe for the person [relationshipId]: their
+  /// category's profile or the Settings default owns a transcription slot.
+  Future<bool> canTranscribe({required String relationshipId}) async =>
+      await _resolveProfile(relationshipId) != null;
 
-  /// The names of the model and the provider a transcript would come
-  /// from, for the composer's saved-audio line — or null when nothing can
-  /// transcribe. Names only: never a key, an endpoint or a channel.
-  Future<CheckInTranscriptionRoute?> route() async {
-    final profile = await _resolveProfile();
+  /// The names of the model and the provider a transcript about the person
+  /// [relationshipId] would come from, for the composer's saved-audio line —
+  /// or null when nothing can transcribe. Names only: never a key, an
+  /// endpoint or a channel.
+  Future<CheckInTranscriptionRoute?> route({
+    required String relationshipId,
+  }) async {
+    final profile = await _resolveProfile(relationshipId);
     final model = profile?.transcriptionModel;
     final provider = profile?.transcriptionProvider;
     if (profile == null || model == null || provider == null) return null;
     return (model: model.name, provider: provider.name);
   }
 
-  Future<ResolvedProfile?> _resolveProfile() async {
-    final profile = await _profileResolver.resolveDefaultProfile();
-    if (profile?.transcriptionModelId == null ||
-        profile?.transcriptionProvider == null) {
+  /// The profile that transcribes for the person [relationshipId]: their
+  /// category's, else the Settings default — whichever first owns a
+  /// transcription slot. A person who cannot be read resolves as filed under
+  /// no category, so the default still transcribes.
+  Future<ResolvedProfile?> _resolveProfile(String relationshipId) async =>
+      _automationResolver.resolveTranscriptionProfile(
+        categoryId: await _categoryOf(relationshipId),
+      );
+
+  /// The category the person [relationshipId] is filed under, or null when
+  /// they have none or cannot be read. A failed read costs only the
+  /// category's profile, never the transcript.
+  Future<String?> _categoryOf(String relationshipId) async {
+    try {
+      final person = await _journalDb.journalEntityById(relationshipId);
+      return person?.meta.categoryId;
+    } catch (exception, stackTrace) {
+      _domainLogger.error(
+        LogDomain.speech,
+        exception,
+        stackTrace: stackTrace,
+        subDomain: _logTag,
+        message:
+            'Could not read the category of '
+            '${DomainLogger.sanitizeId(relationshipId)}',
+      );
       return null;
     }
-    return profile;
   }
 
   /// Waits for [audioEntryId]'s transcript and starts one explicit request
   /// about the person [relationshipId].
   ///
   /// Listening starts before inference so a fast result cannot be missed.
-  /// Missing default configuration and inference errors end the wait promptly.
+  /// No profile that can transcribe, and inference errors, end the wait
+  /// promptly.
   ///
   /// With [summarize] — a check-in's recording — the words, once in, are
   /// also given a one-line summary (`PersonRecordingSummarizer`), which the
@@ -185,7 +216,8 @@ class CheckInTranscriptionService {
     }
   }
 
-  /// Runs the system default's transcription slot without any fallback.
+  /// Runs the resolved profile's transcription slot without any model
+  /// fallback.
   Future<void> _runTranscription({
     required String audioEntryId,
     required String relationshipId,
@@ -194,7 +226,7 @@ class CheckInTranscriptionService {
   }) async {
     try {
       final (profile, knownTerms) = await (
-        _resolveProfile(),
+        _resolveProfile(relationshipId),
         _knownTerms(relationshipId),
       ).wait;
       if (profile == null) {
@@ -348,7 +380,7 @@ CheckInTranscriptionService checkInTranscriptionService(Ref ref) =>
     CheckInTranscriptionService(
       ref.watch(journalDbProvider),
       ref.read(updateNotificationsProvider),
-      ref.watch(profileResolverProvider),
+      ref.watch(profileAutomationResolverProvider),
       ref.watch(skillInferenceRunnerProvider),
       ref.watch(relationshipRepositoryProvider),
       ref.watch(domainLoggerProvider),

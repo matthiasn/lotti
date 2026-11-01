@@ -57,7 +57,7 @@ it creates the areas, where having just connected a provider and picked those ar
 *is* the consent.
 
 `ProfileAutomationService` consults it before **every** automatic path — the
-profile-driven one and the direct transcription fallback alike — so this flag, not
+profile-driven one and the transcription fallbacks alike — so this flag, not
 the profile, is the switch that decides whether automation runs. See
 [AI execution paths](../features/ai/execution-paths.md).
 

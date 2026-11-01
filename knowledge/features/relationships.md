@@ -5,7 +5,7 @@ description: A personal CRM carried by two journal variants — why check-ins ar
 resource: ../../lib/features/relationships
 tags: [relationships, check-ins, journal-entity, privacy]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-09-25T18:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-11-01T12:00:00Z }
 stale_after: 2027-03-01
 sources:
   - id: tla-lifecycle
@@ -2282,12 +2282,24 @@ A take's first line names the route while its words are on their way —
 `Whisper large v3 · via Groq` — from `CheckInTranscriptionService.route()`,
 model and provider names only, resolved after the wait has started so a
 slow read never holds the transcript.
-Spoken check-ins use only the system's selected default inference profile.
-`CheckInTranscriptionService` calls `ProfileResolver.resolveDefaultProfile`,
-which reads the device's selected profile id and resolves that profile. The
-transcription model and provider must both resolve. There is no person/category
-profile selection, provider ranking, model discovery, or fallback on failure.
-Preflight refuses recording when the default cannot transcribe.
+Spoken check-ins transcribe through the
+[transcription profile](ai/profile-resolution.md#the-transcription-profile)
+of the person's category: `CheckInTranscriptionService` reads the person's
+`categoryId` and asks `ProfileAutomationResolver.resolveTranscriptionProfile`,
+which takes the category's profile when it owns a transcription slot, else
+the device's Settings default when that one does — the same rule a goal's
+check-ins follow. The transcription model and provider must both resolve.
+There is no provider ranking, model discovery, or fallback on failure. A
+person who cannot be read is treated as filed under no category, so the
+default still transcribes. Preflight refuses recording when neither profile
+can transcribe. `canTranscribe` and `route` take the person's id for that
+reason.
+
+Dictation into the person's agent chat follows the same rule:
+`RelationshipChatPane` hands `AgentChatView` the person's
+`subjectDictationProvider` route and its dictionary correction, so a spoken
+chat message never reaches `AudioTranscriptionService.discoverTarget`, whose
+ranking used to pick the seeded Melious Whisper.
 
 ```mermaid
 sequenceDiagram
@@ -2295,11 +2307,11 @@ sequenceDiagram
   participant Inline as CheckInInlineRecorder
   participant Rec as AudioRecorderController
   participant Svc as CheckInTranscriptionService
-  participant Profile as ProfileResolver
+  participant Profile as ProfileAutomationResolver
   participant Runner as SkillInferenceRunner
-  Sheet->>Svc: canTranscribe()
-  Svc->>Profile: resolveDefaultProfile()
-  Profile-->>Svc: selected profile or null
+  Sheet->>Svc: canTranscribe(person)
+  Svc->>Profile: resolveTranscriptionProfile(person's category)
+  Profile-->>Svc: category profile, Settings default, or null
   Svc-->>Sheet: transcription slot available
   Sheet->>Inline: mounted in place of the text
   Inline->>Rec: record(linkedId: person, transcriptionHandledByCaller: true)
@@ -2307,8 +2319,8 @@ sequenceDiagram
   Inline-->>Sheet: audio entry id, length
   Sheet->>Svc: transcribe(audioEntryId)
   Note over Svc: subscribe to transcript notifications first
-  Svc->>Profile: resolveDefaultProfile()
-  Svc->>Runner: runTranscription(default profile, explicit skill)
+  Svc->>Profile: resolveTranscriptionProfile(person's category)
+  Svc->>Runner: runTranscription(resolved profile, explicit skill)
   Runner-->>Svc: onError cancels wait on failure
   Svc-->>Sheet: transcript or null
   Sheet->>Sheet: the take is heard, or missing

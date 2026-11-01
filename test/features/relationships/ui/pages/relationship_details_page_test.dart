@@ -68,10 +68,12 @@ import '../../helpers/person_timeline_fakes.dart';
 /// prove the form opened in speaking mode without a recorder on screen.
 class _NoTranscription implements CheckInTranscriptionService {
   @override
-  Future<bool> canTranscribe() async => false;
+  Future<bool> canTranscribe({required String relationshipId}) async => false;
 
   @override
-  Future<CheckInTranscriptionRoute?> route() async => null;
+  Future<CheckInTranscriptionRoute?> route({
+    required String relationshipId,
+  }) async => null;
 
   @override
   CheckInTranscriptWait transcribe({

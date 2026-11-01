@@ -271,6 +271,17 @@ void main() {
     when(
       () => mockResolver.resolveDefaultProfile(),
     ).thenAnswer((_) async => null);
+    // Nor any profile the transcription fallback could take — no category,
+    // no Settings default — unless a test selects one: the direct model
+    // fallback is then the last step left.
+    when(() => mockResolver.categoryOfSubject(any())).thenAnswer(
+      (_) async => null,
+    );
+    when(
+      () => mockResolver.resolveTranscriptionProfile(
+        categoryId: any(named: 'categoryId'),
+      ),
+    ).thenAnswer((_) async => null);
     mockAiConfig = MockAiConfigRepository();
     mockDomainLogger = MockDomainLogger();
     capturedLogLines = [];
@@ -567,7 +578,7 @@ void main() {
 
       // Settings asks this without a task in hand, to decide whether the
       // category switch has anything to control.
-      group('hasDirectTranscriptionFallback', () {
+      group('hasTranscriptionFallback', () {
         test(
           'is true when a configured provider owns a speech model',
           () async {
@@ -578,7 +589,7 @@ void main() {
               () => mockAiConfig.getConfigById('provider-mlx'),
             ).thenAnswer((_) async => makeProvider());
 
-            expect(await service.hasDirectTranscriptionFallback(), isTrue);
+            expect(await service.hasTranscriptionFallback(), isTrue);
           },
         );
 
@@ -591,7 +602,7 @@ void main() {
             ],
           );
 
-          expect(await service.hasDirectTranscriptionFallback(), isFalse);
+          expect(await service.hasTranscriptionFallback(), isFalse);
         });
       });
 
@@ -1566,7 +1577,7 @@ void main() {
           () => mockAiConfig.getConfigById('provider-mlx'),
         ).thenAnswer((_) async => makeProvider());
 
-        expect(await service.hasDirectTranscriptionFallback(), isTrue);
+        expect(await service.hasTranscriptionFallback(), isTrue);
         expect(loggedLines(), isEmpty);
       });
 
@@ -1888,7 +1899,7 @@ void main() {
           // A goal check-in belongs to no task and no category, so the walk
           // that starts from a task id cannot be asked at all — this is the
           // entry point that lets it transcribe anyway.
-          final result = await service.resolveDirectTranscription();
+          final result = await service.resolveTranscriptionFallback();
 
           expect(result.handled, isTrue);
           expect(
@@ -1931,7 +1942,7 @@ void main() {
           );
 
           final profile =
-              (await service.resolveDirectTranscription()).resolvedProfile!;
+              (await service.resolveTranscriptionFallback()).resolvedProfile!;
 
           expect(profile.transcriptionModelId, 'whisper-1');
           expect(profile.effectiveAudioPostProcessingModelId, 'editor-native');
@@ -1961,7 +1972,7 @@ void main() {
           );
 
           final profile =
-              (await service.resolveDirectTranscription()).resolvedProfile!;
+              (await service.resolveTranscriptionFallback()).resolvedProfile!;
 
           expect(profile.audioPostProcessingModelUnavailable, isTrue);
         },
@@ -1977,6 +1988,14 @@ void main() {
         final localResolver = MockProfileAutomationResolver();
         when(
           localResolver.resolveDefaultProfile,
+        ).thenAnswer((_) async => null);
+        when(
+          () => localResolver.categoryOfSubject(any()),
+        ).thenAnswer((_) async => null);
+        when(
+          () => localResolver.resolveTranscriptionProfile(
+            categoryId: any(named: 'categoryId'),
+          ),
         ).thenAnswer((_) async => null);
         final localAiConfig = MockAiConfigRepository();
         final localService = ProfileAutomationService(
@@ -2093,6 +2112,14 @@ void main() {
         when(
           localResolver.resolveDefaultProfile,
         ).thenAnswer((_) async => null);
+        when(
+          () => localResolver.categoryOfSubject(any()),
+        ).thenAnswer((_) async => null);
+        when(
+          () => localResolver.resolveTranscriptionProfile(
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).thenAnswer((_) async => null);
         final localAiConfig = MockAiConfigRepository();
         final localService = ProfileAutomationService(
           resolver: localResolver,
@@ -2182,6 +2209,162 @@ void main() {
       },
       tags: 'glados',
     );
+
+    // A recording whose subject automates no transcription — every goal
+    // check-in — used to go straight to the direct model fallback, which
+    // ranks models by provider type and picks the on-device engine first.
+    // The category's profile and the Settings default come before it now.
+    group('transcription profile before the direct model fallback', () {
+      // The subject's agent owns no profile; the tests that need one say so.
+      setUp(() {
+        when(
+          () => mockResolver.resolveForSubject(any()),
+        ).thenAnswer((_) async => null);
+      });
+
+      // A speech-to-text model the direct fallback would pick if asked.
+      void stubDirectCandidate() {
+        when(
+          () => mockAiConfig.getConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) async => [makeModel()]);
+        when(
+          () => mockAiConfig.getConfigById('provider-mlx'),
+        ).thenAnswer((_) async => makeProvider());
+      }
+
+      final configured = makeProfile(
+        withTranscription: true,
+        transcriptionModelId: 'profile-transcription-model',
+      );
+
+      void stubProfileFor(String? categoryId) {
+        when(
+          () => mockResolver.resolveTranscriptionProfile(
+            categoryId: categoryId,
+          ),
+        ).thenAnswer((_) async => configured);
+      }
+
+      void expectProfileRun(AutomationResult result) {
+        expect(result.handled, isTrue);
+        expect(result.resolvedProfile, same(configured));
+        expect(result.skill!.id, skillTranscribeContextId);
+        expect(result.skillAssignment!.automate, isTrue);
+        verifyNever(() => mockAiConfig.getConfigsByType(AiConfigType.model));
+      }
+
+      test(
+        "an automatic run takes the subject's category's transcription "
+        'profile, never a model picked by provider type',
+        () async {
+          stubDirectCandidate();
+          when(
+            () => mockResolver.categoryOfSubject('goal-1'),
+          ).thenAnswer((_) async => 'goals');
+          stubProfileFor('goals');
+
+          final result = await service.tryTranscribe(subjectId: 'goal-1');
+
+          expectProfileRun(result);
+          expect(
+            loggedLines(),
+            contains(
+              'resolved: no automated skill owns transcription — using the '
+              'transcription slot of profile '
+              '${DomainLogger.sanitizeId('')}',
+            ),
+          );
+        },
+      );
+
+      test(
+        'a subject in no category takes the Settings default the resolver '
+        'falls to',
+        () async {
+          stubDirectCandidate();
+          stubProfileFor(null);
+
+          expectProfileRun(
+            await service.requestTranscription(subjectId: 'goal-1'),
+          );
+          verify(
+            () => mockResolver.resolveTranscriptionProfile(),
+          ).called(1);
+        },
+      );
+
+      test('the manual fallback asks the category it is handed', () async {
+        stubDirectCandidate();
+        stubProfileFor('people');
+
+        expectProfileRun(
+          await service.resolveTranscriptionFallback(categoryId: 'people'),
+        );
+      });
+
+      test('the probes answer yes from a profile alone, with no speech model '
+          'configured', () async {
+        stubProfileFor(null);
+
+        expect(await service.hasTranscriptionFallback(), isTrue);
+        expect(
+          await service.canTranscribeOnRequest(subjectId: 'goal-1'),
+          isTrue,
+        );
+        expect(
+          await service.hasAutomatedSkillType(
+            subjectId: 'goal-1',
+            skillType: SkillType.transcription,
+          ),
+          isTrue,
+        );
+        expect(loggedLines(), isEmpty);
+      });
+
+      test(
+        'an automated transcription skill on the subject still wins — the '
+        'fallback profiles are never asked',
+        () async {
+          const assignment = SkillAssignment(
+            skillId: 'skill-transcribe',
+            automate: true,
+          );
+          final subjectProfile = makeProfile(
+            skillAssignments: [assignment],
+            withTranscription: true,
+          );
+          when(
+            () => mockResolver.resolveForSubject('task-1'),
+          ).thenAnswer((_) async => subjectProfile);
+          when(() => mockAiConfig.getConfigById('skill-transcribe')).thenAnswer(
+            (_) async => makeSkill(id: 'skill-transcribe'),
+          );
+          stubProfileFor(null);
+
+          final result = await service.tryTranscribe(subjectId: 'task-1');
+
+          expect(result.resolvedProfile, same(subjectProfile));
+          verifyNever(
+            () => mockResolver.resolveTranscriptionProfile(
+              categoryId: any(named: 'categoryId'),
+            ),
+          );
+        },
+      );
+
+      test(
+        'with no profile that can transcribe, the direct model fallback is '
+        'still the last step',
+        () async {
+          stubDirectCandidate();
+
+          final result = await service.tryTranscribe(subjectId: 'goal-1');
+
+          expect(result.handled, isTrue);
+          expect(result.resolvedProfile!.transcriptionModelId, 'whisper-1');
+        },
+      );
+    });
 
     group('hasAutomatedSkillType', () {
       test('returns true when skill type is available', () async {

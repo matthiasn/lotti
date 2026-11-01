@@ -102,9 +102,11 @@ class AutomationResult {
 /// [AutomationResult] that tells the caller whether the profile-driven
 /// path handled the request.
 ///
-/// Speech recognition has one extra path: if no profile path handles
-/// transcription, the service can fall back to a configured audio-to-text model
-/// row directly. This supports recording automation without a configured profile.
+/// Speech recognition has extra paths: if no automated skill handles
+/// transcription, the category's profile and then the Settings default
+/// profile transcribe through their transcription slot, and only when neither
+/// can does the service fall back to a configured audio-to-text model row
+/// directly. That last step supports recording without any usable profile.
 ///
 /// The actual inference invocation is left to the caller, which uses the
 /// returned skill and profile to build prompts via `SkillPromptBuilder` and
@@ -233,7 +235,10 @@ class ProfileAutomationService {
     );
     if (profileResult.handled) return profileResult;
 
-    return _tryDirectTranscriptionFallback(_CallIntent.run);
+    return _tryTranscriptionFallbacks(
+      _CallIntent.run,
+      categoryId: await _resolver.categoryOfSubject(subjectId),
+    );
   }
 
   /// Transcription the user explicitly asked for, by gesture.
@@ -246,9 +251,9 @@ class ProfileAutomationService {
   /// is off, could never dictate a check-in however their models were set up.
   ///
   /// Everything else still holds. A profile must actually own an automated
-  /// transcription skill with the matching model slot, or the direct-model
-  /// fallback must find a usable speech-to-text model; with neither, this
-  /// returns not-handled and the caller tells the user to type instead.
+  /// transcription skill with the matching model slot, or one of the
+  /// [_tryTranscriptionFallbacks] must resolve; with none, this returns
+  /// not-handled and the caller tells the user to type instead.
   Future<AutomationResult> requestTranscription({
     required String subjectId,
   }) async {
@@ -259,7 +264,10 @@ class ProfileAutomationService {
     );
     if (profileResult.handled) return profileResult;
 
-    return _tryDirectTranscriptionFallback(_CallIntent.run);
+    return _tryTranscriptionFallbacks(
+      _CallIntent.run,
+      categoryId: await _resolver.categoryOfSubject(subjectId),
+    );
   }
 
   /// Whether [requestTranscription] would resolve anything for [subjectId].
@@ -275,7 +283,10 @@ class ProfileAutomationService {
     );
     if (profileResult.handled) return true;
 
-    final fallback = await _tryDirectTranscriptionFallback(_CallIntent.probe);
+    final fallback = await _tryTranscriptionFallbacks(
+      _CallIntent.probe,
+      categoryId: await _resolver.categoryOfSubject(subjectId),
+    );
     return fallback.handled;
   }
 
@@ -496,43 +507,86 @@ class ProfileAutomationService {
     if (result.handled) return true;
     if (skillType != SkillType.transcription) return false;
 
-    final fallbackResult = await _tryDirectTranscriptionFallback(
+    final fallbackResult = await _tryTranscriptionFallbacks(
       _CallIntent.probe,
+      categoryId: await _resolver.categoryOfSubject(subjectId),
     );
     return fallbackResult.handled;
   }
 
-  /// Resolves a speech-to-text model with no profile involved, for a run the
-  /// user asked for.
+  /// Resolves transcription for a run the user asked for when no automated
+  /// skill owns it: [categoryId]'s profile, the Settings default profile,
+  /// then the direct model fallback ([_tryTranscriptionFallbacks]).
   ///
-  /// The profile walk is the wrong question for an entry that belongs to no
-  /// task and no category — a goal check-in, a standalone voice note — and
+  /// The automated-skill walk is the wrong question for an entry that
+  /// belongs to no task — a goal check-in, a standalone voice note — and
   /// answering it with "no profile configured" left those recordings
   /// untranscribable from every surface, including the manual popup. This is
-  /// the same fallback [tryTranscribe] already ends on, exposed so the manual
+  /// the same chain [tryTranscribe] already ends on, exposed so the manual
   /// path can end on it too.
   ///
-  /// Unlike [hasDirectTranscriptionFallback] this runs as [_CallIntent.run]:
-  /// it precedes real inference, so its decline belongs in the log.
-  Future<AutomationResult> resolveDirectTranscription() =>
-      _tryDirectTranscriptionFallback(_CallIntent.run);
+  /// Unlike [hasTranscriptionFallback] this runs as [_CallIntent.run]: it
+  /// precedes real inference, so its decline belongs in the log.
+  Future<AutomationResult> resolveTranscriptionFallback({
+    String? categoryId,
+  }) => _tryTranscriptionFallbacks(_CallIntent.run, categoryId: categoryId);
 
-  /// Whether the direct transcription fallback could run at all — some
-  /// configured provider owns a usable speech-to-text model.
+  /// Whether anything could transcribe without an automated skill — the
+  /// Settings default profile owns a transcription slot, or some configured
+  /// provider owns a usable speech-to-text model.
   ///
-  /// Settings needs this without a subject in hand: the fallback transcribes with
-  /// no profile involved, so the category's automation switch has something to
-  /// control even when the category has no profile selected.
+  /// Settings needs this without a subject in hand, so the category's
+  /// automation switch has something to control even when the category has
+  /// no profile selected.
   ///
   /// Runs as a [_CallIntent.probe] — settings asks this to decide whether to
   /// render a switch, not to transcribe anything.
-  Future<bool> hasDirectTranscriptionFallback() async {
-    final result = await _tryDirectTranscriptionFallback(_CallIntent.probe);
+  Future<bool> hasTranscriptionFallback() async {
+    final result = await _tryTranscriptionFallbacks(_CallIntent.probe);
     return result.handled;
   }
 
-  /// Finds a configured audio-to-text model that can run transcription without
-  /// requiring the subject to resolve to an inference profile.
+  /// Transcription when no automated skill owns it, in a fixed order:
+  ///
+  /// 1. [categoryId]'s default profile, when it owns a transcription slot;
+  /// 2. the device's Settings default profile, when it does;
+  /// 3. only then the direct model fallback, for a device whose profiles
+  ///    cannot transcribe at all.
+  ///
+  /// Steps 1 and 2 are [ProfileAutomationResolver.resolveTranscriptionProfile],
+  /// the rule People check-ins follow as well. Without them a recording whose
+  /// category automated nothing — every goal check-in — went straight to
+  /// step 3, which ranks models by provider type and picks the on-device
+  /// engine first: minutes per recording, on a model the user never chose,
+  /// while their default profile named a fast one.
+  Future<AutomationResult> _tryTranscriptionFallbacks(
+    _CallIntent intent, {
+    String? categoryId,
+  }) async {
+    final profile = await _resolver.resolveTranscriptionProfile(
+      categoryId: categoryId,
+    );
+    final skill = findBuiltInSkill(skillTranscribeContextId);
+    if (profile != null && skill != null) {
+      _logRun(
+        'no automated skill owns transcription — using the transcription '
+        'slot of profile ${DomainLogger.sanitizeId(profile.profileId ?? '')}',
+        intent: intent,
+      );
+      return AutomationResult(
+        handled: true,
+        resolvedProfile: profile,
+        skill: skill,
+        skillAssignment: _fallbackTranscriptionAssignment,
+      );
+    }
+    return _tryDirectTranscriptionFallback(intent);
+  }
+
+  /// Finds a configured audio-to-text model that can run transcription
+  /// without any inference profile — the last step of
+  /// [_tryTranscriptionFallbacks], reached only when neither the category
+  /// nor the Settings default profile can transcribe.
   ///
   /// Declines out loud. The profile walk's own decline only reports that no
   /// profile automates transcription, which is the less interesting half when

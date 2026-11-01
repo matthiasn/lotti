@@ -145,7 +145,9 @@ class _PersonCaptureFlowViewState extends ConsumerState<PersonCaptureFlowView> {
     }
     bool canTranscribe;
     try {
-      canTranscribe = await transcription.canTranscribe();
+      canTranscribe = await transcription.canTranscribe(
+        relationshipId: widget.person.meta.id,
+      );
     } catch (error, stackTrace) {
       // A probe that fails is a transcriber that is not there: the capture
       // stays the voice note it already is.

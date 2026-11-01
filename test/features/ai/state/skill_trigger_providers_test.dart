@@ -1346,7 +1346,7 @@ void main() {
       // Default: nothing to fall back to. Tests that exercise the fallback
       // stub it to hand back a resolved speech-to-text route.
       when(
-        () => mockAutomationService.resolveDirectTranscription(),
+        () => mockAutomationService.resolveTranscriptionFallback(),
       ).thenAnswer((_) async => AutomationResult.notHandled);
     });
 
@@ -1544,7 +1544,7 @@ void main() {
                 )
                 as AiConfigInferenceProvider;
         when(
-          () => mockAutomationService.resolveDirectTranscription(),
+          () => mockAutomationService.resolveTranscriptionFallback(),
         ).thenAnswer(
           (_) async => AutomationResult(
             handled: true,
@@ -1625,7 +1625,7 @@ void main() {
         // decline is now visible, which is what makes the timeline offer
         // Retry instead of claiming it is still transcribing.
         when(
-          () => mockAutomationService.resolveDirectTranscription(),
+          () => mockAutomationService.resolveTranscriptionFallback(),
         ).thenAnswer((_) async => AutomationResult.notHandled);
         final declineContainer = ProviderContainer(
           overrides: withServiceOverrides([
@@ -1836,7 +1836,7 @@ void main() {
         // unrelated recording look like a failed transcription.
         verifyNever(() => bench.service.finalize(any()));
         // The fallback belongs to transcription alone.
-        verifyNever(() => mockAutomationService.resolveDirectTranscription());
+        verifyNever(() => mockAutomationService.resolveTranscriptionFallback());
         verifyZeroInteractions(mockRunner);
 
         // Same for the other way in: a task whose profile does not resolve.

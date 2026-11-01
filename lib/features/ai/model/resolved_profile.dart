@@ -140,6 +140,21 @@ class ResolvedProfile {
   AiConfigModel? get effectiveAudioPostProcessingModel =>
       audioPostProcessingModel ?? thinkingModel;
 
+  /// The route that corrects a transcript against the speech dictionary —
+  /// the post-processing slot, or the thinking model it falls back to — when
+  /// that model can call the correction tool. Null when nothing
+  /// post-processes this profile, when its configured slot does not resolve
+  /// on this device, or when the model cannot call tools.
+  ({AiConfigInferenceProvider provider, AiConfigModel model})?
+  get transcriptCorrectionRoute {
+    if (audioPostProcessingDisabled || audioPostProcessingModelUnavailable) {
+      return null;
+    }
+    final model = effectiveAudioPostProcessingModel;
+    if (model == null || !model.supportsFunctionCalling) return null;
+    return (provider: effectiveAudioPostProcessingProvider, model: model);
+  }
+
   /// The provider-native model id for image generation (nullable).
   final String? imageGenerationModelId;
 

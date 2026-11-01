@@ -8,6 +8,7 @@ import 'package:lotti/features/agents/query/query_source_access.dart';
 import 'package:lotti/features/agents/ui/chat/chat_recorder_controller.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/transcription_exception.dart';
+import 'package:lotti/features/ai/services/audio_transcription_service.dart';
 import 'package:lotti/features/ai/speech/sherpa_model_repository.dart';
 import 'package:lotti/features/ai/util/inference_provider_resolver.dart';
 import 'package:lotti/providers/service_providers.dart';
@@ -41,7 +42,9 @@ queryTranscriptionTargetResolverProvider =
             !target.model.outputModalities.contains(Modality.text) ||
             (target.provider.inferenceProviderType ==
                     InferenceProviderType.mistral &&
-                target.model.providerModelId.contains('transcribe-realtime'))) {
+                isRealtimeOnlyTranscriptionModel(
+                  target.model.providerModelId,
+                ))) {
           throw _unavailable();
         }
         if (target.provider.inferenceProviderType ==

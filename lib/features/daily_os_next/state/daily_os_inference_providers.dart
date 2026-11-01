@@ -123,18 +123,7 @@ dailyOsTranscriptionTargetProvider = FutureProvider(
 /// the engine's words, corrected by sound and spelling only.
 final FutureProvider<DailyOsTranscriptionTarget?>
 dailyOsTranscriptCorrectionTargetProvider = FutureProvider(
-  (ref) async {
-    final resolved = await _dayAgentProfile(ref);
-    if (resolved == null || resolved.audioPostProcessingModelUnavailable) {
-      return null;
-    }
-    final model = resolved.effectiveAudioPostProcessingModel;
-    if (model == null || !model.supportsFunctionCalling) return null;
-    return (
-      provider: resolved.effectiveAudioPostProcessingProvider,
-      model: model,
-    );
-  },
+  (ref) async => (await _dayAgentProfile(ref))?.transcriptCorrectionRoute,
   name: 'dailyOsTranscriptCorrectionTargetProvider',
 );
 

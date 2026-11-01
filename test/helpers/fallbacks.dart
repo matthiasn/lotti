@@ -186,6 +186,26 @@ final AiConfig fallbackAiConfig = AiConfig.inferenceProvider(
   inferenceProviderType: InferenceProviderType.openAi,
 );
 
+/// An inference route — a provider and one of its models — for
+/// `any(named: 'target')` on `AudioTranscriptionService.correctTranscript`
+/// and the like.
+final ({AiConfigInferenceProvider provider, AiConfigModel model})
+fallbackInferenceRoute = (
+  provider: fallbackAiConfig as AiConfigInferenceProvider,
+  model:
+      AiConfig.model(
+            id: 'fallback-model',
+            name: 'Fallback model',
+            providerModelId: 'fallback-model',
+            inferenceProviderId: 'config-id',
+            createdAt: DateTime.fromMillisecondsSinceEpoch(0),
+            inputModalities: const [Modality.text],
+            outputModalities: const [Modality.text],
+            isReasoningModel: false,
+          )
+          as AiConfigModel,
+);
+
 /// A row builder, for `any(named: 'build')` on `NotificationRepository.armEpisode`.
 NotificationEntity fallbackNotificationBuild(NotificationMeta meta) =>
     fallbackNotificationEntity;
@@ -361,6 +381,7 @@ void registerAllFallbackValues() {
   registerFallbackValue(MockEvent());
   registerFallbackValue(MockPreparedSyncEvent());
   registerFallbackValue(fallbackAiConfig);
+  registerFallbackValue(fallbackInferenceRoute);
   registerFallbackValue(fallbackSavedTaskFilter);
   registerFallbackValue(fallbackNotificationEntity);
   registerFallbackValue(fallbackNotificationBuild);

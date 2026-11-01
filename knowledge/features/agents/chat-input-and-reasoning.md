@@ -5,8 +5,8 @@ description: Shared voice-recorder state, waveform feedback, and reasoning discl
 resource: ../../../lib/features/agents/ui/chat
 tags: [agents, chat, recording, reasoning]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-10-13T12:00:00Z }
-stale_after: 2027-01-05
+generated: { by: claude-code/opus-5.5, at: 2026-11-01T12:00:00Z }
+stale_after: 2027-01-31
 sources:
   - id: chat
     resource: ../../../lib/features/agents/ui/chat
@@ -119,8 +119,19 @@ or copied into the draft before transcription finishes.
 Hosts can pass a lazy `resolveTranscriptionTarget` callback into `start`. It is
 captured for that recording and awaited immediately before transcription;
 cancellation or disposal during resolution prevents submission. Scoped queries
-supply their [category-default policy](query-chat.md); callers that omit the
-callback retain the transcription service's automatic discovery behavior.
+supply their [category-default policy](query-chat.md); goal and People chats,
+and the goal charter sheet, supply their subject's
+[transcription profile](../ai/profile-resolution.md#the-transcription-profile)
+through `subjectDictationProvider`. Callers that omit the callback retain the
+transcription service's automatic discovery behavior.
+
+An optional `correctTranscript` callback (`ChatTranscriptCorrector`) belongs
+to the same take and is used only with an explicit route: once the words are
+in, it receives them and the route that heard them, and its answer becomes the
+transcript. The subject dictation's corrector runs the speech-dictionary
+correction on the profile's post-processing model when a speech-to-text
+engine heard the words. A corrector that throws, and silence, keep the words
+as heard. `AgentChatView` forwards both callbacks to `start`.
 
 Every recording captures a monotonically increasing operation ID before the
 first startup await. Cancellation also recognizes pending startup while its

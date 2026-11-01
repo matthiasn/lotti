@@ -1,4 +1,5 @@
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_text.dart';
@@ -7,6 +8,7 @@ import 'package:lotti/features/agents/ui/chat/chat_recorder_controller.dart';
 import 'package:lotti/features/agents/ui/chat/waveform_bars.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
+import 'package:lotti/features/goals/state/goal_dictation_provider.dart';
 import 'package:lotti/features/goals/ui/charter/goal_charter_sheet.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
@@ -33,6 +35,9 @@ void main() {
 
   setUp(() {
     repository = MockGoalRepository();
+    when(
+      () => repository.goalIdForAgent('agent-1'),
+    ).thenReturn('goal-entry-1');
     logger = MockDomainLogger();
   });
 
@@ -313,6 +318,16 @@ void main() {
 
       expect(recorder.startCalls, 1);
       expect(find.byType(WaveformBars), findsOneWidget);
+      // On the goal's transcription profile, corrected like its check-ins —
+      // never a discovered model.
+      final dictation = ProviderScope.containerOf(
+        tester.element(find.byType(GoalCharterForm)),
+      ).read(goalDictationProvider('agent-1'))!;
+      expect(
+        recorder.lastTranscriptionTargetResolver,
+        same(dictation.resolveTarget),
+      );
+      expect(recorder.lastTranscriptCorrector, same(dictation.correct));
     });
 
     testWidgets('a transcript is added after what is written, never '
