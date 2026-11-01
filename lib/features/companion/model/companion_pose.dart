@@ -38,6 +38,7 @@ class ArmPose {
 class CompanionPose {
   const CompanionPose({
     this.pelvis = Offset.zero,
+    this.lift = 0,
     this.lean = 0,
     this.breath = 0,
     this.headRoll = 0,
@@ -70,6 +71,11 @@ class CompanionPose {
   });
 
   final Offset pelvis;
+
+  /// How far her upper body is raised above her hips, in units: a bounce of
+  /// joy. Her shoulders, arms and head rise by all of it, her dress by less
+  /// the lower it reaches; her hips, legs and hem stay where they stand.
+  final double lift;
   final double lean;
 
   /// -1..1 over a breath.
