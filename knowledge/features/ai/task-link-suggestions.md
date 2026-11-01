@@ -52,6 +52,10 @@ sources:
     resource: ../../../lib/features/tasks/state/task_preview_provider.dart
     title: taskPreviewProvider — the task and its agent's latest one-liner and TL;DR
     last_modified: 2026-11-01
+  - id: proposal-title
+    resource: ../../../lib/features/agents/state/proposal_task_title_provider.dart
+    title: proposalTaskTitleProvider — the title an agent link proposal names by id
+    last_modified: 2026-11-01
   - id: link-handler
     resource: ../../../lib/features/agents/tools/task_link_handler.dart
     title: TaskLinkHandler, the one writer of a confirmed link_task
@@ -270,9 +274,13 @@ The card sits below the tasks feature in the layer order, so it cannot open a
 task itself. `AiSummaryCard.onOpenLinkedTask` carries the tap out; the task
 page (`TaskForm`) supplies the preview. A host that passes nothing — the
 event card, for one — keeps the title plain text. The link is any `link_task`
-row that carries both `targetTaskId` and `targetTitle`; the row splits its
-already-localized sentence at the title, so every language's word order
-works unchanged.
+row, the agent's own included. A suggestion carries `targetTitle` in its args.
+An agent proposal names its target by id alone, so its row looks the title up
+at render time (`proposalTaskTitleProvider`) and adds it for display only: the
+proposal's args, and so its fingerprint, stay as they are. Until the title
+arrives, or when the task is gone, the row shows the persisted English summary
+unlinked. Either way the row splits its already-localized sentence at the
+title, so every language's word order works unchanged.
 
 ```mermaid
 sequenceDiagram

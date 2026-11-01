@@ -141,9 +141,10 @@ Contents:
   this device on reject — and then its
   [inference backfill suggestions](../ai/inference-backfill.md), which confirm
   into the backfill queue and reject into a device-local dismissal. Neither
-  kind has a persisted change set behind it. A `link_task` row that carries
-  its target's title shows that title as a link when the host passes
-  `onOpenLinkedTask`; the task page opens a preview of the task from it (see
+  kind has a persisted change set behind it. A `link_task` row — a
+  suggestion, or the agent's own proposal, whose target title is looked up by
+  id (`proposalTaskTitleProvider`) — shows that title as a link when the host
+  passes `onOpenLinkedTask`; the task page opens a preview of the task from it (see
   [task link suggestions](../ai/task-link-suggestions.md#seeing-which-task-is-meant)).
 - **`History · N`** — lazily expands resolved ledger entries with
   `Confirmed` / `Dismissed` tags; dismissed and retracted entries are struck
