@@ -731,6 +731,28 @@ void main() {
       },
     );
 
+    test('a queue drain while detaching starts no re-check', () async {
+      final gate = Completer<void>();
+      final sink = MockSyncedEmbeddingSink();
+      when(sink.recheckAll).thenAnswer((_) => gate.future);
+      await attach(sink: sink);
+      final depth = StreamController<QueueDepthSignal>();
+      addTearDown(depth.close);
+      vectors.watchInboundQueue(depth.stream);
+
+      final detach = vectors.detach();
+      await pumpEventQueue();
+      depth
+        ..add(const QueueDepthSignal(total: 1))
+        ..add(const QueueDepthSignal(total: 0));
+      await pumpEventQueue();
+
+      verify(sink.recheckAll).called(1); // the attach re-check only
+      gate.complete();
+      await detach;
+      expect(vectors.isAttached, isFalse);
+    });
+
     test(
       'a flag change re-checks the held versions, then runs the catch-up',
       () async {

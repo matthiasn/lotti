@@ -186,13 +186,16 @@ class EmbeddingVectorsSync implements EmbeddingShare {
 
   /// Disconnects the pipeline, which is being disposed, once every re-check
   /// running — each reads and writes its store — has finished.
+  ///
+  /// The sink goes first: a queue drain starts a re-check only while one is
+  /// attached, so none can start while this waits.
   Future<void> detach() async {
     await _flagSubscription?.cancel();
     _flagSubscription = null;
+    _sink = null;
     await _rechecks;
     _store = null;
     _modelId = null;
-    _sink = null;
   }
 
   /// Makes up, once per model and device, for the versions this device
