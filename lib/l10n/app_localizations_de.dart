@@ -6876,9 +6876,6 @@ class AppLocalizationsDe extends AppLocalizations {
       'Die Zusammenfassung konnte nicht geladen werden.';
 
   @override
-  String get eventsRegenerateSummary => 'Zusammenfassung neu erstellen';
-
-  @override
   String get eventsSearchHint => 'Ereignisse suchen';
 
   @override

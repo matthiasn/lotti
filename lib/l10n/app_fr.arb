@@ -2838,7 +2838,6 @@
   "eventsRatingStarLabel": "Attribue {starIndex} étoiles sur {totalStars}",
   "eventsRecapAwaitingContent": "Ajoute une photo ou une note et le récap apparaîtra ici.",
   "eventsRecapUnavailable": "Impossible de charger le récap.",
-  "eventsRegenerateSummary": "Régénérer le résumé",
   "eventsSearchHint": "Rechercher des événements",
   "eventsSectionUpcoming": "À venir",
   "eventsStatusCancelled": "Annulé",

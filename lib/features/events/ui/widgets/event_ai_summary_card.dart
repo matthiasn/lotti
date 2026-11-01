@@ -1,19 +1,31 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_report_provenance.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/event_agent_providers.dart';
+import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
+import 'package:lotti/features/agents/ui/agent_automation_row.dart';
+import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
+import 'package:lotti/features/agents/ui/ai_summary_card/tldr_section_part.dart';
+import 'package:lotti/features/agents/ui/task_agent_model_identity.dart';
+import 'package:lotti/features/agents/ui/widgets/ai_card_chrome.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/events/ui/widgets/event_passive_summary_card.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/cards/modern_base_card.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// Event-detail summary card backed by the event agent.
+/// The event agent's living recap, on the same card the task and project
+/// agents use.
 ///
-/// Shows the agent's living recap (its report `tldr`, falling back to the
-/// report body) with a refresh control that re-wakes the agent. When no event
-/// agent is attached it falls back to [fallbackSummary] (the legacy passive
-/// summary), and renders nothing when there is neither an agent nor a fallback.
+/// [AgentSummaryCardSurface] gives it the shared AI surface — the accent wash,
+/// hairline and radius, and no shadow — and the reading order is the task
+/// card's: the identity header (the agent's name opens its internals), the
+/// recap's TLDR with *Read more* for the full recap, then the freshness strip
+/// with *Update now*, which re-wakes the agent. Before the first recap the
+/// body is the awaiting hint; a report that fails to load says so instead.
+///
+/// With no event agent attached it falls back to [fallbackSummary] on the
+/// plain [EventPassiveSummaryCard], and renders nothing when there is neither.
 ///
 /// The event's **rating and cover are never shown or touched here** — the agent
 /// has no authority over them, so this card never surfaces or edits them.
@@ -26,7 +38,7 @@ class EventAiSummaryCard extends ConsumerWidget {
 
   final String eventId;
 
-  /// The legacy passive summary, shown only when no event agent is attached.
+  /// The passive summary, shown only when no event agent is attached.
   final String? fallbackSummary;
 
   @override
@@ -41,136 +53,129 @@ class EventAiSummaryCard extends ConsumerWidget {
       if (fallback == null || fallback.isEmpty) {
         return const SizedBox.shrink();
       }
-      return _RecapCard(state: _RecapState.recap, body: fallback);
+      return EventPassiveSummaryCard(summary: fallback);
     }
-
-    void refresh() =>
-        ref.read(eventAgentServiceProvider).triggerReanalysis(agent.agentId);
-
-    // unwrapPrevious() keeps the last recap during a background reload (after a
-    // wake / sync) instead of dropping to a loading state — honoring the
-    // "never flash established UI during background refresh" rule. Loading and
-    // error are only ever surfaced on a genuine first load, and they render
-    // distinctly so they never masquerade as the awaiting-content hint.
-    return ref
-        .watch(agentReportProvider(agent.agentId))
-        .unwrapPrevious()
-        .when(
-          skipLoadingOnReload: true,
-          data: (value) {
-            final report = value?.mapOrNull(agentReport: (r) => r);
-            final tldr = report?.tldr?.trim();
-            final content = report?.content.trim();
-            final body = (tldr != null && tldr.isNotEmpty)
-                ? tldr
-                : (content != null && content.isNotEmpty ? content : null);
-            return _RecapCard(
-              state: body != null ? _RecapState.recap : _RecapState.awaiting,
-              body: body,
-              onRefresh: refresh,
-            );
-          },
-          loading: () =>
-              _RecapCard(state: _RecapState.loading, onRefresh: refresh),
-          error: (_, _) =>
-              _RecapCard(state: _RecapState.error, onRefresh: refresh),
-        );
+    return _EventAgentRecapCard(identity: agent);
   }
 }
 
-enum _RecapState { recap, awaiting, loading, error }
+class _EventAgentRecapCard extends ConsumerStatefulWidget {
+  const _EventAgentRecapCard({required this.identity});
 
-class _RecapCard extends StatelessWidget {
-  const _RecapCard({required this.state, this.body, this.onRefresh});
+  final AgentIdentityEntity identity;
 
-  final _RecapState state;
+  @override
+  ConsumerState<_EventAgentRecapCard> createState() =>
+      _EventAgentRecapCardState();
+}
 
-  /// The recap text, present only when [state] is [_RecapState.recap].
-  final String? body;
-  final VoidCallback? onRefresh;
+class _EventAgentRecapCardState extends ConsumerState<_EventAgentRecapCard> {
+  bool _expanded = false;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final cs = context.colorScheme;
-    final styles = tokens.typography.styles;
-    final reduceMotion = MediaQuery.disableAnimationsOf(context);
+    final agentId = widget.identity.agentId;
 
-    final bodyWidget = switch (state) {
-      _RecapState.recap => Text(
-        body!,
-        style: styles.body.bodyLarge.copyWith(color: cs.onSurface),
-      ),
-      _RecapState.awaiting => Text(
-        context.messages.eventsRecapAwaitingContent,
-        style: styles.body.bodyMedium.copyWith(color: cs.onSurfaceVariant),
-      ),
-      _RecapState.error => Text(
-        context.messages.eventsRecapUnavailable,
-        style: styles.body.bodyMedium.copyWith(color: cs.onSurfaceVariant),
-      ),
-      _RecapState.loading => Padding(
-        padding: EdgeInsets.symmetric(vertical: tokens.spacing.step2),
-        child: SizedBox(
-          width: tokens.spacing.step5,
-          height: tokens.spacing.step5,
-          child: CircularProgressIndicator(
-            strokeWidth: 2,
-            color: cs.onSurfaceVariant,
-          ),
-        ),
-      ),
-    };
+    // `.value` keeps the last recap through a background reload (a wake, a
+    // sync), so the card never drops back to its empty state while the
+    // report refreshes.
+    final reportAsync = ref.watch(agentReportProvider(agentId));
+    final report = reportAsync.value?.mapOrNull(agentReport: (r) => r);
+    final isRunning = ref.watch(agentIsRunningProvider(agentId)).value ?? false;
+    final state = ref
+        .watch(agentStateProvider(agentId))
+        .value
+        ?.mapOrNull(agentState: (s) => s);
+    final setup = ref.watch(taskAgentResolvedSetupProvider(agentId)).value;
+    final identityData = TaskAgentModelIdentityViewData.fromResolution(
+      setup: setup,
+      reportProvenance: report == null
+          ? null
+          : ReportInferenceProvenance.tryRead(report.provenance),
+      hasReport: report != null,
+    );
+    final inferenceAvailable =
+        identityData.presentation != TaskAgentIdentityPresentation.disabled &&
+        identityData.presentation != TaskAgentIdentityPresentation.broken;
+    final template = ref.watch(templateForAgentProvider(agentId)).value;
+    final templateName = template is AgentTemplateEntity
+        ? template.displayName.trim()
+        : null;
+    final agentName = templateName == null || templateName.isEmpty
+        ? widget.identity.displayName
+        : templateName;
 
-    return ModernBaseCard(
-      isEnhanced: true,
-      padding: EdgeInsets.all(tokens.spacing.step4),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(LottiIcons.aiSpark, size: 16, color: cs.primary),
-              SizedBox(width: tokens.spacing.step2),
-              Text(
-                context.messages.eventsSummaryTitle,
-                style: styles.subtitle.subtitle2.copyWith(
-                  color: cs.onSurfaceVariant,
+    final tldr = resolveReportTldr(report);
+    final hasReportContent = tldr.isNotEmpty;
+
+    void openInternals() => AgentInternalsPanel.show(
+      context: context,
+      agentId: agentId,
+      agentName: agentName,
+    );
+
+    final Widget body;
+    if (hasReportContent) {
+      body = TldrBody(
+        disclosureKey: const ValueKey('eventAgentReportDisclosure'),
+        tldr: tldr,
+        expanded: _expanded,
+        additionalReport: resolveReportAdditional(report),
+        onToggle: () => setState(() => _expanded = !_expanded),
+        onOpenInternals: openInternals,
+      );
+    } else {
+      // A load that failed says so; otherwise the agent simply has nothing
+      // to narrate yet. A first load in flight shows neither — the header
+      // and strip stand alone for that moment, as on a task's card.
+      final hint = reportAsync.hasError
+          ? context.messages.eventsRecapUnavailable
+          : reportAsync.hasValue
+          ? context.messages.eventsRecapAwaitingContent
+          : null;
+      body = hint == null
+          ? const SizedBox.shrink()
+          : Padding(
+              padding: EdgeInsets.only(bottom: tokens.spacing.step3),
+              child: Text(
+                hint,
+                style: tokens.typography.styles.body.bodySmall.copyWith(
+                  color: tokens.colors.aiCard.metaText,
                 ),
               ),
-              const Spacer(),
-              if (onRefresh != null)
-                IconButton(
-                  onPressed: onRefresh,
-                  visualDensity: VisualDensity.compact,
-                  iconSize: 18,
-                  color: cs.onSurfaceVariant,
-                  tooltip: context.messages.eventsRegenerateSummary,
-                  icon: const Icon(LottiIcons.refresh),
-                ),
-            ],
+            );
+    }
+
+    return AgentSummaryCardSurface(
+      children: [
+        TldrHeader(agentName: agentName, onAgentTap: openInternals),
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: tokens.spacing.cardPadding),
+          child: body,
+        ),
+        // The freshness word and the manual trigger, on the summary's leading
+        // edge; the card pays the bottom inset, as the task card does.
+        Padding(
+          padding: EdgeInsets.only(
+            left: tokens.spacing.cardPadding,
+            right: tokens.spacing.cardPadding,
+            bottom: tokens.spacing.step4,
           ),
-          SizedBox(height: tokens.spacing.step2),
-          // The body swaps between a small loading spinner and a multi-line
-          // recap (or the awaiting/error hints) as the agent report resolves.
-          // Animate the height change so the event detail column below eases
-          // down instead of snapping when the recap first lands. Width is
-          // pinned full so only the height animates (no horizontal slide).
-          // With animations off there is no AnimatedSize at all: a zero
-          // duration still restarts its controller from inside layout when
-          // the body changes size, which the framework rejects as a render
-          // object re-dirtying itself mid-layout.
-          if (reduceMotion)
-            SizedBox(width: double.infinity, child: bodyWidget)
-          else
-            AnimatedSize(
-              alignment: Alignment.topCenter,
-              duration: MotionDurations.medium2,
-              curve: MotionCurves.emphasizedDecelerate,
-              child: SizedBox(width: double.infinity, child: bodyWidget),
-            ),
-        ],
-      ),
+          child: AgentAutomationRow.compact(
+            inferenceAvailable: inferenceAvailable,
+            isRunning: isRunning,
+            hasReportContent: hasReportContent,
+            isStale: state?.isReportStale ?? false,
+            reportUpdatedAt: report?.createdAt,
+            onRunNow: inferenceAvailable
+                ? () => ref
+                      .read(eventAgentServiceProvider)
+                      .triggerReanalysis(agentId)
+                : null,
+          ),
+        ),
+      ],
     );
   }
 }

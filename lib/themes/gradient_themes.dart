@@ -1,19 +1,11 @@
 import 'package:lotti/themes/colors.dart';
 import 'package:material_ui/material_ui.dart';
 
-// Gradient and shadow constants - tuned for polished, modern look
+// The soft shadow under the About page's app-icon tile.
 class GradientConstants {
-  // Shadow alpha values for enhanced cards - much more subtle
   static const double enhancedShadowLightAlpha = 0.06;
-  static const double enhancedShadowSecondaryLightAlpha = 0.03;
-  static const double enhancedShadowSecondaryDarkAlpha = 0.12;
-
-  // Shadow blur and spread values - reduced for cleaner look
   static const double enhancedShadowBlurLight = 8;
-  static const double enhancedShadowSecondaryBlurLight = 16;
-  static const double enhancedShadowSecondaryBlurDark = 20;
   static const double enhancedShadowOffsetY = 2;
-  static const double enhancedShadowSecondaryOffsetY = 4;
 }
 
 /// Gradient themes for consistent card styling across the app

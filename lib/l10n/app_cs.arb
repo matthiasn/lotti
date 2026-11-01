@@ -2845,7 +2845,6 @@
   "eventsRatingStarLabel": "Ohodnoť {starIndex} z {totalStars} hvězdiček",
   "eventsRecapAwaitingContent": "Přidej fotku nebo poznámku a tady se objeví shrnutí.",
   "eventsRecapUnavailable": "Shrnutí se nepodařilo načíst.",
-  "eventsRegenerateSummary": "Znovu vytvořit shrnutí",
   "eventsSearchHint": "Hledat události",
   "eventsSectionUpcoming": "Nadcházející",
   "eventsStatusCancelled": "Zrušeno",

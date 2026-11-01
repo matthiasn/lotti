@@ -6907,9 +6907,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get eventsRecapUnavailable => 'Shrnutí se nepodařilo načíst.';
 
   @override
-  String get eventsRegenerateSummary => 'Znovu vytvořit shrnutí';
-
-  @override
   String get eventsSearchHint => 'Hledat události';
 
   @override

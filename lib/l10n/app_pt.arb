@@ -3182,7 +3182,6 @@
   "eventsRatingStarLabel": "Avalia com {starIndex} de {totalStars} estrelas",
   "eventsRecapAwaitingContent": "Adicione uma foto ou nota e a recapitulação aparecerá aqui.",
   "eventsRecapUnavailable": "Não foi possível carregar a recapitulação.",
-  "eventsRegenerateSummary": "Regenerar resumo",
   "eventsSearchHint": "Pesquisar eventos",
   "eventsSectionUpcoming": "Próximos",
   "eventsStatusCancelled": "Cancelado",

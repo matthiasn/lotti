@@ -589,7 +589,8 @@ a failed read degrades to captions alone. This matters because image analysis
 runs automatically for a photo added to an event (the event is its subject),
 and the analysis landing notifies the event id and wakes the agent — a wake
 that would otherwise see nothing new. Its `oneLiner` is what the page shows in
-the hero, its `tldr` what the recap card shows (see
+the hero, its `tldr` what the recap card — the task agent's card, on
+`AgentSummaryCardSurface` — shows (see
 [events](../events.md#the-hero-is-the-interaction-surface)).
 
 ## Tools

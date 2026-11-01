@@ -23,8 +23,11 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/event_data.dart';
 import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/features/agents/state/agent_query_providers.dart';
+import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/event_agent_providers.dart';
+import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
+import 'package:lotti/features/agents/ui/widgets/ai_card_chrome.dart';
+import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/demo/seed/demo_entity_factories.dart';
 import 'package:lotti/features/demo/seed/demo_ids.dart';
 import 'package:lotti/features/design_system/components/chips/active_filter_chip.dart';
@@ -470,11 +473,31 @@ void main() {
         id: _detailAgentId,
         agentId: _detailAgentId,
         kind: 'event_agent',
+        displayName: _t('Gala recap', 'Gala-Rückblick'),
+      ),
+    ),
+    // The card's freshness strip reads the agent's run state and model: a
+    // settled agent on a resolved model, so Update now is live.
+    agentIsRunningProvider(
+      _detailAgentId,
+    ).overrideWith((ref) => Stream.value(false)),
+    agentStateProvider(_detailAgentId).overrideWith((ref) => null),
+    templateForAgentProvider(_detailAgentId).overrideWith((ref) => null),
+    taskAgentResolvedSetupProvider(_detailAgentId).overrideWith(
+      (ref) => ResolvedAgentSetup(
+        status: AgentSetupResolutionStatus.resolved,
+        profile: ResolvedProfile(
+          thinkingModelId: 'test-model',
+          thinkingProvider: testInferenceProvider(),
+          thinkingModel: testAiModel(),
+        ),
+        source: AgentSetupResolutionSource.baseProfile,
       ),
     ),
     agentReportProvider(_detailAgentId).overrideWith(
       (ref) => makeTestReport(
         agentId: _detailAgentId,
+        createdAt: DateTime(2026, 7, 16, 21, 40),
         oneLiner: _t(
           'The habitat opened on time and the sardines arrived chilled.',
           'Das Habitat öffnete pünktlich, die Sardinen kamen gekühlt an.',
@@ -707,10 +730,9 @@ void main() {
           find.text(_t('Penguin Operations', 'Pinguinbetrieb')),
           findsOneWidget,
         );
-        expect(
-          find.text(_messages(tester).eventsSummaryTitle),
-          findsOneWidget,
-        );
+        // The recap is the task agent's card, under its title.
+        expect(find.text(_messages(tester).aiCardTitle), findsOneWidget);
+        expect(find.byType(AgentSummaryCardSurface), findsOneWidget);
         final galleryImages = find.descendant(
           of: find.byType(EventPhotoGrid),
           matching: find.byType(RawImage),

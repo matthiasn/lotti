@@ -7,7 +7,7 @@ import 'package:material_ui/material_ui.dart';
 ///
 /// This provides the foundation for all modern card components with:
 /// - Gradient background (dark mode) or solid color (light mode)
-/// - Consistent border, shadow, and border radius
+/// - Consistent border, a single subtle shadow, and border radius
 /// - Material inkwell effects for interactivity
 /// - Flexible content area
 /// - Optional custom shadow overrides for bespoke styling
@@ -20,7 +20,6 @@ class ModernBaseCard extends StatelessWidget {
     this.gradient,
     this.margin,
     this.padding,
-    this.isEnhanced = false,
     this.selected = false,
     this.customShadows,
     super.key,
@@ -33,7 +32,6 @@ class ModernBaseCard extends StatelessWidget {
   final LinearGradient? gradient;
   final EdgeInsets? margin;
   final EdgeInsets? padding;
-  final bool isEnhanced;
 
   /// Whether this card is the active row of a desktop list/detail split.
   ///
@@ -103,47 +101,25 @@ class ModernBaseCard extends StatelessWidget {
         gradient: effectiveGradient,
         borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
         border: Border.all(color: effectiveBorderColor),
+        // One soft, close shadow. There was once an "enhanced" variant —
+        // a wide spread shadow pushed eight pixels down plus a second layer —
+        // and on a pale page it read as a grey slab under the card rather
+        // than lift; it is gone, and flat design-system surfaces carry none.
         boxShadow:
             customShadows ??
-            (isEnhanced
-                ? [
-                    BoxShadow(
-                      color: context.colorScheme.shadow.withValues(
-                        alpha: isDark ? 0.3 : 0.15,
-                      ),
-                      blurRadius: isDark ? 20 : 15,
-                      offset: const Offset(0, 8),
-                      spreadRadius: 2,
-                    ),
-                    BoxShadow(
-                      color: context.colorScheme.shadow.withValues(
-                        alpha: isDark
-                            ? GradientConstants.enhancedShadowSecondaryDarkAlpha
-                            : GradientConstants
-                                  .enhancedShadowSecondaryLightAlpha,
-                      ),
-                      blurRadius: isDark
-                          ? GradientConstants.enhancedShadowSecondaryBlurDark
-                          : GradientConstants.enhancedShadowSecondaryBlurLight,
-                      offset: const Offset(
-                        0,
-                        GradientConstants.enhancedShadowSecondaryOffsetY,
-                      ),
-                    ),
-                  ]
-                : [
-                    BoxShadow(
-                      color: context.colorScheme.shadow.withValues(
-                        alpha: isDark
-                            ? AppTheme.alphaShadowDark
-                            : AppTheme.alphaShadowLight,
-                      ),
-                      blurRadius: isDark
-                          ? AppTheme.cardElevationDark
-                          : AppTheme.cardElevationLight,
-                      offset: AppTheme.shadowOffset,
-                    ),
-                  ]),
+            [
+              BoxShadow(
+                color: context.colorScheme.shadow.withValues(
+                  alpha: isDark
+                      ? AppTheme.alphaShadowDark
+                      : AppTheme.alphaShadowLight,
+                ),
+                blurRadius: isDark
+                    ? AppTheme.cardElevationDark
+                    : AppTheme.cardElevationLight,
+                offset: AppTheme.shadowOffset,
+              ),
+            ],
       ),
       child: Material(
         borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
@@ -167,36 +143,6 @@ class ModernBaseCard extends StatelessWidget {
                 child: child,
               ),
       ),
-    );
-  }
-}
-
-/// Enhanced modern card with sophisticated gradient and effects
-class EnhancedModernCard extends StatelessWidget {
-  const EnhancedModernCard({
-    required this.child,
-    this.onTap,
-    this.gradient,
-    this.margin,
-    this.padding,
-    super.key,
-  });
-
-  final Widget child;
-  final VoidCallback? onTap;
-  final LinearGradient? gradient;
-  final EdgeInsets? margin;
-  final EdgeInsets? padding;
-
-  @override
-  Widget build(BuildContext context) {
-    return ModernBaseCard(
-      onTap: onTap,
-      gradient: gradient ?? GradientThemes.primaryGradient(context),
-      margin: margin,
-      padding: padding,
-      isEnhanced: true,
-      child: child,
     );
   }
 }

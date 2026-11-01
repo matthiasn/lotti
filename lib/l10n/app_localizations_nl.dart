@@ -6861,9 +6861,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get eventsRecapUnavailable => 'Kon de samenvatting niet laden.';
 
   @override
-  String get eventsRegenerateSummary => 'Samenvatting regenereren';
-
-  @override
   String get eventsSearchHint => 'Gebeurtenissen zoeken';
 
   @override

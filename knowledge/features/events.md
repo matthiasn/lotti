@@ -176,10 +176,19 @@ its `tldr`. Both are tiers of the one report the agent writes (see
 read by the page through `eventAgentProvider` → `agentReportProvider`. `.value`
 keeps the last line through a background reload. With no agent, or no
 one-liner yet, the hero is title and date alone — the user's own note never
-stands in for it. Under reduced motion the recap card swaps its body in place:
-an `AnimatedSize` given a zero duration still restarts its controller from
-inside its own layout when the recap replaces the spinner, which the framework
-rejects.
+stands in for it.
+
+**The recap card is the task agent's card.** `EventAiSummaryCard` builds on
+`AgentSummaryCardSurface` — the shared `aiCardDecoration` wash, hairline and
+radius, with no shadow — in the task card's reading order: `TldrHeader` (the
+agent's name opens `AgentInternalsPanel`), `TldrBody` with *Read more* for the
+full recap, then the compact `AgentAutomationRow` whose *Update now* re-wakes
+the agent through `EventAgentService.triggerReanalysis`. Before the first recap
+the body is the awaiting hint; a failed load says so instead; a first load in
+flight shows the header alone. Without an agent, the passive summary (the
+event note or the newest linked AI response) sits on the plain
+`EventPassiveSummaryCard` — the design-system section card with a `plain`
+`TldrHeader`, since no agent wrote it — and offers no refresh.
 
 **Cover art becomes automatic then explicit**: while there is no linked photo,
 an "add cover photo" action opens the create-entry menu; the **newest** linked

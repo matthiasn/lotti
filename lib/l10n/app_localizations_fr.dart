@@ -6938,9 +6938,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get eventsRecapUnavailable => 'Impossible de charger le récap.';
 
   @override
-  String get eventsRegenerateSummary => 'Régénérer le résumé';
-
-  @override
   String get eventsSearchHint => 'Rechercher des événements';
 
   @override
