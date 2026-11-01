@@ -684,6 +684,54 @@ void main() {
     );
 
     test(
+      'detaching waits for a re-check a flag change started, and disposing '
+      'for one a queue drain started',
+      () async {
+        var gate = Completer<void>();
+        final sink = MockSyncedEmbeddingSink();
+        var calls = 0;
+        when(sink.recheckAll).thenAnswer((_) {
+          calls++;
+          // The attach re-check finishes at once; later ones wait.
+          return calls == 1 ? Future.value() : gate.future;
+        });
+        final flagChanges = StreamController<void>();
+        addTearDown(flagChanges.close);
+        await vectors.attach(
+          store: store,
+          modelId: _model,
+          sink: sink,
+          flagChanges: flagChanges.stream,
+        );
+
+        flagChanges.add(null);
+        await pumpEventQueue();
+        var detached = false;
+        final detach = vectors.detach().then((_) => detached = true);
+        await pumpEventQueue();
+        expect(detached, isFalse, reason: 'the flag re-check still runs');
+        gate.complete();
+        await detach;
+
+        gate = Completer<void>();
+        await attach(sink: sink);
+        final depth = StreamController<QueueDepthSignal>();
+        addTearDown(depth.close);
+        vectors.watchInboundQueue(depth.stream);
+        depth
+          ..add(const QueueDepthSignal(total: 1))
+          ..add(const QueueDepthSignal(total: 0));
+        await pumpEventQueue();
+        var disposed = false;
+        final dispose = vectors.dispose().then((_) => disposed = true);
+        await pumpEventQueue();
+        expect(disposed, isFalse, reason: 'the drain re-check still runs');
+        gate.complete();
+        await dispose;
+      },
+    );
+
+    test(
       'a flag change re-checks the held versions, then runs the catch-up',
       () async {
         final calls = <String>[];

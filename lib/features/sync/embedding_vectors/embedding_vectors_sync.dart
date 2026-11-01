@@ -107,21 +107,15 @@ class EmbeddingVectorsSync implements EmbeddingShare {
     });
   }
 
-  /// Stops watching the inbound queue, once the re-check [attach] started
-  /// has finished.
+  /// Stops watching the inbound queue and the flags, once every re-check
+  /// they started has finished: cancelling a subscription does not wait for
+  /// a listener already running.
   Future<void> dispose() async {
     await _depthSubscription?.cancel();
     _depthSubscription = null;
     await _flagSubscription?.cancel();
     _flagSubscription = null;
-    await _settleAttachRecheck();
-  }
-
-  /// Waits for the re-check [attach] started; it logs its own failure.
-  Future<void> _settleAttachRecheck() async {
-    final recheck = _attachRecheck;
-    _attachRecheck = null;
-    await recheck;
+    await _rechecks;
   }
 
   /// Connects the embedding pipeline: its [store], the [modelId] it embeds
@@ -131,9 +125,9 @@ class EmbeddingVectorsSync implements EmbeddingShare {
   /// may hash their text the way their sender did, and nothing else would
   /// look at them until the inbound queue next drains — without waiting for
   /// it: the app is starting, and the holds may be many. [detach] and
-  /// [dispose] wait for it. Then it runs the [catchUp], and whenever
-  /// [flagChanges] fires, a re-check (holds wait while a flag is off) and
-  /// the catch-up again.
+  /// [dispose] wait for it, as for every re-check. Then it runs the
+  /// [catchUp], and whenever [flagChanges] fires, a re-check (holds wait
+  /// while a flag is off) and the catch-up again.
   Future<void> attach({
     required EmbeddingStore store,
     required String modelId,
@@ -148,16 +142,30 @@ class EmbeddingVectorsSync implements EmbeddingShare {
       await _recheckHeld(sink);
       await catchUp();
     });
-    _attachRecheck = _recheckHeld(sink);
+    _startRecheck(sink);
     await catchUp();
   }
 
-  /// The re-check [attach] started and did not wait for.
-  Future<void>? _attachRecheck;
+  /// Every re-check started so far, as one future: what [detach] and
+  /// [dispose] wait for before the store goes. A finished link lets go of
+  /// what it waited on, so the chain does not grow.
+  Future<void> _rechecks = Future.value();
+
+  /// Starts a re-check of every version [sink] holds, tracked in
+  /// [_rechecks].
+  void _startRecheck(SyncedEmbeddingSink sink) {
+    _rechecks = Future.wait([_rechecks, _runRecheck(sink)]);
+  }
+
+  /// Starts a re-check and waits for it, and for any still running.
+  Future<void> _recheckHeld(SyncedEmbeddingSink sink) {
+    _startRecheck(sink);
+    return _rechecks;
+  }
 
   /// Re-checks every version [sink] holds, logging a failure: a held
-  /// version waits for the next check either way.
-  Future<void> _recheckHeld(SyncedEmbeddingSink sink) async {
+  /// version waits for the next check either way. Never throws.
+  Future<void> _runRecheck(SyncedEmbeddingSink sink) async {
     try {
       await sink.recheckAll();
     } on Object catch (error, stackTrace) {
@@ -176,12 +184,12 @@ class EmbeddingVectorsSync implements EmbeddingShare {
   Stream<int> watchHeldVersionCount() =>
       _sink?.watchHeldCount() ?? Stream.value(0);
 
-  /// Disconnects the pipeline, which is being disposed, once the re-check
-  /// [attach] started — which reads its store — has finished.
+  /// Disconnects the pipeline, which is being disposed, once every re-check
+  /// running — each reads and writes its store — has finished.
   Future<void> detach() async {
     await _flagSubscription?.cancel();
     _flagSubscription = null;
-    await _settleAttachRecheck();
+    await _rechecks;
     _store = null;
     _modelId = null;
     _sink = null;
