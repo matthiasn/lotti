@@ -11681,11 +11681,29 @@ abstract class AppLocalizations {
   /// **'Add photos, notes or a voice memo'**
   String get eventsTimelineEmpty;
 
+  /// Kind label of a text note row on an event's timeline, after its time.
+  ///
+  /// In en, this message translates to:
+  /// **'Note'**
+  String get eventsTimelineNote;
+
+  /// Kind label of a photo row on an event's timeline, after its time.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo'**
+  String get eventsTimelinePhoto;
+
   /// No description provided for @eventsTimelineSection.
   ///
   /// In en, this message translates to:
   /// **'Timeline'**
   String get eventsTimelineSection;
+
+  /// Kind label of a recorded-time row on an event's timeline, after its start time.
+  ///
+  /// In en, this message translates to:
+  /// **'Time recording'**
+  String get eventsTimelineTimeRecording;
 
   /// No description provided for @eventsTitleHint.
   ///

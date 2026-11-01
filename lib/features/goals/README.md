@@ -313,8 +313,8 @@ recorder. When the switch is off the decline is recorded rather than skipped,
 so the beat offers Retry instead of looking like it is still being
 transcribed. Tapping a beat opens the journal entry behind it.
 
-They appear as dated beats on the goal's timeline, which is the shared
-`lib/widgets/timeline/` rail that Events uses, merged with the standing daily
+They appear as dated rows on the goal's timeline — the design system's
+`DesignSystemTimelineRow`, the same row People and Events use — merged with the standing daily
 reflections so both halves of "what I've said about this goal" read as one
 story. The rail is the reflections' only surface — the dashboard renders no
 separate history card — and each reflection is one tight row: the verdict

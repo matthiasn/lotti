@@ -6947,7 +6947,16 @@ class AppLocalizationsCs extends AppLocalizations {
       'Přidej fotky, poznámky nebo hlasovou poznámku';
 
   @override
+  String get eventsTimelineNote => 'Poznámka';
+
+  @override
+  String get eventsTimelinePhoto => 'Fotka';
+
+  @override
   String get eventsTimelineSection => 'Časová osa';
+
+  @override
+  String get eventsTimelineTimeRecording => 'Záznam času';
 
   @override
   String get eventsTitleHint => 'Název události';

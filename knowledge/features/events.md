@@ -13,8 +13,8 @@ sources:
     title: Events feature source
     last_modified: 2026-11-01
   - id: timeline
-    resource: ../../lib/widgets/timeline/timeline_view.dart
-    title: The shared timeline rail and its photo beat
+    resource: ../../lib/features/events/ui/widgets/event_timeline.dart
+    title: EventTimeline — the event's rows on DesignSystemTimelineRow, and its photo band
     last_modified: 2026-11-01
   - id: plan
     resource: ../../docs/implementation_plans/2026-11-01_event_agent_record.md
@@ -227,11 +227,21 @@ all chrome on a single tap, and keeps pinch zoom/pan while rotation is disabled.
 It participates in the shared mobile image-viewer orientation lifecycle described
 in [shared widgets](../architecture/shared-widgets.md).
 
-On the timeline a photo is a **wide, short band**: the shared rail
-(`lib/widgets/timeline/timeline_view.dart`) sizes its lead frame at 2.4 : 1 of
-the column, held between 96 and 180 logical pixels tall, so a photo beat reads
-as a strip on a phone instead of a block that pushes the next beat off screen.
-Its caption is the photo's **one-line summary** — the `oneLiner` of its newest
+**The timeline is the goal and person timeline.** `EventTimeline` puts each
+linked entry on a `DesignSystemTimelineRow`, the row Goals and People hang on
+their rails: a neutral tile naming the kind (note, photo, voice note, time
+recording), a `time · kind` meta line, the words as `FoldedWords`, a recording
+as the light `RecordingPlayback` with its `RecordingTranscript`, a recorded
+span as its `TimeSpanBar`, one spoken sentence per row, and the whole row as
+the door to its entry (`onOpenTimelineEntry`, inert without one). A recording
+missing its span labels reads as a note.
+
+What stays the event's own is the photo: a photo row carries the picture in
+its footer as a **wide, short band** (`EventTimelinePhotoBand`) at 2.4 : 1 of
+the column, held between 96 and 180 logical pixels tall, so it reads as a
+strip on a phone instead of a block that pushes the next row off screen —
+where a person's timeline shows a small thumbnail strip, an event is
+photo-led. Under the band, its caption is the photo's **one-line summary** — the `oneLiner` of its newest
 image analysis (`imageAnalysisOneLiner`, the same source the journal's
 collapsed image row uses), falling back to the user's note — held to two
 lines. The page watches each photo's analyses, so a caption appears in place

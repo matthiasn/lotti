@@ -6984,7 +6984,16 @@ class AppLocalizationsRo extends AppLocalizations {
       'Adăugați fotografii, notițe sau o notă vocală';
 
   @override
+  String get eventsTimelineNote => 'Notă';
+
+  @override
+  String get eventsTimelinePhoto => 'Fotografie';
+
+  @override
   String get eventsTimelineSection => 'Cronologie';
+
+  @override
+  String get eventsTimelineTimeRecording => 'Timp înregistrat';
 
   @override
   String get eventsTitleHint => 'Titlul evenimentului';

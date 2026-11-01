@@ -6843,7 +6843,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get eventsTimelineEmpty => 'Add photos, notes or a voice memo';
 
   @override
+  String get eventsTimelineNote => 'Note';
+
+  @override
+  String get eventsTimelinePhoto => 'Photo';
+
+  @override
   String get eventsTimelineSection => 'Timeline';
+
+  @override
+  String get eventsTimelineTimeRecording => 'Time recording';
 
   @override
   String get eventsTitleHint => 'Event title';

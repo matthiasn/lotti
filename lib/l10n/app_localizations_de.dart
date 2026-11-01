@@ -6916,7 +6916,16 @@ class AppLocalizationsDe extends AppLocalizations {
       'Füge Fotos, Notizen oder eine Sprachnotiz hinzu';
 
   @override
+  String get eventsTimelineNote => 'Notiz';
+
+  @override
+  String get eventsTimelinePhoto => 'Foto';
+
+  @override
   String get eventsTimelineSection => 'Zeitleiste';
+
+  @override
+  String get eventsTimelineTimeRecording => 'Zeiterfassung';
 
   @override
   String get eventsTitleHint => 'Ereignistitel';

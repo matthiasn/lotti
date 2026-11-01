@@ -6901,7 +6901,16 @@ class AppLocalizationsNl extends AppLocalizations {
       'Foto\'s, notities of een spraakmemo toevoegen';
 
   @override
+  String get eventsTimelineNote => 'Notitie';
+
+  @override
+  String get eventsTimelinePhoto => 'Foto';
+
+  @override
   String get eventsTimelineSection => 'Tijdslijn';
+
+  @override
+  String get eventsTimelineTimeRecording => 'Tijdregistratie';
 
   @override
   String get eventsTitleHint => 'Titel van de gebeurtenis';
