@@ -24,6 +24,7 @@ class AgentChatView extends ConsumerStatefulWidget {
     required this.onDraftChanged,
     required this.onSend,
     required this.onRetry,
+    this.onSendSpoken,
     this.hasFailedTurn = false,
     this.attachmentBuilder,
     this.dividerBuilder,
@@ -78,6 +79,10 @@ class AgentChatView extends ConsumerStatefulWidget {
   final ValueChanged<String> onDraftChanged;
   final VoidCallback onSend;
   final VoidCallback onRetry;
+
+  /// Sends a transcript a [voiceFirst] chat sends by itself, so the host
+  /// knows the turn was spoken; [onSend] when not given.
+  final VoidCallback? onSendSpoken;
   final AgentChatMessageAttachmentBuilder? attachmentBuilder;
 
   /// Builds what a bubble's footer line carries after the author and the

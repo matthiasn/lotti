@@ -169,6 +169,15 @@ next one. The order is a proposal.
   - layout at phone and desktop sizes;
   - before/after screenshots.
 
+- **As built, C1 (her voice):** a spoken question's answer is spoken
+  (`frontSpokenTurnProvider`, marked before the turn is written; spoken by
+  `FrontVoice` under `front-chat:<conversation>`, gated on the companion and
+  read-aloud flags and a voice); her bust is a `CompanionSpeaker` holding
+  `listen` and `think`; a tap stops her; recording stops the voice first.
+  Left for C2: the panel and phone screen, the category chips, opening her
+  from her bust, the personality block from `CompanionSass`, and reduced
+  motion and a mute in the companion — none of which exists yet.
+
 ### D. "Anything" — the remaining doors
 
 - **Daily OS:** a `day` segment refines today.

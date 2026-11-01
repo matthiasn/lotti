@@ -104,6 +104,14 @@ sources:
     resource: ../../lib/features/front_agent/state/front_agent_providers.dart
     title: The registry contributions, the wake runner that routes then walks, and the setup resolver
     last_modified: 2026-10-24
+  - id: voice
+    resource: ../../lib/features/front_agent/ui/front_chat_voice.dart
+    title: FrontVoice — her spoken reply, its gating, her pose
+    last_modified: 2026-11-01
+  - id: voice-state
+    resource: ../../lib/features/front_agent/state/front_voice_providers.dart
+    title: The spoken turn awaiting her spoken reply, and her voice's source id
+    last_modified: 2026-11-01
   - id: plan
     resource: ../../docs/implementation_plans/2026-10-23_single_agent_entry_point.md
     title: The single-entry-point plan — decisions and slices
@@ -543,10 +551,10 @@ opening an empty conversation with her invitation. Once the thread
 (`AgentChatView.onThreadScrolled`) is past her bust, `frontHeroScrolledProvider`
 puts her and the title in a line in the header's control row — reset when
 another conversation opens or the list opens or closes, so a thread that
-comes back at its top has her there, which otherwise holds only the list button and a new
-conversation on the left, an overflow (her internals, where the thread's cost
-is accounted, then this conversation's rename, archive and delete) and close
-on the right. The thread is `conversational` and `voiceFirst` (see
+comes back at its top has her there. Otherwise the control row holds only
+the list button and a new conversation on the left, an overflow (her
+internals, where the thread's cost is accounted, then this conversation's
+rename, archive and delete) and close on the right. The thread is `conversational` and `voiceFirst` (see
 [chat input](agents/chat-input-and-reasoning.md)): her replies as prose with
 their cost as a quiet line under them, one talk disc, and what she was told
 by voice sent as said.
@@ -557,6 +565,44 @@ button beside the menu, or the `openFrontChat` keyboard command
 (Cmd/Ctrl+L), all gated by `enable_front_agent` and all closed under
 lockdown: her thread spans every category.
 
+# Her voice
+
+A question the user **spoke** is answered aloud; a typed one only in
+writing (the voice-first plan's decision 3). `AgentChatView` hands a
+transcript it sends by itself to `onSendSpoken`, which the pane wires to
+`FrontChatController.sendSpoken`; that marks `frontSpokenTurnProvider` with
+the landing conversation and the moment, *before* the turn is written, since
+her reply can land before the send returns. A typed send, or a send that
+fails, clears it.
+
+```mermaid
+stateDiagram-v2
+    [*] --> NoSpokenTurn
+    NoSpokenTurn --> AwaitingSpokenReply: sendSpoken (marked before the write)
+    AwaitingSpokenReply --> NoSpokenTurn: a typed send
+    AwaitingSpokenReply --> NoSpokenTurn: the send fails
+    AwaitingSpokenReply --> NoSpokenTurn: her first reply after it lands on screen
+    AwaitingSpokenReply --> AwaitingSpokenReply: another conversation on screen
+```
+
+`FrontVoice.listenForSpokenReply`, called from the pane's build, watches the
+thread: when her first message after the spoken turn is on screen in that
+conversation it settles the turn and — with `enable_companion` and
+`enable_ai_summary_tts` on and a voice available (her profile's cloud voice
+in the app's language, else the on-device engine) — speaks it under
+`front-chat:<conversation>` (`frontVoiceSourceId`), stopping whatever else
+was speaking first. It keeps those flags and her resolved setup watched, so
+they are known the moment the reply lands. A voice that fails surfaces the
+shared playback toast.
+
+Her bust is a `CompanionSpeaker` on that source, so her lips follow only her
+own words in the conversation on screen. She holds `listen` while the user
+records and `think` while a send is in flight or a spoken answer is owed
+(`FrontVoice.holdingOf`); a tap on her while she speaks stops her
+(`FrontChatHeroKeys.stop`). Starting to record stops any voice before the
+microphone opens (`ChatRecorderController.start`), so she never records
+herself.
+
 # Where it plugs in
 
 `frontAgentWakeRunnersProvider` and `resolveFrontAgentSetup` are merged in
@@ -564,7 +610,8 @@ lockdown: her thread spans every category.
 `agentResolvedSetupResolversProvider` (see [the agents overview](agents/overview.md)),
 pinned by `test/app_bootstrap_test.dart`. Model resolution is the agent's
 own: explicit setup, then its profile, then the Settings default, then the
-built-in cheap model — never a category's, because the front agent spans
+built-in cheap model (DeepSeek V4.1 Flash on Melious, else on Mistral —
+`frontAgentBuiltInModelIds`) — never a category's, because the front agent spans
 categories. The full-text index reaches the builder through
 `fts5DbProvider`, overridden from the composition root, null on a host
 without one.

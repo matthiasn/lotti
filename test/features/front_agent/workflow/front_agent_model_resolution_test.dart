@@ -99,9 +99,63 @@ void main() {
     ).thenAnswer((_) async => null);
   });
 
-  test('the built-in route is the cheap flash model', () {
-    expect(frontAgentBuiltInModelId, meliousDeepseekV41FlashModelId);
+  test('the built-in route is the cheap flash model, Melious first, then '
+      "Mistral's", () {
+    expect(frontAgentBuiltInModelIds, [
+      meliousDeepseekV41FlashModelId,
+      mistralDeepseekV41Flash1017ModelId,
+    ]);
   });
+
+  test(
+    'with only Mistral set up, the built-in model routes through it',
+    () async {
+      final mistral =
+          AiConfig.inferenceProvider(
+                id: 'mistral-provider',
+                baseUrl: 'https://api.mistral.ai/v1',
+                apiKey: 'key',
+                name: 'Mistral',
+                createdAt: DateTime(2026),
+                inferenceProviderType: InferenceProviderType.mistral,
+              )
+              as AiConfigInferenceProvider;
+      final mistralFlash =
+          AiConfig.model(
+                id: 'model-mistral-flash',
+                name: 'DeepSeek Flash',
+                providerModelId: mistralDeepseekV41Flash1017ModelId,
+                inferenceProviderId: mistral.id,
+                createdAt: DateTime(2026),
+                inputModalities: const [Modality.text],
+                outputModalities: const [Modality.text],
+                isReasoningModel: true,
+                supportsFunctionCalling: true,
+              )
+              as AiConfigModel;
+      final byId = <String, AiConfig>{
+        mistral.id: mistral,
+        mistralFlash.id: mistralFlash,
+        mistralFlash.providerModelId: mistralFlash,
+      };
+      when(
+        () => aiConfigRepository.getConfigById(any()),
+      ).thenAnswer(
+        (invocation) async =>
+            byId[invocation.positionalArguments.first as String],
+      );
+      when(
+        () => aiConfigRepository.getConfigsByType(AiConfigType.model),
+      ).thenAnswer((_) async => [mistralFlash]);
+
+      final resolved = await resolve(const AgentConfig());
+
+      expect(resolved, isNotNull);
+      expect(resolved!.modelId, mistralDeepseekV41Flash1017ModelId);
+      expect(resolved.provider.id, mistral.id);
+      expect(resolved.setup.source, AgentSetupResolutionSource.legacyModel);
+    },
+  );
 
   test('with nothing configured, the built-in cheap model routes', () async {
     final resolved = await resolve(const AgentConfig());

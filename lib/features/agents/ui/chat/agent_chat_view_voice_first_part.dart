@@ -99,8 +99,10 @@ class _VoiceFirstIdle extends ConsumerWidget {
 }
 
 /// The talk control while it is live, laid out as at rest so nothing
-/// else moves: one caption under it, and in the slot "Type instead" held,
-/// one quiet Cancel. The disc stretches into a pill carrying what it hears
+/// else moves: the caption's line under it — empty while listening, the
+/// waveform says that; "Transcribing" after — and in the slot "Type
+/// instead" held, one quiet Cancel. Screen readers hear the state as the
+/// pill's label. The disc stretches into a pill carrying what it hears
 /// ([_ListeningPill]); one tap sends what was said. Transcribing, the pill
 /// holds the words' shape and waits, and the Cancel slot is kept empty so
 /// the composer keeps its height. Escape cancels.
@@ -147,11 +149,20 @@ class _VoiceFirstLive extends StatelessWidget {
                 ),
               ),
               SizedBox(height: tokens.spacing.step3),
-              ExcludeSemantics(
-                child: Text(
-                  caption,
-                  style: tokens.typography.styles.others.caption.copyWith(
-                    color: tokens.colors.text.mediumEmphasis,
+              // The moving waveform says it is listening; only the wait
+              // after it needs words. The line keeps its place either way,
+              // so nothing below moves.
+              Visibility(
+                visible: processing,
+                maintainSize: true,
+                maintainAnimation: true,
+                maintainState: true,
+                child: ExcludeSemantics(
+                  child: Text(
+                    messages.chatInputTranscribing,
+                    style: tokens.typography.styles.others.caption.copyWith(
+                      color: tokens.colors.text.mediumEmphasis,
+                    ),
                   ),
                 ),
               ),

@@ -30,6 +30,7 @@ import 'package:lotti/features/front_agent/service/front_filing_service.dart';
 import 'package:lotti/features/front_agent/service/front_routing_index_builder.dart';
 import 'package:lotti/features/front_agent/state/front_agent_providers.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_contract.dart';
+import 'package:lotti/features/front_agent/workflow/front_agent_model_resolution.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_workflow.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
@@ -264,9 +265,12 @@ void main() {
         _setupProvider(frontAgentId).future,
       );
 
-      // Nothing configured and no built-in model present: no route.
+      // Nothing configured and no built-in model present on any provider:
+      // no route, after one look per built-in model.
       expect(setup, isNull);
-      verify(() => aiConfigRepository.getDefaultProfileId()).called(1);
+      verify(
+        () => aiConfigRepository.getDefaultProfileId(),
+      ).called(frontAgentBuiltInModelIds.length);
     });
 
     test('hands the registry the resolved setup when the built-in model '

@@ -16,6 +16,7 @@ import 'package:lotti/features/front_agent/state/front_journal_access_provider.d
 import 'package:lotti/features/front_agent/ui/front_ask_options_row.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_header.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_hero.dart';
+import 'package:lotti/features/front_agent/ui/front_chat_voice.dart';
 import 'package:lotti/features/front_agent/ui/front_conversation_list.dart';
 import 'package:lotti/features/front_agent/ui/front_door_card.dart';
 import 'package:lotti/features/front_agent/ui/front_turn_cost_line.dart';
@@ -42,6 +43,8 @@ class FrontChatPane extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final listOpen = ref.watch(frontConversationListOpenProvider);
+    // Her reply to a spoken turn is spoken back, list open or not.
+    FrontVoice.listenForSpokenReply(ref, context);
     final inboxOnly = ref.watch(frontInboxFilterProvider);
     // A thread opens at its top, her bust in view, so the header lets her
     // go: on another conversation, and on the thread coming back from the
@@ -204,6 +207,8 @@ class _Body extends ConsumerWidget {
       hasFailedTurn: composer.failedMessage != null,
       onDraftChanged: controller.updateDraft,
       onSend: controller.send,
+      // A spoken question gets a spoken answer.
+      onSendSpoken: controller.sendSpoken,
       onRetry: controller.retry,
       attachmentBuilder: (context, message) {
         if (thread == null) return null;

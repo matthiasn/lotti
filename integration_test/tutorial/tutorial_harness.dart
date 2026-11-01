@@ -514,8 +514,11 @@ class TutorialAppHarness {
     );
     final updateNotifications = UpdateNotifications();
     final userActivityService = UserActivityService();
+    // With the settings store, as `get_it.dart` wires it: the Settings
+    // default profile lives there.
     final aiConfigRepository = AiConfigRepository(
       AiConfigDb(inMemoryDatabase: true),
+      settingsDb: settingsDb,
     );
     final matrixService = _matrixServiceMock();
     final outboxService = _outboxServiceMock();

@@ -9,6 +9,7 @@ import 'package:lotti/features/agents/ui/chat/chat_recorder_state.dart';
 import 'package:lotti/features/ai/repository/transcription_exception.dart';
 import 'package:lotti/features/ai/services/audio_transcription_service.dart';
 import 'package:lotti/features/ai/util/inference_provider_resolver.dart';
+import 'package:lotti/features/tts/state/tts_playback_controller.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:path_provider/path_provider.dart';
@@ -195,6 +196,13 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
       if (!ref.mounted || currentOpId != _operationId) return;
       final fileName = 'chat_${_nowMillisProvider()}.m4a';
       final filePath = '${tempDir.path}/$fileName';
+
+      // Talking over the voice stops it: the microphone never records what
+      // the app itself is saying.
+      if (ref.read(ttsPlaybackControllerProvider).isBusy) {
+        await ref.read(ttsPlaybackControllerProvider.notifier).stop();
+        if (!ref.mounted || currentOpId != _operationId) return;
+      }
 
       nativeStartAttempted = true;
       await recorder.start(

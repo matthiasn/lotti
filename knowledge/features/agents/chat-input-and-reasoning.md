@@ -56,7 +56,11 @@ pill, and in the slot *Type instead* held, a quiet Cancel (Escape too),
 kept empty while transcribing so the composer never changes height; a finished
 transcript is sent as it is (tap to talk, tap to send), and choosing to type
 holds for the session (`agentChatPrefersTypingProvider`, keep-alive) and
-focuses the field. `leading` is a widget that scrolls in above the first
+focuses the field. A transcript a `voiceFirst` chat sends by itself goes to
+`onSendSpoken` when the host gives one, so the host knows the turn was
+spoken; starting to record stops any voice that is speaking first
+(`ChatRecorderController.start`), so the microphone never records the
+app. `leading` is a widget that scrolls in above the first
 message, with the thread. `onThreadScrolled` reports the thread list's own
 scroll metrics, on every scroll and on layout (a list restored to its saved
 offset moves without a scroll); a scroll nested inside a message or the
