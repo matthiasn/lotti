@@ -593,6 +593,15 @@ the hero, its `tldr` what the recap card — the task agent's card, on
 `AgentSummaryCardSurface` — shows (see
 [events](../events.md#the-hero-is-the-interaction-surface)).
 
+The digest opens with **who it was with**: the people whose live
+`RelationshipLink` runs to the event (see
+[events](../events.md#who-it-was-with)), as names with a differing nickname
+in parentheses. The builder reads them through
+`JournalRepository.getTypedLinksForTaskIds` rather than the relationships
+feature, which ranks above agents; a failed read degrades to no people. A
+change to who was there writes a link, which notifies the event id and wakes
+the agent, so the recap can name them.
+
 ## Tools
 
 Immediate local, reusing the task agent's scope-agnostic contract:

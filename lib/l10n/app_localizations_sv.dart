@@ -6829,6 +6829,22 @@ class AppLocalizationsSv extends AppLocalizations {
   String get eventsPageTitle => 'Evenemang';
 
   @override
+  String get eventsPeopleAdd => 'Lägg till personer';
+
+  @override
+  String get eventsPeopleEdit => 'Redigera personer';
+
+  @override
+  String get eventsPeoplePickerTitle => 'Vilka var där?';
+
+  @override
+  String get eventsPeopleSaveFailed =>
+      'Kunde inte uppdatera vilka som var där.';
+
+  @override
+  String get eventsPeopleSection => 'Personer';
+
+  @override
   String get eventsPhotosSection => 'Foton';
 
   @override
@@ -13916,6 +13932,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String relationshipPhotoSheetTitle(String name) {
     return 'Foto på $name';
   }
+
+  @override
+  String get relationshipPickerSearchHint => 'Sök personer';
 
   @override
   String relationshipPlanMeeting(String name) {

@@ -6897,6 +6897,21 @@ class AppLocalizationsCs extends AppLocalizations {
   String get eventsPageTitle => 'Události';
 
   @override
+  String get eventsPeopleAdd => 'Přidat lidi';
+
+  @override
+  String get eventsPeopleEdit => 'Upravit lidi';
+
+  @override
+  String get eventsPeoplePickerTitle => 'Kdo tam byl?';
+
+  @override
+  String get eventsPeopleSaveFailed => 'Nepodařilo se upravit, kdo tam byl.';
+
+  @override
+  String get eventsPeopleSection => 'Lidé';
+
+  @override
   String get eventsPhotosSection => 'Fotky';
 
   @override
@@ -14095,6 +14110,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String relationshipPhotoSheetTitle(String name) {
     return 'Fotka – $name';
   }
+
+  @override
+  String get relationshipPickerSearchHint => 'Hledat lidi';
 
   @override
   String relationshipPlanMeeting(String name) {

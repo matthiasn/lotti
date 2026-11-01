@@ -22,6 +22,9 @@ import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/ui/create/entry_creation_service.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_action_bar.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/entry_datetime_multipage_modal.dart';
+import 'package:lotti/features/relationships/repository/person_timeline_repository.dart';
+import 'package:lotti/features/relationships/state/entry_people_providers.dart';
+import 'package:lotti/features/relationships/ui/widgets/person_picker_sheet.dart';
 import 'package:lotti/features/speech/ui/widgets/recording_playback.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -92,6 +95,12 @@ class EventDetailPage extends ConsumerWidget {
         image.meta.id: imageAnalysisOneLiner(ref, image.meta.id),
     };
 
+    // Who the event was with. `.value` keeps the people on screen while a
+    // link write or a rename re-reads them, rather than blanking the row.
+    final people =
+        ref.watch(peopleOnEntryProvider(eventId)).value ??
+        const <RelationshipEntry>[];
+
     // Every provider the page depends on is watched above, in its own build.
     // The Builder exists only to hand the resolved view — and the toasts its
     // callbacks raise — a context beneath the nested messenger.
@@ -104,6 +113,7 @@ class EventDetailPage extends ConsumerWidget {
           linked: linked,
           imageSummaries: imageSummaries,
           recapOneLiner: _recapOneLiner(ref),
+          people: people,
         ),
       ),
     );
@@ -134,6 +144,7 @@ class EventDetailPage extends ConsumerWidget {
     required List<JournalEntity> linked,
     required Map<String, String?> imageSummaries,
     required String? recapOneLiner,
+    required List<RelationshipEntry> people,
   }) {
     final category = getIt<EntitiesCacheService>().getCategoryById(
       entry.meta.categoryId,
@@ -252,8 +263,36 @@ class EventDetailPage extends ConsumerWidget {
       );
     }
 
+    // Picks who was there and writes only the difference: each person added
+    // gets the event on their timeline, each one dropped has it taken off.
+    Future<void> editPeople() async {
+      final currentIds = {for (final person in people) person.meta.id};
+      final picked = await showPersonPicker(
+        context: context,
+        title: context.messages.eventsPeoplePickerTitle,
+        initialSelectedIds: currentIds,
+      );
+      if (picked == null) return;
+      final saved = await ref
+          .read(personTimelineRepositoryProvider)
+          .setPeopleOn(
+            entryId: eventId,
+            currentIds: currentIds,
+            personIds: picked,
+          );
+      if (!saved && context.mounted) {
+        context.showToast(
+          tone: DesignSystemToastTone.error,
+          title: context.messages.eventsPeopleSaveFailed,
+        );
+      }
+    }
+
     return EventDetailView(
       data: data,
+      people: [for (final person in people) eventPersonFor(person)],
+      onOpenPerson: (personId) => beamToNamed('/people/$personId'),
+      onEditPeople: editPeople,
       recapOneLiner: recapOneLiner,
       aiSummaryCard: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

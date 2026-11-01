@@ -253,7 +253,7 @@ Against `main` at #4937. Each verdict was checked in the code, not the PR text.
 | 2 | One-liner and TLDR in the header | **Done** | #4935: `recapOneLiner` under the title (`event_detail_view_hero_content_part.dart`, `EventDetailPage._recapOneLiner`); TLDR on the task agent's card since #4937 (`event_ai_summary_card.dart`) |
 | 3 | Image analysis automatically in event context | **Partly done** | Already runs: the Add sheet passes `linkedFromId: eventId`, the automatic trigger uses it as the subject, and `subjectAgentLinkTypes` resolves the event agent through `agentEvent` (`subject_agent_lookup.dart`). Since #4935 the result reaches the page (captions) and the agent (photo digest). Missing: event context in the analysis prompt (`ai_input_repository.dart` returns early for non-tasks), backfill for event photos (task-only), a deliberate rather than incidental wake (`linkedTaskId` in `skill_inference_runner.dart`), and a profile fallback for an event without an agent (`subjectProfileIdOf` has no event arm) |
 | 4 | Embeddings + natural-language search | **Open** | `EmbeddingContentExtractor` has no `JournalEvent` or image-analysis arm; event recaps are never embedded (only the task agent calls `processAgentReport`); `QueryJournalCrawler.sourceTypes` leaves out `JournalEvent`, so the front agent drops events even from full-text hits |
-| 5 | Person tags linked to tracked relationships | **Open (model exists)** | The link exists: `EntryLink.relationship`, person → event, written by `PersonTimelineRepository.addToTimeline`. The event page reads only outgoing links, has no people UI, and the agent's context never sees the people |
+| 5 | Person tags linked to tracked relationships | **Done (PR A)** | No new link: an event's people are the `RelationshipLink`s from each person to it. `getPeopleOn` / `peopleOnEntryProvider` read them, `EventPeopleRow` shows them, `showPersonPicker` + `setPeopleOn` change them, and the event agent's digest lists them — see [events](../../knowledge/features/events.md#who-it-was-with) |
 | 6 | Inventory of the event UI elements | **Done** | [UI inventory](#ui-inventory), updated for #4937 |
 | 7 | Align the event timeline with the unified timeline | **Done (audit PR)** | `EventTimeline` renders on `DesignSystemTimelineRow` like goals and people; `lib/widgets/timeline/` deleted — what moved is in the [inventory](#ui-inventory) |
 | 8 | One-liner on timeline images | **Done** | #4935: `imageSummaryFor` in `event_view_mapping.dart`, fed by `imageAnalysisOneLiner` on the page |
@@ -273,24 +273,14 @@ re-wake — and it removed the enhanced card shadow app-wide.
 
 Each is independent and sized for one pull request.
 
-### PR A — People on the event (item 5)
+### ~~PR A~~ — People on the event (item 5), landed
 
-- **Read:** the event's incoming `RelationshipLink`s
-  (`typedLinksForTaskIds({eventId}, types: {relationship})`, filtered on
-  `toId == eventId`, live and not hidden), resolved to `RelationshipEntry`s —
-  the reverse of `personTimelineLinkTargets`. A provider in `relationships`
-  keyed by event id, refreshed on `LINK_CHANGED` for that id.
-- **UI:** a *People* row on the event page (avatar chips, design-system chip
-  and avatar components), and a person picker sheet over
-  `relationshipsListControllerProvider` behind an *Add person* chip. Add uses
-  `PersonTimelineRepository.addToTimeline(personId, eventId)`; remove uses
-  `removeFromTimeline`. Both notify both ends, so the person's timeline
-  updates on its own. No new link type, no migration.
-- **Agent:** `EventAgentContextBuilder` renders `### People` with their names,
-  so the recap names who was there; the relationship agent's facts renderer
-  gains past shared events (today it lists only upcoming meetings).
-- **Layering:** events may read relationships (it ranks above them); the
-  shared picker lives with relationships.
+As planned, on the existing person → event `RelationshipLink`: the reverse
+read (`personTimelineLinkSources`, `getPeopleOn`), a *People* row of avatar
+chips under the recap, the shared `showPersonPicker`, a diffing
+`setPeopleOn`, and the people at the top of the event agent's digest. Still
+open from this step: the relationship agent's facts renderer lists only
+*upcoming* meetings, so past shared events do not yet reach it.
 
 ### ~~PR B~~ — landed with the audit (item 7)
 

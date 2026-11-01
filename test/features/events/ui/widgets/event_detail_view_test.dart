@@ -6,6 +6,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/events/ui/model/event_view_data.dart';
 import 'package:lotti/features/events/ui/widgets/event_detail_view.dart';
 import 'package:lotti/features/events/ui/widgets/event_passive_summary_card.dart';
+import 'package:lotti/features/events/ui/widgets/event_people_row.dart';
 import 'package:lotti/features/events/ui/widgets/event_photo_gallery.dart';
 import 'package:lotti/features/events/ui/widgets/event_star_rating.dart';
 import 'package:lotti/features/events/ui/widgets/event_timeline.dart';
@@ -124,6 +125,84 @@ void main() {
       );
 
       expect(heroTexts(), withoutRecap);
+    });
+
+    group('people', () {
+      const people = [
+        EventPerson(id: 'pip', name: 'Pip Penguin'),
+        EventPerson(id: 'rocko', name: 'Rocko'),
+      ];
+
+      testWidgets('who it was with sits between the summary and the timeline', (
+        tester,
+      ) async {
+        await pumpEventScreen(
+          tester,
+          EventDetailView(
+            data: buildEventDetailData(),
+            people: people,
+            onEditPeople: () {},
+          ),
+          size: _tallMobile,
+        );
+
+        expect(find.text('People'), findsOneWidget);
+        expect(find.byType(EventPeopleRow), findsOneWidget);
+        final header = tester.getRect(find.text('People'));
+        final summary = tester.getRect(
+          find.text('A surprise 30th for Anna on the rooftop.'),
+        );
+        final timeline = tester.getRect(find.text('Timeline'));
+        expect(header.top, greaterThan(summary.bottom));
+        expect(header.bottom, lessThan(timeline.top));
+        expect(
+          tester.widget<EventPeopleRow>(find.byType(EventPeopleRow)).people,
+          people,
+        );
+      });
+
+      testWidgets('with no one linked only the Add people chip shows', (
+        tester,
+      ) async {
+        await pumpEventScreen(
+          tester,
+          EventDetailView(data: buildEventDetailData(), onEditPeople: () {}),
+          size: _tallMobile,
+        );
+
+        expect(find.text('People'), findsNothing);
+        expect(find.text('Add people'), findsOneWidget);
+      });
+
+      testWidgets('read-only with no one linked shows nothing of it', (
+        tester,
+      ) async {
+        await pumpEventScreen(
+          tester,
+          EventDetailView(data: buildEventDetailData()),
+          size: _tallMobile,
+        );
+
+        expect(find.byType(EventPeopleRow), findsNothing);
+        expect(find.text('Add people'), findsNothing);
+      });
+
+      testWidgets('a person chip opens that person', (tester) async {
+        final opened = <String>[];
+        await pumpEventScreen(
+          tester,
+          EventDetailView(
+            data: buildEventDetailData(),
+            people: people,
+            onOpenPerson: opened.add,
+          ),
+          size: _tallMobile,
+        );
+
+        await tester.tap(find.text('Rocko'));
+
+        expect(opened, ['rocko']);
+      });
     });
 
     testWidgets('hides the rating on a fresh, not-yet-happened event', (

@@ -11585,6 +11585,36 @@ abstract class AppLocalizations {
   /// **'Events'**
   String get eventsPageTitle;
 
+  /// Chip on an event's page that opens the picker for who was there, while no one is linked yet.
+  ///
+  /// In en, this message translates to:
+  /// **'Add people'**
+  String get eventsPeopleAdd;
+
+  /// Chip after the people on an event's page that opens the picker to change who was there.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit people'**
+  String get eventsPeopleEdit;
+
+  /// Title of the sheet where the user picks who was at an event.
+  ///
+  /// In en, this message translates to:
+  /// **'Who was there?'**
+  String get eventsPeoplePickerTitle;
+
+  /// Toast when changing who was at an event could not be fully saved.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not update who was there.'**
+  String get eventsPeopleSaveFailed;
+
+  /// Header over the people an event was with, on the event's page.
+  ///
+  /// In en, this message translates to:
+  /// **'People'**
+  String get eventsPeopleSection;
+
   /// No description provided for @eventsPhotosSection.
   ///
   /// In en, this message translates to:
@@ -22986,6 +23016,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Photo of {name}'**
   String relationshipPhotoSheetTitle(String name);
+
+  /// Placeholder of the search field in the sheet for picking people.
+  ///
+  /// In en, this message translates to:
+  /// **'Search people'**
+  String get relationshipPickerSearchHint;
 
   /// The person page's create-menu row and the meeting sheet's title; also read out on the overdue pill, which opens the sheet.
   ///

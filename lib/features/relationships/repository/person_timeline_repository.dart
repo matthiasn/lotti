@@ -57,6 +57,28 @@ Future<Set<String>> personTimelineLinkTargets(
   };
 }
 
+/// The people whose timeline holds [entryId]: the sources of the live
+/// [RelationshipLink]s to it — the reverse of [personTimelineLinkTargets].
+///
+/// This is how an event knows who was there. The link is the person's
+/// timeline entry, so the same row answers both "what did I do with this
+/// person" (from the person) and "who was at this event" (from the event),
+/// and there is nothing for the two to disagree about.
+Future<Set<String>> personTimelineLinkSources(
+  JournalDb journalDb,
+  String entryId,
+) async {
+  final links = await journalDb.typedLinksForTaskIds(
+    {entryId},
+    types: {entryLinkTypeDbName(EntryLinkType.relationship)},
+  );
+  return {
+    for (final link in links)
+      if (link.toId == entryId && link.deletedAt == null && link.hidden != true)
+        link.fromId,
+  };
+}
+
 /// When [personId]'s timeline last changed shape — the newest write to a
 /// [RelationshipLink] from the person, a tombstone included — or null when
 /// there is none. Adding an older note, or taking an entry off, changes what
@@ -279,6 +301,49 @@ class PersonTimelineRepository {
       personId: personId,
       otherId: entryId,
     );
+  }
+
+  /// The live people [entryId] sits on the timeline of, by name. Respects
+  /// the private-entry filter: this is a display read, so a private person
+  /// is left out while private entries are hidden.
+  Future<List<RelationshipEntry>> getPeopleOn(String entryId) async {
+    final ids = await personTimelineLinkSources(_journalDb, entryId);
+    if (ids.isEmpty) return const [];
+    final people =
+        (await _journalDb.getLiveEntitiesOfTypesByIds(
+          ids,
+          types: const {'Relationship'},
+        )).whereType<RelationshipEntry>().toList()..sort(
+          (a, b) => a.data.title.toLowerCase().compareTo(
+            b.data.title.toLowerCase(),
+          ),
+        );
+    return people;
+  }
+
+  /// Makes [personIds] the people on [entryId]: puts it on the timeline of
+  /// each one in [personIds] not in [currentIds], and takes it off each one
+  /// in [currentIds] no longer chosen. Untouched people are not rewritten.
+  ///
+  /// Returns whether every write landed; a failed one leaves the others in
+  /// place, and the page re-reads the links either way, so it shows what
+  /// was actually stored.
+  Future<bool> setPeopleOn({
+    required String entryId,
+    required Set<String> currentIds,
+    required Set<String> personIds,
+  }) async {
+    var allLanded = true;
+    for (final personId in personIds.difference(currentIds)) {
+      allLanded &= await addToTimeline(personId: personId, entryId: entryId);
+    }
+    for (final personId in currentIds.difference(personIds)) {
+      allLanded &= await removeFromTimeline(
+        personId: personId,
+        entryId: entryId,
+      );
+    }
+    return allLanded;
   }
 
   /// Writes a note about [person] — background, where you met, a gift idea —

@@ -113,6 +113,15 @@ EventTimelineEntry _journalEntryBeat(
   );
 }
 
+/// Maps a person whose timeline holds the event to the [EventPerson] its
+/// people row shows.
+EventPerson eventPersonFor(RelationshipEntry person) => EventPerson(
+  id: person.meta.id,
+  name: person.data.title,
+  avatarImageId: person.data.avatarImageId,
+  avatarCrop: person.data.avatarCrop,
+);
+
 /// Maps a linked [Task] to the compact [EventTaskRef] shown in the event's
 /// "Tasks" section, or `null` for non-task entries. [dueLabel] is the
 /// already-formatted due date, when present.

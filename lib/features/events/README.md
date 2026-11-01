@@ -26,6 +26,10 @@ Behind the **Enable Events** flag. With it off, events are hidden everywhere.
 - **Rates a memory, but only once it is a memory.** Stars appear once the event
   has happened, so a plan is not asked to rate itself, and sit in the header's
   state row beside the category and status.
+- **Remembers who it was with.** People from the People page can be added
+  to an event; each one is a chip that opens their page, and the event
+  appears on each person's timeline — adding someone to an event and
+  putting the event on their timeline are the same thing.
 - **Says what happened.** With an event agent attached, its recap's one-liner
   reads under the title and its summary in the card below; each photo on the
   timeline carries the one-line caption its image analysis wrote, or the
