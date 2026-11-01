@@ -17,6 +17,7 @@ import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
+import 'package:lotti/features/ai/state/ai_runtime_settings_controller.dart';
 import 'package:lotti/features/companion/state/companion_customization_controller.dart';
 import 'package:lotti/features/front_agent/runtime/front_runtime_maintenance.dart';
 import 'package:lotti/features/front_agent/service/front_agent_service.dart';
@@ -104,12 +105,19 @@ final frontRuntimeMaintenanceProvider = Provider<FrontRuntimeMaintenance>(
 
 /// The front agent's contribution to `agentResolvedSetupResolversProvider`:
 /// its own setup, never a template's and never a category's.
+///
+/// Without a setup of her own she falls back to the Settings default
+/// profile, so a change of that default resolves her again — her voice too,
+/// which is that profile's read-aloud model.
 Future<ResolvedAgentSetup?> resolveFrontAgentSetup(
   Ref ref,
   String agentId,
 ) async {
   final identity = await ref.watch(agentRepositoryProvider).getEntity(agentId);
   if (identity is! AgentIdentityEntity) return null;
+  ref.watch(
+    defaultInferenceProfileControllerProvider.select((value) => value.value),
+  );
   final resolved = await resolveFrontAgentModel(
     agentIdentity: identity,
     aiConfigRepository: ref.watch(aiConfigRepositoryProvider),

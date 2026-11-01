@@ -61,7 +61,9 @@ and a proposal she got wrong goes to the inbox rather than being retyped.
 - `ui/` — her control row and the hero that leads a conversation (her bust
   and its title), her voice (`front_chat_voice.dart`: the spoken reply, when
   she may speak, the pose she holds), the list of conversations, the
-  category chips, the door card with its proposals and inbox chips, the
+  category chips, her AI profile choice (`front_profile_choice.dart`: the
+  profile she thinks with, whose read-aloud model is her voice), the door
+  card with its proposals and inbox chips, the
   clarifying chips, the per-turn cost line, the pane on the shared
   `AgentChatView`, and her surface over the app (`front_chat_surface.dart`)
   that the sidebar row, the phone launcher button and the keyboard command

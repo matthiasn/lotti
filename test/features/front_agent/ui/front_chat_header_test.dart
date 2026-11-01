@@ -2,17 +2,22 @@ import 'dart:async';
 
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
 import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
+import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/companion/ui/companion_speaker.dart';
 import 'package:lotti/features/companion/ui/companion_view.dart';
 import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu_button.dart';
+import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
 import 'package:lotti/features/front_agent/model/front_chat_thread.dart';
@@ -24,12 +29,17 @@ import 'package:lotti/features/front_agent/state/front_conversation_providers.da
 import 'package:lotti/features/front_agent/state/front_inbox_filter.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_header.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_hero.dart';
+import 'package:lotti/features/front_agent/ui/front_profile_choice.dart';
 import 'package:lotti/features/tts/model/tts_playback_state.dart';
 import 'package:lotti/features/tts/state/tts_playback_controller.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:mocktail/mocktail.dart';
 
+import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
+import '../../agents/test_data/ai_config_factories.dart';
+import '../../agents/test_data/entity_factories.dart';
 
 void main() {
   Future<void> pumpHeader(
@@ -42,6 +52,8 @@ void main() {
     FrontConversationIndex conversations = FrontConversationIndex.empty,
     TtsPlaybackController Function()? voice,
     bool activeLoading = false,
+    AgentDomainEntity? identity,
+    List<Override> extra = const [],
   }) async {
     await setUpTestGetIt();
     addTearDown(tearDownTestGetIt);
@@ -70,10 +82,14 @@ void main() {
               (ref, flag) =>
                   Stream.value(companion && flag == enableCompanionFlag),
             ),
-            // The internals panel resolves the identity; it may stay in flight.
+            // The internals panel resolves the identity; it stays in flight
+            // unless the test says she exists.
             agentIdentityProvider.overrideWith(
-              (ref, agentId) => Completer<AgentDomainEntity?>().future,
+              (ref, agentId) => identity == null
+                  ? Completer<AgentDomainEntity?>().future
+                  : Future.value(identity),
             ),
+            ...extra,
             agentStateProvider.overrideWith((ref, agentId) async => null),
             frontChatThreadProvider.overrideWith(
               (ref) async => threadOf?.call() ?? thread,
@@ -321,6 +337,76 @@ void main() {
 
     await tester.tap(find.byKey(FrontChatHeaderKeys.close));
     expect(closed, 1);
+  });
+
+  group('her AI profile', () {
+    final her = makeTestIdentity(
+      id: frontAgentId,
+      agentId: frontAgentId,
+      kind: AgentKinds.frontAgent,
+    );
+
+    List<String> overflow(WidgetTester tester) => tester
+        .widget<DesignSystemContextMenuButton>(
+          find.byKey(FrontChatHeaderKeys.more),
+        )
+        .items
+        .map((item) => item.label)
+        .toList();
+
+    testWidgets('leads the overflow once she exists', (tester) async {
+      await pumpHeader(tester, identity: her);
+
+      expect(overflow(tester), ['AI profile', 'Agent internals']);
+    });
+
+    testWidgets('is not offered before she exists: nothing to write it on', (
+      tester,
+    ) async {
+      await pumpHeader(tester);
+
+      expect(overflow(tester), isNot(contains('AI profile')));
+    });
+
+    testWidgets('opens the profile picker, marking the Settings default '
+        'she follows', (tester) async {
+      final aiConfigs = MockAiConfigRepository();
+      when(
+        aiConfigs.getDefaultProfileId,
+      ).thenAnswer((_) async => 'profile-mistral');
+      await pumpHeader(
+        tester,
+        identity: her,
+        extra: [
+          aiConfigRepositoryProvider.overrideWithValue(aiConfigs),
+          agentSetupOptionsProvider.overrideWith(
+            (ref) async => TaskAgentSetupOptions(
+              profiles: [
+                testInferenceProfile(
+                  id: 'profile-mistral',
+                  name: 'Mistral (EU)',
+                ),
+              ],
+              models: const [],
+              providers: const [],
+            ),
+          ),
+        ],
+      );
+
+      await tester.tap(find.byKey(FrontChatHeaderKeys.more));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(FrontChatHeaderKeys.profile));
+      for (var i = 0; i < 20; i++) {
+        await tester.pump(const Duration(milliseconds: 50));
+      }
+
+      expect(find.text('Choose an inference profile'), findsOneWidget);
+      bool selected(Key key) =>
+          tester.widget<DesignSystemSelectionRow>(find.byKey(key)).selected;
+      expect(selected(FrontProfileChoiceKeys.useDefault), isTrue);
+      expect(selected(const ValueKey('profile-mistral')), isFalse);
+    });
   });
 
   testWidgets('her internals open from the overflow', (tester) async {

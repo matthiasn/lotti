@@ -7064,6 +7064,21 @@ class AppLocalizationsRo extends AppLocalizations {
   String get frontChatPrevious7Days => 'Ultimele 7 zile';
 
   @override
+  String frontChatProfileChanged(String profile) {
+    return 'Însoțitoarea folosește acum $profile';
+  }
+
+  @override
+  String get frontChatProfileFollowsDefault =>
+      'Însoțitoarea urmează acum profilul implicit din Setări';
+
+  @override
+  String get frontChatProfileMenuItem => 'Profil AI';
+
+  @override
+  String get frontChatProfileUseDefault => 'Implicit din Setări';
+
+  @override
   String get frontChatResponding => 'Caută cine știe…';
 
   @override

@@ -112,6 +112,10 @@ sources:
     resource: ../../lib/features/front_agent/ui/front_chat_voice.dart
     title: FrontVoice — her spoken reply, its gating, her pose
     last_modified: 2026-11-01
+  - id: profile-choice
+    resource: ../../lib/features/front_agent/ui/front_profile_choice.dart
+    title: FrontProfileChoice — her AI profile, and with it her voice
+    last_modified: 2026-11-01
   - id: voice-state
     resource: ../../lib/features/front_agent/state/front_voice_providers.dart
     title: The spoken turn awaiting her spoken reply, and her voice's source id
@@ -667,6 +671,39 @@ was speaking first. It keeps those flags and her resolved setup watched, so
 they are known the moment the reply lands. A voice that fails surfaces the
 shared playback toast.
 
+**Which voice is hers.** Her cloud voice is the read-aloud model of the
+profile her own setup resolves to ([where it plugs in](#where-it-plugs-in)).
+Her built-in fallback is a bare model with no read-aloud slot, so without a
+profile of her own or a Settings default she speaks with the on-device
+voice, however many other profiles name Voxtral TTS. The header's overflow
+offers *AI profile* once she exists (`FrontProfileChoice`). The picker leads
+with a *Settings default* row, named after that profile and marked while she
+has no profile of her own (or her own is gone), then lists every profile. A
+pick is written onto her identity as a user-configured setup
+(`FrontAgentService.chooseProfile`, synced with the identity); the default
+row clears it. The identity's update stream re-resolves her setup, on this
+device and on one the choice syncs to. Her routing then thinks with that
+profile's thinking model, and its read-aloud model is her voice. Her resolver
+also watches the Settings default, so changing it re-resolves her while her
+surface is open. A chosen profile that no longer resolves — deleted here or
+through sync — counts as no choice (`resolveFrontAgentModel`): she follows
+the Settings default rather than falling silent. A disabled setup still
+resolves to nothing.
+
+```mermaid
+flowchart TD
+  Setup["resolveFrontAgentSetup"] --> Own{"A profile chosen for her that still exists?"}
+  Own -->|yes| Chosen["That profile"]
+  Own -->|no| Default{"A Settings default profile?"}
+  Default -->|yes| Def["The default profile"]
+  Default -->|no| Builtin["Built-in model: no read-aloud slot"]
+  Chosen --> Slot{"Names a Mistral read-aloud model?"}
+  Def --> Slot
+  Slot -->|yes| Cloud["Voxtral TTS in the app's language"]
+  Slot -->|no| Device["On-device voice"]
+  Builtin --> Device
+```
+
 She speaks only while her customization lets her
 (`CompanionCustomization.speaksReplies`, Settings › Preferences ›
 Companion › Her voice, synced) and only once that is known
@@ -689,7 +726,9 @@ herself.
 `app_bootstrap.dart` into `agentWakeRunnersProvider` and
 `agentResolvedSetupResolversProvider` (see [the agents overview](agents/overview.md)),
 pinned by `test/app_bootstrap_test.dart`. Model resolution is the agent's
-own: explicit setup, then its profile, then the Settings default, then the
+own: explicit setup (the profile chosen for her from the header, see
+[her voice](#her-voice); one whose profile is gone counts as no choice), then
+its profile, then the Settings default, then the
 built-in cheap model (DeepSeek V4.1 Flash on Melious, else on Mistral —
 `frontAgentBuiltInModelIds`) — never a category's, because the front agent spans
 categories. The full-text index reaches the builder through

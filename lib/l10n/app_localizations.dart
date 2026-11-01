@@ -11825,6 +11825,30 @@ abstract class AppLocalizations {
   /// **'Previous 7 days'**
   String get frontChatPrevious7Days;
 
+  /// Toast after choosing the companion's AI profile.
+  ///
+  /// In en, this message translates to:
+  /// **'The companion now uses {profile}'**
+  String frontChatProfileChanged(String profile);
+
+  /// Toast after the companion's own AI profile choice is cleared, so she follows the default profile from Settings again.
+  ///
+  /// In en, this message translates to:
+  /// **'The companion now follows the Settings default'**
+  String get frontChatProfileFollowsDefault;
+
+  /// Companion chat overflow item: choose the AI profile she thinks and speaks with (its read-aloud model is her voice).
+  ///
+  /// In en, this message translates to:
+  /// **'AI profile'**
+  String get frontChatProfileMenuItem;
+
+  /// First row of the companion's AI profile picker: clear her own choice and follow the default profile set in Settings. Its subtitle names that profile.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings default'**
+  String get frontChatProfileUseDefault;
+
   /// No description provided for @frontChatResponding.
   ///
   /// In en, this message translates to:

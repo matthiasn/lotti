@@ -1,6 +1,8 @@
+import 'package:clock/clock.dart';
 import 'package:lotti/classes/agents/agent_config.dart';
 import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
+import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/features/agents/service/agent_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
@@ -41,4 +43,42 @@ class FrontAgentService {
       );
     });
   }
+
+  /// Points her at [profileId], the user's choice: her setup from now on,
+  /// on every device, since the identity syncs. Her routing thinks with the
+  /// profile's thinking model and her voice is its read-aloud model, so a
+  /// profile naming Voxtral TTS makes her speak with it. A null
+  /// [profileId] clears her choice, so she follows the Settings default
+  /// again.
+  ///
+  /// False when she does not exist yet: her first turn creates her. True,
+  /// without a write, when she already uses exactly that choice.
+  Future<bool> chooseProfile(String? profileId) =>
+      _syncService.runInTransaction(
+        () async {
+          final identity = await _agentService.getAgent(frontAgentId);
+          if (identity == null) return false;
+          final setup = profileId == null
+              ? null
+              : AgentInferenceSetup(
+                  mode: AgentInferenceSetupMode.configured,
+                  origin: AgentInferenceSetupOrigin.user,
+                  baseProfileId: profileId,
+                );
+          final config = identity.config;
+          if (config.inferenceSetup == setup && config.profileId == profileId) {
+            return true;
+          }
+          await _syncService.upsertEntity(
+            identity.copyWith(
+              config: config.copyWith(
+                profileId: profileId,
+                inferenceSetup: setup,
+              ),
+              updatedAt: clock.now(),
+            ),
+          );
+          return true;
+        },
+      );
 }

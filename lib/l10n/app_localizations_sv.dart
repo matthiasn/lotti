@@ -6958,6 +6958,21 @@ class AppLocalizationsSv extends AppLocalizations {
   String get frontChatPrevious7Days => 'Senaste 7 dagarna';
 
   @override
+  String frontChatProfileChanged(String profile) {
+    return 'Följeslagaren använder nu $profile';
+  }
+
+  @override
+  String get frontChatProfileFollowsDefault =>
+      'Följeslagaren följer nu standardprofilen från Inställningar';
+
+  @override
+  String get frontChatProfileMenuItem => 'AI-profil';
+
+  @override
+  String get frontChatProfileUseDefault => 'Standard från Inställningar';
+
+  @override
   String get frontChatResponding => 'Letar efter den som vet…';
 
   @override

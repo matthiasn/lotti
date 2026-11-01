@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_config.dart';
@@ -19,6 +21,7 @@ import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
+import 'package:lotti/features/ai/state/ai_runtime_settings_controller.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
@@ -266,11 +269,12 @@ void main() {
       );
 
       // Nothing configured and no built-in model present on any provider:
-      // no route, after one look per built-in model.
+      // no route, after one look per built-in model — and one more by the
+      // default-profile controller the resolver watches.
       expect(setup, isNull);
       verify(
         () => aiConfigRepository.getDefaultProfileId(),
-      ).called(frontAgentBuiltInModelIds.length);
+      ).called(frontAgentBuiltInModelIds.length + 1);
     });
 
     test('hands the registry the resolved setup when the built-in model '
@@ -318,6 +322,137 @@ void main() {
 
       expect(setup?.status, AgentSetupResolutionStatus.resolved);
       expect(setup?.profile?.thinkingModelId, meliousDeepseekV41FlashModelId);
+      // A built-in model alone carries no read-aloud model: no cloud voice.
+      expect(setup?.profile?.speechProvider, isNull);
+    });
+
+    group("her voice follows a profile's read-aloud model", () {
+      final mistral =
+          AiConfig.inferenceProvider(
+                id: 'mistral-provider',
+                baseUrl: 'https://api.mistral.ai/v1',
+                apiKey: 'key',
+                name: 'Mistral',
+                createdAt: DateTime(2026),
+                inferenceProviderType: InferenceProviderType.mistral,
+              )
+              as AiConfigInferenceProvider;
+      AiConfigModel model(String id, String providerModelId) =>
+          AiConfig.model(
+                id: id,
+                name: id,
+                providerModelId: providerModelId,
+                inferenceProviderId: mistral.id,
+                createdAt: DateTime(2026),
+                inputModalities: const [Modality.text],
+                outputModalities: const [Modality.text],
+                isReasoningModel: false,
+                supportsFunctionCalling: true,
+              )
+              as AiConfigModel;
+      final thinking = model('row-large', 'mistral-large-4');
+      final voxtral = model('row-voxtral', 'voxtral-mini-tts-3-0');
+      final profile =
+          AiConfig.inferenceProfile(
+                id: 'profile-mistral',
+                name: 'Mistral (EU)',
+                thinkingModelId: thinking.id,
+                speechModelId: voxtral.id,
+                createdAt: DateTime(2026),
+              )
+              as AiConfigInferenceProfile;
+
+      // One provider for the whole test: each `_setupProvider` call is a
+      // new one, which would resolve afresh and hide a missed re-resolve.
+      late FutureProvider<Object?> setupProvider;
+
+      /// Her setup once it satisfies [where], watched as her surface watches
+      /// it: a dependency that changes while she resolves starts her over,
+      /// and only a listener sees the value that lands.
+      Future<ResolvedAgentSetup?> settled(
+        bool Function(ResolvedAgentSetup? setup) where,
+      ) {
+        final done = Completer<ResolvedAgentSetup?>();
+        final sub = container.listen(setupProvider, (_, next) {
+          if (next case AsyncData(
+            :final value,
+          ) when !done.isCompleted && where(value as ResolvedAgentSetup?)) {
+            done.complete(value);
+          }
+        }, fireImmediately: true);
+        return done.future.whenComplete(sub.close);
+      }
+
+      setUp(() {
+        setupProvider = _setupProvider(frontAgentId);
+        when(
+          () => aiConfigRepository.getConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) async => [thinking, voxtral]);
+        when(
+          () => aiConfigRepository.getConfigById(mistral.id),
+        ).thenAnswer((_) async => mistral);
+        when(
+          () => aiConfigRepository.getConfigById(profile.id),
+        ).thenAnswer((_) async => profile);
+        when(
+          () => aiConfigRepository.setDefaultProfileId(any()),
+        ).thenAnswer((_) async {});
+      });
+
+      test('the profile she was pointed at, whatever the default', () async {
+        when(() => repository.getEntity(frontAgentId)).thenAnswer(
+          (_) async => identity.copyWith(
+            config: const AgentConfig(
+              profileId: 'profile-mistral',
+              inferenceSetup: AgentInferenceSetup(
+                mode: AgentInferenceSetupMode.configured,
+                origin: AgentInferenceSetupOrigin.user,
+                baseProfileId: 'profile-mistral',
+              ),
+            ),
+          ),
+        );
+        when(
+          () => aiConfigRepository.getDefaultProfileId(),
+        ).thenAnswer((_) async => 'profile-elsewhere');
+        final setup = await settled((setup) => setup?.profile != null);
+
+        expect(setup?.profile?.thinkingModel, thinking);
+        expect(setup?.profile?.speechProvider, mistral);
+        expect(setup?.profile?.speechModel, voxtral);
+      });
+
+      test(
+        'a new Settings default resolves her again, voice and all',
+        () async {
+          when(
+            () => repository.getEntity(frontAgentId),
+          ).thenAnswer((_) async => identity);
+          String? defaultId;
+          when(
+            () => aiConfigRepository.getDefaultProfileId(),
+          ).thenAnswer((_) async => defaultId);
+          // Nothing configured and no built-in model here: no route at all.
+          when(
+            () => aiConfigRepository.getConfigsByType(AiConfigType.model),
+          ).thenAnswer((_) async => const []);
+          final kept = container.listen(setupProvider, (_, _) {});
+          addTearDown(kept.close);
+          expect(await settled((_) => true), isNull);
+
+          when(
+            () => aiConfigRepository.getConfigsByType(AiConfigType.model),
+          ).thenAnswer((_) async => [thinking, voxtral]);
+          defaultId = 'profile-mistral';
+          await container
+              .read(defaultInferenceProfileControllerProvider.notifier)
+              .selectProfile('profile-mistral');
+          final after = await settled((setup) => setup != null);
+
+          expect(after?.profile?.speechProvider, mistral);
+          expect(after?.profile?.speechModel, voxtral);
+        },
+      );
     });
   });
 

@@ -68,7 +68,9 @@ together with the text's language:
 | Task summary card and its companion stage | the task agent's resolved setup | the task's `languageCode`, else the app's |
 | Goal report | the goal agent's resolved setup | the app's |
 | Query answer | `queryProfileProvider` for the chat | the scope task's `languageCode`, else the app's |
-| Day briefing, onboarding companion | none | — |
+| Day briefing | the Daily OS planner's resolved setup | the app's |
+| Companion's spoken reply ([front agent](front_agent.md#her-voice)) | her own resolved setup: the profile chosen for her, else the Settings default; her built-in fallback model names no voice | the app's |
+| Onboarding companion | none: she speaks unasked, so only the on-device voice | — |
 
 `fromProfile` returns a route only for a provider with a speech client here —
 Mistral (Voxtral TTS) today; another provider joins by adding its case. Every
