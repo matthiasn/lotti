@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -93,6 +94,49 @@ void main() {
 
     expect(first, [0, 1, 0]);
     expect(second, [1, 0]);
+  });
+
+  test(
+    'a batch writes its changes once, at its end; a change from outside it '
+    'is written at once',
+    () async {
+      final held = await HeldEmbeddingVersions.open(path);
+      await held.put(_held('e1', 1));
+      Future<List<String>> onDisk() async => (await HeldEmbeddingVersions.open(
+        path,
+      )).all.map((h) => h.register.id).toList();
+
+      await held.batch(() async {
+        await held.remove('e1|m');
+        await held.put(_held('e2', 1));
+        expect(await onDisk(), ['e1|m'], reason: 'deferred inside the batch');
+
+        // The apply path, outside the batch's zone, writes at once — with
+        // every change made so far.
+        await Zone.root.run(() => held.put(_held('e3', 1)));
+        expect(await onDisk(), ['e2|m', 'e3|m']);
+
+        await held.remove('e3|m');
+        expect(await onDisk(), ['e2|m', 'e3|m']);
+      });
+
+      expect(await onDisk(), ['e2|m']);
+    },
+  );
+
+  test('a batch that throws still writes what it changed', () async {
+    final held = await HeldEmbeddingVersions.open(path);
+    await held.put(_held('e1', 1));
+
+    await expectLater(
+      held.batch(() async {
+        await held.remove('e1|m');
+        throw StateError('merge failed');
+      }),
+      throwsStateError,
+    );
+
+    expect((await HeldEmbeddingVersions.open(path)).all, isEmpty);
   });
 
   test('put replaces what is held of the register, remove drops it', () async {

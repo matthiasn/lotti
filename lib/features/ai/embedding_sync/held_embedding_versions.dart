@@ -103,14 +103,45 @@ class HeldEmbeddingVersions {
   Future<void> put(HeldEmbeddingVersion version) async {
     _held[version.register.id] = version;
     _counts.add(_held.length);
-    await _persist();
+    await _persistUnlessBatched();
   }
 
   /// Drops what is held of [registerId]; a no-op when nothing is.
   Future<void> remove(String registerId) async {
     if (_held.remove(registerId) == null) return;
     _counts.add(_held.length);
-    await _persist();
+    await _persistUnlessBatched();
+  }
+
+  /// Runs [body], writing the file once at its end for every [put] and
+  /// [remove] made inside it, instead of once each: a re-check of every
+  /// held version would otherwise rewrite the whole file per version.
+  ///
+  /// Only the changes [body] makes are deferred. Another caller's change
+  /// meanwhile — a version the apply path holds, its receipt already
+  /// recorded — is written at once, with every change made so far. A crash
+  /// before the end leaves the file as it was, which a later re-check
+  /// settles again.
+  Future<T> batch<T>(Future<T> Function() body) async {
+    try {
+      return await runZoned(body, zoneValues: {_batchKey: this});
+    } finally {
+      if (_batchDirty) {
+        _batchDirty = false;
+        await _persist();
+      }
+    }
+  }
+
+  static final Object _batchKey = Object();
+  bool _batchDirty = false;
+
+  Future<void> _persistUnlessBatched() {
+    if (identical(Zone.current[_batchKey], this)) {
+      _batchDirty = true;
+      return Future.value();
+    }
+    return _persist();
   }
 
   Future<void> _persist() {

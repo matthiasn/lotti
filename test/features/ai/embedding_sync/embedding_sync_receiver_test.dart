@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -182,6 +183,57 @@ void main() {
     await d.open();
     return d;
   }
+
+  group('agentReportTextReader', () {
+    test('reads the body, TLDR and one-liner of a report', () async {
+      final repository = MockAgentRepository();
+      when(() => repository.getEntity('r1')).thenAnswer(
+        (_) async => AgentDomainEntity.agentReport(
+          id: 'r1',
+          agentId: 'agent-1',
+          scope: 'current',
+          createdAt: _date,
+          vectorClock: null,
+          content: 'The body',
+          tldr: 'The TLDR',
+          oneLiner: 'The one-liner',
+        ),
+      );
+
+      final read = agentReportTextReader(() => repository);
+
+      expect(await read('r1'), (
+        content: 'The body',
+        tldr: 'The TLDR',
+        oneLiner: 'The one-liner',
+      ));
+    });
+
+    test(
+      'reads nothing for another entity, a missing one, or no database',
+      () async {
+        final repository = MockAgentRepository();
+        when(() => repository.getEntity('head')).thenAnswer(
+          (_) async => AgentDomainEntity.agentReportHead(
+            id: 'head',
+            agentId: 'agent-1',
+            scope: 'current',
+            reportId: 'r1',
+            updatedAt: _date,
+            vectorClock: null,
+          ),
+        );
+        when(
+          () => repository.getEntity('gone'),
+        ).thenAnswer((_) async => null);
+
+        final read = agentReportTextReader(() => repository);
+        expect(await read('head'), isNull);
+        expect(await read('gone'), isNull);
+        expect(await agentReportTextReader(() => null)('r1'), isNull);
+      },
+    );
+  });
 
   group('merge', () {
     test(

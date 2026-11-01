@@ -5,7 +5,7 @@ description: How one device's embeddings reach the user's other devices as a tra
 resource: ../../../lib/features/ai/embedding_sync
 tags: [ai, embeddings, sync, vector-clock, register, tombstone, tla]
 status: draft
-generated: { by: claude-code/opus-5.5, at: 2026-10-30T21:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-11-01T19:30:00Z }
 stale_after: 2027-04-30
 sources:
   - id: register
@@ -198,8 +198,17 @@ stateDiagram-v2
   shard it is stored in. They are re-checked from `onJournalEntityApplied`,
   `onAgentEntityApplied` (reports live in the agent database),
   `onEntityDefinitionApplied` (a label's name is part of a task's text),
-  every time the inbound queue drains, and when the pipeline attaches — a
-  new build may hash a held version's text the way its sender did.
+  every time the inbound queue drains, whenever a config flag changes (holds
+  wait while a flag is off), and when the pipeline attaches — a new build
+  may hash a held version's text the way its sender did. The attach re-check
+  runs without holding up start; `detach` waits for it. A pass writes the
+  holds file once, not once per version (`HeldEmbeddingVersions.batch`).
+- **A report's text comes from the agent database** through
+  `agentReportTextReader`, which builds an `AgentRepository` over the
+  registered `AgentDatabase` per read. It once looked the repository up as a
+  service, which is never registered, so every report version a peer shared
+  was held until a later report's tombstone replaced it — and each task's
+  current report never was.
 - **Holds are shown, not counted missing.** Their receipts are recorded, so
   the sequence log never asks for them, and a deep backfill only delivers
   them to the hold again. Sync health lists their number under the

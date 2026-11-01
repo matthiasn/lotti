@@ -5,8 +5,8 @@ description: Local vector search over per-category ObjectBox shards filled by th
 resource: ../../../lib/features/ai/service/embedding_service.dart
 tags: [ai, embeddings, vector-search, objectbox, onnx, on-device, tla]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-10-30T12:00:00Z }
-stale_after: 2027-01-30
+generated: { by: claude-code/opus-5.5, at: 2026-11-01T19:30:00Z }
+stale_after: 2027-02-01
 sources:
   - id: embedding-service
     resource: ../../../lib/features/ai/service/embedding_service.dart

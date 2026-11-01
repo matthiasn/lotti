@@ -660,6 +660,56 @@ void main() {
     );
 
     test(
+      'attaching does not wait for the re-check, and detaching does',
+      () async {
+        final recheck = Completer<void>();
+        final sink = MockSyncedEmbeddingSink();
+        when(sink.recheckAll).thenAnswer((_) => recheck.future);
+        var rounds = 0;
+        vectors.catchUpRound = () async => rounds++;
+
+        await attach(sink: sink);
+        expect(rounds, 1, reason: 'the catch-up ran while the re-check runs');
+
+        var detached = false;
+        final detach = vectors.detach().then((_) => detached = true);
+        await pumpEventQueue();
+        expect(detached, isFalse);
+        expect(vectors.isAttached, isTrue);
+
+        recheck.complete();
+        await detach;
+        expect(vectors.isAttached, isFalse);
+      },
+    );
+
+    test(
+      'a flag change re-checks the held versions, then runs the catch-up',
+      () async {
+        final calls = <String>[];
+        final sink = MockSyncedEmbeddingSink();
+        when(sink.recheckAll).thenAnswer((_) async => calls.add('recheck'));
+        final flagChanges = StreamController<void>();
+        addTearDown(flagChanges.close);
+        flags[syncEmbeddingsFlag] = false;
+        vectors.catchUpRound = () async => calls.add('catch-up');
+        await vectors.attach(
+          store: store,
+          modelId: _model,
+          sink: sink,
+          flagChanges: flagChanges.stream,
+        );
+        expect(calls, ['recheck'], reason: 'nothing to catch up while off');
+
+        flags[syncEmbeddingsFlag] = true;
+        flagChanges.add(null);
+        await pumpEventQueue();
+
+        expect(calls, ['recheck', 'recheck', 'catch-up']);
+      },
+    );
+
+    test(
       'a re-check at attach that fails is logged, and the catch-up still runs',
       () async {
         final sink = MockSyncedEmbeddingSink();

@@ -1,11 +1,11 @@
 ### Fixed
-- **Embeddings of tasks with a private label now reach every device.** A
-  device that hid private items built such a task's searchable text without
-  the label, so the embeddings another device shared for it never matched and
-  waited there for good — the embedding counts differed while Sync health
-  reported nothing missing. Every device now builds the same text, re-embeds
-  the affected tasks on start, and Sync health shows any embeddings still
-  waiting for their entry under the embedding count.
+- **Embeddings shared between devices now arrive in full.** A device never
+  stored the embedding of a task's current agent report that another device
+  shared, nor that of a task with a private label while it hid private items:
+  both waited for good, so the embedding counts differed while Sync health
+  reported nothing missing. Both now store, the affected tasks are re-embedded
+  on start, and Sync health shows any embeddings still waiting under the
+  embedding count.
 
 ### Changed
 - **Tasks are found by their whole agent report.** Search by meaning now

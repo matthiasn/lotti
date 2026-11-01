@@ -1,8 +1,10 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/vector_clock.dart';
+import 'package:lotti/database/agents/agent_repository.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/database/embedding_register.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
@@ -20,6 +22,22 @@ typedef AgentReportText = ({String content, String? tldr, String? oneLiner});
 /// `null` when this device does not hold it.
 typedef ReportContentReader =
     Future<AgentReportText?> Function(String reportId);
+
+/// The [ReportContentReader] over the agent database: [repository] is
+/// resolved per read, since the database may open after the pipeline, and
+/// `null` reads as a report not held yet.
+///
+/// The repository is built from the database, never looked up as a service:
+/// none is registered, and a reader that waited for one held every report
+/// vector a peer shared for good.
+ReportContentReader agentReportTextReader(
+  AgentRepository? Function() repository,
+) => (reportId) async {
+  final report = await repository()?.getEntity(reportId);
+  return report is AgentReportEntity
+      ? (content: report.content, tldr: report.tldr, oneLiner: report.oneLiner)
+      : null;
+};
 
 /// Reads a config flag.
 typedef EmbeddingFlagReader = Future<bool> Function(String flag);
@@ -244,10 +262,15 @@ class EmbeddingSyncReceiver implements SyncedEmbeddingSink {
     }
   }
 
-  /// Re-runs the merge for every held version [matches] selects.
+  /// Re-runs the merge for every held version [matches] selects, writing the
+  /// holds file once for the whole pass ([HeldEmbeddingVersions.batch]).
   Future<void> _recheck(bool Function(HeldEmbeddingVersion) matches) async {
     final due = _held.all.where(matches).toList();
     if (due.isEmpty || !await _accepting) return;
+    await _held.batch(() => _recheckEach(due));
+  }
+
+  Future<void> _recheckEach(List<HeldEmbeddingVersion> due) async {
     for (final held in due) {
       final register = held.register;
       await EmbeddingProcessor.runExclusive(_lockKey(register), () async {

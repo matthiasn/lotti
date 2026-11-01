@@ -5,8 +5,8 @@ description: The Drift-backed inbound queue, the anchored catch-up bridge, per-r
 resource: ../../../lib/features/sync/queue
 tags: [sync, inbound-queue, catch-up, matrix]
 status: stable
-generated: { by: claude-code/fable-5.1, at: 2026-10-24T12:00:00Z }
-stale_after: 2027-01-03
+generated: { by: claude-code/opus-5.5, at: 2026-11-01T19:30:00Z }
+stale_after: 2027-02-01
 sources:
   - id: descriptor-recovery
     resource: ../../../lib/features/sync/matrix/sync_event_processor_descriptor_cache.dart
