@@ -8,6 +8,14 @@ status: stable
 generated: { by: claude-code/opus-5.5, at: 2026-11-01T12:00:00Z }
 stale_after: 2027-02-01
 sources:
+  - id: task-preview
+    resource: ../../../lib/features/tasks/ui/linked_tasks/task_preview_modal.dart
+    title: showTaskPreviewModal — the glance at a task a proposal names
+    last_modified: 2026-11-01
+  - id: proposal-title
+    resource: ../../../lib/features/agents/state/proposal_task_title_provider.dart
+    title: proposalTaskTitleProvider — the title a link proposal names by id
+    last_modified: 2026-11-01
   - id: ui
     resource: ../../../lib/features/agents/ui
     title: Agent UI widgets
@@ -131,21 +139,26 @@ Contents:
 - **Proposed changes** — rows from `unifiedSuggestionListProvider`, each a
   `PendingSuggestion`, confirmable or rejectable by tap or swipe (`> 70px` →
   confirm, `< -70px` → reject; in between snaps back). Change-set confirms
-  route through `ChangeSetConfirmationService`; mechanical rows
-  (`PendingSuggestion.isMechanical`) go to `confirmMechanicalSuggestion` /
-  `dismissMechanicalSuggestion`, and a host may supply its own `onConfirm` /
-  `onReject`. *Confirm all* decides each mechanical row in turn and batches
-  `confirmAll` over distinct change sets. After the agent's proposals come the
-  task's [link suggestions](../ai/task-link-suggestions.md) — `link_task` rows
-  that write the link through `TaskLinkHandler` on accept and hide the pair on
-  this device on reject — and then its
-  [inference backfill suggestions](../ai/inference-backfill.md), which confirm
-  into the backfill queue and reject into a device-local dismissal. Neither
-  kind has a persisted change set behind it. A `link_task` row — a
-  suggestion, or the agent's own proposal, whose target title is looked up by
-  id (`proposalTaskTitleProvider`) — shows that title as a link when the host
-  passes `onOpenLinkedTask`; the task page opens a preview of the task from it (see
-  [task link suggestions](../ai/task-link-suggestions.md#seeing-which-task-is-meant)).
+  route through `ChangeSetConfirmationService`; backfill rows go to
+  `confirmBackfillSuggestion` / `dismissBackfillSuggestion`, and a host may
+  supply its own `onConfirm` / `onReject`. *Confirm all* batches `confirmAll` over
+  distinct change sets. The list ends with the task's
+  [inference backfill suggestions](../ai/inference-backfill.md) — mechanical
+  rows with no change set behind them, which confirm into the backfill queue,
+  reject into a device-local dismissal, and are all queued by *Confirm all*.
+
+  A `link_task` row reads the target task's title in the reader's language:
+  the agent's proposal names its target by id alone (its args are kept
+  canonical for the fingerprint), so the row looks the title up at render
+  time (`proposalTaskTitleProvider`) and keeps the persisted English summary
+  only while that is loading or the task is gone. When the host passes
+  `onOpenLinkedTask`, the title is a link. The task page passes
+  `showTaskPreviewModal`: the task's title, its agent's latest one-liner and
+  TL;DR (`taskPreviewProvider`) — or the task's own notes before any report,
+  else *No summary yet* — and *Open task*, which closes the preview and opens
+  the task the way a linked task opens (`openLinkedTaskDetail`): stacked over
+  the current one, so Back returns to the decision. A host that passes
+  nothing, the event card for one, keeps the title plain.
 - **`History · N`** — lazily expands resolved ledger entries with
   `Confirmed` / `Dismissed` tags; dismissed and retracted entries are struck
   through and dimmed, confirmed ones are not. It is a section of its

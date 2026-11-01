@@ -1036,9 +1036,10 @@ when a note calls for it ([ADR 0155](../../../docs/adr/0155-the-task-agent-finds
 
 1. **`find_related_tasks {query}`** — the model writes a query from what the
    note says about the other work. `RelatedTaskLookup.find` runs the
-   on-device search by meaning through `RelatedTaskFinder` — the one the
-   mechanical [link suggestions](../ai/task-link-suggestions.md) use, with
-   the same 0.55 cutoff — scoped to the agent's `allowedCategoryIds`, leaving
+   on-device search by meaning through `RelatedTaskFinder` — with its
+   measured 0.55 cutoff, see
+   [embeddings and search](../ai/embeddings-and-search.md#related-tasks) —
+   scoped to the agent's `allowedCategoryIds`, leaving
    out the task itself, every task already linked to it and every private
    task. It answers with at most five: id, title, status and their agent's
    one-liner.

@@ -3,7 +3,7 @@
 - Status: Accepted
 - Date: 2026-11-01
 - Concepts: [task agents](../../knowledge/features/agents/task-agents.md#related-tasks-are-fetched-on-demand),
-  [task link suggestions](../../knowledge/features/ai/task-link-suggestions.md)
+  [embeddings and search](../../knowledge/features/ai/embeddings-and-search.md#related-tasks)
 
 ## Context
 
@@ -15,18 +15,19 @@ id is in its context, and its context held only tasks already linked.
 Two earlier attempts left this unsolved. Injecting sibling tasks' TL;DRs
 into every wake polluted the context window and was switched off, leaving
 `get_related_task_details` implemented but disabled, waiting for "a better
-retrieval path". Mechanical link suggestions (a cue-phrase table, then a
-search by meaning) found the candidates on the device, but the phrase table
-read other languages poorly: German "das hängt von X ab" splits its verb
-around the object, Czech and Romanian inflect, and anything phrased outside
-the list was never seen.
+retrieval path". A mechanical alternative was built and dropped before it
+shipped: a cue-phrase table spotted sentences that speak of other work, and a
+search by meaning found the task. The search worked; the phrase table read
+other languages poorly — German "das hängt von X ab" splits its verb around
+the object, Czech and Romanian inflect, and anything phrased outside the list
+was never seen. Judging what a note means is the model's strength, and
+deciding a relationship's kind from wording is a judgement too.
 
 ## Decision
 
 1. **The model searches only when a note calls for it.** A
    `find_related_tasks {query}` tool runs the on-device search by meaning
-   (`RelatedTaskFinder`, the same one link suggestions use) for a query the
-   model writes from the note. Nothing about other tasks enters a wake that
+   (`RelatedTaskFinder`) for a query the model writes from the note. Nothing about other tasks enters a wake that
    does not call it, and the prompt forbids searching when no note refers
    to other work.
 2. **Two depths, fetched in order.** A search answers with at most five
@@ -49,6 +50,9 @@ the list was never seen.
 7. **The `enabled` flag on tool definitions goes.** It existed for the
    disabled drill-down alone; with both tools gated by a wake fact it had no
    user left.
+8. **No mechanical suggestions.** The cue-phrase path is not kept beside the
+   agent: one way to propose a link, judged by the model, in every language
+   it reads.
 
 ## Consequences
 

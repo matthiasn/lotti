@@ -191,12 +191,12 @@ Spoken relationships ("this task is blocked by X", "this supersedes Y") become
 **user-confirmable proposals**, never direct writes — see
 [task agents](../agents/task-agents.md) for the validation and apply pipeline.
 
-Written ones do too, without the agent: a sentence in a task's notes or log
-that speaks of other work is matched by meaning to the task it most likely
-means and offered as a `link_task` row in the same list, read in the same
-directed vocabulary and applied by the same `TaskLinkHandler` — see
-[task link suggestions](../ai/task-link-suggestions.md). A pair that already
-holds any link is never suggested.
+Written ones do too. When a note speaks of other work the agent does not have
+in its context, it finds the task by meaning with `find_related_tasks`, reads
+its summary if in doubt, and proposes the edge through `link_task` like any
+other — see
+[task agents](../agents/task-agents.md#related-tasks-are-fetched-on-demand).
+A task already linked to this one is never offered by that search.
 
 ## Where it surfaces
 

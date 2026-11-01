@@ -1,21 +1,15 @@
 # Knowledge Bundle Update Log
 
 ## 2026-11-01
-* **New**: [Task link suggestions](features/ai/task-link-suggestions.md) — the
-  cue table for sentences that speak of other work, the search by meaning
-  behind them, the measured 0.55 distance cutoff, the existing-link guards,
-  and the accept/dismiss paths. **Update**:
-  [Inference backfill](features/ai/inference-backfill.md) and
-  [Agent UI surfaces](features/agents/ui-surfaces.md) — the shared mechanical
-  dispatch and dismissal store;
-  [Typed relationships](features/tasks/relationships.md) and
+* **Update**: [Task agents](features/agents/task-agents.md) — related tasks
+  are fetched on demand: `find_related_tasks` and `get_related_task_details`
+  ([ADR 0155](../docs/adr/0155-the-task-agent-finds-related-tasks-on-demand.md));
   [Embeddings and semantic search](features/ai/embeddings-and-search.md) —
-  where link suggestions sit. A suggested link's target title opens a
-  preview of that task (one-liner, TL;DR, *Open task*).
-  [Task agents](features/agents/task-agents.md) — related tasks are fetched
-  on demand: `find_related_tasks` and `get_related_task_details`
-  ([ADR 0155](../docs/adr/0155-the-task-agent-finds-related-tasks-on-demand.md)).
-
+  `RelatedTaskFinder` and its measured cutoff;
+  [Agent UI surfaces](features/agents/ui-surfaces.md) — a link proposal's
+  title in the reader's language, as a link to a preview of the task;
+  [Typed relationships](features/tasks/relationships.md) — where the agent's
+  search fits.
 ## 2026-10-28
 * **New**: [History](features/history.md) — the device-local log of opened
   entities: what counts as a visit, the recorder's three signals, live
