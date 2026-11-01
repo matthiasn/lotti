@@ -1364,7 +1364,7 @@
   "categoryAiDefaultsTitle": "Setări implicite AI",
   "categoryAutomaticAgentWakesDescription": "Lăsați asistentul din această categorie să se actualizeze singur când o sarcină se modifică. Se aplică sarcinilor noi; cele existente își păstrează propria setare.",
   "categoryAutomaticAgentWakesLabel": "Treziți asistentul automat",
-  "categoryAutomaticInferenceDescription": "Transcrie automat audio nou și analizează imaginile noi din această categorie",
+  "categoryAutomaticInferenceDescription": "Transcrie automat audio nou, analizează imaginile noi și rezumă pull requesturile din această categorie",
   "categoryAutomaticInferenceLabel": "Inferență automată",
   "categoryCreationError": "Nu s-a putut crea categoria. Vă rugăm să încercați din nou.",
   "categoryDayPlanDescription": "Faceți această categorie disponibilă pentru selecție în planul zilei",

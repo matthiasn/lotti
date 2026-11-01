@@ -3220,7 +3220,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get categoryAutomaticInferenceDescription =>
-      'Automaticky přepisovat nové audio a analyzovat nové obrázky v této kategorii';
+      'Automaticky přepisovat nové audio, analyzovat nové obrázky a shrnovat pull requesty v této kategorii';
 
   @override
   String get categoryAutomaticInferenceLabel => 'Automatická inference';

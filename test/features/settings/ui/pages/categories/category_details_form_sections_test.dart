@@ -399,6 +399,20 @@ void main() {
       expect(switchFinder(), findsNothing);
     });
 
+    // Consent given earlier must stay revocable: an "on" switch is shown even
+    // when nothing it governs could run right now.
+    testWidgets('stays visible while on, even when no automation is '
+        'available, and can be switched off', (tester) async {
+      final category = CategoryTestUtils.createTestCategory().copyWith(
+        automaticInferenceEnabled: true,
+      );
+      await pumpPage(tester, category: category, automationAvailable: false);
+
+      final row = tester.widget<SettingsSwitchRow>(switchFinder());
+      expect(row.value, isTrue);
+      expect(row.onChanged, isNotNull);
+    });
+
     testWidgets('renders off for a category that never opted in', (
       tester,
     ) async {

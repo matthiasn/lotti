@@ -1364,7 +1364,7 @@
   "categoryAiDefaultsTitle": "Paramètres IA par défaut",
   "categoryAutomaticAgentWakesDescription": "Laisse l'assistant de cette catégorie se mettre à jour quand une tâche change. S'applique aux nouvelles tâches ; les tâches existantes gardent leur propre réglage.",
   "categoryAutomaticAgentWakesLabel": "Réveille l'assistant automatiquement",
-  "categoryAutomaticInferenceDescription": "Transcris les nouveaux audios et analyse les nouvelles images de cette catégorie automatiquement",
+  "categoryAutomaticInferenceDescription": "Transcris les nouveaux audios, analyse les nouvelles images et résume les pull requests de cette catégorie automatiquement",
   "categoryAutomaticInferenceLabel": "Inférence automatique",
   "categoryCreationError": "Impossible de créer la catégorie. Réessaie s'il te plaît.",
   "categoryDayPlanDescription": "Rendre cette catégorie disponible à la sélection dans le plan de ta journée",

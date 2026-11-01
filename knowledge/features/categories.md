@@ -5,7 +5,7 @@ description: The app's primary scoping unit — its repository, its picker surfa
 resource: ../../lib/features/categories
 tags: [categories, scoping, defaults, consent]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T02:45:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-11-01T21:00:00Z }
 stale_after: 2027-02-22
 sources:
   - id: src
@@ -126,9 +126,12 @@ Two callers set it. The category settings form owns it from then on — a
 `SettingsSwitchRow` bound to `CategoryDetailsController
 .setAutomaticInferenceEnabled`, which stages the change on the pending category
 like any other field and saves with the form. That row is **conditional**: it
-renders only when `categoryAutomationAvailableProvider(defaultProfileId)`
-resolves true, so a category whose profile automates nothing shows no switch
-rather than a switch that controls nothing.
+renders when `categoryAutomationAvailableProvider(defaultProfileId)` resolves
+true — something the flag governs could run: the profile automates a skill,
+the profile resolves (transcription, and pull request summaries on its
+thinking model), or the Settings default resolves — **or while the flag is
+on**. An off switch that controls nothing is not shown; an on switch always
+is, so consent given earlier stays revocable whatever is configured now.
 
 Onboarding is the other, and the only one that sets it **without the user
 touching a switch**: at the moment it creates the areas, having just connected a

@@ -45,58 +45,6 @@ void main() {
     tearDown(() => container.dispose());
 
     test(
-      'the transcription fallback follows the Settings default, never a '
-      'speech model no profile names',
-      () async {
-        final configs = MockAiConfigRepository();
-        final provider = AiTestDataFactory.createTestProvider();
-        final speech = AiTestDataFactory.createTestModel(
-          id: 'speech',
-          providerModelId: 'speech-native',
-          inputModalities: [Modality.audio],
-        );
-        final thinking = AiTestDataFactory.createTestModel(
-          id: 'thinking',
-          providerModelId: 'thinking-native',
-        );
-        when(
-          () => configs.getConfigsByType(AiConfigType.model),
-        ).thenAnswer((_) async => [speech, thinking]);
-        when(
-          () => configs.getConfigById(provider.id),
-        ).thenAnswer((_) async => provider);
-        when(() => configs.getConfigById('default-profile')).thenAnswer(
-          (_) async => AiTestDataFactory.createTestProfile(
-            id: 'default-profile',
-            thinkingModelId: 'thinking-native',
-            transcriptionModelId: 'speech-native',
-          ),
-        );
-        String? defaultId;
-        when(configs.getDefaultProfileId).thenAnswer((_) async => defaultId);
-        final scoped = ProviderContainer(
-          overrides: withServiceOverrides([
-            aiConfigRepositoryProvider.overrideWithValue(configs),
-            automationSubjectAgentLookupProvider.overrideWithValue(
-              MockSubjectAgentResolver().call,
-            ),
-            automationTemplateLookupProvider.overrideWithValue(
-              MockAgentTemplateService(),
-            ),
-            domainLoggerProvider.overrideWithValue(MockDomainLogger()),
-          ]),
-        );
-        addTearDown(scoped.dispose);
-        final service = scoped.read(profileAutomationServiceProvider);
-
-        // A speech model is configured, but no profile names it.
-        expect(await service.hasTranscriptionFallback(), isFalse);
-        defaultId = 'default-profile';
-        expect(await service.hasTranscriptionFallback(), isTrue);
-      },
-    );
-
-    test(
       'profileResolverProvider wires the repo into a working resolver',
       () async {
         final mockAiConfigRepo = MockAiConfigRepository();
@@ -654,9 +602,10 @@ void main() {
       });
     });
 
-    /// Decides whether the category settings form shows the automatic-
-    /// inference switch at all. It must answer yes for both ways automation
-    /// can happen, or the fallback path would run with no visible control.
+    /// Decides whether the category settings form offers the automatic-
+    /// inference switch. It must answer yes for everything the switch
+    /// governs — transcription, analysis and pull request summaries — or
+    /// that automation would run with no visible control.
     group('categoryAutomationAvailableProvider', () {
       AiConfigInferenceProfile profileWith({required bool automated}) {
         return AiTestDataFactory.createTestProfile(id: 'profile-1').copyWith(
@@ -763,8 +712,10 @@ void main() {
         expect(await availableFor('profile-1'), isTrue);
       });
 
-      test('false for a manual category profile that cannot transcribe, '
-          'with no Settings default', () async {
+      // The switch also governs pull request summaries, which need only the
+      // profile's thinking model.
+      test('true for a manual category profile that cannot transcribe: its '
+          'thinking model summarises pull requests', () async {
         stubFallbackAvailable(available: false);
         when(() => mockAiConfigRepo.getConfigById('profile-1')).thenAnswer(
           (_) async => AiTestDataFactory.createTestProfile(
@@ -772,6 +723,16 @@ void main() {
             thinkingModelId: 'thinking-native',
           ),
         );
+
+        expect(await availableFor('profile-1'), isTrue);
+      });
+
+      test('false when the category profile does not resolve and there is no '
+          'Settings default', () async {
+        stubFallbackAvailable(available: false);
+        when(
+          () => mockAiConfigRepo.getConfigById('profile-1'),
+        ).thenAnswer((_) async => profileWith(automated: false));
 
         expect(await availableFor('profile-1'), isFalse);
       });

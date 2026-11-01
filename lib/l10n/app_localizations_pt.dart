@@ -3215,7 +3215,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get categoryAutomaticInferenceDescription =>
-      'Transcrever novo áudio e analisar novas imagens nesta categoria automaticamente';
+      'Transcrever novo áudio, analisar novas imagens e resumir pull requests nesta categoria automaticamente';
 
   @override
   String get categoryAutomaticInferenceLabel => 'Inferência automática';

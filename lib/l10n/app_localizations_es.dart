@@ -3216,7 +3216,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get categoryAutomaticInferenceDescription =>
-      'Transcribe los audios nuevos y analiza las imágenes nuevas de esta categoría automáticamente';
+      'Transcribe los audios nuevos, analiza las imágenes nuevas y resume las pull requests de esta categoría automáticamente';
 
   @override
   String get categoryAutomaticInferenceLabel => 'Inferencia automática';
