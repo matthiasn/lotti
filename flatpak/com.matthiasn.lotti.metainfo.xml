@@ -40,6 +40,14 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="1.1.75" date="2026-11-01">
+      <description>
+        <p>Added: the companion answers aloud. Ask her a question by voice and she speaks her answer, her lips moving with the words; a typed question still gets a written answer. She listens while you talk and thinks while she works; tap her to stop her. Starting to talk stops her voice, so she is never recorded.</p>
+        <p>Fixed: the companion answers with only Mistral set up. Without a default profile, she now finds her built-in model on Mistral as well as on Melious.</p>
+        <p>Fixed: the companion no longer shakes her legs when she bounces. When she was pleased - a clap, a thumbs up, a celebration - her knees pumped in and out several times a second, most visible in the full-body view on a phone. Her knees now hold their place while she bobs, and the bob itself is smooth.</p>
+        <p>Fixed: playing a summary again starts right away. Read aloud used to make the whole recording again for a replay - for the cloud voice, sending the text and waiting for the voice once more. A summary that played to its end now replays at once, until something else is read aloud.</p>
+      </description>
+    </release>
     <release version="1.1.74" date="2026-10-31">
       <description>
         <p>Added: many chats with the companion. Start a new chat for a new subject and come back to an earlier one: the list groups them by day, each with what she last said, and lets you search, rename, archive or delete them. Each chat keeps its own context, and the inbox still gathers what waits on you from all of them. Your earlier messages are kept as one chat.</p>
