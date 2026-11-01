@@ -17384,6 +17384,23 @@ class AppLocalizationsSv extends AppLocalizations {
   String get taskPriorityUrgent => 'Brådskande';
 
   @override
+  String taskProjectSuggestionAccept(String project) {
+    return 'Lägga till i $project?';
+  }
+
+  @override
+  String get taskProjectSuggestionDismiss => 'Inte det här projektet';
+
+  @override
+  String taskProjectSuggestionSemantics(String project) {
+    return 'Föreslaget projekt: $project. Lägg till den här uppgiften';
+  }
+
+  @override
+  String get taskProjectSuggestionTooltip =>
+      'Föreslaget utifrån orden i den här uppgiften';
+
+  @override
   String get tasksAddLabelButton => 'Lägg till etikett';
 
   @override

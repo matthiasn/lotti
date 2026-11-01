@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
@@ -21,6 +23,7 @@ import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:lotti/features/tasks/state/task_one_liner_provider.dart';
+import 'package:lotti/features/tasks/state/task_project_suggestion_controller.dart';
 import 'package:lotti/features/tasks/ui/header/desktop_task_header.dart';
 import 'package:lotti/features/tasks/ui/header/desktop_task_header_connector.dart';
 import 'package:lotti/features/tasks/ui/header/project_selection_modal_content.dart';
@@ -134,6 +137,7 @@ void main() {
     Duration? estimate,
     List<String>? labelIds,
     TaskPriority priority = TaskPriority.p2Medium,
+    String title = 'Test Task',
   }) {
     return Task(
       meta: Metadata(
@@ -156,7 +160,7 @@ void main() {
         dateFrom: now,
         dateTo: now,
         statusHistory: const [],
-        title: 'Test Task',
+        title: title,
         due: due,
         estimate: estimate,
         priority: priority,
@@ -258,15 +262,27 @@ void main() {
     Locale locale = const Locale('en'),
     bool metaColumnVisible = false,
     int aiCallCount = 0,
+    TaskProjectSuggestion? suggestion,
+    MockProjectRepository? projectRepo,
   }) {
     return ProviderScope(
       overrides: withServiceOverrides([
         createEntryControllerOverride(task),
+        // With a repository, the task's project and its suggestion come from
+        // the real provider chain over it. Without one both are pinned, so
+        // the data-mapping tests do not depend on the matcher.
+        if (projectRepo != null)
+          projectRepositoryProvider.overrideWithValue(projectRepo)
+        else ...[
+          taskProjectSuggestionProvider(
+            task.id,
+          ).overrideWith((ref) async => suggestion),
+          projectForTaskProvider(task.id).overrideWith(
+            (ref) async => project,
+          ),
+        ],
         labelsStreamProvider.overrideWith(
           (ref) => Stream<List<LabelDefinition>>.value(labels),
-        ),
-        projectForTaskProvider(task.id).overrideWith(
-          (ref) async => project,
         ),
         taskProgressControllerProvider(task.id).overrideWith(
           () => _FakeTaskProgressController(progress),
@@ -1695,5 +1711,163 @@ void main() {
         expect(pill.onTap, isNull);
       },
     );
+  });
+
+  group('DesktopTaskHeaderConnector — proactive project suggestion', () {
+    late MockProjectRepository projectRepo;
+    late StreamController<Set<String>> projectUpdates;
+    final work = buildProject(id: 'work', title: 'Work');
+    final home = buildProject(id: 'home', title: 'Home');
+    const taskTitle = 'Prepare work presentation';
+
+    Finder offer() => find.text('Add to Work?');
+
+    setUp(() {
+      projectRepo = MockProjectRepository();
+      projectUpdates = StreamController<Set<String>>.broadcast();
+      // The category is deliberately not named after a project, so a
+      // `find.text('Work')` can only be the project.
+      when(
+        () => mockCache.getCategoryById('cat-1'),
+      ).thenReturn(buildCategory(name: 'Admin'));
+      when(
+        () => projectRepo.updateStream,
+      ).thenAnswer((_) => projectUpdates.stream);
+      when(
+        () => projectRepo.getProjectsForCategory('cat-1'),
+      ).thenAnswer((_) async => [work, home]);
+      when(
+        () => projectRepo.getTasksForProject(any()),
+      ).thenAnswer((_) async => const []);
+      when(
+        () => projectRepo.getProjectForTask('task-1'),
+      ).thenAnswer((_) async => null);
+      when(
+        () => projectRepo.getLinkedProjectForTask('task-1'),
+      ).thenAnswer((_) async => null);
+    });
+
+    tearDown(() => projectUpdates.close());
+
+    Future<void> pumpUnassigned(WidgetTester tester) async {
+      await tester.pumpWidget(
+        pumpConnector(
+          task: buildTask(categoryId: 'cat-1', title: taskTitle),
+          projectRepo: projectRepo,
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+    }
+
+    testWidgets(
+      'an unassigned task whose title is about a project gets the offer in '
+      'the crumb, beside "No project" — no project was ever named',
+      (tester) async {
+        await pumpUnassigned(tester);
+
+        expect(
+          find.descendant(
+            of: find.byType(TaskHierarchyCrumb),
+            matching: offer(),
+          ),
+          findsOneWidget,
+        );
+        expect(find.text('No project'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'one tap files the task: the link is written, and the crumb then names '
+      'the project instead of offering it',
+      (tester) async {
+        when(
+          () => projectRepo.linkTaskToProject(
+            projectId: 'work',
+            taskId: 'task-1',
+          ),
+        ).thenAnswer((_) async {
+          when(
+            () => projectRepo.getProjectForTask('task-1'),
+          ).thenAnswer((_) async => work);
+          projectUpdates.add({'task-1', projectNotification});
+          return true;
+        });
+        await pumpUnassigned(tester);
+
+        await tester.tap(offer());
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        verify(
+          () => projectRepo.linkTaskToProject(
+            projectId: 'work',
+            taskId: 'task-1',
+          ),
+        ).called(1);
+        expect(offer(), findsNothing);
+        expect(find.text('Work'), findsOneWidget);
+        expect(find.text('No project'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'dismissing leaves the task unassigned and the offer gone',
+      (tester) async {
+        await pumpUnassigned(tester);
+
+        await tester.tap(find.byTooltip('Not this project'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(offer(), findsNothing);
+        expect(find.text('No project'), findsOneWidget);
+        verifyNever(
+          () => projectRepo.linkTaskToProject(
+            projectId: any(named: 'projectId'),
+            taskId: any(named: 'taskId'),
+          ),
+        );
+      },
+    );
+
+    testWidgets(
+      'a task that already has a project is never offered one, whatever the '
+      'suggestion provider says',
+      (tester) async {
+        await tester.pumpWidget(
+          pumpConnector(
+            task: buildTask(categoryId: 'cat-1', title: taskTitle),
+            project: home,
+            suggestion: const TaskProjectSuggestion(
+              projectId: 'work',
+              projectTitle: 'Work',
+            ),
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(find.text('Home'), findsOneWidget);
+        expect(offer(), findsNothing);
+      },
+    );
+
+    testWidgets('a task without a category has no project crumb to offer '
+        'one in', (tester) async {
+      await tester.pumpWidget(
+        pumpConnector(
+          task: buildTask(title: taskTitle),
+          suggestion: const TaskProjectSuggestion(
+            projectId: 'work',
+            projectTitle: 'Work',
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(offer(), findsNothing);
+    });
   });
 }

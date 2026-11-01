@@ -56,6 +56,18 @@ sources:
     resource: ../../../lib/features/tasks/state/task_estimate_suggestions_controller.dart
     title: taskEstimateSuggestionsControllerProvider
     last_modified: 2026-09-03
+  - id: project-suggestion
+    resource: ../../../lib/features/tasks/state/task_project_suggestion_controller.dart
+    title: taskProjectSuggestionProvider, its index and the dismissals
+    last_modified: 2026-11-01
+  - id: project-suggestion-matcher
+    resource: ../../../lib/features/tasks/util/project_suggestion_matcher.dart
+    title: ProjectSuggestionMatcher
+    last_modified: 2026-11-01
+  - id: project-suggestion-action
+    resource: ../../../lib/features/tasks/ui/header/task_project_suggestion_action.dart
+    title: TaskProjectSuggestionAction
+    last_modified: 2026-11-01
 ---
 
 # Band order
@@ -268,8 +280,9 @@ Three rules govern getting *out* of edit mode:
 
 The header body is Crumb → Title → AI one-liner → Summary:
 
-1. **Crumb** — `category / [project | No project]` separated by a literal `/`.
-   No label chips here.
+1. **Crumb** — `category / [project | No project [Add to {project}? ✕]]`
+   separated by a literal `/`. No label chips here; the offer after "No
+   project" is the [proactive project suggestion](#the-proactive-project-suggestion).
 2. **Title** — full width, tap to edit.
 3. **AI one-liner** — an optional, fully wrapping AI-accent summary. It
    preserves the last value during background refresh and grows vertically
@@ -313,6 +326,85 @@ its project: it closes the picker *without* writing a link and beams to
 tab's root (Tasks) instead, and while wide lockdown hides Projects
 (`NavService.isDelegateAllowed`) it refuses the beam outright. Either way the
 arrow would not open the project, so it is not offered.
+
+## The proactive project suggestion
+
+A task with a category and no project gets an offer in the crumb, right after
+"No project": `Add to {project}?` (`DesignSystemInlineAction`, folder glyph in
+`interactive.enabled`) and a dismiss control (`DesignSystemIconAction`,
+"Not this project"). The user never has to name a project for it to appear —
+it is drawn from the task's own words, entirely on-device. It complements the
+task agent's `set_task_project` proposal ([task agents](../agents/task-agents.md)),
+which only runs when an agent wakes; this one is there the moment the task is
+named.
+
+`DesktopTaskHeaderConnector` passes `TaskProjectSuggestionAction` as the
+header's `projectSuggestionSlot` when the task has a category, and
+`TaskHierarchyCrumb` renders it only while the project segment shows and no
+project is linked — an offer never sits beside a project the task is in.
+
+**What is offered** is `taskProjectSuggestionProvider(taskId)`:
+
+```mermaid
+flowchart TD
+  E["entryControllerProvider(taskId)<br/>select: title, body, labels,<br/>category, privacy"] --> S[taskProjectSuggestionProvider]
+  P["projectForTaskProvider(taskId)"] --> S
+  I["projectSuggestionIndexProvider<br/>(category, privacy)"] --> S
+  D["taskProjectSuggestionDismissalsProvider(taskId)"] --> S
+  PC["projectsForCategoryProvider"] --> I
+  R["ProjectRepository.getTasksForProject<br/>(≤ 200 titles per project)"] --> I
+  S -->|"no category, has a project,<br/>no clear match, best match dismissed,<br/>or linked behind the private gate"| N[null: nothing rendered]
+  S --> O["TaskProjectSuggestion(projectId, projectTitle)"]
+```
+
+- Only projects of the task's category **and privacy** that are not completed
+  or archived are candidates — the same set the picker offers, since the
+  repository refuses any other link.
+- `ProjectSuggestionMatcher` ranks them. It tokenises the way title search
+  does (`searchWords`: lower-cased, accent-folded), drops stop words, folds
+  plurals and `-ing`/`-ed` with a light stemmer, and scores each distinct task
+  word once per project: task field (title 1, labels 0.75, body 0.5) × project
+  field (name 3, description 1, the titles of the project's own tasks
+  0.75–1.5 by how many share the word) × similarity (exact 1, typo by trigram
+  Dice ≥ 0.6 → 0.7, prefix 0.6 — the last two against name and description
+  only) × specificity (a word all N candidates use counts 1/N). A project
+  whose name words the task actually says gets up to +1 for the share covered.
+  It suggests only when the best score is ≥ 2 **and** ≥ 1.25× the runner-up:
+  a wrong offer costs more than a missing one, so "Plan workshop" alone does
+  not offer "Work", and two equally good projects offer neither.
+- The index is built once per category and privacy, and rebuilt on every
+  project notification (a link included), so a re-rank after a title edit
+  only tokenises the task. The suggestion re-evaluates when the selected task
+  facts change — not on editor focus or toolbar flips — and when the task's
+  project link changes.
+- `projectForTaskProvider` is privacy-filtered, so before offering anything
+  the provider also asks `getLinkedProjectForTask`: a task filed under a
+  project the private gate hides is not unassigned.
+
+**Accept and dismiss.** A tap on the offer calls
+`ProjectRepository.linkTaskToProject`; the link's own notification makes
+`projectForTaskProvider` re-read and the crumb names the project. A refused or
+failed write shows the picker's `projectPickerUpdateFailed` toast and gives
+the offer back. Dismiss records the project in
+`TaskProjectSuggestionDismissals` — a per-task set in `SettingsDb` under
+`TASK_PROJECT_SUGGESTION_DISMISSED_<taskId>`, local to the device — and the
+same project is never offered for that task again. A dismissed best match
+does **not** hand over to the runner-up: "not that one" is not "show me
+another"; a title that now points elsewhere earns a new offer. Either tap
+hides the offer at once, before the provider recomputes. The notifier takes
+its store and logger before its first await, so a dismissal still lands — and
+a failed write is still logged — when the page closes mid-write.
+
+```mermaid
+stateDiagram-v2
+  [*] --> Hidden
+  Hidden --> Offered: suggestion computed
+  Offered --> Hidden: title or labels no longer match
+  Offered --> Settling: tap offer / tap dismiss
+  Settling --> Offered: link refused (toast)
+  Settling --> Hidden: project linked
+  Settling --> Hidden: project dismissed for this task
+```
 
 **Metadata is set once and rarely changed, so it no longer wears
 always-visible button-styled chrome.** The summary lane is read-outs only:

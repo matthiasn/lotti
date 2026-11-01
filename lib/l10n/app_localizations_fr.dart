@@ -17639,6 +17639,23 @@ class AppLocalizationsFr extends AppLocalizations {
   String get taskPriorityUrgent => 'Urgente';
 
   @override
+  String taskProjectSuggestionAccept(String project) {
+    return 'Ajouter à $project ?';
+  }
+
+  @override
+  String get taskProjectSuggestionDismiss => 'Pas ce projet';
+
+  @override
+  String taskProjectSuggestionSemantics(String project) {
+    return 'Projet suggéré : $project. Ajoute cette tâche';
+  }
+
+  @override
+  String get taskProjectSuggestionTooltip =>
+      'Suggéré à partir des mots de cette tâche';
+
+  @override
   String get tasksAddLabelButton => 'Ajouter une étiquette';
 
   @override

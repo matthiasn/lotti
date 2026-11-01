@@ -28817,6 +28817,30 @@ abstract class AppLocalizations {
   /// **'Urgent'**
   String get taskPriorityUrgent;
 
+  /// No description provided for @taskProjectSuggestionAccept.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to {project}?'**
+  String taskProjectSuggestionAccept(String project);
+
+  /// No description provided for @taskProjectSuggestionDismiss.
+  ///
+  /// In en, this message translates to:
+  /// **'Not this project'**
+  String get taskProjectSuggestionDismiss;
+
+  /// No description provided for @taskProjectSuggestionSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Suggested project: {project}. Add this task to it'**
+  String taskProjectSuggestionSemantics(String project);
+
+  /// No description provided for @taskProjectSuggestionTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Suggested from this task\'s words'**
+  String get taskProjectSuggestionTooltip;
+
   /// No description provided for @tasksAddLabelButton.
   ///
   /// In en, this message translates to:

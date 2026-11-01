@@ -10749,6 +10749,24 @@
     }
   },
   "taskPriorityUrgent": "Urgent",
+  "taskProjectSuggestionAccept": "Add to {project}?",
+  "@taskProjectSuggestionAccept": {
+    "placeholders": {
+      "project": {
+        "type": "String"
+      }
+    }
+  },
+  "taskProjectSuggestionDismiss": "Not this project",
+  "taskProjectSuggestionSemantics": "Suggested project: {project}. Add this task to it",
+  "@taskProjectSuggestionSemantics": {
+    "placeholders": {
+      "project": {
+        "type": "String"
+      }
+    }
+  },
+  "taskProjectSuggestionTooltip": "Suggested from this task's words",
   "tasksAddLabelButton": "Add label",
   "tasksAgentFilterAll": "All",
   "tasksAgentFilterHasAgent": "Has Agent",

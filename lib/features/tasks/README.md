@@ -72,6 +72,12 @@ project, and relationships to other tasks.
   the same rows stay one tap away in their fly-out — which steps aside the
   moment you set a status, so the completion animation on a task you just
   finished is not playing behind a panel.
+- **Offers a project for a task that has none.** Name a task "Prepare work
+  presentation" in a category with a "Work" project and the header offers
+  "Add to Work?" beside "No project" — one tap files it, the ✕ says it does
+  not belong there and that project is never offered for the task again. The
+  match runs on the device, against the projects' names, descriptions and the
+  tasks already in them; it stays quiet when no project clearly fits.
 
 ## What it owns
 

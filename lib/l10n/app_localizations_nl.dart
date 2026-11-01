@@ -17429,6 +17429,23 @@ class AppLocalizationsNl extends AppLocalizations {
   String get taskPriorityUrgent => 'Dringend';
 
   @override
+  String taskProjectSuggestionAccept(String project) {
+    return 'Toevoegen aan $project?';
+  }
+
+  @override
+  String get taskProjectSuggestionDismiss => 'Niet dit project';
+
+  @override
+  String taskProjectSuggestionSemantics(String project) {
+    return 'Voorgesteld project: $project. Voeg deze taak toe';
+  }
+
+  @override
+  String get taskProjectSuggestionTooltip =>
+      'Voorgesteld op basis van de woorden in deze taak';
+
+  @override
   String get tasksAddLabelButton => 'Label toevoegen';
 
   @override

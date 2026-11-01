@@ -495,6 +495,66 @@ void main() {
       );
       expect(find.text('No project'), findsNothing);
     });
+
+    testWidgets('a project suggestion rides the crumb after "No project"', (
+      tester,
+    ) async {
+      await _pumpDesktop(
+        tester,
+        DesktopTaskHeader(
+          data: _fixture(category: _categoryFixture),
+          onTitleSaved: (_) {},
+          projectSuggestionSlot: const Text('suggestion-slot'),
+        ),
+      );
+
+      final crumb = find.byType(TaskHierarchyCrumb);
+      expect(
+        find.descendant(of: crumb, matching: find.text('suggestion-slot')),
+        findsOneWidget,
+      );
+      // Reading order: the placeholder first, the offer after it.
+      expect(
+        tester.getTopLeft(find.text('suggestion-slot')).dx,
+        greaterThan(tester.getTopRight(find.text('No project')).dx),
+      );
+    });
+
+    testWidgets('a linked project drops the suggestion — the crumb never '
+        'offers a project beside the one the task is in', (tester) async {
+      await _pumpDesktop(
+        tester,
+        DesktopTaskHeader(
+          data: _fixture(
+            category: _categoryFixture,
+            project: _projectFixture,
+          ),
+          onTitleSaved: (_) {},
+          projectSuggestionSlot: const Text('suggestion-slot'),
+        ),
+      );
+
+      expect(find.text('suggestion-slot'), findsNothing);
+    });
+  });
+
+  group('TaskHierarchyCrumb — project suggestion', () {
+    testWidgets('is dropped with the project segment', (tester) async {
+      await _pumpDesktop(
+        tester,
+        const TaskHierarchyCrumb(
+          category: _categoryFixture,
+          project: null,
+          onCategoryTap: null,
+          onProjectTap: null,
+          showProjectSegment: false,
+          projectSuggestion: Text('suggestion-slot'),
+        ),
+      );
+
+      expect(find.text('Work'), findsOneWidget);
+      expect(find.text('suggestion-slot'), findsNothing);
+    });
   });
 
   group('DesktopTaskHeader — title editing', () {

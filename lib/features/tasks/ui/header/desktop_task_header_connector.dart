@@ -13,6 +13,7 @@ import 'package:lotti/features/tasks/ui/header/desktop_task_header.dart';
 import 'package:lotti/features/tasks/ui/header/task_meta_column.dart';
 import 'package:lotti/features/tasks/ui/header/task_meta_flyout.dart';
 import 'package:lotti/features/tasks/ui/header/task_meta_pickers.dart';
+import 'package:lotti/features/tasks/ui/header/task_project_suggestion_action.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/linked_task_row.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_ai_cost_indicator.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
@@ -114,6 +115,13 @@ class DesktopTaskHeaderConnector extends ConsumerWidget {
               taskIsPrivate: task.meta.private ?? false,
               current: project,
             ),
+      // A task with a category but no project gets a proactive suggestion
+      // beside "No project", drawn from its own words. The crumb drops the
+      // slot once a project is linked; without a category there is nothing
+      // a project could be picked from.
+      projectSuggestionSlot: categoryId == null
+          ? null
+          : TaskProjectSuggestionAction(taskId: taskId),
       onCategoryTap: () => TaskMetaPickers.showCategoryPicker(
         context,
         ref,

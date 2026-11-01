@@ -17574,6 +17574,23 @@ class AppLocalizationsCs extends AppLocalizations {
   String get taskPriorityUrgent => 'Naléhavá';
 
   @override
+  String taskProjectSuggestionAccept(String project) {
+    return 'Přidat do $project?';
+  }
+
+  @override
+  String get taskProjectSuggestionDismiss => 'Tento projekt ne';
+
+  @override
+  String taskProjectSuggestionSemantics(String project) {
+    return 'Navrhovaný projekt: $project. Přidej tento úkol';
+  }
+
+  @override
+  String get taskProjectSuggestionTooltip =>
+      'Navrženo podle slov v tomto úkolu';
+
+  @override
   String get tasksAddLabelButton => 'Přidat štítek';
 
   @override

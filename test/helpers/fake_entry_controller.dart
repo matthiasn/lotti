@@ -220,6 +220,33 @@ class StatefulTogglesFakeEntryController extends FakeEntryController {
   }
 }
 
+/// Fake EntryController whose `save(title:)` lands the new title in state,
+/// the way the production save does once the task is persisted — so a test
+/// can drive a title edit and read what depends on the title (a suggestion
+/// keyed on it, say). Every other write stays the plain fake's no-op.
+class TitleSavingFakeEntryController extends FakeEntryController {
+  // ignore: use_super_parameters, parent uses private `_entity` field
+  TitleSavingFakeEntryController(JournalEntity entity) : super(entity);
+
+  @override
+  Future<void> save({
+    Duration? estimate,
+    String? title,
+    DateTime? dueDate,
+    bool clearDueDate = false,
+    bool stopRecording = false,
+  }) async {
+    final current = state.value;
+    final entry = current?.entry;
+    if (title == null || current == null || entry is! Task) return;
+    state = AsyncData(
+      current.copyWith(
+        entry: entry.copyWith(data: entry.data.copyWith(title: title)),
+      ),
+    );
+  }
+}
+
 /// Fake EntryController that scripts the *status* write's timing and ordering.
 ///
 /// Two knobs, for the two things a status-picker test needs to be able to say

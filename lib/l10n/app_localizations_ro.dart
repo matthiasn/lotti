@@ -17691,6 +17691,23 @@ class AppLocalizationsRo extends AppLocalizations {
   String get taskPriorityUrgent => 'Urgentă';
 
   @override
+  String taskProjectSuggestionAccept(String project) {
+    return 'Adăugați la $project?';
+  }
+
+  @override
+  String get taskProjectSuggestionDismiss => 'Nu acest proiect';
+
+  @override
+  String taskProjectSuggestionSemantics(String project) {
+    return 'Proiect sugerat: $project. Adăugați această sarcină';
+  }
+
+  @override
+  String get taskProjectSuggestionTooltip =>
+      'Sugerat pe baza cuvintelor acestei sarcini';
+
+  @override
   String get tasksAddLabelButton => 'Adăugați o etichetă';
 
   @override

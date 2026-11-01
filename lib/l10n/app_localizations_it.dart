@@ -17577,6 +17577,23 @@ class AppLocalizationsIt extends AppLocalizations {
   String get taskPriorityUrgent => 'Urgente';
 
   @override
+  String taskProjectSuggestionAccept(String project) {
+    return 'Aggiungere a $project?';
+  }
+
+  @override
+  String get taskProjectSuggestionDismiss => 'Non questo progetto';
+
+  @override
+  String taskProjectSuggestionSemantics(String project) {
+    return 'Progetto suggerito: $project. Aggiungi questa attività';
+  }
+
+  @override
+  String get taskProjectSuggestionTooltip =>
+      'Suggerito dalle parole di questa attività';
+
+  @override
   String get tasksAddLabelButton => 'Aggiungi l\'etichetta';
 
   @override

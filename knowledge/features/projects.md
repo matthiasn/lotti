@@ -143,7 +143,9 @@ assignment race requires cleanup and that cleanup cannot be confirmed, creation
 throws instead of claiming success. The Tasks tab catches that failure, shows a
 localized error, and does not navigate to the failed task.
 The task header filters its project picker to the same normalized privacy, so
-it does not offer a choice the repository must reject. Project-agent
+it does not offer a choice the repository must reject; its proactive project
+suggestion draws from the same set
+([task detail composition](tasks/detail-composition.md#the-proactive-project-suggestion)). Project-agent
 `create_task` calls pass the project's privacy into task creation before
 linking. A category can still move after linking, and that
 write is nowhere near the link, so the category rule has to be re-checked there

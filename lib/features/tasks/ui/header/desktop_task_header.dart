@@ -108,6 +108,7 @@ class DesktopTaskHeader extends StatefulWidget {
     this.onCategoryTap,
     this.blockedBySlot,
     this.aiCostSlot,
+    this.projectSuggestionSlot,
     this.initialEditing = false,
     super.key,
   });
@@ -127,6 +128,11 @@ class DesktopTaskHeader extends StatefulWidget {
   /// The task's AI cost read-out, forwarded into the summary lane. See
   /// [TaskMetaSummaryLine.aiCostSlot].
   final Widget? aiCostSlot;
+
+  /// The proactive project suggestion, shown in the crumb beside "No
+  /// project". Forwarded to [TaskHierarchyCrumb.projectSuggestion], which
+  /// only renders it while the task has no project.
+  final Widget? projectSuggestionSlot;
 
   /// Force the inline editor open on first build.
   ///
@@ -271,6 +277,7 @@ class _DesktopTaskHeaderState extends State<DesktopTaskHeader> {
               project: widget.data.project,
               onCategoryTap: widget.onCategoryTap,
               onProjectTap: widget.onProjectTap,
+              projectSuggestion: widget.projectSuggestionSlot,
             ),
             SizedBox(height: crumbGap),
           ],
@@ -359,6 +366,7 @@ class TaskHierarchyCrumb extends StatelessWidget {
     required this.onCategoryTap,
     required this.onProjectTap,
     this.showProjectSegment = true,
+    this.projectSuggestion,
     super.key,
   });
 
@@ -367,6 +375,12 @@ class TaskHierarchyCrumb extends StatelessWidget {
   final VoidCallback? onCategoryTap;
   final VoidCallback? onProjectTap;
   final bool showProjectSegment;
+
+  /// An offer to file the task under a project, rendered after the "No
+  /// project" segment. Ignored once a [project] is set — a suggestion for a
+  /// task that already has one would contradict the crumb beside it — and
+  /// while the project segment is hidden.
+  final Widget? projectSuggestion;
 
   @override
   Widget build(BuildContext context) {
@@ -452,6 +466,14 @@ class TaskHierarchyCrumb extends StatelessWidget {
               ),
             ),
           ),
+        if (showProjectSegment && project == null)
+          if (projectSuggestion case final suggestion?) ...[
+            SizedBox(width: tokens.spacing.step3),
+            // Twice the share of the two segments before it: those are a
+            // category name and the short "No project", while the offer
+            // carries a project name plus its dismiss control.
+            Flexible(flex: 2, child: suggestion),
+          ],
       ],
     );
   }
