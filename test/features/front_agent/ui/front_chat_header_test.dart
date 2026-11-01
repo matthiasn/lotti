@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
+import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
@@ -354,10 +355,34 @@ void main() {
         .map((item) => item.label)
         .toList();
 
-    testWidgets('leads the overflow once she exists', (tester) async {
-      await pumpHeader(tester, identity: her);
+    final catalog = agentSetupOptionsProvider.overrideWith(
+      (ref) async => TaskAgentSetupOptions(
+        profiles: [testInferenceProfile(id: 'p', name: 'Mistral (EU)')],
+        models: const [],
+        providers: const [],
+      ),
+    );
+
+    testWidgets('leads the overflow once she exists and the profiles are '
+        'loaded', (tester) async {
+      await pumpHeader(tester, identity: her, extra: [catalog]);
 
       expect(overflow(tester), ['AI profile', 'Agent internals']);
+    });
+
+    testWidgets('waits for the profiles: offered before they load, it would '
+        'open an empty picker', (tester) async {
+      await pumpHeader(
+        tester,
+        identity: her,
+        extra: [
+          agentSetupOptionsProvider.overrideWith(
+            (ref) => Completer<TaskAgentSetupOptions>().future,
+          ),
+        ],
+      );
+
+      expect(overflow(tester), ['Agent internals']);
     });
 
     testWidgets('is not offered before she exists: nothing to write it on', (
@@ -407,6 +432,46 @@ void main() {
       expect(selected(FrontProfileChoiceKeys.useDefault), isTrue);
       expect(selected(const ValueKey('profile-mistral')), isFalse);
     });
+  });
+
+  testWidgets('her AI profile opens the picker though the profile catalog '
+      'changed while it loaded: a one-off read of it never settled, and '
+      'the tap did nothing', (tester) async {
+    final her = makeTestIdentity(
+      id: frontAgentId,
+      agentId: frontAgentId,
+      kind: AgentKinds.frontAgent,
+    );
+    final aiConfigs = MockAiConfigRepository();
+    when(aiConfigs.getDefaultProfileId).thenAnswer((_) async => null);
+    final profiles = StreamController<List<AiConfig>>();
+    addTearDown(profiles.close);
+    // The catalog emits twice as it loads, as a sync or a seed makes it.
+    profiles
+      ..add([testInferenceProfile(id: 'a', name: 'First')])
+      ..add([testInferenceProfile(id: 'a', name: 'Mistral (EU)')]);
+    await pumpHeader(
+      tester,
+      identity: her,
+      extra: [
+        aiConfigRepositoryProvider.overrideWithValue(aiConfigs),
+        aiConfigsByTypeProvider.overrideWith(
+          (ref, type) => type == AiConfigType.inferenceProfile
+              ? profiles.stream
+              : Stream.value(const <AiConfig>[]),
+        ),
+      ],
+    );
+
+    await tester.tap(find.byKey(FrontChatHeaderKeys.more));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(FrontChatHeaderKeys.profile));
+    for (var i = 0; i < 20; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+
+    expect(find.text('Mistral (EU)'), findsOneWidget);
+    expect(find.text('Choose an inference profile'), findsOneWidget);
   });
 
   testWidgets('her internals open from the overflow', (tester) async {

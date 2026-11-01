@@ -10,6 +10,7 @@ import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/ai/state/ai_runtime_settings_controller.dart';
 import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
 import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
 import 'package:lotti/features/front_agent/state/front_agent_providers.dart';
@@ -34,8 +35,8 @@ AgentConfig _chose(String profileId) => AgentConfig(
   ),
 );
 
-/// Opens the choice for [identity] from a button, keeping her identity and
-/// resolved setup watched as her surface does.
+/// Opens the choice for [identity] from a button, watching what her header
+/// watches and handing over the catalog and the default it has loaded.
 class _Host extends ConsumerWidget {
   const _Host(this.identity);
 
@@ -46,9 +47,20 @@ class _Host extends ConsumerWidget {
     ref
       ..watch(agentIdentityProvider(frontAgentId))
       ..watch(agentResolvedSetupProvider(frontAgentId));
+    final profiles = ref.watch(agentSetupOptionsProvider).value?.profiles;
+    final defaultProfileId = ref
+        .watch(defaultInferenceProfileControllerProvider)
+        .value;
     return TextButton(
-      onPressed: () =>
-          FrontProfileChoice.choose(context, ref, identity).ignore(),
+      onPressed: profiles == null
+          ? null
+          : () => FrontProfileChoice.choose(
+              context,
+              ref,
+              identity,
+              profiles: profiles,
+              defaultProfileId: defaultProfileId,
+            ).ignore(),
       child: const Text('choose'),
     );
   }
@@ -109,7 +121,6 @@ void main() {
     Future<void> pumpAndOpen(
       WidgetTester tester, {
       AgentIdentityEntity? who,
-      Future<TaskAgentSetupOptions>? options,
     }) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
@@ -119,15 +130,11 @@ void main() {
             aiConfigRepositoryProvider.overrideWithValue(aiConfigs),
             domainLoggerProvider.overrideWithValue(logger),
             agentSetupOptionsProvider.overrideWith(
-              (ref) =>
-                  options ??
-                  Future.value(
-                    TaskAgentSetupOptions(
-                      profiles: [melious, mistral],
-                      models: const [],
-                      providers: const [],
-                    ),
-                  ),
+              (ref) async => TaskAgentSetupOptions(
+                profiles: [melious, mistral],
+                models: const [],
+                providers: const [],
+              ),
             ),
             agentIdentityProvider.overrideWith(
               (ref, agentId) async => who ?? identity,
@@ -310,25 +317,6 @@ void main() {
           message: 'Choosing her profile failed',
         ),
       ).called(1);
-    });
-
-    testWidgets('her surface closing while the profiles load opens no '
-        'picker', (tester) async {
-      final options = Completer<TaskAgentSetupOptions>();
-      await pumpAndOpen(tester, options: options.future);
-
-      await tester.pumpWidget(const SizedBox.shrink());
-      options.complete(
-        TaskAgentSetupOptions(
-          profiles: [mistral],
-          models: const [],
-          providers: const [],
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      expect(find.text('Choose an inference profile'), findsNothing);
-      verifyNever(() => service.chooseProfile(any()));
     });
 
     testWidgets('her surface closing while the choice saves still saves it, '

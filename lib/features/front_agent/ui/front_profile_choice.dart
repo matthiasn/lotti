@@ -2,8 +2,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/agents/agent_config.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
-import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
-import 'package:lotti/features/ai/state/ai_runtime_settings_controller.dart';
 import 'package:lotti/features/ai/ui/widgets/inference_profile_picker_modal.dart';
 import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
@@ -43,26 +41,27 @@ abstract final class FrontProfileChoice {
   ///
   /// Her identity's update stream re-resolves her setup, and with it her
   /// voice, once the choice is written.
+  ///
+  /// The caller watches the catalog ([profiles]) and [defaultProfileId] and
+  /// hands over what is loaded, so the picker opens at once. A one-off read
+  /// of the catalog here never settled when nothing listened to it and a
+  /// config stream emitted again while it loaded: the tap did nothing.
   static Future<void> choose(
     BuildContext context,
     WidgetRef ref,
-    AgentIdentityEntity identity,
-  ) async {
+    AgentIdentityEntity identity, {
+    required List<AiConfigInferenceProfile> profiles,
+    required String? defaultProfileId,
+  }) async {
     final messages = context.messages;
     final logger = ref.read(domainLoggerProvider);
     try {
-      final options = await ref.read(agentSetupOptionsProvider.future);
-      // Awaited, not peeked: nothing may have read the default yet.
-      final defaultProfileId = await ref.read(
-        defaultInferenceProfileControllerProvider.future,
-      );
-      if (!context.mounted) return;
       final own = ownProfileId(identity.config);
       final pick = await _showPicker(
         context,
-        profiles: options.profiles,
+        profiles: profiles,
         // A choice whose profile is gone falls back to the default.
-        ownProfileId: options.profiles.any((p) => p.id == own) ? own : null,
+        ownProfileId: profiles.any((p) => p.id == own) ? own : null,
         defaultProfileId: defaultProfileId,
       );
       if (pick == null || !context.mounted || pick.profileId == own) return;
@@ -78,7 +77,7 @@ abstract final class FrontProfileChoice {
             ? messages.frontChatProfileFollowsDefault
             // The picker answers with an id from this very list.
             : messages.frontChatProfileChanged(
-                options.profiles.firstWhere((p) => p.id == pickedId).name,
+                profiles.firstWhere((p) => p.id == pickedId).name,
               ),
       );
     } catch (error, stackTrace) {

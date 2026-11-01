@@ -1,7 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/agent_query_providers.dart';
+import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
 import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
+import 'package:lotti/features/ai/state/ai_runtime_settings_controller.dart';
 import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
@@ -112,6 +114,12 @@ class FrontChatHeader extends ConsumerWidget {
       // Her profile can be chosen once she exists: her first turn creates
       // her, and the choice is written onto her.
       final identity = ref.watch(agentIdentityProvider(frontAgentId)).value;
+      // Watched, not read on the tap: the picker opens at once with what is
+      // current, and the catalog is never left loading with no listener.
+      final profiles = ref.watch(agentSetupOptionsProvider).value?.profiles;
+      final defaultProfileId = ref
+          .watch(defaultInferenceProfileControllerProvider)
+          .value;
       // Read through `.value`: a re-projection keeps the last count.
       final inboxCount =
           ref.watch(
@@ -218,13 +226,18 @@ class FrontChatHeader extends ConsumerWidget {
           key: FrontChatHeaderKeys.more,
           iconColor: tokens.colors.text.mediumEmphasis,
           items: [
-            if (identity is AgentIdentityEntity)
+            if (identity is AgentIdentityEntity && profiles != null)
               DesignSystemContextMenuItem(
                 key: FrontChatHeaderKeys.profile,
                 label: messages.frontChatProfileMenuItem,
                 icon: LottiIcons.aiModel,
-                onTap: () =>
-                    FrontProfileChoice.choose(context, ref, identity).ignore(),
+                onTap: () => FrontProfileChoice.choose(
+                  context,
+                  ref,
+                  identity,
+                  profiles: profiles,
+                  defaultProfileId: defaultProfileId,
+                ).ignore(),
               ),
             DesignSystemContextMenuItem(
               key: FrontChatHeaderKeys.internals,
