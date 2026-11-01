@@ -5,9 +5,17 @@ description: The primary agent workflow — inference setup resolution, the auto
 resource: ../../../lib/features/agents/workflow/task_agent_workflow.dart
 tags: [agents, task-agent, tools, proposals, inference]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-10-05T16:00:00Z }
-stale_after: 2027-01-05
+generated: { by: claude-code/opus-5.5, at: 2026-11-01T12:00:00Z }
+stale_after: 2027-02-01
 sources:
+  - id: related-tasks
+    resource: ../../../lib/features/agents/workflow/related_task_lookup.dart
+    title: RelatedTaskLookup — the related-task search and drill-down of one wake
+    last_modified: 2026-11-01
+  - id: adr-0155
+    resource: ../../../docs/adr/0155-the-task-agent-finds-related-tasks-on-demand.md
+    title: ADR 0155 — The task agent finds related tasks on demand
+    last_modified: 2026-11-01
   - id: report-policy
     resource: ../../../lib/features/agents/workflow/task_agent_report_policy.dart
     title: Shared publication policy for prompts and execution
@@ -441,8 +449,10 @@ flowchart LR
   Project["Parent project (oneLiner + tldr)"] --> Wake
   Linked["Linked tasks (compact oneLiner/tldr)"] --> Wake
   PRs["Linked pull requests (refreshed from GitHub per wake)"] --> Wake
-  Wake -.->|disabled today| Drill["get_related_task_details<br/>(enabled: false)"]
-  Drill -.-> FullSibling["Full sibling task JSON + latest task-agent report"]
+  Wake -.->|only when a note refers to other work| Find["find_related_tasks<br/>(on-device search)"]
+  Find -.-> Hits["Up to 5 tasks: id, title, status, one-liner"]
+  Hits -.->|on demand| Drill["get_related_task_details"]
+  Drill -.-> Summary["TL;DR, or the full latest report"]
 ```
 
 The wake prompt is assembled from current task JSON, report existence,
@@ -808,9 +818,9 @@ default.
 
 ## Locally short-circuited tools
 
-Seven tools are short-circuited **locally** in `TaskAgentStrategy` and never
+Eight tools are short-circuited **locally** in `TaskAgentStrategy` and never
 reach `AgentToolExecutor`: `update_report`, `record_observations`,
-`get_related_task_details`, `get_category_projects`,
+`find_related_tasks`, `get_related_task_details`, `get_category_projects`,
 `get_unlinked_pull_requests`, `refresh_pull_requests`, `retract_suggestions`.
 
 Two run immediately but route through `AgentToolExecutor` → `TaskToolDispatcher`:
@@ -1018,18 +1028,52 @@ sequenceDiagram
   L->>G: read the pull request, check holders again
 ```
 
-## `get_related_task_details` is disabled
+## Related tasks are fetched on demand
 
-The read-only sibling drill-down defines a handler but carries `enabled: false`
-in `tools/task_planning_tool_definitions.dart` — the only such tool in `tools/`.
-`_buildToolDefinitions` filters out disabled tools, so it is never advertised;
-`allowedRelatedTaskIds` is never wired and defaults to empty, so even a
-hallucinated call is rejected; and no related-task directory section is injected
-into the wake prompt, so the drill-down has no source to draw from.
+Other tasks never enter the wake prompt up front: injecting sibling tasks'
+TL;DRs into every wake polluted the context window. The model fetches them
+when a note calls for it ([ADR 0155](../../../docs/adr/0155-the-task-agent-finds-related-tasks-on-demand.md)):
 
-Re-enabling it requires building the directory section *and* wiring the
-allowlist. Re-enabling or removing it is a deliberate follow-up, not an
-oversight.
+1. **`find_related_tasks {query}`** — the model writes a query from what the
+   note says about the other work. `RelatedTaskLookup.find` runs the
+   on-device search by meaning through `RelatedTaskFinder` — the one the
+   mechanical [link suggestions](../ai/task-link-suggestions.md) use, with
+   the same 0.55 cutoff — scoped to the agent's `allowedCategoryIds`, leaving
+   out the task itself, every task already linked to it and every private
+   task. It answers with at most five: id, title, status and their agent's
+   one-liner.
+2. **`get_related_task_details {taskId, includeFullReport?}`** — reads one of
+   them: its agent's TL;DR, and with `includeFullReport` the whole latest
+   report. Any id no search of this wake returned is refused
+   (`RelatedTaskLookup.foundIds`), as are the current task and an empty id.
+3. A link is then proposed through `link_task`, validated and confirmed like
+   any other.
+
+```mermaid
+sequenceDiagram
+  participant M as Model
+  participant S as TaskAgentStrategy
+  participant L as RelatedTaskLookup
+  participant F as RelatedTaskFinder
+  M->>S: find_related_tasks {query}
+  S->>L: find(taskId, query)
+  L->>F: search, agent's categories
+  F-->>L: matches under the cutoff, not linked
+  L-->>M: id, title, status, one-liner (no private tasks)
+  M->>S: get_related_task_details {taskId}
+  S->>S: refuse ids no search returned
+  S->>L: details(taskId, fullReport)
+  L-->>M: TLDR or full report
+  M->>S: link_task {relation, targetTaskId}
+```
+
+A result lives only in the wake that fetched it: the persisted tool message
+records the tool name and any error, not the answer, and the next wake builds
+its context afresh. Both tools are gated on `hasRelatedTaskSearch`, computed
+on every wake — narrowed or not — so neither is offered where search by
+meaning cannot run (no embedding pipeline, or `enable_embeddings` off). The
+prompt tells the model to search only when a note refers to other work, and to
+propose only for a hit the note clearly means.
 
 ## The initial-field carve-out
 

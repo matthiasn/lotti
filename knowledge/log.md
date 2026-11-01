@@ -12,6 +12,9 @@
   [Embeddings and semantic search](features/ai/embeddings-and-search.md) —
   where link suggestions sit. A suggested link's target title opens a
   preview of that task (one-liner, TL;DR, *Open task*).
+  [Task agents](features/agents/task-agents.md) — related tasks are fetched
+  on demand: `find_related_tasks` and `get_related_task_details`
+  ([ADR 0155](../docs/adr/0155-the-task-agent-finds-related-tasks-on-demand.md)).
 
 ## 2026-10-28
 * **New**: [History](features/history.md) — the device-local log of opened

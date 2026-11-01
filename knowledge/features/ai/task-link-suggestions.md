@@ -20,6 +20,10 @@ sources:
     resource: ../../../lib/features/ai/link_suggestions/task_link_suggestion.dart
     title: TaskLinkSuggestion and TaskLinkSuggestionScan
     last_modified: 2026-11-01
+  - id: finder
+    resource: ../../../lib/features/ai/link_suggestions/related_task_finder.dart
+    title: RelatedTaskFinder — the search, cutoff and existing-link exclusion, shared with the task agent
+    last_modified: 2026-11-01
   - id: detector
     resource: ../../../lib/features/ai/link_suggestions/task_link_suggestion_detector.dart
     title: TaskLinkSuggestionDetector — search, cutoff, deduplication
@@ -150,6 +154,14 @@ Text comes from the task's own notes and from its linked `JournalEntry` and
 20-character floor, since a short note is exactly where a mention hides.
 
 # Finding the task
+
+The search itself is `RelatedTaskFinder`, which the task agent's
+`find_related_tasks` tool uses too
+([task agents](../agents/task-agents.md#related-tasks-are-fetched-on-demand)),
+so a suggestion and an agent search agree on what counts as related: the
+cutoff below, the task itself left out, every linked task left out, and
+candidates read fresh. The agent's search adds its own scope — the agent's
+categories, no private tasks — because its answer leaves the device.
 
 `TaskLinkSuggestionDetector.scan` reads, in order, the newest 20 text entries
 and then the task's notes, and searches at most **four** mentions — each search
