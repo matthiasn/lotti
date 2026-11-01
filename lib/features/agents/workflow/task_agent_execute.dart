@@ -266,6 +266,12 @@ extension TaskAgentExecute on TaskAgentWorkflow {
       );
     }
 
+    // Read once per wake: the message's `## Project` cue and the project
+    // tools' gate both depend on it.
+    final categoryHasProjects = await _categoryHasProjects(
+      taskAttentionContext.task?.meta.categoryId,
+    );
+
     final systemPrompt = _buildSystemPrompt(templateCtx, modelId: modelId);
     final builtMessage = await _buildUserMessage(
       agentId: agentId,
@@ -286,6 +292,9 @@ extension TaskAgentExecute on TaskAgentWorkflow {
       // log was dropped); otherwise the full inline log already carries it.
       compactedTaskLog: useCompactedLog ? compactedTaskLog : null,
       statusTransition: statusTransition,
+      projectCandidates: categoryHasProjects
+          ? await _projectCandidates(taskAttentionContext.task)
+          : const [],
     );
     final userMessage = builtMessage.text;
 
@@ -345,6 +354,7 @@ extension TaskAgentExecute on TaskAgentWorkflow {
               taskId: taskId,
               ledger: ledger,
               attentionClaims: taskAttentionContext.claims,
+              hasCategoryProjects: categoryHasProjects,
             )
           : TaskAgentWakeFacts.permissive;
       final tools = _contextBuilder.buildToolDefinitions(facts: wakeFacts);
@@ -631,11 +641,13 @@ extension TaskAgentExecute on TaskAgentWorkflow {
   /// is deliberately left permissive: a note that arrived saying nothing new is
   /// still newer than the report, and materiality is not something timestamps
   /// can judge, so gating `update_report` on it would withhold the tool from
-  /// wakes that genuinely need it.
+  /// wakes that genuinely need it. [hasCategoryProjects] is resolved by the
+  /// caller, once per wake, because the user message needs it too.
   Future<TaskAgentWakeFacts> _resolveWakeFacts({
     required String taskId,
     required ProposalLedger ledger,
     required List<AttentionRequestEntity> attentionClaims,
+    required bool hasCategoryProjects,
   }) async {
     final entity = await journalDb.journalEntityById(taskId);
     final task = entity is Task ? entity : null;
@@ -646,16 +658,6 @@ extension TaskAgentExecute on TaskAgentWorkflow {
     final hasTimeRecords = linked.whereType<JournalEntry>().isNotEmpty;
 
     final labelDefinitions = await journalDb.getAllLabelDefinitions();
-
-    // No repository means the project tools are not wired, so they stay
-    // hidden; a task without a category has no projects to choose from.
-    final projects = this.projectRepository;
-    final categoryId = task?.meta.categoryId;
-    final hasCategoryProjects =
-        projects != null &&
-        categoryId != null &&
-        categoryId.isNotEmpty &&
-        (await projects.getProjectsForCategory(categoryId)).isNotEmpty;
 
     return TaskAgentWakeFacts(
       // A null `checklistIds` and an empty one both mean "no checklists"
@@ -670,6 +672,49 @@ extension TaskAgentExecute on TaskAgentWorkflow {
       hasActiveAttentionClaims: attentionClaims.isNotEmpty,
       hasCategoryProjects: hasCategoryProjects,
     );
+  }
+
+  /// Whether [categoryId] holds a project a task could be filed under. False
+  /// without a project repository — the project tools are then not wired —
+  /// and for a task without a category, which has no projects to choose from.
+  Future<bool> _categoryHasProjects(String? categoryId) async {
+    final projects = this.projectRepository;
+    return projects != null &&
+        categoryId != null &&
+        categoryId.isNotEmpty &&
+        (await projects.getProjectsForCategory(categoryId)).isNotEmpty;
+  }
+
+  /// The projects [task] could be filed under, for the wake's `## Project`
+  /// section — empty unless the task is in no project.
+  ///
+  /// Whether it is in one is read from its live project link rather than
+  /// `getProjectForTask`: that read hides a project the private gate hides,
+  /// and a task filed under one is not unassigned. The candidates are the
+  /// `get_category_projects` list (same category and privacy, with each
+  /// project report's one-liner and TLDR). Never fails the wake: a read that
+  /// throws leaves the section out.
+  Future<List<TaskProjectOption>> _projectCandidates(Task? task) async {
+    final projects = this.projectRepository;
+    if (task == null || projects == null) return const [];
+    try {
+      if (await projects.getLinkedProjectForTask(task.meta.id) != null) {
+        return const [];
+      }
+      return await loadTaskProjectOptions(
+        taskId: task.meta.id,
+        journalDb: journalDb,
+        projectRepository: projects,
+        agentRepository: agentRepository,
+      );
+    } catch (error, stackTrace) {
+      logError(
+        'failed to read the project candidates',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return const [];
+    }
   }
 
   /// Fingerprints this wake's inputs (see [taskWakeInputFingerprint]) and

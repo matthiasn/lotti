@@ -2,6 +2,7 @@ import 'dart:ui' show Locale;
 
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/features/demo/seed/demo_seed_text.dart';
 import 'package:lotti/features/demo/seed/demo_world.dart';
@@ -194,5 +195,42 @@ Future<PenguinWakeWorld> seedPenguinWakeWorld({
     itemTitles: {for (final item in items) item.meta.id: item.data.title},
     labelIds: task.meta.labelIds ?? const <String>[],
     dueDate: task.data.due,
+  );
+}
+
+/// Seeds the project [id] titled [title] into [categoryId], the way the
+/// projects tab creates one: a
+/// `Project` journal entity, active, public like the demo task. No task is
+/// linked to it.
+Future<void> seedPenguinWakeProject({
+  required PersistenceLogic persistenceLogic,
+  required String id,
+  required String title,
+  required String categoryId,
+  DateTime? now,
+}) async {
+  final at = now ?? DateTime.utc(2026, 8, 1, 9);
+  await persistenceLogic.createDbEntity(
+    JournalEntity.project(
+      meta: Metadata(
+        id: id,
+        createdAt: at,
+        updatedAt: at,
+        dateFrom: at,
+        dateTo: at,
+        categoryId: categoryId,
+        vectorClock: const VectorClock({'eval': 1}),
+      ),
+      data: ProjectData(
+        title: title,
+        status: ProjectStatus.active(
+          id: '$id-status',
+          createdAt: at,
+          utcOffset: 0,
+        ),
+        dateFrom: at,
+        dateTo: at,
+      ),
+    ),
   );
 }

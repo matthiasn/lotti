@@ -204,6 +204,32 @@ class TaskAgentWorkflowEvalHarness {
       finalNote: isNoOp ? penguinWakeNoOpNote : null,
     );
 
+    final projects = PenguinWakeScenario.of(scenario).projects;
+    for (final project in projects) {
+      await seedPenguinWakeProject(
+        persistenceLogic: getIt<PersistenceLogic>(),
+        id: project.id,
+        title: project.title,
+        categoryId: world.categoryId,
+      );
+    }
+    if (projects.isNotEmpty) {
+      // A project scenario only measures something when the task is really
+      // unassigned and its category really holds the projects.
+      expect(
+        (await journalDb.getProjectsForCategory(
+          world.categoryId,
+        )).map((project) => project.meta.id).toSet(),
+        {for (final project in projects) project.id},
+        reason: 'the scenario projects must be stored in the task category',
+      );
+      expect(
+        await journalDb.getProjectLinkForTask(world.taskId),
+        isNull,
+        reason: 'the project scenarios start from a task in no project',
+      );
+    }
+
     // The seed is worth checking rather than assuming: a task without a
     // category silently loses checklist creation, and an eval that runs on an
     // empty context measures nothing while still producing a report.

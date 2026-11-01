@@ -420,6 +420,7 @@ class TaskAgentWorkflow with AgentErrorLogging {
     String? categoryKnowledge,
     String? pullRequestsContext,
     TaskStatusTransition? statusTransition,
+    List<TaskProjectOption> projectCandidates = const [],
   }) => _contextBuilder.buildUserMessage(
     agentId: agentId,
     hasReport: hasReport,
@@ -437,5 +438,6 @@ class TaskAgentWorkflow with AgentErrorLogging {
     categoryKnowledge: categoryKnowledge,
     pullRequestsContext: pullRequestsContext,
     statusTransition: statusTransition,
+    projectCandidates: projectCandidates,
   );
 }

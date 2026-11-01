@@ -16,6 +16,7 @@ import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/workflow/agent_observations.dart';
 import 'package:lotti/features/agents/workflow/task_agent_context_builder.dart';
 import 'package:lotti/features/agents/workflow/task_agent_report_policy.dart';
+import 'package:lotti/features/agents/workflow/task_project_options.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -501,6 +502,7 @@ void main() {
       String? categoryKnowledge,
       String? pullRequestsContext,
       TaskStatusTransition? statusTransition,
+      List<TaskProjectOption> projectCandidates = const [],
     }) {
       return withClock(Clock.fixed(clockNow), () {
         when(() => timeService.getCurrent()).thenReturn(null);
@@ -524,6 +526,7 @@ void main() {
           categoryKnowledge: categoryKnowledge,
           pullRequestsContext: pullRequestsContext,
           statusTransition: statusTransition,
+          projectCandidates: projectCandidates,
         );
       });
     }
@@ -642,6 +645,44 @@ void main() {
       expect(result.text, contains('## Parent Project Context'));
       expect(result.text, contains('"id":"p1"'));
       expect(result.text, contains('## Linked Tasks'));
+    });
+
+    test('lists the candidate projects of a task in none, in the tail after '
+        'the task log and before the linked tasks', () async {
+      const log = 'event A\nevent B';
+      final result = await build(
+        compactedTaskLog: log,
+        linkedTasksJson: '{"linked_from":[]}',
+        projectCandidates: const [
+          TaskProjectOption(
+            id: 'p-habitat',
+            title: 'Habitat repairs',
+            status: 'ACTIVE',
+            oneLiner: 'Fixing the bay walls',
+            isCurrent: false,
+          ),
+        ],
+      );
+
+      final section = result.text.indexOf(
+        '## Project\n$taskNeedsProjectNotice\n```json\n',
+      );
+      expect(section, isNonNegative);
+      // The same JSON `get_category_projects` answers with, so the model can
+      // propose by id without a read.
+      expect(result.text, contains('"id": "p-habitat"'));
+      expect(result.text, contains('"oneLiner": "Fixing the bay walls"'));
+      // Outside the cacheable prefix the log ends …
+      expect(section, greaterThan(result.logEnd!));
+      // … and in the project slot, ahead of the linked tasks.
+      expect(section, lessThan(result.text.indexOf('## Linked Tasks')));
+    });
+
+    test('says nothing about a project unless asked to', () async {
+      final result = await build();
+
+      expect(result.text, isNot(contains('## Project\n')));
+      expect(result.text, isNot(contains(taskNeedsProjectNotice)));
     });
 
     test('adds first-wake notice and sorted trigger tokens', () async {

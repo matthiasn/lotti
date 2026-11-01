@@ -65,7 +65,47 @@ enum PenguinWakeScenarioId {
   /// Re-proposing it puts the same decision in front of the user twice. The
   /// context carries pending proposals precisely so the agent can see them.
   pendingProposal,
+
+  /// The task is in no project, and one project of its category plainly
+  /// covers its work — though neither the task nor any note names it.
+  ///
+  /// The case the `## Project` cue exists for: before it, the agent reached
+  /// for `get_category_projects` only when the notes named a project, so an
+  /// unassigned task stayed unassigned. A correct wake proposes the habitat
+  /// project and not the decoy.
+  projectFit,
+
+  /// The task is in no project, and none of its category's projects covers
+  /// its work.
+  ///
+  /// The counterweight to [projectFit]: a cue that makes the agent file every
+  /// task somewhere is worse than no cue. A correct wake proposes no project.
+  projectRestraint,
 }
+
+/// A project seeded into the task's category for the project scenarios.
+class PenguinWakeProject {
+  const PenguinWakeProject({required this.id, required this.title});
+
+  final String id;
+  final String title;
+}
+
+/// The project that covers the Bay C leak work.
+const penguinWakeHabitatProject = PenguinWakeProject(
+  id: 'penguin-project-habitat',
+  title: 'Habitat maintenance and repairs',
+);
+
+/// Projects in the same category that have nothing to do with the leak.
+const penguinWakeFishProject = PenguinWakeProject(
+  id: 'penguin-project-fish',
+  title: 'Fish supply runs',
+);
+const penguinWakeVisitorProject = PenguinWakeProject(
+  id: 'penguin-project-visitors',
+  title: 'Visitor centre reopening',
+);
 
 /// What a scenario needs seeded beyond the shared world.
 class PenguinWakeScenario {
@@ -76,6 +116,8 @@ class PenguinWakeScenario {
     required this.expectsReport,
     this.forbiddenToolNames = const {},
     this.allowedProposalTools = const {},
+    this.projects = const [],
+    this.expectedProjectId,
   });
 
   final PenguinWakeScenarioId id;
@@ -116,6 +158,14 @@ class PenguinWakeScenario {
   /// already queued is not. A blanket "propose nothing" would fail a model for
   /// the half of the wake it got right.
   final Set<String> forbiddenToolNames;
+
+  /// Projects seeded into the task's category before the wake. The task
+  /// itself is left in none of them.
+  final List<PenguinWakeProject> projects;
+
+  /// The project a correct wake proposes with `set_task_project`, or null
+  /// when it should propose none (then `set_task_project` is forbidden).
+  final String? expectedProjectId;
 
   static const _byId = <PenguinWakeScenarioId, PenguinWakeScenario>{
     PenguinWakeScenarioId.requalification: PenguinWakeScenario(
@@ -166,6 +216,28 @@ class PenguinWakeScenario {
       expectsProposals: true,
       expectsReport: true,
       forbiddenToolNames: {TaskAgentToolNames.setTaskStatus},
+    ),
+    PenguinWakeScenarioId.projectFit: PenguinWakeScenario(
+      id: PenguinWakeScenarioId.projectFit,
+      summary:
+          'The task is in no project and never names one; its category has a '
+          'habitat-repair project that covers the leak work: propose it.',
+      expectsProposals: true,
+      // The project is the question here; the report is the requalification
+      // wake's, already measured by that scenario.
+      expectsReport: false,
+      projects: [penguinWakeHabitatProject, penguinWakeFishProject],
+      expectedProjectId: 'penguin-project-habitat',
+    ),
+    PenguinWakeScenarioId.projectRestraint: PenguinWakeScenario(
+      id: PenguinWakeScenarioId.projectRestraint,
+      summary:
+          "The task is in no project, and none of its category's projects "
+          'covers the leak work: propose no project.',
+      expectsProposals: true,
+      expectsReport: false,
+      projects: [penguinWakeFishProject, penguinWakeVisitorProject],
+      forbiddenToolNames: {TaskAgentToolNames.setTaskProject},
     ),
   };
 

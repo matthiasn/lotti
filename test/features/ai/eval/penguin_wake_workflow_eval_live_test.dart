@@ -12,6 +12,7 @@ import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
+import 'package:lotti/features/agents/workflow/task_agent_context_builder.dart';
 import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
 import 'package:lotti/features/ai/constants/provider_config.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
@@ -21,6 +22,7 @@ import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/repositories/checklist_repository.dart';
+import 'package:lotti/logic/repositories/project_repository.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -179,6 +181,9 @@ void main() {
           getIt<UpdateNotifications>(),
         ),
         syncService: harness.syncService,
+        // Real, over the seeded journal: the project tools and the
+        // `## Project` cue read the category's projects through it.
+        projectRepository: container.read(projectRepositoryProvider),
         // The real service, resolving the template the app's own seeding
         // wrote and the agent's templateAssignment link points at. A stub
         // here is how the shipped directives went missing from every run.
@@ -280,6 +285,24 @@ void main() {
         }
       }
 
+      // Whether the `## Project` cue reached the model, read from the user
+      // message this wake persisted. A project scenario the model "missed"
+      // with no cue in its payload would be blaming the model for the app.
+      final userMessages = await harness.agentRepository.getMessagesByKind(
+        harness.agentId,
+        AgentMessageKind.user,
+      );
+      final userPayloads = await harness.agentRepository.getEntitiesByIds([
+        for (final message in userMessages)
+          if (message.metadata.runKey == runKey)
+            if (message.contentEntryId case final String id) id,
+      ]);
+      final projectCueSent = userPayloads.values.any(
+        (entity) =>
+            entity is AgentMessagePayloadEntity &&
+            jsonEncode(entity.content).contains(taskNeedsProjectNotice),
+      );
+
       final changeSetRunKeys = [
         for (final changeSet in proposals)
           '${changeSet.runKey}:${changeSet.items.map((i) => i.toolName).join(",")}',
@@ -309,6 +332,7 @@ void main() {
         proposedItemTitles: proposedItemTitles,
         changeSetRunKeys: changeSetRunKeys,
         calledTools: calledTools,
+        projectCueSent: projectCueSent,
         reportText: reportText,
         consumptionEvents: [
           for (final event in attribution.recordedInteractions)
@@ -486,15 +510,48 @@ void main() {
       // Re-proposing a queued change puts the same decision in front of the
       // user twice. The pending list is in the context precisely so the agent
       // can see it, so this measures whether the model reads it.
+      // The project-restraint wake forbids `set_task_project` the same way:
+      // no project of the category covers the work.
       for (final forbidden in scenario.forbiddenToolNames) {
         expect(
           calledTools,
           isNot(contains(forbidden)),
           reason:
-              'DUPLICATE PROPOSAL: $forbidden is already queued and awaiting '
-              'the user. ${scenario.summary} $where',
+              'FORBIDDEN: the wake called $forbidden. ${scenario.summary} '
+              '$where',
         );
       }
+
+      // ---- The project of a task in none --------------------------------
+      if (scenario.projects.isNotEmpty) {
+        expect(
+          projectCueSent,
+          isTrue,
+          reason:
+              'FIXTURE: the task is in no project and its category has '
+              'projects, yet the wake carried no `## Project` cue. $where',
+        );
+      }
+      // Persisted proposals, not the action log: `set_task_project` accepts a
+      // project's title as well as its id, and the queued item carries the
+      // resolved id.
+      if (scenario.expectedProjectId case final expected?) {
+        final proposedProjectIds = [
+          for (final (index, tool) in proposedTools.indexed)
+            if (tool == TaskAgentToolNames.setTaskProject)
+              proposedArgs[index]['projectId'],
+        ];
+        expect(
+          proposedProjectIds,
+          [expected],
+          reason:
+              'MISSED PROJECT: ${scenario.summary} Proposed project ids: '
+              '$proposedProjectIds. $where',
+        );
+      }
+      // The rest of this wake is the requalification scenario's, and its
+      // traps are measured there.
+      if (scenario.projects.isNotEmpty) return;
 
       if (!scenario.expectsProposals) {
         return;
@@ -636,6 +693,7 @@ Future<String> _writeArtifact({
   required List<String?> proposedItemTitles,
   required List<String> changeSetRunKeys,
   required List<String> calledTools,
+  required bool projectCueSent,
   required String reportText,
   required List<Map<String, Object?>> consumptionEvents,
 }) async {
@@ -677,6 +735,7 @@ Future<String> _writeArtifact({
       'proposedItemTitles': proposedItemTitles,
       'changeSetRunKeys': changeSetRunKeys,
       'calledTools': calledTools,
+      'projectCueSent': projectCueSent,
       'reportText': reportText,
       'consumptionEvents': consumptionEvents,
     }),

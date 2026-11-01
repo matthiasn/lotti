@@ -224,10 +224,19 @@ void main() {
             makeTestProject(id: 'project-1', categoryId: 'cat-001'),
           ],
         );
+        // In no project yet, so the wake also lists the category's projects.
+        when(
+          () => projectRepository.getLinkedProjectForTask(any()),
+        ).thenAnswer((_) async => null);
         final bench = createTaskAgentWorkflowTestBench(
           narrowToolSurface: true,
           projectRepository: projectRepository,
         );
+        when(
+          () => bench.mockAgentRepository.getLatestProjectReportForProjectId(
+            any(),
+          ),
+        ).thenAnswer((_) async => null);
 
         final running = makeLinkedTimeEntry(
           id: 'running-entry',

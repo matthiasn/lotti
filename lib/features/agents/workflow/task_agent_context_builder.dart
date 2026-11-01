@@ -22,6 +22,7 @@ import 'package:lotti/features/agents/util/agent_error_logging.dart';
 import 'package:lotti/features/agents/workflow/agent_observations.dart';
 import 'package:lotti/features/agents/workflow/task_agent_evidence_synthesis.dart';
 import 'package:lotti/features/agents/workflow/task_agent_report_policy.dart';
+import 'package:lotti/features/agents/workflow/task_project_options.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:openai_dart/openai_dart.dart';
@@ -38,6 +39,14 @@ part 'task_agent_context_builder_formatters.dart';
 /// workflow holds an instance and delegates to it.
 /// How many of its newest observations a task agent's wake reads.
 const taskObservationLookback = 20;
+
+/// The opening of the wake payload's `## Project` section, for a task that
+/// belongs to no project while its category has some; the projects follow as
+/// JSON. See the scaffold's project guidance
+/// (`TaskAgentPromptBuilder.projectCueRule`).
+const taskNeedsProjectNotice =
+    'This task belongs to no project. The projects of its category it could '
+    'belong to:';
 
 class TaskAgentContextBuilder {
   TaskAgentContextBuilder({
@@ -524,6 +533,7 @@ class TaskAgentContextBuilder {
     String? categoryKnowledge,
     String? pullRequestsContext,
     TaskStatusTransition? statusTransition,
+    List<TaskProjectOption> projectCandidates = const [],
   }) async {
     final buffer = StringBuffer();
 
@@ -626,6 +636,22 @@ class TaskAgentContextBuilder {
         ..writeln('## Parent Project Context')
         ..writeln('```json')
         ..writeln(projectContextJson)
+        ..writeln('```')
+        ..writeln();
+    }
+
+    // The task details never name the task's project, so without this a task
+    // in none reads the same as one whose project has no report yet — and the
+    // agent only looked for a project when the notes named one. The
+    // candidates are listed inline, as the available labels are: a model in a
+    // busy wake skips an optional read, and a live eval showed a bare "this
+    // task has no project" was not enough to make it look.
+    if (projectCandidates.isNotEmpty) {
+      buffer
+        ..writeln('## Project')
+        ..writeln(taskNeedsProjectNotice)
+        ..writeln('```json')
+        ..writeln(renderTaskProjectOptions(projectCandidates))
         ..writeln('```')
         ..writeln();
     }
