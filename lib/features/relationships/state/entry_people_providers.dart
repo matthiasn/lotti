@@ -11,9 +11,11 @@ import 'package:lotti/services/db_notification.dart';
 /// Read through [PersonTimelineRepository.getPeopleOn]: the live
 /// relationship links to the entry, so the same rows that put an event on a
 /// person's page answer who the event was with. Re-read when a link to the
-/// entry is written or tombstoned (both notify the entry's id), when one of
-/// the people shown changes — a rename, a new avatar — and when private
-/// entries are shown or hidden.
+/// entry is written or tombstoned (both notify the entry's id), when any
+/// person is written — which covers a rename or a new avatar on someone shown,
+/// but also a person who was not shown yet: one whose link synced before
+/// their entry, or a private one made public while private entries are
+/// hidden — and when private entries are shown or hidden.
 final FutureProviderFamily<List<RelationshipEntry>, String>
 peopleOnEntryProvider = FutureProvider.autoDispose
     .family<List<RelationshipEntry>, String>((ref, entryId) async {
@@ -23,6 +25,7 @@ peopleOnEntryProvider = FutureProvider.autoDispose
           .updateStream
           .listen((affectedIds) {
             if (affectedIds.contains(entryId) ||
+                affectedIds.contains(relationshipNotification) ||
                 affectedIds.contains(privateToggleNotification) ||
                 affectedIds.any(shownIds.contains) ||
                 shownIds.any(

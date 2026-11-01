@@ -4,11 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/relationships/repository/person_timeline_repository.dart';
 import 'package:lotti/features/relationships/state/entry_people_providers.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/service_overrides.dart';
+import '../../../helpers/test_get_it.dart';
 import '../../../mocks/mocks.dart';
 import '../helpers/test_people.dart';
 
@@ -16,7 +16,6 @@ void main() {
   const eventId = 'event-1';
 
   late MockPersonTimelineRepository timeline;
-  late MockUpdateNotifications notifications;
   late StreamController<Set<String>> updates;
   late ProviderContainer container;
   ProviderSubscription<AsyncValue<Object?>>? keepAlive;
@@ -28,14 +27,15 @@ void main() {
     await container.read(peopleOnEntryProvider(eventId).future);
   }
 
-  setUp(() {
+  setUp(() async {
     timeline = MockPersonTimelineRepository();
-    notifications = MockUpdateNotifications();
+    final mocks = await setUpTestGetIt();
     // Synchronous delivery: `add` runs the listener — and its
     // `invalidateSelf` — before it returns.
     updates = StreamController<Set<String>>.broadcast(sync: true);
-    when(() => notifications.updateStream).thenAnswer((_) => updates.stream);
-    getIt.registerSingleton<UpdateNotifications>(notifications);
+    when(
+      () => mocks.updateNotifications.updateStream,
+    ).thenAnswer((_) => updates.stream);
     container = ProviderContainer(
       overrides: withServiceOverrides([
         personTimelineRepositoryProvider.overrideWithValue(timeline),
@@ -48,7 +48,7 @@ void main() {
     keepAlive = null;
     container.dispose();
     await updates.close();
-    await getIt.unregister<UpdateNotifications>();
+    await tearDownTestGetIt();
   });
 
   final pip = makeTestPerson(id: 'pip', title: 'Pip Penguin');
@@ -85,6 +85,14 @@ void main() {
       await notify({relationshipEntityUpdateNotification('pip')});
       verify(() => timeline.getPeopleOn(eventId)).called(1);
     });
+
+    test(
+      'when any person is written — a person shown or one arriving',
+      () async {
+        await notify({'someone-new', relationshipNotification});
+        verify(() => timeline.getPeopleOn(eventId)).called(1);
+      },
+    );
 
     test('when private entries are shown or hidden', () async {
       await notify({privateToggleNotification});
