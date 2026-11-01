@@ -154,6 +154,30 @@ void main() {
       });
     });
 
+    test('is known once read — nothing stored counts — or once set; not '
+        'while the read is pending', () {
+      fakeAsync((async) {
+        final load = Completer<Map<String, String>>();
+        when(() => db.itemsByKeys(any())).thenAnswer((_) => load.future);
+        final c = start(async);
+        final controller = c.read(companionCustomizationProvider.notifier);
+        expect(controller.loaded, isFalse);
+
+        load.complete(const {});
+        async.flushMicrotasks();
+        expect(controller.loaded, isTrue);
+      });
+    });
+
+    test('a read that fails leaves it unknown, so nothing guesses at it', () {
+      fakeAsync((async) {
+        stored({companionCustomizationKey: 'not json'});
+        final c = start(async);
+        settle(async);
+        expect(c.read(companionCustomizationProvider.notifier).loaded, isFalse);
+      });
+    });
+
     test('storage it cannot read is logged, and she stays as she is', () {
       fakeAsync((async) {
         stored({companionCustomizationKey: 'not json'});

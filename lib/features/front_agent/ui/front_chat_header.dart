@@ -43,15 +43,24 @@ abstract final class FrontChatHeaderKeys {
 /// On the list the row is a page header: back to the conversation, "Chats",
 /// close — nothing that would duplicate the list's own new-chat row.
 class FrontChatHeader extends ConsumerWidget {
-  const FrontChatHeader({required this.onClose, super.key});
+  const FrontChatHeader({
+    required this.onClose,
+    this.listBeside = false,
+    super.key,
+  });
 
   final VoidCallback onClose;
+
+  /// The list sits beside the conversation, carrying the way to it, a new
+  /// conversation and the inbox, so the control row leaves them out.
+  final bool listBeside;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
     final messages = context.messages;
-    final listOpen = ref.watch(frontConversationListOpenProvider);
+    final listOpen =
+        !listBeside && ref.watch(frontConversationListOpenProvider);
     final inboxOnly = ref.watch(frontInboxFilterProvider);
     // The title rides the control row once the hero has scrolled away —
     // and always in the inbox, which has no hero of its own.
@@ -101,50 +110,54 @@ class FrontChatHeader extends ConsumerWidget {
           ) ??
           0;
       row = [
-        // The way to the list sits where the list's own back arrow does,
-        // so the two pages share one leading rail.
-        // While something waits on the user in any conversation, a quiet
-        // dot on the way to the list — where the inbox is — rather than a
-        // chip taking the title's width.
-        Stack(
-          clipBehavior: Clip.none,
-          children: [
-            DesignSystemIconAction(
-              key: FrontChatHeaderKeys.chats,
-              tooltip: messages.queryChats,
-              onPressed: ref
-                  .read(frontConversationListOpenProvider.notifier)
-                  .toggle,
-              icon: LottiIcons.menu,
-            ),
-            if (inboxCount > 0)
-              Positioned(
-                top: tokens.spacing.step2,
-                right: tokens.spacing.step2,
-                child: IgnorePointer(
-                  child: DesignSystemBadge.dot(
-                    key: FrontChatHeaderKeys.inbox,
-                    // The tone query chat marks "waiting on you" with.
-                    tone: DesignSystemBadgeTone.warning,
-                    semanticLabel: messages.frontChatInboxChip(inboxCount),
+        // Beside the list these live in it: the way to it, a new
+        // conversation, the inbox.
+        if (!listBeside) ...[
+          // The way to the list sits where the list's own back arrow does,
+          // so the two pages share one leading rail.
+          // While something waits on the user in any conversation, a quiet
+          // dot on the way to the list — where the inbox is — rather than a
+          // chip taking the title's width.
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              DesignSystemIconAction(
+                key: FrontChatHeaderKeys.chats,
+                tooltip: messages.queryChats,
+                onPressed: ref
+                    .read(frontConversationListOpenProvider.notifier)
+                    .toggle,
+                icon: LottiIcons.menu,
+              ),
+              if (inboxCount > 0)
+                Positioned(
+                  top: tokens.spacing.step2,
+                  right: tokens.spacing.step2,
+                  child: IgnorePointer(
+                    child: DesignSystemBadge.dot(
+                      key: FrontChatHeaderKeys.inbox,
+                      // The tone query chat marks "waiting on you" with.
+                      tone: DesignSystemBadgeTone.warning,
+                      semanticLabel: messages.frontChatInboxChip(inboxCount),
+                    ),
                   ),
                 ),
-              ),
-          ],
-        ),
-        // Beside the list, as ChatGPT groups them: the ways to another
-        // conversation lead, so the pencil never reads as "rename this".
-        DesignSystemIconAction(
-          key: FrontChatHeaderKeys.newChat,
-          tooltip: messages.queryNewChat,
-          // Nothing to start while the open one is new and empty already.
-          onPressed: notBegun && !inboxOnly
-              ? null
-              : ref
-                    .read(frontChatControllerProvider.notifier)
-                    .startConversation,
-          icon: LottiIcons.editNote,
-        ),
+            ],
+          ),
+          // Beside the list, as ChatGPT groups them: the ways to another
+          // conversation lead, so the pencil never reads as "rename this".
+          DesignSystemIconAction(
+            key: FrontChatHeaderKeys.newChat,
+            tooltip: messages.queryNewChat,
+            // Nothing to start while the open one is new and empty already.
+            onPressed: notBegun && !inboxOnly
+                ? null
+                : ref
+                      .read(frontChatControllerProvider.notifier)
+                      .startConversation,
+            icon: LottiIcons.editNote,
+          ),
+        ],
         // She and the title lead the thread from its hero; once that has
         // scrolled away, they ride here in a line.
         Expanded(

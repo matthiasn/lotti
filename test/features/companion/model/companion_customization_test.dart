@@ -63,6 +63,7 @@ void main() {
         hairColour: CompanionHairColour.auburn,
         outfitId: 'grandma_winter',
         sass: CompanionSass.sassy,
+        speaksReplies: false,
       ),
     ]) {
       expect(CompanionCustomization.fromJson(custom.toJson()), custom);
@@ -73,6 +74,27 @@ void main() {
   test('she teases by default, a cheeky sass, never a scold', () {
     expect(const CompanionCustomization().sass, CompanionSass.cheeky);
     expect(const CompanionCustomization().toJson()['sass'], 'cheeky');
+  });
+
+  test('she answers a spoken question aloud unless she is muted; only an '
+      'explicit false mutes her', () {
+    expect(const CompanionCustomization().speaksReplies, isTrue);
+    expect(
+      CompanionCustomization.fromJson(const {
+        'speaksReplies': false,
+      }).speaksReplies,
+      isFalse,
+    );
+    expect(
+      CompanionCustomization.fromJson(const {
+        'speaksReplies': 'no',
+      }).speaksReplies,
+      isTrue,
+    );
+    expect(
+      const CompanionCustomization().copyWith(speaksReplies: false),
+      isNot(const CompanionCustomization()),
+    );
   });
 
   test('a part a newer version wrote falls back to its default', () {

@@ -3895,6 +3895,17 @@ class AppLocalizationsDa extends AppLocalizations {
   String get companionSettingsSkinToneLabel => 'Hudfarve';
 
   @override
+  String get companionSettingsSpeakRepliesTitle =>
+      'Svar højt på talte spørgsmål';
+
+  @override
+  String get companionSettingsVoiceDescription =>
+      'Spørg hende om noget med stemmen, så svarer hun højt. Et skrevet spørgsmål får altid et skrevet svar.';
+
+  @override
+  String get companionSettingsVoiceLabel => 'Hendes stemme';
+
+  @override
   String get completeHabitFailButton => 'Missede';
 
   @override

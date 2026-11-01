@@ -5,6 +5,8 @@ import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
 import 'package:lotti/features/agents/ui/chat/chat_recorder_controller.dart';
+import 'package:lotti/features/companion/model/companion_customization.dart';
+import 'package:lotti/features/companion/state/companion_customization_controller.dart';
 import 'package:lotti/features/front_agent/model/front_chat_thread.dart';
 import 'package:lotti/features/front_agent/state/front_chat_thread_provider.dart';
 import 'package:lotti/features/front_agent/state/front_conversation_providers.dart';
@@ -28,7 +30,9 @@ class _Voice extends TtsPlaybackController {
 
   final TtsPlaybackState _initial;
   final spoken = <({String sourceId, String text})>[];
+  final stoppedSources = <String?>[];
   TtsModelDownloadConsent? consent;
+  Future<bool> Function()? canPlayNow;
   int stops = 0;
 
   @override
@@ -44,12 +48,14 @@ class _Voice extends TtsPlaybackController {
     TtsCloudRoute? cloudRoute,
   }) async {
     consent = confirmModelDownload;
+    canPlayNow = canPlay;
     spoken.add((sourceId: sourceId, text: text));
   }
 
   @override
   Future<void> stop({String? sourceId}) async {
     stops++;
+    stoppedSources.add(sourceId);
     state = const TtsPlaybackState();
   }
 }
@@ -63,6 +69,22 @@ class _Recorder extends ChatRecorderController {
   @override
   ChatRecorderState build() =>
       ChatRecorderState(status: _status, amplitudeHistory: const []);
+}
+
+/// Her customization as set, without storage.
+class _Custom extends CompanionCustomizationController {
+  _Custom(this._value, {this.known = true});
+
+  final CompanionCustomization _value;
+  final bool known;
+
+  @override
+  bool get loaded => known;
+
+  @override
+  CompanionCustomization build() => _value;
+
+  void mute() => state = state.copyWith(speaksReplies: false);
 }
 
 /// Hosts the voice as the pane does, and shows the pose she holds.
@@ -88,6 +110,7 @@ void main() {
 
   late List<AgentChatMessage> thread;
   late _Voice voice;
+  late _Custom custom;
 
   setUp(() {
     thread = [
@@ -100,6 +123,8 @@ void main() {
     WidgetTester tester, {
     String active = 'c-1',
     bool tts = true,
+    bool speaksReplies = true,
+    bool customizationKnown = true,
     ChatRecorderStatus recorder = ChatRecorderStatus.idle,
     TtsPlaybackState playing = const TtsPlaybackState(),
   }) async {
@@ -115,6 +140,12 @@ void main() {
             }),
           ),
           ttsEngineProvider.overrideWithValue(FakeTtsEngine()),
+          companionCustomizationProvider.overrideWith(
+            () => custom = _Custom(
+              CompanionCustomization(speaksReplies: speaksReplies),
+              known: customizationKnown,
+            ),
+          ),
           ttsPlaybackControllerProvider.overrideWith(() => voice),
           agentResolvedSetupProvider.overrideWith((ref, id) async => null),
           frontActiveConversationProvider.overrideWith((ref) async => active),
@@ -240,6 +271,40 @@ void main() {
       await tester.pump();
       await tester.pump();
       expect(voice.spoken.single.text, 'Forty-two.');
+    });
+
+    testWidgets('stays written until her saved setting is known — a mute '
+        'is never guessed at', (tester) async {
+      final container = await pumpHost(tester, customizationKnown: false);
+      speakTurn(container, 'c-1');
+
+      await reply(tester, container, 'Forty-two.');
+
+      expect(voice.spoken, isEmpty);
+    });
+
+    testWidgets('a mute while she prepares holds as playback starts, and a '
+        'mute while she speaks stops her own voice only', (tester) async {
+      final container = await pumpHost(tester);
+      speakTurn(container, 'c-1');
+      await reply(tester, container, 'Forty-two.');
+      expect(await voice.canPlayNow!(), isTrue);
+
+      custom.mute();
+      await tester.pump();
+
+      expect(await voice.canPlayNow!(), isFalse);
+      expect(voice.stoppedSources, [frontVoiceSourceId('c-1')]);
+    });
+
+    testWidgets('stays written when she is muted', (tester) async {
+      final container = await pumpHost(tester, speaksReplies: false);
+      speakTurn(container, 'c-1');
+
+      await reply(tester, container, 'Forty-two.');
+
+      expect(voice.spoken, isEmpty);
+      expect(container.read(frontSpokenTurnProvider), isNull);
     });
 
     testWidgets('stays written when read-aloud is switched off', (

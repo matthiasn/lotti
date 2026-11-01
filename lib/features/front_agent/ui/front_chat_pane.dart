@@ -14,6 +14,7 @@ import 'package:lotti/features/front_agent/state/front_conversation_providers.da
 import 'package:lotti/features/front_agent/state/front_inbox_filter.dart';
 import 'package:lotti/features/front_agent/state/front_journal_access_provider.dart';
 import 'package:lotti/features/front_agent/ui/front_ask_options_row.dart';
+import 'package:lotti/features/front_agent/ui/front_category_chips.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_header.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_hero.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_voice.dart';
@@ -36,13 +37,20 @@ import 'package:material_ui/material_ui.dart';
 /// question, the choices as chips. A day divider sits between messages of
 /// different days.
 class FrontChatPane extends ConsumerWidget {
-  const FrontChatPane({required this.onClose, super.key});
+  const FrontChatPane({required this.onClose, this.listWidth, super.key});
 
   final VoidCallback onClose;
 
+  /// The width of the list kept beside the conversation, on a window wide
+  /// enough for both; null where the list is a page over the conversation.
+  final double? listWidth;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final listOpen = ref.watch(frontConversationListOpenProvider);
+    final beside = listWidth != null;
+    // Beside the conversation the list is always there: it never opens
+    // over it.
+    final listOpen = !beside && ref.watch(frontConversationListOpenProvider);
     // Her reply to a spoken turn is spoken back, list open or not.
     FrontVoice.listenForSpokenReply(ref, context);
     final inboxOnly = ref.watch(frontInboxFilterProvider);
@@ -75,14 +83,39 @@ class FrontChatPane extends ConsumerWidget {
           ref.read(frontInboxFilterProvider.notifier).clear();
         }
       },
-      child: Column(
-        children: [
-          FrontChatHeader(onClose: onClose),
-          Expanded(
-            child: listOpen ? const FrontConversationList() : _Body(),
-          ),
-        ],
-      ),
+      child: beside
+          ? Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                SizedBox(
+                  width: listWidth,
+                  child: const FrontConversationList(),
+                ),
+                const DesignSystemDivider(
+                  orientation: DesignSystemDividerOrientation.vertical,
+                ),
+                Expanded(
+                  child: Column(
+                    children: [
+                      FrontChatHeader(onClose: onClose, listBeside: true),
+                      if (!inboxOnly) const FrontCategoryChips(),
+                      Expanded(child: _Body()),
+                    ],
+                  ),
+                ),
+              ],
+            )
+          : Column(
+              children: [
+                FrontChatHeader(onClose: onClose),
+                // The chips belong to a conversation: not over the list, nor
+                // over the inbox, which spans every conversation.
+                if (!listOpen && !inboxOnly) const FrontCategoryChips(),
+                Expanded(
+                  child: listOpen ? const FrontConversationList() : _Body(),
+                ),
+              ],
+            ),
     );
   }
 }

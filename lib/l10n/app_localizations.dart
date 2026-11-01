@@ -6606,6 +6606,24 @@ abstract class AppLocalizations {
   /// **'Skin tone'**
   String get companionSettingsSkinToneLabel;
 
+  /// No description provided for @companionSettingsSpeakRepliesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Answer spoken questions aloud'**
+  String get companionSettingsSpeakRepliesTitle;
+
+  /// No description provided for @companionSettingsVoiceDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask her something by voice and she answers out loud. A typed question always gets a written answer.'**
+  String get companionSettingsVoiceDescription;
+
+  /// No description provided for @companionSettingsVoiceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Her voice'**
+  String get companionSettingsVoiceLabel;
+
   /// No description provided for @completeHabitFailButton.
   ///
   /// In en, this message translates to:

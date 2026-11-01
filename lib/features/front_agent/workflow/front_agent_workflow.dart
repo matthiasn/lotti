@@ -15,6 +15,7 @@ import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_wrapper.dart';
+import 'package:lotti/features/companion/model/companion_reaction.dart';
 import 'package:lotti/features/front_agent/model/front_conversation.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_routing_index.dart';
@@ -82,7 +83,9 @@ class FrontAgentWorkflow with AgentErrorLogging {
     required this._indexBuilder,
     required this._domainLogger,
     FrontRoutingScope Function(AgentIdentityEntity identity)? scopeFor,
-  }) : _scopeFor = scopeFor ?? _defaultScope;
+    CompanionSass Function()? sass,
+  }) : _scopeFor = scopeFor ?? _defaultScope,
+       _sass = sass ?? _defaultSass;
 
   final AgentRepository _repository;
   final AgentSyncService _syncService;
@@ -95,6 +98,11 @@ class FrontAgentWorkflow with AgentErrorLogging {
   /// What this identity may see. The default is the identity's own
   /// allow-list with goals and without people (decision 4).
   final FrontRoutingScope Function(AgentIdentityEntity identity) _scopeFor;
+
+  /// How much sass she speaks with: the companion's, as the user set it.
+  final CompanionSass Function() _sass;
+
+  static CompanionSass _defaultSass() => CompanionSass.cheeky;
 
   static FrontRoutingScope _defaultScope(AgentIdentityEntity identity) =>
       FrontRoutingScope(categoryIds: identity.allowedCategoryIds);
@@ -190,7 +198,8 @@ class FrontAgentWorkflow with AgentErrorLogging {
         geminiThinkingMode: resolved.geminiThinkingMode,
       );
       conversationId = _conversationRepository.createConversation(
-        systemMessage: frontAgentSystemPrompt,
+        systemMessage:
+            '$frontAgentSystemPrompt\n\n${frontAgentPersonality(_sass())}',
         maxTurns: agentIdentity.config.maxTurnsPerWake,
       );
 

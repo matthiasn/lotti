@@ -3929,6 +3929,17 @@ class AppLocalizationsDe extends AppLocalizations {
   String get companionSettingsSkinToneLabel => 'Hautton';
 
   @override
+  String get companionSettingsSpeakRepliesTitle =>
+      'Gesprochene Fragen laut beantworten';
+
+  @override
+  String get companionSettingsVoiceDescription =>
+      'Frag sie etwas per Stimme, und sie antwortet laut. Eine getippte Frage bekommt immer eine geschriebene Antwort.';
+
+  @override
+  String get companionSettingsVoiceLabel => 'Ihre Stimme';
+
+  @override
   String get completeHabitFailButton => 'Verpasst';
 
   @override

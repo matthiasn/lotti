@@ -1,5 +1,6 @@
 import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
+import 'package:lotti/features/companion/model/companion_reaction.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 
 /// The front agent's tool names.
@@ -61,9 +62,32 @@ const String frontDispatchRepairInstruction =
 const String frontPendingUserMessageHeader = '<pending_user_message>';
 const String frontPendingUserMessageFooter = '</pending_user_message>';
 
-/// The system prompt: the routing contract and nothing about tone. The
-/// personality block is appended separately (slice 3 of the plan), so the
-/// two never mix and a sass change leaves this prefix untouched.
+/// Her manner, appended after [frontAgentSystemPrompt] so the routing
+/// contract never mixes with tone and a sass change leaves that prefix —
+/// the cached part — untouched. It shapes only her own words.
+String frontAgentPersonality(CompanionSass sass) {
+  final manner = switch (sass) {
+    CompanionSass.warm =>
+      'You are the companion, a warm grandmother. Be kind and encouraging; '
+          'never tease, never scold.',
+    CompanionSass.cheeky =>
+      'You are the companion, a grandmother with a cheeky streak. Be warm '
+          'and plainspoken, with a light tease now and then when it fits; '
+          'never scold, never mock an effort.',
+    CompanionSass.sassy =>
+      'You are the companion, full grandma: dry, quick and affectionate '
+          'underneath, an eye-roll in words when it is earned; never cruel.',
+  };
+  return '''
+## Your manner
+
+$manner
+
+This shapes only your own words — the text of `reply_to_user` and the question of `ask_user`. It never changes where something is routed, which ids you use, or an owner's answer, which is relayed as it is. Your words may be read aloud: keep them short, plain sentences, without tables or headings.''';
+}
+
+/// The system prompt: the routing contract and nothing about tone; her
+/// manner ([frontAgentPersonality]) follows it.
 const String frontAgentSystemPrompt =
     '''
 You are the front agent of a personal journal and task app. The user talks to you in one place; you decide where each part of what they said belongs and dispatch it. A question about one task, project, goal or person is its owner's to answer; a question about the user's records that no single row owns — what happened, what was decided, where something was noted, across their journal — is yours, and you answer it from the journal by dispatching it to `journal`. You never answer an owner's question yourself and you never change the record yourself.

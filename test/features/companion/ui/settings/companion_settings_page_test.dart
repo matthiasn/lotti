@@ -248,6 +248,21 @@ void main() {
     expect(stored, contains('"sass":"warm"'));
   });
 
+  testWidgets('her voice can be muted: the switch stores it', (tester) async {
+    await pumpBody(tester);
+    expect(chosen(tester).speaksReplies, isTrue);
+
+    final row = find.byKey(const ValueKey('companion-speaks-replies'));
+    await tester.ensureVisible(row);
+    await tester.tap(row);
+    await tester.pump(const Duration(milliseconds: 16));
+    expect(chosen(tester).speaksReplies, isFalse);
+
+    await _frames(tester);
+    final stored = await db.itemByKey(companionCustomizationKey);
+    expect(stored, contains('"speaksReplies":false'));
+  });
+
   testWidgets('the page wears the settings chrome and its title', (
     tester,
   ) async {

@@ -64,10 +64,12 @@ class FrontChatService {
   Future<void> sendMessage({
     required String text,
     required String conversationId,
+    Set<String> categoryIds = const {},
   }) async {
     final messageId = await appendMessage(
       text: text,
       conversationId: conversationId,
+      categoryIds: categoryIds,
     );
     if (messageId == null) return;
     await retryMessage(messageId: messageId);
@@ -89,6 +91,7 @@ class FrontChatService {
   Future<String?> appendMessage({
     required String text,
     required String conversationId,
+    Set<String> categoryIds = const {},
   }) async {
     final trimmed = text.trim();
     if (trimmed.isEmpty) return null;
@@ -113,6 +116,8 @@ class FrontChatService {
         content: <String, Object?>{
           'text': trimmed,
           frontConversationKey: conversationId,
+          if (categoryIds.isNotEmpty)
+            frontCategoriesKey: [...categoryIds]..sort(),
         },
       ),
     );

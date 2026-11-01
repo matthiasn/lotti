@@ -10,6 +10,7 @@ import 'package:lotti/features/agents/query/query_chat_projection.dart';
 import 'package:lotti/features/agents/query/query_chat_providers.dart';
 import 'package:lotti/features/agents/query/query_text_inference.dart';
 import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
+import 'package:lotti/features/front_agent/model/front_conversation.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
 import 'package:lotti/features/front_agent/service/front_door_walker.dart';
@@ -705,6 +706,77 @@ void main() {
 
       expect(factoryCalls.single.$1, QueryScope.journal);
     });
+
+    /// The source turn as sent, with the conversation's chips.
+    void chips(List<String> categoryIds) {
+      when(() => repository.getEntity(messageId)).thenAnswer(
+        (_) async => makeTestMessage(
+          id: messageId,
+          agentId: frontAgentId,
+          contentEntryId: 'turn-payload',
+        ),
+      );
+      when(() => repository.getEntity('turn-payload')).thenAnswer(
+        (_) async => makeTestMessagePayload(
+          id: 'turn-payload',
+          agentId: frontAgentId,
+          content: {
+            'text': 'How is the garden?',
+            frontCategoriesKey: categoryIds,
+          },
+        ),
+      );
+    }
+
+    void allowed(Set<String> ids) =>
+        when(() => repository.getEntity(frontAgentId)).thenAnswer(
+          (_) async => makeTestIdentity(
+            id: frontAgentId,
+            agentId: frontAgentId,
+            kind: AgentKinds.frontAgent,
+            allowedCategoryIds: ids,
+          ),
+        );
+
+    for (final (name, allowList, chosen, scope) in [
+      (
+        "the conversation's chips narrow her allow-list",
+        {'colony', 'feeding'},
+        ['colony'],
+        {'colony'},
+      ),
+      (
+        'with no allow-list the chips are the scope',
+        <String>{},
+        ['feeding'],
+        {'feeding'},
+      ),
+      (
+        'chips outside her allow-list never widen it — it stays as it is',
+        {'colony'},
+        ['nests'],
+        {'colony'},
+      ),
+    ]) {
+      test(name, () async {
+        seedDispatch([
+          segment(start: 0, end: 18, kind: FrontDestinationKind.journal),
+        ]);
+        allowed(allowList);
+        chips(chosen);
+        answers(
+          const QueryChatAnswer(
+            questionId: 'q',
+            text: 'Nothing about it yet.',
+            coverage: QueryCoverage(),
+          ),
+        );
+
+        await walker.walk(messageId);
+
+        expect(factoryCalls.single.$1, QueryScope.journalIn(scope));
+      });
+    }
 
     test('with no model to answer it is skipped', () async {
       seedDispatch([
