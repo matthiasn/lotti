@@ -746,6 +746,36 @@ void main() {
         expect(await availableFor(null), isTrue);
       });
 
+      // The fallback asks the category's own profile first, so a manual
+      // profile that can transcribe is automation the switch must control —
+      // whatever the Settings default can do.
+      test("true from the category profile's own transcription slot, even "
+          'with nothing automated and no Settings default', () async {
+        stubFallbackAvailable(available: false);
+        when(() => mockAiConfigRepo.getConfigById('profile-1')).thenAnswer(
+          (_) async => AiTestDataFactory.createTestProfile(
+            id: 'profile-1',
+            thinkingModelId: 'thinking-native',
+            transcriptionModelId: 'stt-native',
+          ),
+        );
+
+        expect(await availableFor('profile-1'), isTrue);
+      });
+
+      test('false for a manual category profile that cannot transcribe, '
+          'with no Settings default', () async {
+        stubFallbackAvailable(available: false);
+        when(() => mockAiConfigRepo.getConfigById('profile-1')).thenAnswer(
+          (_) async => AiTestDataFactory.createTestProfile(
+            id: 'profile-1',
+            thinkingModelId: 'thinking-native',
+          ),
+        );
+
+        expect(await availableFor('profile-1'), isFalse);
+      });
+
       test('false when nothing can be automated', () async {
         stubFallbackAvailable(available: false);
 

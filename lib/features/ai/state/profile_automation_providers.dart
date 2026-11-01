@@ -89,10 +89,10 @@ ProfileAutomationResolver profileAutomationResolver(Ref ref) {
 /// Keyed by the category's `defaultProfileId` (nullable). True when that
 /// profile carries at least one `automate: true` skill assignment — the
 /// "profile is set to automatic" case — or when the transcription fallback
-/// could run: the Settings default profile's transcription slot, or a direct
-/// speech-to-text model that needs no profile at all. Showing the switch in
-/// that second case lets users control recording automation even without a
-/// profile on the category.
+/// could run for a recording in the category: that profile's own
+/// transcription slot, or the Settings default's. Showing the switch in that
+/// second case lets users control recording automation even when no skill
+/// is set to automatic, or no profile is on the category at all.
 final FutureProviderFamily<bool, String?> categoryAutomationAvailableProvider =
     FutureProvider.family<bool, String?>(
       categoryAutomationAvailable,
@@ -105,6 +105,15 @@ Future<bool> categoryAutomationAvailable(Ref ref, String? profileId) async {
         .getConfigById(profileId);
     if (config is AiConfigInferenceProfile &&
         config.skillAssignments.any((assignment) => assignment.automate)) {
+      return true;
+    }
+    // The fallback asks the category's profile first: a transcription slot
+    // that resolves is automation the switch controls.
+    final resolved = await ref
+        .watch(profileResolverProvider)
+        .resolveByProfileId(profileId);
+    if (resolved?.transcriptionModelId != null &&
+        resolved?.transcriptionProvider != null) {
       return true;
     }
   }
