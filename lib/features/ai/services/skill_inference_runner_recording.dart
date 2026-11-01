@@ -30,11 +30,9 @@ extension _SkillInferenceRunnerRecording on SkillInferenceRunner {
     required bool speechToText,
   }) {
     final profile = automationResult.resolvedProfile;
-    if (profile == null || profile.audioPostProcessingDisabled) return null;
-    // A summary needs a post-processing model that can call its tool. The
-    // direct speech-to-text fallback, run without an inference profile, puts
-    // its transcription model in the thinking slot it falls back to; no
-    // summary is scheduled then, and the transcript is written at once
+    if (profile == null) return null;
+    // A summary needs a post-processing model that can call its tool; with
+    // none, no summary is scheduled and the transcript is written at once
     // instead of held for a call that `_summarizeRecording` would skip. A
     // post-processing model that does not resolve here is not judged by the
     // thinking model it would otherwise fall back to: the summary is still

@@ -64,79 +64,96 @@ class SubjectDictation {
 /// entry, a person). Everything is read when a take needs it, not when a
 /// chat builds: a category or a profile changed meanwhile is the one that
 /// runs, and a surface that is never dictated into resolves nothing.
-final ProviderFamily<SubjectDictation, String> subjectDictationProvider =
-    Provider.family<SubjectDictation, String>((ref, subjectId) {
-      Future<({ResolvedProfile? profile, String? categoryId})> resolve() async {
-        final resolver = ref.read(profileAutomationResolverProvider);
-        final categoryId = await resolver.categoryOfSubject(subjectId);
-        return (
-          profile: await resolver.resolveTranscriptionProfile(
-            categoryId: categoryId,
-          ),
-          categoryId: categoryId,
-        );
-      }
+final ProviderFamily<SubjectDictation, String>
+subjectDictationProvider = Provider.family<SubjectDictation, String>((
+  ref,
+  subjectId,
+) {
+  Future<({ResolvedProfile? profile, String? categoryId})> resolve() async {
+    final resolver = ref.read(profileAutomationResolverProvider);
+    final categoryId = await resolver.categoryOfSubject(subjectId);
+    return (
+      profile: await resolver.resolveTranscriptionProfile(
+        categoryId: categoryId,
+      ),
+      categoryId: categoryId,
+    );
+  }
 
-      return SubjectDictation(
-        dictionaryCategory: () => ref
-            .read(profileAutomationResolverProvider)
-            .categoryOfSubject(subjectId),
-        resolveTarget: () async {
-          final profile = (await resolve()).profile;
-          final provider = profile?.transcriptionProvider;
-          final model = profile?.transcriptionModel;
-          if (provider == null ||
-              model == null ||
-              !model.inputModalities.contains(Modality.audio) ||
-              !model.outputModalities.contains(Modality.text) ||
-              (provider.inferenceProviderType ==
-                      InferenceProviderType.mistral &&
-                  isRealtimeOnlyTranscriptionModel(model.providerModelId))) {
-            throw _unavailable();
-          }
-          if (provider.inferenceProviderType == InferenceProviderType.sherpa &&
-              !await ref
-                  .read(sherpaModelRepositoryProvider)
-                  .isAvailable(model.providerModelId)) {
-            throw _unavailable();
-          }
-          return (model: model, provider: provider);
-        },
-        correct: (transcript, heardBy) async {
-          if (!routesToSpeechToText(
-            heardBy.provider,
-            heardBy.model.providerModelId,
-          )) {
-            return transcript;
-          }
-          try {
-            final (:profile, :categoryId) = await resolve();
-            final route = profile?.transcriptCorrectionRoute;
-            if (route == null) return transcript;
-            return await ref
-                .read(audioTranscriptionServiceProvider)
-                .correctTranscript(
-                  transcript,
-                  target: route,
-                  dictionaryCategoryId: categoryId,
-                );
-          } catch (error, stackTrace) {
-            ref
-                .read(domainLoggerProvider)
-                .error(
-                  LogDomain.speech,
-                  error,
-                  stackTrace: stackTrace,
-                  subDomain: _logTag,
-                  message:
-                      'Could not correct dictation for '
-                      '${DomainLogger.sanitizeId(subjectId)}',
-                );
-            return transcript;
-          }
-        },
-      );
-    }, name: 'subjectDictationProvider');
+  return SubjectDictation(
+    dictionaryCategory: () => ref
+        .read(profileAutomationResolverProvider)
+        .categoryOfSubject(subjectId),
+    resolveTarget: () async {
+      final (:profile, :categoryId) = await resolve();
+      // Once per take: which profile a dictation goes through, by
+      // sanitized id only.
+      ref
+          .read(domainLoggerProvider)
+          .log(
+            LogDomain.speech,
+            profile == null
+                ? 'no transcription profile for dictation about '
+                      '${DomainLogger.sanitizeId(subjectId)}'
+                : 'dictation about ${DomainLogger.sanitizeId(subjectId)} '
+                      'through profile '
+                      '${DomainLogger.sanitizeId(profile.profileId ?? '')} '
+                      '(${categoryId == null ? 'no category' : 'category ${DomainLogger.sanitizeId(categoryId)}'})',
+            subDomain: _logTag,
+          );
+      final provider = profile?.transcriptionProvider;
+      final model = profile?.transcriptionModel;
+      if (provider == null ||
+          model == null ||
+          !model.inputModalities.contains(Modality.audio) ||
+          !model.outputModalities.contains(Modality.text) ||
+          (provider.inferenceProviderType == InferenceProviderType.mistral &&
+              isRealtimeOnlyTranscriptionModel(model.providerModelId))) {
+        throw _unavailable();
+      }
+      if (provider.inferenceProviderType == InferenceProviderType.sherpa &&
+          !await ref
+              .read(sherpaModelRepositoryProvider)
+              .isAvailable(model.providerModelId)) {
+        throw _unavailable();
+      }
+      return (model: model, provider: provider);
+    },
+    correct: (transcript, heardBy) async {
+      if (!routesToSpeechToText(
+        heardBy.provider,
+        heardBy.model.providerModelId,
+      )) {
+        return transcript;
+      }
+      try {
+        final (:profile, :categoryId) = await resolve();
+        final route = profile?.transcriptCorrectionRoute;
+        if (route == null) return transcript;
+        return await ref
+            .read(audioTranscriptionServiceProvider)
+            .correctTranscript(
+              transcript,
+              target: route,
+              dictionaryCategoryId: categoryId,
+            );
+      } catch (error, stackTrace) {
+        ref
+            .read(domainLoggerProvider)
+            .error(
+              LogDomain.speech,
+              error,
+              stackTrace: stackTrace,
+              subDomain: _logTag,
+              message:
+                  'Could not correct dictation for '
+                  '${DomainLogger.sanitizeId(subjectId)}',
+            );
+        return transcript;
+      }
+    },
+  );
+}, name: 'subjectDictationProvider');
 
 // The chat recorder reads "No audio-capable models" as its no-model error.
 TranscriptionException _unavailable() => TranscriptionException(

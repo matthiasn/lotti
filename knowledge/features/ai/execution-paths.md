@@ -5,7 +5,7 @@ description: The legacy prompt path, the skill/profile path, the category consen
 resource: ../../../lib/features/ai/services/skill_inference_runner.dart
 tags: [ai, skills, automation, consent, overrides, diagnostics]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-11-01T12:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-11-01T20:00:00Z }
 stale_after: 2027-01-31
 sources:
   - id: runner
@@ -164,16 +164,14 @@ flowchart TD
   Walked -->|no| Stop
   Walked -->|yes| TxProfile["Transcription profile: category's, else Settings default<br/>(also behind the gate)"]
   TxProfile --> Runner
-  TxProfile -->|neither owns a slot| Fallback["Direct model fallback"]
-  Fallback --> Runner
-  Fallback -->|no usable model| Stop
+  TxProfile -->|neither owns a slot| Stop
 
   Direct --> LinkTask["Resolve task id from caller or link graph"]
   LinkTask -->|task| ResolveDirect["ProfileAutomationResolver.resolveForSubject(task)"]
   LinkTask -->|no task| ResolveCategory["ProfileAutomationResolver.resolveForCategory()<br/>when the entry has a category"]
   ResolveDirect --> Runner
   ResolveCategory --> Runner
-  ResolveDirect -->|transcription without a transcription slot| DirectFallback["resolveTranscriptionFallback()<br/>Settings default, then direct model (no gate)"]
+  ResolveDirect -->|transcription without a transcription slot| DirectFallback["resolveTranscriptionFallback()<br/>Settings default, or nothing (no gate)"]
   ResolveCategory -->|transcription without a transcription slot| DirectFallback
   ResolveDirect -->|audio summary without a profile| DefaultProfile["resolveDefaultProfile()"]
   ResolveCategory -->|audio summary without a profile| DefaultProfile
@@ -205,9 +203,8 @@ tokens on its own after an upgrade.
 gate.** When no automated skill owns transcription, the service takes the
 [transcription profile](profile-resolution.md#the-transcription-profile) — the
 subject's category's profile, else the Settings default, whichever owns a
-transcription slot — and only when neither can, the direct model fallback,
-which synthesises a profile-shaped result from a configured speech-to-text
-model. Leaving either ungated would have preserved exactly the behaviour the
+transcription slot; when neither can, nothing transcribes. Leaving it
+ungated would have preserved exactly the behaviour the
 switch is meant to make explicit. The gesture paths — `requestTranscription`,
 `canTranscribeOnRequest` and `resolveTranscriptionFallback`, which
 `triggerSkillProvider` uses when no profile owns a transcription slot — reach
@@ -243,7 +240,7 @@ Past the gate the automatic branch is intentionally strict:
 - Multiple automated skills of the same type make the profile **ambiguous** and
   *end the profile walk* rather than moving on, because guessing between two
   deliberate assignments is worse than doing nothing. For transcription the
-  direct model fallback still runs after an ambiguous walk, exactly as after a
+  transcription profile still runs after an ambiguous walk, exactly as after a
   walk with no match.
 - The resolved profile must expose the required model slot for that skill type.
 - The per-recording `enableSpeechRecognition: false` opt-out wins independently
@@ -263,8 +260,8 @@ rejected a recording or an image:
 | `categoryGate` | the category's `automaticInferenceEnabled` is off, or no lookup is wired |
 | `profileResolution` | no profile resolved, or the whole walk finished without a match (reports how many profiles it tried) |
 | `skillMatch` | an assignment's skill config is missing, the profile's model slot for that type is empty or unresolvable, or two skills of the same type made it ambiguous |
-| `directFallback` | the profile walk found nothing, neither the category's profile nor the Settings default owns a transcription slot, **and** the direct transcription fallback could not run either — no speech-to-text model is configured at all, or every configured one was rejected (tallied by unresolvable provider vs. missing API key; an embedded sherpa model not installed on this device is rejected without a tally) |
-| `resolved` | it *did* run — names the skill and whether it came from the subject-linked or an inherited profile, names the transcription profile by sanitized id when no automated skill owned the run, or names the direct fallback model by sanitized config id and provider type |
+| `transcriptionProfile` | the profile walk found nothing **and** neither the category's profile nor the Settings default owns a transcription slot — nothing transcribes |
+| `resolved` | it *did* run — names the skill and whether it came from the subject-linked or an inherited profile, or names the transcription profile by sanitized id when no automated skill owned the run |
 
 `resolved` is not decoration: a run against the wrong profile is as opaque as no
 run at all.
@@ -430,14 +427,9 @@ The gates, all deliberate:
   it.
 - **The post-processing model must be able to call tools.** The summary
   publishes through a pinned tool call, on the profile's audio
-  post-processing model or, without one, its thinking model (see below). The
-  direct speech-to-text fallback, used when no inference profile applies,
-  puts its transcription model in the thinking slot, so it borrows the
-  post-processing route of the device's Settings default profile
-  (`ProfileAutomationResolver.resolveDefaultProfile`); with no default
-  selected nothing can post-process, no summary is scheduled, and the
-  transcript is written at once rather than held for a call that would be
-  skipped.
+  post-processing model or, without one, its thinking model (see below). A
+  model that cannot call tools schedules no summary, and the transcript is
+  written at once rather than held for a call that would be skipped.
 - **A multimodal transcription** — a model that read the dictionary and the
   context in its own prompt — chains the summary only when it was automated,
   which a non-null `AutomationResult.skillAssignment` records, **and** the

@@ -5,7 +5,7 @@ description: Goal-driven agents — the deterministic Phase A tier evaluating cr
 resource: ../../lib/features/goals
 tags: [goals, agents, runtime, wake, evaluation]
 status: draft
-generated: { by: claude-code/opus-5.5, at: 2026-11-01T12:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-11-01T20:00:00Z }
 stale_after: 2027-02-22
 sources:
   - id: goals-src
@@ -2029,10 +2029,10 @@ Invariants worth not breaking:
   [transcription profile](ai/profile-resolution.md#the-transcription-profile):
   the category's profile, else the device's Settings default, whichever owns
   a transcription slot (`ProfileAutomationService.resolveTranscriptionFallback`
-  on the trigger's path, the same rule inside `tryTranscribe`). Only when
-  neither can transcribe does it end on the direct model fallback. Without the
-  profile step, every check-in whose category automated nothing went straight
-  to that fallback, whose provider ranking puts the on-device engine first —
+  on the trigger's path, the same rule inside `tryTranscribe`). When neither
+  can transcribe, the check-in declines visibly; no model is picked outside a
+  profile. Before, every check-in whose category automated nothing went to a
+  fallback whose provider ranking put the on-device engine first —
   minutes per recording and the reported crashes, on a model the user never
   picked.
 - **A declined run is a failed run, visibly — including a run never started.**

@@ -22,8 +22,8 @@ import 'package:lotti/services/vector_clock_service.dart';
 /// One call to [maybeDispatch] runs the eligibility logic from the plan §4,
 /// then — if every guard passes — invokes [SkillInferenceRunner.runTranscription]
 /// directly (no `AutomaticPromptTrigger` reuse, no `ProfileAutomationService`
-/// re-entry, no `_tryDirectTranscriptionFallback` route through cloud
-/// providers) and finally nudges [WakeOrchestrator.enqueueManualWake] iff the
+/// re-entry, no Settings-default transcription fallback that could route
+/// through cloud providers) and finally nudges [WakeOrchestrator.enqueueManualWake] iff the
 /// transcript actually grew.
 ///
 /// Every skip is logged with enough context to debug a missing auto-trigger
@@ -180,8 +180,8 @@ class SyncedAudioInferenceDispatcher {
 
     // 12. Find the automated transcription skill on this profile. NO
     // fallback — if the profile doesn't own a `transcription` skill with
-    // `automate: true`, skip. Synced audio never routes through
-    // `_tryDirectTranscriptionFallback`'s rank-ordered model search.
+    // `automate: true`, skip. Synced audio never falls back to the Settings
+    // default the way a local recording does.
     SkillAssignment? matchedAssignment;
     AiConfigSkill? matchedSkill;
     for (final assignment in profileConfig.skillAssignments) {

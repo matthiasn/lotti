@@ -106,6 +106,16 @@ void main() {
         verify(
           () => resolver.resolveTranscriptionProfile(categoryId: 'goals'),
         ).called(1);
+        // Once per take: which profile the dictation goes through.
+        verify(
+          () => logger.log(
+            LogDomain.speech,
+            'dictation about ${DomainLogger.sanitizeId(subjectId)} through '
+            'profile ${DomainLogger.sanitizeId('goals-profile')} (category '
+            '${DomainLogger.sanitizeId('goals')})',
+            subDomain: 'SubjectDictation',
+          ),
+        ).called(1);
       },
     );
 

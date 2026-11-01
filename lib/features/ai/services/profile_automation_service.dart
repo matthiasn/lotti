@@ -1,7 +1,6 @@
 import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/classes/ai/skill_assignment.dart';
 import 'package:lotti/classes/ai/skill_type.dart';
-import 'package:lotti/features/ai/constants/provider_config.dart';
 import 'package:lotti/features/ai/helpers/profile_automation_resolver.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
@@ -14,11 +13,6 @@ const _fallbackTranscriptionAssignment = SkillAssignment(
   skillId: skillTranscribeContextId,
   automate: true,
 );
-
-typedef _TranscriptionFallbackCandidate = ({
-  AiConfigModel model,
-  AiConfigInferenceProvider provider,
-});
 
 /// The automated skill a profile contributes for one requested skill type.
 typedef _AutomatedSkillMatch = ({
@@ -102,11 +96,10 @@ class AutomationResult {
 /// [AutomationResult] that tells the caller whether the profile-driven
 /// path handled the request.
 ///
-/// Speech recognition has extra paths: if no automated skill handles
+/// Speech recognition has one more path: if no automated skill handles
 /// transcription, the category's profile and then the Settings default
-/// profile transcribe through their transcription slot, and only when neither
-/// can does the service fall back to a configured audio-to-text model row
-/// directly. That last step supports recording without any usable profile.
+/// profile transcribe through their transcription slot. When neither owns
+/// one, nothing transcribes — no model is ever picked outside a profile.
 ///
 /// The actual inference invocation is left to the caller, which uses the
 /// returned skill and profile to build prompts via `SkillPromptBuilder` and
@@ -117,11 +110,7 @@ class ProfileAutomationService {
     required this._aiConfigRepository,
     this._categoryAutomationLookup,
     this._domainLogger,
-    this.isEmbeddedModelInstalled,
   });
-
-  /// Device-local availability, required before choosing an embedded fallback.
-  final Future<bool> Function(String modelId)? isEmbeddedModelInstalled;
 
   final ProfileAutomationResolver _resolver;
   final AiConfigRepository _aiConfigRepository;
@@ -515,8 +504,8 @@ class ProfileAutomationService {
   }
 
   /// Resolves transcription for a run the user asked for when no automated
-  /// skill owns it: [categoryId]'s profile, the Settings default profile,
-  /// then the direct model fallback ([_tryTranscriptionFallbacks]).
+  /// skill owns it: [categoryId]'s profile, else the Settings default profile
+  /// ([_tryTranscriptionFallbacks]); not handled when neither can transcribe.
   ///
   /// The automated-skill walk is the wrong question for an entry that
   /// belongs to no task — a goal check-in, a standalone voice note — and
@@ -531,9 +520,8 @@ class ProfileAutomationService {
     String? categoryId,
   }) => _tryTranscriptionFallbacks(_CallIntent.run, categoryId: categoryId);
 
-  /// Whether anything could transcribe without an automated skill — the
-  /// Settings default profile owns a transcription slot, or some configured
-  /// provider owns a usable speech-to-text model.
+  /// Whether anything could transcribe without an automated skill: the
+  /// Settings default profile owns a transcription slot.
   ///
   /// Settings needs this without a subject in hand, so the category's
   /// automation switch has something to control even when the category has
@@ -550,15 +538,13 @@ class ProfileAutomationService {
   ///
   /// 1. [categoryId]'s default profile, when it owns a transcription slot;
   /// 2. the device's Settings default profile, when it does;
-  /// 3. only then the direct model fallback, for a device whose profiles
-  ///    cannot transcribe at all.
+  /// 3. otherwise nothing: not handled, and the caller declines visibly.
   ///
   /// Steps 1 and 2 are [ProfileAutomationResolver.resolveTranscriptionProfile],
-  /// the rule People check-ins follow as well. Without them a recording whose
-  /// category automated nothing — every goal check-in — went straight to
-  /// step 3, which ranks models by provider type and picks the on-device
-  /// engine first: minutes per recording, on a model the user never chose,
-  /// while their default profile named a fast one.
+  /// the rule People check-ins and subject dictation follow as well. There is
+  /// no third route that picks a configured speech model by provider type:
+  /// that ranking put the on-device engine first and sent goal check-ins to
+  /// it for minutes per recording, on a model no profile named.
   Future<AutomationResult> _tryTranscriptionFallbacks(
     _CallIntent intent, {
     String? categoryId,
@@ -566,171 +552,34 @@ class ProfileAutomationService {
     final profile = await _resolver.resolveTranscriptionProfile(
       categoryId: categoryId,
     );
-    final skill = findBuiltInSkill(skillTranscribeContextId);
-    if (profile != null && skill != null) {
-      _logRun(
-        'no automated skill owns transcription — using the transcription '
-        'slot of profile ${DomainLogger.sanitizeId(profile.profileId ?? '')}',
-        intent: intent,
-      );
-      return AutomationResult(
-        handled: true,
-        resolvedProfile: profile,
-        skill: skill,
-        skillAssignment: _fallbackTranscriptionAssignment,
-      );
-    }
-    return _tryDirectTranscriptionFallback(intent);
-  }
-
-  /// Finds a configured audio-to-text model that can run transcription
-  /// without any inference profile — the last step of
-  /// [_tryTranscriptionFallbacks], reached only when neither the category
-  /// nor the Settings default profile can transcribe.
-  ///
-  /// Declines out loud. The profile walk's own decline only reports that no
-  /// profile automates transcription, which is the less interesting half when
-  /// the user *has* configured a speech-to-text model and it was rejected for
-  /// a missing provider or API key — so the tallies below name that instead of
-  /// leaving the fallback's failure invisible.
-  Future<AutomationResult> _tryDirectTranscriptionFallback(
-    _CallIntent intent,
-  ) async {
-    // Unreachable in practice: the transcribe skill is a compile-time entry in
-    // `builtInSkills`. No decline log here — it would be untestable.
-    final skill = findBuiltInSkill(skillTranscribeContextId);
-    if (skill == null) return AutomationResult.notHandled;
-
-    final modelConfigs = await _aiConfigRepository.getConfigsByType(
-      AiConfigType.model,
-    );
-    final candidates = <_TranscriptionFallbackCandidate>[];
-    var speechModelCount = 0;
-    var withoutProvider = 0;
-    var withoutApiKey = 0;
-
-    for (final model in modelConfigs.whereType<AiConfigModel>()) {
-      if (!_isSpeechToTextModel(model)) continue;
-      speechModelCount++;
-
-      final providerConfig = await _aiConfigRepository.getConfigById(
-        model.inferenceProviderId,
-      );
-      if (providerConfig is! AiConfigInferenceProvider) {
-        withoutProvider++;
-        continue;
-      }
-      if (_requiresMissingApiKey(providerConfig)) {
-        withoutApiKey++;
-        continue;
-      }
-
-      if (providerConfig.inferenceProviderType ==
-              InferenceProviderType.sherpa &&
-          !(await isEmbeddedModelInstalled?.call(model.providerModelId) ??
-              false)) {
-        continue;
-      }
-      candidates.add((model: model, provider: providerConfig));
-    }
-
-    if (candidates.isEmpty) {
+    // The transcribe skill is a compile-time entry in `builtInSkills`.
+    final skill = findBuiltInSkill(skillTranscribeContextId)!;
+    if (profile == null) {
       _logSkip(
-        speechModelCount == 0
-            ? 'no speech-to-text model is configured — the direct '
-                  'transcription fallback has nothing to run'
-            : 'all $speechModelCount configured speech-to-text model(s) were '
-                  'rejected: $withoutProvider without a resolvable provider, '
-                  '$withoutApiKey missing an API key',
-        subDomain: 'directFallback',
+        'neither the profile of ${_categoryLabel(categoryId)} nor the '
+        'Settings default owns a transcription slot — nothing transcribes',
+        subDomain: 'transcriptionProfile',
         intent: intent,
       );
       return AutomationResult.notHandled;
     }
-    candidates.sort(_compareFallbackCandidates);
-
-    final selected = candidates.first;
     _logRun(
-      // Not `providerModelId` / `name`: both are free-text fields the user
-      // types, so they can carry private hostnames, deployment names or
-      // repository paths. The config id plus the provider type identifies the
-      // row for support without exporting anything user-authored.
-      'no profile owns transcription — using the direct fallback model '
-      '${DomainLogger.sanitizeId(selected.model.id)} on provider type '
-      '${selected.provider.inferenceProviderType.name}',
+      'no automated skill owns transcription — using the transcription '
+      'slot of profile ${DomainLogger.sanitizeId(profile.profileId ?? '')} '
+      'for ${_categoryLabel(categoryId)}',
       intent: intent,
     );
-
-    // No profile owns this run, so nothing names a model for the
-    // post-processing that follows a speech-to-text transcript. The device's
-    // Settings default profile does: its post-processing route, or its
-    // thinking route, corrects and summarizes the transcript. Without one the
-    // transcript is written as heard.
-    final postProcessing = await _resolver.resolveDefaultProfile();
-
     return AutomationResult(
       handled: true,
-      resolvedProfile: ResolvedProfile(
-        // The transcription runner only consumes the transcription slot. Keep
-        // the required thinking fields populated with the same provider so the
-        // profile-shaped contract remains valid without creating a DB profile.
-        thinkingModelId: selected.model.providerModelId,
-        thinkingProvider: selected.provider,
-        thinkingModel: selected.model,
-        transcriptionModelId: selected.model.providerModelId,
-        transcriptionProvider: selected.provider,
-        transcriptionModel: selected.model,
-        audioPostProcessingModelId:
-            postProcessing?.effectiveAudioPostProcessingModelId,
-        audioPostProcessingProvider:
-            postProcessing?.effectiveAudioPostProcessingProvider,
-        audioPostProcessingModel:
-            postProcessing?.effectiveAudioPostProcessingModel,
-        audioPostProcessingModelUnavailable:
-            postProcessing?.audioPostProcessingModelUnavailable ?? false,
-        // The thinking slot holds the speech-to-text model, so without a
-        // default there is nothing to post-process with — whatever that
-        // model's capability flags say.
-        audioPostProcessingDisabled: postProcessing == null,
-        skillAssignments: const [_fallbackTranscriptionAssignment],
-      ),
+      resolvedProfile: profile,
       skill: skill,
       skillAssignment: _fallbackTranscriptionAssignment,
     );
   }
 
-  bool _isSpeechToTextModel(AiConfigModel model) {
-    return model.inputModalities.contains(Modality.audio) &&
-        model.outputModalities.contains(Modality.text);
-  }
-
-  bool _requiresMissingApiKey(AiConfigInferenceProvider provider) {
-    return ProviderConfig.requiresApiKey(provider.inferenceProviderType) &&
-        provider.apiKey.trim().isEmpty;
-  }
-
-  int _compareFallbackCandidates(
-    _TranscriptionFallbackCandidate left,
-    _TranscriptionFallbackCandidate right,
-  ) {
-    final rankComparison = _fallbackCandidateRank(
-      left,
-    ).compareTo(_fallbackCandidateRank(right));
-    if (rankComparison != 0) return rankComparison;
-    return left.model.name.compareTo(right.model.name);
-  }
-
-  int _fallbackCandidateRank(_TranscriptionFallbackCandidate candidate) {
-    final type = candidate.provider.inferenceProviderType;
-
-    if (type == InferenceProviderType.sherpa) return 0;
-    if (type == InferenceProviderType.mistral) return 3;
-    if (type == InferenceProviderType.melious) return 4;
-    if (type == InferenceProviderType.openAi) return 5;
-    if (type == InferenceProviderType.whisper) return 6;
-    if (type == InferenceProviderType.voxtral) return 7;
-    return 10;
-  }
+  static String _categoryLabel(String? categoryId) => categoryId == null
+      ? 'no category'
+      : 'category ${DomainLogger.sanitizeId(categoryId)}';
 
   /// Checks whether the resolved profile has a model slot populated for
   /// the given skill type.

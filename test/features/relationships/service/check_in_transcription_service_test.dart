@@ -408,6 +408,15 @@ void main() {
         withRun((run) {
           verifyResolvedFor('people');
           verifyNoMoreInteractions(resolver);
+          verify(
+            () => logger.log(
+              LogDomain.speech,
+              'transcribing ${DomainLogger.sanitizeId(audioEntryId)} through '
+              'profile ${DomainLogger.sanitizeId('')} (category '
+              '${DomainLogger.sanitizeId('people')})',
+              subDomain: 'CheckInTranscriptionService',
+            ),
+          ).called(1);
         });
       },
     );
@@ -766,6 +775,10 @@ void main() {
         'route', () async {
       stubResolved(null);
       expect(await service.canTranscribe(relationshipId: personId), isFalse);
+      // The probe itself leaves no trace; only the run below logs.
+      verifyNever(
+        () => logger.log(any(), any(), subDomain: any(named: 'subDomain')),
+      );
       withRun((run) {
         expect(run.isDone, isTrue);
         expect(run.result, isNull);

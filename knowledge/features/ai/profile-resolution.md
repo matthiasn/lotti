@@ -5,7 +5,7 @@ description: Which profile drives a run, the optional Chat, audio post-processin
 resource: ../../../lib/features/ai/util/profile_resolver.dart
 tags: [ai, profiles, resolution, pinning, privacy]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-11-01T12:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-11-01T20:00:00Z }
 stale_after: 2027-01-31
 sources:
   - id: device-default
@@ -38,7 +38,7 @@ sources:
     last_modified: 2026-11-01
   - id: automation-service
     resource: ../../../lib/features/ai/services/profile_automation_service.dart
-    title: The transcription fallbacks — profile first, then the direct model
+    title: The transcription fallback — category profile, then Settings default
     last_modified: 2026-11-01
   - id: subject-dictation
     resource: ../../../lib/features/ai/state/subject_dictation_providers.dart
@@ -60,7 +60,7 @@ sources:
 | `resolveForSubject(subjectId)` | Subject-linked execution (a task, project or person). Tries the agent path, then the subject's own `profileId` |
 | `resolveForCategory(categoryId)` | Standalone entries with no parent task. Reads `CategoryDefinition.defaultProfileId` and resolves it directly |
 | `resolveAutomationFallbacks(subjectId)` | The ordered, de-duplicated profiles a subject *inherits*: its own `profileId`, then its category's current `defaultProfileId`. Used only by `ProfileAutomationService` — see [execution paths](execution-paths.md) |
-| `resolveDefaultProfile()` | The device's Settings default profile. Used for recording summaries no task or category reaches, and for the post-processing route of the direct transcription fallback |
+| `resolveDefaultProfile()` | The device's Settings default profile. Used for recording summaries no task or category reaches, and as the second step of the transcription profile |
 | `resolveTranscriptionProfile({categoryId})` | The profile a recording without a task transcribes through: the category's `defaultProfileId` when it owns a transcription slot, else the Settings default when it does, else null. The one rule goal and People recordings, their chats' dictation and the automation fallback all follow — see [the transcription profile](#the-transcription-profile) |
 | `categoryOfSubject(subjectId)` | The category a subject (task, project, person, goal entry) is filed under, for the rule above |
 
@@ -80,7 +80,7 @@ calls `resolveForSubject`; otherwise it looks up the entry, reads its
 the skill, except transcription and recording summaries. A transcription that
 resolves no transcription slot falls back to
 `ProfileAutomationService.resolveTranscriptionFallback` — the Settings
-default's transcription slot, then the direct model fallback; a recording
+default's transcription slot, or nothing; a recording
 summary that resolves no profile falls back to `resolveDefaultProfile`. Skills whose
 `contextPolicy` is `fullTask` are hidden from the popup for entries without task
 context, except `Summarize Recording`, and the provider declines them without a
@@ -113,7 +113,7 @@ flowchart TD
   CategoryProfile --> Result
 
   Result --> NeedsStt{"Transcription without a transcription slot?"}
-  NeedsStt -->|yes| Direct["resolveTranscriptionFallback(): Settings default's slot, then direct model fallback"]
+  NeedsStt -->|yes| Direct["resolveTranscriptionFallback(): Settings default's slot, or nothing"]
   NeedsStt -->|no| NeedsDefault{"Audio summary without a profile?"}
   NeedsDefault -->|yes| Default["resolveDefaultProfile()"]
   NeedsDefault -->|no| Runnable
@@ -278,37 +278,28 @@ post-processing route that follows, come from whichever profile wins. Who asks:
   reach `AudioTranscriptionService.discoverTarget`.
 
 Before this order existed, a goal check-in whose category automated nothing
-went straight to the direct model fallback below, whose provider ranking put
-the on-device engine first: minutes per recording on a model nobody chose,
+went straight to a model fallback whose provider ranking put the on-device
+engine first: minutes per recording on a model nobody chose,
 while the Settings default named a fast one. Chat dictation in goals and
 People ran on discovery, which picks the seeded Melious Whisper.
 
-# The direct transcription fallback
+The rule itself logs nothing, because render-time probes ask it on every
+rebuild. Each run path logs, by sanitized id, the profile it transcribes
+through and the category it resolved for. That is
+`ProfileAutomationService`'s `resolved:` line (run intent only),
+`CheckInTranscriptionService`'s `transcribing … through profile …` line, and
+subject dictation's `dictation about … through profile …` line. Together they
+answer "which model heard this recording?" from a log export.
 
-The last step of `ProfileAutomationService._tryTranscriptionFallbacks`,
-reached only when neither the category nor the Settings default profile can
-transcribe — a device whose profiles name no transcription model at all. It
-scans configured audio-to-text model rows and builds an **ephemeral**
-`ResolvedProfile` around the selected model and the built-in
-`Transcribe (Task Context)` skill — it does not persist a profile.
+# No model outside a profile
 
-Candidate ranking prefers installed sherpa models, then Mistral, Melious,
-OpenAI, Whisper, and Voxtral, followed by other audio-to-text providers.
-Candidates need a resolvable provider and any required API key; sherpa also
-requires a verified local model. HTTP endpoint validation is left to the
-provider. Equal-ranked models are ordered by name. The fallback works without
-a profile.
-
-Its transcription model fills the ephemeral profile's thinking slot, so the
-post-processing that follows a speech-to-text transcript borrows a route
-instead: the device's Settings default profile's audio post-processing
-model, or its thinking model (`ProfileAutomationResolver.resolveDefaultProfile`,
-copied into the ephemeral profile's post-processing slot, unavailability
-included). With no default selected, or a selected default that does not
-resolve, the ephemeral profile is marked
-`audioPostProcessingDisabled`: nothing post-processes, whatever the
-speech-to-text model's own capability flags claim, and the transcript is
-written as heard.
+When neither the category nor the Settings default owns a transcription
+slot, `ProfileAutomationService` returns not-handled and the trigger declines
+visibly ("no transcription model configured"). There is no third step that
+picks a configured speech model by provider type: that ranking (sherpa first,
+then Mistral, Melious, OpenAI, Whisper, Voxtral) is what sent goal check-ins
+to the on-device engine, and it was removed. The profile that transcribes
+always carries its own post-processing route, so no route is borrowed either.
 
 The direct `AudioTranscriptionService` path used by Daily OS capture/refine
 prefers installed sherpa models, then Mistral contextual Voxtral and a Mistral batch audio model; next come

@@ -8,7 +8,6 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/task.dart';
-import 'package:lotti/features/ai/speech/sherpa_model_repository.dart';
 import 'package:lotti/features/ai/state/profile_automation_providers.dart';
 import 'package:lotti/providers/service_providers.dart'
     show domainLoggerProvider, journalDbProvider;
@@ -46,32 +45,38 @@ void main() {
     tearDown(() => container.dispose());
 
     test(
-      'embedded fallback provider follows installation and removal',
+      'the transcription fallback follows the Settings default, never a '
+      'speech model no profile names',
       () async {
         final configs = MockAiConfigRepository();
-        final models = MockSherpaModelRepository();
-        final provider = AiTestDataFactory.createTestProvider(
-          type: InferenceProviderType.sherpa,
-        );
-        final model = AiTestDataFactory.createTestModel(
-          providerModelId: 'tiny',
-          inferenceProviderId: provider.id,
+        final provider = AiTestDataFactory.createTestProvider();
+        final speech = AiTestDataFactory.createTestModel(
+          id: 'speech',
+          providerModelId: 'speech-native',
           inputModalities: [Modality.audio],
+        );
+        final thinking = AiTestDataFactory.createTestModel(
+          id: 'thinking',
+          providerModelId: 'thinking-native',
         );
         when(
           () => configs.getConfigsByType(AiConfigType.model),
-        ).thenAnswer((_) async => [model]);
+        ).thenAnswer((_) async => [speech, thinking]);
         when(
           () => configs.getConfigById(provider.id),
         ).thenAnswer((_) async => provider);
-        var installed = false;
-        when(
-          () => models.isAvailable('tiny'),
-        ).thenAnswer((_) async => installed);
+        when(() => configs.getConfigById('default-profile')).thenAnswer(
+          (_) async => AiTestDataFactory.createTestProfile(
+            id: 'default-profile',
+            thinkingModelId: 'thinking-native',
+            transcriptionModelId: 'speech-native',
+          ),
+        );
+        String? defaultId;
+        when(configs.getDefaultProfileId).thenAnswer((_) async => defaultId);
         final scoped = ProviderContainer(
           overrides: withServiceOverrides([
             aiConfigRepositoryProvider.overrideWithValue(configs),
-            sherpaModelRepositoryProvider.overrideWithValue(models),
             automationSubjectAgentLookupProvider.overrideWithValue(
               MockSubjectAgentResolver().call,
             ),
@@ -83,12 +88,11 @@ void main() {
         );
         addTearDown(scoped.dispose);
         final service = scoped.read(profileAutomationServiceProvider);
+
+        // A speech model is configured, but no profile names it.
         expect(await service.hasTranscriptionFallback(), isFalse);
-        installed = true;
+        defaultId = 'default-profile';
         expect(await service.hasTranscriptionFallback(), isTrue);
-        installed = false;
-        expect(await service.hasTranscriptionFallback(), isFalse);
-        verify(() => models.isAvailable('tiny')).called(3);
       },
     );
 
@@ -662,8 +666,8 @@ void main() {
         );
       }
 
-      /// A configured speech-to-text model plus its provider — the state in
-      /// which the direct transcription fallback could run.
+      /// The Settings default can transcribe when [available]: a selected
+      /// default profile whose transcription and thinking slots resolve.
       void stubFallbackAvailable({required bool available}) {
         when(
           () => mockAiConfigRepo.getConfigsByType(AiConfigType.model),
@@ -671,20 +675,32 @@ void main() {
           (_) async => [
             AiTestDataFactory.createTestModel(
               id: 'stt-model',
+              providerModelId: 'stt-native',
               inferenceProviderId: 'provider-1',
-              inputModalities: available
-                  ? const [Modality.audio]
-                  : const [Modality.text],
-              // Spelled out even though it matches the default: audio-in /
-              // text-out is exactly what makes this a speech-to-text row.
-              // ignore: avoid_redundant_argument_values
-              outputModalities: const [Modality.text],
+              inputModalities: const [Modality.audio],
+            ),
+            AiTestDataFactory.createTestModel(
+              id: 'thinking-model',
+              providerModelId: 'thinking-native',
+              inferenceProviderId: 'provider-1',
             ),
           ],
         );
         when(() => mockAiConfigRepo.getConfigById('provider-1')).thenAnswer(
           (_) async => AiTestDataFactory.createTestProvider(id: 'provider-1'),
         );
+        when(
+          () => mockAiConfigRepo.getConfigById('default-profile'),
+        ).thenAnswer(
+          (_) async => AiTestDataFactory.createTestProfile(
+            id: 'default-profile',
+            thinkingModelId: 'thinking-native',
+            transcriptionModelId: 'stt-native',
+          ),
+        );
+        when(
+          mockAiConfigRepo.getDefaultProfileId,
+        ).thenAnswer((_) async => available ? 'default-profile' : null);
       }
 
       Future<bool> availableFor(String? profileId) async {
@@ -706,10 +722,11 @@ void main() {
         },
       );
 
-      // A profile whose skills are all manual still leaves the fallback, so
-      // the switch stays offered rather than silently disappearing.
+      // A profile whose skills are all manual still leaves the Settings
+      // default, so the switch stays offered rather than silently
+      // disappearing.
       test(
-        'falls through to the direct fallback for a manual profile',
+        'falls through to the Settings default for a manual profile',
         () async {
           when(
             () => mockAiConfigRepo.getConfigById('profile-1'),
@@ -720,12 +737,43 @@ void main() {
         },
       );
 
-      // No profile is selected, but a transcription model
-      // configured. Hiding the switch here would strand the fallback.
-      test('true from the fallback when the category has no profile', () async {
+      // No profile is selected on the category, but the Settings default can
+      // transcribe. Hiding the switch here would strand that fallback.
+      test('true from the Settings default when the category has no '
+          'profile', () async {
         stubFallbackAvailable(available: true);
 
         expect(await availableFor(null), isTrue);
+      });
+
+      // The fallback asks the category's own profile first, so a manual
+      // profile that can transcribe is automation the switch must control —
+      // whatever the Settings default can do.
+      test("true from the category profile's own transcription slot, even "
+          'with nothing automated and no Settings default', () async {
+        stubFallbackAvailable(available: false);
+        when(() => mockAiConfigRepo.getConfigById('profile-1')).thenAnswer(
+          (_) async => AiTestDataFactory.createTestProfile(
+            id: 'profile-1',
+            thinkingModelId: 'thinking-native',
+            transcriptionModelId: 'stt-native',
+          ),
+        );
+
+        expect(await availableFor('profile-1'), isTrue);
+      });
+
+      test('false for a manual category profile that cannot transcribe, '
+          'with no Settings default', () async {
+        stubFallbackAvailable(available: false);
+        when(() => mockAiConfigRepo.getConfigById('profile-1')).thenAnswer(
+          (_) async => AiTestDataFactory.createTestProfile(
+            id: 'profile-1',
+            thinkingModelId: 'thinking-native',
+          ),
+        );
+
+        expect(await availableFor('profile-1'), isFalse);
       });
 
       test('false when nothing can be automated', () async {

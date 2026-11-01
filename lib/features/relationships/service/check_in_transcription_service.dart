@@ -130,9 +130,21 @@ class CheckInTranscriptionService {
   /// transcription slot. A person who cannot be read resolves as filed under
   /// no category, so the default still transcribes.
   Future<ResolvedProfile?> _resolveProfile(String relationshipId) async =>
-      _automationResolver.resolveTranscriptionProfile(
-        categoryId: await _categoryOf(relationshipId),
-      );
+      (await _resolve(relationshipId)).profile;
+
+  /// [_resolveProfile] with the category it was resolved for, which the
+  /// run path logs beside the profile it transcribes through.
+  Future<({ResolvedProfile? profile, String? categoryId})> _resolve(
+    String relationshipId,
+  ) async {
+    final categoryId = await _categoryOf(relationshipId);
+    return (
+      profile: await _automationResolver.resolveTranscriptionProfile(
+        categoryId: categoryId,
+      ),
+      categoryId: categoryId,
+    );
+  }
 
   /// The category the person [relationshipId] is filed under, or null when
   /// they have none or cannot be read. A failed read costs only the
@@ -225,10 +237,27 @@ class CheckInTranscriptionService {
     required bool summarize,
   }) async {
     try {
-      final (profile, knownTerms) = await (
-        _resolveProfile(relationshipId),
+      final (resolved, knownTerms) = await (
+        _resolve(relationshipId),
         _knownTerms(relationshipId),
       ).wait;
+      final profile = resolved.profile;
+      final category = resolved.categoryId == null
+          ? 'no category'
+          : 'category ${DomainLogger.sanitizeId(resolved.categoryId!)}';
+      // Which profile a check-in transcribes through, by sanitized id only:
+      // the line that answers "which model heard this?" from a log export.
+      _domainLogger.log(
+        LogDomain.speech,
+        profile == null
+            ? 'no transcription profile for '
+                  '${DomainLogger.sanitizeId(audioEntryId)} ($category) — '
+                  'not transcribed'
+            : 'transcribing ${DomainLogger.sanitizeId(audioEntryId)} through '
+                  'profile ${DomainLogger.sanitizeId(profile.profileId ?? '')} '
+                  '($category)',
+        subDomain: _logTag,
+      );
       if (profile == null) {
         onFailure();
         return;

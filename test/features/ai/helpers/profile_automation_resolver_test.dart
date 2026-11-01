@@ -1,8 +1,13 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/agents/agent_config.dart';
+import 'package:lotti/classes/ai/ai_config.dart';
+import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:lotti/features/ai/helpers/profile_automation_resolver.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
+import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/ai/util/profile_resolver.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -648,6 +653,20 @@ void main() {
           transcriptionProvider: testInferenceProvider(id: 'audio-$id'),
         );
 
+    late List<String> logged;
+    late MockDomainLogger logger;
+    setUp(() {
+      logged = [];
+      logger = MockDomainLogger();
+      when(
+        () => logger.log(any(), any(), subDomain: any(named: 'subDomain')),
+      ).thenAnswer((call) {
+        if (call.namedArguments[#subDomain] == 'ProfileAutomationResolver') {
+          logged.add(call.positionalArguments[1] as String);
+        }
+      });
+    });
+
     ProfileAutomationResolver withCategories({
       Map<String, String> categoryProfiles = const {},
       SubjectCategoryLookup? subjectCategoryLookup,
@@ -655,7 +674,7 @@ void main() {
       subjectAgentLookup: mockTaskAgentService.getTaskAgentForTask,
       templateService: mockTemplateService,
       profileResolver: mockProfileResolver,
-      domainLogger: MockDomainLogger(),
+      domainLogger: logger,
       categoryProfileLookup: (categoryId) async => categoryProfiles[categoryId],
       subjectCategoryLookup: subjectCategoryLookup,
     );
@@ -681,6 +700,8 @@ void main() {
 
         expect(result, same(category));
         verifyNever(() => mockProfileResolver.resolveDefaultProfile());
+        // Silent: render-time probes ask this on every rebuild.
+        expect(logged, isEmpty);
       },
     );
 
@@ -697,6 +718,7 @@ void main() {
         ).resolveTranscriptionProfile(categoryId: 'goals');
 
         expect(result, same(fallback));
+        expect(logged, isEmpty);
       },
     );
 
@@ -732,6 +754,7 @@ void main() {
           });
 
           expect(await withCategories().resolveTranscriptionProfile(), isNull);
+          expect(logged, isEmpty);
         },
       );
     }
@@ -747,5 +770,122 @@ void main() {
       expect(await wired.categoryOfSubject('other'), isNull);
       expect(await resolver.categoryOfSubject('goal-1'), isNull);
     });
+  });
+
+  // The resolution end to end over a real config store: what a device with a
+  // Settings default and one categorised profile actually resolves to.
+  group('resolveTranscriptionProfile over real configs', () {
+    late AiConfigDb configDb;
+    late ProfileAutomationResolver realResolver;
+    final created = DateTime(2026, 8);
+
+    Future<void> save(AiConfig config) => configDb.saveConfig(config);
+
+    setUp(() async {
+      configDb = AiConfigDb(inMemoryDatabase: true);
+      final settingsDb = SettingsDb(inMemoryDatabase: true);
+      addTearDown(configDb.close);
+      final repo = AiConfigRepository(configDb, settingsDb: settingsDb);
+      for (final provider in [
+        ('mistral', InferenceProviderType.mistral),
+        ('melious', InferenceProviderType.melious),
+      ]) {
+        await save(
+          AiConfig.inferenceProvider(
+            id: provider.$1,
+            name: provider.$1,
+            baseUrl: 'https://example.test',
+            apiKey: 'test-key',
+            createdAt: created,
+            inferenceProviderType: provider.$2,
+          ),
+        );
+      }
+      for (final model in [
+        ('voxtral-mini-latest', 'Voxtral Mini Transcribe', 'mistral'),
+        ('whisper-large-v3', 'Whisper large v3', 'melious'),
+        ('mistral-small-latest', 'Mistral Small', 'mistral'),
+      ]) {
+        await save(
+          AiConfig.model(
+            id: model.$1,
+            name: model.$2,
+            providerModelId: model.$1,
+            inferenceProviderId: model.$3,
+            createdAt: created,
+            inputModalities: const [Modality.audio, Modality.text],
+            outputModalities: const [Modality.text],
+            isReasoningModel: false,
+          ),
+        );
+      }
+      for (final profile in [
+        ('default-profile', 'voxtral-mini-latest'),
+        ('family-profile', 'whisper-large-v3'),
+      ]) {
+        await save(
+          AiConfig.inferenceProfile(
+            id: profile.$1,
+            name: profile.$1,
+            thinkingModelId: 'mistral-small-latest',
+            transcriptionModelId: profile.$2,
+            createdAt: created,
+          ),
+        );
+      }
+      await settingsDb.saveSettingsItem(
+        AiConfigRepository.defaultProfileSettingsKey,
+        'default-profile',
+      );
+      realResolver = ProfileAutomationResolver(
+        subjectAgentLookup: mockTaskAgentService.getTaskAgentForTask,
+        templateService: mockTemplateService,
+        profileResolver: ProfileResolver(
+          aiConfigRepository: repo,
+          domainLogger: MockDomainLogger(),
+        ),
+        domainLogger: MockDomainLogger(),
+        categoryProfileLookup: (categoryId) async => switch (categoryId) {
+          'family' => 'family-profile',
+          _ => null,
+        },
+      );
+    });
+
+    test(
+      'a goal or person in no category transcribes with the Settings '
+      "default's model",
+      () async {
+        final profile = await realResolver.resolveTranscriptionProfile();
+
+        expect(profile!.profileId, 'default-profile');
+        expect(profile.transcriptionModel!.name, 'Voxtral Mini Transcribe');
+        expect(profile.transcriptionProvider!.id, 'mistral');
+      },
+    );
+
+    test(
+      "one in a category with no profile still gets the default's model",
+      () async {
+        final profile = await realResolver.resolveTranscriptionProfile(
+          categoryId: 'work',
+        );
+
+        expect(profile!.transcriptionModel!.name, 'Voxtral Mini Transcribe');
+      },
+    );
+
+    test(
+      "one in a category with a profile gets that profile's model",
+      () async {
+        final profile = await realResolver.resolveTranscriptionProfile(
+          categoryId: 'family',
+        );
+
+        expect(profile!.profileId, 'family-profile');
+        expect(profile.transcriptionModel!.name, 'Whisper large v3');
+        expect(profile.transcriptionProvider!.id, 'melious');
+      },
+    );
   });
 }

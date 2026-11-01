@@ -99,12 +99,18 @@ class ProfileAutomationResolver {
   /// model picked by provider type behind their back. A profile that
   /// resolves but names no transcription model is passed over like a
   /// missing one: it cannot transcribe either.
+  ///
+  /// Silent: render-time probes ask it on every rebuild. The run paths that
+  /// act on its answer log which profile they transcribe through.
   Future<ResolvedProfile?> resolveTranscriptionProfile({
     String? categoryId,
   }) async {
-    if (categoryId != null) {
+    final categoryProfileId = categoryId == null
+        ? null
+        : await _categoryProfileLookup?.call(categoryId);
+    if (categoryProfileId != null) {
       final categoryProfile = _transcribing(
-        await resolveForCategory(categoryId),
+        await _profileResolver.resolveByProfileId(categoryProfileId),
       );
       if (categoryProfile != null) return categoryProfile;
     }

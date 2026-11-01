@@ -242,15 +242,13 @@ final triggerSkillProvider = FutureProvider.autoDispose
             }
           }
 
-          // Transcription has more places to go, and they are the ones that
-          // matter for an entry whose task or category profile cannot
+          // Transcription has one more place to go, and it is the one that
+          // matters for an entry whose task or category profile cannot
           // transcribe — a goal check-in, a standalone voice note: the
-          // Settings default profile's transcription slot, and only when it
-          // has none, the direct fallback that picks a configured
-          // speech-to-text model without a profile. The category was asked
-          // above already. Without these the manual popup, the timeline's
-          // Retry and the automatic path all declined the same recording for
-          // the same invisible reason.
+          // Settings default profile's transcription slot. The category was
+          // asked above already. When the default cannot transcribe either,
+          // the recording declines visibly below; no model is picked outside
+          // a profile.
           if (isTranscription &&
               (resolvedProfile == null ||
                   resolvedProfile.transcriptionModelId == null)) {
