@@ -36,15 +36,24 @@ final companionCustomizationProvider =
 /// load, so it reaches the other devices without a re-edit.
 class CompanionCustomizationController
     extends Notifier<CompanionCustomization> {
-  /// Set by [set], so a late-resolving [_load] never clobbers it.
-  bool _changed = false;
-
   /// Whether what she was set to is known: read from storage (nothing
   /// stored counts — she is the default) or set here. False while the read
-  /// is pending and after it failed, so a host that must not guess — her
-  /// voice, muted or not — can wait.
+  /// is out, and after it failed unless a change made meanwhile was then
+  /// stored — so a host that must not guess (her voice, muted or not) can
+  /// wait.
   bool get loaded => _loaded;
   bool _loaded = false;
+
+  /// Whether the first read is out: set as [build] starts it.
+  bool _loading = false;
+
+  /// The change made while the read was out, and every part any change
+  /// then touched — kept apart from [state], which a reload may replace.
+  /// Only those parts are laid over what the read finds, so a part stored
+  /// there and never touched — a mute — is not overwritten by the default
+  /// shown before; a part switched and switched back still counts as set.
+  CompanionCustomization? _pendingTo;
+  final Set<String> _touched = {};
 
   /// Saves not yet committed. A reload while one is pending would read the
   /// value it is about to replace, so it waits until the last one lands.
@@ -69,6 +78,7 @@ class CompanionCustomizationController
     _watchSynced();
     // Nothing waits on the load: she is drawn in the default until it lands,
     // and [_load] handles its own failure.
+    _loading = true;
     _load().ignore();
     return const CompanionCustomization();
   }
@@ -82,14 +92,26 @@ class CompanionCustomizationController
       ]);
       final json = stored[companionCustomizationKey];
       if (!ref.mounted) return;
-      if (_changed || json == null) {
-        _loaded = true;
+      _loading = false;
+      final raw = json == null ? null : _parse(json);
+      final found = raw == null ? null : CompanionCustomization.fromJson(raw);
+      _stored = raw;
+      final pending = _pendingTo;
+      if (pending != null) {
+        // A change made while this read was out: laid over what it found.
+        final merged = (found ?? const CompanionCustomization()).adopting(
+          pending,
+          {..._touched},
+        );
+        _pendingTo = null;
+        _touched.clear();
+        _write(merged);
         return;
       }
-      final raw = _parse(json);
-      state = CompanionCustomization.fromJson(raw);
-      _stored = raw;
       _loaded = true;
+      _reloadIfAsked();
+      if (found == null || json == null) return;
+      state = found;
       // Every write stores its stamp with the value, so one without a stamp
       // has nothing to win with and is not sent.
       final updatedAt = int.tryParse(
@@ -103,13 +125,35 @@ class CompanionCustomizationController
     } catch (error, stackTrace) {
       // Storage unreadable, or JSON it cannot parse: she stays as she is.
       _logError(error, stackTrace, 'Could not load her customization');
+      _loading = false;
+      // A change made meanwhile is all there is to keep: stored as it is.
+      final pending = _pendingTo;
+      if (pending != null && ref.mounted) {
+        _pendingTo = null;
+        _touched.clear();
+        _write(pending);
+      } else if (ref.mounted) {
+        _reloadIfAsked();
+      }
     }
   }
 
   /// Makes her [customization], stores it, and sends it to the other
   /// devices.
   void set(CompanionCustomization customization) {
-    _changed = true;
+    if (_loading) {
+      // Shown at once, stored once the read lands (see [_load]).
+      _touched.addAll(
+        CompanionCustomization.changedParts(state, customization),
+      );
+      _pendingTo = customization;
+      state = customization;
+      return;
+    }
+    _write(customization);
+  }
+
+  void _write(CompanionCustomization customization) {
     _loaded = true;
     state = customization;
     final stored = _stored;
@@ -138,10 +182,7 @@ class CompanionCustomizationController
       _logError(error, stackTrace, 'Could not store her customization');
     } finally {
       _saving--;
-      if (_saving == 0 && _reloadPending && ref.mounted) {
-        _reloadPending = false;
-        _reload().ignore();
-      }
+      if (ref.mounted) _reloadIfAsked();
     }
   }
 
@@ -189,9 +230,18 @@ class CompanionCustomizationController
     });
   }
 
+  /// Runs a reload asked for while one could not run, once it can.
+  void _reloadIfAsked() {
+    if (_saving == 0 && !_loading && _reloadPending) {
+      _reloadPending = false;
+      _reload().ignore();
+    }
+  }
+
   Future<void> _reload() async {
-    if (_saving > 0) {
-      // What is stored is about to change; read it once it has.
+    if (_saving > 0 || _loading) {
+      // What is stored is about to change, or the first read — and a change
+      // made during it — has not landed yet: read it once it has.
       _reloadPending = true;
       return;
     }

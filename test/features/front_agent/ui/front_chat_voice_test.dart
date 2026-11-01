@@ -50,6 +50,10 @@ class _Voice extends TtsPlaybackController {
     consent = confirmModelDownload;
     canPlayNow = canPlay;
     spoken.add((sourceId: sourceId, text: text));
+    state = TtsPlaybackState(
+      status: TtsPlaybackStatus.playing,
+      sourceId: sourceId,
+    );
   }
 
   @override
@@ -295,6 +299,40 @@ void main() {
 
       expect(await voice.canPlayNow!(), isFalse);
       expect(voice.stoppedSources, [frontVoiceSourceId('c-1')]);
+    });
+
+    testWidgets('a mute stops her where she is speaking, though another '
+        'conversation is open, and leaves any other voice alone', (
+      tester,
+    ) async {
+      await pumpHost(
+        tester,
+        active: 'c-2',
+        playing: TtsPlaybackState(
+          status: TtsPlaybackStatus.playing,
+          sourceId: frontVoiceSourceId('c-1'),
+        ),
+      );
+
+      custom.mute();
+      await tester.pump();
+
+      expect(voice.stoppedSources, [frontVoiceSourceId('c-1')]);
+    });
+
+    testWidgets('a mute leaves the day briefing speaking', (tester) async {
+      await pumpHost(
+        tester,
+        playing: const TtsPlaybackState(
+          status: TtsPlaybackStatus.playing,
+          sourceId: 'day-briefing:2026-10-31',
+        ),
+      );
+
+      custom.mute();
+      await tester.pump();
+
+      expect(voice.stoppedSources, isEmpty);
     });
 
     testWidgets('stays written when she is muted', (tester) async {
