@@ -12,3 +12,10 @@
   Day header now speaks with the read-aloud model of the profile the Daily OS
   planner uses, and she appears on devices without the on-device voice when
   that profile has a cloud voice.
+- **Questions about your journal sometimes failed with "Asking this
+  failed".** When the model cited a source number it was never given, the
+  whole answer was thrown away; now that citation is dropped and the answer
+  is kept. When one entry could no longer be read in the categories you
+  chose, the whole question failed; now that entry is left out and the
+  answer says its coverage is incomplete. This affects the companion's
+  journal answers and Ask in tasks, projects and categories.

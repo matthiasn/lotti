@@ -314,8 +314,10 @@ void main() {
           await started.future;
           final text = summaryOutcome
               ? 'The Penguin other summary records calibration.'
+              // Nothing but a citation naming no evidence: dropping it
+              // leaves no answer, which is still rejected.
               : outcome == 'invalid citation'
-              ? 'Unsupported [999]'
+              ? '[999]'
               : 'Recorded [1]';
           stream.add('{"answer":"$text');
           await seen.future;
