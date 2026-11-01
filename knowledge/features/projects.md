@@ -450,8 +450,9 @@ glass strip as the task and entry bars: **Record a voice note** is its one
 filled shape, taking the alert fill while a recording linked to the project
 runs; **Write a note** makes a note linked to the project and opens it on its
 own page, since the project page has no editor to land in; **Import image**;
-and the plus opens the Add sheet (`CreateEntryModal`) for the rest. On a
-project host that sheet leaves out the timer — time is tracked on the
+and the plus opens the Add sheet (`CreateEntryModal`) for the rest, handing
+it the project it holds (`host`) so its rules apply from the first frame
+rather than after a lookup. On a project host that sheet leaves out the timer — time is tracked on the
 project's tasks — and the linked task, which would not be one of them (the
 tasks panel adds those), and its own note opens on its page too. On a narrow
 row the image button gives way first, then the note; both stay in the
