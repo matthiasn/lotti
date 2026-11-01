@@ -21,6 +21,7 @@ import 'package:lotti/features/projects/service/project_lifecycle_service.dart';
 import 'package:lotti/features/projects/state/project_detail_controller.dart';
 import 'package:lotti/features/projects/state/project_detail_record_provider.dart';
 import 'package:lotti/features/projects/state/project_task_list_options_controller.dart';
+import 'package:lotti/features/projects/ui/widgets/project_action_bar.dart';
 import 'package:lotti/features/projects/ui/widgets/project_mobile_detail_content.dart';
 import 'package:lotti/features/projects/ui/widgets/project_recommendations_panel.dart';
 import 'package:lotti/features/projects/ui/widgets/project_status_picker.dart';
@@ -151,6 +152,10 @@ class ProjectDetailsPage extends ConsumerWidget {
 
         return Scaffold(
           backgroundColor: ShowcasePalette.page(context),
+          // The content paints behind the bar's glass; the body's safe area
+          // takes in the bar's height, so the last section clears it.
+          extendBody: true,
+          bottomNavigationBar: ProjectActionBar(project: record.project),
           body: SafeArea(
             child: ProjectMobileDetailContent(
               record: record,

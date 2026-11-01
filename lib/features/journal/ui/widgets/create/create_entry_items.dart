@@ -299,6 +299,11 @@ class CreateTextItem extends ConsumerWidget {
               .read(taskFocusControllerProvider(id).notifier)
               .publishTaskFocus(entryId: entry.meta.id);
         }
+        // A project's page has no editor to land in: the note opens on its
+        // own page, linked to the project and in its timeline.
+        if (entry != null && host is ProjectEntry) {
+          beamToNamed('/journal/${entry.meta.id}');
+        }
         if (context.mounted) {
           Navigator.of(context).pop();
         }

@@ -161,6 +161,10 @@ void main() {
       groups: overviewGroups ?? groups,
     );
     final overrides = [
+      // The project page's timeline and record pill are not this test's
+      // subject; neither leaves a timer behind.
+      noProjectTimeline,
+      quietProjectRecorder,
       projectsOverviewProvider.overrideWith(
         (ref) => Stream.value(snapshot),
       ),

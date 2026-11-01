@@ -37,6 +37,7 @@ import '../../../../../mocks/mocks.dart';
 import '../../../../../widget_test_utils.dart';
 import '../../../../github/github_token_status.dart';
 import '../../../../github/pull_request_fixtures.dart';
+import '../../../../projects/test_utils.dart';
 
 /// Resolves the host id to [_host], so the sheet's host-type rows render as
 /// they would for that entity.
@@ -254,6 +255,41 @@ void main() {
           findsOneWidget,
         );
         expect(find.byIcon(LottiIcons.timer), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'a PROJECT host drops the Timer and the linked Task — time is tracked '
+      "on the project's tasks, and those are added from its tasks panel",
+      (tester) async {
+        final hostProject = makeTestProject(
+          id: 'host-project',
+          title: 'Nest survey',
+        );
+        getIt.registerSingleton<EditorStateService>(MockEditorStateService());
+        final updates = MockUpdateNotifications();
+        when(
+          () => updates.updateStream,
+        ).thenAnswer((_) => const Stream<Set<String>>.empty());
+        getIt.registerSingleton<UpdateNotifications>(updates);
+
+        await pumpAndOpenModal(
+          tester,
+          linkedFromId: 'host-project',
+          extraOverrides: [
+            entryControllerProvider(
+              'host-project',
+            ).overrideWith(() => _HostEntryController(hostProject)),
+          ],
+        );
+
+        final messages = AppLocalizations.of(
+          tester.element(find.byType(DsActionRow).first),
+        )!;
+        expect(find.byIcon(LottiIcons.timer), findsNothing);
+        expect(find.text(messages.addActionCreateLinkedTask), findsNothing);
+        // The rest of the sheet stays: a note and a voice note among them.
+        expect(find.text(messages.taskFirstRunWriteNote), findsOneWidget);
       },
     );
 

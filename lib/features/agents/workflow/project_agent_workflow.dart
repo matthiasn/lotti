@@ -9,6 +9,7 @@ import 'package:lotti/classes/ai_attribution.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/agents/agent_repository.dart';
 import 'package:lotti/features/agents/model/project_agent_report_contract.dart';
+import 'package:lotti/features/agents/projection/input_capture.dart';
 import 'package:lotti/features/agents/service/agent_log_llm_summarizer.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/service/project_recommendation_service.dart';
@@ -37,6 +38,7 @@ import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_wrapper.dart';
+import 'package:lotti/features/ai/util/image_ai_responses.dart';
 import 'package:lotti/features/ai/util/profile_resolver.dart';
 import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
 import 'package:lotti/get_it.dart';
@@ -229,6 +231,7 @@ class ProjectAgentWorkflow with AgentErrorLogging {
     required Set<String> triggerTokens,
     required ProposalLedger ledger,
     String? compactedLog,
+    List<RenderedSource> projectEntries = const [],
   }) => _contextBuilder.buildUserMessage(
     projectEntity: projectEntity,
     lastReport: lastReport,
@@ -236,8 +239,34 @@ class ProjectAgentWorkflow with AgentErrorLogging {
     linkedTasksContext: linkedTasksContext,
     triggerTokens: triggerTokens,
     compactedLog: compactedLog,
+    projectEntries: projectEntries,
     ledger: ledger,
   );
+
+  /// The journal entries linked straight to [projectId], rendered as the log
+  /// shows them: text, audio transcripts, and each image with its AI
+  /// analyses (fetched in bulk, as the task agent does). Null when they
+  /// could not be read; a failed analysis lookup only drops the analyses.
+  Future<List<RenderedSource>?> _renderProjectEntries(String projectId) async {
+    try {
+      final linked = await journalRepository.getLinkedEntities(
+        linkedTo: projectId,
+      );
+      var analyses = const <String, List<AiResponseEntry>>{};
+      try {
+        analyses = await fetchAiResponsesForImages(
+          getBulkLinkedEntities: journalRepository.getBulkLinkedEntities,
+          linkedEntities: linked,
+        );
+      } catch (e) {
+        logError('failed to fetch image AI responses for capture', error: e);
+      }
+      return renderTaskSources(linked, aiResponsesByEntryId: analyses);
+    } catch (e) {
+      logError('failed to render project entries', error: e);
+      return null;
+    }
+  }
 
   List<ChatCompletionTool> _buildToolDefinitions({
     required bool hasOpenProposals,

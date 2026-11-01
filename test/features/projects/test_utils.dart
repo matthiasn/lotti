@@ -8,8 +8,10 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/projects/state/project_health_metrics.dart';
 import 'package:lotti/features/projects/ui/model/project_list_detail_models.dart';
+import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/utils/file_utils.dart';
 
+import '../../helpers/stub_audio_recorder_controller.dart';
 import '../categories/test_utils.dart';
 
 /// Shared test factory for creating [ProjectEntry] instances.
@@ -21,6 +23,11 @@ import '../categories/test_utils.dart';
 final Override noProjectTimeline = hasNonTaskLinkedEntriesProvider.overrideWith(
   (ref, id) => false,
 );
+
+/// For tests that render a project page with its action bar: an idle
+/// recorder, so the bar's record pill starts no amplitude stream (a timer).
+final Override quietProjectRecorder = audioRecorderControllerProvider
+    .overrideWith(StubAudioRecorderController.new);
 
 ProjectEntry makeTestProject({
   String? id,

@@ -75,6 +75,9 @@ class _CreateEntryMenuList extends ConsumerWidget {
         ? null
         : ref.watch(entryControllerProvider(id)).value?.entry;
     final hostIsTask = host is Task;
+    // A project's own page: time is tracked on its tasks, and a task linked
+    // from here would not be one of them — the project adds those itself.
+    final hostIsProject = host is ProjectEntry;
     final enableEvents =
         ref
             .watch(configFlagProvider(enableEventsFlag))
@@ -105,12 +108,14 @@ class _CreateEntryMenuList extends ConsumerWidget {
         CreateTextItem(linkedFromId, categoryId: categoryId),
         if (hostIsTask) CreateChecklistItem(linkedFromId),
         CreateAudioItem(linkedFromId, categoryId: categoryId),
-        CreateTaskItem(linkedFromId, categoryId: categoryId),
+        if (!hostIsProject)
+          CreateTaskItem(linkedFromId, categoryId: categoryId),
         if (enableEvents) CreateEventItem(linkedFromId, categoryId: categoryId),
         // On a task host the Track time pill IS the timer — offering it here
         // a second time under a different name taxed every user with a
         // synonym.
-        if (linkedFromId != null && !hostIsTask) CreateTimerItem(linkedFromId),
+        if (linkedFromId != null && !hostIsTask && !hostIsProject)
+          CreateTimerItem(linkedFromId),
         if (isMacOS || isMobile || isLinux || isWindows)
           ImportImageItem(
             linkedFromId,

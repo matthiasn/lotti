@@ -85,6 +85,11 @@ is compacted by **summary checkpoints over a log prefix** (ADR 0017).
 The substrate covers task agents (captured journal entries + observations +
 proposal verdicts), project agents (captured project-linked entries +
 observations), and day agents (submitted capture transcripts + observations).
+A project agent renders its entries exactly as a task agent does — image
+analyses included — and when its wake does not read the compacted log, its
+prompt lists the most recent of them inline (`## Project Entries`,
+`projectEntriesLimit`), as a task agent's legacy context carries its log
+entries.
 
 Goal agents use its **read side only**: recall builds an `AgentLogCompactor`
 over the goal's check-ins and chat as inline events, beside its observations,

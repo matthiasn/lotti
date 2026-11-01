@@ -46,6 +46,7 @@ import '../../../../../helpers/fallbacks.dart';
 import '../../../../../helpers/service_overrides.dart';
 import '../../../../../mocks/mocks.dart';
 import '../../../../../widget_test_utils.dart';
+import '../../../../projects/test_utils.dart';
 
 // ---------------------------------------------------------------------------
 // Helper controllers / fake data
@@ -2539,6 +2540,70 @@ void main() {
           expect(focus?.entryId, noteId);
         },
       );
+    });
+
+    group('CreateTextItem on a project host', () {
+      final bench = _DbBench();
+      setUpAll(bench.setUpAll);
+      tearDownAll(bench.tearDownAll);
+
+      testWidgets('opens the new note on its own page: a project page has no '
+          'editor below the fold to land in', (tester) async {
+        const projectId = 'host-project-id';
+        const noteId = 'project-note-id';
+        final paths = <String>[];
+        beamToNamedOverride = paths.add;
+        addTearDown(() => beamToNamedOverride = null);
+        final mockEntryCreationService = MockEntryCreationService();
+        when(
+          () => mockEntryCreationService.createTextEntry(
+            linkedId: projectId,
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).thenAnswer((_) async => _makeJournalEntry(noteId));
+
+        final container = ProviderContainer(
+          overrides: withServiceOverrides([
+            entryCreationServiceProvider.overrideWithValue(
+              mockEntryCreationService,
+            ),
+            entryControllerProvider(projectId).overrideWith(
+              () => _TestEntryController(
+                makeTestProject(id: projectId, title: 'Nest survey'),
+              ),
+            ),
+          ]),
+        );
+        addTearDown(container.dispose);
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: MaterialApp(
+              builder: LegacyMaterialBridge.builder,
+              theme: resolveTestTheme(),
+              localizationsDelegates: const [
+                AppLocalizations.delegate,
+                ...GlobalMaterialLocalizations.delegates,
+              ],
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: const Scaffold(body: CreateTextItem(projectId)),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        await tester.tap(find.byType(DsActionRow));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+
+        verify(
+          () => mockEntryCreationService.createTextEntry(
+            linkedId: projectId,
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).called(1);
+        expect(paths, ['/journal/$noteId']);
+      });
     });
 
     group('ImportImageItem Widget Integration Tests (modern)', () {

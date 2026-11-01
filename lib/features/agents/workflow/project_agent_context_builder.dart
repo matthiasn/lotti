@@ -8,6 +8,8 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/agents/agent_repository.dart';
+import 'package:lotti/features/agents/projection/compaction_summary.dart';
+import 'package:lotti/features/agents/projection/input_capture.dart';
 import 'package:lotti/features/agents/tools/project_tool_definitions.dart';
 import 'package:lotti/features/agents/util/agent_error_logging.dart';
 import 'package:lotti/features/agents/workflow/agent_observations.dart';
@@ -24,6 +26,10 @@ import 'package:openai_dart/openai_dart.dart';
 /// state. The workflow holds an instance and delegates to it.
 /// How many of its newest observations a project agent's wake reads.
 const projectObservationLookback = 20;
+
+/// How many of the project's own entries a wake without the compacted log
+/// lists — the most recent; the log, when on, carries them all.
+const projectEntriesLimit = 50;
 
 class ProjectAgentContextBuilder {
   ProjectAgentContextBuilder({
@@ -145,6 +151,7 @@ is listed under `## Open Proposal Guard` with its fingerprint.
     required String linkedTasksContext,
     required Set<String> triggerTokens,
     String? compactedLog,
+    List<RenderedSource> projectEntries = const [],
     ProposalLedger ledger = const ProposalLedger.empty(),
   }) {
     final buf = StringBuffer();
@@ -189,6 +196,24 @@ is listed under `## Open Proposal Guard` with its fingerprint.
         ..writeln('## Previous Report')
         ..writeln()
         ..writeln(lastReport.content);
+    }
+
+    // Without the compacted log, the project's own entries — what was
+    // linked straight to it — are listed as the log would show them, the
+    // most recent [projectEntriesLimit], oldest first.
+    if (compactedLog == null && projectEntries.isNotEmpty) {
+      final recent = [...projectEntries]
+        ..sort((a, b) => a.sourceCreatedAt.compareTo(b.sourceCreatedAt));
+      final shown = recent.length > projectEntriesLimit
+          ? recent.sublist(recent.length - projectEntriesLimit)
+          : recent;
+      buf
+        ..writeln()
+        ..writeln('## Project Entries')
+        ..writeln();
+      for (final entry in shown) {
+        buf.writeln(renderCompactedSourceLine(entry));
+      }
     }
 
     // With the compacted log in place, observations live in the `## Project

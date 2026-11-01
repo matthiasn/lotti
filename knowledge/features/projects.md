@@ -442,7 +442,20 @@ editor. The AI surface appears above the task list. Under the task list,
 `ProjectTimelineSection` shows what is linked straight to the project —
 `LinkedEntriesWidget` over the project with its tasks hidden
 (`hasNonTaskLinkedEntriesProvider`), the same cards, filters and sort a task's
-entries have — and is absent while nothing but tasks is linked. `ProjectRecommendationsPanel`
+entries have — and is absent while nothing but tasks is linked. The project
+agent reads the same entries ([memory and compaction](agents/memory-and-compaction.md#scope)).
+
+`ProjectActionBar` docks at the page's foot (`Scaffold.extendBody`), the same
+glass strip as the task and entry bars: **Record a voice note** is its one
+filled shape, taking the alert fill while a recording linked to the project
+runs; **Write a note** makes a note linked to the project and opens it on its
+own page, since the project page has no editor to land in; **Import image**;
+and the plus opens the Add sheet (`CreateEntryModal`) for the rest. On a
+project host that sheet leaves out the timer — time is tracked on the
+project's tasks — and the linked task, which would not be one of them (the
+tasks panel adds those), and its own note opens on its page too. On a narrow
+row the image button gives way first, then the note; both stay in the
+sheet. `ProjectRecommendationsPanel`
 renders two bands inside the card: the newest run's **recommended next steps**
 (`ProjectNextStepRow`, one per step) and the agent's **proposed changes**
 (`ProjectProposalRow`, reusing Task Details' `RowActions` rail). What keeps

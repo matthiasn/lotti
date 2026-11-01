@@ -35,6 +35,7 @@ import 'package:lotti/features/projects/state/project_detail_record_provider.dar
 import 'package:lotti/features/projects/state/project_task_list_options_controller.dart';
 import 'package:lotti/features/projects/ui/model/project_list_detail_models.dart';
 import 'package:lotti/features/projects/ui/pages/project_details_page.dart';
+import 'package:lotti/features/projects/ui/widgets/project_action_bar.dart';
 import 'package:lotti/features/projects/ui/widgets/project_mobile_detail_content.dart';
 import 'package:lotti/features/projects/ui/widgets/project_recommendations_panel.dart';
 import 'package:lotti/features/projects/ui/widgets/project_tasks_panel.dart';
@@ -173,7 +174,6 @@ List<Override> _baseOverrides({
   List<Override> extraOverrides = const [],
 }) {
   return [
-    noProjectTimeline,
     projectDetailControllerProvider(_projectId).overrideWith(
       controllerOverride ?? () => _TestProjectDetailController(controllerState),
     ),
@@ -221,7 +221,7 @@ void main() {
       () => repository.getProjectById(project.id),
     ).thenAnswer((_) async => project);
     final container = ProviderContainer(
-      overrides: withServiceOverrides([
+      overrides: _withPageOverrides([
         projectRepositoryProvider.overrideWithValue(repository),
       ]),
     );
@@ -265,7 +265,7 @@ void main() {
 
     await tester.pumpWidget(
       ProviderScope(
-        overrides: withServiceOverrides(overrides),
+        overrides: _withPageOverrides(overrides),
         child: makeTestableWidget2(
           Theme(
             data: DesignSystemTheme.dark(),
@@ -278,6 +278,30 @@ void main() {
     await tester.pump();
     await tester.pump();
   }
+
+  testWidgets("docks the project's action bar at the page's foot, with the "
+      'content painting behind its glass', (tester) async {
+    await pumpPageWithData(
+      tester,
+      controllerState: ProjectDetailState.initial().copyWith(
+        project: testProject,
+        isLoading: false,
+      ),
+      record: testRecord,
+    );
+
+    final bar = tester.widget<ProjectActionBar>(find.byType(ProjectActionBar));
+    expect(bar.project, same(testRecord.project));
+    final scaffold = tester.widget<Scaffold>(
+      find
+          .ancestor(
+            of: find.byType(ProjectActionBar),
+            matching: find.byType(Scaffold),
+          )
+          .first,
+    );
+    expect(scaffold.extendBody, isTrue);
+  });
 
   testWidgets('Ask keeps project details mounted in a companion until Close', (
     tester,
@@ -395,7 +419,7 @@ void main() {
       () async {
         final mockService = MockTaskAgentService();
         final container = ProviderContainer(
-          overrides: withServiceOverrides([
+          overrides: _withPageOverrides([
             taskAgentServiceProvider.overrideWithValue(mockService),
           ]),
         );
@@ -456,7 +480,7 @@ void main() {
 
           await tester.pumpWidget(
             ProviderScope(
-              overrides: withServiceOverrides(overrides),
+              overrides: _withPageOverrides(overrides),
               child: makeTestableWidget2(
                 Theme(
                   data: DesignSystemTheme.dark(),
@@ -506,20 +530,24 @@ void main() {
           );
 
           final container = ProviderContainer(
-            overrides: _baseOverrides(
-              controllerState: ProjectDetailState(
-                project: testProject,
-                linkedTasks: const [],
-                isLoading: false,
-                isSaving: false,
-                hasChanges: false,
+            overrides: [
+              noProjectTimeline,
+              quietProjectRecorder,
+              ..._baseOverrides(
+                controllerState: ProjectDetailState(
+                  project: testProject,
+                  linkedTasks: const [],
+                  isLoading: false,
+                  isSaving: false,
+                  hasChanges: false,
+                ),
+                recordOverride: (ref) {
+                  final reload =
+                      ref.watch(reloadTriggerProvider).asData?.value ?? 0;
+                  return reload == 0 ? tallRecord : completer.future;
+                },
               ),
-              recordOverride: (ref) {
-                final reload =
-                    ref.watch(reloadTriggerProvider).asData?.value ?? 0;
-                return reload == 0 ? tallRecord : completer.future;
-              },
-            ),
+            ],
           );
           addTearDown(container.dispose);
 
@@ -573,20 +601,24 @@ void main() {
         (tester) async {
           final reloadTriggerProvider = StateProvider<int>((ref) => 0);
           final container = ProviderContainer(
-            overrides: _baseOverrides(
-              controllerState: ProjectDetailState(
-                project: testProject,
-                linkedTasks: const [],
-                isLoading: false,
-                isSaving: false,
-                hasChanges: false,
+            overrides: [
+              noProjectTimeline,
+              quietProjectRecorder,
+              ..._baseOverrides(
+                controllerState: ProjectDetailState(
+                  project: testProject,
+                  linkedTasks: const [],
+                  isLoading: false,
+                  isSaving: false,
+                  hasChanges: false,
+                ),
+                recordOverride: (ref) {
+                  final reload = ref.watch(reloadTriggerProvider);
+                  if (reload == 0) return testRecord;
+                  throw StateError('transient agent report failure');
+                },
               ),
-              recordOverride: (ref) {
-                final reload = ref.watch(reloadTriggerProvider);
-                if (reload == 0) return testRecord;
-                throw StateError('transient agent report failure');
-              },
-            ),
+            ],
           );
           addTearDown(container.dispose);
 
@@ -635,7 +667,7 @@ void main() {
 
           await tester.pumpWidget(
             ProviderScope(
-              overrides: withServiceOverrides(overrides),
+              overrides: _withPageOverrides(overrides),
               child: makeTestableWidget2(
                 Theme(
                   data: DesignSystemTheme.dark(),
@@ -1220,7 +1252,7 @@ void main() {
           // `projectAgentProvider(_projectId)` to null.
           await tester.pumpWidget(
             ProviderScope(
-              overrides: withServiceOverrides([
+              overrides: _withPageOverrides([
                 projectDetailControllerProvider(_projectId).overrideWith(
                   () => _TestProjectDetailController(
                     ProjectDetailState(
@@ -1349,7 +1381,7 @@ void main() {
           // returns true.
           await tester.pumpWidget(
             ProviderScope(
-              overrides: withServiceOverrides(overrides),
+              overrides: _withPageOverrides(overrides),
               child: makeTestableWidget2(
                 Theme(
                   data: DesignSystemTheme.dark(),
@@ -2133,7 +2165,7 @@ void main() {
 
               await tester.pumpWidget(
                 ProviderScope(
-                  overrides: withServiceOverrides(overrides),
+                  overrides: _withPageOverrides(overrides),
                   child: makeTestableWidget2(
                     Theme(
                       data: DesignSystemTheme.dark(),
@@ -2303,7 +2335,7 @@ void main() {
 
           await tester.pumpWidget(
             ProviderScope(
-              overrides: withServiceOverrides(overrides),
+              overrides: _withPageOverrides(overrides),
               child: makeTestableWidget2(
                 Theme(
                   data: DesignSystemTheme.dark(),
@@ -2428,3 +2460,13 @@ void main() {
     });
   });
 }
+
+/// [withServiceOverrides] for a test that renders the project page: no
+/// timeline and a quiet recorder, so neither the linked-entries cache nor
+/// the record pill's amplitude stream leaves a timer behind.
+List<Override> _withPageOverrides(List<Override> overrides) =>
+    withServiceOverrides([
+      noProjectTimeline,
+      quietProjectRecorder,
+      ...overrides,
+    ]);
