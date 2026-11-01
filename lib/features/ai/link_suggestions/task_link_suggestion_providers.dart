@@ -88,20 +88,22 @@ class TaskLinkSuggestionScanController
   /// fine a moment ago.
   Future<void> _rescan() async {
     final generation = ++_generation;
+    // Read before the await: the task may close while the scan runs, and a
+    // disposed provider's ref cannot be read — the failure would then escape
+    // unlogged instead of being reported here.
+    final logger = ref.read(domainLoggerProvider);
     try {
       final scan = await ref
           .read(taskLinkSuggestionDetectorProvider)
           .scan(taskId, previous: state.value);
       if (ref.mounted && generation == _generation) state = AsyncData(scan);
     } catch (exception, stackTrace) {
-      ref
-          .read(domainLoggerProvider)
-          .error(
-            LogDomain.ai,
-            exception,
-            stackTrace: stackTrace,
-            subDomain: 'taskLinkSuggestionScan',
-          );
+      logger.error(
+        LogDomain.ai,
+        exception,
+        stackTrace: stackTrace,
+        subDomain: 'taskLinkSuggestionScan',
+      );
     }
   }
 }

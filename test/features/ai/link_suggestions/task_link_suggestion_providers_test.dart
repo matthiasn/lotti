@@ -184,6 +184,38 @@ void main() {
       expect(published()?.map((s) => s.targetTaskId), ['newer']);
     });
 
+    test('a rescan that fails after the task closed is still logged, and '
+        'nothing escapes', () async {
+      stubScan((_) => _scan([]));
+      final subscription = container.listen(
+        taskLinkSuggestionScanProvider(_taskId),
+        (_, _) {},
+      );
+      await container.read(taskLinkSuggestionScanProvider(_taskId).future);
+
+      final slow = Completer<TaskLinkSuggestionScan>();
+      when(
+        () => detector.scan(_taskId, previous: any(named: 'previous')),
+      ).thenAnswer((_) => slow.future);
+      updates.add({_taskId});
+      await pumpEventQueue();
+      // The task page closes while the scan runs: the provider is disposed.
+      subscription.close();
+      await pumpEventQueue();
+
+      slow.completeError(StateError('db closed'));
+      await pumpEventQueue();
+
+      verify(
+        () => logger.error(
+          LogDomain.ai,
+          any<Object>(),
+          stackTrace: any(named: 'stackTrace'),
+          subDomain: 'taskLinkSuggestionScan',
+        ),
+      ).called(1);
+    });
+
     test('a failed rescan keeps the last list and is logged', () async {
       stubScan((_) => _scan([_suggestion('census')]));
       await readScan();

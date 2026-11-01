@@ -94,6 +94,10 @@ class InferenceBackfillScanController
   /// Never throws: a failure is logged and the last list stays.
   Future<void> _rescan() async {
     final generation = ++_generation;
+    // Read before the await: the task may close while the scan runs, and a
+    // disposed provider's ref cannot be read — the failure would then escape
+    // unlogged instead of being reported here.
+    final logger = ref.read(domainLoggerProvider);
     try {
       final scan = await ref
           .read(inferenceBackfillDetectorProvider)
@@ -102,14 +106,12 @@ class InferenceBackfillScanController
     } catch (exception, stackTrace) {
       // A background rescan keeps the last list rather than flashing an
       // error over suggestions that were fine a moment ago.
-      ref
-          .read(domainLoggerProvider)
-          .error(
-            LogDomain.ai,
-            exception,
-            stackTrace: stackTrace,
-            subDomain: 'inferenceBackfillScan',
-          );
+      logger.error(
+        LogDomain.ai,
+        exception,
+        stackTrace: stackTrace,
+        subDomain: 'inferenceBackfillScan',
+      );
     }
   }
 }
