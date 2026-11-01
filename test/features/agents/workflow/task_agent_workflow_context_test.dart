@@ -25,6 +25,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 import '../../categories/test_utils.dart';
+import '../../projects/test_utils.dart' show makeTestProject;
 import 'task_agent_workflow_test_helpers.dart';
 
 void main() {
@@ -37,6 +38,7 @@ void main() {
   late MockConversationManager mockConversationManager;
   late TaskAgentWorkflow workflow;
   late MockPullRequestContextService mockPullRequestContextService;
+  late MockProjectRepository mockProjectRepository;
 
   const agentId = taskAgentTestAgentId;
   const taskId = taskAgentTestTaskId;
@@ -52,7 +54,18 @@ void main() {
   tearDownAll(tearDownTaskAgentWorkflowTestGetIt);
 
   setUp(() {
-    final bench = createTaskAgentWorkflowTestBench();
+    // Wired, so the wake can tell whether a task needs a project; categories
+    // have no projects unless a test gives them some.
+    mockProjectRepository = MockProjectRepository();
+    when(
+      () => mockProjectRepository.getProjectsForCategory(any()),
+    ).thenAnswer((_) async => const []);
+    when(
+      () => mockProjectRepository.getLinkedProjectForTask(any()),
+    ).thenAnswer((_) async => null);
+    final bench = createTaskAgentWorkflowTestBench(
+      projectRepository: mockProjectRepository,
+    );
     mockAgentRepository = bench.mockAgentRepository;
     mockSyncService = bench.mockSyncService;
     mockConversationRepository = bench.mockConversationRepository;
@@ -763,6 +776,126 @@ void main() {
 
         expect(message, isNotNull);
         expect(message, isNot(contains('## Linked Tasks')));
+      });
+
+      group('a task in no project', () {
+        Task taskInCategory(String? categoryId) => Task(
+          data: TaskData(
+            status: TaskStatus.open(
+              id: 'status_id',
+              createdAt: DateTime(2024, 3, 15),
+              utcOffset: 60,
+            ),
+            title: 'Prepare the quarterly slides',
+            statusHistory: const [],
+            dateTo: DateTime(2024, 3, 15),
+            dateFrom: DateTime(2024, 3, 15),
+          ),
+          meta: Metadata(
+            id: taskId,
+            createdAt: DateTime(2024, 3, 15),
+            dateFrom: DateTime(2024, 3, 15),
+            dateTo: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            categoryId: categoryId,
+          ),
+        );
+
+        void stubTask(String? categoryId) => when(
+          () => mockJournalDb.journalEntityById(taskId),
+        ).thenAnswer((_) async => taskInCategory(categoryId));
+
+        void stubCategoryProjects() {
+          when(
+            () => mockProjectRepository.getProjectsForCategory('cat-001'),
+          ).thenAnswer(
+            (_) async => [
+              makeTestProject(
+                id: 'project-1',
+                title: 'Quarterly reporting',
+                categoryId: 'cat-001',
+              ),
+            ],
+          );
+          when(
+            () => mockAgentRepository.getLatestProjectReportForProjectId(
+              'project-1',
+            ),
+          ).thenAnswer((_) async => null);
+        }
+
+        test("is shown its category's projects in the volatile tail, though "
+            'nothing in the task names one', () async {
+          stubTask('cat-001');
+          stubCategoryProjects();
+
+          final message = await executeAndCaptureMessage();
+
+          expect(message, contains('## Project\n$taskNeedsProjectNotice'));
+          expect(message, contains('"id": "project-1"'));
+          expect(message, contains('"title": "Quarterly reporting"'));
+          // After the task state, so the cached prefix stays byte-identical
+          // on the wake that links the task.
+          expect(
+            message!.indexOf('## Project\n'),
+            greaterThan(message.indexOf('## Current Task Context')),
+          );
+        });
+
+        test('is not told so when it is already in a project — one the '
+            'private gate hides included', () async {
+          stubTask('cat-001');
+          stubCategoryProjects();
+          when(
+            () => mockProjectRepository.getLinkedProjectForTask(taskId),
+          ).thenAnswer(
+            (_) async => makeTestProject(id: 'hidden', categoryId: 'cat-001'),
+          );
+
+          final message = await executeAndCaptureMessage();
+
+          expect(message, isNot(contains(taskNeedsProjectNotice)));
+        });
+
+        test('is not told so when its category has no project', () async {
+          stubTask('cat-001');
+
+          final message = await executeAndCaptureMessage();
+
+          expect(message, isNot(contains(taskNeedsProjectNotice)));
+          verifyNever(
+            () => mockProjectRepository.getLinkedProjectForTask(any()),
+          );
+        });
+
+        test('a project read that fails leaves the section out and the wake '
+            'running', () async {
+          stubTask('cat-001');
+          stubCategoryProjects();
+          when(
+            () => mockProjectRepository.getLinkedProjectForTask(taskId),
+          ).thenAnswer((_) => Future.error(StateError('db closed')));
+
+          final message = await executeAndCaptureMessage();
+
+          expect(
+            message,
+            isNotNull,
+            reason: 'the wake still reached the model',
+          );
+          expect(message, isNot(contains(taskNeedsProjectNotice)));
+        });
+
+        test('without a category, no projects are looked up at all', () async {
+          stubTask(null);
+
+          final message = await executeAndCaptureMessage();
+
+          expect(message, isNot(contains(taskNeedsProjectNotice)));
+          verifyNever(
+            () => mockProjectRepository.getProjectsForCategory(any()),
+          );
+        });
       });
 
       test('omits parent project context section when empty', () async {

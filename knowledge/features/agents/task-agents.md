@@ -140,6 +140,10 @@ sources:
     resource: ../../../lib/features/agents/tools/task_project_tool_definitions.dart
     title: get_category_projects and set_task_project — choosing the task's project
     last_modified: 2026-10-31
+  - id: project-cue
+    resource: ../../../lib/features/agents/workflow/task_agent_execute.dart
+    title: TaskAgentExecute — the `## Project` cue for a task in no project
+    last_modified: 2026-11-01
   - id: project-options
     resource: ../../../lib/features/agents/workflow/task_project_options.dart
     title: TaskProjectOption — the category's projects, read and matched for the agent
@@ -842,7 +846,37 @@ decision is its record.
 ## Project assignment tools
 
 A task belongs to at most one project, and only to one of its own category.
-Two tools let the agent choose it:
+Two tools let the agent choose it.
+
+**The wake lists the candidates when a task has none.** The task details
+never name the task's project, and `Parent Project Context` is absent both for
+a task in no project and for one whose project has no report yet — so on its
+own the model could not tell an unassigned task from an assigned one, and it
+reached for `get_category_projects` only when the task's notes named a project.
+Now `TaskAgentExecute` reads once per wake whether the task's category has
+projects (the same answer the tool gate uses) and, if so, whether the task has
+a live project link (`getLinkedProjectForTask`, past the private gate, so a task
+filed under a hidden project is not unassigned). For a task in none, the
+volatile tail carries a `## Project` section: `taskNeedsProjectNotice`, then the
+`get_category_projects` JSON itself (`loadTaskProjectOptions` →
+`renderTaskProjectOptions`: same category and privacy, each project's report
+one-liner and TLDR), between the parent-project slot and the linked tasks, after
+the cached log prefix. A failing read leaves the section out and the wake runs.
+`TaskAgentPromptBuilder.projectCueRule` — in both the full and the compact
+scaffold, since the section reaches every model — tells the agent to judge from
+the task's own title, notes and checklist whether one listed project covers its
+work, propose it by id with `set_task_project`, and propose nothing when none
+clearly fits. A declined proposal stays declined under the Open Proposal Guard.
+
+The candidates are inline, as `## Available Labels` are, because a bare
+"this task has no project" was not enough: in the live penguin wake eval
+(`projectFit`), glm-5.3 received that sentence and never called
+`get_category_projects`; with the list in the payload it proposed the right
+project. `projectRestraint` checks the other side — only unrelated projects, so
+proposing any is the failure. Measured 2026-11-01 on Melious, three samples
+each: with the section, glm-5.3, Kimi K3 and Qwen 3.6 27B (compact scaffold)
+proposed the right project 9/9 and no project 9/9 under restraint; with the
+section off, glm-5.3 proposed none 3/3.
 
 - `get_category_projects {}` is **read-only**, answered in the strategy from
   `loadTaskProjectOptions`: every project of the task's category, sorted by
@@ -880,6 +914,7 @@ sequenceDiagram
   participant U as User
   participant D as TaskToolDispatcher
   participant P as ProjectRepository
+  Note over M: for a task in none, "## Project" already lists these projects
   M->>S: get_category_projects
   S->>P: projects of the task's category
   S-->>M: JSON: id, title, status, oneLiner, tldr, isCurrentProject

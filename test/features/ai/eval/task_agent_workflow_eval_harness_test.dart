@@ -7,6 +7,7 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/model/seeded_directive_content.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/workflow/task_agent_prompt_builder.dart';
+import 'package:lotti/logic/repositories/project_repository.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../helpers/service_overrides.dart';
@@ -233,6 +234,64 @@ void main() {
 
       harness = await TaskAgentWorkflowEvalHarness.start(container: container);
     });
+
+    for (final (scenarioId, expectedProject) in [
+      (PenguinWakeScenarioId.projectFit, 'penguin-project-habitat'),
+      (PenguinWakeScenarioId.projectRestraint, null),
+    ]) {
+      test('the ${scenarioId.name} scenario seeds an unassigned task beside '
+          'its projects, read through the real repository', () async {
+        final projectContainer = ProviderContainer(
+          overrides: getItServiceOverrides(),
+        );
+        addTearDown(projectContainer.dispose);
+        await harness.dispose();
+        final run = await TaskAgentWorkflowEvalHarness.start(
+          container: projectContainer,
+          scenario: scenarioId,
+        );
+        addTearDown(run.dispose);
+
+        // What the wake's `## Project` cue and `get_category_projects` read:
+        // the real repository over the seeded journal.
+        final repository = projectContainer.read(projectRepositoryProvider);
+        final projects = await repository.getProjectsForCategory(
+          run.world.categoryId,
+        );
+        expect(
+          projects.map((project) => project.data.title).toSet(),
+          {for (final project in run.scenario.projects) project.title},
+        );
+        expect(
+          await repository.getLinkedProjectForTask(run.world.taskId),
+          isNull,
+          reason: 'the cue only fires for a task in no project',
+        );
+        // Neither the task nor its notes name a project — that is the point.
+        final context = (await run.buildTaskContextJson())!.toLowerCase();
+        for (final project in run.scenario.projects) {
+          expect(context, isNot(contains(project.title.toLowerCase())));
+        }
+
+        expect(run.scenario.expectedProjectId, expectedProject);
+        if (expectedProject == null) {
+          expect(
+            run.scenario.forbiddenToolNames,
+            contains(TaskAgentToolNames.setTaskProject),
+            reason: 'restraint: proposing any project is the failure',
+          );
+        } else {
+          expect(
+            run.scenario.projects.map((project) => project.id),
+            contains(expectedProject),
+          );
+        }
+
+        harness = await TaskAgentWorkflowEvalHarness.start(
+          container: container,
+        );
+      });
+    }
 
     test('the built prompt carries the live no-op rule', () {
       // Assert against a BUILT prompt, never a seeded constant. The seeded

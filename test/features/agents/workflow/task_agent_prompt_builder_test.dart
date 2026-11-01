@@ -399,6 +399,30 @@ Use the task language and omit empty sections.
       expect(compact, contains(guidance));
     });
 
+    test('both scaffolds tell the agent what the `## Project` section asks '
+        'for — every model receives it', () {
+      const rule = TaskAgentPromptBuilder.projectCueRule;
+      // Proactive: the task need not name a project for one to be proposed.
+      expect(rule, contains('## Project'));
+      expect(rule, contains('a task rarely names its project'));
+      // The candidates are in the payload, so no read stands in the way.
+      expect(rule, contains('the section lists the projects of its category'));
+      expect(rule, contains('set_task_project'));
+      expect(rule, contains('Propose nothing when no project clearly fits'));
+
+      for (final modelId in ['models/gemini-flash', 'qwen3.5-122b-a10b']) {
+        expect(
+          TaskAgentPromptBuilder.buildSystemPrompt(
+            version: makeTestTemplateVersion(),
+            soulVersion: null,
+            modelId: modelId,
+          ),
+          contains(rule),
+          reason: modelId,
+        );
+      }
+    });
+
     test('both scaffolds teach the typed-relationship tools', () {
       // The full scaffold: relation-aware Linked Tasks reading plus the
       // link_task / create_follow_up_task+relation guidance.

@@ -398,6 +398,7 @@ user-facing report current.
   Do not add existing work. Archive true duplicates instead of renaming them.
 - Treat tool failures and policy denials as private observations, not report
   content. Stay within the task's allowed categories.
+- $projectCueRule
 - The Open Proposal Guard is authoritative: never duplicate an open or rejected
   proposal. Retract only the same proposal when it became stale; never retract
   unaffected siblings after a partial user decision.
@@ -456,8 +457,21 @@ domain; prefer direct evidence from THIS task only where the two conflict.
 Apply it silently: never restate it in the report and never propose changes
 to it.''';
 
+  /// What to do with the wake payload's `## Project` section — a task in no
+  /// project whose category has some. Shared by the full and the compact
+  /// scaffold: the section reaches every model, so every model is told what it
+  /// asks for.
+  static const projectCueRule =
+      'When the wake payload has a `## Project` section, the task belongs to '
+      'no project yet and the section lists the projects of its category. '
+      "Judge from the task's own title, notes and checklist — a task rarely "
+      "names its project — whether one project's title, one-liner or TLDR "
+      'covers its work; if so, propose it with `set_task_project` and its id. '
+      'Propose nothing when no project clearly fits.';
+
   /// Parent-project and linked-task context guidance for task agents.
-  static const taskAgentScaffoldProjectContext = '''
+  static const taskAgentScaffoldProjectContext =
+      '''
 
 
 ## Parent Project Context
@@ -474,11 +488,9 @@ Use this as high-level planning context:
 - prefer direct evidence from the current task when it conflicts with older,
   broader project context
 
-When the task belongs to no project, or clearly to a different one, call
-`get_category_projects` to read the projects of its category, then
-`set_task_project` with the id of the one whose one-liner or TLDR covers the
-task's work. The user confirms the move. Propose nothing when no project
-clearly fits.
+$projectCueRule
+Do the same when the task clearly belongs to a different project than its
+own. The user confirms the move.
 
 ## Linked Tasks
 
