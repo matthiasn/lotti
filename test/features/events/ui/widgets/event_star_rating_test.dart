@@ -101,6 +101,45 @@ void main() {
       expect(ratings, [2.5]);
     });
 
+    testWidgets('a screen reader sets whole and half stars through each '
+        "star's own semantics node", (tester) async {
+      final handle = tester.ensureSemantics();
+      final ratings = <double>[];
+      await pumpRating(tester, rating: 0, onRatingChanged: ratings.add);
+
+      expect(
+        tester.getSemantics(find.bySemanticsLabel('Rate 4 of 5 stars')),
+        isSemantics(
+          isButton: true,
+          hasTapAction: true,
+          hasLongPressAction: true,
+        ),
+      );
+
+      tester.semantics.tap(find.semantics.byLabel('Rate 4 of 5 stars'));
+      tester.semantics.longPress(find.semantics.byLabel('Rate 2 of 5 stars'));
+
+      expect(ratings, [4.0, 1.5]);
+      handle.dispose();
+    });
+
+    testWidgets('stars are drawn at the control-glyph token size', (
+      tester,
+    ) async {
+      await pumpRating(tester, rating: 5);
+
+      final sizes = tester
+          .widgetList<Icon>(
+            find.descendant(
+              of: find.byType(EventStarRating),
+              matching: find.byType(Icon),
+            ),
+          )
+          .map((icon) => icon.size)
+          .toSet();
+      expect(sizes, {IconSizes.m});
+    });
+
     testWidgets('without a callback the stars are inert and unannounced', (
       tester,
     ) async {

@@ -16,7 +16,7 @@ class EventStarRating extends StatelessWidget {
   const EventStarRating({
     required this.rating,
     this.onRatingChanged,
-    this.size = 20,
+    this.size = IconSizes.m,
     super.key,
   });
 
@@ -96,17 +96,25 @@ class _Star extends StatelessWidget {
       return ExcludeSemantics(child: glyphFor(highlighted: false));
     }
 
+    void setWhole() => onRatingChanged(star.toDouble());
+    void setHalf() => onRatingChanged(star - 0.5);
+
+    // The node replaces the ink's own semantics (one label per star, not the
+    // ink's unlabelled button), so it carries the ink's actions itself — a
+    // screen reader's activate sets the whole star, its long press the half.
     return Semantics(
       button: true,
       label: context.messages.eventsRatingStarLabel(
         star,
         EventStarRating.starCount,
       ),
+      onTap: setWhole,
+      onLongPress: setHalf,
       excludeSemantics: true,
       child: DsQuietInk(
         customBorder: const CircleBorder(),
-        onTap: () => onRatingChanged(star.toDouble()),
-        onLongPress: () => onRatingChanged(star - 0.5),
+        onTap: setWhole,
+        onLongPress: setHalf,
         builder: (context, highlighted) => glyphFor(highlighted: highlighted),
       ),
     );
