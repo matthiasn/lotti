@@ -12621,6 +12621,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get projectTasksSortTitle => 'Titolo';
 
   @override
+  String get projectTimelineTitle => 'Cronologia';
+
+  @override
   String get projectTitleLabel => 'Titolo del progetto';
 
   @override

@@ -17,6 +17,7 @@ import 'package:lotti/features/projects/ui/model/project_task_list_options.dart'
 import 'package:lotti/features/projects/ui/widgets/project_agent_summary_card.dart';
 import 'package:lotti/features/projects/ui/widgets/project_header_title_row.dart';
 import 'package:lotti/features/projects/ui/widgets/project_tasks_panel.dart';
+import 'package:lotti/features/projects/ui/widgets/project_timeline_section.dart';
 import 'package:lotti/features/projects/ui/widgets/shared_widgets.dart';
 import 'package:lotti/features/projects/ui/widgets/showcase/showcase_palette.dart';
 import 'package:lotti/features/tasks/ui/header/desktop_task_header.dart';
@@ -351,6 +352,13 @@ class _ProjectMobileDetailContentState
                                   : _handleAddTask,
                               isAddTaskEnabled: !isMutating,
                               isAddingTask: _isAddingTask,
+                            ),
+                            // What is linked straight to the project, under
+                            // its tasks — gone when there is nothing.
+                            SliverToBoxAdapter(
+                              child: ProjectTimelineSection(
+                                project: widget.record.project,
+                              ),
                             ),
                           ],
                         ),

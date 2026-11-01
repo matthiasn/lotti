@@ -387,7 +387,8 @@ The entry a tap writes goes through the persistence logic — a text entry
 with the owner's `categoryId` and `linkedId`, a task through
 `createTaskEntry` — so an entry filed under a task wakes the task agent
 through its subscription exactly as dictation into the task does, one filed
-under a project lands in that project agent's log at its next scheduled
+under a project shows in the project's timeline (`ProjectTimelineSection`)
+and lands in that project agent's log at its next scheduled
 update (a linked entry marks the report stale; it never wakes the agent
 itself), and a made task is a task like any other. **Every write is idempotent per door**: the entry or
 task is created under a deterministic id (`frontDoorEntryId`,

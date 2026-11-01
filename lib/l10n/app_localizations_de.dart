@@ -12546,6 +12546,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get projectTasksSortTitle => 'Titel';
 
   @override
+  String get projectTimelineTitle => 'Zeitleiste';
+
+  @override
   String get projectTitleLabel => 'Projekttitel';
 
   @override

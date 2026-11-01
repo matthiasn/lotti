@@ -7783,6 +7783,7 @@
   "projectTasksSortPriority": "Priority",
   "projectTasksSortRecentlyUpdated": "Recently updated",
   "projectTasksSortTitle": "Title",
+  "projectTimelineTitle": "Timeline",
   "projectTitleLabel": "Project Title",
   "projectTitleRequired": "Project title cannot be empty",
   "promptDefaultModelBadge": "Default",

@@ -12413,6 +12413,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get projectTasksSortTitle => 'Title';
 
   @override
+  String get projectTimelineTitle => 'Timeline';
+
+  @override
   String get projectTitleLabel => 'Project Title';
 
   @override

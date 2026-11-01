@@ -12503,6 +12503,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get projectTasksSortTitle => 'Titel';
 
   @override
+  String get projectTimelineTitle => 'Tijdlijn';
+
+  @override
   String get projectTitleLabel => 'Projecttitel';
 
   @override

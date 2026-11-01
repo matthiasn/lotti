@@ -5353,6 +5353,7 @@
   "projectTasksSortPriority": "Prioritet",
   "projectTasksSortRecentlyUpdated": "Senest opdateret",
   "projectTasksSortTitle": "Titel",
+  "projectTimelineTitle": "Tidslinje",
   "projectTitleLabel": "Projekttitel",
   "projectTitleRequired": "Projekttitel kan ikke være tom",
   "promptDefaultModelBadge": "Default",
