@@ -28,7 +28,15 @@ class SubjectDictation {
   const SubjectDictation({
     required this.resolveTarget,
     required this.correct,
+    required this.dictionaryCategory,
   });
+
+  /// Dictation for a subject that cannot be named yet: every take fails as
+  /// "no audio model" — never a discovered one — and nothing is corrected.
+  SubjectDictation.unavailable()
+    : resolveTarget = (() async => throw _unavailable()),
+      correct = ((transcript, _) async => transcript),
+      dictionaryCategory = (() async => null);
 
   /// The transcription slot's provider and model, resolved when a take
   /// stops. Throws a [TranscriptionException] when nothing can transcribe.
@@ -44,6 +52,12 @@ class SubjectDictation {
     ResolvedInferenceProvider heardBy,
   )
   correct;
+
+  /// The category whose speech dictionary the transcription request carries
+  /// — the subject's — so a multimodal model reads its terms in the prompt
+  /// and a speech-to-text engine gets them as a hint. Null for a subject in
+  /// no category: the terms that apply everywhere still reach it.
+  final Future<String?> Function() dictionaryCategory;
 }
 
 /// The [SubjectDictation] for the subject `subjectId` (a goal's journal
@@ -64,6 +78,9 @@ final ProviderFamily<SubjectDictation, String> subjectDictationProvider =
       }
 
       return SubjectDictation(
+        dictionaryCategory: () => ref
+            .read(profileAutomationResolverProvider)
+            .categoryOfSubject(subjectId),
         resolveTarget: () async {
           final profile = (await resolve()).profile;
           final provider = profile?.transcriptionProvider;

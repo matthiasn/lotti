@@ -798,6 +798,44 @@ void main() {
       expect(heardBy, [target]);
     });
 
+    test("the explicit route's request carries the take's dictionary "
+        'category', () async {
+      when(
+        () => service.transcribeStream(
+          any(),
+          target: target,
+          dictionaryCategoryId: 'family',
+        ),
+      ).thenAnswer((_) => Stream.value('Family words'));
+      await controller.start(
+        resolveTranscriptionTarget: () async => target,
+        resolveDictionaryCategory: () async => 'family',
+      );
+      await controller.stopAndTranscribe();
+
+      expect(
+        container.read(chatRecorderControllerProvider).transcript,
+        'Family words',
+      );
+    });
+
+    test('discovery never asks for a dictionary category', () async {
+      var asked = 0;
+      await controller.start(
+        resolveDictionaryCategory: () async {
+          asked++;
+          return 'family';
+        },
+      );
+      await controller.stopAndTranscribe();
+
+      expect(asked, 0);
+      expect(
+        container.read(chatRecorderControllerProvider).transcript,
+        'Automatic model result',
+      );
+    });
+
     test('a correction that throws keeps the words as heard', () async {
       await controller.start(
         resolveTranscriptionTarget: () async => target,

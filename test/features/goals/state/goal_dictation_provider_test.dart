@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/ai/repository/transcription_exception.dart';
 import 'package:lotti/features/ai/state/subject_dictation_providers.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/state/goal_dictation_provider.dart';
@@ -23,12 +24,16 @@ void main() {
     );
   });
 
-  test('is nothing without a goal repository to name the goal', () {
+  test('without a goal repository to name the goal, a take fails as "no '
+      'audio model" — never a discovered one', () async {
     final container = ProviderContainer(
       overrides: [goalRepositoryProvider.overrideWithValue(null)],
     );
     addTearDown(container.dispose);
 
-    expect(container.read(goalDictationProvider('agent-1')), isNull);
+    await expectLater(
+      container.read(goalDictationProvider('agent-1')).resolveTarget(),
+      throwsA(isA<TranscriptionException>()),
+    );
   });
 }

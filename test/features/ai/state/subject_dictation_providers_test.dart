@@ -175,6 +175,36 @@ void main() {
     }
   });
 
+  test("dictionaryCategory is the subject's category", () async {
+    expect(await dictation().dictionaryCategory(), 'goals');
+    stubCategory(null);
+    expect(await dictation().dictionaryCategory(), isNull);
+  });
+
+  test('the unavailable dictation refuses every take and corrects '
+      'nothing', () async {
+    final unavailable = SubjectDictation.unavailable();
+
+    await expectLater(
+      unavailable.resolveTarget(),
+      throwsA(
+        isA<TranscriptionException>().having(
+          (e) => e.message,
+          'message',
+          contains('No audio-capable models'),
+        ),
+      ),
+    );
+    expect(
+      await unavailable.correct('Pip', (
+        provider: whisper,
+        model: speechModel(),
+      )),
+      'Pip',
+    );
+    expect(await unavailable.dictionaryCategory(), isNull);
+  });
+
   group('correct', () {
     final heardByWhisper = (provider: whisper, model: speechModel());
 

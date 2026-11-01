@@ -129,6 +129,7 @@ class RelationshipChatPane extends ConsumerWidget {
       onRetry: controller.retry,
       resolveTranscriptionTarget: dictation.resolveTarget,
       correctTranscript: dictation.correct,
+      resolveDictionaryCategory: dictation.dictionaryCategory,
       attachmentBuilder: (context, message) {
         if (message.role != AgentChatRole.agent || message.runKey == null) {
           return null;

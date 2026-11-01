@@ -1209,6 +1209,7 @@ void main() {
           throw UnimplementedError();
       Future<String> correct(String words, ResolvedInferenceProvider _) async =>
           words;
+      Future<String?> category() async => 'family';
       await tester.pumpWidget(
         makeTestableWidgetNoScroll(
           Scaffold(
@@ -1222,6 +1223,7 @@ void main() {
               onRetry: () {},
               resolveTranscriptionTarget: resolveTarget,
               correctTranscript: correct,
+              resolveDictionaryCategory: category,
             ),
           ),
           overrides: [
@@ -1245,6 +1247,7 @@ void main() {
       // The host's route and its correction belong to the take it starts.
       expect(recorder.lastTranscriptionTargetResolver, same(resolveTarget));
       expect(recorder.lastTranscriptCorrector, same(correct));
+      expect(recorder.lastDictionaryCategoryResolver, same(category));
     });
 
     testWidgets('shows waveform and cancel/stop while recording', (

@@ -161,9 +161,13 @@ void main() {
     final view = tester.widget<AgentChatView>(find.byType(AgentChatView));
     final dictation = ProviderScope.containerOf(
       tester.element(find.byType(AgentChatView)),
-    ).read(goalDictationProvider('goal-1'))!;
+    ).read(goalDictationProvider('goal-1'));
     expect(view.resolveTranscriptionTarget, same(dictation.resolveTarget));
     expect(view.correctTranscript, same(dictation.correct));
+    expect(
+      view.resolveDictionaryCategory,
+      same(dictation.dictionaryCategory),
+    );
   });
 
   testWidgets('user turns get a receipt, nothing, or an offer card depending '

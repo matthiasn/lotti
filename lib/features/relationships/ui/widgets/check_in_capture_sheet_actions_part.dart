@@ -163,7 +163,6 @@ class CheckInStickyActions extends StatelessWidget {
                 key: const ValueKey('check-in-save'),
                 label: messages.checkInSaveButton,
                 size: DesignSystemButtonSize.large,
-                fullWidth: !wide,
                 onPressed: handle.canSave ? handle.save : null,
               ),
             ),
@@ -231,7 +230,10 @@ class CheckInStickyActions extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  // Save keeps its own width on the trailing edge: stretched
+                  // across a phone it read as a banner, not a button.
                   DesignSystemModalActionBar(
+                    layout: DesignSystemModalActionBarLayout.compactPrimary,
                     secondary: [?delete, cancel],
                     primary: save,
                   ),

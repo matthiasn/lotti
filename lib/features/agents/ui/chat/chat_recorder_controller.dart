@@ -22,9 +22,14 @@ export 'package:lotti/features/agents/ui/chat/chat_recorder_state.dart';
 typedef ChatTranscriptionTargetResolver =
     Future<ResolvedInferenceProvider> Function();
 
+/// The category whose speech dictionary a take's transcription request
+/// carries, resolved when the take stops; null for the terms that apply
+/// everywhere.
+typedef ChatDictionaryCategoryResolver = Future<String?> Function();
+
 /// Post-processes a finished transcript before it is handed back: the
 /// correction the caller's profile names for the route that heard the words,
-/// [heardBy]. A correction that fails keeps the words as heard — the
+/// `heardBy`. A correction that fails keeps the words as heard — the
 /// recorder never loses a transcript to it.
 typedef ChatTranscriptCorrector =
     Future<String> Function(
@@ -94,6 +99,7 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
   Future<void>? _startFuture;
   ChatTranscriptionTargetResolver? _resolveTranscriptionTarget;
   ChatTranscriptCorrector? _correctTranscript;
+  ChatDictionaryCategoryResolver? _resolveDictionaryCategory;
   int _operationId = 0; // Incremented for each new operation to prevent races
   Future<void>? _disposeFuture;
   Future<void>? _cleanupFuture;
@@ -159,12 +165,15 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
   /// cleaned up. An optional [resolveTranscriptionTarget] belongs to this
   /// recording and resolves the caller's current route when recording stops;
   /// an optional [correctTranscript], used only with that route, then
-  /// post-processes the words before they are handed back.
+  /// post-processes the words before they are handed back, and an optional
+  /// [resolveDictionaryCategory] names the speech dictionary that route's
+  /// request carries.
   /// Startup retains local resources until all awaits pass the operation gate;
   /// cancellation/disposal wait for an abandoned startup to release them.
   Future<void> start({
     ChatTranscriptionTargetResolver? resolveTranscriptionTarget,
     ChatTranscriptCorrector? correctTranscript,
+    ChatDictionaryCategoryResolver? resolveDictionaryCategory,
   }) async {
     if (!ref.mounted ||
         _disposeFuture != null ||
@@ -233,6 +242,7 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
       _filePath = filePath;
       _resolveTranscriptionTarget = resolveTranscriptionTarget;
       _correctTranscript = correctTranscript;
+      _resolveDictionaryCategory = resolveDictionaryCategory;
       transferred = true;
 
       final startedAt = _nowMillisProvider();
@@ -330,6 +340,7 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
     final filePath = _filePath;
     final resolveTarget = _resolveTranscriptionTarget;
     final correct = _correctTranscript;
+    final resolveCategory = _resolveDictionaryCategory;
     final ampSub = _ampSub;
     ChatRecorderState? completed;
 
@@ -362,6 +373,7 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
         currentOpId,
         resolveTarget,
         correct,
+        resolveCategory,
       );
       if (currentOpId == _operationId && ref.mounted) {
         completed = state.copyWith(
@@ -454,15 +466,32 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
     int operationId,
     ChatTranscriptionTargetResolver? resolveTarget,
     ChatTranscriptCorrector? correct,
+    ChatDictionaryCategoryResolver? resolveCategory,
   ) async {
     final buffer = StringBuffer();
     var chunkCount = 0;
 
     final target = resolveTarget == null ? null : await resolveTarget();
     if (!ref.mounted || operationId != _operationId) return '';
-    final stream = target == null
-        ? _transcriptionService.transcribeStream(filePath)
-        : _transcriptionService.transcribeStream(filePath, target: target);
+    // The dictionary belongs to the explicit route: discovery keeps the
+    // terms that apply everywhere, as it always has.
+    final categoryId = target == null || resolveCategory == null
+        ? null
+        : await resolveCategory();
+    if (!ref.mounted || operationId != _operationId) return '';
+    final stream = switch ((target, categoryId)) {
+      (null, _) => _transcriptionService.transcribeStream(filePath),
+      (final target?, null) => _transcriptionService.transcribeStream(
+        filePath,
+        target: target,
+      ),
+      (final target?, final categoryId?) =>
+        _transcriptionService.transcribeStream(
+          filePath,
+          target: target,
+          dictionaryCategoryId: categoryId,
+        ),
+    };
     await for (final chunk in stream) {
       chunkCount++;
       buffer.write(chunk);

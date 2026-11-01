@@ -5,7 +5,7 @@ description: A personal CRM carried by two journal variants — why check-ins ar
 resource: ../../lib/features/relationships
 tags: [relationships, check-ins, journal-entity, privacy]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-11-01T12:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-11-01T18:00:00Z }
 stale_after: 2027-03-01
 sources:
   - id: tla-lifecycle
@@ -1941,7 +1941,9 @@ The composer's parts, top to bottom:
   nothing but its take, rather than standing greyed out beneath it.
 * [`CheckInStickyActions`](../../lib/features/relationships/ui/widgets/check_in_capture_sheet.dart)
   in the modal's sticky bar: *Save check-in* visible whenever saving is the
-  next thing the user could do, and when it is held, why — on two lines
+  next thing the user could do, at its own width on the trailing edge
+  (`compactPrimary`: stretched across a phone it read as a banner, not a
+  button), and when it is held, why — on two lines
   when the bar is stacked above `TextScales.large`, reserved by
   `CheckInStickyActions.height`. While the recorder is up
   (`CheckInSaveBlock.recording`) the bar keeps only that reason line

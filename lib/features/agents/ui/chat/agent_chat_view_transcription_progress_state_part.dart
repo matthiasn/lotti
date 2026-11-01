@@ -48,6 +48,7 @@ class AgentChatView extends ConsumerStatefulWidget {
     this.onLinkTap,
     this.resolveTranscriptionTarget,
     this.correctTranscript,
+    this.resolveDictionaryCategory,
     this.conversational = false,
     this.voiceFirst = false,
     this.leading,
@@ -152,6 +153,9 @@ class AgentChatView extends ConsumerStatefulWidget {
   /// Post-processes the words that setup heard before they reach the draft.
   final ChatTranscriptCorrector? correctTranscript;
 
+  /// Names the speech dictionary that setup's request carries.
+  final ChatDictionaryCategoryResolver? resolveDictionaryCategory;
+
   @override
   ConsumerState<AgentChatView> createState() => _AgentChatViewState();
 }
@@ -182,6 +186,7 @@ class _ChatComposer extends ConsumerWidget {
     this.header,
     this.resolveTranscriptionTarget,
     this.correctTranscript,
+    this.resolveDictionaryCategory,
   });
 
   final bool voiceFirst;
@@ -201,6 +206,7 @@ class _ChatComposer extends ConsumerWidget {
   final DesignSystemTextInputShape shape;
   final ChatTranscriptionTargetResolver? resolveTranscriptionTarget;
   final ChatTranscriptCorrector? correctTranscript;
+  final ChatDictionaryCategoryResolver? resolveDictionaryCategory;
 
   /// [header] over [controls]. The header brings its own gap below it, so
   /// a header that renders nothing leaves no blank band.
@@ -273,6 +279,7 @@ class _ChatComposer extends ConsumerWidget {
                 .start(
                   resolveTranscriptionTarget: resolveTranscriptionTarget,
                   correctTranscript: correctTranscript,
+                  resolveDictionaryCategory: resolveDictionaryCategory,
                 );
             final text = _IdleComposer(
               controller: controller,

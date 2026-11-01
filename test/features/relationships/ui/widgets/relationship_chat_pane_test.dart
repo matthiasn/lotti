@@ -138,6 +138,10 @@ void main() {
     ).read(subjectDictationProvider(relationshipId));
     expect(view.resolveTranscriptionTarget, same(dictation.resolveTarget));
     expect(view.correctTranscript, same(dictation.correct));
+    expect(
+      view.resolveDictionaryCategory,
+      same(dictation.dictionaryCategory),
+    );
   });
 
   // The agent carries the person's name, but the person is not the one

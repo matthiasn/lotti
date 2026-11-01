@@ -5,7 +5,7 @@ description: Shared voice-recorder state, waveform feedback, and reasoning discl
 resource: ../../../lib/features/agents/ui/chat
 tags: [agents, chat, recording, reasoning]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-11-01T12:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-11-01T18:00:00Z }
 stale_after: 2027-01-31
 sources:
   - id: chat
@@ -137,7 +137,14 @@ in, it receives them and the route that heard them, and its answer becomes the
 transcript. The subject dictation's corrector runs the speech-dictionary
 correction on the profile's post-processing model when a speech-to-text
 engine heard the words. A corrector that throws, and silence, keep the words
-as heard. `AgentChatView` forwards both callbacks to `start`.
+as heard. A third, `resolveDictionaryCategory`
+(`ChatDictionaryCategoryResolver`), names the category whose speech
+dictionary the explicit route's request carries, so a multimodal model reads
+the subject's terms in its prompt and a speech-to-text engine gets them as a
+hint; discovery never asks for one. `AgentChatView` forwards all three
+callbacks to `start`. Without a goal to name, `goalDictationProvider` hands
+the chat `SubjectDictation.unavailable()`, whose every take fails as "no
+audio model" rather than falling back to discovery.
 
 Every recording captures a monotonically increasing operation ID before the
 first startup await. Cancellation also recognizes pending startup while its
