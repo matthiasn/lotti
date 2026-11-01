@@ -4107,6 +4107,7 @@
   "frontChatPrevious7Days": "Previous 7 days",
   "frontChatResponding": "Finding who knows…",
   "frontChatRowMenuHint": "Chat actions",
+  "frontChatScopeAll": "All",
   "frontChatScopeLabel": "Answers from",
   "frontChatSearchChats": "Search chats",
   "frontChatTitle": "Companion",
@@ -11121,6 +11122,5 @@
     "description": "Badge displayed on the newest release in the What's New view."
   },
   "whatsNewDoneButton": "Done",
-  "whatsNewSkipButton": "Skip",
-  "frontChatScopeAll": "All"
+  "whatsNewSkipButton": "Skip"
 }

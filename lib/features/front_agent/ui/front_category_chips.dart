@@ -37,53 +37,60 @@ class FrontCategoryChips extends ConsumerWidget {
     final scope = ref.read(frontConversationCategoriesProvider.notifier);
     // In the composer, under its own padding: the scope of the question.
     // The label stays put; the chips scroll beside it when they run long.
-    return Row(
-      children: [
-        // What the chips do, said once: they choose what she answers from.
-        Text(
-          context.messages.frontChatScopeLabel,
-          style: tokens.typography.styles.others.caption.copyWith(
-            color: tokens.colors.text.mediumEmphasis,
-          ),
-        ),
-        SizedBox(width: tokens.spacing.step3),
-        Flexible(
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // One chosen form for every chip — the default as much as
-                // a chosen category: a neutral fill and a check, never the
-                // accent, which stays the talk control's.
-                DesignSystemChip(
-                  key: FrontCategoryChipsKeys.all,
-                  label: context.messages.frontChatScopeAll,
-                  outlined: true,
-                  selected: chosen.isEmpty,
-                  quietSelection: true,
-                  leadingIcon: chosen.isEmpty ? LottiIcons.confirm : null,
-                  onPressed: () => scope.clear(conversationId),
-                ),
-                for (final category in options) ...[
-                  SizedBox(width: tokens.spacing.step3),
-                  DesignSystemChip(
-                    key: FrontCategoryChipsKeys.chip(category.id),
-                    label: category.name,
-                    outlined: true,
-                    selected: chosen.contains(category.id),
-                    quietSelection: true,
-                    leadingIcon: chosen.contains(category.id)
-                        ? LottiIcons.confirm
-                        : null,
-                    onPressed: () => scope.toggle(conversationId, category.id),
-                  ),
-                ],
-              ],
+    // A step more than within the talk control below it, so the scope and
+    // the control read as two groups; the gap is the chips' own, so no
+    // chips means no gap.
+    return Padding(
+      padding: EdgeInsets.only(bottom: tokens.spacing.step5),
+      child: Row(
+        children: [
+          // What the chips do, said once: they choose what she answers from.
+          Text(
+            context.messages.frontChatScopeLabel,
+            style: tokens.typography.styles.others.caption.copyWith(
+              color: tokens.colors.text.mediumEmphasis,
             ),
           ),
-        ),
-      ],
+          SizedBox(width: tokens.spacing.step3),
+          Flexible(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // One chosen form for every chip — the default as much as
+                  // a chosen category: a neutral fill and a check, never the
+                  // accent, which stays the talk control's.
+                  DesignSystemChip(
+                    key: FrontCategoryChipsKeys.all,
+                    label: context.messages.frontChatScopeAll,
+                    outlined: true,
+                    selected: chosen.isEmpty,
+                    quietSelection: true,
+                    leadingIcon: chosen.isEmpty ? LottiIcons.confirm : null,
+                    onPressed: () => scope.clear(conversationId),
+                  ),
+                  for (final category in options) ...[
+                    SizedBox(width: tokens.spacing.step3),
+                    DesignSystemChip(
+                      key: FrontCategoryChipsKeys.chip(category.id),
+                      label: category.name,
+                      outlined: true,
+                      selected: chosen.contains(category.id),
+                      quietSelection: true,
+                      leadingIcon: chosen.contains(category.id)
+                          ? LottiIcons.confirm
+                          : null,
+                      onPressed: () =>
+                          scope.toggle(conversationId, category.id),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

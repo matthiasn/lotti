@@ -7065,6 +7065,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get frontChatRowMenuHint => 'Acțiunile conversației';
 
   @override
+  String get frontChatScopeAll => 'Toate';
+
+  @override
   String get frontChatScopeLabel => 'Răspunsuri din';
 
   @override
@@ -18283,7 +18286,4 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Omite';
-
-  @override
-  String get frontChatScopeAll => 'Toate';
 }

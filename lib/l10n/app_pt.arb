@@ -3220,6 +3220,7 @@
   "frontChatPrevious7Days": "Últimos 7 dias",
   "frontChatResponding": "A procurar quem sabe…",
   "frontChatRowMenuHint": "Ações do chat",
+  "frontChatScopeAll": "Tudo",
   "frontChatScopeLabel": "Respostas de",
   "frontChatSearchChats": "Procurar nos chats",
   "frontChatTitle": "Companheira",
@@ -7506,6 +7507,5 @@
     "description": "Badge displayed on the newest release in the What's New view."
   },
   "whatsNewDoneButton": "Concluído",
-  "whatsNewSkipButton": "Pular",
-  "frontChatScopeAll": "Tudo"
+  "whatsNewSkipButton": "Pular"
 }

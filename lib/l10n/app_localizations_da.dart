@@ -6950,6 +6950,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get frontChatRowMenuHint => 'Chathandlinger';
 
   @override
+  String get frontChatScopeAll => 'Alle';
+
+  @override
   String get frontChatScopeLabel => 'Svar fra';
 
   @override
@@ -17947,7 +17950,4 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Spring over';
-
-  @override
-  String get frontChatScopeAll => 'Alle';
 }

@@ -7036,6 +7036,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get frontChatRowMenuHint => 'Azioni della chat';
 
   @override
+  String get frontChatScopeAll => 'Tutto';
+
+  @override
   String get frontChatScopeLabel => 'Risposte da';
 
   @override
@@ -18160,7 +18163,4 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Salta!';
-
-  @override
-  String get frontChatScopeAll => 'Tutto';
 }

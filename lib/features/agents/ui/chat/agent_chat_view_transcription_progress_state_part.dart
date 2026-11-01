@@ -196,17 +196,14 @@ class _ChatComposer extends ConsumerWidget {
   final DesignSystemTextInputShape shape;
   final ChatTranscriptionTargetResolver? resolveTranscriptionTarget;
 
-  Widget _withHeader(DsTokens tokens, Widget controls) {
+  /// [header] over [controls]. The header brings its own gap below it, so
+  /// a header that renders nothing leaves no blank band.
+  Widget _withHeader(Widget controls) {
     final header = this.header;
     if (header == null) return controls;
     return Column(
       mainAxisSize: MainAxisSize.min,
-      // The scope, then a step more than within the control: two groups.
-      children: [
-        header,
-        SizedBox(height: tokens.spacing.step5),
-        controls,
-      ],
+      children: [header, controls],
     );
   }
 
@@ -232,7 +229,7 @@ class _ChatComposer extends ConsumerWidget {
                 vertical: tokens.spacing.step4,
               )
             : EdgeInsets.all(tokens.spacing.step4),
-        child: _withHeader(tokens, switch (status) {
+        child: _withHeader(switch (status) {
           ChatRecorderStatus.recording ||
           ChatRecorderStatus.processing when voiceFirst => _VoiceFirstLive(
             processing: status == ChatRecorderStatus.processing,

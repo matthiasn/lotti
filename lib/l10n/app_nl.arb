@@ -3220,6 +3220,7 @@
   "frontChatPrevious7Days": "Afgelopen 7 dagen",
   "frontChatResponding": "Zoekt wie het weet…",
   "frontChatRowMenuHint": "Chatacties",
+  "frontChatScopeAll": "Alles",
   "frontChatScopeLabel": "Antwoorden uit",
   "frontChatSearchChats": "Chats doorzoeken",
   "frontChatTitle": "Metgezel",
@@ -7506,6 +7507,5 @@
     "description": "Badge displayed on the newest release in the What's New view."
   },
   "whatsNewDoneButton": "Klaar",
-  "whatsNewSkipButton": "Overslaan",
-  "frontChatScopeAll": "Alles"
+  "whatsNewSkipButton": "Overslaan"
 }

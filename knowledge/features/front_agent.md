@@ -5,7 +5,7 @@ description: The one agent the user talks to in one place — how a durable user
 resource: ../../lib/features/front_agent
 tags: [agents, front-agent, routing, dispatch, doors, filing, inbox, companion, chat]
 status: draft
-generated: { by: claude-code/fable-5.1, at: 2026-10-26T12:00:00Z }
+generated: { by: claude-code/fable-5.1, at: 2026-11-01T14:00:00Z }
 stale_after: 2027-04-26
 sources:
   - id: workflow
@@ -79,7 +79,7 @@ sources:
   - id: conversation-list
     resource: ../../lib/features/front_agent/ui/front_conversation_list.dart
     title: FrontConversationList — the list of conversations, grouped by recency
-    last_modified: 2026-10-31
+    last_modified: 2026-11-01
   - id: adr-0154
     resource: ../../docs/adr/0154-front-agent-conversations.md
     title: ADR 0154 — the front agent keeps many conversations
@@ -95,7 +95,7 @@ sources:
   - id: pane
     resource: ../../lib/features/front_agent/ui/front_chat_pane.dart
     title: FrontChatPane — the thread on the shared AgentChatView
-    last_modified: 2026-10-24
+    last_modified: 2026-11-01
   - id: sheet
     resource: ../../lib/features/front_agent/ui/front_chat_surface.dart
     title: showFrontChat — her surface over the app
@@ -103,7 +103,7 @@ sources:
   - id: category-scope
     resource: ../../lib/features/front_agent/state/front_category_scope.dart
     title: The chip options and each conversation's chosen categories
-    last_modified: 2026-10-24
+    last_modified: 2026-11-01
   - id: providers
     resource: ../../lib/features/front_agent/state/front_agent_providers.dart
     title: The registry contributions, the wake runner that routes then walks, and the setup resolver

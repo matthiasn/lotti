@@ -2,7 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
-import 'package:lotti/features/design_system/theme/icon_tokens.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/front_agent/state/front_category_scope.dart';
 import 'package:lotti/features/front_agent/state/front_conversation_providers.dart';
 import 'package:lotti/features/front_agent/ui/front_category_chips.dart';
@@ -89,6 +89,27 @@ void main() {
     expect(check(FrontCategoryChipsKeys.all), LottiIcons.confirm);
   });
 
+  testWidgets('the chips bring their own step to the control below them', (
+    tester,
+  ) async {
+    await pumpChips(tester, options: [colony, nests]);
+    final chips = tester.getRect(find.byType(FrontCategoryChips));
+    final row = tester.getRect(
+      find
+          .descendant(
+            of: find.byType(FrontCategoryChips),
+            matching: find.byType(Row),
+          )
+          .first,
+    );
+    final step = tester
+        .element(find.byType(FrontCategoryChips))
+        .designTokens
+        .spacing
+        .step5;
+    expect(chips.bottom - row.bottom, step);
+  });
+
   testWidgets('a screen reader hears which chips are chosen', (tester) async {
     final semantics = tester.ensureSemantics();
     await pumpChips(tester, options: [colony, nests]);
@@ -117,5 +138,7 @@ void main() {
     await pumpChips(tester, options: [colony]);
 
     expect(find.byType(DesignSystemChip), findsNothing);
+    // Nor their gap: the composer keeps no blank band above the disc.
+    expect(tester.getSize(find.byType(FrontCategoryChips)).height, 0);
   });
 }

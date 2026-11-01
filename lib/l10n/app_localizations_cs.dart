@@ -7027,6 +7027,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get frontChatRowMenuHint => 'Akce chatu';
 
   @override
+  String get frontChatScopeAll => 'Vše';
+
+  @override
   String get frontChatScopeLabel => 'Odpovědi z';
 
   @override
@@ -18160,7 +18163,4 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Přeskočit';
-
-  @override
-  String get frontChatScopeAll => 'Vše';
 }

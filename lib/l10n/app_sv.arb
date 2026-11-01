@@ -3221,6 +3221,7 @@
   "frontChatPrevious7Days": "Senaste 7 dagarna",
   "frontChatResponding": "Letar efter den som vet…",
   "frontChatRowMenuHint": "Chattåtgärder",
+  "frontChatScopeAll": "Allt",
   "frontChatScopeLabel": "Svar från",
   "frontChatSearchChats": "Sök i chattar",
   "frontChatTitle": "Följeslagare",
@@ -7507,6 +7508,5 @@
     "description": "Badge displayed on the newest release in the What's New view."
   },
   "whatsNewDoneButton": "Klart",
-  "whatsNewSkipButton": "Hoppa över",
-  "frontChatScopeAll": "Allt"
+  "whatsNewSkipButton": "Hoppa över"
 }
