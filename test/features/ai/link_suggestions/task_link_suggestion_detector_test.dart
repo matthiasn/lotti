@@ -326,6 +326,65 @@ void main() {
     },
   );
 
+  test('a search that did not run is tried again on the next scan, not '
+      'remembered as nothing found', () async {
+    final bench = _Bench(
+      task: _current,
+      entries: [logEntry('e1', 'Follow-up to the census export.')],
+      tasks: [_census],
+      hits: {
+        'the census export': [_hit(_census, 0.2)],
+      },
+    );
+    void answer(Future<VectorSearchResult> Function(Invocation) result) => when(
+      () => bench.search.searchRelatedTasks(
+        query: any(named: 'query'),
+        k: any(named: 'k'),
+      ),
+    ).thenAnswer(result);
+    answer((_) async => VectorSearchResult.notSearched());
+
+    final first = await bench.scan();
+
+    expect(first.suggestions, isEmpty);
+    expect(first.searches, isEmpty);
+
+    answer(
+      (_) async => VectorSearchResult(
+        entities: [_census],
+        elapsed: Duration.zero,
+        distances: {'census': 0.2},
+      ),
+    );
+    final second = await bench.scan(previous: first);
+
+    expect(second.suggestions.map((s) => s.targetTaskId), ['census']);
+    expect(second.searches.keys, ['the census export']);
+  });
+
+  test('equally near tasks are ordered by id, so a rescan never reshuffles '
+      'them', () async {
+    final bench = _Bench(
+      task: _current,
+      entries: [logEntry('e1', 'Related to the colony census work.')],
+      tasks: [_sled, _census, _relay],
+      hits: {
+        'the colony census work': [
+          _hit(_sled, 0.3),
+          _hit(_relay, 0.3),
+          _hit(_census, 0.3),
+        ],
+      },
+    );
+
+    final scan = await bench.scan();
+
+    expect(
+      scan.suggestions.map((s) => s.targetTaskId),
+      ['census', 'relay', 'sled'],
+    );
+  });
+
   test('a deleted or vanished candidate is not suggested', () async {
     final deleted = linkTask('sled', 'Sled', deletedAt: testFixedDate);
     final bench = _Bench(

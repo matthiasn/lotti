@@ -413,15 +413,32 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
       for (final s in pending)
         if (!s.isMechanical) s.changeSet.id: s.changeSet,
     };
+    // The card's own agent is always notified, so a batch of mechanical rows
+    // alone — no change set behind them — still refreshes the list, and a
+    // row whose write failed comes back.
     final agentIds = <String>{
+      widget.identity.agentId,
       for (final cs in distinctSets.values) cs.agentId,
     };
 
     var anyFailed = false;
     try {
+      // Each mechanical row is decided on its own: one write that throws must
+      // not stop the rows after it, nor the change sets.
       for (final s in mechanical) {
-        final result = await confirmMechanicalSuggestion(ref, s);
-        if (result?.success != true) anyFailed = true;
+        try {
+          final result = await confirmMechanicalSuggestion(ref, s);
+          if (result?.success != true) anyFailed = true;
+        } catch (e, stackTrace) {
+          anyFailed = true;
+          logger.error(
+            LogDomain.agentWorkflow,
+            e,
+            stackTrace: stackTrace,
+            subDomain: 'AiSummaryCard',
+            message: 'confirming a mechanical suggestion failed',
+          );
+        }
       }
       for (final cs in distinctSets.values) {
         final results = await service.confirmAll(cs);

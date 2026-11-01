@@ -9,6 +9,7 @@ import 'package:lotti/features/ai/state/device_local_key_set.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/providers/update_notifications_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:lotti/utils/consts.dart';
 
 final taskLinkSuggestionDetectorProvider = Provider<TaskLinkSuggestionDetector>(
   (ref) => TaskLinkSuggestionDetector(
@@ -20,7 +21,9 @@ final taskLinkSuggestionDetectorProvider = Provider<TaskLinkSuggestionDetector>(
 );
 
 /// The link suggestions a task's text yields, rescanned whenever the task,
-/// one of its text entries or a suggested task changes.
+/// one of its text entries or a suggested task changes — and whenever search
+/// by meaning is switched on or off, which reaches config flags rather than
+/// journal notifications.
 ///
 /// A new or edited log entry changes the task's links or the entry itself, so
 /// it is seen here as it happens — while the task is on screen; nothing scans
@@ -51,11 +54,20 @@ class TaskLinkSuggestionScanController
 
   @override
   Future<TaskLinkSuggestionScan> build() async {
-    final subscription = ref
-        .watch(updateNotificationsProvider)
-        .updateStream
-        .listen(_onUpdate);
-    ref.onDispose(subscription.cancel);
+    final subscriptions = [
+      ref.watch(updateNotificationsProvider).updateStream.listen(_onUpdate),
+      ref
+          .read(journalDbProvider)
+          .watchConfigFlag(enableEmbeddingsFlag)
+          // The first event replays the value the initial scan reads.
+          .skip(1)
+          .listen((_) => _rescan()),
+    ];
+    ref.onDispose(
+      () => Future.wait([
+        for (final subscription in subscriptions) subscription.cancel(),
+      ]),
+    );
     final generation = ++_generation;
     final scan = await ref
         .read(taskLinkSuggestionDetectorProvider)

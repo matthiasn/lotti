@@ -402,6 +402,78 @@ void main() {
       expect(find.text('Failed to apply change'), findsOneWidget);
     });
 
+    testWidgets('Confirm-all keeps going past a link write that throws, and '
+        "refreshes the card's own agent even with no change set", (
+      tester,
+    ) async {
+      final service = MockChangeSetConfirmationService();
+      final persistenceLogic = MockPersistenceLogic();
+      final journalDb = MockJournalDb();
+      final notifier = MockUpdateNotifications();
+      for (final id in ['census', 'relay']) {
+        when(() => journalDb.journalEntityById(id)).thenAnswer(
+          (_) async => journal.TestTaskFactory.create(id: id, title: id),
+        );
+      }
+      when(
+        () => journalDb.typedLinksForTaskIds(
+          any(),
+          types: any(named: 'types'),
+        ),
+      ).thenAnswer((_) async => []);
+      when(
+        () => persistenceLogic.createLink(
+          fromId: any(named: 'fromId'),
+          toId: any(named: 'toId'),
+          linkType: any(named: 'linkType'),
+        ),
+      ).thenAnswer((invocation) async {
+        if (invocation.namedArguments[#toId] == 'census') {
+          throw StateError('database is locked');
+        }
+        return true;
+      });
+
+      final bench = AgentTestBench(
+        identity: makeTestIdentity(agentId: 'agent-card'),
+        confirmationService: service,
+        updateNotifications: notifier,
+        suggestions: UnifiedSuggestionList(
+          open: [
+            makeLinkPending('census'),
+            makeLinkPending('relay', title: 'Repair the relay'),
+          ],
+          activity: const [],
+        ),
+        extraOverrides: linkSuggestionOverrides(
+          persistenceLogic: persistenceLogic,
+          journalDb: journalDb,
+        ),
+      );
+
+      await tester.pumpWidget(bench.build());
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      await tester.tap(find.text('Confirm all'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      verify(
+        () => persistenceLogic.createLink(
+          fromId: AgentTestBench.taskId,
+          toId: 'relay',
+          linkType: EntryLinkType.followsUp,
+        ),
+      ).called(1);
+      verifyNever(() => service.confirmAll(any()));
+      expect(find.text('Failed to apply change'), findsOneWidget);
+      final notified =
+          verify(() => notifier.notify(captureAny())).captured.single
+              as Set<String>;
+      expect(notified, {'agent-card'});
+    });
+
     testWidgets('tap-confirm dispatches confirmItem with the correct args', (
       tester,
     ) async {

@@ -185,8 +185,10 @@ class TaskLinkSuggestionDetector {
     return mentions;
   }
 
-  /// The search's hits for [query], or null when the search failed — not
-  /// remembered, so the next scan tries it again.
+  /// The search's hits for [query], or null when no search ran — it threw,
+  /// or the model is missing or could not embed the query. Null is not
+  /// remembered, so the next scan tries again; only a search that ran can
+  /// answer "nothing found" for good.
   Future<List<RelatedTaskHit>?> _searchFor(
     VectorSearchRepository search,
     String query,
@@ -196,6 +198,7 @@ class TaskLinkSuggestionDetector {
         query: query,
         k: hitsPerMention + 1,
       );
+      if (!result.searched) return null;
       return [
         for (final entity in result.entities)
           if (result.distances[entity.meta.id] case final distance?)

@@ -190,6 +190,7 @@ void main() {
 
       expect(result.entities, isEmpty);
       expect(result.distances, isEmpty);
+      expect(result.searched, isTrue, reason: 'nothing found is an answer');
     });
 
     test('deduplicates when multiple results map to the same task', () async {
@@ -279,6 +280,7 @@ void main() {
       final result = await sut.searchRelatedTasks(query: 'query');
 
       expect(result.entities, isEmpty);
+      expect(result.searched, isFalse);
       verifyNever(
         () => mockEmbeddingStore.search(
           queryVector: any(named: 'queryVector'),
@@ -297,6 +299,7 @@ void main() {
       final result = await sut.searchRelatedTasks(query: 'query');
 
       expect(result.entities, isEmpty);
+      expect(result.searched, isFalse);
       verify(
         () => mockDomainLogger.error(
           LogDomain.ai,
@@ -707,6 +710,7 @@ void main() {
       final result = await sut.searchRelatedEntries(query: 'query');
 
       expect(result.entities, isEmpty);
+      expect(result.searched, isFalse);
     });
 
     test('returns empty when embedding fails', () async {
@@ -717,12 +721,14 @@ void main() {
       final result = await sut.searchRelatedEntries(query: 'query');
 
       expect(result.entities, isEmpty);
+      expect(result.searched, isFalse);
     });
 
     test('returns empty when k is zero', () async {
       final result = await sut.searchRelatedEntries(query: 'query', k: 0);
 
       expect(result.entities, isEmpty);
+      expect(result.searched, isFalse);
     });
 
     test('preserves distance ordering in results', () async {

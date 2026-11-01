@@ -50,6 +50,7 @@ void main() {
   late MockUpdateNotifications notifications;
   late MockDomainLogger logger;
   late StreamController<Set<String>> updates;
+  late StreamController<bool> embeddingsFlag;
   late ProviderContainer container;
 
   setUp(() {
@@ -60,6 +61,12 @@ void main() {
     updates = StreamController<Set<String>>.broadcast();
     addTearDown(updates.close);
     when(() => notifications.updateStream).thenAnswer((_) => updates.stream);
+    embeddingsFlag = StreamController<bool>.broadcast();
+    addTearDown(embeddingsFlag.close);
+    final journalDb = MockJournalDb();
+    when(
+      () => journalDb.watchConfigFlag(enableEmbeddingsFlag),
+    ).thenAnswer((_) => embeddingsFlag.stream);
     when(
       () => settingsDb.itemByKey(taskLinkSuggestionsDismissedKey),
     ).thenAnswer((_) async => null);
@@ -70,6 +77,7 @@ void main() {
     container = ProviderContainer(
       overrides: [
         taskLinkSuggestionDetectorProvider.overrideWithValue(detector),
+        journalDbProvider.overrideWithValue(journalDb),
         settingsDbProvider.overrideWithValue(settingsDb),
         updateNotificationsProvider.overrideWithValue(notifications),
         domainLoggerProvider.overrideWithValue(logger),
@@ -121,6 +129,27 @@ void main() {
 
       expect(handedOver, same(first));
       expect(published(), isEmpty);
+    });
+
+    test('rescans when search by meaning is switched on or off, after the '
+        'replayed value', () async {
+      stubScan((_) => _scan([_suggestion('census')]));
+      await readScan();
+
+      embeddingsFlag.add(true);
+      await pumpEventQueue();
+      verify(
+        () => detector.scan(_taskId, previous: any(named: 'previous')),
+      ).called(1);
+
+      stubScan((_) => _scan([]));
+      embeddingsFlag.add(false);
+      await pumpEventQueue();
+
+      expect(published(), isEmpty);
+      verify(
+        () => detector.scan(_taskId, previous: any(named: 'previous')),
+      ).called(1);
     });
 
     test('ignores changes to ids it does not watch', () async {
