@@ -17451,6 +17451,12 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String get taskPreviewNoSummary => 'Nog geen samenvatting.';
+
+  @override
+  String get taskPreviewOpenTask => 'Taak openen';
+
+  @override
   String get taskPriorityHigh => 'Hoog';
 
   @override

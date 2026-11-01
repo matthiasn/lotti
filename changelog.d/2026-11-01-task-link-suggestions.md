@@ -6,6 +6,8 @@
   task's proposed changes as a link of the matching kind: blocked by, follows
   up on, fixes, duplicates, supersedes or simply related. Nothing is linked
   until you accept it; dismissing one hides it on that device, and a task
-  that is already linked is never suggested. It needs search by meaning
+  that is already linked is never suggested. Tap the suggested task's title
+  to see what it is about — its summary, with a button to open it — before
+  you decide. It needs search by meaning
   switched on and its model downloaded, and understands all of the app's
   languages.

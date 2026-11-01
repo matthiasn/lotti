@@ -28859,6 +28859,18 @@ abstract class AppLocalizations {
   /// **'Overdue by {days, plural, =1{1 day} other{{days} days}}'**
   String taskOverdueByDays(int days);
 
+  /// Task preview modal: shown in place of the TL;DR when the task has neither an agent report nor notes of its own.
+  ///
+  /// In en, this message translates to:
+  /// **'No summary yet.'**
+  String get taskPreviewNoSummary;
+
+  /// Task preview modal: button that closes the preview and opens the task.
+  ///
+  /// In en, this message translates to:
+  /// **'Open task'**
+  String get taskPreviewOpenTask;
+
   /// No description provided for @taskPriorityHigh.
   ///
   /// In en, this message translates to:

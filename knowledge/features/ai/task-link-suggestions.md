@@ -44,6 +44,14 @@ sources:
     resource: ../../../lib/features/agents/ui/ai_summary_card/mechanical_suggestion_actions.dart
     title: confirmLinkSuggestion and dismissLinkSuggestion
     last_modified: 2026-11-01
+  - id: preview
+    resource: ../../../lib/features/tasks/ui/linked_tasks/task_preview_modal.dart
+    title: showTaskPreviewModal, the glance at a named task
+    last_modified: 2026-11-01
+  - id: preview-provider
+    resource: ../../../lib/features/tasks/state/task_preview_provider.dart
+    title: taskPreviewProvider — the task and its agent's latest one-liner and TL;DR
+    last_modified: 2026-11-01
   - id: link-handler
     resource: ../../../lib/features/agents/tools/task_link_handler.dart
     title: TaskLinkHandler, the one writer of a confirmed link_task
@@ -246,6 +254,40 @@ apart from an agent proposal of the same link.
 `confirmMechanicalSuggestion` and `dismissMechanicalSuggestion` are the single
 dispatch the row and *Confirm all* use for both mechanical kinds; an agent
 proposal falls through to the change-set service.
+
+## Seeing which task is meant
+
+A title alone can be ambiguous, so the target's title in the row is a link.
+Tapping it decides nothing: it opens a preview of that task —
+`showTaskPreviewModal` in the tasks feature — with the task's title, its
+agent's latest one-liner and TL;DR (`taskPreviewProvider`), or the task's own
+notes when no report exists yet, and an *Open task* button. That button closes
+the preview and opens the task the way a linked task opens
+(`openLinkedTaskDetail`): stacked over the current task in the desktop detail
+pane, pushed on a phone, so Back returns to the decision.
+
+The card sits below the tasks feature in the layer order, so it cannot open a
+task itself. `AiSummaryCard.onOpenLinkedTask` carries the tap out; the task
+page (`TaskForm`) supplies the preview. A host that passes nothing — the
+event card, for one — keeps the title plain text. The link is any `link_task`
+row that carries both `targetTaskId` and `targetTitle`; the row splits its
+already-localized sentence at the title, so every language's word order
+works unchanged.
+
+```mermaid
+sequenceDiagram
+  participant U as User
+  participant R as ProposalRow
+  participant F as TaskForm
+  participant P as Task preview
+  participant N as openLinkedTaskDetail
+  U->>R: tap the target's title
+  R->>F: onOpenLinkedTask(targetTaskId)
+  F->>P: showTaskPreviewModal
+  P-->>U: title, one-liner, summary or notes
+  U->>P: Open task
+  P->>N: close, then open stacked over this task
+```
 
 # Gotchas
 

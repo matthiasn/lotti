@@ -318,6 +318,85 @@ void main() {
     });
   });
 
+  group('AiSummaryCard – linked task title', () {
+    Future<void> pumpRow(
+      WidgetTester tester,
+      PendingSuggestion row, {
+      void Function(String taskId)? onOpenLinkedTask,
+    }) async {
+      final bench = AgentTestBench(
+        confirmationService: MockChangeSetConfirmationService(),
+        updateNotifications: MockUpdateNotifications(),
+        suggestions: UnifiedSuggestionList(open: [row], activity: const []),
+        onOpenLinkedTask: onOpenLinkedTask,
+      );
+      await tester.pumpWidget(bench.build());
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+    }
+
+    /// Whether the row's sentence holds a tappable span.
+    bool hasLink(WidgetTester tester, String title) {
+      final text = tester.widget<RichText>(
+        find.byWidgetPredicate(
+          (w) => w is RichText && w.text.toPlainText().contains(title),
+        ),
+      );
+      var linked = false;
+      text.text.visitChildren((span) {
+        if (span is TextSpan && span.recognizer != null) linked = true;
+        return true;
+      });
+      return linked;
+    }
+
+    testWidgets('tapping the title opens that task, deciding nothing', (
+      tester,
+    ) async {
+      final opened = <String>[];
+      await pumpRow(
+        tester,
+        makeLinkPending('census'),
+        onOpenLinkedTask: opened.add,
+      );
+
+      expect(hasLink(tester, 'Colony census export'), isTrue);
+      await tester.tapOnText(
+        find.textRange.ofSubstring('Colony census export'),
+      );
+      await tester.pump();
+
+      expect(opened, ['census']);
+      expect(find.byType(ProposalRow), findsOneWidget);
+    });
+
+    testWidgets('without a host to open it, the title is plain text', (
+      tester,
+    ) async {
+      await pumpRow(tester, makeLinkPending('census'));
+
+      expect(hasLink(tester, 'Colony census export'), isFalse);
+    });
+
+    testWidgets('a link proposal that carries no title stays plain', (
+      tester,
+    ) async {
+      final opened = <String>[];
+      await pumpRow(
+        tester,
+        makePending(
+          id: 'agent-link',
+          toolName: 'link_task',
+          args: const {'relation': 'blocks', 'targetTaskId': 'census'},
+          humanSummary: 'Link: this task blocks "Colony census export"',
+        ),
+        onOpenLinkedTask: opened.add,
+      );
+
+      expect(hasLink(tester, 'Colony census export'), isFalse);
+    });
+  });
+
   group('AiSummaryCard – Proposal row error branches', () {
     testWidgets(
       'confirmItem returning success: false surfaces an error toast',

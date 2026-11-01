@@ -17407,6 +17407,12 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String get taskPreviewNoSummary => 'Ingen sammanfattning än.';
+
+  @override
+  String get taskPreviewOpenTask => 'Öppna uppgift';
+
+  @override
   String get taskPriorityHigh => 'Högt';
 
   @override

@@ -10,7 +10,8 @@
   dispatch and dismissal store;
   [Typed relationships](features/tasks/relationships.md) and
   [Embeddings and semantic search](features/ai/embeddings-and-search.md) —
-  where link suggestions sit.
+  where link suggestions sit. A suggested link's target title opens a
+  preview of that task (one-liner, TL;DR, *Open task*).
 
 ## 2026-10-28
 * **New**: [History](features/history.md) — the device-local log of opened

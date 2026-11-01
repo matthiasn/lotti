@@ -6591,6 +6591,8 @@
       }
     }
   },
+  "taskPreviewNoSummary": "Zatím bez shrnutí.",
+  "taskPreviewOpenTask": "Otevřít úkol",
   "taskPriorityHigh": "Vysoká",
   "taskPriorityLow": "Nízká",
   "taskPriorityMedium": "Střední",
