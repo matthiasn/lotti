@@ -375,6 +375,44 @@ void main() {
     });
   });
 
+  group('pull request link', () {
+    const args = {
+      'owner': 'penguin',
+      'repo': 'colony',
+      'number': 7,
+      'title': ' Count igloos ',
+    };
+
+    test("names the pull request in the reader's language", () {
+      expect(
+        summary(TaskAgentToolNames.linkPullRequest, args),
+        'Link pull request #7 "Count igloos"',
+      );
+      expect(
+        summary(TaskAgentToolNames.linkPullRequest, args, messages: de),
+        'Pull-Request #7 „Count igloos“ verknüpfen',
+      );
+      expect(
+        summary(TaskAgentToolNames.linkPullRequest, args, messages: ro),
+        'Legați pull request-ul #7 „Count igloos”',
+      );
+    });
+
+    test('one without a title names its number', () {
+      expect(
+        summary(TaskAgentToolNames.linkPullRequest, {'number': 7}),
+        'Link pull request #7 ""',
+      );
+    });
+
+    test('one without a number keeps the persisted wording', () {
+      expect(
+        summary(TaskAgentToolNames.linkPullRequest, {'number': '7'}),
+        isNull,
+      );
+    });
+  });
+
   group('time entries', () {
     test('a closed entry states both ends', () {
       expect(

@@ -586,6 +586,17 @@
       }
     }
   },
+  "agentSummaryLinkPullRequest": "Link pull request #{number} \"{title}\"",
+  "@agentSummaryLinkPullRequest": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      },
+      "title": {
+        "type": "String"
+      }
+    }
+  },
   "agentSummaryMigrateItem": "Migrate to follow-up: \"{title}\"",
   "@agentSummaryMigrateItem": {
     "placeholders": {

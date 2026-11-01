@@ -5,7 +5,9 @@ import 'package:lotti/classes/agents/attention_negotiation.dart';
 import 'package:lotti/classes/agents/proposal_ledger.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/pull_request_data.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/agents/model/pull_request_link_source.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/workflow/task_agent_strategy.dart';
 import 'package:lotti/get_it.dart';
@@ -14,6 +16,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 import '../../../mocks/mocks.dart';
+import '../../github/pull_request_fixtures.dart';
 import '../../projects/test_utils.dart' show makeTestProject;
 import 'task_agent_workflow_test_helpers.dart';
 
@@ -145,6 +148,9 @@ void main() {
     TaskAgentToolNames.resolveAttentionRequest,
     TaskAgentToolNames.getCategoryProjects,
     TaskAgentToolNames.setTaskProject,
+    TaskAgentToolNames.getUnlinkedPullRequests,
+    TaskAgentToolNames.linkPullRequest,
+    TaskAgentToolNames.refreshPullRequests,
   ];
 
   group('TaskAgentWorkflow tool exposure', () {
@@ -231,6 +237,7 @@ void main() {
         final bench = createTaskAgentWorkflowTestBench(
           narrowToolSurface: true,
           projectRepository: projectRepository,
+          pullRequestLinks: _Links(canList: true),
         );
         when(
           () => bench.mockAgentRepository.getLatestProjectReportForProjectId(
@@ -256,9 +263,13 @@ void main() {
         await timeService.start(running, task);
         addTearDown(timeService.stop);
 
-        when(
-          () => bench.mockJournalDb.getLinkedEntities(taskId),
-        ).thenAnswer((_) async => <JournalEntity>[running, completed]);
+        when(() => bench.mockJournalDb.getLinkedEntities(taskId)).thenAnswer(
+          (_) async => <JournalEntity>[
+            running,
+            completed,
+            prEntry(clock: {'a': 1}, snapshot: prSnapshot()),
+          ],
+        );
         when(bench.mockJournalDb.getAllLabelDefinitions).thenAnswer(
           (_) async => [
             LabelDefinition(
@@ -364,6 +375,89 @@ void main() {
     );
 
     test(
+      'withholds the list and link tools without a repository and token, '
+      'or unwired',
+      () async {
+        for (final links in [_Links(canList: false), null]) {
+          final bench = createTaskAgentWorkflowTestBench(
+            narrowToolSurface: true,
+            pullRequestLinks: links,
+          );
+
+          final perTurn = await exposedToolNamesPerTurn(bench);
+
+          expect(
+            perTurn.first.handedOver,
+            isNot(contains(TaskAgentToolNames.getUnlinkedPullRequests)),
+          );
+          expect(
+            perTurn.first.handedOver,
+            isNot(contains(TaskAgentToolNames.linkPullRequest)),
+          );
+        }
+      },
+    );
+
+    test('withholds the list and link tools when the check throws, and the '
+        'wake goes on', () async {
+      final bench = createTaskAgentWorkflowTestBench(
+        narrowToolSurface: true,
+        pullRequestLinks: _Links(canList: true, fails: true),
+      );
+
+      final perTurn = await exposedToolNamesPerTurn(bench);
+
+      expect(
+        perTurn.first.handedOver,
+        isNot(contains(TaskAgentToolNames.getUnlinkedPullRequests)),
+      );
+    });
+
+    test(
+      'offers refresh_pull_requests when the only linked pull request is '
+      'stored as merged — the wake may have shown it as not refreshed',
+      () async {
+        // The wake's refresh can time out, show the pull request without a
+        // state, then finish in the background and store it merged before
+        // the facts are read. Hiding the tool then would leave the agent
+        // no way to a current read.
+        final bench = createTaskAgentWorkflowTestBench(narrowToolSurface: true);
+        when(() => bench.mockJournalDb.getLinkedEntities(taskId)).thenAnswer(
+          (_) async => <JournalEntity>[
+            prEntry(
+              clock: {'a': 1},
+              snapshot: prSnapshot(status: PullRequestStatus.merged),
+            ),
+          ],
+        );
+
+        final perTurn = await exposedToolNamesPerTurn(bench);
+
+        expect(
+          perTurn.first.handedOver,
+          contains(TaskAgentToolNames.refreshPullRequests),
+        );
+      },
+    );
+
+    test(
+      'withholds refresh_pull_requests without a linked pull request',
+      () async {
+        final bench = createTaskAgentWorkflowTestBench(narrowToolSurface: true);
+        when(
+          () => bench.mockJournalDb.getLinkedEntities(taskId),
+        ).thenAnswer((_) async => <JournalEntity>[]);
+
+        final perTurn = await exposedToolNamesPerTurn(bench);
+
+        expect(
+          perTurn.first.handedOver,
+          isNot(contains(TaskAgentToolNames.refreshPullRequests)),
+        );
+      },
+    );
+
+    test(
       "withholds update_time_entry when only another task's timer runs",
       () async {
         // A timer running on a different task reaches the prompt only as an
@@ -433,4 +527,28 @@ void main() {
       },
     );
   });
+}
+
+/// A link source that only answers whether it can list.
+class _Links implements PullRequestLinkSource {
+  _Links({required this.canList, this.fails = false});
+
+  final bool canList;
+  final bool fails;
+
+  @override
+  Future<bool> canListFor(String taskId) async =>
+      fails ? throw StateError('keystore locked') : canList;
+
+  @override
+  Future<UnlinkedPullRequestsResult> unlinkedFor(String taskId) =>
+      throw UnimplementedError();
+
+  @override
+  Future<PullRequestLinkConfirmation> link({
+    required String taskId,
+    required String owner,
+    required String repo,
+    required int number,
+  }) => throw UnimplementedError();
 }

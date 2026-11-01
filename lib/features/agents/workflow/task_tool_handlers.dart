@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/agents/model/pull_request_link_source.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/tools/attention_request_handler.dart';
@@ -524,6 +525,60 @@ extension TaskToolHandlers on TaskToolDispatcher {
                 '"${project.data.title}".',
             errorMessage: 'Project link rejected',
           );
+  }
+
+  /// Links the pull request a confirmed `link_pull_request` names to task
+  /// [taskId]. The GitHub feature reads it first and checks again that no
+  /// other task took it meanwhile, so a late confirmation links nothing
+  /// another task holds. One this task holds already is the outcome wanted.
+  Future<ToolExecutionResult> handleLinkPullRequest(
+    String taskId,
+    Map<String, dynamic> args,
+  ) async {
+    final links = pullRequestLinks;
+    if (links == null) {
+      return const ToolExecutionResult(
+        success: false,
+        output: 'Error: link_pull_request is not configured.',
+        errorMessage: 'link_pull_request is not configured',
+      );
+    }
+    final owner = args['owner'];
+    final repo = args['repo'];
+    final number = args['number'];
+    if (owner is! String ||
+        owner.isEmpty ||
+        repo is! String ||
+        repo.isEmpty ||
+        number is! int) {
+      return const ToolExecutionResult(
+        success: false,
+        output: 'Error: "owner", "repo" and an integer "number" are required.',
+        errorMessage: 'Type validation failed for the pull request',
+      );
+    }
+    final reference = '$owner/$repo#$number';
+    return switch (await links.link(
+      taskId: taskId,
+      owner: owner,
+      repo: repo,
+      number: number,
+    )) {
+      PullRequestLinkSucceeded(alreadyLinked: true) => ToolExecutionResult(
+        success: true,
+        output: 'Pull request $reference was linked already.',
+      ),
+      PullRequestLinkSucceeded() => ToolExecutionResult(
+        success: true,
+        output: 'Pull request $reference linked.',
+        mutatedEntityId: taskId,
+      ),
+      PullRequestLinkRefused(:final reason) => ToolExecutionResult(
+        success: false,
+        output: 'Error: $reason',
+        errorMessage: 'Pull request link refused',
+      ),
+    };
   }
 
   Future<ToolExecutionResult> handleCreateTimeEntry(

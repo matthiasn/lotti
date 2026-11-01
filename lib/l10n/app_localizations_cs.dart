@@ -1010,6 +1010,11 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String agentSummaryLinkPullRequest(String number, String title) {
+    return 'Propojit pull request #$number „$title“';
+  }
+
+  @override
   String agentSummaryMigrateItem(Object title) {
     return 'Přesunout do navazujícího úkolu: „$title“';
   }

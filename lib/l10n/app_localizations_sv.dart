@@ -1015,6 +1015,11 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String agentSummaryLinkPullRequest(String number, String title) {
+    return 'Koppla pull request #$number ”$title”';
+  }
+
+  @override
   String agentSummaryMigrateItem(Object title) {
     return 'Flytta till uppföljningsuppgift: ”$title”';
   }

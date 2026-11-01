@@ -472,6 +472,7 @@
   "agentSummaryGoalRevisionPeriod": "Ændr perioden til {value}",
   "agentSummaryGoalRevisionScope": "gælder for {value}",
   "agentSummaryGoalRevisionTarget": "Ændr målet til {value}",
+  "agentSummaryLinkPullRequest": "Knyt pull request #{number} \"{title}\"",
   "agentSummaryMigrateItem": "Flyt til opfølgningsopgave: \"{title}\"",
   "agentSummaryRecommendNextSteps": "Anbefal næste skridt",
   "agentSummaryRecommendNextStepsCount": "{count, plural, =1{Anbefal 1 næste skridt} other{Anbefal {count} næste skridt}}",

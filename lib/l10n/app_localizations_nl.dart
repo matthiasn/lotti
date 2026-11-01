@@ -1012,6 +1012,11 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String agentSummaryLinkPullRequest(String number, String title) {
+    return 'Pull request #$number \"$title\" koppelen';
+  }
+
+  @override
   String agentSummaryMigrateItem(Object title) {
     return 'Verplaatsen naar vervolgtaak: \"$title\"';
   }

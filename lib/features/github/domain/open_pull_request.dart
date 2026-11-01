@@ -2,7 +2,8 @@ import 'package:lotti/classes/github/github_repository.dart';
 import 'package:lotti/classes/github/pull_request_ref.dart';
 import 'package:meta/meta.dart';
 
-/// An open pull request as the picker lists it.
+/// An open pull request as the picker lists it, and as the task agent reads
+/// it to suggest a link.
 @immutable
 class OpenPullRequest {
   const OpenPullRequest({
@@ -11,6 +12,9 @@ class OpenPullRequest {
     required this.createdAt,
     this.authorLogin,
     this.draft = false,
+    this.body = '',
+    this.labels = const [],
+    this.headRef,
   });
 
   final PullRequestRef ref;
@@ -20,6 +24,15 @@ class OpenPullRequest {
   final DateTime createdAt;
   final String? authorLogin;
   final bool draft;
+
+  /// The description, Markdown; empty when it has none.
+  final String body;
+
+  /// The names of its labels, as GitHub lists them.
+  final List<String> labels;
+
+  /// The branch it merges from, when the list carries it.
+  final String? headRef;
 }
 
 /// One item of `GET /repos/{o}/{r}/pulls` in [repository]. Throws
@@ -39,6 +52,11 @@ OpenPullRequest openPullRequestFrom(
   }
   final user = json['user'];
   final login = user is Map<String, dynamic> ? user['login'] : null;
+  final body = json['body'];
+  final headRef = switch (json['head']) {
+    {'ref': final String ref} => ref,
+    _ => null,
+  };
   return OpenPullRequest(
     ref: PullRequestRef(
       owner: repository.owner,
@@ -49,6 +67,13 @@ OpenPullRequest openPullRequestFrom(
     createdAt: createdAt.toUtc(),
     authorLogin: login is String ? login : null,
     draft: json['draft'] == true,
+    body: body is String ? body : '',
+    labels: [
+      if (json['labels'] case final List<dynamic> labels)
+        for (final label in labels)
+          if (label case {'name': final String name}) name,
+    ],
+    headRef: headRef,
   );
 }
 

@@ -471,6 +471,7 @@
   "agentSummaryGoalRevisionPeriod": "Periode wijzigen naar {value}",
   "agentSummaryGoalRevisionScope": "geldt voor {value}",
   "agentSummaryGoalRevisionTarget": "Doel wijzigen naar {value}",
+  "agentSummaryLinkPullRequest": "Pull request #{number} \"{title}\" koppelen",
   "agentSummaryMigrateItem": "Verplaatsen naar vervolgtaak: \"{title}\"",
   "agentSummaryRecommendNextSteps": "Volgende stappen voorstellen",
   "agentSummaryRecommendNextStepsCount": "{count, plural, =1{1 volgende stap voorstellen} other{{count} volgende stappen voorstellen}}",

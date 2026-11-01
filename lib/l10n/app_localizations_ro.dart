@@ -1019,6 +1019,11 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String agentSummaryLinkPullRequest(String number, String title) {
+    return 'Legați pull request-ul #$number „$title”';
+  }
+
+  @override
   String agentSummaryMigrateItem(Object title) {
     return 'Mutați în sarcina ulterioară: „$title”';
   }

@@ -659,6 +659,27 @@ extension TaskAgentExecute on TaskAgentWorkflow {
 
     final labelDefinitions = await journalDb.getAllLabelDefinitions();
 
+    // Unwired, or without a repository and a token, the pull request tools
+    // stay hidden. Local reads only: GitHub is asked when a tool is called.
+    final links = pullRequestLinks;
+    var hasPullRequestRepository = false;
+    if (links != null) {
+      try {
+        hasPullRequestRepository = await links.canListFor(taskId);
+      } catch (error, stackTrace) {
+        logError(
+          'pull request listing check failed',
+          error: error,
+          stackTrace: stackTrace,
+        );
+      }
+    }
+    // Any linked pull request, merged ones included: what is stored now may
+    // be newer than what the wake's context showed (see the fact).
+    final hasLinkedPullRequests =
+        pullRequestContextService != null &&
+        linked.whereType<PullRequestEntry>().isNotEmpty;
+
     return TaskAgentWakeFacts(
       // A null `checklistIds` and an empty one both mean "no checklists"
       // everywhere else in the app, and a task that never had one carries null
@@ -671,6 +692,8 @@ extension TaskAgentExecute on TaskAgentWorkflow {
       hasOpenProposals: ledger.open.isNotEmpty,
       hasActiveAttentionClaims: attentionClaims.isNotEmpty,
       hasCategoryProjects: hasCategoryProjects,
+      hasPullRequestRepository: hasPullRequestRepository,
+      hasLinkedPullRequests: hasLinkedPullRequests,
     );
   }
 

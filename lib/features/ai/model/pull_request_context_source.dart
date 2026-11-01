@@ -22,4 +22,11 @@ abstract interface class PullRequestContextSource {
     String taskId, {
     required PullRequestContextAudience audience,
   });
+
+  /// The task's pull requests rendered for the task agent, each one not yet
+  /// merged read from GitHub again now — the agent's
+  /// `refresh_pull_requests` tool, for one that merged since the wake
+  /// started or whose refresh then failed. A merge is final, so a pull
+  /// request stored as merged is shown as stored, without asking GitHub.
+  Future<String> refreshOpenFor(String taskId);
 }

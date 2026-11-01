@@ -86,15 +86,18 @@ class QueryTaskActionPlanner {
 
   final QueryTextInference inference;
 
-  /// The deferred task tools, less `set_task_project`: the chat's task context
-  /// carries no project directory, so a project id here could only be invented.
+  /// The deferred task tools, less `set_task_project` and
+  /// `link_pull_request`: the chat's task context carries no project
+  /// directory and no pull request listing, so a project id or a pull
+  /// request number here could only be invented.
   static final List<AgentToolDefinition> tools = AgentToolRegistry
       .taskAgentTools
       .where(
         (tool) =>
             tool.enabled &&
             AgentToolRegistry.deferredTools.contains(tool.name) &&
-            tool.name != TaskAgentToolNames.setTaskProject,
+            tool.name != TaskAgentToolNames.setTaskProject &&
+            tool.name != TaskAgentToolNames.linkPullRequest,
       )
       .toList(growable: false);
 

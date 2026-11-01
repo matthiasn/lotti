@@ -15,6 +15,12 @@ void main() {
     'created_at': createdAt,
     'user': user,
     'draft': true,
+    'body': 'Shorter steps on the ice.',
+    'labels': [
+      {'name': 'ice'},
+      {'name': 'speed'},
+    ],
+    'head': {'ref': 'feat/waddle-faster'},
   };
 
   test('reads an item of the repository, its time in UTC', () {
@@ -29,7 +35,34 @@ void main() {
     expect(pr.createdAt.isUtc, isTrue);
     expect(pr.authorLogin, 'pingu');
     expect(pr.draft, isTrue);
+    expect(pr.body, 'Shorter steps on the ice.');
+    expect(pr.labels, ['ice', 'speed']);
+    expect(pr.headRef, 'feat/waddle-faster');
   });
+
+  test(
+    'a missing description, malformed labels and no branch read as none',
+    () {
+      final pr = openPullRequestFrom({
+        ...item(),
+        'body': null,
+        'labels': [
+          {'name': 7},
+          'ice',
+          {'name': 'kept'},
+        ],
+        'head': {'ref': null},
+      }, repository);
+
+      expect(pr.body, isEmpty);
+      expect(pr.labels, ['kept']);
+      expect(pr.headRef, isNull);
+      expect(
+        openPullRequestFrom({...item(), 'labels': 'ice'}, repository).labels,
+        isEmpty,
+      );
+    },
+  );
 
   test('an author that is not a login reads as none', () {
     expect(

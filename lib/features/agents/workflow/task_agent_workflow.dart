@@ -12,6 +12,7 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/agents/agent_repository.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/model/agent_report_provenance.dart';
+import 'package:lotti/features/agents/model/pull_request_link_source.dart';
 import 'package:lotti/features/agents/projection/content_digest.dart';
 import 'package:lotti/features/agents/projection/decision_events.dart';
 import 'package:lotti/features/agents/projection/input_capture.dart';
@@ -41,6 +42,7 @@ import 'package:lotti/features/agents/workflow/task_agent_report_editor.dart';
 import 'package:lotti/features/agents/workflow/task_agent_report_policy.dart';
 import 'package:lotti/features/agents/workflow/task_agent_strategy.dart';
 import 'package:lotti/features/agents/workflow/task_project_options.dart';
+import 'package:lotti/features/agents/workflow/task_pull_request_candidates.dart';
 import 'package:lotti/features/agents/workflow/task_source_renderer.dart';
 import 'package:lotti/features/agents/workflow/task_tool_dispatcher.dart';
 import 'package:lotti/features/agents/workflow/task_wake_input_fingerprint.dart';
@@ -125,6 +127,7 @@ class TaskAgentWorkflow with AgentErrorLogging {
     this.taskAgentService,
     this.projectRepository,
     this.pullRequestContextService,
+    this.pullRequestLinks,
     this.changeSetNotificationService,
     this.inputCaptureService,
     this.logSummarizer,
@@ -185,6 +188,10 @@ class TaskAgentWorkflow with AgentErrorLogging {
   /// Refreshes the task's linked pull requests for the wake's context; null
   /// leaves the `## Pull Requests` section out.
   final PullRequestContextSource? pullRequestContextService;
+
+  /// Lists the task's unlinked pull requests for `get_unlinked_pull_requests`
+  /// and links a confirmed `link_pull_request`; null hides both tools.
+  final PullRequestLinkSource? pullRequestLinks;
 
   /// Optional bridge that keeps task-suggestion notifications aligned with
   /// agent change-set resolution.

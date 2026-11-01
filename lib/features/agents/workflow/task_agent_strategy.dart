@@ -22,6 +22,7 @@ import 'package:lotti/features/agents/workflow/change_proposal_filter.dart';
 import 'package:lotti/features/agents/workflow/change_set_builder.dart';
 import 'package:lotti/features/agents/workflow/task_agent_report_editor.dart';
 import 'package:lotti/features/agents/workflow/task_project_options.dart';
+import 'package:lotti/features/agents/workflow/task_pull_request_candidates.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:openai_dart/openai_dart.dart';
@@ -95,6 +96,8 @@ class TaskAgentStrategy extends ConversationStrategy {
     this.resolveLinkableTaskTitle,
     this.resolveExistingTaskRelations,
     this.resolveCategoryProjects,
+    this.resolveUnlinkedPullRequests,
+    this.refreshLinkedPullRequests,
     this.flushChangeSet,
     this.stagedToolExposure,
   });
@@ -209,6 +212,17 @@ class TaskAgentStrategy extends ConversationStrategy {
   /// task's current project is suppressed as a no-op. A transient resolver
   /// failure keeps the proposal (we cannot prove the id is fake).
   final Future<List<TaskProjectOption>> Function()? resolveCategoryProjects;
+
+  /// Optional resolver for the task's unlinked pull requests, ranked against
+  /// the task. Backs the read-only `get_unlinked_pull_requests` tool and
+  /// validates `link_pull_request`: a number outside the listing is rejected
+  /// as linked by now, closed or invented. Memoised by the caller, so the
+  /// read and the validation ask GitHub once per wake.
+  final Future<TaskPullRequestListing> Function()? resolveUnlinkedPullRequests;
+
+  /// Optional reader of the task's linked pull requests, the ones not yet
+  /// merged read from GitHub again now. Backs `refresh_pull_requests`.
+  final Future<String> Function()? refreshLinkedPullRequests;
 
   String? _reportContent;
   String? _reportTldr;
@@ -370,6 +384,12 @@ class TaskAgentStrategy extends ConversationStrategy {
       if (toolName == categoryProjectsToolName) {
         await _recordActionMessage(toolName: toolName, args: args);
         await _handleCategoryProjects(call.id, manager);
+        continue;
+      }
+      if (toolName == TaskAgentToolNames.getUnlinkedPullRequests ||
+          toolName == TaskAgentToolNames.refreshPullRequests) {
+        await _recordActionMessage(toolName: toolName, args: args);
+        await _handlePullRequestRead(toolName, call.id, manager);
         continue;
       }
       if (toolName == retractSuggestionsToolName) {

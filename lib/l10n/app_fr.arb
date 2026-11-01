@@ -446,6 +446,7 @@
   "agentSummaryGoalRevisionPeriod": "Changer la période à {value}",
   "agentSummaryGoalRevisionScope": "s'applique à {value}",
   "agentSummaryGoalRevisionTarget": "Changer l'objectif à {value}",
+  "agentSummaryLinkPullRequest": "Lier la pull request #{number} « {title} »",
   "agentSummaryMigrateItem": "Déplacer vers la tâche de suivi : « {title} »",
   "agentSummaryRecommendNextSteps": "Recommander les prochaines étapes",
   "agentSummaryRecommendNextStepsCount": "{count, plural, =1{Recommander 1 prochaine étape} other{Recommander {count} prochaines étapes}}",

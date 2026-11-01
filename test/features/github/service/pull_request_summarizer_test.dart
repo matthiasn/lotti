@@ -418,6 +418,46 @@ void main() {
     },
   );
 
+  group('summarizeAfterRunning', () {
+    test('waits for the attempt a refresh started, then finds its summary '
+        'stored, asking no model twice', () async {
+      final gate = Completer<List<ChatCompletionMessageToolCall>>();
+      answers = [() => gate.future];
+      var storedYet = false;
+      when(
+        () => repository.addSummary(any(), any(), start: any(named: 'start')),
+      ).thenAnswer((_) async => storedYet = true);
+      when(() => repository.summaryOf(entryId, any())).thenAnswer(
+        (_) async => storedYet
+            ? const PullRequestSummary(oneLiner: 'Tracks.', tldr: tldr)
+            : null,
+      );
+
+      final refreshStarted = summarizer.summarize(entryId);
+      PullRequestSummaryOutcome? settled;
+      unawaited(
+        summarizer.summarizeAfterRunning(entryId).then((o) => settled = o),
+      );
+      await pumpEventQueue();
+      expect(settled, isNull, reason: 'waits while the first one runs');
+
+      gate.complete([summaryToolCall()]);
+
+      expect(await refreshStarted, PullRequestSummaryOutcome.stored);
+      await pumpEventQueue();
+      expect(settled, PullRequestSummaryOutcome.upToDate);
+      expect(asked, hasLength(1));
+    });
+
+    test('with none running, summarises as a refresh would', () async {
+      expect(
+        await summarizer.summarizeAfterRunning(entryId),
+        PullRequestSummaryOutcome.stored,
+      );
+      expect(asked, hasLength(1));
+    });
+  });
+
   group('the language', () {
     test('is asked for by name, whatever the pull request is written in', () {
       expect(

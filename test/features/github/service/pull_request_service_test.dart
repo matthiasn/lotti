@@ -555,6 +555,33 @@ void main() {
       expect(result, isA<PullRequestRefreshed>());
     });
 
+    test('settleSummary waits for the summarizer, past any run in '
+        'progress', () async {
+      final done = Completer<PullRequestSummaryOutcome>();
+      when(
+        () => summarizer.summarizeAfterRunning(entry.id),
+      ).thenAnswer((_) => done.future);
+      var settled = false;
+
+      unawaited(service.settleSummary(entry.id).then((_) => settled = true));
+      await pumpEventQueue();
+      expect(settled, isFalse);
+      done.complete(PullRequestSummaryOutcome.upToDate);
+      await pumpEventQueue();
+
+      expect(settled, isTrue);
+    });
+
+    test('settleSummary without a summarizer settles at once', () async {
+      await PullRequestService(
+        client: client,
+        tokenStorage: tokens,
+        repository: repository,
+      ).settleSummary(entry.id);
+
+      verifyNever(() => summarizer.summarizeAfterRunning(any()));
+    });
+
     test('a link asks for a summary of the new entry', () async {
       answers(prSnapshot());
       when(

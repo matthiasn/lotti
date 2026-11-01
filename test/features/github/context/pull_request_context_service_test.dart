@@ -257,4 +257,128 @@ void main() {
       expect(text, isNot(contains('Adds tracking.')));
     });
   });
+
+  group('refreshOpenFor — the agent reads its pull requests again', () {
+    const tracks = PullRequestSummary(
+      oneLiner: 'Tracks pull requests.',
+      tldr: 'Tracks pull requests on tasks.',
+    );
+    final merged = prSnapshot(
+      second: 60,
+      status: PullRequestStatus.merged,
+    ).copyWith(body: 'Adds tracking.');
+
+    test('one that merged since waits for its summary, and shows the '
+        'summary written meanwhile', () async {
+      refreshes(PullRequestRefreshed(merged));
+      when(
+        () => repository.liveEntry(stored.id),
+      ).thenAnswer(
+        (_) async => stored.copyWith(
+          data: stored.data.copyWith(snapshot: merged),
+        ),
+      );
+      var settled = false;
+      when(() => service.settleSummary(stored.id)).thenAnswer((_) async {
+        settled = true;
+      });
+      // The summary exists only once the summarizer has settled.
+      when(
+        () => repository.summaryOf(
+          stored.id,
+          pullRequestSummaryInput(stored.data.ref, merged),
+        ),
+      ).thenAnswer((_) async => settled ? tracks : null);
+
+      final text = await subject().refreshOpenFor(taskId);
+
+      verify(() => service.settleSummary(stored.id)).called(1);
+      expect(text, contains('- TL;DR: Tracks pull requests on tasks.'));
+    });
+
+    test('one stored as merged is not read from GitHub again, but shown '
+        'current with its summary settled', () async {
+      final storedMerged = stored.copyWith(
+        data: stored.data.copyWith(snapshot: merged),
+      );
+      when(
+        () => repository.forTask(taskId),
+      ).thenAnswer((_) async => [storedMerged]);
+      when(
+        () => repository.liveEntry(stored.id),
+      ).thenAnswer((_) async => storedMerged);
+      when(() => service.settleSummary(stored.id)).thenAnswer((_) async {});
+      when(
+        () => repository.summaryOf(any(), any()),
+      ).thenAnswer((_) async => tracks);
+
+      final [item] = await subject().forTask(taskId, agentRefresh: true);
+
+      verifyNever(() => service.refresh(any()));
+      verify(() => service.settleSummary(stored.id)).called(1);
+      expect(item.current, isTrue);
+      expect(item.snapshot, merged);
+      expect(item.summary, tracks);
+    });
+
+    test('one stored as merged but unlinked meanwhile is left out', () async {
+      final storedMerged = stored.copyWith(
+        data: stored.data.copyWith(snapshot: merged),
+      );
+      when(
+        () => repository.forTask(taskId),
+      ).thenAnswer((_) async => [storedMerged]);
+      when(() => repository.liveEntry(stored.id)).thenAnswer((_) async => null);
+      when(() => service.settleSummary(stored.id)).thenAnswer((_) async {});
+
+      expect(await subject().forTask(taskId, agentRefresh: true), isEmpty);
+    });
+
+    test(
+      'one still open is read again without waiting for a summary',
+      () async {
+        refreshes(PullRequestRefreshed(prSnapshot(second: 60)));
+
+        final [item] = await subject().forTask(taskId, agentRefresh: true);
+
+        expect(item.current, isTrue);
+        verify(() => service.refresh(stored)).called(1);
+        verifyNever(() => service.settleSummary(any()));
+      },
+    );
+
+    test('the wake does not wait on contextFor for a summary', () async {
+      refreshes(PullRequestRefreshed(merged));
+
+      await subject().contextFor(
+        taskId,
+        audience: PullRequestContextAudience.taskAgent,
+      );
+
+      verifyNever(() => service.settleSummary(any()));
+    });
+
+    test('a summary that outlasts its timeout is not waited for', () {
+      fakeAsync((async) {
+        refreshes(PullRequestRefreshed(merged));
+        final pending = Completer<void>();
+        when(
+          () => service.settleSummary(stored.id),
+        ).thenAnswer((_) => pending.future);
+        List<PullRequestContextItem>? items;
+        subject()
+            .forTask(taskId, agentRefresh: true)
+            .then((value) => items = value);
+
+        async.elapse(const Duration(seconds: 89));
+        expect(items, isNull);
+        async.elapse(const Duration(seconds: 2));
+
+        expect(items?.single.current, isTrue);
+        expect(items?.single.summary, isNull);
+        pending.complete();
+        async.flushMicrotasks();
+      });
+    });
+  });
 }

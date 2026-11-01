@@ -11,6 +11,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/agents/model/pull_request_link_source.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/tools/change_effect.dart';
 import 'package:lotti/features/agents/workflow/task_tool_dispatcher.dart';
@@ -643,6 +644,121 @@ void main() {
 
       expect(result.success, isFalse);
       expect(result.errorMessage, 'set_task_project is not configured');
+    });
+  });
+
+  group('dispatch — link_pull_request', () {
+    late _FakePullRequestLinks links;
+    late TaskToolDispatcher linkDispatcher;
+
+    // The confirmed change item carries the repository and the title the
+    // review row showed.
+    const confirmedArgs = {
+      'owner': 'penguin',
+      'repo': 'colony',
+      'number': 7,
+      'title': 'Count igloos',
+    };
+
+    setUp(() {
+      links = _FakePullRequestLinks();
+      linkDispatcher = TaskToolDispatcher(
+        domainLogger: MockDomainLogger(),
+        journalDb: mockJournalDb,
+        journalRepository: mockJournalRepository,
+        checklistRepository: mockChecklistRepository,
+        labelsRepository: mockLabelsRepository,
+        persistenceLogic: mockPersistenceLogic,
+        timeService: mockTimeService,
+        pullRequestLinks: links,
+      );
+      when(
+        () => mockJournalDb.journalEntityById(taskId),
+      ).thenAnswer((_) async => _makeTestTask(taskId));
+    });
+
+    test('links the confirmed pull request to the task', () async {
+      links.answer = const PullRequestLinkSucceeded();
+
+      final result = await linkDispatcher.dispatch(
+        TaskAgentToolNames.linkPullRequest,
+        confirmedArgs,
+        taskId,
+      );
+
+      expect(result.success, isTrue);
+      expect(result.output, 'Pull request penguin/colony#7 linked.');
+      expect(result.mutatedEntityId, taskId);
+      expect(links.linked, [(taskId, 'penguin', 'colony', 7)]);
+    });
+
+    test('one the task holds already is the outcome wanted, and mutates '
+        'nothing', () async {
+      links.answer = const PullRequestLinkSucceeded(alreadyLinked: true);
+
+      final result = await linkDispatcher.dispatch(
+        TaskAgentToolNames.linkPullRequest,
+        confirmedArgs,
+        taskId,
+      );
+
+      expect(result.success, isTrue);
+      expect(
+        result.output,
+        'Pull request penguin/colony#7 was linked already.',
+      );
+      expect(result.mutatedEntityId, isNull);
+    });
+
+    test('a refused link fails with its reason', () async {
+      links.answer = const PullRequestLinkRefused(
+        'penguin/colony#7 is linked to another task by now.',
+      );
+
+      final result = await linkDispatcher.dispatch(
+        TaskAgentToolNames.linkPullRequest,
+        confirmedArgs,
+        taskId,
+      );
+
+      expect(result.success, isFalse);
+      expect(
+        result.output,
+        'Error: penguin/colony#7 is linked to another task by now.',
+      );
+      expect(result.errorMessage, 'Pull request link refused');
+    });
+
+    for (final args in <Map<String, dynamic>>[
+      {'owner': 'penguin', 'repo': 'colony', 'number': '7'},
+      {'owner': '', 'repo': 'colony', 'number': 7},
+      {'owner': 'penguin', 'number': 7},
+    ]) {
+      test('rejects $args before linking anything', () async {
+        final result = await linkDispatcher.dispatch(
+          TaskAgentToolNames.linkPullRequest,
+          args,
+          taskId,
+        );
+
+        expect(result.success, isFalse);
+        expect(
+          result.errorMessage,
+          'Type validation failed for the pull request',
+        );
+        expect(links.linked, isEmpty);
+      });
+    }
+
+    test('fails when GitHub is not wired', () async {
+      final result = await dispatcher.dispatch(
+        TaskAgentToolNames.linkPullRequest,
+        confirmedArgs,
+        taskId,
+      );
+
+      expect(result.success, isFalse);
+      expect(result.errorMessage, 'link_pull_request is not configured');
     });
   });
 
@@ -2214,4 +2330,28 @@ AttentionRequestEntity _makeAttentionRequest({
         vectorClock: null,
       )
       as AttentionRequestEntity;
+}
+
+/// Records each link and answers with [answer].
+class _FakePullRequestLinks implements PullRequestLinkSource {
+  PullRequestLinkConfirmation answer = const PullRequestLinkSucceeded();
+  final linked = <(String, String, String, int)>[];
+
+  @override
+  Future<bool> canListFor(String taskId) async => true;
+
+  @override
+  Future<UnlinkedPullRequestsResult> unlinkedFor(String taskId) =>
+      throw UnimplementedError();
+
+  @override
+  Future<PullRequestLinkConfirmation> link({
+    required String taskId,
+    required String owner,
+    required String repo,
+    required int number,
+  }) async {
+    linked.add((taskId, owner, repo, number));
+    return answer;
+  }
 }

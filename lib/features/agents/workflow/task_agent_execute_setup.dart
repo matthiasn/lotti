@@ -220,7 +220,11 @@ extension _TaskAgentExecuteSetup on TaskAgentWorkflow {
       agentRepository: agentRepository,
       syncService: syncService,
       requestingAgentId: agentId,
+      pullRequestLinks: pullRequestLinks,
     );
+    // One GitHub listing per wake, shared by the read tool and the
+    // validation of every link proposal.
+    Future<TaskPullRequestListing>? unlinkedPullRequests;
 
     return TaskAgentStrategy(
       domainLogger: domainLogger,
@@ -332,6 +336,25 @@ extension _TaskAgentExecuteSetup on TaskAgentWorkflow {
           journalDb: journalDb,
           projectRepository: projects,
           agentRepository: agentRepository,
+        ),
+        null => null,
+      },
+      // The task's unlinked pull requests, ranked against it, for
+      // `get_unlinked_pull_requests` and to validate `link_pull_request`.
+      resolveUnlinkedPullRequests: switch (pullRequestLinks) {
+        final PullRequestLinkSource links =>
+          () => unlinkedPullRequests ??= loadTaskPullRequestListing(
+            taskId: taskId,
+            journalDb: journalDb,
+            source: links,
+          ),
+        null => null,
+      },
+      // The task's linked pull requests read again for
+      // `refresh_pull_requests`, a merged one's summary awaited.
+      refreshLinkedPullRequests: switch (pullRequestContextService) {
+        final PullRequestContextSource context => () => context.refreshOpenFor(
+          taskId,
         ),
         null => null,
       },

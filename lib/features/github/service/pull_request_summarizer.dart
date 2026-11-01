@@ -137,8 +137,8 @@ class PullRequestSummarizer {
   /// tool, is not asked on every refresh.
   final Duration retryAfter;
 
-  /// Entries being summarised on this device now.
-  final Set<String> _running = {};
+  /// Entries being summarised on this device now, with the attempt's end.
+  final Map<String, Future<PullRequestSummaryOutcome>> _running = {};
 
   /// The content whose automatic summary failed, and when it may be asked
   /// for again, by entry. On this device only, and only until it restarts.
@@ -178,7 +178,32 @@ class PullRequestSummarizer {
     String entryId, {
     bool manual = false,
   }) async {
-    if (!_running.add(entryId)) return PullRequestSummaryOutcome.busy;
+    if (_running.containsKey(entryId)) return PullRequestSummaryOutcome.busy;
+    final attempt = _attempt(entryId, manual: manual);
+    _running[entryId] = attempt;
+    return attempt;
+  }
+
+  /// Summarises entry [entryId] automatically, as a refresh does, but first
+  /// waits for an attempt already running for it — the one the refresh
+  /// started — so what it answers is about the content stored now:
+  /// [PullRequestSummaryOutcome.upToDate] when that attempt stored its
+  /// summary. Never [PullRequestSummaryOutcome.busy]. For a caller that
+  /// needs the summary of a pull request that just merged.
+  Future<PullRequestSummaryOutcome> summarizeAfterRunning(
+    String entryId,
+  ) async {
+    for (var running = _running[entryId]; running != null;) {
+      await running;
+      running = _running[entryId];
+    }
+    return summarize(entryId);
+  }
+
+  Future<PullRequestSummaryOutcome> _attempt(
+    String entryId, {
+    required bool manual,
+  }) async {
     try {
       return await _summarize(entryId, manual: manual);
     } on Object catch (error, stackTrace) {
@@ -190,7 +215,8 @@ class PullRequestSummarizer {
       );
       return PullRequestSummaryOutcome.failed;
     } finally {
-      _running.remove(entryId);
+      // The removed future is this attempt itself, which never throws.
+      _running.remove(entryId)?.ignore();
       if (!_attempts.isClosed) _attempts.add(entryId);
     }
   }

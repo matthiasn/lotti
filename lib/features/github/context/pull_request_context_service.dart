@@ -48,6 +48,7 @@ class PullRequestContextService implements PullRequestContextSource {
     required PullRequestService service,
     required Future<bool> Function() hasToken,
     this.refreshTimeout = const Duration(seconds: 8),
+    this.summaryTimeout = const Duration(seconds: 90),
   }) : _entries = repository,
        _refresher = service,
        _tokenStored = hasToken;
@@ -73,16 +74,69 @@ class PullRequestContextService implements PullRequestContextSource {
   }) async =>
       renderPullRequestContext(await forTask(taskId), audience: audience);
 
+  @override
+  Future<String> refreshOpenFor(String taskId) async =>
+      renderPullRequestContext(
+        await forTask(taskId, agentRefresh: true),
+        audience: PullRequestContextAudience.taskAgent,
+      );
+
   /// The task's pull requests, each refreshed now, in parallel. Empty while
   /// this device holds no GitHub token: then nothing is asked of GitHub.
-  Future<List<PullRequestContextItem>> forTask(String taskId) async {
+  ///
+  /// With [agentRefresh] — the task agent's `refresh_pull_requests` — one
+  /// stored as merged is not read again but shown as stored, and as current:
+  /// a merge is final, so no later read can differ. And for every one merged
+  /// or closed, the item waits until its summary is settled
+  /// ([PullRequestService.settleSummary]), at most [summaryTimeout], so the
+  /// agent decides from what the pull request did, not from its title.
+  Future<List<PullRequestContextItem>> forTask(
+    String taskId, {
+    bool agentRefresh = false,
+  }) async {
     if (!await _tokenStored()) return const [];
     final entries = await _entries.forTask(taskId);
-    final items = await Future.wait(entries.map(_itemFor));
+    final items = await Future.wait(
+      entries.map(
+        (entry) => agentRefresh && _isMerged(entry.data.snapshot)
+            ? _merged(entry)
+            : _itemFor(entry, settleSummary: agentRefresh),
+      ),
+    );
     return items.nonNulls.toList();
   }
 
-  Future<PullRequestContextItem?> _itemFor(PullRequestEntry entry) async {
+  static bool _isMerged(PullRequestSnapshot? snapshot) =>
+      snapshot?.status == PullRequestStatus.merged;
+
+  /// How long the agent's refresh waits for a merged or closed pull
+  /// request's summary; past it, the item goes without one.
+  final Duration summaryTimeout;
+
+  /// Waits until [entry]'s summary is settled, at most [summaryTimeout].
+  Future<void> _settle(PullRequestEntry entry) => _refresher
+      .settleSummary(entry.id)
+      .timeout(summaryTimeout, onTimeout: () {});
+
+  /// A pull request stored as merged, current without asking GitHub, with
+  /// its summary settled first.
+  Future<PullRequestContextItem?> _merged(PullRequestEntry entry) async {
+    await _settle(entry);
+    final stored = await _entries.liveEntry(entry.id);
+    final snapshot = stored?.data.snapshot;
+    if (stored == null || snapshot == null) return null;
+    return PullRequestContextItem(
+      ref: entry.data.ref,
+      snapshot: snapshot,
+      current: true,
+      summary: await _summaryOf(entry, snapshot),
+    );
+  }
+
+  Future<PullRequestContextItem?> _itemFor(
+    PullRequestEntry entry, {
+    bool settleSummary = false,
+  }) async {
     final PullRequestRefresh result;
     try {
       result = await _refresher.refresh(entry).timeout(refreshTimeout);
@@ -93,6 +147,9 @@ class PullRequestContextService implements PullRequestContextSource {
       case PullRequestRefreshFailed(:final kind):
         return _notRefreshed(entry, kind);
       case PullRequestRefreshed(:final observation):
+        if (settleSummary && observation.status != PullRequestStatus.open) {
+          await _settle(entry);
+        }
         // Read again: the pull request may have been unlinked, or a later
         // observation may have synced in, while the refresh ran.
         final stored = await _entries.liveEntry(entry.id);

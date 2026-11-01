@@ -129,6 +129,46 @@ void main() {
       await journalDb.journalEntityByIdIncludingDeleted(id)
           as PullRequestEntry?;
 
+  group('repositoryOfTask', () {
+    Future<String> taskInCategory(String? repository) async {
+      await journalDb.upsertCategoryDefinition(
+        CategoryDefinition(
+          id: 'colony',
+          createdAt: DateTime(2024),
+          updatedAt: DateTime(2024),
+          name: 'Colony',
+          vectorClock: null,
+          private: false,
+          active: true,
+          githubRepository: repository,
+        ),
+      );
+      final task = testTask.copyWith(
+        meta: testTask.meta.copyWith(id: 'filed-task', categoryId: 'colony'),
+      );
+      await getIt<PersistenceLogic>().createDbEntity(task);
+      return task.meta.id;
+    }
+
+    test("is the task's category's repository", () async {
+      final id = await taskInCategory('penguin/colony');
+
+      final repo = await repository.repositoryOfTask(id);
+
+      expect(repo?.owner, 'penguin');
+      expect(repo?.repo, 'colony');
+    });
+
+    test('is none when the category names none, the task has no category, '
+        'or there is no such task', () async {
+      final id = await taskInCategory(null);
+
+      expect(await repository.repositoryOfTask(id), isNull);
+      expect(await repository.repositoryOfTask(taskId), isNull);
+      expect(await repository.repositoryOfTask('no-such-task'), isNull);
+    });
+  });
+
   group('track', () {
     Future<Task> storedTask() async =>
         (await journalDb.journalEntityById(taskId))! as Task;

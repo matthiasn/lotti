@@ -13,6 +13,7 @@ export 'package:lotti/features/agents/tools/task_field_tool_definitions.dart';
 export 'package:lotti/features/agents/tools/task_link_tool_definitions.dart';
 export 'package:lotti/features/agents/tools/task_planning_tool_definitions.dart';
 export 'package:lotti/features/agents/tools/task_project_tool_definitions.dart';
+export 'package:lotti/features/agents/tools/task_pull_request_tool_definitions.dart';
 export 'package:lotti/features/agents/tools/task_time_tool_definitions.dart';
 
 /// Metadata describing a single tool that an agent can call.
@@ -137,6 +138,11 @@ abstract final class TaskAgentToolNames {
   static const getCategoryProjects = 'get_category_projects';
   static const setTaskProject = 'set_task_project';
 
+  // Pull request tools.
+  static const getUnlinkedPullRequests = 'get_unlinked_pull_requests';
+  static const linkPullRequest = 'link_pull_request';
+  static const refreshPullRequests = 'refresh_pull_requests';
+
   // Time tracking tools.
   static const createTimeEntry = 'create_time_entry';
   static const updateTimeEntry = 'update_time_entry';
@@ -184,6 +190,7 @@ abstract final class AgentToolRegistry {
     TaskAgentToolNames.createFollowUpTask,
     TaskAgentToolNames.linkTask,
     TaskAgentToolNames.setTaskProject,
+    TaskAgentToolNames.linkPullRequest,
     TaskAgentToolNames.migrateChecklistItems,
     TaskAgentToolNames.createTimeEntry,
     TaskAgentToolNames.updateTimeEntry,

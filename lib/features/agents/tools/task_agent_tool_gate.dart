@@ -18,6 +18,8 @@ class TaskAgentWakeFacts {
     this.hasActiveAttentionClaims = true,
     this.hasNewerContentThanReport = true,
     this.hasCategoryProjects = true,
+    this.hasPullRequestRepository = true,
+    this.hasLinkedPullRequests = true,
   });
 
   /// Every fact permissive: the tool list is exactly today's.
@@ -60,6 +62,23 @@ class TaskAgentWakeFacts {
   /// Gates both project tools: with no project to read there is none to
   /// propose, and offering `set_task_project` would invite an invented id.
   final bool hasCategoryProjects;
+
+  /// The task's pull requests can be listed: its category names a GitHub
+  /// repository and this device holds a token.
+  ///
+  /// Gates both pull request tools: without a repository to read there is no
+  /// pull request to propose, and `link_pull_request` would invite an
+  /// invented number.
+  final bool hasPullRequestRepository;
+
+  /// The task links a pull request, and this device can read it again. Gates
+  /// `refresh_pull_requests`.
+  ///
+  /// Merged ones count too: the wake's own refresh may have timed out and
+  /// shown one as not refreshed, then finished in the background and stored
+  /// it as merged before this fact was read. The tool is how that wake gets a
+  /// current read; a merged one costs no GitHub call there.
+  final bool hasLinkedPullRequests;
 }
 
 /// The tools a wake with these [facts] may be offered.
@@ -95,6 +114,11 @@ Set<String> visibleTaskAgentToolNames(TaskAgentWakeFacts facts) {
       TaskAgentToolNames.getCategoryProjects,
       TaskAgentToolNames.setTaskProject,
     },
+    if (!facts.hasPullRequestRepository) ...{
+      TaskAgentToolNames.getUnlinkedPullRequests,
+      TaskAgentToolNames.linkPullRequest,
+    },
+    if (!facts.hasLinkedPullRequests) TaskAgentToolNames.refreshPullRequests,
   };
 
   return {

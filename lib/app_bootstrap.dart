@@ -20,6 +20,7 @@ import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/agents/service/subject_agent_lookup.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/agent_runtime_registry.dart';
+import 'package:lotti/features/agents/state/pull_request_link_source_provider.dart';
 import 'package:lotti/features/agents/workflow/prompt_log_wrap.dart';
 import 'package:lotti/features/ai/on_device_embedding/on_device_embedding_repository.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
@@ -474,6 +475,11 @@ List<Override> appFeatureWiringOverrides() => [
   // GitHub, which ranks above both.
   pullRequestContextSourceProvider.overrideWith(
     (ref) => ref.watch(pullRequestContextServiceProvider),
+  ),
+  // The task agent lists a task's unlinked pull requests and links the one
+  // the user confirms through GitHub, which ranks above agents.
+  pullRequestLinkSourceProvider.overrideWith(
+    (ref) => ref.watch(pullRequestLinkSuggestionsProvider),
   ),
   // An active lockdown scopes every category list; categories ranks below
   // lockdown.

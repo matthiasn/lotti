@@ -259,6 +259,14 @@ class PullRequestService {
     return observed;
   }
 
+  /// Waits until entry [entryId]'s summary is settled: the attempt its
+  /// refresh started has ended, and one more is made if that left the
+  /// content stored now without a summary — under the same consent and
+  /// cool-down as every automatic summary, so it may still end without one.
+  Future<void> settleSummary(String entryId) async {
+    await _summaries?.summarizeAfterRunning(entryId);
+  }
+
   void _summarize(String entryId) {
     final summaries = _summaries;
     if (summaries != null) unawaited(summaries.summarize(entryId));

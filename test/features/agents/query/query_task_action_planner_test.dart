@@ -951,6 +951,22 @@ void main() {
       expect(names, contains('link_task'));
     });
 
+    test('withholds link_pull_request, whose numbers the chat context '
+        'lacks', () async {
+      expect(
+        QueryTaskActionPlanner.tools.map((t) => t.name),
+        isNot(contains('link_pull_request')),
+      );
+      await expectLater(
+        QueryTaskActionPlanner.validate(
+          'link_pull_request',
+          {'number': 7},
+          context,
+        ),
+        throwsFormatException,
+      );
+    });
+
     test('rejects a set_task_project action as an unknown tool', () async {
       await expectLater(
         QueryTaskActionPlanner.validate(

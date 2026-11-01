@@ -1020,6 +1020,11 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
+  String agentSummaryLinkPullRequest(String number, String title) {
+    return 'Collega la pull request #$number \"$title\"';
+  }
+
+  @override
   String agentSummaryMigrateItem(Object title) {
     return 'Sposta nell’attività di follow-up: \"$title\"';
   }

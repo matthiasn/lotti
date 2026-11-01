@@ -25,6 +25,7 @@ import 'package:lotti/features/github/repository/github_token_storage.dart';
 import 'package:lotti/features/github/repository/pull_request_repository.dart';
 import 'package:lotti/features/github/service/pull_request_image_attacher.dart';
 import 'package:lotti/features/github/service/pull_request_image_fetcher.dart';
+import 'package:lotti/features/github/service/pull_request_link_suggestions.dart';
 import 'package:lotti/features/github/service/pull_request_service.dart';
 import 'package:lotti/features/github/service/pull_request_summarizer.dart';
 import 'package:lotti/features/github/service/pull_request_summary_tool.dart';
@@ -194,6 +195,16 @@ final pullRequestContextServiceProvider = Provider<PullRequestContextService>((
   );
 }, name: 'pullRequestContextServiceProvider');
 
+/// The task agent's unlinked pull requests and confirmed links.
+final pullRequestLinkSuggestionsProvider = Provider<PullRequestLinkSuggestions>(
+  (ref) => PullRequestLinkSuggestions(
+    repository: ref.watch(pullRequestRepositoryProvider),
+    service: ref.watch(pullRequestServiceProvider),
+    hasToken: ref.watch(gitHubTokenStorageProvider).hasToken,
+  ),
+  name: 'pullRequestLinkSuggestionsProvider',
+);
+
 /// What this device knows about its GitHub token.
 enum GitHubTokenStatus {
   /// No token is stored.
@@ -336,15 +347,7 @@ taskGitHubRepositoryProvider = StreamProvider.autoDispose
           categoriesNotification,
           privateToggleNotification,
         },
-        fetcher: () async {
-          final task = await db.journalEntityById(taskId);
-          final categoryId = task?.meta.categoryId;
-          if (categoryId == null) return null;
-          final repository = (await db.getCategoryById(
-            categoryId,
-          ))?.githubRepository;
-          return repository == null ? null : parseGitHubRepository(repository);
-        },
+        fetcher: () => readTaskGitHubRepository(db, taskId),
       );
     }, name: 'taskGitHubRepositoryProvider');
 
