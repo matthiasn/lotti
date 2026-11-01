@@ -4,6 +4,7 @@ import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
 import 'package:lotti/features/agents/ui/chat/chat_recorder_controller.dart';
 import 'package:lotti/features/companion/model/companion_gesture.dart';
+import 'package:lotti/features/companion/state/companion_customization_controller.dart';
 import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
 import 'package:lotti/features/front_agent/state/front_chat_controller.dart';
 import 'package:lotti/features/front_agent/state/front_chat_thread_provider.dart';
@@ -35,8 +36,15 @@ abstract final class FrontVoice {
     bool on(String flag) => ref.read(configFlagProvider(flag)).value ?? false;
     return on(enableCompanionFlag) &&
         on(enableAiSummaryTtsFlag) &&
+        _speaksReplies(ref) &&
         (route != null || ref.read(ttsEngineProvider).isSupported);
   }
+
+  /// Whether she answers aloud: only once her saved customization is known
+  /// — a mute must never be guessed at — and while it lets her.
+  static bool _speaksReplies(WidgetRef ref) =>
+      ref.read(companionCustomizationProvider.notifier).loaded &&
+      ref.read(companionCustomizationProvider).speaksReplies;
 
   /// The pose she holds: listening while the user speaks, thinking while
   /// her answer is on its way; none at rest.
@@ -64,8 +72,23 @@ abstract final class FrontVoice {
       ..watch(configFlagProvider(enableCompanionFlag))
       ..watch(configFlagProvider(enableAiSummaryTtsFlag))
       ..watch(agentResolvedSetupProvider(frontAgentId))
-      ..watch(frontInboxFilterProvider);
+      ..watch(frontInboxFilterProvider)
+      ..watch(companionCustomizationProvider);
     final conversationId = ref.watch(frontActiveConversationProvider).value;
+    // Muted while she speaks — here or synced from another device — her own
+    // voice stops; any other source speaks on.
+    ref.listen(
+      companionCustomizationProvider.select((c) => c.speaksReplies),
+      (_, speaks) {
+        final id = ref.read(frontActiveConversationProvider).value;
+        if (!speaks && id != null) {
+          ref
+              .read(ttsPlaybackControllerProvider.notifier)
+              .stop(sourceId: frontVoiceSourceId(id))
+              .ignore();
+        }
+      },
+    );
     if (conversationId != null) {
       listenForPlaybackFailure(
         ref,
@@ -113,6 +136,8 @@ abstract final class FrontVoice {
       sourceId: frontVoiceSourceId(conversationId),
       text: text,
       cloudRoute: route,
+      // Asked again as playback starts: a mute while she was preparing holds.
+      canPlay: () async => _speaksReplies(ref),
       confirmModelDownload: (model) => confirmTtsModelDownload(context, model),
     );
   }

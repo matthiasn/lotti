@@ -166,7 +166,22 @@ class _CompanionViewState extends State<CompanionView>
     _animator = CompanionAnimator(seed: widget.seed);
     widget.controller?._animator = _animator;
     _pose = _advance(0);
-    _ticker = createTicker(_onTick)..start();
+    _ticker = createTicker(_onTick);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Reduced motion holds her still in the pose she stands in; she moves
+    // again once the platform allows it.
+    final still = MediaQuery.maybeDisableAnimationsOf(context) ?? false;
+    if (still) {
+      if (_ticker.isActive) _ticker.stop();
+    } else if (!_ticker.isActive) {
+      // A restarted ticker counts from zero again.
+      _last = Duration.zero;
+      _ticker.start();
+    }
   }
 
   @override

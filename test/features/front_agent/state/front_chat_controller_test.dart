@@ -8,6 +8,7 @@ import 'package:lotti/features/front_agent/model/front_conversation.dart';
 import 'package:lotti/features/front_agent/service/front_chat_service.dart';
 import 'package:lotti/features/front_agent/service/front_chat_thread_builder.dart';
 import 'package:lotti/features/front_agent/state/front_agent_providers.dart';
+import 'package:lotti/features/front_agent/state/front_category_scope.dart';
 import 'package:lotti/features/front_agent/state/front_chat_controller.dart';
 import 'package:lotti/features/front_agent/state/front_chat_thread_provider.dart';
 import 'package:lotti/features/front_agent/state/front_conversation_providers.dart';
@@ -396,6 +397,55 @@ void main() {
       expect(state().failedMessage, 'Hello');
       expect(state().failedMessageId, isNull);
     });
+  });
+
+  test("a send carries the open conversation's chips", () async {
+    when(
+      () => chatService.sendMessage(
+        text: 'Hello',
+        conversationId: 'c-1',
+        categoryIds: any(named: 'categoryIds'),
+      ),
+    ).thenAnswer((_) async {});
+    container.read(frontConversationCategoriesProvider.notifier)
+      ..toggle('c-1', 'colony')
+      ..toggle('c-2', 'nests');
+    controller().updateDraft('Hello');
+
+    await controller().send();
+
+    verify(
+      () => chatService.sendMessage(
+        text: 'Hello',
+        conversationId: 'c-1',
+        categoryIds: {'colony'},
+      ),
+    ).called(1);
+  });
+
+  test("a retry of a turn that never persisted keeps its conversation's "
+      'chips', () async {
+    var calls = 0;
+    when(
+      () => chatService.sendMessage(
+        text: 'Hello',
+        conversationId: 'c-1',
+        categoryIds: {'colony'},
+      ),
+    ).thenAnswer((_) async {
+      if (calls++ == 0) throw StateError('first');
+    });
+    container
+        .read(frontConversationCategoriesProvider.notifier)
+        .toggle('c-1', 'colony');
+    controller().updateDraft('Hello');
+    await controller().send();
+    expect(state().failedMessage, 'Hello');
+
+    await controller().retry();
+
+    expect(calls, 2);
+    expect(state().failedMessage, isNull);
   });
 
   group('a spoken turn', () {

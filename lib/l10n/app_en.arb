@@ -2605,6 +2605,9 @@
   "@companionSettingsSkinToneLabel": {
     "description": "Section title on the companion settings page for choosing her skin tone."
   },
+  "companionSettingsSpeakRepliesTitle": "Answer spoken questions aloud",
+  "companionSettingsVoiceDescription": "Ask her something by voice and she answers out loud. A typed question always gets a written answer.",
+  "companionSettingsVoiceLabel": "Her voice",
   "completeHabitFailButton": "Missed",
   "completeHabitSkipButton": "Skip",
   "completeHabitSuccessButton": "Success",

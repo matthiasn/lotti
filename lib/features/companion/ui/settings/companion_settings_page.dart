@@ -15,6 +15,7 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/pages/sliver_box_adapter_page.dart';
 import 'package:lotti/widgets/settings/settings_form_section.dart';
 import 'package:lotti/widgets/settings/settings_page_layout.dart';
+import 'package:lotti/widgets/settings/settings_switch_row.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// The mobile page for [CompanionSettingsBody], in the settings chrome.
@@ -175,6 +176,19 @@ class _CompanionSettingsBodyState extends ConsumerState<CompanionSettingsBody> {
                     for (final sass in CompanionSass.values)
                       DsSegment(sass, sassName(messages, sass)),
                   ],
+                ),
+              ],
+            ),
+            SettingsFormSection(
+              title: messages.companionSettingsVoiceLabel,
+              description: messages.companionSettingsVoiceDescription,
+              children: [
+                SettingsSwitchRow(
+                  key: const ValueKey('companion-speaks-replies'),
+                  title: messages.companionSettingsSpeakRepliesTitle,
+                  value: custom.speaksReplies,
+                  onChanged: (value) =>
+                      controller.set(custom.copyWith(speaksReplies: value)),
                 ),
               ],
             ),

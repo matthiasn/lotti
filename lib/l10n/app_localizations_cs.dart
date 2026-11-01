@@ -3944,6 +3944,17 @@ class AppLocalizationsCs extends AppLocalizations {
   String get companionSettingsSkinToneLabel => 'Odstín pleti';
 
   @override
+  String get companionSettingsSpeakRepliesTitle =>
+      'Odpovídat nahlas na mluvené otázky';
+
+  @override
+  String get companionSettingsVoiceDescription =>
+      'Zeptej se jí hlasem a odpoví nahlas. Na napsanou otázku vždy odpoví písemně.';
+
+  @override
+  String get companionSettingsVoiceLabel => 'Její hlas';
+
+  @override
   String get completeHabitFailButton => 'Zmeškáno';
 
   @override

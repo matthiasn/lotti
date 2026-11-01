@@ -3962,6 +3962,17 @@ class AppLocalizationsRo extends AppLocalizations {
   String get companionSettingsSkinToneLabel => 'Nuanța pielii';
 
   @override
+  String get companionSettingsSpeakRepliesTitle =>
+      'Răspundeți cu voce tare la întrebările rostite';
+
+  @override
+  String get companionSettingsVoiceDescription =>
+      'Întrebați-o ceva cu vocea și vă răspunde cu voce tare. O întrebare scrisă primește întotdeauna un răspuns scris.';
+
+  @override
+  String get companionSettingsVoiceLabel => 'Vocea ei';
+
+  @override
   String get completeHabitFailButton => 'Ratat';
 
   @override

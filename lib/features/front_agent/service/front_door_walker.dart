@@ -11,6 +11,7 @@ import 'package:lotti/features/agents/query/query_chat_providers.dart';
 import 'package:lotti/features/agents/query/query_text_inference.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
+import 'package:lotti/features/front_agent/model/front_conversation.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
 import 'package:lotti/features/front_agent/service/front_owner_titles.dart';
@@ -338,6 +339,30 @@ class FrontDoorWalker {
     );
   }
 
+  /// The categories the turn's conversation chips narrowed it to, from its
+  /// payload; empty for none.
+  Future<Set<String>> _chosenCategories(String sourceMessageId) async {
+    final source = await _repository.getEntity(sourceMessageId);
+    final payloadId = source is AgentMessageEntity
+        ? source.contentEntryId
+        : null;
+    if (payloadId == null) return const {};
+    final payload = await _repository.getEntity(payloadId);
+    return payload is AgentMessagePayloadEntity
+        ? frontCategoriesOf(payload.content)
+        : const {};
+  }
+
+  /// [allowed] narrowed by [chosen], never widened: chips outside her
+  /// allow-list (left over after it changed) leave the allow-list as it is
+  /// — an empty scope would be the whole journal.
+  static Set<String> _narrowed(Set<String> allowed, Set<String> chosen) {
+    if (chosen.isEmpty) return allowed;
+    if (allowed.isEmpty) return chosen;
+    final both = allowed.intersection(chosen);
+    return both.isEmpty ? allowed : both;
+  }
+
   /// The front agent answers from the journal herself: the query pipeline
   /// over every category in her allow-list (decision 4; an empty allow-list
   /// is unrestricted), which a category named in the question narrows. The
@@ -352,7 +377,9 @@ class FrontDoorWalker {
         ? identity.allowedCategoryIds
         : const <String>{};
     final built = await _build(
-      QueryScope.journalIn(allowed),
+      QueryScope.journalIn(
+        _narrowed(allowed, await _chosenCategories(sourceMessageId)),
+      ),
       agentId: frontAgentId,
       question: question,
       sourceMessageId: sourceMessageId,

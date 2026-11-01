@@ -140,7 +140,9 @@ and she never reaches up for data.
 by the frame's `dt` — capped at 1/20 s, so a stall moves her one short step,
 not a jump — and repaints with the returned `CompanionPose`. The pose is the
 only per-frame value; look, mood, framing and the speech track arrive as
-widget parameters.
+widget parameters. Under reduced motion (`MediaQuery.disableAnimations`) the
+ticker does not run: she holds the pose she stands in, and moves again once
+the platform allows it.
 
 ```mermaid
 flowchart LR
@@ -455,7 +457,9 @@ flowchart LR
   outfits and wrapping, for the session only; a new choice in settings
   starts over from that choice.
 - **The customization** (`companionCustomizationProvider`): her skin tone,
-  hairstyle, hair colour, outfit and sass (default `cheeky`), stored as JSON
+  hairstyle, hair colour, outfit, sass (default `cheeky`) and whether she
+  answers a spoken question aloud (`speaksReplies`, default on; only an
+  explicit false mutes her), stored as JSON
   under
   `COMPANION_CUSTOMIZATION` in `SettingsDb` (the keys are in
   `lib/utils/companion_settings_keys.dart`, which sync reads too). It starts at

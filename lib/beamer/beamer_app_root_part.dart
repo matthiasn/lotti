@@ -246,7 +246,7 @@ class _MyBeamerAppState extends ConsumerState<MyBeamerApp> {
         invoke: (invocation) {
           final modalContext =
               routerDelegate.navigatorKey.currentContext ?? invocation.context;
-          return showFrontChatSheet(modalContext);
+          return showFrontChat(modalContext);
         },
       ),
       AppCommandId.openHistory: AppCommandHandler(

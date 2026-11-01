@@ -155,7 +155,7 @@ extension _AppScreenLayout on _AppScreenState {
                   ? _frontChatDestination(context)
                   : null,
               onUtilitySelected: frontChatOn && !lockdown.isActive
-                  ? () => showFrontChatSheet(context)
+                  ? () => showFrontChat(context)
                   : null,
               onSettingsSelected: settingsIndex >= 0 && !lockdown.isActive
                   ? () => navService.tapIndex(settingsIndex)
@@ -317,7 +317,7 @@ extension _AppScreenLayout on _AppScreenState {
               ? MobileNavDockAction.glyph(
                   label: context.messages.frontChatOpen,
                   icon: LottiIcons.assistant,
-                  onPressed: () => showFrontChatSheet(context),
+                  onPressed: () => showFrontChat(context),
                 )
               : null,
           pageAction: _launcherDockAction(context, destinations[index].kind),

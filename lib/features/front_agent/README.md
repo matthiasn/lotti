@@ -1,9 +1,10 @@
 # Front agent
 
-Status: slices 0–2, and slices A, B and C1 of the voice-first plan
+Status: slices 0–2, and slices A, B, C1 and C2 of the voice-first plan
 (`docs/implementation_plans/2026-10-31_voice_first_front_agent.md`): she
-answers from the journal, the user keeps many conversations with her, and a
-question asked aloud is answered aloud. Behind the `enable_front_agent` flag in Advanced
+answers from the journal, the user keeps many conversations with her, a
+question asked aloud is answered aloud, and she has a surface of her own over
+the app. Behind the `enable_front_agent` flag in Advanced
 settings.
 
 The front agent is the one agent the user talks to in one place. It does not
@@ -50,15 +51,19 @@ and a proposal she got wrong goes to the inbox rather than being retyped.
 - `runtime/` — the maintenance hook that re-arms an unanswered turn's
   recovery on every device.
 - `state/` — providers, the composer controller, the thread providers, the
-  picked and active conversation, and
-  the wake-runner, maintenance and setup-resolver contributions merged in
-  `app_bootstrap.dart`.
+  picked and active conversation, the spoken turn awaiting her spoken reply
+  (`front_voice_providers.dart`), the chip options and each conversation's
+  chosen categories (`front_category_scope.dart`), and the wake-runner,
+  maintenance and
+  setup-resolver contributions merged in `app_bootstrap.dart`.
 - `ui/` — her control row and the hero that leads a conversation (her bust
-  and its title), the
-  list of conversations, the door card with its proposals
-  and inbox chips, the clarifying chips, the per-turn cost line, the pane on
-  the shared `AgentChatView`, and the app-shell sheet the sidebar row, the
-  phone launcher button and the keyboard command open.
+  and its title), her voice (`front_chat_voice.dart`: the spoken reply, when
+  she may speak, the pose she holds), the list of conversations, the
+  category chips, the door card with its proposals and inbox chips, the
+  clarifying chips, the per-turn cost line, the pane on the shared
+  `AgentChatView`, and her surface over the app (`front_chat_surface.dart`)
+  that the sidebar row, the phone launcher button and the keyboard command
+  open.
 
 ## What it delegates
 
@@ -68,7 +73,9 @@ one-liners and TL;DRs are the owner agents'. Answers are theirs too: the
 query pipeline (`features/agents/query`) for tasks and projects, the goal
 and relationship chat services for goals and people. Filing writes through
 the journal's own entry and task creation; the goal and project wizards open
-as they are. The Daily OS door and the spoken replies are later slices.
+as they are. Her voice is the shared read-aloud (`features/tts`) and the
+companion's lip-synced bust (`features/companion`). The Daily OS door is a
+later slice.
 
 The decisions and the slices are in
 [the implementation plan](../../../docs/implementation_plans/2026-10-23_single_agent_entry_point.md);

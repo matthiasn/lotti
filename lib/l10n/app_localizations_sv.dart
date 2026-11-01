@@ -3903,6 +3903,17 @@ class AppLocalizationsSv extends AppLocalizations {
   String get companionSettingsSkinToneLabel => 'Hudton';
 
   @override
+  String get companionSettingsSpeakRepliesTitle =>
+      'Svara högt på talade frågor';
+
+  @override
+  String get companionSettingsVoiceDescription =>
+      'Fråga henne något med rösten så svarar hon högt. En skriven fråga får alltid ett skrivet svar.';
+
+  @override
+  String get companionSettingsVoiceLabel => 'Hennes röst';
+
+  @override
   String get completeHabitFailButton => 'Missade';
 
   @override

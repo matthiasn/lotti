@@ -18,6 +18,7 @@ class CompanionCustomization {
     this.hairColour = CompanionHairColour.silver,
     this.outfitId,
     this.sass = CompanionSass.cheeky,
+    this.speaksReplies = true,
   });
 
   /// Reads what [toJson] wrote. A part this version does not know — written
@@ -47,6 +48,9 @@ class CompanionCustomization {
           ? outfit as String
           : null,
       sass: part(CompanionSass.values, json['sass'], CompanionSass.cheeky),
+      // Only an explicit false mutes her: a missing or unknown value keeps
+      // her default.
+      speaksReplies: json['speaksReplies'] != false,
     );
   }
 
@@ -60,6 +64,10 @@ class CompanionCustomization {
 
   /// How much sass she puts into what she reads.
   final CompanionSass sass;
+
+  /// Whether she answers a question spoken to her out loud. A typed one
+  /// only ever gets a written answer; this mutes the spoken one.
+  final bool speaksReplies;
 
   /// [outfit] in this skin and hair: the outfit keeps its clothes and props,
   /// and takes the face and hair from here. Lips an outfit paints — the rock
@@ -91,12 +99,14 @@ class CompanionCustomization {
     CompanionHairColour? hairColour,
     ValueGetter<String?>? outfitId,
     CompanionSass? sass,
+    bool? speaksReplies,
   }) => CompanionCustomization(
     skinTone: skinTone ?? this.skinTone,
     hairStyle: hairStyle ?? this.hairStyle,
     hairColour: hairColour ?? this.hairColour,
     outfitId: outfitId == null ? this.outfitId : outfitId(),
     sass: sass ?? this.sass,
+    speaksReplies: speaksReplies ?? this.speaksReplies,
   );
 
   Map<String, dynamic> toJson() => {
@@ -105,6 +115,7 @@ class CompanionCustomization {
     'hairColour': hairColour.name,
     'outfit': ?outfitId,
     'sass': sass.name,
+    'speaksReplies': speaksReplies,
   };
 
   /// [toJson] laid over [stored], the JSON this was changed from: a part
@@ -134,9 +145,16 @@ class CompanionCustomization {
       other.hairStyle == hairStyle &&
       other.hairColour == hairColour &&
       other.outfitId == outfitId &&
-      other.sass == sass;
+      other.sass == sass &&
+      other.speaksReplies == speaksReplies;
 
   @override
-  int get hashCode =>
-      Object.hash(skinTone, hairStyle, hairColour, outfitId, sass);
+  int get hashCode => Object.hash(
+    skinTone,
+    hairStyle,
+    hairColour,
+    outfitId,
+    sass,
+    speaksReplies,
+  );
 }

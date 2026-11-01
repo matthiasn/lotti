@@ -39,6 +39,13 @@ class CompanionCustomizationController
   /// Set by [set], so a late-resolving [_load] never clobbers it.
   bool _changed = false;
 
+  /// Whether what she was set to is known: read from storage (nothing
+  /// stored counts — she is the default) or set here. False while the read
+  /// is pending and after it failed, so a host that must not guess — her
+  /// voice, muted or not — can wait.
+  bool get loaded => _loaded;
+  bool _loaded = false;
+
   /// Saves not yet committed. A reload while one is pending would read the
   /// value it is about to replace, so it waits until the last one lands.
   var _saving = 0;
@@ -74,10 +81,15 @@ class CompanionCustomizationController
         companionCustomizationSyncedAtKey,
       ]);
       final json = stored[companionCustomizationKey];
-      if (!ref.mounted || _changed || json == null) return;
+      if (!ref.mounted) return;
+      if (_changed || json == null) {
+        _loaded = true;
+        return;
+      }
       final raw = _parse(json);
       state = CompanionCustomization.fromJson(raw);
       _stored = raw;
+      _loaded = true;
       // Every write stores its stamp with the value, so one without a stamp
       // has nothing to win with and is not sent.
       final updatedAt = int.tryParse(
@@ -98,6 +110,7 @@ class CompanionCustomizationController
   /// devices.
   void set(CompanionCustomization customization) {
     _changed = true;
+    _loaded = true;
     state = customization;
     final stored = _stored;
     final json = stored == null

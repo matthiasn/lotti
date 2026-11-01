@@ -3946,6 +3946,17 @@ class AppLocalizationsIt extends AppLocalizations {
   String get companionSettingsSkinToneLabel => 'Carnagione';
 
   @override
+  String get companionSettingsSpeakRepliesTitle =>
+      'Rispondere ad alta voce alle domande vocali';
+
+  @override
+  String get companionSettingsVoiceDescription =>
+      'Chiedile qualcosa a voce e ti risponde ad alta voce. Una domanda scritta riceve sempre una risposta scritta.';
+
+  @override
+  String get companionSettingsVoiceLabel => 'La sua voce';
+
+  @override
   String get completeHabitFailButton => 'Mancato';
 
   @override

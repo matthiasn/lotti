@@ -3954,6 +3954,17 @@ class AppLocalizationsFr extends AppLocalizations {
   String get companionSettingsSkinToneLabel => 'Teint';
 
   @override
+  String get companionSettingsSpeakRepliesTitle =>
+      'Répondre à voix haute aux questions posées à l’oral';
+
+  @override
+  String get companionSettingsVoiceDescription =>
+      'Pose-lui une question à voix haute et elle te répond à voix haute. Une question écrite reçoit toujours une réponse écrite.';
+
+  @override
+  String get companionSettingsVoiceLabel => 'Sa voix';
+
+  @override
   String get completeHabitFailButton => 'Manqué';
 
   @override

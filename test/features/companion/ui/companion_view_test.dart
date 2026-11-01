@@ -68,6 +68,26 @@ void main() {
     expect(poses.every((p) => p.mouth.open == 0), isTrue);
   });
 
+  testWidgets('with reduced motion she holds still, and moves again once '
+      'it is lifted', (tester) async {
+    Widget host({required bool still}) => _host(
+      Builder(
+        builder: (context) => MediaQuery(
+          data: MediaQuery.of(context).copyWith(disableAnimations: still),
+          child: const CompanionView(),
+        ),
+      ),
+    );
+    await tester.pumpWidget(host(still: true));
+    final held = await _frames(tester, 1);
+    expect(held.map((p) => p.breath).toSet(), hasLength(1));
+    expect(tester.binding.hasScheduledFrame, isFalse);
+
+    await tester.pumpWidget(host(still: false));
+    final moving = await _frames(tester, 1);
+    expect(moving.map((p) => p.breath).toSet().length, greaterThan(30));
+  });
+
   testWidgets('paints in the look and framing it is given', (tester) async {
     await tester.pumpWidget(
       _host(

@@ -9,6 +9,7 @@ import 'package:lotti/classes/agents/front_chat_tokens.dart';
 import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
+import 'package:lotti/features/front_agent/model/front_conversation.dart';
 import 'package:lotti/features/front_agent/service/front_chat_history_service.dart';
 import 'package:lotti/features/front_agent/service/front_chat_service.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -169,6 +170,21 @@ void main() {
             initiator: any(named: 'initiator'),
           ),
         );
+      },
+    );
+
+    test(
+      "a turn sent with the conversation's chips carries them, sorted",
+      () async {
+        await service.appendMessage(
+          text: 'How is the garden?',
+          conversationId: 'c-1',
+          categoryIds: const {'nests', 'colony'},
+        );
+
+        final payload = upserts.whereType<AgentMessagePayloadEntity>().single;
+        expect(payload.content['categoryIds'], ['colony', 'nests']);
+        expect(frontCategoriesOf(payload.content), {'colony', 'nests'});
       },
     );
 

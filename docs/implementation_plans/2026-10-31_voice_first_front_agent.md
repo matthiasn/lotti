@@ -178,6 +178,16 @@ next one. The order is a proposal.
   from her bust, the personality block from `CompanionSass`, and reduced
   motion and a mute in the companion — none of which exists yet.
 
+- **As built, C2 (her surface):** `showFrontChat` opens her over the app as
+  History opens — the whole screen on a phone, a panel up to the detail
+  measure elsewhere, with the list beside the conversation on a desktop
+  window. Category chips per conversation travel with each turn and narrow
+  her allow-list, never widen it. Her manner (`frontAgentPersonality`) follows
+  the routing contract at the companion's sass. Reduced motion holds the
+  companion still everywhere, and "Answer spoken questions aloud" mutes her
+  voice. Left out: opening her by pressing her bust elsewhere — there a tap
+  already speaks the day briefing or opens her stage.
+
 ### D. "Anything" — the remaining doors
 
 - **Daily OS:** a `day` segment refines today.

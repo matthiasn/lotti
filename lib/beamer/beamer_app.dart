@@ -40,7 +40,7 @@ import 'package:lotti/features/design_system/state/pane_width_controller.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/events/ui/pages/events_overview_page.dart';
-import 'package:lotti/features/front_agent/ui/front_chat_sheet.dart';
+import 'package:lotti/features/front_agent/ui/front_chat_surface.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/ui/pages/unified_goals_page.dart';
 import 'package:lotti/features/habits/ui/habits_page.dart';

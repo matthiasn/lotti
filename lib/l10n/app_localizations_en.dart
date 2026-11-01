@@ -3880,6 +3880,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get companionSettingsSkinToneLabel => 'Skin tone';
 
   @override
+  String get companionSettingsSpeakRepliesTitle =>
+      'Answer spoken questions aloud';
+
+  @override
+  String get companionSettingsVoiceDescription =>
+      'Ask her something by voice and she answers out loud. A typed question always gets a written answer.';
+
+  @override
+  String get companionSettingsVoiceLabel => 'Her voice';
+
+  @override
   String get completeHabitFailButton => 'Missed';
 
   @override

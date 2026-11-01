@@ -97,8 +97,12 @@ sources:
     title: FrontChatPane — the thread on the shared AgentChatView
     last_modified: 2026-10-24
   - id: sheet
-    resource: ../../lib/features/front_agent/ui/front_chat_sheet.dart
-    title: showFrontChatSheet — the app-shell sheet
+    resource: ../../lib/features/front_agent/ui/front_chat_surface.dart
+    title: showFrontChat — her surface over the app
+    last_modified: 2026-11-01
+  - id: category-scope
+    resource: ../../lib/features/front_agent/state/front_category_scope.dart
+    title: The chip options and each conversation's chosen categories
     last_modified: 2026-10-24
   - id: providers
     resource: ../../lib/features/front_agent/state/front_agent_providers.dart
@@ -256,6 +260,13 @@ becomes an `unrouted` segment, and when the gaps together hold ≥20 % every
 gap containing a word becomes one. The thresholds are the day agent's
 (`≥0.75` strong, `0.5–0.75` low, `<0.5` none).
 
+
+Her **manner** follows the contract in the system prompt:
+`frontAgentPersonality(sass)` — warm, cheeky or sassy, the companion's
+`CompanionSass` read at each wake through the workflow's `sass` getter —
+shapes only her own words (`reply_to_user`, `ask_user`), never routing, ids
+or an owner's answer, and asks for short spoken-friendly sentences. Appended
+after the contract, so a sass change leaves the cached prefix as it is.
 # The budget and the repair round
 
 `frontProviderCallsPerTurn` is 3, passed as `turnBudget`. The common turn is
@@ -558,12 +569,32 @@ rename, archive and delete) and close on the right. The thread is `conversationa
 [chat input](agents/chat-input-and-reasoning.md)): her replies as prose with
 their cost as a quiet line under them, one talk disc, and what she was told
 by voice sent as said.
-`showFrontChatSheet` opens it on the root navigator in the
-agent-chat side sheet — a bottom sheet below the page breakpoint — from the
-desktop rail's utility row above Settings, the phone launcher's utility
-button beside the menu, or the `openFrontChat` keyboard command
-(Cmd/Ctrl+L), all gated by `enable_front_agent` and all closed under
-lockdown: her thread spans every category.
+`showFrontChat` opens her surface over the app, as History opens: a dialog
+behind the shared scrim, the whole screen below the page breakpoint, else a
+panel up to `kDetailContentMaxWidth` inset by `step6`. On a desktop-width
+window (`isDesktopLayout`) the list sits beside the conversation, a third of
+the panel (`FrontChatSurface.listShare`), and the header leaves out the way
+to the list and a new conversation, which the list carries. Escape goes
+through `ModalEscapeScope` to the pane's back chain — the list, then the
+inbox — before it closes her. It opens from the desktop rail's utility row
+above Settings, the phone launcher's utility button beside the menu, or the
+`openFrontChat` keyboard command (Cmd/Ctrl+L), all gated by
+`enable_front_agent` and all closed under lockdown: her thread spans every
+category.
+
+**Category chips** (`FrontCategoryChips`) sit under the header of a
+conversation — not over the list or the inbox — when there are two
+categories or more to choose from: the active ones she may see
+(`frontCategoryOptionsProvider`: her allow-list, or every visible category
+when it is empty; `categoriesStreamProvider` is lockdown-scoped). The choice
+is kept per conversation for the session
+(`frontConversationCategoriesProvider`) and travels with each turn: the
+controller passes it to `sendMessage`, which writes it sorted under
+`categoryIds` (`frontCategoriesKey`) in the turn's payload. The journal door
+reads it back from the source turn and narrows her allow-list by it, never
+widening it: with no allow-list the chips are the scope, and chips that fall
+outside the allow-list leave it as it is — an empty scope would be the whole
+journal. A category named in the question narrows further, as before.
 
 # Her voice
 
@@ -594,6 +625,11 @@ in the app's language, else the on-device engine) — speaks it under
 was speaking first. It keeps those flags and her resolved setup watched, so
 they are known the moment the reply lands. A voice that fails surfaces the
 shared playback toast.
+
+She speaks only while her customization lets her
+(`CompanionCustomization.speaksReplies`, Settings › Preferences ›
+Companion › Her voice, synced): muted, a spoken question is answered in
+writing like a typed one.
 
 Her bust is a `CompanionSpeaker` on that source, so her lips follow only her
 own words in the conversation on screen. She holds `listen` while the user

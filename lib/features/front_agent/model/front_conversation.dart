@@ -16,6 +16,17 @@ String frontConversationOf(Map<String, Object?> content) {
   return id is String && id.trim().isNotEmpty ? id : earlierConversationId;
 }
 
+/// The key under which a user turn's payload names the categories its
+/// question is narrowed to — the conversation's chips when it was sent.
+const frontCategoriesKey = 'categoryIds';
+
+/// The categories a user turn's payload [content] narrows its question to;
+/// empty for none (her whole allow-list).
+Set<String> frontCategoriesOf(Map<String, Object?> content) {
+  final ids = content[frontCategoriesKey];
+  return ids is List ? {...ids.whereType<String>()} : const {};
+}
+
 /// One conversation with the front agent, as the chat list shows it.
 ///
 /// A conversation exists once it holds a turn: there is no creation record.

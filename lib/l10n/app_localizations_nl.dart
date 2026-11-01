@@ -3916,6 +3916,17 @@ class AppLocalizationsNl extends AppLocalizations {
   String get companionSettingsSkinToneLabel => 'Huidskleur';
 
   @override
+  String get companionSettingsSpeakRepliesTitle =>
+      'Gesproken vragen hardop beantwoorden';
+
+  @override
+  String get companionSettingsVoiceDescription =>
+      'Vraag haar iets met je stem en ze antwoordt hardop. Een getypte vraag krijgt altijd een geschreven antwoord.';
+
+  @override
+  String get companionSettingsVoiceLabel => 'Haar stem';
+
+  @override
   String get completeHabitFailButton => 'Gemiste';
 
   @override

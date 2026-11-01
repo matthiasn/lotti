@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_constants.dart';
+import 'package:lotti/features/companion/model/companion_reaction.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_contract.dart';
 
@@ -75,6 +76,25 @@ void main() {
       frontCorpusMatchExhaustedAnswer,
       contains('$frontCorpusMatchesPerTurn used'),
     );
+  });
+
+  test('her manner follows the sass the user set, and never touches the '
+      'routing', () {
+    final manners = {
+      for (final sass in CompanionSass.values)
+        sass: frontAgentPersonality(sass),
+    };
+    expect(manners.values.toSet(), hasLength(CompanionSass.values.length));
+    expect(manners[CompanionSass.warm], contains('never tease'));
+    expect(manners[CompanionSass.cheeky], contains('light tease'));
+    expect(manners[CompanionSass.sassy], contains('eye-roll'));
+    for (final manner in manners.values) {
+      expect(manner, startsWith('## Your manner'));
+      expect(manner, contains('never changes where something is routed'));
+      expect(manner, contains('may be read aloud'));
+    }
+    // The contract itself carries no tone, so its cached prefix holds.
+    expect(frontAgentSystemPrompt, isNot(contains('## Your manner')));
   });
 
   test('the system prompt states the thresholds it expects the model to use '

@@ -14,6 +14,7 @@ import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
 import 'package:lotti/features/ai_consumption/service/ai_interaction_capture.dart';
+import 'package:lotti/features/companion/model/companion_reaction.dart';
 import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/service/front_routing_index_builder.dart';
@@ -300,7 +301,7 @@ void main() {
     test(
       'the prompt carries the index, the recent turns of this '
       'conversation only and the pending message in that order, and the '
-      'system prompt is the contract',
+      'system prompt is the contract followed by her manner',
       () async {
         seedMessage();
         String? system;
@@ -320,6 +321,7 @@ void main() {
             agentRepository: repository,
           ),
           domainLogger: MockDomainLogger(),
+          sass: () => CompanionSass.sassy,
         );
         conversationRepository.sendMessageDelegate =
             ({
@@ -460,7 +462,12 @@ void main() {
 
         await run();
 
-        expect(system, frontAgentSystemPrompt);
+        // The contract, then her manner at the sass the user set.
+        expect(
+          system,
+          '$frontAgentSystemPrompt\n\n'
+          '${frontAgentPersonality(CompanionSass.sassy)}',
+        );
         expect(sent, isNotNull);
         final indexAt = sent!.indexOf('<routing_index>');
         final recentAt = sent!.indexOf('<recent_turns>');

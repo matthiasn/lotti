@@ -17,6 +17,7 @@ import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
+import 'package:lotti/features/companion/state/companion_customization_controller.dart';
 import 'package:lotti/features/front_agent/runtime/front_runtime_maintenance.dart';
 import 'package:lotti/features/front_agent/service/front_agent_service.dart';
 import 'package:lotti/features/front_agent/service/front_chat_history_service.dart';
@@ -56,6 +57,8 @@ final frontAgentWorkflowProvider = Provider<FrontAgentWorkflow>(
     aiConfigRepository: ref.watch(aiConfigRepositoryProvider),
     indexBuilder: ref.watch(frontRoutingIndexBuilderProvider),
     domainLogger: ref.watch(domainLoggerProvider),
+    // Read at each wake, so a sass changed since speaks from the next turn.
+    sass: () => ref.read(companionCustomizationProvider).sass,
   ),
   name: 'frontAgentWorkflowProvider',
 );
