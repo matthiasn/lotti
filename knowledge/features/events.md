@@ -11,7 +11,15 @@ sources:
   - id: src
     resource: ../../lib/features/events
     title: Events feature source
-    last_modified: 2026-10-05
+    last_modified: 2026-11-01
+  - id: timeline
+    resource: ../../lib/widgets/timeline/timeline_view.dart
+    title: The shared timeline rail and its photo beat
+    last_modified: 2026-11-01
+  - id: plan
+    resource: ../../docs/implementation_plans/2026-11-01_event_agent_record.md
+    title: Event agent record plan — image analysis, on-device search, person links
+    last_modified: 2026-11-01
 ---
 
 Events are the meaningful moments — a birthday, a trip, a wedding, an upcoming
@@ -152,7 +160,26 @@ line opens the shared date-time modal and is **the single source of the event's
 when** — the body no longer repeats it.
 
 **Rating stars only appear once the event has happened** or already carries a
-rating, so a fresh or tentative event is not pushed gold stars.
+rating, so a fresh or tentative event is not pushed gold stars. When they do,
+they sit **in the state row** — category, status, stars — a `Wrap` that
+reflows on a phone rather than overflowing. `EventStarRating` makes each star
+its own `DsQuietInk` target: a tap sets that many stars, a long press the half
+below, and hovering lifts only the star under the pointer. Nothing paints
+across the row as a whole; the third-party `StarRating` it replaced gave every
+star an ink radius as wide as the star itself, so its hover spilled over the
+neighbours and read as one highlight around the group.
+
+**Under the title, the event agent says what happened.** The hero carries the
+`oneLiner` of the agent's newest report; the recap card below the hero carries
+its `tldr`. Both are tiers of the one report the agent writes (see
+[project and event agents](agents/project-and-event-agents.md#event-agents)),
+read by the page through `eventAgentProvider` → `agentReportProvider`. `.value`
+keeps the last line through a background reload. With no agent, or no
+one-liner yet, the hero is title and date alone — the user's own note never
+stands in for it. Under reduced motion the recap card swaps its body in place:
+an `AnimatedSize` given a zero duration still restarts its controller from
+inside its own layout when the recap replaces the spinner, which the framework
+rejects.
 
 **Cover art becomes automatic then explicit**: while there is no linked photo,
 an "add cover photo" action opens the create-entry menu; the **newest** linked
@@ -190,6 +217,17 @@ ratio, downloads the currently visible file, shows its capture/file date, hides
 all chrome on a single tap, and keeps pinch zoom/pan while rotation is disabled.
 It participates in the shared mobile image-viewer orientation lifecycle described
 in [shared widgets](../architecture/shared-widgets.md).
+
+On the timeline a photo is a **wide, short band**: the shared rail
+(`lib/widgets/timeline/timeline_view.dart`) sizes its lead frame at 2.4 : 1 of
+the column, held between 96 and 180 logical pixels tall, so a photo beat reads
+as a strip on a phone instead of a block that pushes the next beat off screen.
+Its caption is the photo's **one-line summary** — the `oneLiner` of its newest
+image analysis (`imageAnalysisOneLiner`, the same source the journal's
+collapsed image row uses), falling back to the user's note — held to two
+lines. The page watches each photo's analyses, so a caption appears in place
+when an analysis lands after the photo; the pure mapping receives them as
+`imageSummaryFor`.
 
 The overview controller refreshes its loaded window for event entity
 notifications and for `LINK_CHANGED` notifications whose endpoint ids include
@@ -262,3 +300,4 @@ Go back to reach the overview and its launcher, as on a task or an entry.
 # Related
 
 * [Project and event agents](agents/project-and-event-agents.md) - the recap writer, and the human-only rating/cover invariant.
+* [Event agent record plan](../../docs/implementation_plans/2026-11-01_event_agent_record.md) - the proposed next steps: people on the event page, events and recaps in on-device search.

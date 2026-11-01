@@ -279,6 +279,64 @@ void main() {
       expect(entry.photos.single.id, image.meta.id);
     });
 
+    group('photo caption', () {
+      String? captionWith({
+        String? note,
+        String? Function(JournalImage image)? imageSummaryFor,
+      }) {
+        final image = testImageEntry.copyWith(
+          entryText: note == null ? null : EntryText(plainText: note),
+        );
+        return eventTimelineEntryFor(
+          image,
+          timeLabel: '20:15',
+          formatTime: fakeClock,
+          imageProviderFor: fakeImage,
+          imageSummaryFor: imageSummaryFor,
+        )!.text;
+      }
+
+      test("prefers the analysis one-liner over the user's note", () {
+        expect(
+          captionWith(
+            note: 'Cake time',
+            imageSummaryFor: (image) => ' Friends around a candlelit cake. ',
+          ),
+          'Friends around a candlelit cake.',
+        );
+      });
+
+      test('asks for the summary of this exact photo', () {
+        final asked = <String>[];
+        captionWith(
+          imageSummaryFor: (image) {
+            asked.add(image.meta.id);
+            return null;
+          },
+        );
+        expect(asked, [testImageEntry.meta.id]);
+      });
+
+      test('falls back to the note when there is no summary', () {
+        expect(
+          captionWith(note: ' Cake time ', imageSummaryFor: (_) => null),
+          'Cake time',
+        );
+        expect(captionWith(note: 'Cake time'), 'Cake time');
+      });
+
+      test('a blank summary does not hide the note', () {
+        expect(
+          captionWith(note: 'Cake time', imageSummaryFor: (_) => '   '),
+          'Cake time',
+        );
+      });
+
+      test('no summary and no note leaves the photo uncaptioned', () {
+        expect(captionWith(imageSummaryFor: (_) => null), isNull);
+      });
+    });
+
     test('maps a point-in-time text entry to a note timeline entry', () {
       final instant = testTextEntry.copyWith(
         meta: testTextEntry.meta.copyWith(dateTo: testTextEntry.meta.dateFrom),
@@ -410,6 +468,29 @@ void main() {
           formatTime: fakeClock,
           imageProviderFor: fakeImage,
         );
+
+    test('threads the photo summaries through to the timeline', () {
+      final data = eventDetailDataFromEntities(
+        event: _event(),
+        linked: [testImageEntry, testTextEntry],
+        now: now,
+        locale: 'en',
+        categoryColor: const Color(0xFF112233),
+        fallbackTitle: 'Untitled event',
+        formatTime: fakeClock,
+        imageProviderFor: fakeImage,
+        imageSummaryFor: (image) => 'Seen: ${image.meta.id}',
+      );
+      final photo = data.timeline.singleWhere(
+        (entry) => entry.kind == EventTimelineKind.photo,
+      );
+      expect(photo.text, 'Seen: ${testImageEntry.meta.id}');
+      // A text beat is not a photo: it keeps its own text.
+      final note = data.timeline.singleWhere(
+        (entry) => entry.kind != EventTimelineKind.photo,
+      );
+      expect(note.text, testTextEntry.entryText!.plainText.trim());
+    });
 
     test('builds card, timeline, tasks and a when label from links', () {
       final data = detail(_event(note: 'A lovely night.'), [

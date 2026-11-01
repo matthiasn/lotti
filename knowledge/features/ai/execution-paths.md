@@ -644,10 +644,12 @@ size rather than as a heading. The card's
 inset is one spacing step tighter than a top-level card's for the same reason:
 it is a subordinate surface inside a card, not a page section.
 
-`fetchAiResponsesForImages` resolves them in bulk for task context:
-`AiInputRepository.generate` nests them per image log entry as
+`fetchAiResponsesForImages` resolves them in bulk — it takes the bulk read as a
+function, so callers holding `JournalDb` or only `JournalRepository` share it.
+For task context `AiInputRepository.generate` nests them per image log entry as
 `aiResponses: [{model, generatedAt, text}]`, and the agent capture path emits one
-`image_analysis` log source per analysis.
+`image_analysis` log source per analysis. The event agent's photo digest reads
+the newest analysis's `oneLiner` (else `tldr`) per photo the same way.
 
 Coding prompts use `buildTaskDetailsJson`, so those nested linked analyses are
 part of the full-task JSON passed to `SkillPromptBuilder`; the analysis does not

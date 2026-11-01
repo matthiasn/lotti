@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter_rating/flutter_rating.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -10,7 +9,10 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/event_data.dart';
 import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/agents/state/agent_query_providers.dart';
+import 'package:lotti/features/agents/state/event_agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
+import 'package:lotti/features/demo/seed/demo_entity_factories.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/events/ui/pages/event_detail_page.dart';
 import 'package:lotti/features/events/ui/widgets/event_cover_image.dart';
@@ -20,6 +22,7 @@ import 'package:lotti/features/events/ui/widgets/event_photo_gallery.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/state/image_paste_controller.dart';
+import 'package:lotti/features/journal/state/linked_ai_responses_controller.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/create/create_entry_items.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_action_bar.dart';
@@ -39,6 +42,7 @@ import '../../../../helpers/stub_audio_recorder_controller.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
 import '../../../../widget_test_utils.dart';
+import '../../../agents/test_utils.dart';
 
 const _eventId = 'event-1';
 
@@ -115,6 +119,16 @@ class _RecordingEntryController extends FakeEntryController {
     deletes++;
     return deleted;
   }
+}
+
+/// Serves a photo's linked AI responses without a database.
+class _FixedAiResponses extends LinkedAiResponsesController {
+  _FixedAiResponses(super.entryId, this.responses);
+
+  final List<AiResponseEntry> responses;
+
+  @override
+  Future<List<AiResponseEntry>> build() async => responses;
 }
 
 JournalEvent _event() {
@@ -331,10 +345,152 @@ void main() {
         controllerBuilder: () => rec,
       );
 
-      await tester.tap(find.byType(StarRating));
+      await tester.tap(find.bySemanticsLabel('Rate 3 of 5 stars'));
       await tester.pump();
 
-      expect(rec.ratings, isNotEmpty);
+      expect(rec.ratings, [3.0]);
+    });
+
+    group('event agent recap', () {
+      const agentId = 'event-agent-1';
+      List<Override> agentWithReport({String? oneLiner}) => [
+        eventAgentProvider(_eventId).overrideWith(
+          (ref) => makeTestIdentity(
+            id: agentId,
+            agentId: agentId,
+            kind: 'event_agent',
+          ),
+        ),
+        agentReportProvider(agentId).overrideWith(
+          (ref) => makeTestReport(
+            agentId: agentId,
+            oneLiner: oneLiner,
+            tldr: 'Everyone stayed until the last song.',
+          ),
+        ),
+      ];
+
+      testWidgets("the hero carries the recap's one-liner", (tester) async {
+        await pumpResolved(
+          tester,
+          linked: const [],
+          extraOverrides: agentWithReport(
+            oneLiner: 'A rooftop night that ran past two.',
+          ),
+        );
+
+        final hero = find.byType(FlexibleSpaceBar);
+        expect(
+          find.descendant(
+            of: hero,
+            matching: find.text('A rooftop night that ran past two.'),
+          ),
+          findsOneWidget,
+        );
+        // The TLDR stays in the recap card under the hero, not in the hero.
+        expect(
+          find.descendant(
+            of: hero,
+            matching: find.text('Everyone stayed until the last song.'),
+          ),
+          findsNothing,
+        );
+        expect(
+          find.text('Everyone stayed until the last song.'),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('a recap without a one-liner adds no hero line', (
+        tester,
+      ) async {
+        await pumpResolved(
+          tester,
+          linked: const [],
+          extraOverrides: agentWithReport(),
+        );
+
+        final view = tester.widget<EventDetailView>(
+          find.byType(EventDetailView),
+        );
+        expect(view.recapOneLiner, isNull);
+      });
+
+      testWidgets('no event agent means no hero line', (tester) async {
+        await pumpResolved(
+          tester,
+          linked: const [],
+          extraOverrides: [
+            eventAgentProvider(_eventId).overrideWith((ref) => null),
+          ],
+        );
+
+        final view = tester.widget<EventDetailView>(
+          find.byType(EventDetailView),
+        );
+        expect(view.recapOneLiner, isNull);
+      });
+    });
+
+    group('photo captions', () {
+      final imageId = testImageEntry.meta.id;
+
+      AiResponseEntry analysis({String? oneLiner}) {
+        final response = TestAiResponseFactory.create(
+          id: 'analysis-1',
+          response: 'A long description of the photo.',
+        );
+        return response.copyWith(
+          data: response.data.copyWith(oneLiner: oneLiner),
+        );
+      }
+
+      testWidgets("a photo is captioned by its analysis's one-liner", (
+        tester,
+      ) async {
+        await pumpResolved(
+          tester,
+          linked: [testImageEntry],
+          extraOverrides: [
+            linkedAiResponsesControllerProvider(imageId).overrideWith(
+              () => _FixedAiResponses(imageId, [
+                analysis(oneLiner: 'Two friends toasting at sunset.'),
+              ]),
+            ),
+          ],
+        );
+        await tester.pump();
+
+        final view = tester.widget<EventDetailView>(
+          find.byType(EventDetailView),
+        );
+        expect(
+          view.data.timeline.single.text,
+          'Two friends toasting at sunset.',
+        );
+        expect(find.text('Two friends toasting at sunset.'), findsOneWidget);
+        expect(find.text('test image entry text'), findsNothing);
+      });
+
+      testWidgets('without an analysis one-liner the note captions it', (
+        tester,
+      ) async {
+        await pumpResolved(
+          tester,
+          linked: [testImageEntry],
+          extraOverrides: [
+            linkedAiResponsesControllerProvider(imageId).overrideWith(
+              () => _FixedAiResponses(imageId, [analysis()]),
+            ),
+          ],
+        );
+        await tester.pump();
+
+        final view = tester.widget<EventDetailView>(
+          find.byType(EventDetailView),
+        );
+        expect(view.data.timeline.single.text, 'test image entry text');
+      });
     });
 
     testWidgets('tapping a timeline row opens its linked source entry', (

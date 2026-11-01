@@ -3179,6 +3179,7 @@
   "eventsNoResults": "Inga matchande evenemang",
   "eventsPageTitle": "Evenemang",
   "eventsPhotosSection": "Foton",
+  "eventsRatingStarLabel": "Ge {starIndex} av {totalStars} stjärnor",
   "eventsRecapAwaitingContent": "Lägg till ett foto eller en notis så visas sammanfattningen här.",
   "eventsRecapUnavailable": "Kunde inte ladda sammanfattningen.",
   "eventsRegenerateSummary": "Regenereringssammanfattning",

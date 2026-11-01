@@ -3178,6 +3178,7 @@
   "eventsNoResults": "Nenhum evento correspondente",
   "eventsPageTitle": "Eventos",
   "eventsPhotosSection": "Fotos",
+  "eventsRatingStarLabel": "Avalia com {starIndex} de {totalStars} estrelas",
   "eventsRecapAwaitingContent": "Adicione uma foto ou nota e a recapitulação aparecerá aqui.",
   "eventsRecapUnavailable": "Não foi possível carregar a recapitulação.",
   "eventsRegenerateSummary": "Regenerar resumo",

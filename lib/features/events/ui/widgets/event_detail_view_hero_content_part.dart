@@ -4,6 +4,7 @@ class _HeroSliver extends StatelessWidget {
   const _HeroSliver({
     required this.card,
     this.whenLabel,
+    this.recapOneLiner,
     this.onBack,
     this.onDelete,
     this.onChangeCover,
@@ -17,6 +18,7 @@ class _HeroSliver extends StatelessWidget {
 
   final EventCardData card;
   final String? whenLabel;
+  final String? recapOneLiner;
   final VoidCallback? onBack;
   final VoidCallback? onDelete;
   final VoidCallback? onChangeCover;
@@ -62,6 +64,7 @@ class _HeroSliver extends StatelessWidget {
                 child: _HeroContent(
                   card: card,
                   whenLabel: whenLabel,
+                  recapOneLiner: recapOneLiner,
                   onRenameTitle: onRenameTitle,
                   onTapCategory: onTapCategory,
                   onTapStatus: onTapStatus,
@@ -83,6 +86,7 @@ class _HeroContent extends StatelessWidget {
   const _HeroContent({
     required this.card,
     this.whenLabel,
+    this.recapOneLiner,
     this.onRenameTitle,
     this.onTapCategory,
     this.onTapStatus,
@@ -94,6 +98,10 @@ class _HeroContent extends StatelessWidget {
 
   final EventCardData card;
   final String? whenLabel;
+
+  /// The event agent's one-line recap, shown under the title. Null (no
+  /// agent, or no recap yet) leaves the hero as title and date alone.
+  final String? recapOneLiner;
   final ValueChanged<String>? onRenameTitle;
   final VoidCallback? onTapCategory;
   final VoidCallback? onTapStatus;
@@ -142,26 +150,28 @@ class _HeroContent extends StatelessWidget {
           ),
           SizedBox(height: tokens.spacing.step3),
         ],
-        Row(
-          mainAxisSize: MainAxisSize.min,
+        // One row for the event's state: category, status and — once the
+        // event has happened — its rating. It wraps rather than overflowing
+        // when a long category name meets five stars on a phone.
+        Wrap(
+          spacing: tokens.spacing.step2,
+          runSpacing: tokens.spacing.step2,
+          crossAxisAlignment: WrapCrossAlignment.center,
           children: [
-            if (card.categoryName != null) ...[
+            if (card.categoryName != null)
               _TappablePill(
                 onTap: onTapCategory,
                 child: EventOverlayPill(
                   dotColor: card.categoryColor,
                   label: card.categoryName!,
                 ),
-              ),
-              SizedBox(width: tokens.spacing.step2),
-            ] else if (onTapCategory != null) ...[
+              )
+            else if (onTapCategory != null)
               // No category yet, but editable: a clearly-additive placeholder.
               _SetChip(
                 label: context.messages.habitCategoryLabel,
                 onTap: onTapCategory,
               ),
-              SizedBox(width: tokens.spacing.step2),
-            ],
             // Status is always shown (and tappable) since it's the core
             // editable state of an event.
             _TappablePill(
@@ -171,6 +181,11 @@ class _HeroContent extends StatelessWidget {
                 label: eventStatusLabel(context, card.status),
               ),
             ),
+            if (showRating)
+              EventStarRating(
+                rating: card.stars,
+                onRatingChanged: onSetRating,
+              ),
           ],
         ),
         SizedBox(height: tokens.spacing.step3),
@@ -179,6 +194,18 @@ class _HeroContent extends StatelessWidget {
           style: titleStyle,
           onRename: onRenameTitle,
         ),
+        // What happened, in the event agent's words — the recap's one-liner,
+        // read before the when and the summary card below the hero.
+        if (recapOneLiner?.trim() case final oneLiner?
+            when oneLiner.isNotEmpty) ...[
+          SizedBox(height: tokens.spacing.step2),
+          Text(
+            oneLiner,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: styles.body.bodyLarge.copyWith(color: fade),
+          ),
+        ],
         SizedBox(height: tokens.spacing.step3),
         _TappablePill(
           onTap: onTapDateTime,
@@ -205,19 +232,6 @@ class _HeroContent extends StatelessWidget {
             ],
           ),
         ),
-        if (showRating) ...[
-          SizedBox(height: tokens.spacing.step3),
-          StarRating(
-            rating: card.stars,
-            size: 22,
-            allowHalfRating: true,
-            color: starredGold,
-            borderColor: starredGold,
-            onRatingChanged: onSetRating == null
-                ? null
-                : (rating) => onSetRating!(rating),
-          ),
-        ],
       ],
     );
   }

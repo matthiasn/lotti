@@ -4051,6 +4051,18 @@
   "eventsNoResults": "No matching events",
   "eventsPageTitle": "Events",
   "eventsPhotosSection": "Photos",
+  "eventsRatingStarLabel": "Rate {starIndex} of {totalStars} stars",
+  "@eventsRatingStarLabel": {
+    "description": "Screen-reader label of one star in an event's rating: tapping it sets the rating to that many stars.",
+    "placeholders": {
+      "starIndex": {
+        "type": "int"
+      },
+      "totalStars": {
+        "type": "int"
+      }
+    }
+  },
   "eventsRecapAwaitingContent": "Add a photo or note and the recap will appear here.",
   "eventsRecapUnavailable": "Couldn't load the recap.",
   "eventsRegenerateSummary": "Regenerate summary",

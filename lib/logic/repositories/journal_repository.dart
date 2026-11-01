@@ -746,6 +746,15 @@ class JournalRepository {
     return _journalDb.getLinkedEntities(linkedTo);
   }
 
+  /// The entities each of [fromIds] links *to*, keyed by that id, in one
+  /// read — the outgoing direction of [getLinkedEntities] for many parents at
+  /// once, so a caller walking several photos' analyses avoids N+1 queries.
+  Future<Map<String, List<JournalEntity>>> getBulkLinkedEntities(
+    Set<String> fromIds,
+  ) {
+    return _journalDb.getBulkLinkedEntities(fromIds);
+  }
+
   /// Returns all JournalImage entries linked to the given task.
   ///
   /// This is a convenience method that filters the linked entities

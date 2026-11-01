@@ -1,4 +1,5 @@
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
+import 'package:lotti/classes/ai_response_type.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/agents/agent_repository.dart';
@@ -6,6 +7,7 @@ import 'package:lotti/features/agents/tools/event_tool_definitions.dart';
 import 'package:lotti/features/agents/util/agent_error_logging.dart';
 import 'package:lotti/features/agents/workflow/agent_observations.dart';
 import 'package:lotti/features/agents/workflow/agent_system_prompt.dart';
+import 'package:lotti/features/ai/util/image_ai_responses.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -160,8 +162,11 @@ persist across recaps but are not shown to the user.''';
   /// Builds a readable markdown block of the event's linked photos, notes,
   /// voice memos, and tasks — the raw material the recap narrates from.
   ///
-  /// Photos are summarized by count plus any captions; notes and audio render
-  /// their plain text; linked tasks render title + status (prep/follow-up).
+  /// Photos are summarized by count plus, per photo, the user's caption and
+  /// what its newest image analysis saw (its one-liner, else its TLDR) — the
+  /// analysis runs automatically when a photo is added to the event, and is
+  /// often the only description a photo has. Notes and audio render their
+  /// plain text; linked tasks render title + status (prep/follow-up).
   Future<String> buildLinkedEntriesContext(String eventId) async {
     try {
       final linked = await journalRepository.getLinkedEntities(
@@ -169,8 +174,7 @@ persist across recaps but are not shown to the user.''';
       );
       if (linked.isEmpty) return '';
 
-      final photoCaptions = <String>[];
-      var photoCount = 0;
+      final photos = <JournalImage>[];
       final notes = <String>[];
       final audio = <String>[];
       final tasks = <Task>[];
@@ -178,11 +182,7 @@ persist across recaps but are not shown to the user.''';
       for (final entity in linked) {
         if (entity.meta.deletedAt != null) continue;
         if (entity is JournalImage) {
-          photoCount++;
-          final caption = entity.entryText?.plainText.trim();
-          if (caption != null && caption.isNotEmpty) {
-            photoCaptions.add(caption);
-          }
+          photos.add(entity);
         } else if (entity is JournalAudio) {
           final transcript = entity.entryText?.plainText.trim();
           if (transcript != null && transcript.isNotEmpty) {
@@ -200,10 +200,12 @@ persist across recaps but are not shown to the user.''';
 
       final buf = StringBuffer();
 
-      if (photoCount > 0) {
-        buf.writeln('### Photos ($photoCount)');
-        for (final caption in photoCaptions) {
-          buf.writeln('- $caption');
+      if (photos.isNotEmpty) {
+        final analyses = await _imageAnalysesFor(photos);
+        buf.writeln('### Photos (${photos.length})');
+        for (final photo in photos) {
+          final line = _photoLine(photo, analyses[photo.meta.id]);
+          if (line != null) buf.writeln('- $line');
         }
         buf.writeln();
       }
@@ -243,6 +245,61 @@ persist across recaps but are not shown to the user.''';
       );
       return '';
     }
+  }
+
+  /// Each photo's newest image-analysis summary, keyed by photo id. Analyses
+  /// hang off the photo, not the event, so they take their own bulk read; a
+  /// failure there degrades to the captions alone rather than dropping the
+  /// whole linked-entries block.
+  Future<Map<String, String>> _imageAnalysesFor(
+    List<JournalImage> photos,
+  ) async {
+    try {
+      final responses = await fetchAiResponsesForImages(
+        getBulkLinkedEntities: journalRepository.getBulkLinkedEntities,
+        linkedEntities: photos,
+      );
+      final summaries = <String, String>{};
+      for (final MapEntry(key: imageId, value: list) in responses.entries) {
+        // Oldest-first, so the last analysis is the newest one.
+        final newest = list
+            .where((r) => r.data.type == AiResponseType.imageAnalysis)
+            .lastOrNull;
+        final summary = _firstNonEmpty([
+          newest?.data.oneLiner,
+          newest?.data.tldr,
+        ]);
+        if (summary != null) summaries[imageId] = summary;
+      }
+      return summaries;
+    } catch (e, stackTrace) {
+      logError(
+        'failed to load image analyses for the photo digest',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      return const {};
+    }
+  }
+
+  /// One photo's digest line: the user's caption, what the analysis saw, or
+  /// both; null when the photo has neither, so it only counts in the header.
+  static String? _photoLine(JournalImage photo, String? seen) {
+    final caption = _firstNonEmpty([photo.entryText?.plainText]);
+    return switch ((caption, seen)) {
+      (final String c, final String s) => '$c (photo shows: $s)',
+      (final String c, null) => c,
+      (null, final String s) => 'Photo shows: $s',
+      (null, null) => null,
+    };
+  }
+
+  static String? _firstNonEmpty(List<String?> candidates) {
+    for (final candidate in candidates) {
+      final trimmed = candidate?.trim();
+      if (trimmed != null && trimmed.isNotEmpty) return trimmed;
+    }
+    return null;
   }
 
   static String _taskStatusLabel(TaskStatus status) {

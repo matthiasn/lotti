@@ -1,5 +1,10 @@
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/database/database.dart';
+
+/// One bulk read of the entities linked *from* each id, keyed by that id —
+/// `JournalDb.getBulkLinkedEntities`, or `JournalRepository`'s pass-through
+/// of it for a caller that only holds the repository.
+typedef BulkLinkedEntitiesFetch =
+    Future<Map<String, List<JournalEntity>>> Function(Set<String> fromIds);
 
 /// Bulk-fetches the AI analysis responses (summary, OCR, …) linked from each
 /// image entry in [linkedEntities].
@@ -7,14 +12,15 @@ import 'package:lotti/database/database.dart';
 /// Analyses are stored as [AiResponseEntry] entities linked *from* their image
 /// (`fromId = imageId`), one entry per analysis run — the same shape the
 /// nested-AI-responses UI reads. This helper resolves them for every image in
-/// one [JournalDb.getBulkLinkedEntities] call so callers assembling task
-/// context (prompt JSON and agent input capture) stay free of N+1 queries.
+/// one [getBulkLinkedEntities] call so callers assembling task or event
+/// context (prompt JSON, agent input capture, the event agent's photo digest)
+/// stay free of N+1 queries.
 ///
 /// Returns a map keyed by image entry id. Only non-deleted [AiResponseEntry]
 /// rows are included, sorted oldest-first so consumers read them in
 /// chronological order. Images without analyses are absent from the map.
 Future<Map<String, List<AiResponseEntry>>> fetchAiResponsesForImages({
-  required JournalDb db,
+  required BulkLinkedEntitiesFetch getBulkLinkedEntities,
   required Iterable<JournalEntity> linkedEntities,
 }) async {
   final imageIds = linkedEntities
@@ -25,7 +31,7 @@ Future<Map<String, List<AiResponseEntry>>> fetchAiResponsesForImages({
     return const <String, List<AiResponseEntry>>{};
   }
 
-  final linkedByImageId = await db.getBulkLinkedEntities(imageIds);
+  final linkedByImageId = await getBulkLinkedEntities(imageIds);
 
   final result = <String, List<AiResponseEntry>>{};
   for (final entry in linkedByImageId.entries) {

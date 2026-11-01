@@ -29,6 +29,11 @@ String _formatDuration(Duration duration) {
 /// timestamp this function derives rather than receives. It is injected for
 /// the same reason [imageProviderFor] is: honouring the device's 24-hour
 /// setting needs a [BuildContext], which this pure mapping does not have.
+///
+/// [imageSummaryFor] answers a photo's one-line summary — the one-liner of its
+/// newest image analysis — which captions the photo in preference to the
+/// user's own note, as the collapsed image row in the journal does. A photo
+/// without one keeps its note as the caption.
 EventTimelineEntry? eventTimelineEntryFor(
   JournalEntity entity, {
   required String timeLabel,
@@ -36,13 +41,14 @@ EventTimelineEntry? eventTimelineEntryFor(
   required ImageProvider Function(JournalImage image) imageProviderFor,
   String Function(JournalImage image)? imagePathFor,
   Widget Function(JournalAudio audio)? audioPlayerFor,
+  String? Function(JournalImage image)? imageSummaryFor,
 }) {
   return switch (entity) {
     final JournalImage image => EventTimelineEntry(
       timeLabel: timeLabel,
       kind: EventTimelineKind.photo,
       entryId: image.meta.id,
-      text: _trimmedNote(image),
+      text: _imageCaption(image, imageSummaryFor),
       photos: [
         EventPhoto(
           imageProviderFor(image),
@@ -66,6 +72,17 @@ EventTimelineEntry? eventTimelineEntryFor(
     final JournalEntry entry => _journalEntryBeat(entry, timeLabel, formatTime),
     _ => null,
   };
+}
+
+/// A photo's caption: its analysis one-liner when [imageSummaryFor] has one,
+/// else the user's own note, else none.
+String? _imageCaption(
+  JournalImage image,
+  String? Function(JournalImage image)? imageSummaryFor,
+) {
+  final summary = imageSummaryFor?.call(image)?.trim();
+  if (summary != null && summary.isNotEmpty) return summary;
+  return _trimmedNote(image);
 }
 
 /// A plain note becomes a [EventTimelineKind.note]; one whose `dateTo` is after
@@ -117,7 +134,8 @@ EventTaskRef? eventTaskRefFor(JournalEntity entity, {String? dueLabel}) {
 ///   (the chosen cover — `card.coverChosen`, and that photo's
 ///   [EventPhoto.isCover]), else the newest linked photo as an unmarked
 ///   default, else none.
-/// - **Timeline**: linked photos/notes/audio, oldest first.
+/// - **Timeline**: linked photos/notes/audio, oldest first; a photo captioned
+///   by [imageSummaryFor] when it answers, else by its note.
 /// - **Tasks**: linked tasks.
 /// - **Summary**: the latest linked AI response, falling back to the event's
 ///   own note.
@@ -132,6 +150,7 @@ EventDetailData eventDetailDataFromEntities({
   required ImageProvider Function(JournalImage image) imageProviderFor,
   String Function(JournalImage image)? imagePathFor,
   Widget Function(JournalAudio audio)? audioPlayerFor,
+  String? Function(JournalImage image)? imageSummaryFor,
   String? categoryName,
 }) {
   final images = linked.whereType<JournalImage>().toList();
@@ -178,6 +197,7 @@ EventDetailData eventDetailDataFromEntities({
       imageProviderFor: imageProviderFor,
       imagePathFor: imagePathFor,
       audioPlayerFor: audioPlayerFor,
+      imageSummaryFor: imageSummaryFor,
     );
     if (timelineEntry != null) timeline.add(timelineEntry);
   }

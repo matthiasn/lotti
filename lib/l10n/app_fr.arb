@@ -2834,6 +2834,7 @@
   "eventsNoResults": "Aucun événement correspondant",
   "eventsPageTitle": "Événements",
   "eventsPhotosSection": "Photos",
+  "eventsRatingStarLabel": "Attribue {starIndex} étoiles sur {totalStars}",
   "eventsRecapAwaitingContent": "Ajoute une photo ou une note et le récap apparaîtra ici.",
   "eventsRecapUnavailable": "Impossible de charger le récap.",
   "eventsRegenerateSummary": "Régénérer le résumé",

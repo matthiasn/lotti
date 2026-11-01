@@ -6816,6 +6816,11 @@ class AppLocalizationsDa extends AppLocalizations {
   String get eventsPhotosSection => 'Fotos';
 
   @override
+  String eventsRatingStarLabel(int starIndex, int totalStars) {
+    return 'Giv $starIndex af $totalStars stjerner';
+  }
+
+  @override
   String get eventsRecapAwaitingContent =>
       'Tilføj et foto eller en note, og resuméet vil dukke op her.';
 

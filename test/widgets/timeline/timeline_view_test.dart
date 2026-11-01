@@ -499,6 +499,114 @@ void main() {
     });
   });
 
+  group('photo beat', () {
+    Widget photoTimeline({String? caption}) => TimelineView(
+      groups: [
+        TimelineGroup(
+          beats: [
+            beat(
+              content: TimelineBeatContent.photos(
+                photos: const [TimelinePhoto(BrokenImageProvider())],
+                caption: caption,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+
+    /// The rendered size of the lead frame — the first photo on the beat.
+    Size leadFrame(WidgetTester tester) => tester.getSize(
+      find
+          .ancestor(
+            of: find.byType(Image).first,
+            matching: find.byType(ClipRRect),
+          )
+          .first,
+    );
+
+    Future<void> pumpAtWidth(
+      WidgetTester tester,
+      double width, {
+      String? caption,
+    }) async {
+      await pump(
+        tester,
+        Align(
+          alignment: Alignment.topLeft,
+          child: SizedBox(
+            width: width,
+            child: photoTimeline(caption: caption),
+          ),
+        ),
+      );
+      await tester.pump();
+    }
+
+    testWidgets('the lead frame is a wide, short band on a phone column', (
+      tester,
+    ) async {
+      await pumpAtWidth(tester, 360);
+
+      final frame = leadFrame(tester);
+      // Wider than tall by well over two to one — a strip, not a block.
+      expect(frame.width / frame.height, greaterThan(2.3));
+      expect(frame.height, lessThan(140));
+    });
+
+    testWidgets('a wide column caps the height, widening the band further', (
+      tester,
+    ) async {
+      await pumpAtWidth(tester, 1000);
+
+      final frame = leadFrame(tester);
+      expect(frame.height, 180);
+      expect(frame.width / frame.height, greaterThan(4));
+    });
+
+    testWidgets('a narrow column keeps a readable minimum height', (
+      tester,
+    ) async {
+      await pumpAtWidth(tester, 200);
+
+      expect(leadFrame(tester).height, 96);
+    });
+
+    testWidgets('the height follows the width between the bounds', (
+      tester,
+    ) async {
+      await pumpAtWidth(tester, 300);
+      final narrow = leadFrame(tester);
+      await pumpAtWidth(tester, 380);
+      final wide = leadFrame(tester);
+
+      expect(wide.height, greaterThan(narrow.height));
+      expect(
+        wide.width / wide.height,
+        closeTo(narrow.width / narrow.height, 0.01),
+      );
+    });
+
+    testWidgets('the caption is a brief one: two lines at most', (
+      tester,
+    ) async {
+      await pumpAtWidth(
+        tester,
+        360,
+        caption:
+            'Penguins in flight suits beside a glowing launch pad, '
+            'with the habitat lights coming up behind them one by one as '
+            'the ceremonial sardines are carried out on silver trays.',
+      );
+
+      final caption = tester.widget<Text>(
+        find.textContaining('Penguins in flight suits'),
+      );
+      expect(caption.maxLines, 2);
+      expect(caption.overflow, TextOverflow.ellipsis);
+    });
+  });
+
   group('degrading content', () {
     testWidgets('a photo beat with no photos falls back to its caption', (
       tester,

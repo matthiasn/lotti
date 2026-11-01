@@ -367,7 +367,6 @@ class _TimelineContent extends StatelessWidget {
   final TimelineBeat beat;
   final ValueChanged<String>? onRetryTranscript;
 
-  static const double _leadHeight = 196;
   static const double _thumbSize = 72;
 
   @override
@@ -429,7 +428,6 @@ class _TimelineContent extends StatelessWidget {
         return _PhotoCluster(
           photos: photos.photos,
           caption: photos.caption,
-          leadHeight: _leadHeight,
           thumbSize: _thumbSize,
         );
     }
@@ -460,20 +458,37 @@ class _TimelineContent extends StatelessWidget {
   }
 }
 
-/// A hero lead frame plus a supporting strip — a curated moment rather than a
+/// A lead frame plus a supporting strip — a curated moment rather than a
 /// flat contact sheet.
+///
+/// The lead frame is a wide, short band: its height follows the column's width
+/// at [leadAspectRatio], held between [minLeadHeight] and [maxLeadHeight], so
+/// a photo reads as a strip on the rail at every width instead of a tall
+/// block that pushes the next beat off a phone screen. The caption under it
+/// is the photo's one-line summary, held to two lines.
 class _PhotoCluster extends StatelessWidget {
   const _PhotoCluster({
     required this.photos,
     required this.caption,
-    required this.leadHeight,
     required this.thumbSize,
   });
 
   final List<TimelinePhoto> photos;
   final String? caption;
-  final double leadHeight;
   final double thumbSize;
+
+  /// Width over height of the lead frame.
+  static const double leadAspectRatio = 2.4;
+
+  /// The lead frame never grows taller than this on a wide column…
+  static const double maxLeadHeight = 180;
+
+  /// …nor shrinks below this on a narrow one.
+  static const double minLeadHeight = 96;
+
+  /// The lead frame's height for a column [width] wide.
+  static double leadHeightFor(double width) =>
+      (width / leadAspectRatio).clamp(minLeadHeight, maxLeadHeight);
 
   @override
   Widget build(BuildContext context) {
@@ -486,14 +501,16 @@ class _PhotoCluster extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(tokens.radii.m),
-          child: SizedBox(
-            height: leadHeight,
-            width: double.infinity,
-            child: _Photo(
-              photo: photos.first,
-              fallback: cs.surfaceContainerHighest,
+        LayoutBuilder(
+          builder: (context, constraints) => ClipRRect(
+            borderRadius: BorderRadius.circular(tokens.radii.m),
+            child: SizedBox(
+              height: leadHeightFor(constraints.maxWidth),
+              width: double.infinity,
+              child: _Photo(
+                photo: photos.first,
+                fallback: cs.surfaceContainerHighest,
+              ),
             ),
           ),
         ),
@@ -525,6 +542,8 @@ class _PhotoCluster extends StatelessWidget {
           SizedBox(height: tokens.spacing.step2),
           Text(
             text,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
             style: tokens.typography.styles.body.bodyMedium.copyWith(
               color: cs.onSurface,
               fontStyle: FontStyle.italic,

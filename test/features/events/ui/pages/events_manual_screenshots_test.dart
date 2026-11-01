@@ -23,7 +23,9 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/event_data.dart';
 import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/agents/state/event_agent_providers.dart';
+import 'package:lotti/features/demo/seed/demo_entity_factories.dart';
 import 'package:lotti/features/demo/seed/demo_ids.dart';
 import 'package:lotti/features/design_system/components/chips/active_filter_chip.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_filter_selection_modal.dart';
@@ -36,6 +38,7 @@ import 'package:lotti/features/events/ui/pages/events_overview_page.dart';
 import 'package:lotti/features/events/ui/widgets/event_detail_view.dart';
 import 'package:lotti/features/events/ui/widgets/event_photo_gallery.dart';
 import 'package:lotti/features/events/ui/widgets/events_overview_view.dart';
+import 'package:lotti/features/journal/state/linked_ai_responses_controller.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/get_it.dart';
@@ -53,11 +56,13 @@ import '../../../../helpers/stub_audio_recorder_controller.dart';
 import '../../../../helpers/target_platform.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
+import '../../../agents/test_utils.dart';
 import '../../../categories/test_utils.dart';
 import '../../../daily_os_next/screenshot_harness.dart';
 
 const _subdir = 'events';
 final String _detailEventId = demoUuid('event-project-waddle-launch-gala');
+final String _detailAgentId = demoUuid('event-agent-project-waddle-gala');
 String _t(String en, String de) => manualScreenshotText(en: en, de: de);
 
 AppLocalizations _messages(WidgetTester tester) =>
@@ -110,6 +115,27 @@ class _ManualEventsOverviewController extends EventsOverviewController {
   Future<void> clearFilters() async {
     state = AsyncData(_snapshot());
   }
+}
+
+/// Serves the image analyses a capture's photos carry, without a database.
+class _FixedImageAnalyses extends LinkedAiResponsesController {
+  _FixedImageAnalyses(super.entryId, this.responses);
+
+  final List<AiResponseEntry> responses;
+
+  @override
+  Future<List<AiResponseEntry>> build() async => responses;
+}
+
+AiResponseEntry _imageAnalysis(String imageId, String oneLiner) {
+  final response = TestAiResponseFactory.create(
+    id: 'analysis-$imageId',
+    response: oneLiner,
+    dateFrom: DateTime(2026, 7, 16, 20),
+  );
+  return response.copyWith(
+    data: response.data.copyWith(oneLiner: oneLiner),
+  );
 }
 
 Widget _app({
@@ -436,7 +462,56 @@ void main() {
     resolvedOutgoingLinkedEntriesProvider(
       _detailEventId,
     ).overrideWithValue(detailLinkedEntries),
-    eventAgentProvider(_detailEventId).overrideWith((ref) async => null),
+    // The event agent's recap, resolved synchronously so the page renders
+    // it on its first frame: the one-liner the hero carries and the TLDR
+    // the recap card under it reads.
+    eventAgentProvider(_detailEventId).overrideWith(
+      (ref) => makeTestIdentity(
+        id: _detailAgentId,
+        agentId: _detailAgentId,
+        kind: 'event_agent',
+      ),
+    ),
+    agentReportProvider(_detailAgentId).overrideWith(
+      (ref) => makeTestReport(
+        agentId: _detailAgentId,
+        oneLiner: _t(
+          'The habitat opened on time and the sardines arrived chilled.',
+          'Das Habitat öffnete pünktlich, die Sardinen kamen gekühlt an.',
+        ),
+        tldr: _t(
+          'Mission Control cleared the ice-pad trajectory, the pressure seals '
+              'held, and the Europa cargo pods docked in time for the '
+              'ceremonial sardines.',
+          'Die Missionskontrolle gab die Eisplattform-Flugbahn frei, die '
+              'Druckdichtungen hielten, und die Europa-Frachtkapseln dockten '
+              'rechtzeitig für die Zeremonialsardinen an.',
+        ),
+      ),
+    ),
+    // Two photos carry an image analysis with a one-liner; the third keeps
+    // only the user's note, so both caption sources render.
+    for (final (imageId, oneLiner) in [
+      (
+        manualLaunchReviewCoverImageId,
+        _t(
+          'Penguins in flight suits beside a glowing launch pad.',
+          'Pinguine in Fluganzügen neben einer leuchtenden Startrampe.',
+        ),
+      ),
+      (
+        manualSardineCargoCoverImageId,
+        _t(
+          'Frosted cargo pods stacked in the docking bay.',
+          'Bereifte Frachtkapseln, gestapelt in der Andockbucht.',
+        ),
+      ),
+    ])
+      linkedAiResponsesControllerProvider(imageId).overrideWith(
+        () => _FixedImageAnalyses(imageId, [
+          _imageAnalysis(imageId, oneLiner),
+        ]),
+      ),
     // The page docks the entry action bar, whose mic watches the recorder.
     audioRecorderControllerProvider.overrideWith(
       StubAudioRecorderController.new,

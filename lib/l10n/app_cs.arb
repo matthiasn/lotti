@@ -2841,6 +2841,7 @@
   "eventsNoResults": "Žádné odpovídající události",
   "eventsPageTitle": "Události",
   "eventsPhotosSection": "Fotky",
+  "eventsRatingStarLabel": "Ohodnoť {starIndex} z {totalStars} hvězdiček",
   "eventsRecapAwaitingContent": "Přidej fotku nebo poznámku a tady se objeví shrnutí.",
   "eventsRecapUnavailable": "Shrnutí se nepodařilo načíst.",
   "eventsRegenerateSummary": "Znovu vytvořit shrnutí",
