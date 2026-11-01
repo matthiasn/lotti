@@ -70,9 +70,10 @@ class TtsPlaybackController extends Notifier<TtsPlaybackState> {
   int _generation = 0;
   Future<void> _preparation = Future<void>.value();
   _PreparedSpeech? _prepared;
-  File? _file;
-  _SpeechKey? _fileKey;
-  Future<bool> Function()? _fileGate;
+
+  /// The clip being played, with the key it was made under and the caller's
+  /// gate — one record, so a playing file never lacks either.
+  ({File file, _SpeechKey key, Future<bool> Function()? canPlay})? _playing;
   TtsAudioPlayer? _player;
   final DomainLogger? _injectedLogger;
   // Captured in build: cleanup can finish after provider disposal, when ref is
@@ -86,8 +87,8 @@ class TtsPlaybackController extends Notifier<TtsPlaybackState> {
       _generation++;
       discardPrepared();
       _cancelPlayerSubscriptions();
-      final file = _file;
-      _file = null;
+      final file = _playing?.file;
+      _playing = null;
       unawaited(_stopAndDelete(_player, file));
     });
     return const TtsPlaybackState();
@@ -267,12 +268,10 @@ class TtsPlaybackController extends Notifier<TtsPlaybackState> {
         await _deleteFile(file);
         return;
       }
-      _file = file;
-      _fileKey = key;
-      _fileGate = canPlay;
+      _playing = (file: file, key: key, canPlay: canPlay);
       final allowed = canPlay == null || await canPlay();
       if (!current() || !allowed) {
-        if (identical(_file, file)) _file = null;
+        if (identical(_playing?.file, file)) _playing = null;
         await _deleteFile(file);
         if (current()) _onPlaybackEnded();
         return;
@@ -305,8 +304,8 @@ class TtsPlaybackController extends Notifier<TtsPlaybackState> {
         );
       }
       _cancelPlayerSubscriptions();
-      final file = _file;
-      _file = null;
+      final file = _playing?.file;
+      _playing = null;
       await _stopAndDelete(_player, file);
       if (!current()) return;
       state = state.copyWith(
@@ -328,8 +327,8 @@ class TtsPlaybackController extends Notifier<TtsPlaybackState> {
       return;
     }
     _generation++;
-    final file = _file;
-    _file = null;
+    final file = _playing?.file;
+    _playing = null;
     final player = _player;
     // Invalidate preparation and presentation before the native await.
     _onPlaybackEnded();
@@ -392,24 +391,19 @@ class TtsPlaybackController extends Notifier<TtsPlaybackState> {
   /// utterance never leaves a clip behind, however its own cleanup and this
   /// completion interleave. A stop deletes a clip still playing.
   Future<void> _onPlaybackFinished() async {
-    final file = _file;
-    final key = _fileKey;
-    final gate = _fileGate;
-    _file = null;
+    final played = _playing;
+    _playing = null;
     _onPlaybackEnded();
-    if (file == null) return;
-    if (key == null || !ref.mounted) {
-      await _deleteFile(file);
-      return;
-    }
+    if (played == null) return;
     discardPrepared();
-    final job = _prepared = _PreparedSpeech(key)
-      ..file = file
+    final job = _prepared = _PreparedSpeech(played.key)
+      ..file = played.file
       ..done.complete();
-    if (gate == null) return;
+    final canPlay = played.canPlay;
+    if (canPlay == null) return;
     var allowed = false;
     try {
-      allowed = await gate();
+      allowed = await canPlay();
     } on Object {
       allowed = false;
     }
@@ -439,11 +433,9 @@ class TtsPlaybackController extends Notifier<TtsPlaybackState> {
   );
 
   void _onPlaybackEnded() {
-    _fileKey = null;
-    _fileGate = null;
     _cancelPlayerSubscriptions();
-    final file = _file;
-    _file = null;
+    final file = _playing?.file;
+    _playing = null;
     unawaited(_deleteFile(file));
     if (!ref.mounted) return;
     state = state.copyWith(
