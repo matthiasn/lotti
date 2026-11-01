@@ -3,8 +3,8 @@ import 'package:openai_dart/openai_dart.dart';
 
 /// Widens the task agent's tool surface as a wake proceeds.
 ///
-/// A wake advertises every enabled tool on every turn, so the opening request
-/// carries the whole registry whether or not the wake will use any of it. The
+/// A wake advertises every tool its facts allow on every turn, so the opening
+/// request carries all of them whether or not the wake will use any. The
 /// lean-payload probe measured what that costs the models most likely to run
 /// locally: Qwen3.6 27B went from 10/14 to 13/14 on the scenario suite purely
 /// as the prompt shrank, while the frontier models were unaffected at 14/14.
