@@ -156,12 +156,19 @@ class _RecapCard extends StatelessWidget {
           // Animate the height change so the event detail column below eases
           // down instead of snapping when the recap first lands. Width is
           // pinned full so only the height animates (no horizontal slide).
-          AnimatedSize(
-            alignment: Alignment.topCenter,
-            duration: reduceMotion ? Duration.zero : MotionDurations.medium2,
-            curve: MotionCurves.emphasizedDecelerate,
-            child: SizedBox(width: double.infinity, child: bodyWidget),
-          ),
+          // With animations off there is no AnimatedSize at all: a zero
+          // duration still restarts its controller from inside layout when
+          // the body changes size, which the framework rejects as a render
+          // object re-dirtying itself mid-layout.
+          if (reduceMotion)
+            SizedBox(width: double.infinity, child: bodyWidget)
+          else
+            AnimatedSize(
+              alignment: Alignment.topCenter,
+              duration: MotionDurations.medium2,
+              curve: MotionCurves.emphasizedDecelerate,
+              child: SizedBox(width: double.infinity, child: bodyWidget),
+            ),
         ],
       ),
     );

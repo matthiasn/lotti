@@ -1,4 +1,3 @@
-import 'package:flutter_rating/flutter_rating.dart';
 import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
@@ -6,10 +5,10 @@ import 'package:lotti/features/events/ui/model/event_view_data.dart';
 import 'package:lotti/features/events/ui/widgets/event_cover_image.dart';
 import 'package:lotti/features/events/ui/widgets/event_overlay_pill.dart';
 import 'package:lotti/features/events/ui/widgets/event_photo_gallery.dart';
+import 'package:lotti/features/events/ui/widgets/event_star_rating.dart';
 import 'package:lotti/features/events/ui/widgets/event_status_picker.dart';
 import 'package:lotti/features/events/ui/widgets/event_timeline_beat.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/cards/index.dart';
 import 'package:lotti/widgets/timeline/timeline_models.dart';
@@ -36,6 +35,7 @@ part 'event_detail_view_hero_content_part.dart';
 class EventDetailView extends StatelessWidget {
   const EventDetailView({
     required this.data,
+    this.recapOneLiner,
     this.onBack,
     this.onRenameTitle,
     this.onTapCategory,
@@ -55,6 +55,10 @@ class EventDetailView extends StatelessWidget {
   });
 
   final EventDetailData data;
+
+  /// The event agent's one-line recap of what happened, carried in the hero
+  /// under the title. The longer TLDR lives in [aiSummaryCard].
+  final String? recapOneLiner;
   final VoidCallback? onBack;
 
   /// Inline rename — receives the new (trimmed-by-caller) title.
@@ -133,6 +137,7 @@ class EventDetailView extends StatelessWidget {
             _HeroSliver(
               card: data.card,
               whenLabel: data.whenLabel,
+              recapOneLiner: recapOneLiner,
               onBack: onBack,
               onDelete: onDelete,
               onChangeCover: onChangeCover,

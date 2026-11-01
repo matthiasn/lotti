@@ -1,7 +1,10 @@
 import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/agents/state/agent_query_providers.dart';
+import 'package:lotti/features/agents/state/event_agent_providers.dart';
 import 'package:lotti/features/agents/ui/change_set_summary_card.dart';
 import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
@@ -14,6 +17,7 @@ import 'package:lotti/features/events/ui/widgets/event_cover_picker.dart';
 import 'package:lotti/features/events/ui/widgets/event_detail_view.dart';
 import 'package:lotti/features/events/ui/widgets/event_status_picker.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
+import 'package:lotti/features/journal/state/entry_summary_providers.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/ui/create/entry_creation_service.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_action_bar.dart';
@@ -79,15 +83,48 @@ class EventDetailPage extends ConsumerWidget {
 
     final linked = ref.watch(resolvedOutgoingLinkedEntriesProvider(eventId));
 
+    // Each photo's one-line summary, from its newest image analysis. Watched
+    // per photo so an analysis landing after the photo re-captions it in
+    // place; a photo still analysing (or never analysed) maps to null and
+    // keeps its note as the caption.
+    final imageSummaries = {
+      for (final image in linked.whereType<JournalImage>())
+        image.meta.id: imageAnalysisOneLiner(ref, image.meta.id),
+    };
+
     // Every provider the page depends on is watched above, in its own build.
     // The Builder exists only to hand the resolved view — and the toasts its
     // callbacks raise — a context beneath the nested messenger.
     return ScaffoldMessenger(
       child: Builder(
-        builder: (context) =>
-            _resolvedView(context, ref, entry: entry, linked: linked),
+        builder: (context) => _resolvedView(
+          context,
+          ref,
+          entry: entry,
+          linked: linked,
+          imageSummaries: imageSummaries,
+          recapOneLiner: _recapOneLiner(ref),
+        ),
       ),
     );
+  }
+
+  /// The event agent's one-line recap of what happened, or null while there
+  /// is no agent or it has not written a recap yet. `.value` keeps the last
+  /// recap through a background reload, so the hero line never blinks out
+  /// while a wake or sync refreshes the report.
+  String? _recapOneLiner(WidgetRef ref) {
+    final agent = ref
+        .watch(eventAgentProvider(eventId))
+        .value
+        ?.mapOrNull(agent: (a) => a);
+    if (agent == null) return null;
+    final report = ref
+        .watch(agentReportProvider(agent.agentId))
+        .value
+        ?.mapOrNull(agentReport: (r) => r);
+    final oneLiner = report?.oneLiner?.trim();
+    return (oneLiner == null || oneLiner.isEmpty) ? null : oneLiner;
   }
 
   Widget _resolvedView(
@@ -95,6 +132,8 @@ class EventDetailPage extends ConsumerWidget {
     WidgetRef ref, {
     required JournalEvent entry,
     required List<JournalEntity> linked,
+    required Map<String, String?> imageSummaries,
+    required String? recapOneLiner,
   }) {
     final category = getIt<EntitiesCacheService>().getCategoryById(
       entry.meta.categoryId,
@@ -120,6 +159,7 @@ class EventDetailPage extends ConsumerWidget {
       // of only naming its duration. The app-wide player means starting one
       // beat stops any other.
       audioPlayerFor: AudioPlayerWidget.new,
+      imageSummaryFor: (image) => imageSummaries[image.meta.id],
     );
 
     Future<void> pickCategory() async {
@@ -214,6 +254,7 @@ class EventDetailPage extends ConsumerWidget {
 
     return EventDetailView(
       data: data,
+      recapOneLiner: recapOneLiner,
       aiSummaryCard: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

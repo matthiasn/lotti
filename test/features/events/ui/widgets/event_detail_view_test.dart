@@ -1,10 +1,10 @@
-import 'package:flutter_rating/flutter_rating.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/events/ui/model/event_view_data.dart';
 import 'package:lotti/features/events/ui/widgets/event_detail_view.dart';
 import 'package:lotti/features/events/ui/widgets/event_photo_gallery.dart';
+import 'package:lotti/features/events/ui/widgets/event_star_rating.dart';
 import 'package:lotti/features/journal/ui/widgets/time_span_bar.dart';
 import 'package:lotti/widgets/timeline/timeline_view.dart';
 import 'package:material_ui/material_ui.dart';
@@ -46,28 +46,81 @@ void main() {
       // The hero carries the single date/time line (from whenLabel).
       expect(find.text('19:30 – 02:00 · 18 friends'), findsOneWidget);
       // A completed event shows its rating.
-      expect(find.byType(StarRating), findsOneWidget);
+      expect(find.byType(EventStarRating), findsOneWidget);
     });
 
-    testWidgets('injected aiSummaryCard replaces the passive summary', (
-      tester,
-    ) async {
+    testWidgets('the rating shares one row with the category and status '
+        'pills, not a row of its own under the date', (tester) async {
+      await pumpEventScreen(
+        tester,
+        EventDetailView(data: buildEventDetailData()),
+        size: _tallDesktop,
+      );
+
+      final stars = tester.getRect(find.byType(EventStarRating));
+      final status = tester.getRect(find.text('Completed'));
+      final category = tester.getRect(find.text('Friends'));
+      final date = tester.getRect(find.text('19:30 – 02:00 · 18 friends'));
+
+      // Same row: the stars' vertical band overlaps the pills' centre line,
+      // and they sit to the right of the status pill.
+      expect(stars.top, lessThan(status.center.dy));
+      expect(stars.bottom, greaterThan(status.center.dy));
+      expect(stars.left, greaterThan(status.right));
+      expect(status.left, greaterThan(category.right));
+      // …and that row is above the title and date, not below the date line
+      // as the stars used to be.
+      expect(stars.bottom, lessThan(date.top));
+      // Left-aligned with the hero content rather than centred on it.
+      expect(stars.left - status.right, lessThan(category.width));
+    });
+
+    testWidgets('the recap one-liner reads under the title', (tester) async {
       await pumpEventScreen(
         tester,
         EventDetailView(
-          // buildEventDetailData supplies a passive summary by default.
           data: buildEventDetailData(),
-          aiSummaryCard: const Text('AGENT RECAP CARD'),
+          recapOneLiner: 'Rooftop surprise, cake at midnight.',
         ),
         size: _tallMobile,
       );
 
-      expect(find.text('AGENT RECAP CARD'), findsOneWidget);
-      // The injected card takes the slot; the passive summary is not rendered.
-      expect(
-        find.text('A surprise 30th for Anna on the rooftop.'),
-        findsNothing,
+      final oneLiner = find.text('Rooftop surprise, cake at midnight.');
+      expect(oneLiner, findsOneWidget);
+      final title = tester.getRect(find.text("Anna's 30th Birthday"));
+      final line = tester.getRect(oneLiner);
+      final date = tester.getRect(find.text('19:30 – 02:00 · 18 friends'));
+      expect(line.top, greaterThanOrEqualTo(title.bottom));
+      expect(line.bottom, lessThanOrEqualTo(date.top));
+    });
+
+    testWidgets('a blank recap one-liner renders exactly like none', (
+      tester,
+    ) async {
+      List<String?> heroTexts() => tester
+          .widgetList<Text>(
+            find.descendant(
+              of: find.byType(FlexibleSpaceBar),
+              matching: find.byType(Text),
+            ),
+          )
+          .map((text) => text.data)
+          .toList();
+
+      await pumpEventScreen(
+        tester,
+        EventDetailView(data: buildEventDetailData()),
+        size: _tallMobile,
       );
+      final withoutRecap = heroTexts();
+
+      await pumpEventScreen(
+        tester,
+        EventDetailView(data: buildEventDetailData(), recapOneLiner: '  \n '),
+        size: _tallMobile,
+      );
+
+      expect(heroTexts(), withoutRecap);
     });
 
     testWidgets('hides the rating on a fresh, not-yet-happened event', (
@@ -79,7 +132,7 @@ void main() {
         size: _tallMobile,
       );
       // A tentative event with no rating yet shows no stars.
-      expect(find.byType(StarRating), findsNothing);
+      expect(find.byType(EventStarRating), findsNothing);
     });
 
     testWidgets('tapping the date opens the date-time picker', (tester) async {
@@ -521,8 +574,9 @@ void main() {
         size: _tallMobile,
       );
 
-      await tester.tap(find.byType(StarRating));
-      expect(ratings, isNotEmpty);
+      // The third star sets three stars.
+      await tester.tap(find.bySemanticsLabel('Rate 3 of 5 stars'));
+      expect(ratings, [3.0]);
     });
 
     testWidgets('the overflow menu deletes the event', (tester) async {

@@ -120,7 +120,7 @@ class AiInputRepository {
     final logEntries = <AiInputLogEntryObject>[];
     final linkedEntities = await _db.getLinkedEntities(id);
     final aiResponsesByImageId = await fetchAiResponsesForImages(
-      db: _db,
+      getBulkLinkedEntities: _db.getBulkLinkedEntities,
       linkedEntities: linkedEntities,
     );
 

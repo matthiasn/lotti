@@ -2834,6 +2834,7 @@
   "eventsNoResults": "No hay eventos que coincidan",
   "eventsPageTitle": "Eventos",
   "eventsPhotosSection": "Fotos",
+  "eventsRatingStarLabel": "Valora con {starIndex} de {totalStars} estrellas",
   "eventsRecapAwaitingContent": "Añade una foto o una nota y aquí aparecerá el resumen.",
   "eventsRecapUnavailable": "No se pudo cargar el resumen.",
   "eventsRegenerateSummary": "Regenerar resumen",

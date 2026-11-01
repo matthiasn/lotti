@@ -11579,6 +11579,12 @@ abstract class AppLocalizations {
   /// **'Photos'**
   String get eventsPhotosSection;
 
+  /// Screen-reader label of one star in an event's rating: tapping it sets the rating to that many stars.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate {starIndex} of {totalStars} stars'**
+  String eventsRatingStarLabel(int starIndex, int totalStars);
+
   /// No description provided for @eventsRecapAwaitingContent.
   ///
   /// In en, this message translates to:

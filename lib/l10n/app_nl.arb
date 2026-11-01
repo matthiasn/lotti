@@ -3178,6 +3178,7 @@
   "eventsNoResults": "Geen overeenkomende gebeurtenissen",
   "eventsPageTitle": "Gebeurtenissen",
   "eventsPhotosSection": "Foto's",
+  "eventsRatingStarLabel": "Geef {starIndex} van {totalStars} sterren",
   "eventsRecapAwaitingContent": "Voeg een foto of notitie toe en de samenvatting verschijnt hier.",
   "eventsRecapUnavailable": "Kon de samenvatting niet laden.",
   "eventsRegenerateSummary": "Samenvatting regenereren",

@@ -56,6 +56,10 @@ sources:
     resource: ../../../lib/features/agents/workflow/event_agent_workflow.dart
     title: EventAgentWorkflow
     last_modified: 2026-08-07
+  - id: event-context
+    resource: ../../../lib/features/agents/workflow/event_agent_context_builder.dart
+    title: EventAgentContextBuilder — the linked-entries digest, photo analyses included
+    last_modified: 2026-11-01
   - id: project-service
     resource: ../../../lib/features/agents/service/project_agent_service.dart
     title: ProjectAgentService (creation, inference setup and announcement)
@@ -571,10 +575,22 @@ transaction.
 `EventAgentWorkflow.execute()` loads the reconciled agent state and resolves
 `activeEventId`, loads the latest recap and the event entity, loads prior
 observations, resolves template/version and profile, builds context (title,
-status, when, note, plus a linked-entries digest of photos with captions, notes,
-voice-memo transcripts and linked tasks), runs `EventAgentStrategy`, and persists
-usage, final thought, recap report and head, observations, and the updated state
-— clearing `awaitingContent` and emitting the `wakeCompleted` milestone.
+status, when, note, plus a linked-entries digest of photos, notes, voice-memo
+transcripts and linked tasks), runs `EventAgentStrategy`, and persists usage,
+final thought, recap report and head, observations, and the updated state —
+clearing `awaitingContent` and emitting the `wakeCompleted` milestone.
+
+A photo in the digest is its caption **and what its image analysis saw** — the
+newest `imageAnalysis` response's `oneLiner`, else its `tldr`, never the full
+response. Analyses hang off the photo rather than the event, so
+`EventAgentContextBuilder` resolves them for every photo in one
+`fetchAiResponsesForImages` read through `JournalRepository.getBulkLinkedEntities`;
+a failed read degrades to captions alone. This matters because image analysis
+runs automatically for a photo added to an event (the event is its subject),
+and the analysis landing notifies the event id and wakes the agent — a wake
+that would otherwise see nothing new. Its `oneLiner` is what the page shows in
+the hero, its `tldr` what the recap card shows (see
+[events](../events.md#the-hero-is-the-interaction-surface)).
 
 ## Tools
 

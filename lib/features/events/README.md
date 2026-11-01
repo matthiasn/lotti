@@ -24,7 +24,12 @@ Behind the **Enable Events** flag. With it off, events are hidden everywhere.
   Day timeline at that time, beside recorded work, and opens from there. A
   cancelled, missed or postponed one stays off it.
 - **Rates a memory, but only once it is a memory.** Stars appear once the event
-  has happened, so a plan is not asked to rate itself.
+  has happened, so a plan is not asked to rate itself, and sit in the header's
+  state row beside the category and status.
+- **Says what happened.** With an event agent attached, its recap's one-liner
+  reads under the title and its summary in the card below; each photo on the
+  timeline carries the one-line caption its image analysis wrote, or the
+  user's own note.
 - **Picks its own cover, until told otherwise.** The newest linked photo stands
   in as the cover until the user chooses one — from the full-screen viewer with
   **Set cover** on the photo in view, or from the **Change cover** picker in

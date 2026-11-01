@@ -6824,6 +6824,11 @@ class AppLocalizationsSv extends AppLocalizations {
   String get eventsPhotosSection => 'Foton';
 
   @override
+  String eventsRatingStarLabel(int starIndex, int totalStars) {
+    return 'Ge $starIndex av $totalStars stjärnor';
+  }
+
+  @override
   String get eventsRecapAwaitingContent =>
       'Lägg till ett foto eller en notis så visas sammanfattningen här.';
 

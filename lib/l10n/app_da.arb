@@ -3179,6 +3179,7 @@
   "eventsNoResults": "Ingen matchende begivenheder",
   "eventsPageTitle": "Begivenheder",
   "eventsPhotosSection": "Fotos",
+  "eventsRatingStarLabel": "Giv {starIndex} af {totalStars} stjerner",
   "eventsRecapAwaitingContent": "Tilføj et foto eller en note, og resuméet vil dukke op her.",
   "eventsRecapUnavailable": "Kunne ikke indlæse recapet.",
   "eventsRegenerateSummary": "Regenereringsresumé",

@@ -1460,6 +1460,36 @@ void main() {
       );
     });
 
+    group('getBulkLinkedEntities', () {
+      test(
+        'answers the outgoing links of many parents in one DB read',
+        () async {
+          final byParent = {
+            'img-1': [
+              testJournalEntry(
+                plainText: 'Analysis',
+                markdown: 'Analysis',
+                meta: testMeta(id: 'analysis-1'),
+              ),
+            ],
+          };
+          when(
+            () => mockJournalDb.getBulkLinkedEntities({'img-1', 'img-2'}),
+          ).thenAnswer((_) async => byParent);
+
+          final result = await repository.getBulkLinkedEntities({
+            'img-1',
+            'img-2',
+          });
+
+          expect(result, same(byParent));
+          verify(
+            () => mockJournalDb.getBulkLinkedEntities({'img-1', 'img-2'}),
+          ).called(1);
+        },
+      );
+    });
+
     group('getLinkedEntities', () {
       test('returns all linked entities for the specified entity', () async {
         // Arrange

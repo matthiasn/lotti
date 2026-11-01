@@ -6929,6 +6929,11 @@ class AppLocalizationsRo extends AppLocalizations {
   String get eventsPhotosSection => 'Fotografii';
 
   @override
+  String eventsRatingStarLabel(int starIndex, int totalStars) {
+    return 'Acordați $starIndex din $totalStars stele';
+  }
+
+  @override
   String get eventsRecapAwaitingContent =>
       'Adăugați o fotografie sau o notă, iar rezumatul va apărea aici.';
 

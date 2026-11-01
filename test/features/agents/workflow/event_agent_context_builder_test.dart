@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/ai_response_type.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/event_data.dart';
 import 'package:lotti/classes/event_status.dart';
@@ -6,6 +7,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/tools/event_tool_definitions.dart';
 import 'package:lotti/features/agents/workflow/event_agent_context_builder.dart';
+import 'package:lotti/features/demo/seed/demo_entity_factories.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -109,6 +111,10 @@ void main() {
     agentRepository = MockAgentRepository();
     journalRepository = MockJournalRepository();
     loggedErrors = [];
+    // No photo carries an analysis unless a test says so.
+    when(
+      () => journalRepository.getBulkLinkedEntities(any()),
+    ).thenAnswer((_) async => {});
     builder = EventAgentContextBuilder(
       agentRepository: agentRepository,
       journalRepository: journalRepository,
@@ -268,6 +274,150 @@ void main() {
         expect(context, contains('- Book the venue (done)'));
       },
     );
+
+    group('photo analyses', () {
+      AiResponseEntry analysis({
+        required String id,
+        String? oneLiner,
+        String? tldr,
+        AiResponseType type = AiResponseType.imageAnalysis,
+        DateTime? at,
+      }) {
+        final response = TestAiResponseFactory.create(
+          id: id,
+          response: 'The full analysis text, never rendered in the digest.',
+          type: type,
+          dateFrom: at ?? eventTime,
+        );
+        return response.copyWith(
+          data: response.data.copyWith(oneLiner: oneLiner, tldr: tldr),
+        );
+      }
+
+      void linkPhotos(List<JournalEntity> photos) => when(
+        () => journalRepository.getLinkedEntities(linkedTo: 'event-001'),
+      ).thenAnswer((_) async => photos);
+
+      test("renders what each photo's analysis saw beside its caption", () async {
+        linkPhotos([
+          image(caption: 'toast on the rooftop'),
+          image(id: 'img-2'),
+          image(id: 'img-3'),
+        ]);
+        when(
+          () => journalRepository.getBulkLinkedEntities({
+            'img-1',
+            'img-2',
+            'img-3',
+          }),
+        ).thenAnswer(
+          (_) async => {
+            'img-1': [
+              analysis(id: 'a-1', oneLiner: 'Four friends raising glasses'),
+            ],
+            'img-2': [
+              analysis(id: 'a-2', oneLiner: 'A cake with thirty candles'),
+            ],
+          },
+        );
+
+        final context = await builder.buildLinkedEntriesContext('event-001');
+
+        expect(context, contains('### Photos (3)'));
+        expect(
+          context,
+          contains(
+            '- toast on the rooftop (photo shows: Four friends raising glasses)',
+          ),
+        );
+        expect(context, contains('- Photo shows: A cake with thirty candles'));
+        // The full analysis is the photo's own record; the digest stays short.
+        expect(context, isNot(contains('never rendered in the digest')));
+        // img-3 has neither caption nor analysis: counted, not listed.
+        expect('- '.allMatches(context).length, 2);
+        expect(loggedErrors, isEmpty);
+      });
+
+      test('uses the newest image analysis, and its TLDR when it has no '
+          'one-liner', () async {
+        linkPhotos([image()]);
+        when(
+          () => journalRepository.getBulkLinkedEntities({'img-1'}),
+        ).thenAnswer(
+          (_) async => {
+            'img-1': [
+              analysis(
+                id: 'old',
+                oneLiner: 'An earlier reading',
+                at: eventTime,
+              ),
+              analysis(
+                id: 'new',
+                tldr: 'Guests dancing under string lights.',
+                at: eventTime.add(const Duration(hours: 1)),
+              ),
+            ],
+          },
+        );
+
+        final context = await builder.buildLinkedEntriesContext('event-001');
+
+        expect(
+          context,
+          contains('- Photo shows: Guests dancing under string lights.'),
+        );
+        expect(context, isNot(contains('An earlier reading')));
+      });
+
+      test('ignores responses that are not image analyses', () async {
+        linkPhotos([image(caption: 'the cake')]);
+        when(
+          () => journalRepository.getBulkLinkedEntities({'img-1'}),
+        ).thenAnswer(
+          (_) async => {
+            'img-1': [
+              analysis(
+                id: 'prompt',
+                oneLiner: 'A generated prompt',
+                type: AiResponseType.promptGeneration,
+              ),
+            ],
+          },
+        );
+
+        final context = await builder.buildLinkedEntriesContext('event-001');
+
+        expect(context, contains('- the cake\n'));
+        expect(context, isNot(contains('A generated prompt')));
+      });
+
+      test('an analysis lookup failure keeps the captions and logs', () async {
+        linkPhotos([
+          image(caption: 'toast on the rooftop'),
+          note(text: 'kept'),
+        ]);
+        when(
+          () => journalRepository.getBulkLinkedEntities(any()),
+        ).thenThrow(Exception('db down'));
+
+        final context = await builder.buildLinkedEntriesContext('event-001');
+
+        expect(context, contains('### Photos (1)'));
+        expect(context, contains('- toast on the rooftop'));
+        expect(context, contains('- kept'));
+        expect(loggedErrors.single.message, contains('image analyses'));
+      });
+
+      test('reads no analyses when no photo is linked', () async {
+        when(
+          () => journalRepository.getLinkedEntities(linkedTo: 'event-001'),
+        ).thenAnswer((_) async => [note(text: 'just words')]);
+
+        await builder.buildLinkedEntriesContext('event-001');
+
+        verifyNever(() => journalRepository.getBulkLinkedEntities(any()));
+      });
+    });
 
     test('labels a linked task by its status (rejected)', () async {
       when(

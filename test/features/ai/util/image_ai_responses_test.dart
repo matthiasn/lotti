@@ -18,7 +18,7 @@ void main() {
       'returns empty map without querying when no images are linked',
       () async {
         final result = await fetchAiResponsesForImages(
-          db: mockDb,
+          getBulkLinkedEntities: mockDb.getBulkLinkedEntities,
           linkedEntities: [
             TestTaskFactory.create(),
             JournalEntry(
@@ -74,7 +74,7 @@ void main() {
         );
 
         final result = await fetchAiResponsesForImages(
-          db: mockDb,
+          getBulkLinkedEntities: mockDb.getBulkLinkedEntities,
           linkedEntities: [imageA, imageB, TestTaskFactory.create()],
         );
 
@@ -104,7 +104,7 @@ void main() {
       );
 
       final result = await fetchAiResponsesForImages(
-        db: mockDb,
+        getBulkLinkedEntities: mockDb.getBulkLinkedEntities,
         linkedEntities: [image],
       );
 

@@ -3179,6 +3179,7 @@
   "eventsNoResults": "Nessun evento corrispondente",
   "eventsPageTitle": "Eventi",
   "eventsPhotosSection": "Fotografie",
+  "eventsRatingStarLabel": "Assegna {starIndex} stelle su {totalStars}",
   "eventsRecapAwaitingContent": "Aggiungi una foto o una nota e il recap apparirà qui.",
   "eventsRecapUnavailable": "Non ho potuto caricare il recap.",
   "eventsRegenerateSummary": "Riepilogo rigenerante",

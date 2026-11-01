@@ -182,4 +182,57 @@ void main() {
       verify(() => service.triggerReanalysis(agentId)).called(1);
     });
   });
+
+  group('reduced motion', () {
+    testWidgets('the recap landing after a loading frame swaps in without '
+        'an animated resize', (tester) async {
+      final pending = Completer<AgentDomainEntity?>();
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const MediaQuery(
+            data: MediaQueryData(disableAnimations: true),
+            child: EventAiSummaryCard(eventId: eventId),
+          ),
+          overrides: <Override>[
+            eventAgentProvider(eventId).overrideWith((ref) => agentIdentity),
+            agentReportProvider(agentId).overrideWith((ref) => pending.future),
+          ],
+        ),
+      );
+      await tester.pump();
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+      // The body grows from a spinner to a multi-line recap: with animations
+      // off that must be a plain swap, not an AnimatedSize asked to animate
+      // over zero time from inside its own layout.
+      pending.complete(
+        makeTestReport(
+          tldr:
+              'A long recap that wraps over several lines of the card, '
+              'so the body is far taller than the spinner it replaces.',
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      expect(tester.takeException(), isNull);
+      expect(find.byType(AnimatedSize), findsNothing);
+      expect(find.textContaining('A long recap that wraps'), findsOneWidget);
+    });
+
+    testWidgets('with motion on, the body still eases its height', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildCard(
+          agent: agentIdentity,
+          report: makeTestReport(tldr: 'recap'),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 50));
+
+      expect(find.byType(AnimatedSize), findsOneWidget);
+    });
+  });
 }

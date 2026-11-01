@@ -6892,6 +6892,11 @@ class AppLocalizationsCs extends AppLocalizations {
   String get eventsPhotosSection => 'Fotky';
 
   @override
+  String eventsRatingStarLabel(int starIndex, int totalStars) {
+    return 'Ohodnoť $starIndex z $totalStars hvězdiček';
+  }
+
+  @override
   String get eventsRecapAwaitingContent =>
       'Přidej fotku nebo poznámku a tady se objeví shrnutí.';
 

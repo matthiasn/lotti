@@ -21,7 +21,7 @@ extension _TaskAgentExecuteSetup on TaskAgentWorkflow {
       var imageAiResponses = const <String, List<AiResponseEntry>>{};
       try {
         imageAiResponses = await fetchAiResponsesForImages(
-          db: journalDb,
+          getBulkLinkedEntities: journalDb.getBulkLinkedEntities,
           linkedEntities: linked,
         );
       } catch (e) {
