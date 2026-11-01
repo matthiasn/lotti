@@ -2825,6 +2825,7 @@
   "entryTypeLabelSurveyEntry": "Umfrage",
   "entryTypeLabelTask": "Aufgabe",
   "entryTypeLabelWorkoutEntry": "Training",
+  "eventAgentAssignHint": "Schreibt mit eingebauter KI eine Zusammenfassung aus den Fotos und Notizen des Ereignisses.",
   "eventNameLabel": "Ereignis:",
   "eventsAddCoverPhoto": "Titelbild hinzufügen",
   "eventsChangeCover": "Titelbild ändern",

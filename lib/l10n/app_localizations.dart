@@ -11525,6 +11525,12 @@ abstract class AppLocalizations {
   /// **'Workout'**
   String get entryTypeLabelWorkoutEntry;
 
+  /// Subtitle of the Assign Agent row on an event without an agent: what an event agent does.
+  ///
+  /// In en, this message translates to:
+  /// **'Writes a recap from the event\'s photos and notes with built-in AI.'**
+  String get eventAgentAssignHint;
+
   /// No description provided for @eventNameLabel.
   ///
   /// In en, this message translates to:

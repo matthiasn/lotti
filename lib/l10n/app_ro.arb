@@ -2825,6 +2825,7 @@
   "entryTypeLabelSurveyEntry": "Sondaj",
   "entryTypeLabelTask": "Sarcină",
   "entryTypeLabelWorkoutEntry": "Antrenament",
+  "eventAgentAssignHint": "Redactează un rezumat din fotografiile și notițele evenimentului cu IA încorporată.",
   "eventNameLabel": "Eveniment:",
   "eventsAddCoverPhoto": "Adăugați o fotografie de copertă",
   "eventsChangeCover": "Schimbați coperta",

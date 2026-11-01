@@ -6886,6 +6886,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get entryTypeLabelWorkoutEntry => 'Antrenament';
 
   @override
+  String get eventAgentAssignHint =>
+      'Redactează un rezumat din fotografiile și notițele evenimentului cu IA încorporată.';
+
+  @override
   String get eventNameLabel => 'Eveniment:';
 
   @override

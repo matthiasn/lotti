@@ -1,10 +1,14 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
+import 'package:lotti/classes/event_data.dart';
+import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/agents/state/event_agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/assign_agent_cta_part.dart';
@@ -347,6 +351,298 @@ void main() {
       },
     );
   });
+
+  group('AssignAgentCta.event – assigning an agent to an existing event', () {
+    testWidgets(
+      'offers an event agent, not a task one: event hint, event templates, '
+      'createEventAgent with the category, then the card re-reads the agent',
+      (tester) async {
+        const categoryId = 'cat-events';
+        final harness = _EventHarness.create(categoryId: categoryId);
+
+        await tester.pumpWidget(harness.build());
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text(
+            "Writes a recap from the event's photos and notes with built-in AI.",
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.text('Drafts steps and summaries with built-in AI.'),
+          findsNothing,
+        );
+
+        await tester.tap(find.text('Assign Agent'));
+        await tester.pumpAndSettle();
+
+        // The category offers a task template and an event template; only
+        // the event one is assignable here, so the picker skips straight to
+        // the profile page.
+        expect(find.text('Solo'), findsOneWidget);
+
+        harness.attachAgent();
+        await tester.tap(find.text('Solo'));
+        await tester.pumpAndSettle();
+
+        // The picked template and profile, the event's category as the
+        // agent's scope, and the default content gate (no awaitContent
+        // override): the creation wake runs at once if the event already has
+        // a photo or note.
+        verify(
+          () => harness.eventAgentService.createEventAgent(
+            eventId: harness.event.meta.id,
+            templateId: 'tpl-event',
+            profileId: 'prof-success',
+            allowedCategoryIds: {categoryId},
+          ),
+        ).called(1);
+
+        // The invalidated provider re-resolved to the new agent, so the
+        // offer is replaced by what the host renders for an attached agent.
+        expect(find.text('Assign Agent'), findsNothing);
+        expect(find.text('agent attached'), findsOneWidget);
+      },
+    );
+
+    testWidgets('an entry that is not an event creates nothing', (
+      tester,
+    ) async {
+      final harness = _EventHarness.create(
+        categoryId: 'cat-events',
+        entity: testTask,
+      );
+
+      await tester.pumpWidget(harness.build());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Assign Agent'));
+      await tester.pumpAndSettle();
+
+      verifyNever(
+        () => harness.templateService.listTemplatesForCategory(any()),
+      );
+      verifyNever(
+        () => harness.eventAgentService.createEventAgent(
+          eventId: any(named: 'eventId'),
+          templateId: any(named: 'templateId'),
+          allowedCategoryIds: any(named: 'allowedCategoryIds'),
+          profileId: any(named: 'profileId'),
+        ),
+      );
+    });
+
+    testWidgets(
+      'with no event template anywhere it warns instead of opening the picker',
+      (tester) async {
+        final harness = _EventHarness.create(
+          categoryId: 'cat-events',
+          categoryTemplates: [makeTestTemplate(id: 'tpl-task')],
+          globalTemplates: [makeTestTemplate(id: 'tpl-task')],
+        );
+
+        await tester.pumpWidget(harness.build());
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Assign Agent'));
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text('No templates available. Create one in Settings first.'),
+          findsOneWidget,
+        );
+        expect(find.text('Solo'), findsNothing);
+        verifyNever(
+          () => harness.eventAgentService.createEventAgent(
+            eventId: any(named: 'eventId'),
+            templateId: any(named: 'templateId'),
+            allowedCategoryIds: any(named: 'allowedCategoryIds'),
+            profileId: any(named: 'profileId'),
+          ),
+        );
+      },
+    );
+  });
+
+  group('assignableAgentTemplates', () {
+    final taskTemplate = makeTestTemplate(id: 'tpl-task');
+    final eventTemplate = makeTestTemplate(
+      id: 'tpl-event',
+      kind: AgentTemplateKind.eventAgent,
+    );
+    final globalEventTemplate = makeTestTemplate(
+      id: 'tpl-event-global',
+      kind: AgentTemplateKind.eventAgent,
+    );
+
+    test('prefers the category-scoped templates of the kind', () async {
+      final service = MockAgentTemplateService();
+      when(
+        () => service.listTemplatesForCategory('cat'),
+      ).thenAnswer((_) async => [taskTemplate, eventTemplate]);
+
+      final templates = await assignableAgentTemplates(
+        service,
+        kind: AgentTemplateKind.eventAgent,
+        categoryId: 'cat',
+      );
+
+      expect(templates.map((t) => t.id), ['tpl-event']);
+      // ignore: unnecessary_lambdas
+      verifyNever(() => service.listTemplates());
+    });
+
+    test('falls back to every template of the kind when the category scopes '
+        'only templates of another kind', () async {
+      final service = MockAgentTemplateService();
+      when(
+        () => service.listTemplatesForCategory('cat'),
+      ).thenAnswer((_) async => [taskTemplate]);
+      when(
+        // ignore: unnecessary_lambdas
+        () => service.listTemplates(),
+      ).thenAnswer((_) async => [taskTemplate, globalEventTemplate]);
+
+      final templates = await assignableAgentTemplates(
+        service,
+        kind: AgentTemplateKind.eventAgent,
+        categoryId: 'cat',
+      );
+
+      expect(templates.map((t) => t.id), ['tpl-event-global']);
+    });
+
+    test('without a category it lists every template of the kind', () async {
+      final service = MockAgentTemplateService();
+      when(
+        // ignore: unnecessary_lambdas
+        () => service.listTemplates(),
+      ).thenAnswer((_) async => [taskTemplate, globalEventTemplate]);
+
+      final templates = await assignableAgentTemplates(
+        service,
+        kind: AgentTemplateKind.taskAgent,
+        categoryId: null,
+      );
+
+      expect(templates.map((t) => t.id), ['tpl-task']);
+      verifyNever(() => service.listTemplatesForCategory(any()));
+    });
+  });
+}
+
+/// Wiring for the event variant of the CTA. The host is a stand-in for the
+/// event's recap card: it watches `eventAgentProvider` and swaps the offer for
+/// a marker once an agent is attached, so the post-create invalidate is
+/// observable without pulling in the whole recap card.
+class _EventHarness {
+  _EventHarness._({
+    required this.event,
+    required this.entity,
+    required this.templateService,
+    required this.eventAgentService,
+    required this.profile,
+  });
+
+  factory _EventHarness.create({
+    required String categoryId,
+    JournalEntity? entity,
+    List<AgentTemplateEntity>? categoryTemplates,
+    List<AgentTemplateEntity> globalTemplates = const [],
+  }) {
+    final event = JournalEvent(
+      meta: Metadata(
+        id: 'event-1',
+        createdAt: DateTime(2026, 5, 2, 18),
+        updatedAt: DateTime(2026, 5, 2, 18),
+        dateFrom: DateTime(2026, 5, 2, 18),
+        dateTo: DateTime(2026, 5, 2, 22),
+        categoryId: categoryId,
+      ),
+      data: const EventData(
+        title: 'Rooftop birthday',
+        stars: 0,
+        status: EventStatus.completed,
+      ),
+    );
+    final templateService = MockAgentTemplateService();
+    when(
+      () => templateService.listTemplatesForCategory(categoryId),
+    ).thenAnswer(
+      (_) async =>
+          categoryTemplates ??
+          [
+            makeTestTemplate(id: 'tpl-task'),
+            makeTestTemplate(
+              id: 'tpl-event',
+              agentId: 'tpl-event',
+              kind: AgentTemplateKind.eventAgent,
+            ),
+          ],
+    );
+    when(
+      // ignore: unnecessary_lambdas
+      () => templateService.listTemplates(),
+    ).thenAnswer((_) async => globalTemplates);
+
+    final eventAgentService = MockEventAgentService();
+    when(
+      () => eventAgentService.createEventAgent(
+        eventId: any(named: 'eventId'),
+        templateId: any(named: 'templateId'),
+        allowedCategoryIds: any(named: 'allowedCategoryIds'),
+        profileId: any(named: 'profileId'),
+      ),
+    ).thenAnswer((_) async => makeTestIdentity(kind: 'event_agent'));
+
+    return _EventHarness._(
+      event: event,
+      entity: entity ?? event,
+      templateService: templateService,
+      eventAgentService: eventAgentService,
+      profile: testInferenceProfile(id: 'prof-success', name: 'Solo'),
+    );
+  }
+
+  final JournalEvent event;
+
+  /// What the journal database returns for the event's id.
+  final JournalEntity entity;
+  final MockAgentTemplateService templateService;
+  final MockEventAgentService eventAgentService;
+  final AiConfig profile;
+
+  bool _agentAttached = false;
+
+  /// Flip `eventAgentProvider` so the post-create invalidate re-resolves to a
+  /// real identity instead of null.
+  void attachAgent() => _agentAttached = true;
+
+  Widget build() {
+    final eventId = event.meta.id;
+    return RiverpodWidgetTestBench(
+      mediaQueryData: const MediaQueryData(size: Size(900, 1000)),
+      overrides: [
+        eventAgentProvider.overrideWith(
+          (ref, id) async =>
+              _agentAttached ? makeTestIdentity(kind: 'event_agent') : null,
+        ),
+        journalDbProvider.overrideWithValue(_dbReturning(eventId, entity)),
+        agentTemplateServiceProvider.overrideWith((ref) => templateService),
+        eventAgentServiceProvider.overrideWithValue(eventAgentService),
+        inferenceProfileControllerProvider.overrideWith(
+          () => _FakeInferenceProfileController([profile]),
+        ),
+      ],
+      child: Consumer(
+        builder: (context, ref, _) =>
+            ref.watch(eventAgentProvider(eventId)).value == null
+            ? AssignAgentCta.event(eventId: eventId)
+            : const Text('agent attached'),
+      ),
+    );
+  }
 }
 
 /// Bundles the ~50 lines of mock + provider wiring for the CTA success

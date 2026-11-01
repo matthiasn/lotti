@@ -6849,6 +6849,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get entryTypeLabelWorkoutEntry => 'Cvičení';
 
   @override
+  String get eventAgentAssignHint =>
+      'Sepíše shrnutí z fotek a poznámek události pomocí vestavěné AI.';
+
+  @override
   String get eventNameLabel => 'Událost:';
 
   @override

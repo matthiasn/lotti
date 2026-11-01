@@ -33,7 +33,8 @@ Behind the **Enable Events** flag. With it off, events are hidden everywhere.
 - **Says what happened.** With an event agent attached, its recap's one-liner
   reads under the title and its summary in the card below; each photo on the
   timeline carries the one-line caption its image analysis wrote, or the
-  user's own note.
+  user's own note. An event without an agent offers **Assign Agent** in that
+  card, the same row a task without one shows.
 - **Picks its own cover, until told otherwise.** The newest linked photo stands
   in as the cover until the user chooses one — from the full-screen viewer with
   **Set cover** on the photo in view, or from the **Change cover** picker in

@@ -188,7 +188,12 @@ the body is the awaiting hint; a failed load says so instead; a first load in
 flight shows the header alone. Without an agent, the passive summary (the
 event note or the newest linked AI response) sits on the plain
 `EventPassiveSummaryCard` — the design-system section card with a `plain`
-`TldrHeader`, since no agent wrote it — and offers no refresh.
+`TldrHeader`, since no agent wrote it — and offers no refresh. Below it (or on
+its own, when there is no passive summary) sits the task page's *Assign Agent*
+row, `AssignAgentCta.event`, so an event created before its category had a
+default event agent can still be given one; it appears only once
+`eventAgentProvider` has settled on "no agent", never while that lookup loads
+or after it fails.
 
 **Cover art becomes automatic then explicit**: while there is no linked photo,
 an "add cover photo" action opens the create-entry menu; the **newest** linked

@@ -6783,6 +6783,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get entryTypeLabelWorkoutEntry => 'Träning';
 
   @override
+  String get eventAgentAssignHint =>
+      'Skriver en sammanfattning utifrån evenemangets foton och notiser med inbyggd AI.';
+
+  @override
   String get eventNameLabel => 'Evenemang:';
 
   @override

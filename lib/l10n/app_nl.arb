@@ -3155,6 +3155,7 @@
   "entryTypeLabelSurveyEntry": "Onderzoek",
   "entryTypeLabelTask": "Taak",
   "entryTypeLabelWorkoutEntry": "Workout",
+  "eventAgentAssignHint": "Schrijft met ingebouwde AI een samenvatting op basis van de foto's en notities van de gebeurtenis.",
   "eventNameLabel": "Gebeurtenis:",
   "eventsAddCoverPhoto": "Hoesfoto toevoegen",
   "eventsChangeCover": "Omslag wijzigen",

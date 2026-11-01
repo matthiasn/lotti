@@ -2832,6 +2832,7 @@
   "entryTypeLabelSurveyEntry": "Průzkum",
   "entryTypeLabelTask": "Úkol",
   "entryTypeLabelWorkoutEntry": "Cvičení",
+  "eventAgentAssignHint": "Sepíše shrnutí z fotek a poznámek události pomocí vestavěné AI.",
   "eventNameLabel": "Událost:",
   "eventsAddCoverPhoto": "Přidat titulní fotku",
   "eventsChangeCover": "Změnit obálku",

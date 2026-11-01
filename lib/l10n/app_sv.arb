@@ -3156,6 +3156,7 @@
   "entryTypeLabelSurveyEntry": "Undersökning",
   "entryTypeLabelTask": "Uppgift",
   "entryTypeLabelWorkoutEntry": "Träning",
+  "eventAgentAssignHint": "Skriver en sammanfattning utifrån evenemangets foton och notiser med inbyggd AI.",
   "eventNameLabel": "Evenemang:",
   "eventsAddCoverPhoto": "Lägg till omslagsfoto",
   "eventsChangeCover": "Byt omslag",

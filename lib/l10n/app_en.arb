@@ -4038,6 +4038,10 @@
   "entryTypeLabelSurveyEntry": "Survey",
   "entryTypeLabelTask": "Task",
   "entryTypeLabelWorkoutEntry": "Workout",
+  "eventAgentAssignHint": "Writes a recap from the event's photos and notes with built-in AI.",
+  "@eventAgentAssignHint": {
+    "description": "Subtitle of the Assign Agent row on an event without an agent: what an event agent does."
+  },
   "eventNameLabel": "Event:",
   "eventsAddCoverPhoto": "Add cover photo",
   "eventsChangeCover": "Change cover",
