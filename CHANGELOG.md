@@ -4,6 +4,46 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.79]
+
+### Added
+
+- **Projects have a timeline.** Under a project's tasks, everything linked
+  straight to the project — like notes the companion filed under it — now
+  shows newest first, the way a task shows its entries.
+- **Add to a project from its page.** A bar at the foot of a project records a
+  voice note, writes a note, adds an image, or opens Add for the rest — all
+  linked to the project, in its timeline.
+- **Events remember who they were with.** Add people from your People page to
+  an event: each one shows as a chip with their face that opens their page,
+  and the event appears on their timeline. The event's AI summary now knows
+  who was there, too.
+- **The task agent suggests the pull request for its task.** It reads the open
+  pull requests of the task's repository that no task is linked to yet,
+  matches them against the task on your device, and proposes linking the one
+  that implements it — one tap to confirm.
+- **The task agent notices a pull request that merged while it worked.** It
+  can read its linked pull requests again mid-run, waits for a just-merged
+  one's summary, and suggests checking off what that pull request completed.
+
+### Changed
+
+- **The project's agent reads what you add.** Notes, voice notes and images
+  linked to a project — including what an image shows — are in its agent's
+  context, as a task's entries are in its agent's.
+- **The task agent now suggests a project for a task that has none.** It used
+  to propose one only when your notes named a project. Now, when a task
+  belongs to no project and its category has some, the agent looks at the
+  task's title, notes and checklist and proposes the project it fits, like any
+  other suggestion you confirm or decline. It proposes nothing when no project
+  clearly fits.
+- **An event's timeline now reads like a goal's or a person's.** Each photo,
+  note, voice memo and recorded time is a row on the same rail, with a small
+  icon naming what it is and its time and kind on one line; tap anywhere on a
+  row to open it. Photos keep their wide, short frame with the one-line
+  caption under them, and a voice memo now shows just *Play audio* until you
+  play it, instead of a full waveform card.
+
 ## [1.1.78]
 
 ### Added
