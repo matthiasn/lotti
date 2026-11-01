@@ -4079,7 +4079,19 @@
   "eventsSummaryTitle": "Summary",
   "eventsTasksSection": "Tasks",
   "eventsTimelineEmpty": "Add photos, notes or a voice memo",
+  "eventsTimelineNote": "Note",
+  "@eventsTimelineNote": {
+    "description": "Kind label of a text note row on an event's timeline, after its time."
+  },
+  "eventsTimelinePhoto": "Photo",
+  "@eventsTimelinePhoto": {
+    "description": "Kind label of a photo row on an event's timeline, after its time."
+  },
   "eventsTimelineSection": "Timeline",
+  "eventsTimelineTimeRecording": "Time recording",
+  "@eventsTimelineTimeRecording": {
+    "description": "Kind label of a recorded-time row on an event's timeline, after its start time."
+  },
   "eventsTitleHint": "Event title",
   "eventsVoiceNote": "Voice note",
   "favoriteLabel": "Favorite",

@@ -22,7 +22,7 @@ import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/ui/create/entry_creation_service.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_action_bar.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/entry_datetime_multipage_modal.dart';
-import 'package:lotti/features/speech/ui/widgets/audio_player.dart';
+import 'package:lotti/features/speech/ui/widgets/recording_playback.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -155,10 +155,10 @@ class EventDetailPage extends ConsumerWidget {
       ),
       imagePathFor: (image) =>
           getFullImagePath(image, documentsDirectory: documentsDirectory),
-      // A voice memo on an event's timeline now plays where it sits, instead
-      // of only naming its duration. The app-wide player means starting one
-      // beat stops any other.
-      audioPlayerFor: AudioPlayerWidget.new,
+      // A voice memo plays where it sits, kept light as on a goal's or a
+      // person's timeline: *Play audio* until it plays, then the app's one
+      // waveform player, so starting one row stops any other.
+      audioPlayerFor: RecordingPlayback.new,
       imageSummaryFor: (image) => imageSummaries[image.meta.id],
     );
 

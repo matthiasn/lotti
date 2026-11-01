@@ -6955,7 +6955,16 @@ class AppLocalizationsEs extends AppLocalizations {
   String get eventsTimelineEmpty => 'Añade fotos, notas o una nota de voz';
 
   @override
+  String get eventsTimelineNote => 'Nota';
+
+  @override
+  String get eventsTimelinePhoto => 'Foto';
+
+  @override
   String get eventsTimelineSection => 'Cronología';
+
+  @override
+  String get eventsTimelineTimeRecording => 'Registro de tiempo';
 
   @override
   String get eventsTitleHint => 'Título del evento';

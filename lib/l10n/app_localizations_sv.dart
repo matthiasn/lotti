@@ -6879,7 +6879,16 @@ class AppLocalizationsSv extends AppLocalizations {
       'Lägg till foton, anteckningar eller ett röstmeddelande';
 
   @override
+  String get eventsTimelineNote => 'Anteckning';
+
+  @override
+  String get eventsTimelinePhoto => 'Foto';
+
+  @override
   String get eventsTimelineSection => 'Tidslinje';
+
+  @override
+  String get eventsTimelineTimeRecording => 'Tidsregistrering';
 
   @override
   String get eventsTitleHint => 'Evenemangstitel';

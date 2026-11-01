@@ -8,11 +8,9 @@ import 'package:lotti/features/events/ui/widgets/event_passive_summary_card.dart
 import 'package:lotti/features/events/ui/widgets/event_photo_gallery.dart';
 import 'package:lotti/features/events/ui/widgets/event_star_rating.dart';
 import 'package:lotti/features/events/ui/widgets/event_status_picker.dart';
-import 'package:lotti/features/events/ui/widgets/event_timeline_beat.dart';
+import 'package:lotti/features/events/ui/widgets/event_timeline.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/timeline/timeline_models.dart';
-import 'package:lotti/widgets/timeline/timeline_view.dart';
 import 'package:material_ui/material_ui.dart';
 
 part 'event_detail_view_hero_content_part.dart';
@@ -248,16 +246,9 @@ class EventDetailView extends StatelessWidget {
       if (data.timeline.isEmpty)
         _EmptyTimelineHint(label: context.messages.eventsTimelineEmpty)
       else
-        TimelineView(
-          groups: [
-            TimelineGroup(
-              beats: [
-                for (final entry in data.timeline)
-                  eventTimelineBeat(context, entry),
-              ],
-            ),
-          ],
-          onOpenBeat: onOpenTimelineEntry,
+        EventTimeline(
+          entries: data.timeline,
+          onOpenEntry: onOpenTimelineEntry,
         ),
     ];
   }

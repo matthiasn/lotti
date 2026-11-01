@@ -6870,7 +6870,16 @@ class AppLocalizationsDa extends AppLocalizations {
   String get eventsTimelineEmpty => 'Tilføj fotos, noter eller en talebesked';
 
   @override
+  String get eventsTimelineNote => 'Note';
+
+  @override
+  String get eventsTimelinePhoto => 'Foto';
+
+  @override
   String get eventsTimelineSection => 'Tidslinje';
+
+  @override
+  String get eventsTimelineTimeRecording => 'Tidsregistrering';
 
   @override
   String get eventsTitleHint => 'Begivenhedstitel';

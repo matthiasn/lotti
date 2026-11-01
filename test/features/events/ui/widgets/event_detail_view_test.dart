@@ -1,14 +1,15 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
+import 'package:lotti/features/design_system/components/timeline/design_system_timeline_row.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/events/ui/model/event_view_data.dart';
 import 'package:lotti/features/events/ui/widgets/event_detail_view.dart';
 import 'package:lotti/features/events/ui/widgets/event_passive_summary_card.dart';
 import 'package:lotti/features/events/ui/widgets/event_photo_gallery.dart';
 import 'package:lotti/features/events/ui/widgets/event_star_rating.dart';
+import 'package:lotti/features/events/ui/widgets/event_timeline.dart';
 import 'package:lotti/features/journal/ui/widgets/time_span_bar.dart';
-import 'package:lotti/widgets/timeline/timeline_view.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../test_utils.dart';
@@ -412,7 +413,7 @@ void main() {
           greaterThan(tester.getRect(find.text('Timeline')).right),
         );
         expect(
-          tester.getSize(find.byType(TimelineView)).width,
+          tester.getSize(find.byType(EventTimeline)).width,
           contentWidth - railWidth,
         );
 
@@ -423,7 +424,7 @@ void main() {
         );
         // No tasks: one column at full width, no empty rail beside it.
         expect(find.text('Tasks'), findsNothing);
-        expect(tester.getSize(find.byType(TimelineView)).width, contentWidth);
+        expect(tester.getSize(find.byType(EventTimeline)).width, contentWidth);
       },
     );
 
@@ -739,7 +740,7 @@ void main() {
       expect(find.byIcon(LottiIcons.refresh), findsNothing);
     });
 
-    testWidgets('shows no row chevron when timeline rows are not openable', (
+    testWidgets('timeline rows are inert when nothing opens them', (
       tester,
     ) async {
       await pumpEventScreen(
@@ -747,7 +748,11 @@ void main() {
         EventDetailView(data: buildEventDetailData()),
         size: _tallMobile,
       );
-      expect(find.byIcon(LottiIcons.chevronRight), findsNothing);
+      final rows = tester.widgetList<DesignSystemTimelineRow>(
+        find.byType(DesignSystemTimelineRow),
+      );
+      expect(rows, isNotEmpty);
+      expect(rows.every((row) => row.onTap == null), isTrue);
     });
 
     testWidgets('tapping a timeline row opens its source entry', (
@@ -763,7 +768,14 @@ void main() {
         size: _tallMobile,
       );
 
-      expect(find.byIcon(LottiIcons.chevronRight), findsNWidgets(3));
+      // Every row with a source entry is a door to it; the whole row is the
+      // target, as on a goal's or a person's timeline.
+      final rows = tester
+          .widgetList<DesignSystemTimelineRow>(
+            find.byType(DesignSystemTimelineRow),
+          )
+          .toList();
+      expect(rows.where((row) => row.onTap != null), hasLength(3));
       await tester.tap(find.text("Anna's speech."));
       await tester.pump();
 

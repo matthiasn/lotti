@@ -25,46 +25,45 @@ This plan closes the gaps between that agent and the record we want.
 ## UI inventory
 
 Every event-facing widget, what it shows, and how it maps onto the unified
-timeline that Goals, People and Tasks share (`lib/widgets/timeline/`).
+timeline Goals and People share (`DesignSystemTimelineRow`).
 
 | Widget | File | Role | Unified-timeline mapping |
 |---|---|---|---|
 | `EventDetailPage` | `lib/features/events/ui/pages/event_detail_page.dart` | Route glue: watches the event, its links, photo analyses and the agent's report; wires edits | Same page/view split as goals and people |
-| `EventDetailView` | `lib/features/events/ui/widgets/event_detail_view.dart` | Hero sliver, recap slot, photo grid, timeline, tasks rail, docked bar | Body column = shared `TimelineView` |
+| `EventDetailView` | `lib/features/events/ui/widgets/event_detail_view.dart` | Hero sliver, recap slot, photo grid, timeline, tasks rail, docked bar | Body column = `EventTimeline` on `DesignSystemTimelineRow` |
 | `_HeroSliver` / `_HeroContent` | `event_detail_view_hero_content_part.dart` | Cover, category/status pills + rating, title, recap one-liner, date line | Event-specific header (goals and people have their own) |
 | `EventStarRating` | `lib/features/events/ui/widgets/event_star_rating.dart` | 0–5 stars, per-star hover, half stars on long press | — |
 | `EventAiSummaryCard` | `lib/features/events/ui/widgets/event_ai_summary_card.dart` | The agent's TLDR, *Read more*, *Update now*; awaiting/error states | The task agent's card: `AgentSummaryCardSurface`, `TldrHeader`, `TldrBody`, compact `AgentAutomationRow` |
 | `EventPassiveSummaryCard` | `lib/features/events/ui/widgets/event_passive_summary_card.dart` | The event note when no agent is attached | Plain section card with a plain `TldrHeader` |
 | `ChangeSetSummaryCard.event` | `lib/features/agents/ui/change_set_summary_card.dart` | Accept/reject the agent's follow-up-task proposals | Shared with tasks |
 | `EventPhotoGrid` + gallery viewer | `lib/features/events/ui/widgets/event_photo_gallery.dart` | Flat photo wall; full-screen viewer with Set cover | Events only |
-| `eventTimelineBeat` | `lib/features/events/ui/widgets/event_timeline_beat.dart` | Maps an `EventTimelineEntry` to a `TimelineBeat` | The adapter onto `lib/widgets/timeline/TimelineView` — photo, note, time span and audio beats. **Not** the rail goals and people use (see below) |
+| `EventTimeline` + `EventTimelinePhotoBand` | `lib/features/events/ui/widgets/event_timeline.dart` | Linked photos, notes, recordings and recorded time as rows | The goal and person row: `DesignSystemTimelineRow`, `DesignSystemTimelineTile`, `DsTieredText`, `FoldedWords`, `RecordingPlayback` + `RecordingTranscript`; the photo band is the event's own footer |
 | `EntryActionBar` | `lib/features/journal/ui/widgets/entry_action_bar.dart` | Sticky bar: Add a task · record · Add sheet | Same bar as the entry page; stays |
 | `EventCard` / `EventFeatureCard` | `lib/features/events/ui/widgets/event_card.dart`, `event_feature_card.dart` | Overview cards with cover, date, read-only stars | — |
 | `LinkedEventCard` | `lib/features/events/ui/widgets/linked_event_card.dart` | An event inside another entry's timeline | — |
 | `EventCoverImage`, `EventOverlayPill`, `EventCoverPicker`, `EventStatusPicker` | `lib/features/events/ui/widgets/` | Hero chrome and pickers | — |
 
-**Alignment with the unified timeline — not aligned yet.** Goals
-(`goal_checkin_timeline.dart`) and People (`person_timeline_view.dart`) render
-their timelines on the design system's `DesignSystemTimelineRow`. Events are
-the last caller of the older `lib/widgets/timeline/TimelineView`, which was
-extracted from the event page for sharing and has since been left behind.
-The diff, row by row:
+**Alignment with the unified timeline — aligned.** Goals
+(`goal_checkin_timeline.dart`) and People (`person_timeline_view.dart`)
+render on the design system's `DesignSystemTimelineRow`, and since the audit
+PR so do Events (`EventTimeline`). The older `lib/widgets/timeline/`
+(`TimelineView`), which events were the last to use, is deleted. What moved,
+row by row:
 
-| | People / goals (`DesignSystemTimelineRow`) | Events (`TimelineView`) |
+| | Before (`TimelineView`) | Now (`DesignSystemTimelineRow`, as goals and people) |
 |---|---|---|
-| Rail mark | `DesignSystemTimelineTile` with one glyph per kind (note, mic, image, calendar); `agent` tone for agent rows | Plain primary dot, no glyph |
-| Meta line | `DsTieredText`: `time · kind · tail`, shedding segments on a narrow width | Time label only |
-| Text | `FoldedWords` | `FoldedWords` (same) |
-| Recording | Light playback + `RecordingTranscript` with awaiting/retry | Full `AudioPlayerWidget` + transcript |
-| Photos | A small footer strip (`_PhotoStrip`) under a "N photos" meta line | A 2.4 : 1 lead band with a caption, plus thumbs |
-| Sections | `DesignSystemTimelineSectionHeader` per run | None (one event, one day) |
-| Accessibility | One required `semanticsLabel` sentence per row | Per-widget semantics |
+| Rail mark | Plain primary dot | `DesignSystemTimelineTile`: note, image, mic, timer |
+| Meta line | Time label only | `time · kind` in the caption tier |
+| Text | `FoldedWords` | `FoldedWords` |
+| Recording | Full `AudioPlayerWidget` + transcript | Light `RecordingPlayback` + `RecordingTranscript` |
+| Photos | 2.4 : 1 lead band + thumbs, caption | Each picture as a 2.4 : 1 band in the row's footer, caption under it — kept, where people show a small strip, because events are photo-led |
+| Open | Chevron on openable beats | The whole row is the door (hover fill, button semantics) |
+| Accessibility | Per-widget semantics | One `semanticsLabel` sentence per row ("Photo, 19:05") |
 
-What stays deliberately different is the photographic hero (events are
-memories, the hero is the cover), the photo grid above the rail, and the
-sticky `EntryActionBar`, which remains the one place the event grows from.
-Whether the wide photo band survives the move is the one design call in it:
-see [PR B](#follow-up-prs).
+No section headers: an event's timeline is one run. What stays deliberately
+different is the photographic hero (events are memories, the hero is the
+cover), the photo grid above the rail, and the sticky `EntryActionBar`, which
+remains the one place the event grows from.
 
 ---
 
@@ -82,7 +81,7 @@ card's move onto the task agent's card is #4937):
    gave every star an `InkResponse` whose radius equalled the star size, so its
    hover ink overlapped the neighbours and read as one highlight around the
    group.)
-3. **Wide, short timeline photos.** The shared rail's lead frame is a band at
+3. **Wide, short timeline photos.** The timeline's lead frame is a band at
    2.4 : 1, held between 96 and 180 logical pixels tall, instead of a fixed
    196-pixel block that read tall on a phone column.
 4. **One-line photo captions.** A photo on the timeline is captioned by the
@@ -256,9 +255,9 @@ Against `main` at #4937. Each verdict was checked in the code, not the PR text.
 | 4 | Embeddings + natural-language search | **Open** | `EmbeddingContentExtractor` has no `JournalEvent` or image-analysis arm; event recaps are never embedded (only the task agent calls `processAgentReport`); `QueryJournalCrawler.sourceTypes` leaves out `JournalEvent`, so the front agent drops events even from full-text hits |
 | 5 | Person tags linked to tracked relationships | **Open (model exists)** | The link exists: `EntryLink.relationship`, person → event, written by `PersonTimelineRepository.addToTimeline`. The event page reads only outgoing links, has no people UI, and the agent's context never sees the people |
 | 6 | Inventory of the event UI elements | **Done** | [UI inventory](#ui-inventory), updated for #4937 |
-| 7 | Align the event timeline with the unified timeline | **Open** | Events alone still use `lib/widgets/timeline/TimelineView`; goals and people use `DesignSystemTimelineRow` — the row-by-row diff is in the [inventory](#ui-inventory) |
+| 7 | Align the event timeline with the unified timeline | **Done (audit PR)** | `EventTimeline` renders on `DesignSystemTimelineRow` like goals and people; `lib/widgets/timeline/` deleted — what moved is in the [inventory](#ui-inventory) |
 | 8 | One-liner on timeline images | **Done** | #4935: `imageSummaryFor` in `event_view_mapping.dart`, fed by `imageAnalysisOneLiner` on the page |
-| 9 | Wide, short timeline images | **Done** | #4935: `leadAspectRatio = 2.4`, 96–180 px (`timeline_view.dart`). Revisit in PR B |
+| 9 | Wide, short timeline images | **Done** | #4935: 2.4 : 1, 96–180 px; kept through the move as `EventTimelinePhotoBand`, the photo row's footer |
 | 10 | Rating in the status row | **Done** | #4935: `EventStarRating` inside the state-row `Wrap` with category and status |
 | 11 | Hover on single stars only | **Done** | #4935: one `DsQuietInk` per star, `hoverScale` on the hovered star; per-star semantic actions and the `IconSizes.m` token added in review |
 | 12 | Coding prompt / audit | **Done** | This audit |
@@ -293,20 +292,10 @@ Each is independent and sized for one pull request.
 - **Layering:** events may read relationships (it ranks above them); the
   shared picker lives with relationships.
 
-### PR B — Event timeline on `DesignSystemTimelineRow` (item 7)
+### ~~PR B~~ — landed with the audit (item 7)
 
-- Map each `EventTimelineEntry` to a row: tile glyph by kind (note, mic,
-  image, timer), a `DsTieredText` meta line `time · kind · tail`
-  (duration for recordings and time spans), `FoldedWords` / `RecordingTranscript`
-  bodies with the light playback the people timeline uses, one
-  `semanticsLabel` sentence per row, `onTap` opening the entry with the event
-  as `linkedFromId`.
-- Photos: a footer under the row. Decide band vs strip with the owner — the
-  wide band was asked for (item 9) and events are photo-led, so the default
-  is to keep the 2.4 : 1 band as the row's footer, caption included.
-- Then delete `lib/widgets/timeline/` (`TimelineView`, `timeline_models.dart`)
-  and their test, since nothing else uses them.
-- Before/after captures from `events_manual_screenshots_test.dart`.
+The event timeline moved onto `DesignSystemTimelineRow` in the audit PR
+itself; see the [inventory](#ui-inventory) for what changed.
 
 ### PR C — Events in natural-language search (item 4)
 
