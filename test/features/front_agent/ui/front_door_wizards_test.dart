@@ -62,7 +62,7 @@ void main() {
 
   testWidgets('the planner opens the planning for today with the words, and '
       'a dismissed planning plans nothing', (tester) async {
-    bool? planned;
+    DateTime? planned;
     await withClock(Clock.fixed(today.add(const Duration(hours: 9))), () async {
       await tester.pumpWidget(
         makeTestableWidget(
@@ -113,13 +113,13 @@ void main() {
     Navigator.of(tester.element(content), rootNavigator: true).pop();
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
-    expect(planned, isFalse);
+    expect(planned, isNull);
   });
 
   testWidgets('a surface gone before the plan is read opens nothing and '
       'plans nothing', (tester) async {
     final read = Completer<DraftPlan?>();
-    bool? planned;
+    DateTime? planned;
     await tester.pumpWidget(
       makeTestableWidget(
         Consumer(
@@ -144,7 +144,7 @@ void main() {
     read.complete(null);
     await tester.pump();
 
-    expect(planned, isFalse);
+    expect(planned, isNull);
     expect(find.byType(CaptureModalContent), findsNothing);
   });
 

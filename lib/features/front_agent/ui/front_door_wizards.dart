@@ -12,9 +12,10 @@ import 'package:material_ui/material_ui.dart';
 /// without the form behind it.
 
 /// Takes [words] the user told the companion about today into the Daily OS
-/// planning, opened over her; resolves whether a plan was accepted there.
+/// planning, opened over her; resolves the day a plan was accepted for, or
+/// null when none was.
 typedef FrontDayPlanner =
-    Future<bool> Function(BuildContext context, String words);
+    Future<DateTime?> Function(BuildContext context, String words);
 
 /// The day door's tap: today's plan refined with the words, or the day
 /// planned from them when it has no plan yet. The plan changes only when
@@ -24,13 +25,13 @@ final frontDayPlannerProvider = Provider<FrontDayPlanner>(
     final now = clock.now();
     final today = DateTime(now.year, now.month, now.day);
     final plan = await ref.read(dayAgentProvider).currentPlanForDate(today);
-    if (!context.mounted) return false;
+    if (!context.mounted) return null;
     final planned = await showDayPlanningModal(
       context: context,
       dayDate: today,
       intent: frontDayPlanningIntent(plan, words),
     );
-    return planned != null;
+    return planned == null ? null : today;
   },
   name: 'frontDayPlannerProvider',
 );

@@ -321,16 +321,28 @@ class FrontChatController extends Notifier<FrontChatComposerState> {
     }
   }
 
-  /// Settles a change to today once a plan was accepted for it.
-  Future<void> markDayPlanned(String doorId) =>
-      _doorAction(doorId, (filing) => filing.markDayPlanned(doorId));
+  /// Takes a change to today into the planning [plan] opens, and settles
+  /// the door on the day it resolves — none, when nothing was accepted.
+  /// The door is busy the whole time, so a second tap opens no second
+  /// planning.
+  Future<void> planDay(String doorId, Future<DateTime?> Function() plan) =>
+      _doorAction(doorId, (filing) async {
+        final day = await plan();
+        if (day != null) await filing.markDayPlanned(doorId, day);
+      });
 
-  /// Settles an inbox item on the project made of it.
-  Future<void> markProjectCreated(String doorId, String projectId) =>
-      _doorAction(
-        doorId,
-        (filing) => filing.markProjectCreated(doorId, projectId),
-      );
+  /// Makes a project of an inbox item through the form [create] opens, and
+  /// settles the item on the project it resolves — none, when the form was
+  /// closed. Busy the whole time, like [planDay].
+  Future<void> newProject(
+    String doorId,
+    Future<String?> Function() create,
+  ) => _doorAction(doorId, (filing) async {
+    final projectId = await create();
+    if (projectId != null) {
+      await filing.markProjectCreated(doorId, projectId);
+    }
+  });
 
   /// Files the proposal under its task or project — the user's one tap
   /// (decision 1).

@@ -580,7 +580,7 @@ void main() {
             text: 'Move the colony count to the afternoon.',
             kind: FrontDestinationKind.day,
             ownerTitle: null,
-            outcome: const FrontDoorDayPlanned(),
+            outcome: FrontDoorDayPlanned(day: DateTime(2026, 11)),
           ),
         ),
         entry(

@@ -281,6 +281,8 @@ class _DoorRow extends StatelessWidget {
           action = DesignSystemButton(
             key: ValueKey('front-door-day-$index'),
             label: messages.frontDoorChangeDay,
+            // Busy while the planning is open, so a second tap opens none.
+            isLoading: busy,
             onPressed: guarded(() => acting.onPlanDay(door)),
           );
           menu.add(

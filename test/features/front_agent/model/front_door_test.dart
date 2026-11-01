@@ -40,40 +40,44 @@ void main() {
   });
 
   test('every outcome round-trips through JSON', () {
-    const outcomes = <FrontDoorOutcome>[
-      FrontDoorAnswer(
+    final outcomes = <FrontDoorOutcome>[
+      const FrontDoorAnswer(
         text: 'The seam is next.',
         summaryBased: true,
         incomplete: false,
         ownerIds: ['task-1'],
       ),
-      FrontDoorChatTurn(
+      const FrontDoorChatTurn(
         specialistAgentId: 'goal-a',
         specialistMessageId: 'm-1',
       ),
-      FrontDoorSkipped(FrontDoorSkipReason.noAgent),
-      FrontDoorFailed('StateError'),
-      FrontDoorProposal(ownerId: 'garden'),
-      FrontDoorProposal(ownerId: 'garden', generation: 2),
-      FrontDoorFiled(entryId: 'entry-1', ownerId: 'garden', generation: 1),
-      FrontDoorFiled(entryId: 'entry-2'),
-      FrontDoorFiled(entryId: 'entry-3', newKind: FrontNewKind.goal),
-      FrontDoorDeclined(),
-      FrontDoorDeclined(ownerId: 'garden', generation: 2),
-      FrontDoorDeclined(newKind: FrontNewKind.goal, generation: 1),
-      FrontDoorInbox(),
-      FrontDoorInbox(newKind: FrontNewKind.goal),
-      FrontDoorInbox(newKind: FrontNewKind.project, generation: 1),
-      FrontDoorInbox(ownerId: 'garden', generation: 2),
-      FrontDoorTaskCreated(taskId: 'task-1'),
-      FrontDoorTaskCreated(
+      const FrontDoorSkipped(FrontDoorSkipReason.noAgent),
+      const FrontDoorFailed('StateError'),
+      const FrontDoorProposal(ownerId: 'garden'),
+      const FrontDoorProposal(ownerId: 'garden', generation: 2),
+      const FrontDoorFiled(
+        entryId: 'entry-1',
+        ownerId: 'garden',
+        generation: 1,
+      ),
+      const FrontDoorFiled(entryId: 'entry-2'),
+      const FrontDoorFiled(entryId: 'entry-3', newKind: FrontNewKind.goal),
+      const FrontDoorDeclined(),
+      const FrontDoorDeclined(ownerId: 'garden', generation: 2),
+      const FrontDoorDeclined(newKind: FrontNewKind.goal, generation: 1),
+      const FrontDoorInbox(),
+      const FrontDoorInbox(newKind: FrontNewKind.goal),
+      const FrontDoorInbox(newKind: FrontNewKind.project, generation: 1),
+      const FrontDoorInbox(ownerId: 'garden', generation: 2),
+      const FrontDoorTaskCreated(taskId: 'task-1'),
+      const FrontDoorTaskCreated(
         taskId: 'task-2',
         newKind: FrontNewKind.task,
         generation: 3,
       ),
-      FrontDoorDay(),
-      FrontDoorDayPlanned(),
-      FrontDoorProjectCreated(projectId: 'p-1'),
+      const FrontDoorDay(),
+      FrontDoorDayPlanned(day: DateTime(2026, 11)),
+      const FrontDoorProjectCreated(projectId: 'p-1'),
     ];
     for (final outcome in outcomes) {
       final back = FrontDoorRecord.fromJson(record(outcome: outcome).toJson());
@@ -224,6 +228,10 @@ void main() {
     expect(FrontDoorOutcome.fromJson('text'), isNull);
     expect(FrontDoorOutcome.fromJson({'type': 'proposal'}), isNull);
     expect(FrontDoorOutcome.fromJson({'type': 'projectCreated'}), isNull);
+    expect(
+      FrontDoorOutcome.fromJson({'type': 'dayPlanned', 'day': 'someday'}),
+      isNull,
+    );
     final proposal =
         FrontDoorOutcome.fromJson({'type': 'proposal', 'ownerId': 'g'})!
             as FrontDoorProposal;
@@ -255,17 +263,17 @@ void main() {
     expect(frontDoorAwaitsUser(const FrontDoorProposal(ownerId: 'g')), isTrue);
     expect(frontDoorAwaitsUser(const FrontDoorInbox()), isTrue);
     expect(frontDoorAwaitsUser(const FrontDoorDay()), isTrue);
-    for (final settled in const <FrontDoorOutcome?>[
+    for (final settled in <FrontDoorOutcome?>[
       null,
-      FrontDoorFiled(entryId: 'e'),
-      FrontDoorDeclined(),
-      FrontDoorTaskCreated(taskId: 't'),
-      FrontDoorDayPlanned(),
-      FrontDoorProjectCreated(projectId: 'p'),
-      FrontDoorSkipped(FrontDoorSkipReason.noDoor),
-      FrontDoorFailed('x'),
-      FrontDoorChatTurn(specialistAgentId: 'a', specialistMessageId: 'm'),
-      FrontDoorAnswer(text: 't', summaryBased: false, incomplete: false),
+      const FrontDoorFiled(entryId: 'e'),
+      const FrontDoorDeclined(),
+      const FrontDoorTaskCreated(taskId: 't'),
+      FrontDoorDayPlanned(day: DateTime(2026, 11)),
+      const FrontDoorProjectCreated(projectId: 'p'),
+      const FrontDoorSkipped(FrontDoorSkipReason.noDoor),
+      const FrontDoorFailed('x'),
+      const FrontDoorChatTurn(specialistAgentId: 'a', specialistMessageId: 'm'),
+      const FrontDoorAnswer(text: 't', summaryBased: false, incomplete: false),
     ]) {
       expect(frontDoorAwaitsUser(settled), isFalse, reason: '$settled');
     }

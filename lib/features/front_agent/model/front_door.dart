@@ -130,7 +130,8 @@ sealed class FrontDoorOutcome {
       case 'day':
         return const FrontDoorDay();
       case 'dayPlanned':
-        return const FrontDoorDayPlanned();
+        final day = DateTime.tryParse('${map['day']}');
+        return day == null ? null : FrontDoorDayPlanned(day: day);
       case 'projectCreated':
         final projectId = map['projectId'];
         if (projectId is! String) return null;
@@ -278,13 +279,24 @@ class FrontDoorDay extends FrontDoorOutcome {
   Map<String, Object?> toJson() => {'type': 'day'};
 }
 
-/// The user took the words into today's plan and accepted a plan there.
-/// Undoing it is the Daily OS's own revert, on the day itself.
+/// The user took the words into the plan of [day] — today at the time —
+/// and accepted a plan there. Undoing it is the Daily OS's own revert, on
+/// the day itself.
 class FrontDoorDayPlanned extends FrontDoorOutcome {
-  const FrontDoorDayPlanned();
+  const FrontDoorDayPlanned({required this.day});
+
+  /// The calendar day that was planned, at local midnight.
+  final DateTime day;
 
   @override
-  Map<String, Object?> toJson() => {'type': 'dayPlanned'};
+  Map<String, Object?> toJson() => {
+    'type': 'dayPlanned',
+    'day': DateTime(
+      day.year,
+      day.month,
+      day.day,
+    ).toIso8601String().substring(0, 10),
+  };
 }
 
 /// The user made a project of the segment, through the project form opened

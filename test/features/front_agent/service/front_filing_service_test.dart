@@ -253,9 +253,10 @@ void main() {
           kind: FrontDestinationKind.day,
           destinationId: null,
         );
-        await service.markDayPlanned(doorId);
+        await service.markDayPlanned(doorId, DateTime(2026, 11));
         expect(written, isEmpty);
-        expect(rewritten().outcome, isA<FrontDoorDayPlanned>());
+        final outcome = rewritten().outcome! as FrontDoorDayPlanned;
+        expect(outcome.day, DateTime(2026, 11));
       },
     );
 
@@ -264,7 +265,7 @@ void main() {
       () async {
         seed(const FrontDoorProposal(ownerId: 'garden'));
         await expectLater(
-          service.markDayPlanned(doorId),
+          service.markDayPlanned(doorId, DateTime(2026, 11)),
           throwsA(isA<FrontDoorStateException>()),
         );
         expect(upserts, isEmpty);

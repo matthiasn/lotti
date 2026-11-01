@@ -11,6 +11,7 @@ import 'package:lotti/features/agents/ui/chat/agent_chat_view.dart';
 import 'package:lotti/features/agents/ui/chat/chat_recorder_controller.dart';
 import 'package:lotti/features/ai_consumption/model/consumption_aggregation_models.dart';
 import 'package:lotti/features/ai_consumption/state/consumption_providers.dart';
+import 'package:lotti/features/daily_os_next/state/selected_date_provider.dart';
 import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
@@ -751,7 +752,10 @@ void main() {
               ),
               FrontDoorEntry(
                 doorId: 'd:door:3',
-                record: settled(3, const FrontDoorDayPlanned()),
+                record: settled(
+                  3,
+                  FrontDoorDayPlanned(day: DateTime(2026, 10, 30)),
+                ),
               ),
             ],
           },
@@ -767,13 +771,19 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('front-door-open-3')));
       await tester.pump();
 
-      // The day it planned is the Daily OS day surface.
+      // The day it planned is the Daily OS day surface, showing that day.
       expect(paths, [
         '/journal/e-1',
         '/tasks/t-1',
         '/projects/p-1',
         '/calendar',
       ]);
+      expect(
+        ProviderScope.containerOf(
+          tester.element(find.byType(FrontChatPane)),
+        ).read(dailyOsNextSelectedDateProvider),
+        DateTime(2026, 10, 30),
+      );
     });
   });
 
@@ -975,11 +985,14 @@ void main() {
       },
     );
 
-    testWidgets('takes the words into the planning, and settles once a plan '
-        'was accepted there', (tester) async {
-      var accepted = true;
+    testWidgets('takes the words into the planning, and settles on the day '
+        'a plan was accepted for', (tester) async {
+      final day = DateTime(2026, 10, 31);
+      DateTime? accepted = day;
       final asked = <String>[];
-      when(() => filing.markDayPlanned('d:door:0')).thenAnswer((_) async {});
+      when(
+        () => filing.markDayPlanned('d:door:0', day),
+      ).thenAnswer((_) async {});
       await pumpPane(
         tester,
         thread: () async => today(),
@@ -992,13 +1005,39 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('front-door-day-0')));
       await tester.pump();
       expect(asked, ['Move the count.']);
-      verify(() => filing.markDayPlanned('d:door:0')).called(1);
+      verify(() => filing.markDayPlanned('d:door:0', day)).called(1);
 
-      accepted = false;
+      accepted = null;
       await tester.tap(find.byKey(const ValueKey('front-door-day-0')));
       await tester.pump();
       expect(asked, hasLength(2));
-      verifyNever(() => filing.markDayPlanned(any()));
+      verifyNever(() => filing.markDayPlanned(any(), any()));
+    });
+
+    testWidgets('a second tap while the planning is open opens no second '
+        'one', (tester) async {
+      final open = Completer<DateTime?>();
+      var opened = 0;
+      await pumpPane(
+        tester,
+        thread: () async => today(),
+        planDay: (context, words) {
+          opened++;
+          return open.future;
+        },
+      );
+
+      await tester.tap(find.byKey(const ValueKey('front-door-day-0')));
+      await tester.pump();
+      await tester.tap(
+        find.byKey(const ValueKey('front-door-day-0')),
+        warnIfMissed: false,
+      );
+      await tester.pump();
+      expect(opened, 1);
+
+      open.complete(null);
+      await tester.pump();
     });
   });
 }

@@ -5,6 +5,7 @@ import 'package:lotti/classes/agents/query_chat_models.dart';
 import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/agents/ui/chat/agent_chat_view.dart';
 import 'package:lotti/features/agents/ui/chat/chat_recorder_controller.dart';
+import 'package:lotti/features/daily_os_next/state/selected_date_provider.dart';
 import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
@@ -180,6 +181,11 @@ class _Body extends ConsumerWidget {
           _ => null,
         };
         if (path == null) return;
+        // The day surface shows the selected day: the planned one, not
+        // whichever was picked there last.
+        if (door.record.outcome case FrontDoorDayPlanned(:final day)) {
+          ref.read(dailyOsNextSelectedDateProvider.notifier).select(day);
+        }
         Navigator.of(context).maybePop();
         beamToNamed(path);
       },
@@ -192,23 +198,18 @@ class _Body extends ConsumerWidget {
       },
       // The project form opens with the words as its title; a project it
       // creates settles the item.
-      onNewProject: (door) async {
-        final create = ref.read(frontNewProjectProvider);
-        final projectId = await create(context, door.record.text);
-        if (projectId != null) {
-          await controller.markProjectCreated(door.doorId, projectId);
-        }
-      },
+      onNewProject: (door) => controller.newProject(
+        door.doorId,
+        () => ref.read(frontNewProjectProvider)(context, door.record.text),
+      ),
       // A change to today opens the Daily OS planning with the words given:
       // refining today's plan, or planning the day when there is none. The
       // plan changes only when the user accepts there; then the door
       // settles.
-      onPlanDay: (door) async {
-        final plan = ref.read(frontDayPlannerProvider);
-        if (await plan(context, door.record.text)) {
-          await controller.markDayPlanned(door.doorId);
-        }
-      },
+      onPlanDay: (door) => controller.planDay(
+        door.doorId,
+        () => ref.read(frontDayPlannerProvider)(context, door.record.text),
+      ),
       // A source a journal answer cites opens on its own page.
       onOpenEvidence: (evidence) {
         final id = evidence.source.id;

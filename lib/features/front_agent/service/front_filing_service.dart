@@ -142,11 +142,11 @@ class FrontFilingService {
   }
 
   /// The user took a change to today into the Daily OS planning and
-  /// accepted a plan there: the door settles. Nothing is written here; the
-  /// plan was.
-  Future<void> markDayPlanned(String doorId) async {
+  /// accepted a plan for [day] there: the door settles on that day.
+  /// Nothing is written here; the plan was.
+  Future<void> markDayPlanned(String doorId, DateTime day) async {
     final (record, payload) = await _waiting<FrontDoorDay>(doorId);
-    await _rewrite(payload, record.done(const FrontDoorDayPlanned()));
+    await _rewrite(payload, record.done(FrontDoorDayPlanned(day: day)));
   }
 
   /// The project form, opened with an inbox item's words, created
