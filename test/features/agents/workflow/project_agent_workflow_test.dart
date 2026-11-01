@@ -673,6 +673,37 @@ void main() {
       );
 
       test(
+        'captures nothing when the image analyses cannot be read — a '
+        'snapshot without them would retract them from the log',
+        () async {
+          final image = TestImageFactory.create(
+            id: 'img-1',
+            dateFrom: DateTime(2026, 10, 31, 9),
+          );
+          when(
+            () => mockJournalRepository.getLinkedEntities(linkedTo: projectId),
+          ).thenAnswer((_) async => [image]);
+          when(
+            () => mockJournalRepository.getBulkLinkedEntities({'img-1'}),
+          ).thenThrow(StateError('journal busy'));
+
+          final recorder = _RecordingCaptureService();
+          final result =
+              await buildWorkflow(
+                inputCaptureService: recorder,
+              ).execute(
+                agentIdentity: testAgentIdentity,
+                runKey: runKey,
+                triggerTokens: {'entity-a'},
+                threadId: threadId,
+              );
+
+          expect(result.success, isTrue);
+          expect(recorder.callCount, 0);
+        },
+      );
+
+      test(
         "without the log, the prompt lists the project's own entries",
         () async {
           final note = JournalEntity.journalEntry(

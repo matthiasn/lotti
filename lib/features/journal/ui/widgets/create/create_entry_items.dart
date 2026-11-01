@@ -260,8 +260,13 @@ class CreateTextItem extends ConsumerWidget {
   const CreateTextItem(
     this.linkedFromId, {
     this.categoryId,
+    this.host,
     super.key,
   });
+
+  /// The host as the sheet holds it; looked up by [linkedFromId] otherwise,
+  /// which may still be pending when the row is tapped.
+  final JournalEntity? host;
 
   final String? linkedFromId;
   final String? categoryId;
@@ -270,9 +275,11 @@ class CreateTextItem extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final entryCreationService = ref.read(entryCreationServiceProvider);
     final id = linkedFromId;
-    final host = id == null
-        ? null
-        : ref.watch(entryControllerProvider(id)).value?.entry;
+    final host =
+        this.host ??
+        (id == null
+            ? null
+            : ref.watch(entryControllerProvider(id)).value?.entry);
 
     return DsActionRow(
       tone: DsActionRowTone.accent,

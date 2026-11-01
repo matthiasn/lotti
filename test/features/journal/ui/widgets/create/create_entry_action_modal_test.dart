@@ -98,6 +98,7 @@ void main() {
       String? categoryId = 'test-category-id',
       List<Override> extraOverrides = const [],
       ImageAnalysisTrigger? imageAnalysisTrigger,
+      JournalEntity? host,
     }) async {
       await tester.pumpWidget(
         ProviderScope(
@@ -116,6 +117,7 @@ void main() {
                     linkedFromId: linkedFromId,
                     categoryId: categoryId,
                     imageAnalysisTrigger: imageAnalysisTrigger,
+                    host: host,
                   ),
                   child: const Text('Open Modal'),
                 ),
@@ -292,6 +294,21 @@ void main() {
         expect(find.text(messages.taskFirstRunWriteNote), findsOneWidget);
       },
     );
+
+    testWidgets('a PROJECT host the caller holds decides the rows at once, '
+        'with no lookup to wait for', (tester) async {
+      await pumpAndOpenModal(
+        tester,
+        linkedFromId: 'host-project',
+        host: makeTestProject(id: 'host-project', title: 'Nest survey'),
+      );
+
+      final messages = AppLocalizations.of(
+        tester.element(find.byType(DsActionRow).first),
+      )!;
+      expect(find.byIcon(LottiIcons.timer), findsNothing);
+      expect(find.text(messages.addActionCreateLinkedTask), findsNothing);
+    });
 
     // A check-in is a standard entry for this sheet: its detail page's bar
     // opens it, and it must carry the full long tail — a timer, a linked

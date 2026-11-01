@@ -10,13 +10,12 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../helpers/fallbacks.dart';
 import '../../../../helpers/stub_audio_recorder_controller.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
 import '../../../../widget_test_utils.dart';
 import '../../test_utils.dart';
-
-class _FakeBuildContext extends Fake implements BuildContext {}
 
 void main() {
   final project = makeTestProject(
@@ -27,7 +26,7 @@ void main() {
   late MockEntryCreationService creation;
   late List<String> paths;
 
-  setUpAll(() => registerFallbackValue(_FakeBuildContext()));
+  setUpAll(registerAllFallbackValues);
 
   setUp(() async {
     creation = MockEntryCreationService();
@@ -60,6 +59,7 @@ void main() {
         any(),
         linkedFromId: any(named: 'linkedFromId'),
         categoryId: any(named: 'categoryId'),
+        host: any(named: 'host'),
       ),
     ).thenAnswer((_) async {});
   });
@@ -116,12 +116,15 @@ void main() {
       ),
     ).called(1);
 
+    // The project in hand goes along, so the sheet's project rules hold
+    // from its first frame.
     await tester.tap(find.byKey(ProjectActionBar.addKey));
     verify(
       () => creation.showCreateEntryModal(
         any(),
         linkedFromId: 'project-1',
         categoryId: 'cat-1',
+        host: project,
       ),
     ).called(1);
   });

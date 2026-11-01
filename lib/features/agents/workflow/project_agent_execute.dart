@@ -72,13 +72,15 @@ extension ProjectAgentExecute on ProjectAgentWorkflow {
       logSummarizer: logSummarizer,
       domainLogger: domainLogger,
     );
-    final projectEntries = await _renderProjectEntries(projectId);
+    final rendered = await _renderProjectEntries(projectId);
     var captureSucceeded = false;
-    if (inputCaptureService != null && projectEntries != null) {
+    // Only a complete snapshot is captured: one missing its image analyses
+    // would retract them from the log. This wake then reads the inline list.
+    if (inputCaptureService != null && rendered != null && rendered.complete) {
       try {
         captureSucceeded = await memory.capture(
           agentId: agentId,
-          sources: projectEntries,
+          sources: rendered.sources,
           at: now,
           threadId: threadId,
           runKey: runKey,
@@ -180,7 +182,7 @@ extension ProjectAgentExecute on ProjectAgentWorkflow {
       compactedLog: memoryView.useCompactedLog ? memoryView.compactedLog : null,
       projectEntries: memoryView.useCompactedLog
           ? const []
-          : projectEntries ?? const [],
+          : rendered?.sources ?? const [],
     );
     final userMessage = builtMessage.text;
 

@@ -147,10 +147,13 @@ class ProjectActionBar extends ConsumerWidget {
                 key: addKey,
                 icon: LottiIcons.add,
                 semanticLabel: messages.addLinkedEntryLabel,
+                // The project is in hand: the sheet's project rules
+                // hold from its first frame.
                 onPressed: () => creation.showCreateEntryModal(
                   context,
                   linkedFromId: _id,
                   categoryId: _categoryId,
+                  host: project,
                 ),
               ),
             ],

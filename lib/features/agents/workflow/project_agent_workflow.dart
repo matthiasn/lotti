@@ -246,22 +246,33 @@ class ProjectAgentWorkflow with AgentErrorLogging {
   /// The journal entries linked straight to [projectId], rendered as the log
   /// shows them: text, audio transcripts, and each image with its AI
   /// analyses (fetched in bulk, as the task agent does). Null when they
-  /// could not be read; a failed analysis lookup only drops the analyses.
-  Future<List<RenderedSource>?> _renderProjectEntries(String projectId) async {
+  /// could not be read.
+  ///
+  /// `complete` is false when the analyses could not be read: the sources
+  /// then lack them, which is fine to show but must not be captured — a
+  /// capture is a full snapshot, so the missing analyses would be retracted
+  /// from the log on a passing read failure.
+  Future<({List<RenderedSource> sources, bool complete})?>
+  _renderProjectEntries(String projectId) async {
     try {
       final linked = await journalRepository.getLinkedEntities(
         linkedTo: projectId,
       );
       var analyses = const <String, List<AiResponseEntry>>{};
+      var complete = true;
       try {
         analyses = await fetchAiResponsesForImages(
           getBulkLinkedEntities: journalRepository.getBulkLinkedEntities,
           linkedEntities: linked,
         );
       } catch (e) {
+        complete = false;
         logError('failed to fetch image AI responses for capture', error: e);
       }
-      return renderTaskSources(linked, aiResponsesByEntryId: analyses);
+      return (
+        sources: renderTaskSources(linked, aiResponsesByEntryId: analyses),
+        complete: complete,
+      );
     } catch (e) {
       logError('failed to render project entries', error: e);
       return null;

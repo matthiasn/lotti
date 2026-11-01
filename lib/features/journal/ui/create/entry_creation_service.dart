@@ -159,12 +159,14 @@ class EntryCreationService {
     String? linkedFromId,
     String? categoryId,
     ImageAnalysisTrigger? imageAnalysisTrigger,
+    JournalEntity? host,
   }) {
     return CreateEntryModal.show(
       context: context,
       linkedFromId: linkedFromId,
       categoryId: categoryId,
       imageAnalysisTrigger: imageAnalysisTrigger,
+      host: host,
     );
   }
 }
