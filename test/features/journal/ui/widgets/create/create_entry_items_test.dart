@@ -46,6 +46,7 @@ import '../../../../../helpers/fallbacks.dart';
 import '../../../../../helpers/service_overrides.dart';
 import '../../../../../mocks/mocks.dart';
 import '../../../../../widget_test_utils.dart';
+import '../../../../projects/test_utils.dart';
 
 // ---------------------------------------------------------------------------
 // Helper controllers / fake data
@@ -2541,6 +2542,73 @@ void main() {
       );
     });
 
+    group('CreateTextItem on a project host', () {
+      final bench = _DbBench();
+      setUpAll(bench.setUpAll);
+      tearDownAll(bench.tearDownAll);
+
+      const projectId = 'host-project-id';
+      const noteId = 'project-note-id';
+      final project = makeTestProject(id: projectId, title: 'Nest survey');
+      late List<String> paths;
+      late MockEntryCreationService creation;
+
+      setUp(() {
+        paths = [];
+        beamToNamedOverride = paths.add;
+        creation = MockEntryCreationService();
+        when(
+          () => creation.createTextEntry(
+            linkedId: projectId,
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).thenAnswer((_) async => _makeJournalEntry(noteId));
+      });
+      tearDown(() => beamToNamedOverride = null);
+
+      Future<void> tapNote(
+        WidgetTester tester,
+        Widget item,
+        List<Override> overrides,
+      ) async {
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            item,
+            overrides: [
+              entryCreationServiceProvider.overrideWithValue(creation),
+              ...overrides,
+            ],
+          ),
+        );
+        await tester.pump();
+        await tester.tap(find.byType(DsActionRow));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+
+      testWidgets('opens the new note on its own page: a project page has no '
+          'editor below the fold to land in', (tester) async {
+        await tapNote(tester, const CreateTextItem(projectId), [
+          entryControllerProvider(
+            projectId,
+          ).overrideWith(() => _TestEntryController(project)),
+        ]);
+
+        expect(paths, ['/journal/$noteId']);
+      });
+
+      testWidgets('a host the sheet already holds decides at once, even while '
+          'its lookup is still pending', (tester) async {
+        await tapNote(tester, CreateTextItem(projectId, host: project), [
+          entryControllerProvider(
+            projectId,
+          ).overrideWith(_PendingEntryController.new),
+        ]);
+
+        expect(paths, ['/journal/$noteId']);
+      });
+    });
+
     group('ImportImageItem Widget Integration Tests (modern)', () {
       final bench = _DbBench();
       setUpAll(bench.setUpAll);
@@ -2752,4 +2820,10 @@ void main() {
       });
     }
   });
+}
+
+/// An entry lookup that never resolves: the host is still pending.
+class _PendingEntryController extends EntryController {
+  @override
+  Future<EntryState?> build() => Completer<EntryState?>().future;
 }

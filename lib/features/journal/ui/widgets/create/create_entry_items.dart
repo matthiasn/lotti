@@ -260,8 +260,13 @@ class CreateTextItem extends ConsumerWidget {
   const CreateTextItem(
     this.linkedFromId, {
     this.categoryId,
+    this.host,
     super.key,
   });
+
+  /// The host as the sheet holds it; looked up by [linkedFromId] otherwise,
+  /// which may still be pending when the row is tapped.
+  final JournalEntity? host;
 
   final String? linkedFromId;
   final String? categoryId;
@@ -270,9 +275,11 @@ class CreateTextItem extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final entryCreationService = ref.read(entryCreationServiceProvider);
     final id = linkedFromId;
-    final host = id == null
-        ? null
-        : ref.watch(entryControllerProvider(id)).value?.entry;
+    final host =
+        this.host ??
+        (id == null
+            ? null
+            : ref.watch(entryControllerProvider(id)).value?.entry);
 
     return DsActionRow(
       tone: DsActionRowTone.accent,
@@ -298,6 +305,11 @@ class CreateTextItem extends ConsumerWidget {
           ref
               .read(taskFocusControllerProvider(id).notifier)
               .publishTaskFocus(entryId: entry.meta.id);
+        }
+        // A project's page has no editor to land in: the note opens on its
+        // own page, linked to the project and in its timeline.
+        if (entry != null && host is ProjectEntry) {
+          beamToNamed('/journal/${entry.meta.id}');
         }
         if (context.mounted) {
           Navigator.of(context).pop();

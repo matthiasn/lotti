@@ -34,6 +34,7 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
+import '../../../helpers/entity_factories.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
@@ -620,6 +621,139 @@ void main() {
             recorder.sources.single.content['text'],
             'project kickoff note',
           );
+        },
+      );
+
+      test(
+        'captures a linked image with its AI analysis, as the task agent '
+        'does',
+        () async {
+          final image = TestImageFactory.create(
+            id: 'img-1',
+            dateFrom: DateTime(2026, 10, 31, 9),
+          );
+          final analysis = TestAiResponseFactory.create(
+            id: 'resp-1',
+            model: 'mistral-small',
+            response: 'Two leopard seals by the east ledge.',
+            dateFrom: DateTime(2026, 10, 31, 9, 5),
+          );
+          when(
+            () => mockJournalRepository.getLinkedEntities(linkedTo: projectId),
+          ).thenAnswer((_) async => [image]);
+          when(
+            () => mockJournalRepository.getBulkLinkedEntities({'img-1'}),
+          ).thenAnswer(
+            (_) async => {
+              'img-1': [analysis],
+            },
+          );
+
+          final recorder = _RecordingCaptureService();
+          final result =
+              await buildWorkflow(
+                inputCaptureService: recorder,
+              ).execute(
+                agentIdentity: testAgentIdentity,
+                runKey: runKey,
+                triggerTokens: {'entity-a'},
+                threadId: threadId,
+              );
+
+          expect(result.success, isTrue);
+          final analysisSource = recorder.sources.singleWhere(
+            (s) => s.content['entryType'] == 'image_analysis',
+          );
+          expect(
+            analysisSource.content['text'],
+            'Two leopard seals by the east ledge.',
+          );
+          expect(analysisSource.content['refersTo'], 'img-1');
+        },
+      );
+
+      test(
+        'captures nothing when the image analyses cannot be read — a '
+        'snapshot without them would retract them from the log',
+        () async {
+          final image = TestImageFactory.create(
+            id: 'img-1',
+            dateFrom: DateTime(2026, 10, 31, 9),
+          );
+          when(
+            () => mockJournalRepository.getLinkedEntities(linkedTo: projectId),
+          ).thenAnswer((_) async => [image]);
+          when(
+            () => mockJournalRepository.getBulkLinkedEntities({'img-1'}),
+          ).thenThrow(StateError('journal busy'));
+
+          final recorder = _RecordingCaptureService();
+          final result =
+              await buildWorkflow(
+                inputCaptureService: recorder,
+              ).execute(
+                agentIdentity: testAgentIdentity,
+                runKey: runKey,
+                triggerTokens: {'entity-a'},
+                threadId: threadId,
+              );
+
+          expect(result.success, isTrue);
+          expect(recorder.callCount, 0);
+        },
+      );
+
+      test(
+        "without the log, the prompt lists the project's own entries",
+        () async {
+          final note = JournalEntity.journalEntry(
+            meta: Metadata(
+              id: 'note-1',
+              createdAt: DateTime(2024, 5),
+              updatedAt: DateTime(2024, 5),
+              dateFrom: DateTime(2024, 5),
+              dateTo: DateTime(2024, 5),
+            ),
+            entryText: const EntryText(plainText: 'project kickoff note'),
+          );
+          when(
+            () => mockJournalRepository.getLinkedEntities(linkedTo: projectId),
+          ).thenAnswer((_) async => [note]);
+          final sentMessages = <String>[];
+          final sendCapturingRepo =
+              MockConversationRepository(
+                  mockConversationManager,
+                )
+                ..sendMessageDelegate =
+                    ({
+                      required conversationId,
+                      required message,
+                      required model,
+                      required provider,
+                      required inferenceRepo,
+                      tools,
+                      toolChoice,
+                      temperature = 0.7,
+                      strategy,
+                    }) async {
+                      sentMessages.add(message);
+                      return null;
+                    };
+
+          // No capture service: the compacted log is not used.
+          final result =
+              await buildWorkflow(
+                conversationRepository: sendCapturingRepo,
+              ).execute(
+                agentIdentity: testAgentIdentity,
+                runKey: runKey,
+                triggerTokens: {'entity-a'},
+                threadId: threadId,
+              );
+
+          expect(result.success, isTrue);
+          expect(sentMessages.first, contains('## Project Entries'));
+          expect(sentMessages.first, contains('project kickoff note'));
         },
       );
 

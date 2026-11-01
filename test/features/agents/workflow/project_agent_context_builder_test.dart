@@ -9,6 +9,7 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/agents/projection/input_capture.dart';
 import 'package:lotti/features/agents/tools/project_tool_definitions.dart';
 import 'package:lotti/features/agents/workflow/project_agent_context_builder.dart';
 import 'package:mocktail/mocktail.dart';
@@ -209,6 +210,59 @@ void main() {
   });
 
   group('buildUserMessage', () {
+    RenderedSource entry(int minute) => RenderedSource(
+      contentEntryId: 'note-$minute',
+      sourceCreatedAt: DateTime(2026, 11, 1, 9, minute),
+      content: {'entryType': 'text', 'text': 'note $minute'},
+    );
+
+    test('without the log, lists the most recent project entries, oldest '
+        'first, as the log would show them', () {
+      // One more than the limit, newest first, so the oldest is dropped and
+      // the rest are reordered.
+      final entries = [
+        for (var m = projectEntriesLimit; m >= 0; m--) entry(m),
+      ];
+      final text = builder
+          .buildUserMessage(
+            projectEntity: projectEntity(),
+            lastReport: null,
+            observations: const [],
+            linkedTasksContext: '{}',
+            triggerTokens: const {},
+            projectEntries: entries,
+          )
+          .text;
+
+      expect(text, contains('## Project Entries'));
+      expect(text, isNot(contains('note 0 ')));
+      expect(text, isNot(contains(') note 0\n')));
+      expect(
+        text.indexOf(') note 1\n'),
+        lessThan(text.indexOf(') note $projectEntriesLimit\n')),
+      );
+      expect(
+        ') note '.allMatches(text).length,
+        projectEntriesLimit,
+      );
+    });
+
+    test('with the log, the entries are in it, never listed twice', () {
+      final text = builder
+          .buildUserMessage(
+            projectEntity: projectEntity(),
+            lastReport: null,
+            observations: const [],
+            linkedTasksContext: '{}',
+            triggerTokens: const {},
+            compactedLog: '- [2026-11-01T09:01:00.000] (id: note-1, text) a',
+            projectEntries: [entry(1)],
+          )
+          .text;
+
+      expect(text, isNot(contains('## Project Entries')));
+    });
+
     test('omits project log block and offsets when compactedLog is null', () {
       final result = builder.buildUserMessage(
         projectEntity: projectEntity(),

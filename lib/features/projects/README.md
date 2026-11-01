@@ -31,6 +31,12 @@ project agent is attached — a summary and health read that the agent maintains
   linked straight to it — notes the companion filed under it, entries linked
   to it — newest first, as a task shows its entries. Its tasks' own entries
   stay with those tasks; with nothing linked, the section is not there.
+- **Takes notes where it is.** A sticky action bar at the foot of the project
+  page records a voice note (its one filled action), writes a note (which
+  opens at once), imports an image, or opens the Add sheet for the rest —
+  each linked to the project, so it lands in the timeline and the project
+  agent reads it. No timer and no stray task: time is tracked on the tasks,
+  and tasks are added from the tasks panel.
 - **Is honest when it does not know.** If the agent has not produced a usable
   health payload, the detail says that no health assessment exists yet —
   nothing is invented locally. Agent health stays categorical and explains its

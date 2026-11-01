@@ -60,27 +60,27 @@ extension ProjectAgentExecute on ProjectAgentWorkflow {
       state = latestState;
     }
 
-    // 2a. Capture this wake's project-linked journal entries into the log
-    // (ADR 0020) — same substrate and renderer as the task agent (only
-    // text/audio/image log entries are kept; member TASKS are state, not
-    // log, and stay in the linked-tasks context). Runs AFTER the
-    // fresh-report skip so a slot with nothing to do stays cheap.
-    // Non-fatal.
+    // 2a. Render this wake's project-linked journal entries — same renderer
+    // as the task agent (only text/audio/image log entries are kept, an
+    // image with its AI analyses; member TASKS are state, not log, and stay
+    // in the linked-tasks context) — and capture them into the log
+    // (ADR 0020). Runs AFTER the fresh-report skip so a slot with nothing to
+    // do stays cheap. Non-fatal: without them the wake still runs.
     final memory = AgentWakeMemory(
       syncService: syncService,
       inputCaptureService: inputCaptureService,
       logSummarizer: logSummarizer,
       domainLogger: domainLogger,
     );
+    final rendered = await _renderProjectEntries(projectId);
     var captureSucceeded = false;
-    if (inputCaptureService != null) {
+    // Only a complete snapshot is captured: one missing its image analyses
+    // would retract them from the log. This wake then reads the inline list.
+    if (inputCaptureService != null && rendered != null && rendered.complete) {
       try {
-        final linked = await this.journalRepository.getLinkedEntities(
-          linkedTo: projectId,
-        );
         captureSucceeded = await memory.capture(
           agentId: agentId,
-          sources: renderTaskSources(linked),
+          sources: rendered.sources,
           at: now,
           threadId: threadId,
           runKey: runKey,
@@ -177,8 +177,12 @@ extension ProjectAgentExecute on ProjectAgentWorkflow {
       triggerTokens: triggerTokens,
       ledger: ledger,
       // Only attach the compacted log when the read actually flips; the
-      // legacy sections render otherwise.
+      // legacy sections render otherwise — the project's entries among them,
+      // as a task agent's legacy context carries its log entries.
       compactedLog: memoryView.useCompactedLog ? memoryView.compactedLog : null,
+      projectEntries: memoryView.useCompactedLog
+          ? const []
+          : rendered?.sources ?? const [],
     );
     final userMessage = builtMessage.text;
 

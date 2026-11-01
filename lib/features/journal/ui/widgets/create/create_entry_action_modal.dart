@@ -33,11 +33,15 @@ import 'package:material_ui/material_ui.dart';
 /// action gets one home — the same dedupe rationale the compact action bar
 /// documents.
 class CreateEntryModal {
+  /// [host], when the caller already holds the entity behind
+  /// [linkedFromId], decides the host-dependent rows at once instead of
+  /// after a lookup — so no row the host leaves out shows meanwhile.
   static Future<void> show({
     required BuildContext context,
     required String? linkedFromId,
     required String? categoryId,
     ImageAnalysisTrigger? imageAnalysisTrigger,
+    JournalEntity? host,
   }) async {
     await DsActionModal.show<void>(
       context: context,
@@ -46,6 +50,7 @@ class CreateEntryModal {
         linkedFromId: linkedFromId,
         categoryId: categoryId,
         imageAnalysisTrigger: imageAnalysisTrigger,
+        knownHost: host,
       ),
     );
   }
@@ -57,11 +62,15 @@ class _CreateEntryMenuList extends ConsumerWidget {
     required this.linkedFromId,
     required this.categoryId,
     this.imageAnalysisTrigger,
+    this.knownHost,
   });
 
   final String? linkedFromId;
   final String? categoryId;
   final ImageAnalysisTrigger? imageAnalysisTrigger;
+
+  /// The host as the caller holds it; looked up by [linkedFromId] otherwise.
+  final JournalEntity? knownHost;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -71,10 +80,15 @@ class _CreateEntryMenuList extends ConsumerWidget {
     // an item collapse itself to a SizedBox after being listed is how the
     // sheet used to close on an orphan rule under a row that wasn't there.
     final id = linkedFromId;
-    final host = id == null
-        ? null
-        : ref.watch(entryControllerProvider(id)).value?.entry;
+    final host =
+        knownHost ??
+        (id == null
+            ? null
+            : ref.watch(entryControllerProvider(id)).value?.entry);
     final hostIsTask = host is Task;
+    // A project's own page: time is tracked on its tasks, and a task linked
+    // from here would not be one of them — the project adds those itself.
+    final hostIsProject = host is ProjectEntry;
     final enableEvents =
         ref
             .watch(configFlagProvider(enableEventsFlag))
@@ -102,15 +116,17 @@ class _CreateEntryMenuList extends ConsumerWidget {
       children: [
         // Writing first — the same priority the task page's first-run card
         // teaches: type it down, structure it, say it. The long tail follows.
-        CreateTextItem(linkedFromId, categoryId: categoryId),
+        CreateTextItem(linkedFromId, categoryId: categoryId, host: host),
         if (hostIsTask) CreateChecklistItem(linkedFromId),
         CreateAudioItem(linkedFromId, categoryId: categoryId),
-        CreateTaskItem(linkedFromId, categoryId: categoryId),
+        if (!hostIsProject)
+          CreateTaskItem(linkedFromId, categoryId: categoryId),
         if (enableEvents) CreateEventItem(linkedFromId, categoryId: categoryId),
         // On a task host the Track time pill IS the timer — offering it here
         // a second time under a different name taxed every user with a
         // synonym.
-        if (linkedFromId != null && !hostIsTask) CreateTimerItem(linkedFromId),
+        if (linkedFromId != null && !hostIsTask && !hostIsProject)
+          CreateTimerItem(linkedFromId),
         if (isMacOS || isMobile || isLinux || isWindows)
           ImportImageItem(
             linkedFromId,
