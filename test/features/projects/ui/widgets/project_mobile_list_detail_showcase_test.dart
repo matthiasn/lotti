@@ -11,6 +11,7 @@ import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../widget_test_utils.dart';
+import '../../test_utils.dart';
 
 void main() {
   Widget wrap(
@@ -43,7 +44,7 @@ void main() {
     late ProviderContainer container;
 
     setUp(() {
-      container = ProviderContainer();
+      container = ProviderContainer(overrides: [noProjectTimeline]);
     });
 
     tearDown(() {

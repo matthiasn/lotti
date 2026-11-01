@@ -173,6 +173,7 @@ List<Override> _baseOverrides({
   List<Override> extraOverrides = const [],
 }) {
   return [
+    noProjectTimeline,
     projectDetailControllerProvider(_projectId).overrideWith(
       controllerOverride ?? () => _TestProjectDetailController(controllerState),
     ),

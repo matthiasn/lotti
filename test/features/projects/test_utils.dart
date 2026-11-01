@@ -1,9 +1,11 @@
+import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/projects_overview_models.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/projects/state/project_health_metrics.dart';
 import 'package:lotti/features/projects/ui/model/project_list_detail_models.dart';
 import 'package:lotti/utils/file_utils.dart';
@@ -13,6 +15,13 @@ import '../categories/test_utils.dart';
 /// Shared test factory for creating [ProjectEntry] instances.
 ///
 /// All parameters have sensible defaults to keep call sites concise.
+/// For tests that render a project page without being about its timeline:
+/// nothing is linked straight to any project, so the timeline section stays
+/// absent and its linked-entries cache (a one-minute timer) never starts.
+final Override noProjectTimeline = hasNonTaskLinkedEntriesProvider.overrideWith(
+  (ref, id) => false,
+);
+
 ProjectEntry makeTestProject({
   String? id,
   String title = 'Test Project',

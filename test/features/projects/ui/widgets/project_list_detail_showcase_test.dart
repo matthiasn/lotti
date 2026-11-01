@@ -11,6 +11,7 @@ import 'package:lotti/features/projects/widgetbook/project_list_detail_mock_cont
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../widget_test_utils.dart';
+import '../../test_utils.dart';
 
 void main() {
   const viewportSize = Size(1600, 1000);
@@ -42,7 +43,7 @@ void main() {
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
 
-    final container = ProviderContainer();
+    final container = ProviderContainer(overrides: [noProjectTimeline]);
     addTearDown(container.dispose);
 
     await tester.pumpWidget(wrap(container));
