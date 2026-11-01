@@ -1,13 +1,16 @@
 import 'package:flutter/widgets.dart';
 import 'package:lotti/widgets/transcript/transcript_status.dart';
 
-/// Presentation-only view models for the shared vertical timeline.
+/// Presentation-only view models for the event detail page's vertical
+/// timeline.
 ///
 /// Deliberately free of persistence and feature dependencies: a caller resolves
 /// its own entities into these plain, immutable shapes and the widgets render
-/// them. That is what lets Events and Goals share one rail without either
-/// feature depending on the other, and what lets a screenshot harness drive the
-/// component with real images and players without touching a database.
+/// them, which lets a screenshot harness drive the component with real images
+/// and players without touching a database. Events are its only caller: Goals
+/// and People render their timelines on the design system's
+/// `DesignSystemTimelineRow`, and moving Events onto it too is planned in
+/// `docs/implementation_plans/2026-11-01_event_agent_record.md`.
 ///
 /// Anything the component cannot render generically — an audio player, a
 /// verdict pill — arrives as a caller-supplied [Widget]. The component owns the

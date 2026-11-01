@@ -8,12 +8,14 @@ import 'package:lotti/widgets/transcript/recording_transcript.dart';
 import 'package:lotti/widgets/transcript/transcript_status.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// The app's one vertical timeline: a dated rail of beats.
+/// The event detail page's vertical timeline: a dated rail of beats.
 ///
-/// Extracted from the Events detail view so Events and Goals render the same
-/// rail from the same code. Two timelines drifting apart is the failure mode
-/// this exists to prevent, so a feature that needs a new beat kind supplies a
-/// body through [TimelineBeatContent.custom] rather than editing this file.
+/// Extracted from the Events detail view to be shared with Goals; Goals and
+/// People have since moved to the design system's `DesignSystemTimelineRow`,
+/// so Events are its only caller, and moving them onto that row too is planned
+/// in `docs/implementation_plans/2026-11-01_event_agent_record.md`. Until then a
+/// new beat kind still supplies a body through [TimelineBeatContent.custom]
+/// rather than editing this file.
 ///
 /// The component owns the chrome and the shared behaviours: the rail, day
 /// dividers, folded words, transcription status, the open affordance and

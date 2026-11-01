@@ -227,8 +227,9 @@ all chrome on a single tap, and keeps pinch zoom/pan while rotation is disabled.
 It participates in the shared mobile image-viewer orientation lifecycle described
 in [shared widgets](../architecture/shared-widgets.md).
 
-On the timeline a photo is a **wide, short band**: the shared rail
-(`lib/widgets/timeline/timeline_view.dart`) sizes its lead frame at 2.4 : 1 of
+On the timeline a photo is a **wide, short band**: the event rail
+(`lib/widgets/timeline/timeline_view.dart`, which only events still use — goals
+and people moved to `DesignSystemTimelineRow`) sizes its lead frame at 2.4 : 1 of
 the column, held between 96 and 180 logical pixels tall, so a photo beat reads
 as a strip on a phone instead of a block that pushes the next beat off screen.
 Its caption is the photo's **one-line summary** — the `oneLiner` of its newest
