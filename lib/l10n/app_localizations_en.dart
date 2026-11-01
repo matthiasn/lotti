@@ -6954,6 +6954,15 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get frontDoorChangeDay => 'Change today';
+
+  @override
+  String get frontDoorDayPlanned => 'Today\'s plan changed';
+
+  @override
+  String get frontDoorDayProposal => 'Change today\'s plan?';
+
+  @override
   String get frontDoorDeclined => 'Not filed';
 
   @override
@@ -7030,6 +7039,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get frontDoorOpen => 'Open';
+
+  @override
+  String get frontDoorProjectCreated => 'Made into a project';
 
   @override
   String frontDoorProposal(String owner) {

@@ -36,7 +36,11 @@ sealed class DayPlanningIntent {
 
 /// Start a brand-new plan: Capture → Reconcile → Drafting.
 class DayPlanningCreate extends DayPlanningIntent {
-  const DayPlanningCreate();
+  const DayPlanningCreate({this.initialTranscript});
+
+  /// Optional words the capture opens with, typed in and ready to send —
+  /// what the user already said elsewhere, such as to the companion.
+  final String? initialTranscript;
 }
 
 /// Adapt an existing plan via the voice-driven Refine step.
@@ -86,7 +90,11 @@ Future<DayPlanningResult?> showDayPlanningModal({
         _dayPlanningModalType(modalContext, intent),
     pageListBuilder: (modalContext) => [
       switch (intent) {
-        DayPlanningCreate() => _captureStepPage(modalContext, day),
+        DayPlanningCreate(:final initialTranscript) => _captureStepPage(
+          modalContext,
+          day,
+          initialTranscript: initialTranscript,
+        ),
         DayPlanningAdapt(:final draft, :final initialTranscript) =>
           _refineStepPage(
             modalContext,
@@ -211,15 +219,19 @@ Widget _layoutBarPills(BuildContext context, List<Widget> pills) {
 
 SliverWoltModalSheetPage _captureStepPage(
   BuildContext context,
-  DateTime day,
-) {
+  DateTime day, {
+  String? initialTranscript,
+}) {
   return ModalUtils.sliverModalSheetPage(
     context: context,
     slivers: [
       SliverToBoxAdapter(
         child: SizedBox(
           height: _stepViewportHeight(context),
-          child: _CaptureStepBody(day: day),
+          child: _CaptureStepBody(
+            day: day,
+            initialTranscript: initialTranscript,
+          ),
         ),
       ),
     ],
@@ -231,13 +243,38 @@ SliverWoltModalSheetPage _captureStepPage(
 /// time so the "Today so far" card (handoff v2 item 1) appears in the modal,
 /// matching the standalone capture surface. A loading/error projection falls
 /// through as "no tracked time" rather than blocking the ritual.
-class _CaptureStepBody extends ConsumerWidget {
-  const _CaptureStepBody({required this.day});
+class _CaptureStepBody extends ConsumerStatefulWidget {
+  const _CaptureStepBody({required this.day, this.initialTranscript});
 
   final DateTime day;
 
+  /// Words the capture opens with, typed in: the user reviews and sends
+  /// them like any typed capture.
+  final String? initialTranscript;
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_CaptureStepBody> createState() => _CaptureStepBodyState();
+}
+
+class _CaptureStepBodyState extends ConsumerState<_CaptureStepBody> {
+  @override
+  void initState() {
+    super.initState();
+    final words = widget.initialTranscript?.trim() ?? '';
+    if (words.isEmpty) return;
+    // After the first frame: a provider is not changed while the tree
+    // builds, and by then the capture content watches it, keeping it alive.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ref.read(captureControllerProvider.notifier)
+        ..startTyping()
+        ..updateTranscript(words);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final day = widget.day;
     final actualBlocks =
         ref.watch(dailyOsActualTimeBlocksProvider(day)).value ?? const [];
     return Column(

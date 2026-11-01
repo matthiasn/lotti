@@ -194,17 +194,15 @@ final List<FrontEvalScenario> frontEvalScenarios = [
   ),
   const FrontEvalScenario(
     id: 'project_statement',
-    input:
-        'The relocation is slipping, the shelf survey keeps getting '
-        'bumped.',
-    outcome: FrontEvalOutcome.ask,
-    // Only tasks may be offered; the project itself is never a destination
-    // for a statement, in the question or in a dispatch.
-    askCandidates: {'task-iceberg-survey', 'task-bay-c-seam'},
-    forbiddenDestinationIds: {'project-relocation'},
+    input: 'The relocation as a whole is slipping, we lost two weeks.',
+    outcome: FrontEvalOutcome.dispatch,
+    expectedSegments: [
+      (kind: FrontDestinationKind.project, id: 'project-relocation'),
+    ],
+    forbiddenDestinationIds: {'task-iceberg-survey', 'task-bay-c-seam'},
+    maxLookups: 0,
     note:
-        'A statement about a project has no door (decision 5): she asks '
-        'which task it belongs to. Offering or dispatching to the project '
-        'is wrong.',
+        'A statement about a project as a whole files under the project '
+        '(the project door); no single task owns it.',
   ),
 ];

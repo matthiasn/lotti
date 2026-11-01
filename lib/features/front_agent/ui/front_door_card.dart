@@ -26,10 +26,12 @@ class FrontDoorActions {
     required this.onSaveNote,
     required this.onStartGoal,
     required this.onNewProject,
+    required this.onPlanDay,
     this.onOpenEvidence,
   });
 
-  /// File the proposal under its task — the one tap of decision 1.
+  /// File the proposal under its task or project — the one tap of
+  /// decision 1.
   final ValueChanged<String> onFile;
 
   /// Say no to what a waiting door offers: a proposal's words go to the
@@ -51,11 +53,14 @@ class FrontDoorActions {
   /// Save an inbox item as a note.
   final ValueChanged<String> onSaveNote;
 
-  /// Open the goal wizard for an inbox item.
-  final ValueChanged<String> onStartGoal;
+  /// Open the goal wizard for an inbox item, with its words.
+  final ValueChanged<FrontDoorEntry> onStartGoal;
 
-  /// Open the project creation for an inbox item.
-  final ValueChanged<String> onNewProject;
+  /// Open the project creation for an inbox item, with its words.
+  final ValueChanged<FrontDoorEntry> onNewProject;
+
+  /// Take a change to today into the Daily OS planning, with its words.
+  final ValueChanged<FrontDoorEntry> onPlanDay;
 
   /// Open the source a journal answer cites.
   final ValueChanged<QueryEvidence>? onOpenEvidence;
@@ -269,6 +274,36 @@ class _DoorRow extends StatelessWidget {
             ),
           );
         }
+      case FrontDoorDay():
+        title = words;
+        status = messages.frontDoorDayProposal;
+        if (acting != null) {
+          action = DesignSystemButton(
+            key: ValueKey('front-door-day-$index'),
+            label: messages.frontDoorChangeDay,
+            onPressed: guarded(() => acting.onPlanDay(door)),
+          );
+          menu.add(
+            item(
+              'decline',
+              messages.frontDoorNotThis,
+              LottiIcons.inbox,
+              () => acting.onDecline(id),
+            ),
+          );
+        }
+      case FrontDoorDayPlanned():
+        title = words;
+        status = messages.frontDoorDayPlanned;
+        glyph = LottiIcons.confirmCircled;
+        ink = tokens.colors.alert.success.ink;
+        if (acting != null) action = open();
+      case FrontDoorProjectCreated():
+        title = words;
+        status = messages.frontDoorProjectCreated;
+        glyph = LottiIcons.confirmCircled;
+        ink = tokens.colors.alert.success.ink;
+        if (acting != null) action = open();
       case FrontDoorInbox(:final newKind, :final ownerId):
         title = words;
         status = ownerId == null
@@ -288,20 +323,20 @@ class _DoorRow extends StatelessWidget {
               'goal',
               messages.frontDoorStartGoal,
               LottiIcons.focus,
-              acting.onStartGoal,
+              () => acting.onStartGoal(door),
             ),
             if (newKind == FrontNewKind.project)
               (
                 'project',
                 messages.frontDoorNewProject,
                 LottiIcons.folder,
-                acting.onNewProject,
+                () => acting.onNewProject(door),
               ),
             (
               'note',
               messages.frontDoorSaveNote,
               LottiIcons.note,
-              acting.onSaveNote,
+              () => acting.onSaveNote(id),
             ),
           ];
           final guess = switch (newKind) {
@@ -316,7 +351,7 @@ class _DoorRow extends StatelessWidget {
           });
           menu.addAll([
             for (final (name, label, icon, go) in ways)
-              item(name, label, icon, () => go(id)),
+              item(name, label, icon, go),
             item(
               'decline',
               messages.frontDoorLeaveIt,

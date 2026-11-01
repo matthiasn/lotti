@@ -7059,6 +7059,15 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get frontDoorChangeDay => 'Změnit dnešek';
+
+  @override
+  String get frontDoorDayPlanned => 'Dnešní plán změněn';
+
+  @override
+  String get frontDoorDayProposal => 'Změnit dnešní plán?';
+
+  @override
   String get frontDoorDeclined => 'Neuloženo';
 
   @override
@@ -7135,6 +7144,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get frontDoorOpen => 'Otevřít';
+
+  @override
+  String get frontDoorProjectCreated => 'Vytvořen projekt';
 
   @override
   String frontDoorProposal(String owner) {

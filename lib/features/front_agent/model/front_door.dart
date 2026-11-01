@@ -39,8 +39,8 @@ enum FrontDoorSkipReason {
   /// The owner's inference setup resolves to nothing.
   inferenceUnavailable,
 
-  /// The segment is about today's plan — the Daily OS door comes with a
-  /// later slice.
+  /// Nothing takes this kind of segment: a question about today's plan,
+  /// or anything about it while the Daily OS is off.
   noDoor;
 
   static FrontDoorSkipReason? fromName(Object? name) =>
@@ -127,6 +127,14 @@ sealed class FrontDoorOutcome {
           ownerId: ownerId is String ? ownerId : null,
           generation: generation is int ? generation : 0,
         );
+      case 'day':
+        return const FrontDoorDay();
+      case 'dayPlanned':
+        return const FrontDoorDayPlanned();
+      case 'projectCreated':
+        final projectId = map['projectId'];
+        if (projectId is! String) return null;
+        return FrontDoorProjectCreated(projectId: projectId);
       case 'taskCreated':
         final taskId = map['taskId'];
         if (taskId is! String) return null;
@@ -259,10 +267,47 @@ class FrontDoorTaskCreated extends FrontDoorOutcome {
   };
 }
 
-/// Whether the user still has to act on this door: a proposal waiting for
-/// its tap, or an inbox item nobody has taken anywhere.
+/// Something to change in today's plan, waiting for the user's tap: the
+/// tap opens the Daily OS planning with the words already given — refining
+/// today's plan, or planning the day when there is none yet — and the plan
+/// changes only when the user accepts there (decision 1).
+class FrontDoorDay extends FrontDoorOutcome {
+  const FrontDoorDay();
+
+  @override
+  Map<String, Object?> toJson() => {'type': 'day'};
+}
+
+/// The user took the words into today's plan and accepted a plan there.
+/// Undoing it is the Daily OS's own revert, on the day itself.
+class FrontDoorDayPlanned extends FrontDoorOutcome {
+  const FrontDoorDayPlanned();
+
+  @override
+  Map<String, Object?> toJson() => {'type': 'dayPlanned'};
+}
+
+/// The user made a project of the segment, through the project form opened
+/// with their words as its title. The form wrote it, so the door only
+/// records it; removing it is the project's own business.
+class FrontDoorProjectCreated extends FrontDoorOutcome {
+  const FrontDoorProjectCreated({required this.projectId});
+
+  final String projectId;
+
+  @override
+  Map<String, Object?> toJson() => {
+    'type': 'projectCreated',
+    'projectId': projectId,
+  };
+}
+
+/// Whether the user still has to act on this door: a proposal or a change
+/// to today waiting for its tap, or an inbox item nobody has taken anywhere.
 bool frontDoorAwaitsUser(FrontDoorOutcome? outcome) =>
-    outcome is FrontDoorProposal || outcome is FrontDoorInbox;
+    outcome is FrontDoorProposal ||
+    outcome is FrontDoorDay ||
+    outcome is FrontDoorInbox;
 
 /// The query pipeline answered a question; the text is shown in the front
 /// thread — a task or project question attributed to its owner, a journal

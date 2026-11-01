@@ -4133,6 +4133,9 @@
       }
     }
   },
+  "frontDoorChangeDay": "Change today",
+  "frontDoorDayPlanned": "Today's plan changed",
+  "frontDoorDayProposal": "Change today's plan?",
   "frontDoorDeclined": "Not filed",
   "frontDoorFailed": "Asking {owner} failed.",
   "@frontDoorFailed": {
@@ -4190,6 +4193,7 @@
   "frontDoorNoDoor": "Nowhere to take this yet.",
   "frontDoorNotThis": "Somewhere else",
   "frontDoorOpen": "Open",
+  "frontDoorProjectCreated": "Made into a project",
   "frontDoorProposal": "File this under {owner}?",
   "@frontDoorProposal": {
     "placeholders": {

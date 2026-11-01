@@ -7029,6 +7029,15 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get frontDoorChangeDay => 'Heute ändern';
+
+  @override
+  String get frontDoorDayPlanned => 'Heutiger Plan geändert';
+
+  @override
+  String get frontDoorDayProposal => 'Den heutigen Plan ändern?';
+
+  @override
   String get frontDoorDeclined => 'Nicht abgelegt';
 
   @override
@@ -7105,6 +7114,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get frontDoorOpen => 'Öffnen';
+
+  @override
+  String get frontDoorProjectCreated => 'Zum Projekt gemacht';
 
   @override
   String frontDoorProposal(String owner) {

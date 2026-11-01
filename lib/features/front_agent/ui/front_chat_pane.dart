@@ -21,8 +21,8 @@ import 'package:lotti/features/front_agent/ui/front_chat_hero.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_voice.dart';
 import 'package:lotti/features/front_agent/ui/front_conversation_list.dart';
 import 'package:lotti/features/front_agent/ui/front_door_card.dart';
+import 'package:lotti/features/front_agent/ui/front_door_wizards.dart';
 import 'package:lotti/features/front_agent/ui/front_turn_cost_line.dart';
-import 'package:lotti/features/projects/ui/widgets/project_create_modal.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/goal_routes.dart';
@@ -164,7 +164,7 @@ class _Body extends ConsumerWidget {
           )
         : history;
     final actions = FrontDoorActions(
-      onFile: controller.fileUnderTask,
+      onFile: controller.fileUnderOwner,
       onDecline: controller.decline,
       onUndoDecline: controller.undoDecline,
       onTakeBack: controller.takeBack,
@@ -175,21 +175,40 @@ class _Body extends ConsumerWidget {
         final path = switch (door.record.outcome) {
           FrontDoorFiled(:final entryId) => '/journal/$entryId',
           FrontDoorTaskCreated(:final taskId) => '/tasks/$taskId',
+          FrontDoorProjectCreated(:final projectId) => '/projects/$projectId',
+          FrontDoorDayPlanned() => '/calendar',
           _ => null,
         };
         if (path == null) return;
         Navigator.of(context).maybePop();
         beamToNamed(path);
       },
-      // The wizards are not pre-filled: they open plain, the words stay in
-      // the thread, and the door keeps waiting until a chip that writes
-      // takes it (nothing is written by opening a wizard).
-      onStartGoal: (_) {
+      // The goal wizard opens with the words as its intention; nothing is
+      // written by opening it, and the item keeps waiting.
+      onStartGoal: (door) {
         // Leave the sheet, then go: the wizard is a page, not a modal.
         Navigator.of(context).maybePop();
-        beamToNamed(goalCreatePath);
+        beamToNamed(goalCreatePathWith(intention: door.record.text));
       },
-      onNewProject: (_) => showProjectCreateModal(context: context),
+      // The project form opens with the words as its title; a project it
+      // creates settles the item.
+      onNewProject: (door) async {
+        final create = ref.read(frontNewProjectProvider);
+        final projectId = await create(context, door.record.text);
+        if (projectId != null) {
+          await controller.markProjectCreated(door.doorId, projectId);
+        }
+      },
+      // A change to today opens the Daily OS planning with the words given:
+      // refining today's plan, or planning the day when there is none. The
+      // plan changes only when the user accepts there; then the door
+      // settles.
+      onPlanDay: (door) async {
+        final plan = ref.read(frontDayPlannerProvider);
+        if (await plan(context, door.record.text)) {
+          await controller.markDayPlanned(door.doorId);
+        }
+      },
       // A source a journal answer cites opens on its own page.
       onOpenEvidence: (evidence) {
         final id = evidence.source.id;

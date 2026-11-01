@@ -13,6 +13,16 @@ const String goalsRootPath = '/goals';
 /// The goal-creation wizard route.
 const String goalCreatePath = '$goalsRootPath/create';
 
+/// The goal-creation wizard route, opening with [intention] as the
+/// intention statement — the user's own words, from wherever they said it.
+String goalCreatePathWith({required String intention}) => Uri(
+  path: goalCreatePath,
+  queryParameters: {goalIntentionParam: intention},
+).toString();
+
+/// The query parameter [goalCreatePathWith] carries the intention in.
+const String goalIntentionParam = 'intention';
+
 /// The detail route for [agentId].
 String goalDetailPath(String agentId) => '$goalsRootPath/details/$agentId';
 

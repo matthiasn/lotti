@@ -11,9 +11,13 @@ part of 'create_goal_agent_page.dart';
 /// for creation; saving mints a new immutable spec version rather than
 /// changing history in place.
 class CreateGoalAgentPage extends ConsumerStatefulWidget {
-  const CreateGoalAgentPage({this.agentId, super.key});
+  const CreateGoalAgentPage({this.agentId, this.initialIntention, super.key});
 
   final String? agentId;
+
+  /// The intention statement a new goal starts from — words the user said
+  /// elsewhere, such as to the companion. Creation only.
+  final String? initialIntention;
 
   @override
   ConsumerState<CreateGoalAgentPage> createState() =>

@@ -5,7 +5,7 @@ description: The one agent the user talks to in one place — how a durable user
 resource: ../../lib/features/front_agent
 tags: [agents, front-agent, routing, dispatch, doors, filing, inbox, companion, chat]
 status: draft
-generated: { by: claude-code/fable-5.1, at: 2026-11-01T14:00:00Z }
+generated: { by: claude-code/fable-5.1, at: 2026-11-01T20:00:00Z }
 stale_after: 2027-04-26
 sources:
   - id: workflow
@@ -19,7 +19,7 @@ sources:
   - id: contract
     resource: ../../lib/features/front_agent/workflow/front_agent_contract.dart
     title: The tool contract, caps and system prompt
-    last_modified: 2026-10-23
+    last_modified: 2026-11-01
   - id: validator
     resource: ../../lib/features/front_agent/workflow/front_dispatch_validator.dart
     title: validateFrontDispatch — the dispatch rules in code
@@ -55,15 +55,15 @@ sources:
   - id: door
     resource: ../../lib/features/front_agent/model/front_door.dart
     title: FrontDoorRecord — the claim, the outcome, the deterministic id
-    last_modified: 2026-10-24
+    last_modified: 2026-11-01
   - id: walker
     resource: ../../lib/features/front_agent/service/front_door_walker.dart
     title: FrontDoorWalker — one door per segment, claimed, never awaited
-    last_modified: 2026-10-24
+    last_modified: 2026-11-01
   - id: filing
     resource: ../../lib/features/front_agent/service/front_filing_service.dart
     title: FrontFilingService — what the tap under a door writes
-    last_modified: 2026-10-26
+    last_modified: 2026-11-01
   - id: inbox-filter
     resource: ../../lib/features/front_agent/state/front_inbox_filter.dart
     title: The inbox is every conversation filtered
@@ -91,7 +91,7 @@ sources:
   - id: controller
     resource: ../../lib/features/front_agent/state/front_chat_controller.dart
     title: FrontChatController — the composer
-    last_modified: 2026-10-24
+    last_modified: 2026-11-01
   - id: pane
     resource: ../../lib/features/front_agent/ui/front_chat_pane.dart
     title: FrontChatPane — the thread on the shared AgentChatView
@@ -107,7 +107,7 @@ sources:
   - id: providers
     resource: ../../lib/features/front_agent/state/front_agent_providers.dart
     title: The registry contributions, the wake runner that routes then walks, and the setup resolver
-    last_modified: 2026-10-24
+    last_modified: 2026-11-01
   - id: voice
     resource: ../../lib/features/front_agent/ui/front_chat_voice.dart
     title: FrontVoice — her spoken reply, its gating, her pose
@@ -323,11 +323,11 @@ walker died. Outcomes:
 |---------|------|---------|
 | `task` / `project` question with an active agent | the owner's query pipeline, headless: `QueryAnswerBuilder.build` over an in-memory `QueryChatHistory` whose one event is the segment, chat id the source message id | `FrontDoorAnswer(text, summaryBased, incomplete, ownerIds)` — the answer is the record's, attributed to the owner, never reworded |
 | `goal` / `person`, question or statement, with an active agent | that agent's own chat: `appendMessage` then `enqueueMessage`, **never awaited** | `FrontDoorChatTurn(specialistAgentId, specialistMessageId)`; the reply lands in the specialist's thread with the turn as its `operationId` |
-| `task` statement or instruction | none — the walker writes nothing | `FrontDoorProposal(ownerId)`: waits for the user's tap |
-| `project` statement | none (decision 5: no project door) | `FrontDoorInbox()` |
+| `task` or `project` statement or instruction | none — the walker writes nothing | `FrontDoorProposal(ownerId)`: waits for the user's tap |
 | `journal` question | the journal answer engine, headless: `QueryAnswerBuilder.build` over `QueryScope.journalIn(her allowedCategoryIds)` (empty = every visible category), agent id `front_agent`, the Settings default profile | `FrontDoorAnswer(fromJournal: true, evidence, dependencies, private)` — her own answer, with the passages it cites |
 | `new`, `journal` statement, `unrouted` | none | `FrontDoorInbox(newKind?)` — what the router thought it would become leads the chips |
-| `day` | none yet (slice 4) | `FrontDoorSkipped(noDoor)` |
+| `day` statement or instruction, while `enable_daily_os_page` is on | none — the walker writes nothing | `FrontDoorDay()`: waits for the user's tap |
+| `day` question, or anything about the day while the Daily OS is off | — | `FrontDoorSkipped(noDoor)` |
 | no agent, or a retired one | — | `FrontDoorSkipped(noAgent)` |
 | owner without a usable inference setup | — | `FrontDoorSkipped(inferenceUnavailable)` |
 | a door that throws | — | `FrontDoorFailed(errorType)` — the type, never the text |
@@ -364,11 +364,14 @@ the front agent itself (`notifyUiOnly`), which re-projects the thread.
 
 ```mermaid
 stateDiagram-v2
-  [*] --> Proposal: task statement walked
-  Proposal --> Filed: File it — text entry, linked to the task, in its category
-  Proposal --> Inbox: Somewhere else — the words go to the inbox, the task kept on the item
+  [*] --> Proposal: task or project statement walked
+  Proposal --> Filed: File it — text entry, linked to the owner, in its category
+  Proposal --> Inbox: Somewhere else — the words go to the inbox, the owner kept on the item
   Filed --> Proposal: Undo — entry deleted, next generation
-  [*] --> Inbox: new / journal / unrouted / project statement walked
+  [*] --> Day: day statement walked, the Daily OS on
+  Day --> DayPlanned: Change today — the planning accepted a plan
+  Day --> Inbox: Somewhere else — the words go to the inbox
+  [*] --> Inbox: new / journal / unrouted walked
   Inbox --> SavedNote: Save as a note — text entry, owned by nothing
   Inbox --> TaskCreated: Make it a task — titled with the words
   Inbox --> Left: Leave it — nothing written, nothing waits
@@ -376,14 +379,17 @@ stateDiagram-v2
   Left --> Inbox: Undo — otherwise, same guess, same generation
   SavedNote --> Inbox: Undo — note deleted, next generation, same guess
   TaskCreated --> Inbox: Undo — task deleted, next generation, same guess
-  Inbox --> Inbox: Start a goal… / New project… — the wizard opens, nothing written
+  Inbox --> ProjectCreated: New project… — the form, titled with the words, created one
+  Inbox --> Inbox: Start a goal… — the wizard opens with the words, nothing written
 ```
 
 The entry a tap writes goes through the persistence logic — a text entry
-with the task's `categoryId` and `linkedId`, a task through
-`createTaskEntry` — so a filed entry wakes the task agent through its
-subscription exactly as dictation into the task does, and a made task is a
-task like any other. **Every write is idempotent per door**: the entry or
+with the owner's `categoryId` and `linkedId`, a task through
+`createTaskEntry` — so an entry filed under a task wakes the task agent
+through its subscription exactly as dictation into the task does, one filed
+under a project lands in that project agent's log at its next scheduled
+update (a linked entry marks the report stale; it never wakes the agent
+itself), and a made task is a task like any other. **Every write is idempotent per door**: the entry or
 task is created under a deterministic id (`frontDoorEntryId`,
 `frontDoorNoteId`, `frontDoorTaskId` — a UUID v5 of the door id and the
 door's *generation*, how often it was written and taken back; generation
@@ -413,9 +419,22 @@ nothing waiting. **Undo** (`undoDecline`) makes a left door what it was —
 the proposal, when it came from one, else the inbox item; a refusal from
 before that was kept falls back on a task door's destination — with
 nothing written in between.
-The goal and project wizards take no prefill today: their chips open them
-as they are, the words stay in the thread, and the door keeps waiting
-until a chip that writes takes it.
+**Change today** (`FrontDoorDay`) is a tap that hands the words over
+rather than writing them: the pane calls `frontDayPlannerProvider`
+(`front_door_wizards.dart`), which opens the Daily OS planning
+(`showDayPlanningModal`) over her — `DayPlanningAdapt` with the words sent
+at once when today has a plan, `DayPlanningCreate` with them typed into the
+capture when it has none. The plan changes only when the user accepts its
+proposed changes there; a planning that ends in a plan settles the door
+(`markDayPlanned` → `FrontDoorDayPlanned`, whose *Open* goes to the day),
+and one closed leaves it waiting. Undoing it is the Daily OS's own revert.
+**New project…** opens the project form titled with the words
+(`frontNewProjectProvider`); a project it creates settles the item
+(`markProjectCreated` → `FrontDoorProjectCreated`, *Open* goes to the
+project), and removing it is the project's own business. **Start a goal…**
+opens the goal wizard with the words as its intention
+(`goalCreatePathWith`); a page tells nobody what came of it, so the item
+keeps waiting until the user leaves it.
 
 A turn with a door still waiting on the user never leaves the projection:
 `FrontChatThreadBuilder` keeps it beside the newest fifty messages of its

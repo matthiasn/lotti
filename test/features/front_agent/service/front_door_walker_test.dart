@@ -16,6 +16,7 @@ import 'package:lotti/features/front_agent/model/front_door.dart';
 import 'package:lotti/features/front_agent/service/front_door_walker.dart';
 import 'package:lotti/features/front_agent/service/front_owner_titles.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_contract.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -72,6 +73,7 @@ void main() {
   late List<AgentDomainEntity> upserts;
   late List<(QueryScope, String, String)> factoryCalls;
   late Exception? factoryError;
+  late bool dayPlanning;
   late Map<String, AgentIdentityEntity?> taskAgents;
   late Map<String, AgentIdentityEntity?> projectAgents;
   late FrontDoorWalker walker;
@@ -145,6 +147,7 @@ void main() {
     upserts = [];
     factoryCalls = [];
     factoryError = null;
+    dayPlanning = true;
     taskAgents = {};
     projectAgents = {};
     when(() => syncService.upsertEntity(any())).thenAnswer((invocation) async {
@@ -170,6 +173,7 @@ void main() {
       goalChat: goalChat,
       personChat: personChat,
       ownerTitles: titles,
+      configFlag: (name) async => name == enableDailyOsPageFlag && dayPlanning,
       domainLogger: MockDomainLogger(),
     );
   });
@@ -527,7 +531,8 @@ void main() {
       ).called(1);
     });
 
-    test('under a project wait in the inbox: no project door yet', () async {
+    test('under a project propose filing under it, as under a task, and '
+        'ask nobody', () async {
       seedDispatch([
         segment(
           start: 30,
@@ -541,8 +546,8 @@ void main() {
 
       await walker.walk(messageId);
 
-      final outcome = doors()[0]!.outcome! as FrontDoorInbox;
-      expect(outcome.newKind, isNull);
+      final outcome = doors()[0]!.outcome! as FrontDoorProposal;
+      expect(outcome.ownerId, 'reloc');
       expect(factoryCalls, isEmpty);
     });
 
@@ -793,48 +798,83 @@ void main() {
     });
   });
 
-  test('new, journal and unrouted segments wait in the inbox — a new thing '
-      "with what it would become; today's plan has no door yet", () async {
+  test(
+    'new, journal and unrouted segments wait in the inbox — a new thing '
+    'with what it would become; a change to today waits for its tap',
+    () async {
+      seedDispatch([
+        segment(
+          start: 30,
+          end: 39,
+          kind: FrontDestinationKind.journal,
+          intent: FrontSegmentIntent.statement,
+        ),
+        segment(
+          start: 40,
+          end: 56,
+          kind: FrontDestinationKind.newThing,
+          intent: FrontSegmentIntent.statement,
+          newKind: FrontNewKind.goal,
+        ),
+      ]);
+
+      await walker.walk(messageId);
+
+      expect((doors()[0]!.outcome! as FrontDoorInbox).newKind, isNull);
+      expect(
+        (doors()[1]!.outcome! as FrontDoorInbox).newKind,
+        FrontNewKind.goal,
+      );
+      // Only owners get a title looked up.
+      verifyNever(() => titles.titleFor(FrontDestinationKind.newThing, any()));
+      verifyNever(() => titles.titleFor(FrontDestinationKind.journal, any()));
+
+      seedDispatch([
+        segment(start: 0, end: 18, kind: FrontDestinationKind.unrouted),
+        segment(
+          start: 19,
+          end: 24,
+          kind: FrontDestinationKind.day,
+          intent: FrontSegmentIntent.instruction,
+        ),
+      ]);
+      upserts.clear();
+
+      await walker.walk(messageId);
+
+      expect(doors()[0]!.outcome, isA<FrontDoorInbox>());
+      expect(doors()[1]!.outcome, isA<FrontDoorDay>());
+    },
+  );
+
+  test('a question about today, or a change to it while the Daily OS is '
+      'off, has no door', () async {
     seedDispatch([
       segment(
-        start: 30,
-        end: 39,
-        kind: FrontDestinationKind.journal,
-        intent: FrontSegmentIntent.statement,
-      ),
-      segment(
-        start: 40,
-        end: 56,
-        kind: FrontDestinationKind.newThing,
-        intent: FrontSegmentIntent.statement,
-        newKind: FrontNewKind.goal,
+        start: 0,
+        end: 18,
+        kind: FrontDestinationKind.day,
       ),
     ]);
-
     await walker.walk(messageId);
+    expect(
+      (doors()[0]!.outcome! as FrontDoorSkipped).reason,
+      FrontDoorSkipReason.noDoor,
+    );
 
-    expect((doors()[0]!.outcome! as FrontDoorInbox).newKind, isNull);
-    expect((doors()[1]!.outcome! as FrontDoorInbox).newKind, FrontNewKind.goal);
-    // Only owners get a title looked up.
-    verifyNever(() => titles.titleFor(FrontDestinationKind.newThing, any()));
-    verifyNever(() => titles.titleFor(FrontDestinationKind.journal, any()));
-
+    dayPlanning = false;
     seedDispatch([
-      segment(start: 0, end: 18, kind: FrontDestinationKind.unrouted),
       segment(
-        start: 19,
-        end: 24,
+        start: 0,
+        end: 18,
         kind: FrontDestinationKind.day,
         intent: FrontSegmentIntent.instruction,
       ),
     ]);
     upserts.clear();
-
     await walker.walk(messageId);
-
-    expect(doors()[0]!.outcome, isA<FrontDoorInbox>());
     expect(
-      (doors()[1]!.outcome! as FrontDoorSkipped).reason,
+      (doors()[0]!.outcome! as FrontDoorSkipped).reason,
       FrontDoorSkipReason.noDoor,
     );
   });

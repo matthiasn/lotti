@@ -71,6 +71,9 @@ void main() {
         newKind: FrontNewKind.task,
         generation: 3,
       ),
+      FrontDoorDay(),
+      FrontDoorDayPlanned(),
+      FrontDoorProjectCreated(projectId: 'p-1'),
     ];
     for (final outcome in outcomes) {
       final back = FrontDoorRecord.fromJson(record(outcome: outcome).toJson());
@@ -220,6 +223,7 @@ void main() {
     );
     expect(FrontDoorOutcome.fromJson('text'), isNull);
     expect(FrontDoorOutcome.fromJson({'type': 'proposal'}), isNull);
+    expect(FrontDoorOutcome.fromJson({'type': 'projectCreated'}), isNull);
     final proposal =
         FrontDoorOutcome.fromJson({'type': 'proposal', 'ownerId': 'g'})!
             as FrontDoorProposal;
@@ -245,15 +249,19 @@ void main() {
     );
   });
 
-  test('a proposal and an inbox item wait on the user; everything else does '
+  test('a proposal, a change to today and an inbox item wait on the user; '
+      'everything else does '
       'not', () {
     expect(frontDoorAwaitsUser(const FrontDoorProposal(ownerId: 'g')), isTrue);
     expect(frontDoorAwaitsUser(const FrontDoorInbox()), isTrue);
+    expect(frontDoorAwaitsUser(const FrontDoorDay()), isTrue);
     for (final settled in const <FrontDoorOutcome?>[
       null,
       FrontDoorFiled(entryId: 'e'),
       FrontDoorDeclined(),
       FrontDoorTaskCreated(taskId: 't'),
+      FrontDoorDayPlanned(),
+      FrontDoorProjectCreated(projectId: 'p'),
       FrontDoorSkipped(FrontDoorSkipReason.noDoor),
       FrontDoorFailed('x'),
       FrontDoorChatTurn(specialistAgentId: 'a', specialistMessageId: 'm'),

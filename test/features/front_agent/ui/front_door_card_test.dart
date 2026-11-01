@@ -51,8 +51,9 @@ void main() {
     onOpen: (door) => acted.add(('open', door.doorId)),
     onMakeTask: (id) => acted.add(('task', id)),
     onSaveNote: (id) => acted.add(('note', id)),
-    onStartGoal: (id) => acted.add(('goal', id)),
-    onNewProject: (id) => acted.add(('project', id)),
+    onStartGoal: (door) => acted.add(('goal', door.doorId)),
+    onNewProject: (door) => acted.add(('project', door.doorId)),
+    onPlanDay: (door) => acted.add(('day', door.doorId)),
     onOpenEvidence: (evidence) => acted.add(('source', evidence.source.id)),
   );
 
@@ -543,6 +544,63 @@ void main() {
       expect(await openMenu(tester, 1), ['Undo']);
       await tapItem(tester, 'undo', 1);
       expect(acted, [('undo', 'd:door:1')]);
+    });
+  });
+
+  group('a change to today', () {
+    testWidgets('asks to change the plan, takes it there on the one filled '
+        'tap, and offers somewhere else instead', (tester) async {
+      await pump(tester, [
+        entry(
+          record(
+            index: 0,
+            text: 'Move the colony count to the afternoon.',
+            kind: FrontDestinationKind.day,
+            ownerTitle: null,
+            outcome: const FrontDoorDay(),
+          ),
+        ),
+      ]);
+      expect(statusOf(tester, 0), "Change today's plan?");
+      expect(button(tester, 'day', 0).label, 'Change today');
+      await tester.tap(find.byKey(const ValueKey('front-door-day-0')));
+      expect(acted, [('day', 'd:door:0')]);
+
+      expect(await openMenu(tester, 0), ['Somewhere else']);
+      await tapItem(tester, 'decline', 0);
+      expect(acted.last, ('decline', 'd:door:0'));
+    });
+
+    testWidgets('once planned, and a project made of an item, each say so '
+        'with Open and nothing to take back here', (tester) async {
+      await pump(tester, [
+        entry(
+          record(
+            index: 0,
+            text: 'Move the colony count to the afternoon.',
+            kind: FrontDestinationKind.day,
+            ownerTitle: null,
+            outcome: const FrontDoorDayPlanned(),
+          ),
+        ),
+        entry(
+          record(
+            index: 1,
+            text: 'Rebuild the feeding stations.',
+            kind: FrontDestinationKind.newThing,
+            ownerTitle: null,
+            outcome: const FrontDoorProjectCreated(projectId: 'p-1'),
+          ),
+        ),
+      ]);
+      expect(statusOf(tester, 0), "Today's plan changed");
+      expect(statusOf(tester, 1), 'Made into a project');
+      for (final index in [0, 1]) {
+        expect(glyph(tester, index).icon, LottiIcons.confirmCircled);
+        expect(menu(index), findsNothing);
+      }
+      await tester.tap(find.byKey(const ValueKey('front-door-open-1')));
+      expect(acted, [('open', 'd:door:1')]);
     });
   });
 

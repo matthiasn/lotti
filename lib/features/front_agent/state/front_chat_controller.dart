@@ -321,9 +321,21 @@ class FrontChatController extends Notifier<FrontChatComposerState> {
     }
   }
 
-  /// Files the proposal under its task — the user's one tap (decision 1).
-  Future<void> fileUnderTask(String doorId) =>
-      _doorAction(doorId, (filing) => filing.fileUnderTask(doorId));
+  /// Settles a change to today once a plan was accepted for it.
+  Future<void> markDayPlanned(String doorId) =>
+      _doorAction(doorId, (filing) => filing.markDayPlanned(doorId));
+
+  /// Settles an inbox item on the project made of it.
+  Future<void> markProjectCreated(String doorId, String projectId) =>
+      _doorAction(
+        doorId,
+        (filing) => filing.markProjectCreated(doorId, projectId),
+      );
+
+  /// Files the proposal under its task or project — the user's one tap
+  /// (decision 1).
+  Future<void> fileUnderOwner(String doorId) =>
+      _doorAction(doorId, (filing) => filing.fileUnderOwner(doorId));
 
   /// Says no to what a waiting door offers: a proposal's words go to the
   /// inbox, an inbox item is left where it is.

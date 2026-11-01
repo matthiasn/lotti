@@ -487,7 +487,7 @@ void main() {
       seed(const FrontDoorProposal(ownerId: 'garden'));
       writeAnswers(verdict: true);
 
-      await wired.read(frontFilingServiceProvider).fileUnderTask(doorId);
+      await wired.read(frontFilingServiceProvider).fileUnderOwner(doorId);
 
       final entry =
           verify(
@@ -515,7 +515,7 @@ void main() {
         ),
       );
 
-      await wired.read(frontFilingServiceProvider).fileUnderTask(doorId);
+      await wired.read(frontFilingServiceProvider).fileUnderOwner(doorId);
 
       expect(filed().entryId, id);
     });
@@ -538,7 +538,7 @@ void main() {
         () => persistence.createLink(fromId: 'garden', toId: id),
       ).thenAnswer((_) async => repaired = true);
 
-      await wired.read(frontFilingServiceProvider).fileUnderTask(doorId);
+      await wired.read(frontFilingServiceProvider).fileUnderOwner(doorId);
 
       verify(
         () => persistence.createLink(fromId: 'garden', toId: id),
@@ -558,7 +558,7 @@ void main() {
       ).thenAnswer((_) async => false);
 
       await expectLater(
-        wired.read(frontFilingServiceProvider).fileUnderTask(doorId),
+        wired.read(frontFilingServiceProvider).fileUnderOwner(doorId),
         throwsStateError,
       );
       verifyNever(
@@ -578,13 +578,13 @@ void main() {
         ),
       );
       await expectLater(
-        wired.read(frontFilingServiceProvider).fileUnderTask(doorId),
+        wired.read(frontFilingServiceProvider).fileUnderOwner(doorId),
         throwsStateError,
       );
 
       writeAnswers(verdict: null);
       await expectLater(
-        wired.read(frontFilingServiceProvider).fileUnderTask(doorId),
+        wired.read(frontFilingServiceProvider).fileUnderOwner(doorId),
         throwsStateError,
       );
       verifyNever(
