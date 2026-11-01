@@ -4,6 +4,72 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.78]
+
+### Added
+
+- **Tell the companion about your day and she takes it to your plan.** "Move
+  the colony count to the afternoon" now offers "Change today": one tap opens
+  your day's planning with your words already given. Nothing changes until
+  you accept the proposed plan there.
+- **She files notes under a project.** Something you tell her about a project
+  as a whole is offered for filing under it, like a task; one tap files your
+  words, and the project's agent reads them at its next update.
+
+### Changed
+
+- **Starting a goal or project from her inbox keeps your words.** The goal
+  wizard opens with them as its intention and the project form with them as
+  its title; a project you create settles the item.
+- **An event's page says what happened, right under its title.** When the
+  event agent has written a recap, its one-line summary now sits in the
+  header beneath the title, with the longer summary in the card below.
+- **An event's AI summary now looks and works like a task's.** It sits on
+  the same card as the task agent's summary, with no heavy shadow under it:
+  the agent's name opens its internals, *Read more* opens the full recap,
+  and *Update now* asks the agent for a fresh one. Without an agent, the
+  event's own note shows on a plain card.
+- **The rating sits beside the event's status.** The stars now share a row
+  with the category and status pills instead of taking a row of their own,
+  and only the star under the pointer lights up on hover.
+- **Photos on an event's timeline are wide, short strips.** They no longer
+  fill most of a phone screen each, and every photo carries a one-line
+  caption: what its image analysis saw, or your own note when there is none.
+- **The event agent now reads what was found in your photos.** Its recap
+  draws on each photo's image analysis, not only on the notes you wrote.
+- **Tasks are found by their whole agent report.** Search by meaning now
+  covers a task report's one-liner and TLDR as well as its body, from the
+  task's next report on.
+- **Recordings no longer fall back to a speech model your profiles do not
+  name.** When neither a recording's category profile nor your default
+  inference profile can transcribe, the recording now says no transcription
+  model is set up, instead of picking one of your configured speech models
+  by provider type (the on-device one first). Set a default inference
+  profile with a transcription model to transcribe such recordings.
+- **Save check-in is a button again, not a banner.** On a phone the check-in
+  composer stretched *Save check-in* across the whole bar. It now keeps its
+  own width on the trailing edge, beside Cancel.
+- **The grey slab under the About page's Lotti card is gone.** The card now
+  sits flat on the page like the cards beneath it.
+
+### Fixed
+
+- **Embeddings shared between devices now arrive in full.** A device never
+  stored the embedding of a task's current agent report that another device
+  shared, nor that of a task with a private label while it hid private items:
+  both waited for good, so the embedding counts differed while Sync health
+  reported nothing missing. Both now store, the affected tasks are re-embedded
+  on start, and Sync health shows any embeddings still waiting under the
+  embedding count.
+- **A category's Automatic inference switch could disappear while it was
+  still on.** The switch also controls automatic pull request summaries, but
+  it was only shown when something could transcribe or analyse — so with no
+  speech model set up it vanished, and summaries kept running with no way to
+  turn them off. It now shows whenever it is on, and whenever anything it
+  controls could run, and its description mentions pull request summaries.
+- **With reduced motion on, an event's summary card no longer trips over
+  itself.** That happened when the recap arrived after a moment of loading.
+
 ## [1.1.77]
 
 ### Changed
