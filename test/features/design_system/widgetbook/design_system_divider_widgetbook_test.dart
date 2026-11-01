@@ -17,7 +17,7 @@ void main() {
       expect(find.text('Horizontal'), findsOneWidget);
       expect(find.text('With label'), findsOneWidget);
       expect(find.text('Vertical'), findsOneWidget);
-      expect(find.text('DIVIDER LABEL'), findsOneWidget);
+      expect(find.text('Divider label'), findsOneWidget);
       expect(find.byType(DesignSystemDivider), findsNWidgets(3));
     });
   });
