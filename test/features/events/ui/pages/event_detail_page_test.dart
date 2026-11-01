@@ -26,6 +26,10 @@ import 'package:lotti/features/journal/state/linked_ai_responses_controller.dart
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/create/create_entry_items.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_action_bar.dart';
+import 'package:lotti/features/relationships/repository/person_timeline_repository.dart';
+import 'package:lotti/features/relationships/repository/relationship_repository.dart';
+import 'package:lotti/features/relationships/state/entry_people_providers.dart';
+import 'package:lotti/features/relationships/state/relationships_providers.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/glass_record_button.dart';
 import 'package:lotti/get_it.dart';
@@ -43,6 +47,7 @@ import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
 import '../../../../widget_test_utils.dart';
 import '../../../agents/test_utils.dart';
+import '../../../relationships/helpers/test_people.dart';
 
 const _eventId = 'event-1';
 
@@ -119,6 +124,16 @@ class _RecordingEntryController extends FakeEntryController {
     deletes++;
     return deleted;
   }
+}
+
+/// Serves a fixed People list to the person picker.
+class _FixedPeople extends RelationshipsListController {
+  _FixedPeople(this.items);
+
+  final List<RelationshipListItem> items;
+
+  @override
+  Future<List<RelationshipListItem>> build() async => items;
 }
 
 /// Serves a photo's linked AI responses without a database.
@@ -850,6 +865,136 @@ void main() {
         // A recording started here is the event's voice memo, and the mic
         // lights only for a session linked to this very event.
         expect(mic.linkedId, _eventId);
+      });
+    });
+
+    group('people', () {
+      final pip = makeTestPerson(id: 'pip', title: 'Pip Penguin');
+      final rocko = makeTestPerson(id: 'rocko', title: 'Rocko');
+      late MockPersonTimelineRepository timeline;
+
+      setUp(() {
+        timeline = MockPersonTimelineRepository();
+        when(
+          () => timeline.setPeopleOn(
+            entryId: any(named: 'entryId'),
+            currentIds: any(named: 'currentIds'),
+            personIds: any(named: 'personIds'),
+          ),
+        ).thenAnswer((_) async => true);
+      });
+
+      List<Override> peopleOverrides() => [
+        peopleOnEntryProvider(_eventId).overrideWith((ref) => [pip]),
+        personTimelineRepositoryProvider.overrideWithValue(timeline),
+        relationshipsListControllerProvider.overrideWith(
+          () => _FixedPeople([
+            (relationship: pip, lastCheckIn: null),
+            (relationship: rocko, lastCheckIn: null),
+          ]),
+        ),
+      ];
+
+      Future<void> pickRocko(WidgetTester tester) async {
+        await tester.tap(find.text('Edit people'));
+        await tester.pumpAndSettle();
+        expect(find.text('Who was there?'), findsOneWidget);
+        await tester.tap(find.text('Rocko').last);
+        await tester.pump();
+        await tester.tap(find.byKey(const ValueKey('person-picker-apply')));
+        await tester.pumpAndSettle();
+      }
+
+      testWidgets('shows who the event was with, and opens a person', (
+        tester,
+      ) async {
+        final beamed = <String>[];
+        beamToNamedOverride = beamed.add;
+        await pumpResolved(
+          tester,
+          linked: const [],
+          extraOverrides: peopleOverrides(),
+        );
+
+        final view = tester.widget<EventDetailView>(
+          find.byType(EventDetailView),
+        );
+        expect(view.people.map((p) => p.name), ['Pip Penguin']);
+
+        await tester.tap(find.text('Pip Penguin'));
+        await tester.pump();
+
+        expect(beamed, ['/people/pip']);
+      });
+
+      testWidgets('the picker writes only the change in who was there', (
+        tester,
+      ) async {
+        await pumpResolved(
+          tester,
+          linked: const [],
+          extraOverrides: peopleOverrides(),
+        );
+
+        await pickRocko(tester);
+
+        verify(
+          () => timeline.setPeopleOn(
+            entryId: _eventId,
+            currentIds: {'pip'},
+            personIds: {'pip', 'rocko'},
+          ),
+        ).called(1);
+        expect(find.text('Could not update who was there.'), findsNothing);
+      });
+
+      testWidgets('a write that did not land says so above the bar', (
+        tester,
+      ) async {
+        when(
+          () => timeline.setPeopleOn(
+            entryId: any(named: 'entryId'),
+            currentIds: any(named: 'currentIds'),
+            personIds: any(named: 'personIds'),
+          ),
+        ).thenAnswer((_) async => false);
+        await pumpResolved(
+          tester,
+          linked: const [],
+          extraOverrides: peopleOverrides(),
+          hostScaffold: true,
+        );
+
+        await pickRocko(tester);
+
+        expect(find.text('Could not update who was there.'), findsOneWidget);
+        expect(
+          tester.getRect(find.byType(SnackBar)).bottom,
+          lessThanOrEqualTo(tester.getRect(find.byType(EntryActionBar)).top),
+        );
+      });
+
+      testWidgets('closing the picker writes nothing', (tester) async {
+        await pumpResolved(
+          tester,
+          linked: const [],
+          extraOverrides: peopleOverrides(),
+        );
+
+        await tester.tap(find.text('Edit people'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Rocko').last);
+        await tester.pump();
+        await tester.tapAt(const Offset(5, 5));
+        await tester.pumpAndSettle();
+
+        verifyNever(
+          () => timeline.setPeopleOn(
+            entryId: any(named: 'entryId'),
+            currentIds: any(named: 'currentIds'),
+            personIds: any(named: 'personIds'),
+          ),
+        );
       });
     });
 

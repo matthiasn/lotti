@@ -281,6 +281,49 @@ the same widget renders cleanly in screenshots and tests. An empty event renders
 the Timeline header over a quiet hint naming what the bar below adds — and no
 Tasks section at all.
 
+# Who it was with
+
+An event's people are the people whose timeline holds it: the live
+`RelationshipLink`s **from a person to the event** — the same rows that put
+it on that person's page ([relationships](relationships.md)). There is no
+second "attendee" list to keep in step; adding someone to an event *is*
+putting the event on their timeline, so "what did I do with this person"
+(read from the person) and "who was at this event" (read from the event) are
+one fact.
+
+```mermaid
+flowchart LR
+    P1[RelationshipEntry Pip] -- RelationshipLink --> E[JournalEvent]
+    P2[RelationshipEntry Rocko] -- RelationshipLink --> E
+    E -->|personTimelineLinkSources| ROW[EventPeopleRow on the event page]
+    P1 -->|personTimelineLinkTargets| TL[Pip's timeline]
+    E -->|getTypedLinksForTaskIds| CTX[Event agent: ### People]
+```
+
+- **Read.** `peopleOnEntryProvider(eventId)` reads
+  `PersonTimelineRepository.getPeopleOn` — the link sources, resolved with
+  the private filter, by name — and re-reads when a link to the event is
+  written or tombstoned (both notify the event's id), when a person shown
+  changes, and when private entries are shown or hidden. The page reads it
+  with `.value`, so the row never blanks while it re-reads.
+- **Show.** Under the recap, a *People* section of `DesignSystemChip`s, each
+  with the person's `PersonaAvatar` and name, opening `/people/<id>`, then an
+  *Edit people* chip. With no one linked there is no section, only an *Add
+  people* chip — people are an attribute of the event, like its category,
+  not content the action bar adds.
+- **Change.** The chip opens `showPersonPicker`, the multi-select
+  `EntityPickerSheet` over the People list (search by name or nickname,
+  staged until *Apply*). `PersonTimelineRepository.setPeopleOn` writes only
+  the difference: `addToTimeline` for each person added, `removeFromTimeline`
+  for each one dropped. A write that did not land raises
+  `eventsPeopleSaveFailed` above the bar; the row re-reads either way, so it
+  shows what was stored.
+- **Recap.** `EventAgentContextBuilder` lists the people first in the
+  linked-entries digest (see
+  [project and event agents](agents/project-and-event-agents.md#event-agents)),
+  and a link write notifies the event id, so the event agent wakes to name
+  who was there.
+
 # Adding to an event
 
 An event is a `JournalEntity`, so its page ends in the very same

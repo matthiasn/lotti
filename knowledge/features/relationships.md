@@ -744,7 +744,12 @@ owns the writes — `addToTimeline`, `removeFromTimeline`, `createNote` (a note
 pinned *About* the person is a starred one, `meta.starred`), `createMeeting`
 (a planned `JournalEvent` over the chosen slot), `setPinned`, `updateNote`,
 `deleteNote` — and resolves the link targets in one query of the
-types a timeline holds (`personTimelineEntryTypes`). The detail controller
+types a timeline holds (`personTimelineEntryTypes`). Read the other way,
+the same links say who an entry is with: `personTimelineLinkSources` and
+`getPeopleOn` answer the people whose timeline holds an entry, and
+`setPeopleOn` writes the difference to a chosen set — that is an event's
+*People* row ([events](events.md#who-it-was-with)), picked in
+`showPersonPicker`, the shared multi-select over the People list. The detail controller
 loads them with the check-ins and the tasks, and watches their ids, so an edit
 to any of them refreshes the page. The pure
 [`buildPersonTimeline`](../../lib/features/relationships/model/person_timeline.dart)

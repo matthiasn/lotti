@@ -17,6 +17,7 @@ import '../../../database/test_utils.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
+import '../helpers/test_people.dart';
 
 void main() {
   final at = DateTime(2026, 8, 14, 20);
@@ -621,6 +622,162 @@ void main() {
       expect(data.response, 'Pip wants a crew send-off.');
       expect(data.model, 'glm-5.2');
     });
+  });
+
+  group('getPeopleOn', () {
+    RelationshipEntry personAt(
+      String id,
+      String title, {
+      bool private = false,
+    }) => makeTestPerson(id: id, title: title).copyWith(
+      meta: meta(id, private: private),
+    );
+
+    test('answers the people whose live RelationshipLink runs to the entry, '
+        'by name', () async {
+      await db.updateJournalEntity(personAt('rocko', 'Rocko'));
+      await db.updateJournalEntity(personAt('pip', 'pip penguin'));
+      await db.updateJournalEntity(personAt('gone', 'Gone'));
+      await db.updateJournalEntity(personAt('plain', 'Plain'));
+      await link('rocko', 'event');
+      await link('pip', 'event');
+      await link('gone', 'event', deletedAt: at);
+      await link('plain', 'event', relationship: false);
+      // A person linked to something else is not on this event.
+      await link('pip', 'other');
+
+      final people = await repository.getPeopleOn('event');
+
+      expect(people.map((p) => p.meta.id), ['pip', 'rocko']);
+    });
+
+    test(
+      'a private person is left out while private entries are hidden',
+      () async {
+        await db.updateJournalEntity(
+          personAt('secret', 'Secret', private: true),
+        );
+        await link('secret', 'event');
+
+        await showPrivate(shown: false);
+        expect(await repository.getPeopleOn('event'), isEmpty);
+
+        await showPrivate(shown: true);
+        expect(
+          (await repository.getPeopleOn('event')).map((p) => p.meta.id),
+          ['secret'],
+        );
+      },
+    );
+
+    test('answers nothing for an entry no one holds', () async {
+      expect(await repository.getPeopleOn('event'), isEmpty);
+    });
+
+    test('a link to a deleted person does not bring them back', () async {
+      await db.updateJournalEntity(
+        personAt('gone', 'Gone').copyWith(
+          meta: meta('gone').copyWith(deletedAt: at),
+        ),
+      );
+      await link('gone', 'event');
+
+      expect(await repository.getPeopleOn('event'), isEmpty);
+    });
+  });
+
+  group('setPeopleOn', () {
+    setUp(() {
+      when(
+        () => persistence.createLink(
+          fromId: any(named: 'fromId'),
+          toId: any(named: 'toId'),
+          linkType: any(named: 'linkType'),
+        ),
+      ).thenAnswer((_) async => true);
+      when(
+        () => journalRepository.updateLink(any()),
+      ).thenAnswer((_) async => true);
+    });
+
+    test('links each person added and unlinks each one dropped, leaving '
+        'the rest untouched', () async {
+      await link('kept', 'event');
+      await link('dropped', 'event');
+
+      final saved = await repository.setPeopleOn(
+        entryId: 'event',
+        currentIds: {'kept', 'dropped'},
+        personIds: {'kept', 'added'},
+      );
+
+      expect(saved, isTrue);
+      verify(
+        () => persistence.createLink(
+          fromId: 'added',
+          toId: 'event',
+          linkType: EntryLinkType.relationship,
+        ),
+      ).called(1);
+      verifyNever(
+        () => persistence.createLink(
+          fromId: 'kept',
+          toId: any(named: 'toId'),
+          linkType: any(named: 'linkType'),
+        ),
+      );
+      final tombstones = verify(
+        () => journalRepository.updateLink(captureAny()),
+      ).captured.cast<EntryLink>();
+      expect(tombstones.map((l) => l.fromId).toSet(), {'dropped'});
+    });
+
+    test('an unchanged set writes nothing', () async {
+      expect(
+        await repository.setPeopleOn(
+          entryId: 'event',
+          currentIds: {'a'},
+          personIds: {'a'},
+        ),
+        isTrue,
+      );
+      verifyNever(
+        () => persistence.createLink(
+          fromId: any(named: 'fromId'),
+          toId: any(named: 'toId'),
+          linkType: any(named: 'linkType'),
+        ),
+      );
+      verifyNever(() => journalRepository.updateLink(any()));
+    });
+
+    test(
+      'answers false when a write fails, and still makes the others',
+      () async {
+        when(
+          () => persistence.createLink(
+            fromId: 'refused',
+            toId: any(named: 'toId'),
+            linkType: any(named: 'linkType'),
+          ),
+        ).thenAnswer((_) async => false);
+
+        final saved = await repository.setPeopleOn(
+          entryId: 'event',
+          currentIds: const {},
+          personIds: {'refused', 'accepted'},
+        );
+
+        expect(saved, isFalse);
+        verify(
+          () => persistence.createLink(
+            fromId: 'accepted',
+            toId: 'event',
+            linkType: EntryLinkType.relationship,
+          ),
+        ).called(1);
+      },
+    );
   });
 
   group('isOnTimeline', () {

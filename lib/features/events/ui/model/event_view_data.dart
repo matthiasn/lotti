@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:lotti/classes/event_status.dart';
+import 'package:lotti/classes/relationship_data.dart';
 
 /// Presentation-only view models for the Events surfaces.
 ///
@@ -173,6 +174,25 @@ class EventTimelineEntry {
   /// presentation-only layer deliberately does not depend on. Null renders the
   /// beat without playback.
   final Widget? player;
+}
+
+/// A person the event was with: someone on the People page whose timeline
+/// holds the event. Carries what the face and the chip need, nothing more —
+/// the page maps it from the relationship entry.
+@immutable
+class EventPerson {
+  const EventPerson({
+    required this.id,
+    required this.name,
+    this.avatarImageId,
+    this.avatarCrop,
+  });
+
+  /// The person's relationship id, which opens their page.
+  final String id;
+  final String name;
+  final String? avatarImageId;
+  final AvatarCrop? avatarCrop;
 }
 
 /// A prep/follow-up task linked to the event.

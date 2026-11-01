@@ -6860,6 +6860,21 @@ class AppLocalizationsDe extends AppLocalizations {
   String get eventsPageTitle => 'Ereignisse';
 
   @override
+  String get eventsPeopleAdd => 'Personen hinzufügen';
+
+  @override
+  String get eventsPeopleEdit => 'Personen bearbeiten';
+
+  @override
+  String get eventsPeoplePickerTitle => 'Wer war dabei?';
+
+  @override
+  String get eventsPeopleSaveFailed => 'Konnte nicht speichern, wer dabei war.';
+
+  @override
+  String get eventsPeopleSection => 'Personen';
+
+  @override
   String get eventsPhotosSection => 'Fotos';
 
   @override
@@ -13985,6 +14000,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String relationshipPhotoSheetTitle(String name) {
     return 'Foto von $name';
   }
+
+  @override
+  String get relationshipPickerSearchHint => 'Personen suchen';
 
   @override
   String relationshipPlanMeeting(String name) {

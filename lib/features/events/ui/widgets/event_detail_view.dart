@@ -5,6 +5,7 @@ import 'package:lotti/features/events/ui/model/event_view_data.dart';
 import 'package:lotti/features/events/ui/widgets/event_cover_image.dart';
 import 'package:lotti/features/events/ui/widgets/event_overlay_pill.dart';
 import 'package:lotti/features/events/ui/widgets/event_passive_summary_card.dart';
+import 'package:lotti/features/events/ui/widgets/event_people_row.dart';
 import 'package:lotti/features/events/ui/widgets/event_photo_gallery.dart';
 import 'package:lotti/features/events/ui/widgets/event_star_rating.dart';
 import 'package:lotti/features/events/ui/widgets/event_status_picker.dart';
@@ -33,6 +34,9 @@ part 'event_detail_view_hero_content_part.dart';
 class EventDetailView extends StatelessWidget {
   const EventDetailView({
     required this.data,
+    this.people = const [],
+    this.onOpenPerson,
+    this.onEditPeople,
     this.recapOneLiner,
     this.onBack,
     this.onRenameTitle,
@@ -52,6 +56,15 @@ class EventDetailView extends StatelessWidget {
   });
 
   final EventDetailData data;
+
+  /// Who the event was with — the people whose timeline holds it.
+  final List<EventPerson> people;
+
+  /// Opens a person's page (receives their relationship id).
+  final ValueChanged<String>? onOpenPerson;
+
+  /// Opens the picker for who was there. Null leaves the people read-only.
+  final VoidCallback? onEditPeople;
 
   /// The event agent's one-line recap of what happened, carried in the hero
   /// under the title. The longer TLDR lives in [aiSummaryCard].
@@ -231,6 +244,22 @@ class EventDetailView extends StatelessWidget {
         aiSummaryCard!
       else if (data.summary != null)
         EventPassiveSummaryCard(summary: data.summary!),
+      // Who it was with, under what happened: a section once anyone is
+      // linked, and until then only the chip that adds them.
+      if (people.isNotEmpty) ...[
+        _SectionHeader(
+          title: context.messages.eventsPeopleSection,
+          count: people.length,
+        ),
+        EventPeopleRow(
+          people: people,
+          onOpenPerson: onOpenPerson,
+          onEditPeople: onEditPeople,
+        ),
+      ] else if (onEditPeople != null) ...[
+        SizedBox(height: context.designTokens.spacing.step4),
+        EventPeopleRow(people: const [], onEditPeople: onEditPeople),
+      ],
       // A flat, scannable photo wall (distinct from the narrative timeline).
       if (data.photos.isNotEmpty) ...[
         _SectionHeader(

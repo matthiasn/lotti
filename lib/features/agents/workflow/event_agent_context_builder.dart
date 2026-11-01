@@ -1,5 +1,6 @@
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/ai_response_type.dart';
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/agents/agent_repository.dart';
@@ -45,7 +46,7 @@ not a status report.
 
 Your job each wake is to:
 
-1. Read the event's linked photos, notes, and voice memos.
+1. Read who was there, and the event's linked photos, notes, and voice memos.
 2. Synthesize what happened — the highlights, the people, the through-line.
 3. Publish the recap via the `update_report` tool.
 4. Record private follow-up ideas via `record_observations`.
@@ -172,7 +173,8 @@ persist across recaps but are not shown to the user.''';
       final linked = await journalRepository.getLinkedEntities(
         linkedTo: eventId,
       );
-      if (linked.isEmpty) return '';
+      final people = await _peopleAt(eventId);
+      if (linked.isEmpty && people.isEmpty) return '';
 
       final photos = <JournalImage>[];
       final notes = <String>[];
@@ -199,6 +201,16 @@ persist across recaps but are not shown to the user.''';
       }
 
       final buf = StringBuffer();
+
+      // Who it was with comes first: the people are what the recap is most
+      // often about, and what a later question names.
+      if (people.isNotEmpty) {
+        buf.writeln('### People');
+        for (final person in people) {
+          buf.writeln('- $person');
+        }
+        buf.writeln();
+      }
 
       if (photos.isNotEmpty) {
         final analyses = await _imageAnalysesFor(photos);
@@ -244,6 +256,52 @@ persist across recaps but are not shown to the user.''';
         stackTrace: stackTrace,
       );
       return '';
+    }
+  }
+
+  /// The people the event was with — the sources of the live relationship
+  /// links to it, the rows that also put it on each person's timeline — as
+  /// their names, with the nickname the user calls them when it differs.
+  ///
+  /// Read through the journal rather than the relationships feature, which
+  /// ranks above this one. A failure degrades to no people rather than
+  /// dropping the whole block.
+  Future<List<String>> _peopleAt(String eventId) async {
+    try {
+      final links = await journalRepository.getTypedLinksForTaskIds(
+        {eventId},
+        linkTypes: {entryLinkTypeDbName(EntryLinkType.relationship)},
+      );
+      final personIds = {
+        for (final link in links)
+          if (link.toId == eventId &&
+              link.deletedAt == null &&
+              link.hidden != true)
+            link.fromId,
+      };
+      if (personIds.isEmpty) return const [];
+      final people =
+          (await journalRepository.getJournalEntitiesByIds(personIds))
+              .whereType<RelationshipEntry>()
+              .where((person) => person.meta.deletedAt == null)
+              .toList()
+            ..sort((a, b) => a.data.title.compareTo(b.data.title));
+      return [
+        for (final person in people)
+          switch (person.data.nickname?.trim()) {
+            final nickname?
+                when nickname.isNotEmpty && nickname != person.data.title =>
+              '${person.data.title} ($nickname)',
+            _ => person.data.title,
+          },
+      ];
+    } catch (e, stackTrace) {
+      logError(
+        'failed to load the people at the event',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      return const [];
     }
   }
 

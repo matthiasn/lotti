@@ -4051,6 +4051,26 @@
   "eventsNewEvent": "New event",
   "eventsNoResults": "No matching events",
   "eventsPageTitle": "Events",
+  "eventsPeopleAdd": "Add people",
+  "@eventsPeopleAdd": {
+    "description": "Chip on an event's page that opens the picker for who was there, while no one is linked yet."
+  },
+  "eventsPeopleEdit": "Edit people",
+  "@eventsPeopleEdit": {
+    "description": "Chip after the people on an event's page that opens the picker to change who was there."
+  },
+  "eventsPeoplePickerTitle": "Who was there?",
+  "@eventsPeoplePickerTitle": {
+    "description": "Title of the sheet where the user picks who was at an event."
+  },
+  "eventsPeopleSaveFailed": "Could not update who was there.",
+  "@eventsPeopleSaveFailed": {
+    "description": "Toast when changing who was at an event could not be fully saved."
+  },
+  "eventsPeopleSection": "People",
+  "@eventsPeopleSection": {
+    "description": "Header over the people an event was with, on the event's page."
+  },
   "eventsPhotosSection": "Photos",
   "eventsRatingStarLabel": "Rate {starIndex} of {totalStars} stars",
   "@eventsRatingStarLabel": {
@@ -8879,6 +8899,10 @@
         "type": "String"
       }
     }
+  },
+  "relationshipPickerSearchHint": "Search people",
+  "@relationshipPickerSearchHint": {
+    "description": "Placeholder of the search field in the sheet for picking people."
   },
   "relationshipPlanMeeting": "Plan a meeting with {name}",
   "@relationshipPlanMeeting": {

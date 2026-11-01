@@ -11,6 +11,7 @@ import 'package:lotti/features/events/ui/model/event_view_data.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../test_data/test_data.dart';
+import '../../relationships/helpers/test_people.dart';
 import '../test_utils.dart';
 
 /// Stands in for the real `TimeOfDay.format(context)` the widgets inject.
@@ -436,6 +437,24 @@ void main() {
       );
 
       expect(entry!.endTimeLabel, '2:00 PM');
+    });
+  });
+
+  group('eventPersonFor', () {
+    test('carries the name and the face the chip draws', () {
+      final person = makeTestPerson(
+        id: 'pip',
+        title: 'Pip Penguin',
+        nickname: 'Pip',
+        avatarImageId: 'avatar-1',
+      );
+
+      final mapped = eventPersonFor(person);
+
+      expect(mapped.id, 'pip');
+      expect(mapped.name, 'Pip Penguin');
+      expect(mapped.avatarImageId, 'avatar-1');
+      expect(mapped.avatarCrop, isNull);
     });
   });
 

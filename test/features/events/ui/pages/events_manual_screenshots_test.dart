@@ -43,6 +43,7 @@ import 'package:lotti/features/events/ui/widgets/event_photo_gallery.dart';
 import 'package:lotti/features/events/ui/widgets/events_overview_view.dart';
 import 'package:lotti/features/journal/state/linked_ai_responses_controller.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
+import 'package:lotti/features/relationships/state/entry_people_providers.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
@@ -62,6 +63,7 @@ import '../../../../widget_test_utils.dart';
 import '../../../agents/test_utils.dart';
 import '../../../categories/test_utils.dart';
 import '../../../daily_os_next/screenshot_harness.dart';
+import '../../../relationships/helpers/test_people.dart';
 
 const _subdir = 'events';
 final String _detailEventId = demoUuid('event-project-waddle-launch-gala');
@@ -475,6 +477,22 @@ void main() {
         kind: 'event_agent',
         displayName: _t('Gala recap', 'Gala-Rückblick'),
       ),
+    ),
+    // Who the gala was with: two of the penguin world's People, so the
+    // page shows its People row.
+    peopleOnEntryProvider(_detailEventId).overrideWith(
+      (ref) => [
+        makeTestPerson(
+          id: demoUuid('person-pip-frostbeak'),
+          title: 'Commander Pip Frostbeak',
+          nickname: 'Pip',
+        ),
+        makeTestPerson(
+          id: demoUuid('person-skua-brightwing'),
+          title: 'Dr. Skua Brightwing',
+          nickname: 'Skua',
+        ),
+      ],
     ),
     // The card's freshness strip reads the agent's run state and model: a
     // settled agent on a resolved model, so Update now is live.

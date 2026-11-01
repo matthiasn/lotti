@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/ai_response_type.dart';
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/event_data.dart';
 import 'package:lotti/classes/event_status.dart';
@@ -11,6 +12,7 @@ import 'package:lotti/features/demo/seed/demo_entity_factories.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
+import '../../relationships/helpers/test_people.dart';
 import '../test_utils.dart';
 
 void main() {
@@ -115,6 +117,13 @@ void main() {
     when(
       () => journalRepository.getBulkLinkedEntities(any()),
     ).thenAnswer((_) async => {});
+    // …and no one is linked to the event unless a test says so.
+    when(
+      () => journalRepository.getTypedLinksForTaskIds(
+        any(),
+        linkTypes: any(named: 'linkTypes'),
+      ),
+    ).thenAnswer((_) async => const []);
     builder = EventAgentContextBuilder(
       agentRepository: agentRepository,
       journalRepository: journalRepository,
@@ -416,6 +425,98 @@ void main() {
         await builder.buildLinkedEntriesContext('event-001');
 
         verifyNever(() => journalRepository.getBulkLinkedEntities(any()));
+      });
+    });
+
+    group('people', () {
+      JournalEntity person(String id, String title, {String? nickname}) =>
+          makeTestPerson(id: id, title: title, nickname: nickname);
+
+      EntryLink relationshipLink(
+        String personId, {
+        String toId = 'event-001',
+        bool hidden = false,
+        DateTime? deletedAt,
+      }) => EntryLink.relationship(
+        id: 'link-$personId',
+        fromId: personId,
+        toId: toId,
+        createdAt: eventTime,
+        updatedAt: eventTime,
+        vectorClock: null,
+        hidden: hidden,
+        deletedAt: deletedAt,
+      );
+
+      void linkPeople(List<EntryLink> links) => when(
+        () => journalRepository.getTypedLinksForTaskIds(
+          {'event-001'},
+          linkTypes: {'RelationshipLink'},
+        ),
+      ).thenAnswer((_) async => links);
+
+      test('lists who was there first, by name, with a differing '
+          'nickname', () async {
+        when(
+          () => journalRepository.getLinkedEntities(linkedTo: 'event-001'),
+        ).thenAnswer((_) async => [note(text: 'best night in months')]);
+        linkPeople([
+          relationshipLink('p-rocko'),
+          relationshipLink('p-pip'),
+          relationshipLink('p-gone', deletedAt: eventTime),
+          relationshipLink('p-hidden', hidden: true),
+          // A link from the event to someone else is not this event's people.
+          relationshipLink('p-other', toId: 'other-event'),
+        ]);
+        when(
+          () => journalRepository.getJournalEntitiesByIds({'p-rocko', 'p-pip'}),
+        ).thenAnswer(
+          (_) async => [
+            person('p-rocko', 'Rocko', nickname: 'Rocko'),
+            person('p-pip', 'Pip Penguin', nickname: 'Pip'),
+          ],
+        );
+
+        final context = await builder.buildLinkedEntriesContext('event-001');
+
+        expect(
+          context,
+          startsWith('### People\n- Pip Penguin (Pip)\n- Rocko\n'),
+        );
+        expect(context, contains('### Notes'));
+        expect(loggedErrors, isEmpty);
+      });
+
+      test('people alone are worth a context block', () async {
+        when(
+          () => journalRepository.getLinkedEntities(linkedTo: 'event-001'),
+        ).thenAnswer((_) async => []);
+        linkPeople([relationshipLink('p-pip')]);
+        when(
+          () => journalRepository.getJournalEntitiesByIds({'p-pip'}),
+        ).thenAnswer((_) async => [person('p-pip', 'Pip Penguin')]);
+
+        final context = await builder.buildLinkedEntriesContext('event-001');
+
+        expect(context.trim(), '### People\n- Pip Penguin');
+      });
+
+      test('a failed people lookup keeps the rest and logs', () async {
+        when(
+          () => journalRepository.getLinkedEntities(linkedTo: 'event-001'),
+        ).thenAnswer((_) async => [note(text: 'kept')]);
+        when(
+          () => journalRepository.getTypedLinksForTaskIds(
+            any(),
+            linkTypes: any(named: 'linkTypes'),
+          ),
+        ).thenThrow(Exception('db down'));
+
+        final context = await builder.buildLinkedEntriesContext('event-001');
+
+        expect(context, isNot(contains('### People')));
+        expect(context, contains('- kept'));
+        expect(loggedErrors.single.message, contains('people'));
       });
     });
 
