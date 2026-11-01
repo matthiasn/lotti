@@ -51,7 +51,7 @@ part 'create_goal_agent_page_form_helpers.dart';
 
 class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage>
     with _GoalFormCategory {
-  final _statement = TextEditingController();
+  late final _statement = TextEditingController(text: widget.initialIntention);
   final _title = TextEditingController();
   final _persona = TextEditingController();
   final _stepsTarget = TextEditingController(text: '10000');

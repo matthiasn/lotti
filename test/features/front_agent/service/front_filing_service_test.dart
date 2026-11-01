@@ -13,6 +13,7 @@ import 'package:mocktail/mocktail.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../agents/test_data/entity_factories.dart';
+import '../../projects/test_utils.dart';
 
 void main() {
   setUpAll(registerAllFallbackValues);
@@ -137,7 +138,7 @@ void main() {
     );
   });
 
-  group('fileUnderTask', () {
+  group('fileUnderOwner', () {
     test("writes the user's words verbatim as an entry linked to the task, in "
         "the task's category, and records the entry", () async {
       seed(const FrontDoorProposal(ownerId: 'garden'));
@@ -145,7 +146,7 @@ void main() {
         (_) async => task('garden', 'Repair the nest box', categoryId: 'cat-1'),
       );
 
-      await service.fileUnderTask(doorId);
+      await service.fileUnderOwner(doorId);
 
       expect(written, [
         (
@@ -164,11 +165,34 @@ void main() {
       ).called(1);
     });
 
+    test('files under a project the same way: linked under it, in its '
+        'category, so its agent reads it in its log', () async {
+      seed(
+        const FrontDoorProposal(ownerId: 'survey'),
+        kind: FrontDestinationKind.project,
+        destinationId: 'survey',
+      );
+      when(() => journalDb.journalEntityById('survey')).thenAnswer(
+        (_) async => makeTestProject(
+          id: 'survey',
+          title: 'Nest survey',
+          categoryId: 'cat-2',
+        ),
+      );
+
+      await service.fileUnderOwner(doorId);
+
+      expect(written.single.$3, 'survey');
+      expect(written.single.$4, 'cat-2');
+      final outcome = rewritten().outcome! as FrontDoorFiled;
+      expect(outcome.ownerId, 'survey');
+    });
+
     test(
       'a task that is gone still files under its id, with no category',
       () async {
         seed(const FrontDoorProposal(ownerId: 'garden'));
-        await service.fileUnderTask(doorId);
+        await service.fileUnderOwner(doorId);
         expect(written.single.$4, isNull);
       },
     );
@@ -178,7 +202,7 @@ void main() {
       () async {
         seed(const FrontDoorProposal(ownerId: 'garden'));
         entryFor = (_) => null;
-        await expectLater(service.fileUnderTask(doorId), throwsStateError);
+        await expectLater(service.fileUnderOwner(doorId), throwsStateError);
         expect(upserts, isEmpty);
       },
     );
@@ -186,7 +210,7 @@ void main() {
     test('a door that is not a proposal any more refuses', () async {
       seed(const FrontDoorFiled(entryId: 'e', ownerId: 'garden'));
       await expectLater(
-        service.fileUnderTask(doorId),
+        service.fileUnderOwner(doorId),
         throwsA(isA<FrontDoorStateException>()),
       );
       expect(written, isEmpty);
@@ -204,6 +228,71 @@ void main() {
           ),
         ),
       );
+    });
+  });
+
+  group('a change to today', () {
+    test('declined, its words go to the inbox, writing nothing', () async {
+      seed(
+        const FrontDoorDay(),
+        kind: FrontDestinationKind.day,
+        destinationId: null,
+      );
+      await service.decline(doorId);
+      expect(written, isEmpty);
+      final outcome = rewritten().outcome! as FrontDoorInbox;
+      expect(outcome.ownerId, isNull);
+      expect(outcome.newKind, isNull);
+    });
+
+    test(
+      'settles once a plan was accepted for it, writing nothing here',
+      () async {
+        seed(
+          const FrontDoorDay(),
+          kind: FrontDestinationKind.day,
+          destinationId: null,
+        );
+        await service.markDayPlanned(doorId, DateTime(2026, 11));
+        expect(written, isEmpty);
+        final outcome = rewritten().outcome! as FrontDoorDayPlanned;
+        expect(outcome.day, DateTime(2026, 11));
+      },
+    );
+
+    test(
+      'a door that is not a change to today refuses to settle as one',
+      () async {
+        seed(const FrontDoorProposal(ownerId: 'garden'));
+        await expectLater(
+          service.markDayPlanned(doorId, DateTime(2026, 11)),
+          throwsA(isA<FrontDoorStateException>()),
+        );
+        expect(upserts, isEmpty);
+      },
+    );
+  });
+
+  group('markProjectCreated', () {
+    test('settles an inbox item on the project the form made of it', () async {
+      seed(
+        const FrontDoorInbox(newKind: FrontNewKind.project),
+        kind: FrontDestinationKind.newThing,
+        destinationId: null,
+      );
+      await service.markProjectCreated(doorId, 'p-1');
+      expect(written, isEmpty);
+      final outcome = rewritten().outcome! as FrontDoorProjectCreated;
+      expect(outcome.projectId, 'p-1');
+    });
+
+    test('an item already settled refuses', () async {
+      seed(const FrontDoorDeclined());
+      await expectLater(
+        service.markProjectCreated(doorId, 'p-1'),
+        throwsA(isA<FrontDoorStateException>()),
+      );
+      expect(upserts, isEmpty);
     });
   });
 
@@ -324,7 +413,7 @@ void main() {
 
     test('a re-file after an unfile names the next generation', () async {
       seed(const FrontDoorProposal(ownerId: 'garden', generation: 2));
-      await service.fileUnderTask(doorId);
+      await service.fileUnderOwner(doorId);
       expect(written.single.$2, frontDoorEntryId(doorId, generation: 2));
       expect(
         frontDoorEntryId(doorId, generation: 2),

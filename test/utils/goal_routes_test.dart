@@ -13,6 +13,17 @@ void main() {
       expect(goalCreatePath, startsWith(goalsRootPath));
     });
 
+    test('the creation route can carry an intention, encoded, and reads '
+        'back as it was said', () {
+      final path = goalCreatePathWith(intention: 'Swim & read: 3×/week?');
+      final uri = Uri.parse(path);
+      expect(uri.path, goalCreatePath);
+      expect(
+        uri.queryParameters[goalIntentionParam],
+        'Swim & read: 3×/week?',
+      );
+    });
+
     test('the sub-routes are distinct from one another', () {
       final paths = {
         goalDetailPath('g1'),

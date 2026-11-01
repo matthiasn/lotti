@@ -6999,6 +6999,15 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String get frontDoorChangeDay => 'Ändra idag';
+
+  @override
+  String get frontDoorDayPlanned => 'Dagens plan ändrad';
+
+  @override
+  String get frontDoorDayProposal => 'Ändra dagens plan?';
+
+  @override
   String get frontDoorDeclined => 'Inte sparat';
 
   @override
@@ -7075,6 +7084,9 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get frontDoorOpen => 'Öppna';
+
+  @override
+  String get frontDoorProjectCreated => 'Gjort till ett projekt';
 
   @override
   String frontDoorProposal(String owner) {

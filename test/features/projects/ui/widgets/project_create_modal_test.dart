@@ -150,6 +150,7 @@ void main() {
   Future<void> pumpForm(
     WidgetTester tester, {
     String? categoryId,
+    String? initialTitle,
   }) async {
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
@@ -165,7 +166,10 @@ void main() {
                       onPressed: () => Navigator.of(context).push(
                         MaterialPageRoute<void>(
                           builder: (_) => Scaffold(
-                            body: ProjectCreateForm(categoryId: categoryId),
+                            body: ProjectCreateForm(
+                              categoryId: categoryId,
+                              initialTitle: initialTitle,
+                            ),
                           ),
                         ),
                       ),
@@ -196,6 +200,17 @@ void main() {
       expect(find.text(messages.projectTargetDateLabel), findsNWidgets(2));
       expect(find.text(messages.cancelButton), findsOneWidget);
       expect(find.text(messages.createButton), findsOneWidget);
+    });
+
+    testWidgets('words said elsewhere open as the title', (tester) async {
+      await pumpForm(tester, initialTitle: 'Rebuild the feeders');
+      expect(
+        find.descendant(
+          of: find.byType(DesignSystemTextInput),
+          matching: find.text('Rebuild the feeders'),
+        ),
+        findsOne,
+      );
     });
 
     testWidgets('empty title shows an error toast and never calls the '

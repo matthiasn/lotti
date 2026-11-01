@@ -6,6 +6,7 @@ import 'package:lotti/features/goals/ui/pages/goal_agent_chat_page.dart';
 import 'package:lotti/features/goals/ui/pages/goal_agent_detail_page.dart';
 import 'package:lotti/features/goals/ui/pages/goal_timeline_page.dart';
 import 'package:lotti/features/goals/ui/pages/unified_goals_page.dart';
+import 'package:lotti/utils/goal_routes.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../widget_test_utils.dart';
@@ -84,6 +85,23 @@ void main() {
       expect(pages.length, 2);
       expect(pages.last.key, const ValueKey('goals-create'));
       expect(pages.last.child, isA<CreateGoalAgentPage>());
+      expect(
+        (pages.last.child as CreateGoalAgentPage).initialIntention,
+        isNull,
+      );
+    });
+
+    testWidgets('the creation wizard takes an intention said elsewhere from '
+        'the route', (tester) async {
+      final pages = await pagesFor(
+        tester,
+        goalCreatePathWith(intention: 'Swim every morning'),
+      );
+      expect(pages.last.key, const ValueKey('goals-create'));
+      expect(
+        (pages.last.child as CreateGoalAgentPage).initialIntention,
+        'Swim every morning',
+      );
     });
 
     testWidgets('hosts the goal detail, chat, timeline and edit pages under '

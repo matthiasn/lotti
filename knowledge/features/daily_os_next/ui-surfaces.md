@@ -5,7 +5,7 @@ description: The Day page, the anchored voice template, timeline editing, the ca
 resource: ../../../lib/features/daily_os_next/ui
 tags: [daily-os, ui, voice, timeline, onboarding]
 status: stable
-generated: { by: claude-code/fable-5, at: 2026-09-02T12:00:00Z }
+generated: { by: claude-code/fable-5, at: 2026-11-01T20:00:00Z }
 stale_after: 2027-03-02
 sources:
   - id: ui
@@ -558,6 +558,7 @@ completion celebration beat and the Settings replay entry.
 | `AgentRepository.countEntitiesByType` | The "has a plan ever existed" query. Deliberately **includes soft-deleted tombstones** and counts across planner identities, so a returning user who deleted their only plan is not mistaken for a new user |
 | Daily OS event vocabulary | Six `dailyOs*` events reuse the shared metrics DB but are excluded from `OnboardingFunnelState`, so they never shift the general FTUE metrics |
 | `DayPlanningResult` + `attributeCreatedTaskIds` | `showDayPlanningModal` resolves to a typed result: `DayPlanningCreated`, `DayPlanningAdapted`, or `null`. Attribution reconstructs created task ids from `ParsedItem.matchedTaskId` transitions — best-effort, empty when it cannot be established |
+| `initialTranscript` on both intents | Words said elsewhere open the planning already given: `DayPlanningAdapt` sends them to Refine at once, `DayPlanningCreate` types them into the capture (after the first frame, through `startTyping` + `updateTranscript`) for the user to continue. The companion's day door uses both ([front agent](../front_agent.md)) |
 | `DailyOsOnboardingSession` / `…SessionController` | Stable id, target date, tips-visible state, and exactly-once guards for stage and skip events. Sessions do not carry an origin; the deferred Settings replay entry will need an explicit entry-point contract when it is implemented |
 | `DailyOsOnboardingSpotlight` | Presentational full-screen overlay: dims the surface, cuts a highlight hole around a measured target rect, floats a glass card with one primary action. Attention ring pulses under normal motion, static under reduced motion. Copy, callbacks and rect all injected |
 | `DailyOsOnboardingCoachStrip` / `…CoachSlot` | A static glass banner narrating one modal beat; the slot renders it only while a session is active and records its stage event once on mount. Collapses to nothing for normal users |

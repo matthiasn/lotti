@@ -41,15 +41,20 @@ import 'package:material_ui/material_ui.dart';
 ///
 /// Resolves to the freshly created [ProjectEntry] when a project is saved, or
 /// `null` when the overlay is dismissed (Cancel, the close button, the scrim,
-/// or back). [categoryId] preselects a category for the new project.
+/// or back). [categoryId] preselects a category for the new project;
+/// [initialTitle] fills the title, for words the user said elsewhere.
 Future<ProjectEntry?> showProjectCreateModal({
   required BuildContext context,
   String? categoryId,
+  String? initialTitle,
 }) {
   return ModalUtils.showSinglePageModal<ProjectEntry>(
     context: context,
     title: context.messages.projectCreateTitle,
-    builder: (modalContext) => ProjectCreateForm(categoryId: categoryId),
+    builder: (modalContext) => ProjectCreateForm(
+      categoryId: categoryId,
+      initialTitle: initialTitle,
+    ),
   );
 }
 
@@ -62,10 +67,14 @@ Future<ProjectEntry?> showProjectCreateModal({
 class ProjectCreateForm extends ConsumerStatefulWidget {
   const ProjectCreateForm({
     this.categoryId,
+    this.initialTitle,
     super.key,
   });
 
   final String? categoryId;
+
+  /// The title the form starts with — words the user said elsewhere.
+  final String? initialTitle;
 
   @override
   ConsumerState<ProjectCreateForm> createState() => _ProjectCreateFormState();
@@ -80,7 +89,7 @@ class _ProjectCreateFormState extends ConsumerState<ProjectCreateForm> {
   @override
   void initState() {
     super.initState();
-    _titleController = TextEditingController();
+    _titleController = TextEditingController(text: widget.initialTitle);
     _categoryId = widget.categoryId;
   }
 

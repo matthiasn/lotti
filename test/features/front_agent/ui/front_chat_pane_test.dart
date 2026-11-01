@@ -11,6 +11,7 @@ import 'package:lotti/features/agents/ui/chat/agent_chat_view.dart';
 import 'package:lotti/features/agents/ui/chat/chat_recorder_controller.dart';
 import 'package:lotti/features/ai_consumption/model/consumption_aggregation_models.dart';
 import 'package:lotti/features/ai_consumption/state/consumption_providers.dart';
+import 'package:lotti/features/daily_os_next/state/selected_date_provider.dart';
 import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
@@ -30,7 +31,9 @@ import 'package:lotti/features/front_agent/ui/front_chat_hero.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_pane.dart';
 import 'package:lotti/features/front_agent/ui/front_conversation_list.dart';
 import 'package:lotti/features/front_agent/ui/front_door_card.dart';
+import 'package:lotti/features/front_agent/ui/front_door_wizards.dart';
 import 'package:lotti/features/front_agent/ui/front_turn_cost_line.dart';
+import 'package:lotti/features/projects/ui/widgets/project_create_modal.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -86,6 +89,8 @@ void main() {
     QueryAccessSnapshot? journalAccess,
     FrontConversationIndex? conversations,
     ChatRecorderController Function()? recorder,
+    FrontDayPlanner? planDay,
+    FrontNewProject? newProject,
   }) async {
     // The project creation resolves categories through the locator.
     final cache = MockEntitiesCacheService();
@@ -152,6 +157,10 @@ void main() {
             ),
             if (recorder != null)
               chatRecorderControllerProvider.overrideWith(recorder),
+            if (planDay != null)
+              frontDayPlannerProvider.overrideWithValue(planDay),
+            if (newProject != null)
+              frontNewProjectProvider.overrideWithValue(newProject),
           ],
         ),
       );
@@ -535,14 +544,14 @@ void main() {
     testWidgets('the one tap under a proposal files through the service', (
       tester,
     ) async {
-      when(() => filing.fileUnderTask('d:door:0')).thenAnswer((_) async {});
+      when(() => filing.fileUnderOwner('d:door:0')).thenAnswer((_) async {});
       await pumpPane(tester, thread: () async => waiting());
 
       await tester.tap(find.byKey(const ValueKey('front-door-file-0')));
       await tester.pump();
       await tester.pump();
 
-      verify(() => filing.fileUnderTask('d:door:0')).called(1);
+      verify(() => filing.fileUnderOwner('d:door:0')).called(1);
     });
 
     /// Opens the list from the header and the inbox from the list.
@@ -734,6 +743,20 @@ void main() {
                 doorId: 'd:door:1',
                 record: settled(1, const FrontDoorTaskCreated(taskId: 't-1')),
               ),
+              FrontDoorEntry(
+                doorId: 'd:door:2',
+                record: settled(
+                  2,
+                  const FrontDoorProjectCreated(projectId: 'p-1'),
+                ),
+              ),
+              FrontDoorEntry(
+                doorId: 'd:door:3',
+                record: settled(
+                  3,
+                  FrontDoorDayPlanned(day: DateTime(2026, 10, 30)),
+                ),
+              ),
             ],
           },
         ),
@@ -743,8 +766,24 @@ void main() {
       await tester.pump();
       await tester.tap(find.byKey(const ValueKey('front-door-open-1')));
       await tester.pump();
+      await tester.tap(find.byKey(const ValueKey('front-door-open-2')));
+      await tester.pump();
+      await tester.tap(find.byKey(const ValueKey('front-door-open-3')));
+      await tester.pump();
 
-      expect(paths, ['/journal/e-1', '/tasks/t-1']);
+      // The day it planned is the Daily OS day surface, showing that day.
+      expect(paths, [
+        '/journal/e-1',
+        '/tasks/t-1',
+        '/projects/p-1',
+        '/calendar',
+      ]);
+      expect(
+        ProviderScope.containerOf(
+          tester.element(find.byType(FrontChatPane)),
+        ).read(dailyOsNextSelectedDateProvider),
+        DateTime(2026, 10, 30),
+      );
     });
   });
 
@@ -853,9 +892,8 @@ void main() {
       },
     );
 
-    testWidgets('start a goal leaves the sheet and goes to the goal wizard', (
-      tester,
-    ) async {
+    testWidgets('start a goal leaves the sheet and goes to the goal wizard, '
+        'with the words as its intention', (tester) async {
       final paths = <String>[];
       beamToNamedOverride = paths.add;
       addTearDown(() => beamToNamedOverride = null);
@@ -866,12 +904,13 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('front-door-goal-0')));
       await tester.pump();
 
-      expect(paths, [goalCreatePath]);
+      expect(paths, [goalCreatePathWith(intention: 'Relocate the colony.')]);
       // Nothing was written: the door still waits.
       verifyNever(() => filing.saveAsNote(any()));
     });
 
-    testWidgets('new project opens the project creation', (tester) async {
+    testWidgets('new project opens the project creation, titled with the '
+        'words', (tester) async {
       await pumpPane(tester, thread: () async => inbox(FrontNewKind.project));
 
       await tester.tap(find.byKey(const ValueKey('front-door-menu-0')));
@@ -881,6 +920,124 @@ void main() {
       await tester.pump(const Duration(milliseconds: 400));
 
       expect(find.text('Create Project'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(ProjectCreateForm),
+          matching: find.text('Relocate the colony.'),
+        ),
+        findsOne,
+      );
+      verifyNever(() => filing.markProjectCreated(any(), any()));
+    });
+
+    testWidgets('a project the form created settles the item on it; a form '
+        'closed settles nothing', (tester) async {
+      String? created = 'p-1';
+      final asked = <String>[];
+      when(
+        () => filing.markProjectCreated('d:door:0', 'p-1'),
+      ).thenAnswer((_) async {});
+      await pumpPane(
+        tester,
+        thread: () async => inbox(FrontNewKind.project),
+        newProject: (context, words) async {
+          asked.add(words);
+          return created;
+        },
+      );
+
+      Future<void> choose() async {
+        await tester.tap(find.byKey(const ValueKey('front-door-menu-0')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const ValueKey('front-door-project-0')));
+        await tester.pumpAndSettle();
+      }
+
+      await choose();
+      expect(asked, ['Relocate the colony.']);
+      verify(() => filing.markProjectCreated('d:door:0', 'p-1')).called(1);
+
+      created = null;
+      await choose();
+      verifyNever(() => filing.markProjectCreated(any(), any()));
+    });
+  });
+
+  group('a change to today', () {
+    FrontChatThread today() => FrontChatThread(
+      messages: [
+        message('u1', AgentChatRole.user, 'Move the count.', now),
+      ],
+      doorsByMessageId: {
+        'u1': [
+          FrontDoorEntry(
+            doorId: 'd:door:0',
+            record: FrontDoorRecord(
+              segmentIndex: 0,
+              text: 'Move the count.',
+              kind: FrontDestinationKind.day,
+              status: FrontDoorStatus.done,
+              claimedAt: now.toUtc(),
+              outcome: const FrontDoorDay(),
+            ),
+          ),
+        ],
+      },
+    );
+
+    testWidgets('takes the words into the planning, and settles on the day '
+        'a plan was accepted for', (tester) async {
+      final day = DateTime(2026, 10, 31);
+      DateTime? accepted = day;
+      final asked = <String>[];
+      when(
+        () => filing.markDayPlanned('d:door:0', day),
+      ).thenAnswer((_) async {});
+      await pumpPane(
+        tester,
+        thread: () async => today(),
+        planDay: (context, words) async {
+          asked.add(words);
+          return accepted;
+        },
+      );
+
+      await tester.tap(find.byKey(const ValueKey('front-door-day-0')));
+      await tester.pump();
+      expect(asked, ['Move the count.']);
+      verify(() => filing.markDayPlanned('d:door:0', day)).called(1);
+
+      accepted = null;
+      await tester.tap(find.byKey(const ValueKey('front-door-day-0')));
+      await tester.pump();
+      expect(asked, hasLength(2));
+      verifyNever(() => filing.markDayPlanned(any(), any()));
+    });
+
+    testWidgets('a second tap while the planning is open opens no second '
+        'one', (tester) async {
+      final open = Completer<DateTime?>();
+      var opened = 0;
+      await pumpPane(
+        tester,
+        thread: () async => today(),
+        planDay: (context, words) {
+          opened++;
+          return open.future;
+        },
+      );
+
+      await tester.tap(find.byKey(const ValueKey('front-door-day-0')));
+      await tester.pump();
+      await tester.tap(
+        find.byKey(const ValueKey('front-door-day-0')),
+        warnIfMissed: false,
+      );
+      await tester.pump();
+      expect(opened, 1);
+
+      open.complete(null);
+      await tester.pump();
     });
   });
 }

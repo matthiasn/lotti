@@ -141,6 +141,7 @@ final frontDoorWalkerProvider = Provider<FrontDoorWalker>(
     goalChat: ref.watch(goalChatServiceProvider),
     personChat: ref.watch(relationshipChatServiceProvider),
     ownerTitles: ref.watch(frontOwnerTitlesProvider),
+    configFlag: ref.watch(journalDbProvider).getConfigFlag,
     domainLogger: ref.watch(domainLoggerProvider),
   ),
   name: 'frontDoorWalkerProvider',

@@ -90,18 +90,19 @@ class FrontFilingService {
   final FrontTaskMaker _makeTask;
   final FrontEntryDeleter _deleteEntry;
 
-  /// Files the proposed segment under its task: a text entry with the
-  /// user's words, linked to the task and in the task's category, so the
-  /// task agent's subscription wake takes it from there.
-  Future<void> fileUnderTask(String doorId) async {
+  /// Files the proposed segment under its owner — a task or a project: a
+  /// text entry with the user's words, linked under the owner and in its
+  /// category. A task agent's subscription wake takes it from there; a
+  /// project agent reads it in its log at its next update.
+  Future<void> fileUnderOwner(String doorId) async {
     final (record, payload) = await _waiting<FrontDoorProposal>(doorId);
     final proposal = record.outcome! as FrontDoorProposal;
-    final task = await _journalDb.journalEntityById(proposal.ownerId);
+    final owner = await _journalDb.journalEntityById(proposal.ownerId);
     final entry = await _writeTextEntry(
       record.text,
       id: frontDoorEntryId(doorId, generation: proposal.generation),
       linkedId: proposal.ownerId,
-      categoryId: task?.meta.categoryId,
+      categoryId: owner?.meta.categoryId,
     );
     if (entry == null) throw StateError('The entry was not written.');
     await _rewrite(
@@ -117,9 +118,9 @@ class FrontFilingService {
   }
 
   /// The user said no to what a waiting door offers. Nothing is written.
-  /// A proposal is not refused outright: the words go to the inbox, where
-  /// they can still be made something, or left — a wrong guess costs one
-  /// more tap, not a retype. An inbox item left where it is settles, and
+  /// A proposal — under an owner or for today's plan — is not refused
+  /// outright: the words go to the inbox, where they can still be made
+  /// something, or left — a wrong guess costs one more tap, not a retype. An inbox item left where it is settles, and
   /// what it was is kept on the record so [undoDecline] can bring it back.
   Future<void> decline(String doorId) async {
     final (record, payload) = await _waiting<FrontDoorOutcome>(doorId);
@@ -128,6 +129,7 @@ class FrontFilingService {
         ownerId: ownerId,
         generation: generation,
       ),
+      FrontDoorDay() => const FrontDoorInbox(),
       FrontDoorInbox(:final ownerId, :final newKind, :final generation) =>
         FrontDoorDeclined(
           ownerId: ownerId,
@@ -137,6 +139,24 @@ class FrontFilingService {
       _ => throw FrontDoorStateException(doorId),
     };
     await _rewrite(payload, record.done(next));
+  }
+
+  /// The user took a change to today into the Daily OS planning and
+  /// accepted a plan for [day] there: the door settles on that day.
+  /// Nothing is written here; the plan was.
+  Future<void> markDayPlanned(String doorId, DateTime day) async {
+    final (record, payload) = await _waiting<FrontDoorDay>(doorId);
+    await _rewrite(payload, record.done(FrontDoorDayPlanned(day: day)));
+  }
+
+  /// The project form, opened with an inbox item's words, created
+  /// [projectId]: the item settles on it.
+  Future<void> markProjectCreated(String doorId, String projectId) async {
+    final (record, payload) = await _waiting<FrontDoorInbox>(doorId);
+    await _rewrite(
+      payload,
+      record.done(FrontDoorProjectCreated(projectId: projectId)),
+    );
   }
 
   /// A left item waits again as what it was — the proposal, when it came

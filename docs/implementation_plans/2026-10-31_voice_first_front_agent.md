@@ -196,6 +196,19 @@ next one. The order is a proposal.
   (decision 1).
 - Auto-filing stays an opt-in for later.
 
+- **As built, D (the doors):** a statement about a project as a whole is a
+  proposal like a task's, its tap filing the words under the project (the
+  project agent reads them in its log at its next update). A change to today
+  waits as *Change today*, whose tap opens the Daily OS planning with the
+  words — refining today's plan, or planning the day when there is none —
+  and settles once a plan is accepted there; a question about the day, or a
+  day with the Daily OS off, still has no door. *New project…* opens the
+  project form titled with the words and settles on the project it makes;
+  *Start a goal…* opens the goal wizard with them as its intention. A task
+  and a note were already one tap. Left: auto-filing, and a goal made from
+  the wizard settling its inbox item (the wizard is a page and reports
+  nothing back).
+
 ## Decided (owner, 2026-10-31)
 
 1. **Order:** A, then B, then C, then D.

@@ -640,17 +640,17 @@ void main() {
     test('runs the filing service, keeps the door busy meanwhile, and '
         're-projects the thread after', () async {
       final gate = Completer<void>();
-      when(() => filing.fileUnderTask('d1')).thenAnswer((_) => gate.future);
+      when(() => filing.fileUnderOwner('d1')).thenAnswer((_) => gate.future);
       final before = threadBuilder.builds;
 
-      final action = controller().fileUnderTask('d1');
+      final action = controller().fileUnderOwner('d1');
       expect(state().busyDoorIds, {'d1'});
       // A second tap while busy is a no-op.
-      await controller().fileUnderTask('d1');
+      await controller().fileUnderOwner('d1');
       gate.complete();
       await action;
 
-      verify(() => filing.fileUnderTask('d1')).called(1);
+      verify(() => filing.fileUnderOwner('d1')).called(1);
       expect(state().busyDoorIds, isEmpty);
       expect(state().failedDoorIds, isEmpty);
       await container.read(frontChatThreadProvider.future);
@@ -676,16 +676,27 @@ void main() {
       when(() => filing.takeBack('d')).thenAnswer((_) async {});
       when(() => filing.makeTask('d')).thenAnswer((_) async {});
       when(() => filing.saveAsNote('d')).thenAnswer((_) async {});
+      final day = DateTime(2026, 11);
+      when(() => filing.markDayPlanned('d', day)).thenAnswer((_) async {});
+      when(() => filing.markProjectCreated('d', 'p')).thenAnswer((_) async {});
       await controller().undoDecline('d');
       await controller().takeBack('d');
       await controller().makeTask('d');
       await controller().saveAsNote('d');
+      await controller().planDay('d', () async => day);
+      await controller().newProject('d', () async => 'p');
+      // Nothing accepted, nothing made: nothing settles.
+      await controller().planDay('d', () async => null);
+      await controller().newProject('d', () async => null);
       verifyInOrder([
         () => filing.undoDecline('d'),
         () => filing.takeBack('d'),
         () => filing.makeTask('d'),
         () => filing.saveAsNote('d'),
+        () => filing.markDayPlanned('d', day),
+        () => filing.markProjectCreated('d', 'p'),
       ]);
+      verifyNoMoreInteractions(filing);
     });
 
     test("the doors' state survives a send settling either way", () async {

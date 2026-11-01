@@ -5,6 +5,7 @@ import 'package:lotti/features/goals/ui/pages/goal_agent_detail_page.dart';
 import 'package:lotti/features/goals/ui/pages/goal_timeline_page.dart';
 import 'package:lotti/features/goals/ui/pages/unified_goals_page.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/utils/goal_routes.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// The unified Goals tab (flag: `enable_unified_goals`): goals at the top
@@ -39,7 +40,9 @@ class GoalsLocation extends BeamLocation<BeamState> {
         BeamPage(
           key: const ValueKey('goals-create'),
           title: messages.agentsCreateGoal,
-          child: const CreateGoalAgentPage(),
+          child: CreateGoalAgentPage(
+            initialIntention: state.uri.queryParameters[goalIntentionParam],
+          ),
         ),
       if (agentId != null)
         BeamPage(

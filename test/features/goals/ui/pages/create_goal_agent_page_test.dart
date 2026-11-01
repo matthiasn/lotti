@@ -281,6 +281,24 @@ void main() {
     );
   });
 
+  testWidgets('an intention said elsewhere opens the wizard filled in', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const CreateGoalAgentPage(initialIntention: 'Swim every morning'),
+        overrides: withServiceOverrides(overrides()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Step 1 of 3'), findsOneWidget);
+    expect(
+      tester.widget<TextField>(find.byType(TextField).first).controller!.text,
+      'Swim every morning',
+    );
+  });
+
   testWidgets('an example fills the intention and back returns one step', (
     tester,
   ) async {

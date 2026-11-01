@@ -21,6 +21,7 @@ import 'package:lotti/features/goals/service/goal_chat_service.dart';
 import 'package:lotti/features/relationships/model/relationship_agent_identity.dart';
 import 'package:lotti/features/relationships/service/relationship_chat_service.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:lotti/utils/consts.dart';
 
 /// Finds the agent that owns a task or project, or null when it has none.
 typedef FrontOwnerAgentLookup =
@@ -35,8 +36,9 @@ typedef FrontOwnerAgentLookup =
 /// projection when it lands. A task or project question is answered here,
 /// by the query pipeline, headless; so is a journal question, which the
 /// front agent answers herself from the journal within her allow-list.
-/// Every other segment is recorded as skipped with its reason; nothing
-/// writes to the journal.
+/// A statement for a task or project, or a change to today, waits as a
+/// proposal for the user's tap; what nothing owns waits in the inbox.
+/// Nothing here writes to the journal.
 ///
 /// Each segment is claimed under its deterministic record id before its
 /// door is invoked (the `ChangeDispatchIntents` discipline), so a retry or
@@ -52,6 +54,7 @@ class FrontDoorWalker {
     required GoalChatService goalChat,
     required RelationshipChatService personChat,
     required FrontOwnerTitles ownerTitles,
+    required Future<bool> Function(String flagName) configFlag,
     required DomainLogger domainLogger,
   }) : this._(
          repository,
@@ -62,6 +65,7 @@ class FrontDoorWalker {
          goalChat,
          personChat,
          ownerTitles,
+         configFlag,
          domainLogger,
        );
 
@@ -74,6 +78,7 @@ class FrontDoorWalker {
     this._goalChat,
     this._personChat,
     this._ownerTitles,
+    this._configFlag,
     this._domainLogger,
   );
 
@@ -85,6 +90,10 @@ class FrontDoorWalker {
   final GoalChatService _goalChat;
   final RelationshipChatService _personChat;
   final FrontOwnerTitles _ownerTitles;
+
+  /// Reads a config flag: whether the Daily OS is on, so a change to today
+  /// has somewhere to go.
+  final Future<bool> Function(String flagName) _configFlag;
   final DomainLogger _domainLogger;
 
   /// Walks every unwalked segment of the dispatch that answered
@@ -237,18 +246,12 @@ class FrontDoorWalker {
     final question = segment.intent == FrontSegmentIntent.question;
     switch (segment.kind) {
       case FrontDestinationKind.task:
-        if (!question) {
-          // A statement or instruction becomes a text entry under the
-          // task — but only on the user's tap (decision 1): the door
-          // proposes and waits.
-          return FrontDoorProposal(ownerId: id!);
-        }
-        return _askOwner(segment.kind, id!, segment.text, sourceMessageId);
       case FrontDestinationKind.project:
         if (!question) {
-          // No project door yet (decision 5): the router was told to ask
-          // which task; what still arrives here waits in the inbox.
-          return const FrontDoorInbox();
+          // A statement or instruction becomes a text entry under the
+          // task or project — but only on the user's tap (decision 1):
+          // the door proposes and waits.
+          return FrontDoorProposal(ownerId: id!);
         }
         return _askOwner(segment.kind, id!, segment.text, sourceMessageId);
       case FrontDestinationKind.goal:
@@ -296,7 +299,13 @@ class FrontDoorWalker {
       case FrontDestinationKind.unrouted:
         return const FrontDoorInbox();
       case FrontDestinationKind.day:
-        return const FrontDoorSkipped(FrontDoorSkipReason.noDoor);
+        // A change to today waits for the user's tap, which opens the
+        // Daily OS planning with the words (decision 1). A question about
+        // the day, or a day with the Daily OS off, has no door.
+        if (question || !await _configFlag(enableDailyOsPageFlag)) {
+          return const FrontDoorSkipped(FrontDoorSkipReason.noDoor);
+        }
+        return const FrontDoorDay();
     }
   }
 

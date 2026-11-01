@@ -11897,6 +11897,24 @@ abstract class AppLocalizations {
   /// **'{owner} is still replying…'**
   String frontDoorAwaitingReply(String owner);
 
+  /// No description provided for @frontDoorChangeDay.
+  ///
+  /// In en, this message translates to:
+  /// **'Change today'**
+  String get frontDoorChangeDay;
+
+  /// No description provided for @frontDoorDayPlanned.
+  ///
+  /// In en, this message translates to:
+  /// **'Today\'s plan changed'**
+  String get frontDoorDayPlanned;
+
+  /// No description provided for @frontDoorDayProposal.
+  ///
+  /// In en, this message translates to:
+  /// **'Change today\'s plan?'**
+  String get frontDoorDayProposal;
+
   /// No description provided for @frontDoorDeclined.
   ///
   /// In en, this message translates to:
@@ -12034,6 +12052,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Open'**
   String get frontDoorOpen;
+
+  /// No description provided for @frontDoorProjectCreated.
+  ///
+  /// In en, this message translates to:
+  /// **'Made into a project'**
+  String get frontDoorProjectCreated;
 
   /// No description provided for @frontDoorProposal.
   ///

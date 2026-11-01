@@ -175,6 +175,7 @@ Future<void> _openCreate(
   MockDayAgent? agent,
   List<TimeBlock> actualBlocks = const [],
   Size size = const Size(420, 900),
+  DayPlanningCreate intent = const DayPlanningCreate(),
 }) async {
   await tester.pumpWidget(
     makeTestableWidget(
@@ -184,7 +185,7 @@ Future<void> _openCreate(
             onPressed: () => showDayPlanningModal(
               context: context,
               dayDate: DateTime(2024, 3, 15),
-              intent: const DayPlanningCreate(),
+              intent: intent,
             ),
             child: const Text('open'),
           ),
@@ -301,6 +302,22 @@ void main() {
       expect(find.byType(CaptureModalContent), findsOneWidget);
       expect(find.byType(DayPlanningGlassActionBar), findsOneWidget);
       expect(find.byType(DayPlanningThinkingShader), findsOneWidget);
+    });
+
+    testWidgets('words given elsewhere open the capture typed in, ready to '
+        'continue', (tester) async {
+      await _openCreate(
+        tester,
+        intent: const DayPlanningCreate(
+          initialTranscript: '  Move the count to the afternoon  ',
+        ),
+      );
+      final capture = ProviderScope.containerOf(
+        tester.element(find.byType(CaptureModalContent)),
+      ).read(captureControllerProvider);
+      expect(capture.phase, CapturePhase.captured);
+      expect(capture.transcript, 'Move the count to the afternoon');
+      expect(find.byIcon(LottiIcons.forward), findsOneWidget);
     });
 
     testWidgets('idle bar offers only the "type instead" action', (

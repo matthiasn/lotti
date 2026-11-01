@@ -24,14 +24,16 @@ gave it, never reworded. A question about their records that no single owner
 holds — what was decided, where something was noted — she answers herself
 from the journal, within the categories she may see (a category named in the
 question narrows it), with the passages she relied on, each opening its
-source. A statement under a task is a **proposal**: one tap
-files the user's words verbatim as an entry under the task, and only the
-tap writes. The user keeps many **conversations** with her, as in a ChatGPT
+source. A statement under a task or a project is a **proposal**: one tap
+files the user's words verbatim as an entry under it, and only the tap
+writes. A change to today ("move the count to the afternoon") is one too:
+its tap takes the words into the Daily OS planning for today. The user keeps many **conversations** with her, as in a ChatGPT
 or Claude window: each a subject of its own, titled by its first question,
 listed newest first by recency behind the header's *Chats* button (beside
 the conversation on a desktop window), renamed, archived or deleted there. What nothing owns waits in the **inbox** — every conversation,
-filtered — with chips that make it a task, start a goal or project, or save
-it as a note, or leave it. Whatever a tap wrote can be opened or undone,
+filtered — with chips that make it a task, start a goal or project with
+its words, or save it as a note, or leave it. Whatever a tap wrote can be
+opened or undone,
 and a proposal she got wrong goes to the inbox rather than being retyped.
 
 ## What it owns
@@ -72,10 +74,11 @@ The open-task corpus and the phrase match are `features/agents`
 one-liners and TL;DRs are the owner agents'. Answers are theirs too: the
 query pipeline (`features/agents/query`) for tasks and projects, the goal
 and relationship chat services for goals and people. Filing writes through
-the journal's own entry and task creation; the goal and project wizards open
-as they are. Her voice is the shared read-aloud (`features/tts`) and the
-companion's lip-synced bust (`features/companion`). The Daily OS door is a
-later slice.
+the journal's own entry and task creation; the goal wizard and the project
+form open with the user's words in them. A change to today goes to the Daily
+OS planning (`features/daily_os_next`), which proposes the change and asks
+before it touches the plan. Her voice is the shared read-aloud
+(`features/tts`) and the companion's lip-synced bust (`features/companion`).
 
 The decisions and the slices are in
 [the implementation plan](../../../docs/implementation_plans/2026-10-23_single_agent_entry_point.md);
