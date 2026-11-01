@@ -492,8 +492,9 @@ a page over the conversation with its own back, *Chats* and close.
 `FrontConversationList` leads with *New chat*, *Inbox* while something waits,
 and *Search chats*, which opens in place; then the history grouped by
 recency — *Today*, *Yesterday*, *Previous 7 days*, *Older* — flat: each
-group a quiet caption over its rows, no card and no hairlines, so the open
-row's rounded neutral fill is the one strong surface in the list.
+group's day a caption in the accent, snug over its dense rows, no card and no
+hairlines. The accent splits the days while the rows stay neutral, so the open
+row's rounded fill is still the one strong surface in the list.
 A row is the title on the full width (two lines before it is cut) over one
 line of her last answer (`FrontConversation.preview`, the first line of her
 latest `reply_to_user` or `ask_user` in it, read by

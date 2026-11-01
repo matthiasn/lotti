@@ -3,10 +3,10 @@
   sit in the composer after "Answers from", with "All" to clear them; a chosen
   chip is filled and checked. "Type instead" and "Cancel" are quieter, and
   while you speak, the pill ends in a send arrow.
-- **Your chats with her are easier to scan.** The list is flat, without boxes,
-  each row shows the start of her last answer, and the times line up in one
-  column. On a phone the way to the list says "Chats", with the inbox count
-  beside it.
+- **Your chats with her are easier to scan.** The list is denser, without
+  boxes: each day is named in the accent colour, each row shows the start of
+  her last answer, and the times line up in one column. On a phone the way to
+  the list says "Chats", with the inbox count beside it.
 - **Labelled dividers stop shouting.** A divider's label, such as "Today" in
   a chat, is now written in sentence case instead of capitals.
 - **On a computer, start typing to her right away.** The first key you type
