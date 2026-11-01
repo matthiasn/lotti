@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:lotti/classes/agents/query_chat_models.dart';
 import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/agents/ui/chat/agent_chat_view.dart';
+import 'package:lotti/features/agents/ui/chat/chat_recorder_controller.dart';
 import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
@@ -59,8 +60,18 @@ class FrontChatPane extends ConsumerWidget {
     // list (it is rebuilt at its top). Listened here, where it is always
     // mounted, not in the thread, which the list replaces.
     void letHerGo(Object? previous, Object? next) {
-      if (previous != next) {
-        ref.read(frontHeroScrolledProvider.notifier).reset();
+      if (previous == next) return;
+      ref.read(frontHeroScrolledProvider.notifier).reset();
+      // What was being said belongs to the conversation it was said in:
+      // leaving it — for another, or for the list — lets it go, rather than
+      // sending it into wherever the user went.
+      // (Only on leaving one: a conversation resolving as the surface opens
+      // is where the user already is.)
+      final recorder = ref.read(chatRecorderControllerProvider);
+      if (previous != null &&
+          (recorder.status == ChatRecorderStatus.recording ||
+              recorder.status == ChatRecorderStatus.processing)) {
+        ref.read(chatRecorderControllerProvider.notifier).cancel().ignore();
       }
     }
 
@@ -89,7 +100,7 @@ class FrontChatPane extends ConsumerWidget {
               children: [
                 SizedBox(
                   width: listWidth,
-                  child: const FrontConversationList(),
+                  child: const FrontConversationList(beside: true),
                 ),
                 const DesignSystemDivider(
                   orientation: DesignSystemDividerOrientation.vertical,
@@ -98,7 +109,6 @@ class FrontChatPane extends ConsumerWidget {
                   child: Column(
                     children: [
                       FrontChatHeader(onClose: onClose, listBeside: true),
-                      if (!inboxOnly) const FrontCategoryChips(),
                       Expanded(child: _Body()),
                     ],
                   ),
@@ -108,9 +118,6 @@ class FrontChatPane extends ConsumerWidget {
           : Column(
               children: [
                 FrontChatHeader(onClose: onClose),
-                // The chips belong to a conversation: not over the list, nor
-                // over the inbox, which spans every conversation.
-                if (!listOpen && !inboxOnly) const FrontCategoryChips(),
                 Expanded(
                   child: listOpen ? const FrontConversationList() : _Body(),
                 ),
@@ -202,6 +209,9 @@ class _Body extends ConsumerWidget {
           ref.read(frontHeroScrolledProvider.notifier).follow(metrics.pixels),
       agentId: frontAgentId,
       agentName: messages.frontChatTitle,
+      // Where the question is asked, its scope: the conversation's chips,
+      // in the composer — not in the inbox, which spans every conversation.
+      composerHeader: inboxOnly ? null : const FrontCategoryChips(),
       // Each conversation keeps its own scroll position.
       conversationId: inboxOnly
           ? 'front-chat-inbox'

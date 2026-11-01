@@ -2876,6 +2876,7 @@
   "frontChatPrevious7Days": "Ultimele 7 zile",
   "frontChatResponding": "Caută cine știe…",
   "frontChatRowMenuHint": "Acțiunile conversației",
+  "frontChatScopeLabel": "Răspunsuri din",
   "frontChatSearchChats": "Căutați în conversații",
   "frontChatTitle": "Însoțitoare",
   "frontChatYesterday": "Ieri",
@@ -6777,5 +6778,6 @@
   "viewMenuZoomReset": "Dimensiune reală",
   "whatsNewBadgeNew": "NOU",
   "whatsNewDoneButton": "Gata",
-  "whatsNewSkipButton": "Omite"
+  "whatsNewSkipButton": "Omite",
+  "frontChatScopeAll": "Toate"
 }

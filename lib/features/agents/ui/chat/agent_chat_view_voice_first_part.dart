@@ -29,6 +29,7 @@ class _VoiceFirstIdle extends ConsumerWidget {
     required this.hasDraft,
     required this.canRecord,
     required this.onStartRecording,
+    required this.onTypeStart,
   });
 
   /// The ordinary text composer, shown while typing.
@@ -36,6 +37,9 @@ class _VoiceFirstIdle extends ConsumerWidget {
   final bool hasDraft;
   final bool canRecord;
   final VoidCallback onStartRecording;
+
+  /// The first character typed at rest on a keyboard: typing starts with it.
+  final ValueChanged<String> onTypeStart;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -47,65 +51,91 @@ class _VoiceFirstIdle extends ConsumerWidget {
     final ink = canRecord
         ? tokens.colors.text.onInteractiveAlert
         : tokens.colors.text.lowEmphasis;
+    // On a desktop, where there is a keyboard, a key typed at rest starts
+    // typing with that key: no click on "Type instead" first.
+    final keyboard = isDesktopLayout(context);
+    KeyEventResult onKey(FocusNode node, KeyEvent event) {
+      final character = event.character;
+      final keys = HardwareKeyboard.instance;
+      if (!keyboard ||
+          event is! KeyDownEvent ||
+          // A shortcut is not typing: it never switches her to the field.
+          keys.isControlPressed ||
+          keys.isMetaPressed ||
+          keys.isAltPressed ||
+          character == null ||
+          character.trim().isEmpty ||
+          character.codeUnitAt(0) < 0x20) {
+        return KeyEventResult.ignored;
+      }
+      ref.read(agentChatPrefersTypingProvider.notifier).prefer();
+      onTypeStart(character);
+      return KeyEventResult.handled;
+    }
+
     // The composer's full width, so its top border spans the surface.
-    return SizedBox(
-      width: double.infinity,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Semantics(
-            button: true,
-            enabled: canRecord,
-            label: messages.chatInputTapToTalk,
-            child: Material(
-              key: const Key('agent-chat-talk'),
-              color: canRecord
-                  ? tokens.colors.interactive.enabled
-                  : tokens.colors.surface.enabled,
-              shape: const CircleBorder(),
-              clipBehavior: Clip.antiAlias,
-              child: InkWell(
-                onTap: canRecord ? onStartRecording : null,
-                child: SizedBox.square(
-                  dimension: _talkSize(tokens),
-                  child: Icon(LottiIcons.mic, size: IconSizes.l, color: ink),
+    return Focus(
+      autofocus: keyboard,
+      onKeyEvent: onKey,
+      child: SizedBox(
+        width: double.infinity,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Semantics(
+              button: true,
+              enabled: canRecord,
+              label: messages.chatInputTapToTalk,
+              child: Tooltip(
+                message: messages.chatInputTapToTalk,
+                excludeFromSemantics: true,
+                child: Material(
+                  key: const Key('agent-chat-talk'),
+                  color: canRecord
+                      ? tokens.colors.interactive.enabled
+                      : tokens.colors.surface.enabled,
+                  shape: const CircleBorder(),
+                  clipBehavior: Clip.antiAlias,
+                  child: InkWell(
+                    onTap: canRecord ? onStartRecording : null,
+                    child: SizedBox.square(
+                      dimension: _talkSize(tokens),
+                      child: Icon(
+                        LottiIcons.mic,
+                        size: IconSizes.l,
+                        color: ink,
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ),
-          ),
-          SizedBox(height: tokens.spacing.step3),
-          ExcludeSemantics(
-            child: Text(
-              messages.chatInputTapToTalk,
-              style: tokens.typography.styles.others.caption.copyWith(
-                color: tokens.colors.text.mediumEmphasis,
-              ),
+            SizedBox(height: tokens.spacing.step3),
+            DesignSystemButton(
+              key: const Key('agent-chat-type-instead'),
+              label: messages.chatInputTypeInstead,
+              variant: DesignSystemButtonVariant.quiet,
+              // Caption tier: a way round the disc, never a second button
+              // beside it.
+              size: DesignSystemButtonSize.dense,
+              leadingIcon: LottiIcons.keyboard,
+              onPressed: () =>
+                  ref.read(agentChatPrefersTypingProvider.notifier).prefer(),
             ),
-          ),
-          SizedBox(height: tokens.spacing.step2),
-          DesignSystemButton(
-            key: const Key('agent-chat-type-instead'),
-            label: messages.chatInputTypeInstead,
-            variant: DesignSystemButtonVariant.quiet,
-            size: DesignSystemButtonSize.dense,
-            leadingIcon: LottiIcons.keyboard,
-            onPressed: () =>
-                ref.read(agentChatPrefersTypingProvider.notifier).prefer(),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 }
 
 /// The talk control while it is live, laid out as at rest so nothing
-/// else moves: the caption's line under it — empty while listening, the
-/// waveform says that; "Transcribing" after — and in the slot "Type
-/// instead" held, one quiet Cancel. Screen readers hear the state as the
-/// pill's label. The disc stretches into a pill carrying what it hears
-/// ([_ListeningPill]); one tap sends what was said. Transcribing, the pill
-/// holds the words' shape and waits, and the Cancel slot is kept empty so
-/// the composer keeps its height. Escape cancels.
+/// else moves: the disc stretches into a pill carrying what it hears
+/// ([_ListeningPill]), and one tap sends what was said; in the slot "Type
+/// instead" held, one quiet Cancel. Transcribing, the pill holds the words'
+/// shape around a spinner, and Cancel stays, so a stalled turn always has
+/// its way out. Screen readers hear the state as the pill's label. Escape
+/// cancels.
 class _VoiceFirstLive extends StatelessWidget {
   const _VoiceFirstLive({
     required this.processing,
@@ -149,36 +179,20 @@ class _VoiceFirstLive extends StatelessWidget {
                 ),
               ),
               SizedBox(height: tokens.spacing.step3),
-              // The moving waveform says it is listening; only the wait
-              // after it needs words. The line keeps its place either way,
-              // so nothing below moves.
-              Visibility(
-                visible: processing,
-                maintainSize: true,
-                maintainAnimation: true,
-                maintainState: true,
-                child: ExcludeSemantics(
-                  child: Text(
-                    messages.chatInputTranscribing,
-                    style: tokens.typography.styles.others.caption.copyWith(
-                      color: tokens.colors.text.mediumEmphasis,
-                    ),
-                  ),
-                ),
-              ),
-              SizedBox(height: tokens.spacing.step2),
-              Visibility(
-                visible: !processing,
-                maintainSize: true,
-                maintainAnimation: true,
-                maintainState: true,
-                child: DesignSystemButton(
-                  key: const Key('agent-chat-talk-cancel'),
-                  label: messages.cancelButton,
-                  variant: DesignSystemButtonVariant.quiet,
-                  size: DesignSystemButtonSize.dense,
-                  onPressed: onCancel,
-                ),
+              // In the slot "Type instead" held, one quiet Cancel — while
+              // listening, and while transcribing too, so a stalled turn
+              // always has its way out. The moving waveform says it listens;
+              // the spinner in the pill says it is writing it down.
+              DesignSystemButton(
+                key: const Key('agent-chat-talk-cancel'),
+                label: messages.cancelButton,
+                // The same quiet button "Type instead" is, in the same
+                // place, so nothing moves as listening starts; its ×
+                // says it is a way out, not words.
+                variant: DesignSystemButtonVariant.quiet,
+                size: DesignSystemButtonSize.dense,
+                leadingIcon: LottiIcons.close,
+                onPressed: onCancel,
               ),
             ],
           ),
@@ -191,8 +205,8 @@ class _VoiceFirstLive extends StatelessWidget {
 /// The talk disc, stretched: the same teal and height as "Tap to talk",
 /// widening into a pill as listening starts, the voice scrolling across it
 /// as bars — newest at the right, a dot for each quiet moment — up to the
-/// stop mark at its end. Transcribing, the bars hold still and a spinner
-/// takes the stop mark's place.
+/// send arrow at its end: what a tap does. Transcribing, the bars hold
+/// still and a spinner takes the arrow's place.
 class _ListeningPill extends StatelessWidget {
   const _ListeningPill({
     required this.amplitudes,
@@ -232,7 +246,17 @@ class _ListeningPill extends StatelessWidget {
             clipBehavior: Clip.antiAlias,
             child: InkWell(
               onTap: processing ? null : onStop,
-              child: SizedBox(width: grown, height: height, child: content),
+              // Laid out at its full width from the start and revealed as
+              // the pill grows, so nothing inside squeezes while it opens.
+              child: SizedBox(
+                width: grown,
+                height: height,
+                child: OverflowBox(
+                  minWidth: width,
+                  maxWidth: width,
+                  child: content,
+                ),
+              ),
             ),
           ),
           child: Padding(
@@ -254,21 +278,29 @@ class _ListeningPill extends StatelessWidget {
                   ),
                 ),
                 SizedBox(width: tokens.spacing.step4),
+                // What a tap does, as a send button reads: the arrow on its
+                // own dark disc at the pill's end.
                 SizedBox.square(
-                  dimension: IconSizes.m,
+                  dimension: IconSizes.xxl,
                   child: processing
-                      ? CircularProgressIndicator(
-                          key: const Key('agent-chat-talk-transcribing'),
-                          strokeWidth: tokens.spacing.step1,
-                          color: ink,
+                      ? Center(
+                          child: DesignSystemSpinner(
+                            key: const Key('agent-chat-talk-transcribing'),
+                            style: DesignSystemSpinnerStyle.plain,
+                            size: IconSizes.m,
+                            color: ink,
+                          ),
                         )
                       : DecoratedBox(
-                          key: const Key('agent-chat-talk-stop'),
                           decoration: BoxDecoration(
                             color: ink,
-                            borderRadius: BorderRadius.circular(
-                              tokens.radii.xs,
-                            ),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            LottiIcons.arrowUp,
+                            key: const Key('agent-chat-talk-stop'),
+                            size: IconSizes.m,
+                            color: tokens.colors.interactive.enabled,
                           ),
                         ),
                 ),

@@ -42,18 +42,22 @@ state too, so a turn never changes shape on answering), keeps the user's
 words in a soft bubble capped short of the far edge on a phone, and drops the
 author-and-time line, leaving the footer only for what `footerTrailingBuilder`
 adds. `voiceFirst` makes the idle composer one talk disc (`spacing.step10`
-across, `_talkSize`) with *Type instead* under it
-(`agent_chat_view_voice_first_part.dart`): the disc keeps its height and
+across, `_talkSize`; its tooltip and screen-reader label *Tap to talk*) with
+a caption-tier *Type instead* under it
+(`agent_chat_view_voice_first_part.dart`). On a desktop-width window the first
+printable key typed at rest starts typing with it; a chord with Ctrl, Cmd or
+Alt never does. The disc keeps its height and
 teal through recording, stretching into a pill (`_ListeningPill`, 4.4 discs
 wide at most, opened from the disc
 over `MotionDurations.medium2`, at once under reduced motion) across which
 what it hears scrolls as bars — `WaveformBarsPainter` over the recorder's
 normalised amplitude history, newest at the right, a dot for each quiet
-moment — up to a stop mark at its end; a tap anywhere on it sends. While
-transcribing, the bars hold still and a spinner takes the stop mark's place.
-The live composer is laid out like the idle one: one caption under the
-pill, and in the slot *Type instead* held, a quiet Cancel (Escape too),
-kept empty while transcribing so the composer never changes height; a finished
+moment — up to a send arrow on its own dark disc at its end; a tap anywhere
+on it sends. While transcribing, the bars hold still and a
+`DesignSystemSpinner` takes the arrow's place, with *Transcribing…* as the
+pill's screen-reader label. The live composer is laid out like the idle one:
+in the slot *Type instead* held, a caption-tier Cancel (Escape too), there
+while transcribing as well, so a stalled turn always has its way out; a finished
 transcript is sent as it is (tap to talk, tap to send), and choosing to type
 holds for the session (`agentChatPrefersTypingProvider`, keep-alive) and
 focuses the field. A transcript a `voiceFirst` chat sends by itself goes to
@@ -64,7 +68,9 @@ app. `leading` is a widget that scrolls in above the first
 message, with the thread. `onThreadScrolled` reports the thread list's own
 scroll metrics, on every scroll and on layout (a list restored to its saved
 offset moves without a scroll); a scroll nested inside a message or the
-composer is not reported.
+composer is not reported. `composerHeader` sits inside the composer, above
+its controls and a larger step from them, so what scopes the next turn (the
+front agent's category chips) belongs to the composer rather than the thread.
 `replyTextStyle` lets the host select its answer typography from design tokens;
 scoped queries use `bodySmall`, while other hosts retain `bodyMedium`.
 Hosts can supply `onLinkTap` to resolve each link against its containing message.

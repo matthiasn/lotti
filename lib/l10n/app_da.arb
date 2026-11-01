@@ -3221,6 +3221,7 @@
   "frontChatPrevious7Days": "Seneste 7 dage",
   "frontChatResponding": "Finder den, der ved det…",
   "frontChatRowMenuHint": "Chathandlinger",
+  "frontChatScopeLabel": "Svar fra",
   "frontChatSearchChats": "Søg i chats",
   "frontChatTitle": "Ledsager",
   "frontChatYesterday": "I går",
@@ -7506,5 +7507,6 @@
     "description": "Badge displayed on the newest release in the What's New view."
   },
   "whatsNewDoneButton": "Færdig",
-  "whatsNewSkipButton": "Spring over"
+  "whatsNewSkipButton": "Spring over",
+  "frontChatScopeAll": "Alle"
 }

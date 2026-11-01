@@ -430,8 +430,9 @@ turn with a door whose outcome is a `FrontDoorProposal` or a
 `frontInboxFilterProvider` the switch the list's *Inbox* row turns on — an
 auto-disposed notifier, so the filter is off every time the sheet opens, and
 Back (or Escape) leaves it before closing the sheet. While something waits,
-a warning-tone dot sits on the header's list button and the *Inbox* row
-counts it with a badge of the same tone.
+a warning-tone badge counts it right after the word on the header's *Chats*
+button (a tap on either opens the list) and the *Inbox* row counts it with a
+badge of the same tone.
 The count and the filtered view come from `frontAllChatsThreadProvider`,
 the thread of every conversation not deleted, so what waits in one
 conversation is not lost by opening another.
@@ -485,19 +486,26 @@ it. The routing prompt's recent turns come from the
 pending turn's conversation only (`FrontAgentWorkflow._recentTurns`): another
 conversation is another subject.
 
-The header's list button (and a new conversation beside it) opens the list
-(`frontConversationListOpenProvider`), a page over the conversation with its
-own back, *Chats* and close. `FrontConversationList` leads with *New chat*,
-*Inbox* while something waits, and *Search chats*, which opens in place; then
-the history grouped by recency — *Today*, *Yesterday*, *Previous 7 days*,
-*Older* — each group a quiet caption over a `DesignSystemGroupedList` card.
-A row is the title with the time it last moved (the clock today and
-yesterday, the weekday within a week, else the date) and one line of her
-last answer (`FrontConversation.preview`, the first line of her latest
-`reply_to_user` or `ask_user` in it, read by `FrontConversationService`).
-The open one is the brightest fill in its card; a row's rename, archive and
-delete show on the open row and on hover, and a long press offers them on any
-row. Archived ones fold away at the end; a search looks through them too.
+The header's *Chats* button — the word as well as the glyph, with a new
+conversation beside it — opens the list (`frontConversationListOpenProvider`),
+a page over the conversation with its own back, *Chats* and close.
+`FrontConversationList` leads with *New chat*, *Inbox* while something waits,
+and *Search chats*, which opens in place; then the history grouped by
+recency — *Today*, *Yesterday*, *Previous 7 days*, *Older* — flat: each
+group a quiet caption over its rows, no card and no hairlines, so the open
+row's rounded neutral fill is the one strong surface in the list.
+A row is the title on the full width (two lines before it is cut) over one
+line of her last answer (`FrontConversation.preview`, the first line of her
+latest `reply_to_user` or `ask_user` in it, read by
+`FrontConversationService`), fading out before the time it last moved (the
+clock today and yesterday, the weekday within a week, else the date). The
+times share one column as wide as the list's widest, in tabular figures, so
+every preview ends on the same line. On the open row's fill the second line
+is as bright as the title. A row's rename, archive and delete (its ⋯ in the
+time's place) show on hover and focus, at rest on the open row too unless
+the list sits beside the conversation (`FrontConversationList.beside`), whose
+header carries the same menu; a long press offers them on any row. Archived
+ones fold away at the end; a search looks through them too.
 
 # The chat surface
 
@@ -563,7 +571,7 @@ opening an empty conversation with her invitation. Once the thread
 puts her and the title in a line in the header's control row — reset when
 another conversation opens or the list opens or closes, so a thread that
 comes back at its top has her there. Otherwise the control row holds only
-the list button and a new conversation on the left, an overflow (her
+the *Chats* button and a new conversation on the left, an overflow (her
 internals, where the thread's cost is accounted, then this conversation's
 rename, archive and delete) and close on the right. The thread is `conversational` and `voiceFirst` (see
 [chat input](agents/chat-input-and-reasoning.md)): her replies as prose with
@@ -572,7 +580,7 @@ by voice sent as said.
 `showFrontChat` opens her surface over the app, as History opens: a dialog
 behind the shared scrim, the whole screen below the page breakpoint, else a
 panel up to `kDetailContentMaxWidth` inset by `step6`. On a desktop-width
-window (`isDesktopLayout`) the list sits beside the conversation, a third of
+window (`isDesktopLayout`) the list sits beside the conversation, 38% of
 the panel (`FrontChatSurface.listShare`), and the header leaves out the way
 to the list and a new conversation, which the list carries. Escape goes
 through `ModalEscapeScope` to the pane's back chain — the list, then the
@@ -582,9 +590,14 @@ above Settings, the phone launcher's utility button beside the menu, or the
 `enable_front_agent` and all closed under lockdown: her thread spans every
 category.
 
-**Category chips** (`FrontCategoryChips`) sit under the header of a
-conversation — not over the list or the inbox — when there are two
-categories or more to choose from: the active ones she may see
+**Category chips** (`FrontCategoryChips`) sit at the top of a
+conversation's composer (`AgentChatView.composerHeader`) — not in the inbox —
+after an *Answers from* label that stays put while they scroll, when there
+are two categories or more to choose from. *All* leads and clears the
+choice; every chip is outlined and neutral, and a chosen one (*All* by
+default) takes the neutral pressed fill and a check
+(`DesignSystemChip.quietSelection`), never the accent the talk disc
+carries. The options are the active categories she may see
 (`frontCategoryOptionsProvider`: her allow-list, or every visible category
 when it is empty; `categoriesStreamProvider` is lockdown-scoped). The choice
 is kept per conversation for the session
@@ -595,6 +608,11 @@ reads it back from the source turn and narrows her allow-list by it, never
 widening it: with no allow-list the chips are the scope, and chips that fall
 outside the allow-list leave it as it is — an empty scope would be the whole
 journal. A category named in the question narrows further, as before.
+
+Leaving a conversation — another one, or the list — while it records or
+transcribes cancels the recording (`ChatRecorderController.cancel`), so what
+was said never lands in a conversation it was not said to; a recording
+already running when the pane first resolves its conversation is kept.
 
 # Her voice
 

@@ -1,10 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
+import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/companion/rig/companion_painter.dart';
 import 'package:lotti/features/companion/state/companion_look_controller.dart';
 import 'package:lotti/features/companion/ui/companion_speaker.dart';
 import 'package:lotti/features/companion/ui/companion_view.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/front_agent/service/front_conversation_service.dart';
+import 'package:lotti/features/front_agent/state/front_chat_thread_provider.dart';
 import 'package:lotti/features/front_agent/state/front_conversation_providers.dart';
 import 'package:lotti/features/front_agent/state/front_inbox_filter.dart';
 import 'package:lotti/features/front_agent/state/front_voice_providers.dart';
@@ -81,46 +84,61 @@ class FrontChatHero extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
     final open = frontOpenConversation(ref, context.messages);
+    // A title that only repeats the first question would say it twice, right
+    // above it: she leads alone then, and a title of its own — one the user
+    // gave it — shows.
+    final first = ref
+        .watch(frontChatThreadProvider)
+        .value
+        ?.messages
+        .where((m) => m.role == AgentChatRole.user)
+        .firstOrNull;
+    final echoes =
+        first != null &&
+        open.title == FrontConversationService.titleOf(first.text);
     return Padding(
       key: FrontChatHeroKeys.hero,
-      padding: EdgeInsets.only(bottom: tokens.spacing.step5),
+      // A step more than between messages: the day below belongs to them.
+      padding: EdgeInsets.only(bottom: tokens.spacing.step6),
       child: Column(
         children: [
           const FrontCompanionFigure(size: ControlSizes.avatarHero),
-          SizedBox(height: tokens.spacing.step3),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // An archived conversation says so where it is read, as its
-              // row does in the list.
-              if (open.archived) ...[
-                Icon(
-                  LottiIcons.archive,
-                  key: FrontChatHeroKeys.archived,
-                  size: IconSizes.s,
-                  color: tokens.colors.text.mediumEmphasis,
-                ),
-                SizedBox(width: tokens.spacing.step2),
-              ],
-              // Two lines before it is cut, so a question-long title still
-              // says what this conversation is.
-              Flexible(
-                child: Tooltip(
-                  message: open.title,
-                  child: Text(
-                    open.title,
-                    key: FrontChatHeroKeys.title,
-                    maxLines: 2,
-                    textAlign: TextAlign.center,
-                    overflow: TextOverflow.ellipsis,
-                    style: tokens.typography.styles.subtitle.subtitle1.copyWith(
-                      color: tokens.colors.text.highEmphasis,
+          if (!echoes || open.archived) ...[
+            SizedBox(height: tokens.spacing.step3),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // An archived conversation says so where it is read, as its
+                // row does in the list.
+                if (open.archived) ...[
+                  Icon(
+                    LottiIcons.archive,
+                    key: FrontChatHeroKeys.archived,
+                    size: IconSizes.s,
+                    color: tokens.colors.text.mediumEmphasis,
+                  ),
+                  SizedBox(width: tokens.spacing.step2),
+                ],
+                // Two lines before it is cut, so a question-long title still
+                // says what this conversation is.
+                Flexible(
+                  child: Tooltip(
+                    message: open.title,
+                    child: Text(
+                      open.title,
+                      key: FrontChatHeroKeys.title,
+                      maxLines: 2,
+                      textAlign: TextAlign.center,
+                      overflow: TextOverflow.ellipsis,
+                      style: tokens.typography.styles.heading.heading3.copyWith(
+                        color: tokens.colors.text.highEmphasis,
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
+          ],
         ],
       ),
     );

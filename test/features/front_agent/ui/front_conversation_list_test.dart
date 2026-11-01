@@ -3,6 +3,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/lists/design_system_grouped_list.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/components/search/design_system_search.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -62,13 +63,14 @@ void main() {
   Future<ProviderContainer> pumpList(
     WidgetTester tester, {
     FrontConversationIndex? index,
+    bool beside = false,
   }) async {
     await setUpTestGetIt();
     addTearDown(tearDownTestGetIt);
     await withClock(Clock.fixed(now), () async {
       await tester.pumpWidget(
         makeTestableWidgetNoScroll(
-          const Scaffold(body: FrontConversationList()),
+          Scaffold(body: FrontConversationList(beside: beside)),
           overrides: [
             frontConversationsProvider.overrideWith(
               (ref) async => index ?? colony,
@@ -255,20 +257,92 @@ void main() {
         ],
       ),
     );
-    final census = tester.widget<DesignSystemListItem>(
+    // Her last answer under the title; a conversation not answered yet has
+    // no words there.
+    expect(
+      find.descendant(
+        of: find.byKey(FrontConversationListKeys.row('c-1')),
+        matching: find.text('Saturday works.'),
+      ),
+      findsOne,
+    );
+    final rotaTexts = tester
+        .widgetList<Text>(
+          find.descendant(
+            of: find.byKey(FrontConversationListKeys.row('c-2')),
+            matching: find.byType(Text),
+          ),
+        )
+        .map((t) => t.data)
+        .whereType<String>()
+        .where((t) => t.isNotEmpty);
+    expect(rotaTexts, isNot(contains('Saturday works.')));
+    expect(rotaTexts.first, 'Feeding rota');
+  });
+
+  testWidgets('the groups are flat: a label over its rows, no card and no '
+      'hairlines, each row rounded for its own fill', (tester) async {
+    await pumpList(tester);
+    expect(find.byType(DesignSystemGroupedList), findsNothing);
+    final rows = tester.widgetList<DesignSystemListItem>(
       find.descendant(
         of: find.byKey(FrontConversationListKeys.row('c-1')),
         matching: find.byType(DesignSystemListItem),
       ),
     );
-    final rota = tester.widget<DesignSystemListItem>(
-      find.descendant(
-        of: find.byKey(FrontConversationListKeys.row('c-2')),
-        matching: find.byType(DesignSystemListItem),
+    expect(rows.single.showDivider, isFalse);
+    expect(rows.single.borderRadius, isNotNull);
+  });
+
+  testWidgets('every time sits in one column, so every preview ends on the '
+      'same line; the open row says its second line as brightly as its '
+      'title', (tester) async {
+    FrontConversation chat(String id, DateTime at) => FrontConversation(
+      id: id,
+      title: 'Chat $id',
+      lastActivity: at,
+      archived: false,
+      preview:
+          'Saturday works: low tide is early, so the census starts '
+          'at the north colony and moves south along the shelf.',
+    );
+    await pumpList(
+      tester,
+      index: FrontConversationIndex(
+        conversations: [
+          // Today at 11:58 — the widest time — and a weekday, much narrower.
+          chat('c-1', DateTime(2026, 10, 31, 11, 58)),
+          chat('c-2', DateTime(2026, 10, 27, 9)),
+        ],
       ),
     );
-    expect(census.subtitle, 'Saturday works.');
-    expect(rota.subtitle, isNull, reason: 'not answered yet');
+    Text preview(String id) => tester.widget<Text>(
+      find.descendant(
+        of: find.byKey(FrontConversationListKeys.row(id)),
+        matching: find.textContaining('Saturday works'),
+      ),
+    );
+    Rect previewBox(String id) => tester.getRect(
+      find.descendant(
+        of: find.byKey(FrontConversationListKeys.row(id)),
+        matching: find.textContaining('Saturday works'),
+      ),
+    );
+    expect(previewBox('c-1').right, previewBox('c-2').right);
+    expect(preview('c-1').overflow, TextOverflow.fade);
+    // Digits line up down the column.
+    expect(
+      tester.widget<Text>(find.text('11:58 AM')).style!.fontFeatures,
+      contains(const FontFeature.tabularFigures()),
+    );
+
+    final colors = tester
+        .element(find.byKey(FrontConversationListKeys.row('c-1')))
+        .designTokens
+        .colors
+        .text;
+    expect(preview('c-1').style!.color, colors.highEmphasis);
+    expect(preview('c-2').style!.color, colors.mediumEmphasis);
   });
 
   testWidgets("on a wide window a row's menu shows on hover and focus", (
@@ -303,6 +377,54 @@ void main() {
     await mouse.moveTo(Offset.zero);
     await tester.pump();
     expect(shown('c-2'), isFalse);
+  });
+
+  testWidgets('beside the open conversation its row keeps its time, and '
+      'shows its menu only on hover like any other', (tester) async {
+    tester.view.physicalSize = const Size(1600, 1200);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await pumpList(tester, beside: true);
+    bool shown(String id) => tester
+        .widget<Visibility>(
+          find
+              .ancestor(
+                of: find.byKey(FrontConversationListKeys.menu(id)),
+                matching: find.byType(Visibility),
+              )
+              .first,
+        )
+        .visible;
+    expect(shown('c-1'), isFalse);
+
+    final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+    addTearDown(mouse.removePointer);
+    await mouse.addPointer(location: Offset.zero);
+    await mouse.moveTo(
+      tester.getCenter(find.byKey(FrontConversationListKeys.row('c-1'))),
+    );
+    await tester.pump();
+    expect(shown('c-1'), isTrue);
+  });
+
+  testWidgets('not beside it, the open row shows its menu at rest', (
+    tester,
+  ) async {
+    await pumpList(tester);
+    expect(
+      tester
+          .widget<Visibility>(
+            find
+                .ancestor(
+                  of: find.byKey(FrontConversationListKeys.menu('c-1')),
+                  matching: find.byType(Visibility),
+                )
+                .first,
+          )
+          .visible,
+      isTrue,
+    );
   });
 
   testWidgets('an empty search closes when focus leaves it', (tester) async {
@@ -538,9 +660,10 @@ void main() {
 }
 
 /// A row's label: the text itself, or the title leading a conversation
-/// row's title-and-time line.
+/// row (its title over its preview-and-time line).
 String _textOf(Widget content) => switch (content) {
   Text(:final data) => data!,
+  Column(:final children) => _textOf(children.first),
   Row(:final children) => _textOf(
     switch (children.first) {
       Expanded(:final child) => child,

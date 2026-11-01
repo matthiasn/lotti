@@ -3221,6 +3221,7 @@
   "frontChatPrevious7Days": "Ultimi 7 giorni",
   "frontChatResponding": "Sta cercando chi lo sa…",
   "frontChatRowMenuHint": "Azioni della chat",
+  "frontChatScopeLabel": "Risposte da",
   "frontChatSearchChats": "Cerca nelle chat",
   "frontChatTitle": "Compagna",
   "frontChatYesterday": "Ieri",
@@ -7506,5 +7507,6 @@
     "description": "Badge displayed on the newest release in the What's New view."
   },
   "whatsNewDoneButton": "Fatto",
-  "whatsNewSkipButton": "Salta!"
+  "whatsNewSkipButton": "Salta!",
+  "frontChatScopeAll": "Tutto"
 }

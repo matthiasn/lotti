@@ -97,6 +97,42 @@ void main() {
       },
     );
 
+    testWidgets('a chip without its own label is read out once, by its '
+        'words', (tester) async {
+      final semantics = tester.ensureSemantics();
+      await _pumpChip(
+        tester,
+        DesignSystemChip(label: 'Notes', onPressed: () {}),
+      );
+      expect(
+        tester.getSemantics(find.bySemanticsLabel('Notes')).label,
+        'Notes',
+      );
+      semantics.dispose();
+    });
+
+    testWidgets('a quiet selection is chosen in neutral ink — the pressed '
+        'fill and the resting outline, never the accent', (tester) async {
+      await _pumpChip(
+        tester,
+        DesignSystemChip(
+          label: 'Notes',
+          outlined: true,
+          selected: true,
+          quietSelection: true,
+          onPressed: () {},
+        ),
+      );
+      expect(
+        _chipDecoration(tester).color,
+        dsTokensLight.colors.surface.focusPressed,
+      );
+      expect(
+        (_chipDecoration(tester).shape as RoundedRectangleBorder).side.color,
+        dsTokensLight.colors.decorative.level01,
+      );
+    });
+
     testWidgets('renders the enabled label-only chip from tokens', (
       tester,
     ) async {

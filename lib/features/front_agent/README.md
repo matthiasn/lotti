@@ -28,8 +28,8 @@ source. A statement under a task is a **proposal**: one tap
 files the user's words verbatim as an entry under the task, and only the
 tap writes. The user keeps many **conversations** with her, as in a ChatGPT
 or Claude window: each a subject of its own, titled by its first question,
-listed newest first under the header's title, renamed, archived or deleted
-there. What nothing owns waits in the **inbox** — every conversation,
+listed newest first by recency behind the header's *Chats* button (beside
+the conversation on a desktop window), renamed, archived or deleted there. What nothing owns waits in the **inbox** — every conversation,
 filtered — with chips that make it a task, start a goal or project, or save
 it as a note, or leave it. Whatever a tap wrote can be opened or undone,
 and a proposal she got wrong goes to the inbox rather than being retyped.

@@ -40,6 +40,10 @@ class FrontConversationCategories extends Notifier<Map<String, Set<String>>> {
   /// The categories chosen in [conversationId]; empty for none.
   Set<String> of(String conversationId) => state[conversationId] ?? const {};
 
+  /// Lets every chosen category of [conversationId] go: all of them again.
+  void clear(String conversationId) =>
+      state = {...state, conversationId: const {}};
+
   /// Chooses [categoryId] in [conversationId], or lets it go.
   void toggle(String conversationId, String categoryId) {
     final chosen = {...of(conversationId)};

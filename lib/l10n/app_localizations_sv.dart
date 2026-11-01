@@ -6959,6 +6959,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get frontChatRowMenuHint => 'Chattåtgärder';
 
   @override
+  String get frontChatScopeLabel => 'Svar från';
+
+  @override
   String get frontChatSearchChats => 'Sök i chattar';
 
   @override
@@ -17963,4 +17966,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Hoppa över';
+
+  @override
+  String get frontChatScopeAll => 'Allt';
 }

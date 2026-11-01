@@ -6922,6 +6922,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get frontChatRowMenuHint => 'Chat actions';
 
   @override
+  String get frontChatScopeLabel => 'Answers from';
+
+  @override
   String get frontChatSearchChats => 'Search chats';
 
   @override
@@ -17842,6 +17845,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Skip';
+
+  @override
+  String get frontChatScopeAll => 'All';
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).

@@ -6997,6 +6997,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get frontChatRowMenuHint => 'Chat-Aktionen';
 
   @override
+  String get frontChatScopeLabel => 'Antworten aus';
+
+  @override
   String get frontChatSearchChats => 'Chats durchsuchen';
 
   @override
@@ -18070,4 +18073,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Überspringen';
+
+  @override
+  String get frontChatScopeAll => 'Alle';
 }

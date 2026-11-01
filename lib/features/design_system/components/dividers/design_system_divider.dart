@@ -127,9 +127,10 @@ class _HorizontalDivider extends StatelessWidget {
             ),
           ),
           SizedBox(width: tokens.spacing.step5),
+          // In sentence case, as written: never all caps.
           Text(
-            label!.toUpperCase(),
-            style: tokens.typography.styles.others.overline.copyWith(
+            label!,
+            style: tokens.typography.styles.others.caption.copyWith(
               color: tokens.colors.text.mediumEmphasis,
             ),
           ),
