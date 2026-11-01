@@ -12,7 +12,7 @@ import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 
 const _taskId = 'task-1';
-const _work = TaskProjectSuggestion(projectId: 'work', projectTitle: 'Work');
+const TaskProjectSuggestion _work = (projectId: 'work', projectTitle: 'Work');
 
 void main() {
   late MockProjectRepository repository;

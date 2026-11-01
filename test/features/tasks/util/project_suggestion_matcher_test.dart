@@ -173,12 +173,35 @@ void main() {
       // the full name covered (titleCoverageBonus × 1/1). Only "work" uses
       // "work", so its specificity is 1.
       expect(ranked, [
-        const ProjectMatchScore(
+        (
           projectId: 'work',
           score:
               ProjectSuggestionMatcher.taskTitleWeight *
                   ProjectSuggestionMatcher.projectTitleWeight +
               ProjectSuggestionMatcher.titleCoverageBonus,
+        ),
+      ]);
+    });
+
+    test('a task word matching several name words approximately keeps the '
+        'strongest match, whichever comes first', () {
+      // "reno" is only a prefix of the misspelt "renovaton" (0.6), and comes
+      // first; "renovation" is the same word misspelt (0.7) and must win.
+      final ranked = ProjectSuggestionMatcher([
+        _project(
+          'kitchen',
+          'Kitchen',
+          description: 'Reno: renovation of the old room',
+        ),
+      ]).rank(const ProjectMatchTask(title: 'Plan renovaton'));
+
+      expect(ranked, [
+        (
+          projectId: 'kitchen',
+          score:
+              ProjectSuggestionMatcher.taskTitleWeight *
+              ProjectSuggestionMatcher.projectDescriptionWeight *
+              ProjectSuggestionMatcher.fuzzySimilarity,
         ),
       ]);
     });

@@ -44,25 +44,7 @@ class ProjectMatchTask {
 
 /// One project's relevance to a task. Higher is more relevant; only
 /// positive scores are ever reported.
-@immutable
-class ProjectMatchScore {
-  const ProjectMatchScore({required this.projectId, required this.score});
-
-  final String projectId;
-  final double score;
-
-  @override
-  bool operator ==(Object other) =>
-      other is ProjectMatchScore &&
-      other.projectId == projectId &&
-      other.score == score;
-
-  @override
-  int get hashCode => Object.hash(projectId, score);
-
-  @override
-  String toString() => 'ProjectMatchScore($projectId, $score)';
-}
+typedef ProjectMatchScore = ({String projectId, double score});
 
 /// Ranks a category's projects against a task's words, entirely on-device.
 ///
@@ -160,7 +142,7 @@ class ProjectSuggestionMatcher {
     for (final profile in _profiles) {
       final score = _score(profile, taskStems);
       if (score > 0) {
-        scores.add(ProjectMatchScore(projectId: profile.id, score: score));
+        scores.add((projectId: profile.id, score: score));
       }
     }
     scores.sort((a, b) {

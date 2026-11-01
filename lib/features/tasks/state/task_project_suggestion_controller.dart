@@ -14,26 +14,10 @@ import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:meta/meta.dart';
 
-/// The project the app proposes for a task that has none.
-@immutable
-class TaskProjectSuggestion {
-  const TaskProjectSuggestion({
-    required this.projectId,
-    required this.projectTitle,
-  });
-
-  final String projectId;
-  final String projectTitle;
-
-  @override
-  bool operator ==(Object other) =>
-      other is TaskProjectSuggestion &&
-      other.projectId == projectId &&
-      other.projectTitle == projectTitle;
-
-  @override
-  int get hashCode => Object.hash(projectId, projectTitle);
-}
+/// The project the app proposes for a task that has none. A record, so two
+/// suggestions of the same project compare equal and a recompute that lands
+/// on the same answer does not rebuild the offer.
+typedef TaskProjectSuggestion = ({String projectId, String projectTitle});
 
 /// How many of a project's task titles feed its vocabulary. Enough to learn
 /// the words the user files under it; bounded so a project with years of
@@ -323,5 +307,5 @@ Future<TaskProjectSuggestion?> taskProjectSuggestion(
       .read(projectRepositoryProvider)
       .getLinkedProjectForTask(taskId);
   if (linked != null) return null;
-  return TaskProjectSuggestion(projectId: best.projectId, projectTitle: title);
+  return (projectId: best.projectId, projectTitle: title);
 }

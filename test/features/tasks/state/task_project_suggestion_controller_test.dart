@@ -144,7 +144,7 @@ void main() {
 
       expect(
         await readSuggestion(container),
-        const TaskProjectSuggestion(projectId: 'work', projectTitle: 'Work'),
+        (projectId: 'work', projectTitle: 'Work'),
       );
     });
 
@@ -214,7 +214,7 @@ void main() {
       expect(await readSuggestion(makeContainer()), isNull);
       expect(
         await readSuggestion(makeContainer(task: _task(private: true))),
-        const TaskProjectSuggestion(projectId: 'work', projectTitle: 'Work'),
+        (projectId: 'work', projectTitle: 'Work'),
       );
     });
 
@@ -292,7 +292,7 @@ void main() {
 
       expect(
         await container.read(taskProjectSuggestionProvider(_taskId).future),
-        const TaskProjectSuggestion(projectId: 'work', projectTitle: 'Work'),
+        (projectId: 'work', projectTitle: 'Work'),
       );
     });
 

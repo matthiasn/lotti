@@ -1842,10 +1842,7 @@ void main() {
           pumpConnector(
             task: buildTask(categoryId: 'cat-1', title: taskTitle),
             project: home,
-            suggestion: const TaskProjectSuggestion(
-              projectId: 'work',
-              projectTitle: 'Work',
-            ),
+            suggestion: (projectId: 'work', projectTitle: 'Work'),
           ),
         );
         await tester.pump();
@@ -1861,10 +1858,7 @@ void main() {
       await tester.pumpWidget(
         pumpConnector(
           task: buildTask(title: taskTitle),
-          suggestion: const TaskProjectSuggestion(
-            projectId: 'work',
-            projectTitle: 'Work',
-          ),
+          suggestion: (projectId: 'work', projectTitle: 'Work'),
         ),
       );
       await tester.pump();
