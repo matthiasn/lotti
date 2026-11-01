@@ -3027,8 +3027,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get backfillRecordsEmbeddingVectors => 'Einbettungen';
 
   @override
-  String get backfillRecordsEmbeddingVectorsHeld =>
-      'Einbettungen, die auf ihren Eintrag warten';
+  String get backfillRecordsEmbeddingVectorsHeld => 'Wartende Einbettungen';
 
   @override
   String get backfillRecordsEntryLinks => 'Eintragsverknüpfungen';

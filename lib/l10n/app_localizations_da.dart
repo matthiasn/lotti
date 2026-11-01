@@ -3001,8 +3001,7 @@ class AppLocalizationsDa extends AppLocalizations {
   String get backfillRecordsEmbeddingVectors => 'Indlejringer';
 
   @override
-  String get backfillRecordsEmbeddingVectorsHeld =>
-      'Indlejringer, der venter på deres post';
+  String get backfillRecordsEmbeddingVectorsHeld => 'Ventende indlejringer';
 
   @override
   String get backfillRecordsEntryLinks => 'Links mellem poster';

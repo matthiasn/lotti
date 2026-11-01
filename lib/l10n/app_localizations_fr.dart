@@ -3045,8 +3045,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get backfillRecordsEmbeddingVectors => 'Embeddings';
 
   @override
-  String get backfillRecordsEmbeddingVectorsHeld =>
-      'Embeddings en attente de leur entrée';
+  String get backfillRecordsEmbeddingVectorsHeld => 'Embeddings en attente';
 
   @override
   String get backfillRecordsEntryLinks => 'Liens entre entrées';

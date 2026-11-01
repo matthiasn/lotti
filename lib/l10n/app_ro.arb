@@ -1300,7 +1300,7 @@
   "backfillRecordsConsumptionEvents": "Evenimente de utilizare AI",
   "backfillRecordsDefinitions": "Definiții de setări",
   "backfillRecordsEmbeddingVectors": "Încorporări",
-  "backfillRecordsEmbeddingVectorsHeld": "Încorporări care își așteaptă înregistrarea",
+  "backfillRecordsEmbeddingVectorsHeld": "Încorporări în așteptare",
   "backfillRecordsEntryLinks": "Legături între intrări",
   "backfillRecordsHint": "Inclusiv cele șterse. Dispozitivele sincronizate afișează aici aceleași numere; contoarele urmărite pot diferi între ele.",
   "backfillRecordsJournal": "Intrări în jurnal",

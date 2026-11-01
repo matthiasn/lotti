@@ -3030,8 +3030,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get backfillRecordsEmbeddingVectors => 'Incorporações';
 
   @override
-  String get backfillRecordsEmbeddingVectorsHeld =>
-      'Incorporações à espera da sua entrada';
+  String get backfillRecordsEmbeddingVectorsHeld => 'Incorporações em espera';
 
   @override
   String get backfillRecordsEntryLinks => 'Ligações entre entradas';

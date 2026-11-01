@@ -3046,8 +3046,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get backfillRecordsEmbeddingVectors => 'Încorporări';
 
   @override
-  String get backfillRecordsEmbeddingVectorsHeld =>
-      'Încorporări care își așteaptă înregistrarea';
+  String get backfillRecordsEmbeddingVectorsHeld => 'Încorporări în așteptare';
 
   @override
   String get backfillRecordsEntryLinks => 'Legături între intrări';

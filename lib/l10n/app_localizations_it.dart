@@ -3041,8 +3041,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get backfillRecordsEmbeddingVectors => 'Vettori di embedding';
 
   @override
-  String get backfillRecordsEmbeddingVectorsHeld =>
-      'Vettori di embedding in attesa della loro voce';
+  String get backfillRecordsEmbeddingVectorsHeld => 'Vettori in attesa';
 
   @override
   String get backfillRecordsEntryLinks => 'Collegamenti tra voci';

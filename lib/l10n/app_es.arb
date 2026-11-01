@@ -1300,7 +1300,7 @@
   "backfillRecordsConsumptionEvents": "Eventos de uso de IA",
   "backfillRecordsDefinitions": "Definiciones de ajustes",
   "backfillRecordsEmbeddingVectors": "Incrustaciones",
-  "backfillRecordsEmbeddingVectorsHeld": "Incrustaciones a la espera de su entrada",
+  "backfillRecordsEmbeddingVectorsHeld": "Incrustaciones en espera",
   "backfillRecordsEntryLinks": "Enlaces entre entradas",
   "backfillRecordsHint": "Incluye los eliminados. Los dispositivos sincronizados muestran aquí las mismas cifras; los contadores registrados pueden variar entre ellos.",
   "backfillRecordsJournal": "Entradas del diario",

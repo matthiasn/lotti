@@ -2040,7 +2040,7 @@
   "backfillRecordsConsumptionEvents": "AI usage events",
   "backfillRecordsDefinitions": "Settings definitions",
   "backfillRecordsEmbeddingVectors": "Embeddings",
-  "backfillRecordsEmbeddingVectorsHeld": "Embeddings waiting for their entry",
+  "backfillRecordsEmbeddingVectorsHeld": "Embeddings waiting",
   "backfillRecordsEntryLinks": "Entry links",
   "backfillRecordsHint": "Deletions included. Devices that are in sync show the same numbers here; tracked counters can differ between them.",
   "backfillRecordsJournal": "Journal entries",
