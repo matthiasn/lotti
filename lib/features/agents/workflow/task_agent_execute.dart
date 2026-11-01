@@ -346,17 +346,23 @@ extension TaskAgentExecute on TaskAgentWorkflow {
             changeSetNotificationService?.syncAfterAgentRetraction,
       );
 
-      // Only compute the gating facts when the flag is on: each is a real
+      // Only compute the payload gates when the flag is on: each is a real
       // query, and a wake that will advertise everything anyway should not pay
-      // for the answers.
+      // for the answers. Whether the pull request tools exist for this task at
+      // all is decided on every wake.
+      final pullRequests = await _pullRequestToolAvailability(taskId);
       final wakeFacts = narrowToolSurface
           ? await _resolveWakeFacts(
               taskId: taskId,
               ledger: ledger,
               attentionClaims: taskAttentionContext.claims,
               hasCategoryProjects: categoryHasProjects,
+              pullRequests: pullRequests,
             )
-          : TaskAgentWakeFacts.permissive;
+          : TaskAgentWakeFacts(
+              hasPullRequestRepository: pullRequests.repository,
+              hasLinkedPullRequests: pullRequests.linked,
+            );
       final tools = _contextBuilder.buildToolDefinitions(facts: wakeFacts);
 
       final strategy = _buildStrategy(
@@ -642,12 +648,15 @@ extension TaskAgentExecute on TaskAgentWorkflow {
   /// still newer than the report, and materiality is not something timestamps
   /// can judge, so gating `update_report` on it would withhold the tool from
   /// wakes that genuinely need it. [hasCategoryProjects] is resolved by the
-  /// caller, once per wake, because the user message needs it too.
+  /// caller, once per wake, because the user message needs it too; so is
+  /// [pullRequests], which every wake needs (see
+  /// [_pullRequestToolAvailability]).
   Future<TaskAgentWakeFacts> _resolveWakeFacts({
     required String taskId,
     required ProposalLedger ledger,
     required List<AttentionRequestEntity> attentionClaims,
     required bool hasCategoryProjects,
+    required ({bool repository, bool linked}) pullRequests,
   }) async {
     final entity = await journalDb.journalEntityById(taskId);
     final task = entity is Task ? entity : null;
@@ -658,27 +667,6 @@ extension TaskAgentExecute on TaskAgentWorkflow {
     final hasTimeRecords = linked.whereType<JournalEntry>().isNotEmpty;
 
     final labelDefinitions = await journalDb.getAllLabelDefinitions();
-
-    // Unwired, or without a repository and a token, the pull request tools
-    // stay hidden. Local reads only: GitHub is asked when a tool is called.
-    final links = pullRequestLinks;
-    var hasPullRequestRepository = false;
-    if (links != null) {
-      try {
-        hasPullRequestRepository = await links.canListFor(taskId);
-      } catch (error, stackTrace) {
-        logError(
-          'pull request listing check failed',
-          error: error,
-          stackTrace: stackTrace,
-        );
-      }
-    }
-    // Any linked pull request, merged ones included: what is stored now may
-    // be newer than what the wake's context showed (see the fact).
-    final hasLinkedPullRequests =
-        pullRequestContextService != null &&
-        linked.whereType<PullRequestEntry>().isNotEmpty;
 
     return TaskAgentWakeFacts(
       // A null `checklistIds` and an empty one both mean "no checklists"
@@ -692,9 +680,55 @@ extension TaskAgentExecute on TaskAgentWorkflow {
       hasOpenProposals: ledger.open.isNotEmpty,
       hasActiveAttentionClaims: attentionClaims.isNotEmpty,
       hasCategoryProjects: hasCategoryProjects,
-      hasPullRequestRepository: hasPullRequestRepository,
-      hasLinkedPullRequests: hasLinkedPullRequests,
+      hasPullRequestRepository: pullRequests.repository,
+      hasLinkedPullRequests: pullRequests.linked,
     );
+  }
+
+  /// Whether the pull request tools can do anything for task [taskId]: its
+  /// category names a repository and this device holds a token (`repository`,
+  /// for listing and linking), and it links a pull request (`linked`, for
+  /// re-reading). Merged ones count: what is stored now may be newer than
+  /// what the wake's context showed (`TaskAgentWakeFacts.hasLinkedPullRequests`).
+  ///
+  /// Read on every wake, not only under `narrowToolSurface`: unlike the
+  /// payload gates, this is whether the tools exist for the task at all, and
+  /// offering them to a task in a category without a repository would only
+  /// invite a call that can answer "no repository". Local reads only — GitHub
+  /// is asked when a tool is called. Unwired, both are false.
+  Future<({bool repository, bool linked})> _pullRequestToolAvailability(
+    String taskId,
+  ) async {
+    final links = pullRequestLinks;
+    var repository = false;
+    if (links != null) {
+      try {
+        repository = await links.canListFor(taskId);
+      } catch (error, stackTrace) {
+        logError(
+          'pull request listing check failed',
+          error: error,
+          stackTrace: stackTrace,
+        );
+      }
+    }
+    var linked = false;
+    if (pullRequestContextService != null) {
+      try {
+        linked = (await journalDb.getLinkedEntities(
+          taskId,
+        )).whereType<PullRequestEntry>().isNotEmpty;
+      } catch (error, stackTrace) {
+        // The wake goes on without the refresh tool, as it goes on without
+        // the sections that read the same links.
+        logError(
+          'linked pull request check failed',
+          error: error,
+          stackTrace: stackTrace,
+        );
+      }
+    }
+    return (repository: repository, linked: linked);
   }
 
   /// Whether [categoryId] holds a project a task could be filed under. False

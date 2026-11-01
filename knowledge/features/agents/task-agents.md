@@ -760,6 +760,13 @@ of the payload.
 | `get_unlinked_pull_requests`, `link_pull_request` | the task's category names no GitHub repository, this device holds no token, or the workflow has no `PullRequestLinkSource` (`canListFor`, local reads only) |
 | `refresh_pull_requests` | the task links no pull request, or the workflow has no `PullRequestContextSource`. A merged one keeps it offered: the wake's own refresh may have timed out and shown it as not refreshed, then stored it as merged in the background before the facts were read |
 
+The table is applied only under `narrowToolSurface`, which the shipped wake
+leaves off — except the two pull request rows. Those are not payload
+trimming but whether the tools exist for the task at all, so
+`_pullRequestToolAvailability` decides them on every wake, from local reads
+only: a task in a category without a GitHub repository is never offered
+`get_unlinked_pull_requests` or `link_pull_request`.
+
 Tools with no precondition — `set_task_title`, `update_task_estimate`,
 `update_task_due_date`, `update_task_priority`, `set_task_status`,
 `set_task_language`, `add_multiple_checklist_items`, `create_follow_up_task`,
