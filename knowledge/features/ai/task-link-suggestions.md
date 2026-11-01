@@ -86,9 +86,12 @@ thing that creates a link, through the same handler a confirmed agent
 **It is mechanical and local.** No language model reads the text: a cue table
 spots the sentence, and the on-device embedding model
 ([embeddings and semantic search](embeddings-and-search.md)) finds the task.
-Nothing leaves the device. The task's agent is not involved — its tools and
-wake context are unchanged — though its card hosts the rows, as it does
-[inference backfill suggestions](inference-backfill.md).
+Nothing leaves the device. The task's agent plays no part in these
+suggestions, though its card hosts the rows, as it does
+[inference backfill suggestions](inference-backfill.md). The agent has its
+own, separate way to the same search — `find_related_tasks`, whose results
+do reach its inference provider; see
+[task agents](../agents/task-agents.md#related-tasks-are-fetched-on-demand).
 
 ```mermaid
 flowchart LR

@@ -1,6 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/directed_relation.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
+import 'package:lotti/features/agents/tools/task_agent_tool_gate.dart';
+
+import 'wake_facts_fixtures.dart';
 
 void main() {
   group('task link tool definitions', () {
@@ -50,7 +53,12 @@ void main() {
         );
       });
 
-      test('is enabled', () {});
+      test('is offered on every wake, whatever the wake facts', () {
+        expect(
+          visibleTaskAgentToolNames(nothingAvailableFacts),
+          contains(tool.name),
+        );
+      });
     });
 
     group('taskRelationWireNames', () {

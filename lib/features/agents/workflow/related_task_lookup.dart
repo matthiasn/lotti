@@ -57,13 +57,18 @@ class RelatedTaskLookup {
     final bounded = trimmed.length > maxQueryLength
         ? trimmed.substring(0, maxQueryLength)
         : trimmed;
-    final found = _allowedCategoryIds.isEmpty
-        ? const <RelatedTaskMatch>[]
-        : (await _finder.find(
+    final search = _allowedCategoryIds.isEmpty
+        ? null
+        : await _finder.find(
             taskId,
             [bounded],
             categoryIds: _allowedCategoryIds,
-          )).matches;
+          );
+    final found = search?.matches ?? const <RelatedTaskMatch>[];
+    // The finder remembers only searches that ran: with one query, an empty
+    // map means the model was missing, the query could not be embedded or
+    // the search threw — which says nothing about the journal.
+    final searchRan = search == null || search.searches.isNotEmpty;
     final tasks = [
       for (final match in found)
         if (match.task.meta.private != true) match.task,
@@ -85,9 +90,12 @@ class RelatedTaskLookup {
           },
       ],
       if (tasks.isEmpty)
-        'note':
-            'No related task is close enough to this query. Do not propose '
-            'a link without one.',
+        'note': searchRan
+            ? 'No related task is close enough to this query. Do not '
+                  'propose a link without one.'
+            : 'Search by meaning could not run on this device right now, so '
+                  'this says nothing about other tasks. Do not propose a '
+                  'link without a search result.',
     });
   }
 

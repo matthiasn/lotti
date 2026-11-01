@@ -178,6 +178,25 @@ void main() {
       verifyNever(() => agents.getLatestTaskReportsForTaskIds(any()));
     });
 
+    test(
+      'a search that could not run says so, not that nothing is close',
+      () async {
+        when(
+          () => search.searchRelatedTasks(
+            query: any(named: 'query'),
+            k: any(named: 'k'),
+            categoryIds: any(named: 'categoryIds'),
+          ),
+        ).thenAnswer((_) async => VectorSearchResult.notSearched());
+
+        final answer = jsonDecode(await lookup().find(_current, 'q')) as Map;
+
+        expect(answer['tasks'], isEmpty);
+        expect(answer['note'], contains('could not run'));
+        expect(answer['note'], isNot(contains('close enough')));
+      },
+    );
+
     test('an agent with no categories searches nothing', () async {
       final answer =
           jsonDecode(await lookup(categories: {}).find(_current, 'q')) as Map;
