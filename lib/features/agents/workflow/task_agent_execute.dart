@@ -209,10 +209,10 @@ extension TaskAgentExecute on TaskAgentWorkflow {
 
     // 2. Build task context from journal domain (independent fetches in
     //    parallel).
-    // NOTE: Related-project task enrichment is intentionally disabled here.
-    // Injecting sibling-task TLDRs polluted the context window, and the
-    // related-task drill-down tool is currently hidden from the LLM until it
-    // can be backed by a better retrieval path.
+    // Other tasks never enter this context up front — injecting sibling-task
+    // TLDRs polluted the window. The model fetches them on demand instead:
+    // `find_related_tasks` searches by meaning, on the device, when a note
+    // talks about other work, and `get_related_task_details` reads one hit.
     // With compaction on, the inline log entries are dropped from the task
     // header and supplied instead as `active summary + uncovered tail` from
     // the captured log (the read-flip).
@@ -349,8 +349,12 @@ extension TaskAgentExecute on TaskAgentWorkflow {
       // Only compute the payload gates when the flag is on: each is a real
       // query, and a wake that will advertise everything anyway should not pay
       // for the answers. Whether the pull request tools exist for this task at
-      // all is decided on every wake.
+      // all is decided on every wake, and so is whether the related-task
+      // tools do: a search that cannot run has nothing to offer either.
       final pullRequests = await _pullRequestToolAvailability(taskId);
+      final relatedTasks = await _relatedTaskLookup(
+        agentIdentity.allowedCategoryIds,
+      );
       final wakeFacts = narrowToolSurface
           ? await _resolveWakeFacts(
               taskId: taskId,
@@ -358,10 +362,12 @@ extension TaskAgentExecute on TaskAgentWorkflow {
               attentionClaims: taskAttentionContext.claims,
               hasCategoryProjects: categoryHasProjects,
               pullRequests: pullRequests,
+              hasRelatedTaskSearch: relatedTasks != null,
             )
           : TaskAgentWakeFacts(
               hasPullRequestRepository: pullRequests.repository,
               hasLinkedPullRequests: pullRequests.linked,
+              hasRelatedTaskSearch: relatedTasks != null,
             );
       final tools = _contextBuilder.buildToolDefinitions(facts: wakeFacts);
 
@@ -375,6 +381,7 @@ extension TaskAgentExecute on TaskAgentWorkflow {
         changeSetBuilder: changeSetBuilder,
         ledger: ledger,
         retractionService: retractionService,
+        relatedTasks: relatedTasks,
       );
 
       final inferenceRepo = CloudInferenceWrapper(
@@ -657,6 +664,7 @@ extension TaskAgentExecute on TaskAgentWorkflow {
     required List<AttentionRequestEntity> attentionClaims,
     required bool hasCategoryProjects,
     required ({bool repository, bool linked}) pullRequests,
+    required bool hasRelatedTaskSearch,
   }) async {
     final entity = await journalDb.journalEntityById(taskId);
     final task = entity is Task ? entity : null;
@@ -682,6 +690,26 @@ extension TaskAgentExecute on TaskAgentWorkflow {
       hasCategoryProjects: hasCategoryProjects,
       hasPullRequestRepository: pullRequests.repository,
       hasLinkedPullRequests: pullRequests.linked,
+      hasRelatedTaskSearch: hasRelatedTaskSearch,
+    );
+  }
+
+  /// The related-task tools' lookup for this wake, searching the agent's
+  /// [allowedCategoryIds]; null when search by meaning cannot run here.
+  Future<RelatedTaskLookup?> _relatedTaskLookup(
+    Set<String> allowedCategoryIds,
+  ) async {
+    final finder = RelatedTaskFinder(
+      db: journalDb,
+      search: vectorSearch,
+      domainLogger: domainLogger,
+    );
+    if (!await finder.isAvailable) return null;
+    return RelatedTaskLookup(
+      finder: finder,
+      journalDb: journalDb,
+      agentRepository: agentRepository,
+      allowedCategoryIds: allowedCategoryIds,
     );
   }
 

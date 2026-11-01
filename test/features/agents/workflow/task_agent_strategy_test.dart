@@ -13,6 +13,7 @@ import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/tools/task_agent_staged_tool_exposure.dart';
 import 'package:lotti/features/agents/workflow/change_proposal_filter.dart';
 import 'package:lotti/features/agents/workflow/change_set_builder.dart';
+import 'package:lotti/features/agents/workflow/related_task_lookup.dart';
 import 'package:lotti/features/agents/workflow/task_agent_strategy.dart';
 import 'package:lotti/features/agents/workflow/task_project_options.dart';
 import 'package:lotti/features/agents/workflow/task_pull_request_candidates.dart';
@@ -162,8 +163,7 @@ ChatCompletionMessageToolCall _toolCall({
   required MockAgentSyncService syncService,
   ResolveTaskMetadata? resolveTaskMetadata,
   ChecklistItemStateResolver? checklistItemStateResolver,
-  Future<String?> Function(String requestedTaskId)? resolveRelatedTaskDetails,
-  Set<String> allowedRelatedTaskIds = const <String>{},
+  RelatedTaskLookup? relatedTasks,
   SuggestionRetractionService? retractionService,
   ExecuteToolHandler? executeToolHandler,
   ChangeSetBuilder? builder,
@@ -216,8 +216,7 @@ ChatCompletionMessageToolCall _toolCall({
     changeSetBuilder: withChangeSetBuilder ? csBuilder : null,
     retractionService: retractionService,
     resolveTaskMetadata: resolveTaskMetadata,
-    resolveRelatedTaskDetails: resolveRelatedTaskDetails,
-    allowedRelatedTaskIds: allowedRelatedTaskIds,
+    relatedTasks: relatedTasks,
     resolveEditableTimeEntryIds: resolveEditableTimeEntryIds,
     resolveRunningTimerId: resolveRunningTimerId,
     resolveTimeEntryFields: resolveTimeEntryFields,
@@ -413,20 +412,19 @@ void main() {
         ).called(2);
       });
 
-      // get_related_task_details is handled locally (never reaches the
-      // executor); the five scenarios differ only in resolver behaviour,
-      // allowlist, requested id, and the expected response.
+      // The related-task tools are handled locally (they never reach the
+      // executor); the scenarios differ only in the lookup's behaviour, the
+      // tool, its arguments and the expected response.
       Future<String> runRelatedCall({
-        required Future<String?> Function(String) resolver,
-        required Set<String> allowedIds,
-        required String requestedTaskId,
+        required RelatedTaskLookup? lookup,
+        required String toolName,
+        required Map<String, dynamic> args,
       }) async {
         final relatedStrategy = _createStrategy(
           executor: mockExecutor,
           syncService: mockSyncService,
           withChangeSetBuilder: false,
-          resolveRelatedTaskDetails: resolver,
-          allowedRelatedTaskIds: allowedIds,
+          relatedTasks: lookup,
         ).strategy;
 
         await relatedStrategy.processToolCalls(
@@ -435,15 +433,15 @@ void main() {
               id: 'call-related',
               type: ChatCompletionMessageToolCallType.function,
               function: ChatCompletionMessageFunctionCall(
-                name: TaskAgentToolNames.getRelatedTaskDetails,
-                arguments: jsonEncode({'taskId': requestedTaskId}),
+                name: toolName,
+                arguments: jsonEncode(args),
               ),
             ),
           ],
           manager: mockManager,
         );
 
-        // The local handler must never reach the deferred-tool executor.
+        // The local handlers must never reach the deferred-tool executor.
         verifyNever(
           () => mockExecutor.execute(
             toolName: any(named: 'toolName'),
@@ -463,60 +461,180 @@ void main() {
             as String;
       }
 
-      test(
-        'handles get_related_task_details locally for allowlisted sibling tasks',
-        () async {
-          final response = await runRelatedCall(
-            resolver: (requestedTaskId) async =>
-                '{"task":{"id":"$requestedTaskId"}}',
-            allowedIds: const {'task-002'},
-            requestedTaskId: 'task-002',
-          );
-          expect(response, '{"task":{"id":"task-002"}}');
-        },
-      );
+      /// A lookup whose searches of this wake returned [found].
+      MockRelatedTaskLookup lookupWith({Set<String> found = const {}}) {
+        final lookup = MockRelatedTaskLookup();
+        when(() => lookup.foundIds).thenReturn(found);
+        return lookup;
+      }
 
-      test('rejects get_related_task_details for the current task', () async {
-        final response = await runRelatedCall(
-          resolver: (_) async => '{"task":{"id":"unused"}}',
-          allowedIds: {taskId},
-          requestedTaskId: taskId,
+      group('find_related_tasks', () {
+        test(
+          'searches with the trimmed query and answers with the hits',
+          () async {
+            final lookup = lookupWith();
+            when(
+              () => lookup.find(taskId, 'the radio relay repair'),
+            ).thenAnswer((_) async => '{"tasks":[{"id":"task-002"}]}');
+
+            final response = await runRelatedCall(
+              lookup: lookup,
+              toolName: TaskAgentToolNames.findRelatedTasks,
+              args: {'query': '  the radio relay repair '},
+            );
+
+            expect(response, '{"tasks":[{"id":"task-002"}]}');
+          },
         );
-        expect(response, contains('cannot be used for the current task'));
+
+        test('refuses an empty query without searching', () async {
+          final lookup = lookupWith();
+
+          final response = await runRelatedCall(
+            lookup: lookup,
+            toolName: TaskAgentToolNames.findRelatedTasks,
+            args: {'query': '   '},
+          );
+
+          expect(response, contains('"query" must be a non-empty string'));
+          verifyNever(() => lookup.find(any(), any()));
+        });
+
+        test(
+          'says it is unavailable where search by meaning cannot run',
+          () async {
+            final response = await runRelatedCall(
+              lookup: null,
+              toolName: TaskAgentToolNames.findRelatedTasks,
+              args: {'query': 'relay'},
+            );
+
+            expect(response, contains('is not available'));
+          },
+        );
+
+        test('answers with an error when the search throws', () async {
+          final lookup = lookupWith();
+          when(
+            () => lookup.find(any(), any()),
+          ).thenThrow(Exception('store closed'));
+
+          final response = await runRelatedCall(
+            lookup: lookup,
+            toolName: TaskAgentToolNames.findRelatedTasks,
+            args: {'query': 'relay'},
+          );
+
+          expect(response, contains('search failed'));
+        });
       });
 
-      test('rejects get_related_task_details outside the allowlist', () async {
-        final response = await runRelatedCall(
-          resolver: (_) async => '{"task":{"id":"unused"}}',
-          allowedIds: const {'task-002'},
-          requestedTaskId: 'task-999',
+      group('get_related_task_details', () {
+        test(
+          'reads a task this wake found, with the full report on request',
+          () async {
+            final lookup = lookupWith(found: {'task-002'});
+            when(
+              () => lookup.details('task-002', fullReport: true),
+            ).thenAnswer((_) async => '{"id":"task-002","report":"..."}');
+
+            final response = await runRelatedCall(
+              lookup: lookup,
+              toolName: TaskAgentToolNames.getRelatedTaskDetails,
+              args: {'taskId': 'task-002', 'includeFullReport': true},
+            );
+
+            expect(response, '{"id":"task-002","report":"..."}');
+          },
         );
-        expect(response, contains('not available in the current'));
+
+        test(
+          'reads only the TL;DR unless the full report is asked for',
+          () async {
+            final lookup = lookupWith(found: {'task-002'});
+            when(
+              () => lookup.details('task-002'),
+            ).thenAnswer((_) async => '{"id":"task-002"}');
+
+            await runRelatedCall(
+              lookup: lookup,
+              toolName: TaskAgentToolNames.getRelatedTaskDetails,
+              args: {'taskId': 'task-002'},
+            );
+
+            verify(() => lookup.details('task-002')).called(1);
+          },
+        );
+
+        test('refuses the current task', () async {
+          final response = await runRelatedCall(
+            lookup: lookupWith(found: {taskId}),
+            toolName: TaskAgentToolNames.getRelatedTaskDetails,
+            args: {'taskId': taskId},
+          );
+
+          expect(response, contains('cannot be used for the current task'));
+        });
+
+        test('refuses a task no search of this wake returned', () async {
+          final lookup = lookupWith(found: {'task-002'});
+
+          final response = await runRelatedCall(
+            lookup: lookup,
+            toolName: TaskAgentToolNames.getRelatedTaskDetails,
+            args: {'taskId': 'task-999'},
+          );
+
+          expect(response, contains('was not returned by find_related_tasks'));
+          verifyNever(
+            () => lookup.details(any(), fullReport: any(named: 'fullReport')),
+          );
+        });
+
+        test('refuses an empty id, and answers that it is unavailable without '
+            'search', () async {
+          expect(
+            await runRelatedCall(
+              lookup: lookupWith(),
+              toolName: TaskAgentToolNames.getRelatedTaskDetails,
+              args: {'taskId': ' '},
+            ),
+            contains('"taskId" must be a non-empty string'),
+          );
+          clearInteractions(mockManager);
+          expect(
+            await runRelatedCall(
+              lookup: null,
+              toolName: TaskAgentToolNames.getRelatedTaskDetails,
+              args: {'taskId': 'task-002'},
+            ),
+            contains('is not available'),
+          );
+        });
+
+        for (final (label, answer) in [
+          ('returns nothing', () async => null),
+          ('throws', () async => throw Exception('DB connection lost')),
+        ]) {
+          test('answers with an error when the lookup $label', () async {
+            final lookup = lookupWith(found: {'task-002'});
+            when(
+              () => lookup.details(
+                any(),
+                fullReport: any(named: 'fullReport'),
+              ),
+            ).thenAnswer((_) => answer());
+
+            final response = await runRelatedCall(
+              lookup: lookup,
+              toolName: TaskAgentToolNames.getRelatedTaskDetails,
+              args: {'taskId': 'task-002'},
+            );
+
+            expect(response, contains('could not be resolved'));
+          });
+        }
       });
-
-      test(
-        'returns tool error when related-task resolver returns null',
-        () async {
-          final response = await runRelatedCall(
-            resolver: (_) async => null,
-            allowedIds: const {'task-002'},
-            requestedTaskId: 'task-002',
-          );
-          expect(response, contains('could not be resolved'));
-        },
-      );
-
-      test(
-        'returns tool error when related-task resolver throws',
-        () async {
-          final response = await runRelatedCall(
-            resolver: (_) async => throw Exception('DB connection lost'),
-            allowedIds: const {'task-002'},
-            requestedTaskId: 'task-002',
-          );
-          expect(response, contains('could not be resolved'));
-        },
-      );
 
       test('records error and continues on invalid JSON arguments', () async {
         final toolCalls = [

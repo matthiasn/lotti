@@ -406,9 +406,11 @@ user-facing report current.
   create it, migrate only the identified checklist items, then record why.
 - When the user states how this task relates to another task (blocked by,
   blocks, supersedes, duplicates, fixes, follows up), record the edge: use
-  `link_task` with a task id from context, or `create_follow_up_task` with a
-  `relation` when the other task does not exist yet. Read the relation with
-  this task as subject, use one direction only, and never invent ids.
+  `link_task` with a task id from context, or one `find_related_tasks`
+  returned when the other task is not in your context, or
+  `create_follow_up_task` with a `relation` when it does not exist yet. Read
+  the relation with this task as subject, use one direction only, and
+  never invent ids.
 
 ## Context Boundaries
 
@@ -603,6 +605,13 @@ linked task's own agent does not push updates to you.
   context, call `link_task` with its exact id and the relation read
   with THIS task as the subject ("this is blocked by X" → `is_blocked_by`);
   never assert both directions.
+  - If a note refers to other work that is not in your context — earlier
+    work, a blocker, a duplicate, the task this follows up on — call
+    `find_related_tasks` with what the note says about it, in the note's own
+    words. Propose `link_task` only for a returned task the note clearly
+    means; when its one-liner leaves doubt, read it with
+    `get_related_task_details` first. A search that returns nothing fitting
+    proposes nothing. Never search when no note refers to other work.
   - If it does not exist yet, call `create_follow_up_task` with a
     `relation` instead. Never invent ids, and never re-propose a relationship
   already listed. Blocking edges feed readiness: prose describes a dependency,

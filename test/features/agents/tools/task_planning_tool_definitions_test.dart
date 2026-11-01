@@ -13,17 +13,42 @@ void main() {
         );
       });
 
-      test('has correct name and description', () {
-        expect(tool.name, equals(TaskAgentToolNames.getRelatedTaskDetails));
-        expect(tool.description, contains('related task'));
-        expect(tool.description, contains('same parent project'));
+      test('reads only tasks a search of this wake returned', () {
+        expect(tool.description, contains('find_related_tasks returned'));
+        expect(tool.description, contains('TL;DR'));
       });
 
-      test('requires a string taskId parameter', () {
+      test('requires a string taskId and offers the full report', () {
         final properties = tool.parameters['properties'] as Map;
-        final taskIdProp = properties['taskId'] as Map;
-        expect(taskIdProp['type'], equals('string'));
-        expect(tool.parameters['required'], contains('taskId'));
+        expect((properties['taskId'] as Map)['type'], equals('string'));
+        expect(
+          (properties['includeFullReport'] as Map)['type'],
+          equals('boolean'),
+        );
+        expect(tool.parameters['required'], ['taskId']);
+      });
+    });
+
+    group('find_related_tasks', () {
+      late AgentToolDefinition tool;
+
+      setUp(() {
+        tool = AgentToolRegistry.taskAgentTools.firstWhere(
+          (t) => t.name == TaskAgentToolNames.findRelatedTasks,
+        );
+      });
+
+      test('is for notes that refer to other work, never speculative', () {
+        expect(tool.description, contains('by meaning'));
+        expect(tool.description, contains('do not search speculatively'));
+        expect(tool.description, contains('link_task'));
+      });
+
+      test('requires only a string query', () {
+        final properties = tool.parameters['properties'] as Map;
+        expect(properties.keys, ['query']);
+        expect((properties['query'] as Map)['type'], equals('string'));
+        expect(tool.parameters['required'], ['query']);
       });
     });
 

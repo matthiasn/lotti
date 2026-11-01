@@ -16,6 +16,7 @@ import 'package:lotti/features/ai/on_device_embedding/on_device_embedding_reposi
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
+import 'package:lotti/features/ai/repository/vector_search_repository.dart';
 import 'package:lotti/features/ai/state/pull_request_context_source_provider.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/notifications/repository/notification_repository.dart';
@@ -113,6 +114,7 @@ TaskAgentWorkflow taskAgentWorkflow(Ref ref) {
     domainLogger: ref.watch(domainLoggerProvider),
     embeddingStore: embeddingStore,
     embeddingRepository: embeddingRepository,
+    vectorSearch: ref.watch(vectorSearchRepositoryProvider),
     taskAgentService: ref.watch(taskAgentServiceProvider),
     projectRepository: ref.watch(projectRepositoryProvider),
     pullRequestContextService: ref.watch(pullRequestContextSourceProvider),

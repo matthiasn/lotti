@@ -22,6 +22,7 @@ import 'package:lotti/features/notifications/repository/notification_repository.
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/time_service.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -158,89 +159,115 @@ void main() {
         },
       );
 
+      /// The names of the tools a wake of [bench]'s workflow offers the model.
+      Future<List<String>> offeredTools(
+        TaskAgentWorkflowTestBench bench,
+      ) async {
+        when(
+          () => bench.mockAgentRepository.getAgentState(agentId),
+        ).thenAnswer((_) async => testAgentState);
+        when(
+          () => bench.mockAgentRepository.getLatestReport(agentId, 'current'),
+        ).thenAnswer((_) async => null);
+        when(
+          () => bench.mockAgentRepository.getMessagesByKind(
+            agentId,
+            AgentMessageKind.observation,
+          ),
+        ).thenAnswer((_) async => []);
+        when(
+          () => bench.mockAgentRepository.getMessagesByKind(
+            agentId,
+            AgentMessageKind.observation,
+            limit: taskObservationLookback,
+          ),
+        ).thenAnswer((_) async => []);
+        when(
+          () => bench.mockAiInputRepository.buildTaskDetailsJson(id: taskId),
+        ).thenAnswer((_) async => '{"title":"Test Task"}');
+        when(
+          () => bench.mockAiInputRepository.buildProjectContextJsonForTask(
+            taskId,
+          ),
+        ).thenAnswer((_) async => '{}');
+        when(
+          () => bench.mockAiInputRepository.buildCategoryKnowledge(taskId),
+        ).thenAnswer((_) async => null);
+        when(
+          () => bench.mockAiInputRepository.buildLinkedFromContext(taskId),
+        ).thenAnswer((_) async => <AiLinkedTaskContext>[]);
+        when(
+          () => bench.mockAiInputRepository.buildLinkedToContext(taskId),
+        ).thenAnswer((_) async => <AiLinkedTaskContext>[]);
+        when(
+          () =>
+              bench.mockAiConfigRepository.getConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) async => [geminiModel]);
+        when(
+          () =>
+              bench.mockAiConfigRepository.getConfigById('gemini-provider-001'),
+        ).thenAnswer((_) async => geminiProvider);
+        when(
+          () => bench.mockAgentRepository.getReportHead(agentId, 'current'),
+        ).thenAnswer((_) async => null);
+        when(() => bench.mockConversationManager.messages).thenReturn([]);
+
+        List<ChatCompletionTool>? exposedTools;
+        bench.mockConversationRepository.sendMessageDelegate =
+            ({
+              required conversationId,
+              required message,
+              required model,
+              required provider,
+              required inferenceRepo,
+              tools,
+              toolChoice,
+              temperature = 0.7,
+              strategy,
+            }) async {
+              exposedTools = tools;
+              return null;
+            };
+
+        final result = await bench.workflow.execute(
+          agentIdentity: testAgentIdentity,
+          runKey: runKey,
+          triggerTokens: {'entity-a'},
+          threadId: threadId,
+        );
+
+        expect(result.success, isTrue);
+        expect(exposedTools, isNotNull);
+        return [for (final tool in exposedTools!) tool.function.name];
+      }
+
+      const relatedTaskTools = [
+        TaskAgentToolNames.findRelatedTasks,
+        TaskAgentToolNames.getRelatedTaskDetails,
+      ];
+
+      test('does not offer the related-task tools where search by meaning '
+          'cannot run', () async {
+        final offered = await offeredTools(createTaskAgentWorkflowTestBench());
+
+        for (final name in relatedTaskTools) {
+          expect(offered, isNot(contains(name)));
+        }
+      });
+
       test(
-        'does not expose disabled related-task drill-down tools to the LLM',
+        'offers both related-task tools where search by meaning runs',
         () async {
-          final relatedTaskTool = AgentToolRegistry.taskAgentTools.firstWhere(
-            (def) => def.name == TaskAgentToolNames.getRelatedTaskDetails,
+          final bench = createTaskAgentWorkflowTestBench(
+            vectorSearch: MockVectorSearchRepository(),
           );
-          expect(relatedTaskTool.enabled, isFalse);
+          when(
+            () => bench.mockJournalDb.getConfigFlag(enableEmbeddingsFlag),
+          ).thenAnswer((_) async => true);
 
-          when(
-            () => mockAgentRepository.getAgentState(agentId),
-          ).thenAnswer((_) async => testAgentState);
-          when(
-            () => mockAgentRepository.getLatestReport(agentId, 'current'),
-          ).thenAnswer((_) async => null);
-          when(
-            () => mockAgentRepository.getMessagesByKind(
-              agentId,
-              AgentMessageKind.observation,
-            ),
-          ).thenAnswer((_) async => []);
-          when(
-            () => mockAgentRepository.getMessagesByKind(
-              agentId,
-              AgentMessageKind.observation,
-              limit: taskObservationLookback,
-            ),
-          ).thenAnswer((_) async => []);
-          when(
-            () => mockAiInputRepository.buildTaskDetailsJson(id: taskId),
-          ).thenAnswer((_) async => '{"title":"Test Task"}');
-          when(
-            () => mockAiInputRepository.buildProjectContextJsonForTask(taskId),
-          ).thenAnswer((_) async => '{}');
-          when(
-            () => mockAiInputRepository.buildCategoryKnowledge(taskId),
-          ).thenAnswer((_) async => null);
-          when(
-            () => mockAiInputRepository.buildLinkedFromContext(taskId),
-          ).thenAnswer((_) async => <AiLinkedTaskContext>[]);
-          when(
-            () => mockAiInputRepository.buildLinkedToContext(taskId),
-          ).thenAnswer((_) async => <AiLinkedTaskContext>[]);
-          when(
-            () => mockAiConfigRepository.getConfigsByType(AiConfigType.model),
-          ).thenAnswer((_) async => [geminiModel]);
-          when(
-            () => mockAiConfigRepository.getConfigById('gemini-provider-001'),
-          ).thenAnswer((_) async => geminiProvider);
-          when(
-            () => mockAgentRepository.getReportHead(agentId, 'current'),
-          ).thenAnswer((_) async => null);
-          when(() => mockConversationManager.messages).thenReturn([]);
+          final offered = await offeredTools(bench);
 
-          List<ChatCompletionTool>? exposedTools;
-          mockConversationRepository.sendMessageDelegate =
-              ({
-                required conversationId,
-                required message,
-                required model,
-                required provider,
-                required inferenceRepo,
-                tools,
-                toolChoice,
-                temperature = 0.7,
-                strategy,
-              }) async {
-                exposedTools = tools;
-                return null;
-              };
-
-          final result = await workflow.execute(
-            agentIdentity: testAgentIdentity,
-            runKey: runKey,
-            triggerTokens: {'entity-a'},
-            threadId: threadId,
-          );
-
-          expect(result.success, isTrue);
-          expect(exposedTools, isNotNull);
-          expect(
-            exposedTools!.map((tool) => tool.function.name),
-            isNot(contains(TaskAgentToolNames.getRelatedTaskDetails)),
-          );
+          expect(offered, containsAll(relatedTaskTools));
         },
       );
     });

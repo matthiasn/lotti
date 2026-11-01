@@ -68,6 +68,7 @@ import 'package:lotti/features/agents/workflow/change_set_builder.dart';
 import 'package:lotti/features/agents/workflow/event_agent_workflow.dart';
 import 'package:lotti/features/agents/workflow/improver_agent_workflow.dart';
 import 'package:lotti/features/agents/workflow/project_agent_workflow.dart';
+import 'package:lotti/features/agents/workflow/related_task_lookup.dart';
 import 'package:lotti/features/agents/workflow/task_agent_strategy.dart';
 import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
 import 'package:lotti/features/agents/workflow/task_tool_dispatcher.dart';
@@ -1936,6 +1937,8 @@ class MockInferenceBackfillDetector extends Mock
 
 class MockTaskLinkSuggestionDetector extends Mock
     implements TaskLinkSuggestionDetector {}
+
+class MockRelatedTaskLookup extends Mock implements RelatedTaskLookup {}
 
 class MockAutomaticImageAnalysisTrigger extends Mock
     implements AutomaticImageAnalysisTrigger {}
