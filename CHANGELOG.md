@@ -4,6 +4,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.75]
+
+### Added
+
+- **The companion answers aloud.** Ask her a question by voice and she
+  speaks her answer, her lips moving with the words; a typed question still
+  gets a written answer. She listens while you talk and thinks while she
+  works; tap her to stop her. Starting to talk stops her voice, so she is
+  never recorded.
+
+### Fixed
+
+- **The companion answers with only Mistral set up.** Without a default
+  profile, she now finds her built-in model on Mistral as well as on
+  Melious.
+- **The companion no longer shakes her legs when she bounces.** When she was
+  pleased — a clap, a thumbs up, a celebration — her knees pumped in and out
+  several times a second, most visible in the full-body view on a phone. Her
+  knees now hold their place while she bobs, and the bob itself is smooth.
+- **Playing a summary again starts right away.** Read aloud used to make the
+  whole recording again for a replay — for the cloud voice, sending the text
+  and waiting for the voice once more. A summary that played to its end now
+  replays at once, until something else is read aloud.
+
 ## [1.1.74]
 
 ### Added
