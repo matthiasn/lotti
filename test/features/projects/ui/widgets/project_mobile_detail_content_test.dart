@@ -26,6 +26,7 @@ import 'package:lotti/features/projects/ui/widgets/project_header_title_row.dart
 import 'package:lotti/features/projects/ui/widgets/project_mobile_detail_content.dart';
 import 'package:lotti/features/projects/ui/widgets/project_task_list_options_sheet.dart';
 import 'package:lotti/features/projects/ui/widgets/project_tasks_panel.dart';
+import 'package:lotti/features/projects/ui/widgets/project_timeline_section.dart';
 import 'package:lotti/features/projects/ui/widgets/shared_widgets.dart';
 import 'package:lotti/features/tasks/ui/header/desktop_task_header.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
@@ -137,6 +138,26 @@ void main() {
         tester.getTopLeft(find.byType(ProjectAgentSummaryCard)).dy,
         lessThan(tester.getTopLeft(find.text('Project Tasks')).dy),
       );
+    });
+
+    testWidgets('closes with the timeline of what is linked straight to the '
+        'project', (tester) async {
+      final record = makeTestProjectRecord();
+      await tester.pumpWidget(
+        wrap(
+          ProjectMobileDetailContent(
+            record: record,
+            currentTime: DateTime(2026, 3, 28),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      // Last on the page, so built below the fold.
+      final section = tester.widget<ProjectTimelineSection>(
+        find.byType(ProjectTimelineSection, skipOffstage: false),
+      );
+      expect(section.project, same(record.project));
     });
 
     testWidgets('uses a real overflow menu and forwards project actions', (

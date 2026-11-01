@@ -5352,6 +5352,7 @@
   "projectTasksSortPriority": "Prioridade",
   "projectTasksSortRecentlyUpdated": "Atualização recente",
   "projectTasksSortTitle": "Título",
+  "projectTimelineTitle": "Linha do tempo",
   "projectTitleLabel": "Título do projeto",
   "projectTitleRequired": "O título do projeto não pode ficar vazio",
   "promptDefaultModelBadge": "Padrão",

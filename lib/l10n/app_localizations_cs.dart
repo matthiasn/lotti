@@ -12626,6 +12626,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get projectTasksSortTitle => 'Název';
 
   @override
+  String get projectTimelineTitle => 'Časová osa';
+
+  @override
   String get projectTitleLabel => 'Název projektu';
 
   @override

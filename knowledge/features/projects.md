@@ -438,7 +438,11 @@ chrome, identity route, report expansion, automation toggle, countdown,
 run-now action and setup route as Task Details. Project health and durable
 recommendation/change-set actions remain project-owned content inside that one
 surface instead of becoming competing cards or duplicating the report in the
-editor. The AI surface appears above the task list. `ProjectRecommendationsPanel`
+editor. The AI surface appears above the task list. Under the task list,
+`ProjectTimelineSection` shows what is linked straight to the project —
+`LinkedEntriesWidget` over the project with its tasks hidden
+(`hasNonTaskLinkedEntriesProvider`), the same cards, filters and sort a task's
+entries have — and is absent while nothing but tasks is linked. `ProjectRecommendationsPanel`
 renders two bands inside the card: the newest run's **recommended next steps**
 (`ProjectNextStepRow`, one per step) and the agent's **proposed changes**
 (`ProjectProposalRow`, reusing Task Details' `RowActions` rail). What keeps

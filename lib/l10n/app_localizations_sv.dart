@@ -12487,6 +12487,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get projectTasksSortTitle => 'Titel';
 
   @override
+  String get projectTimelineTitle => 'Tidslinje';
+
+  @override
   String get projectTitleLabel => 'Projekttitel';
 
   @override

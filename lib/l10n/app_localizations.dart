@@ -20869,6 +20869,12 @@ abstract class AppLocalizations {
   /// **'Title'**
   String get projectTasksSortTitle;
 
+  /// No description provided for @projectTimelineTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Timeline'**
+  String get projectTimelineTitle;
+
   /// No description provided for @projectTitleLabel.
   ///
   /// In en, this message translates to:
