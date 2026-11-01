@@ -40,6 +40,20 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="1.1.77" date="2026-11-01">
+      <description>
+        <p>Changed: the companion's composer is calmer and clearer. The category chips now sit in the composer after "Answers from", with "All" to clear them; a chosen chip is filled and checked. "Type instead" and "Cancel" are quieter, and while you speak, the pill ends in a send arrow.</p>
+        <p>Changed: your chats with her are easier to scan. The list is denser, without boxes: each day is named in the accent colour, each row shows the start of her last answer, and the times line up in one column. On a phone the way to the list says "Chats", with the inbox count beside it.</p>
+        <p>Changed: labelled dividers stop shouting. A divider's label, such as "Today" in a chat, is now written in sentence case instead of capitals.</p>
+        <p>Changed: on a computer, start typing to her right away. The first key you type opens the text field with it; shortcuts never do.</p>
+        <p>Fixed: goal check-ins took minutes to transcribe, or never did, on a model you never picked. When a goal's category set up no automatic transcription, its spoken check-ins skipped your inference profiles altogether and went to whichever speech model ranked first - the on-device one when installed, which could take minutes or fail. They now use the goal's category profile, and your default inference profile when the category has none that can transcribe.</p>
+        <p>Fixed: People check-ins ignored the person's category. Spoken check-ins about a person always used the default profile. They now use the profile of the person's category first, like goals, and fall back to the default.</p>
+        <p>Fixed: dictating into a goal's or a person's chat used a different model. Voice input in those chats, and in a goal's "About this goal" sheet, picked its own speech model instead of the one in your profiles. It now uses the same profile as the check-ins, and a speech-to-text model's words get the same speech-dictionary correction afterwards.</p>
+        <p>Fixed: a stuck transcription can be cancelled. Cancel stays available while your words are being written down, not only while you speak.</p>
+        <p>Fixed: leaving a chat while speaking no longer posts there later. Opening another chat, or the list, cancels the recording.</p>
+        <p>Fixed: screen readers read each chip once. Chips across the app were announced twice.</p>
+      </description>
+    </release>
     <release version="1.1.76" date="2026-11-01">
       <description>
         <p>Added: the companion has a place of her own. She opens over the app as a large panel on a computer - your chats beside the one you are in - and full screen on a phone.</p>
