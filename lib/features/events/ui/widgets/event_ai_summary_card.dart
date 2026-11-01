@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_report_provenance.dart';
@@ -166,7 +167,13 @@ class _EventAgentRecapCardState extends ConsumerState<_EventAgentRecapCard> {
             inferenceAvailable: inferenceAvailable,
             isRunning: isRunning,
             hasReportContent: hasReportContent,
-            isStale: state?.isReportStale ?? false,
+            // A photo or note added since the recap queues a wake behind
+            // the coalescing window: that deadline is the only trace of
+            // the change until it fires, and the recap is just as behind
+            // meanwhile — so it counts, and its countdown rides Update now,
+            // as on a task's card.
+            isStale: state?.isReportBehindAt(clock.now()) ?? false,
+            nextWakeAt: state?.nextWakeAt,
             reportUpdatedAt: report?.createdAt,
             onRunNow: inferenceAvailable
                 ? () => ref

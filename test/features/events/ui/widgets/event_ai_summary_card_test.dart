@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
+
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
@@ -330,6 +332,35 @@ void main() {
         isTrue,
       );
       expect(find.text('Out of date'), findsOneWidget);
+    });
+
+    testWidgets('a change queued behind the coalescing window makes the '
+        'recap out of date and counts down on Update now', (tester) async {
+      final now = DateTime(2026, 7, 16, 22);
+      final queued = makeTestState(
+        agentId: agentId,
+        nextWakeAt: now.add(const Duration(seconds: 42)),
+      ).copyWith(reportFreshAt: now.subtract(const Duration(hours: 1)));
+
+      await withClock(Clock.fixed(now), () async {
+        await pumpCard(
+          tester,
+          overrides: agentOverrides(
+            agent: agentIdentity,
+            report: () => makeTestReport(agentId: agentId, tldr: 'recap'),
+            state: queued,
+          ),
+        );
+
+        final strip = tester.widget<AgentAutomationRow>(
+          find.byType(AgentAutomationRow),
+        );
+        // No stale mark was written; the queued wake alone makes it behind.
+        expect(queued.isReportStale, isFalse);
+        expect(strip.isStale, isTrue);
+        expect(strip.nextWakeAt, queued.nextWakeAt);
+        expect(find.text('Out of date'), findsOneWidget);
+      });
     });
 
     testWidgets("the agent's name opens this agent's internals", (
