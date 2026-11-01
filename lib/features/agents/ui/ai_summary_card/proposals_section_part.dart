@@ -31,6 +31,7 @@ class ProposalsSection extends StatelessWidget {
     this.pendingCount,
     this.onResolveStart,
     this.onResolveEnd,
+    this.onOpenLinkedTask,
     this.settling = false,
     this.newlyArrived = const {},
     this.rowBuilder,
@@ -63,6 +64,9 @@ class ProposalsSection extends StatelessWidget {
   final void Function(PendingSuggestion suggestion)? onResolveStart;
   final void Function(PendingSuggestion suggestion, {required bool removed})?
   onResolveEnd;
+
+  /// Forwarded to each open [ProposalRow]: opens a task a row names.
+  final void Function(String taskId)? onOpenLinkedTask;
 
   /// True while at least one row is committing/collapsing, so the surviving
   /// rows guard taps against a mis-targeted second action while they slide.
@@ -158,6 +162,7 @@ class ProposalsSection extends StatelessWidget {
                         cascadeIndex: i,
                         onResolveStart: onResolveStart,
                         onResolveEnd: onResolveEnd,
+                        onOpenLinkedTask: onOpenLinkedTask,
                         settling: settling,
                         pendingCount: pendingCount ?? open.length,
                       ),

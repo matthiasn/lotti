@@ -7254,6 +7254,8 @@
       }
     }
   },
+  "taskPreviewNoSummary": "Ingen sammanfattning än.",
+  "taskPreviewOpenTask": "Öppna uppgift",
   "taskPriorityHigh": "Högt",
   "taskPriorityLow": "Lågt",
   "taskPriorityMedium": "Medium",

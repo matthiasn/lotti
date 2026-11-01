@@ -17601,6 +17601,12 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get taskPreviewNoSummary => 'Aún no hay resumen.';
+
+  @override
+  String get taskPreviewOpenTask => 'Abrir tarea';
+
+  @override
   String get taskPriorityHigh => 'Alta';
 
   @override

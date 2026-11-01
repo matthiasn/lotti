@@ -20,6 +20,7 @@ import 'package:lotti/features/agents/tools/task_agent_staged_tool_exposure.dart
 import 'package:lotti/features/agents/workflow/agent_observations.dart';
 import 'package:lotti/features/agents/workflow/change_proposal_filter.dart';
 import 'package:lotti/features/agents/workflow/change_set_builder.dart';
+import 'package:lotti/features/agents/workflow/related_task_lookup.dart';
 import 'package:lotti/features/agents/workflow/task_agent_report_editor.dart';
 import 'package:lotti/features/agents/workflow/task_project_options.dart';
 import 'package:lotti/features/agents/workflow/task_pull_request_candidates.dart';
@@ -88,8 +89,7 @@ class TaskAgentStrategy extends ConversationStrategy {
     this.changeSetBuilder,
     this.retractionService,
     this.resolveTaskMetadata,
-    this.resolveRelatedTaskDetails,
-    this.allowedRelatedTaskIds = const <String>{},
+    this.relatedTasks,
     this.resolveEditableTimeEntryIds,
     this.resolveRunningTimerId,
     this.resolveTimeEntryFields,
@@ -164,12 +164,10 @@ class TaskAgentStrategy extends ConversationStrategy {
   /// was made against (`ChangeItem.base`).
   final ResolveTaskMetadata? resolveTaskMetadata;
 
-  /// Optional read-only resolver for sibling-task drill-down context.
-  final Future<String?> Function(String requestedTaskId)?
-  resolveRelatedTaskDetails;
-
-  /// Allowlist of sibling task IDs exposed in the current wake payload.
-  final Set<String> allowedRelatedTaskIds;
+  /// What `find_related_tasks` and `get_related_task_details` read, for
+  /// this wake; null where search by meaning is unavailable, which leaves
+  /// both tools answering that they are not available.
+  final RelatedTaskLookup? relatedTasks;
 
   /// Optional resolver for the set of time-entry ids linked to this task,
   /// the running timer's included — the only ids `update_time_entry` may
@@ -273,6 +271,10 @@ class TaskAgentStrategy extends ConversationStrategy {
   static const String observationToolName =
       TaskAgentToolNames.recordObservations;
 
+  /// Tool name for the read-only related-task search.
+  static const String findRelatedTasksToolName =
+      TaskAgentToolNames.findRelatedTasks;
+
   /// Tool name for the read-only related-task drill-down tool.
   static const String relatedTaskDetailsToolName =
       TaskAgentToolNames.getRelatedTaskDetails;
@@ -374,6 +376,11 @@ class TaskAgentStrategy extends ConversationStrategy {
       if (toolName == observationToolName) {
         await _recordActionMessage(toolName: toolName, args: args);
         await _handleRecordObservations(args, call.id, manager);
+        continue;
+      }
+      if (toolName == findRelatedTasksToolName) {
+        await _recordActionMessage(toolName: toolName, args: args);
+        await _handleFindRelatedTasks(args, call.id, manager);
         continue;
       }
       if (toolName == relatedTaskDetailsToolName) {

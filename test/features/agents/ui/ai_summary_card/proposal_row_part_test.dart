@@ -1,6 +1,8 @@
 import 'dart:async';
 
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/agents/state/proposal_task_title_provider.dart';
 import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/proposal_row_part.dart';
@@ -163,6 +165,133 @@ void main() {
         ),
       );
       expect(find.byType(ProposalRow), findsNothing);
+    });
+  });
+
+  group('AiSummaryCard – linked task title', () {
+    /// A `link_task` row that carries its target's title, as a proposal
+    /// from the query chat does.
+    PendingSuggestion titledLink() => makePending(
+      id: 'titled-link',
+      toolName: 'link_task',
+      args: const {
+        'relation': 'follows_up_on',
+        'targetTaskId': 'census',
+        'targetTitle': 'Colony census export',
+      },
+      humanSummary: 'Link: this task follows up on "Colony census export"',
+    );
+
+    Future<void> pumpRow(
+      WidgetTester tester,
+      PendingSuggestion row, {
+      void Function(String taskId)? onOpenLinkedTask,
+      List<Override> overrides = const [],
+    }) async {
+      final bench = AgentTestBench(
+        confirmationService: MockChangeSetConfirmationService(),
+        updateNotifications: MockUpdateNotifications(),
+        suggestions: UnifiedSuggestionList(open: [row], activity: const []),
+        onOpenLinkedTask: onOpenLinkedTask,
+        extraOverrides: overrides,
+      );
+      await tester.pumpWidget(bench.build());
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+    }
+
+    /// Whether the row's sentence holds a tappable span.
+    bool hasLink(WidgetTester tester, String title) {
+      final text = tester.widget<RichText>(
+        find.byWidgetPredicate(
+          (w) => w is RichText && w.text.toPlainText().contains(title),
+        ),
+      );
+      var linked = false;
+      text.text.visitChildren((span) {
+        if (span is TextSpan && span.recognizer != null) linked = true;
+        return true;
+      });
+      return linked;
+    }
+
+    testWidgets('tapping the title opens that task, deciding nothing', (
+      tester,
+    ) async {
+      final opened = <String>[];
+      await pumpRow(
+        tester,
+        titledLink(),
+        onOpenLinkedTask: opened.add,
+      );
+
+      expect(hasLink(tester, 'Colony census export'), isTrue);
+      await tester.tapOnText(
+        find.textRange.ofSubstring('Colony census export'),
+      );
+      await tester.pump();
+
+      expect(opened, ['census']);
+      expect(find.byType(ProposalRow), findsOneWidget);
+    });
+
+    testWidgets('without a host to open it, the title is plain text', (
+      tester,
+    ) async {
+      await pumpRow(tester, titledLink());
+
+      expect(hasLink(tester, 'Colony census export'), isFalse);
+    });
+
+    PendingSuggestion agentLink() => makePending(
+      id: 'agent-link',
+      toolName: 'link_task',
+      args: const {'relation': 'follows_up_on', 'targetTaskId': 'census'},
+      humanSummary: 'Link: this task follows up on "Colony census export"',
+    );
+
+    testWidgets("an agent's link proposal, which names its task by id, reads "
+        "the title in the reader's language and links it", (tester) async {
+      final opened = <String>[];
+      await pumpRow(
+        tester,
+        agentLink(),
+        onOpenLinkedTask: opened.add,
+        overrides: [
+          proposalTaskTitleProvider(
+            'census',
+          ).overrideWith((ref) async => 'Colony census export'),
+        ],
+      );
+      await tester.pump();
+
+      expect(
+        find.text('Add · This task follows up on "Colony census export"'),
+        findsOneWidget,
+      );
+      expect(hasLink(tester, 'Colony census export'), isTrue);
+      await tester.tapOnText(
+        find.textRange.ofSubstring('Colony census export'),
+      );
+      expect(opened, ['census']);
+    });
+
+    testWidgets('an agent link proposal whose task cannot be found keeps its '
+        'persisted summary, unlinked', (tester) async {
+      await pumpRow(
+        tester,
+        agentLink(),
+        onOpenLinkedTask: (_) {},
+        overrides: [
+          proposalTaskTitleProvider('census').overrideWith((ref) async => null),
+        ],
+      );
+
+      expect(
+        find.text('Add · Link: this task follows up on "Colony census export"'),
+        findsOneWidget,
+      );
+      expect(hasLink(tester, 'Colony census export'), isFalse);
     });
   });
 

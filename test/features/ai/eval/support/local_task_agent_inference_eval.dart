@@ -663,10 +663,6 @@ List<ChatCompletionTool> buildLocalTaskAgentEvalTools({
   LocalTaskAgentEvalPromptVariant? promptVariant,
 }) {
   return AgentToolRegistry.taskAgentTools
-      .where((definition) {
-        if (!definition.enabled) return false;
-        return true;
-      })
       .map((definition) {
         final optimizeReport =
             definition.name == TaskAgentToolNames.updateReport;

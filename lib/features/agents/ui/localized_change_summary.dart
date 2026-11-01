@@ -389,6 +389,9 @@ String localizedNewTaskRelationSentence(
 ///
 /// Widening the canonical args to carry the title is not a display-only
 /// change — it would alter `ChangeItem.fingerprint` and so cross-wake dedup.
+/// The proposal row instead looks the title up by id at render time
+/// (`proposalTaskTitleProvider`) and passes it in its display args, so the
+/// English fallback only shows until that lookup answers.
 String? _link(AppLocalizations messages, Map<String, dynamic> args) {
   final raw = args['relation'];
   final relation = raw is String ? DirectedRelation.fromWireName(raw) : null;

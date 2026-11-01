@@ -1,5 +1,15 @@
 # Knowledge Bundle Update Log
 
+## 2026-11-01
+* **Update**: [Task agents](features/agents/task-agents.md) — related tasks
+  are fetched on demand: `find_related_tasks` and `get_related_task_details`
+  ([ADR 0155](../docs/adr/0155-the-task-agent-finds-related-tasks-on-demand.md));
+  [Embeddings and semantic search](features/ai/embeddings-and-search.md) —
+  `RelatedTaskFinder` and its measured cutoff;
+  [Agent UI surfaces](features/agents/ui-surfaces.md) — a link proposal's
+  title in the reader's language, as a link to a preview of the task;
+  [Typed relationships](features/tasks/relationships.md) — where the agent's
+  search fits.
 ## 2026-10-28
 * **New**: [History](features/history.md) — the device-local log of opened
   entities: what counts as a visit, the recorder's three signals, live

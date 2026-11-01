@@ -35,6 +35,7 @@ import 'package:lotti/features/agents/workflow/agent_wake_memory.dart';
 import 'package:lotti/features/agents/workflow/change_proposal_filter.dart';
 import 'package:lotti/features/agents/workflow/change_set_builder.dart';
 import 'package:lotti/features/agents/workflow/prompt_record.dart';
+import 'package:lotti/features/agents/workflow/related_task_lookup.dart';
 import 'package:lotti/features/agents/workflow/task_agent_context_builder.dart';
 import 'package:lotti/features/agents/workflow/task_agent_evidence_synthesis.dart';
 import 'package:lotti/features/agents/workflow/task_agent_prompt_builder.dart';
@@ -59,6 +60,8 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_wrapper.dart';
+import 'package:lotti/features/ai/repository/related_task_finder.dart';
+import 'package:lotti/features/ai/repository/vector_search_repository.dart';
 import 'package:lotti/features/ai/service/embedding_processor.dart';
 import 'package:lotti/features/ai/util/forced_tool_choice.dart';
 import 'package:lotti/features/ai/util/image_ai_responses.dart';
@@ -124,6 +127,7 @@ class TaskAgentWorkflow with AgentErrorLogging {
     this.soulDocumentService,
     this.embeddingStore,
     this.embeddingRepository,
+    this.vectorSearch,
     this.taskAgentService,
     this.projectRepository,
     this.pullRequestContextService,
@@ -172,6 +176,11 @@ class TaskAgentWorkflow with AgentErrorLogging {
 
   @override
   LogDomain get errorLogDomain => LogDomain.agentWorkflow;
+
+  /// Search by meaning over the on-device index, for the related-task tools.
+  /// Null where the embedding pipeline did not start; the tools are then not
+  /// offered.
+  final VectorSearchRepository? vectorSearch;
 
   /// Optional embedding dependencies. When both are provided, agent reports
   /// are embedded for vector search after persistence. The pipeline is

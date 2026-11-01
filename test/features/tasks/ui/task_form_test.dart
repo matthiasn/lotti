@@ -15,6 +15,7 @@ import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklists_widget.dart';
 import 'package:lotti/features/tasks/ui/header/desktop_task_header_connector.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/linked_tasks_widget.dart';
+import 'package:lotti/features/tasks/ui/linked_tasks/task_preview_modal.dart';
 import 'package:lotti/features/tasks/ui/task_form.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_first_run_actions.dart';
 import 'package:lotti/get_it.dart';
@@ -458,6 +459,26 @@ void main() {
         );
       },
     );
+
+    testWidgets('a task the AI card names opens as a preview of that task', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildSubject(task: testTask));
+      await tester.pumpAndSettle();
+
+      tester
+          .widget<AiSummaryCard>(find.byType(AiSummaryCard))
+          .onOpenLinkedTask!('linked-task');
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+
+      expect(
+        tester
+            .widget<TaskPreviewContent>(find.byType(TaskPreviewContent))
+            .taskId,
+        'linked-task',
+      );
+    });
 
     testWidgets('exposes the AI card band through cardRegionKey', (
       tester,

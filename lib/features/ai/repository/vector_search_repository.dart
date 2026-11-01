@@ -14,7 +14,13 @@ class VectorSearchResult {
     required this.entities,
     required this.elapsed,
     this.distances = const {},
+    this.searched = true,
   });
+
+  /// No search ran: the model is not on this device, the query could not be
+  /// embedded, or nothing was asked for.
+  VectorSearchResult.notSearched()
+    : this(entities: const [], elapsed: Duration.zero, searched: false);
 
   final List<JournalEntity> entities;
   final Duration elapsed;
@@ -22,6 +28,11 @@ class VectorSearchResult {
   /// Entity ID → best (lowest) cosine distance from search.
   /// Empty when not from vector search.
   final Map<String, double> distances;
+
+  /// Whether the index was actually searched. An empty result that was not
+  /// searched says nothing about the index, so a caller that remembers
+  /// results must not remember it as "nothing found".
+  final bool searched;
 }
 
 /// Orchestrates vector-based semantic search for tasks.
@@ -59,7 +70,7 @@ class VectorSearchRepository {
       categoryIds: categoryIds,
     );
     if (prepared == null) {
-      return VectorSearchResult(entities: [], elapsed: Duration.zero);
+      return VectorSearchResult.notSearched();
     }
 
     final (stopwatch, searchResults) = prepared;
@@ -112,7 +123,7 @@ class VectorSearchRepository {
       categoryIds: categoryIds,
     );
     if (prepared == null) {
-      return VectorSearchResult(entities: [], elapsed: Duration.zero);
+      return VectorSearchResult.notSearched();
     }
 
     final (stopwatch, searchResults) = prepared;

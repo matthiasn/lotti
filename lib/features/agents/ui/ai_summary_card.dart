@@ -79,6 +79,7 @@ class AiSummaryCard extends ConsumerWidget {
     required this.taskId,
     this.proposalsFocusKey,
     this.onSuggestionResolveStart,
+    this.onOpenLinkedTask,
     this.showAssignCta = true,
     super.key,
   });
@@ -96,6 +97,12 @@ class AiSummaryCard extends ConsumerWidget {
   /// Called synchronously when the user commits to resolving a suggestion,
   /// before the underlying task mutation can change surrounding layout.
   final VoidCallback? onSuggestionResolveStart;
+
+  /// Opens task `taskId` where a row names it — the target of a proposed
+  /// link — so the reader can see which task is meant before deciding. The
+  /// host decides how: the task page shows a preview with a way on to the
+  /// task. Null leaves the name plain text.
+  final void Function(String taskId)? onOpenLinkedTask;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -118,6 +125,7 @@ class AiSummaryCard extends ConsumerWidget {
           identity: identity,
           proposalsFocusKey: proposalsFocusKey,
           onSuggestionResolveStart: onSuggestionResolveStart,
+          onOpenLinkedTask: onOpenLinkedTask,
         );
       },
     );
@@ -130,12 +138,14 @@ class _AiSummaryShell extends ConsumerStatefulWidget {
     required this.identity,
     required this.proposalsFocusKey,
     required this.onSuggestionResolveStart,
+    required this.onOpenLinkedTask,
   });
 
   final String taskId;
   final AgentIdentityEntity identity;
   final GlobalKey? proposalsFocusKey;
   final VoidCallback? onSuggestionResolveStart;
+  final void Function(String taskId)? onOpenLinkedTask;
 
   @override
   ConsumerState<_AiSummaryShell> createState() => _AiSummaryShellState();
@@ -641,6 +651,7 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
                 : null,
             onResolveStart: _onRowResolveStart,
             onResolveEnd: _onRowResolveEnd,
+            onOpenLinkedTask: widget.onOpenLinkedTask,
             // While any row is collapsing out, the survivors are sliding
             // up — guard them so a fast second tap can't land on a row
             // that just moved under the pointer.

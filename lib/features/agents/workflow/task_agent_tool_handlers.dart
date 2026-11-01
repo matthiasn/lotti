@@ -121,7 +121,36 @@ extension TaskAgentToolHandlers on TaskAgentStrategy {
     );
   }
 
-  /// Handles the read-only related-task drill-down tool.
+  /// Handles `find_related_tasks`: searches by meaning, on the device, for
+  /// the tasks the model's query describes, and answers with them.
+  Future<void> _handleFindRelatedTasks(
+    Map<String, dynamic> args,
+    String callId,
+    ConversationManager manager,
+  ) async {
+    final rawQuery = args['query'];
+    final query = rawQuery is String ? rawQuery.trim() : '';
+    final lookup = relatedTasks;
+    final error = lookup == null
+        ? 'Error: ${TaskAgentStrategy.findRelatedTasksToolName} is not '
+              'available: search by meaning is off on this device.'
+        : query.isEmpty
+        ? 'Error: "query" must be a non-empty string.'
+        : null;
+    await _answerRelatedTaskTool(
+      toolName: TaskAgentStrategy.findRelatedTasksToolName,
+      callId: callId,
+      manager: manager,
+      error: error,
+      answer: () => lookup!.find(taskId, query),
+      failure: 'Error: the related-task search failed.',
+    );
+  }
+
+  /// Handles `get_related_task_details`: reads one task a search of this
+  /// wake returned — its TL;DR, or with `includeFullReport` its whole
+  /// report. Any other id is refused, so the model cannot read a task it
+  /// guessed.
   Future<void> _handleRelatedTaskDetails(
     Map<String, dynamic> args,
     String callId,
@@ -129,60 +158,70 @@ extension TaskAgentToolHandlers on TaskAgentStrategy {
   ) async {
     final rawTaskId = args['taskId'];
     final requestedTaskId = rawTaskId is String ? rawTaskId.trim() : '';
+    final lookup = relatedTasks;
 
-    String? errorMessage;
-    if (requestedTaskId.isEmpty) {
-      errorMessage = 'Error: "taskId" must be a non-empty string.';
-    } else if (requestedTaskId == taskId) {
-      errorMessage =
-          'Error: get_related_task_details cannot be used for the current '
-          'task. Choose another task from the related-tasks directory.';
-    } else if (!allowedRelatedTaskIds.contains(requestedTaskId)) {
-      errorMessage =
-          'Error: taskId "$requestedTaskId" is not available in the current '
-          'related-tasks directory. Only inspect sibling task IDs that were '
-          'included in this wake context.';
-    }
-
-    if (errorMessage != null) {
-      manager.addToolResponse(toolCallId: callId, response: errorMessage);
-      await _recordToolResultMessage(
-        toolName: TaskAgentStrategy.relatedTaskDetailsToolName,
-        errorMessage: errorMessage,
-      );
-      return;
-    }
-
-    final resolver = resolveRelatedTaskDetails;
-    String? response;
-    try {
-      response = resolver != null ? await resolver(requestedTaskId) : null;
-    } catch (error, stackTrace) {
-      _domainLogger.error(
-        LogDomain.agentWorkflow,
-        error,
-        stackTrace: stackTrace,
-        subDomain: 'TaskAgentStrategy',
-        message:
-            'Failed to resolve related task details for '
-            '${DomainLogger.sanitizeId(requestedTaskId)}',
-      );
-    }
-    if (response == null || response.trim().isEmpty) {
-      final toolError =
-          'Error: related task details could not be resolved for '
-          '"$requestedTaskId".';
-      manager.addToolResponse(toolCallId: callId, response: toolError);
-      await _recordToolResultMessage(
-        toolName: TaskAgentStrategy.relatedTaskDetailsToolName,
-        errorMessage: toolError,
-      );
-      return;
-    }
-
-    manager.addToolResponse(toolCallId: callId, response: response);
-    await _recordToolResultMessage(
+    final error = lookup == null
+        ? 'Error: ${TaskAgentStrategy.relatedTaskDetailsToolName} is not '
+              'available: search by meaning is off on this device.'
+        : requestedTaskId.isEmpty
+        ? 'Error: "taskId" must be a non-empty string.'
+        : requestedTaskId == taskId
+        ? 'Error: get_related_task_details cannot be used for the current '
+              'task. Its details are already in your context.'
+        : !lookup.foundIds.contains(requestedTaskId)
+        ? 'Error: task "$requestedTaskId" was not returned by '
+              '${TaskAgentStrategy.findRelatedTasksToolName} in this wake. '
+              'Search for it first; only read tasks a search returned.'
+        : null;
+    await _answerRelatedTaskTool(
       toolName: TaskAgentStrategy.relatedTaskDetailsToolName,
+      callId: callId,
+      manager: manager,
+      error: error,
+      answer: () => lookup!.details(
+        requestedTaskId,
+        fullReport: args['includeFullReport'] == true,
+      ),
+      failure:
+          'Error: related task details could not be resolved for '
+          '"$requestedTaskId".',
+    );
+  }
+
+  /// Answers a related-task tool call with [error] when there is one,
+  /// otherwise with what [answer] returns — or [failure] when it throws or
+  /// returns nothing — and records the result.
+  Future<void> _answerRelatedTaskTool({
+    required String toolName,
+    required String callId,
+    required ConversationManager manager,
+    required String? error,
+    required Future<String?> Function() answer,
+    required String failure,
+  }) async {
+    var response = error;
+    var failed = error != null;
+    if (!failed) {
+      try {
+        response = await answer();
+      } catch (exception, stackTrace) {
+        _domainLogger.error(
+          LogDomain.agentWorkflow,
+          exception,
+          stackTrace: stackTrace,
+          subDomain: 'TaskAgentStrategy',
+          message: '$toolName failed',
+        );
+      }
+      if (response == null || response.trim().isEmpty) {
+        response = failure;
+        failed = true;
+      }
+    }
+    manager.addToolResponse(toolCallId: callId, response: response!);
+    await _recordToolResultMessage(
+      toolName: toolName,
+      errorMessage: failed ? response : null,
     );
   }
 

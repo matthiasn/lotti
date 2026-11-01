@@ -17596,6 +17596,12 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get taskPreviewNoSummary => 'Zatím bez shrnutí.';
+
+  @override
+  String get taskPreviewOpenTask => 'Otevřít úkol';
+
+  @override
   String get taskPriorityHigh => 'Vysoká';
 
   @override

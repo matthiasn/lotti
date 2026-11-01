@@ -94,7 +94,6 @@ class QueryTaskActionPlanner {
       .taskAgentTools
       .where(
         (tool) =>
-            tool.enabled &&
             AgentToolRegistry.deferredTools.contains(tool.name) &&
             tool.name != TaskAgentToolNames.setTaskProject &&
             tool.name != TaskAgentToolNames.linkPullRequest,

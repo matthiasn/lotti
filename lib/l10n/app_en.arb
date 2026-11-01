@@ -10789,6 +10789,14 @@
       }
     }
   },
+  "taskPreviewNoSummary": "No summary yet.",
+  "@taskPreviewNoSummary": {
+    "description": "Task preview modal: shown in place of the TL;DR when the task has neither an agent report nor notes of its own."
+  },
+  "taskPreviewOpenTask": "Open task",
+  "@taskPreviewOpenTask": {
+    "description": "Task preview modal: button that closes the preview and opens the task."
+  },
   "taskPriorityHigh": "High",
   "taskPriorityLow": "Low",
   "taskPriorityMedium": "Medium",

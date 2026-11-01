@@ -6584,6 +6584,8 @@
       }
     }
   },
+  "taskPreviewNoSummary": "Aún no hay resumen.",
+  "taskPreviewOpenTask": "Abrir tarea",
   "taskPriorityHigh": "Alta",
   "taskPriorityLow": "Baja",
   "taskPriorityMedium": "Media",

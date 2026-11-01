@@ -3,24 +3,55 @@ import 'package:lotti/features/agents/workflow/agent_observations.dart';
 import 'package:lotti/features/agents/workflow/task_agent_report_policy.dart';
 
 /// Tools for planning, attention negotiation, reporting, and observations:
-/// related-task lookups, attention requests, report publishing, suggestion
-/// retraction, and recording private observations.
+/// the related-task search and drill-down, attention requests, report
+/// publishing, suggestion retraction, and recording private observations.
 final taskPlanningTools = <AgentToolDefinition>[
+  const AgentToolDefinition(
+    name: TaskAgentToolNames.findRelatedTasks,
+    description:
+        'Search, by meaning, for existing tasks that a note of this task '
+        'talks about — earlier work, a blocker, a duplicate, the task this '
+        'one follows up on. Call it only when the task or its log actually '
+        'refers to other work; do not search speculatively. Answers with up '
+        'to five tasks (id, title, status and the one-line summary of their '
+        'own agent), nearest first; tasks already in Linked Tasks are left '
+        'out. Use what it returns to judge whether a link is warranted, and '
+        'propose one with link_task.',
+    parameters: {
+      'type': 'object',
+      'properties': {
+        'query': {
+          'type': 'string',
+          'description':
+              'What the note says about the other work, in the words of the '
+              'note — e.g. "the radio relay repair", "last year\'s census '
+              'export". Not the relationship word itself.',
+        },
+      },
+      'required': ['query'],
+      'additionalProperties': false,
+    },
+  ),
   const AgentToolDefinition(
     name: TaskAgentToolNames.getRelatedTaskDetails,
     description:
-        'Fetch full details for one related task in the same parent '
-        'project. Use only when a task from the related-tasks directory is '
-        'directly relevant to the current task. Use sparingly.',
-    enabled: false,
+        'Read one task that find_related_tasks returned in this wake: its '
+        "agent's TL;DR, and with includeFullReport its whole latest report. "
+        'Use it when the one-liner is not enough to tell whether, or how, '
+        'this task relates to it.',
     parameters: {
       'type': 'object',
       'properties': {
         'taskId': {
           'type': 'string',
           'description':
-              "The ID of a task listed in the current wake's related-tasks "
-              'directory.',
+              'The id of a task find_related_tasks returned in this wake.',
+        },
+        'includeFullReport': {
+          'type': 'boolean',
+          'description':
+              "Also return the task's whole latest report, not just its "
+              'TL;DR. Use sparingly: reports are long.',
         },
       },
       'required': ['taskId'],
