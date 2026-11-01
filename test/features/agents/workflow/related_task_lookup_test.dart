@@ -74,7 +74,7 @@ void main() {
     when(() => agents.getLatestTaskReportsForTaskIds(any())).thenAnswer(
       (invocation) async => {
         for (final id in invocation.positionalArguments.first as List<String>)
-          if (reports[id] case final report?) id: report,
+          id: ?reports[id],
       },
     );
   });

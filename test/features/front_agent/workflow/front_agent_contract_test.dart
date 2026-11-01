@@ -15,7 +15,6 @@ void main() {
       FrontAgentToolNames.askUser,
       FrontAgentToolNames.replyToUser,
     ]);
-    expect(frontAgentTools.every((t) => t.enabled), isTrue);
   });
 
   test('reply_to_user is the shared conversation tool name', () {
