@@ -383,14 +383,14 @@ class TtsPlaybackController extends Notifier<TtsPlaybackState> {
     });
   }
 
-  /// The utterance played to its end: its clip is kept as the prepared
-  /// result for its key, so the same words, voice and language play again at
-  /// once — but only while the caller's `canPlay` still allows it, asked
-  /// again now, and only if nothing else started meanwhile. An owner that
-  /// lost access or let go of the utterance (its gate says no) never leaves
-  /// a clip behind, however its own cleanup and this completion interleave.
-  /// Anything else spoken or prepared, a discard, and disposal delete a kept
-  /// clip, as they do any prepared audio; a stop deletes a clip still playing.
+  /// The utterance played to its end: its clip becomes the prepared result
+  /// for its key, so the same words, voice and language play again at once —
+  /// while the caller's `canPlay` still allows it, asked again now. The clip
+  /// goes into the slot before the question, so a discard, anything else
+  /// spoken or prepared, and disposal reach it however long the answer takes;
+  /// a no takes it out again. An owner that lost access or let go of the
+  /// utterance never leaves a clip behind, however its own cleanup and this
+  /// completion interleave. A stop deletes a clip still playing.
   Future<void> _onPlaybackFinished() async {
     final file = _file;
     final key = _fileKey;
@@ -398,27 +398,23 @@ class TtsPlaybackController extends Notifier<TtsPlaybackState> {
     _file = null;
     _onPlaybackEnded();
     if (file == null) return;
-    final generation = _generation;
-    final slot = _prepared;
-    var keep = key != null && ref.mounted;
-    if (keep && gate != null) {
-      try {
-        keep = await gate();
-      } on Object {
-        keep = false;
-      }
-    }
-    if (keep &&
-        ref.mounted &&
-        generation == _generation &&
-        identical(_prepared, slot)) {
-      discardPrepared();
-      _prepared = _PreparedSpeech(key!)
-        ..file = file
-        ..done.complete();
-    } else {
+    if (key == null || !ref.mounted) {
       await _deleteFile(file);
+      return;
     }
+    discardPrepared();
+    final job = _prepared = _PreparedSpeech(key)
+      ..file = file
+      ..done.complete();
+    if (gate == null) return;
+    var allowed = false;
+    try {
+      allowed = await gate();
+    } on Object {
+      allowed = false;
+    }
+    // Still in the slot: neither replayed, replaced, discarded nor disposed.
+    if (!allowed && identical(_prepared, job)) discardPrepared();
   }
 
   /// The key of an utterance: on a cloud route, its voice is the route's or

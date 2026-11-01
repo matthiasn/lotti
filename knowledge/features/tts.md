@@ -251,12 +251,13 @@ clip. Speed is applied at playback and does not invalidate the WAV.
 **A replay plays the kept clip.** The same slot holds the WAV of an utterance
 that played to its end, under that utterance's key, so pressing play again on
 the same words starts at once — no second synthesis and, for a cloud voice, no
-second upload of the text. The clip is kept only if the utterance's own
-`canPlay` still allows it when playback ends, asked again then, and nothing
-else started while it was asked: an owner that lost access or let go of the
-utterance never leaves a clip behind, however its cleanup and the completion
-interleave. A replay rechecks `canPlay` too, and a denied replay deletes the
-clip. Anything else spoken or prepared, `discardPrepared`
+second upload of the text. When playback ends the clip goes into the slot at
+once, so a discard, other speech and disposal reach it from then on, and the
+utterance's own `canPlay` is asked again; a no takes it out and deletes it. An
+owner that lost access or let go of the utterance never leaves a clip behind,
+however its cleanup and the completion interleave, and a question that is
+never answered leaves the clip where disposal still deletes it. A replay
+rechecks `canPlay` too, and a denied replay deletes the clip. Anything else spoken or prepared, `discardPrepared`
 and disposal delete it like any prepared result; a stop while playing deletes
 the clip it stopped, as before. `speak` waits for a
 matching job and takes ownership of its file instead of synthesizing again;

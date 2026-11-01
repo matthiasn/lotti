@@ -901,6 +901,33 @@ void main() {
       expect(engine.calls, hasLength(2));
     });
 
+    test('while its caller is still asked, the clip stays where disposal '
+        'reaches it', () async {
+      final file = preparedFile();
+      final player = FakeTtsAudioPlayer();
+      addTearDown(player.dispose);
+      final h = harness(
+        engine: FakeTtsEngine(output: file),
+        player: player,
+      );
+      var asked = 0;
+      // Allowed at play; the question at completion never gets an answer.
+      final never = Completer<bool>();
+      await controllerOf(h.container).speak(
+        sourceId: 'chat',
+        text: 'Private answer',
+        canPlay: () => ++asked == 1 ? Future.value(true) : never.future,
+      );
+      player.complete();
+      await pumpEventQueue();
+      expect(asked, 2);
+      verifyNever(file.delete);
+
+      h.container.dispose();
+      await pumpEventQueue();
+      verify(file.delete).called(1);
+    });
+
     test('other words, or disposal, delete the kept clip', () async {
       final kept = preparedFile();
       final next = MockIoFile();
