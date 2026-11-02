@@ -480,7 +480,7 @@ class TaskAgentContextBuilder {
   }) {
     final visible = visibleTaskAgentToolNames(facts);
     return AgentToolRegistry.taskAgentTools
-        .where((def) => def.enabled && visible.contains(def.name))
+        .where((def) => visible.contains(def.name))
         .map((def) {
           final optimizeReport = def.name == TaskAgentToolNames.updateReport;
           return ChatCompletionTool(

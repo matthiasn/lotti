@@ -7256,6 +7256,8 @@
       }
     }
   },
+  "taskPreviewNoSummary": "Ancora nessun riepilogo.",
+  "taskPreviewOpenTask": "Apri attività",
   "taskPriorityHigh": "Alto.",
   "taskPriorityLow": "Basso",
   "taskPriorityMedium": "Mezzo",

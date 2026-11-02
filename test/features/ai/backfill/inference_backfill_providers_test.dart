@@ -115,6 +115,36 @@ void main() {
   }
 
   group('inferenceBackfillScanProvider', () {
+    test('a rescan that fails after the task closed is still logged, and '
+        'nothing escapes', () async {
+      when(() => detector.scan(_taskId)).thenAnswer((_) async => _scan([]));
+      final subscription = container.listen(
+        inferenceBackfillScanProvider(_taskId),
+        (_, _) {},
+      );
+      await container.read(inferenceBackfillScanProvider(_taskId).future);
+
+      final slow = Completer<InferenceBackfillScan>();
+      when(() => detector.scan(_taskId)).thenAnswer((_) => slow.future);
+      updates.add({_taskId});
+      await pumpEventQueue();
+      // The task page closes while the scan runs: the provider is disposed.
+      subscription.close();
+      await pumpEventQueue();
+
+      slow.completeError(StateError('db closed'));
+      await pumpEventQueue();
+
+      verify(
+        () => logger.error(
+          LogDomain.ai,
+          any<Object>(),
+          stackTrace: any(named: 'stackTrace'),
+          subDomain: 'inferenceBackfillScan',
+        ),
+      ).called(1);
+    });
+
     test('rescans when the task or one of its media entries changes', () async {
       when(
         () => detector.scan(_taskId),

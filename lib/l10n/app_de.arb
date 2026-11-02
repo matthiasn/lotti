@@ -6586,6 +6586,8 @@
       }
     }
   },
+  "taskPreviewNoSummary": "Noch keine Zusammenfassung.",
+  "taskPreviewOpenTask": "Aufgabe öffnen",
   "taskPriorityHigh": "Hoch",
   "taskPriorityLow": "Niedrig",
   "taskPriorityMedium": "Mittel",

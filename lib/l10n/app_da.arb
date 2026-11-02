@@ -7256,6 +7256,8 @@
       }
     }
   },
+  "taskPreviewNoSummary": "Ingen opsummering endnu.",
+  "taskPreviewOpenTask": "Åbn opgave",
   "taskPriorityHigh": "Høj",
   "taskPriorityLow": "Lavt",
   "taskPriorityMedium": "Medium",

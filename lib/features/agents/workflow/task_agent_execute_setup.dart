@@ -205,6 +205,7 @@ extension _TaskAgentExecuteSetup on TaskAgentWorkflow {
     required ChangeSetBuilder changeSetBuilder,
     required ProposalLedger ledger,
     required SuggestionRetractionService retractionService,
+    RelatedTaskLookup? relatedTasks,
   }) {
     final pendingSets = ledger.pendingSets;
     final toolDispatcher = TaskToolDispatcher(
@@ -241,6 +242,7 @@ extension _TaskAgentExecuteSetup on TaskAgentWorkflow {
       runKey: runKey,
       taskId: taskId,
       changeSetBuilder: changeSetBuilder,
+      relatedTasks: relatedTasks,
       // Surface proposals at each turn boundary instead of making the user
       // wait out the report turn, its forced retry and any report-editor
       // pass. `pendingSets` is the pre-wake snapshot: an incremental flush

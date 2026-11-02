@@ -25,7 +25,6 @@ class AgentToolDefinition {
     required this.name,
     required this.description,
     required this.parameters,
-    this.enabled = true,
   });
 
   /// The tool name used in function-call messages.
@@ -36,9 +35,6 @@ class AgentToolDefinition {
 
   /// JSON Schema object describing the tool's parameters.
   final Map<String, dynamic> parameters;
-
-  /// Whether this tool should be exposed to the LLM right now.
-  final bool enabled;
 
   /// This tool as an OpenAI-compatible function tool, exactly as declared.
   ChatCompletionTool toChatCompletionTool() => ChatCompletionTool(
@@ -122,6 +118,7 @@ abstract final class TaskAgentToolNames {
   static const assignTaskLabels = 'assign_task_labels';
   static const setTaskLanguage = 'set_task_language';
   static const setTaskStatus = 'set_task_status';
+  static const findRelatedTasks = 'find_related_tasks';
   static const getRelatedTaskDetails = 'get_related_task_details';
   static const requestAttention = 'request_attention';
   static const resolveAttentionRequest = 'resolve_attention_request';

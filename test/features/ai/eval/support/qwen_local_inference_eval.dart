@@ -215,7 +215,7 @@ QwenLocalEvalFailureCategory _classifyResult({
 List<ChatCompletionTool> _toolsForScenario(QwenLocalEvalScenario scenario) {
   final byName = {
     for (final definition in AgentToolRegistry.taskAgentTools)
-      if (definition.enabled) definition.name: definition,
+      definition.name: definition,
   };
 
   return scenario.exposedToolNames

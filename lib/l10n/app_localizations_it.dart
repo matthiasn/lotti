@@ -17607,6 +17607,12 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
+  String get taskPreviewNoSummary => 'Ancora nessun riepilogo.';
+
+  @override
+  String get taskPreviewOpenTask => 'Apri attività';
+
+  @override
   String get taskPriorityHigh => 'Alto.';
 
   @override

@@ -120,10 +120,9 @@ void main() {
   });
 
   test(
-    'task-agent eval tool surface uses the full enabled task-agent registry',
+    'task-agent eval tool surface uses the full task-agent registry',
     () {
       final expected = AgentToolRegistry.taskAgentTools
-          .where((definition) => definition.enabled)
           .map((definition) => definition.name)
           .toList();
 

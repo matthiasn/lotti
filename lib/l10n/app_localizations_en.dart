@@ -17300,6 +17300,12 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get taskPreviewNoSummary => 'No summary yet.';
+
+  @override
+  String get taskPreviewOpenTask => 'Open task';
+
+  @override
   String get taskPriorityHigh => 'High';
 
   @override

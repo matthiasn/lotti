@@ -56,8 +56,8 @@ void main() {
   });
 
   group('AgentToolRegistry.taskAgentTools', () {
-    test('contains exactly 25 tool definitions', () {
-      expect(AgentToolRegistry.taskAgentTools, hasLength(25));
+    test('contains exactly 26 tool definitions', () {
+      expect(AgentToolRegistry.taskAgentTools, hasLength(26));
     });
 
     test('offers the three pull request tools, only the link deferred', () {
@@ -153,30 +153,13 @@ void main() {
           equals('get_related_task_details'),
         );
       });
-    });
-  });
 
-  group('AgentToolDefinition.enabled field', () {
-    test('get_related_task_details is the only tool with enabled: false', () {
-      final disabled = AgentToolRegistry.taskAgentTools
-          .where((t) => !t.enabled)
-          .toList();
-      expect(disabled, hasLength(1));
-      expect(
-        disabled.first.name,
-        equals(TaskAgentToolNames.getRelatedTaskDetails),
-      );
-    });
-
-    test('all tools except get_related_task_details have enabled: true', () {
-      for (final tool in AgentToolRegistry.taskAgentTools) {
-        if (tool.name == TaskAgentToolNames.getRelatedTaskDetails) continue;
+      test('findRelatedTasks constant exists', () {
         expect(
-          tool.enabled,
-          isTrue,
-          reason: '${tool.name} should be enabled',
+          TaskAgentToolNames.findRelatedTasks,
+          equals('find_related_tasks'),
         );
-      }
+      });
     });
   });
 
@@ -234,6 +217,10 @@ void main() {
       expect(
         AgentToolRegistry.deferredTools,
         isNot(contains(TaskAgentToolNames.getRelatedTaskDetails)),
+      );
+      expect(
+        AgentToolRegistry.deferredTools,
+        isNot(contains(TaskAgentToolNames.findRelatedTasks)),
       );
       expect(
         AgentToolRegistry.deferredTools,

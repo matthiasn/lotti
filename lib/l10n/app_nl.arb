@@ -7255,6 +7255,8 @@
       }
     }
   },
+  "taskPreviewNoSummary": "Nog geen samenvatting.",
+  "taskPreviewOpenTask": "Taak openen",
   "taskPriorityHigh": "Hoog",
   "taskPriorityLow": "Laag",
   "taskPriorityMedium": "Middel",

@@ -8,6 +8,10 @@ status: stable
 generated: { by: claude-code/opus-5.5, at: 2026-11-01T19:30:00Z }
 stale_after: 2027-02-01
 sources:
+  - id: related-task-finder
+    resource: ../../../lib/features/ai/repository/related_task_finder.dart
+    title: RelatedTaskFinder — related by meaning, under the measured cutoff
+    last_modified: 2026-11-01
   - id: embedding-service
     resource: ../../../lib/features/ai/service/embedding_service.dart
     title: EmbeddingService
@@ -117,6 +121,26 @@ beside the full-text search on every query and list what it adds after the
 word matches, under a "Related by meaning" heading (ADR 0149); there is no mode
 switch. That page side is
 [browse, search and linking](../journal/browse-and-linking.md#one-search-the-words-then-the-meaning).
+
+## Related tasks
+
+`RelatedTaskFinder` (`repository/related_task_finder.dart`) is what the task
+agent's `find_related_tasks` searches with
+([task agents](../agents/task-agents.md#related-tasks-are-fetched-on-demand)).
+It wraps `searchRelatedTasks` with what "related" means for a link: within
+**0.55** cosine distance of the query, not the task itself, holding no live
+link to it — any type, either direction, hidden ones included — and still
+existing. Tasks are read fresh on every search; only ids and distances are
+reused, and only for searches that ran (`VectorSearchResult.searched`), so a
+missing model is never remembered as "nothing found".
+
+The cutoff is measured, not guessed: with the shipped EmbeddingGemma q4 model
+over the demo world's note and paraphrase queries in eleven languages
+([`tool/embedding_eval`](../../../tool/embedding_eval/README.md)'s corpus,
+466 queries), the right task's median distance is 0.53 and the nearest wrong
+task's 0.63. At 0.55, 57 % of right matches pass and 13 % of nearest wrong
+ones; nine in ten nearest hits under it are the right task. A related task
+offered wrongly costs more than one never offered, so it favours precision.
 
 # Constraints
 

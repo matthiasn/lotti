@@ -22,6 +22,11 @@ applied until the user confirms it.
   off a follow-up task carrying such a relationship — each arrives as a row the
   user can accept, dismiss, or swipe away. *Confirm all* takes the whole batch
   at once.
+- **Finds the task a note means.** When a note speaks of other work — a
+  blocker, earlier work, a duplicate — the task agent searches the user's
+  other tasks by meaning, on the device, reads the summary of a likely match,
+  and proposes the link. It looks only when a note calls for it, never at
+  private tasks or outside its categories.
 - **Updates itself when things change**, if the user wants it to. Automatic
   updates are off by default and per-agent; with them off the report is simply
   marked out of date and an *Update now* button appears.

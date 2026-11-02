@@ -5,9 +5,17 @@ description: The AI summary card and its proposal choreography, the internals pa
 resource: ../../../lib/features/agents/ui
 tags: [agents, ui, motion, accessibility]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-10-28T12:00:00Z }
-stale_after: 2027-01-05
+generated: { by: claude-code/opus-5.5, at: 2026-11-01T12:00:00Z }
+stale_after: 2027-02-01
 sources:
+  - id: task-preview
+    resource: ../../../lib/features/tasks/ui/linked_tasks/task_preview_modal.dart
+    title: showTaskPreviewModal — the glance at a task a proposal names
+    last_modified: 2026-11-01
+  - id: proposal-title
+    resource: ../../../lib/features/agents/state/proposal_task_title_provider.dart
+    title: proposalTaskTitleProvider — the title a link proposal names by id
+    last_modified: 2026-11-01
   - id: ui
     resource: ../../../lib/features/agents/ui
     title: Agent UI widgets
@@ -138,6 +146,19 @@ Contents:
   [inference backfill suggestions](../ai/inference-backfill.md) — mechanical
   rows with no change set behind them, which confirm into the backfill queue,
   reject into a device-local dismissal, and are all queued by *Confirm all*.
+
+  A `link_task` row reads the target task's title in the reader's language:
+  the agent's proposal names its target by id alone (its args are kept
+  canonical for the fingerprint), so the row looks the title up at render
+  time (`proposalTaskTitleProvider`) and keeps the persisted English summary
+  only while that is loading or the task is gone. When the host passes
+  `onOpenLinkedTask`, the title is a link. The task page passes
+  `showTaskPreviewModal`: the task's title, its agent's latest one-liner and
+  TL;DR (`taskPreviewProvider`) — or the task's own notes before any report,
+  else *No summary yet* — and *Open task*, which closes the preview and opens
+  the task the way a linked task opens (`openLinkedTaskDetail`): stacked over
+  the current one, so Back returns to the decision. A host that passes
+  nothing, the event card for one, keeps the title plain.
 - **`History · N`** — lazily expands resolved ledger entries with
   `Confirmed` / `Dismissed` tags; dismissed and retracted entries are struck
   through and dimmed, confirmed ones are not. It is a section of its

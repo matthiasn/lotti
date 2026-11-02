@@ -6586,6 +6586,8 @@
       }
     }
   },
+  "taskPreviewNoSummary": "Încă nu există un rezumat.",
+  "taskPreviewOpenTask": "Deschideți sarcina",
   "taskPriorityHigh": "Ridicată",
   "taskPriorityLow": "Scăzută",
   "taskPriorityMedium": "Medie",

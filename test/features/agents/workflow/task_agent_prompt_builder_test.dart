@@ -437,12 +437,18 @@ Use the task language and omit empty sections.
       expect(full, contains('`is_blocked_by`'));
       expect(full, contains('never assert both directions'));
       expect(full, contains('`create_follow_up_task` with a\n    `relation`'));
+      // A task outside the context is found by searching, only when a note
+      // refers to it, and read in detail before a doubtful proposal.
+      expect(full, contains('`find_related_tasks`'));
+      expect(full, contains('`get_related_task_details`'));
+      expect(full, contains('Never search when no note refers to other work'));
 
       // The compact scaffold carries the same capability in short form.
       const compact = TaskAgentPromptBuilder.taskAgentCompactScaffold;
       expect(compact, contains('link_task'));
       expect(compact, contains('`relation`'));
       expect(compact, contains('never invent ids'));
+      expect(compact, contains('`find_related_tasks`'));
     });
 
     test('keeps one open text proposal per time entry', () {

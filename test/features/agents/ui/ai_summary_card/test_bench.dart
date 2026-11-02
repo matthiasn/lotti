@@ -95,6 +95,7 @@ class AgentTestBench {
     this._isRunningOverride,
     this.suggestionListOverride,
     this.onSuggestionResolveStart,
+    this.onOpenLinkedTask,
     this._extraOverrides = const [],
     this.width,
   });
@@ -104,6 +105,9 @@ class AgentTestBench {
   /// resizable task pane on a wide desktop.
   final double? width;
   final VoidCallback? onSuggestionResolveStart;
+
+  /// Handed to the card as its `onOpenLinkedTask`.
+  final void Function(String taskId)? onOpenLinkedTask;
 
   static const String taskId = 'task-001';
 
@@ -169,6 +173,7 @@ class AgentTestBench {
             child: AiSummaryCard(
               taskId: taskId,
               onSuggestionResolveStart: onSuggestionResolveStart,
+              onOpenLinkedTask: onOpenLinkedTask,
             ),
           )
         : Align(
@@ -179,6 +184,7 @@ class AgentTestBench {
                 child: AiSummaryCard(
                   taskId: taskId,
                   onSuggestionResolveStart: onSuggestionResolveStart,
+                  onOpenLinkedTask: onOpenLinkedTask,
                 ),
               ),
             ),

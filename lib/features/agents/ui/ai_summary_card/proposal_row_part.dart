@@ -1,14 +1,17 @@
 import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/agents/proposal_ledger.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart';
+import 'package:lotti/features/agents/state/proposal_task_title_provider.dart';
 import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
+import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/backfill_actions.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/proposal_kind_part.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/proposal_row_widgets_part.dart';
@@ -60,6 +63,7 @@ class ProposalRow extends ConsumerStatefulWidget {
     this.cascadeIndex = 0,
     this.onResolveStart,
     this.onResolveEnd,
+    this.onOpenLinkedTask,
     this.settling = false,
     this.pendingCount = 0,
     this.onConfirm,
@@ -80,6 +84,7 @@ class ProposalRow extends ConsumerStatefulWidget {
        cascadeIndex = 0,
        onResolveStart = null,
        onResolveEnd = null,
+       onOpenLinkedTask = null,
        settling = false,
        pendingCount = 0;
 
@@ -120,6 +125,12 @@ class ProposalRow extends ConsumerStatefulWidget {
   /// restores it from provider truth.
   final void Function(PendingSuggestion suggestion, {required bool removed})?
   onResolveEnd;
+
+  /// Opens task `taskId` where this row names it — the target of a proposed
+  /// link — so the reader can see which task is meant before deciding. The
+  /// host decides how: the task page shows a preview with a way on to the
+  /// task. Null leaves the name plain text.
+  final void Function(String taskId)? onOpenLinkedTask;
 
   /// True while *another* row in the section is committing and collapsing.
   /// During that window the surviving rows are sliding up, so this row treats
@@ -362,14 +373,49 @@ class _ProposalRowState extends ConsumerState<ProposalRow>
   /// a chip, while a sentence that merely *opens* with the label word — as
   /// German's "Status auf … setzen" does — must keep it, because stripping it
   /// would leave a fragment.
-  String _displaySummary(AppLocalizations messages, String kindLabel) {
-    final rebuilt = localizedChangeSummary(messages, _toolName, _args);
+  String _displaySummary(
+    AppLocalizations messages,
+    String kindLabel,
+    Map<String, dynamic> args,
+  ) {
+    final rebuilt = localizedChangeSummary(messages, _toolName, args);
     return rebuilt == null
         ? _stripKindPrefix(_persistedSummary, kindLabel, requireColon: false)
         : _stripKindPrefix(rebuilt, kindLabel, requireColon: true);
   }
 
   ChangeItemStatus? get _resolvedStatus => widget.entry?.status;
+
+  /// [_args] for display: an agent's `link_task` carries its target by id
+  /// alone, so the target's title is looked up here
+  /// ([proposalTaskTitleProvider]) and added for the row to read — in the
+  /// reader's language, with the title as a link. The proposal itself is
+  /// never changed. While the title is loading, or when the task is gone,
+  /// the args stay as they are and the persisted summary shows.
+  Map<String, dynamic> _displayArgs() {
+    final args = _args;
+    if (_toolName != TaskAgentToolNames.linkTask) return args;
+    final id = args['targetTaskId'];
+    final title = args['targetTitle'];
+    if (id is! String || id.isEmpty || (title is String && title.isNotEmpty)) {
+      return args;
+    }
+    final resolved = ref.watch(proposalTaskTitleProvider(id)).value;
+    return resolved == null ? args : {...args, 'targetTitle': resolved};
+  }
+
+  /// The task a `link_task` row names, when [args] carry both its id and its
+  /// title — the title is what the row's sentence shows, and so what becomes
+  /// the link. Null for every other row.
+  ({String taskId, String title})? _linkedTask(Map<String, dynamic> args) {
+    if (_toolName != TaskAgentToolNames.linkTask) return null;
+    final id = args['targetTaskId'];
+    final title = args['targetTitle'];
+    if (id is! String || id.isEmpty || title is! String || title.isEmpty) {
+      return null;
+    }
+    return (taskId: id, title: title);
+  }
 
   // The row uses a `GestureDetector` (not a raw `Listener`) so its
   // horizontal drag participates in Flutter's gesture arena. This is
@@ -644,7 +690,14 @@ class _ProposalRowState extends ConsumerState<ProposalRow>
     final ai = tokens.colors.aiCard;
     final kind = resolveKind(_toolName, _args);
     final meta = kindMeta(context, kind);
-    final cleanText = _displaySummary(context.messages, meta.label);
+    final displayArgs = _displayArgs();
+    final cleanText = _displaySummary(
+      context.messages,
+      meta.label,
+      displayArgs,
+    );
+    final linkedTask = _linkedTask(displayArgs);
+    final openTask = widget.onOpenLinkedTask;
     final errorColor = tokens.colors.alert.error.defaultColor;
 
     final resolveKindLocal = _resolveKind;
@@ -789,6 +842,11 @@ class _ProposalRowState extends ConsumerState<ProposalRow>
                       ProposalRowContent(
                         meta: meta,
                         text: cleanText,
+                        linkedTitle: linkedTask?.title,
+                        onOpenLinkedTitle:
+                            linkedTask == null || openTask == null
+                            ? null
+                            : () => openTask(linkedTask.taskId),
                         lineThrough: lineThrough,
                         isResolved: widget.isResolved,
                         resolvedStatus: _resolvedStatus,

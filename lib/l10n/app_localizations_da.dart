@@ -17396,6 +17396,12 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
+  String get taskPreviewNoSummary => 'Ingen opsummering endnu.';
+
+  @override
+  String get taskPreviewOpenTask => 'Åbn opgave';
+
+  @override
   String get taskPriorityHigh => 'Høj';
 
   @override

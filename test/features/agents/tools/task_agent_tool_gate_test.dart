@@ -4,14 +4,14 @@ import 'package:lotti/features/agents/tools/task_agent_tool_gate.dart';
 
 void main() {
   group('visibleTaskAgentToolNames', () {
-    test('permissive facts advertise exactly the enabled registry', () {
+    test('permissive facts advertise exactly the registry', () {
       final visible = visibleTaskAgentToolNames(TaskAgentWakeFacts.permissive);
 
       expect(
         visible,
         {
           for (final definition in AgentToolRegistry.taskAgentTools)
-            if (definition.enabled) definition.name,
+            definition.name,
         },
         reason: 'the migration default must not change what a wake advertises',
       );
@@ -29,6 +29,24 @@ void main() {
       expect(
         visibleTaskAgentToolNames(TaskAgentWakeFacts.permissive),
         contains(TaskAgentToolNames.updateTimeEntry),
+      );
+    });
+
+    test('hides both related-task tools where search cannot run', () {
+      const related = [
+        TaskAgentToolNames.findRelatedTasks,
+        TaskAgentToolNames.getRelatedTaskDetails,
+      ];
+      final without = visibleTaskAgentToolNames(
+        const TaskAgentWakeFacts(hasRelatedTaskSearch: false),
+      );
+
+      for (final name in related) {
+        expect(without, isNot(contains(name)));
+      }
+      expect(
+        visibleTaskAgentToolNames(TaskAgentWakeFacts.permissive),
+        containsAll(related),
       );
     });
 

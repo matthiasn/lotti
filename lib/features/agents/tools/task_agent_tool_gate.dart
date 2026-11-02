@@ -20,6 +20,7 @@ class TaskAgentWakeFacts {
     this.hasCategoryProjects = true,
     this.hasPullRequestRepository = true,
     this.hasLinkedPullRequests = true,
+    this.hasRelatedTaskSearch = true,
   });
 
   /// Every fact permissive: the tool list is exactly today's.
@@ -79,6 +80,13 @@ class TaskAgentWakeFacts {
   /// it as merged before this fact was read. The tool is how that wake gets a
   /// current read; a merged one costs no GitHub call there.
   final bool hasLinkedPullRequests;
+
+  /// Search by meaning can run on this device: the embedding pipeline is up
+  /// and switched on.
+  ///
+  /// Gates both related-task tools: without a search there is nothing to
+  /// find, and no task found to read.
+  final bool hasRelatedTaskSearch;
 }
 
 /// The tools a wake with these [facts] may be offered.
@@ -119,11 +127,14 @@ Set<String> visibleTaskAgentToolNames(TaskAgentWakeFacts facts) {
       TaskAgentToolNames.linkPullRequest,
     },
     if (!facts.hasLinkedPullRequests) TaskAgentToolNames.refreshPullRequests,
+    if (!facts.hasRelatedTaskSearch) ...{
+      TaskAgentToolNames.findRelatedTasks,
+      TaskAgentToolNames.getRelatedTaskDetails,
+    },
   };
 
   return {
     for (final definition in AgentToolRegistry.taskAgentTools)
-      if (definition.enabled && !hidden.contains(definition.name))
-        definition.name,
+      if (!hidden.contains(definition.name)) definition.name,
   };
 }

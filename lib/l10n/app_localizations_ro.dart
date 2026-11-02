@@ -17722,6 +17722,12 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get taskPreviewNoSummary => 'Încă nu există un rezumat.';
+
+  @override
+  String get taskPreviewOpenTask => 'Deschideți sarcina';
+
+  @override
   String get taskPriorityHigh => 'Ridicată';
 
   @override
