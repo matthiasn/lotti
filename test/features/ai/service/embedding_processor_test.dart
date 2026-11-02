@@ -376,10 +376,6 @@ void _stubNoCategoryId(MockEmbeddingStore db) {
   when(() => db.getCategoryId(any())).thenReturn(null);
 }
 
-void _stubNoTaskReports(MockEmbeddingStore db) {
-  when(() => db.agentReportIdsForTask(any())).thenAnswer((_) async => {});
-}
-
 void _stubReplaceEntityEmbeddings(MockEmbeddingStore db) {
   when(
     () => db.replaceEntityEmbeddings(
@@ -508,7 +504,6 @@ void main() {
 
     _stubNoExistingHash(mockEmbeddingStore);
     _stubNoCategoryId(mockEmbeddingStore);
-    _stubNoTaskReports(mockEmbeddingStore);
     _stubReplaceEntityEmbeddings(mockEmbeddingStore);
     _stubEmbed(mockEmbeddingRepo);
   });
@@ -1402,7 +1397,6 @@ void main() {
         stubEmbeddingRegisters(localEmbeddingStore);
         final localEmbeddingRepo = MockOnDeviceEmbeddingRepository();
         when(() => localEmbeddingRepo.modelId).thenReturn(_modelId);
-        _stubNoTaskReports(localEmbeddingStore);
         final actualEmbedInputs = <String>[];
         final writes = <_CapturedAgentReportWrite>[];
         var embedCallIndex = 0;
@@ -1891,6 +1885,61 @@ void main() {
         expect(tombstone.entityType, kEntityTypeJournalText);
         expect(store.chunks, isEmpty);
         verify(() => ticket.send(tombstone, const [])).called(1);
+      },
+    );
+
+    test(
+      "a deleted task takes its reports' vectors along, each as a sent "
+      'tombstone',
+      () async {
+        final task = Task(
+          meta: _meta(id: 'task-1').copyWith(
+            vectorClock: const VectorClock({'host-b': 3}),
+          ),
+          data: _taskData('Plan the quarterly review meeting'),
+        );
+        await process(task);
+        store.replaceEntityEmbeddings(
+          entityId: 'report-1',
+          entityType: kEntityTypeAgentReport,
+          modelId: _modelId,
+          contentHash: _hashOf(_longText),
+          embeddings: [_fakeEmbedding()],
+          taskId: 'task-1',
+          register: const EmbeddingRegister(
+            entityId: 'report-1',
+            modelId: _modelId,
+            entityType: kEntityTypeAgentReport,
+            contentHash: 'report-hash',
+            vectorClock: VectorClock({'host-a': 2}),
+            taskId: 'task-1',
+          ),
+        );
+        EmbeddingProcessor.share = share;
+        when(
+          () => mockJournalDb.journalEntityById('task-1'),
+        ).thenAnswer((_) async => null);
+
+        await EmbeddingProcessor.processEntity(
+          entityId: 'task-1',
+          journalDb: mockJournalDb,
+          embeddingStore: store,
+          embeddingRepository: mockEmbeddingRepo,
+        );
+
+        expect(store.chunks, isEmpty);
+        final reportTombstone = store.registers['report-1']!;
+        expect(reportTombstone.deleted, isTrue);
+        expect(reportTombstone.taskId, 'task-1');
+        expect(reportTombstone.entityType, kEntityTypeAgentReport);
+        verify(
+          () => share.reserve(
+            registerId: 'report-1|$_modelId',
+            previous: const VectorClock({'host-a': 2}),
+          ),
+        ).called(1);
+        verify(() => ticket.send(reportTombstone, const [])).called(1);
+        expect(store.registers['task-1']!.deleted, isTrue);
       },
     );
 

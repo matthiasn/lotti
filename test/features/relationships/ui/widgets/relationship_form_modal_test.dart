@@ -778,9 +778,9 @@ void main() {
         reason: 'no category, nothing to tint',
       );
 
-      tester
-          .widget<CategoryFieldRow>(find.byType(CategoryFieldRow))
-          .onChanged!('cat-1');
+      tester.widget<CategoryFieldRow>(find.byType(CategoryFieldRow)).onChanged!(
+        'cat-1',
+      );
       await tester.pumpAndSettle();
 
       expect(find.text('Family'), findsOneWidget);
@@ -1865,9 +1865,9 @@ void main() {
       await tester.pumpWidget(buildForm(initial: categorized()));
       await tester.pumpAndSettle();
 
-      tester
-          .widget<CategoryFieldRow>(find.byType(CategoryFieldRow))
-          .onChanged!(null);
+      tester.widget<CategoryFieldRow>(find.byType(CategoryFieldRow)).onChanged!(
+        null,
+      );
       await tester.pumpAndSettle();
 
       await tester.ensureVisible(find.text('Save'));
@@ -1931,9 +1931,9 @@ void main() {
       await tester.pumpWidget(buildForm(initial: categorized()));
       await tester.pumpAndSettle();
 
-      tester
-          .widget<CategoryFieldRow>(find.byType(CategoryFieldRow))
-          .onChanged!(null);
+      tester.widget<CategoryFieldRow>(find.byType(CategoryFieldRow)).onChanged!(
+        null,
+      );
       await tester.pumpAndSettle();
       await tapVisible(tester, find.byType(DesignSystemToggle));
       await tester.pumpAndSettle();

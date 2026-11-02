@@ -5,7 +5,7 @@ description: How one device's embeddings reach the user's other devices as a tra
 resource: ../../../lib/features/ai/embedding_sync
 tags: [ai, embeddings, sync, vector-clock, register, tombstone, tla]
 status: draft
-generated: { by: claude-code/opus-5.5, at: 2026-11-01T19:30:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-11-02T12:00:00Z }
 stale_after: 2027-04-30
 sources:
   - id: register
@@ -23,7 +23,7 @@ sources:
   - id: receiver
     resource: ../../../lib/features/ai/embedding_sync/embedding_sync_receiver.dart
     title: EmbeddingSyncReceiver, the merge and the hash check
-    last_modified: 2026-11-01
+    last_modified: 2026-11-02
   - id: held
     resource: ../../../lib/features/ai/embedding_sync/held_embedding_versions.dart
     title: HeldEmbeddingVersions, the persisted hold
@@ -35,15 +35,19 @@ sources:
   - id: processor
     resource: ../../../lib/features/ai/service/embedding_processor.dart
     title: EmbeddingProcessor, which writes every version
-    last_modified: 2026-11-01
+    last_modified: 2026-11-02
   - id: service
     resource: ../../../lib/features/ai/service/embedding_service.dart
-    title: EmbeddingService and its start-time re-embed of tasks with private labels
-    last_modified: 2026-11-01
+    title: EmbeddingService, which reconciles the store at start
+    last_modified: 2026-11-02
+  - id: reconciler
+    resource: ../../../lib/features/ai/service/embedding_reconciler.dart
+    title: EmbeddingReconciler, the stored vectors that drifted from their entry
+    last_modified: 2026-11-02
   - id: vectors-sync
     resource: ../../../lib/features/sync/embedding_vectors/embedding_vectors_sync.dart
     title: EmbeddingVectorsSync, sync's half of the register
-    last_modified: 2026-11-01
+    last_modified: 2026-11-02
   - id: apply
     resource: ../../../lib/features/sync/matrix/sync_event_processor_embedding_vectors.dart
     title: The apply arm and its receipts
@@ -88,6 +92,7 @@ is found as a gap and asked for ([sequence and backfill](../sync/sequence-and-ba
 | `SyncEventProcessor` (embedding vectors part) | `sync/matrix` | Resolves the attachment, hands the version to the sink, records the receipt |
 | `EmbeddingSyncReceiver` | `ai/embedding_sync` | The merge, the tombstone path and the hash check |
 | `HeldEmbeddingVersions` | `ai/embedding_sync` | Versions waiting for their text, in `embedding_vector_holds.json` |
+| `EmbeddingReconciler` | `ai/service` | Finds stored vectors that drifted from their entry, for `EmbeddingService` to settle at start |
 
 Sync ranks above the AI feature (`tool/architecture/layer_guard.dart`), so both
 seams — `EmbeddingShare` and `SyncedEmbeddingSink` — are defined here and
@@ -163,6 +168,7 @@ stateDiagram-v2
   Candidate --> Dropped: no attachment, or not finite 768-wide vectors
   Candidate --> Stored: own text hashes the same
   Candidate --> Discarded: the entry moved past the source clock
+  Candidate --> Discarded: the entry (a report: its task) is deleted here
   Candidate --> Held: text not here yet
   Held --> Merged: entry, report or label applied, the queue drained, or the pipeline attached
 ```
@@ -175,10 +181,8 @@ stateDiagram-v2
   differently from one showing them: the receiver held the version for good
   — same entry clock, so never discarded — with its receipt recorded, and
   showed fewer embeddings than its peer while reporting nothing missing.
-  `EmbeddingService.start` re-embeds every task that carries a private label
-  (`JournalDb.taskIdsWithPrivateLabels`) in its first batch that finds
-  embeddings on and the model downloaded; the content hash skips those
-  already embedded from that text.
+  The start-time reconcile re-embeds the tasks still embedded the old way
+  ([below](#reconciling-at-start)).
 - **An agent report's text is its one-liner, TLDR and body**
   (`EmbeddingContentExtractor.extractAgentReportText`). A receiver also
   accepts a version hashed from the body alone, as writers before
@@ -209,11 +213,58 @@ stateDiagram-v2
   service, which is never registered, so every report version a peer shared
   was held until a later report's tombstone replaced it — and each task's
   current report never was.
+- **A deleted entry is never waited for.** "Not here" means two things: not
+  arrived yet, or deleted here — the row remains, hidden from the live read
+  (`journalEntityByIdIncludingDeleted`). Only the first is held. A version
+  whose entry, or whose report's task, is deleted here is discarded, and a
+  hold of one left by an older build goes at the attach re-check. Such a
+  hold never resolved: no text was coming, and no tombstone either when
+  the deletion was made where vectors were not shared, or was a task's
+  (its reports' vectors outlived it).
 - **Holds are shown, not counted missing.** Their receipts are recorded, so
   the sequence log never asks for them, and a deep backfill only delivers
   them to the hold again. Sync health lists their number under the
   embeddings (`watchHeldCount`), the gap between this device's count and a
   peer's.
+
+# Reconciling at start
+
+A device's stored vectors can drift from its own entries without any local
+edit to notice: a deletion it only received, a label renamed (a task's text
+names its labels, the task's clock does not move), a text built while the
+privacy toggle hid a label's name. Such vectors keep the device's count
+apart from its peers' and wait forever on a peer that receives them.
+`EmbeddingService` therefore reconciles once per start, in the first batch
+that finds embeddings on and the model downloaded:
+
+- **`EmbeddingReconciler.entriesToReprocess`** reads every live journal
+  register in batches against the rows they describe, deleted ones
+  included, and queues for `processEntity` those whose entry is deleted,
+  whose text no longer hashes as stored (labels named whatever the privacy
+  toggle says), or whose live version has no chunks. `processEntity` then
+  does what a local edit would: re-embeds — a new version, dominating every
+  copy — or removes with a tombstone. The model is called only for those.
+- **`retireReportsOfDeletedTasks`** tombstones the report vectors of every
+  task deleted here (`EmbeddingProcessor.retireAgentReport`). A task
+  deleted from now on takes them along itself (`processEntity`).
+- **Only rows this device holds count.** An entry or task with no row at
+  all is left alone: a journal restored from an older backup lacks rows its
+  vector store still describes, and retiring those would remove the vectors
+  from every device.
+
+```mermaid
+flowchart TD
+  R[live register of this model] --> T{report?}
+  T -- no --> E{entry row here?}
+  E -- no --> L[left alone]
+  E -- deleted --> P[processEntity: tombstone]
+  E -- live --> C{chunks, and text hashes as stored?}
+  C -- yes --> L
+  C -- no --> Q[processEntity: re-embed or tombstone]
+  T -- yes --> K{task row deleted here?}
+  K -- yes --> X[retireAgentReport: tombstone]
+  K -- no --> L
+```
 
 # Removals
 
@@ -239,8 +290,12 @@ of an older live version is dominated by it.
 - **Backfill** answers a counter with the version held now, its attachment
   written afresh from the store: an exact resend, a hint at a newer version, or
   `deleted` when nothing is held.
-- **Deep backfill** lists the shared registers, tombstones included
-  (`EmbeddingVectorsDeepBackfillStore`). A device that does not store vectors
+- **Deep backfill** lists the shared registers it can serve, tombstones
+  included (`EmbeddingVectorsDeepBackfillStore`), and Sync health counts the
+  same list (`sharedRegisters`). A live version without chunks is left out:
+  `prepareResend` has nothing to send for it, so a backfill request for it
+  is answered "deleted", and counting it would show a gap no peer closes.
+  The start-time reconcile re-embeds it. A device that does not store vectors
   takes no part (`DeepBackfillStore.participates`): an empty range would ask
   for every vector only to drop them.
 - **Catch-up.** A dropped version's receipt is recorded, so it is never asked
@@ -267,8 +322,14 @@ Open questions it leaves as residuals:
 - **Entries their writer never embedded** — written with the flag off, on
   Windows, without the model — stay unembedded on receivers until a local edit
   or a backfill.
-- **A label rename** changes a task's hash on every device; the task is
-  unsearchable by meaning until its next local edit's vectors arrive.
+- **A label rename** changes a task's hash on every device; a peer holds the
+  task's vectors until a device that stores them starts again and its
+  reconcile re-embeds the task. Every device that stored them does, so the
+  task is embedded once per device; the concurrent versions converge.
+- **Vectors of a report whose agent was deleted here** stay: the reports
+  are gone with the agent, but the vectors carry no agent id, and a report
+  with no row is never taken for deleted. A peer that receives one later
+  holds it.
 - **Clocks of a discarded version are not merged.** A device whose entry moved
   past a version drops it, clock and all; the content still converges.
 - **Windows** neither sends nor receives until its ONNX worker lands.

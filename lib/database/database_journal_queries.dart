@@ -256,10 +256,13 @@ mixin _JournalDbJournalQueries on _$JournalDb, _JournalDbConfigFlags {
     return dbEntities.map(fromDbEntity).toList();
   }
 
-  /// Fetches journal rows by id including soft-deleted tombstones.
+  /// Fetches journal rows by id including soft-deleted tombstones, whatever
+  /// the privacy toggle says.
   ///
   /// Demo reseed protection uses this inventory to distinguish a deleted
-  /// seeded row from an untouched world before replacing stale seed content.
+  /// seeded row from an untouched world before replacing stale seed content;
+  /// the embedding reconciler, to find stored vectors whose entry is gone or
+  /// hashes differently now.
   Future<List<JournalEntity>> getJournalEntitiesForIdsIncludingDeleted(
     Set<String> ids,
   ) async {

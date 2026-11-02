@@ -83,7 +83,8 @@ abstract final class EmbeddingProcessor {
   ///
   /// An entity that is gone — deleted, or with text under
   /// [kMinEmbeddingTextLength] — has its stored vectors deleted, so search
-  /// can no longer find it by text it no longer has. A task's agent-report
+  /// can no longer find it by text it no longer has; a deleted task's
+  /// agent-report vectors are removed with it. A task's agent-report
   /// embeddings are moved to the task's category on every run, whether or
   /// not the task has a vector of its own.
   ///
@@ -122,6 +123,18 @@ abstract final class EmbeddingProcessor {
         sourceVectorClock: deleted?.meta.vectorClock,
         announce: deletedType != null,
       );
+      // A deleted task takes its reports' vectors along: nothing else
+      // removes them, and a peer that receives one after the deletion
+      // could only wait for a task that never comes back.
+      for (final reportId in await embeddingStore.agentReportIdsForTask(
+        entityId,
+      )) {
+        await _removeVectors(
+          entityId: reportId,
+          modelId: embeddingRepository.modelId,
+          embeddingStore: embeddingStore,
+        );
+      }
       return false;
     }
 
@@ -322,6 +335,26 @@ abstract final class EmbeddingProcessor {
 
     return true;
   });
+
+  /// Removes the vectors of agent report [reportId] of task [taskId], as a
+  /// tombstone version when they are shared: the task is deleted, and the
+  /// vectors would otherwise stay searchable here and wait forever on a peer
+  /// that receives them.
+  ///
+  /// Under the task's lock, as every report write is.
+  static Future<void> retireAgentReport({
+    required String reportId,
+    required String taskId,
+    required String modelId,
+    required EmbeddingStore embeddingStore,
+  }) => _serialized(
+    taskId.isNotEmpty ? taskId : reportId,
+    () => _removeVectors(
+      entityId: reportId,
+      modelId: modelId,
+      embeddingStore: embeddingStore,
+    ),
+  );
 
   /// Where versions are shared, set by the composition root once sync and
   /// the embedding pipeline are both up; `null` without sync (a guest

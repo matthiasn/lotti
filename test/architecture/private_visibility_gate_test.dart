@@ -69,7 +69,9 @@ const _ungatedDeclarations = <String, String>{
       'backfill, the conflict page — tombstone included (ADR 0083)',
   'lib/database/database_journal_queries.dart:'
           'getJournalEntitiesForIdsIncludingDeleted':
-      'ids the caller holds, tombstones included (demo reseed inventory)',
+      'ids the caller holds, tombstones included (demo reseed inventory; '
+      'the embedding reconciler, whose stored text must hash the same on '
+      'every device whatever its privacy toggle says)',
   'lib/database/database_journal_queries.dart:checklistItemsNaming':
       'the items of checklists the caller holds, found by their back-link '
       '(ADR 0105) — the same rows the checklist read already resolves by id '
@@ -91,10 +93,6 @@ const _ungatedDeclarations = <String, String>{
       'outbound sync payloads, tombstones included',
   'lib/database/database_journal_queries.dart:streamEntriesWithVectorClock':
       'sequence-log population walks every row for sync',
-  'lib/database/database_definitions.dart:taskIdsWithPrivateLabels':
-      'task ids the embedding service re-embeds at start: their text must '
-      'hash the same on every device whatever its privacy toggle says; '
-      'no row content leaves it',
   'lib/features/sync/deep_backfill/deep_backfill_stores.dart:mediaSizes':
       'a deep-backfill round sizes the file of every image and audio entry '
       'it advertises, private ones included; only lengths leave the device',
