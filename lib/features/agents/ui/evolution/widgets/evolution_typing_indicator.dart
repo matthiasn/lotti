@@ -9,7 +9,15 @@ import 'package:material_ui/material_ui.dart';
 /// 16px spinner beside a literal `'...'`, which read as an unstyled loading
 /// artefact rather than a participant thinking.
 class EvolutionTypingIndicator extends StatefulWidget {
-  const EvolutionTypingIndicator({this.announceComposing = true, super.key});
+  const EvolutionTypingIndicator({
+    this.announceComposing = true,
+    this.spaced = true,
+    super.key,
+  });
+
+  /// Whether the dots keep the space below them that an evolution turn has;
+  /// false inside a bubble whose own padding already frames them.
+  final bool spaced;
 
   /// Whether the dots announce themselves as *the agent composing a reply*.
   ///
@@ -77,7 +85,9 @@ class _EvolutionTypingIndicatorState extends State<EvolutionTypingIndicator>
           : null,
       child: ExcludeSemantics(
         child: Padding(
-          padding: EdgeInsets.only(bottom: tokens.spacing.step5),
+          padding: EdgeInsets.only(
+            bottom: widget.spaced ? tokens.spacing.step5 : 0,
+          ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [

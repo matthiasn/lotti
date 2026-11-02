@@ -5,6 +5,7 @@ import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/agents/ui/chat/agent_chat_view.dart';
 import 'package:lotti/features/agents/ui/chat/chat_recorder_controller.dart';
 import 'package:lotti/features/agents/ui/chat/waveform_bars.dart';
+import 'package:lotti/features/agents/ui/evolution/widgets/evolution_typing_indicator.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
@@ -235,7 +236,7 @@ void main() {
       await pumpView(tester, isSending: true);
 
       final thinking = find.ancestor(
-        of: find.text('•••'),
+        of: find.byType(EvolutionTypingIndicator),
         matching: find.byType(DecoratedBox),
       );
       final box = tester.widget<DecoratedBox>(thinking.first);

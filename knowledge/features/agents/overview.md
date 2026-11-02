@@ -228,6 +228,17 @@ The diagram keeps to the steps a reader needs; `agent_providers.dart` also
 wires project-slot refusals and the wake coordinator, and runs the seed
 tombstone migration before seeding.
 
+**Initialization stops and restarts; the orchestrator lives on.**
+`agentInitializationProvider` watches the runtime providers, so it rebuilds
+when one changes — at startup it does — and its disposal calls
+`WakeOrchestrator.stop()` before the rebuild calls `start()` on the same
+instance. `stop()` therefore only pauses listening and timers; it leaves
+`runCompletions` open. Only `dispose()`, which `wakeOrchestratorProvider`
+calls when the instance itself is discarded, closes it. Closing it on `stop()`
+made every chat that waits on a run's completion (the front agent's, a goal's,
+a person's) report a failed send at once after such a rebuild, while the wake
+still ran and its reply landed later.
+
 `ScheduledWakeManager` polls hourly for **both** due `scheduledWakeAt` state
 values and due `ScheduledWakeEntity` records — the Daily OS planner's day-scoped
 pre-warms (ADR 0022) and digest, project update slots, goal and relationship

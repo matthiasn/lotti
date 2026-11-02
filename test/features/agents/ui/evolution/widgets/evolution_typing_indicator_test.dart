@@ -23,14 +23,33 @@ void main() {
   Widget subject({
     bool reduceMotion = false,
     bool announceComposing = true,
+    bool spaced = true,
   }) => makeTestableWidgetNoScroll(
     Center(
-      child: EvolutionTypingIndicator(announceComposing: announceComposing),
+      child: EvolutionTypingIndicator(
+        announceComposing: announceComposing,
+        spaced: spaced,
+      ),
     ),
     mediaQueryData: MediaQueryData(disableAnimations: reduceMotion),
   );
 
   group('EvolutionTypingIndicator', () {
+    testWidgets('keeps the space below an evolution turn, and drops it '
+        'inside a bubble that frames the dots itself', (tester) async {
+      double height() =>
+          tester.getSize(find.byType(EvolutionTypingIndicator)).height;
+      await tester.pumpWidget(subject());
+      await tester.pump();
+      final spaced = height();
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpWidget(subject(spaced: false));
+      await tester.pump();
+
+      expect(height(), lessThan(spaced));
+    });
+
     testWidgets('renders three dots', (tester) async {
       await tester.pumpWidget(subject());
       await tester.pump();

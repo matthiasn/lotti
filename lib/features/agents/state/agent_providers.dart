@@ -168,7 +168,17 @@ final wakeOrchestratorProvider = Provider<WakeOrchestrator>(
   wakeOrchestrator,
   name: 'wakeOrchestratorProvider',
 );
+
+/// The orchestrator, discarded with its provider. Initialization only stops
+/// and restarts its listening when it rebuilds; the instance — and every
+/// service waiting on its run completions — outlives that.
 WakeOrchestrator wakeOrchestrator(Ref ref) {
+  final orchestrator = _buildWakeOrchestrator(ref);
+  ref.onDispose(() => orchestrator.dispose().ignore());
+  return orchestrator;
+}
+
+WakeOrchestrator _buildWakeOrchestrator(Ref ref) {
   final notifications = ref.watch(maybeUpdateNotificationsProvider);
   void Function(String agentId)? onPersistedStateChanged;
   if (notifications != null) {

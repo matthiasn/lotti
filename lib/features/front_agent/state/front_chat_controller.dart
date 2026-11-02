@@ -105,7 +105,9 @@ class FrontChatController extends Notifier<FrontChatComposerState> {
     if (state.isSending || message.isEmpty) return;
     // A send is a new turn, and its conversation is where it lands.
     ref.read(frontInboxFilterProvider.notifier).clear();
-    state = state.copyWith(isSending: true);
+    // The words leave the box as they are sent — her thread shows them
+    // straight away — and come back only if the send fails.
+    state = state.copyWith(isSending: true, draft: '');
     String? conversationId;
     try {
       final landing = conversationId = await _landingConversation();
@@ -134,7 +136,7 @@ class FrontChatController extends Notifier<FrontChatComposerState> {
       ref.read(frontSpokenTurnProvider.notifier).settle();
       _reproject();
       state = state.settled(
-        draft: state.draft,
+        draft: _draftAfterFailure(message),
         failedMessage: message,
         failedMessageId: error.messageId,
         failedConversationId: conversationId,
@@ -142,12 +144,17 @@ class FrontChatController extends Notifier<FrontChatComposerState> {
     } catch (_) {
       ref.read(frontSpokenTurnProvider.notifier).settle();
       state = state.settled(
-        draft: state.draft,
+        draft: _draftAfterFailure(message),
         failedMessage: message,
         failedConversationId: conversationId,
       );
     }
   }
+
+  /// The box after a send of [message] failed: what the user typed since,
+  /// else the words that did not go, so nothing they said is lost.
+  String _draftAfterFailure(String message) =>
+      state.draft.isEmpty ? message : state.draft;
 
   /// Talking in an archived conversation brings it back: it is in use. Best
   /// effort — the turn is sent, so a failure here must not offer a retry

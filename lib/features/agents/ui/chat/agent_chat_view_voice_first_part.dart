@@ -353,11 +353,11 @@ class _ThinkingBubble extends StatelessWidget {
               horizontal: conversational ? 0 : tokens.spacing.step4,
               vertical: tokens.spacing.step3,
             ),
-            child: Text(
-              '•••',
-              style: tokens.typography.styles.body.bodyMedium.copyWith(
-                color: tokens.colors.text.mediumEmphasis,
-              ),
+            // Dots that pulse in turn, so the wait reads as an answer on its
+            // way; the label above is what a screen reader hears.
+            child: const EvolutionTypingIndicator(
+              announceComposing: false,
+              spaced: false,
             ),
           ),
         ),

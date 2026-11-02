@@ -19,3 +19,23 @@
   chose, the whole question failed; now that entry is left out and the
   answer says its coverage is incomplete. This affects the companion's
   journal answers and Ask in tasks, projects and categories.
+- **With Mistral Large 4 as the companion's model, every message failed with
+  "That didn't send".** She asks for fully predictable answers, which Mistral
+  Large 4 refuses because it always reasons first. The app now leaves that
+  setting out for Large 4, so she answers.
+- **With a Mistral model, a longer question to the companion failed with
+  "That didn't send".** She marks which words of your message go where by
+  counting characters, and Mistral miscounted them, so every attempt was
+  refused. She now places your words by the words themselves when the count
+  is off, and still never drops any of them.
+- **A chat with the companion, a goal or a person said "That didn't send"
+  while the answer was still on its way, and kept saying it after the
+  answer came.** After the app's agent runtime restarted itself at startup,
+  every send was reported as failed at once. Sends now wait for the real
+  answer, and the words you sent leave the input box as soon as you send
+  them.
+- **New answers scroll into view.** A chat now follows the newest message
+  as it grows, including cards that arrive after the reply, unless you have
+  scrolled up to read.
+- **The waiting dots move.** While an answer is on its way, the three dots
+  pulse, so it is clear something is coming.
