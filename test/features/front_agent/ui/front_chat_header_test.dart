@@ -12,6 +12,7 @@ import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
 import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
+import 'package:lotti/features/agents/ui/ai_summary_card/companion_stage_page.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/companion/ui/companion_speaker.dart';
 import 'package:lotti/features/companion/ui/companion_view.dart';
@@ -31,6 +32,7 @@ import 'package:lotti/features/front_agent/state/front_inbox_filter.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_header.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_hero.dart';
 import 'package:lotti/features/front_agent/ui/front_profile_choice.dart';
+import 'package:lotti/features/front_agent/ui/front_voice_controls.dart';
 import 'package:lotti/features/tts/model/tts_playback_state.dart';
 import 'package:lotti/features/tts/state/tts_playback_controller.dart';
 import 'package:lotti/utils/consts.dart';
@@ -543,8 +545,8 @@ void main() {
     });
 
     testWidgets('she stays the same figure as she starts and stops '
-        'speaking — her animator lives through it — and a tap stops her '
-        'only while she speaks', (tester) async {
+        'speaking — her animator lives through it — and a tap on her '
+        'stands her up full screen, still speaking', (tester) async {
       final voice = _Voice(const TtsPlaybackState());
       await pumpHeader(
         tester,
@@ -552,20 +554,33 @@ void main() {
         conversations: census,
         voice: () => voice,
       );
-      Element figure() => tester.element(find.byType(CompanionSpeaker));
+      Element figure() => tester.element(
+        find.descendant(
+          of: find.byKey(FrontChatHeroKeys.figure),
+          matching: find.byType(CompanionSpeaker),
+        ),
+      );
       final before = figure();
-
-      await tester.tap(find.byKey(FrontChatHeroKeys.stop));
-      expect(voice.stoppedSources, isEmpty, reason: 'nothing to stop');
 
       voice.play('front-chat:c-1');
       await tester.pump();
       expect(figure(), same(before));
 
-      await tester.tap(find.byKey(FrontChatHeroKeys.stop));
-      await tester.pump();
-      expect(voice.stoppedSources, ['front-chat:c-1']);
-      expect(figure(), same(before));
+      await tester.tap(find.byKey(FrontChatHeroKeys.openStage));
+      for (var i = 0; i < 10; i++) {
+        await tester.pump(const Duration(milliseconds: 50));
+      }
+
+      final stage = tester.widget<CompanionStagePage>(
+        find.byType(CompanionStagePage),
+      );
+      expect(stage.sourceId, 'front-chat:c-1');
+      // Her own voice control at her feet, not the summary's.
+      expect(
+        (stage.readAloud! as FrontVoiceButton).conversationId,
+        'c-1',
+      );
+      expect(voice.stoppedSources, isEmpty, reason: 'she speaks on');
     });
 
     testWidgets('before any conversation resolves she simply stands', (
@@ -583,24 +598,28 @@ void main() {
       expect(find.byType(CompanionSpeaker), findsNothing);
     });
 
-    testWidgets('a tap on her while she speaks stops her', (tester) async {
-      final voice = _Voice(
-        const TtsPlaybackState(
-          status: TtsPlaybackStatus.playing,
-          sourceId: 'front-chat:c-1',
-        ),
-      );
-      await pumpHeader(
-        tester,
-        companion: true,
-        conversations: census,
-        voice: () => voice,
-      );
+    testWidgets('her voice and her stage stand under her, for the open '
+        'conversation, only while the companion is on', (tester) async {
+      await pumpHeader(tester, companion: true, conversations: census);
 
-      await tester.tap(find.byKey(FrontChatHeroKeys.stop));
-      await tester.pump();
+      expect(
+        tester
+            .widget<FrontVoiceButton>(find.byType(FrontVoiceButton))
+            .conversationId,
+        'c-1',
+      );
+      expect(
+        tester
+            .widget<FrontStageButton>(find.byType(FrontStageButton))
+            .conversationId,
+        'c-1',
+      );
+    });
 
-      expect(voice.stoppedSources, ['front-chat:c-1']);
+    testWidgets('with the companion off she has neither', (tester) async {
+      await pumpHeader(tester, conversations: census);
+      expect(find.byType(FrontVoiceButton), findsNothing);
+      expect(find.byType(FrontStageButton), findsNothing);
     });
   });
 

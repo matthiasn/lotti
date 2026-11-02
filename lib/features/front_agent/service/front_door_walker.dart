@@ -362,16 +362,6 @@ class FrontDoorWalker {
         : const {};
   }
 
-  /// [allowed] narrowed by [chosen], never widened: chips outside her
-  /// allow-list (left over after it changed) leave the allow-list as it is
-  /// — an empty scope would be the whole journal.
-  static Set<String> _narrowed(Set<String> allowed, Set<String> chosen) {
-    if (chosen.isEmpty) return allowed;
-    if (allowed.isEmpty) return chosen;
-    final both = allowed.intersection(chosen);
-    return both.isEmpty ? allowed : both;
-  }
-
   /// The front agent answers from the journal herself: the query pipeline
   /// over every category in her allow-list (decision 4; an empty allow-list
   /// is unrestricted), which a category named in the question narrows. The
@@ -387,7 +377,10 @@ class FrontDoorWalker {
         : const <String>{};
     final built = await _build(
       QueryScope.journalIn(
-        _narrowed(allowed, await _chosenCategories(sourceMessageId)),
+        frontNarrowedCategories(
+          allowed,
+          await _chosenCategories(sourceMessageId),
+        ),
       ),
       agentId: frontAgentId,
       question: question,

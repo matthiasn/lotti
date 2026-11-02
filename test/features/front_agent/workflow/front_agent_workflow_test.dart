@@ -17,6 +17,7 @@ import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dar
 import 'package:lotti/features/ai_consumption/service/ai_interaction_capture.dart';
 import 'package:lotti/features/companion/model/companion_reaction.dart';
 import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
+import 'package:lotti/features/front_agent/model/front_conversation.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/service/front_routing_index_builder.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_contract.dart';
@@ -30,6 +31,7 @@ import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../agents/test_data/entity_factories.dart';
 import '../../agents/workflow/task_agent_workflow_test_helpers.dart';
+import '../../categories/test_utils.dart';
 
 void main() {
   setUpAll(registerAllFallbackValues);
@@ -103,11 +105,15 @@ void main() {
   };
 
   /// Seeds the durable user turn the wake token names.
-  void seedMessage({String messageId = 'msg-1', String? text = input}) {
+  void seedMessage({
+    String messageId = 'msg-1',
+    String? text = input,
+    List<String>? chips,
+  }) {
     final payload = makeTestMessagePayload(
       id: 'payload-1',
       agentId: frontAgentId,
-      content: {'text': ?text},
+      content: {'text': ?text, frontCategoriesKey: ?chips},
     );
     final message = makeTestMessage(
       id: messageId,
@@ -128,6 +134,7 @@ void main() {
   void stubModel(
     List<ChatCompletionMessageToolCall> Function(int call) toolCalls, {
     int maxCalls = 1,
+    void Function(String message)? onMessage,
   }) {
     var calls = 0;
     conversationRepository
@@ -145,6 +152,7 @@ void main() {
             strategy,
           }) async {
             calls++;
+            onMessage?.call(message);
             when(() => manager.turnCount).thenReturn(calls);
             await (strategy! as FrontAgentStrategy).processToolCalls(
               toolCalls: toolCalls(calls),
@@ -181,6 +189,12 @@ void main() {
     when(
       () => journalDb.getVisibleProjects(),
     ).thenAnswer((_) async => const []);
+    when(() => journalDb.getAllCategories()).thenAnswer(
+      (_) async => [
+        CategoryTestUtils.createTestCategory(id: 'work', name: 'Work'),
+        CategoryTestUtils.createTestCategory(id: 'home', name: 'Home'),
+      ],
+    );
     when(
       () => repository.getLatestTaskReportsForTaskIds(any()),
     ).thenAnswer((_) async => const {});
@@ -221,9 +235,12 @@ void main() {
     );
   });
 
-  Future<WakeResultLike> run({String messageId = 'msg-1'}) async {
+  Future<WakeResultLike> run({
+    String messageId = 'msg-1',
+    AgentIdentityEntity? agentIdentity,
+  }) async {
     final result = await workflow.executeUserMessage(
-      agentIdentity: identity,
+      agentIdentity: agentIdentity ?? identity,
       runKey: runKey,
       triggerTokens: {frontChatMessageTriggerToken(messageId)},
       threadId: threadId,
@@ -750,7 +767,7 @@ void main() {
         conversationRepository.maxDelegateCalls = 1;
         stubModel(
           (_) => [
-            call('list_due_tasks', {'daysAhead': 0}),
+            call('list_due_tasks', {'which': 'today'}),
             call('reply_to_user', {'message': 'Due today: task:garden.'}),
           ],
         );
@@ -792,6 +809,71 @@ void main() {
         );
       },
     );
+
+    test('the chips the turn was sent with narrow her index and her due '
+        'list, and the categories are named to her', () async {
+      final task = makeGardenTask();
+      final overdueAtHome = task.copyWith(
+        meta: task.meta.copyWith(id: 'dishes', categoryId: 'home'),
+        data: task.data.copyWith(title: 'Dishes', due: DateTime(2026, 11)),
+      );
+      final overdueAtWork = task.copyWith(
+        data: task.data.copyWith(due: DateTime(2026, 10, 30)),
+      );
+      when(
+        () => journalDb.getTasksDueOnOrBefore(any()),
+      ).thenAnswer((_) async => [overdueAtHome, overdueAtWork]);
+      seedMessage(chips: ['home']);
+      String? prompt;
+      String? listed;
+      stubModel(
+        (_) => [
+          call('list_due_tasks', {'which': 'overdue'}),
+          call('reply_to_user', {'message': 'Overdue at home: task:dishes.'}),
+        ],
+        onMessage: (message) => prompt ??= message,
+      );
+      when(
+        () => manager.addToolResponse(
+          toolCallId: 'call-list_due_tasks',
+          response: any(named: 'response'),
+        ),
+      ).thenAnswer((invocation) {
+        listed = invocation.namedArguments[#response] as String;
+      });
+
+      final result = await withClock(
+        Clock.fixed(DateTime(2026, 11, 2, 9)),
+        () => run(
+          agentIdentity: makeTestIdentity(
+            id: frontAgentId,
+            agentId: frontAgentId,
+            kind: AgentKinds.frontAgent,
+            allowedCategoryIds: {'work', 'home'},
+          ),
+        ),
+      );
+
+      expect(result.success, isTrue);
+      verify(
+        () => journalDb.getOpenTasksForDayAgentCorpus(
+          categoryIds: {'home'},
+          limit: any(named: 'limit'),
+        ),
+      ).called(1);
+      expect(
+        prompt,
+        contains(
+          '## Categories (2; this conversation is narrowed to the chosen '
+          'ones)\n- category:home | Home | chosen\n- category:work | Work\n',
+        ),
+      );
+      expect(
+        listed,
+        'Open tasks overdue (due before 2026-11-02) (1):\n'
+        '- task:dishes | Dishes | OPEN | due 2026-11-01 | Home',
+      );
+    });
   });
 
   group('a question', () {

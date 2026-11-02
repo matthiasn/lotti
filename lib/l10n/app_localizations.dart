@@ -11927,6 +11927,12 @@ abstract class AppLocalizations {
   /// **'Settings default'**
   String get frontChatProfileUseDefault;
 
+  /// Front agent: the control that plays her last answer aloud again from the start (stops it while she speaks)
+  ///
+  /// In en, this message translates to:
+  /// **'Say it again'**
+  String get frontChatReplayAnswer;
+
   /// No description provided for @frontChatResponding.
   ///
   /// In en, this message translates to:

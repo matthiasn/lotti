@@ -195,4 +195,45 @@ void main() {
       expect(frontSpokenAnswer(old, turn).landed, isFalse);
     });
   });
+
+  group('frontLatestAnswer', () {
+    final at = DateTime(2026, 11, 3, 9);
+    AgentChatMessage message(String id, AgentChatRole role, int s) =>
+        AgentChatMessage(
+          id: id,
+          role: role,
+          text: '$id said',
+          createdAt: at.add(Duration(seconds: s)),
+        );
+    FrontChatThread thread(List<AgentChatMessage> messages) =>
+        FrontChatThread(messages: messages);
+
+    test('is her answer to the latest turn, never an earlier one', () {
+      expect(
+        frontLatestAnswer(
+          thread([
+            message('u1', AgentChatRole.user, 0),
+            message('a1', AgentChatRole.agent, 1),
+            message('u2', AgentChatRole.user, 2),
+            message('a2', AgentChatRole.agent, 3),
+          ]),
+        ),
+        'a2 said',
+      );
+    });
+
+    test('is empty while the latest turn waits for her, or with no turn', () {
+      expect(
+        frontLatestAnswer(
+          thread([
+            message('u1', AgentChatRole.user, 0),
+            message('a1', AgentChatRole.agent, 1),
+            message('u2', AgentChatRole.user, 2),
+          ]),
+        ),
+        isEmpty,
+      );
+      expect(frontLatestAnswer(FrontChatThread.empty), isEmpty);
+    });
+  });
 }

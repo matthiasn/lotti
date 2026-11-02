@@ -108,7 +108,7 @@ You are the front agent of a personal journal and task app. The user talks to yo
 
 ## What you see
 
-- `<routing_index>`: every destination you may route to — open tasks, projects, active goals and tracked people — one row each: `kind:id | title | status | due | one-liner`. The one-liner says what the thing is about right now. A kind may say more exist than are shown.
+- `<routing_index>`: first the categories the user's records are kept in, `category:id | name`, by name — when the conversation is narrowed to some of them, those are marked `chosen` and everything below is already inside them; a category is never a destination. Then every destination you may route to — open tasks, projects, active goals and tracked people — one row each: `kind:id | title | status | due | one-liner`. The one-liner says what the thing is about right now. A kind may say more exist than are shown.
 - `<recent_turns>`: the last few turns of this conversation, so a short answer to your own question resolves.
 - `<pending_user_message>`: what the user just said. Route this, and only this.
 
@@ -121,7 +121,7 @@ You are the front agent of a personal journal and task app. The user talks to yo
 5. Nothing matches above `$frontLowConfidence`: the part is `new` (say what it would become: task, goal or project), `journal` or `unrouted`. A `journal` question is answered from the journal — keep any category the user names in its span, it narrows the search; a `journal` statement is kept as a note.
 6. A statement about a project as a whole goes to the project. One about a particular piece of its work goes to that task when you can see it.
 7. Moving, planning or changing something in today's plan ("my day"): destination `day`. A question about what is due is not the day's — see 8.
-8. A question about which tasks are due — "what is due today?", "anything overdue?", "what's due this week?": call `list_due_tasks` with how many days past today it reaches (0 for today alone, at most $frontDueMaxDaysAhead), then end the turn with `reply_to_user` alone. Name the tasks it asks about, the overdue ones apart, or say plainly that nothing is due. Never dispatch it, and never say you cannot answer it.
+8. A question about which tasks are due — "what is due today?", "anything overdue?", "what's due this week?": call `list_due_tasks` with `which` for exactly what was asked — `today` for due today (never the overdue ones), `overdue` for overdue (never today's), `upcoming` with `daysAhead` (at most $frontDueMaxDaysAhead) for the days ahead, `all` only when both overdue and due are asked for — then end the turn with `reply_to_user` alone. When the user names a category listed under Categories ("overdue in Work"), pass its id in `categoryIds`; a category they name that is not chosen in a narrowed conversation is outside it, so say so. Name only the tasks the list returned, or say plainly that none are. Never dispatch it, and never say you cannot answer it.
 
 ## Naming things
 
@@ -268,21 +268,37 @@ final List<AgentToolDefinition> frontAgentTools = [
   const AgentToolDefinition(
     name: FrontAgentToolNames.listDueTasks,
     description:
-        'List the open tasks due from today through daysAhead days from '
-        'now, overdue ones included and marked, to answer a question about '
-        'what is due. Once per turn.',
+        'List the open tasks in one due window, to answer a question about '
+        'what is due or overdue: only the window asked about. Once per '
+        'turn.',
     parameters: {
       'type': 'object',
       'properties': {
+        'which': {
+          'type': 'string',
+          'enum': ['today', 'overdue', 'upcoming', 'all'],
+          'description':
+              'today: due today only. overdue: due before today only. '
+              'upcoming: due from today through daysAhead, nothing overdue. '
+              'all: overdue and due through daysAhead, when both are asked.',
+        },
         'daysAhead': {
           'type': 'integer',
           'minimum': 0,
           'maximum': frontDueMaxDaysAhead,
           'description':
-              'How many days past today the question reaches: 0 for today.',
+              'For upcoming and all: how many days past today the question '
+              'reaches.',
+        },
+        'categoryIds': {
+          'type': 'array',
+          'items': {'type': 'string'},
+          'description':
+              'The ids, from ## Categories, of the categories the user '
+              'named; left out when they named none.',
         },
       },
-      'required': ['daysAhead'],
+      'required': ['which'],
     },
   ),
   const AgentToolDefinition(

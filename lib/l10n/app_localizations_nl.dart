@@ -7042,6 +7042,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get frontChatProfileUseDefault => 'Standaard uit Instellingen';
 
   @override
+  String get frontChatReplayAnswer => 'Zeg het nog eens';
+
+  @override
   String get frontChatResponding => 'Zoekt wie het weet…';
 
   @override

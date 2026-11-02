@@ -67,6 +67,21 @@ const _frontVoicePrefix = 'front-chat:';
 
 final _citation = RegExp(r'\s*\[\d+\]');
 
+/// Her answer to the latest turn in [thread], as she says it aloud
+/// ([frontSpokenAnswer]) — what *say it again* plays from the start. Empty
+/// while that answer has not landed, or for a thread with no turn.
+String frontLatestAnswer(FrontChatThread thread) {
+  final asked = thread.messages
+      .where((m) => m.role == AgentChatRole.user)
+      .lastOrNull;
+  if (asked == null) return '';
+  final answer = frontSpokenAnswer(thread, (
+    conversationId: '',
+    spokenAt: asked.createdAt,
+  ));
+  return answer.landed ? answer.text : '';
+}
+
 /// Whether [sourceId] is her voice in one of the conversations.
 bool isFrontVoiceSourceId(String sourceId) =>
     sourceId.startsWith(_frontVoicePrefix);

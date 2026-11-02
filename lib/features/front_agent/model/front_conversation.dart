@@ -27,6 +27,17 @@ Set<String> frontCategoriesOf(Map<String, Object?> content) {
   return ids is List ? {...ids.whereType<String>()} : const {};
 }
 
+/// Her allow-list [allowed] narrowed by a turn's [chosen] categories, never
+/// widened: chips outside her allow-list (left over after it changed) leave
+/// the allow-list as it is — an empty scope would be the whole journal. An
+/// empty [allowed] is unrestricted, so the chips alone narrow it.
+Set<String> frontNarrowedCategories(Set<String> allowed, Set<String> chosen) {
+  if (chosen.isEmpty) return allowed;
+  if (allowed.isEmpty) return chosen;
+  final both = allowed.intersection(chosen);
+  return both.isEmpty ? allowed : both;
+}
+
 /// One conversation with the front agent, as the chat list shows it.
 ///
 /// A conversation exists once it holds a turn: there is no creation record.

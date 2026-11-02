@@ -25,7 +25,10 @@ holds — what was decided, where something was noted — she answers herself
 from the journal, within the categories she may see (a category named in the
 question narrows it), with the passages she relied on, each opening its
 source. A question about what is due — today, overdue, this week — is
-hers too: she reads the tasks due and answers in her own words. Every task
+hers too: she reads only what was asked (due today is never mixed with
+overdue) and answers in her own words. She knows the categories by name: one
+named in the question narrows the answer, and so do the categories chosen in
+the conversation's chips, alone or together. Every task
 or project she names is a link that closes her and opens it, and every
 answer is shown as the Markdown it was written in. A statement under a task or a project is a **proposal**: one tap
 files the user's words verbatim as an entry under it, and only the tap
@@ -66,7 +69,10 @@ and a proposal she got wrong goes to the inbox rather than being retyped.
   setup-resolver contributions merged in `app_bootstrap.dart`.
 - `ui/` — her control row and the hero that leads a conversation (her bust
   and its title), her voice (`front_chat_voice.dart`: the spoken reply, when
-  she may speak, the pose she holds), the list of conversations, the
+  she may speak, the pose she holds), her voice's control and her stage
+  (`front_voice_controls.dart`: stop her, or have her say her latest answer
+  again from the start; stand her up full screen on any form factor), the
+  list of conversations, the
   category chips, her AI profile choice (`front_profile_choice.dart`: the
   profile she thinks with, whose read-aloud model is her voice), the door
   card with its proposals and inbox chips, the

@@ -7057,6 +7057,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get frontChatProfileUseDefault => 'Standard aus den Einstellungen';
 
   @override
+  String get frontChatReplayAnswer => 'Sag es noch mal';
+
+  @override
   String get frontChatResponding => 'Sucht, wer es weiß…';
 
   @override

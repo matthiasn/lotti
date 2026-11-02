@@ -18,10 +18,11 @@ import 'package:openai_dart/openai_dart.dart';
 typedef FrontCorpusMatcher =
     Future<List<FrontIndexRow>> Function(String phrase);
 
-/// Lists the open tasks due from today through `daysAhead` days past it,
-/// overdue ones included; the rows become valid destinations for the rest
-/// of the turn.
-typedef FrontDueTaskLister = Future<FrontDueTasks> Function(int daysAhead);
+/// Lists the open tasks in one due window — today, overdue, upcoming, or
+/// all of them — narrowed to the categories the query names; the rows
+/// become valid destinations for the rest of the turn.
+typedef FrontDueTaskLister =
+    Future<FrontDueTasks> Function(FrontDueQuery query);
 
 /// One candidate offered by `ask_user`.
 typedef FrontAskOption = ({FrontDestinationKind kind, String id, String label});
@@ -324,6 +325,16 @@ class FrontAgentStrategy extends ConversationStrategy
       await _reject(call, manager, frontDueListExhaustedAnswer);
       return;
     }
+    final window = FrontDueWindow.fromWire(args['which']);
+    if (window == null) {
+      await _reject(
+        call,
+        manager,
+        'Error: list_due_tasks needs which: one of '
+        '${FrontDueWindow.values.map((w) => w.name).join(', ')}.',
+      );
+      return;
+    }
     final raw = args['daysAhead'] ?? 0;
     final daysAhead = raw is num && raw == raw.roundToDouble()
         ? raw.toInt()
@@ -339,6 +350,38 @@ class FrontAgentStrategy extends ConversationStrategy
       );
       return;
     }
+    final categoryIds = <String>{};
+    final rawCategories = args['categoryIds'] ?? const <Object?>[];
+    if (rawCategories is! List) {
+      await _reject(
+        call,
+        manager,
+        'Error: categoryIds is a list of ids from ## Categories.',
+      );
+      return;
+    }
+    for (final id in rawCategories) {
+      final category = id is String ? index.category(id) : null;
+      if (category == null) {
+        await _reject(
+          call,
+          manager,
+          'Error: $id is not a category id listed under ## Categories; '
+          'leave categoryIds out when no listed category is named.',
+        );
+        return;
+      }
+      if (index.categories.any((c) => c.chosen) && !category.chosen) {
+        await _reject(
+          call,
+          manager,
+          '${category.name} is outside the categories this conversation is '
+          'narrowed to; say so in reply_to_user.',
+        );
+        return;
+      }
+      categoryIds.add(category.id);
+    }
     final lister = dueTaskLister;
     if (lister == null) {
       await _reject(
@@ -349,7 +392,11 @@ class FrontAgentStrategy extends ConversationStrategy
       return;
     }
     _dueLists++;
-    final due = await lister(daysAhead);
+    final due = await lister((
+      window: window,
+      daysAhead: daysAhead,
+      categoryIds: categoryIds,
+    ));
     _lookupRows.addAll(due.rows);
     await _accept(call, manager, due.render());
   }

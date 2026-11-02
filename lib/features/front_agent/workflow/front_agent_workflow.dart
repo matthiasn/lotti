@@ -82,10 +82,8 @@ class FrontAgentWorkflow with AgentErrorLogging {
     required this._aiConfigRepository,
     required this._indexBuilder,
     required this._domainLogger,
-    FrontRoutingScope Function(AgentIdentityEntity identity)? scopeFor,
     CompanionSass Function()? sass,
-  }) : _scopeFor = scopeFor ?? _defaultScope,
-       _sass = sass ?? _defaultSass;
+  }) : _sass = sass ?? _defaultSass;
 
   final AgentRepository _repository;
   final AgentSyncService _syncService;
@@ -95,17 +93,10 @@ class FrontAgentWorkflow with AgentErrorLogging {
   final FrontRoutingIndexBuilder _indexBuilder;
   final DomainLogger _domainLogger;
 
-  /// What this identity may see. The default is the identity's own
-  /// allow-list with goals and without people (decision 4).
-  final FrontRoutingScope Function(AgentIdentityEntity identity) _scopeFor;
-
   /// How much sass she speaks with: the companion's, as the user set it.
   final CompanionSass Function() _sass;
 
   static CompanionSass _defaultSass() => CompanionSass.cheeky;
-
-  static FrontRoutingScope _defaultScope(AgentIdentityEntity identity) =>
-      FrontRoutingScope(categoryIds: identity.allowedCategoryIds);
 
   @override
   DomainLogger get domainLogger => _domainLogger;
@@ -132,11 +123,12 @@ class FrontAgentWorkflow with AgentErrorLogging {
       );
     }
     final payload = await _repository.getEntity(message.contentEntryId!);
-    final text =
+    final content =
         payload is AgentMessagePayloadEntity &&
             payload.agentId == agentIdentity.agentId
-        ? payload.content['text']
-        : null;
+        ? payload.content
+        : const <String, Object?>{};
+    final text = content['text'];
     if (text is! String || text.trim().isEmpty) {
       return const WakeResult(
         success: false,
@@ -149,16 +141,20 @@ class FrontAgentWorkflow with AgentErrorLogging {
       threadId: threadId,
       sourceMessageId: messageId,
       input: text.trim(),
+      chosenCategoryIds: frontCategoriesOf(content),
     );
   }
 
-  /// One routing turn over [input].
+  /// One routing turn over [input], inside her allow-list narrowed by
+  /// [chosenCategoryIds] — the conversation's chips when the turn was sent
+  /// (decision 4: goals included, people not).
   Future<WakeResult> execute({
     required AgentIdentityEntity agentIdentity,
     required String runKey,
     required String threadId,
     required String sourceMessageId,
     required String input,
+    Set<String> chosenCategoryIds = const {},
   }) async {
     final agentId = agentIdentity.agentId;
     final now = clock.now();
@@ -177,7 +173,10 @@ class FrontAgentWorkflow with AgentErrorLogging {
         );
       }
 
-      final scope = _scopeFor(agentIdentity);
+      final scope = FrontRoutingScope(
+        allowedCategoryIds: agentIdentity.allowedCategoryIds,
+        chosenCategoryIds: chosenCategoryIds,
+      );
       final index = await _indexBuilder.build(scope: scope, now: now);
       final recent = await _recentTurns(agentId, sourceMessageId);
       final strategy = FrontAgentStrategy(

@@ -7119,6 +7119,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get frontChatProfileUseDefault => 'Par défaut des Paramètres';
 
   @override
+  String get frontChatReplayAnswer => 'Redis-le';
+
+  @override
   String get frontChatResponding => 'Elle cherche qui sait…';
 
   @override

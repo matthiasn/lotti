@@ -39,6 +39,18 @@ abstract final class FrontVoice {
         (route != null || ref.read(ttsEngineProvider).isSupported);
   }
 
+  /// [canSpeak] with her voice, watched: a build calling it follows the
+  /// switches, her mute and her profile's voice as they change — a provider
+  /// first read when it is needed is still loading.
+  static bool watchCanSpeak(WidgetRef ref, BuildContext context) {
+    ref
+      ..watch(configFlagProvider(enableCompanionFlag))
+      ..watch(configFlagProvider(enableAiSummaryTtsFlag))
+      ..watch(agentResolvedSetupProvider(frontAgentId))
+      ..watch(companionCustomizationProvider);
+    return canSpeak(ref, routeOf(ref, context));
+  }
+
   /// Whether she answers aloud: only once her saved customization is known
   /// — a mute must never be guessed at — and while it lets her.
   static bool _speaksReplies(WidgetRef ref) =>
@@ -66,14 +78,9 @@ abstract final class FrontVoice {
   /// pane's build.
   static void listenForSpokenReply(WidgetRef ref, BuildContext context) {
     // Kept live, so whether she may speak, and with which voice, is known
-    // the moment her reply lands — a provider first read then is still
-    // loading.
-    ref
-      ..watch(configFlagProvider(enableCompanionFlag))
-      ..watch(configFlagProvider(enableAiSummaryTtsFlag))
-      ..watch(agentResolvedSetupProvider(frontAgentId))
-      ..watch(frontInboxFilterProvider)
-      ..watch(companionCustomizationProvider);
+    // the moment her reply lands.
+    watchCanSpeak(ref, context);
+    ref.watch(frontInboxFilterProvider);
     final conversationId = ref.watch(frontActiveConversationProvider).value;
     // Muted while she speaks — here or synced from another device — her own
     // voice stops; any other source speaks on.
@@ -120,11 +127,14 @@ abstract final class FrontVoice {
       if (!answer.landed) return;
       ref.read(frontSpokenTurnProvider.notifier).settle();
       if (answer.text.isEmpty) return;
-      _speak(ref, context, turn.conversationId, answer.text).ignore();
+      speak(ref, context, turn.conversationId, answer.text).ignore();
     });
   }
 
-  static Future<void> _speak(
+  /// Speaks [text] as her voice in [conversationId], from the start: once
+  /// she may speak, taking the voice over from whatever else holds it, and
+  /// held back if she is muted while it prepares.
+  static Future<void> speak(
     WidgetRef ref,
     BuildContext context,
     String conversationId,

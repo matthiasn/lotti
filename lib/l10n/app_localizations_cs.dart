@@ -7087,6 +7087,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get frontChatProfileUseDefault => 'Výchozí z Nastavení';
 
   @override
+  String get frontChatReplayAnswer => 'Řekni to znovu';
+
+  @override
   String get frontChatResponding => 'Hledá, kdo to ví…';
 
   @override
