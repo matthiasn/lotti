@@ -644,12 +644,18 @@ queuing it, so an id the model made up, or a person already with the event
 (their live `RelationshipLink`), already suggested (a pending item of this
 agent's change sets for the event), or dismissed (a rejected
 `ChangeDecision` for the event) never reaches the user — a dismissal is
-never re-proposed. A queued suggestion carries the person's name for the row,
+never re-proposed. Those reads take `EventPeopleDirectory.historyWindow`
+rather than the repository's display windows, which follow-up proposals
+also fill. A queued suggestion carries the person's name for the row,
 which renders "Add · Pip Penguin was there" in the reader's language, with
-the quoted words that named them under it. On confirm, `EventToolDispatcher`
+the quoted words that named them under it. Because the row carries a name,
+`eventSuggestionListProvider` shows a person suggestion — row or history —
+only while that person is in the private-filtered People read, and re-reads
+on a privacy toggle. On confirm, `EventToolDispatcher`
 writes the person → event `RelationshipLink` through `ensureLink`, so two
-devices confirming, or a re-run after a crash, write one link; it refuses
-while the event or the person is gone. The link is the one the event page's
+devices confirming, or a re-run after a crash, write one link; a live link
+the user once hid is shown again, since the People row leaves hidden links
+out; it refuses while the event or the person is gone. The link is the one the event page's
 People row reads and writes ([events](../events.md#who-it-was-with)), so the
 person appears there and the event on their timeline.
 
