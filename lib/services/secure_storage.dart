@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart' show kDebugMode;
+import 'package:flutter/services.dart' show PlatformException;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:meta/meta.dart';
@@ -35,8 +36,14 @@ import 'package:package_info_plus/package_info_plus.dart';
 /// Writes, deletes and cache-missing reads run one at a time, so a repair
 /// never resurrects a key a concurrent delete just removed.
 class SecureStorage {
-  SecureStorage({bool? singleBundle, this._logging})
-    : singleBundle = singleBundle ?? Platform.isLinux;
+  SecureStorage({
+    bool? singleBundle,
+    this._logging,
+    @visibleForTesting FlutterSecureStorage? storage,
+    @visibleForTesting bool? loginKeychain,
+  }) : singleBundle = singleBundle ?? Platform.isLinux,
+       _storage = storage ?? const FlutterSecureStorage(),
+       _loginKeychain = loginKeychain ?? (Platform.isMacOS && kDebugMode);
 
   /// Marks a value stored base64url-encoded, on a [singleBundle] keystore
   /// only. A value that itself starts with it is encoded too, so a read never
@@ -48,7 +55,11 @@ class SecureStorage {
   final bool singleBundle;
 
   final DomainLogger? _logging;
-  final _storage = const FlutterSecureStorage();
+  final FlutterSecureStorage _storage;
+
+  /// Whether this process keeps its secrets in the macOS login keychain: a
+  /// Debug build there ([macOsOptions]).
+  final bool _loginKeychain;
   final _state = <String, String>{};
   Future<void> _mutations = Future<void>.value();
   bool _migrated = false;
@@ -130,12 +141,37 @@ class SecureStorage {
 
   Future<void> _remove(String key) async {
     _state.remove(key);
-    await _storage.delete(
-      key: key,
-      iOptions: await _iOptions(),
-      mOptions: await _mOptions(),
-    );
+    try {
+      await _storage.delete(
+        key: key,
+        iOptions: await _iOptions(),
+        mOptions: await _mOptions(),
+      );
+    } on PlatformException catch (error) {
+      if (!refusedOnlyAsSynchronizable(error, loginKeychain: _loginKeychain)) {
+        rethrow;
+      }
+    }
   }
+
+  /// Whether a failed delete only means its iCloud half was refused, so
+  /// nothing of the key is left on this device.
+  ///
+  /// The plugin deletes twice, as a synchronizable item and as a local one,
+  /// and reports the first failure. A synchronizable item lives only in the
+  /// data protection keychain, which a [loginKeychain] build cannot reach:
+  /// that half answers -34018 (errSecMissingEntitlement) on every call, and
+  /// when the local half found nothing the plugin reports the -34018 — so
+  /// every delete, and every write, which deletes first, failed. Measured
+  /// with an ad-hoc signed sandboxed app on 2026-11-02: the synchronizable
+  /// delete of a missing item answers -34018, the local one -25300.
+  @visibleForTesting
+  static bool refusedOnlyAsSynchronizable(
+    PlatformException error, {
+    required bool loginKeychain,
+  }) => loginKeychain && error.details == _errSecMissingEntitlement;
+
+  static const _errSecMissingEntitlement = -34018;
 
   Future<void> _put(String key, String value) async {
     await _storage.write(

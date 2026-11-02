@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/services/logging_domains.dart';
@@ -369,4 +370,84 @@ void main() {
       expect(options.toMap()['accountName'], 'com.matthiasn.lotti');
     });
   });
+
+  group('a delete whose iCloud half the keychain refuses', () {
+    PlatformException refused([Object details = -34018]) => PlatformException(
+      code: 'Unexpected security result code',
+      message: "A required entitlement isn't present.",
+      details: details,
+    );
+
+    test('means nothing is left, in a login-keychain build only', () {
+      expect(
+        SecureStorage.refusedOnlyAsSynchronizable(
+          refused(),
+          loginKeychain: true,
+        ),
+        isTrue,
+      );
+      expect(
+        SecureStorage.refusedOnlyAsSynchronizable(
+          refused(),
+          loginKeychain: false,
+        ),
+        isFalse,
+      );
+      expect(
+        SecureStorage.refusedOnlyAsSynchronizable(
+          refused(-25308),
+          loginKeychain: true,
+        ),
+        isFalse,
+      );
+    });
+
+    test('lets a Debug macOS build save a key and delete it', () async {
+      final storage = SecureStorage(
+        storage: const _RefusingSyncDeletes(),
+        loginKeychain: true,
+      );
+
+      await storage.write(key: 'api_key', value: 'secret');
+      expect(await storage.read(key: 'api_key'), 'secret');
+      await storage.delete(key: 'api_key');
+      expect(await storage.read(key: 'api_key'), isNull);
+    });
+
+    test('still fails a build that uses the data protection keychain', () {
+      final storage = SecureStorage(
+        storage: const _RefusingSyncDeletes(),
+        loginKeychain: false,
+      );
+
+      expect(
+        storage.write(key: 'api_key', value: 'secret'),
+        throwsA(isA<PlatformException>()),
+      );
+    });
+  });
+}
+
+/// The keychain as a Debug macOS build meets it: every delete is refused for
+/// its synchronizable half (-34018), while reads and writes go through.
+class _RefusingSyncDeletes extends FlutterSecureStorage {
+  const _RefusingSyncDeletes();
+
+  @override
+  Future<void> delete({
+    required String key,
+    AppleOptions? iOptions,
+    AndroidOptions? aOptions,
+    LinuxOptions? lOptions,
+    WebOptions? webOptions,
+    AppleOptions? mOptions,
+    WindowsOptions? wOptions,
+  }) async {
+    await super.delete(key: key);
+    throw PlatformException(
+      code: 'Unexpected security result code',
+      message: "A required entitlement isn't present.",
+      details: -34018,
+    );
+  }
 }

@@ -116,7 +116,14 @@ message, so neither the message nor a log line prints it.
   every call (-34018, errSecMissingEntitlement): no API key could be saved
   and deleting a provider failed. A Debug build uses the login keychain
   instead (`SecureStorage.macOsOptions`), which a sandboxed app may use for
-  its own items.
+  its own items. One refusal remains: the plugin deletes every key twice, as
+  a synchronizable (iCloud) item and as a local one, and reports the first
+  failure; the synchronizable half lives only in the data protection
+  keychain and answers -34018, so a Debug build treats that answer to a
+  delete as nothing left (`SecureStorage.refusedOnlyAsSynchronizable`).
+  Measured with an ad-hoc signed sandboxed app: the login keychain takes
+  every write and delete; only data protection and synchronizable calls
+  answer -34018.
 - **Guards for Linux's single bundle.** On Linux the plugin keeps *every* key
   in one libsecret item, a JSON object, which it reads, edits and writes back
   whole; a blank item parses as "no keys", so one bad read followed by a write
