@@ -726,11 +726,11 @@ const double kGoalTimelineRailFoldWidth = 640;
 /// — while a wide window spent the room the dashboard's measure left over on
 /// empty margins either side of it. Dragged, it may grow to
 /// [kGoalTimelineRailDragMaxWidth]. Either way it never leaves the dashboard
-/// less than [kGoalTimelineRailFoldWidth].
+/// less than [kGoalTimelineRailFoldWidth] beside it and its divider.
 double goalTimelineRailWidth(double paneWidth, {double? dragged}) => math
     .min(
       dragged ?? paneWidth * kGoalTimelineRailPaneShare,
-      paneWidth - kGoalTimelineRailFoldWidth,
+      paneWidth - kGoalTimelineRailFoldWidth - ResizableDivider.layoutWidth,
     )
     .clamp(
       kGoalTimelineRailMinWidth,

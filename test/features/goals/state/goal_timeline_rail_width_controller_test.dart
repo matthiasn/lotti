@@ -57,14 +57,31 @@ void main() {
       expect(await _hydrated(container), isNull);
     });
 
-    test('a drag before the load wins over it', () async {
-      final load = Completer<Map<String, String?>>();
-      final (container, _) = await _containerWith(load: load.future);
-      final pending = _hydrated(container);
-      container.read(goalTimelineRailWidthProvider.notifier).set(500);
-      load.complete({goalTimelineRailWidthKey: '700'});
-      expect(await pending, 500);
-      expect(container.read(goalTimelineRailWidthProvider).value, 500);
+    test('a drag before the load wins over it', () {
+      fakeAsync((async) {
+        final load = Completer<Map<String, String?>>();
+        late ProviderContainer container;
+        late MockSettingsDb settingsDb;
+        _containerWith(
+          load: load.future,
+        ).then((value) => (container, settingsDb) = value);
+        async.flushMicrotasks();
+        double? loaded;
+        _hydrated(container).then((value) => loaded = value);
+        container.read(goalTimelineRailWidthProvider.notifier).set(500);
+        load.complete({goalTimelineRailWidthKey: '700'});
+        async.flushMicrotasks();
+        expect(loaded, 500);
+        expect(container.read(goalTimelineRailWidthProvider).value, 500);
+
+        // The drag's own write lands once it rests, and the stored 700
+        // never comes back.
+        async.elapse(goalTimelineRailPersistDebounce);
+        verify(
+          () => settingsDb.saveSettingsItem(goalTimelineRailWidthKey, '500.0'),
+        ).called(1);
+        expect(container.read(goalTimelineRailWidthProvider).value, 500);
+      });
     });
 
     test('a failing load leaves the rail undragged', () async {

@@ -2309,9 +2309,11 @@ flowchart LR
 A wake carries a bounded slice of the past: the check-in summaries that fit
 `userVoice`, the long-range digests, the twelve newest observations and the
 older ones the agent filed `critical` (ADR 0146). The system prompt's
-*Memory* step asks for an observation whenever `userVoice` or a message shows
-something about the user — circumstances, mood, obstacles, what helps, how
-coaching lands — and the closing "call no tools" step yields to it; a prompt
+*Memory* step asks for an observation whenever the user's message or a
+`sinceLastReport` check-in in `userVoice` shows something new about them —
+circumstances, mood, obstacles, what helps, how coaching lands — and not
+already in `observations`, since check-ins stay in `userVoice` across wakes;
+the closing "call no tools" step yields to it; a prompt
 that said only what observations were *not* for got next to none.
 
 **Older observations are digested by month (ADR 0156).** On automatic wakes,

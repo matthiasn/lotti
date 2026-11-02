@@ -16,8 +16,13 @@ void main() {
     expect(goalAgentSystemPrompt.length, lessThan(4000));
     expect(
       goalAgentSystemPrompt,
-      contains('Memory: when userVoice or a message shows something about'),
+      contains(
+        'Memory: when a message or sinceLastReport userVoice shows something '
+        'new',
+      ),
     );
+    // A check-in carried into later wakes must not be noted again.
+    expect(goalAgentSystemPrompt, contains('not in observations'));
     expect(goalAgentSystemPrompt, isNot(contains('only for novel facts')));
     expect(
       goalAgentSystemPrompt,

@@ -120,6 +120,24 @@ void main() {
     expect(xs.reduce(math.max) - xs.reduce(math.min), lessThan(8));
   });
 
+  test('a held wave waves once, then keeps its hand up and still', () {
+    final a = CompanionAnimator()..hold(GestureName.wave);
+    double spread(List<CompanionPose> poses) {
+      final xs = poses.map((p) => p.right.wrist.dx);
+      return xs.reduce(math.max) - xs.reduce(math.min);
+    }
+
+    // Waving: the hand swings to and fro.
+    final waving = _run(a, 1.5);
+    _run(a, 3);
+    final settled = _run(a, 2);
+    expect(spread(waving.skip(30).toList()), greaterThan(4));
+    // Settled: still up, no longer waving.
+    expect(spread(settled), lessThan(spread(waving.skip(30).toList()) / 2));
+    final ready = _run(CompanionAnimator(), 3).last.right.wrist.dy;
+    expect(settled.every((p) => p.right.wrist.dy < ready - 30), isTrue);
+  });
+
   test('a gesture played over a hold hands back to it', () {
     final a = CompanionAnimator()..hold(GestureName.listen);
     _run(a, 2);

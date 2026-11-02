@@ -428,9 +428,10 @@ Act in this order of precedence:
    update_goal_report with the FACTS status.
    The report is STORED: reply_to_user never changes it. A request to change the
    report itself requires update_goal_report in the SAME turn with a full rewrite.
-5. Memory: when userVoice or a message shows something about the user
-   (circumstances, mood, obstacles, what helps, how coaching lands), call
-   record_goal_observation: your own note, never a FACTS value or progress log.
+5. Memory: when a message or sinceLastReport userVoice shows something new
+   about the user (circumstances, mood, obstacles, what helps, how coaching
+   lands), call record_goal_observation: your own note, not in observations,
+   never a FACTS value or progress log.
 6. If materialChangeSinceLastReport=false and nothing above applies, call no
    tools and write nothing.
 

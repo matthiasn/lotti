@@ -502,7 +502,10 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
         goalTimelineRailWidth(paneWidth, dragged: draggedRailWidth);
     bool railFits(double paneWidth) =>
         desktopLayout &&
-        paneWidth >= kGoalTimelineRailFoldWidth + kGoalTimelineRailMinWidth;
+        paneWidth >=
+            kGoalTimelineRailFoldWidth +
+                ResizableDivider.layoutWidth +
+                kGoalTimelineRailMinWidth;
 
     // Watched, not read at tap time: an unwatched lookup is still loading.
     final goalCategoryId = ref.watch(goalCategoryIdProvider(agentId)).value;
@@ -594,16 +597,24 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
                   reverse: true,
                   currentValue: railWidth(paneWidth),
                   minValue: kGoalTimelineRailMinWidth,
-                  maxValue: math.max(
-                    kGoalTimelineRailMinWidth,
-                    math.min(
-                      kGoalTimelineRailDragMaxWidth,
-                      paneWidth - kGoalTimelineRailFoldWidth,
-                    ),
+                  maxValue: goalTimelineRailWidth(
+                    paneWidth,
+                    dragged: kGoalTimelineRailDragMaxWidth,
                   ),
+                  // From the width as it stands now, not as this build saw
+                  // it: deltas arriving between two frames each build on
+                  // the one before.
                   onDrag: (delta) => ref
                       .read(goalTimelineRailWidthProvider.notifier)
-                      .set(railWidth(paneWidth) + delta),
+                      .set(
+                        goalTimelineRailWidth(
+                              paneWidth,
+                              dragged: ref
+                                  .read(goalTimelineRailWidthProvider)
+                                  .value,
+                            ) +
+                            delta,
+                      ),
                 ),
                 SizedBox(
                   width: railWidth(paneWidth),

@@ -2842,6 +2842,17 @@ void main() {
     final undragged = goalTimelineRailWidth(1400);
     expect(railWidth(), undragged);
 
+    // Two drag updates inside one frame both count: each builds on the width
+    // the one before left, not on the width the last build saw.
+    tester.widget<ResizableDivider>(divider)
+      ..onDrag(10)
+      ..onDrag(10);
+    await tester.pump();
+    expect(railWidth(), undragged + 20);
+    tester.widget<ResizableDivider>(divider).onDrag(-20);
+    await tester.pump();
+    expect(railWidth(), undragged);
+
     // Its leading edge: dragging left widens it, past where the pane alone
     // would size it.
     await tester.drag(divider, const Offset(-100, 0), touchSlopX: 0);
@@ -4779,12 +4790,15 @@ void main() {
     test('the rail grows with the pane, between its bounds', () {
       // At the narrowest pane that shows it, the rail takes its minimum and
       // leaves the dashboard exactly its fold width.
-      const narrowest = kGoalTimelineRailFoldWidth + kGoalTimelineRailMinWidth;
+      const narrowest =
+          kGoalTimelineRailFoldWidth +
+          ResizableDivider.layoutWidth +
+          kGoalTimelineRailMinWidth;
       expect(goalTimelineRailWidth(narrowest), kGoalTimelineRailMinWidth);
       // In between, a share of the pane, the dashboard never under its fold.
       expect(goalTimelineRailWidth(1200), 480);
       expect(
-        1100 - goalTimelineRailWidth(1100),
+        1100 - goalTimelineRailWidth(1100) - ResizableDivider.layoutWidth,
         greaterThanOrEqualTo(kGoalTimelineRailFoldWidth),
       );
       // On a wide window it stops at its maximum; the dashboard keeps the
@@ -4810,7 +4824,7 @@ void main() {
       // ...and by the dashboard's fold on a narrower pane.
       expect(
         goalTimelineRailWidth(1200, dragged: 700),
-        1200 - kGoalTimelineRailFoldWidth,
+        1200 - kGoalTimelineRailFoldWidth - ResizableDivider.layoutWidth,
       );
     });
   });

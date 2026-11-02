@@ -111,8 +111,8 @@ class CompanionAnimator {
   /// ready again.
   ///
   /// A newly held gesture plays at once, its bounce of joy and all. Once its
-  /// own hold has run she stays in its settled phase, still: no replay, and
-  /// no bounce from it or from her mood. Replayed at every hold, a verdict
+  /// own hold has run she stays in its settled phase, still: no replay, no
+  /// waving or wagging, and no bounce from it or from her mood. Replayed at every hold, a verdict
   /// kept up on a card for minutes bobbed her upper body three times a
   /// second and started its phases over every second or so. A gesture
   /// played over it — a reaction while she reads — runs its course and
@@ -331,14 +331,14 @@ class CompanionAnimator {
       mouth: mouth,
       left: _left.step(
         g.left ?? CompanionGesture.readyLeft,
-        g.oscLeft,
+        steady ? null : g.oscLeft,
         t,
         dt,
         beatKick: g.left == null ? kick : 0,
       ),
       right: _right.step(
         g.right ?? CompanionGesture.readyRight,
-        g.oscRight,
+        steady ? null : g.oscRight,
         t,
         dt,
         beatKick: g.right == null ? kick : 0,
