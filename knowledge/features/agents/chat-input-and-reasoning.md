@@ -31,7 +31,7 @@ door's answer arrive after the reply's own frame, and a lazily built list's
 real height after the first jump, so one jump landed short. A drag away from
 the bottom stops the following, a drag back resumes it, and a conversation
 restored where it was left keeps its place until something new arrives.
-While a reply is on its way the thread shows `EvolutionTypingIndicator`'s
+While a reply is on its way the thread shows `AgentTypingIndicator`'s
 pulsing dots (unspaced inside the bubble), stopped under reduced motion; a
 test of a sending thread pumps frames rather than settling.
 `groupAttachmentsWithReply` places a consumer's supporting widgets inside the

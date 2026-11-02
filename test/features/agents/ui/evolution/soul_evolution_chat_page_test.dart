@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:genui/genui.dart' as genui;
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/soul_query_providers.dart';
+import 'package:lotti/features/agents/ui/chat/agent_typing_indicator.dart';
 import 'package:lotti/features/agents/ui/evolution/evolution_chat_message.dart';
 import 'package:lotti/features/agents/ui/evolution/evolution_chat_state.dart';
 import 'package:lotti/features/agents/ui/evolution/soul_evolution_chat_page.dart';
@@ -13,7 +14,6 @@ import 'package:lotti/features/agents/ui/evolution/soul_evolution_chat_state.dar
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_chat_bubble.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_message_input.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_session_opening.dart';
-import 'package:lotti/features/agents/ui/evolution/widgets/evolution_typing_indicator.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
@@ -318,7 +318,7 @@ void main() {
       await tester.pump();
       await tester.pump();
 
-      expect(find.byType(EvolutionTypingIndicator), findsOneWidget);
+      expect(find.byType(AgentTypingIndicator), findsOneWidget);
       expect(find.text('...'), findsNothing);
     });
 
@@ -540,7 +540,7 @@ void main() {
         await tester.pump();
 
         // The loading indicator ('...') should now appear.
-        expect(find.byType(EvolutionTypingIndicator), findsOneWidget);
+        expect(find.byType(AgentTypingIndicator), findsOneWidget);
         expect(find.text('...'), findsNothing);
       },
     );

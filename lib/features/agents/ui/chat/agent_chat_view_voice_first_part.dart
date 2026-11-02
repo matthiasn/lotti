@@ -355,7 +355,7 @@ class _ThinkingBubble extends StatelessWidget {
             ),
             // Dots that pulse in turn, so the wait reads as an answer on its
             // way; the label above is what a screen reader hears.
-            child: const EvolutionTypingIndicator(
+            child: const AgentTypingIndicator(
               announceComposing: false,
               spaced: false,
             ),

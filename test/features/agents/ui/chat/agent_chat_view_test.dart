@@ -6,9 +6,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/agents/ui/chat/agent_chat_view.dart';
+import 'package:lotti/features/agents/ui/chat/agent_typing_indicator.dart';
 import 'package:lotti/features/agents/ui/chat/chat_recorder_controller.dart';
 import 'package:lotti/features/agents/ui/chat/waveform_bars.dart';
-import 'package:lotti/features/agents/ui/evolution/widgets/evolution_typing_indicator.dart';
 import 'package:lotti/features/ai/util/inference_provider_resolver.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -676,7 +676,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
-    expect(find.byType(EvolutionTypingIndicator), findsOneWidget);
+    expect(find.byType(AgentTypingIndicator), findsOneWidget);
     expect(find.text("That didn't send."), findsOneWidget);
     expect(find.text('Juno is replying…'), findsOneWidget);
     await tester.tap(find.text('Try Again'));
@@ -1066,7 +1066,10 @@ void main() {
     late StateSetter updateHost;
     late double cardHeight;
 
-    Future<void> pumpThread(WidgetTester tester) async {
+    Future<void> pumpThread(
+      WidgetTester tester, {
+      bool scrollOnReplies = true,
+    }) async {
       cardHeight = 10;
       final history = [
         for (var index = 0; index < 30; index++)
@@ -1091,6 +1094,7 @@ void main() {
                     draft: '',
                     isSending: false,
                     history: AsyncData(history),
+                    scrollOnReplies: scrollOnReplies,
                     onDraftChanged: (_) {},
                     onSend: () {},
                     onRetry: () {},
@@ -1152,6 +1156,19 @@ void main() {
 
       expect(position(tester).pixels, 0);
       expect(find.textContaining('Message 0'), findsOneWidget);
+    });
+
+    testWidgets('a host that keeps replies where they start is not '
+        'followed as they grow', (tester) async {
+      await pumpThread(tester, scrollOnReplies: false);
+      await tester.drag(find.byType(ListView), const Offset(0, -20000));
+      await tester.pumpAndSettle();
+      final before = position(tester).extentAfter;
+
+      await grow(tester);
+
+      // The card grew by hundreds of pixels below the reader, who stayed.
+      expect(position(tester).extentAfter, greaterThan(before + 400));
     });
 
     testWidgets('back at the bottom, it follows again', (tester) async {

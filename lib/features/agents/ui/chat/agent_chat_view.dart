@@ -2,10 +2,10 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/state/agent_chat_projection.dart';
+import 'package:lotti/features/agents/ui/chat/agent_typing_indicator.dart';
 import 'package:lotti/features/agents/ui/chat/chat_recorder_controller.dart';
 import 'package:lotti/features/agents/ui/chat/chat_recorder_error_message.dart';
 import 'package:lotti/features/agents/ui/chat/waveform_bars.dart';
-import 'package:lotti/features/agents/ui/evolution/widgets/evolution_typing_indicator.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
 import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
@@ -145,8 +145,13 @@ class _AgentChatViewState extends ConsumerState<AgentChatView> {
             dragDetails: _?,
           ):
             _followLatest = metrics.extentAfter <= nearBottom;
+          // A host that keeps replies where they start (query chat, whose
+          // reader reads an answer and its evidence from the top) is not
+          // followed as they grow.
           case ScrollMetricsNotification(depth: 0, :final metrics)
-              when _followLatest && metrics.extentAfter > 0:
+              when widget.scrollOnReplies &&
+                  _followLatest &&
+                  metrics.extentAfter > 0:
             _scrollToLatest();
         }
         final metrics = switch (notification) {

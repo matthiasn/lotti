@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/agents/ui/chat/agent_typing_indicator.dart';
 import 'package:lotti/features/agents/ui/evolution/evolution_chat_data.dart';
 import 'package:lotti/features/agents/ui/evolution/evolution_chat_message.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_session_opening.dart';
-import 'package:lotti/features/agents/ui/evolution/widgets/evolution_typing_indicator.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -25,7 +25,7 @@ void main() {
         find.text(context.messages.agentRitualOpeningHint),
         findsOneWidget,
       );
-      expect(find.byType(EvolutionTypingIndicator), findsOneWidget);
+      expect(find.byType(AgentTypingIndicator), findsOneWidget);
       // The old opening frame was a 16px CircularProgressIndicator beside a
       // literal '...' in the corner of an empty page.
       expect(find.byType(CircularProgressIndicator), findsNothing);

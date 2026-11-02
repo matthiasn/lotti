@@ -6,12 +6,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:genui/genui.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/agents/ui/chat/agent_typing_indicator.dart';
 import 'package:lotti/features/agents/ui/evolution/evolution_chat_message.dart';
 import 'package:lotti/features/agents/ui/evolution/evolution_chat_page.dart';
 import 'package:lotti/features/agents/ui/evolution/evolution_chat_state.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_chat_bubble.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_message_input.dart';
-import 'package:lotti/features/agents/ui/evolution/widgets/evolution_typing_indicator.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -325,7 +325,7 @@ void main() {
         await tester.pumpAndSettle();
 
         // No typing indicator initially.
-        expect(find.byType(EvolutionTypingIndicator), findsNothing);
+        expect(find.byType(AgentTypingIndicator), findsNothing);
 
         // Push isWaiting=true — triggers didUpdateWidget.
         capturedNotifier!.pushData(
@@ -338,7 +338,7 @@ void main() {
         await tester.pump();
 
         // The typing indicator lands where the answer will.
-        expect(find.byType(EvolutionTypingIndicator), findsOneWidget);
+        expect(find.byType(AgentTypingIndicator), findsOneWidget);
       },
     );
 
