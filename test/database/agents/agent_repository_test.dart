@@ -1991,6 +1991,50 @@ void main() {
       });
     });
 
+    group('getUsableTaskReportsForTaskIds', () {
+      test(
+        'reaches past a newest agent that has not reported to an older '
+        "agent's report, where the primary-only lookup returns none",
+        () async {
+          await seedTaskAgentLink(
+            repo,
+            linkId: 'task-link-old',
+            agentId: 'task-agent-old',
+            taskId: 'task-001',
+            createdAt: testDate,
+          );
+          await seedTaskAgentLink(
+            repo,
+            linkId: 'task-link-new',
+            agentId: 'task-agent-new',
+            taskId: 'task-001',
+            createdAt: testDate.add(const Duration(minutes: 1)),
+          );
+          await setupReportWithHead(
+            repo,
+            reportId: 'task-report-old',
+            headId: 'task-head-old',
+            agentId: 'task-agent-old',
+            createdAt: testDate,
+            oneLiner: 'Parts ordered',
+            tldr: 'Old TLDR',
+            content: 'Old report',
+          );
+
+          final usable = await repo.getUsableTaskReportsForTaskIds([
+            'task-001',
+          ]);
+
+          expect(usable['task-001']?.id, 'task-report-old');
+          expect(usable['task-001']?.oneLiner, 'Parts ordered');
+          expect(
+            await repo.getLatestTaskReportsForTaskIds(['task-001']),
+            isEmpty,
+          );
+        },
+      );
+    });
+
     glados.Glados(
       glados.any.primaryLinkSelectionScenario,
       glados.ExploreConfig(numRuns: 80),
