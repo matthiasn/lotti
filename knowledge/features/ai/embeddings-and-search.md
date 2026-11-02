@@ -186,16 +186,18 @@ offered wrongly costs more than one never offered, so it favours precision.
   blank line apart (`EmbeddingContentExtractor.extractAgentReportText`), so a
   task — or an event — is found by anything its current report says. The
   task agent's and the event agent's wakes embed a report as they write it,
-  through the one `embedAgentReport`, keyed to their subject; reports written before this keep
-  the body-only vectors until the task's next report.
-- **A task has at most one report in the index.** Once a new report is
-  embedded, every other report embedded for its task is deleted
-  (`EmbeddingStore.agentReportIdsForTask`), not just the one it replaced: a
-  report whose own embedding was skipped — model missing, text too short —
-  would otherwise leave the one before it searchable for good. A failed or
-  skipped embed deletes nothing, so the task stays findable by its last
-  embedded report. The cleanup runs in `EmbeddingProcessor.processAgentReport`
-  under the task's lock, so an earlier report's run cannot delete a newer
+  through the one `embedAgentReport`, keyed to their subject; reports
+  written before this keep the body-only vectors until the subject's next
+  report.
+- **A subject — a task or an event — has at most one report in the
+  index.** Once a new report is embedded, every other report embedded for
+  its subject is deleted (`EmbeddingStore.agentReportIdsForTask`, keyed by
+  the subject id), not just the one it replaced: a report whose own
+  embedding was skipped — model missing, text too short — would otherwise
+  leave the one before it searchable for good. A failed or skipped embed
+  deletes nothing, so the subject stays findable by its last embedded
+  report. The cleanup runs in `EmbeddingProcessor.processAgentReport` under
+  the subject's lock, so an earlier report's run cannot delete a newer
   report's vector.
 - Agent reports are stored with `taskId` metadata — the report's subject, a
   task or an event — so a search hit can resolve back to it: the task search
@@ -296,9 +298,9 @@ protocol is model-checked in
   [embedding vector sync](embedding-vector-sync.md#reconciling-at-start)).
 - **Reports follow their subject.** Every run over a task or an event moves
   its report embeddings to its category, whether or not it has a vector of
-  its own. The report writer reads the task's category and writes under the
-  task's lock, so a recategorisation is either seen by the writer or processed
-  after the report is stored.
+  its own. The report writer reads the subject's category and writes under
+  the subject's lock, so a recategorisation is either seen by the writer or
+  processed after the report is stored.
 - **Failures are retried, in memory.** A failed id is kept and queued again
   after `EmbeddingService.retryDelay` (5 minutes). An id is dropped after
   `EmbeddingService.maxFailedAttempts` (3) failures in a row, so an entity that
