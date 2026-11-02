@@ -174,10 +174,11 @@ list.
 
 `LegacyMaterialBridge` runs inside the MaterialApp builders, including test
 hosts. It maps the active theme and installs the old localization delegates
-for dependencies that have not migrated. `LegacyMaterialExtensions` carries
-Wolt and GPT Markdown's old extensions inside the modern theme and interpolates
-them during theme changes. The bridge is an adapter for those dependencies,
-not a second source of visual tokens.
+for dependencies that have not migrated. Wolt and GPT Markdown have moved to
+Material UI, so their theme extensions are registered directly on the modern
+theme (`withOverrides`) and need no carry-over. The bridge is an adapter for
+the component themes that legacy widgets still read, not a second source of
+visual tokens.
 
 ```mermaid
 flowchart TD

@@ -80,47 +80,51 @@ class AgentMarkdownView extends StatelessWidget {
       h6: styles.others.caption.copyWith(color: textColor),
     );
 
-    return legacy.Theme(
-      data: legacyTheme.copyWith(
-        checkboxTheme: legacyTheme.checkboxTheme.copyWith(
-          materialTapTargetSize: legacy.MaterialTapTargetSize.shrinkWrap,
-          visualDensity: legacy.VisualDensity.compact,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(tokens.radii.xs),
-          ),
-          side: BorderSide(
-            color: tokens.colors.text.lowEmphasis,
-            width: 1.5,
-          ),
-          fillColor: WidgetStateProperty.resolveWith((states) {
-            if (states.contains(WidgetState.selected)) {
-              return tokens.colors.interactive.enabled;
-            }
-            return Colors.transparent;
-          }),
-          overlayColor: const WidgetStatePropertyAll(Colors.transparent),
-          mouseCursor: const WidgetStatePropertyAll(SystemMouseCursors.basic),
-        ),
+    return Theme(
+      data: theme.copyWith(
         extensions: [
-          ...legacyTheme.extensions.values.where(
+          ...theme.extensions.values.where(
             (e) => e is! GptMarkdownThemeData,
           ),
           markdownTheme,
         ],
       ),
-      child: legacy.Material(
-        type: legacy.MaterialType.transparency,
-        child: DefaultTextStyle.merge(
-          style: bodyStyle,
-          child: GptMarkdown(
-            text,
+      child: legacy.Theme(
+        data: legacyTheme.copyWith(
+          checkboxTheme: legacyTheme.checkboxTheme.copyWith(
+            materialTapTargetSize: legacy.MaterialTapTargetSize.shrinkWrap,
+            visualDensity: legacy.VisualDensity.compact,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(tokens.radii.xs),
+            ),
+            side: BorderSide(
+              color: tokens.colors.text.lowEmphasis,
+              width: 1.5,
+            ),
+            fillColor: WidgetStateProperty.resolveWith((states) {
+              if (states.contains(WidgetState.selected)) {
+                return tokens.colors.interactive.enabled;
+              }
+              return Colors.transparent;
+            }),
+            overlayColor: const WidgetStatePropertyAll(Colors.transparent),
+            mouseCursor: const WidgetStatePropertyAll(SystemMouseCursors.basic),
+          ),
+        ),
+        child: legacy.Material(
+          type: legacy.MaterialType.transparency,
+          child: DefaultTextStyle.merge(
             style: bodyStyle,
-            maxLines: maxLines,
-            overflow: overflow,
-            onLinkTap: onLinkTap ?? handleMarkdownLinkTap,
-            styleSheet: markdownLinkStyleSheet(theme.colorScheme.primary),
-            inlineLinkBuilder: buildFocusableMarkdownLink,
-            imageBuilder: imageBuilder ?? buildBlockedMarkdownImage,
+            child: GptMarkdown(
+              text,
+              style: bodyStyle,
+              maxLines: maxLines,
+              overflow: overflow,
+              onLinkTap: onLinkTap ?? handleMarkdownLinkTap,
+              styleSheet: markdownLinkStyleSheet(theme.colorScheme.primary),
+              inlineLinkBuilder: buildFocusableMarkdownLink,
+              imageBuilder: imageBuilder ?? buildBlockedMarkdownImage,
+            ),
           ),
         ),
       ),

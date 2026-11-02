@@ -53,7 +53,9 @@ void main() {
         theme.textTheme.bodyMedium?.color,
       );
       expect(
-        oldTheme.extension<WoltModalSheetThemeData>()?.surfaceTintColor,
+        Theme.of(
+          consumer,
+        ).extension<WoltModalSheetThemeData>()?.surfaceTintColor,
         Colors.transparent,
       );
       expect(
@@ -70,26 +72,6 @@ void main() {
       );
     }
   });
-
-  test(
-    'legacy extensions interpolate instead of disappearing during theme changes',
-    () {
-      const a = LegacyMaterialExtensions([
-        WoltModalSheetThemeData(surfaceTintColor: Colors.black),
-      ]);
-      const b = LegacyMaterialExtensions([
-        WoltModalSheetThemeData(surfaceTintColor: Colors.white),
-      ]);
-      final mixed = a.lerp(b, 0.5);
-      expect(
-        (mixed.values.single as WoltModalSheetThemeData).surfaceTintColor,
-        Color.lerp(Colors.black, Colors.white, 0.5),
-      );
-      expect(a.lerp(null, 0.5), same(a));
-      expect(a.copyWith().values, same(a.values));
-      expect(a.copyWith(values: b.values).values, same(b.values));
-    },
-  );
 
   test('the legacy elevated button style keeps density and tap target', () {
     final theme = ThemeData(

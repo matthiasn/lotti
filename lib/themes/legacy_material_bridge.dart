@@ -2,34 +2,12 @@ import 'package:flutter/material.dart' as legacy;
 import 'package:flutter_localizations/flutter_localizations.dart' as legacy;
 import 'package:material_ui/material_ui.dart';
 
-/// Carries unmigrated packages' extensions through the app's modern theme.
-class LegacyMaterialExtensions
-    extends ThemeExtension<LegacyMaterialExtensions> {
-  const LegacyMaterialExtensions(this.values);
-
-  final List<legacy.ThemeExtension<dynamic>> values;
-
-  @override
-  LegacyMaterialExtensions copyWith({
-    List<legacy.ThemeExtension<dynamic>>? values,
-  }) => LegacyMaterialExtensions(values ?? this.values);
-
-  @override
-  LegacyMaterialExtensions lerp(LegacyMaterialExtensions? other, double t) {
-    if (other == null) return this;
-    final targets = {for (final value in other.values) value.type: value};
-    return LegacyMaterialExtensions([
-      for (final value in values) value.lerp(targets.remove(value.type), t),
-      ...targets.values,
-    ]);
-  }
-}
-
 /// Maps design state for dependencies whose public types still belong to Flutter.
 ///
-/// The upstream compatibility bridge drops component themes and extensions.
-/// Preserve the editor, Markdown and modal styling here until those packages
-/// migrate. App widgets continue to read the surrounding Material UI theme.
+/// The upstream compatibility bridge drops component themes. Preserve the
+/// component themes here until those packages migrate. Theme extensions need
+/// no carry-over: wolt_modal_sheet and gpt_markdown already read Material UI's
+/// extensions. App widgets continue to read the surrounding Material UI theme.
 legacy.ThemeData legacyMaterialTheme(ThemeData theme) {
   final scheme = theme.colorScheme;
   final text = theme.textTheme;
@@ -103,7 +81,6 @@ legacy.ThemeData legacyMaterialTheme(ThemeData theme) {
     elevatedButtonTheme: legacy.ElevatedButtonThemeData(
       style: _legacyButtonStyle(theme.elevatedButtonTheme.style),
     ),
-    extensions: theme.extension<LegacyMaterialExtensions>()?.values,
   );
 }
 
