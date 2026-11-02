@@ -588,6 +588,9 @@ void main() {
         ),
       );
       when(create).thenAnswer((_) async => true);
+      when(
+        () => mockPersistenceLogic.createLink(fromId: eventId, toId: derivedId),
+      ).thenAnswer((_) async => true);
     });
 
     test("adds the note to the event's timeline as the user's own, under "
@@ -617,6 +620,51 @@ void main() {
       ).captured.single;
       expect(input, effect.entityInput('note'));
     });
+
+    test('logs the note under the event-note subdomain', () async {
+      final logger = MockDomainLogger();
+      dispatcher = EventToolDispatcher(
+        journalDb: mockJournalDb,
+        journalRepository: mockJournalRepository,
+        persistenceLogic: mockPersistenceLogic,
+        entitiesCacheService: mockCache,
+        domainLogger: logger,
+      );
+
+      await accept();
+
+      verify(
+        () => logger.log(
+          any(),
+          any(that: contains('added suggested note')),
+          subDomain: 'event-note',
+        ),
+      ).called(1);
+    });
+
+    test(
+      'a note stored without its link to the event fails, retryably',
+      () async {
+        // `createDbEntity` answers true even when its link write failed.
+        when(
+          () =>
+              mockPersistenceLogic.createLink(fromId: eventId, toId: derivedId),
+        ).thenAnswer((_) async => false);
+        when(
+          () => mockJournalDb.linksBetween(
+            eventId,
+            derivedId,
+            type: any(named: 'type'),
+          ),
+        ).thenAnswer((_) async => const []);
+
+        final result = await accept();
+
+        expect(result.success, isFalse);
+        expect(result.nonRetryable, isFalse);
+        expect(result.errorMessage, 'Note link failed');
+      },
+    );
 
     test('adds nothing when the other device accepted it first', () async {
       when(

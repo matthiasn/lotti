@@ -134,7 +134,16 @@ extension _SkillMediaRuns on SkillInferenceRunner {
             images: images,
             provider: provider,
             systemMessage: promptResult.systemMessage,
-            tools: useTieredSummary ? [imageAnalysisSummaryTool] : null,
+            // Worded as the prompt's tiers are: a task's analysis keeps the
+            // task wording, every other analysis captions the photo.
+            tools: useTieredSummary
+                ? [
+                    if (framing.taskFramed)
+                      entrySummaryTool
+                    else
+                      imageAnalysisSummaryTool,
+                  ]
+                : null,
             toolChoice: useTieredSummary
                 ? entrySummaryToolChoiceFor(modelId)
                 : null,

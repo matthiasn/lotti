@@ -178,6 +178,7 @@ void main() {
     List<String> observations = const [],
     List<String> followUpTitles = const [],
     List<String> suggestedPersonIds = const [],
+    String? noteText,
     InferenceUsage? usage,
   }) {
     mockConversationRepository.sendMessageDelegate =
@@ -235,6 +236,15 @@ void main() {
                       'personId': suggestedPersonIds[i],
                       'mention': 'Pip brought the sardines',
                     }),
+                  ),
+                ),
+              if (noteText != null)
+                ChatCompletionMessageToolCall(
+                  id: 'call-note',
+                  type: ChatCompletionMessageToolCallType.function,
+                  function: ChatCompletionMessageFunctionCall(
+                    name: EventAgentToolNames.suggestNote,
+                    arguments: jsonEncode({'text': noteText}),
                   ),
                 ),
               for (var i = 0; i < followUpTitles.length; i++)
@@ -809,6 +819,53 @@ void main() {
         ).called(1);
       },
     );
+
+    for (final earlierNotePending in [false, true]) {
+      test(
+        earlierNotePending
+            ? "a note while an earlier wake's note awaits the user is not "
+                  'suggested again'
+            : 'a suggested note becomes a pending change set on the event',
+        () async {
+          when(
+            () => mockAgentRepository.getPendingChangeSets(
+              agentId,
+              taskId: eventId,
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer(
+            (_) async => [
+              if (earlierNotePending)
+                makeTestChangeSet(
+                  taskId: eventId,
+                  items: const [
+                    ChangeItem(
+                      toolName: EventAgentToolNames.suggestNote,
+                      args: {'text': 'The earlier account.'},
+                      humanSummary: 'Add a note: The earlier account.',
+                    ),
+                  ],
+                ),
+            ],
+          );
+          stubReportPublishingRun(noteText: 'We skated until dusk.');
+
+          await run();
+
+          final changeSets = verify(
+            () => mockSyncService.upsertEntity(captureAny()),
+          ).captured.whereType<ChangeSetEntity>().toList();
+          if (earlierNotePending) {
+            expect(changeSets, isEmpty);
+          } else {
+            expect(
+              changeSets.single.items.single.args['text'],
+              'We skated until dusk.',
+            );
+          }
+        },
+      );
+    }
 
     test(
       'persists suggested follow-ups as a pending change set on the event',

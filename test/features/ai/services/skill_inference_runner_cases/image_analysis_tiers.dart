@@ -267,7 +267,8 @@ extension _ImageAnalysisTierCases on _SkillInferenceTestSetup {
           final tools = captured[1] as List<ChatCompletionTool>?;
           expect(tools, hasLength(1));
           expect(tools!.single.function.name, entrySummaryToolName);
-          // Worded for an image: the one-liner captions the photo.
+          // Worded for an image: the one-liner captions the photo (no task
+          // frames this run).
           expect(
             tools.single.function.description,
             imageAnalysisSummaryTool.function.description,
@@ -277,6 +278,70 @@ extension _ImageAnalysisTierCases on _SkillInferenceTestSetup {
           // ignore it would answer in prose.
           expect(userMessage, contains(entrySummaryToolName));
           expect(userMessage, contains('oneLiner'));
+        },
+      );
+
+      test(
+        "a task's analysis keeps the task-worded tool its tier rules match",
+        () async {
+          _registerInteractionCapture();
+          await stubImageOnDisk();
+          stubImageInference([tierChunk()]);
+          when(
+            () => mockAiInputRepo.getEntity('task-1'),
+          ).thenAnswer((_) async => makeTaskEntity('task-1'));
+          when(
+            () => mockAiInputRepo.buildTaskDetailsJson(id: 'task-1'),
+          ).thenAnswer((_) async => '{}');
+          when(
+            () => mockAiInputRepo.buildLinkedTasksJson('task-1'),
+          ).thenAnswer((_) async => '{}');
+          when(
+            () => mockTaskSummaryResolver.resolve(any()),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockAiInputRepo.createAiResponseEntry(
+              id: any(named: 'id'),
+              data: any(named: 'data'),
+              start: any(named: 'start'),
+              linkedId: any(named: 'linkedId'),
+              categoryId: any(named: 'categoryId'),
+            ),
+          ).thenAnswer(
+            (invocation) async => makePersistedResponse(invocation),
+          );
+          stubLoggingEvent();
+
+          await runner.runImageAnalysis(
+            imageEntryId: 'img-1',
+            automationResult: resultWithVisionModel(
+              model: toolCapableVisionModel(),
+            ),
+            linkedTaskId: 'task-1',
+          );
+
+          final tools =
+              verify(
+                    () => mockCloudRepo.generateWithImages(
+                      any(),
+                      baseUrl: any(named: 'baseUrl'),
+                      apiKey: any(named: 'apiKey'),
+                      model: any(named: 'model'),
+                      temperature: any(named: 'temperature'),
+                      images: any(named: 'images'),
+                      provider: any(named: 'provider'),
+                      systemMessage: any(named: 'systemMessage'),
+                      tools: captureAny(named: 'tools'),
+                      toolChoice: any(named: 'toolChoice'),
+                      geminiThinkingMode: any(named: 'geminiThinkingMode'),
+                      impactCollector: any(named: 'impactCollector'),
+                    ),
+                  ).captured.single
+                  as List<ChatCompletionTool>;
+          expect(
+            tools.single.function.description,
+            entrySummaryTool.function.description,
+          );
         },
       );
 

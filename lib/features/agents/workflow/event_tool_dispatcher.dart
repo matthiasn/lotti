@@ -221,6 +221,23 @@ class EventToolDispatcher {
       );
     }
 
+    // `createDbEntity` reports the note stored even when its link to the
+    // event was not written, and an unlinked note is not on the event's
+    // timeline. Confirm the link, so a failure leaves the item to retry —
+    // the retry finds the note under its derived id and links it.
+    if (!await ensureLink(
+      persistenceLogic: persistenceLogic,
+      journalDb: journalDb,
+      fromId: eventId,
+      toId: note.meta.id,
+    )) {
+      return ToolExecutionResult(
+        success: false,
+        output: 'Error: note ${note.meta.id} exists but could not be linked',
+        errorMessage: 'Note link failed',
+      );
+    }
+
     domainLogger?.log(
       LogDomain.agentRuntime,
       'added suggested note ${DomainLogger.sanitizeId(note.meta.id)} '
