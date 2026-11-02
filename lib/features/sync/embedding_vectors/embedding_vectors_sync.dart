@@ -296,15 +296,23 @@ class EmbeddingVectorsSync implements EmbeddingShare {
     return register != null && register.isShared ? register : null;
   }
 
-  /// Every version this device holds and shared (tombstones included), in
-  /// register-id order: what deep backfill advertises and Add Device sends.
-  /// A version never shared is left out; no peer can know of it.
+  /// Every version this device holds and shared, and can serve — a
+  /// tombstone, or live vectors with their chunks — in register-id order:
+  /// what deep backfill advertises and Sync health counts.
+  ///
+  /// A version never shared is left out; no peer can know of it. So is a
+  /// live one without chunks: [prepareResend] has nothing to send for it,
+  /// and backfill answers that it was deleted, so counting it would show
+  /// a gap no peer can ever close (`EmbeddingReconciler` re-embeds it).
   Future<List<EmbeddingRegister>> sharedRegisters() async {
     final store = _store;
     if (store == null) return const [];
     final registers = [
       for (final register in await store.allRegisters())
-        if (register.isShared && register.modelId == _modelId) register,
+        if (register.isShared &&
+            register.modelId == _modelId &&
+            (register.deleted || await store.hasEmbedding(register.entityId)))
+          register,
     ]..sort((a, b) => a.id.compareTo(b.id));
     return registers;
   }

@@ -116,6 +116,10 @@ class _Device {
   final String holdPath;
   final store = InMemoryEmbeddingStore();
   final journal = <String, JournalEntity>{};
+
+  /// Entries deleted on this device: their rows remain, hidden from the
+  /// live read.
+  final deleted = <String, JournalEntity>{};
   final labels = <LabelDefinition>[];
   final reports = <String, AgentReportText>{};
   final flags = <String, bool>{
@@ -130,6 +134,12 @@ class _Device {
     journalDb = MockJournalDb();
     when(() => journalDb.journalEntityById(any())).thenAnswer(
       (i) async => journal[i.positionalArguments.first as String],
+    );
+    when(() => journalDb.journalEntityByIdIncludingDeleted(any())).thenAnswer(
+      (i) async {
+        final id = i.positionalArguments.first as String;
+        return journal[id] ?? deleted[id];
+      },
     );
     when(
       journalDb.getAllLabelDefinitionsIncludingPrivate,
@@ -603,6 +613,61 @@ void main() {
         d.journal['e1'] = _entry('e1', text);
         await d.receiver.onJournalEntityApplied('e1');
         expect(d.store.chunks.keys, ['e1']);
+      },
+    );
+
+    test(
+      'a version whose entry is deleted here is dropped, not held, and a '
+      'held one is released at the next re-check',
+      () async {
+        final d = await device();
+        const text = 'An entry this device has deleted since';
+        d.deleted['e1'] = _entry('e1', text);
+        await d.receive(_version(entityId: 'e1', text: text, vc: {'a': 1}));
+
+        expect(d.held.all, isEmpty);
+        expect(d.store.chunks, isEmpty);
+
+        // Held by a build that did not tell a deleted entry from one not
+        // here yet: the re-check at attach lets it go.
+        d.deleted['e2'] = _entry('e2', text);
+        await d.held.put(
+          HeldEmbeddingVersion(
+            register: _version(entityId: 'e2', text: text, vc: {'a': 1}),
+            payload: _payload([0.5]),
+          ),
+        );
+        await d.receiver.recheckAll();
+
+        expect(d.held.all, isEmpty);
+        expect(await d.held.watchCount().first, 0);
+        expect(d.store.chunks, isEmpty);
+      },
+    );
+
+    test(
+      'a report vector whose task is deleted here is dropped, report or not',
+      () async {
+        final d = await device();
+        const content = 'The agent report about the task progress';
+        d.deleted['t1'] = _task('t1', 'The task', labelIds: const []);
+        d.deleted['t2'] = _task('t2', 'The other task', labelIds: const []);
+        d.reports['r1'] = _report(content);
+
+        for (final (report, task) in [('r1', 't1'), ('r2', 't2')]) {
+          await d.receive(
+            _version(
+              entityId: report,
+              text: content,
+              vc: {'a': 1},
+              entityType: kEntityTypeAgentReport,
+              taskId: task,
+            ),
+          );
+        }
+
+        expect(d.held.all, isEmpty);
+        expect(d.store.chunks, isEmpty);
       },
     );
 

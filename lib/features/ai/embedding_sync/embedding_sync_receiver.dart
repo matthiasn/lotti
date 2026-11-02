@@ -42,9 +42,12 @@ ReportContentReader agentReportTextReader(
 /// Reads a config flag.
 typedef EmbeddingFlagReader = Future<bool> Function(String flag);
 
-/// What this device's own copy of an entry says about a version.
+/// What this device's own copy of an entry says about a version. `gone`:
+/// the entry — for a report, its task — is deleted here, so the text will
+/// never arrive.
 typedef _LocalText = ({
   bool exists,
+  bool gone,
   Set<String> contentHashes,
   VectorClock? vectorClock,
   String categoryId,
@@ -73,7 +76,9 @@ typedef _LocalText = ({
 ///    whole-report embedding hashed it.
 ///    Otherwise it is held ([HeldEmbeddingVersions]) until the entry, the
 ///    report or a task's label arrives — or discarded once the entry has
-///    moved past the version's source clock.
+///    moved past the version's source clock, or is deleted here (for a
+///    report: its task). A deleted entry never arrives again; holding its
+///    vectors kept them waiting for good.
 ///
 /// An agent report is stored alone: the writer's tombstones remove a task's
 /// older reports, and the receiver writes none of its own.
@@ -230,6 +235,13 @@ class EmbeddingSyncReceiver implements SyncedEmbeddingSink {
       return;
     }
 
+    if (local.gone) {
+      // Deleted here: no text will arrive. The device that still stores
+      // the vectors retires them (`EmbeddingReconciler`).
+      await _held.remove(candidate.id);
+      return;
+    }
+
     final source = candidate.sourceVectorClock;
     final localClock = local.vectorClock;
     if (source != null &&
@@ -293,12 +305,12 @@ class EmbeddingSyncReceiver implements SyncedEmbeddingSink {
   /// clock, its category and, for a task, its labels.
   Future<_LocalText> _localText(EmbeddingRegister candidate) async {
     if (candidate.entityType == kEntityTypeAgentReport) {
-      final report = await _reportContent(candidate.entityId);
-      if (report == null) return _missing;
       // Its task decides the shard; stored before the task arrives, the
       // report would stay in the default one.
       final task = await _journalDb.journalEntityById(candidate.taskId);
-      if (task == null) return _missing;
+      if (task == null) return _absent(candidate.taskId);
+      final report = await _reportContent(candidate.entityId);
+      if (report == null) return _missing;
       final text = EmbeddingContentExtractor.extractAgentReportText(
         content: report.content,
         tldr: report.tldr,
@@ -309,6 +321,7 @@ class EmbeddingSyncReceiver implements SyncedEmbeddingSink {
       final body = report.content.trim();
       return (
         exists: true,
+        gone: false,
         contentHashes: {
           if (text != null) EmbeddingContentExtractor.contentHash(text),
           if (body.length >= kMinEmbeddingTextLength)
@@ -321,13 +334,14 @@ class EmbeddingSyncReceiver implements SyncedEmbeddingSink {
     }
 
     final entity = await _journalDb.journalEntityById(candidate.entityId);
-    if (entity == null) return _missing;
+    if (entity == null) return _absent(candidate.entityId);
     final text = await EmbeddingProcessor.embeddingText(
       entity,
       await EmbeddingProcessor.buildLabelResolver(_journalDb),
     );
     return (
       exists: true,
+      gone: false,
       contentHashes: {
         if (text != null) EmbeddingContentExtractor.contentHash(text),
       },
@@ -339,11 +353,26 @@ class EmbeddingSyncReceiver implements SyncedEmbeddingSink {
 
   static const _LocalText _missing = (
     exists: false,
+    gone: false,
     contentHashes: <String>{},
     vectorClock: null,
     categoryId: '',
     labelIds: <String>[],
   );
+
+  /// Entry [entityId], which the live read did not find: deleted here when
+  /// its row remains, otherwise not arrived yet.
+  Future<_LocalText> _absent(String entityId) async =>
+      await _journalDb.journalEntityByIdIncludingDeleted(entityId) == null
+      ? _missing
+      : (
+          exists: false,
+          gone: true,
+          contentHashes: const <String>{},
+          vectorClock: null,
+          categoryId: '',
+          labelIds: const <String>[],
+        );
 
   /// Whether [a] beats [over], two concurrent versions of one register: the
   /// larger source clock in the canonical order, then a tombstone over live

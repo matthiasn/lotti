@@ -98,6 +98,7 @@ import 'package:lotti/features/ai/repository/omlx_inference_repository.dart';
 import 'package:lotti/features/ai/repository/task_summary_resolver.dart';
 import 'package:lotti/features/ai/repository/unified_ai_inference_repository.dart';
 import 'package:lotti/features/ai/repository/vector_search_repository.dart';
+import 'package:lotti/features/ai/service/embedding_reconciler.dart';
 import 'package:lotti/features/ai/service/embedding_service.dart';
 import 'package:lotti/features/ai/services/audio_transcription_service.dart';
 import 'package:lotti/features/ai/services/auto_checklist_service.dart';
@@ -354,24 +355,6 @@ class MockJournalDb extends Mock implements JournalDb {
       // ignore and fall back
     }
     return Future<bool>.value(false);
-  }
-
-  /// Unstubbed, no task carries a private label — so every
-  /// `EmbeddingService.start` behind a mocked database queues nothing at
-  /// start instead of failing on a null `Future`.
-  @override
-  Future<List<String>> taskIdsWithPrivateLabels() {
-    try {
-      final result = super.noSuchMethod(
-        Invocation.method(#taskIdsWithPrivateLabels, []),
-      );
-      if (result is Future<List<String>>) {
-        return result;
-      }
-    } catch (_) {
-      // ignore and fall back
-    }
-    return Future<List<String>>.value(const <String>[]);
   }
 
   /// Unstubbed, no version of the link is stored — so every
@@ -756,6 +739,8 @@ class MockHabitAutoCompletionNotifier extends Mock
 
 class MockEmbeddingStore extends Mock implements EmbeddingStore {}
 
+class MockEmbeddingReconciler extends Mock implements EmbeddingReconciler {}
+
 class MockEmbeddingShare extends Mock implements EmbeddingShare {}
 
 class MockEmbeddingVectorsSync extends Mock implements EmbeddingVectorsSync {}
@@ -774,14 +759,16 @@ void stubNoDeletedEntries(MockJournalDb mock) {
 }
 
 /// Stubs the register reads `EmbeddingProcessor` makes around every store
-/// and removal: no register stored, and chunks present when [hasEmbedding]
-/// (so a removal reaches `deleteEntityEmbeddings`).
+/// and removal: no register stored, chunks present when [hasEmbedding] (so
+/// a removal reaches `deleteEntityEmbeddings`), and no agent report
+/// embedded for a deleted task.
 void stubEmbeddingRegisters(
   MockEmbeddingStore mock, {
   bool hasEmbedding = true,
 }) {
   when(() => mock.getRegister(any())).thenReturn(null);
   when(() => mock.hasEmbedding(any())).thenReturn(hasEmbedding);
+  when(() => mock.agentReportIdsForTask(any())).thenReturn(const <String>{});
 }
 
 class MockOnDeviceEmbeddingRepository extends Mock

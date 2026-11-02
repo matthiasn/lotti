@@ -330,6 +330,11 @@ Future<void> _registerEmbeddingPipeline() async {
           journalDb: getIt<JournalDb>(),
           updateNotifications: getIt<UpdateNotifications>(),
           domainLogger: getIt<DomainLogger>(),
+          reconciler: EmbeddingReconciler(
+            store: embeddingStore,
+            journalDb: getIt<JournalDb>(),
+            modelId: getIt<OnDeviceEmbeddingRepository>().modelId,
+          ),
         ),
         dispose: (svc) async => svc.stop(),
       )

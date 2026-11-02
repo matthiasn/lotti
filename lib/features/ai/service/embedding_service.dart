@@ -4,6 +4,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
 import 'package:lotti/features/ai/on_device_embedding/on_device_embedding_repository.dart';
 import 'package:lotti/features/ai/service/embedding_processor.dart';
+import 'package:lotti/features/ai/service/embedding_reconciler.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/consts.dart';
@@ -35,6 +36,7 @@ class EmbeddingService {
     required this.journalDb,
     required this.updateNotifications,
     required this._domainLogger,
+    this._reconciler,
   });
 
   static const _subDomain = 'EmbeddingService';
@@ -46,6 +48,10 @@ class EmbeddingService {
 
   /// Receives the failures of a batch and of each entity in it.
   final DomainLogger _domainLogger;
+
+  /// Finds the stored vectors that drifted from their entry; `null` skips
+  /// the start-time pass.
+  final EmbeddingReconciler? _reconciler;
 
   /// How long a failed id waits before it is retried.
   static const Duration retryDelay = Duration(minutes: 5);
@@ -70,43 +76,57 @@ class EmbeddingService {
     aiResponseNotification,
   };
 
-  /// Starts listening to local update notifications, and queues the tasks
-  /// that carry a private label (see [_queuePrivateLabelledTasks]) as the
-  /// first batch that finds embeddings on and the model downloaded.
+  /// Starts listening to local update notifications, and reconciles the
+  /// stored vectors with the journal (see [_reconcile]) in the first batch
+  /// that finds embeddings on and the model downloaded.
   ///
   /// Idempotent — calling while already started is a no-op.
   void start() {
     if (_subscription != null) return;
     _stopped = false;
     _subscription = updateNotifications.localUpdateStream.listen(_onBatch);
-    _privateLabelledTasksDue = true;
+    _reconcileDue = true;
     _enqueue(const {});
   }
 
-  /// Whether the tasks that carry a private label still need queueing in
-  /// this run of the service.
-  bool _privateLabelledTasksDue = false;
+  /// Whether the stored vectors still need reconciling in this run of the
+  /// service.
+  bool _reconcileDue = false;
 
-  /// Adds every task that carries a private label to the pending batch.
+  /// Queues every entry whose stored vectors no longer match it — deleted,
+  /// text changed without an edit (a label renamed, or a private label's
+  /// name left out while the privacy toggle hid it), chunks missing — and
+  /// retires the vectors of agent reports whose task is deleted
+  /// ([EmbeddingReconciler]).
   ///
-  /// A device hiding private items used to leave those labels out of a
-  /// task's text, so its vectors hashed differently from a peer's, and the
-  /// peer held them for good. Every device now builds the text with them;
-  /// this re-embeds the tasks embedded the old way, and the content hash
-  /// skips the rest without a model call. A failed query is logged and not
-  /// retried before the next start; a [stop] while it runs queues nothing.
-  Future<void> _queuePrivateLabelledTasks() async {
-    _privateLabelledTasksDue = false;
+  /// Such vectors wait forever on a peer that receives them and keep its
+  /// embedding count apart from this device's; re-embedding or retiring
+  /// them here sends the version that settles it. The content hash keeps
+  /// the pass from calling the model for anything that still matches. A
+  /// failure is logged and not retried before the next start; a [stop]
+  /// while it runs queues nothing.
+  Future<void> _reconcile() async {
+    _reconcileDue = false;
+    final reconciler = _reconciler;
+    if (reconciler == null) return;
     try {
-      final ids = await journalDb.taskIdsWithPrivateLabels();
-      if (!_stopped) _pendingEntityIds.addAll(ids);
+      final ids = await reconciler.entriesToReprocess();
+      if (_stopped) return;
+      _pendingEntityIds.addAll(ids);
+      final retired = await reconciler.retireReportsOfDeletedTasks();
+      _domainLogger.log(
+        LogDomain.ai,
+        'Reconciled stored embeddings: ${ids.length} entries to re-process, '
+        '$retired report vectors retired',
+        subDomain: _subDomain,
+      );
     } on Object catch (e, stackTrace) {
       _domainLogger.error(
         LogDomain.ai,
         e,
         stackTrace: stackTrace,
         subDomain: _subDomain,
-        message: 'Failed to queue the tasks that carry private labels',
+        message: 'Failed to reconcile the stored embeddings',
       );
     }
   }
@@ -191,7 +211,7 @@ class EmbeddingService {
         _pendingEntityIds.clear();
         return;
       }
-      if (_privateLabelledTasksDue) await _queuePrivateLabelledTasks();
+      if (_reconcileDue) await _reconcile();
 
       // Cache label definitions for the batch to avoid one DB query per entity.
       // Best-effort: label resolution failures should not block core embeddings.

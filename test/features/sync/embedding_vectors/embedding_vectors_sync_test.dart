@@ -330,22 +330,43 @@ void main() {
     );
 
     test(
-      'sharedRegisters lists shared versions of this model in id order',
+      'sharedRegisters lists the shared versions of this model it can serve, '
+      'in id order',
       () async {
         await attach();
+        void withChunks(EmbeddingRegister register) =>
+            store.replaceEntityEmbeddings(
+              entityId: register.entityId,
+              entityType: register.entityType,
+              modelId: register.modelId,
+              contentHash: register.contentHash,
+              embeddings: [_vector(0.5)],
+              register: register,
+            );
+        withChunks(_register('b', vc: const VectorClock({'x': 1})));
+        withChunks(_register('a', vc: const VectorClock({'x': 2})));
+        withChunks(_register('local'));
+        withChunks(
+          _register('old', vc: const VectorClock({'x': 3}), model: 'old'),
+        );
         store
-          ..registers['b'] = _register('b', vc: const VectorClock({'x': 1}))
-          ..registers['a'] = _register('a', vc: const VectorClock({'x': 2}))
-          ..registers['local'] = _register('local')
-          ..registers['old'] = _register(
-            'old',
-            vc: const VectorClock({'x': 3}),
-            model: 'old',
+          // A tombstone is served as it is.
+          ..registers['c'] = _register(
+            'c',
+            vc: const VectorClock({'x': 4}),
+            deleted: true,
+          )
+          // Live, but without its chunks: backfill would answer that it was
+          // deleted, so it is neither advertised nor counted.
+          ..registers['bare'] = _register(
+            'bare',
+            vc: const VectorClock({'x': 5}),
           );
 
         expect((await vectors.sharedRegisters()).map((r) => r.entityId), [
           'a',
           'b',
+          'c',
         ]);
       },
     );

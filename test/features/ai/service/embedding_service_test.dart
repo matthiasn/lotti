@@ -1460,8 +1460,9 @@ void main() {
     });
   });
 
-  group('EmbeddingService tasks with private labels at start', () {
+  group('EmbeddingService reconciles the stored vectors at start', () {
     final fixedDate = DateTime(2024, 3, 15);
+    late MockEmbeddingReconciler reconciler;
 
     Task labelledTask() => Task(
       meta: Metadata(
@@ -1486,6 +1487,21 @@ void main() {
     );
 
     setUp(() {
+      reconciler = MockEmbeddingReconciler();
+      when(
+        () => reconciler.entriesToReprocess(),
+      ).thenAnswer((_) async => const {});
+      when(
+        () => reconciler.retireReportsOfDeletedTasks(),
+      ).thenAnswer((_) async => 0);
+      service = EmbeddingService(
+        embeddingStore: mockEmbeddingStore,
+        embeddingRepository: mockEmbeddingRepo,
+        journalDb: mockJournalDb,
+        updateNotifications: updateNotifications,
+        domainLogger: mockLogger,
+        reconciler: reconciler,
+      );
       when(
         () => mockJournalDb.getAllLabelDefinitionsIncludingPrivate(),
       ).thenAnswer(
@@ -1503,30 +1519,46 @@ void main() {
       );
     });
 
-    test('start re-embeds them, naming the private label, unprompted', () {
-      fakeAsync((async) {
-        when(
-          () => mockJournalDb.taskIdsWithPrivateLabels(),
-        ).thenAnswer((_) async => [_entityId]);
-        stubEntity(labelledTask());
-        stubEmbedding();
+    test(
+      'start re-embeds what the reconciler finds, unprompted, and logs '
+      'what it did',
+      () {
+        fakeAsync((async) {
+          when(
+            () => reconciler.entriesToReprocess(),
+          ).thenAnswer((_) async => {_entityId});
+          when(
+            () => reconciler.retireReportsOfDeletedTasks(),
+          ).thenAnswer((_) async => 2);
+          stubEntity(labelledTask());
+          stubEmbedding();
 
-        service.start();
-        async.flushMicrotasks();
+          service.start();
+          async.flushMicrotasks();
 
-        verify(
-          () => mockEmbeddingRepo.embedDocument(
-            'Plan the team offsite\nLabels: personal',
-          ),
-        ).called(1);
+          // A private label's name is part of the text it re-embeds.
+          verify(
+            () => mockEmbeddingRepo.embedDocument(
+              'Plan the team offsite\nLabels: personal',
+            ),
+          ).called(1);
+          verify(
+            () => mockLogger.log(
+              LogDomain.ai,
+              'Reconciled stored embeddings: 1 entries to re-process, '
+              '2 report vectors retired',
+              subDomain: 'EmbeddingService',
+            ),
+          ).called(1);
 
-        stopInZone(async);
-      });
-    });
+          stopInZone(async);
+        });
+      },
+    );
 
     test(
       'with embeddings off at start, the first batch that finds them on '
-      'queues the tasks, once',
+      'reconciles, once',
       () {
         fakeAsync((async) {
           var enabled = false;
@@ -1534,20 +1566,21 @@ void main() {
             () => mockJournalDb.getConfigFlag(enableEmbeddingsFlag),
           ).thenAnswer((_) async => enabled);
           when(
-            () => mockJournalDb.taskIdsWithPrivateLabels(),
-          ).thenAnswer((_) async => ['bbbbbbbb-bbbb-cccc-dddd-eeeeeeeeeeee']);
+            () => reconciler.entriesToReprocess(),
+          ).thenAnswer((_) async => {'bbbbbbbb-bbbb-cccc-dddd-eeeeeeeeeeee'});
           stubEntity(labelledTask());
           stubEmbedding();
 
           service.start();
           async.flushMicrotasks();
-          verifyNever(() => mockJournalDb.taskIdsWithPrivateLabels());
+          verifyNever(() => reconciler.entriesToReprocess());
 
           enabled = true;
           sendAndProcess(async, {_entityId, taskNotification});
           sendAndProcess(async, {_entityId, taskNotification});
 
-          verify(() => mockJournalDb.taskIdsWithPrivateLabels()).called(1);
+          verify(() => reconciler.entriesToReprocess()).called(1);
+          verify(() => reconciler.retireReportsOfDeletedTasks()).called(1);
           verify(
             () => mockJournalDb.journalEntityById(
               'bbbbbbbb-bbbb-cccc-dddd-eeeeeeeeeeee',
@@ -1559,30 +1592,31 @@ void main() {
       },
     );
 
-    test('a stop before the query returns queues nothing', () {
+    test('a stop before the reconciler returns queues and retires nothing', () {
       fakeAsync((async) {
-        final ids = Completer<List<String>>();
+        final ids = Completer<Set<String>>();
         when(
-          () => mockJournalDb.taskIdsWithPrivateLabels(),
+          () => reconciler.entriesToReprocess(),
         ).thenAnswer((_) => ids.future);
         stubEntity(labelledTask());
         stubEmbedding();
 
         service.start();
         stopInZone(async);
-        ids.complete([_entityId]);
+        ids.complete({_entityId});
         async.flushMicrotasks();
 
+        verifyNever(() => reconciler.retireReportsOfDeletedTasks());
         verifyNever(() => mockJournalDb.journalEntityById(any()));
         verifyNever(() => mockEmbeddingRepo.embedDocument(any()));
       });
     });
 
-    test('a query that fails is logged, and notifications still embed', () {
+    test('a reconcile that fails is logged, and notifications still embed', () {
       fakeAsync((async) {
         when(
-          () => mockJournalDb.taskIdsWithPrivateLabels(),
-        ).thenAnswer((_) => Future.error(StateError('db closed')));
+          () => reconciler.entriesToReprocess(),
+        ).thenAnswer((_) => Future<Set<String>>.error(StateError('closed')));
         stubEntity(
           JournalEntry(
             meta: _meta(),
@@ -1599,7 +1633,7 @@ void main() {
             any<Object>(that: isA<StateError>()),
             stackTrace: any(named: 'stackTrace'),
             subDomain: 'EmbeddingService',
-            message: 'Failed to queue the tasks that carry private labels',
+            message: 'Failed to reconcile the stored embeddings',
           ),
         ).called(1);
 

@@ -5,7 +5,7 @@ description: Local vector search over per-category ObjectBox shards filled by th
 resource: ../../../lib/features/ai/service/embedding_service.dart
 tags: [ai, embeddings, vector-search, objectbox, onnx, on-device, tla]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-11-01T19:30:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-11-02T12:00:00Z }
 stale_after: 2027-02-01
 sources:
   - id: related-task-finder
@@ -15,11 +15,15 @@ sources:
   - id: embedding-service
     resource: ../../../lib/features/ai/service/embedding_service.dart
     title: EmbeddingService
-    last_modified: 2026-11-01
+    last_modified: 2026-11-02
+  - id: reconciler
+    resource: ../../../lib/features/ai/service/embedding_reconciler.dart
+    title: EmbeddingReconciler, run by the service at start
+    last_modified: 2026-11-02
   - id: processor
     resource: ../../../lib/features/ai/service/embedding_processor.dart
     title: EmbeddingProcessor and its per-entity lock
-    last_modified: 2026-11-01
+    last_modified: 2026-11-02
   - id: backfill
     resource: ../../../lib/features/ai/state/embedding_backfill_controller.dart
     title: EmbeddingBackfillController
@@ -258,8 +262,9 @@ rebuilds the index. Every directory is a `rebuild` store in the
 
 Three writers feed one store with no shared queue: the service, the manual
 backfill, and the task agent's report writer. Each run reads the journal,
-waits on the model, then writes. Nothing corrects a stale row later, so every
-rule here is about the row a run leaves behind when it is the last one. The
+waits on the model, then writes. Only the start-time reconcile corrects a
+stale row later, so every rule here is about the row a run leaves behind when
+it is the last one. The
 protocol is model-checked in
 [`EmbeddingFreshness`](../../../specs/tla/README.md#embeddingfreshness--the-index-keeps-up-with-the-journal).
 
@@ -269,8 +274,15 @@ protocol is model-checked in
   queues a run that starts after it, so the last run reads the latest text.
 - **Gone means no vectors.** A run that finds the entry deleted (the read hides
   soft-deleted rows) or its text under the 20-character minimum deletes the
-  entry's vectors. Search also skips hits whose entry no longer exists, which
-  covers vectors left by deletions made before this rule.
+  entry's vectors — a deleted task's report vectors too. Search also skips
+  hits whose entry no longer exists, which covers vectors left by deletions
+  made before this rule.
+- **Each start reconciles the store.** The service's first batch with the
+  flag on and the model downloaded queues every entry whose stored vectors no
+  longer match it — deleted, its text changed without an edit (a label
+  renamed), chunks missing — and retires the report vectors of deleted tasks
+  (`EmbeddingReconciler`; why it matters across devices is in
+  [embedding vector sync](embedding-vector-sync.md#reconciling-at-start)).
 - **Reports follow their task.** Every run over a task moves the task's report
   embeddings to the task's category, whether or not the task has a vector of
   its own. The report writer reads the task's category and writes under the
@@ -293,7 +305,7 @@ protocol is model-checked in
 
 ```mermaid
 stateDiagram-v2
-  [*] --> Pending: local change notification
+  [*] --> Pending: local change notification, or the start-time reconcile
   Pending --> Processing: _processNext takes the id
   Processing --> Settled: stored, moved, unchanged or deleted
   Processing --> Retrying: processEntity threw
