@@ -1460,6 +1460,19 @@ void main() {
       );
     });
 
+    group('getRelationships', () {
+      test("answers the database's private-filtered people", () async {
+        final people = [testRelationship];
+        when(
+          () => mockJournalDb.getRelationships(),
+        ).thenAnswer((_) async => people);
+
+        expect(await repository.getRelationships(), same(people));
+        verify(() => mockJournalDb.getRelationships()).called(1);
+        verifyNever(() => mockJournalDb.getAllRelationships());
+      });
+    });
+
     group('getBulkLinkedEntities', () {
       test(
         'answers the outgoing links of many parents in one DB read',

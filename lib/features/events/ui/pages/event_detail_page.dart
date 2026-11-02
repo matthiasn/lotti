@@ -5,7 +5,6 @@ import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/agents/state/event_agent_providers.dart';
-import 'package:lotti/features/agents/ui/change_set_summary_card.dart';
 import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
@@ -294,14 +293,11 @@ class EventDetailPage extends ConsumerWidget {
       onOpenPerson: (personId) => beamToNamed('/people/$personId'),
       onEditPeople: editPeople,
       recapOneLiner: recapOneLiner,
-      aiSummaryCard: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          EventAiSummaryCard(eventId: eventId, fallbackSummary: data.summary),
-          // Renders nothing until the agent proposes a follow-up the user can
-          // accept or reject.
-          ChangeSetSummaryCard.event(eventId: eventId),
-        ],
+      // The agent's recap, with its proposals inside the same card, as on a
+      // task.
+      aiSummaryCard: EventAiSummaryCard(
+        eventId: eventId,
+        fallbackSummary: data.summary,
       ),
       onBack: () => Navigator.of(context).maybePop(),
       onRenameTitle: controller.updateEventTitle,

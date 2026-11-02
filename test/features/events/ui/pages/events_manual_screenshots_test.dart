@@ -18,14 +18,20 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/agents/agent_domain_entity.dart';
+import 'package:lotti/classes/agents/agent_enums.dart';
+import 'package:lotti/classes/agents/change_set.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/event_data.dart';
 import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/agents/state/event_agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
+import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
+import 'package:lotti/features/agents/tools/event_tool_definitions.dart';
 import 'package:lotti/features/agents/ui/widgets/ai_card_chrome.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/demo/seed/demo_entity_factories.dart';
@@ -121,6 +127,17 @@ class _ManualEventsOverviewController extends EventsOverviewController {
     state = AsyncData(_snapshot());
   }
 }
+
+/// A third penguin the gala's voice memo names, whom the agent suggests.
+const _suggestOona = ChangeItem(
+  toolName: EventAgentToolNames.suggestPerson,
+  args: {
+    'personId': 'person-oona-icefin',
+    'personName': 'Sergeant Oona Icefin',
+    'mention': 'Oona counted the oxygen packs twice',
+  },
+  humanSummary: 'Add Sergeant Oona Icefin to the event',
+);
 
 /// Serves the image analyses a capture's photos carry, without a database.
 class _FixedImageAnalyses extends LinkedAiResponsesController {
@@ -494,6 +511,34 @@ void main() {
         ),
       ],
     ),
+    // The agent heard a third penguin named in a voice memo and suggests
+    // adding her: one pending row under the recap, to confirm or dismiss.
+    eventSuggestionListProvider(_detailEventId).overrideWith((ref) {
+      final changeSet =
+          AgentDomainEntity.changeSet(
+                id: 'changeset-gala-people',
+                agentId: _detailAgentId,
+                taskId: _detailEventId,
+                threadId: 'thread-gala',
+                runKey: 'run-gala',
+                status: ChangeSetStatus.pending,
+                items: const [_suggestOona],
+                createdAt: DateTime(2026, 7, 16, 21, 40),
+                vectorClock: null,
+              )
+              as ChangeSetEntity;
+      return UnifiedSuggestionList(
+        open: [
+          PendingSuggestion(
+            changeSet: changeSet,
+            itemIndex: 0,
+            item: _suggestOona,
+            fingerprint: ChangeItem.fingerprint(_suggestOona),
+          ),
+        ],
+        activity: const [],
+      );
+    }),
     // The card's freshness strip reads the agent's run state and model: a
     // settled agent on a resolved model, so Update now is live.
     agentIsRunningProvider(

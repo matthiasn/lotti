@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/change_set.dart';
@@ -44,19 +47,32 @@ void main() {
 
   tearDown(tearDownTestGetIt);
 
+  /// The confirmation service the owning feature would inject; tests
+  /// override it with [mockConfirmationService].
+  final confirmationProvider = Provider<ChangeSetConfirmationService>(
+    (ref) => throw UnimplementedError('overridden in every test'),
+  );
+
+  List<Override> cardOverrides(
+    FutureOr<List<AgentDomainEntity>> Function() changeSets,
+  ) => [
+    selfTargetedPendingChangeSetsProvider(
+      'agent-001',
+    ).overrideWith((ref) => changeSets()),
+    confirmationProvider.overrideWithValue(mockConfirmationService),
+    updateNotificationsProvider.overrideWithValue(mockUpdateNotifications),
+    domainLoggerProvider.overrideWithValue(mockLogger),
+  ];
+
+  Widget card() => ChangeSetSummaryCard.selfTargeted(
+    agentId: 'agent-001',
+    confirmationProvider: confirmationProvider,
+  );
+
   Widget buildEventWidget({List<AgentDomainEntity> changeSets = const []}) {
     return makeTestableWidgetWithScaffold(
-      const ChangeSetSummaryCard.event(eventId: 'event-001'),
-      overrides: [
-        eventPendingChangeSetsProvider(
-          'event-001',
-        ).overrideWith((ref) async => changeSets),
-        eventChangeSetConfirmationServiceProvider.overrideWithValue(
-          mockConfirmationService,
-        ),
-        updateNotificationsProvider.overrideWithValue(mockUpdateNotifications),
-        domainLoggerProvider.overrideWithValue(mockLogger),
-      ],
+      card(),
+      overrides: cardOverrides(() => changeSets),
     );
   }
 
@@ -68,7 +84,7 @@ void main() {
     await _pumpUi(tester);
   }
 
-  group('ChangeSetSummaryCard.event', () {
+  group('ChangeSetSummaryCard', () {
     testWidgets('renders nothing when change sets list is empty', (
       tester,
     ) async {
@@ -76,6 +92,56 @@ void main() {
 
       expect(find.byType(ChangeSetSummaryCard), findsOneWidget);
       expect(find.text('Proposed changes'), findsNothing);
+    });
+
+    testWidgets('a first load that fails renders nothing', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          card(),
+          overrides: cardOverrides(() => throw StateError('db down')),
+        ),
+      );
+      await _pumpUi(tester);
+
+      expect(find.text('Proposed changes'), findsNothing);
+      expect(
+        tester.getSize(find.byType(ChangeSetSummaryCard)).height,
+        0,
+      );
+    });
+
+    testWidgets('under reduced motion, proposals landing after a loading '
+        'frame swap in without an animated resize', (tester) async {
+      final pending = Completer<List<AgentDomainEntity>>();
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          MediaQuery(
+            data: const MediaQueryData(disableAnimations: true),
+            child: card(),
+          ),
+          overrides: cardOverrides(() => pending.future),
+        ),
+      );
+      await tester.pump();
+
+      pending.complete([
+        makeTestChangeSet(
+          taskId: 'agent-001',
+          items: const [
+            ChangeItem(
+              toolName: 'propose_goal_revision',
+              args: {'summary': 'Walk the colony daily'},
+              humanSummary: 'Revise the goal: walk the colony daily',
+            ),
+          ],
+        ),
+      ]);
+      await tester.pump();
+      await tester.pump();
+
+      expect(tester.takeException(), isNull);
+      expect(find.byType(AnimatedSize), findsNothing);
+      expect(find.text('Proposed changes'), findsOneWidget);
     });
 
     testWidgets('swipe right confirms via the confirmation service', (
@@ -561,49 +627,6 @@ void main() {
       await pumpEventCard(tester, changeSets: [changeSet]);
 
       expect(find.text('Schedule the dawn penguin parade'), findsOneWidget);
-    });
-  });
-
-  group('ChangeSetSummaryCard.event service routing', () {
-    testWidgets('renders nothing when there are no event change sets', (
-      tester,
-    ) async {
-      await tester.pumpWidget(buildEventWidget());
-      await _pumpUi(tester);
-
-      expect(find.byType(ChangeSetSummaryCard), findsOneWidget);
-      expect(find.text('Proposed changes'), findsNothing);
-    });
-
-    testWidgets('swipe right confirms a follow-up via the event service', (
-      tester,
-    ) async {
-      final changeSet = makeTestChangeSet(
-        taskId: 'event-001',
-        items: const [
-          ChangeItem(
-            toolName: 'suggest_follow_up_task',
-            args: {'title': 'Share the album with the group'},
-            humanSummary: 'Follow-up task: Share the album with the group',
-          ),
-        ],
-      );
-
-      when(() => mockConfirmationService.confirmItem(any(), any())).thenAnswer(
-        (_) async => const ToolExecutionResult(success: true, output: 'Done'),
-      );
-
-      await tester.pumpWidget(buildEventWidget(changeSets: [changeSet]));
-      await _pumpUi(tester);
-
-      await tester.drag(
-        find.text('Follow-up task: Share the album with the group'),
-        const Offset(300, 0),
-      );
-      await _pumpUi(tester);
-
-      verify(() => mockConfirmationService.confirmItem(changeSet, 0)).called(1);
-      verify(() => mockUpdateNotifications.notify({'agent-001'})).called(1);
     });
   });
 

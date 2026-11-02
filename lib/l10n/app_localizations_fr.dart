@@ -1103,6 +1103,14 @@ class AppLocalizationsFr extends AppLocalizations {
   String get agentSummarySuggestFollowUpTask => 'Proposer une tâche de suivi';
 
   @override
+  String agentSummarySuggestPerson(Object name) {
+    return '$name était là';
+  }
+
+  @override
+  String get agentSummarySuggestPersonUnnamed => 'Quelqu\'un était là';
+
+  @override
   String agentSummaryTimeEntry(Object range, Object summary) {
     return 'Saisie de temps $range : « $summary »';
   }

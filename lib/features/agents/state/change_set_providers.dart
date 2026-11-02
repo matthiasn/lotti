@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/agents/change_set.dart';
+import 'package:lotti/classes/agents/proposal_ledger.dart';
 import 'package:lotti/features/agents/service/change_dispatch_intents.dart';
 import 'package:lotti/features/agents/service/change_set_confirmation_service.dart';
 import 'package:lotti/features/agents/service/change_set_notification_service.dart';
@@ -13,6 +14,8 @@ import 'package:lotti/features/agents/state/event_agent_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/agents/state/pull_request_link_source_provider.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
+import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
+import 'package:lotti/features/agents/tools/event_tool_definitions.dart';
 import 'package:lotti/features/agents/tools/project_tool_definitions.dart';
 import 'package:lotti/features/agents/workflow/event_tool_dispatcher.dart';
 import 'package:lotti/features/agents/workflow/project_tool_dispatcher.dart';
@@ -93,25 +96,92 @@ projectPendingChangeSetsProvider = FutureProvider.autoDispose
       return deduplicateChangeSets(sets);
     });
 
-/// Fetches pending (and partially resolved) change sets for a given event.
-final FutureProviderFamily<List<AgentDomainEntity>, String>
-eventPendingChangeSetsProvider = FutureProvider.autoDispose
-    .family<List<AgentDomainEntity>, String>((ref, eventId) async {
+/// The event agent's proposals for an event, in the task card's shape: the
+/// open rows (one per pending item, a repeat of the same proposal shown once)
+/// and the resolved ledger for the history band. Empty without an agent.
+///
+/// Read from the proposal ledger, as the task and relationship rows are, so
+/// the event card renders them with the same `ProposalsSection` and
+/// `ProposalRow`. Event-targeted change sets keep their event id in the
+/// historical `taskId` field, as project-targeted ones do.
+///
+/// A person suggestion carries the name it was proposed under, so it is shown
+/// only while that person is: a private person's row and history leave the
+/// card while private entries are hidden, as they leave the People row. Re-read
+/// when private entries are shown or hidden, and when a person is written.
+final FutureProviderFamily<UnifiedSuggestionList, String>
+eventSuggestionListProvider = FutureProvider.autoDispose
+    .family<UnifiedSuggestionList, String>((ref, eventId) async {
       final agent = await ref.watch(eventAgentProvider(eventId).future);
       final identity = agent?.mapOrNull(agent: (a) => a);
-      if (identity == null) return [];
+      if (identity == null) return const UnifiedSuggestionList.empty();
 
       ref.watch(agentUpdateStreamProvider(identity.agentId));
+      final subscription = ref
+          .read(updateNotificationsProvider)
+          .updateStream
+          .listen((affectedIds) {
+            if (affectedIds.contains(privateToggleNotification) ||
+                affectedIds.contains(relationshipNotification)) {
+              ref.invalidateSelf();
+            }
+          });
+      ref.onDispose(subscription.cancel);
 
-      final repo = ref.watch(agentRepositoryProvider);
-      // Event-targeted change sets persist their target entity ID in the
-      // historical `taskId` field, same as project-targeted sets.
-      final sets = await repo.getPendingChangeSets(
-        identity.agentId,
-        taskId: eventId,
+      final ledger = await ref
+          .watch(agentRepositoryProvider)
+          .getProposalLedger(identity.agentId, taskId: eventId);
+      final shown = await _shownPeople(ref, ledger);
+      bool isShown(String toolName, Map<String, dynamic> args) =>
+          toolName != EventAgentToolNames.suggestPerson ||
+          shown.contains(args[EventAgentPersonToolArgs.personId]);
+      final seen = <String>{};
+      final open = <PendingSuggestion>[];
+      for (final set in ledger.pendingSets) {
+        for (var index = 0; index < set.items.length; index++) {
+          final item = set.items[index];
+          if (item.status != ChangeItemStatus.pending) continue;
+          if (!isShown(item.toolName, item.args)) continue;
+          final fingerprint = ChangeItem.fingerprint(item);
+          if (!seen.add(fingerprint)) continue;
+          open.add(
+            PendingSuggestion(
+              changeSet: set,
+              itemIndex: index,
+              item: item,
+              fingerprint: fingerprint,
+            ),
+          );
+        }
+      }
+      return UnifiedSuggestionList(
+        open: open,
+        activity: [
+          for (final entry in ledger.resolved)
+            if (isShown(entry.toolName, entry.args)) entry,
+        ],
+        agentName: identity.displayName,
       );
-      return deduplicateChangeSets(sets);
     });
+
+/// The ids of the people shown on the People page right now (private ones
+/// only while private entries are shown), read only when [ledger] holds a
+/// person suggestion.
+Future<Set<String>> _shownPeople(Ref ref, ProposalLedger ledger) async {
+  bool isPerson(String toolName) =>
+      toolName == EventAgentToolNames.suggestPerson;
+  final hasPerson =
+      ledger.pendingSets.any(
+        (set) => set.items.any((item) => isPerson(item.toolName)),
+      ) ||
+      ledger.resolved.any((entry) => isPerson(entry.toolName));
+  if (!hasPerson) return const {};
+  return {
+    for (final person
+        in await ref.read(journalRepositoryProvider).getRelationships())
+      if (person.meta.deletedAt == null) person.meta.id,
+  };
+}
 
 /// Pending change sets an agent targets at ITSELF (`taskId == agentId`) —
 /// the shape self-owned agents (goal agents today) use for proposals like
@@ -126,8 +196,9 @@ selfTargetedPendingChangeSetsProvider = FutureProvider.autoDispose
     });
 
 /// Event-scoped confirmation service. Confirmed event-agent proposals
-/// (currently just `suggest_follow_up_task`) are applied via
-/// [EventToolDispatcher]; rejection only records the decision.
+/// (`suggest_follow_up_task`, `suggest_person`) are applied via
+/// [EventToolDispatcher]; rejection only records the decision — which is
+/// what keeps a dismissed person from being suggested for the event again.
 final eventChangeSetConfirmationServiceProvider =
     Provider<ChangeSetConfirmationService>((ref) {
       final logger = ref.watch(domainLoggerProvider);

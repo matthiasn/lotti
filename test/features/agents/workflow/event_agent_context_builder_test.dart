@@ -142,6 +142,10 @@ void main() {
       expect(prompt, contains('You are an Event Agent'));
       expect(prompt, contains('## User Sovereignty'));
       expect(prompt, contains('Never comment on them'));
+      // How it finds the people the event names and suggests them.
+      expect(prompt, contains('## People'));
+      expect(prompt, contains('call\n`list_people`'));
+      expect(prompt, contains('call `suggest_person`'));
       expect(prompt, isNot(contains('## Report Directive')));
       expect(prompt, isNot(contains('## Your Personality')));
     });
@@ -176,15 +180,23 @@ void main() {
   });
 
   group('buildToolDefinitions', () {
-    test('exposes the narrate, observe, and follow-up tools', () {
+    test('exposes the narrate, observe, people and follow-up tools', () {
       final tools = builder.buildToolDefinitions();
 
-      expect(tools, hasLength(3));
+      expect(tools, hasLength(5));
       final names = tools.map((t) => t.function.name).toSet();
       expect(names, {
         EventAgentToolNames.updateReport,
         EventAgentToolNames.recordObservations,
+        EventAgentToolNames.listPeople,
+        EventAgentToolNames.suggestPerson,
         EventAgentToolNames.suggestFollowUpTask,
+      });
+      // The person suggestion is the user's to confirm, as follow-ups are;
+      // the list is a read and runs at once.
+      expect(eventDeferredTools, {
+        EventAgentToolNames.suggestFollowUpTask,
+        EventAgentToolNames.suggestPerson,
       });
     });
   });

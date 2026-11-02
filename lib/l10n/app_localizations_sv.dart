@@ -1094,6 +1094,14 @@ class AppLocalizationsSv extends AppLocalizations {
       'Föreslå en uppföljningsuppgift';
 
   @override
+  String agentSummarySuggestPerson(Object name) {
+    return '$name var där';
+  }
+
+  @override
+  String get agentSummarySuggestPersonUnnamed => 'Någon var där';
+
+  @override
   String agentSummaryTimeEntry(Object range, Object summary) {
     return 'Tidspost $range: ”$summary”';
   }

@@ -1,6 +1,5 @@
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/ai_response_type.dart';
-import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/agents/agent_repository.dart';
@@ -8,6 +7,7 @@ import 'package:lotti/features/agents/tools/event_tool_definitions.dart';
 import 'package:lotti/features/agents/util/agent_error_logging.dart';
 import 'package:lotti/features/agents/workflow/agent_observations.dart';
 import 'package:lotti/features/agents/workflow/agent_system_prompt.dart';
+import 'package:lotti/features/agents/workflow/event_people_directory.dart';
 import 'package:lotti/features/ai/util/image_ai_responses.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart';
 import 'package:openai_dart/openai_dart.dart';
@@ -47,9 +47,20 @@ not a status report.
 Your job each wake is to:
 
 1. Read who was there, and the event's linked photos, notes, and voice memos.
-2. Synthesize what happened — the highlights, the people, the through-line.
-3. Publish the recap via the `update_report` tool.
-4. Record private follow-up ideas via `record_observations`.
+2. Suggest the people the event names who are not with it yet (see below).
+3. Synthesize what happened — the highlights, the people, the through-line.
+4. Publish the recap via the `update_report` tool.
+5. Record private follow-up ideas via `record_observations`.
+
+## People
+
+When a note, voice memo transcript or photo caption names someone, call
+`list_people` to see whether that is a person the user keeps (match the name
+or the nickname they are called by). For each person the event shows was
+there, who is not already with the event, call `suggest_person` with their id
+and the words that name them; the user confirms or dismisses it. Never guess
+an id, and never suggest someone already with the event, already suggested,
+or dismissed — `list_people` says which.
 
 ## Report
 
@@ -268,17 +279,10 @@ persist across recaps but are not shown to the user.''';
   /// dropping the whole block.
   Future<List<String>> _peopleAt(String eventId) async {
     try {
-      final links = await journalRepository.getTypedLinksForTaskIds(
-        {eventId},
-        linkTypes: {entryLinkTypeDbName(EntryLinkType.relationship)},
+      final personIds = await eventPersonLinkSources(
+        journalRepository,
+        eventId,
       );
-      final personIds = {
-        for (final link in links)
-          if (link.toId == eventId &&
-              link.deletedAt == null &&
-              link.hidden != true)
-            link.fromId,
-      };
       if (personIds.isEmpty) return const [];
       final people =
           (await journalRepository.getJournalEntitiesByIds(personIds))

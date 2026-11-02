@@ -1,5 +1,7 @@
 import 'package:clock/clock.dart';
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
@@ -14,10 +16,13 @@ import 'package:uuid/uuid.dart';
 
 /// Applies confirmed event-agent proposals.
 ///
-/// The event agent's only write-action (v1) is `suggest_follow_up_task`, a
-/// deferred proposal. When the user accepts it, [dispatch] creates a follow-up
-/// task linked to the event (inheriting the event's category and default
-/// profile), mirroring the manual "add task" flow on the event detail page.
+/// Two deferred proposals reach it on accept:
+/// - `suggest_follow_up_task` creates a follow-up task linked to the event
+///   (inheriting the event's category and default profile), mirroring the
+///   manual "add task" flow on the event detail page.
+/// - `suggest_person` puts the event on the person's timeline: the
+///   `RelationshipLink` from the person to the event, the same link the
+///   event page's People row writes, so the person appears there.
 ///
 /// The dispatcher never touches the event's rating or cover — there is no tool
 /// that can, by design.
@@ -51,6 +56,8 @@ class EventToolDispatcher {
     switch (toolName) {
       case EventAgentToolNames.suggestFollowUpTask:
         return _handleSuggestFollowUpTask(toolArgs, eventId, effect);
+      case EventAgentToolNames.suggestPerson:
+        return _handleSuggestPerson(toolArgs, eventId);
       default:
         return ToolExecutionResult(
           success: false,
@@ -146,6 +153,93 @@ class EventToolDispatcher {
       output: 'Created follow-up task "$title" (${task.meta.id})',
       mutatedEntityId: task.meta.id,
     );
+  }
+
+  /// Links the suggested person to the event — idempotently, so a
+  /// suggestion accepted on two devices, or re-applied after a crash, writes
+  /// one link. Refuses while the event or the person is gone, so the
+  /// suggestion stays unresolved rather than linking a deleted entry.
+  Future<ToolExecutionResult> _handleSuggestPerson(
+    Map<String, dynamic> args,
+    String eventId,
+  ) async {
+    final idValue = args[EventAgentPersonToolArgs.personId];
+    final personId = idValue is String ? idValue.trim() : '';
+    if (personId.isEmpty) {
+      return const ToolExecutionResult(
+        success: false,
+        output: 'Error: "personId" must be a non-empty string',
+        errorMessage: 'Missing personId',
+      );
+    }
+
+    final event = await journalRepository.getJournalEntityById(eventId);
+    if (event == null || event.meta.deletedAt != null) {
+      return ToolExecutionResult(
+        success: false,
+        output: 'Error: event $eventId no longer exists',
+        errorMessage: 'Event missing or deleted; person not linked',
+      );
+    }
+    final person = await journalRepository.getJournalEntityById(personId);
+    if (person is! RelationshipEntry || person.meta.deletedAt != null) {
+      return ToolExecutionResult(
+        success: false,
+        output: 'Error: person $personId no longer exists',
+        errorMessage: 'Person missing or deleted; not linked',
+      );
+    }
+
+    final linked = await ensureLink(
+      persistenceLogic: persistenceLogic,
+      journalDb: journalDb,
+      fromId: personId,
+      toId: eventId,
+      linkType: EntryLinkType.relationship,
+    );
+    if (!linked || !await _showLink(personId, eventId)) {
+      return ToolExecutionResult(
+        success: false,
+        output: 'Error: ${person.data.title} could not be linked to the event',
+        errorMessage: 'Person link failed',
+      );
+    }
+
+    domainLogger?.log(
+      LogDomain.agentRuntime,
+      'linked person ${DomainLogger.sanitizeId(personId)} '
+      'to event ${DomainLogger.sanitizeId(eventId)}',
+      subDomain: 'event-person',
+    );
+    return ToolExecutionResult(
+      success: true,
+      output: 'Added ${person.data.title} to the event',
+      mutatedEntityId: eventId,
+    );
+  }
+
+  /// Shows a live person → event link the user once hid, and answers whether
+  /// every live one is shown afterwards.
+  ///
+  /// `ensureLink` counts a hidden link as there, yet the People row and the
+  /// agent's directory leave hidden links out — so without this a confirmed
+  /// suggestion would report the person added while they stay off the event.
+  /// Confirming is the user asking to see them there.
+  Future<bool> _showLink(String personId, String eventId) async {
+    for (final link in await journalDb.linksBetween(
+      personId,
+      eventId,
+      type: entryLinkTypeDbName(EntryLinkType.relationship),
+    )) {
+      if (link.deletedAt != null || link.hidden != true) continue;
+      if (!await journalRepository.changeLink(
+        link.id,
+        (stored) => stored.copyWith(hidden: false),
+      )) {
+        return false;
+      }
+    }
+    return true;
   }
 
   /// The role of the task in its [ChangeEffect]'s derived ids.

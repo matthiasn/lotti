@@ -460,6 +460,8 @@
   "agentSummarySetStatus": "Définir le statut sur {status}",
   "agentSummarySetTitle": "Définir le titre sur « {title} »",
   "agentSummarySuggestFollowUpTask": "Proposer une tâche de suivi",
+  "agentSummarySuggestPerson": "{name} était là",
+  "agentSummarySuggestPersonUnnamed": "Quelqu'un était là",
   "agentSummaryTimeEntry": "Saisie de temps {range} : « {summary} »",
   "agentSummaryTimeRangeBetween": "{start}–{end}",
   "agentSummaryTimeRangeFrom": "à partir de {start}",

@@ -5,6 +5,7 @@ import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/agents/tools/event_tool_definitions.dart';
 import 'package:lotti/features/agents/workflow/event_agent_strategy.dart';
+import 'package:lotti/features/agents/workflow/event_people_directory.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
@@ -51,6 +52,22 @@ void main() {
   late MockConversationManager mockManager;
   late EventAgentStrategy strategy;
   late MockDomainLogger mockDomainLogger;
+  late int peopleLoads;
+  late Future<EventPeopleDirectory> Function() loadPeople;
+
+  /// Pip is free to suggest; Rocko is with the event already; Oona was
+  /// suggested and still waits; Kai was dismissed.
+  final directory = EventPeopleDirectory(
+    people: const [
+      EventKnownPerson(id: 'kai', name: 'Kai'),
+      EventKnownPerson(id: 'oona', name: 'Oona'),
+      EventKnownPerson(id: 'pip', name: 'Pip Penguin', nickname: 'Pip'),
+      EventKnownPerson(id: 'rocko', name: 'Rocko'),
+    ],
+    withEventIds: {'rocko'},
+    suggestedIds: {'oona'},
+    dismissedIds: {'kai'},
+  );
 
   setUpAll(registerAllFallbackValues);
 
@@ -61,12 +78,18 @@ void main() {
     when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async {});
 
     mockDomainLogger = MockDomainLogger();
+    peopleLoads = 0;
+    loadPeople = () async {
+      peopleLoads++;
+      return directory;
+    };
     strategy = EventAgentStrategy(
       domainLogger: mockDomainLogger,
       syncService: mockSyncService,
       agentId: _agentId,
       threadId: _threadId,
       runKey: _runKey,
+      loadPeople: () => loadPeople(),
     );
   });
 
@@ -269,6 +292,177 @@ void main() {
           response: 'Queued suggest_follow_up_task for user review.',
         ),
       ).called(1);
+    });
+  });
+
+  group('list_people', () {
+    test('answers the directory, read once per wake', () async {
+      for (final id in ['call-1', 'call-2']) {
+        await strategy.processToolCalls(
+          toolCalls: [
+            _makeToolCall(
+              id: id,
+              name: EventAgentToolNames.listPeople,
+              args: const {},
+            ),
+          ],
+          manager: mockManager,
+        );
+      }
+
+      final responses = verify(
+        () => mockManager.addToolResponse(
+          toolCallId: any(named: 'toolCallId'),
+          response: captureAny(named: 'response'),
+        ),
+      ).captured.cast<String>();
+      expect(responses, hasLength(2));
+      expect(responses.first, directory.render());
+      expect(responses.first, contains('- pip: Pip Penguin (called "Pip")'));
+      expect(peopleLoads, 1);
+    });
+
+    test('narrows to a query', () async {
+      await strategy.processToolCalls(
+        toolCalls: [
+          _makeToolCall(
+            name: EventAgentToolNames.listPeople,
+            args: const {'query': 'pip'},
+          ),
+        ],
+        manager: mockManager,
+      );
+
+      verify(
+        () => mockManager.addToolResponse(
+          toolCallId: 'call-1',
+          response: directory.render(query: 'pip'),
+        ),
+      ).called(1);
+    });
+
+    test('a failed read says so, and the next call reads again', () async {
+      var fail = true;
+      loadPeople = () async {
+        peopleLoads++;
+        if (fail) throw StateError('db down');
+        return directory;
+      };
+
+      await strategy.processToolCalls(
+        toolCalls: [
+          _makeToolCall(name: EventAgentToolNames.listPeople, args: const {}),
+        ],
+        manager: mockManager,
+      );
+      verify(
+        () => mockManager.addToolResponse(
+          toolCallId: 'call-1',
+          response: 'Error: the people could not be read (StateError).',
+        ),
+      ).called(1);
+
+      fail = false;
+      await strategy.processToolCalls(
+        toolCalls: [
+          _makeToolCall(
+            id: 'call-2',
+            name: EventAgentToolNames.listPeople,
+            args: const {},
+          ),
+        ],
+        manager: mockManager,
+      );
+      verify(
+        () => mockManager.addToolResponse(
+          toolCallId: 'call-2',
+          response: directory.render(),
+        ),
+      ).called(1);
+      expect(peopleLoads, 2);
+    });
+  });
+
+  group('suggest_person (deferred)', () {
+    Future<String> suggest(Map<String, dynamic> args, {String id = 'c'}) async {
+      await strategy.processToolCalls(
+        toolCalls: [
+          _makeToolCall(
+            id: id,
+            name: EventAgentToolNames.suggestPerson,
+            args: args,
+          ),
+        ],
+        manager: mockManager,
+      );
+      return verify(
+            () => mockManager.addToolResponse(
+              toolCallId: id,
+              response: captureAny(named: 'response'),
+            ),
+          ).captured.single
+          as String;
+    }
+
+    test('queues an open person, carrying their name for the row', () async {
+      final response = await suggest({
+        'personId': ' pip ',
+        'mention': 'Pip brought the sardines',
+      });
+
+      expect(
+        response,
+        'Queued the suggestion to add Pip Penguin for user review.',
+      );
+      expect(strategy.extractDeferredItems(), [
+        {
+          'toolName': EventAgentToolNames.suggestPerson,
+          'args': {
+            'personId': 'pip',
+            'mention': 'Pip brought the sardines',
+            'personName': 'Pip Penguin',
+          },
+        },
+      ]);
+    });
+
+    final refusals = {
+      'rocko': 'Not suggested: Rocko is already with this event.',
+      'oona': 'Not suggested: Oona is already suggested, awaiting the user.',
+      'kai':
+          'Not suggested: Kai is dismissed by the user for this event — do '
+          'not suggest again.',
+      'ghost':
+          'Error: no person has the id "ghost" — use an id exactly as '
+          '`list_people` gave it.',
+      '  ': 'Error: "personId" is required — use an id from `list_people`.',
+    };
+    for (final MapEntry(key: personId, value: refusal) in refusals.entries) {
+      test('refuses "$personId", queueing nothing', () async {
+        expect(await suggest({'personId': personId}), refusal);
+        expect(strategy.extractDeferredItems(), isEmpty);
+      });
+    }
+
+    test('refuses the same person twice in one wake', () async {
+      await suggest({'personId': 'pip'}, id: 'c1');
+      final second = await suggest({'personId': 'pip'}, id: 'c2');
+
+      expect(
+        second,
+        'Not suggested: Pip Penguin is already suggested in this wake.',
+      );
+      expect(strategy.extractDeferredItems(), hasLength(1));
+    });
+
+    test('a failed directory read refuses, queueing nothing', () async {
+      loadPeople = () async => throw StateError('db down');
+
+      expect(
+        await suggest({'personId': 'pip'}),
+        'Error: the people could not be read (StateError).',
+      );
+      expect(strategy.extractDeferredItems(), isEmpty);
     });
   });
 

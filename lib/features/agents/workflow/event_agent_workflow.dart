@@ -18,6 +18,7 @@ import 'package:lotti/features/agents/workflow/carrierless_attribution.dart';
 import 'package:lotti/features/agents/workflow/deferred_change_items.dart';
 import 'package:lotti/features/agents/workflow/event_agent_context_builder.dart';
 import 'package:lotti/features/agents/workflow/event_agent_strategy.dart';
+import 'package:lotti/features/agents/workflow/event_people_directory.dart';
 import 'package:lotti/features/agents/workflow/wake_result.dart';
 import 'package:lotti/features/agents/workflow/wake_token_usage.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
@@ -231,6 +232,12 @@ class EventAgentWorkflow with AgentErrorLogging {
         agentId: agentId,
         threadId: threadId,
         runKey: runKey,
+        loadPeople: () => EventPeopleDirectory.load(
+          journalRepository: journalRepository,
+          agentRepository: agentRepository,
+          agentId: agentId,
+          eventId: eventId,
+        ),
       );
 
       final tools = _contextBuilder.buildToolDefinitions();
@@ -617,6 +624,11 @@ class EventAgentWorkflow with AgentErrorLogging {
         return title is String && title.trim().isNotEmpty
             ? 'Follow-up task: ${title.trim()}'
             : 'Suggest a follow-up task';
+      case EventAgentToolNames.suggestPerson:
+        final name = args[EventAgentPersonToolArgs.personName];
+        return name is String && name.trim().isNotEmpty
+            ? 'Add ${name.trim()} to the event'
+            : 'Suggest a person for the event';
       default:
         return 'Deferred: $toolName';
     }

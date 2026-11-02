@@ -1,14 +1,15 @@
 import 'dart:async';
 
 import 'package:clock/clock.dart';
-
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/agents/state/event_agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
+import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
 import 'package:lotti/features/agents/ui/agent_automation_row.dart';
 import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/assign_agent_cta_part.dart';
@@ -18,6 +19,7 @@ import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/events/ui/widgets/event_ai_summary_card.dart';
 import 'package:lotti/features/events/ui/widgets/event_passive_summary_card.dart';
+import 'package:lotti/features/events/ui/widgets/event_suggestions_band.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -86,6 +88,10 @@ void main() {
       ),
     ),
     if (service != null) eventAgentServiceProvider.overrideWithValue(service),
+    // The proposals band inside the card reads its own list; none here.
+    eventSuggestionListProvider(
+      eventId,
+    ).overrideWith((ref) => const UnifiedSuggestionList.empty()),
   ];
 
   Future<void> pumpCard(
@@ -223,6 +229,36 @@ void main() {
       );
       await tester.pump();
       expect(tester.widget<TldrBody>(find.byType(TldrBody)).expanded, isTrue);
+    });
+
+    testWidgets("the agent's proposals sit inside its card, their history "
+        'shown with the full recap', (tester) async {
+      await pumpCard(
+        tester,
+        overrides: agentOverrides(
+          agent: agentIdentity,
+          report: () => makeTestReport(
+            agentId: agentId,
+            tldr: 'A warm rooftop birthday.',
+            content: '# The night\nThe long recap.',
+          ),
+        ),
+      );
+
+      final band = find.descendant(
+        of: find.byType(AgentSummaryCardSurface),
+        matching: find.byType(EventSuggestionsBand),
+      );
+      expect(band, findsOneWidget);
+      expect(tester.widget<EventSuggestionsBand>(band).eventId, eventId);
+      expect(tester.widget<EventSuggestionsBand>(band).showHistory, isFalse);
+
+      await tester.tap(
+        find.byKey(const ValueKey('eventAgentReportDisclosure')),
+      );
+      await tester.pump();
+
+      expect(tester.widget<EventSuggestionsBand>(band).showHistory, isTrue);
     });
 
     testWidgets('a report without a TLDR reads its body as the summary', (
