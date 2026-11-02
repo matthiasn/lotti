@@ -56,8 +56,8 @@ void main() {
   });
 
   group('AgentToolRegistry.taskAgentTools', () {
-    test('contains exactly 26 tool definitions', () {
-      expect(AgentToolRegistry.taskAgentTools, hasLength(26));
+    test('contains exactly 27 tool definitions', () {
+      expect(AgentToolRegistry.taskAgentTools, hasLength(27));
     });
 
     test('offers the three pull request tools, only the link deferred', () {
@@ -147,11 +147,9 @@ void main() {
         );
       });
 
-      test('getRelatedTaskDetails constant exists', () {
-        expect(
-          TaskAgentToolNames.getRelatedTaskDetails,
-          equals('get_related_task_details'),
-        );
+      test('drill-down tool constants exist', () {
+        expect(TaskAgentToolNames.getTaskTldr, equals('get_task_tldr'));
+        expect(TaskAgentToolNames.getTaskReport, equals('get_task_report'));
       });
 
       test('findRelatedTasks constant exists', () {
@@ -216,7 +214,11 @@ void main() {
       );
       expect(
         AgentToolRegistry.deferredTools,
-        isNot(contains(TaskAgentToolNames.getRelatedTaskDetails)),
+        isNot(contains(TaskAgentToolNames.getTaskTldr)),
+      );
+      expect(
+        AgentToolRegistry.deferredTools,
+        isNot(contains(TaskAgentToolNames.getTaskReport)),
       );
       expect(
         AgentToolRegistry.deferredTools,

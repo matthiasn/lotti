@@ -79,13 +79,17 @@ void main() {
     );
   });
 
-  RelatedTaskLookup lookup({Set<String> categories = const {'cat-a'}}) =>
-      RelatedTaskLookup(
-        finder: RelatedTaskFinder(db: db, search: search),
-        journalDb: db,
-        agentRepository: agents,
-        allowedCategoryIds: categories,
-      );
+  RelatedTaskLookup lookup({
+    Set<String> categories = const {'cat-a'},
+    Set<String> linkedIds = const {},
+    bool canSearch = true,
+  }) => RelatedTaskLookup(
+    finder: canSearch ? RelatedTaskFinder(db: db, search: search) : null,
+    journalDb: db,
+    agentRepository: agents,
+    allowedCategoryIds: categories,
+    linkedIds: linkedIds,
+  );
 
   void found(List<Task> nearestFirst) {
     for (final task in nearestFirst) {
@@ -206,16 +210,58 @@ void main() {
     });
   });
 
-  group('details', () {
+  group('what can be read', () {
+    test('a linked task can be read without any search', () {
+      final sut = lookup(linkedIds: {'linked-a'}, canSearch: false);
+
+      expect(sut.canRead('linked-a'), isTrue);
+      expect(sut.canRead('other'), isFalse);
+      expect(sut.canSearch, isFalse);
+      expect(sut.linkedIds, {'linked-a'});
+    });
+
+    test('a found task becomes readable once a search returned it', () async {
+      found([_task('relay')]);
+      final sut = lookup(linkedIds: {'linked-a'});
+
+      expect(sut.canRead('relay'), isFalse);
+      await sut.find(_current, 'relay');
+
+      expect(sut.canRead('relay'), isTrue);
+      expect(sut.canRead('linked-a'), isTrue);
+      expect(sut.canRead('guessed'), isFalse);
+    });
+
+    test('the linked ids cannot be widened through the getter', () {
+      final linked = {'linked-a'};
+      final sut = lookup(linkedIds: linked);
+      linked.add('later');
+
+      expect(sut.canRead('later'), isFalse);
+      expect(() => sut.linkedIds.add('x'), throwsUnsupportedError);
+    });
+
+    test('a lookup without a finder refuses to search', () {
+      expect(
+        () => lookup(canSearch: false).find(_current, 'q'),
+        throwsStateError,
+      );
+      verifyZeroInteractions(search);
+    });
+  });
+
+  group('tldr', () {
     setUp(() => tasks['relay'] = _task('relay'));
 
-    test("reads the task and its agent's one-liner and TL;DR", () async {
+    test("reads the task and its agent's one-liner and TL;DR, never the "
+        'report', () async {
       reports['relay'] = _report(
         oneLiner: 'Parts ordered',
         tldr: '- ETA Friday',
+        content: 'The long story.',
       );
 
-      final answer = jsonDecode((await lookup().details('relay'))!) as Map;
+      final answer = jsonDecode((await lookup().tldr('relay'))!) as Map;
 
       expect(answer, {
         'id': 'relay',
@@ -226,32 +272,60 @@ void main() {
       });
     });
 
-    test('adds the whole report when asked for it', () async {
-      reports['relay'] = _report(tldr: 'Short', content: 'The long story.');
-
-      final answer =
-          jsonDecode((await lookup().details('relay', fullReport: true))!)
-              as Map;
-
-      expect(answer['report'], 'The long story.');
-      expect(answer['tldr'], 'Short');
-    });
-
     test('a task without a report says so', () async {
-      final answer = jsonDecode((await lookup().details('relay'))!) as Map;
+      final answer = jsonDecode((await lookup().tldr('relay'))!) as Map;
 
       expect(answer['note'], contains('no agent report yet'));
       expect(answer.containsKey('tldr'), isFalse);
     });
 
-    test('a task that is gone has no details', () async {
+    test('a task that is gone has no TL;DR', () async {
       final deleted = _task('gone');
       tasks['gone'] = deleted.copyWith(
         meta: deleted.meta.copyWith(deletedAt: testFixedDate),
       );
 
-      expect(await lookup().details('gone'), isNull);
-      expect(await lookup().details('missing'), isNull);
+      expect(await lookup().tldr('gone'), isNull);
+      expect(await lookup().tldr('missing'), isNull);
+    });
+  });
+
+  group('report', () {
+    setUp(() => tasks['relay'] = _task('relay'));
+
+    test('reads the whole report and the one-liner', () async {
+      reports['relay'] = _report(
+        oneLiner: 'Parts ordered',
+        tldr: 'Short',
+        content: ' The long story. ',
+      );
+
+      final answer = jsonDecode((await lookup().report('relay'))!) as Map;
+
+      expect(answer, {
+        'id': 'relay',
+        'title': 'Task relay',
+        'status': 'OPEN',
+        'oneLiner': 'Parts ordered',
+        'report': 'The long story.',
+      });
+    });
+
+    test('a task without a report says so', () async {
+      final answer = jsonDecode((await lookup().report('relay'))!) as Map;
+
+      expect(answer['note'], contains('no agent report yet'));
+      expect(answer.containsKey('report'), isFalse);
+    });
+
+    test('a task that is gone has no report', () async {
+      final deleted = _task('gone');
+      tasks['gone'] = deleted.copyWith(
+        meta: deleted.meta.copyWith(deletedAt: testFixedDate),
+      );
+
+      expect(await lookup().report('gone'), isNull);
+      expect(await lookup().report('missing'), isNull);
     });
   });
 }

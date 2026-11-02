@@ -26,6 +26,7 @@ import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
+import '../../../helpers/entity_factories.dart';
 import '../../../mocks/mocks.dart';
 import '../../projects/test_utils.dart' show makeTestProject;
 import '../test_utils.dart';
@@ -77,8 +78,9 @@ void main() {
       /// invokes the strategy's processToolCalls with a specific tool call.
       Future<WakeResult> executeWithToolCall(
         String toolName,
-        String arguments,
-      ) async {
+        String arguments, {
+        List<AiLinkedTaskContext>? linkedFrom,
+      }) async {
         stubFullExecutePath(
           mockAgentRepository: mockAgentRepository,
           mockAiInputRepository: mockAiInputRepository,
@@ -90,6 +92,11 @@ void main() {
           agentId: agentId,
           taskId: taskId,
         );
+        if (linkedFrom != null) {
+          when(
+            () => mockAiInputRepository.buildLinkedFromContext(taskId),
+          ).thenAnswer((_) async => linkedFrom);
+        }
 
         // Stub the task entity lookup used by _executeToolHandler.
         when(
@@ -159,10 +166,72 @@ void main() {
         },
       );
 
+      group('reading a linked task', () {
+        final linkedFrom = [
+          AiLinkedTaskContext(
+            id: 'linked-1',
+            title: 'Relay',
+            status: 'OPEN',
+            statusSince: DateTime(2024, 3),
+            priority: 'P2',
+            estimate: '00:00',
+            timeSpent: '00:00',
+            createdAt: DateTime(2024, 3),
+            labels: const [],
+          ),
+        ];
+
+        setUp(() {
+          when(() => mockJournalDb.journalEntityById('linked-1')).thenAnswer(
+            (_) async => TestTaskFactory.create(id: 'linked-1', title: 'Relay'),
+          );
+          when(
+            () => mockAgentRepository.getLatestTaskReportsForTaskIds(any()),
+          ).thenAnswer((_) async => const {});
+          when(
+            () => mockAgentRepository.getLinksToMultiple(
+              any(),
+              type: any(named: 'type'),
+            ),
+          ).thenAnswer((_) async => const {});
+        });
+
+        Future<String> answerTo(String taskId) async {
+          await executeWithToolCall(
+            TaskAgentToolNames.getTaskTldr,
+            jsonEncode({'taskId': taskId}),
+            linkedFrom: linkedFrom,
+          );
+          return verify(
+                () => mockConversationManager.addToolResponse(
+                  toolCallId: 'tool-call-1',
+                  response: captureAny(named: 'response'),
+                ),
+              ).captured.single
+              as String;
+        }
+
+        test('a task the Linked Tasks section lists can be read', () async {
+          final answer = jsonDecode(await answerTo('linked-1')) as Map;
+
+          expect(answer['id'], 'linked-1');
+          expect(answer['title'], 'Relay');
+        });
+
+        test('an id the section does not list is refused', () async {
+          expect(
+            await answerTo('unlisted-1'),
+            contains('is neither listed in Linked Tasks'),
+          );
+          verifyNever(() => mockJournalDb.journalEntityById('unlisted-1'));
+        });
+      });
+
       /// The names of the tools a wake of [bench]'s workflow offers the model.
       Future<List<String>> offeredTools(
-        TaskAgentWorkflowTestBench bench,
-      ) async {
+        TaskAgentWorkflowTestBench bench, {
+        List<AiLinkedTaskContext> linkedFrom = const [],
+      }) async {
         when(
           () => bench.mockAgentRepository.getAgentState(agentId),
         ).thenAnswer((_) async => testAgentState);
@@ -195,10 +264,16 @@ void main() {
         ).thenAnswer((_) async => null);
         when(
           () => bench.mockAiInputRepository.buildLinkedFromContext(taskId),
-        ).thenAnswer((_) async => <AiLinkedTaskContext>[]);
+        ).thenAnswer((_) async => linkedFrom);
         when(
           () => bench.mockAiInputRepository.buildLinkedToContext(taskId),
         ).thenAnswer((_) async => <AiLinkedTaskContext>[]);
+        when(
+          () => bench.mockAgentRepository.getLinksToMultiple(
+            any(),
+            type: any(named: 'type'),
+          ),
+        ).thenAnswer((_) async => const {});
         when(
           () =>
               bench.mockAiConfigRepository.getConfigsByType(AiConfigType.model),
@@ -241,13 +316,17 @@ void main() {
         return [for (final tool in exposedTools!) tool.function.name];
       }
 
+      const drillDownTools = [
+        TaskAgentToolNames.getTaskTldr,
+        TaskAgentToolNames.getTaskReport,
+      ];
       const relatedTaskTools = [
         TaskAgentToolNames.findRelatedTasks,
-        TaskAgentToolNames.getRelatedTaskDetails,
+        ...drillDownTools,
       ];
 
-      test('does not offer the related-task tools where search by meaning '
-          'cannot run', () async {
+      test('offers no related-task tool without a search or a linked '
+          'task', () async {
         final offered = await offeredTools(createTaskAgentWorkflowTestBench());
 
         for (final name in relatedTaskTools) {
@@ -255,8 +334,31 @@ void main() {
         }
       });
 
+      test('offers the drill-down tools, not the search, for a task with '
+          'linked tasks where search by meaning cannot run', () async {
+        final offered = await offeredTools(
+          createTaskAgentWorkflowTestBench(),
+          linkedFrom: [
+            AiLinkedTaskContext(
+              id: 'linked-1',
+              title: 'Relay repair',
+              status: 'OPEN',
+              statusSince: DateTime(2024, 3),
+              priority: 'P2',
+              estimate: '00:00',
+              timeSpent: '00:00',
+              createdAt: DateTime(2024, 3),
+              labels: const [],
+            ),
+          ],
+        );
+
+        expect(offered, containsAll(drillDownTools));
+        expect(offered, isNot(contains(TaskAgentToolNames.findRelatedTasks)));
+      });
+
       test(
-        'offers both related-task tools where search by meaning runs',
+        'offers every related-task tool where search by meaning runs',
         () async {
           final bench = createTaskAgentWorkflowTestBench(
             vectorSearch: MockVectorSearchRepository(),

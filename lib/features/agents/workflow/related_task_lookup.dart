@@ -7,32 +7,40 @@ import 'package:lotti/database/agents/agent_repository.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/repository/related_task_finder.dart';
 
-/// What the task agent's related-task tools read, for one wake.
+/// What the task agent's tools for other tasks read, for one wake.
 ///
-/// `find_related_tasks` searches by meaning, on the device, for the tasks a
-/// note of the current task might be talking about, and answers with their
-/// id, title, status and one-liner. `get_related_task_details` then reads
-/// one of them: its agent's TL;DR, and on request the whole report.
+/// The wake's `## Linked Tasks` section lists every linked task the budget
+/// admits with its agent's one-liner ([linkedIds]). `find_related_tasks`
+/// searches by meaning, on the device, for the tasks a note of the current
+/// task might be talking about, and answers with their id, title, status and
+/// one-liner. Either way the model can then read one task deeper:
+/// `get_task_tldr` for its agent's TL;DR, `get_task_report` for the whole
+/// latest report.
 ///
-/// Nothing reaches the conversation until the model asks, and only what it
-/// asks for: a wake whose notes mention no other work never searches.
+/// Nothing beyond the one-liners reaches the conversation until the model
+/// asks, and only what it asks for.
 ///
-/// Only a task this wake's searches returned can be read in detail
-/// ([foundIds]), so the model cannot inspect a task it guessed the id of. A
-/// search sees only the categories the agent may work in and never a private
-/// task: what it returns is sent to the agent's inference provider.
+/// Only a task this wake has shown can be read in detail ([canRead]): one
+/// the Linked Tasks section lists, or one a search returned. The model
+/// cannot inspect a task it guessed the id of. A search sees only the
+/// categories the agent may work in and never a private task: what it
+/// returns is sent to the agent's inference provider.
 class RelatedTaskLookup {
+  /// The finder is null where search by meaning cannot run on this device:
+  /// then only the linked tasks can be read, and [canSearch] is false.
   RelatedTaskLookup({
     required this._finder,
     required this._journalDb,
     required this._agentRepository,
     required this._allowedCategoryIds,
-  });
+    Set<String> linkedIds = const {},
+  }) : _linkedIds = Set.unmodifiable(linkedIds);
 
-  final RelatedTaskFinder _finder;
+  final RelatedTaskFinder? _finder;
   final JournalDb _journalDb;
   final AgentRepository _agentRepository;
   final Set<String> _allowedCategoryIds;
+  final Set<String> _linkedIds;
 
   /// The most tasks one search answers with.
   static const maxResults = 5;
@@ -42,9 +50,20 @@ class RelatedTaskLookup {
 
   final Set<String> _foundIds = {};
 
-  /// Every task id a search of this wake has returned — the only ids
-  /// [details] reads.
+  /// Whether [find] can search: false where search by meaning is
+  /// unavailable.
+  bool get canSearch => _finder != null;
+
+  /// The tasks the wake's Linked Tasks section lists.
+  Set<String> get linkedIds => _linkedIds;
+
+  /// Every task id a search of this wake has returned.
   Set<String> get foundIds => Set.unmodifiable(_foundIds);
+
+  /// Whether [taskId] may be read in detail: it is listed under Linked Tasks
+  /// or a search of this wake returned it.
+  bool canRead(String taskId) =>
+      _linkedIds.contains(taskId) || _foundIds.contains(taskId);
 
   /// Searches for tasks related to [query], for task [taskId]; answers with
   /// a JSON object listing them, nearest first.
@@ -52,14 +71,20 @@ class RelatedTaskLookup {
   /// The task itself and every task already linked to it are left out: the
   /// first is not a relationship, and the second is in the Linked Tasks
   /// section already.
+  ///
+  /// Only for a lookup that [canSearch].
   Future<String> find(String taskId, String query) async {
     final trimmed = query.trim();
     final bounded = trimmed.length > maxQueryLength
         ? trimmed.substring(0, maxQueryLength)
         : trimmed;
+    final finder = _finder;
+    if (finder == null) {
+      throw StateError('find called on a lookup that cannot search');
+    }
     final search = _allowedCategoryIds.isEmpty
         ? null
-        : await _finder.find(
+        : await finder.find(
             taskId,
             [bounded],
             categoryIds: _allowedCategoryIds,
@@ -99,12 +124,34 @@ class RelatedTaskLookup {
     });
   }
 
-  /// The details of task [taskId] as a JSON object: its title, status,
-  /// one-liner and TL;DR, and with [fullReport] the whole latest report of
-  /// its agent. Null when the task is gone.
+  /// Task [taskId]'s agent TL;DR, as a JSON object with its title, status
+  /// and one-liner. Null when the task is gone.
   ///
-  /// The caller checks [foundIds] first.
-  Future<String?> details(String taskId, {bool fullReport = false}) async {
+  /// The caller checks [canRead] first.
+  Future<String?> tldr(String taskId) => _read(
+    taskId,
+    (report) => {
+      'oneLiner': ?_nonEmpty(report?.oneLiner),
+      'tldr': ?_nonEmpty(report?.tldr),
+    },
+  );
+
+  /// Task [taskId]'s whole latest agent report, as a JSON object with its
+  /// title, status and one-liner. Null when the task is gone.
+  ///
+  /// The caller checks [canRead] first.
+  Future<String?> report(String taskId) => _read(
+    taskId,
+    (report) => {
+      'oneLiner': ?_nonEmpty(report?.oneLiner),
+      'report': ?_nonEmpty(report?.content),
+    },
+  );
+
+  Future<String?> _read(
+    String taskId,
+    Map<String, Object> Function(AgentReportEntity? report) fields,
+  ) async {
     final task = await _journalDb.journalEntityById(taskId);
     if (task is! Task || task.meta.deletedAt != null) return null;
     final reports = await _agentRepository.getLatestTaskReportsForTaskIds([
@@ -113,9 +160,7 @@ class RelatedTaskLookup {
     final report = reports[taskId];
     return jsonEncode({
       ..._identity(task),
-      'oneLiner': ?_nonEmpty(report?.oneLiner),
-      'tldr': ?_nonEmpty(report?.tldr),
-      if (fullReport) 'report': ?_nonEmpty(report?.content),
+      ...fields(report),
       if (report == null)
         'note':
             'This task has no agent report yet; its title is all there is '

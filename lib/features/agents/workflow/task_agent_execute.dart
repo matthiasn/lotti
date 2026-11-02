@@ -209,17 +209,19 @@ extension TaskAgentExecute on TaskAgentWorkflow {
 
     // 2. Build task context from journal domain (independent fetches in
     //    parallel).
-    // Other tasks never enter this context up front — injecting sibling-task
-    // TLDRs polluted the window. The model fetches them on demand instead:
+    // Of other tasks, only the linked ones enter this context up front, and
+    // only as one-liners within a budget (`LinkedTaskDirectory`) — injecting
+    // TLDRs polluted the window. The model reads deeper on demand:
+    // `get_task_tldr` / `get_task_report` for a linked task, and
     // `find_related_tasks` searches by meaning, on the device, when a note
-    // talks about other work, and `get_related_task_details` reads one hit.
+    // talks about other work it does not link yet.
     // With compaction on, the inline log entries are dropped from the task
     // header and supplied instead as `active summary + uncovered tail` from
     // the captured log (the read-flip).
     final (
       taskDetails,
       projectContextJson,
-      linkedTasksJson,
+      linkedTasks,
       categoryKnowledge,
       pullRequestsContext,
     ) = await (
@@ -230,7 +232,7 @@ extension TaskAgentExecute on TaskAgentWorkflow {
           ? this.aiInputRepository.buildTaskStateMarkdown(taskId)
           : this.aiInputRepository.buildTaskDetailsJson(id: taskId),
       this.aiInputRepository.buildProjectContextJsonForTask(taskId),
-      _buildLinkedTasksContextJson(taskId),
+      _buildLinkedTasksContext(taskId),
       this.aiInputRepository.buildCategoryKnowledge(taskId),
       _buildPullRequestsContext(taskId),
     ).wait;
@@ -279,7 +281,7 @@ extension TaskAgentExecute on TaskAgentWorkflow {
       journalObservations: journalObservations,
       taskDetails: taskDetails,
       projectContextJson: projectContextJson,
-      linkedTasksJson: linkedTasksJson,
+      linkedTasksJson: linkedTasks.json,
       categoryKnowledge: categoryKnowledge,
       pullRequestsContext: pullRequestsContext,
       triggerTokens: triggerTokens,
@@ -350,10 +352,12 @@ extension TaskAgentExecute on TaskAgentWorkflow {
       // query, and a wake that will advertise everything anyway should not pay
       // for the answers. Whether the pull request tools exist for this task at
       // all is decided on every wake, and so is whether the related-task
-      // tools do: a search that cannot run has nothing to offer either.
+      // tools do: a search that cannot run has nothing to find, and with no
+      // linked task either there is nothing to read.
       final pullRequests = await _pullRequestToolAvailability(taskId);
       final relatedTasks = await _relatedTaskLookup(
         agentIdentity.allowedCategoryIds,
+        linkedIds: linkedTasks.taskIds,
       );
       final wakeFacts = narrowToolSurface
           ? await _resolveWakeFacts(
@@ -362,12 +366,14 @@ extension TaskAgentExecute on TaskAgentWorkflow {
               attentionClaims: taskAttentionContext.claims,
               hasCategoryProjects: categoryHasProjects,
               pullRequests: pullRequests,
-              hasRelatedTaskSearch: relatedTasks != null,
+              hasRelatedTaskSearch: relatedTasks.canSearch,
+              hasLinkedTasks: linkedTasks.taskIds.isNotEmpty,
             )
           : TaskAgentWakeFacts(
               hasPullRequestRepository: pullRequests.repository,
               hasLinkedPullRequests: pullRequests.linked,
-              hasRelatedTaskSearch: relatedTasks != null,
+              hasRelatedTaskSearch: relatedTasks.canSearch,
+              hasLinkedTasks: linkedTasks.taskIds.isNotEmpty,
             );
       final tools = _contextBuilder.buildToolDefinitions(facts: wakeFacts);
 
@@ -665,6 +671,7 @@ extension TaskAgentExecute on TaskAgentWorkflow {
     required bool hasCategoryProjects,
     required ({bool repository, bool linked}) pullRequests,
     required bool hasRelatedTaskSearch,
+    required bool hasLinkedTasks,
   }) async {
     final entity = await journalDb.journalEntityById(taskId);
     final task = entity is Task ? entity : null;
@@ -691,25 +698,29 @@ extension TaskAgentExecute on TaskAgentWorkflow {
       hasPullRequestRepository: pullRequests.repository,
       hasLinkedPullRequests: pullRequests.linked,
       hasRelatedTaskSearch: hasRelatedTaskSearch,
+      hasLinkedTasks: hasLinkedTasks,
     );
   }
 
-  /// The related-task tools' lookup for this wake, searching the agent's
-  /// [allowedCategoryIds]; null when search by meaning cannot run here.
-  Future<RelatedTaskLookup?> _relatedTaskLookup(
-    Set<String> allowedCategoryIds,
-  ) async {
+  /// The related-task tools' lookup for this wake: it reads the
+  /// [linkedIds] the wake's Linked Tasks section lists, and searches the
+  /// agent's [allowedCategoryIds] where search by meaning can run here
+  /// ([RelatedTaskLookup.canSearch]).
+  Future<RelatedTaskLookup> _relatedTaskLookup(
+    Set<String> allowedCategoryIds, {
+    required Set<String> linkedIds,
+  }) async {
     final finder = RelatedTaskFinder(
       db: journalDb,
       search: vectorSearch,
       domainLogger: domainLogger,
     );
-    if (!await finder.isAvailable) return null;
     return RelatedTaskLookup(
-      finder: finder,
+      finder: await finder.isAvailable ? finder : null,
       journalDb: journalDb,
       agentRepository: agentRepository,
       allowedCategoryIds: allowedCategoryIds,
+      linkedIds: linkedIds,
     );
   }
 

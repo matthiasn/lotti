@@ -21,6 +21,7 @@ class TaskAgentWakeFacts {
     this.hasPullRequestRepository = true,
     this.hasLinkedPullRequests = true,
     this.hasRelatedTaskSearch = true,
+    this.hasLinkedTasks = true,
   });
 
   /// Every fact permissive: the tool list is exactly today's.
@@ -84,9 +85,17 @@ class TaskAgentWakeFacts {
   /// Search by meaning can run on this device: the embedding pipeline is up
   /// and switched on.
   ///
-  /// Gates both related-task tools: without a search there is nothing to
-  /// find, and no task found to read.
+  /// Gates `find_related_tasks`: without a search there is nothing to find.
+  /// With [hasLinkedTasks] it also gates the drill-down tools, which read a
+  /// task the wake has shown — a found one or a linked one.
   final bool hasRelatedTaskSearch;
+
+  /// The wake's Linked Tasks section lists at least one task.
+  ///
+  /// With [hasRelatedTaskSearch], gates `get_task_tldr` and
+  /// `get_task_report`: with neither a linked task nor a search there is no
+  /// task they may read, and offering them would invite a guessed id.
+  final bool hasLinkedTasks;
 }
 
 /// The tools a wake with these [facts] may be offered.
@@ -127,9 +136,10 @@ Set<String> visibleTaskAgentToolNames(TaskAgentWakeFacts facts) {
       TaskAgentToolNames.linkPullRequest,
     },
     if (!facts.hasLinkedPullRequests) TaskAgentToolNames.refreshPullRequests,
-    if (!facts.hasRelatedTaskSearch) ...{
-      TaskAgentToolNames.findRelatedTasks,
-      TaskAgentToolNames.getRelatedTaskDetails,
+    if (!facts.hasRelatedTaskSearch) TaskAgentToolNames.findRelatedTasks,
+    if (!facts.hasRelatedTaskSearch && !facts.hasLinkedTasks) ...{
+      TaskAgentToolNames.getTaskTldr,
+      TaskAgentToolNames.getTaskReport,
     },
   };
 

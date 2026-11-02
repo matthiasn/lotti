@@ -594,16 +594,17 @@ void main() {
           expect(message, isNotNull);
           expect(message, contains('## Linked Tasks'));
           expect(message, contains('Related'));
-          expect(message, contains('latestTaskAgentReportTldr'));
           // A resolved report is marked present (graph-5 freshness marker).
-          expect(message, contains('"summaryStatus": "present"'));
-          // Compact summary is embedded…
+          expect(message, contains('"summaryStatus":"present"'));
+          // Only the one-liner is embedded…
+          expect(message, contains('Linked task is on track.'));
+          // …the TL;DR and the body are read on demand (get_task_tldr,
+          // get_task_report), never carried in the wake.
+          expect(message, isNot(contains('latestTaskAgentReportTldr')));
           expect(
             message,
-            contains('Linked task TLDR: integration nearly done.'),
+            isNot(contains('Linked task TLDR: integration nearly done.')),
           );
-          expect(message, contains('Linked task is on track.'));
-          // …but the full report body is trimmed out to save prefill.
           expect(message, isNot(contains('From task agent.')));
           expect(message, isNot(contains('latestSummary')));
         },
@@ -645,7 +646,7 @@ void main() {
                     scope: 'current',
                     createdAt: now,
                     vectorClock: null,
-                    tldr: 'Report B summary',
+                    oneLiner: 'Report B summary',
                     content: 'report-b',
                   )
                   as AgentReportEntity;
@@ -656,7 +657,7 @@ void main() {
                     scope: 'current',
                     createdAt: now,
                     vectorClock: null,
-                    tldr: 'Report A summary',
+                    oneLiner: 'Report A summary',
                     content: 'report-a',
                   )
                   as AgentReportEntity;
@@ -684,9 +685,9 @@ void main() {
           // in-memory walk of the sorted links. Correctness contract
           // is the same — the first link in `orderedPrimaryFirst`
           // order whose report has non-empty content wins. Reports are
-          // now embedded as their compact tldr (not the full body), so
-          // the tie-break is asserted via the rendered summary:
-          // report B's tldr must show up, report A's must NOT.
+          // now embedded as their one-liner (not the TL;DR or body), so
+          // the tie-break is asserted via the rendered one-liner:
+          // report B's must show up, report A's must NOT.
           expect(message, isNotNull);
           expect(message, contains('Report B summary'));
           expect(message, isNot(contains('Report A summary')));
@@ -728,10 +729,10 @@ void main() {
         expect(message, contains('## Linked Tasks'));
         expect(message, contains('Related'));
         // No report enrichment happened because the lookup failed.
-        expect(message, isNot(contains('latestTaskAgentReportTldr')));
+        expect(message, isNot(contains('latestTaskAgentReportOneLiner')));
         // …and the row is marked as having no published report (graph-5),
         // so the model can tell "no report" apart from "no work".
-        expect(message, contains('"summaryStatus": "none"'));
+        expect(message, contains('"summaryStatus":"none"'));
       });
 
       test('tolerates a failing batch agent report lookup', () async {
@@ -767,8 +768,8 @@ void main() {
         expect(message, isNotNull);
         expect(message, contains('## Linked Tasks'));
         expect(message, contains('Related'));
-        // The report lookup failed, so no tldr is injected.
-        expect(message, isNot(contains('latestTaskAgentReportTldr')));
+        // The report lookup failed, so no one-liner is injected.
+        expect(message, isNot(contains('latestTaskAgentReportOneLiner')));
       });
 
       test('omits linked tasks section when empty', () async {

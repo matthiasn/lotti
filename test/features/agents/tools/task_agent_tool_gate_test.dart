@@ -32,22 +32,46 @@ void main() {
       );
     });
 
-    test('hides both related-task tools where search cannot run', () {
-      const related = [
-        TaskAgentToolNames.findRelatedTasks,
-        TaskAgentToolNames.getRelatedTaskDetails,
+    group('related-task tools', () {
+      const drillDown = [
+        TaskAgentToolNames.getTaskTldr,
+        TaskAgentToolNames.getTaskReport,
       ];
-      final without = visibleTaskAgentToolNames(
-        const TaskAgentWakeFacts(hasRelatedTaskSearch: false),
-      );
 
-      for (final name in related) {
-        expect(without, isNot(contains(name)));
-      }
-      expect(
-        visibleTaskAgentToolNames(TaskAgentWakeFacts.permissive),
-        containsAll(related),
-      );
+      test('without search or linked tasks, none is offered', () {
+        final visible = visibleTaskAgentToolNames(
+          const TaskAgentWakeFacts(
+            hasRelatedTaskSearch: false,
+            hasLinkedTasks: false,
+          ),
+        );
+
+        expect(visible, isNot(contains(TaskAgentToolNames.findRelatedTasks)));
+        for (final name in drillDown) {
+          expect(visible, isNot(contains(name)));
+        }
+      });
+
+      test('linked tasks alone offer the drill-down, not the search', () {
+        final visible = visibleTaskAgentToolNames(
+          const TaskAgentWakeFacts(hasRelatedTaskSearch: false),
+        );
+
+        expect(visible, isNot(contains(TaskAgentToolNames.findRelatedTasks)));
+        expect(visible, containsAll(drillDown));
+      });
+
+      test('search alone offers the search and the drill-down into its '
+          'hits', () {
+        final visible = visibleTaskAgentToolNames(
+          const TaskAgentWakeFacts(hasLinkedTasks: false),
+        );
+
+        expect(
+          visible,
+          containsAll([TaskAgentToolNames.findRelatedTasks, ...drillDown]),
+        );
+      });
     });
 
     test('never offers the retired running-timer tool', () {

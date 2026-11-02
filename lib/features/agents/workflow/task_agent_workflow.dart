@@ -34,6 +34,7 @@ import 'package:lotti/features/agents/workflow/agent_template_context.dart';
 import 'package:lotti/features/agents/workflow/agent_wake_memory.dart';
 import 'package:lotti/features/agents/workflow/change_proposal_filter.dart';
 import 'package:lotti/features/agents/workflow/change_set_builder.dart';
+import 'package:lotti/features/agents/workflow/linked_task_directory.dart';
 import 'package:lotti/features/agents/workflow/prompt_record.dart';
 import 'package:lotti/features/agents/workflow/related_task_lookup.dart';
 import 'package:lotti/features/agents/workflow/task_agent_context_builder.dart';
@@ -373,8 +374,8 @@ class TaskAgentWorkflow with AgentErrorLogging {
   // These forward to [_contextBuilder] (or the pure [TaskAgentPromptBuilder]);
   // the execute part keeps calling the private helpers it always has.
 
-  Future<String> _buildLinkedTasksContextJson(String taskId) =>
-      _contextBuilder.buildLinkedTasksContextJson(taskId);
+  Future<LinkedTaskDirectory> _buildLinkedTasksContext(String taskId) =>
+      _contextBuilder.buildLinkedTasksContext(taskId);
 
   /// The task's pull requests, refreshed for this wake and rendered for the
   /// agent; empty when there are none, or when reading them failed — a wake

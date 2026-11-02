@@ -1949,8 +1949,7 @@ const _defaultProductionWakeUserMessage = '''
       "id": "task-reference-baseline",
       "title": "Reference model baseline",
       "summaryStatus": "present",
-      "latestTaskAgentReportOneLiner": "Reference model passes app-shaped task-agent checks",
-      "latestTaskAgentReportTldr": "The reference model emits task metadata tools and a final report reliably."
+      "latestTaskAgentReportOneLiner": "Reference model passes app-shaped task-agent checks"
     }
   ]
 }

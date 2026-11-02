@@ -1,5 +1,12 @@
 # Knowledge Bundle Update Log
 
+## 2026-11-02
+* **Update**: [Task agents](features/agents/task-agents.md) — linked tasks
+  reach the wake as one-liners within a budget (`LinkedTaskDirectory`: 30
+  rows, 12,000 characters, open and newest first, an `omitted` count), and
+  `get_task_tldr` / `get_task_report` read a linked or found task deeper,
+  replacing `get_related_task_details`
+  ([ADR 0157](../docs/adr/0157-linked-tasks-reach-the-wake-as-one-liners.md)).
 ## 2026-11-01
 * **Update**: [Task agents](features/agents/task-agents.md) — related tasks
   are fetched on demand: `find_related_tasks` and `get_related_task_details`

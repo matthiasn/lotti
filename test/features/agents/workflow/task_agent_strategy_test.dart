@@ -461,10 +461,17 @@ void main() {
             as String;
       }
 
-      /// A lookup whose searches of this wake returned [found].
-      MockRelatedTaskLookup lookupWith({Set<String> found = const {}}) {
+      /// A lookup that may read [readable] and, with [canSearch], search.
+      MockRelatedTaskLookup lookupWith({
+        Set<String> readable = const {},
+        bool canSearch = true,
+      }) {
         final lookup = MockRelatedTaskLookup();
-        when(() => lookup.foundIds).thenReturn(found);
+        when(() => lookup.canSearch).thenReturn(canSearch);
+        when(() => lookup.canRead(any())).thenAnswer(
+          (invocation) =>
+              readable.contains(invocation.positionalArguments.first),
+        );
         return lookup;
       }
 
@@ -513,6 +520,20 @@ void main() {
           },
         );
 
+        test('says it is unavailable when the lookup reads linked tasks '
+            'only', () async {
+          final lookup = lookupWith(readable: {'task-002'}, canSearch: false);
+
+          final response = await runRelatedCall(
+            lookup: lookup,
+            toolName: TaskAgentToolNames.findRelatedTasks,
+            args: {'query': 'relay'},
+          );
+
+          expect(response, contains('is not available'));
+          verifyNever(() => lookup.find(any(), any()));
+        });
+
         test('answers with an error when the search throws', () async {
           final lookup = lookupWith();
           when(
@@ -529,110 +550,144 @@ void main() {
         });
       });
 
-      group('get_related_task_details', () {
-        test(
-          'reads a task this wake found, with the full report on request',
-          () async {
-            final lookup = lookupWith(found: {'task-002'});
-            when(
-              () => lookup.details('task-002', fullReport: true),
-            ).thenAnswer((_) async => '{"id":"task-002","report":"..."}');
-
-            final response = await runRelatedCall(
-              lookup: lookup,
-              toolName: TaskAgentToolNames.getRelatedTaskDetails,
-              args: {'taskId': 'task-002', 'includeFullReport': true},
-            );
-
-            expect(response, '{"id":"task-002","report":"..."}');
-          },
-        );
-
-        test(
-          'reads only the TL;DR unless the full report is asked for',
-          () async {
-            final lookup = lookupWith(found: {'task-002'});
-            when(
-              () => lookup.details('task-002'),
-            ).thenAnswer((_) async => '{"id":"task-002"}');
-
-            await runRelatedCall(
-              lookup: lookup,
-              toolName: TaskAgentToolNames.getRelatedTaskDetails,
-              args: {'taskId': 'task-002'},
-            );
-
-            verify(() => lookup.details('task-002')).called(1);
-          },
-        );
-
-        test('refuses the current task', () async {
-          final response = await runRelatedCall(
-            lookup: lookupWith(found: {taskId}),
-            toolName: TaskAgentToolNames.getRelatedTaskDetails,
-            args: {'taskId': taskId},
-          );
-
-          expect(response, contains('cannot be used for the current task'));
-        });
-
-        test('refuses a task no search of this wake returned', () async {
-          final lookup = lookupWith(found: {'task-002'});
-
-          final response = await runRelatedCall(
-            lookup: lookup,
-            toolName: TaskAgentToolNames.getRelatedTaskDetails,
-            args: {'taskId': 'task-999'},
-          );
-
-          expect(response, contains('was not returned by find_related_tasks'));
-          verifyNever(
-            () => lookup.details(any(), fullReport: any(named: 'fullReport')),
-          );
-        });
-
-        test('refuses an empty id, and answers that it is unavailable without '
-            'search', () async {
-          expect(
-            await runRelatedCall(
-              lookup: lookupWith(),
-              toolName: TaskAgentToolNames.getRelatedTaskDetails,
-              args: {'taskId': ' '},
-            ),
-            contains('"taskId" must be a non-empty string'),
-          );
-          clearInteractions(mockManager);
-          expect(
-            await runRelatedCall(
-              lookup: null,
-              toolName: TaskAgentToolNames.getRelatedTaskDetails,
-              args: {'taskId': 'task-002'},
-            ),
-            contains('is not available'),
-          );
-        });
-
-        for (final (label, answer) in [
-          ('returns nothing', () async => null),
-          ('throws', () async => throw Exception('DB connection lost')),
+      group('get_task_tldr and get_task_report', () {
+        for (final (tool, isReport) in [
+          (TaskAgentToolNames.getTaskTldr, false),
+          (TaskAgentToolNames.getTaskReport, true),
         ]) {
-          test('answers with an error when the lookup $label', () async {
-            final lookup = lookupWith(found: {'task-002'});
-            when(
-              () => lookup.details(
-                any(),
-                fullReport: any(named: 'fullReport'),
-              ),
-            ).thenAnswer((_) => answer());
+          void stubRead(
+            MockRelatedTaskLookup lookup,
+            Future<String?> Function() answer,
+          ) {
+            if (isReport) {
+              when(() => lookup.report(any())).thenAnswer((_) => answer());
+            } else {
+              when(() => lookup.tldr(any())).thenAnswer((_) => answer());
+            }
+          }
+
+          test(
+            '$tool reads a task this wake shows, at its own depth',
+            () async {
+              final lookup = lookupWith(readable: {'task-002'});
+              when(
+                () => lookup.tldr('task-002'),
+              ).thenAnswer((_) async => '{"id":"task-002","tldr":"short"}');
+              when(
+                () => lookup.report('task-002'),
+              ).thenAnswer((_) async => '{"id":"task-002","report":"long"}');
+
+              final response = await runRelatedCall(
+                lookup: lookup,
+                toolName: tool,
+                args: {'taskId': ' task-002 '},
+              );
+
+              expect(
+                response,
+                isReport
+                    ? '{"id":"task-002","report":"long"}'
+                    : '{"id":"task-002","tldr":"short"}',
+              );
+              if (isReport) {
+                verifyNever(() => lookup.tldr(any()));
+              } else {
+                verifyNever(() => lookup.report(any()));
+              }
+            },
+          );
+
+          test('$tool reads a linked task where search cannot run', () async {
+            final lookup = lookupWith(
+              readable: {'linked-1'},
+              canSearch: false,
+            );
+            stubRead(lookup, () async => '{"id":"linked-1"}');
 
             final response = await runRelatedCall(
               lookup: lookup,
-              toolName: TaskAgentToolNames.getRelatedTaskDetails,
-              args: {'taskId': 'task-002'},
+              toolName: tool,
+              args: {'taskId': 'linked-1'},
             );
 
-            expect(response, contains('could not be resolved'));
+            expect(response, '{"id":"linked-1"}');
           });
+
+          test('$tool refuses the current task', () async {
+            final lookup = lookupWith(readable: {taskId});
+
+            final response = await runRelatedCall(
+              lookup: lookup,
+              toolName: tool,
+              args: {'taskId': taskId},
+            );
+
+            expect(response, contains('cannot be used for the current task'));
+            verifyNever(() => lookup.tldr(any()));
+            verifyNever(() => lookup.report(any()));
+          });
+
+          test('$tool refuses a task neither linked nor found', () async {
+            final lookup = lookupWith(readable: {'task-002'});
+
+            final response = await runRelatedCall(
+              lookup: lookup,
+              toolName: tool,
+              args: {'taskId': 'task-999'},
+            );
+
+            expect(
+              response,
+              contains(
+                'is neither listed in Linked Tasks nor returned by '
+                'find_related_tasks',
+              ),
+            );
+            verifyNever(() => lookup.tldr(any()));
+            verifyNever(() => lookup.report(any()));
+          });
+
+          test('$tool refuses an empty id, and answers that it is unavailable '
+              'without a lookup', () async {
+            expect(
+              await runRelatedCall(
+                lookup: lookupWith(),
+                toolName: tool,
+                args: {'taskId': ' '},
+              ),
+              contains('"taskId" must be a non-empty string'),
+            );
+            clearInteractions(mockManager);
+            expect(
+              await runRelatedCall(
+                lookup: null,
+                toolName: tool,
+                args: {'taskId': 'task-002'},
+              ),
+              contains('is not available'),
+            );
+          });
+
+          for (final (label, answer) in [
+            ('returns nothing', () async => null),
+            ('throws', () async => throw Exception('DB connection lost')),
+          ]) {
+            test(
+              '$tool answers with an error when the lookup $label',
+              () async {
+                final lookup = lookupWith(readable: {'task-002'});
+                stubRead(lookup, answer);
+
+                final response = await runRelatedCall(
+                  lookup: lookup,
+                  toolName: tool,
+                  args: {'taskId': 'task-002'},
+                );
+
+                expect(response, contains('could not be read'));
+              },
+            );
+          }
         }
       });
 
