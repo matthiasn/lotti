@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
-import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
 import 'package:lotti/features/agents/ui/chat/chat_recorder_controller.dart';
 import 'package:lotti/features/companion/model/companion_gesture.dart';
@@ -61,9 +60,10 @@ abstract final class FrontVoice {
     return working ? GestureName.think : null;
   }
 
-  /// Speaks her reply to a spoken turn as it lands in the conversation on
-  /// screen — the first of hers after the turn — and surfaces a voice that
-  /// fails. Called from the pane's build.
+  /// Speaks her answer to a spoken turn once it has landed in the
+  /// conversation on screen — her reply and her doors' answers
+  /// ([frontSpokenAnswer]) — and surfaces a voice that fails. Called from the
+  /// pane's build.
   static void listenForSpokenReply(WidgetRef ref, BuildContext context) {
     // Kept live, so whether she may speak, and with which voice, is known
     // the moment her reply lands — a provider first read then is still
@@ -100,8 +100,8 @@ abstract final class FrontVoice {
     }
     ref.listen(frontChatThreadProvider, (_, next) {
       final turn = ref.read(frontSpokenTurnProvider);
-      final messages = next.value?.messages;
-      if (turn == null || messages == null) return;
+      final thread = next.value;
+      if (turn == null || thread == null) return;
       // The inbox gathers every conversation, so a reply there may be
       // another's: hers is matched once its own conversation is back.
       if (ref.read(frontInboxFilterProvider)) return;
@@ -109,16 +109,15 @@ abstract final class FrontVoice {
           turn.conversationId) {
         return;
       }
-      final reply = messages
-          .where(
-            (m) =>
-                m.role == AgentChatRole.agent &&
-                !m.createdAt.isBefore(turn.spokenAt),
-          )
-          .firstOrNull;
-      if (reply == null) return;
+      // Her doors are walked inside the wake the send waits on: while it
+      // runs, a reply may have landed without the answers in its doors. The
+      // thread is projected again when the send settles.
+      if (ref.read(frontChatControllerProvider).isSending) return;
+      final answer = frontSpokenAnswer(thread, turn);
+      if (!answer.landed) return;
       ref.read(frontSpokenTurnProvider.notifier).settle();
-      _speak(ref, context, turn.conversationId, reply.text).ignore();
+      if (answer.text.isEmpty) return;
+      _speak(ref, context, turn.conversationId, answer.text).ignore();
     });
   }
 

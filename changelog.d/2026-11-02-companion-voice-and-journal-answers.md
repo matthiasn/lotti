@@ -39,3 +39,9 @@
   scrolled up to read.
 - **The waiting dots move.** While an answer is on its way, the three dots
   pulse, so it is clear something is coming.
+- **The companion now answers aloud what she found in your journal.** A
+  spoken question about your journal was answered only in writing, and she
+  kept her thinking pose, because the answer came in a card rather than as a
+  reply of hers. She now reads the whole answer aloud, her reply and the
+  answers in its cards, without the citation numbers, once it is complete.
+  Answers from private entries are never read aloud.
