@@ -86,7 +86,7 @@ class GoalCompanionBust extends ConsumerWidget {
           border: Border.all(color: tokens.colors.decorative.level01),
         ),
         child: CompanionView(
-          look: ref.watch(companionLookProvider),
+          look: ref.watch(companionLookRollProvider).draw(),
           framing: CompanionFraming.bust,
           mood: pose.mood,
           // Held, so the verdict never relaxes out of view; she picks no

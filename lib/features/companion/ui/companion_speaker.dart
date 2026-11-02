@@ -30,8 +30,8 @@ import 'package:lotti/services/domain_logging.dart';
 /// Another source playing, or none, leaves her silent but alive. The voice
 /// knows nothing about her.
 ///
-/// She wears the session's outfit ([companionLookProvider]), so she is
-/// dressed the same on every screen.
+/// She is dressed by [companionLookRollProvider] in her build, so every
+/// screen dresses her the same way.
 ///
 /// Only the start and end of an utterance pass through Riverpod; the
 /// per-frame playhead is read straight from the playback state, never
@@ -158,7 +158,7 @@ class _CompanionSpeakerState extends ConsumerState<CompanionSpeaker> {
 
   @override
   Widget build(BuildContext context) => CompanionView(
-    look: ref.watch(companionLookProvider),
+    look: ref.watch(companionLookRollProvider).draw(),
     mood: widget.mood,
     framing: widget.framing,
     stage: widget.stage,

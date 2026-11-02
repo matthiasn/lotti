@@ -196,7 +196,7 @@ class _SpeakingFigure extends ConsumerWidget {
     final id = conversationId;
     if (id == null) {
       return CompanionView(
-        look: ref.watch(companionLookProvider),
+        look: ref.watch(companionLookRollProvider).draw(),
         framing: CompanionFraming.bust,
         holding: holding,
       );

@@ -94,8 +94,8 @@ sources:
     last_modified: 2026-10-22
   - id: look-controller
     resource: ../../lib/features/companion/state/companion_look_controller.dart
-    title: companionOutfitProvider and companionLookProvider
-    last_modified: 2026-10-19
+    title: companionOutfitProvider and companionLookRollProvider
+    last_modified: 2026-11-02
   - id: customization
     resource: ../../lib/features/companion/state/companion_customization_controller.dart
     title: companionCustomizationProvider, her stored customization
@@ -433,30 +433,37 @@ clap, at risk a hand to the cheek, off track palms down — it is all right,
 never a scold — and no data a hand at her ear, listening for news. Until
 the health resolves she stands calm and at ready.
 
-**What she wears.** Every host shows her as `companionLookProvider` draws
-her, in `companion/state/`; `CompanionSpeaker` and the goal card's silent
-bust both watch it, and no host passes a look. It is two things together:
+**What she wears.** Every host shows her as `companionLookRollProvider`
+draws her, in `companion/state/`: each host calls `draw()` in its `build`
+(`CompanionSpeaker`, the goal card's silent bust, the front agent's bust and
+the settings preview). No host passes a look. The draw is never cached, so a
+rebuilt host may dress her in a new surprise outfit; hosts rebuild on what
+changes them (a setting, a voice starting or stopping), never per frame. It
+is three things together:
 
 ```mermaid
 flowchart LR
   DB[(SettingsDb<br/>COMPANION_CUSTOMIZATION)] -->|loaded once| C[companionCustomizationProvider<br/>skin tone · hairstyle · hair colour · outfit? · sass]
-  C -->|outfitId| O[companionOutfitProvider<br/>the chosen outfit, or a random one]
-  R[companionOutfitRandomProvider] --> O
-  Stage[stage palette button] -->|next| O
   Settings[Settings › Preferences › Companion] -->|set| C
-  C -->|dress| L[companionLookProvider]
-  O --> L
-  L --> Hosts[CompanionSpeaker · GoalCompanionBust · settings preview]
+  Stage[stage palette button] -->|next| P[companionOutfitProvider<br/>the stage's pick, or none]
+  C -->|a new outfit clears| P
+  R[companionOutfitRandomProvider] --> Roll
+  C --> Roll[companionLookRollProvider<br/>customization · pick · random]
+  P --> Roll
+  Roll -->|draw in each host's build| Hosts[CompanionSpeaker · GoalCompanionBust · FrontCompanionFigure · settings preview]
+  Roll -.->|each draw records what she wears| W[companionWornOutfitProvider]
+  W -.->|next steps from| P
   C -->|sass| Speaker[CompanionSpeaker]
 ```
 
-- **The outfit** (`companionOutfitProvider`): the one chosen in her
-  customization, or, with none chosen, one of `companionOutfits` (the
-  grandmother's looks) drawn by `companionOutfitRandomProvider`, which a test
-  or a capture pins. It is not auto-disposed, so the draw holds until the app
-  closes. The stage's palette control calls `next`, stepping through the
-  outfits and wrapping, for the session only; a new choice in settings
-  starts over from that choice.
+- **The outfit** (`companionOutfitProvider`): the stage's pick for the
+  session wins; with none, the outfit chosen in her customization; with
+  "Surprise me", one of `companionOutfits` (the grandmother's looks) drawn by
+  `companionOutfitRandomProvider` at every draw, which a test pins. The
+  palette control on the stage calls `next`, stepping from the outfit the
+  last draw showed (`companionWornOutfitProvider`, a plain holder — a draw
+  runs in a build, where state may not change) and wrapping. A new choice in
+  settings clears the pick.
 - **The customization** (`companionCustomizationProvider`): her skin tone,
   hairstyle, hair colour, outfit, sass (default `cheeky`) and whether she
   answers a spoken question aloud (`speaksReplies`, default on; only an

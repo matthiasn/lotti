@@ -63,10 +63,11 @@ nudges), is
   dress, ivory cardigan), rock (beret, yellow sunglasses, beads, a red
   glove), garden (sage and straw), lavender (lavender and dove grey) and
   winter (navy and red). A look is data: a palette and a few switches.
-- **She dresses for the session.** In the app she wears one of her outfits,
-  drawn at random the first time she is shown and kept on every screen until
-  the app closes (`companionOutfitProvider`); the palette button on her
-  full-screen stage changes into the next one.
+- **She dresses for each showing.** In the app she wears the outfit the
+  palette button on her full-screen stage moved her to this session, else the
+  one chosen in settings, else — on "Surprise me" — one of her outfits drawn
+  at random each time she is shown, so she may wear something new the next
+  time you look.
 - **A person makes her their own.** In Settings › Preferences › Companion
   (shown with the flag) they pick her skin tone (six, numbered, never named
   after a people), her hairstyle (bun, curls, afro, locs, bob), her hair
@@ -91,7 +92,7 @@ nudges), is
 | `model/` | The data: looks and their palettes, poses, gestures, hand and mouth shapes, moods, the reaction scale with its beats and last word, the faces she pulls for a moment (`companion_flourish.dart`), and the parts a person dresses her in (`companion_parts.dart`, `companion_customization.dart`) |
 | `rig/` | Drawing: the arm solver, the limb ribbon, the frames a pose resolves into, and one painter per body part, composed by `CompanionPainter`; the animals' head and tail in `animal_head_painter.dart` and `tail_painter.dart`; her hairstyles in `hair_styles_painter.dart`, the bun in `hair_painter.dart` |
 | `animation/` | Motion: `CompanionAnimator` turns time, a mood, gestures and speech into a pose per frame; the mouth tracks; `PlayheadClock`, the playhead between a player's reports |
-| `state/` | `loadSpokenTrack`: the mouth for a clip the voice plays, read once off the UI isolate; the session's outfit, her stored customization, and `companionLookProvider`, the two together |
+| `state/` | `loadSpokenTrack`: the mouth for a clip the voice plays, read once off the UI isolate; the outfit pick, her stored customization, and `companionLookRollProvider`, which dresses her |
 | `ui/` | `CompanionView`, the live widget, and its `CompanionController`; `CompanionSpeaker`, the view bound to the on-device voice; `settings/`, the page that customizes her |
 | `widgetbook/` | The widgetbook folder "Companion" |
 
