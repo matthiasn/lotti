@@ -20,9 +20,11 @@ import 'package:lotti/classes/agents/agent_config.dart';
 import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
+import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_window.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/knowledge/agent_knowledge_providers.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
@@ -30,7 +32,9 @@ import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/companion/state/spoken_track.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/goals/model/goal_timeline_item.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
+import 'package:lotti/features/goals/state/goal_checkin_providers.dart';
 import 'package:lotti/features/goals/ui/pages/goal_agent_detail_page.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
 import 'package:lotti/features/habits/state/habits_controller.dart';
@@ -131,6 +135,54 @@ final _journalSections = <String, Object?>{
     "Say what you found there in Saturday's check-in.",
   ],
 };
+
+/// The journal's check-ins on the rail beside the dashboard: Thursday's
+/// recording with its transcript, Monday's written note.
+final _journalCheckIns = <GoalTimelineItem>[
+  GoalAudioCheckIn(
+    JournalAudio(
+      meta: Metadata(
+        id: 'checkin-thursday',
+        createdAt: DateTime(2026, 8, 13, 19),
+        updatedAt: DateTime(2026, 8, 13, 19, 12),
+        dateFrom: DateTime(2026, 8, 13, 19),
+        dateTo: DateTime(2026, 8, 13, 19, 12),
+      ),
+      data: AudioData(
+        dateFrom: DateTime(2026, 8, 13, 19),
+        dateTo: DateTime(2026, 8, 13, 19, 12),
+        audioFile: 'checkin-thursday.m4a',
+        audioDirectory: '/audio/',
+        duration: const Duration(minutes: 12),
+      ),
+      entryText: const EntryText(
+        plainText:
+            'I keep coming back to the north ridge. The ice shelf looked '
+            'safe in spring, but the wind has changed and the chicks would '
+            'be out in the open all winter. The ridge is a longer walk to '
+            'the water, though, and the older birds will not like that. '
+            'What would we lose by waiting a season? I want to scout it on '
+            'Saturday before I make up my mind.',
+      ),
+    ),
+  ),
+  GoalTextCheckIn(
+    JournalEntry(
+      meta: Metadata(
+        id: 'checkin-monday',
+        createdAt: DateTime(2026, 8, 10, 19),
+        updatedAt: DateTime(2026, 8, 10, 19, 9),
+        dateFrom: DateTime(2026, 8, 10, 19),
+        dateTo: DateTime(2026, 8, 10, 19, 9),
+      ),
+      entryText: const EntryText(
+        plainText:
+            'The new ice shelf feels too exposed for the chicks. Talked it '
+            'over with the elders; nobody wants to move twice.',
+      ),
+    ),
+  ),
+];
 
 Future<void> _capture(
   WidgetTester tester, {
@@ -233,6 +285,9 @@ Future<void> _capture(
                   const AgentKnowledgeView(confirmed: [], proposed: []),
             ),
             agentStateProvider(_agentId).overrideWith((ref) async => state),
+            goalTimelineItemsProvider(
+              _agentId,
+            ).overrideWith((ref) => journal ? _journalCheckIns : const []),
           ],
         ),
       ),
