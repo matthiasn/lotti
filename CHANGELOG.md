@@ -4,6 +4,50 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.82]
+
+### Added
+
+- **The task agent can now suggest creating a project you mention that doesn't
+  exist yet.** Say "this is part of the Garden Shed project" in a task's notes
+  or a recording, and if the task's category has no project of that name, the
+  agent proposes creating it. Once you confirm, the project is created in the
+  task's category under the name you used, already active, with the task in
+  it. If the project does exist, the agent suggests moving the task into it
+  instead, so names differing only in capitalisation or spacing don't produce
+  duplicates.
+
+### Changed
+
+- **A task's agent reads its linked tasks deeper when it needs to.** It used
+  to see a short summary of every linked task on each run, however many there
+  were. It now sees each linked task's one-line summary, and reads that task's
+  longer summary or its full report only when the one line is not enough —
+  to follow a blocker, say. A task with dozens of links no longer floods the
+  agent: it sees the open and newest ones first and is told how many it left
+  out.
+- **The outfit picker sits right under her preview.** On the Companion
+  settings page the choice and the picture it changes are now together,
+  instead of the outfit picker sitting at the bottom of the page.
+
+### Fixed
+
+- **"Surprise me" kept one outfit forever.** Choosing it in Settings ›
+  Preferences › Companion drew one outfit at random and had her wear it
+  until the app was closed. She now picks a fresh outfit each time she is
+  shown, so she may look different the next time a screen with her on it
+  opens.
+- **Sync health could show "Embeddings waiting" stuck at a number that never
+  went down, and one device a few embeddings more than the other.** A device
+  kept waiting for the text of a deleted entry, or of a report whose task was
+  deleted, which would never come — and the device that still held those
+  embeddings kept counting them. Embeddings for deleted entries are now
+  dropped instead of waited for. Each start also brings the device's own
+  embeddings up to date: it removes those of deleted entries and of deleted
+  tasks' reports, and embeds again the tasks whose text changed without an
+  edit, such as a renamed label. The waiting count and the totals on your
+  devices settle to match.
+
 ## [1.1.81]
 
 ### Added
