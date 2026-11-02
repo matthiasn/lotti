@@ -705,6 +705,8 @@ class QueryAnswerBuilder {
         ? withKnownCitations(drafted, evidence.length)
         : '';
     if (text.isEmpty) throw const FormatException('Invalid query answer');
+    // The draft on screen showed the dropped citation: it shows the answer.
+    if (text != drafted) onAnswerText?.call(text);
     final last = await access.load(dependencies.keys);
     cancellation.check();
     if (!last.allowsContent(

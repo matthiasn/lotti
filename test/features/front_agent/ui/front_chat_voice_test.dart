@@ -388,12 +388,16 @@ void main() {
     /// the answer in its door.
     Future<void> answerInDoor(
       WidgetTester tester,
-      ProviderContainer container,
-    ) async {
-      thread = [
-        ...thread,
-        message('u-1', AgentChatRole.user, 'What did I do?', spokenAt),
-      ];
+      ProviderContainer container, {
+      bool settleFirst = false,
+    }) async {
+      if (!thread.any((m) => m.id == 'u-1')) {
+        thread = [
+          ...thread,
+          message('u-1', AgentChatRole.user, 'What did I do?', spokenAt),
+        ];
+      }
+      if (settleFirst) composer.settle();
       doors = {
         'u-1': [
           FrontDoorEntry(
@@ -449,6 +453,34 @@ void main() {
       await tester.pump();
 
       expect(voice.spoken.single.text, 'You fixed the feeder.');
+    });
+
+    testWidgets('a thread still reloading is not read: its old value may '
+        'hold the reply without the answers its doors brought', (
+      tester,
+    ) async {
+      final container = await pumpHost(tester, sending: true);
+      speakTurn(container, 'c-1');
+      // While she works, her reply is projected, its door not yet.
+      thread = [
+        ...thread,
+        message('u-1', AgentChatRole.user, 'What did I do?', spokenAt),
+        message(
+          'a-1',
+          AgentChatRole.agent,
+          'Let me look.',
+          spokenAt.add(const Duration(seconds: 1)),
+        ),
+      ];
+      container.invalidate(frontChatThreadProvider);
+      await tester.pump();
+      await tester.pump();
+
+      // The send settles and the thread reloads with the door's answer;
+      // the reload first holds the reply-only thread as its value.
+      await answerInDoor(tester, container, settleFirst: true);
+
+      expect(voice.spoken.single.text, 'Let me look.\n\nYou fixed the feeder.');
     });
   });
 

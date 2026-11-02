@@ -1,5 +1,6 @@
 import 'dart:ui' show Tristate;
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -1169,6 +1170,38 @@ void main() {
 
       // The card grew by hundreds of pixels below the reader, who stayed.
       expect(position(tester).extentAfter, greaterThan(before + 400));
+    });
+
+    Future<void> wheel(WidgetTester tester, double dy) async {
+      final center = tester.getCenter(find.byType(ListView));
+      await tester.sendEventToBinding(PointerScrollEvent(position: center));
+      await tester.sendEventToBinding(
+        PointerScrollEvent(position: center, scrollDelta: Offset(0, dy)),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('scrolled up with a wheel, the reader keeps their place too', (
+      tester,
+    ) async {
+      await pumpThread(tester);
+      await wheel(tester, -5000);
+      final reading = position(tester).pixels;
+      expect(reading, lessThan(position(tester).maxScrollExtent));
+
+      await grow(tester);
+
+      expect(position(tester).pixels, reading);
+    });
+
+    testWidgets('wheeled back to the bottom, it follows again', (tester) async {
+      await pumpThread(tester);
+      await wheel(tester, -5000);
+      await wheel(tester, 20000);
+
+      await grow(tester);
+
+      expect(position(tester).extentAfter, 0);
     });
 
     testWidgets('back at the bottom, it follows again', (tester) async {

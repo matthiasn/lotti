@@ -223,15 +223,14 @@ void main() {
       );
     });
 
-    testWidgets('the Settings default writes nothing while she already '
-        'follows it', (tester) async {
+    testWidgets('the Settings default, while she already follows it, is '
+        'left to the service, which writes nothing then', (tester) async {
       await pumpAndOpen(tester);
 
       await tester.tap(find.byKey(FrontProfileChoiceKeys.useDefault));
       await tester.pumpAndSettle();
 
-      verifyNever(() => service.chooseProfile(any()));
-      expect(find.textContaining('now follows'), findsNothing);
+      verify(() => service.chooseProfile(null)).called(1);
     });
 
     testWidgets('a chosen profile that is gone marks the default she falls '
@@ -259,18 +258,25 @@ void main() {
       expect(find.textContaining('now uses'), findsNothing);
     });
 
-    testWidgets('picking the profile she already has of her own writes '
-        'nothing', (tester) async {
+    testWidgets('picking the profile whose id alone she keeps asks the '
+        'service, which repairs a disabled setup', (tester) async {
       await pumpAndOpen(
         tester,
-        who: identity.copyWith(config: _chose('profile-mistral')),
+        who: identity.copyWith(
+          config: const AgentConfig(
+            profileId: 'profile-mistral',
+            inferenceSetup: AgentInferenceSetup(
+              mode: AgentInferenceSetupMode.disabled,
+              origin: AgentInferenceSetupOrigin.user,
+            ),
+          ),
+        ),
       );
 
       await tester.tap(find.text('Mistral (EU)'));
       await tester.pumpAndSettle();
 
-      verifyNever(() => service.chooseProfile(any()));
-      expect(find.textContaining('now uses'), findsNothing);
+      verify(() => service.chooseProfile('profile-mistral')).called(1);
     });
 
     testWidgets('a save that finds no companion is logged and shows an '

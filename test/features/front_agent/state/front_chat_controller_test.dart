@@ -424,6 +424,26 @@ void main() {
       expect(state().failedMessage, 'Hello');
     });
 
+    test(
+      'a send that goes through keeps what the user typed meanwhile',
+      () async {
+        final answering = Completer<void>();
+        when(
+          () => chatService.sendMessage(text: 'Hello', conversationId: 'c-1'),
+        ).thenAnswer((_) => answering.future);
+        controller().updateDraft('Hello');
+
+        final sending = controller().send();
+        await pumpEventQueue();
+        controller().updateDraft('And another thing');
+        answering.complete();
+        await sending;
+
+        expect(state().draft, 'And another thing');
+        expect(state().failedMessage, isNull);
+      },
+    );
+
     test('an unexpected error fails the turn without a durable id', () async {
       when(
         () => chatService.sendMessage(text: 'Hello', conversationId: 'c-1'),

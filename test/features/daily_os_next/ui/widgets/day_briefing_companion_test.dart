@@ -22,6 +22,7 @@ import 'package:lotti/features/daily_os_next/logic/day_briefing.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_briefing_companion.dart';
 import 'package:lotti/features/design_system/theme/sizing_tokens.dart';
 import 'package:lotti/features/tts/cloud/cloud_speech_synthesizer.dart';
+import 'package:lotti/features/tts/cloud/voxtral_tts_service.dart';
 import 'package:lotti/features/tts/state/tts_audio_player.dart';
 import 'package:lotti/features/tts/state/tts_engine_provider.dart';
 import 'package:lotti/features/tts/state/tts_model_repository.dart';
@@ -293,6 +294,27 @@ void main() {
         expect(call.text, contains('Write'));
         expect(call.sent, isTrue);
         expect(engine.calls, isEmpty);
+        expect(player.playCount, 1);
+      });
+
+      testWidgets('a language the cloud voice has no voice for is spoken by '
+          'the on-device voice', (tester) async {
+        cloud = FakeCloudSpeechSynthesizer(
+          error: const VoxtralTtsException(
+            VoxtralTtsFailure.noVoice,
+            'No voice for language ro',
+          ),
+        );
+        await pump(
+          tester,
+          plannerSetup: setup(),
+          locale: const Locale('ro'),
+        );
+
+        await tester.tap(find.byType(CompanionSpeaker));
+        await _pumpFrames(tester);
+
+        expect(engine.calls, hasLength(1));
         expect(player.playCount, 1);
       });
 

@@ -137,13 +137,15 @@ class _AgentChatViewState extends ConsumerState<AgentChatView> {
     return NotificationListener<Notification>(
       onNotification: (notification) {
         switch (notification) {
-          // Only a drag by the user decides whether to follow: a jump to the
-          // latest is a scroll too.
+          // Where a scroll leaves the reader decides whether to follow: a
+          // drag as it moves, and every scroll — a wheel, a fling, a jump to
+          // the latest — where it ends. Content growing is no scroll.
           case ScrollUpdateNotification(
-            depth: 0,
-            :final metrics,
-            dragDetails: _?,
-          ):
+                depth: 0,
+                :final metrics,
+                dragDetails: _?,
+              ) ||
+              ScrollEndNotification(depth: 0, :final metrics):
             _followLatest = metrics.extentAfter <= nearBottom;
           // A host that keeps replies where they start (query chat, whose
           // reader reads an answer and its evidence from the top) is not

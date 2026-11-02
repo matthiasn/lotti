@@ -100,6 +100,9 @@ abstract final class FrontVoice {
     }
     ref.listen(frontChatThreadProvider, (_, next) {
       final turn = ref.read(frontSpokenTurnProvider);
+      // A thread reloading still holds its previous value, which may be the
+      // reply without the answers its doors brought: wait for the new one.
+      if (next.isLoading) return;
       final thread = next.value;
       if (turn == null || thread == null) return;
       // The inbox gathers every conversation, so a reply there may be

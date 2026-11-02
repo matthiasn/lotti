@@ -1265,6 +1265,7 @@ void main() {
     void Function()? duringShortlist;
     void Function(String source)? duringExtract;
     late String answerText;
+    late List<String> shown;
     late QueryCancellation cancellation;
     late List<(int, bool)> progress;
     List<String>? plannedSearches;
@@ -1283,6 +1284,7 @@ void main() {
       duringShortlist = null;
       duringExtract = null;
       answerText = 'Here is what the sources establish.';
+      shown = [];
       answerInput = null;
       cancellation = QueryCancellation();
     });
@@ -1336,6 +1338,7 @@ void main() {
           cancellation: cancellation,
           onProgress: (checked, {required expanded}) =>
               progress.add((checked, expanded)),
+          onAnswerText: shown.add,
         );
 
     test(
@@ -1600,6 +1603,8 @@ void main() {
 
       expect(result.answer.evidence, hasLength(1));
       expect(result.answer.text, 'Feeder at noon [1], recounted at dusk.');
+      // The draft that showed the dropped citation ends on the answer.
+      expect(shown.last, result.answer.text);
     });
 
     test('an answer that was nothing but a citation naming no evidence is '

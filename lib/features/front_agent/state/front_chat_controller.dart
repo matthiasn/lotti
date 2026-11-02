@@ -130,7 +130,8 @@ class FrontChatController extends Notifier<FrontChatComposerState> {
           );
       await _unarchive(landing);
       _reproject();
-      state = state.settled();
+      // What the user typed while it was on its way stays in the box.
+      state = state.settled(draft: state.draft);
     } on FrontChatTurnException catch (error) {
       // No answer is coming for a turn that did not go through.
       ref.read(frontSpokenTurnProvider.notifier).settle();

@@ -45,3 +45,6 @@
   reply of hers. She now reads the whole answer aloud, her reply and the
   answers in its cards, without the citation numbers, once it is complete.
   Answers from private entries are never read aloud.
+- **Read aloud no longer fails when the cloud voice has no voice for your
+  language.** Where your device has the on-device voice, it now reads the
+  text instead of showing an error.

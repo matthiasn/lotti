@@ -681,10 +681,12 @@ then the answer of each of the turn's doors — a journal or owner answer, a
 specialist's mirrored reply — in segment order, citation numbers left out.
 A journal question usually ends with a dispatch alone, no reply of hers, so
 speaking only a reply left the answer in its door unspoken and her pose on
-*think*. The answer has landed once the turn holds a reply or a door and
-every door is walked; it is read only after the send settles, because the
-doors are walked inside the wake the send waits on, and the thread is
-projected again then. A turn that landed with nothing to say still settles.
+*think*. The answer has landed once the turn holds a reply or a door,
+every door is walked, and every goal or person a door handed the words to has
+replied (that door is done at the hand-over, its reply mirrored later); it is
+read only after the send settles, because the doors are walked inside the
+wake the send waits on, and only from a thread that is not reloading, whose
+held value may be the reply without its doors' answers. A turn that landed with nothing to say still settles.
 An answer shown only while private entries are is never said aloud.
 
 **Which voice is hers.** Her cloud voice is the read-aloud model of the

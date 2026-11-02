@@ -23,7 +23,9 @@ const _frontVoicePrefix = 'front-chat:';
 /// mirrored reply — in segment order. A journal question usually ends with
 /// a dispatch alone, no reply of hers, so a reply was never enough: the
 /// answer in its door went unspoken and she kept thinking. It has landed
-/// once the turn holds a reply or a door and every door is walked. An answer
+/// once the turn holds a reply or a door, every door is walked, and every
+/// goal or person a door handed the words to has replied: that door is done
+/// as soon as the turn is handed over, its reply mirrored later. An answer
 /// shown only while private entries are is not said aloud. Citation numbers
 /// are left out: they are for reading.
 ({bool landed, String text}) frontSpokenAnswer(
@@ -40,9 +42,11 @@ const _frontVoicePrefix = 'front-chat:';
   final doors = asked == null
       ? const <FrontDoorEntry>[]
       : thread.doorsByMessageId[asked.id] ?? const <FrontDoorEntry>[];
-  final landed =
-      (reply != null || doors.isNotEmpty) &&
-      doors.every((door) => door.record.status == FrontDoorStatus.done);
+  bool answered(FrontDoorEntry door) =>
+      door.record.status == FrontDoorStatus.done &&
+      (door.record.outcome is! FrontDoorChatTurn ||
+          door.specialistReply != null);
+  final landed = (reply != null || doors.isNotEmpty) && doors.every(answered);
   final parts = [
     ?reply?.text,
     for (final door in doors)

@@ -28,8 +28,9 @@ stays on earlier evidence; a new user turn, or the start of sending, still
 scrolls to the latest message. After that the thread **follows its latest
 message as it grows** while the reader is at the bottom: a reply's cards or a
 door's answer arrive after the reply's own frame, and a lazily built list's
-real height after the first jump, so one jump landed short. A drag away from
-the bottom stops the following, a drag back resumes it, and a conversation
+real height after the first jump, so one jump landed short. Where a scroll
+leaves the reader decides it — a drag as it moves, any scroll (wheel, fling)
+where it ends: away from the bottom stops the following, back resumes it, and a conversation
 restored where it was left keeps its place until something new arrives.
 While a reply is on its way the thread shows `AgentTypingIndicator`'s
 pulsing dots (unspaced inside the bubble), stopped under reduced motion; a

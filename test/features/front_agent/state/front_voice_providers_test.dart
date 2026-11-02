@@ -144,6 +144,29 @@ void main() {
       expect(spoken.text, 'Pip says Friday works.');
     });
 
+    test('waits for a goal or person the words were handed to: that door '
+        'is done before they reply', () {
+      const handed = FrontDoorChatTurn(
+        specialistAgentId: 'goal-1',
+        specialistMessageId: 'm-1',
+      );
+      final waiting = frontSpokenAnswer(
+        thread(reply: 'Asking your goal.', doors: [door(handed)]),
+        turn,
+      );
+      expect(waiting.landed, isFalse);
+
+      final replied = frontSpokenAnswer(
+        thread(
+          reply: 'Asking your goal.',
+          doors: [door(handed, specialistReply: 'Two runs left this week.')],
+        ),
+        turn,
+      );
+      expect(replied.landed, isTrue);
+      expect(replied.text, 'Asking your goal.\n\nTwo runs left this week.');
+    });
+
     test('a reply from before the turn is not its answer', () {
       final old = FrontChatThread(
         messages: [

@@ -67,7 +67,10 @@ void main() {
   }) async {
     await setUpTestGetIt();
     addTearDown(tearDownTestGetIt);
-    await withClock(Clock.fixed(now), () async {
+    // Every frame on the fixtures' day, the ones after the list opens too:
+    // a rebuild on the real clock re-groups the rows and re-labels their
+    // times, so the suite would pass only on the day it was written.
+    return withClock(Clock.fixed(now), () async {
       await tester.pumpWidget(
         makeTestableWidgetNoScroll(
           Scaffold(body: FrontConversationList(beside: beside)),
@@ -80,19 +83,22 @@ void main() {
         ),
       );
       await tester.pump();
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(FrontConversationList)),
+      );
+      // Both auto-dispose otherwise; the list is open while it shows.
+      final open = container.listen(
+        frontConversationListOpenProvider,
+        (_, _) {},
+      );
+      addTearDown(open.close);
+      container
+        ..read(frontPickedConversationProvider.notifier).picked = 'c-1'
+        ..read(frontConversationListOpenProvider.notifier).toggle();
+      await tester.pump();
+      await tester.pump();
+      return container;
     });
-    final container = ProviderScope.containerOf(
-      tester.element(find.byType(FrontConversationList)),
-    );
-    // Both auto-dispose otherwise; the list is open while it shows.
-    final open = container.listen(frontConversationListOpenProvider, (_, _) {});
-    addTearDown(open.close);
-    container
-      ..read(frontPickedConversationProvider.notifier).picked = 'c-1'
-      ..read(frontConversationListOpenProvider.notifier).toggle();
-    await tester.pump();
-    await tester.pump();
-    return container;
   }
 
   List<String> titles(WidgetTester tester) => [

@@ -36,7 +36,8 @@ abstract final class FrontProfileChoice {
       config.inferenceSetup?.baseProfileId ?? config.profileId;
 
   /// Lets the user pick her profile for [identity], or the Settings default,
-  /// saves it and says so. Picking what she already has changes nothing.
+  /// saves it and says so. Whether a pick changes anything is the
+  /// service's call (`FrontAgentService.chooseProfile`).
   /// A failure is logged and surfaces as an error toast.
   ///
   /// Her identity's update stream re-resolves her setup, and with it her
@@ -64,7 +65,9 @@ abstract final class FrontProfileChoice {
         ownProfileId: profiles.any((p) => p.id == own) ? own : null,
         defaultProfileId: defaultProfileId,
       );
-      if (pick == null || !context.mounted || pick.profileId == own) return;
+      // The service writes nothing when her setup already is the pick, and
+      // repairs it when only the id matches — a disabled setup, an override.
+      if (pick == null || !context.mounted) return;
       final saved = await ref
           .read(frontAgentServiceProvider)
           .chooseProfile(pick.profileId);

@@ -87,7 +87,8 @@ flowchart TD
   Client -->|Mistral| Cloud["TtsCloudRoute: Voxtral TTS in the text's language"]
   Cloud --> Voice{"Voice for the language?"}
   Voice -->|user's choice, else first female preset, else any| Speak["POST /v1/audio/speech → temporary WAV"]
-  Voice -->|none| NoVoice["error: noVoice — nothing sent"]
+  Voice -->|none, on-device voice supported| Local
+  Voice -->|none, no on-device voice| NoVoice["error: noVoice — nothing sent"]
   Local --> Play["Shared playback, cancellation and cleanup"]
   Speak --> Play
 ```
@@ -130,8 +131,11 @@ still resolve offline. `VoxtralVoiceCatalog.resolve` picks the voice for a
 language: the user's choice for that language while the catalog still has it
 (`TtsSettings.cloudVoiceByLanguage`, `TTS_CLOUD_VOICES`), else the language's
 first female preset, else its first voice. The API has no voice-per-language
-default of its own. A language with no voice fails with `noVoice` before any
-text is sent, rather than reading German in an English voice. Each voice
+default of its own. A language with no voice raises `noVoice` before any
+text is sent, rather than reading German in an English voice; where the
+device has the on-device voice, which infers the language from the text,
+`TtsPlaybackController` speaks with it instead, and only a device without one
+ends in the error. Each voice
 keeps the API's mood `tags` (cached with it) so voices of one language can
 be told apart before they are heard.
 
