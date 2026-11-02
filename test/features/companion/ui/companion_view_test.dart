@@ -606,13 +606,34 @@ void main() {
       ),
     );
 
-    // Well past listen's hold: replayed each time it relaxes.
+    // Well past listen's hold: kept in its settled phase.
     await _frames(tester, 4);
     expect(controller.gesture, GestureName.listen);
 
     await tester.pumpWidget(_host(CompanionView(controller: controller)));
     await _frames(tester, 4);
     expect(controller.gesture, isNull);
+  });
+
+  testWidgets('a held verdict bounces once and then stands still', (
+    tester,
+  ) async {
+    // The goal card's on-track pose: a bright face and a raised thumb.
+    await tester.pumpWidget(
+      _host(
+        const CompanionView(
+          mood: CompanionMood.bright,
+          holding: GestureName.thumbs,
+          autoGestures: false,
+        ),
+      ),
+    );
+    final landing = await _frames(tester, 1);
+    expect(landing.map((p) => p.lift).reduce(math.max), greaterThan(1));
+
+    await _frames(tester, 3);
+    final settled = await _frames(tester, 2);
+    expect(settled.map((p) => p.lift).reduce(math.max), lessThan(0.05));
   });
 
   testWidgets('a new held gesture starts at once', (tester) async {

@@ -129,7 +129,8 @@ class CompanionView extends StatefulWidget {
 
   /// A gesture she keeps up for as long as this is set — listening while
   /// someone records, thinking while something is worked out: played at
-  /// once, and again whenever it relaxes. Null lets her stand at ready.
+  /// once, then held in its settled phase, still (`CompanionAnimator.hold`).
+  /// Null lets her stand at ready.
   final GestureName? holding;
 
   /// Seeds her blinks, glances and gesture picks.
@@ -163,7 +164,7 @@ class _CompanionViewState extends State<CompanionView>
   @override
   void initState() {
     super.initState();
-    _animator = CompanionAnimator(seed: widget.seed);
+    _animator = CompanionAnimator(seed: widget.seed)..hold(widget.holding);
     widget.controller?._animator = _animator;
     _pose = _advance(0);
     _ticker = createTicker(_onTick);
@@ -191,10 +192,7 @@ class _CompanionViewState extends State<CompanionView>
       oldWidget.controller?._animator = null;
       widget.controller?._animator = _animator;
     }
-    final holding = widget.holding;
-    if (holding != null && holding != oldWidget.holding) {
-      _animator.play(holding);
-    }
+    _animator.hold(widget.holding);
   }
 
   @override
@@ -205,8 +203,6 @@ class _CompanionViewState extends State<CompanionView>
   }
 
   CompanionPose _advance(double dt) {
-    final holding = widget.holding;
-    if (holding != null && _animator.gesture == null) _animator.play(holding);
     final track = widget.track;
     final position = widget.playhead?.call();
     return _animator.step(

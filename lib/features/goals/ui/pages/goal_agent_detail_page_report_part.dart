@@ -9,11 +9,18 @@ class _GoalReportCard extends StatefulWidget {
     required this.report,
     required this.fallback,
     required this.fallbackMuted,
+    required this.expanded,
+    required this.onToggle,
   });
 
   final AgentReportEntity? report;
   final String fallback;
   final bool fallbackMuted;
+
+  /// Whether "Show more" is open. Held by the read card, whose read-aloud
+  /// control speaks what this body shows ([goalReportSpokenText]).
+  final bool expanded;
+  final VoidCallback onToggle;
 
   @override
   State<_GoalReportCard> createState() => _GoalReportCardState();
@@ -21,13 +28,12 @@ class _GoalReportCard extends StatefulWidget {
 
 class _GoalReportCardState extends State<_GoalReportCard>
     with SingleTickerProviderStateMixin {
-  bool _expanded = false;
-
   /// Matches the task-details agent section: the body eases open rather than
   /// appearing, so the card reads as one surface revealing more of itself.
   late final AnimationController _reveal = AnimationController(
     vsync: this,
     duration: MotionDurations.medium2,
+    value: widget.expanded ? 1 : 0,
   );
   late final Animation<double> _revealCurve = CurvedAnimation(
     parent: _reveal,
@@ -40,9 +46,11 @@ class _GoalReportCardState extends State<_GoalReportCard>
     super.dispose();
   }
 
-  void _toggle() {
-    setState(() => _expanded = !_expanded);
-    if (_expanded) {
+  @override
+  void didUpdateWidget(covariant _GoalReportCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.expanded == oldWidget.expanded) return;
+    if (widget.expanded) {
       _reveal.forward();
     } else {
       _reveal.reverse();
@@ -57,14 +65,8 @@ class _GoalReportCardState extends State<_GoalReportCard>
     final content = report?.content.trim();
     final hasTldr = tldr != null && tldr.isNotEmpty;
     final hasContent = content != null && content.isNotEmpty;
-    // A full text identical to the TLDR would make Show more a no-op that
-    // merely repeats the same paragraph — hide the toggle instead.
-    final sections = _sectionsOf(report);
-    // A renderable sections payload is expandable even when the flat text
-    // happens to equal the TLDR: without this the toggle vanished and the
-    // sections became unreachable.
-    final expandable =
-        hasTldr && (sections != null || (hasContent && content != tldr));
+    final sections = goalReportSections(report);
+    final expandable = goalReportExpandable(report);
     final primary = hasTldr
         ? tldr
         : hasContent
@@ -93,7 +95,7 @@ class _GoalReportCardState extends State<_GoalReportCard>
         // Show more, and above what comes next. It is the one part of the
         // report written about the person's own words instead of the
         // numbers — on a journal goal, the part they came for.
-        if (_reflectionOf(sections) case final reflection?) ...[
+        if (goalReportReflection(sections) case final reflection?) ...[
           SizedBox(height: tokens.spacing.step3),
           Text(
             context.messages.goalReportSectionReflection,
@@ -133,7 +135,7 @@ class _GoalReportCardState extends State<_GoalReportCard>
         // the expanded body they were reachable only by a tap most readers
         // never make — the one part of a standing report that asks
         // something of you, gated behind the part that only informs.
-        if (_actionsOf(sections) case final actions?) ...[
+        if (goalReportActions(sections) case final actions?) ...[
           SizedBox(height: tokens.spacing.step3),
           // Named, so the briefing's weight reads at a glance: what stands
           // is a sentence above; what comes next is this list.
@@ -201,13 +203,15 @@ class _GoalReportCardState extends State<_GoalReportCard>
         if (expandable) ...[
           SizedBox(height: tokens.spacing.step1),
           DesignSystemButton(
-            label: _expanded
+            label: widget.expanded
                 ? context.messages.aiResponseShowLess
                 : context.messages.aiResponseShowMore,
-            onPressed: _toggle,
+            onPressed: widget.onToggle,
             variant: DesignSystemButtonVariant.tertiary,
             size: DesignSystemButtonSize.dense,
-            trailingIcon: _expanded ? LottiIcons.collapse : LottiIcons.expand,
+            trailingIcon: widget.expanded
+                ? LottiIcons.collapse
+                : LottiIcons.expand,
             alignsLabelToLeadingEdge: true,
             suppressHoverFill: true,
           ),
@@ -360,34 +364,6 @@ class _GoalActionsMenuButton extends ConsumerWidget {
   }
 }
 
-/// The report's current actions, or null when it has none.
-///
-/// Read by the card directly so they can sit with the summary rather than
-/// inside the expandable body: an action reachable only behind "Show more"
-/// is an action most readers never see.
-List<String>? _actionsOf(Map<String, Object?>? sections) {
-  if (sections == null) return null;
-  final actions = <String>[
-    if (sections[GoalReportSectionKeys.nextActions] case final List<Object?> a)
-      for (final item in a)
-        if (item case final String text when text.trim().isNotEmpty)
-          text.trim(),
-  ];
-  return actions.isEmpty ? null : actions;
-}
-
-/// The report's reflection on what the user said, or null when it has none.
-///
-/// Read by the card directly, like the actions, so it sits with the summary;
-/// [_GoalReportSections] never lists it, so it is not repeated below.
-String? _reflectionOf(Map<String, Object?>? sections) {
-  if (sections?[GoalReportSectionKeys.reflection] case final String text
-      when text.trim().isNotEmpty) {
-    return text.trim();
-  }
-  return null;
-}
-
 /// The local dates of the check-ins the report's reflection says it answers,
 /// oldest first and one per day, or null when it names none — a report from
 /// before the record existed, or one whose reflection answered no check-in.
@@ -401,40 +377,6 @@ List<DateTime>? _answeredOf(AgentReportEntity? report) {
           DateTime(at.year, at.month, at.day),
   };
   return days.isEmpty ? null : (days.toList()..sort());
-}
-
-/// The structured sections a report carries, or null when it has none —
-/// a free-form report, or one written before sections were persisted.
-Map<String, Object?>? _sectionsOf(AgentReportEntity? report) {
-  final raw = report?.provenance[GoalReportProvenanceKeys.sections];
-  if (raw is! Map) return null;
-  final sections = <String, Object?>{};
-  for (final entry in raw.entries) {
-    if (entry.key is String) sections[entry.key as String] = entry.value;
-  }
-  // A payload has to RENDER something to count as a sectioned report. A map
-  // of blanks — or one carrying only keys this build does not know — passed
-  // the old non-empty check and won the branch, so the card opened on zero
-  // headings and zero actions while `content` still held the real text.
-  //
-  // Only recognized keys count, for the same reason.
-  var renderable = false;
-  for (final key in const [
-    GoalReportSectionKeys.currentPeriod,
-    GoalReportSectionKeys.rollingWindow,
-    GoalReportSectionKeys.latestChange,
-    GoalReportSectionKeys.coverage,
-  ]) {
-    if (sections[key] case final String text when text.trim().isNotEmpty) {
-      renderable = true;
-    }
-  }
-  if (sections[GoalReportSectionKeys.nextActions] case final List<Object?> a) {
-    if (a.any((item) => item is String && item.trim().isNotEmpty)) {
-      renderable = true;
-    }
-  }
-  return renderable ? sections : null;
 }
 
 /// The expanded report, rendered as titled sections.
@@ -451,20 +393,7 @@ class _GoalReportSections extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final messages = context.messages;
-    final ordered = <(String, String)>[
-      for (final (key, heading) in <(String, String)>[
-        (
-          GoalReportSectionKeys.currentPeriod,
-          messages.goalReportSectionStanding,
-        ),
-        (GoalReportSectionKeys.rollingWindow, messages.goalReportSectionWindow),
-        (GoalReportSectionKeys.latestChange, messages.goalReportSectionChange),
-        (GoalReportSectionKeys.coverage, messages.goalReportSectionCoverage),
-      ])
-        if (sections[key] case final String body when body.trim().isNotEmpty)
-          (heading, body.trim()),
-    ];
+    final ordered = goalReportExpandedSections(sections, context.messages);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

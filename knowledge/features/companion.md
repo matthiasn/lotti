@@ -519,8 +519,13 @@ for the hand in every gesture (a test walks each gesture through its phases).
 `bust` is head, shoulders and raised hands, square, for small sizes.
 
 A host cues her through `CompanionController.play` (a gesture once) or keeps a
-gesture up with `CompanionView.holding`, which her ticker replays whenever it
-relaxes — no timer. `CompanionController.gesture` reads the gesture in play;
+gesture up with `CompanionView.holding` (`CompanionAnimator.hold`): played at
+once, bounce of joy and all, then held in its settled phase — no replay, and no
+bounce from it or her mood while it stands settled. Replayed at every hold, a
+verdict kept up on the goal card for minutes bobbed her upper body three times a
+second and restarted its phases every second or so. A gesture played over a
+hold — a reaction while she reads — runs its course and hands back to it.
+`CompanionController.gesture` reads the gesture in play;
 `CompanionController.flourish` pulls a face and `flourishing` reads it (see
 [flourishes](#flourishes-and-beats)).
 

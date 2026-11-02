@@ -1192,9 +1192,15 @@ handler would retract it; that wiring is a follow-up.
   full-screen stage. She holds the goal's pose (`goalCompanionPose`, as on
   the Goals list) and speaks the read under `goalReportSpeechSourceId`; the
   header rail gains the shared read-aloud disc (`SummaryReadAloudButton`)
-  while read-aloud is on and the device has a voice. It reads the TL;DR,
-  else the full text, else the health one-liner — the read the card leads
-  with. A refresh that DIES
+  while read-aloud is on and the device has a voice. It reads what the card
+  shows (`goalReportSpokenText`, `goals/ui/pages/goal_report_sections.dart`):
+  the TL;DR (else the full text, else the health one-liner), then *From your
+  check-ins* with the reflection and *What's next* with the actions, and —
+  while *Show more* is open — the sections behind it under their headings (or
+  the full text of a report without sections), each heading spoken as a
+  sentence of its own. The read card holds the *Show more* state so the
+  voice and the body never disagree; the same parsers
+  (`goalReportSections`, `goalReportExpandable`) drive both. A refresh that DIES
   (provider out of credits, network down, the executor timeout) says so on
   the card: it watches `goalReportWakeOutcomeProvider` — report-refresh and
   escalation wakes only, so a failed chat run or a passing Phase A
@@ -2073,6 +2079,18 @@ Invariants worth not breaking:
 
 ## The check-in rail, and where a goal is filed
 
+**How wide the rail is.** Beside a desktop pane of at least
+`kGoalTimelineRailFoldWidth` + `kGoalTimelineRailMinWidth` the rail stands to
+the dashboard's right, on its own scroll axis. Undragged,
+`goalTimelineRailWidth` gives it 40 % of the pane between 360 and 560 —
+the room the dashboard's capped measure would otherwise spend on empty
+margins — so an expanded check-in's words set about as wide as on a phone.
+A `ResizableDivider` on its leading edge lets the person drag it, as the
+app's other side panes; the width (`goalTimelineRailWidthProvider`,
+`goals/state/goal_timeline_rail_width_controller.dart`) is one for every goal,
+persisted under `PANE_WIDTH_GOAL_TIMELINE_RAIL`, from 360 up to 800, and
+never leaves the dashboard less than its fold width.
+
 The rail (`GoalCheckInTimeline`) draws the person timeline's rows — the design
 system's `DesignSystemTimelineRow` under a `DesignSystemTimelineSectionHeader`
 per day (*Today*, *Yesterday*, then the date; sentence case, never upper case)
@@ -2290,7 +2308,11 @@ flowchart LR
 
 A wake carries a bounded slice of the past: the check-in summaries that fit
 `userVoice`, the long-range digests, the twelve newest observations and the
-older ones the agent filed `critical` (ADR 0146). `search_goal_memory`
+older ones the agent filed `critical` (ADR 0146). The system prompt's
+*Memory* step asks for an observation whenever `userVoice` or a message shows
+something about the user — circumstances, mood, obstacles, what helps, how
+coaching lands — and the closing "call no tools" step yields to it; a prompt
+that said only what observations were *not* for got next to none. `search_goal_memory`
 reaches the rest (ADR 0057 decision 1): every check-in in the user's own
 words, the whole chat, and the agent's observations.
 

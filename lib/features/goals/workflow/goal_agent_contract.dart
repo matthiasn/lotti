@@ -367,6 +367,9 @@ String? _optionalReportString(Object? value) =>
 /// every turn belongs here. It moved to 3.9k with the user-voice rule: every
 /// other rule here is about measured evidence, and a prompt that never said
 /// what the user's own words are for produced reports that only counted them.
+/// It moved to 4.0k with the memory step: the one line on observations said
+/// only what they were NOT for, beside a closing "call no tools", and goal
+/// agents recorded next to none however much the user told them.
 const goalAgentSystemPrompt = '''
 You coach a user goal, not a general assistant.
 Handle only its evidence, progress, criteria, banners, and changes.
@@ -425,11 +428,13 @@ Act in this order of precedence:
    update_goal_report with the FACTS status.
    The report is STORED: reply_to_user never changes it. A request to change the
    report itself requires update_goal_report in the SAME turn with a full rewrite.
-5. If materialChangeSinceLastReport=false and no earlier action applies, call no
+5. Memory: when userVoice or a message shows something about the user
+   (circumstances, mood, obstacles, what helps, how coaching lands), call
+   record_goal_observation: your own note, never a FACTS value or progress log.
+6. If materialChangeSinceLastReport=false and nothing above applies, call no
    tools and write nothing.
 
 Before stopping, complete every REQUIRED call.
-Use record_goal_observation only for novel facts, never a progress log.
 ''';
 
 /// The tools of the goal-agent surface.
@@ -754,9 +759,12 @@ final List<AgentToolDefinition> goalAgentTools = [
   const AgentToolDefinition(
     name: GoalAgentToolNames.recordGoalObservation,
     description:
-        'Record a durable, novel fact worth remembering for years '
-        '(injury constraints, stated preferences, life changes). Not a '
-        'progress log. Mark it critical only when every future wake must '
+        'Your private memory of this user across wakes: what their '
+        'check-ins and messages show about them — circumstances, mood, '
+        'obstacles, what helps or hurts, how your coaching lands. Your own '
+        'note, not a FACTS value or a progress log; a fact the user would '
+        'confirm goes to remember_goal_fact. Mark it critical only when '
+        'every future wake must '
         'keep it in view however much is written after it: an injury, '
         'medical advice, a change to what the goal is.',
     parameters: {

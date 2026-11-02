@@ -27,6 +27,7 @@ import 'package:lotti/features/agents/wake/wake_orchestrator.dart'
 import 'package:lotti/features/companion/ui/companion_speaker.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/callouts/design_system_inline_callout.dart';
+import 'package:lotti/features/design_system/components/navigation/resizable_divider.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
@@ -38,6 +39,7 @@ import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/state/goal_assessment_state.dart';
 import 'package:lotti/features/goals/state/goal_checkin_providers.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
+import 'package:lotti/features/goals/state/goal_timeline_rail_width_controller.dart';
 import 'package:lotti/features/goals/ui/charter/goal_charter_card.dart';
 import 'package:lotti/features/goals/ui/checkins/goal_checkin_composer.dart';
 import 'package:lotti/features/goals/ui/checkins/goal_checkins_card.dart';
@@ -49,6 +51,7 @@ import 'package:lotti/features/goals/ui/goal_health_direction.dart';
 import 'package:lotti/features/goals/ui/goal_log_today_sheet.dart';
 import 'package:lotti/features/goals/ui/goal_progress_card.dart';
 import 'package:lotti/features/goals/ui/knowledge/goal_knowledge_section.dart';
+import 'package:lotti/features/goals/ui/pages/goal_report_sections.dart';
 import 'package:lotti/features/goals/ui/unified/goal_companion.dart';
 import 'package:lotti/features/goals/ui/unified/unified_goal_status.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
@@ -127,6 +130,8 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
   /// fit the content column at the authored pitch, from the PANE's measured
   /// width (the body [LayoutBuilder]'s constraint — the window width lied
   /// whenever a navigation sidebar or the check-in rail narrowed the pane).
+  /// [railWidth] is the width the rail and its divider take beside the
+  /// content, 0 while there is none.
   ///
   /// Called from layout, so the controller write is deferred past the frame;
   /// idempotent per computed value, and a no-op once the user has picked a
@@ -134,7 +139,7 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
   void _scheduleAutoSpan(
     BuildContext context, {
     required double paneWidth,
-    required bool railShown,
+    required double railWidth,
   }) {
     if (_rangePicked) return;
     final tokens = context.designTokens;
@@ -142,9 +147,7 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
     final contentWidth =
         math.min(
           kUnifiedGoalsContentMaxWidth,
-          paneWidth -
-              (railShown ? kGoalTimelineRailWidth : 0) -
-              tokens.spacing.step6 * 2,
+          paneWidth - railWidth - tokens.spacing.step6 * 2,
         ) -
         tokens.spacing.cardPadding * 2;
     final fit = pitch <= 0 || contentWidth <= pitch
@@ -494,9 +497,12 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
     // pane width is measured at the layout site below, the way the chat
     // drawer's fold guard already does it; this is only the "is a rail
     // possible at all" half.
+    final draggedRailWidth = ref.watch(goalTimelineRailWidthProvider).value;
+    double railWidth(double paneWidth) =>
+        goalTimelineRailWidth(paneWidth, dragged: draggedRailWidth);
     bool railFits(double paneWidth) =>
         desktopLayout &&
-        paneWidth >= kGoalTimelineRailFoldWidth + kGoalTimelineRailWidth;
+        paneWidth >= kGoalTimelineRailFoldWidth + kGoalTimelineRailMinWidth;
 
     // Watched, not read at tap time: an unwatched lookup is still loading.
     final goalCategoryId = ref.watch(goalCategoryIdProvider(agentId)).value;
@@ -581,8 +587,26 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
                     showRail: true,
                   ),
                 ),
+                // Draggable, as the app's other side panes are: on its
+                // leading edge, so dragging left widens the rail.
+                ResizableDivider(
+                  key: const ValueKey('goal-timeline-rail-divider'),
+                  reverse: true,
+                  currentValue: railWidth(paneWidth),
+                  minValue: kGoalTimelineRailMinWidth,
+                  maxValue: math.max(
+                    kGoalTimelineRailMinWidth,
+                    math.min(
+                      kGoalTimelineRailDragMaxWidth,
+                      paneWidth - kGoalTimelineRailFoldWidth,
+                    ),
+                  ),
+                  onDrag: (delta) => ref
+                      .read(goalTimelineRailWidthProvider.notifier)
+                      .set(railWidth(paneWidth) + delta),
+                ),
                 SizedBox(
-                  width: kGoalTimelineRailWidth,
+                  width: railWidth(paneWidth),
                   child: _CheckInRail(card: checkInsCard()),
                 ),
               ],
@@ -705,7 +729,10 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
               _scheduleAutoSpan(
                 context,
                 paneWidth: constraints.maxWidth,
-                railShown: railFits(constraints.maxWidth),
+                railWidth: railFits(constraints.maxWidth)
+                    ? railWidth(constraints.maxWidth) +
+                          ResizableDivider.layoutWidth
+                    : 0,
               );
               return dashboard(constraints.maxWidth);
             },

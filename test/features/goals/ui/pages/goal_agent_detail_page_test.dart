@@ -38,6 +38,7 @@ import 'package:lotti/features/companion/state/spoken_track.dart';
 import 'package:lotti/features/companion/ui/companion_speaker.dart';
 import 'package:lotti/features/companion/ui/companion_view.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/navigation/resizable_divider.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/model/goal_assessment.dart';
@@ -48,8 +49,10 @@ import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/state/goal_charter_providers.dart';
 import 'package:lotti/features/goals/state/goal_checkin_providers.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
+import 'package:lotti/features/goals/state/goal_timeline_rail_width_controller.dart';
 import 'package:lotti/features/goals/ui/charter/goal_charter_card.dart';
 import 'package:lotti/features/goals/ui/checkins/goal_checkin_composer.dart';
+import 'package:lotti/features/goals/ui/checkins/goal_checkins_card.dart';
 import 'package:lotti/features/goals/ui/goal_agent_chat_pane.dart';
 import 'package:lotti/features/goals/ui/goal_assessment_widgets.dart';
 import 'package:lotti/features/goals/ui/goal_banner_card.dart';
@@ -2783,6 +2786,83 @@ void main() {
     expect(habitsController.lastTimeSpan, expectedFit);
   });
 
+  testWidgets('the check-in rail is dragged wider and narrower by its '
+      'divider, within its bounds', (tester) async {
+    tester.view
+      ..physicalSize = const Size(1400, 1000)
+      ..devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const GoalAgentDetailPage(agentId: 'goal-1'),
+        overrides: [
+          habitsControllerProvider.overrideWith(
+            () => FakeHabitsController(
+              HabitsState.initial(now: DateTime(2026, 8, 11)),
+            ),
+          ),
+          agentIdentityProvider(
+            'goal-1',
+          ).overrideWith((ref) async => goalIdentity),
+          goalAgentHealthProvider('goal-1').overrideWith(
+            (ref) async => (
+              trackStatus: GoalTrackStatus.onTrack,
+              attainment: 1.0,
+              reportOneLiner: null,
+              pendingProposals: 0,
+              spec: null,
+              direction: null,
+              deficit: null,
+              buffer: null,
+            ),
+          ),
+          selfTargetedPendingChangeSetsProvider(
+            'goal-1',
+          ).overrideWith((ref) async => []),
+          agentMessagesByThreadProvider(
+            'goal-1',
+          ).overrideWith((ref) async => {}),
+          agentReportProvider('goal-1').overrideWith((ref) async => null),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    double railWidth() => tester
+        .getSize(
+          find
+              .ancestor(
+                of: find.byType(GoalCheckInsCard),
+                matching: find.byType(SizedBox),
+              )
+              .first,
+        )
+        .width;
+    final divider = find.byKey(const ValueKey('goal-timeline-rail-divider'));
+    final undragged = goalTimelineRailWidth(1400);
+    expect(railWidth(), undragged);
+
+    // Its leading edge: dragging left widens it, past where the pane alone
+    // would size it.
+    await tester.drag(divider, const Offset(-100, 0), touchSlopX: 0);
+    await tester.pump();
+    expect(railWidth(), undragged + 100);
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(GoalAgentDetailPage)),
+    );
+    expect(
+      container.read(goalTimelineRailWidthProvider).value,
+      undragged + 100,
+    );
+
+    // Dragged far right, it stops at its narrowest.
+    await tester.drag(divider, const Offset(600, 0), touchSlopX: 0);
+    await tester.pump();
+    expect(railWidth(), kGoalTimelineRailMinWidth);
+    // Let the debounced write land before the test ends.
+    await tester.pump(goalTimelineRailPersistDebounce);
+  });
+
   testWidgets('desktop keeps chat beside watched habits', (tester) async {
     const desktopSize = Size(1400, 1000);
     setTestSurfaceSize(tester, desktopSize);
@@ -2946,9 +3026,20 @@ void main() {
     expect(
       closedCenter,
       moreOrLessEquals(
-        (desktopSize.width - kGoalTimelineRailWidth) / 2,
+        (desktopSize.width -
+                goalTimelineRailWidth(desktopSize.width) -
+                ResizableDivider.layoutWidth) /
+            2,
         epsilon: 1,
       ),
+    );
+    // The rail takes the room the capped measure leaves: the check-ins card
+    // alone is now wider than the whole fixed rail used to be, so an
+    // expanded check-in's words set at least as wide as on a phone.
+    expect(goalTimelineRailWidth(desktopSize.width), kGoalTimelineRailMaxWidth);
+    expect(
+      tester.getSize(find.byType(GoalCheckInsCard)).width,
+      greaterThan(kGoalTimelineRailMinWidth),
     );
     final closedCardWidth = tester.getSize(find.byType(GoalProgressCard)).width;
 
@@ -4685,11 +4776,42 @@ void main() {
   });
 
   group('check-in rail', () {
-    test('the rail is dropped before it can squeeze the dashboard', () {
-      // The rail only earns its width when the dashboard still has a usable
-      // measure beside it.
-      expect(kGoalTimelineRailWidth, greaterThan(0));
-      expect(kGoalTimelineRailFoldWidth, greaterThan(kGoalTimelineRailWidth));
+    test('the rail grows with the pane, between its bounds', () {
+      // At the narrowest pane that shows it, the rail takes its minimum and
+      // leaves the dashboard exactly its fold width.
+      const narrowest = kGoalTimelineRailFoldWidth + kGoalTimelineRailMinWidth;
+      expect(goalTimelineRailWidth(narrowest), kGoalTimelineRailMinWidth);
+      // In between, a share of the pane, the dashboard never under its fold.
+      expect(goalTimelineRailWidth(1200), 480);
+      expect(
+        1100 - goalTimelineRailWidth(1100),
+        greaterThanOrEqualTo(kGoalTimelineRailFoldWidth),
+      );
+      // On a wide window it stops at its maximum; the dashboard keeps the
+      // rest for its measure.
+      expect(goalTimelineRailWidth(2400), kGoalTimelineRailMaxWidth);
+      // Wide enough for an expanded check-in's words to set as on a phone.
+      expect(kGoalTimelineRailMaxWidth, greaterThan(kGoalTimelineRailMinWidth));
+    });
+
+    test('a dragged width is kept, but never squeezes the dashboard', () {
+      expect(goalTimelineRailWidth(2400, dragged: 700), 700);
+      // Below the undragged maximum too: the person's choice wins.
+      expect(goalTimelineRailWidth(2400, dragged: 400), 400);
+      // Bounded by the drag range...
+      expect(
+        goalTimelineRailWidth(2400, dragged: 2000),
+        kGoalTimelineRailDragMaxWidth,
+      );
+      expect(
+        goalTimelineRailWidth(2400, dragged: 100),
+        kGoalTimelineRailMinWidth,
+      );
+      // ...and by the dashboard's fold on a narrower pane.
+      expect(
+        goalTimelineRailWidth(1200, dragged: 700),
+        1200 - kGoalTimelineRailFoldWidth,
+      );
     });
   });
 
@@ -4767,6 +4889,7 @@ void main() {
       bool companion = true,
       bool readAloud = true,
       GoalTrackStatus trackStatus = GoalTrackStatus.atRisk,
+      Map<String, Object?>? sections,
     }) async {
       tester.view
         ..physicalSize = size
@@ -4842,6 +4965,9 @@ void main() {
                 vectorClock: null,
                 content: '$tldr\n\nMore detail.',
                 tldr: tldr,
+                provenance: {
+                  GoalReportProvenanceKeys.sections: ?sections,
+                },
               ),
             ),
           ],
@@ -4922,6 +5048,43 @@ void main() {
       );
       expect(readAloud.sourceId, goalReportSpeechSourceId('goal-1'));
       expect(readAloud.text, tldr);
+    });
+
+    testWidgets('the read-aloud disc speaks the whole report the card shows, '
+        'and the sections behind Show more once it is open', (tester) async {
+      await pump(
+        tester,
+        size: const Size(1440, 1000),
+        sections: {
+          GoalReportSectionKeys.reflection: 'You said mornings are hard.',
+          GoalReportSectionKeys.nextActions: ['Stretch before lunch'],
+          GoalReportSectionKeys.currentPeriod: 'Two of three done.',
+          GoalReportSectionKeys.coverage: 'Every day logged.',
+        },
+      );
+      String spoken() => tester
+          .widget<SummaryReadAloudButton>(find.byType(SummaryReadAloudButton))
+          .text;
+
+      // Collapsed: the summary, what it made of the check-ins and what comes
+      // next — everything on the card, not its first paragraph.
+      const collapsed =
+          '$tldr\n\n'
+          'From your check-ins.\n\nYou said mornings are hard.\n\n'
+          "What's next.\n\nStretch before lunch.";
+      expect(spoken(), collapsed);
+
+      await tester.tap(find.text('Show more'));
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(
+        spoken(),
+        '$collapsed\n\n'
+        'Where things stand.\n\nTwo of three done.\n\n'
+        'Data coverage.\n\nEvery day logged.',
+      );
+      await tester.tap(find.text('Show less'));
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(spoken(), collapsed);
     });
 
     testWidgets('read-aloud off: no disc, and she still stands for the goal', (

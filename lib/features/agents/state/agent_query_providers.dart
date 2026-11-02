@@ -287,8 +287,12 @@ Future<Map<String, List<AgentDomainEntity>>> agentMessagesByThread(
 
 /// Fetch recent observation messages for an agent by agentId.
 ///
-/// Returns only messages with kind [AgentMessageKind.observation], ordered
-/// most-recent first.
+/// Returns the newest 200 messages with kind [AgentMessageKind.observation],
+/// most-recent first. Filtered by kind in the query, before the limit: taking
+/// the newest 200 messages of every kind and filtering those let an agent's
+/// own wakes — each a thought, an action and a tool result per call — push
+/// its rarer observations out of the window, and the internals panel showed
+/// none at all for a goal agent that had recorded some.
 final FutureProviderFamily<List<AgentDomainEntity>, String>
 agentObservationMessagesProvider = FutureProvider.autoDispose
     .family<List<AgentDomainEntity>, String>(
@@ -301,15 +305,11 @@ Future<List<AgentDomainEntity>> agentObservationMessages(
 ) async {
   ref.watch(agentUpdateStreamProvider(agentId));
   final repository = ref.watch(agentRepositoryProvider);
-  final entities = await repository.getEntitiesByAgentId(
+  return repository.getMessagesByKind(
     agentId,
-    type: AgentEntityTypes.agentMessage,
+    AgentMessageKind.observation,
     limit: 200,
   );
-  return entities
-      .whereType<AgentMessageEntity>()
-      .where((msg) => msg.kind == AgentMessageKind.observation)
-      .toList();
 }
 
 /// Fetch all report snapshots for an agent by agentId, most-recent first.
