@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
+import 'package:lotti/features/ai/embedding_sync/embedding_share.dart';
 import 'package:lotti/features/ai/on_device_embedding/on_device_embedding_repository.dart';
 import 'package:lotti/features/ai/service/embedding_processor.dart';
 import 'package:lotti/features/ai/service/embedding_reconciler.dart';
@@ -95,9 +96,12 @@ class EmbeddingService {
 
   /// Queues every entry whose stored vectors no longer match it — deleted,
   /// text changed without an edit (a label renamed, or a private label's
-  /// name left out while the privacy toggle hid it), chunks missing — and
-  /// retires the vectors of agent reports whose task is deleted
-  /// ([EmbeddingReconciler]).
+  /// name left out while the privacy toggle hid it), chunks missing —
+  /// gives the vectors stored before registers existed one, retires the
+  /// vectors of agent reports whose task is deleted ([EmbeddingReconciler]),
+  /// and has every version stored without a clock shared
+  /// ([EmbeddingShare.shareUnversioned]): nothing else sends what was
+  /// embedded while sharing was off.
   ///
   /// Such vectors wait forever on a peer that receives them and keep its
   /// embedding count apart from this device's; re-embedding or retiring
@@ -113,11 +117,14 @@ class EmbeddingService {
       final ids = await reconciler.entriesToReprocess();
       if (_stopped) return;
       _pendingEntityIds.addAll(ids);
+      final adopted = await reconciler.adoptUnregistered();
       final retired = await reconciler.retireReportsOfDeletedTasks();
+      final shared = await EmbeddingProcessor.share?.shareUnversioned() ?? 0;
       _domainLogger.log(
         LogDomain.ai,
         'Reconciled stored embeddings: ${ids.length} entries to re-process, '
-        '$retired report vectors retired',
+        '$adopted unregistered adopted, $retired report vectors retired, '
+        '$shared unshared versions sent',
         subDomain: _subDomain,
       );
     } on Object catch (e, stackTrace) {

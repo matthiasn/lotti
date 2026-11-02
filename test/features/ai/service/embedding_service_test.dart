@@ -11,6 +11,7 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
 import 'package:lotti/features/ai/on_device_embedding/on_device_embedding_repository.dart';
 import 'package:lotti/features/ai/service/embedding_content_extractor.dart';
+import 'package:lotti/features/ai/service/embedding_processor.dart';
 import 'package:lotti/features/ai/service/embedding_service.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -1494,6 +1495,9 @@ void main() {
       when(
         () => reconciler.retireReportsOfDeletedTasks(),
       ).thenAnswer((_) async => 0);
+      when(
+        () => reconciler.adoptUnregistered(),
+      ).thenAnswer((_) async => 0);
       service = EmbeddingService(
         embeddingStore: mockEmbeddingStore,
         embeddingRepository: mockEmbeddingRepo,
@@ -1519,14 +1523,28 @@ void main() {
       );
     });
 
+    tearDown(() => EmbeddingProcessor.share = null);
+
     test(
-      'start re-embeds what the reconciler finds, unprompted, and logs '
-      'what it did',
+      'start re-embeds what the reconciler finds, unprompted, has what was '
+      'stored unshared sent, and logs what it did',
       () {
         fakeAsync((async) {
+          final share = MockEmbeddingShare();
+          when(share.shareUnversioned).thenAnswer((_) async => 5);
+          when(
+            () => share.reserve(
+              registerId: any(named: 'registerId'),
+              previous: any(named: 'previous'),
+            ),
+          ).thenAnswer((_) async => null);
+          EmbeddingProcessor.share = share;
           when(
             () => reconciler.entriesToReprocess(),
           ).thenAnswer((_) async => {_entityId});
+          when(
+            () => reconciler.adoptUnregistered(),
+          ).thenAnswer((_) async => 4);
           when(
             () => reconciler.retireReportsOfDeletedTasks(),
           ).thenAnswer((_) async => 2);
@@ -1546,7 +1564,8 @@ void main() {
             () => mockLogger.log(
               LogDomain.ai,
               'Reconciled stored embeddings: 1 entries to re-process, '
-              '2 report vectors retired',
+              '4 unregistered adopted, 2 report vectors retired, '
+              '5 unshared versions sent',
               subDomain: 'EmbeddingService',
             ),
           ).called(1);
@@ -1580,6 +1599,7 @@ void main() {
           sendAndProcess(async, {_entityId, taskNotification});
 
           verify(() => reconciler.entriesToReprocess()).called(1);
+          verify(() => reconciler.adoptUnregistered()).called(1);
           verify(() => reconciler.retireReportsOfDeletedTasks()).called(1);
           verify(
             () => mockJournalDb.journalEntityById(

@@ -75,6 +75,20 @@ class InMemoryEmbeddingStore implements EmbeddingStore {
   List<EmbeddingRegister> allRegisters() => registers.values.toList();
 
   @override
+  List<EmbeddingRegister> unregisteredVersions() => [
+    for (final MapEntry(key: entityId, value: row) in chunks.entries)
+      if (!registers.containsKey(entityId))
+        EmbeddingRegister(
+          entityId: entityId,
+          modelId: row.modelId,
+          entityType: row.entityType,
+          contentHash: row.contentHash,
+          taskId: row.taskId,
+          subtype: row.subtype,
+        ),
+  ];
+
+  @override
   void replaceEntityEmbeddings({
     required String entityId,
     required String entityType,

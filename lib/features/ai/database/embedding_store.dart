@@ -81,6 +81,12 @@ abstract class EmbeddingStore {
   /// sequence-log population and Add Device walk.
   FutureOr<List<EmbeddingRegister>> allRegisters();
 
+  /// A version for every chunk set stored without a register row — vectors
+  /// embedded before registers existed — built from its first chunk: model,
+  /// type, content hash, task and subtype, with no clock and no source
+  /// clock. Nothing shares such a set until a register is written for it.
+  FutureOr<List<EmbeddingRegister>> unregisteredVersions();
+
   /// Replaces all embedding chunks for [entityId] with [embeddings].
   ///
   /// Deletes any prior chunks for the entity first, so this is an upsert at the

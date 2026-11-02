@@ -590,6 +590,45 @@ void main() {
         );
       });
 
+      test(
+        'lists a version for each chunk set without a register, from its '
+        'first chunk, and none for one that has a register',
+        () {
+          when(mockOps.queryAllEntityMetadata).thenReturn([
+            (entityId: 'entity-1', taskId: 't'),
+            (entityId: 'bare', taskId: 'task-9'),
+            (entityId: 'bare', taskId: 'task-9'),
+            (entityId: 'vanished', taskId: ''),
+          ]);
+          when(mockOps.findAllRegisters).thenReturn([row(live)]);
+          when(() => mockOps.findFirstByEntityId('bare')).thenReturn(
+            makeEntity(
+              entityId: 'bare',
+              entityType: 'agent_report',
+              modelId: 'm',
+              contentHash: 'hash-bare',
+              taskId: 'task-9',
+              subtype: 'current',
+            ),
+          );
+          when(
+            () => mockOps.findFirstByEntityId('vanished'),
+          ).thenReturn(null);
+
+          expect(store.unregisteredVersions(), [
+            const EmbeddingRegister(
+              entityId: 'bare',
+              modelId: 'm',
+              entityType: 'agent_report',
+              contentHash: 'hash-bare',
+              taskId: 'task-9',
+              subtype: 'current',
+            ),
+          ]);
+          verifyNever(() => mockOps.findFirstByEntityId('entity-1'));
+        },
+      );
+
       test('reads one register and all of them', () {
         when(() => mockOps.findRegister('entity-1')).thenReturn(row(live));
         when(mockOps.findAllRegisters).thenReturn([row(live)]);

@@ -18,6 +18,7 @@ import 'package:lotti/services/outbox_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/file_utils.dart';
+import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
 
 /// Reads a config flag.
@@ -126,8 +127,10 @@ class EmbeddingVectorsSync implements EmbeddingShare {
   /// look at them until the inbound queue next drains — without waiting for
   /// it: the app is starting, and the holds may be many. [detach] and
   /// [dispose] wait for it, as for every re-check. Then it runs the
-  /// [catchUp], and whenever [flagChanges] fires, a re-check (holds wait
-  /// while a flag is off) and the catch-up again.
+  /// [catchUp] and starts [shareUnversioned] the same way, and whenever
+  /// [flagChanges] fires, a re-check (holds wait while a flag is off), the
+  /// catch-up and the sharing again: turning `sync_embeddings` on shares
+  /// what was embedded while it was off.
   Future<void> attach({
     required EmbeddingStore store,
     required String modelId,
@@ -141,9 +144,12 @@ class EmbeddingVectorsSync implements EmbeddingShare {
     _flagSubscription = flagChanges?.listen((_) async {
       await _recheckHeld(sink);
       await catchUp();
+      _track(_runShareUnversioned());
+      await _rechecks;
     });
     _startRecheck(sink);
     await catchUp();
+    _track(_runShareUnversioned());
   }
 
   /// Every re-check started so far, as one future: what [detach] and
@@ -153,8 +159,31 @@ class EmbeddingVectorsSync implements EmbeddingShare {
 
   /// Starts a re-check of every version [sink] holds, tracked in
   /// [_rechecks].
-  void _startRecheck(SyncedEmbeddingSink sink) {
-    _rechecks = Future.wait([_rechecks, _runRecheck(sink)]);
+  void _startRecheck(SyncedEmbeddingSink sink) => _track(_runRecheck(sink));
+
+  /// Completes once the re-checks and sharing started so far have finished:
+  /// what a test waits for before it changes the store.
+  @visibleForTesting
+  Future<void> get settled => _rechecks;
+
+  /// Adds [work] to what [detach] and [dispose] wait for.
+  void _track(Future<void> work) {
+    _rechecks = Future.wait([_rechecks, work]);
+  }
+
+  /// [shareUnversioned], logging a failure. Never throws.
+  Future<void> _runShareUnversioned() async {
+    try {
+      await shareUnversioned();
+    } on Object catch (error, stackTrace) {
+      _domainLogger.error(
+        LogDomain.sync,
+        error,
+        stackTrace: stackTrace,
+        subDomain: _subDomain,
+        message: 'unversioned embedding versions could not be shared',
+      );
+    }
   }
 
   /// Starts a re-check and waits for it, and for any still running.
@@ -283,6 +312,42 @@ class EmbeddingVectorsSync implements EmbeddingShare {
       payload: (id: registerId, type: SyncSequencePayloadType.embeddingVectors),
     );
     return _Ticket(this, reservation, host);
+  }
+
+  /// Versions and sends, through [sendCurrent], every live version of this
+  /// model stored without a clock, and returns how many went out. A version
+  /// that fails is logged and left for the next attach or flag change; one
+  /// without chunks, which no peer could store, is left for the start-time
+  /// reconcile to embed again.
+  @override
+  Future<int> shareUnversioned() async {
+    final store = _store;
+    if (store == null || !await isSharing) return 0;
+    var shared = 0;
+    for (final register in await store.allRegisters()) {
+      if (register.isShared ||
+          register.deleted ||
+          register.modelId != _modelId ||
+          !await store.hasEmbedding(register.entityId)) {
+        continue;
+      }
+      try {
+        await sendCurrent(register.id);
+      } on Object catch (error, stackTrace) {
+        _domainLogger.error(
+          LogDomain.sync,
+          error,
+          stackTrace: stackTrace,
+          subDomain: _subDomain,
+          message: 'an unversioned embedding version could not be shared',
+        );
+        continue;
+      }
+      if ((await store.getRegister(register.entityId))?.isShared ?? false) {
+        shared++;
+      }
+    }
+    return shared;
   }
 
   /// The version this device holds of register [registerId] — what a

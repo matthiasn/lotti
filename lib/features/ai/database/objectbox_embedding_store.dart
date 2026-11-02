@@ -77,6 +77,32 @@ class ObjectBoxEmbeddingStore implements EmbeddingStore {
   ];
 
   @override
+  List<EmbeddingRegister> unregisteredVersions() {
+    final registered = {
+      for (final row in _ops.findAllRegisters()) row.entityId,
+    };
+    return [
+      for (final entityId in {
+        for (final row in _ops.queryAllEntityMetadata()) row.entityId,
+      })
+        if (!registered.contains(entityId))
+          if (_ops.findFirstByEntityId(entityId) case final chunk?)
+            unregisteredVersionOf(chunk),
+    ];
+  }
+
+  /// The version [chunk]'s set stands for when it has no register row.
+  static EmbeddingRegister unregisteredVersionOf(EmbeddingChunkEntity chunk) =>
+      EmbeddingRegister(
+        entityId: chunk.entityId,
+        modelId: chunk.modelId,
+        entityType: chunk.entityType,
+        contentHash: chunk.contentHash,
+        taskId: chunk.taskId,
+        subtype: chunk.subtype,
+      );
+
+  @override
   String? getContentHash(String entityId) {
     return _ops.findByEmbeddingKey(_embeddingKey(entityId, 0))?.contentHash;
   }

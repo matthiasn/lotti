@@ -13,6 +13,7 @@ import 'package:lotti/features/ai/embedding_sync/embedding_vectors_payload.dart'
 import 'package:lotti/features/ai/embedding_sync/synced_embedding_sink.dart';
 import 'package:lotti/features/sync/embedding_vectors/embedding_vectors_sync.dart';
 import 'package:lotti/features/sync/queue/inbound_queue_models.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path/path.dart' as p;
@@ -108,11 +109,17 @@ void main() {
     await docs.delete(recursive: true);
   });
 
-  Future<void> attach({SyncedEmbeddingSink? sink}) => vectors.attach(
-    store: store,
-    modelId: _model,
-    sink: sink ?? _quietSink(),
-  );
+  /// Attaches over [store]. With the quiet sink, it also waits for the work
+  /// attaching starts, so a test's own store writes come after it; a test
+  /// passing its own [sink] may gate that work, and waits itself.
+  Future<void> attach({SyncedEmbeddingSink? sink}) async {
+    await vectors.attach(
+      store: store,
+      modelId: _model,
+      sink: sink ?? _quietSink(),
+    );
+    if (sink == null) await vectors.settled;
+  }
 
   File fileOf(SyncEmbeddingVectors message) => File(
     p.joinAll([
@@ -479,6 +486,7 @@ void main() {
           modelId: _model,
           sink: _quietSink(),
         );
+        await vectors.settled;
 
         await expectLater(vectors.sendCurrent('r1|$_model'), throwsStateError);
 
@@ -500,6 +508,115 @@ void main() {
         expect(enqueued, isEmpty);
       },
     );
+  });
+
+  group('sharing what was stored unshared', () {
+    void withChunks(EmbeddingRegister register) =>
+        store.replaceEntityEmbeddings(
+          entityId: register.entityId,
+          entityType: register.entityType,
+          modelId: register.modelId,
+          contentHash: register.contentHash,
+          embeddings: [_vector(0.5)],
+          register: register,
+        );
+
+    test(
+      'attaching versions and sends every live version stored without a '
+      'clock, and nothing else',
+      () async {
+        withChunks(_register('local'));
+        withChunks(_register('shared', vc: const VectorClock({'x': 1})));
+        withChunks(_register('other', model: 'retired-model'));
+        store
+          ..registers['gone'] = _register('gone', deleted: true)
+          // Live without chunks: no peer could store it.
+          ..registers['bare'] = _register('bare');
+
+        await attach();
+
+        expect(
+          store.registers['local']!.vectorClock,
+          const VectorClock({'host-a': 5}),
+        );
+        expect((enqueued.single as SyncEmbeddingVectors).entityId, 'local');
+        for (final id in ['other', 'gone', 'bare']) {
+          expect(store.registers[id]!.isShared, isFalse, reason: id);
+        }
+        expect(
+          store.registers['shared']!.vectorClock,
+          const VectorClock({'x': 1}),
+        );
+        expect(await vectors.shareUnversioned(), 0, reason: 'all shared');
+      },
+    );
+
+    test(
+      'nothing is shared while sync_embeddings is off, and turning it on '
+      'shares it',
+      () async {
+        expect(await vectors.shareUnversioned(), 0, reason: 'not attached');
+        flags[syncEmbeddingsFlag] = false;
+        withChunks(_register('local'));
+        final flagChanges = StreamController<void>();
+        addTearDown(flagChanges.close);
+        await vectors.attach(
+          store: store,
+          modelId: _model,
+          sink: _quietSink(),
+          flagChanges: flagChanges.stream,
+        );
+        await vectors.settled;
+        expect(enqueued, isEmpty);
+
+        flags[syncEmbeddingsFlag] = true;
+        flagChanges.add(null);
+        await pumpEventQueue();
+        await vectors.settled;
+
+        expect(store.registers['local']!.isShared, isTrue);
+        expect(enqueued, hasLength(1));
+      },
+    );
+
+    test(
+      'a version that cannot be shared is logged, and the others still go',
+      () async {
+        store = _RefusingOneStore('refused');
+        withChunks(_register('refused'));
+        withChunks(_register('local'));
+        await vectors.attach(store: store, modelId: _model, sink: _quietSink());
+        await vectors.settled;
+
+        expect(store.registers['local']!.isShared, isTrue);
+        expect(store.registers['refused']!.isShared, isFalse);
+        verify(
+          () => logger.error(
+            LogDomain.sync,
+            any<Object>(that: isA<StateError>()),
+            stackTrace: any(named: 'stackTrace'),
+            subDomain: 'embeddingVectors',
+            message: 'an unversioned embedding version could not be shared',
+          ),
+        ).called(1);
+      },
+    );
+
+    test('a pass that fails as a whole is logged at attach', () async {
+      store = _UnreadableStore();
+      await vectors.attach(store: store, modelId: _model, sink: _quietSink());
+      await vectors.settled;
+
+      verify(
+        () => logger.error(
+          LogDomain.sync,
+          any<Object>(that: isA<StateError>()),
+          stackTrace: any(named: 'stackTrace'),
+          subDomain: 'embeddingVectors',
+          message: 'unversioned embedding versions could not be shared',
+        ),
+      ).called(1);
+    });
   });
 
   group('waiting for the pipeline', () {
@@ -891,4 +1008,23 @@ void main() {
 class _RefusingStore extends InMemoryEmbeddingStore {
   @override
   void putRegister(EmbeddingRegister register) => throw StateError('closed');
+}
+
+/// Refuses the register writes of one entity.
+class _RefusingOneStore extends InMemoryEmbeddingStore {
+  _RefusingOneStore(this.refusedEntityId);
+
+  final String refusedEntityId;
+
+  @override
+  void putRegister(EmbeddingRegister register) {
+    if (register.entityId == refusedEntityId) throw StateError('refused');
+    super.putRegister(register);
+  }
+}
+
+/// Cannot list its registers.
+class _UnreadableStore extends InMemoryEmbeddingStore {
+  @override
+  List<EmbeddingRegister> allRegisters() => throw StateError('closed');
 }

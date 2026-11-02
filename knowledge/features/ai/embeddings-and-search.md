@@ -5,7 +5,7 @@ description: Local vector search over per-category ObjectBox shards filled by th
 resource: ../../../lib/features/ai/service/embedding_service.dart
 tags: [ai, embeddings, vector-search, objectbox, onnx, on-device, tla]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-11-02T12:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-11-02T18:00:00Z }
 stale_after: 2027-02-01
 sources:
   - id: related-task-finder
@@ -31,11 +31,11 @@ sources:
   - id: store
     resource: ../../../lib/features/ai/database/objectbox_embedding_store.dart
     title: ObjectBox-backed embedding store
-    last_modified: 2026-10-30
+    last_modified: 2026-11-02
   - id: sharded-store
     resource: ../../../lib/features/ai/database/sharded_embedding_store.dart
     title: ShardedEmbeddingStore, its index rebuild and its directory
-    last_modified: 2026-10-30
+    last_modified: 2026-11-02
   - id: retired-stores
     resource: ../../../lib/features/ai/database/sharded_embedding_store_migration.dart
     title: The retired model's stores, deleted at start
@@ -280,7 +280,8 @@ protocol is model-checked in
 - **Each start reconciles the store.** The service's first batch with the
   flag on and the model downloaded queues every entry whose stored vectors no
   longer match it — deleted, its text changed without an edit (a label
-  renamed), chunks missing — and retires the report vectors of deleted tasks
+  renamed), chunks missing — gives the vectors stored before registers
+  existed a register, and retires the report vectors of deleted tasks
   (`EmbeddingReconciler`; why it matters across devices is in
   [embedding vector sync](embedding-vector-sync.md#reconciling-at-start)).
 - **Reports follow their task.** Every run over a task moves the task's report
