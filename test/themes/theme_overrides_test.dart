@@ -237,7 +237,7 @@ void main() {
 
     test('uses synchronized design-system motion for modal pagination', () {
       final themedData = withOverrides(ThemeData.light());
-      final pagination = legacyMaterialTheme(themedData)
+      final pagination = themedData
           .extension<WoltModalSheetThemeData>()!
           .animationStyle!
           .paginationAnimationStyle;

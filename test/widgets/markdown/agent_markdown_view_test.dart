@@ -5,7 +5,6 @@ import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
-import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:lotti/widgets/markdown/agent_markdown_view.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -383,13 +382,11 @@ void main() {
         final hostTheme = ThemeData(useMaterial3: true).copyWith(
           extensions: <ThemeExtension<dynamic>>[
             dsTokensLight,
-            LegacyMaterialExtensions([
-              GptMarkdownThemeData(
-                brightness: Brightness.light,
-                linkColor: Colors.purple,
-                h1: const TextStyle(fontSize: 999),
-              ),
-            ]),
+            GptMarkdownThemeData(
+              brightness: Brightness.light,
+              linkColor: Colors.purple,
+              h1: const TextStyle(fontSize: 999),
+            ),
           ],
         );
 
@@ -403,7 +400,7 @@ void main() {
 
         // Exactly one GptMarkdownThemeData survives in the resolved theme.
         final gptContext = tester.element(find.byType(GptMarkdown));
-        final extensions = legacy.Theme.of(gptContext).extensions.values;
+        final extensions = Theme.of(gptContext).extensions.values;
         final markdownExtensions = extensions
             .whereType<GptMarkdownThemeData>()
             .toList();
