@@ -130,6 +130,8 @@ class _CompanionSettingsBodyState extends ConsumerState<CompanionSettingsBody> {
                   children: [
                     DesignSystemChip(
                       label: messages.companionSettingsOutfitSurprise,
+                      outlined: true,
+                      size: DesignSystemChipSize.touch,
                       selected: custom.outfitId == null,
                       onPressed: () =>
                           controller.set(custom.copyWith(outfitId: () => null)),
@@ -137,6 +139,8 @@ class _CompanionSettingsBodyState extends ConsumerState<CompanionSettingsBody> {
                     for (final outfit in companionOutfits)
                       DesignSystemChip(
                         label: outfitName(messages, outfit),
+                        outlined: true,
+                        size: DesignSystemChipSize.touch,
                         selected: custom.outfitId == outfit.id,
                         onPressed: () => controller.set(
                           custom.copyWith(outfitId: () => outfit.id),
