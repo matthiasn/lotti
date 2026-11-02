@@ -35,7 +35,8 @@ import 'package:openai_dart/openai_dart.dart';
 ///   such row ever reaches the user. A queued suggestion carries the
 ///   person's name for the row.
 /// - `suggest_note` — a note of what happened, for the user to add to the
-///   event's timeline; an empty one, or a second in the same wake, is
+///   event's timeline; an empty one, a second in the same wake, or one while
+///   an earlier wake's note still awaits the user ([hasPendingNote]) is
 ///   refused.
 ///
 /// There is deliberately no rating/cover tool — those are human-only. Each
@@ -51,7 +52,13 @@ class EventAgentStrategy extends ConversationStrategy
     required this.runKey,
     required this.loadPeople,
     required this.setLanguage,
+    required this.hasPendingNote,
   });
+
+  /// Whether a note this agent suggested for the event earlier still awaits
+  /// the user — the limit of one note holds across wakes, not only within
+  /// one (`EventAgentWorkflow.hasPendingNote`).
+  final Future<bool> Function() hasPendingNote;
 
   /// Reads who the user keeps and where each stands for this event. Called
   /// at most once per wake, the first time a people tool needs it.
@@ -462,7 +469,7 @@ class EventAgentStrategy extends ConversationStrategy
         ? 'Error: "text" is required and must not be empty.'
         : _noteSuggested
         ? 'Not suggested: a note was already suggested in this wake.'
-        : null;
+        : await _pendingNoteRefusal();
     if (refusal != null) {
       await _rejectToolCall(
         callId: callId,
@@ -482,6 +489,20 @@ class EventAgentStrategy extends ConversationStrategy
       response: 'Queued the note for user review.',
     );
     await recordToolResultMessage(toolName: EventAgentToolNames.suggestNote);
+  }
+
+  /// The refusal for a note while an earlier one awaits the user, or null.
+  /// A failed read refuses too: a second note the user may accept twice is
+  /// worse than one not suggested this wake.
+  Future<String?> _pendingNoteRefusal() async {
+    try {
+      return await hasPendingNote()
+          ? 'Not suggested: a note for this event already awaits the user.'
+          : null;
+    } catch (e) {
+      return 'Error: the pending suggestions could not be read '
+          '(${e.runtimeType}).';
+    }
   }
 
   Future<void> _rejectToolCall({

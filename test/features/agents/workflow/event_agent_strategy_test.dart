@@ -57,6 +57,7 @@ void main() {
   late Future<EventPeopleDirectory> Function() loadPeople;
   late List<String> languageCalls;
   late Future<EventLanguageResult> Function(String code) setLanguage;
+  late Future<bool> Function() hasPendingNote;
 
   /// Pip is free to suggest; Rocko is with the event already; Oona was
   /// suggested and still waits; Kai was dismissed.
@@ -87,6 +88,7 @@ void main() {
       return directory;
     };
     languageCalls = [];
+    hasPendingNote = () async => false;
     setLanguage = (code) async => EventLanguageResult(
       success: true,
       didWrite: true,
@@ -103,6 +105,7 @@ void main() {
         languageCalls.add(code);
         return setLanguage(code);
       },
+      hasPendingNote: () => hasPendingNote(),
     );
   });
 
@@ -563,6 +566,34 @@ void main() {
         },
       ]);
     });
+
+    test("refuses a note while an earlier wake's note still awaits the "
+        'user', () async {
+      hasPendingNote = () async => true;
+
+      expect(
+        await respond(EventAgentToolNames.suggestNote, {
+          'text': 'Another account of the day.',
+        }),
+        'Not suggested: a note for this event already awaits the user.',
+      );
+      expect(strategy.extractDeferredItems(), isEmpty);
+    });
+
+    test(
+      'a failed read of the pending notes refuses, queueing nothing',
+      () async {
+        hasPendingNote = () async => throw StateError('agent db closed');
+
+        expect(
+          await respond(EventAgentToolNames.suggestNote, {
+            'text': 'An account of the day.',
+          }),
+          'Error: the pending suggestions could not be read (StateError).',
+        );
+        expect(strategy.extractDeferredItems(), isEmpty);
+      },
+    );
 
     test('refuses an empty note, queueing nothing', () async {
       expect(

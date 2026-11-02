@@ -674,8 +674,11 @@ entry runs it again.
 The user rarely writes down what happened. When the voice memos, photos and
 notes tell it and the event has no note of the user's own that says it, the
 agent proposes one with `suggest_note`: a few plain sentences in the first
-person, in the event's language. The strategy refuses an empty one and a
-second in the same wake. The row inside the agent's card reads "Note · Add
+person, in the event's language. The strategy refuses an empty one, a
+second in the same wake, and one while an earlier wake's note still awaits
+the user (`EventAgentWorkflow.hasPendingNote` reads the agent's pending change
+sets for the event), so repeated wakes cannot stack notes the user might
+accept twice. The row inside the agent's card reads "Note · Add
 this note to the event" in the reader's language, with the note itself under
 it as `FoldedWords` — read in full before it becomes the user's own. On
 confirm, `EventToolDispatcher` creates it as a text entry linked from the

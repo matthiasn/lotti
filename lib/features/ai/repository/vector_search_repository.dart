@@ -128,12 +128,15 @@ class VectorSearchRepository {
 
     final (stopwatch, searchResults) = prepared;
 
-    // Deduplicate: keep only the best (lowest distance) chunk per entity. An
-    // agent report counts as its subject (`taskId`), so an event and its
-    // recap are one hit.
+    // Deduplicate: keep only the best (lowest distance) chunk per entity, a
+    // report's chunks apart from its subject's own: whether a report hit is
+    // admitted is known only once its subject is read, and a task report
+    // must not displace the task's own hit before it is dropped.
     final bestByEntity = <String, EmbeddingSearchResult>{};
     for (final result in searchResults) {
-      final key = _entryHitId(result);
+      final key = result.entityType == kEntityTypeAgentReport
+          ? 'report:${_entryHitId(result)}'
+          : result.entityId;
       final existing = bestByEntity[key];
       if (existing == null || result.distance < existing.distance) {
         bestByEntity[key] = result;
@@ -160,10 +163,14 @@ class VectorSearchRepository {
       final entity = entityMap[_entryHitId(result)];
       // A report finds its subject only when that is an event: an event's
       // recap is what names who was there and what happened, while a task's
-      // report stays with the task search, as before.
+      // report stays with the task search, as before. Hits run nearest
+      // first, so an event reached by its recap and by its own text is
+      // listed once, at the better distance.
       final admitted =
           result.entityType != kEntityTypeAgentReport || entity is JournalEvent;
-      if (entity != null && admitted) {
+      if (entity != null &&
+          admitted &&
+          !distances.containsKey(entity.meta.id)) {
         ordered.add(entity);
         distances[entity.meta.id] = result.distance;
       }

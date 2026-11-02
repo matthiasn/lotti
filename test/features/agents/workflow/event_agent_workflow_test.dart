@@ -6,6 +6,7 @@ import 'package:lotti/classes/agents/agent_config.dart';
 import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
+import 'package:lotti/classes/agents/change_set.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/classes/ai_attribution.dart';
 import 'package:lotti/classes/entry_text.dart';
@@ -18,6 +19,7 @@ import 'package:lotti/features/agents/sync/agent_concurrent_resolver.dart';
 import 'package:lotti/features/agents/tools/event_tool_definitions.dart';
 import 'package:lotti/features/agents/workflow/event_agent_context_builder.dart';
 import 'package:lotti/features/agents/workflow/event_agent_workflow.dart';
+import 'package:lotti/features/agents/workflow/event_people_directory.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/service/embedding_content_extractor.dart';
@@ -1167,6 +1169,56 @@ void main() {
         ).called(1);
       },
     );
+
+    group('hasPendingNote', () {
+      ChangeItem item(String toolName, ChangeItemStatus status) => ChangeItem(
+        toolName: toolName,
+        args: const {'text': 'We skated.'},
+        humanSummary: 'x',
+        status: status,
+      );
+
+      Future<bool> pendingWith(List<ChangeItem> items) {
+        when(
+          () => mockAgentRepository.getPendingChangeSets(
+            agentId,
+            taskId: eventId,
+            limit: EventPeopleDirectory.historyWindow,
+          ),
+        ).thenAnswer(
+          (_) async => [makeTestChangeSet(taskId: eventId, items: items)],
+        );
+        return EventAgentWorkflow.hasPendingNote(
+          agentRepository: mockAgentRepository,
+          agentId: agentId,
+          eventId: eventId,
+        );
+      }
+
+      test('a pending note in a pending set awaits the user', () async {
+        expect(
+          await pendingWith([
+            item(EventAgentToolNames.suggestPerson, ChangeItemStatus.pending),
+            item(EventAgentToolNames.suggestNote, ChangeItemStatus.pending),
+          ]),
+          isTrue,
+        );
+      });
+
+      test('a confirmed or dismissed note, or none, does not', () async {
+        expect(
+          await pendingWith([
+            item(EventAgentToolNames.suggestNote, ChangeItemStatus.confirmed),
+            item(EventAgentToolNames.suggestNote, ChangeItemStatus.rejected),
+            item(
+              EventAgentToolNames.suggestFollowUpTask,
+              ChangeItemStatus.pending,
+            ),
+          ]),
+          isFalse,
+        );
+      });
+    });
 
     test('buildHumanSummary labels follow-up proposals and falls back', () {
       expect(

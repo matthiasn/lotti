@@ -755,6 +755,34 @@ void main() {
       });
 
       test(
+        "of a task never displaces the task's own hit, nearer or not",
+        () async {
+          stubHits([
+            EmbeddingSearchResult(
+              entityId: 'report-1',
+              distance: 0.1,
+              entityType: kEntityTypeAgentReport,
+              taskId: testTask.meta.id,
+            ),
+            EmbeddingSearchResult(
+              entityId: testTask.meta.id,
+              distance: 0.4,
+              entityType: kEntityTypeTask,
+            ),
+          ]);
+          when(
+            () => mockJournalDb.getJournalEntitiesForIdsUnordered(any()),
+          ).thenAnswer((_) async => [testTask]);
+
+          final result = await sut.searchRelatedEntries(query: 'report');
+
+          // The task is found by its own text, at its own distance.
+          expect(result.entities, [testTask]);
+          expect(result.distances, {testTask.meta.id: 0.4});
+        },
+      );
+
+      test(
         "of a task stays with the task search, out of the journal's",
         () async {
           stubHits([

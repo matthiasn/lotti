@@ -259,6 +259,11 @@ class EventAgentWorkflow with AgentErrorLogging {
           journalRepository: journalRepository,
           domainLogger: domainLogger,
         ).handle,
+        hasPendingNote: () => hasPendingNote(
+          agentRepository: agentRepository,
+          agentId: agentId,
+          eventId: eventId,
+        ),
       );
 
       final tools = _contextBuilder.buildToolDefinitions();
@@ -650,6 +655,29 @@ class EventAgentWorkflow with AgentErrorLogging {
       );
       return null;
     }
+  }
+
+  /// Whether a `suggest_note` of [agentId]'s for [eventId] is still pending
+  /// in its change sets — read over the same window the people directory
+  /// reads, so an older pending note is not missed behind newer proposals.
+  @visibleForTesting
+  static Future<bool> hasPendingNote({
+    required AgentRepository agentRepository,
+    required String agentId,
+    required String eventId,
+  }) async {
+    final changeSets = await agentRepository.getPendingChangeSets(
+      agentId,
+      taskId: eventId,
+      limit: EventPeopleDirectory.historyWindow,
+    );
+    return changeSets.any(
+      (changeSet) => changeSet.items.any(
+        (item) =>
+            item.toolName == EventAgentToolNames.suggestNote &&
+            item.status == ChangeItemStatus.pending,
+      ),
+    );
   }
 
   /// Builds a user-facing one-line summary for a deferred tool call.
