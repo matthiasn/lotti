@@ -12,6 +12,7 @@ import 'package:lotti/features/agents/tools/follow_up_task_handler.dart';
 import 'package:lotti/features/agents/tools/task_label_handler.dart';
 import 'package:lotti/features/agents/tools/task_language_handler.dart';
 import 'package:lotti/features/agents/tools/task_link_handler.dart';
+import 'package:lotti/features/agents/tools/task_project_create_handler.dart';
 import 'package:lotti/features/agents/tools/task_status_handler.dart';
 import 'package:lotti/features/agents/tools/task_title_handler.dart';
 import 'package:lotti/features/agents/tools/time_entry_handler.dart';
@@ -525,6 +526,31 @@ extension TaskToolHandlers on TaskToolDispatcher {
                 '"${project.data.title}".',
             errorMessage: 'Project link rejected',
           );
+  }
+
+  /// Creates the project a confirmed `create_task_project` names in [task]'s
+  /// category, active, and moves [task] into it; see
+  /// [TaskProjectCreateHandler].
+  Future<ToolExecutionResult> handleCreateTaskProject(
+    Task task,
+    Map<String, dynamic> args, {
+    ChangeEffect? effect,
+  }) async {
+    final repository = projectRepository;
+    if (repository == null) {
+      return const ToolExecutionResult(
+        success: false,
+        output: 'Error: create_task_project is not configured.',
+        errorMessage: 'create_task_project is not configured',
+      );
+    }
+    final handler = TaskProjectCreateHandler(
+      persistenceLogic: persistenceLogic,
+      journalDb: journalDb,
+      projectRepository: repository,
+      domainLogger: domainLogger,
+    );
+    return handler.handle(task, args, effect: effect);
   }
 
   /// Links the pull request a confirmed `link_pull_request` names to task

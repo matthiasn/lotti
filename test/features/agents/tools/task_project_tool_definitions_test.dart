@@ -49,4 +49,40 @@ void main() {
       expect(tool.description, contains('get_category_projects'));
     });
   });
+
+  group('create_task_project', () {
+    final tool = toolNamed(TaskAgentToolNames.createTaskProject);
+
+    test('requires exactly one string title', () {
+      expect(tool.name, 'create_task_project');
+      expect(tool.parameters['required'], ['title']);
+      final properties = tool.parameters['properties'] as Map;
+      expect(properties.keys, ['title']);
+      expect((properties['title'] as Map)['type'], 'string');
+      expect(
+        (properties['title'] as Map)['description'],
+        contains('exactly as the user wrote or said it'),
+      );
+      expect(tool.parameters['additionalProperties'], isFalse);
+    });
+
+    test(
+      'waits for the user as a single, non-batch proposal, for a project the '
+      'user named, pointing at set_task_project for one that exists',
+      () {
+        expect(
+          AgentToolRegistry.deferredTools,
+          contains(TaskAgentToolNames.createTaskProject),
+        );
+        expect(
+          AgentToolRegistry.explodedBatchTools,
+          isNot(contains(TaskAgentToolNames.createTaskProject)),
+        );
+        expect(tool.description, contains('user must confirm'));
+        expect(tool.description, contains('explicitly names a project'));
+        expect(tool.description, contains('use set_task_project instead'));
+        expect(tool.description, contains('Never invent a project'));
+      },
+    );
+  });
 }

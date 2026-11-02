@@ -466,6 +466,7 @@
   "agentSummaryCheckItem": "Segna: \"{title}\"",
   "agentSummaryCreateFollowUp": "Crea attività di follow-up: \"{title}\"",
   "agentSummaryCreateFollowUpRelated": "Crea attività di follow-up: \"{title}\" — {relation}",
+  "agentSummaryCreateProject": "Crea il progetto \"{project}\" e sposta lì l'attività",
   "agentSummaryCreateTask": "Crea attività: {title}",
   "agentSummaryFollowUpTask": "Attività di follow-up: {title}",
   "agentSummaryGoalRevisionCadence": "Cambia la cadenza a {value}",

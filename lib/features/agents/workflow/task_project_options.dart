@@ -4,6 +4,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/database/agents/agent_repository.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/agents/tools/task_project_create_handler.dart';
 import 'package:lotti/logic/repositories/project_repository.dart';
 
 /// One project the task agent may propose for its task.
@@ -97,9 +98,10 @@ Future<List<TaskProjectOption>> loadTaskProjectOptions({
   ]..sort((a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
 }
 
-/// The option [reference] names: its id, or else its title compared without
-/// case or surrounding whitespace. `null` when nothing matches, or when the
-/// title is shared by more than one project and so names none of them.
+/// The option [reference] names: its id, or else its title compared by
+/// [projectTitleKey] — without case or differences in whitespace. `null` when
+/// nothing matches, or when the title is shared by more than one project and
+/// so names none of them.
 TaskProjectOption? matchTaskProjectOption(
   List<TaskProjectOption> options,
   String reference,
@@ -108,9 +110,9 @@ TaskProjectOption? matchTaskProjectOption(
   for (final option in options) {
     if (option.id == trimmed) return option;
   }
-  final wanted = trimmed.toLowerCase();
+  final wanted = projectTitleKey(trimmed);
   final byTitle = options
-      .where((option) => option.title.trim().toLowerCase() == wanted)
+      .where((option) => projectTitleKey(option.title) == wanted)
       .toList();
   return byTitle.length == 1 ? byTitle.single : null;
 }

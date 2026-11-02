@@ -56,8 +56,8 @@ void main() {
   });
 
   group('AgentToolRegistry.taskAgentTools', () {
-    test('contains exactly 26 tool definitions', () {
-      expect(AgentToolRegistry.taskAgentTools, hasLength(26));
+    test('contains exactly 27 tool definitions', () {
+      expect(AgentToolRegistry.taskAgentTools, hasLength(27));
     });
 
     test('offers the three pull request tools, only the link deferred', () {
@@ -164,8 +164,8 @@ void main() {
   });
 
   group('AgentToolRegistry.deferredTools', () {
-    test('contains exactly 16 deferred tool names', () {
-      expect(AgentToolRegistry.deferredTools, hasLength(16));
+    test('contains exactly 17 deferred tool names', () {
+      expect(AgentToolRegistry.deferredTools, hasLength(17));
     });
 
     test('includes all expected deferred tool names', () {
@@ -184,6 +184,7 @@ void main() {
           TaskAgentToolNames.createFollowUpTask,
           TaskAgentToolNames.linkTask,
           TaskAgentToolNames.setTaskProject,
+          TaskAgentToolNames.createTaskProject,
           TaskAgentToolNames.linkPullRequest,
           TaskAgentToolNames.migrateChecklistItems,
           TaskAgentToolNames.createTimeEntry,

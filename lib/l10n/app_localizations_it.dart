@@ -990,6 +990,11 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
+  String agentSummaryCreateProject(Object project) {
+    return 'Crea il progetto \"$project\" e sposta lì l\'attività';
+  }
+
+  @override
   String agentSummaryCreateTask(Object title) {
     return 'Crea attività: $title';
   }

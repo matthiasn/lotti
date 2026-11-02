@@ -991,6 +991,11 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String agentSummaryCreateProject(Object project) {
+    return 'Projekt „$project“ erstellen und die Aufgabe dorthin verschieben';
+  }
+
+  @override
   String agentSummaryCreateTask(Object title) {
     return 'Aufgabe erstellen: $title';
   }

@@ -951,6 +951,22 @@ void main() {
       expect(names, contains('link_task'));
     });
 
+    test('withholds create_task_project: without the category projects, a '
+        'new project cannot be told from one that exists', () async {
+      expect(
+        QueryTaskActionPlanner.tools.map((t) => t.name),
+        isNot(contains('create_task_project')),
+      );
+      await expectLater(
+        QueryTaskActionPlanner.validate(
+          'create_task_project',
+          {'title': 'Igloo Repairs'},
+          context,
+        ),
+        throwsFormatException,
+      );
+    });
+
     test('withholds link_pull_request, whose numbers the chat context '
         'lacks', () async {
       expect(

@@ -375,6 +375,37 @@ void main() {
     });
   });
 
+  group('new project', () {
+    test(
+      "names the project it creates in the reader's language, the title "
+      'passing through untranslated',
+      () {
+        const args = {'title': ' Igloo Repairs '};
+        expect(
+          summary(TaskAgentToolNames.createTaskProject, args),
+          'Create project "Igloo Repairs" and move the task into it',
+        );
+        expect(
+          summary(TaskAgentToolNames.createTaskProject, args, messages: de),
+          'Projekt „Igloo Repairs“ erstellen und die Aufgabe dorthin '
+          'verschieben',
+        );
+        expect(
+          summary(TaskAgentToolNames.createTaskProject, args, messages: ro),
+          'Creați proiectul „Igloo Repairs” și mutați sarcina în el',
+        );
+      },
+    );
+
+    test('a proposal without a title keeps the persisted wording', () {
+      expect(summary(TaskAgentToolNames.createTaskProject, const {}), isNull);
+      expect(
+        summary(TaskAgentToolNames.createTaskProject, {'title': ' '}),
+        isNull,
+      );
+    });
+  });
+
   group('pull request link', () {
     const args = {
       'owner': 'penguin',

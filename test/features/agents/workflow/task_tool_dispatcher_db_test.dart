@@ -24,6 +24,7 @@ import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/tools/change_effect.dart';
 import 'package:lotti/features/agents/tools/project_tool_definitions.dart';
+import 'package:lotti/features/agents/tools/task_project_create_handler.dart';
 import 'package:lotti/features/agents/workflow/change_proposal_filter.dart';
 import 'package:lotti/features/agents/workflow/change_set_builder.dart';
 import 'package:lotti/features/agents/workflow/project_tool_dispatcher.dart';
@@ -316,6 +317,129 @@ void main() {
       );
       expect((stored! as Task).data.title, 'Rotate signing certificate');
     });
+  });
+
+  group('create_task_project end to end', () {
+    late ProjectRepository projects;
+    late TaskToolDispatcher withProjects;
+
+    setUp(() {
+      projects = ProjectRepository(
+        journalDb: journalDb,
+        entitiesCacheService: getIt<EntitiesCacheService>(),
+        persistenceLogic: getIt<PersistenceLogic>(),
+        updateNotifications: getIt<UpdateNotifications>(),
+        vectorClockService: getIt<VectorClockService>(),
+      );
+      withProjects = TaskToolDispatcher(
+        domainLogger: MockDomainLogger(),
+        journalDb: journalDb,
+        journalRepository: buildJournalRepository(),
+        checklistRepository: ChecklistRepository(
+          journalRepository: buildJournalRepository(),
+        ),
+        labelsRepository: MockLabelsRepository(),
+        persistenceLogic: getIt<PersistenceLogic>(),
+        timeService: mockTimeService,
+        projectRepository: projects,
+      );
+    });
+
+    // The confirmation of a proposal queued while the task was in no project.
+    const effect = ChangeEffect(
+      key: 'change-set-1:0:confirmed',
+      targetBase: {'projectId': null},
+    );
+
+    Future<ToolExecutionResult> confirm(String title) => withProjects.dispatch(
+      TaskAgentToolNames.createTaskProject,
+      effect.addTo({'title': title}),
+      task.meta.id,
+    );
+
+    test(
+      'a task naming a project its category lacks: the confirmed proposal '
+      "creates the project active, in the task's category, with the task in it",
+      () async {
+        expect(
+          await projects.getProjectsForCategory('db-eval-category'),
+          isEmpty,
+          reason: 'the project the task names must not exist yet',
+        );
+
+        final result = await confirm('Certificate  Rotation');
+
+        expect(result.success, isTrue, reason: result.output);
+        final projectId = result.mutatedEntityId!;
+        // The id derives from the change item, as on every device.
+        expect(
+          projectId,
+          effect.entityId(TaskProjectCreateHandler.projectRole),
+        );
+
+        final project = (await projects.getProjectById(projectId))!;
+        expect(project.data.title, 'Certificate Rotation');
+        expect(project.meta.categoryId, 'db-eval-category');
+        expect(project.data.status, isA<ProjectActive>());
+        expect(project.meta.private ?? false, isFalse);
+        expect(
+          (await projects.getProjectForTask(task.meta.id))?.meta.id,
+          projectId,
+        );
+        expect(
+          await projects.getTasksForProject(projectId),
+          [isA<Task>().having((t) => t.meta.id, 'id', task.meta.id)],
+        );
+      },
+    );
+
+    test(
+      'the same item confirmed again — a second device, a retry — leaves one '
+      'project and the task in it',
+      () async {
+        final first = await confirm('Certificate Rotation');
+        final second = await confirm('Certificate Rotation');
+
+        expect(first.success, isTrue, reason: first.output);
+        expect(second.success, isTrue, reason: second.output);
+        final inCategory = await projects.getProjectsForCategory(
+          'db-eval-category',
+        );
+        expect(inCategory.map((p) => p.meta.id), [first.mutatedEntityId]);
+        expect(
+          (await projects.getProjectForTask(task.meta.id))?.meta.id,
+          first.mutatedEntityId,
+        );
+      },
+    );
+
+    test(
+      'a project of that title made since the proposal is joined, not '
+      'duplicated',
+      () async {
+        final existing = makeTestProject(
+          id: 'project-made-since',
+          title: 'certificate rotation',
+          categoryId: 'db-eval-category',
+        );
+        await getIt<PersistenceLogic>().createDbEntity(existing);
+
+        final result = await confirm('Certificate Rotation');
+
+        expect(result.success, isTrue, reason: result.output);
+        expect(result.mutatedEntityId, 'project-made-since');
+        expect(
+          (await projects.getProjectsForCategory(
+            'db-eval-category',
+          )).map((p) => p.meta.id),
+          ['project-made-since'],
+        );
+        expect(
+          (await projects.getProjectForTask(task.meta.id))?.meta.id,
+          'project-made-since',
+        );
+      },
+    );
   });
 
   _registerIdempotency(

@@ -146,8 +146,12 @@ sources:
     last_modified: 2026-09-22
   - id: project-tools
     resource: ../../../lib/features/agents/tools/task_project_tool_definitions.dart
-    title: get_category_projects and set_task_project — choosing the task's project
-    last_modified: 2026-10-31
+    title: get_category_projects, set_task_project and create_task_project — choosing or creating the task's project
+    last_modified: 2026-11-02
+  - id: project-create
+    resource: ../../../lib/features/agents/tools/task_project_create_handler.dart
+    title: TaskProjectCreateHandler — the confirmed new project, active, with the task in it
+    last_modified: 2026-11-02
   - id: project-cue
     resource: ../../../lib/features/agents/workflow/task_agent_execute.dart
     title: TaskAgentExecute — the `## Project` cue for a task in no project
@@ -780,8 +784,10 @@ only: a task in a category without a GitHub repository is never offered
 Tools with no precondition — `set_task_title`, `update_task_estimate`,
 `update_task_due_date`, `update_task_priority`, `set_task_status`,
 `set_task_language`, `add_multiple_checklist_items`, `create_follow_up_task`,
-`link_task`, `record_observations`, `request_attention`,
-`migrate_checklist_items` — are always offered. `migrate_checklist_items` is
+`link_task`, `create_task_project`, `record_observations`, `request_attention`,
+`migrate_checklist_items` — are always offered. `create_task_project` is
+deliberately not under the projects row: a category with no projects is where a
+project the user names is most likely missing. `migrate_checklist_items` is
 only meaningful after `create_follow_up_task`, but that happens mid-wake and
 the tool list is fixed for the turn, so it cannot be gated on it.
 
@@ -835,7 +841,7 @@ Two run immediately but route through `AgentToolExecutor` → `TaskToolDispatche
 `update_task_estimate`, `update_task_due_date`, `update_task_priority`,
 `set_task_status`, `set_task_language`, `add_multiple_checklist_items`,
 `update_checklist_items`, `assign_task_labels`, `create_follow_up_task`,
-`link_task`, `set_task_project`, `link_pull_request`,
+`link_task`, `set_task_project`, `create_task_project`, `link_pull_request`,
 `migrate_checklist_items`, `create_time_entry`, `update_time_entry`.
 
 `update_time_entry` is also exempt from the one-call-per-wake rule that stops a
@@ -881,7 +887,8 @@ decision is its record.
 ## Project assignment tools
 
 A task belongs to at most one project, and only to one of its own category.
-Two tools let the agent choose it.
+Two tools let the agent choose it, and a third creates the one the user names
+when the category does not have it yet.
 
 **The wake lists the candidates when a task has none.** The task details
 never name the task's project, and `Parent Project Context` is absent both for
@@ -931,15 +938,40 @@ section off, glm-5.3 proposed none 3/3.
   (`{projectId: <id or null>}`).
   If the list cannot be read, the proposal is kept by id, as `link_task` keeps
   one whose title lookup failed.
+- `create_task_project {title}` is **deferred** and single-use per wake, for a
+  project the user explicitly names that the category does not have
+  (`TaskAgentPromptBuilder.createProjectCueRule`, in both scaffolds). It and
+  `set_task_project` exclude each other within a wake: a task belongs to one
+  project. At queue time the title is normalized (`normalizeProjectTitle`:
+  trimmed, inner whitespace collapsed, the user's spelling kept); a task with no
+  category is rejected, and a title already in the list — compared by
+  `projectTitleKey`, without case or whitespace differences — is not queued:
+  the model is pointed at `set_task_project` with its id, or told the task is
+  already in it. The item's `targetBase` records the task's project as for
+  `set_task_project`. `matchTaskProjectOption` compares titles by the same key.
 
-On confirmation `TaskToolDispatcher` calls
+On confirming `create_task_project`, `TaskProjectCreateHandler` creates the
+project in the task's category with the task's private flag (a link across
+either is refused) and status `active` — it is made for a task, so it already
+has work in it — then moves the task in with `linkTaskToProject`. The project's
+id derives from the change item's effect key (`ChangeEffect.entityInput`), so a
+second device confirming the same item finds it rather than creating another;
+one deleted since stays deleted. A same-titled project of the category made or
+synced in after the proposal is joined instead of duplicated. A refused move
+fails the item with the project left in place, and the next confirmation only
+retries the move. The same `targetBase` check runs first, so a late
+confirmation creates nothing once the task is in another project. No project
+agent is provisioned here, unlike the create modal.
+
+On confirming `set_task_project`, `TaskToolDispatcher` calls
 `ProjectRepository.linkTaskToProject`, which replaces any project the task
 had. A project of another category — the task may have moved since the
 proposal — fails the item rather than linking it. Before that, the dispatcher
 compares `targetBase` with the task's live project link
 (`getLinkedProjectForTask`, past the private gate): if it moved on, nothing is
 applied, so a second device confirming late cannot undo a move made since. The query chat's planner
-does not offer `set_task_project`: its task context carries no project ids.
+offers neither `set_task_project` nor `create_task_project`: its task context
+carries no project ids, so it could not tell a new project from an existing one.
 
 ```mermaid
 sequenceDiagram
@@ -957,6 +989,13 @@ sequenceDiagram
   S->>S: match id or title, skip the current project
   S->>B: addItem(projectId, projectTitle)
   U->>D: confirm
+  D->>P: linkTaskToProject
+  Note over M: the user names a project the list does not hold
+  M->>S: create_task_project {title}
+  S->>S: normalize, refuse no category or an existing title
+  S->>B: addItem(title)
+  U->>D: confirm
+  D->>P: same title in the category? else createProject (active, derived id)
   D->>P: linkTaskToProject
 ```
 

@@ -73,6 +73,7 @@ String? localizedChangeSummary(
   TaskAgentToolNames.createFollowUpTask => _followUp(messages, args),
   TaskAgentToolNames.linkTask => _link(messages, args),
   TaskAgentToolNames.setTaskProject => _project(messages, args),
+  TaskAgentToolNames.createTaskProject => _createProject(messages, args),
   TaskAgentToolNames.linkPullRequest => _pullRequest(messages, args),
   TaskAgentToolNames.createTimeEntry => _createTimeEntry(messages, args),
   // The retired running-timer update carried only `summary` (plus a
@@ -408,6 +409,14 @@ String? _project(AppLocalizations messages, Map<String, dynamic> args) {
   final title = args['projectTitle'];
   if (title is! String || title.trim().isEmpty) return null;
   return messages.agentSummarySetProject(title.trim());
+}
+
+/// A new project's proposal names the project it creates. One without a
+/// title has no readable subject, so it keeps its persisted summary.
+String? _createProject(AppLocalizations messages, Map<String, dynamic> args) {
+  final title = args['title'];
+  if (title is! String || title.trim().isEmpty) return null;
+  return messages.agentSummaryCreateProject(title.trim());
 }
 
 /// A pull request proposal names its pull request by number and title. One

@@ -466,6 +466,7 @@
   "agentSummaryCheckItem": "Markera: ”{title}”",
   "agentSummaryCreateFollowUp": "Skapa uppföljningsuppgift: ”{title}”",
   "agentSummaryCreateFollowUpRelated": "Skapa uppföljningsuppgift: ”{title}” — {relation}",
+  "agentSummaryCreateProject": "Skapa projektet ”{project}” och flytta uppgiften dit",
   "agentSummaryCreateTask": "Skapa uppgift: {title}",
   "agentSummaryFollowUpTask": "Uppföljningsuppgift: {title}",
   "agentSummaryGoalRevisionCadence": "Ändra frekvensen till {value}",

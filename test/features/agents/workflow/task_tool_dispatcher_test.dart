@@ -544,6 +544,55 @@ void main() {
       );
     });
 
+    test(
+      'a late create_task_project confirmation creates nothing once the task '
+      'is in another project',
+      () async {
+        when(
+          () => projectRepository.getLinkedProjectForTask(taskId),
+        ).thenAnswer(
+          (_) async =>
+              makeTestProject(id: 'project-other', categoryId: categoryId),
+        );
+
+        final result = await projectDispatcher.dispatchApproved(
+          TaskAgentToolNames.createTaskProject,
+          const ChangeEffect(
+            key: 'cs-1:0',
+            targetBase: {'projectId': null},
+          ).addTo({'title': 'Igloo Repairs'}),
+          taskId,
+          null,
+        );
+
+        expect(result.success, isTrue);
+        expect(result.output, startsWith('Nothing applied'));
+        verifyNever(
+          () => projectRepository.createProject(project: any(named: 'project')),
+        );
+        verifyNever(
+          () => projectRepository.linkTaskToProject(
+            projectId: any(named: 'projectId'),
+            taskId: any(named: 'taskId'),
+          ),
+        );
+      },
+    );
+
+    test(
+      'create_task_project fails when no project repository is wired',
+      () async {
+        final result = await dispatcher.dispatch(
+          TaskAgentToolNames.createTaskProject,
+          {'title': 'Igloo Repairs'},
+          taskId,
+        );
+
+        expect(result.success, isFalse);
+        expect(result.errorMessage, 'create_task_project is not configured');
+      },
+    );
+
     test('a confirmation against the unchanged base links the task', () async {
       when(
         () => projectRepository.getLinkedProjectForTask(taskId),

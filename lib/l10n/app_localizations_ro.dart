@@ -989,6 +989,11 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String agentSummaryCreateProject(Object project) {
+    return 'Creați proiectul „$project” și mutați sarcina în el';
+  }
+
+  @override
   String agentSummaryCreateTask(Object title) {
     return 'Creați sarcină: $title';
   }

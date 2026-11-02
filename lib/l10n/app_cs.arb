@@ -447,6 +447,7 @@
   "agentSummaryCheckItem": "Odškrtnout: „{title}“",
   "agentSummaryCreateFollowUp": "Vytvořit navazující úkol: „{title}“",
   "agentSummaryCreateFollowUpRelated": "Vytvořit navazující úkol: „{title}“ — {relation}",
+  "agentSummaryCreateProject": "Vytvořit projekt „{project}“ a přesunout do něj úkol",
   "agentSummaryCreateTask": "Vytvořit úkol: {title}",
   "agentSummaryFollowUpTask": "Navazující úkol: {title}",
   "agentSummaryGoalRevisionCadence": "Změnit frekvenci na {value}",

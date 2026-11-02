@@ -988,6 +988,11 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String agentSummaryCreateProject(Object project) {
+    return 'Crear el proyecto «$project» y mover la tarea allí';
+  }
+
+  @override
   String agentSummaryCreateTask(Object title) {
     return 'Crear tarea: $title';
   }

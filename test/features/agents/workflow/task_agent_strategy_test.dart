@@ -180,6 +180,7 @@ ChatCompletionMessageToolCall _toolCall({
   Future<void> Function()? flushChangeSet,
   TaskAgentStagedToolExposure? stagedToolExposure,
   DomainLogger? domainLogger,
+  ResolveCategoryId? resolveCategoryId,
 }) {
   const agentId = 'agent-001';
   const taskId = 'task-001';
@@ -204,7 +205,7 @@ ChatCompletionMessageToolCall _toolCall({
     threadId: threadId,
     runKey: runKey,
     taskId: taskId,
-    resolveCategoryId: (_) async => 'cat-001',
+    resolveCategoryId: resolveCategoryId ?? (_) async => 'cat-001',
     readVectorClock: (_) async => null,
     executeToolHandler:
         executeToolHandler ??
@@ -2603,10 +2604,12 @@ void main() {
 
       ({TaskAgentStrategy strategy, ChangeSetBuilder builder}) bench({
         Future<List<TaskProjectOption>> Function()? resolveCategoryProjects,
+        ResolveCategoryId? resolveCategoryId,
       }) => _createStrategy(
         executor: mockExecutor,
         syncService: mockSyncService,
         resolveCategoryProjects: resolveCategoryProjects,
+        resolveCategoryId: resolveCategoryId,
         // Both tools are handled by the strategy: neither may reach the
         // journal-domain handlers during the wake.
         executeToolHandler: (toolName, _, _) =>
@@ -2879,6 +2882,215 @@ void main() {
             startsWith('ERROR: set_task_project was already called'),
           );
         });
+      });
+
+      group('create_task_project', () {
+        test(
+          'queues a confirmable proposal for a project the category lacks, '
+          "named as the user named it and recording the task's project",
+          () async {
+            final b = bench(
+              resolveCategoryProjects: () async => [colony, iceShelf],
+            );
+
+            await b.strategy.processToolCalls(
+              toolCalls: [
+                call('create_task_project', {'title': '  Igloo   Repairs '}),
+              ],
+              manager: mockManager,
+            );
+
+            final item = b.builder.items.single;
+            expect(item.toolName, 'create_task_project');
+            // Whitespace normalized, the user's capitalisation kept.
+            expect(item.args, {'title': 'Igloo Repairs'});
+            expect(
+              item.humanSummary,
+              'Create project "Igloo Repairs" and move the task into it',
+            );
+            // The project the task is in now, so a late second confirmation
+            // cannot undo a move the user made since.
+            expect(item.targetBase, {'projectId': 'project-ice'});
+            expect(
+              responseTo('call-1'),
+              startsWith('OK — create_task_project proposal recorded'),
+            );
+          },
+        );
+
+        test(
+          'queues for a category with no projects at all, with an empty base',
+          () async {
+            final b = bench(resolveCategoryProjects: () async => const []);
+
+            await b.strategy.processToolCalls(
+              toolCalls: [
+                call('create_task_project', {'title': 'Igloo Repairs'}),
+              ],
+              manager: mockManager,
+            );
+
+            expect(b.builder.items.single.targetBase, {'projectId': null});
+          },
+        );
+
+        test(
+          'points at set_task_project when the project exists under another '
+          'spelling, queueing nothing',
+          () async {
+            final b = bench(
+              resolveCategoryProjects: () async => [colony, iceShelf],
+            );
+
+            await b.strategy.processToolCalls(
+              toolCalls: [
+                call('create_task_project', {'title': 'colony   CENSUS'}),
+              ],
+              manager: mockManager,
+            );
+
+            expect(b.builder.items, isEmpty);
+            expect(
+              responseTo('call-1'),
+              allOf(
+                startsWith('ERROR: project "Colony census" already exists'),
+                contains('project-colony'),
+                contains('set_task_project'),
+              ),
+            );
+          },
+        );
+
+        test('skips the project the task already belongs to', () async {
+          final b = bench(
+            resolveCategoryProjects: () async => [colony, iceShelf],
+          );
+
+          await b.strategy.processToolCalls(
+            toolCalls: [
+              call('create_task_project', {'title': 'ice shelf survey'}),
+            ],
+            manager: mockManager,
+          );
+
+          expect(b.builder.items, isEmpty);
+          expect(
+            responseTo('call-1'),
+            'Skipped: the task already belongs to project "Ice shelf survey". '
+            'Do NOT propose it again.',
+          );
+        });
+
+        test('rejects a blank title', () async {
+          final b = bench(resolveCategoryProjects: () async => [colony]);
+
+          await b.strategy.processToolCalls(
+            toolCalls: [
+              call('create_task_project', {'title': '   '}),
+            ],
+            manager: mockManager,
+          );
+
+          expect(b.builder.items, isEmpty);
+          expect(
+            responseTo('call-1'),
+            startsWith('ERROR: create_task_project requires a non-empty'),
+          );
+        });
+
+        test('rejects a task with no category', () async {
+          final b = bench(
+            resolveCategoryProjects: () async => const [],
+            resolveCategoryId: (_) async => null,
+          );
+
+          await b.strategy.processToolCalls(
+            toolCalls: [
+              call('create_task_project', {'title': 'Igloo Repairs'}),
+            ],
+            manager: mockManager,
+          );
+
+          expect(b.builder.items, isEmpty);
+          expect(
+            responseTo('call-1'),
+            startsWith('ERROR: this task has no category'),
+          );
+        });
+
+        test(
+          'keeps the proposal without a base when the projects cannot be read',
+          () async {
+            final b = bench(
+              resolveCategoryProjects: () async => throw Exception('db down'),
+            );
+
+            await b.strategy.processToolCalls(
+              toolCalls: [
+                call('create_task_project', {'title': 'Igloo Repairs'}),
+              ],
+              manager: mockManager,
+            );
+
+            // The apply path checks for a same-titled project again.
+            final item = b.builder.items.single;
+            expect(item.args, {'title': 'Igloo Repairs'});
+            expect(item.targetBase, isNull);
+          },
+        );
+
+        test(
+          'excludes set_task_project in the same wake, in either order: a task '
+          'belongs to one project',
+          () async {
+            final createFirst = bench(
+              resolveCategoryProjects: () async => [colony],
+            );
+            await createFirst.strategy.processToolCalls(
+              toolCalls: [
+                call('create_task_project', {'title': 'Igloo Repairs'}),
+                call('set_task_project', {
+                  'projectId': 'project-colony',
+                }, id: 'call-2'),
+              ],
+              manager: mockManager,
+            );
+            expect(
+              createFirst.builder.items.single.toolName,
+              'create_task_project',
+            );
+            expect(
+              responseTo('call-2'),
+              startsWith(
+                'Skipped: a project for this task was already '
+                'proposed this wake.',
+              ),
+            );
+
+            final setFirst = bench(
+              resolveCategoryProjects: () async => [colony],
+            );
+            await setFirst.strategy.processToolCalls(
+              toolCalls: [
+                call('set_task_project', {
+                  'projectId': 'project-colony',
+                }, id: 'call-3'),
+                call('create_task_project', {
+                  'title': 'Igloo Repairs',
+                }, id: 'call-4'),
+              ],
+              manager: mockManager,
+            );
+            expect(setFirst.builder.items.single.toolName, 'set_task_project');
+            expect(
+              responseTo('call-4'),
+              startsWith(
+                'Skipped: a project for this task was already '
+                'proposed this wake.',
+              ),
+            );
+          },
+        );
       });
     });
 

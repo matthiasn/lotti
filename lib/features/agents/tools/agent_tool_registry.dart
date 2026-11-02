@@ -134,6 +134,7 @@ abstract final class TaskAgentToolNames {
   // Project assignment tools.
   static const getCategoryProjects = 'get_category_projects';
   static const setTaskProject = 'set_task_project';
+  static const createTaskProject = 'create_task_project';
 
   // Pull request tools.
   static const getUnlinkedPullRequests = 'get_unlinked_pull_requests';
@@ -187,6 +188,7 @@ abstract final class AgentToolRegistry {
     TaskAgentToolNames.createFollowUpTask,
     TaskAgentToolNames.linkTask,
     TaskAgentToolNames.setTaskProject,
+    TaskAgentToolNames.createTaskProject,
     TaskAgentToolNames.linkPullRequest,
     TaskAgentToolNames.migrateChecklistItems,
     TaskAgentToolNames.createTimeEntry,

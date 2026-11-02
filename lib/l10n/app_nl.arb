@@ -465,6 +465,7 @@
   "agentSummaryCheckItem": "Afvinken: \"{title}\"",
   "agentSummaryCreateFollowUp": "Vervolgtaak maken: \"{title}\"",
   "agentSummaryCreateFollowUpRelated": "Vervolgtaak maken: \"{title}\" — {relation}",
+  "agentSummaryCreateProject": "Project \"{project}\" maken en de taak erheen verplaatsen",
   "agentSummaryCreateTask": "Taak maken: {title}",
   "agentSummaryFollowUpTask": "Vervolgtaak: {title}",
   "agentSummaryGoalRevisionCadence": "Frequentie wijzigen naar {value}",

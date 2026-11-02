@@ -17,6 +17,7 @@ import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/tools/change_effect.dart';
 import 'package:lotti/features/agents/tools/task_agent_staged_tool_exposure.dart';
+import 'package:lotti/features/agents/tools/task_project_create_handler.dart';
 import 'package:lotti/features/agents/workflow/agent_observations.dart';
 import 'package:lotti/features/agents/workflow/change_proposal_filter.dart';
 import 'package:lotti/features/agents/workflow/change_set_builder.dart';
