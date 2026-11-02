@@ -11,7 +11,9 @@ import 'package:lotti/features/agents/ui/ai_summary_card/proposal_row_part.dart'
 import 'package:lotti/features/agents/ui/ai_summary_card/proposals_section_part.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/events/ui/widgets/event_suggestions_band.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/providers/update_notifications_providers.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -26,11 +28,13 @@ void main() {
 
   late MockChangeSetConfirmationService service;
   late MockUpdateNotifications notifications;
+  late MockDomainLogger logger;
 
   setUp(() async {
     await setUpTestGetIt();
     service = MockChangeSetConfirmationService();
     notifications = MockUpdateNotifications();
+    logger = MockDomainLogger();
     when(() => notifications.notify(any())).thenReturn(null);
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(SystemChannels.platform, (_) async => null);
@@ -89,6 +93,7 @@ void main() {
           eventSuggestionListProvider(eventId).overrideWith((ref) => list),
           eventChangeSetConfirmationServiceProvider.overrideWithValue(service),
           updateNotificationsProvider.overrideWithValue(notifications),
+          domainLoggerProvider.overrideWithValue(logger),
         ],
       ),
     );
@@ -194,6 +199,47 @@ void main() {
     expect(find.text('Add · Pip Penguin was there'), findsOneWidget);
   });
 
+  testWidgets('a Confirm all that throws says so, logs it, and hands every '
+      'row it did not confirm back', (tester) async {
+    when(() => service.confirmItem(pip.changeSet, 0)).thenAnswer(
+      (_) async => const ToolExecutionResult(success: true, output: 'Done'),
+    );
+    when(
+      () => service.confirmItem(album.changeSet, 0),
+    ).thenThrow(StateError('store write failed'));
+    await pump(
+      tester,
+      UnifiedSuggestionList(open: [pip, album], activity: const []),
+    );
+
+    await tester.tap(find.text('Confirm all'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Failed to apply change'), findsOneWidget);
+    verify(
+      () => logger.error(
+        LogDomain.agentWorkflow,
+        any(that: isA<StateError>()),
+        stackTrace: any(named: 'stackTrace'),
+        subDomain: 'EventSuggestionsBand',
+        message: 'confirmAll failed',
+      ),
+    ).called(1);
+    verify(() => notifications.notify({pip.changeSet.agentId})).called(1);
+    // Not stuck busy: the unconfirmed row has its own buttons back.
+    final unconfirmed = find.ancestor(
+      of: find.text('Everyone asked for photos'),
+      matching: find.byType(ProposalRow),
+    );
+    expect(
+      find.descendant(
+        of: unconfirmed,
+        matching: find.byIcon(LottiIcons.confirm),
+      ),
+      findsOneWidget,
+    );
+  });
+
   group('history', () {
     final resolved = makeLedgerEntry(
       changeSetId: 'set-old',
@@ -211,6 +257,19 @@ void main() {
       );
 
       expect(find.byType(ProposalHistorySection), findsOneWidget);
+      expect(find.textContaining('Rocko was there'), findsNothing);
+
+      await tester.tap(
+        find
+            .descendant(
+              of: find.byType(ProposalHistorySection),
+              matching: find.byType(MergeSemantics),
+            )
+            .first,
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Rocko was there'), findsOneWidget);
     });
 
     testWidgets('stays out of the collapsed card', (tester) async {

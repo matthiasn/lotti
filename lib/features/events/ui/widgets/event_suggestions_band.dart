@@ -5,8 +5,13 @@ import 'package:lotti/features/agents/tools/event_tool_definitions.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/proposal_row_part.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/proposals_section_part.dart';
 import 'package:lotti/features/design_system/components/motion/size_fade_collapse.dart';
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
+import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/providers/update_notifications_providers.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// The event agent's proposals, inside its card, in the task card's grammar:
@@ -72,19 +77,44 @@ class _EventSuggestionsBandState extends ConsumerState<EventSuggestionsBand> {
     });
     final service = ref.read(eventChangeSetConfirmationServiceProvider);
     final notifier = ref.read(updateNotificationsProvider);
-    for (final row in rows) {
-      final result = await service.confirmItem(row.changeSet, row.itemIndex);
-      if (!mounted) return;
-      setState(() {
-        if (result.success) {
-          _confirmed.add(_key(row));
-        } else {
-          _resolving.remove(_key(row));
-        }
-      });
+    final logger = ref.read(domainLoggerProvider);
+    try {
+      for (final row in rows) {
+        final result = await service.confirmItem(row.changeSet, row.itemIndex);
+        if (!mounted) return;
+        setState(() {
+          if (result.success) {
+            _confirmed.add(_key(row));
+          } else {
+            _resolving.remove(_key(row));
+          }
+        });
+      }
+    } catch (error, stackTrace) {
+      // The service catches a failing dispatch itself; this is a store write
+      // around it that threw. The rows it did not reach are released below.
+      logger.error(
+        LogDomain.agentWorkflow,
+        error,
+        stackTrace: stackTrace,
+        subDomain: 'EventSuggestionsBand',
+        message: 'confirmAll failed',
+      );
+      if (mounted) {
+        context.showToast(
+          tone: DesignSystemToastTone.error,
+          title: context.messages.changeSetConfirmError,
+        );
+      }
+    } finally {
+      notifier.notify({rows.first.changeSet.agentId});
+      if (mounted) {
+        setState(() {
+          _resolving.removeWhere((key, _) => !_confirmed.contains(key));
+          _confirmAllBusy = false;
+        });
+      }
     }
-    notifier.notify({rows.first.changeSet.agentId});
-    if (mounted) setState(() => _confirmAllBusy = false);
   }
 
   @override

@@ -718,6 +718,17 @@ void main() {
 
       expect(shown.open.single.item, oona);
       expect(shown.activity, [dismissedOona]);
+
+      // A person written — here Oona made private again — re-reads too.
+      privateShown = false;
+      notifications.add({relationshipNotification});
+      await pumpEventQueue();
+      final rewritten = await container.read(
+        eventSuggestionListProvider('event-001').future,
+      );
+
+      expect(rewritten.open, isEmpty);
+      expect(rewritten.activity, isEmpty);
     });
   });
 
