@@ -255,7 +255,12 @@ instead of ending on a sentence about a routing that never happened.
 In code, not prompt: at most `frontMaxSegments` (8) segments; spans by offset,
 **ordered and non-overlapping**, with `text` equal to the input slice, so a
 repeated or overlapping phrase can never stand in for words the model
-skipped; a `task` / `project` / `goal` / `person` destination needs an id
+skipped. Offsets that miscount are not a failure when the words are right:
+a segment whose `text` is found verbatim after the previous segment is
+placed there, its first occurrence (a model copies words far better than it
+counts characters — Mistral Large 4 put a 63-character message at
+`[0, 54)`, then at `[0, 64)`, and every turn failed). Offsets that agree with
+the words are kept, so a phrase said twice is the one the model meant; a `task` / `project` / `goal` / `person` destination needs an id
 the index or a lookup listed, at confidence ≥ `frontLowConfidence` (0.5);
 `new` needs a `newKind`; `day`, `journal` and `unrouted` need neither. The
 spans and the gaps between them partition the input and the gaps are never
