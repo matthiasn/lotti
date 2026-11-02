@@ -83,6 +83,7 @@ class CompanionStagePage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final shown = ref.watch(companionStageShownProvider(sourceId));
     final canReadAloud =
         spokenText.isNotEmpty &&
         (ref.watch(configFlagProvider(enableAiSummaryTtsFlag)).value ??
@@ -116,6 +117,7 @@ class CompanionStagePage extends ConsumerWidget {
                           stage: true,
                           mood: mood,
                           holding: holding,
+                          shown: shown,
                         ),
                       ),
                     ),
@@ -133,9 +135,9 @@ class CompanionStagePage extends ConsumerWidget {
                                   label: context
                                       .messages
                                       .aiCardCompanionStageNextOutfit,
-                                  onPressed: ref
+                                  onPressed: () => ref
                                       .read(companionOutfitProvider.notifier)
-                                      .next,
+                                      .next(from: shown.last),
                                 ),
                                 DsAiDiscButton(
                                   icon: LottiIcons.close,

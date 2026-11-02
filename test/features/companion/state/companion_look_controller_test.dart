@@ -77,29 +77,43 @@ void main() {
       expect(random.draws, 4);
     });
 
-    test('a draw records what she wears, for the stage to step from', () {
+    test('a draw records what the host shows, when the host asks', () {
       final container = containerWith(_Scripted([2]));
-      final worn = container.read(companionWornOutfitProvider);
-      expect(worn.last, isNull);
-      container.read(companionLookRollProvider).draw();
-      expect(worn.last, companionOutfits[2]);
+      final shown = CompanionShownOutfit();
+      expect(shown.last, isNull);
+      container.read(companionLookRollProvider).draw(shown: shown);
+      expect(shown.last, companionOutfits[2]);
     });
 
-    test('next steps from the outfit she was last shown in', () {
+    test('a host drawn without a holder cannot overwrite what the stage '
+        'shows', () {
+      final container = containerWith(_Scripted([1, 2]));
+      final stage = CompanionShownOutfit();
+      final roll = container.read(companionLookRollProvider);
+      roll.draw(shown: stage);
+      expect(stage.last, companionOutfits[1]);
+      roll.draw();
+      expect(stage.last, companionOutfits[1]);
+    });
+
+    test('next steps from the outfit the stage shows', () {
       final container = containerWith(_Scripted([1]));
-      wornAfterDraw(container);
-      container.read(companionOutfitProvider.notifier).next();
-      expect(
-        wornAfterDraw(container),
-        companionOutfits[2].id,
-      );
+      final shown = CompanionShownOutfit();
+      container.read(companionLookRollProvider).draw(shown: shown);
+      container.read(companionOutfitProvider.notifier).next(from: shown.last);
+      expect(wornAfterDraw(container), companionOutfits[2].id);
     });
 
     test('next from the last outfit goes back to the first', () {
-      final container = containerWith(
-        _Scripted([companionOutfits.length - 1]),
-      );
-      wornAfterDraw(container);
+      final container = containerWith(_Scripted([0]));
+      container
+          .read(companionOutfitProvider.notifier)
+          .next(from: companionOutfits.last);
+      expect(wornAfterDraw(container), companionOutfits.first.id);
+    });
+
+    test('next with nothing shown starts at the first outfit', () {
+      final container = containerWith(_Scripted([0]));
       container.read(companionOutfitProvider.notifier).next();
       expect(wornAfterDraw(container), companionOutfits.first.id);
     });
@@ -110,8 +124,9 @@ void main() {
       final container = containerWith(random);
       final sub = container.listen(companionOutfitProvider, (_, _) {});
       addTearDown(sub.close);
-      wornAfterDraw(container);
-      container.read(companionOutfitProvider.notifier).next();
+      container
+          .read(companionOutfitProvider.notifier)
+          .next(from: companionOutfits.first);
       final drawsBefore = random.draws;
       expect(wornAfterDraw(container), companionOutfits[1].id);
       expect(wornAfterDraw(container), companionOutfits[1].id);
@@ -122,8 +137,9 @@ void main() {
       final container = containerWith(_Scripted([0]));
       final sub = container.listen(companionOutfitProvider, (_, _) {});
       addTearDown(sub.close);
-      wornAfterDraw(container);
-      container.read(companionOutfitProvider.notifier).next();
+      container
+          .read(companionOutfitProvider.notifier)
+          .next(from: companionOutfits.first);
       expect(container.read(companionOutfitProvider), companionOutfits[1]);
 
       container

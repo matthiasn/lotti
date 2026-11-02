@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/features/companion/model/companion_customization.dart';
 import 'package:lotti/features/companion/model/companion_look.dart';
 import 'package:lotti/features/companion/state/companion_customization_controller.dart';
@@ -34,29 +35,25 @@ class CompanionOutfitController extends Notifier<CompanionLook?> {
     return null;
   }
 
-  /// Changes into the outfit after the one she wears now, back to the first
-  /// after the last. The outfit she wears now is the one her last draw
-  /// showed, so the step follows what the person saw.
-  void next() {
-    final worn = ref.read(companionWornOutfitProvider).last;
-    final at = worn == null ? -1 : companionOutfits.indexOf(worn);
+  /// Changes into the outfit after [from] — the one a host is showing now —
+  /// back to the first after the last. With no [from] (nothing shown yet),
+  /// the step starts at the first outfit.
+  void next({CompanionLook? from}) {
+    final at = from == null ? -1 : companionOutfits.indexOf(from);
     state = companionOutfits[(at + 1) % companionOutfits.length];
   }
 }
 
-/// The outfit her latest draw dressed her in, for the stage to step from.
+/// The outfit one host is showing, written by each draw of that host.
 ///
 /// A plain holder rather than state: a draw happens in a build, and writing
-/// state there is not allowed. Nothing watches it, so it cannot cycle.
-class CompanionWornOutfit {
-  /// The outfit the most recent draw showed, or null before any.
+/// state there is not allowed. Each host that needs to step from what it
+/// shows (the stage) owns its own holder, so a hidden host cannot overwrite
+/// it.
+class CompanionShownOutfit {
+  /// The outfit the most recent draw into this holder showed, or null.
   CompanionLook? last;
 }
-
-final companionWornOutfitProvider = Provider<CompanionWornOutfit>(
-  (ref) => CompanionWornOutfit(),
-  name: 'companionWornOutfitProvider',
-);
 
 /// One set of choices for dressing her: the stored customization, the
 /// stage's pick for the session, and the random source for "Surprise me".
@@ -70,7 +67,6 @@ class CompanionLookRoll {
     required this.customization,
     required this.picked,
     required this.random,
-    required this.worn,
   });
 
   final CompanionCustomization customization;
@@ -80,15 +76,13 @@ class CompanionLookRoll {
 
   final math.Random random;
 
-  /// Where each draw records the outfit it showed.
-  final CompanionWornOutfit worn;
-
   /// What she wears now: the stage's pick, else the outfit chosen in her
   /// customization, else a surprise outfit drawn at random — in the skin and
-  /// hair of her customization ([CompanionCustomization.dress]).
-  CompanionLook draw() {
+  /// hair of her customization ([CompanionCustomization.dress]). When [shown]
+  /// is given, the outfit drawn is recorded there.
+  CompanionLook draw({CompanionShownOutfit? shown}) {
     final outfit = picked ?? _chosenOutfit() ?? _surprise();
-    worn.last = outfit;
+    if (shown != null) shown.last = outfit;
     return customization.dress(outfit);
   }
 
@@ -111,7 +105,14 @@ final companionLookRollProvider = Provider<CompanionLookRoll>(
     customization: ref.watch(companionCustomizationProvider),
     picked: ref.watch(companionOutfitProvider),
     random: ref.watch(companionOutfitRandomProvider),
-    worn: ref.watch(companionWornOutfitProvider),
   ),
   name: 'companionLookRollProvider',
 );
+
+/// The outfit the full-screen stage shows, one holder per open stage (keyed by
+/// its utterance), so the palette control steps from what is on screen.
+final ProviderFamily<CompanionShownOutfit, String> companionStageShownProvider =
+    Provider.autoDispose.family<CompanionShownOutfit, String>(
+      (ref, sourceId) => CompanionShownOutfit(),
+      name: 'companionStageShownProvider',
+    );
