@@ -840,6 +840,91 @@ void main() {
     expect(find.byType(FrontChatPane), findsNothing);
   });
 
+  testWidgets('a link the app does not route keeps her open and goes '
+      'nowhere', (tester) async {
+    final paths = <String>[];
+    beamToNamedOverride = paths.add;
+    addTearDown(() => beamToNamedOverride = null);
+    await pumpPane(
+      tester,
+      pushed: true,
+      thread: () async => FrontChatThread(
+        messages: [
+          message('u1', AgentChatRole.user, 'How is swimming going?', now),
+          message(
+            'a1',
+            AgentChatRole.agent,
+            'Ask [the swim goal](lotti://goal/g-1).',
+            now,
+          ),
+        ],
+      ),
+    );
+
+    await tester.tap(
+      find.textContaining('the swim goal', findRichText: true).last,
+    );
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(paths, isEmpty);
+    expect(find.byType(FrontChatPane), findsOneWidget);
+  });
+
+  testWidgets("a task named in an owner's answer leaves her surface and "
+      'opens the task', (tester) async {
+    final paths = <String>[];
+    beamToNamedOverride = paths.add;
+    addTearDown(() => beamToNamedOverride = null);
+    await pumpPane(
+      tester,
+      pushed: true,
+      thread: () async => FrontChatThread(
+        messages: [
+          message('u1', AgentChatRole.user, 'What is left?', now),
+        ],
+        doorsByMessageId: {
+          'u1': [
+            FrontDoorEntry(
+              doorId: 'd:door:0',
+              record: FrontDoorRecord(
+                segmentIndex: 0,
+                text: 'What is left?',
+                kind: FrontDestinationKind.task,
+                destinationId: 'census',
+                ownerTitle: 'Penguin census',
+                status: FrontDoorStatus.done,
+                claimedAt: now.toUtc(),
+                outcome: const FrontDoorAnswer(
+                  text: 'Then [Feed the penguins](lotti://task/t-9).',
+                  summaryBased: false,
+                  incomplete: false,
+                ),
+              ),
+            ),
+          ],
+        },
+      ),
+    );
+
+    await tester.tap(
+      find
+          .descendant(
+            of: find.byKey(const ValueKey('front-door-text-0')),
+            matching: find.textContaining(
+              'Feed the penguins',
+              findRichText: true,
+            ),
+          )
+          .last,
+    );
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(paths, ['/tasks/t-9']);
+    expect(find.byType(FrontChatPane), findsNothing);
+  });
+
   testWidgets('dictation goes to the Settings default transcription slot, '
       'the words as heard', (tester) async {
     Future<ResolvedInferenceProvider> target() async =>
