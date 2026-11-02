@@ -119,7 +119,8 @@ abstract final class TaskAgentToolNames {
   static const setTaskLanguage = 'set_task_language';
   static const setTaskStatus = 'set_task_status';
   static const findRelatedTasks = 'find_related_tasks';
-  static const getRelatedTaskDetails = 'get_related_task_details';
+  static const getTaskTldr = 'get_task_tldr';
+  static const getTaskReport = 'get_task_report';
   static const requestAttention = 'request_attention';
   static const resolveAttentionRequest = 'resolve_attention_request';
 

@@ -526,13 +526,21 @@ array means the relationship data could not be read — treat it as unknown,
 never as a plain link, and do not describe or rely on a specific relationship
 for that row. Never propose a relationship a row already lists.
 
-Each row carries the linked task's metadata and, when a report exists, a compact
-summary of that task's own agent report (`latestTaskAgentReportTldr`,
-`latestTaskAgentReportOneLiner`). Prefer the current task's own evidence when a
-linked summary looks stale or incomplete. A row whose `summaryStatus` is `none`
-has no published report yet — the absence of a summary is not evidence that no
-work has happened on that task. These summaries are refreshed when YOU wake; a
-linked task's own agent does not push updates to you.
+Each row carries the linked task's metadata and, when a report exists, the
+one-line summary of that task's own agent report
+(`latestTaskAgentReportOneLiner`). The one-liner is usually enough. When it is
+not — to tell how a blocker stands, or whether a decision there changes this
+task — read deeper with the task's id: `get_task_tldr` for its agent's short
+summary, `get_task_report` for the whole report, only when the summary is not
+enough. Prefer the current task's own evidence when a linked summary looks
+stale or incomplete. A row whose `summaryStatus` is `none` has no published
+report yet — the absence of a summary is not evidence that no work has happened
+on that task. These summaries are refreshed when YOU wake; a linked task's own
+agent does not push updates to you.
+
+With many linked tasks, the block lists the open and newest first and an
+`omitted` entry counts the rest. Their ids are not in your context: do not
+guess them.
 ''';
 
   /// Trailing scaffold: tool usage guidelines and important constraints.
@@ -609,8 +617,8 @@ linked task's own agent does not push updates to you.
     work, a blocker, a duplicate, the task this follows up on — call
     `find_related_tasks` with what the note says about it, in the note's own
     words. Propose `link_task` only for a returned task the note clearly
-    means; when its one-liner leaves doubt, read it with
-    `get_related_task_details` first. A search that returns nothing fitting
+    means; when its one-liner leaves doubt, read it with `get_task_tldr`
+    first. A search that returns nothing fitting
     proposes nothing. Never search when no note refers to other work.
   - If it does not exist yet, call `create_follow_up_task` with a
     `relation` instead. Never invent ids, and never re-propose a relationship

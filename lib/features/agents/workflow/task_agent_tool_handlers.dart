@@ -131,7 +131,7 @@ extension TaskAgentToolHandlers on TaskAgentStrategy {
     final rawQuery = args['query'];
     final query = rawQuery is String ? rawQuery.trim() : '';
     final lookup = relatedTasks;
-    final error = lookup == null
+    final error = lookup == null || !lookup.canSearch
         ? 'Error: ${TaskAgentStrategy.findRelatedTasksToolName} is not '
               'available: search by meaning is off on this device.'
         : query.isEmpty
@@ -147,44 +147,44 @@ extension TaskAgentToolHandlers on TaskAgentStrategy {
     );
   }
 
-  /// Handles `get_related_task_details`: reads one task a search of this
-  /// wake returned — its TL;DR, or with `includeFullReport` its whole
-  /// report. Any other id is refused, so the model cannot read a task it
-  /// guessed.
-  Future<void> _handleRelatedTaskDetails(
+  /// Handles `get_task_tldr` and, with [fullReport], `get_task_report`:
+  /// reads one task this wake has shown — listed under Linked Tasks, or
+  /// returned by a search. Any other id is refused, so the model cannot read
+  /// a task it guessed.
+  Future<void> _handleOtherTaskRead(
     Map<String, dynamic> args,
     String callId,
-    ConversationManager manager,
-  ) async {
+    ConversationManager manager, {
+    required bool fullReport,
+  }) async {
+    final toolName = fullReport
+        ? TaskAgentStrategy.taskReportToolName
+        : TaskAgentStrategy.taskTldrToolName;
     final rawTaskId = args['taskId'];
     final requestedTaskId = rawTaskId is String ? rawTaskId.trim() : '';
     final lookup = relatedTasks;
 
     final error = lookup == null
-        ? 'Error: ${TaskAgentStrategy.relatedTaskDetailsToolName} is not '
-              'available: search by meaning is off on this device.'
+        ? 'Error: $toolName is not available in this wake.'
         : requestedTaskId.isEmpty
         ? 'Error: "taskId" must be a non-empty string.'
         : requestedTaskId == taskId
-        ? 'Error: get_related_task_details cannot be used for the current '
-              'task. Its details are already in your context.'
-        : !lookup.foundIds.contains(requestedTaskId)
-        ? 'Error: task "$requestedTaskId" was not returned by '
-              '${TaskAgentStrategy.findRelatedTasksToolName} in this wake. '
-              'Search for it first; only read tasks a search returned.'
+        ? 'Error: $toolName cannot be used for the current task. Its details '
+              'are already in your context.'
+        : !lookup.canRead(requestedTaskId)
+        ? 'Error: task "$requestedTaskId" is neither listed in Linked Tasks '
+              'nor returned by ${TaskAgentStrategy.findRelatedTasksToolName} '
+              'in this wake. Only those tasks can be read.'
         : null;
     await _answerRelatedTaskTool(
-      toolName: TaskAgentStrategy.relatedTaskDetailsToolName,
+      toolName: toolName,
       callId: callId,
       manager: manager,
       error: error,
-      answer: () => lookup!.details(
-        requestedTaskId,
-        fullReport: args['includeFullReport'] == true,
-      ),
-      failure:
-          'Error: related task details could not be resolved for '
-          '"$requestedTaskId".',
+      answer: () => fullReport
+          ? lookup!.report(requestedTaskId)
+          : lookup!.tldr(requestedTaskId),
+      failure: 'Error: task "$requestedTaskId" could not be read.',
     );
   }
 

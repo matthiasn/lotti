@@ -126,7 +126,7 @@ switch. That page side is
 
 `RelatedTaskFinder` (`repository/related_task_finder.dart`) is what the task
 agent's `find_related_tasks` searches with
-([task agents](../agents/task-agents.md#related-tasks-are-fetched-on-demand)).
+([task agents](../agents/task-agents.md#linked-and-related-tasks-are-read-on-demand)).
 It wraps `searchRelatedTasks` with what "related" means for a link: within
 **0.55** cosine distance of the query, not the task itself, holding no live
 link to it — any type, either direction, hidden ones included — and still

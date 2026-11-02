@@ -301,6 +301,11 @@ class AgentRepository {
     List<String> taskIds,
   ) => _queries.getLatestTaskReportsForTaskIds(taskIds);
 
+  /// See [AgentRepoQueries.getUsableTaskReportsForTaskIds].
+  Future<Map<String, AgentReportEntity>> getUsableTaskReportsForTaskIds(
+    List<String> taskIds,
+  ) => _queries.getUsableTaskReportsForTaskIds(taskIds);
+
   Future<AgentReportHeadEntity?> getReportHead(String agentId, String scope) =>
       _queries.getReportHead(agentId, scope);
 

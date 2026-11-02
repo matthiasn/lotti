@@ -10,12 +10,20 @@ stale_after: 2027-02-01
 sources:
   - id: related-tasks
     resource: ../../../lib/features/agents/workflow/related_task_lookup.dart
-    title: RelatedTaskLookup — the related-task search and drill-down of one wake
-    last_modified: 2026-11-01
+    title: RelatedTaskLookup — the related-task search and the drill-down allowlist of one wake
+    last_modified: 2026-11-02
+  - id: linked-task-directory
+    resource: ../../../lib/features/agents/workflow/linked_task_directory.dart
+    title: LinkedTaskDirectory — the budgeted Linked Tasks section and its ids
+    last_modified: 2026-11-02
   - id: adr-0155
     resource: ../../../docs/adr/0155-the-task-agent-finds-related-tasks-on-demand.md
     title: ADR 0155 — The task agent finds related tasks on demand
     last_modified: 2026-11-01
+  - id: adr-0157
+    resource: ../../../docs/adr/0157-linked-tasks-reach-the-wake-as-one-liners.md
+    title: ADR 0157 — Linked tasks reach the wake as one-liners, deeper on demand
+    last_modified: 2026-11-02
   - id: report-policy
     resource: ../../../lib/features/agents/workflow/task_agent_report_policy.dart
     title: Shared publication policy for prompts and execution
@@ -424,7 +432,8 @@ value also resolves to `false`.
 1. Load agent state, resolve `activeTaskId`.
 2. Load the latest report and prior observation messages.
 3. Build task JSON through `AiInputRepository`.
-4. Build linked-task context.
+4. Build linked-task context: one-liners only, within a budget
+   (`LinkedTaskDirectory`), and the ids it lists.
 5. Resolve the assigned template and active version.
 6. Resolve the effective inference profile with `ProfileResolver`.
 7. Fetch pending change sets for the task.
@@ -447,12 +456,15 @@ flowchart LR
   Brief["Category knowledge brief (user-written)"] --> Wake["TaskAgentWorkflow wake"]
   Task["Current task"] --> Wake
   Project["Parent project (oneLiner + tldr)"] --> Wake
-  Linked["Linked tasks (compact oneLiner/tldr)"] --> Wake
+  Linked["Linked tasks (id, metadata, one-liner,<br/>at most 30 rows, 12,000 chars)"] --> Wake
   PRs["Linked pull requests (refreshed from GitHub per wake)"] --> Wake
   Wake -.->|only when a note refers to other work| Find["find_related_tasks<br/>(on-device search)"]
   Find -.-> Hits["Up to 5 tasks: id, title, status, one-liner"]
-  Hits -.->|on demand| Drill["get_related_task_details"]
-  Drill -.-> Summary["TL;DR, or the full latest report"]
+  Linked -.->|on demand| Tldr["get_task_tldr"]
+  Hits -.->|on demand| Tldr
+  Tldr -.-> Summary["The task agent's TL;DR"]
+  Tldr -.->|still not enough| Report["get_task_report"]
+  Report -.-> Full["The full latest report"]
 ```
 
 The wake prompt is assembled from current task JSON, report existence,
@@ -519,7 +531,11 @@ These context details are load-bearing:
   force publication after a status change since the last report.
 - **Parent project context** carries only the project agent's latest `oneLiner`
   and `tldr` — the full report body is omitted to keep wake prefill small.
-  Linked-task context does the same via `agent_task` links and `agentReportHead`.
+- **Linked-task context carries one-liners only, within a budget.** Each
+  `## Linked Tasks` row holds the linked task's metadata, its `relations` and
+  its agent's `oneLiner` (`latestTaskAgentReportOneLiner`); the TL;DR and the
+  report body stay out, and the agent reads them on demand (see
+  [Linked and related tasks are read on demand](#linked-and-related-tasks-are-read-on-demand)).
   `latestSummary` payloads are stripped before submission.
 - **The running timer is scoped.** If the timer's source task matches the wake's
   task, the agent gets full details (entryId, started, tracked range, elapsed
@@ -769,13 +785,16 @@ of the payload.
 | `get_category_projects`, `set_task_project` | the task's category has no projects, or the workflow has no `ProjectRepository` |
 | `get_unlinked_pull_requests`, `link_pull_request` | the task's category names no GitHub repository, this device holds no token, or the workflow has no `PullRequestLinkSource` (`canListFor`, local reads only) |
 | `refresh_pull_requests` | the task links no pull request, or the workflow has no `PullRequestContextSource`. A merged one keeps it offered: the wake's own refresh may have timed out and shown it as not refreshed, then stored it as merged in the background before the facts were read |
+| `find_related_tasks` | search by meaning cannot run on this device (`hasRelatedTaskSearch`) |
+| `get_task_tldr`, `get_task_report` | search by meaning cannot run *and* the wake's Linked Tasks section lists no task (`hasLinkedTasks`) — there is then no task they may read |
 
 The table is applied only under `narrowToolSurface`, which the shipped wake
-leaves off — except the two pull request rows. Those are not payload
-trimming but whether the tools exist for the task at all, so
-`_pullRequestToolAvailability` decides them on every wake, from local reads
-only: a task in a category without a GitHub repository is never offered
-`get_unlinked_pull_requests` or `link_pull_request`.
+leaves off — except the pull request and related-task rows. Those are not
+payload trimming but whether the tools exist for the task at all, so they are
+decided on every wake, from local reads only: a task in a category without a
+GitHub repository is never offered `get_unlinked_pull_requests` or
+`link_pull_request`, and a wake with neither a search nor a linked task is
+never offered the drill-down.
 
 Tools with no precondition — `set_task_title`, `update_task_estimate`,
 `update_task_due_date`, `update_task_priority`, `set_task_status`,
@@ -818,10 +837,11 @@ default.
 
 ## Locally short-circuited tools
 
-Eight tools are short-circuited **locally** in `TaskAgentStrategy` and never
+Nine tools are short-circuited **locally** in `TaskAgentStrategy` and never
 reach `AgentToolExecutor`: `update_report`, `record_observations`,
-`find_related_tasks`, `get_related_task_details`, `get_category_projects`,
-`get_unlinked_pull_requests`, `refresh_pull_requests`, `retract_suggestions`.
+`find_related_tasks`, `get_task_tldr`, `get_task_report`,
+`get_category_projects`, `get_unlinked_pull_requests`, `refresh_pull_requests`,
+`retract_suggestions`.
 
 Two run immediately but route through `AgentToolExecutor` → `TaskToolDispatcher`:
 
@@ -1028,53 +1048,110 @@ sequenceDiagram
   L->>G: read the pull request, check holders again
 ```
 
-## Related tasks are fetched on demand
+## Linked and related tasks are read on demand
 
-Other tasks never enter the wake prompt up front: injecting sibling tasks'
-TL;DRs into every wake polluted the context window. The model fetches them
-when a note calls for it ([ADR 0155](../../../docs/adr/0155-the-task-agent-finds-related-tasks-on-demand.md)):
+Of other tasks, only the linked ones enter the wake up front, and only as
+one-liners: injecting their TL;DRs into every wake polluted the context
+window, and so did injecting siblings'. Everything deeper is fetched when the
+model decides it needs it ([ADR 0155](../../../docs/adr/0155-the-task-agent-finds-related-tasks-on-demand.md),
+[ADR 0157](../../../docs/adr/0157-linked-tasks-reach-the-wake-as-one-liners.md)).
 
-1. **`find_related_tasks {query}`** — the model writes a query from what the
-   note says about the other work. `RelatedTaskLookup.find` runs the
-   on-device search by meaning through `RelatedTaskFinder` — with its
-   measured 0.55 cutoff, see
+**The Linked Tasks section is budgeted.**
+`TaskAgentContextBuilder.buildLinkedTasksContext` reads both link directions
+(`linked_from`, `linked_to`), annotates each row's `relations`, adds the
+linked task's agent one-liner, and hands the rows to `LinkedTaskDirectory`,
+which holds the section to at most 30 rows and 12,000 characters (about 3,000
+tokens) however many tasks are linked: titles are clipped to 160 characters
+and one-liners to 240, each row is one compact JSON line, and the frame —
+an `omitted` entry at its longest included — is reserved before any row is
+admitted. When not all rows fit, open tasks are chosen before `DONE` and
+`REJECTED` ones, then newer before older, the id breaking ties so the choice
+is the same on every wake; a row too large for what is left is skipped, not a
+stop. Chosen rows keep their arrival order, and an `omitted` entry counts the
+rest and says their ids are not available. A failing read yields no section.
+
+**One report per task, for the row and for the drill-down.**
+`AgentRepository.getUsableTaskReportsForTaskIds` picks it: the task's
+`agent_task` links newest first, and the first agent whose current report has
+a non-empty body — so a newest agent that has not reported yet does not hide
+an older one's. The Linked Tasks rows, `find_related_tasks`' one-liners and
+both drill-down tools read through it, so a row that shows a one-liner can
+always be read deeper. (`getLatestTaskReportsForTaskIds`, which the task UI
+reads, follows the primary link only.)
+
+**What can be read, and how deep:**
+
+1. **`find_related_tasks {query}`** — the model writes a query from what a
+   note says about other work it does not link yet. `RelatedTaskLookup.find`
+   runs the on-device search by meaning through `RelatedTaskFinder` — with
+   its measured 0.55 cutoff, see
    [embeddings and search](../ai/embeddings-and-search.md#related-tasks) —
    scoped to the agent's `allowedCategoryIds`, leaving
    out the task itself, every task already linked to it and every private
    task. It answers with at most five: id, title, status and their agent's
    one-liner.
-2. **`get_related_task_details {taskId, includeFullReport?}`** — reads one of
-   them: its agent's TL;DR, and with `includeFullReport` the whole latest
-   report. Any id no search of this wake returned is refused
-   (`RelatedTaskLookup.foundIds`), as are the current task and an empty id.
-3. A link is then proposed through `link_task`, validated and confirmed like
+2. **`get_task_tldr {taskId}`** — the agent's TL;DR of one task, with its
+   title, status and one-liner, for when the one-liner is not enough.
+3. **`get_task_report {taskId}`** — that task's whole latest report, for when
+   the TL;DR is not enough either.
+4. A link is then proposed through `link_task`, validated and confirmed like
    any other.
+
+**The drill-down allowlist.** `get_task_tldr` and `get_task_report` read only
+a task this wake has shown: one the Linked Tasks section lists
+(`LinkedTaskDirectory.taskIds`, handed to the lookup as
+`RelatedTaskLookup.linkedIds`) or one a search of this wake returned
+(`RelatedTaskLookup.foundIds`) — `RelatedTaskLookup.canRead`. Any other id is
+refused before anything is read, as are the current task and an empty id. A
+linked task the budget left out is therefore unreadable in that wake, and an
+id the model guessed reaches nothing.
+
+**A private task is never read deeper.** The linked-entity queries follow the
+user's *show private entries* setting, so with it on a private linked task is
+in the section — with its one-liner, as before. Both drill-down tools answer
+for it with a note (`RelatedTaskLookup.privateNote`) instead of its TL;DR or
+report, without reading the report at all: like a search, which never returns
+a private task, the drill-down sends nothing more of one to the provider.
 
 ```mermaid
 sequenceDiagram
+  participant W as TaskAgentExecute
+  participant D as LinkedTaskDirectory
   participant M as Model
   participant S as TaskAgentStrategy
   participant L as RelatedTaskLookup
   participant F as RelatedTaskFinder
-  M->>S: find_related_tasks {query}
-  S->>L: find(taskId, query)
-  L->>F: search, agent's categories
-  F-->>L: matches under the cutoff, not linked
-  L-->>M: id, title, status, one-liner (no private tasks)
-  M->>S: get_related_task_details {taskId}
-  S->>S: refuse ids no search returned
-  S->>L: details(taskId, fullReport)
-  L-->>M: TLDR or full report
-  M->>S: link_task {relation, targetTaskId}
+  W->>D: linked rows (one-liners)
+  D-->>W: budgeted section + taskIds
+  W->>L: linkedIds = taskIds, finder if search can run
+  W-->>M: wake with ## Linked Tasks
+  opt a note refers to other work
+    M->>S: find_related_tasks {query}
+    S->>L: find(taskId, query)
+    L->>F: search, agent's categories
+    F-->>L: matches under the cutoff, not linked
+    L-->>M: id, title, status, one-liner (no private tasks)
+  end
+  M->>S: get_task_tldr {taskId}
+  S->>S: refuse ids neither linked nor found
+  S->>L: tldr(taskId)
+  L-->>M: TLDR
+  opt the TLDR is not enough
+    M->>S: get_task_report {taskId}
+    S->>L: report(taskId)
+    L-->>M: the full latest report
+  end
 ```
 
 A result lives only in the wake that fetched it: the persisted tool message
 records the tool name and any error, not the answer, and the next wake builds
-its context afresh. Both tools are gated on `hasRelatedTaskSearch`, computed
-on every wake — narrowed or not — so neither is offered where search by
-meaning cannot run (no embedding pipeline, or `enable_embeddings` off). The
-prompt tells the model to search only when a note refers to other work, and to
-propose only for a hit the note clearly means.
+its context afresh. `find_related_tasks` is gated on `hasRelatedTaskSearch`
+and the drill-down on `hasRelatedTaskSearch || hasLinkedTasks`, both computed
+on every wake — narrowed or not — so neither is offered where it could read
+nothing. The prompt tells the model to search only when a note refers to
+other work, to propose only for a hit the note clearly means, and that the
+one-liner usually suffices: the TL;DR when it does not, the report only when
+the TL;DR does not either.
 
 ## The initial-field carve-out
 

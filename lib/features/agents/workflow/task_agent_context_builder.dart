@@ -1,11 +1,10 @@
 import 'dart:convert';
 
 import 'package:clock/clock.dart';
-import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
-import 'package:lotti/classes/agents/agent_link.dart';
 import 'package:lotti/classes/agents/proposal_ledger.dart';
+import 'package:lotti/classes/ai_input.dart';
 import 'package:lotti/classes/directed_relation.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -20,6 +19,7 @@ import 'package:lotti/features/agents/tools/task_agent_tool_gate.dart';
 import 'package:lotti/features/agents/tools/task_label_handler.dart';
 import 'package:lotti/features/agents/util/agent_error_logging.dart';
 import 'package:lotti/features/agents/workflow/agent_observations.dart';
+import 'package:lotti/features/agents/workflow/linked_task_directory.dart';
 import 'package:lotti/features/agents/workflow/task_agent_evidence_synthesis.dart';
 import 'package:lotti/features/agents/workflow/task_agent_report_policy.dart';
 import 'package:lotti/features/agents/workflow/task_project_options.dart';
@@ -113,37 +113,39 @@ class TaskAgentContextBuilder {
     );
   }
 
-  /// Builds linked-task context JSON for the wake prompt.
+  /// Builds the wake's `## Linked Tasks` section and the ids it shows.
   ///
   /// Forked from [AiInputRepository.buildLinkedTasksJson] for the task-agent
   /// wake path:
   /// 1. Builds linked task context directly from linked task entities.
   /// 2. Removes legacy `latestSummary` fields.
-  /// 3. Injects a compact summary (oneLiner/tldr) of the latest task-agent
-  ///    report for each linked task when present — not the full body, to keep
-  ///    wake prefill small.
+  /// 3. Adds the one-liner of each linked task's latest task-agent report
+  ///    when present — never its TL;DR or body, which the agent reads on
+  ///    demand with `get_task_tldr` and `get_task_report`.
+  /// 4. Holds the section to its budget ([LinkedTaskDirectory]), however
+  ///    many tasks are linked.
   ///
-  /// This keeps prompt context aligned with the Agent Capabilities architecture
-  /// where task summaries are being phased out in favor of task-agent reports.
-  Future<String> buildLinkedTasksContextJson(String taskId) async {
+  /// [LinkedTaskDirectory.taskIds] is the allowlist of the drill-down tools.
+  /// A failure yields [LinkedTaskDirectory.empty]: no section, nothing to
+  /// read.
+  Future<LinkedTaskDirectory> buildLinkedTasksContext(String taskId) async {
     try {
       final linkedFrom = await aiInputRepository.buildLinkedFromContext(taskId);
       final linkedTo = await aiInputRepository.buildLinkedToContext(taskId);
 
-      final linkedFromRows = linkedFrom
-          .map((context) => Map<String, dynamic>.from(context.toJson()))
-          .toList();
-      final linkedToRows = linkedTo
-          .map((context) => Map<String, dynamic>.from(context.toJson()))
-          .toList();
-      final allRows = [...linkedFromRows, ...linkedToRows];
+      LinkedTaskRow rowOf(AiLinkedTaskContext context) => (
+        task: context,
+        row: Map<String, dynamic>.from(context.toJson())
+          ..remove('latestSummary'),
+      );
+      final linkedFromRows = linkedFrom.map(rowOf).toList();
+      final linkedToRows = linkedTo.map(rowOf).toList();
+      final allRows = [
+        for (final entry in [...linkedFromRows, ...linkedToRows]) entry.row,
+      ];
 
       if (allRows.isEmpty) {
-        return '{}';
-      }
-
-      for (final row in allRows) {
-        row.remove('latestSummary');
+        return LinkedTaskDirectory.empty;
       }
 
       await _annotateRelations(taskId, allRows);
@@ -154,72 +156,24 @@ class TaskAgentContextBuilder {
           .where((id) => id.isNotEmpty)
           .toSet();
 
-      // Two bulk queries replace the prior `Future.wait(map →
-      // _resolveLatestTaskAgentReport(id))` fan-out. The fan-out hit
-      // 2 203 `agent_links WHERE to_id = ? AND type = ?` queries plus
-      // a compounding 2 484 `agent_entities WHERE id = ?` queries on
-      // the 2026-05-10 desktop slow_queries log; each per-row request
-      // queued independently behind the writer lock. The bulk path is
-      // `getLinksToMultiple` + `getLatestReportsByAgentIds`, mirroring
-      // the already-batched implementation in
-      // `ProjectAgentContextBuilder.buildLinkedTasksContext`.
-      final reportByTaskId = <String, _LinkedTaskAgentReport>{};
+      // One shared policy picks each linked task's report — its agent links
+      // newest first, the first agent with a non-empty current report — so
+      // the drill-down tools (`RelatedTaskLookup`) read exactly the report
+      // whose one-liner this row shows. Two batched queries, not one per
+      // task: the earlier per-row fan-out queued thousands of lookups behind
+      // the writer lock (2026-05-10 desktop slow_queries log).
+      var reportByTaskId = const <String, AgentReportEntity>{};
       if (taskIds.isNotEmpty) {
-        var linksByTaskId = const <String, List<AgentLink>>{};
         try {
-          linksByTaskId = await agentRepository.getLinksToMultiple(
+          reportByTaskId = await agentRepository.getUsableTaskReportsForTaskIds(
             taskIds.toList(),
-            type: AgentLinkTypes.agentTask,
           );
         } catch (e, s) {
           logError(
-            'batch agent_task link lookup failed',
+            'linked task report lookup failed',
             error: e,
             stackTrace: s,
           );
-        }
-
-        final linkedAgentIds = linksByTaskId.values
-            .expand((links) => links.map((link) => link.fromId))
-            .toSet()
-            .toList();
-
-        var reportsByAgentId = const <String, AgentReportEntity>{};
-        if (linkedAgentIds.isNotEmpty) {
-          try {
-            reportsByAgentId = await agentRepository.getLatestReportsByAgentIds(
-              linkedAgentIds,
-              AgentReportScopes.current,
-            );
-          } catch (e, s) {
-            logError(
-              'batch agent report lookup failed',
-              error: e,
-              stackTrace: s,
-            );
-          }
-        }
-
-        // Sort matches the prior per-task `orderedPrimaryFirst` shape
-        // (createdAt DESC, then id DESC): newest link wins, but only if
-        // its agent has a non-empty current report — otherwise fall
-        // back to the next link, exactly as the pre-batch code did.
-        for (final taskId in taskIds) {
-          final links = linksByTaskId[taskId];
-          if (links == null || links.isEmpty) continue;
-          for (final link in links.orderedPrimaryFirst()) {
-            final report = reportsByAgentId[link.fromId];
-            if (report == null) continue;
-            // Gate on a non-empty body so only "real" reports surface, but
-            // embed just the compact summary to keep wake prefill small.
-            if (report.content.trim().isEmpty) continue;
-            reportByTaskId[taskId] = _LinkedTaskAgentReport(
-              agentId: link.fromId,
-              oneLiner: report.oneLiner,
-              tldr: report.tldr,
-            );
-            break;
-          }
         }
       }
 
@@ -241,21 +195,20 @@ class TaskAgentContextBuilder {
 
         row['summaryStatus'] = 'present';
         row['taskAgentId'] = linkedReport.agentId;
-        row['latestTaskAgentReportOneLiner'] = linkedReport.oneLiner;
-        row['latestTaskAgentReportTldr'] = linkedReport.tldr;
+        row[LinkedTaskDirectory.oneLinerKey] = linkedReport.oneLiner;
       }
 
-      return const JsonEncoder.withIndent('    ').convert(<String, dynamic>{
-        'linked_from': linkedFromRows,
-        'linked_to': linkedToRows,
-      });
+      return LinkedTaskDirectory.build(
+        linkedFrom: linkedFromRows,
+        linkedTo: linkedToRows,
+      );
     } catch (e, stackTrace) {
       logError(
         'failed to build linked tasks context',
         error: e,
         stackTrace: stackTrace,
       );
-      return '{}';
+      return LinkedTaskDirectory.empty;
     }
   }
 
@@ -818,16 +771,4 @@ class TaskAgentContextBuilder {
       buffer.writeln();
     }
   }
-}
-
-class _LinkedTaskAgentReport {
-  const _LinkedTaskAgentReport({
-    required this.agentId,
-    required this.oneLiner,
-    required this.tldr,
-  });
-
-  final String agentId;
-  final String? oneLiner;
-  final String? tldr;
 }

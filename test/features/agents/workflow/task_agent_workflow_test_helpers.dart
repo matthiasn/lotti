@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_config.dart';
+import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/agents/agent_link.dart';
@@ -612,6 +613,37 @@ TaskAgentWorkflowTestBench createTaskAgentWorkflowTestBench({
       final report = await mockAgentRepository.getLatestReport(id, scope);
       if (report != null) {
         result[id] = report;
+      }
+    }
+    return result;
+  });
+
+  // The linked-task rows and the drill-down read through
+  // `getUsableTaskReportsForTaskIds`, whose policy is tested against a real
+  // database in `agent_repo_queries_test.dart`. Here it forwards through the
+  // bulk stubs above — newest link first, the first non-empty report — so
+  // the per-id fixtures keep driving the workflow, and a test that makes a
+  // bulk call throw still reaches the builder's error path.
+  when(
+    () => mockAgentRepository.getUsableTaskReportsForTaskIds(any()),
+  ).thenAnswer((invocation) async {
+    final ids = invocation.positionalArguments.first as List<String>;
+    final links = await mockAgentRepository.getLinksToMultiple(
+      ids,
+      type: AgentLinkTypes.agentTask,
+    );
+    final reports = await mockAgentRepository.getLatestReportsByAgentIds([
+      for (final taskLinks in links.values)
+        for (final link in taskLinks) link.fromId,
+    ], AgentReportScopes.current);
+    final result = <String, AgentReportEntity>{};
+    for (final MapEntry(key: taskId, value: taskLinks) in links.entries) {
+      for (final link in taskLinks.orderedPrimaryFirst()) {
+        final report = reports[link.fromId];
+        if (report != null && report.content.trim().isNotEmpty) {
+          result[taskId] = report;
+          break;
+        }
       }
     }
     return result;

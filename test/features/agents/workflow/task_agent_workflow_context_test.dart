@@ -594,102 +594,19 @@ void main() {
           expect(message, isNotNull);
           expect(message, contains('## Linked Tasks'));
           expect(message, contains('Related'));
-          expect(message, contains('latestTaskAgentReportTldr'));
           // A resolved report is marked present (graph-5 freshness marker).
-          expect(message, contains('"summaryStatus": "present"'));
-          // Compact summary is embedded…
+          expect(message, contains('"summaryStatus":"present"'));
+          // Only the one-liner is embedded…
+          expect(message, contains('Linked task is on track.'));
+          // …the TL;DR and the body are read on demand (get_task_tldr,
+          // get_task_report), never carried in the wake.
+          expect(message, isNot(contains('latestTaskAgentReportTldr')));
           expect(
             message,
-            contains('Linked task TLDR: integration nearly done.'),
+            isNot(contains('Linked task TLDR: integration nearly done.')),
           );
-          expect(message, contains('Linked task is on track.'));
-          // …but the full report body is trimmed out to save prefill.
           expect(message, isNot(contains('From task agent.')));
           expect(message, isNot(contains('latestSummary')));
-        },
-      );
-
-      test(
-        'uses link id as deterministic tie-breaker for equal createdAt',
-        () async {
-          final now = DateTime(2024, 6, 14, 8);
-          final linkB = AgentLink.agentTask(
-            id: 'link-b',
-            fromId: 'linked-agent-b',
-            toId: 't2',
-            createdAt: now,
-            updatedAt: now,
-            vectorClock: null,
-          );
-          final linkA = AgentLink.agentTask(
-            id: 'link-a',
-            fromId: 'linked-agent-a',
-            toId: 't2',
-            createdAt: now,
-            updatedAt: now,
-            vectorClock: null,
-          );
-          when(
-            () => mockAgentRepository.getLinksTo('t2', type: 'agent_task'),
-          ).thenAnswer((_) async => [linkB, linkA]);
-
-          // With descending tie-breaking on ID, 'link-b' sorts before
-          // 'link-a' in `orderedPrimaryFirst`, so the workflow picks
-          // 'linked-agent-b's report when both exist with non-empty
-          // content. Stub both reports; the assertion below verifies
-          // that the workflow's deterministic tie-break still picks B.
-          final reportB =
-              AgentDomainEntity.agentReport(
-                    id: 'linked-report-b',
-                    agentId: 'linked-agent-b',
-                    scope: 'current',
-                    createdAt: now,
-                    vectorClock: null,
-                    tldr: 'Report B summary',
-                    content: 'report-b',
-                  )
-                  as AgentReportEntity;
-          final reportA =
-              AgentDomainEntity.agentReport(
-                    id: 'linked-report-a',
-                    agentId: 'linked-agent-a',
-                    scope: 'current',
-                    createdAt: now,
-                    vectorClock: null,
-                    tldr: 'Report A summary',
-                    content: 'report-a',
-                  )
-                  as AgentReportEntity;
-          when(
-            () => mockAgentRepository.getLatestReport(
-              'linked-agent-b',
-              'current',
-            ),
-          ).thenAnswer((_) async => reportB);
-          when(
-            () => mockAgentRepository.getLatestReport(
-              'linked-agent-a',
-              'current',
-            ),
-          ).thenAnswer((_) async => reportA);
-
-          final message = await executeAndCaptureMessage(
-            linkedTasksJson: '{"linked":[{"id":"t2","title":"Related"}]}',
-          );
-
-          // The 2026-05-12 N+1 rewrite moved from a per-link
-          // `Future.wait(getLatestReport)` (which short-circuited on
-          // the first non-empty report) to a bulk
-          // `getLatestReportsByAgentIds` fetch followed by an
-          // in-memory walk of the sorted links. Correctness contract
-          // is the same — the first link in `orderedPrimaryFirst`
-          // order whose report has non-empty content wins. Reports are
-          // now embedded as their compact tldr (not the full body), so
-          // the tie-break is asserted via the rendered summary:
-          // report B's tldr must show up, report A's must NOT.
-          expect(message, isNotNull);
-          expect(message, contains('Report B summary'));
-          expect(message, isNot(contains('Report A summary')));
         },
       );
 
@@ -728,10 +645,10 @@ void main() {
         expect(message, contains('## Linked Tasks'));
         expect(message, contains('Related'));
         // No report enrichment happened because the lookup failed.
-        expect(message, isNot(contains('latestTaskAgentReportTldr')));
+        expect(message, isNot(contains('latestTaskAgentReportOneLiner')));
         // …and the row is marked as having no published report (graph-5),
         // so the model can tell "no report" apart from "no work".
-        expect(message, contains('"summaryStatus": "none"'));
+        expect(message, contains('"summaryStatus":"none"'));
       });
 
       test('tolerates a failing batch agent report lookup', () async {
@@ -767,8 +684,8 @@ void main() {
         expect(message, isNotNull);
         expect(message, contains('## Linked Tasks'));
         expect(message, contains('Related'));
-        // The report lookup failed, so no tldr is injected.
-        expect(message, isNot(contains('latestTaskAgentReportTldr')));
+        // The report lookup failed, so no one-liner is injected.
+        expect(message, isNot(contains('latestTaskAgentReportOneLiner')));
       });
 
       test('omits linked tasks section when empty', () async {

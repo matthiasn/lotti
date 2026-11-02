@@ -4,29 +4,41 @@ import 'package:lotti/features/agents/workflow/agent_observations.dart';
 
 void main() {
   group('task planning, attention & reporting tool definitions', () {
-    group('get_related_task_details', () {
-      late AgentToolDefinition tool;
+    for (final (name, depth) in [
+      (TaskAgentToolNames.getTaskTldr, 'TL;DR'),
+      (TaskAgentToolNames.getTaskReport, 'whole latest report'),
+    ]) {
+      group(name, () {
+        late AgentToolDefinition tool;
 
-      setUp(() {
-        tool = AgentToolRegistry.taskAgentTools.firstWhere(
-          (t) => t.name == TaskAgentToolNames.getRelatedTaskDetails,
-        );
-      });
+        setUp(() {
+          tool = AgentToolRegistry.taskAgentTools.firstWhere(
+            (t) => t.name == name,
+          );
+        });
 
-      test('reads only tasks a search of this wake returned', () {
-        expect(tool.description, contains('find_related_tasks returned'));
-        expect(tool.description, contains('TL;DR'));
-      });
+        test('reads only a linked task or one a search of this wake '
+            'returned, at its own depth', () {
+          expect(tool.description, contains('listed in Linked Tasks'));
+          expect(tool.description, contains('returned by find_related_tasks'));
+          expect(tool.description, contains(depth));
+        });
 
-      test('requires a string taskId and offers the full report', () {
-        final properties = tool.parameters['properties'] as Map;
-        expect((properties['taskId'] as Map)['type'], equals('string'));
-        expect(
-          (properties['includeFullReport'] as Map)['type'],
-          equals('boolean'),
-        );
-        expect(tool.parameters['required'], ['taskId']);
+        test('takes exactly one required string taskId', () {
+          final properties = tool.parameters['properties'] as Map;
+          expect(properties.keys, ['taskId']);
+          expect((properties['taskId'] as Map)['type'], equals('string'));
+          expect(tool.parameters['required'], ['taskId']);
+          expect(tool.parameters['additionalProperties'], isFalse);
+        });
       });
+    }
+
+    test('the full report is the deeper read, after the TL;DR', () {
+      final report = AgentToolRegistry.taskAgentTools.firstWhere(
+        (t) => t.name == TaskAgentToolNames.getTaskReport,
+      );
+      expect(report.description, contains('only when the TL;DR'));
     });
 
     group('find_related_tasks', () {

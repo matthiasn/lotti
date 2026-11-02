@@ -195,7 +195,7 @@ Written ones do too. When a note speaks of other work the agent does not have
 in its context, it finds the task by meaning with `find_related_tasks`, reads
 its summary if in doubt, and proposes the edge through `link_task` like any
 other — see
-[task agents](../agents/task-agents.md#related-tasks-are-fetched-on-demand).
+[task agents](../agents/task-agents.md#linked-and-related-tasks-are-read-on-demand).
 A task already linked to this one is never offered by that search.
 
 ## Where it surfaces

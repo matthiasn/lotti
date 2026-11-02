@@ -301,6 +301,85 @@ void main() {
     });
   });
 
+  group('getUsableTaskReportsForTaskIds', () {
+    Future<void> link(String agentId, String taskId, DateTime createdAt) =>
+        links.upsertLink(
+          makeTestAgentTaskLink(
+            id: 'link-$agentId-$taskId',
+            fromId: agentId,
+            toId: taskId,
+            createdAt: createdAt,
+            updatedAt: createdAt,
+          ),
+        );
+
+    test("takes the newest linked agent's report when it has one", () async {
+      await seedReportWithHead(agentId: 'agent-old', reportId: 'rpt-old');
+      await seedReportWithHead(agentId: 'agent-new', reportId: 'rpt-new');
+      await link('agent-old', 'task-1', testDate);
+      await link('agent-new', 'task-1', testDate.add(const Duration(days: 1)));
+
+      final byTask = await queries.getUsableTaskReportsForTaskIds(['task-1']);
+
+      expect(byTask['task-1']!.id, 'rpt-new');
+    });
+
+    test('falls back to an older agent when the newest has not reported, '
+        'where the primary-only lookup finds nothing', () async {
+      await seedReportWithHead(agentId: 'agent-old', reportId: 'rpt-old');
+      await link('agent-old', 'task-1', testDate);
+      await link('agent-new', 'task-1', testDate.add(const Duration(days: 1)));
+
+      final usable = await queries.getUsableTaskReportsForTaskIds(['task-1']);
+      final primary = await queries.getLatestTaskReportsForTaskIds([
+        'task-1',
+      ]);
+
+      expect(usable['task-1']!.id, 'rpt-old');
+      expect(primary, isEmpty);
+    });
+
+    test('skips a report with an empty body', () async {
+      await seedReportWithHead(agentId: 'agent-old', reportId: 'rpt-old');
+      await seedReportWithHead(
+        agentId: 'agent-new',
+        reportId: 'rpt-blank',
+        content: '  ',
+      );
+      await link('agent-old', 'task-1', testDate);
+      await link('agent-new', 'task-1', testDate.add(const Duration(days: 1)));
+
+      final byTask = await queries.getUsableTaskReportsForTaskIds(['task-1']);
+
+      expect(byTask['task-1']!.id, 'rpt-old');
+    });
+
+    test('breaks a createdAt tie by link id, the higher id first', () async {
+      await seedReportWithHead(agentId: 'agent-a', reportId: 'rpt-a');
+      await seedReportWithHead(agentId: 'agent-b', reportId: 'rpt-b');
+      await link('agent-a', 'task-1', testDate);
+      await link('agent-b', 'task-1', testDate);
+
+      final byTask = await queries.getUsableTaskReportsForTaskIds(['task-1']);
+
+      expect(byTask['task-1']!.id, 'rpt-b');
+    });
+
+    test('omits tasks with no agent or no usable report, and an empty '
+        'request reads nothing', () async {
+      await link('agent-silent', 'task-silent', testDate);
+
+      expect(
+        await queries.getUsableTaskReportsForTaskIds([
+          'task-silent',
+          'task-unassigned',
+        ]),
+        isEmpty,
+      );
+      expect(await queries.getUsableTaskReportsForTaskIds(const []), isEmpty);
+    });
+  });
+
   group('template versions', () {
     test(
       'getActiveTemplateVersion resolves through the head (core hop)',

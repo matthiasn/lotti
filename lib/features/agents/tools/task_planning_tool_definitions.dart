@@ -3,7 +3,8 @@ import 'package:lotti/features/agents/workflow/agent_observations.dart';
 import 'package:lotti/features/agents/workflow/task_agent_report_policy.dart';
 
 /// Tools for planning, attention negotiation, reporting, and observations:
-/// the related-task search and drill-down, attention requests, report
+/// the related-task search, the drill-down into a linked or found task
+/// (TL;DR or full report), attention requests, report
 /// publishing, suggestion retraction, and recording private observations.
 final taskPlanningTools = <AgentToolDefinition>[
   const AgentToolDefinition(
@@ -16,7 +17,8 @@ final taskPlanningTools = <AgentToolDefinition>[
         'to five tasks (id, title, status and the one-line summary of their '
         'own agent), nearest first; tasks already in Linked Tasks are left '
         'out. Use what it returns to judge whether a link is warranted, and '
-        'propose one with link_task.',
+        'propose one with link_task; get_task_tldr and get_task_report read '
+        'a returned task deeper.',
     parameters: {
       'type': 'object',
       'properties': {
@@ -33,25 +35,43 @@ final taskPlanningTools = <AgentToolDefinition>[
     },
   ),
   const AgentToolDefinition(
-    name: TaskAgentToolNames.getRelatedTaskDetails,
+    name: TaskAgentToolNames.getTaskTldr,
     description:
-        'Read one task that find_related_tasks returned in this wake: its '
-        "agent's TL;DR, and with includeFullReport its whole latest report. "
-        'Use it when the one-liner is not enough to tell whether, or how, '
-        'this task relates to it.',
+        "Read another task's TL;DR — the short summary its own agent wrote. "
+        'Only for a task listed in Linked Tasks or returned by '
+        'find_related_tasks in this wake. Use it when the one-liner is not '
+        'enough to tell whether, or how, this task relates to it; most wakes '
+        'need neither this nor get_task_report.',
     parameters: {
       'type': 'object',
       'properties': {
         'taskId': {
           'type': 'string',
           'description':
-              'The id of a task find_related_tasks returned in this wake.',
+              'The id of a task in Linked Tasks, or one find_related_tasks '
+              'returned in this wake.',
         },
-        'includeFullReport': {
-          'type': 'boolean',
+      },
+      'required': ['taskId'],
+      'additionalProperties': false,
+    },
+  ),
+  const AgentToolDefinition(
+    name: TaskAgentToolNames.getTaskReport,
+    description:
+        "Read another task's whole latest report, written by its own agent. "
+        'Only for a task listed in Linked Tasks or returned by '
+        'find_related_tasks in this wake. Reports are long: call it only when '
+        'the TL;DR (get_task_tldr) is not enough — for example to follow a '
+        'blocker or reuse a decision recorded there.',
+    parameters: {
+      'type': 'object',
+      'properties': {
+        'taskId': {
+          'type': 'string',
           'description':
-              "Also return the task's whole latest report, not just its "
-              'TL;DR. Use sparingly: reports are long.',
+              'The id of a task in Linked Tasks, or one find_related_tasks '
+              'returned in this wake.',
         },
       },
       'required': ['taskId'],

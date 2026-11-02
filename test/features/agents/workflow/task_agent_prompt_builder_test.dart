@@ -440,7 +440,11 @@ Use the task language and omit empty sections.
       // A task outside the context is found by searching, only when a note
       // refers to it, and read in detail before a doubtful proposal.
       expect(full, contains('`find_related_tasks`'));
-      expect(full, contains('`get_related_task_details`'));
+      expect(full, contains('`get_task_tldr`'));
+      // Linked tasks carry one-liners only; the drill-down is on demand.
+      expect(full, contains('`get_task_report` for the whole report'));
+      expect(full, isNot(contains('latestTaskAgentReportTldr')));
+      expect(full, contains('an\n`omitted` entry counts the rest'));
       expect(full, contains('Never search when no note refers to other work'));
 
       // The compact scaffold carries the same capability in short form.

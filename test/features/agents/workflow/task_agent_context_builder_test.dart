@@ -2,7 +2,6 @@ import 'dart:convert';
 
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/agents/attention_negotiation.dart';
@@ -14,6 +13,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/workflow/agent_observations.dart';
+import 'package:lotti/features/agents/workflow/linked_task_directory.dart';
 import 'package:lotti/features/agents/workflow/task_agent_context_builder.dart';
 import 'package:lotti/features/agents/workflow/task_agent_report_policy.dart';
 import 'package:lotti/features/agents/workflow/task_project_options.dart';
@@ -211,7 +211,7 @@ void main() {
     });
   });
 
-  group('buildLinkedTasksContextJson', () {
+  group('buildLinkedTasksContext', () {
     test('returns empty object when there are no linked tasks', () async {
       when(
         () => aiInputRepository.buildLinkedFromContext('task-001'),
@@ -220,7 +220,7 @@ void main() {
         () => aiInputRepository.buildLinkedToContext('task-001'),
       ).thenAnswer((_) async => const []);
 
-      final json = await builder.buildLinkedTasksContextJson('task-001');
+      final json = (await builder.buildLinkedTasksContext('task-001')).json;
 
       expect(json, '{}');
     });
@@ -233,13 +233,10 @@ void main() {
         () => aiInputRepository.buildLinkedToContext('task-001'),
       ).thenAnswer((_) async => const []);
       when(
-        () => agentRepository.getLinksToMultiple(
-          any(),
-          type: AgentLinkTypes.agentTask,
-        ),
+        () => agentRepository.getUsableTaskReportsForTaskIds(any()),
       ).thenAnswer((_) async => const {});
 
-      final json = await builder.buildLinkedTasksContextJson('task-001');
+      final json = (await builder.buildLinkedTasksContext('task-001')).json;
       final decoded = jsonDecode(json) as Map<String, dynamic>;
       final row =
           (decoded['linked_from'] as List<dynamic>).first
@@ -257,25 +254,10 @@ void main() {
         () => aiInputRepository.buildLinkedToContext('task-001'),
       ).thenAnswer((_) async => const []);
       when(
-        () => agentRepository.getLinksToMultiple(
-          any(),
-          type: AgentLinkTypes.agentTask,
-        ),
+        () => agentRepository.getUsableTaskReportsForTaskIds(['child-1']),
       ).thenAnswer(
         (_) async => {
-          'child-1': [
-            makeTestAgentTaskLink(fromId: 'agent-child', toId: 'child-1'),
-          ],
-        },
-      );
-      when(
-        () => agentRepository.getLatestReportsByAgentIds(
-          any(),
-          AgentReportScopes.current,
-        ),
-      ).thenAnswer(
-        (_) async => {
-          'agent-child': makeTestReport(
+          'child-1': makeTestReport(
             agentId: 'agent-child',
             content: 'Body.',
             oneLiner: 'On track.',
@@ -284,7 +266,7 @@ void main() {
         },
       );
 
-      final json = await builder.buildLinkedTasksContextJson('task-001');
+      final json = (await builder.buildLinkedTasksContext('task-001')).json;
       final decoded = jsonDecode(json) as Map<String, dynamic>;
       final row =
           (decoded['linked_from'] as List<dynamic>).first
@@ -293,8 +275,104 @@ void main() {
       expect(row['summaryStatus'], 'present');
       expect(row['taskAgentId'], 'agent-child');
       expect(row['latestTaskAgentReportOneLiner'], 'On track.');
-      expect(row['latestTaskAgentReportTldr'], 'Done with phase 1.');
+      // The TL;DR and the body are read on demand (get_task_tldr,
+      // get_task_report), never carried in the wake.
+      expect(row.containsKey('latestTaskAgentReportTldr'), isFalse);
+      expect(jsonEncode(decoded), isNot(contains('Done with phase 1.')));
+      expect(jsonEncode(decoded), isNot(contains('Body.')));
       expect(row.containsKey('latestTaskAgentReportCreatedAt'), isFalse);
+    });
+
+    test(
+      'lists the ids it shows, which the drill-down tools may read',
+      () async {
+        when(
+          () => aiInputRepository.buildLinkedFromContext('task-001'),
+        ).thenAnswer((_) async => [linkedContext(id: 'child-1')]);
+        when(
+          () => aiInputRepository.buildLinkedToContext('task-001'),
+        ).thenAnswer((_) async => [linkedContext(id: 'parent-1')]);
+        when(
+          () => agentRepository.getUsableTaskReportsForTaskIds(any()),
+        ).thenAnswer((_) async => const {});
+
+        final directory = await builder.buildLinkedTasksContext('task-001');
+
+        expect(directory.taskIds, {'child-1', 'parent-1'});
+        expect(directory.omittedCount, 0);
+      },
+    );
+
+    test('holds many linked tasks to the budget, and lists only the ids it '
+        'shows', () async {
+      final many = [
+        for (var i = 0; i < 120; i++)
+          linkedContext(id: 'linked-$i', title: 'A linked task ' * 20),
+      ];
+      when(
+        () => aiInputRepository.buildLinkedFromContext('task-001'),
+      ).thenAnswer((_) async => many);
+      when(
+        () => aiInputRepository.buildLinkedToContext('task-001'),
+      ).thenAnswer((_) async => const []);
+      when(
+        () => agentRepository.getUsableTaskReportsForTaskIds(any()),
+      ).thenAnswer((_) async => const {});
+
+      final directory = await builder.buildLinkedTasksContext('task-001');
+      final decoded = jsonDecode(directory.json) as Map<String, dynamic>;
+      final rows = decoded['linked_from'] as List<dynamic>;
+
+      expect(
+        directory.json.length,
+        lessThanOrEqualTo(LinkedTaskDirectory.charBudget),
+      );
+      expect(rows.length, lessThanOrEqualTo(LinkedTaskDirectory.maxRows));
+      expect(directory.omittedCount, 120 - rows.length);
+      expect((decoded['omitted'] as Map)['count'], directory.omittedCount);
+      expect(directory.taskIds, {
+        for (final row in rows) (row as Map<String, dynamic>)['id'],
+      });
+    });
+
+    test('a failing report lookup still lists the rows, without one-liners, '
+        'and logs it', () async {
+      when(
+        () => aiInputRepository.buildLinkedFromContext('task-001'),
+      ).thenAnswer((_) async => [linkedContext(id: 'child-1')]);
+      when(
+        () => aiInputRepository.buildLinkedToContext('task-001'),
+      ).thenAnswer((_) async => const []);
+      when(
+        () => agentRepository.getUsableTaskReportsForTaskIds(any()),
+      ).thenThrow(Exception('db down'));
+
+      final directory = await builder.buildLinkedTasksContext('task-001');
+      final row =
+          ((jsonDecode(directory.json) as Map)['linked_from'] as List).single
+              as Map;
+
+      expect(directory.taskIds, {'child-1'});
+      expect(row['summaryStatus'], 'none');
+      expect(
+        loggedErrors.map((e) => e.message),
+        contains('linked task report lookup failed'),
+      );
+    });
+
+    test('a failing read yields no section and nothing to read', () async {
+      when(
+        () => aiInputRepository.buildLinkedFromContext('task-001'),
+      ).thenThrow(Exception('db down'));
+
+      final directory = await builder.buildLinkedTasksContext('task-001');
+
+      expect(directory.json, '{}');
+      expect(directory.taskIds, isEmpty);
+      expect(
+        loggedErrors.map((e) => e.message),
+        contains('failed to build linked tasks context'),
+      );
     });
 
     group('relations annotation', () {
@@ -323,10 +401,7 @@ void main() {
           () => aiInputRepository.buildLinkedToContext('task-001'),
         ).thenAnswer((_) async => [linkedContext(id: 'obsolete-1')]);
         when(
-          () => agentRepository.getLinksToMultiple(
-            any(),
-            type: AgentLinkTypes.agentTask,
-          ),
+          () => agentRepository.getUsableTaskReportsForTaskIds(any()),
         ).thenAnswer((_) async => const {});
       });
 
@@ -354,7 +429,7 @@ void main() {
             ],
           );
 
-          final json = await builder.buildLinkedTasksContextJson('task-001');
+          final json = (await builder.buildLinkedTasksContext('task-001')).json;
           final decoded = jsonDecode(json) as Map<String, dynamic>;
           final blockerRow =
               (decoded['linked_from'] as List<dynamic>).first
@@ -399,7 +474,7 @@ void main() {
             ],
           );
 
-          final json = await builder.buildLinkedTasksContextJson('task-001');
+          final json = (await builder.buildLinkedTasksContext('task-001')).json;
           final decoded = jsonDecode(json) as Map<String, dynamic>;
           final blockerRow =
               (decoded['linked_from'] as List<dynamic>).first
@@ -421,7 +496,7 @@ void main() {
             () => journalDb.linksForEntryIdsBidirectional({'task-001'}),
           ).thenThrow(Exception('db down'));
 
-          final json = await builder.buildLinkedTasksContextJson('task-001');
+          final json = (await builder.buildLinkedTasksContext('task-001')).json;
           final decoded = jsonDecode(json) as Map<String, dynamic>;
           final blockerRow =
               (decoded['linked_from'] as List<dynamic>).first

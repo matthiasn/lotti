@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-11-01
-- Concepts: [task agents](../../knowledge/features/agents/task-agents.md#related-tasks-are-fetched-on-demand),
+- Concepts: [task agents](../../knowledge/features/agents/task-agents.md#linked-and-related-tasks-are-read-on-demand),
   [embeddings and search](../../knowledge/features/ai/embeddings-and-search.md#related-tasks)
 
 ## Context

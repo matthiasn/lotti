@@ -265,6 +265,52 @@ class AgentRepoQueries {
     return result;
   }
 
+  /// The report each task in [taskIds] is summarised by, for a reader that
+  /// wants the newest *usable* one: the task's `agent_task` links newest
+  /// first (`orderedPrimaryFirst`), and the first agent whose current report
+  /// has a non-empty body.
+  ///
+  /// Unlike [getLatestTaskReportsForTaskIds], which follows the primary link
+  /// only, a newest agent that has not reported yet does not hide an older
+  /// agent's report. The task agent's Linked Tasks rows and its drill-down
+  /// tools both read through this, so a row that shows a one-liner can always
+  /// be read deeper. Two batched queries however many tasks; tasks without a
+  /// usable report are omitted.
+  Future<Map<String, AgentReportEntity>> getUsableTaskReportsForTaskIds(
+    List<String> taskIds,
+  ) async {
+    if (taskIds.isEmpty) return {};
+
+    final linksByTaskId = await _links.getLinksToMultiple(
+      taskIds,
+      type: AgentLinkTypes.agentTask,
+    );
+    final agentIds = {
+      for (final links in linksByTaskId.values)
+        for (final link in links) link.fromId,
+    };
+    if (agentIds.isEmpty) return {};
+
+    final reportsByAgentId = await getLatestReportsByAgentIds(
+      agentIds.toList(),
+      AgentReportScopes.current,
+    );
+
+    return {
+      for (final MapEntry(key: taskId, value: links) in linksByTaskId.entries)
+        if (links
+                .orderedPrimaryFirst()
+                .map((link) => reportsByAgentId[link.fromId])
+                .firstWhere(
+                  (report) =>
+                      report != null && report.content.trim().isNotEmpty,
+                  orElse: () => null,
+                )
+            case final AgentReportEntity report)
+          taskId: report,
+    };
+  }
+
   /// Fetch the [AgentReportHeadEntity] for [agentId] in [scope], or `null` if
   /// none exists.
   Future<AgentReportHeadEntity?> getReportHead(

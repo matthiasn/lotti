@@ -164,9 +164,9 @@ class TaskAgentStrategy extends ConversationStrategy {
   /// was made against (`ChangeItem.base`).
   final ResolveTaskMetadata? resolveTaskMetadata;
 
-  /// What `find_related_tasks` and `get_related_task_details` read, for
-  /// this wake; null where search by meaning is unavailable, which leaves
-  /// both tools answering that they are not available.
+  /// What `find_related_tasks`, `get_task_tldr` and `get_task_report` read,
+  /// for this wake: the linked tasks the wake shows, and the search where it
+  /// can run. Null leaves all three answering that they are not available.
   final RelatedTaskLookup? relatedTasks;
 
   /// Optional resolver for the set of time-entry ids linked to this task,
@@ -275,9 +275,11 @@ class TaskAgentStrategy extends ConversationStrategy {
   static const String findRelatedTasksToolName =
       TaskAgentToolNames.findRelatedTasks;
 
-  /// Tool name for the read-only related-task drill-down tool.
-  static const String relatedTaskDetailsToolName =
-      TaskAgentToolNames.getRelatedTaskDetails;
+  /// Tool name for the read-only TL;DR of a linked or found task.
+  static const String taskTldrToolName = TaskAgentToolNames.getTaskTldr;
+
+  /// Tool name for the read-only full report of a linked or found task.
+  static const String taskReportToolName = TaskAgentToolNames.getTaskReport;
 
   /// Tool name for the read-only category-projects tool.
   static const String categoryProjectsToolName =
@@ -383,9 +385,14 @@ class TaskAgentStrategy extends ConversationStrategy {
         await _handleFindRelatedTasks(args, call.id, manager);
         continue;
       }
-      if (toolName == relatedTaskDetailsToolName) {
+      if (toolName == taskTldrToolName || toolName == taskReportToolName) {
         await _recordActionMessage(toolName: toolName, args: args);
-        await _handleRelatedTaskDetails(args, call.id, manager);
+        await _handleOtherTaskRead(
+          args,
+          call.id,
+          manager,
+          fullReport: toolName == taskReportToolName,
+        );
         continue;
       }
       if (toolName == categoryProjectsToolName) {
