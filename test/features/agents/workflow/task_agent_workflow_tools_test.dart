@@ -186,9 +186,6 @@ void main() {
             (_) async => TestTaskFactory.create(id: 'linked-1', title: 'Relay'),
           );
           when(
-            () => mockAgentRepository.getLatestTaskReportsForTaskIds(any()),
-          ).thenAnswer((_) async => const {});
-          when(
             () => mockAgentRepository.getLinksToMultiple(
               any(),
               type: any(named: 'type'),
@@ -269,10 +266,7 @@ void main() {
           () => bench.mockAiInputRepository.buildLinkedToContext(taskId),
         ).thenAnswer((_) async => <AiLinkedTaskContext>[]);
         when(
-          () => bench.mockAgentRepository.getLinksToMultiple(
-            any(),
-            type: any(named: 'type'),
-          ),
+          () => bench.mockAgentRepository.getUsableTaskReportsForTaskIds(any()),
         ).thenAnswer((_) async => const {});
         when(
           () =>

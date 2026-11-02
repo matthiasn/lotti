@@ -100,7 +100,7 @@ class RelatedTaskLookup {
     ].take(maxResults).toList();
     final reports = tasks.isEmpty
         ? const <String, AgentReportEntity>{}
-        : await _agentRepository.getLatestTaskReportsForTaskIds([
+        : await _agentRepository.getUsableTaskReportsForTaskIds([
             for (final task in tasks) task.meta.id,
           ]);
     _foundIds.addAll(tasks.map((task) => task.meta.id));
@@ -154,7 +154,8 @@ class RelatedTaskLookup {
   ) async {
     final task = await _journalDb.journalEntityById(taskId);
     if (task is! Task || task.meta.deletedAt != null) return null;
-    final reports = await _agentRepository.getLatestTaskReportsForTaskIds([
+    // The same report the Linked Tasks row's one-liner came from.
+    final reports = await _agentRepository.getUsableTaskReportsForTaskIds([
       taskId,
     ]);
     final report = reports[taskId];

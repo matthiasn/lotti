@@ -71,7 +71,7 @@ void main() {
         distances: {for (final (id, d) in hits) id: d},
       ),
     );
-    when(() => agents.getLatestTaskReportsForTaskIds(any())).thenAnswer(
+    when(() => agents.getUsableTaskReportsForTaskIds(any())).thenAnswer(
       (invocation) async => {
         for (final id in invocation.positionalArguments.first as List<String>)
           id: ?reports[id],
@@ -179,7 +179,7 @@ void main() {
 
       expect(answer['tasks'], isEmpty);
       expect(answer['note'], contains('Do not propose a link'));
-      verifyNever(() => agents.getLatestTaskReportsForTaskIds(any()));
+      verifyNever(() => agents.getUsableTaskReportsForTaskIds(any()));
     });
 
     test(

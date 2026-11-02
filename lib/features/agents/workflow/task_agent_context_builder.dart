@@ -1,10 +1,8 @@
 import 'dart:convert';
 
 import 'package:clock/clock.dart';
-import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
-import 'package:lotti/classes/agents/agent_link.dart';
 import 'package:lotti/classes/agents/proposal_ledger.dart';
 import 'package:lotti/classes/ai_input.dart';
 import 'package:lotti/classes/directed_relation.dart';
@@ -158,71 +156,24 @@ class TaskAgentContextBuilder {
           .where((id) => id.isNotEmpty)
           .toSet();
 
-      // Two bulk queries replace the prior `Future.wait(map →
-      // _resolveLatestTaskAgentReport(id))` fan-out. The fan-out hit
-      // 2 203 `agent_links WHERE to_id = ? AND type = ?` queries plus
-      // a compounding 2 484 `agent_entities WHERE id = ?` queries on
-      // the 2026-05-10 desktop slow_queries log; each per-row request
-      // queued independently behind the writer lock. The bulk path is
-      // `getLinksToMultiple` + `getLatestReportsByAgentIds`, mirroring
-      // the already-batched implementation in
-      // `ProjectAgentContextBuilder.buildLinkedTasksContext`.
-      final reportByTaskId = <String, ({String agentId, String? oneLiner})>{};
+      // One shared policy picks each linked task's report — its agent links
+      // newest first, the first agent with a non-empty current report — so
+      // the drill-down tools (`RelatedTaskLookup`) read exactly the report
+      // whose one-liner this row shows. Two batched queries, not one per
+      // task: the earlier per-row fan-out queued thousands of lookups behind
+      // the writer lock (2026-05-10 desktop slow_queries log).
+      var reportByTaskId = const <String, AgentReportEntity>{};
       if (taskIds.isNotEmpty) {
-        var linksByTaskId = const <String, List<AgentLink>>{};
         try {
-          linksByTaskId = await agentRepository.getLinksToMultiple(
+          reportByTaskId = await agentRepository.getUsableTaskReportsForTaskIds(
             taskIds.toList(),
-            type: AgentLinkTypes.agentTask,
           );
         } catch (e, s) {
           logError(
-            'batch agent_task link lookup failed',
+            'linked task report lookup failed',
             error: e,
             stackTrace: s,
           );
-        }
-
-        final linkedAgentIds = linksByTaskId.values
-            .expand((links) => links.map((link) => link.fromId))
-            .toSet()
-            .toList();
-
-        var reportsByAgentId = const <String, AgentReportEntity>{};
-        if (linkedAgentIds.isNotEmpty) {
-          try {
-            reportsByAgentId = await agentRepository.getLatestReportsByAgentIds(
-              linkedAgentIds,
-              AgentReportScopes.current,
-            );
-          } catch (e, s) {
-            logError(
-              'batch agent report lookup failed',
-              error: e,
-              stackTrace: s,
-            );
-          }
-        }
-
-        // Sort matches the prior per-task `orderedPrimaryFirst` shape
-        // (createdAt DESC, then id DESC): newest link wins, but only if
-        // its agent has a non-empty current report — otherwise fall
-        // back to the next link, exactly as the pre-batch code did.
-        for (final taskId in taskIds) {
-          final links = linksByTaskId[taskId];
-          if (links == null || links.isEmpty) continue;
-          for (final link in links.orderedPrimaryFirst()) {
-            final report = reportsByAgentId[link.fromId];
-            if (report == null) continue;
-            // Gate on a non-empty body so only "real" reports surface, but
-            // embed just the one-liner to keep wake prefill small.
-            if (report.content.trim().isEmpty) continue;
-            reportByTaskId[taskId] = (
-              agentId: link.fromId,
-              oneLiner: report.oneLiner,
-            );
-            break;
-          }
         }
       }
 

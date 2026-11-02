@@ -2,7 +2,6 @@ import 'dart:convert';
 
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/agents/attention_negotiation.dart';
@@ -234,10 +233,7 @@ void main() {
         () => aiInputRepository.buildLinkedToContext('task-001'),
       ).thenAnswer((_) async => const []);
       when(
-        () => agentRepository.getLinksToMultiple(
-          any(),
-          type: AgentLinkTypes.agentTask,
-        ),
+        () => agentRepository.getUsableTaskReportsForTaskIds(any()),
       ).thenAnswer((_) async => const {});
 
       final json = (await builder.buildLinkedTasksContext('task-001')).json;
@@ -258,25 +254,10 @@ void main() {
         () => aiInputRepository.buildLinkedToContext('task-001'),
       ).thenAnswer((_) async => const []);
       when(
-        () => agentRepository.getLinksToMultiple(
-          any(),
-          type: AgentLinkTypes.agentTask,
-        ),
+        () => agentRepository.getUsableTaskReportsForTaskIds(['child-1']),
       ).thenAnswer(
         (_) async => {
-          'child-1': [
-            makeTestAgentTaskLink(fromId: 'agent-child', toId: 'child-1'),
-          ],
-        },
-      );
-      when(
-        () => agentRepository.getLatestReportsByAgentIds(
-          any(),
-          AgentReportScopes.current,
-        ),
-      ).thenAnswer(
-        (_) async => {
-          'agent-child': makeTestReport(
+          'child-1': makeTestReport(
             agentId: 'agent-child',
             content: 'Body.',
             oneLiner: 'On track.',
@@ -312,10 +293,7 @@ void main() {
           () => aiInputRepository.buildLinkedToContext('task-001'),
         ).thenAnswer((_) async => [linkedContext(id: 'parent-1')]);
         when(
-          () => agentRepository.getLinksToMultiple(
-            any(),
-            type: AgentLinkTypes.agentTask,
-          ),
+          () => agentRepository.getUsableTaskReportsForTaskIds(any()),
         ).thenAnswer((_) async => const {});
 
         final directory = await builder.buildLinkedTasksContext('task-001');
@@ -338,10 +316,7 @@ void main() {
         () => aiInputRepository.buildLinkedToContext('task-001'),
       ).thenAnswer((_) async => const []);
       when(
-        () => agentRepository.getLinksToMultiple(
-          any(),
-          type: AgentLinkTypes.agentTask,
-        ),
+        () => agentRepository.getUsableTaskReportsForTaskIds(any()),
       ).thenAnswer((_) async => const {});
 
       final directory = await builder.buildLinkedTasksContext('task-001');
@@ -358,6 +333,31 @@ void main() {
       expect(directory.taskIds, {
         for (final row in rows) (row as Map<String, dynamic>)['id'],
       });
+    });
+
+    test('a failing report lookup still lists the rows, without one-liners, '
+        'and logs it', () async {
+      when(
+        () => aiInputRepository.buildLinkedFromContext('task-001'),
+      ).thenAnswer((_) async => [linkedContext(id: 'child-1')]);
+      when(
+        () => aiInputRepository.buildLinkedToContext('task-001'),
+      ).thenAnswer((_) async => const []);
+      when(
+        () => agentRepository.getUsableTaskReportsForTaskIds(any()),
+      ).thenThrow(Exception('db down'));
+
+      final directory = await builder.buildLinkedTasksContext('task-001');
+      final row =
+          ((jsonDecode(directory.json) as Map)['linked_from'] as List).single
+              as Map;
+
+      expect(directory.taskIds, {'child-1'});
+      expect(row['summaryStatus'], 'none');
+      expect(
+        loggedErrors.map((e) => e.message),
+        contains('linked task report lookup failed'),
+      );
     });
 
     test('a failing read yields no section and nothing to read', () async {
@@ -401,10 +401,7 @@ void main() {
           () => aiInputRepository.buildLinkedToContext('task-001'),
         ).thenAnswer((_) async => [linkedContext(id: 'obsolete-1')]);
         when(
-          () => agentRepository.getLinksToMultiple(
-            any(),
-            type: AgentLinkTypes.agentTask,
-          ),
+          () => agentRepository.getUsableTaskReportsForTaskIds(any()),
         ).thenAnswer((_) async => const {});
       });
 
