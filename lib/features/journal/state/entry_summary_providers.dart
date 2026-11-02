@@ -57,3 +57,9 @@ String? audioSummaryOneLiner(WidgetRef ref, String entryId) =>
 /// the thumbnail alone when there is no text at all.
 String? imageAnalysisOneLiner(WidgetRef ref, String entryId) =>
     _oneLinerOfType(ref, entryId, AiResponseType.imageAnalysis);
+
+/// The newest image analysis linked to [entryId], or null while the analyses
+/// load or when there is none — what a photo's caption was cut from, for a
+/// surface that opens the whole of it.
+AiResponseEntry? latestImageAnalysis(WidgetRef ref, String entryId) =>
+    _latestResponseOfType(ref, entryId, AiResponseType.imageAnalysis);

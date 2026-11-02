@@ -1105,6 +1105,9 @@ class AppLocalizationsRo extends AppLocalizations {
       'Propuneți o sarcină ulterioară';
 
   @override
+  String get agentSummarySuggestNote => 'Adăugați această notă la eveniment';
+
+  @override
   String agentSummarySuggestPerson(Object name) {
     return '$name a fost acolo';
   }
@@ -1692,6 +1695,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get aiCardProposalKindMedia => 'Media';
+
+  @override
+  String get aiCardProposalKindNote => 'Notă';
 
   @override
   String get aiCardProposalKindPriority => 'Prioritate';
@@ -6918,6 +6924,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get eventsFilterTooltip => 'Filtrați evenimentele';
 
   @override
+  String get eventsLanguageLabel => 'Limbă';
+
+  @override
   String eventsMetricPhotos(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -6965,6 +6974,15 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get eventsPeopleSection => 'Persoane';
+
+  @override
+  String get eventsPhotoAnalysisOpen => 'Deschideți analiza fotografiei';
+
+  @override
+  String get eventsPhotoAnalysisOpenEntry => 'Deschideți fotografia';
+
+  @override
+  String get eventsPhotoAnalysisTitle => 'Ce arată fotografia';
 
   @override
   String get eventsPhotosSection => 'Fotografii';

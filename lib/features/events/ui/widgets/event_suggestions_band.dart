@@ -12,6 +12,7 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/providers/update_notifications_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:lotti/widgets/transcript/folded_words.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// The event agent's proposals, inside its card, in the task card's grammar:
@@ -177,7 +178,12 @@ class _EventSuggestionsBandState extends ConsumerState<EventSuggestionsBand> {
                 onReject: () => ref
                     .read(eventChangeSetConfirmationServiceProvider)
                     .rejectItem(row.changeSet, row.itemIndex),
-                details: _why(context, row.item.toolName, row.item.args),
+                details: _why(
+                  context,
+                  row.item.toolName,
+                  row.item.args,
+                  id: _key(row),
+                ),
               ),
             ),
           ),
@@ -194,12 +200,20 @@ class _EventSuggestionsBandState extends ConsumerState<EventSuggestionsBand> {
   }
 
   /// Why the agent proposes it, where the proposal carries that: the words
-  /// that named the person, or the follow-up's notes. Null otherwise.
+  /// that named the person, or the follow-up's notes — or, for a suggested
+  /// note, the note itself, folded, so it can be read in full before it is
+  /// added as the user's own. Null otherwise.
   static Widget? _why(
     BuildContext context,
     String toolName,
-    Map<String, dynamic> args,
-  ) {
+    Map<String, dynamic> args, {
+    required String id,
+  }) {
+    if (toolName == EventAgentToolNames.suggestNote) {
+      final note = args[EventAgentNoteToolArgs.text];
+      if (note is! String || note.trim().isEmpty) return null;
+      return FoldedWords(id: 'event-note-$id', words: note.trim());
+    }
     final raw = switch (toolName) {
       EventAgentToolNames.suggestPerson =>
         args[EventAgentPersonToolArgs.mention],

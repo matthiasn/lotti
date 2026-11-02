@@ -37,6 +37,7 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/widgets/markdown/agent_markdown_view.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -87,6 +88,7 @@ class _RecordingEntryController extends FakeEntryController {
   final categories = <String?>[];
   final statuses = <EventStatus>[];
   final covers = <String?>[];
+  final languages = <String?>[];
   int deletes = 0;
 
   @override
@@ -116,6 +118,12 @@ class _RecordingEntryController extends FakeEntryController {
   @override
   Future<bool> updateEventCover(String? imageId, {double? cropX}) async {
     covers.add(imageId);
+    return true;
+  }
+
+  @override
+  Future<bool> updateEventLanguage(String? languageCode) async {
+    languages.add(languageCode);
     return true;
   }
 
@@ -487,6 +495,68 @@ void main() {
         expect(find.text('test image entry text'), findsNothing);
       });
 
+      testWidgets('a tap on the photo opens its whole analysis, and Open '
+          "photo goes on to the photo's entry", (tester) async {
+        final beamed = <String>[];
+        beamToNamedOverride = beamed.add;
+        await pumpResolved(
+          tester,
+          linked: [testImageEntry],
+          extraOverrides: [
+            linkedAiResponsesControllerProvider(imageId).overrideWith(
+              () => _FixedAiResponses(imageId, [
+                analysis(oneLiner: 'Two friends toasting at sunset.'),
+              ]),
+            ),
+          ],
+        );
+        await tester.pump();
+
+        await tester.tap(find.text('Two friends toasting at sunset.'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('What the photo shows'), findsOneWidget);
+        expect(
+          tester.widget<AgentMarkdownView>(find.byType(AgentMarkdownView)).text,
+          'A long description of the photo.',
+        );
+        expect(beamed, isEmpty);
+
+        await tester.ensureVisible(find.text('Open photo'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Open photo'));
+        await tester.pumpAndSettle();
+
+        expect(beamed, [
+          '/journal/$imageId?linkedFromId=$_eventId',
+        ]);
+      });
+
+      testWidgets('a photo not analysed yet opens its entry straight away', (
+        tester,
+      ) async {
+        final beamed = <String>[];
+        beamToNamedOverride = beamed.add;
+        await pumpResolved(
+          tester,
+          linked: [testImageEntry],
+          extraOverrides: [
+            linkedAiResponsesControllerProvider(
+              imageId,
+            ).overrideWith(() => _FixedAiResponses(imageId, const [])),
+          ],
+        );
+        await tester.pump();
+
+        await tester.tap(find.text('test image entry text'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('What the photo shows'), findsNothing);
+        expect(beamed, [
+          '/journal/$imageId?linkedFromId=$_eventId',
+        ]);
+      });
+
       testWidgets('without an analysis one-liner the note captions it', (
         tester,
       ) async {
@@ -568,6 +638,24 @@ void main() {
       await tester.tap(find.textContaining('May 2026')); // hero date line
       await tester.pumpAndSettle();
       expect(find.text('Date & Time'), findsOneWidget);
+    });
+
+    testWidgets('the language chip picks the language through the '
+        'controller', (tester) async {
+      final rec = _RecordingEntryController(_event());
+      await pumpResolved(
+        tester,
+        linked: const [],
+        controllerBuilder: () => rec,
+      );
+
+      await tester.tap(find.text('Language'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('German'));
+      await tester.pumpAndSettle();
+
+      expect(rec.languages, ['de']);
+      expect(find.text('Swedish'), findsNothing, reason: 'the sheet closed');
     });
 
     testWidgets('the status pill sets a status through the controller', (

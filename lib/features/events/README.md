@@ -35,6 +35,21 @@ Behind the **Enable Events** flag. With it off, events are hidden everywhere.
   timeline carries the one-line caption its image analysis wrote, or the
   user's own note. An event without an agent offers **Assign Agent** in that
   card, the same row a task without one shows.
+- **Describes a photo for what it shows.** A photo added to an event is
+  analysed in the light of the event — its title, time and note — never as
+  if it belonged to a task, and a tap on it in the timeline opens the whole
+  analysis, with the way through to the photo's own entry.
+- **Keeps one language.** The event agent sets the event's language from its
+  first voice memo; the recap, its suggestions, the photo analyses and the
+  recording summaries are written in it. It shows beside the status, where
+  the user can pick another — a choice the agent never overrides.
+- **Suggests what you did not write down.** Besides the people the event
+  names and follow-up tasks, the agent can suggest a note of what happened,
+  shown in full under the recap; confirming adds it to the timeline as the
+  user's own note.
+- **Can be found by asking.** With on-device search on, an event and its
+  recap are indexed, so the journal's questions can find it by what happened
+  and who was there.
 - **Picks its own cover, until told otherwise.** The newest linked photo stands
   in as the cover until the user chooses one — from the full-screen viewer with
   **Set cover** on the photo in view, or from the **Change cover** picker in

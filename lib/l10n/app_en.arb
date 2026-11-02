@@ -675,6 +675,10 @@
     }
   },
   "agentSummarySuggestFollowUpTask": "Suggest a follow-up task",
+  "agentSummarySuggestNote": "Add this note to the event",
+  "@agentSummarySuggestNote": {
+    "description": "Proposal row sentence: the event agent wrote a note of what happened; confirming adds it to the event's timeline."
+  },
   "agentSummarySuggestPerson": "{name} was there",
   "@agentSummarySuggestPerson": {
     "description": "A suggestion row on an event, after its Add kind chip: the event agent proposes this person, named in the event's notes or voice memos, as one who was there.",
@@ -1227,6 +1231,10 @@
   "aiCardProposalKindEstimate": "Estimate",
   "aiCardProposalKindLabel": "Label",
   "aiCardProposalKindMedia": "Media",
+  "aiCardProposalKindNote": "Note",
+  "@aiCardProposalKindNote": {
+    "description": "Kind label of a proposal row that suggests a note."
+  },
   "aiCardProposalKindPriority": "Priority",
   "aiCardProposalKindRemove": "Remove",
   "aiCardProposalKindStatus": "Status",
@@ -4064,6 +4072,10 @@
   "eventsChangeCover": "Change cover",
   "eventsDeleteEvent": "Delete event",
   "eventsFilterTooltip": "Filter events",
+  "eventsLanguageLabel": "Language",
+  "@eventsLanguageLabel": {
+    "description": "Placeholder chip on an event's header for picking the language its AI-written record is kept in."
+  },
   "eventsMetricPhotos": "{count, plural, =1{1 photo} other{{count} photos}}",
   "@eventsMetricPhotos": {
     "placeholders": {
@@ -4102,6 +4114,18 @@
   "eventsPeopleSection": "People",
   "@eventsPeopleSection": {
     "description": "Header over the people an event was with, on the event's page."
+  },
+  "eventsPhotoAnalysisOpen": "Open the photo's analysis",
+  "@eventsPhotoAnalysisOpen": {
+    "description": "Screen-reader label of a photo on an event's timeline: tapping it opens the photo's full AI analysis."
+  },
+  "eventsPhotoAnalysisOpenEntry": "Open photo",
+  "@eventsPhotoAnalysisOpenEntry": {
+    "description": "Button in the photo analysis sheet that opens the photo's own entry."
+  },
+  "eventsPhotoAnalysisTitle": "What the photo shows",
+  "@eventsPhotoAnalysisTitle": {
+    "description": "Title of the sheet showing a photo's full AI analysis, opened from an event's timeline."
   },
   "eventsPhotosSection": "Photos",
   "eventsRatingStarLabel": "Rate {starIndex} of {totalStars} stars",

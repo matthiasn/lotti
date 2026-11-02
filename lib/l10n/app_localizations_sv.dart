@@ -1099,6 +1099,9 @@ class AppLocalizationsSv extends AppLocalizations {
       'Föreslå en uppföljningsuppgift';
 
   @override
+  String get agentSummarySuggestNote => 'Lägg till anteckningen i evenemanget';
+
+  @override
   String agentSummarySuggestPerson(Object name) {
     return '$name var där';
   }
@@ -1679,6 +1682,9 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get aiCardProposalKindMedia => 'Media';
+
+  @override
+  String get aiCardProposalKindNote => 'Anteckning';
 
   @override
   String get aiCardProposalKindPriority => 'Prioritet';
@@ -6815,6 +6821,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get eventsFilterTooltip => 'Filtrera evenemang';
 
   @override
+  String get eventsLanguageLabel => 'Språk';
+
+  @override
   String eventsMetricPhotos(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -6860,6 +6869,15 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get eventsPeopleSection => 'Personer';
+
+  @override
+  String get eventsPhotoAnalysisOpen => 'Öppna fotots analys';
+
+  @override
+  String get eventsPhotoAnalysisOpenEntry => 'Öppna foto';
+
+  @override
+  String get eventsPhotoAnalysisTitle => 'Vad fotot visar';
 
   @override
   String get eventsPhotosSection => 'Foton';

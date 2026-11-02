@@ -4,23 +4,46 @@ import 'package:lotti/features/agents/workflow/agent_observations.dart';
 
 void main() {
   group('eventAgentTools', () {
-    test('exposes exactly narrate + observe + the people read + the two '
-        'proposals, and the deferred set is exactly the proposals', () {
+    test('exposes exactly narrate + observe + the people read + the '
+        'language + the three proposals, and the deferred set is exactly '
+        'the proposals', () {
       final names = eventAgentTools.map((t) => t.name).toSet();
       expect(names, {
         EventAgentToolNames.updateReport,
         EventAgentToolNames.recordObservations,
         EventAgentToolNames.listPeople,
+        EventAgentToolNames.setEventLanguage,
         EventAgentToolNames.suggestPerson,
         EventAgentToolNames.suggestFollowUpTask,
+        EventAgentToolNames.suggestNote,
       });
-      // The people list is a read, run at once; suggesting someone is the
-      // user's to confirm, as a follow-up is.
+      // The people list is a read and the language fills an empty field,
+      // both run at once; suggesting someone or a note is the user's to
+      // confirm, as a follow-up is.
       expect(eventDeferredTools, {
         EventAgentToolNames.suggestFollowUpTask,
         EventAgentToolNames.suggestPerson,
+        EventAgentToolNames.suggestNote,
       });
     });
+
+    for (final (name, argument) in [
+      (
+        EventAgentToolNames.setEventLanguage,
+        EventAgentLanguageToolArgs.languageCode,
+      ),
+      (EventAgentToolNames.suggestNote, EventAgentNoteToolArgs.text),
+    ]) {
+      test('$name takes exactly its one required argument', () {
+        final tool = eventAgentTools.firstWhere((t) => t.name == name);
+        final properties =
+            tool.parameters['properties'] as Map<String, Object?>;
+
+        expect(properties.keys, [argument]);
+        expect(tool.parameters['required'], [argument]);
+        expect(tool.parameters['additionalProperties'], isFalse);
+      });
+    }
 
     test('suggest_person takes a person id from list_people, and an '
         'optional mention', () {

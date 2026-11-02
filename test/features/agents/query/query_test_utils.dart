@@ -10,6 +10,7 @@ import 'package:lotti/features/agents/query/query_journal_crawler.dart';
 import 'package:lotti/features/agents/query/query_source_access.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/lockdown/domain/lockdown_state.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -64,6 +65,9 @@ class QueryTestBench {
     when(
       () => db.getConfigFlag('private'),
     ).thenAnswer((_) async => showPrivate);
+    when(
+      () => db.getConfigFlag(enableEventsFlag),
+    ).thenAnswer((_) async => eventsEnabled);
     when(db.getAllCategories).thenAnswer((_) async => categories);
     when(() => db.journalEntityMapForIdsIncludingDeleted(any())).thenAnswer((
       call,
@@ -96,11 +100,14 @@ class QueryTestBench {
       categoryReads++;
       final categories = call.namedArguments[#categoryIds] as Set<String>;
       final ids = call.namedArguments[#ids] as List<String>?;
+      final types = call.namedArguments[#types] as List<String>;
       return entries.values
           .where(
             (e) =>
                 categories.contains(e.meta.categoryId) &&
-                (ids == null || ids.contains(e.meta.id)),
+                (ids == null || ids.contains(e.meta.id)) &&
+                // The one type the crawl reads conditionally.
+                (e is! JournalEvent || types.contains('JournalEvent')),
           )
           .take(call.namedArguments[#limit] as int)
           .toList();
@@ -125,6 +132,9 @@ class QueryTestBench {
   /// Whether search by meaning throws, as an embedding failure does.
   bool meaningFails = false;
   bool showPrivate = false;
+
+  /// Whether the events feature is on (`enableEventsFlag`).
+  bool eventsEnabled = false;
   int categoryReads = 0;
 
   QueryJournalCrawler get crawler => QueryJournalCrawler(

@@ -3,6 +3,8 @@ import 'package:lotti/classes/agents/query_chat_models.dart';
 import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/entry_text.dart';
+import 'package:lotti/classes/event_data.dart';
+import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/query/query_journal_crawler.dart';
 import 'package:mocktail/mocktail.dart';
@@ -173,6 +175,76 @@ void main() {
     expect(original, isNotNull);
     expect(original!.text, audio.data.transcripts!.last.transcript);
     expect(original.version, startsWith('transcript:'));
+  });
+
+  test('an event reads as its note, else as its title, labelled by its '
+      'title', () {
+    final event = JournalEvent(
+      meta: testTask.meta.copyWith(id: 'event-1'),
+      data: const EventData(
+        title: 'Ice garden picnic',
+        stars: 0,
+        status: EventStatus.completed,
+      ),
+      entryText: const EntryText(plainText: 'Pip brought the sardines.'),
+    );
+
+    final withNote = QuerySourceDocument.fromEntry(event)!;
+    expect(withNote.text, 'Pip brought the sardines.');
+    expect(withNote.label, 'Ice garden picnic');
+    expect(withNote.kind, QuerySourceKind.text);
+
+    final bare = QuerySourceDocument.fromEntry(
+      event.copyWith(entryText: const EntryText(plainText: ' ')),
+    )!;
+    expect(bare.text, 'Ice garden picnic');
+    expect(bare.version, startsWith('title:'));
+  });
+
+  group('events', () {
+    final category = categoryMindfulness.id;
+
+    QueryTestBench bench({required bool eventsEnabled}) {
+      final b = QueryTestBench()
+        ..add('note', category: category)
+        ..meaningResults = {
+          'with Pip': ['event-1', 'note'],
+        }
+        ..eventsEnabled = eventsEnabled;
+      b.entries['event-1'] = JournalEvent(
+        meta: testTask.meta.copyWith(id: 'event-1', categoryId: category),
+        data: const EventData(
+          title: 'Ice garden picnic',
+          stars: 0,
+          status: EventStatus.completed,
+        ),
+      );
+      return b;
+    }
+
+    for (final eventsEnabled in [true, false]) {
+      test(
+        'a meaning hit on an event is '
+        '${eventsEnabled ? 'read, like any source' : 'dropped while events '
+                  'are off, as everywhere'}',
+        () async {
+          final b = bench(eventsEnabled: eventsEnabled);
+
+          final corpus = await b.crawler.discover(
+            QueryScope(kind: QueryScopeKind.category, id: category),
+            const [],
+            searches: const ['with Pip'],
+          );
+
+          final ids = corpus.documents.map((d) => d.entry.meta.id);
+          if (eventsEnabled) {
+            expect(ids, ['event-1', 'note']);
+          } else {
+            expect(ids, ['note']);
+          }
+        },
+      );
+    }
   });
 
   test('empty descriptions retain task and project titles as evidence', () {

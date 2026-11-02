@@ -4,6 +4,7 @@ import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/agents/model/observation_record.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
+import 'package:lotti/features/agents/tools/event_language_handler.dart';
 import 'package:lotti/features/agents/tools/event_tool_definitions.dart';
 import 'package:lotti/features/agents/workflow/agent_message_recording.dart';
 import 'package:lotti/features/agents/workflow/agent_observations.dart';
@@ -15,13 +16,16 @@ import 'package:openai_dart/openai_dart.dart';
 
 /// [ConversationStrategy] implementation for the Event Agent.
 ///
-/// Three tools are handled immediately and locally:
+/// Four tools are handled immediately and locally:
 /// - `update_report` — accumulates the event recap (oneLiner / tldr / content).
 /// - `record_observations` — accumulates private observation notes.
 /// - `list_people` — answers from the [EventPeopleDirectory] [loadPeople]
 ///   reads, once per wake.
+/// - `set_event_language` — [setLanguage] fills the event's empty language
+///   from its voice memos (`EventLanguageHandler`), and tells the model the
+///   language that stands.
 ///
-/// Two tools are **deferred** (accumulated for user accept/reject, not
+/// Three tools are **deferred** (accumulated for user accept/reject, not
 /// applied in-conversation) — see [eventDeferredTools]; each is surfaced as a
 /// pending change set and applied by `EventToolDispatcher` only on accept:
 /// - `suggest_follow_up_task`.
@@ -30,6 +34,9 @@ import 'package:openai_dart/openai_dart.dart';
 ///   already suggested or dismissed, is refused back to the model, so no
 ///   such row ever reaches the user. A queued suggestion carries the
 ///   person's name for the row.
+/// - `suggest_note` — a note of what happened, for the user to add to the
+///   event's timeline; an empty one, or a second in the same wake, is
+///   refused.
 ///
 /// There is deliberately no rating/cover tool — those are human-only. Each
 /// message is persisted to `agent.sqlite` as an [AgentMessageEntity], mirroring
@@ -43,11 +50,16 @@ class EventAgentStrategy extends ConversationStrategy
     required this.threadId,
     required this.runKey,
     required this.loadPeople,
+    required this.setLanguage,
   });
 
   /// Reads who the user keeps and where each stands for this event. Called
   /// at most once per wake, the first time a people tool needs it.
   final Future<EventPeopleDirectory> Function() loadPeople;
+
+  /// Sets the event's language from its voice memos, answering what the
+  /// model is told (`EventLanguageHandler.handle`).
+  final Future<EventLanguageResult> Function(String languageCode) setLanguage;
 
   /// Sync-aware write service for persisting messages.
   @override
@@ -80,6 +92,10 @@ class EventAgentStrategy extends ConversationStrategy
   /// People suggested earlier in this wake — not yet in the directory, which
   /// was read before them.
   final _suggestedThisWake = <String>{};
+
+  /// Whether a note was suggested in this wake: one is the most a recap
+  /// should hand the user to read.
+  var _noteSuggested = false;
 
   @override
   Future<ConversationAction> processToolCalls({
@@ -136,6 +152,16 @@ class EventAgentStrategy extends ConversationStrategy
 
       if (toolName == EventAgentToolNames.suggestPerson) {
         await _handleSuggestPerson(args, call.id, manager);
+        continue;
+      }
+
+      if (toolName == EventAgentToolNames.setEventLanguage) {
+        await _handleSetLanguage(args, call.id, manager);
+        continue;
+      }
+
+      if (toolName == EventAgentToolNames.suggestNote) {
+        await _handleSuggestNote(args, call.id, manager);
         continue;
       }
 
@@ -386,6 +412,76 @@ class EventAgentStrategy extends ConversationStrategy
       response: 'Queued the suggestion to add ${person.name} for user review.',
     );
     await recordToolResultMessage(toolName: EventAgentToolNames.suggestPerson);
+  }
+
+  // ── Language ───────────────────────────────────────────────────────────────
+
+  Future<void> _handleSetLanguage(
+    Map<String, dynamic> args,
+    String callId,
+    ConversationManager manager,
+  ) async {
+    final value = args[EventAgentLanguageToolArgs.languageCode];
+    final EventLanguageResult result;
+    try {
+      result = await setLanguage(value is String ? value : '');
+    } catch (e) {
+      await _rejectToolCall(
+        callId: callId,
+        toolName: EventAgentToolNames.setEventLanguage,
+        errorMsg: 'Error: the language could not be set (${e.runtimeType}).',
+        manager: manager,
+      );
+      return;
+    }
+    if (!result.success) {
+      await _rejectToolCall(
+        callId: callId,
+        toolName: EventAgentToolNames.setEventLanguage,
+        errorMsg: result.message,
+        manager: manager,
+      );
+      return;
+    }
+    manager.addToolResponse(toolCallId: callId, response: result.message);
+    await recordToolResultMessage(
+      toolName: EventAgentToolNames.setEventLanguage,
+    );
+  }
+
+  // ── Notes ──────────────────────────────────────────────────────────────────
+
+  Future<void> _handleSuggestNote(
+    Map<String, dynamic> args,
+    String callId,
+    ConversationManager manager,
+  ) async {
+    final value = args[EventAgentNoteToolArgs.text];
+    final text = value is String ? value.trim() : '';
+    final refusal = text.isEmpty
+        ? 'Error: "text" is required and must not be empty.'
+        : _noteSuggested
+        ? 'Not suggested: a note was already suggested in this wake.'
+        : null;
+    if (refusal != null) {
+      await _rejectToolCall(
+        callId: callId,
+        toolName: EventAgentToolNames.suggestNote,
+        errorMsg: refusal,
+        manager: manager,
+      );
+      return;
+    }
+    _noteSuggested = true;
+    _deferredItems.add({
+      'toolName': EventAgentToolNames.suggestNote,
+      'args': {EventAgentNoteToolArgs.text: text},
+    });
+    manager.addToolResponse(
+      toolCallId: callId,
+      response: 'Queued the note for user review.',
+    );
+    await recordToolResultMessage(toolName: EventAgentToolNames.suggestNote);
   }
 
   Future<void> _rejectToolCall({

@@ -488,6 +488,9 @@ extension _ImageAnalysisInputCases on _SkillInferenceTestSetup {
         () => mockAiInputRepo.getEntity('img-1'),
       ).thenAnswer((_) async => imageEntity);
       when(
+        () => mockAiInputRepo.getEntity('task-1'),
+      ).thenAnswer((_) async => makeTaskEntity('task-1'));
+      when(
         () => mockAiInputRepo.buildTaskDetailsJson(id: 'task-1'),
       ).thenAnswer((_) async => '{"id": "task-1"}');
       when(
@@ -530,6 +533,115 @@ extension _ImageAnalysisInputCases on _SkillInferenceTestSetup {
       ).called(1);
       verify(() => mockTaskSummaryResolver.resolve('task-1')).called(1);
     });
+
+    // The automated image skill of every seeded profile is the task-context
+    // one. Outside a task it asked whether the image was relevant to a task
+    // there was none of, and answered in English: an event's photo runs the
+    // plain skill instead, framed by the event and in its language.
+    for (final (label, subject, framedByEvent) in [
+      (
+        'an event',
+        JournalEntity.event(
+          meta: Metadata(
+            id: 'event-1',
+            createdAt: DateTime(2024),
+            updatedAt: DateTime(2024),
+            dateFrom: DateTime(2024, 7, 16),
+            dateTo: DateTime(2024, 7, 16, 3),
+          ),
+          data: const EventData(
+            title: 'Ice garden picnic',
+            stars: 0,
+            status: EventStatus.completed,
+            languageCode: 'de',
+          ),
+          entryText: const EntryText(
+            plainText: 'Pip brought the sardines.',
+            markdown: 'Pip brought the sardines.',
+          ),
+        ),
+        true,
+      ),
+      ('nothing that resolves', null, false),
+    ]) {
+      test(
+        'a photo of $label runs the plain image skill, never the task one',
+        () async {
+          await createStubImageFile();
+          when(
+            () => mockAiInputRepo.getEntity('img-1'),
+          ).thenAnswer((_) async => makeImageEntity());
+          when(
+            () => mockAiInputRepo.getEntity('event-1'),
+          ).thenAnswer((_) async => subject);
+          when(
+            () => mockCloudRepo.generateWithImages(
+              any(),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              model: any(named: 'model'),
+              temperature: any(named: 'temperature'),
+              images: any(named: 'images'),
+              provider: any(named: 'provider'),
+              systemMessage: any(named: 'systemMessage'),
+              impactCollector: any(named: 'impactCollector'),
+            ),
+          ).thenAnswer(
+            (_) => Stream.fromIterable([makeStreamChunk('Analysis')]),
+          );
+          when(
+            () => mockJournalRepo.updateJournalEntity(any()),
+          ).thenAnswer((_) async => true);
+          stubLoggingEvent();
+
+          await runner.runImageAnalysis(
+            imageEntryId: 'img-1',
+            automationResult: AutomationResult(
+              handled: true,
+              resolvedProfile: makeImageAnalysisResult().resolvedProfile,
+              skill: findBuiltInSkill(skillImageAnalysisContextId),
+            ),
+            linkedTaskId: 'event-1',
+          );
+
+          final captured = verify(
+            () => mockCloudRepo.generateWithImages(
+              captureAny(),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              model: any(named: 'model'),
+              temperature: any(named: 'temperature'),
+              images: any(named: 'images'),
+              provider: any(named: 'provider'),
+              systemMessage: captureAny(named: 'systemMessage'),
+              impactCollector: any(named: 'impactCollector'),
+            ),
+          ).captured;
+          final userMessage = captured[0] as String;
+          final systemMessage = captured[1] as String;
+          final plain = findBuiltInSkill(skillImageAnalysisId)!;
+          expect(systemMessage, plain.systemInstructions);
+          expect(userMessage, contains(plain.userInstructions));
+          expect(userMessage, isNot(contains('in the context of this task')));
+          expect(userMessage, isNot(contains('salty')));
+          if (framedByEvent) {
+            expect(userMessage, startsWith('Language code: de\n'));
+            expect(userMessage, contains('**Event Context:**'));
+            expect(userMessage, contains('- Title: Ice garden picnic'));
+            expect(userMessage, contains('- Note: Pip brought the sardines.'));
+          } else {
+            expect(userMessage, isNot(contains('Language code:')));
+            expect(userMessage, isNot(contains('Context:**')));
+          }
+          // Nothing task-shaped is read for a subject that is not a task.
+          verifyNever(
+            () => mockAiInputRepo.buildTaskDetailsJson(id: any(named: 'id')),
+          );
+          verifyNever(() => mockAiInputRepo.buildLinkedTasksJson(any()));
+          verifyNever(() => mockTaskSummaryResolver.resolve(any()));
+        },
+      );
+    }
 
     test('logs exception on failure', () async {
       when(

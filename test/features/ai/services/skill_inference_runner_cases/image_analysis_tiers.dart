@@ -267,6 +267,11 @@ extension _ImageAnalysisTierCases on _SkillInferenceTestSetup {
           final tools = captured[1] as List<ChatCompletionTool>?;
           expect(tools, hasLength(1));
           expect(tools!.single.function.name, entrySummaryToolName);
+          // Worded for an image: the one-liner captions the photo.
+          expect(
+            tools.single.function.description,
+            imageAnalysisSummaryTool.function.description,
+          );
           expect(captured[2], isNotNull);
           // The prompt must actually ask for the tool, or a model free to
           // ignore it would answer in prose.

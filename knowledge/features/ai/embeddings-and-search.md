@@ -61,9 +61,9 @@ sources:
     title: The model's download in the generate-embeddings flow
     last_modified: 2026-10-30
   - id: report-writer
-    resource: ../../../lib/features/agents/workflow/task_agent_persistence_helpers.dart
-    title: The task agent's report embedding
-    last_modified: 2026-11-01
+    resource: ../../../lib/features/agents/workflow/agent_report_embedding.dart
+    title: embedAgentReport — the task and event agents' report embedding, keyed to its subject
+    last_modified: 2026-11-02
   - id: gemma-tokenizer
     resource: ../../../lib/features/ai/on_device_embedding/gemma_tokenizer.dart
     title: GemmaTokenizer, EmbeddingGemma's tokenizer in Dart
@@ -97,7 +97,7 @@ nothing leaves the device to embed text.
 flowchart LR
   Change["localUpdateStream"] --> Service["EmbeddingService"]
   Backfill["EmbeddingBackfillController"] --> Extract
-  Report["Task agent report"] --> Extract
+  Report["Task or event agent report"] --> Extract
   Service --> Extract["EmbeddingProcessor"]
   Extract --> Chunk["TextChunker.chunk()"]
   Chunk --> Embed["OnDeviceEmbeddingRepository.embedDocument()"]
@@ -174,13 +174,19 @@ offered wrongly costs more than one never offered, so it favours precision.
   (`EmbeddingRegister`), written in the same ObjectBox transaction as its
   chunks; a removal is a tombstone. See
   [embedding vectors sync](embedding-vector-sync.md).
+- **An event is embedded as its title over its note** (`kEntityTypeEvent`),
+  re-embedded on every `EVENT` notification. Who was there and what happened
+  live in its agent's recap, embedded as a report keyed to the event, so the
+  event's own text stays a pure function of the event and hashes the same on
+  every device. The rating is never part of it.
 - Tasks can be embedded with **label-enriched** text, not just raw title and
   body. Private labels are named whatever the device's privacy toggle says,
   so every device builds the same text.
 - **An agent report is embedded whole**: its one-liner, TLDR and body, a
   blank line apart (`EmbeddingContentExtractor.extractAgentReportText`), so a
-  task is found by anything its current report says. Only the task agent's
-  wake embeds a report, as it writes it; reports written before this keep
+  task — or an event — is found by anything its current report says. The
+  task agent's and the event agent's wakes embed a report as they write it,
+  through the one `embedAgentReport`, keyed to their subject; reports written before this keep
   the body-only vectors until the task's next report.
 - **A task has at most one report in the index.** Once a new report is
   embedded, every other report embedded for its task is deleted
@@ -191,8 +197,12 @@ offered wrongly costs more than one never offered, so it favours precision.
   embedded report. The cleanup runs in `EmbeddingProcessor.processAgentReport`
   under the task's lock, so an earlier report's run cannot delete a newer
   report's vector.
-- Agent reports are stored with `taskId` metadata, so a search hit can resolve
-  back to the owning task.
+- Agent reports are stored with `taskId` metadata — the report's subject, a
+  task or an event — so a search hit can resolve back to it: the task search
+  resolves a report to its task (and passes over an event's), the journal
+  search (`searchRelatedEntries`) resolves an event's recap to the event and
+  leaves a task's report to the task search, deduplicating the event and its
+  recap into one hit at the better distance.
 
 Embedding indexing participates in [work attribution](attribution.md): it begins
 before its first chunk and finalizes a typed `embeddingVector` output after the
@@ -274,18 +284,18 @@ protocol is model-checked in
   queues a run that starts after it, so the last run reads the latest text.
 - **Gone means no vectors.** A run that finds the entry deleted (the read hides
   soft-deleted rows) or its text under the 20-character minimum deletes the
-  entry's vectors — a deleted task's report vectors too. Search also skips
-  hits whose entry no longer exists, which covers vectors left by deletions
-  made before this rule.
+  entry's vectors — a deleted task's or event's report vectors too. Search
+  also skips hits whose entry no longer exists, which covers vectors left by
+  deletions made before this rule.
 - **Each start reconciles the store.** The service's first batch with the
   flag on and the model downloaded queues every entry whose stored vectors no
   longer match it — deleted, its text changed without an edit (a label
   renamed), chunks missing — gives the vectors stored before registers
-  existed a register, and retires the report vectors of deleted tasks
-  (`EmbeddingReconciler`; why it matters across devices is in
+  existed a register, and retires the report vectors of deleted tasks and
+  events (`EmbeddingReconciler`; why it matters across devices is in
   [embedding vector sync](embedding-vector-sync.md#reconciling-at-start)).
-- **Reports follow their task.** Every run over a task moves the task's report
-  embeddings to the task's category, whether or not the task has a vector of
+- **Reports follow their subject.** Every run over a task or an event moves
+  its report embeddings to its category, whether or not it has a vector of
   its own. The report writer reads the task's category and writes under the
   task's lock, so a recategorisation is either seen by the writer or processed
   after the report is stored.

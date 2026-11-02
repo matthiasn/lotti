@@ -1915,6 +1915,12 @@ abstract class AppLocalizations {
   /// **'Suggest a follow-up task'**
   String get agentSummarySuggestFollowUpTask;
 
+  /// Proposal row sentence: the event agent wrote a note of what happened; confirming adds it to the event's timeline.
+  ///
+  /// In en, this message translates to:
+  /// **'Add this note to the event'**
+  String get agentSummarySuggestNote;
+
   /// A suggestion row on an event, after its Add kind chip: the event agent proposes this person, named in the event's notes or voice memos, as one who was there.
   ///
   /// In en, this message translates to:
@@ -2927,6 +2933,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Media'**
   String get aiCardProposalKindMedia;
+
+  /// Kind label of a proposal row that suggests a note.
+  ///
+  /// In en, this message translates to:
+  /// **'Note'**
+  String get aiCardProposalKindNote;
 
   /// No description provided for @aiCardProposalKindPriority.
   ///
@@ -11579,6 +11591,12 @@ abstract class AppLocalizations {
   /// **'Filter events'**
   String get eventsFilterTooltip;
 
+  /// Placeholder chip on an event's header for picking the language its AI-written record is kept in.
+  ///
+  /// In en, this message translates to:
+  /// **'Language'**
+  String get eventsLanguageLabel;
+
   /// No description provided for @eventsMetricPhotos.
   ///
   /// In en, this message translates to:
@@ -11638,6 +11656,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'People'**
   String get eventsPeopleSection;
+
+  /// Screen-reader label of a photo on an event's timeline: tapping it opens the photo's full AI analysis.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the photo\'s analysis'**
+  String get eventsPhotoAnalysisOpen;
+
+  /// Button in the photo analysis sheet that opens the photo's own entry.
+  ///
+  /// In en, this message translates to:
+  /// **'Open photo'**
+  String get eventsPhotoAnalysisOpenEntry;
+
+  /// Title of the sheet showing a photo's full AI analysis, opened from an event's timeline.
+  ///
+  /// In en, this message translates to:
+  /// **'What the photo shows'**
+  String get eventsPhotoAnalysisTitle;
 
   /// No description provided for @eventsPhotosSection.
   ///

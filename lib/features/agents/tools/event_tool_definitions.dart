@@ -15,6 +15,18 @@ abstract final class EventAgentToolNames {
   static const suggestFollowUpTask = 'suggest_follow_up_task';
   static const listPeople = 'list_people';
   static const suggestPerson = 'suggest_person';
+  static const setEventLanguage = 'set_event_language';
+  static const suggestNote = 'suggest_note';
+}
+
+/// Wire argument name for `set_event_language`.
+abstract final class EventAgentLanguageToolArgs {
+  static const languageCode = 'languageCode';
+}
+
+/// Wire argument name for `suggest_note`.
+abstract final class EventAgentNoteToolArgs {
+  static const text = 'text';
 }
 
 /// Wire argument names for `list_people` and `suggest_person`.
@@ -41,10 +53,11 @@ abstract final class EventAgentReportToolArgs {
 /// All tools available to the Event Agent.
 ///
 /// Narrating (`update_report`, `record_observations`), one read
-/// (`list_people`), and two deferred proposals the user confirms or dismisses
-/// (`suggest_follow_up_task`, `suggest_person`). Rating and cover selection
-/// are human-only and are deliberately absent — the event agent has no tool
-/// that can touch them.
+/// (`list_people`), one immediate write that only fills an empty field
+/// (`set_event_language`), and three deferred proposals the user confirms or
+/// dismisses (`suggest_follow_up_task`, `suggest_person`, `suggest_note`).
+/// Rating and cover selection are human-only and are deliberately absent —
+/// the event agent has no tool that can touch them.
 final eventAgentTools = <AgentToolDefinition>[
   const AgentToolDefinition(
     name: EventAgentToolNames.updateReport,
@@ -140,6 +153,53 @@ final eventAgentTools = <AgentToolDefinition>[
     },
   ),
   const AgentToolDefinition(
+    name: EventAgentToolNames.setEventLanguage,
+    description:
+        "Set the language this event's record is kept in, from its voice "
+        'memos. Call it once, when the Event Context says the language is not '
+        'set and the event has a voice memo, with the language the memos are '
+        'spoken in. The recap, every suggestion, the photo analyses and the '
+        'recording summaries are then written in it. Once a language is set '
+        "it is the user's to change — the call only reports it.",
+    parameters: {
+      'type': 'object',
+      'properties': {
+        EventAgentLanguageToolArgs.languageCode: {
+          'type': 'string',
+          'description':
+              'ISO 639-1 code of the language the voice memos are spoken '
+              'in, for example "de" or "en".',
+        },
+      },
+      'required': [EventAgentLanguageToolArgs.languageCode],
+      'additionalProperties': false,
+    },
+  ),
+  const AgentToolDefinition(
+    name: EventAgentToolNames.suggestNote,
+    description:
+        'Propose a note for the event: a few sentences, in the first person '
+        'as the user would write them, of what happened — drawn only from '
+        "the event's voice memos, photos and notes. This is a deferred tool: "
+        'the user reads it and confirms or dismisses it, and only on confirm '
+        "is it added to the event's timeline as their note. Suggest one only "
+        "when the event has no note of the user's own that already says it; "
+        'never more than one per wake, and never invent details.',
+    parameters: {
+      'type': 'object',
+      'properties': {
+        EventAgentNoteToolArgs.text: {
+          'type': 'string',
+          'description':
+              'The note itself, plain text, in the event language — what '
+              'happened, who was there, where.',
+        },
+      },
+      'required': [EventAgentNoteToolArgs.text],
+      'additionalProperties': false,
+    },
+  ),
+  const AgentToolDefinition(
     name: EventAgentToolNames.suggestFollowUpTask,
     description:
         'Propose a concrete follow-up task the event implies (send a '
@@ -169,4 +229,5 @@ final eventAgentTools = <AgentToolDefinition>[
 const eventDeferredTools = <String>{
   EventAgentToolNames.suggestFollowUpTask,
   EventAgentToolNames.suggestPerson,
+  EventAgentToolNames.suggestNote,
 };

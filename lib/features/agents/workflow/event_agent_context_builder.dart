@@ -1,6 +1,7 @@
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/ai_response_type.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/supported_language.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/agents/agent_repository.dart';
 import 'package:lotti/features/agents/tools/event_tool_definitions.dart';
@@ -10,6 +11,7 @@ import 'package:lotti/features/agents/workflow/agent_system_prompt.dart';
 import 'package:lotti/features/agents/workflow/event_people_directory.dart';
 import 'package:lotti/features/ai/util/image_ai_responses.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart';
+import 'package:meta/meta.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 /// Prompt/context assembly and payload-resolution collaborator of the Event
@@ -47,10 +49,32 @@ not a status report.
 Your job each wake is to:
 
 1. Read who was there, and the event's linked photos, notes, and voice memos.
-2. Suggest the people the event names who are not with it yet (see below).
-3. Synthesize what happened — the highlights, the people, the through-line.
-4. Publish the recap via the `update_report` tool.
-5. Record private follow-up ideas via `record_observations`.
+2. Set the event's language from its voice memos if it has none (see below).
+3. Suggest the people the event names who are not with it yet (see below).
+4. Synthesize what happened — the highlights, the people, the through-line.
+5. Publish the recap via the `update_report` tool.
+6. Record private follow-up ideas via `record_observations`.
+
+## Language
+
+The Event Context names the language the event's record is kept in. Write
+every word you publish in it — the recap's `oneLiner`, `tldr` and `content`,
+and every suggestion (a follow-up's title and notes, a note's text) — even
+when a photo analysis or a note reads in another language. When the language
+is not set and the event has a voice memo, call `set_event_language` first
+with the language the memos are spoken in, then write in it. When it is not
+set and there is no voice memo, write in the language of the event's notes.
+Never change a language that is set; that is the user's.
+
+## Notes
+
+The user rarely writes down what happened. When the voice memos, photos and
+notes tell it and the event has no note of the user's own that already says
+it, propose one with `suggest_note`: a few plain sentences in the first
+person, as the user would write them — what happened, who was there, where.
+The user confirms or dismisses it; on confirm it becomes their note on the
+event's timeline. At most one per wake, and never a second while one awaits
+the user. Ideas only you need stay in `record_observations`.
 
 ## People
 
@@ -153,7 +177,8 @@ persist across recaps but are not shown to the user.''';
         '- **When**: '
         '${entity.meta.dateFrom.toIso8601String()} → '
         '${entity.meta.dateTo.toIso8601String()}',
-      );
+      )
+      ..writeln('- **Language**: ${eventLanguageLine(data.languageCode)}');
 
     final note = entity.entryText?.plainText.trim();
     if (note != null && note.isNotEmpty) {
@@ -163,6 +188,16 @@ persist across recaps but are not shown to the user.''';
         ..writeln()
         ..writeln(note);
     }
+  }
+
+  /// How the Event Context names the event's language: the code with its
+  /// English name, or that it is not set yet.
+  @visibleForTesting
+  static String eventLanguageLine(String? languageCode) {
+    final code = languageCode?.trim();
+    if (code == null || code.isEmpty) return 'not set';
+    final name = SupportedLanguage.fromCode(code)?.name;
+    return name == null ? code : '$code ($name)';
   }
 
   List<ChatCompletionTool> buildToolDefinitions() {

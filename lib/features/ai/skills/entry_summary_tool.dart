@@ -87,6 +87,53 @@ const ChatCompletionTool entrySummaryTool = ChatCompletionTool(
   ),
 );
 
+/// [entrySummaryTool] worded for an image: the same wire name and arguments,
+/// so [parseEntrySummaryToolCall] decodes it unchanged, but the one-liner is
+/// the photo's caption — what the picture shows — rather than the label of a
+/// recording in a task log. The schema is what a model reads closest to its
+/// answer, so a recording's wording there pulls an image's one-liner towards
+/// "the user discusses…" whatever the prompt says.
+const ChatCompletionTool imageAnalysisSummaryTool = ChatCompletionTool(
+  type: ChatCompletionToolType.function,
+  function: FunctionObject(
+    name: entrySummaryToolName,
+    description:
+        'Publish the analysis of this image. You MUST call this tool exactly '
+        'once, and respond with nothing else. Provide all three tiers: a '
+        'one-line caption, a short TLDR, and the full markdown analysis.',
+    parameters: {
+      'type': 'object',
+      'properties': {
+        EntrySummaryToolArgs.oneLiner: {
+          'type': 'string',
+          'description':
+              'ONE plain sentence saying what this image shows — who or what '
+              'is in it, what is happening and where — ideally under '
+              '$entrySummaryOneLinerTargetChars characters. It captions the '
+              'photo on its own, so it must be specific — never "a photo" or '
+              '"an image of people". No markdown, no leading label, no '
+              'trailing ellipsis.',
+        },
+        EntrySummaryToolArgs.tldr: {
+          'type': 'string',
+          'description':
+              'One to three sentences on what the image shows and what '
+              'stands out in it. Plain prose, no headings.',
+        },
+        EntrySummaryToolArgs.summary: {
+          'type': 'string',
+          'description':
+              'The full analysis as a markdown document, following the '
+              'instructions you were given. Do not repeat the TLDR verbatim '
+              'as the opening line.',
+        },
+      },
+      'required': EntrySummaryToolArgs.required,
+      'additionalProperties': false,
+    },
+  ),
+);
+
 /// The JSON-Schema properties of the three tiers, shared with every tool that
 /// publishes them.
 const Map<String, Object> entrySummaryToolProperties = {

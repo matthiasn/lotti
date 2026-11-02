@@ -487,6 +487,7 @@
   "agentSummarySetStatus": "Sätt status till {status}",
   "agentSummarySetTitle": "Sätt titeln till ”{title}”",
   "agentSummarySuggestFollowUpTask": "Föreslå en uppföljningsuppgift",
+  "agentSummarySuggestNote": "Lägg till anteckningen i evenemanget",
   "agentSummarySuggestPerson": "{name} var där",
   "agentSummarySuggestPersonUnnamed": "Någon var där",
   "agentSummaryTimeEntry": "Tidspost {range}: ”{summary}”",
@@ -791,6 +792,7 @@
   "aiCardProposalKindEstimate": "Uppskattning",
   "aiCardProposalKindLabel": "Etikett",
   "aiCardProposalKindMedia": "Media",
+  "aiCardProposalKindNote": "Anteckning",
   "aiCardProposalKindPriority": "Prioritet",
   "aiCardProposalKindRemove": "Ta bort",
   "aiCardProposalKindStatus": "Status",
@@ -3165,6 +3167,7 @@
   "eventsChangeCover": "Byt omslag",
   "eventsDeleteEvent": "Ta bort händelsen",
   "eventsFilterTooltip": "Filtrera evenemang",
+  "eventsLanguageLabel": "Språk",
   "eventsMetricPhotos": "{count, plural, =1{1 foto} other{{count} foton}}",
   "@eventsMetricPhotos": {
     "placeholders": {
@@ -3189,6 +3192,9 @@
   "eventsPeoplePickerTitle": "Vilka var där?",
   "eventsPeopleSaveFailed": "Kunde inte uppdatera vilka som var där.",
   "eventsPeopleSection": "Personer",
+  "eventsPhotoAnalysisOpen": "Öppna fotots analys",
+  "eventsPhotoAnalysisOpenEntry": "Öppna foto",
+  "eventsPhotoAnalysisTitle": "Vad fotot visar",
   "eventsPhotosSection": "Foton",
   "eventsRatingStarLabel": "Ge {starIndex} av {totalStars} stjärnor",
   "eventsRecapAwaitingContent": "Lägg till ett foto eller en notis så visas sammanfattningen här.",

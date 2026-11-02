@@ -30,6 +30,7 @@ class EventCardData {
     this.location,
     this.photoCount = 0,
     this.taskCount = 0,
+    this.languageCode,
   });
 
   final String id;
@@ -63,6 +64,10 @@ class EventCardData {
 
   final int photoCount;
   final int taskCount;
+
+  /// The language the event's record is kept in (`EventData.languageCode`),
+  /// named in the reader's locale where it is shown.
+  final String? languageCode;
 
   bool get isUpcoming =>
       status == EventStatus.planned || status == EventStatus.tentative;

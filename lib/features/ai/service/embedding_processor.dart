@@ -197,15 +197,16 @@ abstract final class EmbeddingProcessor {
     return true;
   });
 
-  /// Moves a task's agent-report embeddings into [categoryId], the
-  /// category just read for it; a no-op for reports already there and for
-  /// any other entity.
+  /// Moves the agent-report embeddings of a task or an event — the subjects
+  /// an agent's report is embedded under — into [categoryId], the category
+  /// just read for it; a no-op for reports already there and for any other
+  /// entity.
   static Future<void> _moveReports(
     JournalEntity entity,
     String categoryId,
     EmbeddingStore embeddingStore,
   ) async {
-    if (entity is! Task) return;
+    if (entity is! Task && entity is! JournalEvent) return;
     await embeddingStore.moveRelatedReportEmbeddings(entity.id, categoryId);
   }
 

@@ -257,6 +257,12 @@ write a story, not a status report.
   becomes a task linked to the event. Only propose follow-ups grounded in the
   event; never invent busywork, and do not re-propose something already
   suggested or already handled.
+- Use `suggest_note` to propose a note of what happened, in the first person
+  as the user would write it, when the voice memos and photos tell it and the
+  event has no note of the user's own that says it. On accept it becomes their
+  note on the event's timeline.
+- Use `set_event_language` once, from the first voice memo, while the event
+  has no language; write everything in the event's language once it has one.
 - Use `record_observations` for private notes and ideas that should persist
   across wakes but are not worth proposing to the user.''';
 

@@ -487,6 +487,7 @@
   "agentSummarySetStatus": "Sæt status til {status}",
   "agentSummarySetTitle": "Sæt titlen til \"{title}\"",
   "agentSummarySuggestFollowUpTask": "Foreslå en opfølgningsopgave",
+  "agentSummarySuggestNote": "Tilføj denne note til begivenheden",
   "agentSummarySuggestPerson": "{name} var med",
   "agentSummarySuggestPersonUnnamed": "Nogen var med",
   "agentSummaryTimeEntry": "Tidsregistrering {range}: \"{summary}\"",
@@ -791,6 +792,7 @@
   "aiCardProposalKindEstimate": "Estimat",
   "aiCardProposalKindLabel": "Label",
   "aiCardProposalKindMedia": "Medier",
+  "aiCardProposalKindNote": "Note",
   "aiCardProposalKindPriority": "Prioritet",
   "aiCardProposalKindRemove": "Fjern",
   "aiCardProposalKindStatus": "Status",
@@ -3165,6 +3167,7 @@
   "eventsChangeCover": "Skift omslag",
   "eventsDeleteEvent": "Slet-begivenhed",
   "eventsFilterTooltip": "Filtrer begivenheder",
+  "eventsLanguageLabel": "Sprog",
   "eventsMetricPhotos": "{count, plural, =1{1 foto} other{{count} fotos}}",
   "@eventsMetricPhotos": {
     "placeholders": {
@@ -3189,6 +3192,9 @@
   "eventsPeoplePickerTitle": "Hvem var med?",
   "eventsPeopleSaveFailed": "Kunne ikke opdatere, hvem der var med.",
   "eventsPeopleSection": "Personer",
+  "eventsPhotoAnalysisOpen": "Åbn fotoets analyse",
+  "eventsPhotoAnalysisOpenEntry": "Åbn foto",
+  "eventsPhotoAnalysisTitle": "Hvad fotoet viser",
   "eventsPhotosSection": "Fotos",
   "eventsRatingStarLabel": "Giv {starIndex} af {totalStars} stjerner",
   "eventsRecapAwaitingContent": "Tilføj et foto eller en note, og resuméet vil dukke op her.",

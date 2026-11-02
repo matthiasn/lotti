@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/classes/change_source.dart';
 import 'package:lotti/classes/event_data.dart';
 import 'package:lotti/classes/event_status.dart';
 
@@ -13,6 +14,38 @@ void main() {
     EventData roundTrip(EventData d) => EventData.fromJson(
       jsonDecode(jsonEncode(d.toJson())) as Map<String, dynamic>,
     );
+
+    test('the language and who set it survive a round-trip', () {
+      const d = EventData(
+        title: 'Ice garden picnic',
+        stars: 0,
+        status: EventStatus.completed,
+        languageCode: 'de',
+        languageSource: ChangeSource.agent,
+      );
+      expect(roundTrip(d), d);
+    });
+
+    test('an event stored before the language existed has none, and an '
+        'unknown setter reads as the user', () {
+      final older = EventData.fromJson(const {
+        'title': 'Gala',
+        'stars': 4,
+        'status': 'completed',
+      });
+      expect(older.languageCode, isNull);
+      expect(older.languageSource, ChangeSource.user);
+
+      final newer = EventData.fromJson(const {
+        'title': 'Gala',
+        'stars': 4,
+        'status': 'completed',
+        'languageCode': 'fr',
+        'languageSource': 'someNewSource',
+      });
+      expect(newer.languageCode, 'fr');
+      expect(newer.languageSource, ChangeSource.user);
+    });
 
     test('EventData with tentative status survives JSON round-trip', () {
       const d = EventData(

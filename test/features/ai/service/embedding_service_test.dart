@@ -6,6 +6,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
+import 'package:lotti/classes/event_data.dart';
+import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
@@ -73,6 +75,7 @@ enum _GeneratedEmbeddingRelevantTypeSlot {
   task,
   audio,
   aiResponse,
+  event,
 }
 
 const Map<_GeneratedEmbeddingEntitySlot, String>
@@ -100,6 +103,7 @@ String _generatedEmbeddingRelevantType(
     _GeneratedEmbeddingRelevantTypeSlot.task => taskNotification,
     _GeneratedEmbeddingRelevantTypeSlot.audio => audioNotification,
     _GeneratedEmbeddingRelevantTypeSlot.aiResponse => aiResponseNotification,
+    _GeneratedEmbeddingRelevantTypeSlot.event => eventNotification,
   };
 }
 
@@ -230,7 +234,8 @@ class _GeneratedEmbeddingOperation {
     return tokens.contains(textEntryNotification) ||
         tokens.contains(taskNotification) ||
         tokens.contains(audioNotification) ||
-        tokens.contains(aiResponseNotification);
+        tokens.contains(aiResponseNotification) ||
+        tokens.contains(eventNotification);
   }
 
   @override
@@ -482,6 +487,43 @@ void main() {
             entityType: kEntityTypeJournalText,
             modelId: _modelId,
             contentHash: EmbeddingContentExtractor.contentHash(_longText),
+            embeddings: any(named: 'embeddings'),
+            categoryId: any(named: 'categoryId'),
+            register: any(named: 'register'),
+          ),
+        ).called(1);
+
+        stopInZone(async);
+      });
+    });
+
+    test('embeds an event, title and note, when it is edited', () {
+      fakeAsync((async) {
+        final event = JournalEvent(
+          meta: _meta(),
+          data: const EventData(
+            title: 'Ice garden picnic',
+            stars: 0,
+            status: EventStatus.completed,
+          ),
+          entryText: const EntryText(plainText: _longText),
+        );
+        stubEntity(event);
+        stubEmbedding();
+        service.start();
+
+        sendAndProcess(async, {_entityId, eventNotification});
+
+        verify(
+          () =>
+              mockEmbeddingRepo.embedDocument('Ice garden picnic\n$_longText'),
+        ).called(1);
+        verify(
+          () => mockEmbeddingStore.replaceEntityEmbeddings(
+            entityId: _entityId,
+            entityType: kEntityTypeEvent,
+            modelId: _modelId,
+            contentHash: any(named: 'contentHash'),
             embeddings: any(named: 'embeddings'),
             categoryId: any(named: 'categoryId'),
             register: any(named: 'register'),

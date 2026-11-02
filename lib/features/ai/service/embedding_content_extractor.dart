@@ -18,6 +18,7 @@ const kEntityTypeTask = 'task';
 const kEntityTypeAudio = 'audio';
 const kEntityTypeAiResponse = 'ai_response';
 const kEntityTypeAgentReport = 'agent_report';
+const kEntityTypeEvent = 'event';
 
 /// Pure utility for extracting embeddable text from journal entities.
 ///
@@ -38,6 +39,10 @@ abstract final class EmbeddingContentExtractor {
       JournalAudio(:final data, :final entryText) =>
         entryText?.plainText ?? _firstTranscript(data),
       AiResponseEntry(:final entryText) => entryText?.plainText,
+      JournalEvent(:final data, :final entryText) => _titledText(
+        data.title,
+        entryText,
+      ),
       _ => null,
     };
 
@@ -56,6 +61,7 @@ abstract final class EmbeddingContentExtractor {
       Task() => kEntityTypeTask,
       JournalAudio() => kEntityTypeAudio,
       AiResponseEntry() => kEntityTypeAiResponse,
+      JournalEvent() => kEntityTypeEvent,
       _ => null,
     };
   }
@@ -69,12 +75,18 @@ abstract final class EmbeddingContentExtractor {
   }
 
   /// Combines task title and body text into a single embeddable string.
-  static String? _taskText(TaskData data, EntryText? entryText) {
+  static String? _taskText(TaskData data, EntryText? entryText) =>
+      _titledText(data.title, entryText);
+
+  /// A title and the body under it — a task's, or an event's and its note —
+  /// as one embeddable string. An event's people and what happened there are
+  /// found through its recap, embedded as the event agent's report.
+  static String _titledText(String title, EntryText? entryText) {
     final body = entryText?.plainText;
     if (body != null && body.isNotEmpty) {
-      return '${data.title}\n$body';
+      return '$title\n$body';
     }
-    return data.title;
+    return title;
   }
 
   /// Builds an enriched task text template including resolved label names.

@@ -6,13 +6,16 @@ import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/classes/ai_attribution.dart';
 import 'package:lotti/database/agents/agent_repository.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/service/soul_document_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
+import 'package:lotti/features/agents/tools/event_language_handler.dart';
 import 'package:lotti/features/agents/tools/event_tool_definitions.dart';
 import 'package:lotti/features/agents/util/agent_error_logging.dart';
 import 'package:lotti/features/agents/util/text_utils.dart';
 import 'package:lotti/features/agents/workflow/agent_observations.dart';
+import 'package:lotti/features/agents/workflow/agent_report_embedding.dart';
 import 'package:lotti/features/agents/workflow/agent_template_context.dart';
 import 'package:lotti/features/agents/workflow/carrierless_attribution.dart';
 import 'package:lotti/features/agents/workflow/deferred_change_items.dart';
@@ -23,7 +26,9 @@ import 'package:lotti/features/agents/workflow/wake_result.dart';
 import 'package:lotti/features/agents/workflow/wake_token_usage.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
+import 'package:lotti/features/ai/database/embedding_store.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
+import 'package:lotti/features/ai/on_device_embedding/on_device_embedding_repository.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_wrapper.dart';
@@ -57,6 +62,9 @@ class EventAgentWorkflow with AgentErrorLogging {
     required this.domainLogger,
     this.soulDocumentService,
     this.onPersistedStateChanged,
+    this.journalDb,
+    this.embeddingStore,
+    this.embeddingRepository,
   });
 
   final AgentRepository agentRepository;
@@ -73,6 +81,14 @@ class EventAgentWorkflow with AgentErrorLogging {
   @override
   LogDomain get errorLogDomain => LogDomain.agentWorkflow;
   final void Function(String agentId)? onPersistedStateChanged;
+
+  /// The embedding pipeline the recap is indexed through, so the event is
+  /// found by what its recap says — who was there, what happened. Null
+  /// without the pipeline (ObjectBox unavailable, a test); the recap is then
+  /// only on the page.
+  final JournalDb? journalDb;
+  final EmbeddingStore? embeddingStore;
+  final OnDeviceEmbeddingRepository? embeddingRepository;
 
   static const _uuid = Uuid();
 
@@ -238,6 +254,11 @@ class EventAgentWorkflow with AgentErrorLogging {
           agentId: agentId,
           eventId: eventId,
         ),
+        setLanguage: EventLanguageHandler(
+          eventId: eventId,
+          journalRepository: journalRepository,
+          domainLogger: domainLogger,
+        ).handle,
       );
 
       final tools = _contextBuilder.buildToolDefinitions();
@@ -500,6 +521,22 @@ class EventAgentWorkflow with AgentErrorLogging {
       }
       onPersistedStateChanged?.call(agentId);
 
+      // Index the recap under the event, so a meaning search for who was
+      // there or what happened finds the event. Never throws.
+      if (reportId != null && journalDb != null) {
+        await embedAgentReport(
+          embeddingStore: embeddingStore,
+          embeddingRepository: embeddingRepository,
+          journalDb: journalDb!,
+          reportId: reportId,
+          reportContent: reportContent,
+          subjectId: eventId,
+          reportTldr: reportTldr,
+          reportOneLiner: reportOneLiner,
+          logError: logError,
+        );
+      }
+
       logInfo(
         'wake completed: ${extractedObservations.length} observations',
         subDomain: 'execute',
@@ -629,6 +666,11 @@ class EventAgentWorkflow with AgentErrorLogging {
         return name is String && name.trim().isNotEmpty
             ? 'Add ${name.trim()} to the event'
             : 'Suggest a person for the event';
+      case EventAgentToolNames.suggestNote:
+        final text = args[EventAgentNoteToolArgs.text];
+        return text is String && text.trim().isNotEmpty
+            ? 'Add a note: ${text.trim()}'
+            : 'Suggest a note for the event';
       default:
         return 'Deferred: $toolName';
     }

@@ -15,6 +15,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/ai/helpers/automatic_image_analysis_trigger.dart';
 import 'package:lotti/features/ai/helpers/entity_state_helper.dart';
+import 'package:lotti/features/ai/helpers/image_analysis_framing.dart';
 import 'package:lotti/features/ai/helpers/prompt_builder_helper.dart';
 import 'package:lotti/features/ai/helpers/skill_prompt_builder.dart';
 import 'package:lotti/features/ai/model/image_generation_error.dart';
@@ -488,11 +489,14 @@ class SkillInferenceRunner {
   /// With [imageAnalysis] set the batch also carries
   /// `imageAnalysisNotification`, which brings that wake to within a minute.
   ///
-  /// Non-task parents are skipped — only task contexts render nested AI
+  /// Other parents are skipped — only task contexts render nested AI
   /// responses, so waking their agents would burn inference on content the
-  /// user cannot see. [linkedTaskId] is unioned in because task resolution
-  /// may have matched an outgoing entry→task link that the incoming-parents
-  /// query does not cover.
+  /// user cannot see — with one exception: an image analysis also reaches
+  /// the events that hold the image, because the event page captions its
+  /// photos with the analysis and the event agent's photo digest reads it.
+  /// [linkedTaskId] — the subject the run was framed by, a task or an event —
+  /// is unioned in because subject resolution may have matched an outgoing
+  /// entry→subject link that the incoming-parents query does not cover.
   ///
   /// Never throws: the response is already persisted by the time this runs,
   /// so a failed parent lookup degrades to notifying the resolved task alone
@@ -509,7 +513,12 @@ class SkillInferenceRunner {
         linkedTo: sourceEntryId,
       );
       staleIds.addAll(
-        parents.whereType<Task>().map((parent) => parent.meta.id),
+        parents
+            .where(
+              (parent) =>
+                  parent is Task || (imageAnalysis && parent is JournalEvent),
+            )
+            .map((parent) => parent.meta.id),
       );
     } catch (e, stackTrace) {
       _loggingService.error(

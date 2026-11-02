@@ -1101,6 +1101,9 @@ class AppLocalizationsPt extends AppLocalizations {
       'Propor uma tarefa de acompanhamento';
 
   @override
+  String get agentSummarySuggestNote => 'Adicionar esta nota ao evento';
+
+  @override
   String agentSummarySuggestPerson(Object name) {
     return '$name estava lá';
   }
@@ -1685,6 +1688,9 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get aiCardProposalKindMedia => 'Multimédia';
+
+  @override
+  String get aiCardProposalKindNote => 'Nota';
 
   @override
   String get aiCardProposalKindPriority => 'Prioridade';
@@ -6876,6 +6882,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get eventsFilterTooltip => 'Filtrar eventos';
 
   @override
+  String get eventsLanguageLabel => 'Idioma';
+
+  @override
   String eventsMetricPhotos(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -6921,6 +6930,15 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get eventsPeopleSection => 'Pessoas';
+
+  @override
+  String get eventsPhotoAnalysisOpen => 'Abrir a análise da foto';
+
+  @override
+  String get eventsPhotoAnalysisOpenEntry => 'Abrir foto';
+
+  @override
+  String get eventsPhotoAnalysisTitle => 'O que a foto mostra';
 
   @override
   String get eventsPhotosSection => 'Fotos';

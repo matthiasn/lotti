@@ -559,6 +559,17 @@ class EntryController extends AsyncNotifier<EntryState?> {
     haptic: HapticFeedback.heavyImpact,
   );
 
+  /// Sets the language the event's record is kept in — the user's choice,
+  /// which the event agent never overrides. Clearing it ([languageCode]
+  /// null) hands it back to the agent, which sets it from the next voice
+  /// memo.
+  Future<bool> updateEventLanguage(String? languageCode) => _updateEventData(
+    (data) => data.copyWith(
+      languageCode: languageCode,
+      languageSource: ChangeSource.user,
+    ),
+  );
+
   /// Sets the event's cover photo to [imageId] (a linked [JournalImage]),
   /// optionally repositioning the horizontal crop. Passing null clears the
   /// explicit cover so it falls back to the newest linked photo.

@@ -16,20 +16,23 @@ import 'package:uuid/uuid.dart';
 
 /// Applies confirmed event-agent proposals.
 ///
-/// Two deferred proposals reach it on accept:
+/// Three deferred proposals reach it on accept:
 /// - `suggest_follow_up_task` creates a follow-up task linked to the event
 ///   (inheriting the event's category and default profile), mirroring the
 ///   manual "add task" flow on the event detail page.
 /// - `suggest_person` puts the event on the person's timeline: the
 ///   `RelationshipLink` from the person to the event, the same link the
 ///   event page's People row writes, so the person appears there.
+/// - `suggest_note` adds the note to the event's timeline as the user's own:
+///   a text entry linked from the event, in its category, as the Add sheet's
+///   note would be.
 ///
 /// The dispatcher never touches the event's rating or cover — there is no tool
 /// that can, by design.
 ///
-/// A confirmed proposal's task gets an id derived from the change item
-/// ([ChangeEffect]), so the same proposal accepted on two devices before
-/// they sync creates one task.
+/// A confirmed proposal's task or note gets an id derived from the change
+/// item ([ChangeEffect]), so the same proposal accepted on two devices before
+/// they sync creates one entry.
 class EventToolDispatcher {
   EventToolDispatcher({
     required this.journalDb,
@@ -58,6 +61,8 @@ class EventToolDispatcher {
         return _handleSuggestFollowUpTask(toolArgs, eventId, effect);
       case EventAgentToolNames.suggestPerson:
         return _handleSuggestPerson(toolArgs, eventId);
+      case EventAgentToolNames.suggestNote:
+        return _handleSuggestNote(toolArgs, eventId, effect);
       default:
         return ToolExecutionResult(
           success: false,
@@ -94,7 +99,7 @@ class EventToolDispatcher {
       );
     }
 
-    if (await _createdBefore(effect, title, eventId)
+    if (await _createdBefore(effect, _taskRole, eventId, 'Follow-up task')
         case final ToolExecutionResult existing) {
       return existing;
     }
@@ -130,7 +135,7 @@ class EventToolDispatcher {
     if (task == null) {
       // The insert refuses an id that exists: the other device's task can
       // have arrived between the check above and the write.
-      if (await _createdBefore(effect, title, eventId)
+      if (await _createdBefore(effect, _taskRole, eventId, 'Follow-up task')
           case final ToolExecutionResult existing) {
         return existing;
       }
@@ -152,6 +157,80 @@ class EventToolDispatcher {
       success: true,
       output: 'Created follow-up task "$title" (${task.meta.id})',
       mutatedEntityId: task.meta.id,
+    );
+  }
+
+  /// Adds the suggested note to the event's timeline: a text entry linked
+  /// from the event, in its category, dated now — the moment the user made
+  /// it theirs. Refuses while the event is gone, so the proposal stays
+  /// unresolved rather than leaving a note on nothing.
+  Future<ToolExecutionResult> _handleSuggestNote(
+    Map<String, dynamic> args,
+    String eventId,
+    ChangeEffect? effect,
+  ) async {
+    final textValue = args[EventAgentNoteToolArgs.text];
+    final text = textValue is String ? textValue.trim() : '';
+    if (text.isEmpty) {
+      return const ToolExecutionResult(
+        success: false,
+        output: 'Error: "text" must be a non-empty string',
+        errorMessage: 'Missing or empty note text',
+      );
+    }
+
+    final event = await journalRepository.getJournalEntityById(eventId);
+    if (event == null || event.meta.deletedAt != null) {
+      return ToolExecutionResult(
+        success: false,
+        output: 'Error: event $eventId no longer exists',
+        errorMessage: 'Event missing or deleted; note not added',
+      );
+    }
+
+    if (await _createdBefore(effect, _noteRole, eventId, 'Note')
+        case final ToolExecutionResult existing) {
+      return existing;
+    }
+
+    final now = clock.now();
+    final note = JournalEntity.journalEntry(
+      entryText: EntryText(plainText: text, markdown: text),
+      meta: await persistenceLogic.createMetadata(
+        dateFrom: now,
+        dateTo: now,
+        categoryId: event.meta.categoryId,
+        uuidV5Input: effect?.entityInput(_noteRole),
+      ),
+    );
+    final stored = await persistenceLogic.createDbEntity(
+      note,
+      linkedId: eventId,
+    );
+    if (stored != true) {
+      // The insert refuses an id that exists: the other device's note can
+      // have arrived between the check above and the write.
+      if (await _createdBefore(effect, _noteRole, eventId, 'Note')
+          case final ToolExecutionResult existing) {
+        return existing;
+      }
+      return const ToolExecutionResult(
+        success: false,
+        output: 'Error: failed to add the note',
+        errorMessage: 'Note creation failed',
+      );
+    }
+
+    domainLogger?.log(
+      LogDomain.agentRuntime,
+      'added suggested note ${DomainLogger.sanitizeId(note.meta.id)} '
+      'to event ${DomainLogger.sanitizeId(eventId)}',
+      subDomain: 'event-note',
+    );
+    return ToolExecutionResult(
+      success: true,
+      output: 'Added the note to the event (${note.meta.id})',
+      mutatedEntityId: note.meta.id,
     );
   }
 
@@ -245,43 +324,48 @@ class EventToolDispatcher {
   /// The role of the task in its [ChangeEffect]'s derived ids.
   static const _taskRole = 'task';
 
-  /// The result for a task an earlier application of [effect] created —
-  /// here, on another device, or deleted since — or `null` when there is
-  /// none (or no effect).
+  /// The role of the note in its [ChangeEffect]'s derived ids.
+  static const _noteRole = 'note';
+
+  /// The result for the entry in [role] — a follow-up task or a note, named
+  /// [what] in the result — that an earlier application of [effect]
+  /// created, here, on another device, or deleted since; `null` when there
+  /// is none (or no effect).
   ///
-  /// The task and its link to [eventId] are two writes, and that application
-  /// can have stopped between them — the app died — so a live task is linked
-  /// to the event where it is not; the link takes its triple's derived id, so
-  /// one that landed is not written twice
+  /// The entry and its link from [eventId] are two writes, and that
+  /// application can have stopped between them — the app died — so a live
+  /// entry is linked to the event where it is not; the link takes its
+  /// triple's derived id, so one that landed is not written twice
   /// (`specs/tla/ChangeDispatchRecovery.tla`, TailOnRerun). A link that cannot
   /// be made live fails the dispatch, retryably, so the item is not taken for
-  /// applied. A task deleted since stays deleted.
+  /// applied. An entry deleted since stays deleted.
   Future<ToolExecutionResult?> _createdBefore(
     ChangeEffect? effect,
-    String title,
+    String role,
     String eventId,
+    String what,
   ) async {
-    if (effect == null || !await effect.created(journalDb, _taskRole)) {
+    if (effect == null || !await effect.created(journalDb, role)) {
       return null;
     }
-    final taskId = effect.entityId(_taskRole);
-    if (await journalDb.journalEntityById(taskId) != null &&
+    final entryId = effect.entityId(role);
+    if (await journalDb.journalEntityById(entryId) != null &&
         !await ensureLink(
           persistenceLogic: persistenceLogic,
           journalDb: journalDb,
           fromId: eventId,
-          toId: taskId,
+          toId: entryId,
         )) {
       return ToolExecutionResult(
         success: false,
-        output: 'Error: follow-up task $taskId exists but could not be linked',
-        errorMessage: 'Follow-up task link failed',
+        output: 'Error: $what $entryId exists but could not be linked',
+        errorMessage: '$what link failed',
       );
     }
     return ToolExecutionResult(
       success: true,
-      output: 'Follow-up task "$title" already exists ($taskId)',
-      mutatedEntityId: taskId,
+      output: '$what already exists ($entryId)',
+      mutatedEntityId: entryId,
     );
   }
 }

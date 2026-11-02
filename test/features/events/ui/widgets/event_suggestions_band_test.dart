@@ -14,6 +14,7 @@ import 'package:lotti/features/events/ui/widgets/event_suggestions_band.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/providers/update_notifications_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:lotti/widgets/transcript/folded_words.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -117,6 +118,41 @@ void main() {
     // Never the wire tool ids.
     expect(find.text(EventAgentToolNames.suggestPerson), findsNothing);
     expect(find.text(EventAgentToolNames.suggestFollowUpTask), findsNothing);
+  });
+
+  testWidgets('a suggested note is read in full before it is confirmed', (
+    tester,
+  ) async {
+    const note =
+        'We skated on the frozen lake until dusk. Pip brought the sardines '
+        'and Skua timed the laps.';
+    final row = proposal(
+      'set-note',
+      const ChangeItem(
+        toolName: EventAgentToolNames.suggestNote,
+        args: {'text': '  $note  '},
+        humanSummary: 'Add a note: $note',
+      ),
+    );
+    when(
+      () => service.confirmItem(row.changeSet, 0),
+    ).thenAnswer(
+      (_) async => const ToolExecutionResult(success: true, output: 'ok'),
+    );
+
+    await pump(tester, UnifiedSuggestionList(open: [row], activity: const []));
+
+    // Its own kind and what confirming does, then the note itself — the
+    // user's own words once confirmed, so never cut to a line.
+    expect(find.text('Note · Add this note to the event'), findsOneWidget);
+    final words = tester.widget<FoldedWords>(find.byType(FoldedWords));
+    expect(words.words, note);
+    expect(find.textContaining('Skua timed the laps'), findsOneWidget);
+
+    await tester.tap(find.byIcon(LottiIcons.confirm));
+    await tester.pump();
+
+    verify(() => service.confirmItem(row.changeSet, 0)).called(1);
   });
 
   testWidgets('nothing proposed, no section', (tester) async {

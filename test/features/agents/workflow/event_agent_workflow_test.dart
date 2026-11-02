@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_config.dart';
@@ -17,12 +18,15 @@ import 'package:lotti/features/agents/sync/agent_concurrent_resolver.dart';
 import 'package:lotti/features/agents/tools/event_tool_definitions.dart';
 import 'package:lotti/features/agents/workflow/event_agent_context_builder.dart';
 import 'package:lotti/features/agents/workflow/event_agent_workflow.dart';
+import 'package:lotti/features/ai/database/embedding_store.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
+import 'package:lotti/features/ai/service/embedding_content_extractor.dart';
 import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -731,6 +735,80 @@ void main() {
     );
 
     test(
+      'indexes the recap under the event, so a meaning search finds it',
+      () async {
+        final journalDb = MockJournalDb();
+        final store = MockEmbeddingStore();
+        final repository = MockOnDeviceEmbeddingRepository();
+        stubEmbeddingRegisters(store);
+        when(
+          () => journalDb.getConfigFlag(enableEmbeddingsFlag),
+        ).thenAnswer((_) async => true);
+        when(
+          () => journalDb.journalEntityById(eventId),
+        ).thenAnswer((_) async => eventEntity());
+        when(repository.isInstalled).thenAnswer((_) async => true);
+        when(() => repository.modelId).thenReturn('test-embedding-model');
+        when(() => store.getContentHash(any())).thenReturn(null);
+        when(() => repository.embedDocument(any())).thenAnswer(
+          (_) async => Float32List.fromList(
+            List<double>.filled(kEmbeddingDimensions, 0.25),
+          ),
+        );
+        when(
+          () => store.replaceEntityEmbeddings(
+            entityId: any(named: 'entityId'),
+            entityType: any(named: 'entityType'),
+            modelId: any(named: 'modelId'),
+            contentHash: any(named: 'contentHash'),
+            embeddings: any(named: 'embeddings'),
+            categoryId: any(named: 'categoryId'),
+            taskId: any(named: 'taskId'),
+            subtype: any(named: 'subtype'),
+            register: any(named: 'register'),
+          ),
+        ).thenAnswer((_) async {});
+        when(
+          () => store.agentReportIdsForTask(eventId),
+        ).thenAnswer((_) async => {});
+        workflow = EventAgentWorkflow(
+          domainLogger: MockDomainLogger(),
+          agentRepository: mockAgentRepository,
+          conversationRepository: mockConversationRepository,
+          aiConfigRepository: mockAiConfigRepository,
+          cloudInferenceRepository: mockCloudInferenceRepository,
+          journalRepository: mockJournalRepository,
+          syncService: mockSyncService,
+          templateService: mockTemplateService,
+          journalDb: journalDb,
+          embeddingStore: store,
+          embeddingRepository: repository,
+        );
+        stubReportPublishingRun();
+
+        final result = await run();
+
+        expect(result.success, isTrue);
+        final report = verify(
+          () => mockSyncService.upsertEntity(captureAny()),
+        ).captured.whereType<AgentReportEntity>().single;
+        verify(
+          () => store.replaceEntityEmbeddings(
+            entityId: report.id,
+            entityType: kEntityTypeAgentReport,
+            modelId: any(named: 'modelId'),
+            contentHash: any(named: 'contentHash'),
+            embeddings: any(named: 'embeddings'),
+            categoryId: any(named: 'categoryId'),
+            taskId: eventId,
+            subtype: AgentReportScopes.current,
+            register: any(named: 'register'),
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
       'persists suggested follow-ups as a pending change set on the event',
       () async {
         stubReportPublishingRun(
@@ -1118,6 +1196,20 @@ void main() {
           {'personId': 'pip'},
         ),
         'Suggest a person for the event',
+      );
+      expect(
+        EventAgentWorkflow.buildHumanSummary(
+          EventAgentToolNames.suggestNote,
+          {'text': '  We skated until dusk.  '},
+        ),
+        'Add a note: We skated until dusk.',
+      );
+      expect(
+        EventAgentWorkflow.buildHumanSummary(
+          EventAgentToolNames.suggestNote,
+          {'text': '  '},
+        ),
+        'Suggest a note for the event',
       );
       // Defensive fallback for any other (future) deferred tool name.
       expect(

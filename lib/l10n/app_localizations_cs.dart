@@ -1096,6 +1096,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentSummarySuggestFollowUpTask => 'Navrhnout navazující úkol';
 
   @override
+  String get agentSummarySuggestNote => 'Přidat tuto poznámku k události';
+
+  @override
   String agentSummarySuggestPerson(Object name) {
     return '$name tam byl/a';
   }
@@ -1681,6 +1684,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get aiCardProposalKindMedia => 'Média';
+
+  @override
+  String get aiCardProposalKindNote => 'Poznámka';
 
   @override
   String get aiCardProposalKindPriority => 'Priorita';
@@ -6881,6 +6887,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get eventsFilterTooltip => 'Filtrovat události';
 
   @override
+  String get eventsLanguageLabel => 'Jazyk';
+
+  @override
   String eventsMetricPhotos(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -6927,6 +6936,15 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get eventsPeopleSection => 'Lidé';
+
+  @override
+  String get eventsPhotoAnalysisOpen => 'Otevřít analýzu fotky';
+
+  @override
+  String get eventsPhotoAnalysisOpenEntry => 'Otevřít fotku';
+
+  @override
+  String get eventsPhotoAnalysisTitle => 'Co fotka ukazuje';
 
   @override
   String get eventsPhotosSection => 'Fotky';

@@ -242,6 +242,26 @@ void main() {
       expect(data.title, 'Untitled event');
     });
 
+    test("carries the event's language, for the hero to name", () {
+      final event = _event();
+      final data = eventCardDataFromEvent(
+        event.copyWith(data: event.data.copyWith(languageCode: 'de')),
+        dateLabel: '12 May',
+        categoryColor: const Color(0xFF112233),
+        fallbackTitle: 'Untitled event',
+      );
+      expect(data.languageCode, 'de');
+      expect(
+        eventCardDataFromEvent(
+          event,
+          dateLabel: '12 May',
+          categoryColor: const Color(0xFF112233),
+          fallbackTitle: 'Untitled event',
+        ).languageCode,
+        isNull,
+      );
+    });
+
     test('leaves summary null when there is no note', () {
       final data = eventCardDataFromEvent(
         _event(),

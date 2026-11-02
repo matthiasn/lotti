@@ -14,6 +14,7 @@ import 'package:lotti/features/events/state/event_view_mapping.dart';
 import 'package:lotti/features/events/ui/widgets/event_ai_summary_card.dart';
 import 'package:lotti/features/events/ui/widgets/event_cover_picker.dart';
 import 'package:lotti/features/events/ui/widgets/event_detail_view.dart';
+import 'package:lotti/features/events/ui/widgets/event_photo_analysis_sheet.dart';
 import 'package:lotti/features/events/ui/widgets/event_status_picker.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/state/entry_summary_providers.dart';
@@ -32,6 +33,7 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/utils/image_utils.dart';
+import 'package:lotti/widgets/modal/language_selection_modal_content.dart';
 import 'package:lotti/widgets/modal/modal_action_sheet.dart';
 import 'package:lotti/widgets/modal/modal_sheet_action.dart';
 import 'package:material_ui/material_ui.dart';
@@ -93,6 +95,12 @@ class EventDetailPage extends ConsumerWidget {
       for (final image in linked.whereType<JournalImage>())
         image.meta.id: imageAnalysisOneLiner(ref, image.meta.id),
     };
+    // The analyses those captions were cut from, for the sheet a tap on a
+    // photo opens. The same provider as the captions, so no second read.
+    final imageAnalyses = {
+      for (final image in linked.whereType<JournalImage>())
+        image.meta.id: latestImageAnalysis(ref, image.meta.id),
+    };
 
     // Who the event was with. `.value` keeps the people on screen while a
     // link write or a rename re-reads them, rather than blanking the row.
@@ -111,6 +119,7 @@ class EventDetailPage extends ConsumerWidget {
           entry: entry,
           linked: linked,
           imageSummaries: imageSummaries,
+          imageAnalyses: imageAnalyses,
           recapOneLiner: _recapOneLiner(ref),
           people: people,
         ),
@@ -142,6 +151,7 @@ class EventDetailPage extends ConsumerWidget {
     required JournalEvent entry,
     required List<JournalEntity> linked,
     required Map<String, String?> imageSummaries,
+    required Map<String, AiResponseEntry?> imageAnalyses,
     required String? recapOneLiner,
     required List<RelationshipEntry> people,
   }) {
@@ -192,6 +202,19 @@ class EventDetailPage extends ConsumerWidget {
       );
       if (status != null) await controller.updateEventStatus(status);
     }
+
+    // The language every AI-written word about the event is kept in. The
+    // user's pick stands over the one the agent read from a voice memo.
+    Future<void> pickLanguage() => showLanguageSelectionModal(
+      context: context,
+      initialLanguageCode: entry.data.languageCode,
+      onSelected: (code) async {
+        await controller.updateEventLanguage(code);
+      },
+      headerPadding: EdgeInsets.symmetric(
+        vertical: context.designTokens.spacing.step3,
+      ),
+    );
 
     Future<void> confirmDelete() async {
       const deleteKey = 'deleteKey';
@@ -287,6 +310,40 @@ class EventDetailPage extends ConsumerWidget {
       }
     }
 
+    // Preserve the parent event in the route so the standalone entry menu
+    // can offer the existing confirmed unlink action for this exact link.
+    void openTimelineEntry(String entryId) => beamToNamed(
+      Uri(
+        path: '/journal/$entryId',
+        queryParameters: {'linkedFromId': eventId},
+      ).toString(),
+    );
+
+    // A photo opens what it was seen as — its newest analysis — with the
+    // photo's entry one tap further; a photo not analysed yet opens its entry
+    // straight away, where the analysis can be run.
+    void openPhoto(String imageId) {
+      final analysis = imageAnalyses[imageId];
+      final photo = data.timeline
+          .expand((entry) => entry.photos)
+          .where((photo) => photo.id == imageId)
+          .firstOrNull;
+      final text = analysis?.data.response.trim();
+      if (analysis == null || photo == null || text == null || text.isEmpty) {
+        openTimelineEntry(imageId);
+        return;
+      }
+      showEventPhotoAnalysis(
+        context: context,
+        analysis: EventPhotoAnalysis(
+          photo: photo,
+          analysis: text,
+          oneLiner: analysis.data.oneLiner,
+        ),
+        onOpenEntry: () => openTimelineEntry(imageId),
+      );
+    }
+
     return EventDetailView(
       data: data,
       people: [for (final person in people) eventPersonFor(person)],
@@ -303,6 +360,7 @@ class EventDetailPage extends ConsumerWidget {
       onRenameTitle: controller.updateEventTitle,
       onTapCategory: pickCategory,
       onTapStatus: pickStatus,
+      onTapLanguage: pickLanguage,
       onTapDateTime: () =>
           EntryDateTimeMultiPageModal.show(context: context, entry: entry),
       onSetRating: controller.updateRating,
@@ -310,14 +368,8 @@ class EventDetailPage extends ConsumerWidget {
       onChangeCover: data.card.coverImage == null ? null : changeCover,
       onSetCover: controller.updateEventCover,
       onDelete: confirmDelete,
-      // Preserve the parent event in the route so the standalone entry menu
-      // can offer the existing confirmed unlink action for this exact link.
-      onOpenTimelineEntry: (entryId) => beamToNamed(
-        Uri(
-          path: '/journal/$entryId',
-          queryParameters: {'linkedFromId': eventId},
-        ).toString(),
-      ),
+      onOpenTimelineEntry: openTimelineEntry,
+      onOpenPhoto: openPhoto,
       onOpenTask: (taskId) => beamToNamed('/tasks/$taskId'),
       // The one place the event grows from: a task linked to it, a voice
       // memo, or the Add sheet for the rest — the same bar an entry's page

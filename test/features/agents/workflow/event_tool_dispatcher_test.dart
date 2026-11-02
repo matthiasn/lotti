@@ -557,6 +557,129 @@ void main() {
     });
   });
 
+  group('suggest_note', () {
+    const effect = ChangeEffect(key: 'event-set:1');
+    final derivedId = effect.entityId('note');
+
+    Future<ToolExecutionResult> accept([String text = '  We skated.  ']) =>
+        dispatcher.dispatch(
+          EventAgentToolNames.suggestNote,
+          effect.addTo({'text': text}),
+          eventId,
+        );
+
+    Future<bool?> create() => mockPersistenceLogic.createDbEntity(
+      any(),
+      linkedId: any(named: 'linkedId'),
+    );
+
+    setUp(() {
+      when(
+        () => mockPersistenceLogic.createMetadata(
+          dateFrom: any(named: 'dateFrom'),
+          dateTo: any(named: 'dateTo'),
+          categoryId: any(named: 'categoryId'),
+          uuidV5Input: any(named: 'uuidV5Input'),
+        ),
+      ).thenAnswer(
+        (invocation) async => meta(
+          derivedId,
+          categoryId: invocation.namedArguments[#categoryId] as String?,
+        ),
+      );
+      when(create).thenAnswer((_) async => true);
+    });
+
+    test("adds the note to the event's timeline as the user's own, under "
+        'the id derived from the item', () async {
+      final result = await accept();
+
+      expect(result.success, isTrue);
+      expect(result.mutatedEntityId, derivedId);
+      final captured = verify(
+        () => mockPersistenceLogic.createDbEntity(
+          captureAny(),
+          linkedId: captureAny(named: 'linkedId'),
+        ),
+      ).captured;
+      final note = captured.first as JournalEntry;
+      expect(note.entryText?.plainText, 'We skated.');
+      expect(note.meta.categoryId, categoryId);
+      // Linked from the event, so it shows on the event's timeline.
+      expect(captured.last, eventId);
+      final input = verify(
+        () => mockPersistenceLogic.createMetadata(
+          dateFrom: any(named: 'dateFrom'),
+          dateTo: any(named: 'dateTo'),
+          categoryId: any(named: 'categoryId'),
+          uuidV5Input: captureAny(named: 'uuidV5Input'),
+        ),
+      ).captured.single;
+      expect(input, effect.entityInput('note'));
+    });
+
+    test('adds nothing when the other device accepted it first', () async {
+      when(
+        () => mockJournalDb.journalEntityMapForIdsIncludingDeleted([
+          derivedId,
+        ]),
+      ).thenAnswer((_) async => {derivedId: eventEntity});
+
+      final result = await accept();
+
+      expect(result.success, isTrue);
+      expect(result.output, 'Note already exists ($derivedId)');
+      verifyNever(create);
+    });
+
+    test("reports success when the other device's note lands between the "
+        'check and the write', () async {
+      var lookups = 0;
+      when(
+        () => mockJournalDb.journalEntityMapForIdsIncludingDeleted([
+          derivedId,
+        ]),
+      ).thenAnswer(
+        (_) async => lookups++ == 0 ? const {} : {derivedId: eventEntity},
+      );
+      when(create).thenAnswer((_) async => false);
+
+      final result = await accept();
+
+      expect(result.success, isTrue);
+      expect(result.mutatedEntityId, derivedId);
+    });
+
+    test('fails when the write fails and no note exists', () async {
+      when(create).thenAnswer((_) async => false);
+
+      final result = await accept();
+
+      expect(result.success, isFalse);
+      expect(result.errorMessage, 'Note creation failed');
+    });
+
+    test('refuses an empty note, adding nothing', () async {
+      final result = await accept('   ');
+
+      expect(result.success, isFalse);
+      expect(result.errorMessage, 'Missing or empty note text');
+      verifyNever(create);
+    });
+
+    test('refuses while the event is gone, adding nothing', () async {
+      when(
+        () => mockJournalRepository.getJournalEntityById(eventId),
+      ).thenAnswer((_) async => null);
+
+      final result = await accept();
+
+      expect(result.success, isFalse);
+      expect(result.errorMessage, 'Event missing or deleted; note not added');
+      verifyNever(create);
+    });
+  });
+
   group('a confirmed proposal (ADR 0075)', () {
     const effect = ChangeEffect(key: 'event-set:0');
     final derivedId = effect.entityId('task');

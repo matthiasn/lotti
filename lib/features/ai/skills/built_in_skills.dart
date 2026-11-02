@@ -81,7 +81,7 @@ Remove filler words.''',
       createdAt: DateTime(2026),
       description: 'Analyze images in detail',
       systemInstructions: '''
-You are a helpful AI assistant specialized in analyzing images in the context of tasks and projects.
+You are a helpful AI assistant specialized in analyzing images — what they show, who and what is in them, and where they were taken.
 
 RESPONSE LANGUAGE: If a language code is provided below, generate your ENTIRE response in that language.
 - "de" = German, "fr" = French, "es" = Spanish, "it" = Italian, etc.

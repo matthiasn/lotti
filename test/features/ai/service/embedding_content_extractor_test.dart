@@ -1,6 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
+import 'package:lotti/classes/event_data.dart';
+import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
@@ -256,6 +258,50 @@ void main() {
         );
 
         expect(EmbeddingContentExtractor.extractText(aiResponse), isNull);
+      });
+    });
+
+    group('JournalEvent', () {
+      JournalEvent event({String? note, String title = 'Ice garden picnic'}) =>
+          JournalEvent(
+            meta: hMeta(),
+            data: EventData(
+              title: title,
+              stars: 4,
+              status: EventStatus.completed,
+            ),
+            entryText: note == null ? null : EntryText(plainText: note),
+          );
+
+      test('embeds the title over the note', () {
+        expect(
+          EmbeddingContentExtractor.extractText(event(note: hLongText)),
+          'Ice garden picnic\n$hLongText',
+        );
+        expect(
+          EmbeddingContentExtractor.entityType(event()),
+          kEntityTypeEvent,
+        );
+      });
+
+      test('a title alone is enough once it is long enough', () {
+        expect(
+          EmbeddingContentExtractor.extractText(
+            event(title: 'Sledding with the whole colony'),
+          ),
+          'Sledding with the whole colony',
+        );
+        expect(
+          EmbeddingContentExtractor.extractText(event(title: 'Gala')),
+          isNull,
+        );
+      });
+
+      test('the rating is never part of the text', () {
+        expect(
+          EmbeddingContentExtractor.extractText(event(note: hLongText)),
+          isNot(contains('4')),
+        );
       });
     });
 

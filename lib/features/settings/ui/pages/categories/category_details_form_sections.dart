@@ -59,56 +59,19 @@ extension _CategoryDetailsFormSections on _CategoryDetailsPageState {
 
     return CategoryLanguageDropdown(
       languageCode: category.defaultLanguageCode,
-      onTap: () => _showLanguageSelector(
-        context,
-        controller,
-        category.defaultLanguageCode,
+      onTap: () => showLanguageSelectionModal(
+        context: context,
+        initialLanguageCode: category.defaultLanguageCode,
+        onSelected: (code) async =>
+            controller.updateFormField(defaultLanguageCode: code),
+        headerPadding: const EdgeInsets.only(
+          left: 16,
+          right: 16,
+          top: 20,
+          bottom: 16,
+        ),
       ),
     );
-  }
-
-  Future<void> _showLanguageSelector(
-    BuildContext context,
-    CategoryDetailsController controller,
-    String? currentLanguageCode,
-  ) async {
-    final searchQuery = ValueNotifier<String>('');
-    final searchController = TextEditingController();
-
-    try {
-      await ModalUtils.showSinglePageModal<void>(
-        context: context,
-        titleWidget: Padding(
-          padding: const EdgeInsets.only(
-            left: 16,
-            right: 16,
-            top: 20,
-            bottom: 16,
-          ),
-          child: LanguageSelectionModalContent.buildHeader(
-            context: context,
-            controller: searchController,
-            queryNotifier: searchQuery,
-          ),
-        ),
-        builder: (BuildContext context) {
-          return LanguageSelectionModalContent(
-            initialLanguageCode: currentLanguageCode,
-            searchQuery: searchQuery,
-            onLanguageSelected: (language) {
-              controller.updateFormField(defaultLanguageCode: language?.code);
-              if (!context.mounted) {
-                return;
-              }
-              Navigator.pop(context);
-            },
-          );
-        },
-      );
-    } finally {
-      searchController.dispose();
-      searchQuery.dispose();
-    }
   }
 
   Widget _buildDefaultProfilePicker(CategoryDefinition category) {

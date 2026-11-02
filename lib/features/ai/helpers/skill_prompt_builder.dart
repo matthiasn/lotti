@@ -34,6 +34,10 @@ class SkillPromptBuilder {
   /// the heading an audio summary's [currentTaskSummary] goes under: a
   /// recording is framed by its task, or by the person, goal, project or
   /// event it belongs to.
+  /// [subjectContext] is what an image analysis outside a task reads about
+  /// the thing the image was added to — an event's title, time and note —
+  /// under a `**{contextLabel} Context:**` heading. A task-context skill
+  /// reads its task through [taskContext] instead.
   SkillPromptResult build({
     required AiConfigSkill skill,
     String? speechDictionary,
@@ -49,6 +53,7 @@ class SkillPromptBuilder {
     String? transcriptCorrection,
     String contextLabel = 'Task',
     String reportHeading = 'Task Report',
+    String? subjectContext,
   }) {
     final systemMessage = _buildSystemMessage(
       skill: skill,
@@ -71,6 +76,7 @@ class SkillPromptBuilder {
       transcriptCorrection: transcriptCorrection,
       contextLabel: contextLabel,
       reportHeading: reportHeading,
+      subjectContext: subjectContext,
     );
 
     return SkillPromptResult(
@@ -123,17 +129,19 @@ class SkillPromptBuilder {
     String? transcriptCorrection,
     String contextLabel = 'Task',
     String reportHeading = 'Task Report',
+    String? subjectContext,
   }) {
     final buffer = StringBuffer();
     final compactCoverArtPrompt = _usesCompactCoverArtPrompt(skill);
+    final plainImageAnalysis =
+        skill.skillType == SkillType.imageAnalysis &&
+        skill.contextPolicy != ContextPolicy.fullTask;
 
-    // Add language code for image analysis (no task context) variant.
-    if (skill.skillType == SkillType.imageAnalysis &&
-        skill.contextPolicy != ContextPolicy.fullTask &&
-        languageCode != null &&
-        languageCode.isNotEmpty) {
+    // Add language code for image analysis (no task context) variant: the
+    // skill's instructions read it from the top of the message.
+    if (plainImageAnalysis && languageCode != null && languageCode.isNotEmpty) {
       buffer
-        ..writeln(languageCode)
+        ..writeln('Language code: $languageCode')
         ..writeln();
     }
 
@@ -208,6 +216,24 @@ class SkillPromptBuilder {
         ..writeln(transcriptCorrection);
     }
 
+    // What the image was added to, for an analysis outside a task: read as
+    // the scene's setting, never as something the image must be relevant to.
+    if (plainImageAnalysis &&
+        subjectContext != null &&
+        subjectContext.trim().isNotEmpty) {
+      buffer
+        ..writeln()
+        ..writeln()
+        ..writeln('**$contextLabel Context:**')
+        ..writeln(
+          'This image was added to the ${contextLabel.toLowerCase()} below. '
+          'Use it to read the scene — who might be there, what is happening, '
+          'where — but describe what the image shows, and never judge '
+          'whether it fits.',
+        )
+        ..writeln(subjectContext.trim());
+    }
+
     // Inject URL formatting rules for image analysis skills.
     if (skill.skillType == SkillType.imageAnalysis) {
       buffer
@@ -224,7 +250,9 @@ class SkillPromptBuilder {
       buffer
         ..writeln()
         ..writeln()
-        ..writeln(_tieredSummaryRules);
+        ..writeln(
+          plainImageAnalysis ? _imageTieredSummaryRules : _tieredSummaryRules,
+        );
     }
 
     // Inject correction examples for transcription skills.
@@ -444,6 +472,18 @@ Do NOT answer in prose. Call the `publish_entry_summary` tool exactly once, with
 - `tldr`: one to three sentences covering what matters here and why it matters for the task.
 - `summary`: the full analysis, as markdown, following every instruction above.
 Any tone or humour the instructions above call for belongs in `summary`, never in `oneLiner`.''';
+
+/// The three tiers for an image analysed outside a task. The one-liner is the
+/// photo's caption wherever it is shown — under an event's timeline photo,
+/// on the collapsed image row — so it says what the picture shows, not what
+/// it means for a task the image has nothing to do with.
+const _imageTieredSummaryRules = '''
+OUTPUT — PUBLISH THROUGH THE TOOL:
+Do NOT answer in prose. Call the `publish_entry_summary` tool exactly once, with all three arguments:
+- `oneLiner`: ONE plain sentence saying what the image shows — who or what is in it, what is happening and where, as far as the image tells. It captions the photo on its own, so make it specific ("Three friends toasting on a rooftop at dusk"), never generic ("A photo of people"), and never a remark about relevance. No leading label.
+- `tldr`: one to three sentences on what the image shows and what stands out in it.
+- `summary`: the full analysis, as markdown, following every instruction above.
+When a language code is given above, write all three in that language.''';
 
 /// URL formatting rules injected into image analysis skill prompts.
 const _urlFormattingRules = '''

@@ -54,12 +54,20 @@ sources:
     last_modified: 2026-09-10
   - id: event-workflow
     resource: ../../../lib/features/agents/workflow/event_agent_workflow.dart
-    title: EventAgentWorkflow
-    last_modified: 2026-08-07
+    title: EventAgentWorkflow — the recap, its embedding under the event, deferred proposals
+    last_modified: 2026-11-02
   - id: event-context
     resource: ../../../lib/features/agents/workflow/event_agent_context_builder.dart
-    title: EventAgentContextBuilder — the linked-entries digest, photo analyses included
-    last_modified: 2026-11-01
+    title: EventAgentContextBuilder — the linked-entries digest, the event's language, the language and note rules
+    last_modified: 2026-11-02
+  - id: event-language
+    resource: ../../../lib/features/agents/tools/event_language_handler.dart
+    title: EventLanguageHandler — fills an empty language from the first voice memo
+    last_modified: 2026-11-02
+  - id: event-dispatcher
+    resource: ../../../lib/features/agents/workflow/event_tool_dispatcher.dart
+    title: EventToolDispatcher — follow-up tasks, people and notes on confirm
+    last_modified: 2026-11-02
   - id: project-service
     resource: ../../../lib/features/agents/service/project_agent_service.dart
     title: ProjectAgentService (creation, inference setup and announcement)
@@ -530,7 +538,7 @@ into a short living recap. An event mostly happens **once**, so the agent is a
 *recap writer*, not a continuous watcher.
 
 It is deliberately leaner than the project agent: no compaction or input-capture
-log, no daily digest, no deferred change sets beyond one tool, no health band. It
+log, no daily digest, no health band. It
 borrows the task agent's content gate so a bare-title event does not burn an
 inference run.
 
@@ -602,11 +610,79 @@ feature, which ranks above agents; a failed read degrades to no people. A
 change to who was there writes a link, which notifies the event id and wakes
 the agent, so the recap can name them.
 
+The Event Context names the event's **language** — `EventData.languageCode`
+with its English name, or *not set* — and the scaffold's *Language* rule binds
+every word the agent publishes to it: the recap's three tiers and every
+suggestion, even when a photo analysis or a note reads in another language
+(see [Setting the language](#setting-the-language)).
+
+After the report is persisted, the workflow embeds it for search
+(`embedAgentReport`, shared with the task agent) **keyed to the event**: the
+report's vectors carry the event id as their subject, so a meaning search for
+who was there or what happened resolves to the event (see
+[embeddings and search](../ai/embeddings-and-search.md)). Only while
+embeddings are on and the model is installed; a failure is logged and the
+wake stands.
+
 ## Tools
 
 Immediate local, reusing the task agent's scope-agnostic contract:
 `update_report` (`oneLiner` / `tldr` / `content`), `record_observations` — and
-one read of its own, `list_people`.
+two of its own: the read `list_people`, and `set_event_language`, which only
+ever fills an empty field. Deferred, for the user to confirm or dismiss:
+`suggest_person`, `suggest_note` and `suggest_follow_up_task`
+(`eventDeferredTools`).
+
+### Setting the language
+
+An event has a language once it has a voice memo. While
+`EventData.languageCode` is empty and the event has a transcribed voice memo,
+the agent calls `set_event_language` with the language the memos are spoken
+in, and `EventLanguageHandler` stores it as the agent's
+(`languageSource: agent`). The handler refuses without a voice memo, refuses a
+code outside `SupportedLanguage`, and **never changes a language that is set**
+— the user's pick from the hero's language pill, or the agent's own earlier
+one; the call then reports the language that stands, so the model writes in
+it. The write goes through `JournalRepository.changeEventData`, conditional on
+the stored row, so a language the user picked between the agent's read and its
+write is kept.
+
+```mermaid
+stateDiagram-v2
+  [*] --> Unset
+  Unset --> Unset: set_event_language without a voice memo (refused)
+  Unset --> AgentSet: set_event_language after the first voice memo
+  Unset --> UserSet: user picks a language
+  AgentSet --> AgentSet: set_event_language (reports the language, no write)
+  AgentSet --> UserSet: user picks another language
+  UserSet --> UserSet: set_event_language (reports the language, no write)
+  AgentSet --> Unset: user clears it
+  UserSet --> Unset: user clears it
+```
+
+The language reaches every AI-written word about the event, each through its
+own path: the recap and suggestions through the Event Context above; the
+analyses of its photos through `frameImageAnalysis` (see
+[image analysis in event context](../events.md#what-a-photo-shows)); and the
+summaries of its recordings through the event's `RecordingContext` header,
+whose `languageCode` the audio-summary skill writes in. An analysis written
+before the language was set keeps its language; *Analyze* on the photo's
+entry runs it again.
+
+### Suggesting a note
+
+The user rarely writes down what happened. When the voice memos, photos and
+notes tell it and the event has no note of the user's own that says it, the
+agent proposes one with `suggest_note`: a few plain sentences in the first
+person, in the event's language. The strategy refuses an empty one and a
+second in the same wake. The row inside the agent's card reads "Note · Add
+this note to the event" in the reader's language, with the note itself under
+it as `FoldedWords` — read in full before it becomes the user's own. On
+confirm, `EventToolDispatcher` creates it as a text entry linked from the
+event, in the event's category, under an id derived from the change item, so
+two devices confirming, or a re-run after a crash, write one note; it refuses
+while the event is gone. Before this tool the agent's account of what
+happened could only land in `record_observations`, which no surface shows.
 
 ### Suggesting who was there
 

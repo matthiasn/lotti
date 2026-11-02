@@ -1,4 +1,5 @@
 import 'package:lotti/features/design_system/components/captions/ds_tiered_text.dart';
+import 'package:lotti/features/design_system/components/ds_quiet_ink.dart';
 import 'package:lotti/features/design_system/components/timeline/design_system_timeline_row.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/events/ui/model/event_view_data.dart';
@@ -22,14 +23,25 @@ import 'package:material_ui/material_ui.dart';
 /// photo-led where a person's is mostly words.
 ///
 /// Rows open their source entry through [onOpenEntry]; with it null, or for
-/// a row without an entry id, the row is inert.
+/// a row without an entry id, the row is inert. A photo's band and caption
+/// are their own target when [onOpenPhoto] is set: they open what the photo
+/// was seen as — its full analysis — while the rest of the row still opens
+/// the entry.
 class EventTimeline extends StatelessWidget {
-  const EventTimeline({required this.entries, this.onOpenEntry, super.key});
+  const EventTimeline({
+    required this.entries,
+    this.onOpenEntry,
+    this.onOpenPhoto,
+    super.key,
+  });
 
   final List<EventTimelineEntry> entries;
 
   /// Opens a row's source entry (receives the entry id).
   final ValueChanged<String>? onOpenEntry;
+
+  /// Opens a photo's analysis (receives the image's entry id).
+  final ValueChanged<String>? onOpenPhoto;
 
   @override
   Widget build(BuildContext context) {
@@ -42,6 +54,7 @@ class EventTimeline extends StatelessWidget {
             entry: entry,
             last: index == entries.length - 1,
             onOpenEntry: onOpenEntry,
+            onOpenPhoto: onOpenPhoto,
           ),
       ],
     );
@@ -53,12 +66,14 @@ class _EventTimelineRow extends StatelessWidget {
     required this.entry,
     required this.last,
     required this.onOpenEntry,
+    required this.onOpenPhoto,
     super.key,
   });
 
   final EventTimelineEntry entry;
   final bool last;
   final ValueChanged<String>? onOpenEntry;
+  final ValueChanged<String>? onOpenPhoto;
 
   @override
   Widget build(BuildContext context) {
@@ -125,11 +140,18 @@ class _EventTimelineRow extends StatelessWidget {
       ),
     };
 
+    final entryId = entry.entryId;
+    final openPhoto = onOpenPhoto;
     final footer = entry.kind == EventTimelineKind.photo
-        ? _PhotoFooter(photos: entry.photos, caption: words)
+        ? _PhotoFooter(
+            photos: entry.photos,
+            caption: words,
+            onTap: openPhoto == null || entryId == null
+                ? null
+                : () => openPhoto(entryId),
+          )
         : null;
 
-    final entryId = entry.entryId;
     final open = onOpenEntry;
     return DesignSystemTimelineRow(
       leading: DesignSystemTimelineTile(icon: icon),
@@ -166,15 +188,39 @@ class _EventTimelineRow extends StatelessWidget {
 }
 
 /// A photo row's footer: each picture as a wide, short band, then the
-/// photo's one-line caption.
+/// photo's one-line caption. With [onTap] the two are one target of their
+/// own, announced as the photo's analysis.
 class _PhotoFooter extends StatelessWidget {
-  const _PhotoFooter({required this.photos, required this.caption});
+  const _PhotoFooter({
+    required this.photos,
+    required this.caption,
+    this.onTap,
+  });
 
   final List<EventPhoto> photos;
   final String? caption;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final content = _content(context);
+    final tap = onTap;
+    if (tap == null) return content;
+    return Semantics(
+      container: true,
+      button: true,
+      label: context.messages.eventsPhotoAnalysisOpen,
+      child: DsQuietInk(
+        onTap: tap,
+        focusRing: true,
+        borderRadius: BorderRadius.circular(tokens.radii.m),
+        builder: (context, _) => content,
+      ),
+    );
+  }
+
+  Widget _content(BuildContext context) {
     final tokens = context.designTokens;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

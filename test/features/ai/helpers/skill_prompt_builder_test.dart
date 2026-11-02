@@ -179,7 +179,7 @@ void main() {
         final skill = makeSkill(skillType: SkillType.imageAnalysis);
         final result = builder.build(skill: skill, languageCode: 'de');
 
-        expect(result.userMessage, startsWith('de\n'));
+        expect(result.userMessage, startsWith('Language code: de\n'));
       });
 
       test('does not prepend language code for fullTask', () {
@@ -189,7 +189,83 @@ void main() {
         );
         final result = builder.build(skill: skill, languageCode: 'de');
 
-        expect(result.userMessage, isNot(startsWith('de\n')));
+        expect(result.userMessage, isNot(contains('Language code:')));
+      });
+
+      test('frames a plain analysis by the event the image was added to', () {
+        final skill = makeSkill(skillType: SkillType.imageAnalysis);
+        final result = builder.build(
+          skill: skill,
+          subjectContext: '- Title: Ice garden picnic',
+          contextLabel: 'Event',
+        );
+
+        expect(result.userMessage, contains('**Event Context:**'));
+        expect(
+          result.userMessage,
+          contains('This image was added to the event below.'),
+        );
+        expect(result.userMessage, contains('never judge whether it fits'));
+        expect(result.userMessage, contains('- Title: Ice garden picnic'));
+        // The scene comes before the URL rules and the output contract.
+        expect(
+          result.userMessage.indexOf('**Event Context:**'),
+          lessThan(result.userMessage.indexOf('URL FORMATTING RULES')),
+        );
+      });
+
+      test('a task-context skill never reads a subject context', () {
+        final skill = makeSkill(
+          skillType: SkillType.imageAnalysis,
+          contextPolicy: ContextPolicy.fullTask,
+        );
+        final result = builder.build(
+          skill: skill,
+          subjectContext: '- Title: Ice garden picnic',
+          contextLabel: 'Event',
+        );
+
+        expect(result.userMessage, isNot(contains('**Event Context:**')));
+      });
+
+      test('a blank subject context adds no section', () {
+        final skill = makeSkill(skillType: SkillType.imageAnalysis);
+        final result = builder.build(skill: skill, subjectContext: '  ');
+
+        expect(result.userMessage, isNot(contains('Context:**')));
+      });
+
+      test('a plain analysis asks for a caption, not a task verdict', () {
+        final skill = makeSkill(skillType: SkillType.imageAnalysis);
+        final result = builder.build(skill: skill, requestTieredSummary: true);
+
+        expect(
+          result.userMessage,
+          contains('ONE plain sentence saying what the image shows'),
+        );
+        expect(result.userMessage, contains('never a remark about relevance'));
+        expect(
+          result.userMessage,
+          contains('When a language code is given above, write all three'),
+        );
+        expect(
+          result.userMessage,
+          isNot(contains('why it matters for the task')),
+        );
+      });
+
+      test('a task-context analysis keeps the task tiers', () {
+        final skill = makeSkill(
+          skillType: SkillType.imageAnalysis,
+          contextPolicy: ContextPolicy.fullTask,
+        );
+        final result = builder.build(skill: skill, requestTieredSummary: true);
+
+        expect(result.userMessage, contains('why it matters for the task'));
+        expect(
+          result.userMessage,
+          isNot(contains('ONE plain sentence saying what the image shows')),
+        );
       });
 
       test('includes task context and linked tasks for fullTask', () {

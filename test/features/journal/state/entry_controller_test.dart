@@ -2686,6 +2686,65 @@ void main() {
     });
   });
 
+  group('updateEventLanguage method', () {
+    setUp(() {
+      when(
+        () => mockJournalDb.journalEntityById(testEventEntry.meta.id),
+      ).thenAnswer((_) async => testEventEntry);
+    });
+
+    Future<EventData> pick(String? languageCode) async {
+      final container = makeProviderContainer();
+      final entryId = testEventEntry.meta.id;
+      final provider = entryControllerProvider(entryId);
+      final notifier = container.read(provider.notifier);
+      await container.read(provider.future);
+      when(
+        () => mockPersistenceLogic.updateEvent(
+          entryText: any(named: 'entryText'),
+          journalEntityId: entryId,
+          data: any(named: 'data'),
+        ),
+      ).thenAnswer((_) async => true);
+
+      expect(await notifier.updateEventLanguage(languageCode), isTrue);
+
+      return verify(
+            () => mockPersistenceLogic.updateEvent(
+              entryText: any(named: 'entryText'),
+              journalEntityId: any(named: 'journalEntityId'),
+              data: captureAny(named: 'data'),
+            ),
+          ).captured.single
+          as EventData;
+    }
+
+    test("stores the user's pick as the user's, over the agent's", () async {
+      final data = await pick('fr');
+
+      expect(data.languageCode, 'fr');
+      expect(data.languageSource, ChangeSource.user);
+      expect(data.title, testEventEntry.data.title);
+    });
+
+    test('clearing hands the language back to the agent', () async {
+      when(
+        () => mockJournalDb.journalEntityById(testEventEntry.meta.id),
+      ).thenAnswer(
+        (_) async => testEventEntry.copyWith(
+          data: testEventEntry.data.copyWith(
+            languageCode: 'de',
+            languageSource: ChangeSource.agent,
+          ),
+        ),
+      );
+
+      final data = await pick(null);
+
+      expect(data.languageCode, isNull);
+    });
+  });
+
   group('updateEventCover method', () {
     setUp(() {
       when(
