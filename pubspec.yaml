@@ -154,9 +154,12 @@ dependency_overrides:
   # win32 6, and device_info_plus 12 still pins win32 5, so device_info_plus
   # moves to 13 (win32 6). health 13.3.1 declares ^12.1.0 but only uses the
   # device id getters (androidInfo.id, iosInfo.identifierForVendor), which
-  # 13 keeps; super_native_extensions 0.9.1 (dev-only) declares <12 but its
-  # tests import only src/native/context.dart. Drop this override once health
-  # declares 13.x.
+  # 13 keeps. super_native_extensions 0.9.1 is a runtime dependency (through
+  # super_clipboard and super_drag_and_drop) and declares <12, which this
+  # override bypasses. Its only device_info use is DeviceInfoPlugin().deviceInfo
+  # and AndroidDeviceInfo.version.sdkInt (long_press_handler.dart), both of
+  # which 13.3.0 keeps. Drop this override once health and
+  # super_native_extensions both accept 13.x.
   device_info_plus: ^13.3.0
   # Local fork: runs ONNX inference off the main thread on macOS, which Flutter
   # can't do via platform-channel task queues (flutter/flutter#162613).
