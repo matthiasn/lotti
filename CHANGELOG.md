@@ -4,6 +4,54 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.81]
+
+### Added
+
+- **Goal agents now remember what they noticed about you beyond the last
+  dozen notes.** Each finished month of a goal agent's notes is condensed into
+  a short digest it reads on every update — for a journal goal, the themes
+  you kept returning to, the questions you raised and how your thinking
+  moved. Notes the app later tidies away live on in their month's digest.
+
+### Changed
+
+- **A goal's check-in timeline is wider on desktop, and you can drag it.**
+  The column beside the goal now grows with the window instead of staying at
+  a fixed narrow width, so an opened recording's words read at least as wide
+  as on a phone. Drag its edge to make it wider or narrower; the width is
+  remembered.
+
+### Fixed
+
+- **The goal agent's read-aloud read only the first sentence or two.** Play
+  now reads the whole report the card shows: the summary, what the agent made
+  of your check-ins, and what comes next — plus the sections behind *Show
+  more* while it is open.
+- **The companion on a goal kept bobbing up and down.** Holding a goal's
+  verdict, she now gives one bounce of joy and then stands still, as she does
+  on a task's summary.
+- **Goal agents almost never noted anything about you, so their internals
+  showed no observations.** The agent is now asked to note what your
+  check-ins and messages show — circumstances, mood, obstacles, what helps —
+  and the internals panel finds those notes however busy the agent has been.
+- **The companion answers "what is due today?"** She used to send the
+  question to today's plan and come back with nothing, though she offers to
+  help with tasks. She now reads the open tasks due today — or tomorrow, or
+  this week — overdue ones included, and names them.
+- **Tasks the companion mentions are links, not ids.** Where she recited a
+  task's long id, she now names it by its title; a tap closes her and opens
+  the task.
+- **Answers in the companion's chat show their formatting.** Bold, lists,
+  code and links in an agent's answer under her reply were shown as raw
+  asterisks and brackets; they are now rendered, and read aloud as plain
+  words.
+- **Talking to the companion is transcribed in about a second.** Her
+  dictation could fall back on an on-device speech model and take 10–15
+  seconds for a short sentence. It now uses the transcription model of your
+  default AI profile, such as Voxtral, and hands the words back as soon as
+  they are heard, with no extra correction pass.
+
 ## [1.1.80]
 
 ### Added
