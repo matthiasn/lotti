@@ -90,9 +90,10 @@ void main() {
       final container = containerWith(_Scripted([1, 2]));
       final stage = CompanionShownOutfit();
       final roll = container.read(companionLookRollProvider);
-      roll.draw(shown: stage);
-      expect(stage.last, companionOutfits[1]);
-      roll.draw();
+      final stageDraw = roll.draw(shown: stage);
+      expect(stageDraw.id, companionOutfits[1].id);
+      final cardDraw = roll.draw();
+      expect(cardDraw.id, companionOutfits[2].id);
       expect(stage.last, companionOutfits[1]);
     });
 
