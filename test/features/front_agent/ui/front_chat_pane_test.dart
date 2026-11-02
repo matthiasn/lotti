@@ -110,7 +110,17 @@ void main() {
     // Pushed, the pane sits on a route of its own over the app, as her
     // surface does, so leaving it can be seen.
     final navigator = GlobalKey<NavigatorState>();
-    final pane = Scaffold(body: FrontChatPane(onClose: onClose ?? () {}));
+    // Her surface closes by popping its route, which back's PopScope does
+    // not hold.
+    final pane = Scaffold(
+      body: FrontChatPane(
+        onClose:
+            onClose ??
+            () {
+              if (pushed) navigator.currentState!.pop();
+            },
+      ),
+    );
     await withClock(Clock.fixed(now), () async {
       await tester.pumpWidget(
         makeTestableWidgetNoScroll(
@@ -583,6 +593,65 @@ void main() {
       await tester.pump();
       await tester.pump();
     }
+
+    testWidgets('a task linked in an answer leaves her from the inbox too, '
+        'rather than only clearing the inbox', (tester) async {
+      final paths = <String>[];
+      beamToNamedOverride = paths.add;
+      addTearDown(() => beamToNamedOverride = null);
+      final base = waiting();
+      await pumpPane(
+        tester,
+        pushed: true,
+        thread: () async => FrontChatThread(
+          messages: base.messages,
+          doorsByMessageId: {
+            'u1': [
+              ...base.doorsByMessageId['u1']!,
+              FrontDoorEntry(
+                doorId: 'd:door:1',
+                record: FrontDoorRecord(
+                  segmentIndex: 1,
+                  text: 'What is next?',
+                  kind: FrontDestinationKind.task,
+                  destinationId: 'garden',
+                  ownerTitle: 'Garden',
+                  status: FrontDoorStatus.done,
+                  claimedAt: now.toUtc(),
+                  outcome: const FrontDoorAnswer(
+                    text: 'Then [Feed the penguins](lotti://task/t-9).',
+                    summaryBased: false,
+                    incomplete: false,
+                  ),
+                ),
+              ),
+            ],
+          },
+        ),
+      );
+      await openInbox(tester);
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(FrontChatPane)),
+      );
+      expect(container.read(frontInboxFilterProvider), isTrue);
+
+      await tester.tap(
+        find
+            .descendant(
+              of: find.byKey(const ValueKey('front-door-text-1')),
+              matching: find.textContaining(
+                'Feed the penguins',
+                findRichText: true,
+              ),
+            )
+            .last,
+      );
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(paths, ['/tasks/t-9']);
+      expect(find.byType(FrontChatPane), findsNothing);
+    });
 
     testWidgets("the list's inbox filters the thread to the turns that wait, "
         'and the header names it', (tester) async {

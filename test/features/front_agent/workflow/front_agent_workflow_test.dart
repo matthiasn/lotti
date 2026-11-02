@@ -348,6 +348,7 @@ void main() {
                 'dispatch',
                 'read_tldr',
                 'match_to_corpus',
+                'list_due_tasks',
                 'ask_user',
                 'reply_to_user',
               ]);
@@ -461,7 +462,10 @@ void main() {
           };
         });
 
-        await run();
+        // An expectation that fails inside the model call fails the wake,
+        // which is caught: the result is what says it held.
+        final result = await run();
+        expect(result.success, isTrue);
 
         // The contract, then her manner at the sass the user set.
         expect(

@@ -112,7 +112,7 @@ class FrontChatPane extends ConsumerWidget {
                   child: Column(
                     children: [
                       FrontChatHeader(onClose: onClose, listBeside: true),
-                      Expanded(child: _Body()),
+                      Expanded(child: _Body(onClose: onClose)),
                     ],
                   ),
                 ),
@@ -122,7 +122,9 @@ class FrontChatPane extends ConsumerWidget {
               children: [
                 FrontChatHeader(onClose: onClose),
                 Expanded(
-                  child: listOpen ? const FrontConversationList() : _Body(),
+                  child: listOpen
+                      ? const FrontConversationList()
+                      : _Body(onClose: onClose),
                 ),
               ],
             ),
@@ -131,6 +133,13 @@ class FrontChatPane extends ConsumerWidget {
 }
 
 class _Body extends ConsumerWidget {
+  const _Body({required this.onClose});
+
+  /// Closes her surface. Everything that leaves her for a page goes through
+  /// this, never `maybePop`: while the list or the inbox is open, back is
+  /// theirs ([PopScope] clears them), and the page would open behind her.
+  final VoidCallback onClose;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final messages = context.messages;
@@ -175,7 +184,7 @@ class _Body extends ConsumerWidget {
         handleMarkdownLinkTap(url, title).ignore();
         return;
       }
-      Navigator.of(context).maybePop();
+      onClose();
       beamToNamed(route);
     }
 
@@ -202,14 +211,14 @@ class _Body extends ConsumerWidget {
         if (door.record.outcome case FrontDoorDayPlanned(:final day)) {
           ref.read(dailyOsNextSelectedDateProvider.notifier).select(day);
         }
-        Navigator.of(context).maybePop();
+        onClose();
         beamToNamed(path);
       },
       // The goal wizard opens with the words as its intention; nothing is
       // written by opening it, and the item keeps waiting.
       onStartGoal: (door) {
         // Leave the sheet, then go: the wizard is a page, not a modal.
-        Navigator.of(context).maybePop();
+        onClose();
         beamToNamed(goalCreatePathWith(intention: door.record.text));
       },
       // The project form opens with the words as its title; a project it
@@ -229,7 +238,7 @@ class _Body extends ConsumerWidget {
       // A source a journal answer cites opens on its own page.
       onOpenEvidence: (evidence) {
         final id = evidence.source.id;
-        Navigator.of(context).maybePop();
+        onClose();
         beamToNamed(switch (evidence.kind) {
           QuerySourceKind.task => '/tasks/$id',
           QuerySourceKind.project => '/projects/$id',

@@ -688,7 +688,10 @@ journal. A category named in the question narrows further, as before.
 A link in her bubble or in a card's answer goes through the pane's one
 handler: a route in the app (`internalRouteFromMarkdownUrl`) closes her
 surface and then goes there, as *Open* does; anything else is the shared
-`handleMarkdownLinkTap`.
+`handleMarkdownLinkTap`. Every way out to a page — a link, *Open*, a cited
+source, *Start a goal…* — closes her through the surface's own close (the
+pane's `onClose`, a `pop`), never through back (`maybePop`): while the list
+or the inbox is open, back is theirs, so the page would open behind her.
 
 **What she hears.** Dictation into her composer is transcribed on the
 Settings default profile's transcription slot
