@@ -86,7 +86,7 @@ extension OutboxEnqueueSimple on OutboxEnqueueWriter {
 
   /// Enqueues a version of an entry's vectors. Its subject keeps the row out
   /// of the dequeue-time bundler (`embeddingVectorsOutboxSubjectPrefix`):
-  /// the attachment is built from the vector store at send time, and an
+  /// the attachment file is written per version at enqueue, and an
   /// older build that cannot decode the message replays only this row. Binds this host's counter in the register's clock, so a peer
   /// that missed the version can ask for it.
   Future<void> enqueueEmbeddingVectors({

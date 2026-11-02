@@ -24,16 +24,22 @@ import 'package:lotti/features/ai/service/embedding_processor.dart';
 ///   deleted task took them along.
 /// - **A live version without chunks** cannot be served: a peer asking for
 ///   it is told it was deleted.
+/// - **Chunks without a register** — embedded before registers existed —
+///   are never shared: nothing versions them, not even Add Device. They are
+///   checked like any stored vectors, and [adoptUnregistered] gives the
+///   ones that still match a register, which `EmbeddingShare.shareUnversioned`
+///   then versions and sends.
 ///
 /// Only a row this device holds counts. An entry or task with no row at all
 /// is left alone, never taken for deleted: a journal restored from an
 /// older backup lacks rows its vector store still describes, and retiring
 /// those would remove the vectors from every device.
 ///
-/// Each read is batched; nothing is written here. The caller runs
-/// [EmbeddingProcessor.processEntity] over [entriesToReprocess] — which
-/// re-embeds, or removes with a tombstone, as the entry now warrants — and
-/// [retireReportsOfDeletedTasks] tombstones report vectors directly.
+/// Each read is batched. The caller runs [EmbeddingProcessor.processEntity]
+/// over [entriesToReprocess] — which re-embeds, or removes with a tombstone,
+/// as the entry now warrants; [adoptUnregistered] and
+/// [retireReportsOfDeletedTasks] write registers directly, each under its
+/// entry's lock.
 class EmbeddingReconciler {
   EmbeddingReconciler({
     required this._store,
@@ -47,39 +53,106 @@ class EmbeddingReconciler {
   final String _modelId;
   final int _batchSize;
 
-  /// The journal entities whose live vectors here do not match this
-  /// device's copy: the entry is deleted, its text no longer hashes as the
-  /// vectors' did (labels included, whatever the privacy toggle says), or
-  /// the version has no chunks.
+  /// The journal entities whose live vectors here — with a register or
+  /// without — do not match this device's copy: the entry is deleted, its
+  /// text no longer hashes as the vectors' did (labels included, whatever
+  /// the privacy toggle says), or the version has no chunks.
   Future<Set<String>> entriesToReprocess() async {
-    final live = [
-      for (final register in await _liveRegisters())
-        if (register.entityType != kEntityTypeAgentReport) register,
-    ];
-    if (live.isEmpty) return const {};
-
-    final labels = await EmbeddingProcessor.buildLabelResolver(_journalDb);
     final due = <String>{};
-    for (final slice in live.slices(_batchSize)) {
-      final entities = await _rows({
-        for (final register in slice) register.entityId,
-      });
-      for (final register in slice) {
-        final entity = entities[register.entityId];
-        if (entity == null) continue;
-        if (entity.isDeleted || !await _store.hasEmbedding(register.entityId)) {
-          due.add(register.entityId);
-          continue;
-        }
-        final text = await EmbeddingProcessor.embeddingText(entity, labels);
-        if (text == null ||
-            EmbeddingContentExtractor.contentHash(text) !=
-                register.contentHash) {
-          due.add(register.entityId);
-        }
+    await _checkJournalVectors(
+      [
+        ...await _liveRegisters(),
+        ...await _unregistered(),
+      ].where((version) => version.entityType != kEntityTypeAgentReport),
+      onStale: (version, _) async => due.add(version.entityId),
+    );
+    return due;
+  }
+
+  /// Writes a register — unshared, no clock — for every chunk set stored
+  /// without one whose text still matches: a journal entry's with the
+  /// entry's clock as its source, a report's as it is (a report has no
+  /// source clock). Returns how many it adopted.
+  ///
+  /// A journal entry with no row here is left alone, and one that no longer
+  /// matches is [entriesToReprocess]'s. Under each entry's lock, and only
+  /// while the set is still unregistered with the same content.
+  Future<int> adoptUnregistered() async {
+    final unregistered = await _unregistered();
+    var adopted = 0;
+    for (final version in unregistered) {
+      if (version.entityType == kEntityTypeAgentReport &&
+          await _adopt(version)) {
+        adopted++;
       }
     }
-    return due;
+    await _checkJournalVectors(
+      unregistered.where(
+        (version) => version.entityType != kEntityTypeAgentReport,
+      ),
+      onMatch: (version, entity) async {
+        if (await _adopt(
+          EmbeddingRegister(
+            entityId: version.entityId,
+            modelId: version.modelId,
+            entityType: version.entityType,
+            contentHash: version.contentHash,
+            sourceVectorClock: entity.meta.vectorClock,
+            taskId: version.taskId,
+            subtype: version.subtype,
+          ),
+        )) {
+          adopted++;
+        }
+      },
+    );
+    return adopted;
+  }
+
+  Future<bool> _adopt(EmbeddingRegister version) =>
+      EmbeddingProcessor.runExclusive(
+        version.taskId.isNotEmpty ? version.taskId : version.entityId,
+        () async {
+          if (await _store.getRegister(version.entityId) != null ||
+              await _store.getContentHash(version.entityId) !=
+                  version.contentHash) {
+            return false;
+          }
+          await _store.putRegister(version);
+          return true;
+        },
+      );
+
+  /// Reads [versions] of journal entries against the rows they describe, in
+  /// batches, and calls [onStale] for each whose entry is deleted, whose
+  /// text no longer hashes as stored, or which has no chunks, and [onMatch]
+  /// for each that still matches. A version with no row here is skipped.
+  Future<void> _checkJournalVectors(
+    Iterable<EmbeddingRegister> versions, {
+    Future<void> Function(EmbeddingRegister, JournalEntity)? onStale,
+    Future<void> Function(EmbeddingRegister, JournalEntity)? onMatch,
+  }) async {
+    final all = versions.toList();
+    if (all.isEmpty) return;
+
+    final labels = await EmbeddingProcessor.buildLabelResolver(_journalDb);
+    for (final slice in all.slices(_batchSize)) {
+      final entities = await _rows({
+        for (final version in slice) version.entityId,
+      });
+      for (final version in slice) {
+        final entity = entities[version.entityId];
+        if (entity == null) continue;
+        final text = entity.isDeleted
+            ? null
+            : await EmbeddingProcessor.embeddingText(entity, labels);
+        final stale =
+            text == null ||
+            !await _store.hasEmbedding(version.entityId) ||
+            EmbeddingContentExtractor.contentHash(text) != version.contentHash;
+        await (stale ? onStale : onMatch)?.call(version, entity);
+      }
+    }
   }
 
   /// Tombstones the live vectors of every agent report whose task is
@@ -118,6 +191,12 @@ class EmbeddingReconciler {
         in await _journalDb.getJournalEntitiesForIdsIncludingDeleted(ids))
       entity.meta.id: entity,
   };
+
+  /// The chunk sets of this model stored without a register.
+  Future<List<EmbeddingRegister>> _unregistered() async => [
+    for (final version in await _store.unregisteredVersions())
+      if (version.modelId == _modelId) version,
+  ];
 
   Future<List<EmbeddingRegister>> _liveRegisters() async => [
     for (final register in await _store.allRegisters())

@@ -5,25 +5,25 @@ description: How devices advertise AI capabilities and how a pinned desktop auto
 resource: ../../../lib/features/sync/services/synced_audio_inference_dispatcher.dart
 tags: [sync, ai, transcription, capabilities, privacy]
 status: stable
-generated: { by: codex/gpt-6, at: 2026-09-06T12:00:00Z }
-stale_after: 2026-11-02
+generated: { by: claude-code/opus-5.5, at: 2026-11-03T08:00:00Z }
+stale_after: 2027-05-03
 sources:
   - id: node-profile
     resource: ../../../lib/classes/sync/sync_node_profile.dart
     title: SyncNodeProfile
-    last_modified: 2026-06-22
+    last_modified: 2026-10-04
   - id: probe
     resource: ../../../lib/features/sync/services/sync_node_capability_probe.dart
     title: Capability probe
-    last_modified: 2026-06-20
+    last_modified: 2026-10-04
   - id: dispatcher
     resource: ../../../lib/features/sync/services/synced_audio_inference_dispatcher.dart
     title: SyncedAudioInferenceDispatcher
-    last_modified: 2026-07-18
+    last_modified: 2026-11-01
   - id: broadcaster
     resource: ../../../lib/features/sync/services/sync_node_profile_broadcaster.dart
     title: SyncNodeProfileBroadcaster
-    last_modified: 2026-05-31
+    last_modified: 2026-10-04
 ---
 
 # The goal
@@ -126,27 +126,30 @@ sequenceDiagram
 Every step is a skip, and several exist specifically to protect the locality
 contract:
 
-1. Skip sentinels (`*_CHANGED`, `*_NOTIFICATION`).
+1. Skip empty ids and sentinels (`*_CHANGED`, `*_NOTIFICATION`).
 2. Load the entity; skip if not `JournalAudio`. Capture `priorTranscriptCount`.
 3. Skip if `priorTranscriptCount > 0` — already transcribed somewhere.
 4. **Self-echo guard.** Skip if the clock has *exactly one* entry and it is the
    local host — a first-time self-originated entry. A merged remote clock that
    includes the local host alongside others passes through; step 3 covers
-   re-transcription.
+   re-transcription. Also skip while the local host id is not yet known.
 5. Find the linked task via `linksForEntryIds`; skip if there is no parent
    `Task`.
 6. Call `ProfileAutomationResolver.resolveProfileIdForSubject(taskId)` — a raw
    legacy profile-id selection (`agentConfig.profileId` → `version.profileId` →
    `template.profileId` → `task.data.profileId`) that returns the first id set
-   without loading it. Unlike `resolveForSubject`, a selected id whose profile
-   no longer exists does not fall back to the task's own profile; step 7 then
-   skips the recording. It **does not consult `category.defaultProfileId`**,
+   without loading it. It reads only these legacy fields; a typed
+   `agentConfig.inferenceSetup` and its `baseProfileId` are not consulted.
+   Unlike `resolveForSubject`, it never checks that the selected profile
+   exists and has no legacy-model or Settings-default fallback; a selected id
+   whose profile no longer exists reaches step 7, which skips the recording. It **does not consult `category.defaultProfileId`**,
    which would let a category edit retroactively re-route claims.
 7. Load the raw `AiConfigInferenceProfile`; skip if missing.
 8. Skip if `profile.pinnedHostId == null`.
 9. Skip if `profile.pinnedHostId != localHostId`.
-10. Skip with an error log if `!await profileIsLocal(profile, repo)` — **fail
-    closed**: an unresolved model id counts as not local.
+10. Skip if `!await profileIsLocal(profile, repo)` — **fail closed**: a
+    referenced model or provider config that cannot be resolved counts as not
+    local.
 11. Skip if `profile.transcriptionModelId == null` (the runner would
     early-return anyway).
 12. Find the profile's automated transcription `SkillAssignment` — `automate:
@@ -155,7 +158,8 @@ contract:
     skip if the profile
     owns more than one such skill, since their context policies could differ
     silently.
-13. Build `ResolvedProfile` via `ProfileResolver.resolveByProfileId` plus
+13. Build `ResolvedProfile` via `ProfileResolver.resolveByProfileId`; skip if
+    it does not resolve or has no `transcriptionProvider`. Wrap it in
     `AutomationResult(handled: true, ...)`.
 14. Call `skillInferenceRunner.runTranscription(...)` inside a `try` — a thrown
     runner reaches step 15 with no transcript growth.

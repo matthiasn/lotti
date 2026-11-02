@@ -5,29 +5,29 @@ description: The thirty-one SyncMessage families, which ten are sequence-tracked
 resource: ../../../lib/classes/sync/sync_message.dart
 tags: [sync, wire-format, sync-message]
 status: stable
-generated: { by: codex/gpt-6, at: 2026-09-26T12:13:54Z }
-stale_after: 2026-11-02
+generated: { by: claude-code/opus-5.5, at: 2026-11-03T08:00:00Z }
+stale_after: 2027-05-03
 sources:
   - id: sync-message
     resource: ../../../lib/classes/sync/sync_message.dart
     title: SyncMessage freezed union
-    last_modified: 2026-08-10
+    last_modified: 2026-10-30
   - id: companion-customization
     resource: ../../../lib/features/companion/state/companion_customization_controller.dart
     title: The companion's customization, sent and reloaded
-    last_modified: 2026-10-19
+    last_modified: 2026-11-01
   - id: payload-type
     resource: ../../../lib/classes/sync_sequence_payload_type.dart
     title: SyncSequencePayloadType
-    last_modified: 2026-07-05
+    last_modified: 2026-10-30
   - id: apply
     resource: ../../../lib/features/sync/matrix/sync_event_processor_apply.dart
     title: Apply path
-    last_modified: 2026-08-02
+    last_modified: 2026-10-30
   - id: settings-model
     resource: ../../../specs/tla/SyncSettings.tla
     title: Conditional convergence of untracked settings
-    last_modified: 2026-09-25
+    last_modified: 2026-10-19
   - id: saved-filter-model
     resource: ../../../specs/tla/SavedTaskFilterSync.tla
     title: Saved task filter delivery and convergence
@@ -35,31 +35,39 @@ sources:
   - id: saved-filter-repository
     resource: ../../../lib/logic/repositories/saved_task_filters_repository.dart
     title: SavedTaskFiltersRepository ledger, order and tombstones
-    last_modified: 2026-09-26
+    last_modified: 2026-10-29
   - id: attachment-index
     resource: ../../../lib/features/sync/matrix/pipeline/attachment_index.dart
     title: AttachmentIndex exact and legacy lookup
-    last_modified: 2026-08-06
+    last_modified: 2026-10-26
   - id: agent-resolution
     resource: ../../../lib/features/sync/matrix/sync_event_processor_agent_handlers.dart
     title: Exact agent attachment resolution
-    last_modified: 2026-08-06
+    last_modified: 2026-10-30
   - id: journal-resolution
     resource: ../../../lib/features/sync/matrix/smart_journal_entity_loader.dart
     title: Exact journal attachment resolution
-    last_modified: 2026-08-06
+    last_modified: 2026-10-24
   - id: bundle-resolution
     resource: ../../../lib/features/sync/matrix/sync_event_processor_outbox_bundle.dart
     title: Exact outbox manifest resolution
-    last_modified: 2026-08-06
+    last_modified: 2026-10-11
   - id: payload-sender
     resource: ../../../lib/features/sync/matrix/matrix_payload_sender.dart
     title: File-backed payload upload and event-id binding
-    last_modified: 2026-08-06
+    last_modified: 2026-10-30
   - id: agent-payload-sender
     resource: ../../../lib/features/sync/matrix/matrix_payload_sender_notifications.dart
     title: Claimed agent payload upload
-    last_modified: 2026-08-06
+    last_modified: 2026-09-19
+  - id: embedding-vectors-receive
+    resource: ../../../lib/features/sync/matrix/sync_event_processor_embedding_vectors.dart
+    title: Exact embedding-vector attachment resolution
+    last_modified: 2026-10-30
+  - id: embedding-vectors-sender
+    resource: ../../../lib/features/sync/matrix/matrix_payload_sender_embedding_vectors.dart
+    title: Embedding-vector attachment upload and file deletion
+    last_modified: 2026-10-30
 ---
 
 # Families
@@ -285,8 +293,9 @@ row to replay. The decision is
 
 # File-backed payloads
 
-Journal entities and agent payloads can travel by reference: the envelope
-carries a `jsonPath` and the bytes ride as a Matrix attachment. Those payloads
+Journal entities, notifications, embedding-vector versions and agent payloads
+can travel by reference: the envelope carries a `jsonPath` and the bytes ride
+as a Matrix attachment. Those payloads
 are resolved through the attachment index and loader before they are applied,
 which is why attachment ordering and dedupe are load-bearing for sync
 correctness rather than a storage detail.
@@ -294,8 +303,8 @@ correctness rather than a storage detail.
 The transition away from mutable-path identity is backward compatible. A
 file-backed envelope may also carry `attachmentEventId`, the Matrix event id of
 the exact JSON attachment generation it represents. When that field is present,
-journal, agent, notification and outbox-manifest resolution looks up only that
-event and waits when it has not arrived; it never reads another descriptor or
+journal, agent, notification, embedding-vector and outbox-manifest resolution
+looks up only that event and waits when it has not arrived; it never reads another descriptor or
 the on-disk cache at the same `jsonPath`. `AttachmentIndex` therefore retains
 every observed event by id while still exposing latest-by-path lookup for legacy
 envelopes. Older peers omit the field and continue through the path-first,
@@ -305,9 +314,15 @@ use their `jsonPath`; they simply cannot enforce exact-generation identity.
 Exact causality therefore activates per envelope when a current sender includes
 the id and a current receiver understands it, without a flag-day upgrade.
 
+Embedding vectors have no legacy path: the variant is newer than the field, so
+a version is read only through its `attachmentEventId`. A version sent without
+an attachment, because the sender's file was already gone, carries no vectors,
+and the receiver still records its receipt.
+
 The wire field stays optional for mixed-version rollout, but every current JSON
 attachment sender populates it from the successful upload: journal entities,
-notifications, agent entities and links, and outbox bundle manifests. Agent
+notifications, embedding vectors, agent entities and links, and outbox bundle
+manifests. Agent
 rows carry their exact serialized payload inline while pending, so the sender
 uploads those claimed bytes before stripping the large entity from the wire
 envelope; a newer enqueue overwriting the stable sidecar cannot change the

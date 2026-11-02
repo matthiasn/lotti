@@ -5,7 +5,7 @@ description: How one device's embeddings reach the user's other devices as a tra
 resource: ../../../lib/features/ai/embedding_sync
 tags: [ai, embeddings, sync, vector-clock, register, tombstone, tla]
 status: draft
-generated: { by: claude-code/opus-5.5, at: 2026-11-02T12:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-11-02T18:00:00Z }
 stale_after: 2027-04-30
 sources:
   - id: register
@@ -15,7 +15,7 @@ sources:
   - id: share
     resource: ../../../lib/features/ai/embedding_sync/embedding_share.dart
     title: EmbeddingShare and EmbeddingVersionTicket
-    last_modified: 2026-10-30
+    last_modified: 2026-11-02
   - id: sink
     resource: ../../../lib/features/ai/embedding_sync/synced_embedding_sink.dart
     title: SyncedEmbeddingSink, where the apply path hands versions
@@ -87,7 +87,7 @@ is found as a gap and asked for ([sequence and backfill](../sync/sequence-and-ba
 |-----------|-------|------|
 | `EmbeddingRegister` | `ai/database` | One version: register clock, source clock, content hash, tombstone flag; kept per shard beside its chunks (`EmbeddingRegisterEntity`) |
 | `EmbeddingProcessor` | `ai/service` | Writes a version on every store and every removal, under the entry's lock |
-| `EmbeddingShare` / `EmbeddingVersionTicket` | `ai/embedding_sync` | What the processor reserves a version through; implemented by sync |
+| `EmbeddingShare` / `EmbeddingVersionTicket` | `ai/embedding_sync` | What the processor reserves a version through, and has what was stored unshared sent; implemented by sync |
 | `EmbeddingVectorsSync` | `sync/embedding_vectors` | Reserves, writes the attachment, enqueues; answers backfill, deep backfill and Add Device; runs the catch-up |
 | `SyncEventProcessor` (embedding vectors part) | `sync/matrix` | Resolves the attachment, hands the version to the sink, records the receipt |
 | `EmbeddingSyncReceiver` | `ai/embedding_sync` | The merge, the tombstone path and the hash check |
@@ -111,7 +111,8 @@ is open.
   The **content hash** pins that text, label names of a task included.
 
 A version stored while sharing was off has no register clock; no peer can know
-of it. Add Device versions it before it is sent.
+of it until it is versioned and sent — by Add Device, and by
+`shareUnversioned` ([below](#sharing-what-was-stored-unshared)).
 
 # Sending
 
@@ -134,8 +135,9 @@ sequenceDiagram
 ```
 
 - **Nothing is shared** before the pipeline attaches, while either flag is
-  off, without a host — and then the version is stored without a clock — or
-  when the vectors came from sync: storing a received version sends nothing.
+  off, without a host — and then the version is stored without a clock, to
+  be shared later — or when the vectors came from sync: storing a received
+  version sends nothing.
 - **A store that fails releases the ticket;** `send` never throws: a version
   the outbox refused is released and settled like any other reservation.
 - **The row travels alone.** Its subject keeps it out of the dequeue-time
@@ -244,6 +246,11 @@ that finds embeddings on and the model downloaded:
   toggle says), or whose live version has no chunks. `processEntity` then
   does what a local edit would: re-embeds — a new version, dominating every
   copy — or removes with a tombstone. The model is called only for those.
+- **Chunk sets with no register** — embedded before registers existed —
+  are checked the same way, and `adoptUnregistered` writes an unshared
+  register for each that still matches: a journal entry's with the entry's
+  clock as its source, a report's as it is. Under the entry's lock, and only
+  while the set is still unregistered with the same content hash.
 - **`retireReportsOfDeletedTasks`** tombstones the report vectors of every
   task deleted here (`EmbeddingProcessor.retireAgentReport`). A task
   deleted from now on takes them along itself (`processEntity`).
@@ -265,6 +272,26 @@ flowchart TD
   K -- yes --> X[retireAgentReport: tombstone]
   K -- no --> L
 ```
+
+# Sharing what was stored unshared
+
+Vectors stored while `sync_embeddings` was off, before the pipeline attached
+or before this device had a host carry no clock, and adopted ones neither.
+No backfill can ask for them, and the catch-up round only advertises shared
+registers. `EmbeddingShare.shareUnversioned`, implemented by
+`EmbeddingVectorsSync`, versions and sends each live one of this model
+through `sendCurrent` — the path Add Device takes — and is run:
+
+- after the start-time reconcile, so adopted sets go out in the same start;
+- when the pipeline attaches, without holding up start, tracked with the
+  re-checks so `detach` waits for it;
+- on every flag change, so turning `sync_embeddings` on shares what was
+  embedded while it was off.
+
+A version without chunks is skipped — no peer could store it, and the
+reconcile embeds it again — and one that fails is logged and left for the
+next run. `sendCurrent` re-reads the register under the entry's lock, so two
+runs never version one twice.
 
 # Removals
 

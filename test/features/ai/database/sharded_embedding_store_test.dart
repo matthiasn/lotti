@@ -505,6 +505,38 @@ void main() {
         expect(await store.allRegisters(), [register()]);
       });
 
+      test(
+        'lists a version for each chunk set without a register, read from '
+        'its own shard',
+        () async {
+          await openStoreWithShards(
+            ['cat-a', 'cat-b'],
+            metadata: {
+              'cat-a': [(entityId: 'entity-1', taskId: '')],
+              'cat-b': [(entityId: 'bare', taskId: '')],
+            },
+            registers: {
+              'cat-a': [row()],
+            },
+          );
+          when(
+            () => getShardOps('cat-b').findFirstByEntityId('bare'),
+          ).thenReturn(
+            makeEntity(entityId: 'bare', modelId: 'm', contentHash: 'h-bare'),
+          );
+
+          expect(await store.unregisteredVersions(), [
+            const EmbeddingRegister(
+              entityId: 'bare',
+              modelId: 'm',
+              entityType: 'journalEntry',
+              contentHash: 'h-bare',
+            ),
+          ]);
+          verifyNever(() => getShardOps('cat-a').findFirstByEntityId(any()));
+        },
+      );
+
       test('a re-categorised chunk set takes its register along', () async {
         await openStoreWithShards(
           ['cat-a'],

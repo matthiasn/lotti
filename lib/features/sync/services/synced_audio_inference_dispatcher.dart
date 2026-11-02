@@ -23,8 +23,8 @@ import 'package:lotti/services/vector_clock_service.dart';
 /// then — if every guard passes — invokes [SkillInferenceRunner.runTranscription]
 /// directly (no `AutomaticPromptTrigger` reuse, no `ProfileAutomationService`
 /// re-entry, no Settings-default transcription fallback that could route
-/// through cloud providers) and finally nudges [WakeOrchestrator.enqueueManualWake] iff the
-/// transcript actually grew.
+/// through cloud providers) and finally nudges the task agent through
+/// [WakeOrchestrator.requestContentWake] iff the transcript actually grew.
 ///
 /// Every skip is logged with enough context to debug a missing auto-trigger
 /// from log triage alone. The dispatcher itself never throws — it logs and

@@ -241,6 +241,110 @@ void main() {
     );
   });
 
+  group('chunk sets stored before registers', () {
+    const text = 'A journal entry long enough to embed';
+    const entryClock = VectorClock({'host-a': 4});
+
+    /// Stores vectors of [entityId] embedded from [embeddedFrom], with no
+    /// register row, as builds before registers did.
+    void unregistered(
+      String entityId,
+      String embeddedFrom, {
+      String entityType = kEntityTypeJournalText,
+      String taskId = '',
+    }) => store.replaceEntityEmbeddings(
+      entityId: entityId,
+      entityType: entityType,
+      modelId: _model,
+      contentHash: _hash(embeddedFrom),
+      embeddings: [Float32List(kEmbeddingDimensions)],
+      taskId: taskId,
+    );
+
+    JournalEntry clocked(String id, String text, {bool deleted = false}) {
+      final entry = _entry(id, text, deleted: deleted);
+      return entry.copyWith(
+        meta: entry.meta.copyWith(vectorClock: entryClock),
+      );
+    }
+
+    setUp(() {
+      rows['matching'] = clocked('matching', text);
+      unregistered('matching', text);
+      rows['edited'] = clocked('edited', 'The text the entry has now, edited');
+      unregistered('edited', text);
+      rows['deleted'] = clocked('deleted', text, deleted: true);
+      unregistered('deleted', text);
+      unregistered('absent', text);
+      unregistered(
+        'report',
+        'What the agent says about the task',
+        entityType: kEntityTypeAgentReport,
+        taskId: 'task-1',
+      );
+    });
+
+    test('are checked like stored vectors', () async {
+      expect(await reconciler().entriesToReprocess(), {'edited', 'deleted'});
+    });
+
+    test(
+      'get a register when they still match: an entry with its clock as the '
+      'source, a report as it is',
+      () async {
+        expect(await reconciler().adoptUnregistered(), 2);
+
+        expect(
+          store.registers['matching'],
+          EmbeddingRegister(
+            entityId: 'matching',
+            modelId: _model,
+            entityType: kEntityTypeJournalText,
+            contentHash: _hash(text),
+            sourceVectorClock: entryClock,
+          ),
+        );
+        expect(
+          store.registers['report'],
+          EmbeddingRegister(
+            entityId: 'report',
+            modelId: _model,
+            entityType: kEntityTypeAgentReport,
+            contentHash: _hash('What the agent says about the task'),
+            taskId: 'task-1',
+          ),
+        );
+        expect(store.registers.keys, unorderedEquals(['matching', 'report']));
+        expect(await reconciler().adoptUnregistered(), 0);
+      },
+    );
+
+    test(
+      'a set that gained a register or changed meanwhile is left as it is',
+      () async {
+        store = _StaleListingStore()
+          ..listed = [
+            const EmbeddingRegister(
+              entityId: 'r1',
+              modelId: _model,
+              entityType: kEntityTypeAgentReport,
+              contentHash: 'the hash it had when listed',
+            ),
+          ];
+        (store as _StaleListingStore).replaceEntityEmbeddings(
+          entityId: 'r1',
+          entityType: kEntityTypeAgentReport,
+          modelId: _model,
+          contentHash: 'the hash it has now',
+          embeddings: [Float32List(kEmbeddingDimensions)],
+        );
+
+        expect(await reconciler().adoptUnregistered(), 0);
+        expect(store.registers, isEmpty);
+      },
+    );
+  });
+
   group('retireReportsOfDeletedTasks', () {
     test(
       'tombstones the report vectors whose task is deleted here, and keeps '
@@ -309,4 +413,13 @@ void main() {
       );
     });
   });
+}
+
+/// A store whose list of unregistered sets is the one it was given, as a
+/// listing taken before another write landed would be.
+class _StaleListingStore extends InMemoryEmbeddingStore {
+  List<EmbeddingRegister> listed = const [];
+
+  @override
+  List<EmbeddingRegister> unregisteredVersions() => listed;
 }

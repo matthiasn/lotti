@@ -20,6 +20,12 @@ abstract interface class EmbeddingShare {
     required String registerId,
     VectorClock? previous,
   });
+
+  /// Versions and sends every live version stored without a clock — while
+  /// sharing was off, or adopted from before registers existed — so the
+  /// user's other devices receive what this one embedded then. Returns how
+  /// many it shared; `0` while versions are not shared.
+  Future<int> shareUnversioned();
 }
 
 /// A reserved register version, finalized exactly once: by [send] once the

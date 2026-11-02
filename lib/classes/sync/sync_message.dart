@@ -365,8 +365,9 @@ sealed class SyncMessage with _$SyncMessage {
   ///
   /// The complete chunk set travels as a JSON attachment at [jsonPath]
   /// (`{"dims": 768, "chunks": [<base64 float32>...]}`, gzipped on the
-  /// wire), built from the sender's store at send time, so the row travels
-  /// alone and never in a bundle. A tombstone ([deleted]) has no attachment
+  /// wire), written from the sender's store when the version is enqueued
+  /// (one file per version, deleted once sent), so the row travels alone and
+  /// never in a bundle. A tombstone ([deleted]) has no attachment
   /// and says the entry has no vectors any more.
   ///
   /// [coveredVectorClocks] are the clocks of earlier versions of the

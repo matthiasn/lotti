@@ -290,6 +290,16 @@ class ShardedEmbeddingStore implements EmbeddingStore {
       ?_shards[entry.value]?.store.getRegister(entry.key),
   ];
 
+  @override
+  Future<List<EmbeddingRegister>> unregisteredVersions() async => [
+    for (final MapEntry(key: entityId, value: shardKey)
+        in _primaryIndex.entries)
+      if (!_registerIndex.containsKey(entityId))
+        if (_shards[shardKey]?.ops.findFirstByEntityId(entityId)
+            case final chunk?)
+          ObjectBoxEmbeddingStore.unregisteredVersionOf(chunk),
+  ];
+
   /// Removes an entity from all in-memory indexes.
   void _removeFromIndexes(String entityId) {
     _primaryIndex.remove(entityId);
