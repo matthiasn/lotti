@@ -14,6 +14,7 @@ import 'package:lotti/features/ai/repository/one_shot_text_generation.dart';
 import 'package:lotti/features/ai_consumption/service/ai_interaction_capture.dart';
 import 'package:lotti/features/goals/logic/goal_checkin_compaction_strategy.dart';
 import 'package:lotti/features/goals/model/goal_checkin_weight.dart';
+import 'package:lotti/features/goals/service/goal_observation_digest_service.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -172,6 +173,16 @@ class GoalCheckInDigestService {
   /// Output cap per digest. The layer's word limit is in the prompt; this is
   /// the hard stop behind it.
   final int maxDigestTokens;
+
+  /// The month digests of the agent's own older observations (ADR 0156),
+  /// written with the same inference and stored the same way as these.
+  late final GoalObservationDigestService observationDigests =
+      GoalObservationDigestService(
+        inferenceRepository: _inference,
+        repository: _repository,
+        syncService: _syncService,
+        domainLogger: _domainLogger,
+      );
 
   static const double _temperature = 0.3;
 

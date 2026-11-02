@@ -30,7 +30,6 @@ import 'package:lotti/features/goals/model/goal_checkin_weight.dart';
 import 'package:lotti/features/goals/runtime/goal_agent_phase_a.dart';
 import 'package:lotti/features/goals/runtime/goal_wake_facts.dart';
 import 'package:lotti/features/goals/service/goal_checkin_compactor.dart';
-import 'package:lotti/features/goals/service/goal_checkin_digest_service.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_strategy.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_workflow.dart';
@@ -2865,10 +2864,42 @@ void main() {
     }
 
     var liveCheckIns = 0;
+    // What the wake asked of the observation digests, and what it was given.
+    bool? observationInference;
+    GoalCheckInWeight? observationWeight;
+    const julyDigest = (
+      month: '2026-07',
+      notes: 6,
+      text: 'July: evening walks held; mornings kept slipping.',
+    );
     Future<String?> runWake({
-      required GoalCheckInDigestService digestService,
+      required MockGoalCheckInDigestService digestService,
       String? pendingUserMessage,
     }) async {
+      observationInference = null;
+      observationWeight = null;
+      final observationDigests = MockGoalObservationDigestService();
+      when(
+        () => observationDigests.digests(
+          agentId: agentId,
+          recalled: any(named: 'recalled'),
+          shownVerbatim: any(named: 'shownVerbatim'),
+          goalStatement: any(named: 'goalStatement'),
+          model: 'glm-5.2',
+          provider: any(named: 'provider'),
+          allowInference: any(named: 'allowInference'),
+          weight: any(named: 'weight'),
+        ),
+      ).thenAnswer((invocation) async {
+        observationInference =
+            invocation.namedArguments[#allowInference] as bool;
+        observationWeight =
+            invocation.namedArguments[#weight] as GoalCheckInWeight;
+        return [julyDigest];
+      });
+      when(() => digestService.observationDigests).thenReturn(
+        observationDigests,
+      );
       stubSpec();
       stubGlmResolution();
       _stubBadPrior(repository, agentId, now);
@@ -2944,6 +2975,12 @@ void main() {
       // A scheduled wake may write digests, and it asks with the goal's own
       // model — the same wake that compacts check-ins.
       expect(allowInference, isTrue);
+      // Its own older notes come in as month digests, written on the same
+      // wakes, under the goal's weight.
+      expect(observationInference, isTrue);
+      expect(observationWeight, GoalCheckInWeight.context);
+      expect(facts, contains('"observationDigests"'));
+      expect(facts, contains(julyDigest.text));
       verify(
         () => digestService.forWake(
           agentId: agentId,
@@ -2991,12 +3028,15 @@ void main() {
         allowInference = invocation.namedArguments[#allowInference] as bool;
         return _RecordingDigestWriter();
       });
-      await runWake(
+      final facts = await runWake(
         digestService: digestService,
         pendingUserMessage: 'How am I doing?',
       );
 
       expect(allowInference, isFalse);
+      // The month digests too: read, never written, on a turn.
+      expect(observationInference, isFalse);
+      expect(facts, contains(julyDigest.text));
     });
 
     test('a failing digest layer falls back to the truncating tail', () async {

@@ -11,6 +11,13 @@
   check-ins and messages show — circumstances, mood, obstacles, what helps —
   and the internals panel finds those notes however busy the agent has been.
 
+### Added
+- **Goal agents now remember what they noticed about you beyond the last
+  dozen notes.** Each finished month of a goal agent's notes is condensed into
+  a short digest it reads on every update — for a journal goal, the themes
+  you kept returning to, the questions you raised and how your thinking
+  moved. Notes the app later tidies away live on in their month's digest.
+
 ### Changed
 - **A goal's check-in timeline is wider on desktop, and you can drag it.**
   The column beside the goal now grows with the window instead of staying at

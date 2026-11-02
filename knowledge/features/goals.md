@@ -2312,7 +2312,23 @@ older ones the agent filed `critical` (ADR 0146). The system prompt's
 *Memory* step asks for an observation whenever `userVoice` or a message shows
 something about the user — circumstances, mood, obstacles, what helps, how
 coaching lands — and the closing "call no tools" step yields to it; a prompt
-that said only what observations were *not* for got next to none. `search_goal_memory`
+that said only what observations were *not* for got next to none.
+
+**Older observations are digested by month (ADR 0156).** On automatic wakes,
+`GoalObservationDigestService` (`goals/service/goal_observation_digest_service.dart`,
+reached through the check-in digest service's `observationDigests`) condenses
+each finished local calendar month of notes into one digest with the wake's
+model, under a prompt for the goal's `GoalCheckInWeight` — a journal keeps
+themes, open questions and how thinking moved; a measured goal keeps
+constraints and patterns. At most two months a wake, newest first, stored as
+`goal_observation_digest` actions keyed by `(agentId, YYYY-MM)` with the note
+ids they cover. A digest is rewritten only when a note it has not seen syncs
+in, folding its earlier text in, so the 180-day observation prune never loses
+what a digest already holds. `goalObservationMemory`
+(`goals/workflow/goal_observation_recall.dart`) reads the window once (1,000
+notes with digests wired, 200 without) and FACTS carries `observationDigests`
+— month, note count, text — newest first within 600 tokens, skipping a month
+whose every note is already listed verbatim. `search_goal_memory`
 reaches the rest (ADR 0057 decision 1): every check-in in the user's own
 words, the whole chat, and the agent's observations.
 

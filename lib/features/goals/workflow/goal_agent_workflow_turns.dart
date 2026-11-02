@@ -266,6 +266,41 @@ extension _GoalAgentWorkflowTurns on GoalAgentWorkflow {
     }
   }
 
+  /// What this wake remembers of the agent's own notes: the newest and the
+  /// critical ones verbatim and, with the digest service wired, the older
+  /// ones as month digests (ADR 0156) — written only on wakes that may infer,
+  /// as the check-in digests are, with the wake's own model.
+  Future<GoalObservationMemory> _observationMemory({
+    required String agentId,
+    required String goalStatement,
+    required ({
+      String modelId,
+      AiConfigInferenceProvider provider,
+      GeminiThinkingMode? geminiThinkingMode,
+    })
+    resolved,
+    required bool allowInference,
+    required GoalCheckInWeight weight,
+  }) {
+    final digests = _checkInDigestService?.observationDigests;
+    return goalObservationMemory(
+      _repository,
+      agentId,
+      digester: digests == null
+          ? null
+          : (recalled, shownVerbatim) => digests.digests(
+              agentId: agentId,
+              recalled: recalled,
+              shownVerbatim: shownVerbatim,
+              goalStatement: goalStatement,
+              model: resolved.modelId,
+              provider: resolved.provider,
+              allowInference: allowInference,
+              weight: weight,
+            ),
+    );
+  }
+
   /// The compacted check-ins and retry failures stored for this goal.
   ///
   /// Summaries are read whole and then token-bounded by

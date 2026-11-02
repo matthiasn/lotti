@@ -97,7 +97,9 @@ Goal agents use its **read side only**: recall builds an `AgentLogCompactor`
 over the goal's check-ins and chat as inline events, beside its observations,
 and searches it — nothing is captured or folded, and no wake reads the log
 whole. Their bounded wake context is the check-in compaction layers in
-[goal agents](../goals.md#check-ins-the-users-own-voice).
+[goal agents](../goals.md#check-ins-the-users-own-voice), and their own older
+observations reach a wake as one digest per finished month
+([recall](../goals.md#recall), ADR 0156) rather than through this log.
 
 The **improver** agent is deliberately out. Its wake context is a per-ritual
 *windowed* snapshot — feedback since the last scan watermark, instance reports,
