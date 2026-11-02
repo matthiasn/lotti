@@ -53,6 +53,16 @@ class EventPeopleDirectory {
        _suggested = suggestedIds,
        _dismissed = dismissedIds;
 
+  /// How far back [load] reads this agent's pending change sets and
+  /// decisions for the event.
+  ///
+  /// The repository's defaults (20 sets, 50 decisions) are display windows,
+  /// and follow-up proposals use them up too; a dismissal or a pending
+  /// suggestion that fell outside them would read as open and be proposed
+  /// again. One event's proposals stay far below this, so in practice it
+  /// reads them all.
+  static const historyWindow = 1000;
+
   /// Everyone the user keeps, by name.
   final List<EventKnownPerson> people;
   final Map<String, EventKnownPerson> _byId;
@@ -85,6 +95,7 @@ class EventPeopleDirectory {
     for (final changeSet in await agentRepository.getPendingChangeSets(
       agentId,
       taskId: eventId,
+      limit: historyWindow,
     )) {
       for (final item in changeSet.items) {
         if (item.toolName == EventAgentToolNames.suggestPerson &&
@@ -101,6 +112,7 @@ class EventPeopleDirectory {
       for (final decision in await agentRepository.getChangeDecisions(
         agentId,
         taskId: eventId,
+        limit: historyWindow,
       ))
         if (decision.toolName == EventAgentToolNames.suggestPerson &&
             decision.verdict == ChangeDecisionVerdict.rejected)

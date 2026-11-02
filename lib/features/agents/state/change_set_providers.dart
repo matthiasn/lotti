@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/agents/change_set.dart';
+import 'package:lotti/classes/agents/proposal_ledger.dart';
 import 'package:lotti/features/agents/service/change_dispatch_intents.dart';
 import 'package:lotti/features/agents/service/change_set_confirmation_service.dart';
 import 'package:lotti/features/agents/service/change_set_notification_service.dart';
@@ -14,6 +15,7 @@ import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/agents/state/pull_request_link_source_provider.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
+import 'package:lotti/features/agents/tools/event_tool_definitions.dart';
 import 'package:lotti/features/agents/tools/project_tool_definitions.dart';
 import 'package:lotti/features/agents/workflow/event_tool_dispatcher.dart';
 import 'package:lotti/features/agents/workflow/project_tool_dispatcher.dart';
@@ -102,6 +104,11 @@ projectPendingChangeSetsProvider = FutureProvider.autoDispose
 /// the event card renders them with the same `ProposalsSection` and
 /// `ProposalRow`. Event-targeted change sets keep their event id in the
 /// historical `taskId` field, as project-targeted ones do.
+///
+/// A person suggestion carries the name it was proposed under, so it is shown
+/// only while that person is: a private person's row and history leave the
+/// card while private entries are hidden, as they leave the People row. Re-read
+/// when private entries are shown or hidden, and when a person is written.
 final FutureProviderFamily<UnifiedSuggestionList, String>
 eventSuggestionListProvider = FutureProvider.autoDispose
     .family<UnifiedSuggestionList, String>((ref, eventId) async {
@@ -110,16 +117,31 @@ eventSuggestionListProvider = FutureProvider.autoDispose
       if (identity == null) return const UnifiedSuggestionList.empty();
 
       ref.watch(agentUpdateStreamProvider(identity.agentId));
+      final subscription = ref
+          .read(updateNotificationsProvider)
+          .updateStream
+          .listen((affectedIds) {
+            if (affectedIds.contains(privateToggleNotification) ||
+                affectedIds.contains(relationshipNotification)) {
+              ref.invalidateSelf();
+            }
+          });
+      ref.onDispose(subscription.cancel);
 
       final ledger = await ref
           .watch(agentRepositoryProvider)
           .getProposalLedger(identity.agentId, taskId: eventId);
+      final shown = await _shownPeople(ref, ledger);
+      bool isShown(String toolName, Map<String, dynamic> args) =>
+          toolName != EventAgentToolNames.suggestPerson ||
+          shown.contains(args[EventAgentPersonToolArgs.personId]);
       final seen = <String>{};
       final open = <PendingSuggestion>[];
       for (final set in ledger.pendingSets) {
         for (var index = 0; index < set.items.length; index++) {
           final item = set.items[index];
           if (item.status != ChangeItemStatus.pending) continue;
+          if (!isShown(item.toolName, item.args)) continue;
           final fingerprint = ChangeItem.fingerprint(item);
           if (!seen.add(fingerprint)) continue;
           open.add(
@@ -134,10 +156,32 @@ eventSuggestionListProvider = FutureProvider.autoDispose
       }
       return UnifiedSuggestionList(
         open: open,
-        activity: ledger.resolved,
+        activity: [
+          for (final entry in ledger.resolved)
+            if (isShown(entry.toolName, entry.args)) entry,
+        ],
         agentName: identity.displayName,
       );
     });
+
+/// The ids of the people shown on the People page right now (private ones
+/// only while private entries are shown), read only when [ledger] holds a
+/// person suggestion.
+Future<Set<String>> _shownPeople(Ref ref, ProposalLedger ledger) async {
+  bool isPerson(String toolName) =>
+      toolName == EventAgentToolNames.suggestPerson;
+  final hasPerson =
+      ledger.pendingSets.any(
+        (set) => set.items.any((item) => isPerson(item.toolName)),
+      ) ||
+      ledger.resolved.any((entry) => isPerson(entry.toolName));
+  if (!hasPerson) return const {};
+  return {
+    for (final person
+        in await ref.read(journalRepositoryProvider).getRelationships())
+      if (person.meta.deletedAt == null) person.meta.id,
+  };
+}
 
 /// Pending change sets an agent targets at ITSELF (`taskId == agentId`) —
 /// the shape self-owned agents (goal agents today) use for proposals like

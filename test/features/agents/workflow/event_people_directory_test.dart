@@ -61,7 +61,13 @@ void main() {
         ],
       );
       when(
-        () => agents.getPendingChangeSets(agentId, taskId: eventId),
+        () => agents.getPendingChangeSets(
+          agentId,
+          taskId: eventId,
+          // The whole history, not the display window: a suggestion past
+          // the newest 20 sets would read as open and come again.
+          limit: EventPeopleDirectory.historyWindow,
+        ),
       ).thenAnswer(
         (_) async => [
           makeTestChangeSet(
@@ -90,7 +96,12 @@ void main() {
         ],
       );
       when(
-        () => agents.getChangeDecisions(agentId, taskId: eventId),
+        () => agents.getChangeDecisions(
+          agentId,
+          taskId: eventId,
+          // Likewise a dismissal past the newest 50 decisions.
+          limit: EventPeopleDirectory.historyWindow,
+        ),
       ).thenAnswer(
         (_) async => [
           makeTestChangeDecision(

@@ -325,6 +325,17 @@ void main() {
       ).thenAnswer((_) async => person);
     }
 
+    // No link stored unless a test says otherwise.
+    setUp(() {
+      when(
+        () => mockJournalDb.linksBetween(
+          any(),
+          any(),
+          type: any(named: 'type'),
+        ),
+      ).thenAnswer((_) async => []);
+    });
+
     Future<ToolExecutionResult> accept() => dispatcher.dispatch(
       EventAgentToolNames.suggestPerson,
       {'personId': 'pip', 'personName': 'Pip Penguin'},
@@ -410,6 +421,67 @@ void main() {
       );
 
       expect((await accept()).success, isTrue);
+    });
+
+    group('a link the user hid', () {
+      final hidden = EntryLink.relationship(
+        id: 'hidden-link',
+        fromId: 'pip',
+        toId: eventId,
+        createdAt: now,
+        updatedAt: now,
+        vectorClock: null,
+        hidden: true,
+      );
+
+      setUp(() {
+        stubEntities(person: pip);
+        // ensureLink counts the hidden link as there.
+        when(
+          () => mockPersistenceLogic.createLink(
+            fromId: any(named: 'fromId'),
+            toId: any(named: 'toId'),
+            linkType: any(named: 'linkType'),
+          ),
+        ).thenAnswer((_) async => false);
+        when(
+          () => mockJournalDb.linksBetween(
+            'pip',
+            eventId,
+            type: 'RelationshipLink',
+          ),
+        ).thenAnswer((_) async => [hidden]);
+      });
+
+      test('is shown again, so the person lands on the event', () async {
+        when(
+          () => mockJournalRepository.changeLink(any(), any()),
+        ).thenAnswer((_) async => true);
+
+        final result = await accept();
+
+        expect(result.success, isTrue);
+        final change =
+            verify(
+                  () => mockJournalRepository.changeLink(
+                    'hidden-link',
+                    captureAny(),
+                  ),
+                ).captured.single
+                as EntryLink Function(EntryLink);
+        expect(change(hidden).hidden, isFalse);
+      });
+
+      test('fails, retryably, when it cannot be shown', () async {
+        when(
+          () => mockJournalRepository.changeLink(any(), any()),
+        ).thenAnswer((_) async => false);
+
+        final result = await accept();
+
+        expect(result.success, isFalse);
+        expect(result.errorMessage, 'Person link failed');
+      });
     });
 
     test('fails, retryably, when the link cannot be written', () async {

@@ -197,7 +197,7 @@ class EventToolDispatcher {
       toId: eventId,
       linkType: EntryLinkType.relationship,
     );
-    if (!linked) {
+    if (!linked || !await _showLink(personId, eventId)) {
       return ToolExecutionResult(
         success: false,
         output: 'Error: ${person.data.title} could not be linked to the event',
@@ -216,6 +216,30 @@ class EventToolDispatcher {
       output: 'Added ${person.data.title} to the event',
       mutatedEntityId: eventId,
     );
+  }
+
+  /// Shows a live person → event link the user once hid, and answers whether
+  /// every live one is shown afterwards.
+  ///
+  /// `ensureLink` counts a hidden link as there, yet the People row and the
+  /// agent's directory leave hidden links out — so without this a confirmed
+  /// suggestion would report the person added while they stay off the event.
+  /// Confirming is the user asking to see them there.
+  Future<bool> _showLink(String personId, String eventId) async {
+    for (final link in await journalDb.linksBetween(
+      personId,
+      eventId,
+      type: entryLinkTypeDbName(EntryLinkType.relationship),
+    )) {
+      if (link.deletedAt != null || link.hidden != true) continue;
+      if (!await journalRepository.changeLink(
+        link.id,
+        (stored) => stored.copyWith(hidden: false),
+      )) {
+        return false;
+      }
+    }
+    return true;
   }
 
   /// The role of the task in its [ChangeEffect]'s derived ids.

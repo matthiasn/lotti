@@ -772,12 +772,14 @@ void main() {
           () => mockAgentRepository.getPendingChangeSets(
             any(),
             taskId: any(named: 'taskId'),
+            limit: any(named: 'limit'),
           ),
         ).thenAnswer((_) async => const []);
         when(
           () => mockAgentRepository.getChangeDecisions(
             any(),
             taskId: any(named: 'taskId'),
+            limit: any(named: 'limit'),
           ),
         ).thenAnswer((_) async => const []);
         // A real person, and an id the model made up.
@@ -800,6 +802,7 @@ void main() {
           () => mockAgentRepository.getPendingChangeSets(
             any(),
             taskId: eventId,
+            limit: any(named: 'limit'),
           ),
         ).called(1);
       },

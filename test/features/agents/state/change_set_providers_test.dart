@@ -25,6 +25,7 @@ import 'package:lotti/providers/agent_repository_providers.dart';
 import 'package:lotti/providers/service_providers.dart'
     show domainLoggerProvider, journalDbProvider;
 import 'package:lotti/providers/update_notifications_providers.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -33,6 +34,7 @@ import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 import '../../projects/test_utils.dart';
+import '../../relationships/helpers/test_people.dart';
 import '../test_utils.dart';
 
 void main() {
@@ -89,11 +91,21 @@ void main() {
     AgentDomainEntity? agent,
     StreamController<Set<String>>? updateController,
     ProviderListenable<Object?>? listenTo,
+    MockJournalRepository? journal,
+    StreamController<Set<String>>? notifications,
   }) {
+    final updates = MockUpdateNotifications();
+    when(() => updates.updateStream).thenAnswer(
+      (_) => notifications?.stream ?? const Stream<Set<String>>.empty(),
+    );
     final container = ProviderContainer(
       overrides: withServiceOverrides([
         eventAgentProvider(eventId).overrideWith((ref) async => agent),
         agentRepositoryProvider.overrideWithValue(mockRepository),
+        updateNotificationsProvider.overrideWithValue(updates),
+        journalRepositoryProvider.overrideWithValue(
+          journal ?? MockJournalRepository(),
+        ),
         if (agent != null && updateController != null)
           agentUpdateStreamProvider(agent.agentId).overrideWith(
             (ref) => updateController.stream,
@@ -563,6 +575,10 @@ void main() {
         ),
       );
 
+      final journal = MockJournalRepository();
+      when(journal.getRelationships).thenAnswer(
+        (_) async => [makeTestPerson(id: 'pip', title: 'Pip Penguin')],
+      );
       final updateController = StreamController<Set<String>>.broadcast();
       addTearDown(updateController.close);
       final container = createEventAgentContainer(
@@ -570,6 +586,7 @@ void main() {
         agent: agent,
         updateController: updateController,
         listenTo: eventSuggestionListProvider('event-001'),
+        journal: journal,
       );
 
       final result = await container.read(
@@ -584,6 +601,123 @@ void main() {
       expect(row.fingerprint, ChangeItem.fingerprint(person));
       expect(result.activity, [resolved]);
       expect(result.agentName, 'Gala recap');
+    });
+
+    test('reads no people while nothing proposed names one', () async {
+      final agent = makeTestIdentity();
+      when(
+        () => mockRepository.getProposalLedger(
+          agent.agentId,
+          taskId: 'event-001',
+        ),
+      ).thenAnswer(
+        (_) async => ProposalLedger(
+          open: const [],
+          resolved: const [],
+          pendingSets: [
+            makeTestChangeSet(
+              agentId: agent.agentId,
+              taskId: 'event-001',
+              items: const [
+                ChangeItem(
+                  toolName: 'suggest_follow_up_task',
+                  args: {'title': 'Share the album'},
+                  humanSummary: 'Follow-up task: Share the album',
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+      final journal = MockJournalRepository();
+      final container = createEventAgentContainer(
+        eventId: 'event-001',
+        agent: agent,
+        listenTo: eventSuggestionListProvider('event-001'),
+        journal: journal,
+      );
+
+      final result = await container.read(
+        eventSuggestionListProvider('event-001').future,
+      );
+
+      expect(result.open, hasLength(1));
+      verifyNever(journal.getRelationships);
+    });
+
+    test('a person hidden as private leaves the card, rows and history, '
+        'and comes back when private entries are shown', () async {
+      final agent = makeTestIdentity();
+      const oona = ChangeItem(
+        toolName: 'suggest_person',
+        args: {'personId': 'oona', 'personName': 'Oona'},
+        humanSummary: 'Add Oona to the event',
+      );
+      final dismissedOona = makeLedgerEntry(
+        changeSetId: 'cs-old',
+        toolName: 'suggest_person',
+        args: const {'personId': 'oona', 'personName': 'Oona'},
+        status: ChangeItemStatus.rejected,
+      );
+      final dismissedGone = makeLedgerEntry(
+        changeSetId: 'cs-older',
+        toolName: 'suggest_person',
+        args: const {'personId': 'gone', 'personName': 'Gone'},
+        status: ChangeItemStatus.rejected,
+      );
+      when(
+        () => mockRepository.getProposalLedger(
+          agent.agentId,
+          taskId: 'event-001',
+        ),
+      ).thenAnswer(
+        (_) async => ProposalLedger(
+          open: const [],
+          resolved: [dismissedOona, dismissedGone],
+          pendingSets: [
+            makeTestChangeSet(
+              agentId: agent.agentId,
+              taskId: 'event-001',
+              items: const [oona],
+            ),
+          ],
+        ),
+      );
+      // Oona is private: absent from the filtered read while hidden. Gone
+      // was deleted and stays out either way.
+      var privateShown = false;
+      final journal = MockJournalRepository();
+      when(journal.getRelationships).thenAnswer(
+        (_) async => [
+          if (privateShown) makeTestPerson(id: 'oona', title: 'Oona'),
+          makeTestPerson(id: 'gone', title: 'Gone', deletedAt: DateTime(2026)),
+        ],
+      );
+      final notifications = StreamController<Set<String>>.broadcast();
+      addTearDown(notifications.close);
+      final container = createEventAgentContainer(
+        eventId: 'event-001',
+        agent: agent,
+        listenTo: eventSuggestionListProvider('event-001'),
+        journal: journal,
+        notifications: notifications,
+      );
+
+      final hidden = await container.read(
+        eventSuggestionListProvider('event-001').future,
+      );
+      expect(hidden.open, isEmpty);
+      expect(hidden.activity, isEmpty);
+
+      privateShown = true;
+      notifications.add({privateToggleNotification});
+      await pumpEventQueue();
+      final shown = await container.read(
+        eventSuggestionListProvider('event-001').future,
+      );
+
+      expect(shown.open.single.item, oona);
+      expect(shown.activity, [dismissedOona]);
     });
   });
 
