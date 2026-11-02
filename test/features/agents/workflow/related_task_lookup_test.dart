@@ -290,6 +290,35 @@ void main() {
     });
   });
 
+  group('a private task', () {
+    setUp(() {
+      tasks['secret'] = _task('secret', private: true);
+      reports['secret'] = _report(
+        oneLiner: 'Private one-liner',
+        tldr: 'Private TL;DR',
+        content: 'Private report.',
+      );
+    });
+
+    for (final (depth, read) in [
+      ('TL;DR', (RelatedTaskLookup l) => l.tldr('secret')),
+      ('report', (RelatedTaskLookup l) => l.report('secret')),
+    ]) {
+      test('keeps its $depth on the device, even when linked', () async {
+        final answer = await read(
+          lookup(linkedIds: {'secret'}, canSearch: false),
+        );
+
+        expect(jsonDecode(answer!), {
+          'id': 'secret',
+          'note': RelatedTaskLookup.privateNote,
+        });
+        expect(answer, isNot(contains('Private')));
+        verifyNever(() => agents.getUsableTaskReportsForTaskIds(any()));
+      });
+    }
+  });
+
   group('report', () {
     setUp(() => tasks['relay'] = _task('relay'));
 

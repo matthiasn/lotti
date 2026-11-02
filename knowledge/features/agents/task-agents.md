@@ -456,7 +456,7 @@ flowchart LR
   Brief["Category knowledge brief (user-written)"] --> Wake["TaskAgentWorkflow wake"]
   Task["Current task"] --> Wake
   Project["Parent project (oneLiner + tldr)"] --> Wake
-  Linked["Linked tasks (id, metadata, one-liner;<br/>at most 30 rows, 12,000 chars)"] --> Wake
+  Linked["Linked tasks (id, metadata, one-liner,<br/>at most 30 rows, 12,000 chars)"] --> Wake
   PRs["Linked pull requests (refreshed from GitHub per wake)"] --> Wake
   Wake -.->|only when a note refers to other work| Find["find_related_tasks<br/>(on-device search)"]
   Find -.-> Hits["Up to 5 tasks: id, title, status, one-liner"]
@@ -1105,6 +1105,13 @@ a task this wake has shown: one the Linked Tasks section lists
 refused before anything is read, as are the current task and an empty id. A
 linked task the budget left out is therefore unreadable in that wake, and an
 id the model guessed reaches nothing.
+
+**A private task is never read deeper.** The linked-entity queries follow the
+user's *show private entries* setting, so with it on a private linked task is
+in the section — with its one-liner, as before. Both drill-down tools answer
+for it with a note (`RelatedTaskLookup.privateNote`) instead of its TL;DR or
+report, without reading the report at all: like a search, which never returns
+a private task, the drill-down sends nothing more of one to the provider.
 
 ```mermaid
 sequenceDiagram

@@ -39,12 +39,16 @@ what the wake had already injected.
    Linked Tasks section lists or one a search of this wake returned
    (`RelatedTaskLookup.canRead`), never another id. A linked task the budget
    left out is not listed, so it cannot be read in that wake either.
-5. **The row and the drill-down read the same report.**
+5. **A private task is never read deeper.** A private linked task appears
+   in the section only when the user shows private entries, and then with its
+   one-liner alone; both drill-down tools answer for it with a note, never
+   its TL;DR or report — the rule ADR 0155 set for search results.
+6. **The row and the drill-down read the same report.**
    `getUsableTaskReportsForTaskIds` takes a task's agent links newest first
    and the first agent with a non-empty current report. A primary-link-only
    lookup would let a row show an older agent's one-liner and then answer
    "no report yet" to `get_task_tldr` for the same task.
-6. **Gated by wake facts, like the search.** `find_related_tasks` needs
+7. **Gated by wake facts, like the search.** `find_related_tasks` needs
    search by meaning (`hasRelatedTaskSearch`); the drill-down needs search or
    a listed linked task (`hasLinkedTasks`). Both are computed on every wake.
    There is no `enabled` flag (ADR 0155, point 7).
@@ -58,5 +62,6 @@ what the wake had already injected.
 - Linked tasks outside the agent's allowed categories were already in its
   context, TL;DR included. They remain readable through the drill-down, now
   only on request; what leaves the device for them shrinks rather than grows.
+  A private linked task's TL;DR, inline before, no longer leaves the device.
 - `get_related_task_details` no longer exists. Persisted tool messages keep
   the old name in history; no live code reads them.

@@ -125,7 +125,8 @@ class RelatedTaskLookup {
   }
 
   /// Task [taskId]'s agent TL;DR, as a JSON object with its title, status
-  /// and one-liner. Null when the task is gone.
+  /// and one-liner. Null when the task is gone; for a private task, only a
+  /// note saying its summary stays on the device.
   ///
   /// The caller checks [canRead] first.
   Future<String?> tldr(String taskId) => _read(
@@ -137,7 +138,8 @@ class RelatedTaskLookup {
   );
 
   /// Task [taskId]'s whole latest agent report, as a JSON object with its
-  /// title, status and one-liner. Null when the task is gone.
+  /// title, status and one-liner. Null when the task is gone; for a private
+  /// task, only a note saying its report stays on the device.
   ///
   /// The caller checks [canRead] first.
   Future<String?> report(String taskId) => _read(
@@ -154,6 +156,12 @@ class RelatedTaskLookup {
   ) async {
     final task = await _journalDb.journalEntityById(taskId);
     if (task is! Task || task.meta.deletedAt != null) return null;
+    // A private task's summary and report never leave the device, as a search
+    // never returns one. A private linked task is in the wake only when the
+    // user shows private entries, and then with its one-liner alone.
+    if (task.meta.private ?? false) {
+      return jsonEncode({'id': taskId, 'note': privateNote});
+    }
     // The same report the Linked Tasks row's one-liner came from.
     final reports = await _agentRepository.getUsableTaskReportsForTaskIds([
       taskId,
@@ -168,6 +176,11 @@ class RelatedTaskLookup {
             'to go on.',
     });
   }
+
+  /// What the drill-down answers for a private task.
+  static const privateNote =
+      'This task is private: its summary and report stay on this device. '
+      'Its one-liner in Linked Tasks is all there is to go on.';
 
   static Map<String, Object> _identity(Task task) => {
     'id': task.meta.id,
