@@ -4,6 +4,91 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.80]
+
+### Added
+
+- **An event without an agent can now be given one, the way a task can.** An
+  event only got an agent when its category had a default event agent at the
+  moment it was created, so older events and events in other categories had no
+  way to get a recap. The event page now offers **Assign Agent** in the recap
+  card, with the same template and profile picker a task uses; an event that
+  already has photos or notes gets its first recap right away.
+- **Mention someone, and the event suggests adding them.** When a note or a
+  voice memo on an event names someone from your People page, the event's AI
+  suggests them as someone who was there — one tap to confirm, which also puts
+  the event on their timeline. Dismiss it and they are not suggested for that
+  event again.
+- **The task agent finds the task a note means, in any language.** When a
+  note, a log entry or a transcript speaks of other work — "blocked by the
+  relay repair", "follow-up to the census export", "same problem as last week"
+  — the agent searches your tasks by meaning, on the device, reads the summary
+  of a likely match, and proposes the link with the right kind of
+  relationship. It searches only when a note calls for it, never looks at
+  private tasks or outside the categories it works in, and links nothing until
+  you accept.
+- **See which task a proposed link means before you decide.** The task's title
+  in a link proposal is now a link: it opens a preview with that task's
+  summary and a button to open it. Link proposals also read in your language
+  rather than in English.
+
+### Changed
+
+- **Suggestions on an event look like a task's.** They now sit inside the
+  event's AI card, with the same confirm and dismiss buttons, *Confirm all*,
+  and the words each one came from.
+
+### Fixed
+
+- **The companion answered aloud in the device voice even when your Mistral
+  profile names Voxtral TTS.** She took her voice from her own AI setup, which
+  had no read-aloud model unless a Settings default profile was set, so she
+  never spoke with Voxtral or showed the lip sync tuned to it. Her chat's
+  overflow menu now has *AI profile*: pick the profile with Voxtral TTS and
+  she thinks and speaks with it, on every device, or pick *Settings default*
+  to have her follow the default profile again. While she follows it, changing
+  the Settings default changes her voice right away, and if the profile you
+  chose for her is deleted she falls back to the default.
+- **The Day page briefing always used the device voice.** Tapping her in the
+  Day header now speaks with the read-aloud model of the profile the Daily OS
+  planner uses, and she appears on devices without the on-device voice when
+  that profile has a cloud voice.
+- **Questions about your journal sometimes failed with "Asking this failed".**
+  When the model cited a source number it was never given, the whole answer
+  was thrown away; now that citation is dropped and the answer is kept. When
+  one entry could no longer be read in the categories you chose, the whole
+  question failed; now that entry is left out and the answer says its coverage
+  is incomplete. This affects the companion's journal answers and Ask in
+  tasks, projects and categories.
+- **With Mistral Large 4 as the companion's model, every message failed with
+  "That didn't send".** She asks for fully predictable answers, which Mistral
+  Large 4 refuses because it always reasons first. The app now leaves that
+  setting out for Large 4, so she answers.
+- **With a Mistral model, a longer question to the companion failed with "That
+  didn't send".** She marks which words of your message go where by counting
+  characters, and Mistral miscounted them, so every attempt was refused. She
+  now places your words by the words themselves when the count is off, and
+  still never drops any of them.
+- **A chat with the companion, a goal or a person said "That didn't send"
+  while the answer was still on its way, and kept saying it after the answer
+  came.** After the app's agent runtime restarted itself at startup, every
+  send was reported as failed at once. Sends now wait for the real answer, and
+  the words you sent leave the input box as soon as you send them.
+- **New answers scroll into view.** A chat now follows the newest message as
+  it grows, including cards that arrive after the reply, unless you have
+  scrolled up to read.
+- **The waiting dots move.** While an answer is on its way, the three dots
+  pulse, so it is clear something is coming.
+- **The companion now answers aloud what she found in your journal.** A spoken
+  question about your journal was answered only in writing, and she kept her
+  thinking pose, because the answer came in a card rather than as a reply of
+  hers. She now reads the whole answer aloud, her reply and the answers in its
+  cards, without the citation numbers, once it is complete. Answers from
+  private entries are never read aloud.
+- **Read aloud no longer fails when the cloud voice has no voice for your
+  language.** Where your device has the on-device voice, it now reads the text
+  instead of showing an error.
+
 ## [1.1.79]
 
 ### Added
