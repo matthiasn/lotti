@@ -39,7 +39,12 @@ what the wake had already injected.
    Linked Tasks section lists or one a search of this wake returned
    (`RelatedTaskLookup.canRead`), never another id. A linked task the budget
    left out is not listed, so it cannot be read in that wake either.
-5. **Gated by wake facts, like the search.** `find_related_tasks` needs
+5. **The row and the drill-down read the same report.**
+   `getUsableTaskReportsForTaskIds` takes a task's agent links newest first
+   and the first agent with a non-empty current report. A primary-link-only
+   lookup would let a row show an older agent's one-liner and then answer
+   "no report yet" to `get_task_tldr` for the same task.
+6. **Gated by wake facts, like the search.** `find_related_tasks` needs
    search by meaning (`hasRelatedTaskSearch`); the drill-down needs search or
    a listed linked task (`hasLinkedTasks`). Both are computed on every wake.
    There is no `enabled` flag (ADR 0155, point 7).

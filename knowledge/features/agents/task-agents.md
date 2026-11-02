@@ -533,9 +533,8 @@ These context details are load-bearing:
   and `tldr` — the full report body is omitted to keep wake prefill small.
 - **Linked-task context carries one-liners only, within a budget.** Each
   `## Linked Tasks` row holds the linked task's metadata, its `relations` and
-  its agent's `oneLiner` (`latestTaskAgentReportOneLiner`, found through
-  `agent_task` links); the TL;DR and the report body stay out, and the agent
-  reads them on demand (see
+  its agent's `oneLiner` (`latestTaskAgentReportOneLiner`); the TL;DR and the
+  report body stay out, and the agent reads them on demand (see
   [Linked and related tasks are read on demand](#linked-and-related-tasks-are-read-on-demand)).
   `latestSummary` payloads are stripped before submission.
 - **The running timer is scoped.** If the timer's source task matches the wake's
@@ -1070,6 +1069,15 @@ admitted. When not all rows fit, open tasks are chosen before `DONE` and
 is the same on every wake; a row too large for what is left is skipped, not a
 stop. Chosen rows keep their arrival order, and an `omitted` entry counts the
 rest and says their ids are not available. A failing read yields no section.
+
+**One report per task, for the row and for the drill-down.**
+`AgentRepository.getUsableTaskReportsForTaskIds` picks it: the task's
+`agent_task` links newest first, and the first agent whose current report has
+a non-empty body — so a newest agent that has not reported yet does not hide
+an older one's. The Linked Tasks rows, `find_related_tasks`' one-liners and
+both drill-down tools read through it, so a row that shows a one-liner can
+always be read deeper. (`getLatestTaskReportsForTaskIds`, which the task UI
+reads, follows the primary link only.)
 
 **What can be read, and how deep:**
 
