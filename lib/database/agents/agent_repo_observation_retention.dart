@@ -164,6 +164,7 @@ class AgentRepoObservationRetention {
       return const ObservationSweepResult.empty();
     }
 
+    final digested = await _digestedObservationIds(agentId);
     final plan = planObservationPrune(
       messages: [
         for (final row in rows)
@@ -175,9 +176,14 @@ class AgentRepoObservationRetention {
             // residue and is never prunable. Read through one join rather
             // than per-row payload reads, which would undo the bounding this
             // sweep is built around.
+            //
+            // A goal agent's observation must also be in a stored month
+            // digest first (ADR 0156): distill, then prune — a month whose
+            // digest has not been written, or failed, keeps its notes.
             isObservation:
                 row.readNullable<String>('subtype') == _observationSubtype &&
-                row.readNullable<String>('priority') != _criticalPriority,
+                row.readNullable<String>('priority') != _criticalPriority &&
+                (digested?.contains(row.read<String>('id')) ?? true),
             parentIds: parents[row.read<String>('id')] ?? const [],
             hintedParentIds: hints[row.read<String>('id')] ?? const [],
           ),
@@ -195,6 +201,46 @@ class AgentRepoObservationRetention {
       linkIds: linkIds,
     );
   });
+
+  /// For a goal agent, the observation ids its stored month digests list —
+  /// the only observations it may lose; null for every other kind of agent,
+  /// whose aged observations go by age alone.
+  Future<Set<String>?> _digestedObservationIds(String agentId) async {
+    final goal = await _db
+        .customSelect(
+          'SELECT 1 FROM agent_entities WHERE agent_id = ?1 AND type = ?2 '
+          'AND subtype = ?3 AND deleted_at IS NULL LIMIT 1',
+          variables: [
+            Variable<String>(agentId),
+            const Variable<String>(_agentType),
+            const Variable<String>(AgentKinds.goalAgent),
+          ],
+          readsFrom: {_db.agentEntities},
+        )
+        .get();
+    if (goal.isEmpty) return null;
+    final rows = await _db
+        .customSelect(
+          'SELECT j.value AS id FROM agent_entities AS e '
+          'JOIN agent_entities AS p '
+          r"  ON p.id = json_extract(e.serialized, '$.contentEntryId') "
+          '  AND p.type = ?4 AND p.deleted_at IS NULL '
+          r"JOIN json_each(p.serialized, '$.content.noteIds') AS j "
+          'WHERE e.agent_id = ?1 AND e.type = ?2 AND e.subtype = ?3 '
+          'AND e.deleted_at IS NULL '
+          r"AND json_extract(e.serialized, '$.metadata.toolName') = ?5",
+          variables: [
+            Variable<String>(agentId),
+            const Variable<String>(AgentEntityTypes.agentMessage),
+            const Variable<String>(_actionSubtype),
+            const Variable<String>(_payloadType),
+            const Variable<String>(goalObservationDigestToolName),
+          ],
+          readsFrom: {_db.agentEntities},
+        )
+        .get();
+    return {for (final row in rows) row.read<String>('id')};
+  }
 
   /// `messagePrev` edges run child → parent, so `from_id` is the child.
   Future<Map<String, List<String>>> _messagePrevParents(
@@ -298,7 +344,12 @@ class AgentRepoObservationRetention {
 }
 
 const _observationSubtype = 'observation';
+const _actionSubtype = 'action';
 const _criticalPriority = 'critical';
+
+/// `AgentDbConversions.entityType` for an agent identity, whose subtype is
+/// its kind.
+const _agentType = 'agent';
 
 /// `AgentDbConversions.entityType` for `agentMessagePayload`.
 const _payloadType = 'agentMessagePayload';

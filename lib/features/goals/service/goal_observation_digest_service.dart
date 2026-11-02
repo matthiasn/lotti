@@ -1,5 +1,6 @@
 import 'package:clock/clock.dart';
 import 'package:lotti/classes/agents/agent_config.dart';
+import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
@@ -16,8 +17,8 @@ import 'package:lotti/features/goals/workflow/goal_facts_renderer.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:openai_dart/openai_dart.dart';
 
-/// Tool name marking a stored month of observations in the agent log.
-const goalObservationDigestToolName = 'goal_observation_digest';
+export 'package:lotti/classes/agents/agent_constants.dart'
+    show goalObservationDigestToolName;
 
 /// How many months one wake may digest. A goal agent with a year of notes
 /// digests it over a few wakes rather than in one.

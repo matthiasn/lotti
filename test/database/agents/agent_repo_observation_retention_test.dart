@@ -423,6 +423,87 @@ void main() {
     });
   });
 
+  group('goal agents digest before they forget (ADR 0156)', () {
+    Future<void> seedGoalAgent() => core.upsertEntity(
+      makeTestIdentity(agentId: agentId, kind: AgentKinds.goalAgent),
+    );
+
+    /// A stored month digest listing [noteIds], written after the cutoff and
+    /// outside the chain, as the digest service writes it.
+    Future<void> seedDigest(String month, List<String> noteIds) async {
+      final id = 'goal_observation_digest:$agentId:$month';
+      await core.upsertEntity(
+        AgentDomainEntity.agentMessagePayload(
+          id: '$id:payload',
+          agentId: agentId,
+          createdAt: young,
+          vectorClock: null,
+          content: <String, Object?>{
+            'month': month,
+            'noteIds': noteIds,
+            'text': 'A month, digested.',
+            'writtenAt': young.toUtc().toIso8601String(),
+          },
+        ),
+      );
+      await core.upsertEntity(
+        makeTestMessage(
+          id: id,
+          agentId: agentId,
+          threadId: id,
+          kind: AgentMessageKind.action,
+          createdAt: young,
+          toolName: goalObservationDigestToolName,
+          contentEntryId: '$id:payload',
+        ),
+      );
+    }
+
+    test('an aged note no digest lists is kept', () async {
+      // No automatic wake yet, or the digest failed: the notes are all the
+      // agent has of those months.
+      await seedGoalAgent();
+      await seedChain();
+
+      expect((await sweep()).isEmpty, isTrue);
+      expect(await messageIds(), ['a', 'b', 'c', 'tip']);
+    });
+
+    test('only the notes a stored digest lists may go', () async {
+      await seedGoalAgent();
+      await seedChain();
+      await seedDigest('2026-03', ['a']);
+      await seedDigest('2026-04', ['b']);
+
+      expect((await sweep()).messageIds, ['a', 'b']);
+      expect(await messageIds(), contains('c'));
+    });
+
+    test('a digest of another tool does not count as coverage', () async {
+      await seedGoalAgent();
+      await seedChain();
+      await core.upsertEntity(
+        makeTestMessage(
+          id: 'other-action',
+          agentId: agentId,
+          threadId: 'other',
+          kind: AgentMessageKind.action,
+          createdAt: young,
+          toolName: 'goal_checkin_digest',
+        ),
+      );
+
+      expect((await sweep()).isEmpty, isTrue);
+    });
+
+    test('any other kind of agent still prunes by age alone', () async {
+      await core.upsertEntity(makeTestIdentity(agentId: agentId));
+      await seedChain();
+
+      expect((await sweep()).messageIds, ['a', 'b', 'c']);
+    });
+  });
+
   group('partial sync', () {
     test('refuses to prune while there is no live head', () async {
       await seedMessage('a', oldest);

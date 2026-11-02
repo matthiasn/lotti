@@ -41,11 +41,15 @@ their log, and its summarizer is written for tasks.
 3. **Only on automatic wakes, and at most two months per wake, newest
    first.** An interactive turn never waits on a digest; a year of notes is
    digested over a few wakes.
-4. **Distill, then prune.** A digest records every note id it was written
-   from and is rewritten only when a note it has not seen syncs in — folding
-   its earlier text into the prompt, so notes pruned since are never lost.
-   Notes that disappear never shrink it. Digests are stored as action
-   messages (`goal_observation_digest`), which the retention sweep keeps.
+4. **Distill, then prune — guaranteed by the sweep.** A digest records every
+   note id it was written from and is rewritten only when a note it has not
+   seen syncs in — folding its earlier text into the prompt — and notes that
+   disappear never shrink it. Digests are stored as action messages
+   (`goal_observation_digest`), which the retention sweep keeps. The sweep
+   prunes a goal agent's observation only when a stored digest lists its id
+   (`AgentRepoObservationRetention`): a month that had no automatic wake, or
+   whose digest failed, keeps its notes past 180 days until a digest holds
+   them. Other agent kinds prune by age alone.
 5. **A wake reads them beside the verbatim notes.** FACTS gains
    `observationDigests` — month, note count, text — newest month first
    within 600 tokens. A month is shown unless every note of it is already
@@ -65,6 +69,9 @@ their log, and its summarizer is written for tasks.
   notes; the twelve verbatim notes and the critical lane are unchanged.
 - A wake reads up to 1,000 observations instead of 200 to group them by
   month; the critical lane still looks only at the newest 200.
+- A goal agent that never has an automatic wake never prunes an observation.
+  That is the price of the guarantee, and bounded by how much such an agent
+  writes.
 - Digests are derived text the model wrote about the model's own notes; they
   can drift from what was noted. The note ids each digest covers keep it
   traceable, and a late note rewrites it.

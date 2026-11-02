@@ -627,6 +627,16 @@ the observation's *payload* rather than its message row, so the sweep reads it
 through a single `LEFT JOIN` on `contentEntryId`; per-candidate payload reads
 would undo the bounding the sweep is built around.
 
+**A goal agent's note goes only once a digest holds it.** A goal agent condenses
+each finished month of its observations into a stored digest (ADR 0156,
+[goal agents](../goals.md#recall)). For an agent whose identity row is a
+`goal_agent`, the sweep reads the note ids its `goal_observation_digest`
+actions list — one join on their payloads, `json_each` over `noteIds` — and only
+those notes are candidates. A month with no automatic wake yet, or whose digest
+failed, keeps its notes however old; the constant lives in
+`lib/classes/agents/agent_constants.dart` so the store can read it. Every other
+kind of agent prunes by age alone, as before.
+
 **Age alone never decides.** Causal and wall-clock order diverge across devices,
 so the cutoff only marks *candidates* — a message is prunable when it is an old
 observation **and every parent of it is prunable**, which stops dead at the first
