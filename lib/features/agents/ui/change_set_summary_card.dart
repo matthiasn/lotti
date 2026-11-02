@@ -4,10 +4,7 @@ import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/agents/change_set.dart';
 import 'package:lotti/features/agents/service/change_set_confirmation_service.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart'
-    show
-        eventChangeSetConfirmationServiceProvider,
-        eventPendingChangeSetsProvider,
-        selfTargetedPendingChangeSetsProvider;
+    show selfTargetedPendingChangeSetsProvider;
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/ui/localized_change_summary.dart';
 import 'package:lotti/features/agents/ui/time_entry_tile.dart';
@@ -22,100 +19,82 @@ import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/cards/modern_base_card.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// Whether the card surfaces an event agent's or a goal agent's proposals.
-enum _ChangeSetScope { event, goal }
-
-/// Displays pending change sets for an event agent or a self-targeted (goal)
-/// agent, allowing the user to confirm or reject individual items via swipe
-/// gestures or buttons.
+/// Displays pending change sets for a self-targeted (goal) agent, allowing
+/// the user to confirm or reject individual items via swipe gestures or
+/// buttons.
 ///
 /// Renders nothing when no pending change sets exist. Task-level
-/// suggestions are rendered by `AiSummaryCard`, and project recommendations
-/// by `ProjectRecommendationsPanel`; both go through their own surfaces.
+/// suggestions are rendered by `AiSummaryCard`, an event agent's inside its
+/// recap card (`EventSuggestionsBand`), and project recommendations by
+/// `ProjectRecommendationsPanel`; each goes through its own surface.
 class ChangeSetSummaryCard extends ConsumerWidget {
-  const ChangeSetSummaryCard.event({
-    required String eventId,
-    super.key,
-  }) : _targetId = eventId,
-       _scope = _ChangeSetScope.event,
-       _customConfirmationProvider = null;
-
   /// Self-targeted agents (goal agents today): the pending sets are the
   /// agent's OWN proposals (`taskId == agentId`). The confirmation
   /// service is passed in because the owning feature defines it — this
   /// file must not import feature plug-ins (the runtime-registry
   /// direction: `features/agents` never imports goals).
   const ChangeSetSummaryCard.selfTargeted({
-    required String agentId,
-    required Provider<ChangeSetConfirmationService> confirmationProvider,
+    required this._agentId,
+    required this._confirmationProvider,
     super.key,
-  }) : _targetId = agentId,
-       _scope = _ChangeSetScope.goal,
-       _customConfirmationProvider = confirmationProvider;
+  });
 
-  final String _targetId;
-  final _ChangeSetScope _scope;
-  final Provider<ChangeSetConfirmationService>? _customConfirmationProvider;
-
-  Provider<ChangeSetConfirmationService> get _confirmationProvider =>
-      switch (_scope) {
-        _ChangeSetScope.event => eventChangeSetConfirmationServiceProvider,
-        _ChangeSetScope.goal => _customConfirmationProvider!,
-      };
+  final String _agentId;
+  final Provider<ChangeSetConfirmationService> _confirmationProvider;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final changeSetsAsync = switch (_scope) {
-      _ChangeSetScope.event => ref.watch(
-        eventPendingChangeSetsProvider(_targetId),
-      ),
-      _ChangeSetScope.goal => ref.watch(
-        selfTargetedPendingChangeSetsProvider(_targetId),
-      ),
-    };
+    final changeSetsAsync = ref.watch(
+      selfTargetedPendingChangeSetsProvider(_agentId),
+    );
 
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
     // The card pops between empty (SizedBox.shrink) and a full proposals stack,
     // and shrinks as items are confirmed/rejected. Animate the height change so
     // the event/goal detail content below it eases instead of snapping.
-    // Width is pinned full so only the height animates.
+    // Width is pinned full so only the height animates. With animations off
+    // there is no AnimatedSize at all: a zero duration still restarts its
+    // controller from inside its own layout when the proposals arrive after a
+    // loading frame, which the framework rejects.
+    final body = SizedBox(
+      width: double.infinity,
+      child: changeSetsAsync.when(
+        skipLoadingOnReload: true,
+        skipLoadingOnRefresh: true,
+        // A transient background reload error must not vanish
+        // established, still-actionable proposals; the error branch is
+        // for a first load without data.
+        skipError: true,
+        data: (entities) {
+          final changeSets = entities.whereType<ChangeSetEntity>().toList();
+          if (changeSets.isEmpty) return const SizedBox.shrink();
+
+          return Padding(
+            padding: const EdgeInsets.only(top: 10),
+            child: Column(
+              children: [
+                for (final changeSet in changeSets)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: _ChangeSetCard(
+                      changeSet: changeSet,
+                      confirmationProvider: _confirmationProvider,
+                    ),
+                  ),
+              ],
+            ),
+          );
+        },
+        error: (_, _) => const SizedBox.shrink(),
+        loading: () => const SizedBox.shrink(),
+      ),
+    );
+    if (reduceMotion) return body;
     return AnimatedSize(
       alignment: Alignment.topCenter,
-      duration: reduceMotion ? Duration.zero : MotionDurations.medium2,
+      duration: MotionDurations.medium2,
       curve: MotionCurves.emphasizedDecelerate,
-      child: SizedBox(
-        width: double.infinity,
-        child: changeSetsAsync.when(
-          skipLoadingOnReload: true,
-          skipLoadingOnRefresh: true,
-          // A transient background reload error must not vanish
-          // established, still-actionable proposals; the error branch is
-          // for a first load without data.
-          skipError: true,
-          data: (entities) {
-            final changeSets = entities.whereType<ChangeSetEntity>().toList();
-            if (changeSets.isEmpty) return const SizedBox.shrink();
-
-            return Padding(
-              padding: const EdgeInsets.only(top: 10),
-              child: Column(
-                children: [
-                  for (final changeSet in changeSets)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: _ChangeSetCard(
-                        changeSet: changeSet,
-                        confirmationProvider: _confirmationProvider,
-                      ),
-                    ),
-                ],
-              ),
-            );
-          },
-          error: (_, _) => const SizedBox.shrink(),
-          loading: () => const SizedBox.shrink(),
-        ),
-      ),
+      child: body,
     );
   }
 }

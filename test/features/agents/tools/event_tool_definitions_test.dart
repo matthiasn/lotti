@@ -4,15 +4,38 @@ import 'package:lotti/features/agents/workflow/agent_observations.dart';
 
 void main() {
   group('eventAgentTools', () {
-    test('exposes exactly narrate + observe + follow-up, and the deferred set '
-        'is exactly the follow-up tool', () {
+    test('exposes exactly narrate + observe + the people read + the two '
+        'proposals, and the deferred set is exactly the proposals', () {
       final names = eventAgentTools.map((t) => t.name).toSet();
       expect(names, {
         EventAgentToolNames.updateReport,
         EventAgentToolNames.recordObservations,
+        EventAgentToolNames.listPeople,
+        EventAgentToolNames.suggestPerson,
         EventAgentToolNames.suggestFollowUpTask,
       });
-      expect(eventDeferredTools, {EventAgentToolNames.suggestFollowUpTask});
+      // The people list is a read, run at once; suggesting someone is the
+      // user's to confirm, as a follow-up is.
+      expect(eventDeferredTools, {
+        EventAgentToolNames.suggestFollowUpTask,
+        EventAgentToolNames.suggestPerson,
+      });
+    });
+
+    test('suggest_person takes a person id from list_people, and an '
+        'optional mention', () {
+      final tool = eventAgentTools.firstWhere(
+        (t) => t.name == EventAgentToolNames.suggestPerson,
+      );
+      final properties = tool.parameters['properties'] as Map<String, Object?>;
+
+      expect(properties.keys, {
+        EventAgentPersonToolArgs.personId,
+        EventAgentPersonToolArgs.mention,
+      });
+      expect(tool.parameters['required'], [EventAgentPersonToolArgs.personId]);
+      // The name the row shows is the strategy's to add, never the model's.
+      expect(properties, isNot(contains(EventAgentPersonToolArgs.personName)));
     });
 
     // The strongest layer of the human-only invariant: there is no tool whose

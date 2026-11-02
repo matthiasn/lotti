@@ -13,6 +13,7 @@ import 'package:lotti/features/agents/ui/task_agent_model_identity.dart';
 import 'package:lotti/features/agents/ui/widgets/ai_card_chrome.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/events/ui/widgets/event_passive_summary_card.dart';
+import 'package:lotti/features/events/ui/widgets/event_suggestions_band.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -23,7 +24,8 @@ import 'package:material_ui/material_ui.dart';
 /// hairline and radius, and no shadow — and the reading order is the task
 /// card's: the identity header (the agent's name opens its internals), the
 /// recap's TLDR with *Read more* for the full recap, then the freshness strip
-/// with *Update now*, which re-wakes the agent. Before the first recap the
+/// with *Update now*, which re-wakes the agent, then the agent's proposals in
+/// the task card's rows ([EventSuggestionsBand]). Before the first recap the
 /// body is the awaiting hint; a report that fails to load says so instead.
 ///
 /// With no event agent attached it shows [fallbackSummary] on the plain
@@ -49,7 +51,9 @@ class EventAiSummaryCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final agentAsync = ref.watch(eventAgentProvider(eventId));
     final agent = agentAsync.value?.mapOrNull(agent: (a) => a);
-    if (agent != null) return _EventAgentRecapCard(identity: agent);
+    if (agent != null) {
+      return _EventAgentRecapCard(identity: agent, eventId: eventId);
+    }
 
     final fallback = fallbackSummary?.trim();
     final passive = fallback == null || fallback.isEmpty
@@ -75,9 +79,10 @@ class EventAiSummaryCard extends ConsumerWidget {
 }
 
 class _EventAgentRecapCard extends ConsumerStatefulWidget {
-  const _EventAgentRecapCard({required this.identity});
+  const _EventAgentRecapCard({required this.identity, required this.eventId});
 
   final AgentIdentityEntity identity;
+  final String eventId;
 
   @override
   ConsumerState<_EventAgentRecapCard> createState() =>
@@ -195,6 +200,14 @@ class _EventAgentRecapCardState extends ConsumerState<_EventAgentRecapCard> {
                       .triggerReanalysis(agentId)
                 : null,
           ),
+        ),
+        // What the agent proposes — a person the event names, a follow-up —
+        // in the task card's rows, under the summary they come from; the
+        // history of what was decided shows with the full recap, as on a
+        // task.
+        EventSuggestionsBand(
+          eventId: widget.eventId,
+          showHistory: _expanded,
         ),
       ],
     );

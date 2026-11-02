@@ -313,52 +313,56 @@ void main() {
   testWidgets('every time sits in one column, so every preview ends on the '
       'same line; the open row says its second line as brightly as its '
       'title', (tester) async {
-    FrontConversation chat(String id, DateTime at) => FrontConversation(
-      id: id,
-      title: 'Chat $id',
-      lastActivity: at,
-      archived: false,
-      preview:
-          'Saturday works: low tide is early, so the census starts '
-          'at the north colony and moves south along the shelf.',
-    );
-    await pumpList(
-      tester,
-      index: FrontConversationIndex(
-        conversations: [
-          // Today at 11:58 — the widest time — and a weekday, much narrower.
-          chat('c-1', DateTime(2026, 10, 31, 11, 58)),
-          chat('c-2', DateTime(2026, 10, 27, 9)),
-        ],
-      ),
-    );
-    Text preview(String id) => tester.widget<Text>(
-      find.descendant(
-        of: find.byKey(FrontConversationListKeys.row(id)),
-        matching: find.textContaining('Saturday works'),
-      ),
-    );
-    Rect previewBox(String id) => tester.getRect(
-      find.descendant(
-        of: find.byKey(FrontConversationListKeys.row(id)),
-        matching: find.textContaining('Saturday works'),
-      ),
-    );
-    expect(previewBox('c-1').right, previewBox('c-2').right);
-    expect(preview('c-1').overflow, TextOverflow.fade);
-    // Digits line up down the column.
-    expect(
-      tester.widget<Text>(find.text('11:58 AM')).style!.fontFeatures,
-      contains(const FontFeature.tabularFigures()),
-    );
+    // Every frame of this test reads the fixed day: "today at 11:58" is
+    // a time only while the clock says it is that day.
+    await withClock(Clock.fixed(now), () async {
+      FrontConversation chat(String id, DateTime at) => FrontConversation(
+        id: id,
+        title: 'Chat $id',
+        lastActivity: at,
+        archived: false,
+        preview:
+            'Saturday works: low tide is early, so the census starts '
+            'at the north colony and moves south along the shelf.',
+      );
+      await pumpList(
+        tester,
+        index: FrontConversationIndex(
+          conversations: [
+            // Today at 11:58 — the widest time — and a weekday, much narrower.
+            chat('c-1', DateTime(2026, 10, 31, 11, 58)),
+            chat('c-2', DateTime(2026, 10, 27, 9)),
+          ],
+        ),
+      );
+      Text preview(String id) => tester.widget<Text>(
+        find.descendant(
+          of: find.byKey(FrontConversationListKeys.row(id)),
+          matching: find.textContaining('Saturday works'),
+        ),
+      );
+      Rect previewBox(String id) => tester.getRect(
+        find.descendant(
+          of: find.byKey(FrontConversationListKeys.row(id)),
+          matching: find.textContaining('Saturday works'),
+        ),
+      );
+      expect(previewBox('c-1').right, previewBox('c-2').right);
+      expect(preview('c-1').overflow, TextOverflow.fade);
+      // Digits line up down the column.
+      expect(
+        tester.widget<Text>(find.text('11:58 AM')).style!.fontFeatures,
+        contains(const FontFeature.tabularFigures()),
+      );
 
-    final colors = tester
-        .element(find.byKey(FrontConversationListKeys.row('c-1')))
-        .designTokens
-        .colors
-        .text;
-    expect(preview('c-1').style!.color, colors.highEmphasis);
-    expect(preview('c-2').style!.color, colors.mediumEmphasis);
+      final colors = tester
+          .element(find.byKey(FrontConversationListKeys.row('c-1')))
+          .designTokens
+          .colors
+          .text;
+      expect(preview('c-1').style!.color, colors.highEmphasis);
+      expect(preview('c-2').style!.color, colors.mediumEmphasis);
+    });
   });
 
   testWidgets("on a wide window a row's menu shows on hover and focus", (

@@ -486,6 +486,8 @@
   "agentSummarySetStatus": "Imposta lo stato su {status}",
   "agentSummarySetTitle": "Imposta il titolo su \"{title}\"",
   "agentSummarySuggestFollowUpTask": "Proponi un’attività di follow-up",
+  "agentSummarySuggestPerson": "{name} c'era",
+  "agentSummarySuggestPersonUnnamed": "Qualcuno c'era",
   "agentSummaryTimeEntry": "Voce di tempo {range}: \"{summary}\"",
   "agentSummaryTimeRangeBetween": "{start}–{end}",
   "agentSummaryTimeRangeFrom": "dalle {start}",

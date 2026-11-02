@@ -30,6 +30,7 @@ import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 import '../../ai_consumption/test_utils.dart';
+import '../../relationships/helpers/test_people.dart';
 import '../test_utils.dart';
 import 'task_agent_workflow_test_helpers.dart';
 
@@ -170,6 +171,7 @@ void main() {
   void stubReportPublishingRun({
     List<String> observations = const [],
     List<String> followUpTitles = const [],
+    List<String> suggestedPersonIds = const [],
     InferenceUsage? usage,
   }) {
     mockConversationRepository.sendMessageDelegate =
@@ -215,6 +217,18 @@ void main() {
                   function: ChatCompletionMessageFunctionCall(
                     name: EventAgentToolNames.recordObservations,
                     arguments: jsonEncode({'observations': observations}),
+                  ),
+                ),
+              for (var i = 0; i < suggestedPersonIds.length; i++)
+                ChatCompletionMessageToolCall(
+                  id: 'call-person-$i',
+                  type: ChatCompletionMessageToolCallType.function,
+                  function: ChatCompletionMessageFunctionCall(
+                    name: EventAgentToolNames.suggestPerson,
+                    arguments: jsonEncode({
+                      'personId': suggestedPersonIds[i],
+                      'mention': 'Pip brought the sardines',
+                    }),
                   ),
                 ),
               for (var i = 0; i < followUpTitles.length; i++)
@@ -738,6 +752,62 @@ void main() {
       },
     );
 
+    test(
+      'a person the event names becomes a pending suggestion on the event, '
+      'checked against the people the user keeps',
+      () async {
+        when(mockJournalRepository.getRelationships).thenAnswer(
+          (_) async => [
+            makeTestPerson(id: 'pip', title: 'Pip Penguin', nickname: 'Pip'),
+            makeTestPerson(id: 'rocko', title: 'Rocko'),
+          ],
+        );
+        when(
+          () => mockJournalRepository.getTypedLinksForTaskIds(
+            any(),
+            linkTypes: any(named: 'linkTypes'),
+          ),
+        ).thenAnswer((_) async => const []);
+        when(
+          () => mockAgentRepository.getPendingChangeSets(
+            any(),
+            taskId: any(named: 'taskId'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) async => const []);
+        when(
+          () => mockAgentRepository.getChangeDecisions(
+            any(),
+            taskId: any(named: 'taskId'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) async => const []);
+        // A real person, and an id the model made up.
+        stubReportPublishingRun(suggestedPersonIds: ['pip', 'made-up']);
+
+        await run();
+
+        final changeSets = verify(
+          () => mockSyncService.upsertEntity(captureAny()),
+        ).captured.whereType<ChangeSetEntity>().toList();
+        expect(changeSets, hasLength(1));
+        expect(changeSets.single.taskId, eventId);
+        final item = changeSets.single.items.single;
+        expect(item.toolName, EventAgentToolNames.suggestPerson);
+        expect(item.args['personId'], 'pip');
+        expect(item.args['personName'], 'Pip Penguin');
+        expect(item.humanSummary, 'Add Pip Penguin to the event');
+        // The directory was read for the agent's own event.
+        verify(
+          () => mockAgentRepository.getPendingChangeSets(
+            any(),
+            taskId: eventId,
+            limit: any(named: 'limit'),
+          ),
+        ).called(1);
+      },
+    );
+
     test('forces a recap when the first pass publishes none', () async {
       stubForcedRetryPublishing();
 
@@ -1034,6 +1104,20 @@ void main() {
           {'title': '   '},
         ),
         'Suggest a follow-up task',
+      );
+      expect(
+        EventAgentWorkflow.buildHumanSummary(
+          EventAgentToolNames.suggestPerson,
+          {'personId': 'pip', 'personName': 'Pip Penguin'},
+        ),
+        'Add Pip Penguin to the event',
+      );
+      expect(
+        EventAgentWorkflow.buildHumanSummary(
+          EventAgentToolNames.suggestPerson,
+          {'personId': 'pip'},
+        ),
+        'Suggest a person for the event',
       );
       // Defensive fallback for any other (future) deferred tool name.
       expect(

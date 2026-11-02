@@ -1098,6 +1098,14 @@ class AppLocalizationsEs extends AppLocalizations {
       'Proponer una tarea de seguimiento';
 
   @override
+  String agentSummarySuggestPerson(Object name) {
+    return '$name estuvo allí';
+  }
+
+  @override
+  String get agentSummarySuggestPersonUnnamed => 'Alguien estuvo allí';
+
+  @override
   String agentSummaryTimeEntry(Object range, Object summary) {
     return 'Registro de tiempo $range: «$summary»';
   }

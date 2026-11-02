@@ -1080,6 +1080,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get agentSummarySuggestFollowUpTask => 'Suggest a follow-up task';
 
   @override
+  String agentSummarySuggestPerson(Object name) {
+    return '$name was there';
+  }
+
+  @override
+  String get agentSummarySuggestPersonUnnamed => 'Someone was there';
+
+  @override
   String agentSummaryTimeEntry(Object range, Object summary) {
     return 'Time entry $range: \"$summary\"';
   }
