@@ -24,7 +24,10 @@ gave it, never reworded. A question about their records that no single owner
 holds — what was decided, where something was noted — she answers herself
 from the journal, within the categories she may see (a category named in the
 question narrows it), with the passages she relied on, each opening its
-source. A statement under a task or a project is a **proposal**: one tap
+source. A question about what is due — today, overdue, this week — is
+hers too: she reads the tasks due and answers in her own words. Every task
+or project she names is a link that closes her and opens it, and every
+answer is shown as the Markdown it was written in. A statement under a task or a project is a **proposal**: one tap
 files the user's words verbatim as an entry under it, and only the tap
 writes. A change to today ("move the count to the afternoon") is one too:
 its tap takes the words into the Daily OS planning for today. The user keeps many **conversations** with her, as in a ChatGPT
@@ -39,13 +42,16 @@ and a proposal she got wrong goes to the inbox rather than being retyped.
 ## What it owns
 
 - `model/` — the fixed identity (`front_agent`), the dispatch shape and its
-  thresholds, the routing index and its caps, the door record, the thread
+  thresholds, the routing index and its caps, what a due-task list holds,
+  the links her words name tasks and projects with
+  (`front_reference_links.dart`), the door record, the thread
   projection the chat surface renders, and what a conversation is.
 - `workflow/` — the tool contract and system prompt, the dispatch validator
   (the rules in code), the conversation strategy (count-and-refuse lookups,
-  terminal calls), the model resolution (its own setup, never a category's)
+  terminal calls, her words linked), the model resolution (its own setup, never a category's)
   and the wake workflow that persists the dispatch record.
-- `service/` — the index builder over existing reads, the singleton's lazy
+- `service/` — the index builder over existing reads (and the due-task
+  lister behind `list_due_tasks`), the singleton's lazy
   creation, the chat service that makes a user turn durable with a recovery
   record and runs the wake, the door walker, the owner titles, the thread
   builder that mirrors specialists' replies, the conversation service, and
@@ -79,7 +85,9 @@ and relationship chat services for goals and people. Filing writes through
 the journal's own entry and task creation; the goal wizard and the project
 form open with the user's words in them. A change to today goes to the Daily
 OS planning (`features/daily_os_next`), which proposes the change and asks
-before it touches the plan. Her voice is the shared read-aloud
+before it touches the plan. What she hears is transcribed on the Settings
+default profile's transcription slot (`features/ai`,
+`settingsDefaultDictationTargetProvider`), the words as heard. Her voice is the shared read-aloud
 (`features/tts`) and the companion's lip-synced bust (`features/companion`).
 
 The decisions and the slices are in

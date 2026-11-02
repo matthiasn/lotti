@@ -13,6 +13,57 @@ const int frontIndexMaxPeople = 50;
 /// How many open tasks one `match_to_corpus` may return.
 const int frontCorpusMatchLimit = 8;
 
+/// How many tasks one `list_due_tasks` may return.
+const int frontDueTaskLimit = 30;
+
+/// What one `list_due_tasks` found: the open tasks due on or before
+/// [through], [today] the local day the question was asked on, each row a
+/// destination the turn may now route to and link.
+class FrontDueTasks {
+  const FrontDueTasks({
+    required this.today,
+    required this.through,
+    required this.rows,
+    this.omitted = 0,
+  });
+
+  /// Local midnights.
+  final DateTime today;
+  final DateTime through;
+
+  /// Soonest due first; the overdue ones lead.
+  final List<FrontIndexRow> rows;
+
+  /// How many more were due than [frontDueTaskLimit] let through.
+  final int omitted;
+
+  /// The tool's answer: a heading with the days it spans, then one row per
+  /// task as the index renders one, an overdue task marked.
+  String render() {
+    const day = FrontRoutingIndex._isoDay;
+    final span = through == today
+        ? 'today, ${day(today)}'
+        : '${day(today)} through ${day(through)}';
+    if (rows.isEmpty) return 'No open task is due $span, and none is overdue.';
+    final buffer = StringBuffer(
+      'Open tasks due $span, overdue ones included (${rows.length}'
+      '${omitted > 0 ? ', +$omitted not shown' : ''}):\n',
+    );
+    for (final row in rows) {
+      buffer.write(
+        '- task:${row.id} | ${FrontRoutingIndex._oneLine(row.title)}',
+      );
+      if (row.status != null) buffer.write(' | ${row.status}');
+      if (row.due case final due?) {
+        buffer.write(' | due ${day(due)}');
+        if (due.isBefore(today)) buffer.write(' (overdue)');
+      }
+      buffer.writeln();
+    }
+    return buffer.toString().trimRight();
+  }
+}
+
 /// One destination the front agent may route to: enough to recognise it by
 /// name and by what it is about right now, never its raw content.
 class FrontIndexRow {

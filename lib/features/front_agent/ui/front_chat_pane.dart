@@ -5,6 +5,7 @@ import 'package:lotti/classes/agents/query_chat_models.dart';
 import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/agents/ui/chat/agent_chat_view.dart';
 import 'package:lotti/features/agents/ui/chat/chat_recorder_controller.dart';
+import 'package:lotti/features/ai/state/subject_dictation_providers.dart';
 import 'package:lotti/features/daily_os_next/state/selected_date_provider.dart';
 import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -27,6 +28,7 @@ import 'package:lotti/features/front_agent/ui/front_turn_cost_line.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/goal_routes.dart';
+import 'package:lotti/widgets/markdown_link_utils.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// The companion's chat: one of the user's conversations with her, under
@@ -164,7 +166,21 @@ class _Body extends ConsumerWidget {
             ],
           )
         : history;
+    // A link in her words or in an answer: a page in the app — a task she
+    // names — closes her and goes there; anything else is opened the way
+    // every agent's links are.
+    void openLink(String url, String title) {
+      final route = internalRouteFromMarkdownUrl(url);
+      if (route == null) {
+        handleMarkdownLinkTap(url, title).ignore();
+        return;
+      }
+      Navigator.of(context).maybePop();
+      beamToNamed(route);
+    }
+
     final actions = FrontDoorActions(
+      onOpenLink: (url) => openLink(url, ''),
       onFile: controller.fileUnderOwner,
       onDecline: controller.decline,
       onUndoDecline: controller.undoDecline,
@@ -272,6 +288,13 @@ class _Body extends ConsumerWidget {
       onSend: controller.send,
       // A spoken question gets a spoken answer.
       onSendSpoken: controller.sendSpoken,
+      // Her ears are the Settings default's transcription slot, the words
+      // as heard: never a discovered on-device engine, never a correction
+      // pass that keeps the question waiting.
+      resolveTranscriptionTarget: ref.watch(
+        settingsDefaultDictationTargetProvider,
+      ),
+      onLinkTap: (_, url, title) => openLink(url, title),
       onRetry: controller.retry,
       attachmentBuilder: (context, message) {
         if (thread == null) return null;

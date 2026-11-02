@@ -105,4 +105,46 @@ void main() {
     expect(frontIndexMaxPeople, 50);
     expect(frontCorpusMatchLimit, 8);
   });
+
+  group('FrontDueTasks.render', () {
+    final today = DateTime(2026, 11, 2);
+
+    test('names the days, marks what is overdue, and counts what was cut', () {
+      final rendered = FrontDueTasks(
+        today: today,
+        through: DateTime(2026, 11, 4),
+        rows: [
+          FrontIndexRow(
+            kind: FrontDestinationKind.task,
+            id: 'late',
+            title: 'Fix   the\nfence',
+            status: 'BLOCKED',
+            due: DateTime(2026, 10, 30),
+          ),
+          FrontIndexRow(
+            kind: FrontDestinationKind.task,
+            id: 'feed',
+            title: 'Feed the penguins',
+            due: DateTime(2026, 11, 3, 8),
+          ),
+        ],
+        omitted: 4,
+      ).render();
+
+      expect(
+        rendered,
+        'Open tasks due 2026-11-02 through 2026-11-04, overdue ones '
+        'included (2, +4 not shown):\n'
+        '- task:late | Fix the fence | BLOCKED | due 2026-10-30 (overdue)\n'
+        '- task:feed | Feed the penguins | due 2026-11-03',
+      );
+    });
+
+    test('says plainly when nothing is due', () {
+      expect(
+        FrontDueTasks(today: today, through: today, rows: const []).render(),
+        'No open task is due today, 2026-11-02, and none is overdue.',
+      );
+    });
+  });
 }

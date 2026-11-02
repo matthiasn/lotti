@@ -158,6 +158,21 @@ void main() {
       verifyNever(() => mockUrlLauncher.launchUrl(any(), any()));
     });
 
+    test('routes the singular lotti task reference to its task', () async {
+      getIt.pushNewScope();
+      final mockNavService = MockNavService();
+      getIt.registerSingleton<NavService>(mockNavService);
+      addTearDown(() async {
+        await getIt.resetScope();
+        await getIt.popScope();
+      });
+
+      await handleMarkdownLinkTap('lotti://task/task-456', 'Task');
+
+      verify(() => mockNavService.beamToNamed('/tasks/task-456')).called(1);
+      verifyNever(() => mockUrlLauncher.launchUrl(any(), any()));
+    });
+
     test(
       'routes lotti URLs with a path but no host through NavService',
       () async {
@@ -218,6 +233,26 @@ void main() {
       },
       tags: 'glados',
     );
+  });
+
+  group('internalRouteFromMarkdownUrl', () {
+    test('reads a singular task or project reference as its page', () {
+      expect(internalRouteFromMarkdownUrl('lotti://task/t-1'), '/tasks/t-1');
+      expect(
+        internalRouteFromMarkdownUrl('lotti://project/p-1'),
+        '/projects/p-1',
+      );
+      expect(internalRouteFromMarkdownUrl('lotti://tasks/t-1'), '/tasks/t-1');
+      expect(internalRouteFromMarkdownUrl('/journal/e-1'), '/journal/e-1');
+    });
+
+    test('is null for anything the app does not route', () {
+      expect(internalRouteFromMarkdownUrl(''), isNull);
+      expect(internalRouteFromMarkdownUrl('https://example.com/tasks'), isNull);
+      expect(internalRouteFromMarkdownUrl('lotti://goal/g-1'), isNull);
+      expect(internalRouteFromMarkdownUrl('lotti://taskx/t-1'), isNull);
+      expect(internalRouteFromMarkdownUrl('tasks/t-1'), isNull);
+    });
   });
 
   group('buildBlockedMarkdownImage', () {

@@ -1,12 +1,12 @@
 ---
 type: Feature Module
 title: Front agent
-description: The one agent the user talks to in one place — how a durable user turn becomes a routing wake, what the routing index holds, how the dispatch contract is validated in code, the capped lookups and the repair round, the deterministic records a turn leaves behind, how the door walker takes each segment to its owner and mirrors the answer, how a statement becomes a proposal the user's one tap files, what the inbox is, how an unanswered turn is recovered on any device, how turns form conversations, and what the chat surface renders.
+description: The one agent the user talks to in one place — how a durable user turn becomes a routing wake, what the routing index holds, how the dispatch contract is validated in code, the capped lookups and the repair round, the deterministic records a turn leaves behind, how the door walker takes each segment to its owner and mirrors the answer, how a statement becomes a proposal the user's one tap files, what the inbox is, how an unanswered turn is recovered on any device, how turns form conversations, how she answers what is due and names tasks as links, what the chat surface renders, and what she hears and says.
 resource: ../../lib/features/front_agent
 tags: [agents, front-agent, routing, dispatch, doors, filing, inbox, companion, chat]
 status: draft
-generated: { by: claude-code/fable-5.1, at: 2026-11-01T20:00:00Z }
-stale_after: 2027-04-26
+generated: { by: claude-code/opus-5.5, at: 2026-11-02T12:00:00Z }
+stale_after: 2027-05-02
 sources:
   - id: workflow
     resource: ../../lib/features/front_agent/workflow/front_agent_workflow.dart
@@ -14,12 +14,12 @@ sources:
     last_modified: 2026-10-23
   - id: strategy
     resource: ../../lib/features/front_agent/workflow/front_agent_strategy.dart
-    title: FrontAgentStrategy — accumulating, count-capped tool handling
-    last_modified: 2026-10-23
+    title: FrontAgentStrategy — accumulating, count-capped tool handling, her words linked
+    last_modified: 2026-11-02
   - id: contract
     resource: ../../lib/features/front_agent/workflow/front_agent_contract.dart
     title: The tool contract, caps and system prompt
-    last_modified: 2026-11-01
+    last_modified: 2026-11-02
   - id: validator
     resource: ../../lib/features/front_agent/workflow/front_dispatch_validator.dart
     title: validateFrontDispatch — the dispatch rules in code
@@ -27,11 +27,11 @@ sources:
   - id: index
     resource: ../../lib/features/front_agent/model/front_routing_index.dart
     title: FrontRoutingIndex — the bounded, byte-stable catalogue
-    last_modified: 2026-10-23
+    last_modified: 2026-11-02
   - id: index-builder
     resource: ../../lib/features/front_agent/service/front_routing_index_builder.dart
     title: FrontRoutingIndexBuilder — the index from existing reads
-    last_modified: 2026-10-23
+    last_modified: 2026-11-02
   - id: corpus
     resource: ../../lib/features/agents/service/open_task_corpus.dart
     title: The open-task corpus shared with the day agent
@@ -56,6 +56,14 @@ sources:
     resource: ../../lib/features/front_agent/model/front_door.dart
     title: FrontDoorRecord — the claim, the outcome, the deterministic id
     last_modified: 2026-11-01
+  - id: reference-links
+    resource: ../../lib/features/front_agent/model/front_reference_links.dart
+    title: linkFrontReferences — a recited task or project id becomes a link
+    last_modified: 2026-11-02
+  - id: dictation
+    resource: ../../lib/features/ai/state/subject_dictation_providers.dart
+    title: settingsDefaultDictationTargetProvider — her dictation on the Settings default's transcription slot
+    last_modified: 2026-11-02
   - id: walker
     resource: ../../lib/features/front_agent/service/front_door_walker.dart
     title: FrontDoorWalker — one door per segment, claimed, never awaited
@@ -95,7 +103,7 @@ sources:
   - id: pane
     resource: ../../lib/features/front_agent/ui/front_chat_pane.dart
     title: FrontChatPane — the thread on the shared AgentChatView
-    last_modified: 2026-11-01
+    last_modified: 2026-11-02
   - id: sheet
     resource: ../../lib/features/front_agent/ui/front_chat_surface.dart
     title: showFrontChat — her surface over the app
@@ -119,7 +127,7 @@ sources:
   - id: voice-state
     resource: ../../lib/features/front_agent/state/front_voice_providers.dart
     title: The spoken turn awaiting her spoken reply, and her voice's source id
-    last_modified: 2026-11-01
+    last_modified: 2026-11-02
   - id: plan
     resource: ../../docs/implementation_plans/2026-10-23_single_agent_entry_point.md
     title: The single-entry-point plan — decisions and slices
@@ -229,7 +237,7 @@ tokens.
 
 # The contract
 
-Five tools, never fewer (a single tool makes DeepSeek rewrite
+Six tools, never fewer (a single tool makes DeepSeek rewrite
 `tool_choice`), in a fixed order:
 
 | Tool | Ends the turn | Cap | Over the cap |
@@ -237,12 +245,14 @@ Five tools, never fewer (a single tool makes DeepSeek rewrite
 | `dispatch` | yes | once | refused |
 | `read_tldr(ids ≤ 5)` | no | 1 per turn | `frontTldrExhaustedAnswer` — the tool stays listed |
 | `match_to_corpus(phrase)` | no | 1 per turn | `frontCorpusMatchExhaustedAnswer`; unavailable when no FTS index is wired |
+| `list_due_tasks(daysAhead 0–7)` | no | 1 per turn | `frontDueListExhaustedAnswer`; unavailable when no lister is wired |
 | `ask_user(question, options ≤ 3)` | yes | once | refused |
 | `reply_to_user(text)` | yes | once | refused |
 
 Lookups are capped by **count-and-refuse**, not by removing the tool:
 removing it changes the request prefix and voids the cache. Rows a
-`match_to_corpus` returns become valid destinations for the rest of the turn.
+`match_to_corpus` or a `list_due_tasks` returns become valid destinations
+for the rest of the turn — and names her words may link.
 
 `ask_user` and `dispatch` refuse each other, and so do `ask_user` and
 `reply_to_user`. A reply may accompany an accepted dispatch; when a batch
@@ -276,6 +286,36 @@ Her **manner** follows the contract in the system prompt:
 shapes only her own words (`reply_to_user`, `ask_user`), never routing, ids
 or an owner's answer, and asks for short spoken-friendly sentences. Appended
 after the contract, so a sass change leaves the cached prefix as it is.
+## Her own answers: what is due, and naming things
+
+A question about which tasks are due — *what is due today?*, *anything
+overdue?*, *what's due this week?* — no single owner holds, so it is hers,
+like a journal question; but she answers it from the record, not the
+journal. The prompt's rule 8 sends it to `list_due_tasks` and then
+`reply_to_user` alone; rule 7 keeps `day` for changes to today's plan, so a
+due question no longer lands on the day door, whose question outcome is
+`FrontDoorSkipped(noDoor)`. `FrontRoutingIndexBuilder.dueTaskLister`
+answers it with `JournalDb.getTasksDueOnOrBefore` — the read the Daily OS
+and the task list's *Due today* view share — from today's local midnight
+through `daysAhead` days past it, overdue tasks included, inside the
+identity's allow-list (not the conversation's chips, which scope journal
+answers), soonest due first, at most `frontDueTaskLimit` (30).
+`FrontDueTasks.render` is what the model reads: the days it spans, one row
+per task in the index's shape, an overdue one marked, or a plain *nothing
+is due*.
+
+Her own words name a task or a project as a Markdown link titled as listed:
+`[title](lotti://task/<id>)`, `lotti://project/<id>` (`frontReferenceUrl`).
+The prompt asks for that; `linkFrontReferences` is the guard the strategy
+runs over every `reply_to_user` and `ask_user` question before it is
+accepted, so a recited id never reaches the user: `task:<id>`, or a bare id
+with a digit (every UUID has one, so no word is mistaken for an id), in
+backticks or not, becomes the link, and `Title (task:<id>)` folds into one
+link over the title. Only rows the turn could see — the index and its
+lookups — are linked; goals and people have no link. The shared
+`internalRouteFromMarkdownUrl` reads the singular `lotti://task/` and
+`lotti://project/` as `/tasks/` and `/projects/`.
+
 # The budget and the repair round
 
 `frontProviderCallsPerTurn` is 3, passed as `turnBudget`. The common turn is
@@ -580,7 +620,10 @@ and every card the same shape: a compact tinted tile with the kind's glyph
 (task, goal, project, person, day, inbox; the done glyph in the success
 ink once something was written, the warning in the error ink when the
 door failed), the user's words in full in body type — or, for an answer,
-the owner's text — one status caption (the proposal's question naming the
+the owner's text, a journal answer or a specialist's mirrored reply rendered
+as the Markdown it is (`AgentMarkdownView`, its links through
+`FrontDoorActions.onOpenLink`; the user's words stay plain text) — one
+status caption (the proposal's question naming the
 task, *Where should this go?* or *… go instead?* after a proposal was sent
 there, *Filed under …*, *Made into a task*, an answer's attribution and
 caveats, a door still being walked, a reason it went nowhere), at most one
@@ -642,6 +685,24 @@ widening it: with no allow-list the chips are the scope, and chips that fall
 outside the allow-list leave it as it is — an empty scope would be the whole
 journal. A category named in the question narrows further, as before.
 
+A link in her bubble or in a card's answer goes through the pane's one
+handler: a route in the app (`internalRouteFromMarkdownUrl`) closes her
+surface and then goes there, as *Open* does; anything else is the shared
+`handleMarkdownLinkTap`.
+
+**What she hears.** Dictation into her composer is transcribed on the
+Settings default profile's transcription slot
+(`settingsDefaultDictationTargetProvider`, resolved when a take stops),
+and the words come back as the engine heard them: no correction model
+follows, only the speech dictionary's local pass inside
+`AudioTranscriptionService`. Without that explicit target the recorder fell
+back on `AudioTranscriptionService.discoverTarget`, which ranks an
+installed on-device (sherpa / ONNX) model first — a short question took
+10–15 s instead of the second Voxtral needs. A default that cannot
+transcribe fails the take as "no audio model", never a discovered engine.
+Unlike a goal's or a person's chat, no category owns her, so there is no
+category tier and no dictionary category.
+
 Leaving a conversation — another one, or the list — while it records or
 transcribes cancels the recording (`ChatRecorderController.cancel`), so what
 was said never lands in a conversation it was not said to; a recording
@@ -679,7 +740,9 @@ shared playback toast.
 
 **What she says** is `frontSpokenAnswer`: her first reply after the turn,
 then the answer of each of the turn's doors — a journal or owner answer, a
-specialist's mirrored reply — in segment order, citation numbers left out.
+specialist's mirrored reply — in segment order, citation numbers left out
+and Markdown said as its words (`withoutMarkdown` in the read-aloud's
+`speech_text.dart`: a linked task is said by its title, never its url).
 A journal question usually ends with a dispatch alone, no reply of hers, so
 speaking only a reply left the answer in its door unspoken and her pose on
 *think*. The answer has landed once the turn holds a reply or a door,
@@ -772,3 +835,6 @@ without one.
   wakes without the record changing.
 - `match_to_corpus` returns open tasks only; a closed task is not a
   destination, and the prompt says so.
+- A due question is hers, not the day's: routed to `day` it would end on
+  *Nowhere to take this yet*. Keep rule 7 about changing today's plan and
+  rule 8 about what is due.

@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_config.dart';
 import 'package:lotti/classes/agents/agent_constants.dart';
@@ -726,6 +727,66 @@ void main() {
         makeTestMessagePayload(content: const {'segments': <Object?>[]}),
       )?.segments,
       isEmpty,
+    );
+  });
+
+  group('a question about what is due', () {
+    test(
+      'is answered from the due tasks of today, each named as a link',
+      () async {
+        final task = makeGardenTask();
+        final dueToday = task.copyWith(
+          data: task.data.copyWith(due: DateTime(2026, 11, 2, 17)),
+        );
+        when(
+          () => journalDb.getTasksDueOnOrBefore(any()),
+        ).thenAnswer((_) async => [dueToday]);
+        seedMessage();
+        String? listed;
+        conversationRepository.maxDelegateCalls = 1;
+        stubModel(
+          (_) => [
+            call('list_due_tasks', {'daysAhead': 0}),
+            call('reply_to_user', {'message': 'Due today: task:garden.'}),
+          ],
+        );
+        when(
+          () => manager.addToolResponse(
+            toolCallId: 'call-list_due_tasks',
+            response: any(named: 'response'),
+          ),
+        ).thenAnswer((invocation) {
+          listed = invocation.namedArguments[#response] as String;
+        });
+
+        final result = await withClock(
+          Clock.fixed(DateTime(2026, 11, 2, 9)),
+          run,
+        );
+
+        expect(result.success, isTrue);
+        // Today's local midnight: the read covers the day and what is overdue
+        // (the index's corpus reads due tasks too, by its own clock).
+        expect(
+          verify(
+            () => journalDb.getTasksDueOnOrBefore(captureAny()),
+          ).captured,
+          contains(DateTime(2026, 11, 2)),
+        );
+        expect(
+          listed,
+          contains('task:garden | Garden | OPEN | due 2026-11-02'),
+        );
+        final reply = upserts
+            .whereType<AgentMessagePayloadEntity>()
+            .singleWhere(
+              (p) => p.content.containsKey('text') && p.agentId == frontAgentId,
+            );
+        expect(
+          reply.content['text'],
+          'Due today: [Garden](lotti://task/garden).',
+        );
+      },
     );
   });
 

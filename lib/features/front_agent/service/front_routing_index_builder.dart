@@ -96,6 +96,46 @@ class FrontRoutingIndexBuilder {
     };
   }
 
+  /// Lists the open tasks inside [scope] due by a day: today, on [now]'s
+  /// local day, through `daysAhead` days past it, overdue ones included —
+  /// soonest due first, then by title, at most [frontDueTaskLimit].
+  ///
+  /// The due-date read the Daily OS and the task list's *Due today* view
+  /// share, so she answers a due question with what those show.
+  Future<FrontDueTasks> Function(int daysAhead) dueTaskLister(
+    FrontRoutingScope scope, {
+    required DateTime now,
+  }) {
+    final today = DateTime(now.year, now.month, now.day);
+    return (daysAhead) async {
+      final through = DateTime(today.year, today.month, today.day + daysAhead);
+      final tasks =
+          (await journalDb.getTasksDueOnOrBefore(through))
+              .where(
+                (task) =>
+                    categoryAllowed(task.meta.categoryId, scope.categoryIds),
+              )
+              .toList()
+            ..sort((a, b) {
+              final byDue = a.data.due!.compareTo(b.data.due!);
+              return byDue != 0
+                  ? byDue
+                  : a.data.title.toLowerCase().compareTo(
+                      b.data.title.toLowerCase(),
+                    );
+            });
+      return FrontDueTasks(
+        today: today,
+        through: through,
+        rows: [
+          for (final task in tasks.take(frontDueTaskLimit))
+            _taskRow(task, null),
+        ],
+        omitted: _omitted(tasks.length, frontDueTaskLimit),
+      );
+    };
+  }
+
   static int _omitted(int total, int cap) => total > cap ? total - cap : 0;
 
   Future<List<FrontIndexRow>> _tasks(

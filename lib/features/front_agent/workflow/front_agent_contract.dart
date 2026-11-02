@@ -14,6 +14,9 @@ abstract final class FrontAgentToolNames {
   /// The fallback for an open task the truncated index omits.
   static const matchToCorpus = 'match_to_corpus';
 
+  /// The open tasks due by a day: what she answers a due-date question from.
+  static const listDueTasks = 'list_due_tasks';
+
   /// One short clarifying question with up to three candidates; terminal.
   static const askUser = 'ask_user';
 
@@ -35,6 +38,12 @@ const int frontTldrIdsPerRead = 5;
 /// How many `match_to_corpus` calls a turn may make.
 const int frontCorpusMatchesPerTurn = 1;
 
+/// How many `list_due_tasks` calls a turn may make.
+const int frontDueListsPerTurn = 1;
+
+/// How many days past today one `list_due_tasks` may reach: a week.
+const int frontDueMaxDaysAhead = 7;
+
 /// How many candidates `ask_user` may offer.
 const int frontAskUserMaxOptions = 3;
 
@@ -49,6 +58,11 @@ const String frontTldrExhaustedAnswer =
 const String frontCorpusMatchExhaustedAnswer =
     'No more corpus matches this turn ($frontCorpusMatchesPerTurn used); '
     'decide from the index and what you found, or ask the user.';
+
+/// The answer once a turn has listed its due tasks.
+const String frontDueListExhaustedAnswer =
+    'No more due-task lists this turn ($frontDueListsPerTurn used); answer '
+    'from the list you have.';
 
 /// The instruction after an invalid `dispatch`, or a turn that ended
 /// without a terminal call: the one repair the budget allows.
@@ -90,7 +104,7 @@ This shapes only your own words — the text of `reply_to_user` and the question
 /// manner ([frontAgentPersonality]) follows it.
 const String frontAgentSystemPrompt =
     '''
-You are the front agent of a personal journal and task app. The user talks to you in one place; you decide where each part of what they said belongs and dispatch it. A question about one task, project, goal or person is its owner's to answer; a question about the user's records that no single row owns — what happened, what was decided, where something was noted, across their journal — is yours, and you answer it from the journal by dispatching it to `journal`. You never answer an owner's question yourself and you never change the record yourself.
+You are the front agent of a personal journal and task app. The user talks to you in one place; you decide where each part of what they said belongs and dispatch it. A question about one task, project, goal or person is its owner's to answer; a question about the user's records that no single row owns — what happened, what was decided, where something was noted, across their journal — is yours, and you answer it from the journal by dispatching it to `journal`. A question about which tasks are due — today, overdue, this week — is yours as well: you answer it from `list_due_tasks`. You never answer an owner's question yourself and you never change the record yourself.
 
 ## What you see
 
@@ -106,7 +120,12 @@ You are the front agent of a personal journal and task app. The user talks to yo
 4. A name you cannot see: for a task, call `match_to_corpus` once; for anything else, `ask_user`. Never invent an id. Closed tasks are not destinations; say so if the user names one.
 5. Nothing matches above `$frontLowConfidence`: the part is `new` (say what it would become: task, goal or project), `journal` or `unrouted`. A `journal` question is answered from the journal — keep any category the user names in its span, it narrows the search; a `journal` statement is kept as a note.
 6. A statement about a project as a whole goes to the project. One about a particular piece of its work goes to that task when you can see it.
-7. "Today", "my day", moving or planning something today: destination `day`.
+7. Moving, planning or changing something in today's plan ("my day"): destination `day`. A question about what is due is not the day's — see 8.
+8. A question about which tasks are due — "what is due today?", "anything overdue?", "what's due this week?": call `list_due_tasks` with how many days past today it reaches (0 for today alone, at most $frontDueMaxDaysAhead), then end the turn with `reply_to_user` alone. Name the tasks it asks about, the overdue ones apart, or say plainly that nothing is due. Never dispatch it, and never say you cannot answer it.
+
+## Naming things
+
+When your own words name a task or a project, write it as a markdown link with its title as listed: `[title](lotti://task/<id>)`, `[title](lotti://project/<id>)`. Never write a bare id; the link is what the user taps to open it.
 
 ## The dispatch
 
@@ -114,7 +133,7 @@ Split the message into segments only where the destinations differ. Each segment
 
 ## Discipline
 
-- One `read_tldr` and one `match_to_corpus` per turn at most; a turn that needs more is fishing. Decide from the index first.
+- One `read_tldr`, one `match_to_corpus` and one `list_due_tasks` per turn at most; a turn that needs more is fishing. Decide from the index first.
 - `dispatch`, `ask_user` and `reply_to_user` end the turn. Call exactly one of them, except that `reply_to_user` may accompany `dispatch` with one line about where things went.
 - Keep every visible sentence short and in the user's language.
 ''';
@@ -247,6 +266,26 @@ final List<AgentToolDefinition> frontAgentTools = [
     },
   ),
   const AgentToolDefinition(
+    name: FrontAgentToolNames.listDueTasks,
+    description:
+        'List the open tasks due from today through daysAhead days from '
+        'now, overdue ones included and marked, to answer a question about '
+        'what is due. Once per turn.',
+    parameters: {
+      'type': 'object',
+      'properties': {
+        'daysAhead': {
+          'type': 'integer',
+          'minimum': 0,
+          'maximum': frontDueMaxDaysAhead,
+          'description':
+              'How many days past today the question reaches: 0 for today.',
+        },
+      },
+      'required': ['daysAhead'],
+    },
+  ),
+  const AgentToolDefinition(
     name: FrontAgentToolNames.askUser,
     description:
         'End the turn with one short clarifying question and up to '
@@ -278,8 +317,10 @@ final List<AgentToolDefinition> frontAgentTools = [
   const AgentToolDefinition(
     name: FrontAgentToolNames.replyToUser,
     description:
-        'Say something in your own words: where things went, or that nothing '
-        'could be placed. At most once per turn.',
+        'Say something in your own words: where things went, the answer to '
+        'a question about what is due, or that nothing could be placed. '
+        'Tasks and projects as markdown links, never bare ids. At most once '
+        'per turn.',
     parameters: {
       'type': 'object',
       'properties': {

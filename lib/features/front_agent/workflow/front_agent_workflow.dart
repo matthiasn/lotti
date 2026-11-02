@@ -189,6 +189,7 @@ class FrontAgentWorkflow with AgentErrorLogging {
         input: input,
         index: index,
         corpusMatcher: _indexBuilder.corpusMatcher(scope),
+        dueTaskLister: _indexBuilder.dueTaskLister(scope, now: now),
       );
       final tools = [
         for (final tool in frontAgentTools) tool.toChatCompletionTool(),

@@ -417,4 +417,51 @@ void main() {
       },
     );
   });
+
+  group('dueTaskLister', () {
+    test('lists the open tasks in scope due through the days asked, '
+        'soonest first, then by title', () async {
+      when(() => journalDb.getTasksDueOnOrBefore(any())).thenAnswer(
+        (_) async => [
+          _task('b', due: DateTime(2026, 10, 23, 17)),
+          _task('late', due: DateTime(2026, 10, 21)),
+          _task('a', due: DateTime(2026, 10, 23, 17)),
+          _task('hidden', categoryId: 'secret', due: DateTime(2026, 10, 23)),
+        ],
+      );
+
+      final due = await builder().dueTaskLister(
+        const FrontRoutingScope(categoryIds: {'work'}),
+        now: _now,
+      )(2);
+
+      verify(
+        () => journalDb.getTasksDueOnOrBefore(DateTime(2026, 10, 25)),
+      ).called(1);
+      expect(due.today, DateTime(2026, 10, 23));
+      expect(due.through, DateTime(2026, 10, 25));
+      expect(due.rows.map((r) => r.id), ['late', 'a', 'b']);
+      expect(due.rows.first.kind, FrontDestinationKind.task);
+      expect(due.rows.first.status, 'OPEN');
+      expect(due.omitted, 0);
+    });
+
+    test('caps the list and counts what it left out', () async {
+      when(() => journalDb.getTasksDueOnOrBefore(any())).thenAnswer(
+        (_) async => [
+          for (var i = 0; i < frontDueTaskLimit + 3; i++)
+            _task('t${i.toString().padLeft(2, '0')}', due: _now),
+        ],
+      );
+
+      final due = await builder().dueTaskLister(
+        const FrontRoutingScope(),
+        now: _now,
+      )(0);
+
+      expect(due.rows, hasLength(frontDueTaskLimit));
+      expect(due.omitted, 3);
+      expect(due.through, due.today);
+    });
+  });
 }

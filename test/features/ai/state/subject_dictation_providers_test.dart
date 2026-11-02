@@ -185,6 +185,73 @@ void main() {
     }
   });
 
+  group('settingsDefaultDictationTargetProvider', () {
+    test("is the Settings default's transcription slot, logged once, with "
+        'no category asked and nothing discovered or corrected', () async {
+      final mistral = testInferenceProvider(
+        id: 'mistral',
+        inferenceProviderType: InferenceProviderType.mistral,
+      );
+      stubProfile(
+        profile(
+          provider: mistral,
+          model: speechModel(providerModelId: 'voxtral-mini-latest'),
+          postProcessing: editor,
+        ),
+      );
+
+      final target = await container.read(
+        settingsDefaultDictationTargetProvider,
+      )();
+
+      expect(target.provider, same(mistral));
+      expect(target.model.providerModelId, 'voxtral-mini-latest');
+      // The default tier alone: no category narrows it.
+      verify(() => resolver.resolveTranscriptionProfile()).called(1);
+      verifyNever(() => resolver.categoryOfSubject(any()));
+      verify(
+        () => logger.log(
+          LogDomain.speech,
+          'dictation through the Settings default profile '
+          '${DomainLogger.sanitizeId('goals-profile')}',
+          subDomain: 'SubjectDictation',
+        ),
+      ).called(1);
+      verifyNever(() => transcriber.discoverTarget());
+      verifyNever(
+        () => transcriber.correctTranscript(
+          any(),
+          target: any(named: 'target'),
+          dictionaryCategoryId: any(named: 'dictionaryCategoryId'),
+        ),
+      );
+    });
+
+    test('fails as "no audio model" without a default that can transcribe '
+        '— never a discovered on-device engine', () async {
+      stubProfile(null);
+
+      await expectLater(
+        container.read(settingsDefaultDictationTargetProvider)(),
+        throwsA(
+          isA<TranscriptionException>().having(
+            (e) => e.message,
+            'message',
+            contains('No audio-capable models'),
+          ),
+        ),
+      );
+      verify(
+        () => logger.log(
+          LogDomain.speech,
+          'no Settings default transcription profile for dictation',
+          subDomain: 'SubjectDictation',
+        ),
+      ).called(1);
+      verifyNever(() => transcriber.discoverTarget());
+    });
+  });
+
   test("dictionaryCategory is the subject's category", () async {
     expect(await dictation().dictionaryCategory(), 'goals');
     stubCategory(null);
