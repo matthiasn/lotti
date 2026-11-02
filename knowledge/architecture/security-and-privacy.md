@@ -108,15 +108,6 @@ message, so neither the message nor a log line prints it.
 - **Namespacing by package name.** iOS and macOS entries carry the app's package
   name as `accountName`, so build flavours installed side by side do not collide
   in a shared keychain.
-- **The login keychain for a macOS Debug build.** macOS uses the data
-  protection keychain, which needs the `keychain-access-groups` entitlement
-  that only the team-signed Profile and Release builds carry. The Debug build
-  is signed to run locally with no team and no keychain group
-  (`macos/Runner/RunnerDebug.entitlements`), and that keychain refuses it on
-  every call (-34018, errSecMissingEntitlement): no API key could be saved
-  and deleting a provider failed. A Debug build uses the login keychain
-  instead (`SecureStorage.macOsOptions`), which a sandboxed app may use for
-  its own items.
 - **Guards for Linux's single bundle.** On Linux the plugin keeps *every* key
   in one libsecret item, a JSON object, which it reads, edits and writes back
   whole; a blank item parses as "no keys", so one bad read followed by a write

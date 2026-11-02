@@ -348,25 +348,4 @@ void main() {
       expect(bundle['api_key'], lookalike);
     });
   });
-
-  group('macOsOptions', () {
-    test('a Debug build, signed with no keychain group, uses the login '
-        'keychain', () {
-      final options = SecureStorage.macOsOptions(
-        accountName: 'com.matthiasn.lotti.dev',
-        debugBuild: true,
-      );
-      expect(options.usesDataProtectionKeychain, isFalse);
-      expect(options.toMap()['accountName'], 'com.matthiasn.lotti.dev');
-    });
-
-    test('a team-signed build keeps the data protection keychain', () {
-      final options = SecureStorage.macOsOptions(
-        accountName: 'com.matthiasn.lotti',
-        debugBuild: false,
-      );
-      expect(options.usesDataProtectionKeychain, isTrue);
-      expect(options.toMap()['accountName'], 'com.matthiasn.lotti');
-    });
-  });
 }

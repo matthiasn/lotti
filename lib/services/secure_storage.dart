@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:meta/meta.dart';
@@ -193,27 +192,6 @@ class SecureStorage {
   Future<IOSOptions> _iOptions() async =>
       IOSOptions(accountName: (await PackageInfo.fromPlatform()).packageName);
 
-  Future<MacOsOptions> _mOptions() async => macOsOptions(
-    accountName: (await PackageInfo.fromPlatform()).packageName,
-    debugBuild: kDebugMode,
-  );
-
-  /// The macOS keychain options for [accountName].
-  ///
-  /// The data protection keychain needs the `keychain-access-groups`
-  /// entitlement, which only a team-signed build carries (Profile, Release).
-  /// The Debug build is signed to run locally, with no team and no keychain
-  /// group (`RunnerDebug.entitlements`), and that keychain refuses it on every
-  /// call (-34018, errSecMissingEntitlement): no API key could be saved, and
-  /// deleting a provider failed on removing its key. A [debugBuild] uses the
-  /// login keychain instead, which a sandboxed app may use for its own items.
-  /// No Debug build ever stored a key in the other one, so none is lost.
-  @visibleForTesting
-  static MacOsOptions macOsOptions({
-    required String accountName,
-    required bool debugBuild,
-  }) => MacOsOptions(
-    accountName: accountName,
-    usesDataProtectionKeychain: !debugBuild,
-  );
+  Future<MacOsOptions> _mOptions() async =>
+      MacOsOptions(accountName: (await PackageInfo.fromPlatform()).packageName);
 }
