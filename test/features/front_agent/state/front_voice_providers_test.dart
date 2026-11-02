@@ -96,6 +96,20 @@ void main() {
       expect(spoken.text, 'You fixed the feeder twice.');
     });
 
+    test('a task she links is said by its title, and Markdown as its '
+        'words', () {
+      final spoken = frontSpokenAnswer(
+        thread(
+          reply:
+              'Due today:\n- [Feed the penguins](lotti://task/t-1)\n'
+              '- **Count** the rookery',
+        ),
+        turn,
+      );
+      expect(spoken.landed, isTrue);
+      expect(spoken.text, 'Due today:\nFeed the penguins\nCount the rookery');
+    });
+
     test('her reply comes first, then the answers of her doors', () {
       final spoken = frontSpokenAnswer(
         thread(

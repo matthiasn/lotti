@@ -101,23 +101,7 @@ subjectDictationProvider = Provider.family<SubjectDictation, String>((
                       '(${categoryId == null ? 'no category' : 'category ${DomainLogger.sanitizeId(categoryId)}'})',
             subDomain: _logTag,
           );
-      final provider = profile?.transcriptionProvider;
-      final model = profile?.transcriptionModel;
-      if (provider == null ||
-          model == null ||
-          !model.inputModalities.contains(Modality.audio) ||
-          !model.outputModalities.contains(Modality.text) ||
-          (provider.inferenceProviderType == InferenceProviderType.mistral &&
-              isRealtimeOnlyTranscriptionModel(model.providerModelId))) {
-        throw _unavailable();
-      }
-      if (provider.inferenceProviderType == InferenceProviderType.sherpa &&
-          !await ref
-              .read(sherpaModelRepositoryProvider)
-              .isAvailable(model.providerModelId)) {
-        throw _unavailable();
-      }
-      return (model: model, provider: provider);
+      return _transcriptionSlotOf(ref, profile);
     },
     correct: (transcript, heardBy) async {
       if (!routesToSpeechToText(
@@ -154,6 +138,65 @@ subjectDictationProvider = Provider.family<SubjectDictation, String>((
     },
   );
 }, name: 'subjectDictationProvider');
+
+/// Dictation into a surface no category owns — the companion's chat — on
+/// the Settings default profile's transcription slot, resolved when a take
+/// stops.
+///
+/// The words come back as the engine heard them: no model corrects them
+/// afterwards, so a short question is in the composer as soon as the
+/// engine — Voxtral on the shipped defaults — has heard it. No model is
+/// discovered either: without a default that can transcribe, a take fails
+/// as "no audio model" rather than landing on an on-device engine the user
+/// never picked for this.
+final Provider<Future<ResolvedInferenceProvider> Function()>
+settingsDefaultDictationTargetProvider =
+    Provider<Future<ResolvedInferenceProvider> Function()>((ref) {
+      return () async {
+        final profile = await ref
+            .read(profileAutomationResolverProvider)
+            .resolveTranscriptionProfile();
+        // Once per take: which profile a dictation goes through, by
+        // sanitized id only.
+        ref
+            .read(domainLoggerProvider)
+            .log(
+              LogDomain.speech,
+              profile == null
+                  ? 'no Settings default transcription profile for dictation'
+                  : 'dictation through the Settings default profile '
+                        '${DomainLogger.sanitizeId(profile.profileId ?? '')}',
+              subDomain: _logTag,
+            );
+        return _transcriptionSlotOf(ref, profile);
+      };
+    }, name: 'settingsDefaultDictationTargetProvider');
+
+/// [profile]'s transcription slot when it can batch-transcribe here — an
+/// audio-in, text-out model that is not realtime-only, and an on-device one
+/// only once downloaded — else the chat's "no audio model" error.
+Future<ResolvedInferenceProvider> _transcriptionSlotOf(
+  Ref ref,
+  ResolvedProfile? profile,
+) async {
+  final provider = profile?.transcriptionProvider;
+  final model = profile?.transcriptionModel;
+  if (provider == null ||
+      model == null ||
+      !model.inputModalities.contains(Modality.audio) ||
+      !model.outputModalities.contains(Modality.text) ||
+      (provider.inferenceProviderType == InferenceProviderType.mistral &&
+          isRealtimeOnlyTranscriptionModel(model.providerModelId))) {
+    throw _unavailable();
+  }
+  if (provider.inferenceProviderType == InferenceProviderType.sherpa &&
+      !await ref
+          .read(sherpaModelRepositoryProvider)
+          .isAvailable(model.providerModelId)) {
+    throw _unavailable();
+  }
+  return (model: model, provider: provider);
+}
 
 // The chat recorder reads "No audio-capable models" as its no-model error.
 TranscriptionException _unavailable() => TranscriptionException(

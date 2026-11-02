@@ -9,6 +9,8 @@ import 'package:lotti/features/agents/query/query_source_access.dart';
 import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/agents/ui/chat/agent_chat_view.dart';
 import 'package:lotti/features/agents/ui/chat/chat_recorder_controller.dart';
+import 'package:lotti/features/ai/state/subject_dictation_providers.dart';
+import 'package:lotti/features/ai/util/inference_provider_resolver.dart';
 import 'package:lotti/features/ai_consumption/model/consumption_aggregation_models.dart';
 import 'package:lotti/features/ai_consumption/state/consumption_providers.dart';
 import 'package:lotti/features/daily_os_next/state/selected_date_provider.dart';
@@ -91,6 +93,8 @@ void main() {
     ChatRecorderController Function()? recorder,
     FrontDayPlanner? planDay,
     FrontNewProject? newProject,
+    Future<ResolvedInferenceProvider> Function()? dictationTarget,
+    bool pushed = false,
   }) async {
     // The project creation resolves categories through the locator.
     final cache = MockEntitiesCacheService();
@@ -103,10 +107,25 @@ void main() {
     // Tall enough that every message of the longest thread is built.
     const window = Size(800, 2400);
     setTestSurfaceSize(tester, window);
+    // Pushed, the pane sits on a route of its own over the app, as her
+    // surface does, so leaving it can be seen.
+    final navigator = GlobalKey<NavigatorState>();
+    // Her surface closes by popping its route, which back's PopScope does
+    // not hold.
+    final pane = Scaffold(
+      body: FrontChatPane(
+        onClose:
+            onClose ??
+            () {
+              if (pushed) navigator.currentState!.pop();
+            },
+      ),
+    );
     await withClock(Clock.fixed(now), () async {
       await tester.pumpWidget(
         makeTestableWidgetNoScroll(
-          Scaffold(body: FrontChatPane(onClose: onClose ?? () {})),
+          pushed ? const SizedBox.shrink() : pane,
+          navigatorKey: navigator,
           mediaQueryData: const MediaQueryData(size: window),
           overrides: [
             frontChatThreadProvider.overrideWith(
@@ -161,9 +180,20 @@ void main() {
               frontDayPlannerProvider.overrideWithValue(planDay),
             if (newProject != null)
               frontNewProjectProvider.overrideWithValue(newProject),
+            if (dictationTarget != null)
+              settingsDefaultDictationTargetProvider.overrideWithValue(
+                dictationTarget,
+              ),
           ],
         ),
       );
+      if (pushed) {
+        navigator.currentState!
+            .push(MaterialPageRoute<void>(builder: (_) => pane))
+            .ignore();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+      }
       // The loading shell spins, so no settle: a few frames let the
       // thread and the composer land.
       for (var i = 0; i < 5; i++) {
@@ -564,6 +594,65 @@ void main() {
       await tester.pump();
     }
 
+    testWidgets('a task linked in an answer leaves her from the inbox too, '
+        'rather than only clearing the inbox', (tester) async {
+      final paths = <String>[];
+      beamToNamedOverride = paths.add;
+      addTearDown(() => beamToNamedOverride = null);
+      final base = waiting();
+      await pumpPane(
+        tester,
+        pushed: true,
+        thread: () async => FrontChatThread(
+          messages: base.messages,
+          doorsByMessageId: {
+            'u1': [
+              ...base.doorsByMessageId['u1']!,
+              FrontDoorEntry(
+                doorId: 'd:door:1',
+                record: FrontDoorRecord(
+                  segmentIndex: 1,
+                  text: 'What is next?',
+                  kind: FrontDestinationKind.task,
+                  destinationId: 'garden',
+                  ownerTitle: 'Garden',
+                  status: FrontDoorStatus.done,
+                  claimedAt: now.toUtc(),
+                  outcome: const FrontDoorAnswer(
+                    text: 'Then [Feed the penguins](lotti://task/t-9).',
+                    summaryBased: false,
+                    incomplete: false,
+                  ),
+                ),
+              ),
+            ],
+          },
+        ),
+      );
+      await openInbox(tester);
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(FrontChatPane)),
+      );
+      expect(container.read(frontInboxFilterProvider), isTrue);
+
+      await tester.tap(
+        find
+            .descendant(
+              of: find.byKey(const ValueKey('front-door-text-1')),
+              matching: find.textContaining(
+                'Feed the penguins',
+                findRichText: true,
+              ),
+            )
+            .last,
+      );
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(paths, ['/tasks/t-9']);
+      expect(find.byType(FrontChatPane), findsNothing);
+    });
+
     testWidgets("the list's inbox filters the thread to the turns that wait, "
         'and the header names it', (tester) async {
       await pumpPane(tester, thread: () async => waiting());
@@ -785,6 +874,137 @@ void main() {
         DateTime(2026, 10, 30),
       );
     });
+  });
+
+  testWidgets('a task she names as a link leaves her surface and opens the '
+      'task', (tester) async {
+    final paths = <String>[];
+    beamToNamedOverride = paths.add;
+    addTearDown(() => beamToNamedOverride = null);
+    await pumpPane(
+      tester,
+      pushed: true,
+      thread: () async => FrontChatThread(
+        messages: [
+          message('u1', AgentChatRole.user, 'What is due today?', now),
+          message(
+            'a1',
+            AgentChatRole.agent,
+            'Due today: [Feed the penguins](lotti://task/t-9).',
+            now,
+          ),
+        ],
+      ),
+    );
+    expect(find.byType(FrontChatPane), findsOneWidget);
+
+    await tester.tap(
+      find.textContaining('Feed the penguins', findRichText: true).last,
+    );
+    await tester.pump();
+    // Her route animates out before it leaves the tree.
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(paths, ['/tasks/t-9']);
+    expect(find.byType(FrontChatPane), findsNothing);
+  });
+
+  testWidgets('a link the app does not route keeps her open and goes '
+      'nowhere', (tester) async {
+    final paths = <String>[];
+    beamToNamedOverride = paths.add;
+    addTearDown(() => beamToNamedOverride = null);
+    await pumpPane(
+      tester,
+      pushed: true,
+      thread: () async => FrontChatThread(
+        messages: [
+          message('u1', AgentChatRole.user, 'How is swimming going?', now),
+          message(
+            'a1',
+            AgentChatRole.agent,
+            'Ask [the swim goal](lotti://goal/g-1).',
+            now,
+          ),
+        ],
+      ),
+    );
+
+    await tester.tap(
+      find.textContaining('the swim goal', findRichText: true).last,
+    );
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(paths, isEmpty);
+    expect(find.byType(FrontChatPane), findsOneWidget);
+  });
+
+  testWidgets("a task named in an owner's answer leaves her surface and "
+      'opens the task', (tester) async {
+    final paths = <String>[];
+    beamToNamedOverride = paths.add;
+    addTearDown(() => beamToNamedOverride = null);
+    await pumpPane(
+      tester,
+      pushed: true,
+      thread: () async => FrontChatThread(
+        messages: [
+          message('u1', AgentChatRole.user, 'What is left?', now),
+        ],
+        doorsByMessageId: {
+          'u1': [
+            FrontDoorEntry(
+              doorId: 'd:door:0',
+              record: FrontDoorRecord(
+                segmentIndex: 0,
+                text: 'What is left?',
+                kind: FrontDestinationKind.task,
+                destinationId: 'census',
+                ownerTitle: 'Penguin census',
+                status: FrontDoorStatus.done,
+                claimedAt: now.toUtc(),
+                outcome: const FrontDoorAnswer(
+                  text: 'Then [Feed the penguins](lotti://task/t-9).',
+                  summaryBased: false,
+                  incomplete: false,
+                ),
+              ),
+            ),
+          ],
+        },
+      ),
+    );
+
+    await tester.tap(
+      find
+          .descendant(
+            of: find.byKey(const ValueKey('front-door-text-0')),
+            matching: find.textContaining(
+              'Feed the penguins',
+              findRichText: true,
+            ),
+          )
+          .last,
+    );
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(paths, ['/tasks/t-9']);
+    expect(find.byType(FrontChatPane), findsNothing);
+  });
+
+  testWidgets('dictation goes to the Settings default transcription slot, '
+      'the words as heard', (tester) async {
+    Future<ResolvedInferenceProvider> target() async =>
+        throw UnimplementedError();
+    await pumpPane(tester, dictationTarget: target);
+
+    final view = tester.widget<AgentChatView>(find.byType(AgentChatView));
+    // An explicit route, so no on-device engine is discovered for her...
+    expect(view.resolveTranscriptionTarget, same(target));
+    // ...and no correction pass keeps the question waiting.
+    expect(view.correctTranscript, isNull);
   });
 
   testWidgets('a source her journal answer cites leaves the sheet and opens '

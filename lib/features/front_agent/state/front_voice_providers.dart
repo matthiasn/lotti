@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/front_agent/model/front_chat_thread.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
+import 'package:lotti/features/tts/engine/speech_text.dart';
 
 /// A turn the user spoke, whose reply she speaks back: the conversation it
 /// was spoken in, and when — her reply is the first of hers after it.
@@ -27,7 +28,8 @@ const _frontVoicePrefix = 'front-chat:';
 /// goal or person a door handed the words to has replied: that door is done
 /// as soon as the turn is handed over, its reply mirrored later. An answer
 /// shown only while private entries are is not said aloud. Citation numbers
-/// are left out: they are for reading.
+/// are left out, and Markdown is said as its words — a task she links is
+/// said by its title ([withoutMarkdown]): they are for reading.
 ({bool landed, String text}) frontSpokenAnswer(
   FrontChatThread thread,
   FrontSpokenTurn turn,
@@ -57,7 +59,7 @@ const _frontVoicePrefix = 'front-chat:';
   ];
   final text = parts
       .whereType<String>()
-      .map((part) => part.replaceAll(_citation, '').trim())
+      .map((part) => withoutMarkdown(part.replaceAll(_citation, '')).trim())
       .where((part) => part.isNotEmpty)
       .join('\n\n');
   return (landed: landed, text: text);

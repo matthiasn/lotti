@@ -21,14 +21,27 @@ const _internalRouteRoots = <String>{
   '/tasks',
 };
 
-String? _internalRouteFromMarkdownUrl(String url) {
+/// The one-thing spelling of a route root an agent may link with: a
+/// reference to one task reads `lotti://task/<id>`, and opens `/tasks/<id>`.
+const _singularRouteRoots = <String, String>{
+  'task': 'tasks',
+  'project': 'projects',
+};
+
+/// The in-app route a markdown link at [url] opens, or null when it is not
+/// one: `lotti://tasks/<id>`, `lotti://task/<id>` (the singular reads as one
+/// thing) and a bare `/tasks/<id>` all open `/tasks/<id>`. Only the roots the
+/// app routes are accepted, so a link a model wrote cannot reach anything
+/// else.
+String? internalRouteFromMarkdownUrl(String url) {
   if (url.isEmpty) return null;
 
   final uri = Uri.tryParse(url);
   if (uri == null) return null;
 
   final path = switch (uri.scheme) {
-    'lotti' when uri.host.isNotEmpty => '/${uri.host}${uri.path}',
+    'lotti' when uri.host.isNotEmpty =>
+      '/${_singularRouteRoots[uri.host] ?? uri.host}${uri.path}',
     'lotti' => uri.path,
     '' when uri.path.startsWith('/') => uri.path,
     '' => '',
@@ -52,7 +65,7 @@ String? _internalRouteFromMarkdownUrl(String url) {
 /// ignored.
 Future<void> handleMarkdownLinkTap(String url, String title) async {
   if (url.isEmpty) return;
-  final internalRoute = _internalRouteFromMarkdownUrl(url);
+  final internalRoute = internalRouteFromMarkdownUrl(url);
   if (internalRoute != null) {
     if (getIt.isRegistered<NavService>()) {
       getIt<NavService>().beamToNamed(internalRoute);

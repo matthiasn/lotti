@@ -76,3 +76,27 @@ String withoutEmoji(String text) {
       .replaceAll(_spaceAroundBreak, '\n')
       .trim();
 }
+
+final _markdownImage = RegExp(r'!\[([^\]\n]*)\]\([^)\n]*\)');
+final _markdownLink = RegExp(r'\[([^\]\n]*)\]\([^)\n]*\)');
+final _strong = RegExp(r'(\*\*|__)(?=\S)(.+?)(?<=\S)\1');
+final _emphasis = RegExp(r'(?<![\w*])([*_])(?=\S)(.+?)(?<=\S)\1(?![\w*])');
+final _inlineCode = RegExp('`([^`\n]*)`');
+final _lineMarker = RegExp(
+  r'^[ \t]*(?:#{1,6}[ \t]+|>[ \t]?|[-*+][ \t]+)',
+  multiLine: true,
+);
+
+/// [text] as a voice should get it when it was written as Markdown: a link
+/// or an image says its label, emphasis and code say their words, and the
+/// markers that open a heading, a quote or a bullet are not read out.
+///
+/// Line breaks stay, as paragraph breaks decide where a voice pauses;
+/// numbered items keep their numbers, which are words.
+String withoutMarkdown(String text) => text
+    .replaceAllMapped(_markdownImage, (m) => m[1]!)
+    .replaceAllMapped(_markdownLink, (m) => m[1]!)
+    .replaceAllMapped(_strong, (m) => m[2]!)
+    .replaceAllMapped(_emphasis, (m) => m[2]!)
+    .replaceAllMapped(_inlineCode, (m) => m[1]!)
+    .replaceAll(_lineMarker, '');

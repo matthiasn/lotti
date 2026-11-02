@@ -6,6 +6,7 @@ import 'package:lotti/features/agents/workflow/agent_message_recording.dart';
 import 'package:lotti/features/agents/workflow/agent_tool_arg_parsing.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
+import 'package:lotti/features/front_agent/model/front_reference_links.dart';
 import 'package:lotti/features/front_agent/model/front_routing_index.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_contract.dart';
 import 'package:lotti/features/front_agent/workflow/front_dispatch_validator.dart';
@@ -16,6 +17,11 @@ import 'package:openai_dart/openai_dart.dart';
 /// returns become valid destinations for the rest of the turn.
 typedef FrontCorpusMatcher =
     Future<List<FrontIndexRow>> Function(String phrase);
+
+/// Lists the open tasks due from today through `daysAhead` days past it,
+/// overdue ones included; the rows become valid destinations for the rest
+/// of the turn.
+typedef FrontDueTaskLister = Future<FrontDueTasks> Function(int daysAhead);
 
 /// One candidate offered by `ask_user`.
 typedef FrontAskOption = ({FrontDestinationKind kind, String id, String label});
@@ -29,7 +35,7 @@ typedef FrontAskUser = ({String question, List<FrontAskOption> options});
 /// writes the outputs in one transaction.
 ///
 /// Three calls end the turn — `dispatch`, `ask_user`, `reply_to_user` — and
-/// the two lookups are capped by count, not by removing them from the list:
+/// the three lookups are capped by count, not by removing them from the list:
 /// a shrinking tool list changes the request prefix and voids the provider's
 /// cache, which a routing turn exists to keep warm.
 class FrontAgentStrategy extends ConversationStrategy
@@ -43,6 +49,7 @@ class FrontAgentStrategy extends ConversationStrategy
     required this.input,
     required this.index,
     this.corpusMatcher,
+    this.dueTaskLister,
   });
 
   @override
@@ -64,11 +71,16 @@ class FrontAgentStrategy extends ConversationStrategy
   /// then answers that it is unavailable.
   final FrontCorpusMatcher? corpusMatcher;
 
+  /// Null when no journal is wired (tests, evals): the tool then answers
+  /// that it is unavailable.
+  final FrontDueTaskLister? dueTaskLister;
+
   FrontDispatch? _dispatch;
   FrontAskUser? _askUser;
   String? _replyToUser;
   int _tldrReads = 0;
   int _corpusMatches = 0;
+  int _dueLists = 0;
   int _rejectedDispatches = 0;
   final _lookupRows = <FrontIndexRow>[];
 
@@ -84,7 +96,7 @@ class FrontAgentStrategy extends ConversationStrategy
   int get rejectedDispatches => _rejectedDispatches;
 
   /// How many lookup calls ran (refused ones excluded).
-  int get lookupCalls => _tldrReads + _corpusMatches;
+  int get lookupCalls => _tldrReads + _corpusMatches + _dueLists;
 
   @override
   Future<ConversationAction> processToolCalls({
@@ -126,6 +138,8 @@ class FrontAgentStrategy extends ConversationStrategy
           await _handleReadTldr(call, args, manager);
         case FrontAgentToolNames.matchToCorpus:
           await _handleMatchToCorpus(call, args, manager);
+        case FrontAgentToolNames.listDueTasks:
+          await _handleListDueTasks(call, args, manager);
         case FrontAgentToolNames.askUser:
           await _handleAskUser(call, args, manager);
         case FrontAgentToolNames.replyToUser:
@@ -301,6 +315,51 @@ class FrontAgentStrategy extends ConversationStrategy
     await _accept(call, manager, buffer.toString().trimRight());
   }
 
+  Future<void> _handleListDueTasks(
+    ChatCompletionMessageToolCall call,
+    Map<String, dynamic> args,
+    ConversationManager manager,
+  ) async {
+    if (_dueLists >= frontDueListsPerTurn) {
+      await _reject(call, manager, frontDueListExhaustedAnswer);
+      return;
+    }
+    final raw = args['daysAhead'] ?? 0;
+    final daysAhead = raw is num && raw == raw.roundToDouble()
+        ? raw.toInt()
+        : null;
+    if (daysAhead == null ||
+        daysAhead < 0 ||
+        daysAhead > frontDueMaxDaysAhead) {
+      await _reject(
+        call,
+        manager,
+        'Error: list_due_tasks needs daysAhead, a whole number from 0 '
+        '(today) to $frontDueMaxDaysAhead.',
+      );
+      return;
+    }
+    final lister = dueTaskLister;
+    if (lister == null) {
+      await _reject(
+        call,
+        manager,
+        'Due tasks are unavailable this turn; say so in reply_to_user.',
+      );
+      return;
+    }
+    _dueLists++;
+    final due = await lister(daysAhead);
+    _lookupRows.addAll(due.rows);
+    await _accept(call, manager, due.render());
+  }
+
+  /// Her words with every task or project they name by id made a link:
+  /// the prompt asks for links, this keeps a recited id from reaching the
+  /// user (see [linkFrontReferences]).
+  String _linked(String words) =>
+      linkFrontReferences(words, [...index.rows, ..._lookupRows]);
+
   Future<void> _handleAskUser(
     ChatCompletionMessageToolCall call,
     Map<String, dynamic> args,
@@ -374,7 +433,7 @@ class FrontAgentStrategy extends ConversationStrategy
       );
       return;
     }
-    _askUser = (question: question, options: options);
+    _askUser = (question: _linked(question), options: options);
     await _accept(call, manager, 'Question delivered.');
   }
 
@@ -409,7 +468,7 @@ class FrontAgentStrategy extends ConversationStrategy
       );
       return;
     }
-    _replyToUser = message;
+    _replyToUser = _linked(message);
     await _accept(call, manager, 'Reply delivered.');
   }
 

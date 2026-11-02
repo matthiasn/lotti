@@ -37,4 +37,36 @@ void main() {
       expect(withoutEmoji(' 🎉🐧 👍🏽 '), isEmpty);
     });
   });
+
+  group('withoutMarkdown', () {
+    test('a link or an image says its label', () {
+      expect(
+        withoutMarkdown('Due: [Feed the penguins](lotti://task/t-1).'),
+        'Due: Feed the penguins.',
+      );
+      expect(withoutMarkdown('![a penguin](https://x/p.png)'), 'a penguin');
+    });
+
+    test('emphasis and code say their words', () {
+      expect(
+        withoutMarkdown('**Two** left, *one* soon, __now__ `rookery-map`'),
+        'Two left, one soon, now rookery-map',
+      );
+    });
+
+    test(
+      'heading, quote and bullet markers are not read, line breaks stay',
+      () {
+        expect(
+          withoutMarkdown('## Today\n- Feed\n* Count\n> Note\n1. First'),
+          'Today\nFeed\nCount\nNote\n1. First',
+        );
+      },
+    );
+
+    test('leaves arithmetic, snake_case and lone marks alone', () {
+      const text = 'Room #4, 2 * 3 = 6, file_name_here, 5 - 2';
+      expect(withoutMarkdown(text), text);
+    });
+  });
 }

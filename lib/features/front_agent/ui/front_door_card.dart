@@ -10,6 +10,7 @@ import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/widgets/markdown/agent_markdown_view.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// What the user can do under a door. Every callback takes the door's id,
@@ -28,6 +29,7 @@ class FrontDoorActions {
     required this.onNewProject,
     required this.onPlanDay,
     this.onOpenEvidence,
+    this.onOpenLink,
   });
 
   /// File the proposal under its task or project — the one tap of
@@ -64,6 +66,9 @@ class FrontDoorActions {
 
   /// Open the source a journal answer cites.
   final ValueChanged<QueryEvidence>? onOpenEvidence;
+
+  /// Open a link in an answer — a task it names, say — by its url.
+  final ValueChanged<String>? onOpenLink;
 }
 
 /// What came back through the doors of one routed turn, as a stack of
@@ -76,7 +81,9 @@ class FrontDoorActions {
 /// grey.
 ///
 /// Specialist text is shown as the specialist's, under its owner's name —
-/// never reworded by the front agent (decision 2). Her own answer from the
+/// never reworded by the front agent (decision 2) — and as what it is,
+/// Markdown, whose links open through [FrontDoorActions.onOpenLink]; the
+/// user's own words stay plain text. Her own answer from the
 /// journal is shown as hers, with the sources it cites, and only while
 /// [journalAccess] still shows all of them.
 class FrontDoorCard extends StatelessWidget {
@@ -179,6 +186,8 @@ class _DoorRow extends StatelessWidget {
     var glyph = _kindGlyph(record.kind);
     var ink = tokens.colors.aiCard.accent;
     final String title;
+    // An answer is an agent's Markdown; the user's words are text.
+    var isAnswer = false;
     final String status;
     Widget? action;
     var sources = const <QueryEvidence>[];
@@ -219,12 +228,14 @@ class _DoorRow extends StatelessWidget {
             false;
         title = visible ? answer.text : messages.frontDoorAnswerHidden;
         if (visible) sources = answer.evidence;
+        isAnswer = visible;
         status = [
           messages.frontDoorFromJournal,
           if (answer.incomplete) messages.frontDoorIncomplete,
         ].join(' · ');
       case FrontDoorAnswer(:final text, :final summaryBased, :final incomplete):
         title = text;
+        isAnswer = true;
         status = [
           messages.frontDoorAttribution(owner),
           if (summaryBased) messages.frontDoorSummaryBased,
@@ -232,6 +243,7 @@ class _DoorRow extends StatelessWidget {
         ].join(' · ');
       case FrontDoorChatTurn() when door.specialistReply != null:
         title = door.specialistReply!;
+        isAnswer = true;
         status = messages.frontDoorAttribution(owner);
       case FrontDoorChatTurn():
         title = words;
@@ -415,6 +427,9 @@ class _DoorRow extends StatelessWidget {
         }
     }
 
+    final titleStyle = tokens.typography.styles.body.bodyMedium.copyWith(
+      color: tokens.colors.text.highEmphasis,
+    );
     final statusStyle = tokens.typography.styles.others.caption.copyWith(
       color: failed
           ? tokens.colors.alert.error.ink
@@ -434,13 +449,27 @@ class _DoorRow extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                title,
-                key: ValueKey('front-door-text-$index'),
-                style: tokens.typography.styles.body.bodyMedium.copyWith(
-                  color: tokens.colors.text.highEmphasis,
+              if (isAnswer)
+                // The card is drawn on a plain box; a link's ink needs a
+                // surface of its own.
+                Material(
+                  type: MaterialType.transparency,
+                  child: AgentMarkdownView(
+                    title,
+                    key: ValueKey('front-door-text-$index'),
+                    style: titleStyle,
+                    onLinkTap: switch (acting?.onOpenLink) {
+                      final open? => (url, _) => open(url),
+                      null => null,
+                    },
+                  ),
+                )
+              else
+                Text(
+                  title,
+                  key: ValueKey('front-door-text-$index'),
+                  style: titleStyle,
                 ),
-              ),
               for (final (number, source) in sources.indexed)
                 _SourceRow(
                   key: ValueKey('front-door-source-$index-$number'),

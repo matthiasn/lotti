@@ -62,17 +62,20 @@ void main() {
     ],
   );
 
-  FrontAgentStrategy strategy({FrontCorpusMatcher? matcher}) =>
-      FrontAgentStrategy(
-        syncService: syncService,
-        domainLogger: domainLogger,
-        agentId: 'front_agent',
-        threadId: 'thread-1',
-        runKey: 'run-1',
-        input: input,
-        index: index,
-        corpusMatcher: matcher,
-      );
+  FrontAgentStrategy strategy({
+    FrontCorpusMatcher? matcher,
+    FrontDueTaskLister? dueLister,
+  }) => FrontAgentStrategy(
+    syncService: syncService,
+    domainLogger: domainLogger,
+    agentId: 'front_agent',
+    threadId: 'thread-1',
+    runKey: 'run-1',
+    input: input,
+    index: index,
+    corpusMatcher: matcher,
+    dueTaskLister: dueLister,
+  );
 
   Map<String, dynamic> segment({
     required int start,
@@ -301,7 +304,114 @@ hologram:x: not listed''');
     });
   });
 
+  group('list_due_tasks', () {
+    final today = DateTime(2026, 11, 2);
+    const shed = FrontIndexRow(
+      kind: FrontDestinationKind.task,
+      id: 'shed',
+      title: 'Paint the shed',
+      status: 'OPEN',
+    );
+
+    test('answers with the tasks due, which the reply may then link and the '
+        'dispatch route to', () async {
+      final asked = <int>[];
+      final s = strategy(
+        dueLister: (daysAhead) async {
+          asked.add(daysAhead);
+          return FrontDueTasks(
+            today: today,
+            through: today,
+            rows: [
+              FrontIndexRow(
+                kind: shed.kind,
+                id: shed.id,
+                title: shed.title,
+                status: shed.status,
+                due: today,
+              ),
+            ],
+          );
+        },
+      );
+      await s.processToolCalls(
+        toolCalls: [
+          _call('list_due_tasks', {'daysAhead': 0}),
+        ],
+        manager: manager,
+      );
+      expect(asked, [0]);
+      expect(
+        responses().single,
+        'Open tasks due today, 2026-11-02, overdue ones included (1):\n'
+        '- task:shed | Paint the shed | OPEN | due 2026-11-02',
+      );
+      expect(s.lookupCalls, 1);
+
+      final action = await s.processToolCalls(
+        toolCalls: [
+          _call('reply_to_user', {
+            'message': 'Due today: task:shed — and Garden (task:garden).',
+          }, id: 'call-2'),
+        ],
+        manager: manager,
+      );
+      expect(action, ConversationAction.complete);
+      // A listed id she recites becomes a link titled as listed.
+      expect(
+        s.replyToUser,
+        'Due today: [Paint the shed](lotti://task/shed) — and '
+        '[Garden](lotti://task/garden).',
+      );
+    });
+
+    test('refuses a second list, a reach past a week, and reports an '
+        'unwired lister', () async {
+      final s = strategy(
+        dueLister: (_) async =>
+            FrontDueTasks(today: today, through: today, rows: const []),
+      );
+      await s.processToolCalls(
+        toolCalls: [
+          _call('list_due_tasks', {'daysAhead': frontDueMaxDaysAhead + 1}),
+          _call('list_due_tasks', {'daysAhead': 1.5}, id: 'call-2'),
+          _call('list_due_tasks', const <String, dynamic>{}, id: 'call-3'),
+          _call('list_due_tasks', {'daysAhead': 0}, id: 'call-4'),
+        ],
+        manager: manager,
+      );
+      expect(responses(), [
+        contains('whole number from 0 (today) to $frontDueMaxDaysAhead'),
+        contains('whole number'),
+        'No open task is due today, 2026-11-02, and none is overdue.',
+        frontDueListExhaustedAnswer,
+      ]);
+
+      await strategy().processToolCalls(
+        toolCalls: [
+          _call('list_due_tasks', {'daysAhead': 0}),
+        ],
+        manager: manager,
+      );
+      expect(responses().last, contains('unavailable this turn'));
+    });
+  });
+
   group('ask_user', () {
+    test('her question names a recited task as a link', () async {
+      final s = strategy();
+      await s.processToolCalls(
+        toolCalls: [
+          _call('ask_user', {'question': 'Is it task:garden you mean?'}),
+        ],
+        manager: manager,
+      );
+      expect(
+        s.askUser!.question,
+        'Is it [Garden](lotti://task/garden) you mean?',
+      );
+    });
+
     test('a question with listed options ends the turn', () async {
       final s = strategy();
       final action = await s.processToolCalls(

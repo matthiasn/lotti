@@ -5,13 +5,14 @@ import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_contract.dart';
 
 void main() {
-  test('five tools, never one, in a fixed order', () {
+  test('six tools, never one, in a fixed order', () {
     // A single tool makes DeepSeek rewrite tool_choice; the list is fixed
     // so the request prefix stays byte-stable across turns.
     expect(frontAgentTools.map((t) => t.name), [
       FrontAgentToolNames.dispatch,
       FrontAgentToolNames.readTldr,
       FrontAgentToolNames.matchToCorpus,
+      FrontAgentToolNames.listDueTasks,
       FrontAgentToolNames.askUser,
       FrontAgentToolNames.replyToUser,
     ]);
@@ -57,12 +58,19 @@ void main() {
     expect(frontCorpusMatchesPerTurn, 1);
     expect(frontTldrIdsPerRead, 5);
     expect(frontAskUserMaxOptions, 3);
+    expect(frontDueListsPerTurn, 1);
+    expect(frontDueMaxDaysAhead, 7);
+    final listDue = frontAgentTools[3];
+    final daysAhead =
+        (listDue.parameters['properties'] as Map)['daysAhead'] as Map;
+    expect(daysAhead['minimum'], 0);
+    expect(daysAhead['maximum'], frontDueMaxDaysAhead);
     final readTldr = frontAgentTools[1];
     expect(
       ((readTldr.parameters['properties'] as Map)['ids'] as Map)['maxItems'],
       frontTldrIdsPerRead,
     );
-    final askUser = frontAgentTools[3];
+    final askUser = frontAgentTools[4];
     expect(
       ((askUser.parameters['properties'] as Map)['options'] as Map)['maxItems'],
       frontAskUserMaxOptions,
@@ -75,6 +83,23 @@ void main() {
       frontCorpusMatchExhaustedAnswer,
       contains('$frontCorpusMatchesPerTurn used'),
     );
+    expect(frontDueListExhaustedAnswer, contains('$frontDueListsPerTurn used'));
+  });
+
+  test('a question about what is due is hers, answered from the due list, '
+      'never the day door', () {
+    expect(frontAgentSystemPrompt, contains('call `list_due_tasks`'));
+    expect(frontAgentSystemPrompt, contains('never say you cannot answer it'));
+    expect(
+      frontAgentSystemPrompt,
+      contains('A question about what is due is not the day'),
+    );
+  });
+
+  test('her own words name tasks and projects as links, never bare ids', () {
+    expect(frontAgentSystemPrompt, contains('[title](lotti://task/<id>)'));
+    expect(frontAgentSystemPrompt, contains('[title](lotti://project/<id>)'));
+    expect(frontAgentSystemPrompt, contains('Never write a bare id'));
   });
 
   test('her manner follows the sass the user set, and never touches the '

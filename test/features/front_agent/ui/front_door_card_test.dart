@@ -9,6 +9,7 @@ import 'package:lotti/features/front_agent/model/front_chat_thread.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
 import 'package:lotti/features/front_agent/ui/front_door_card.dart';
+import 'package:lotti/widgets/markdown/agent_markdown_view.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../test_data/test_data.dart';
@@ -55,6 +56,7 @@ void main() {
     onNewProject: (door) => acted.add(('project', door.doorId)),
     onPlanDay: (door) => acted.add(('day', door.doorId)),
     onOpenEvidence: (evidence) => acted.add(('source', evidence.source.id)),
+    onOpenLink: (url) => acted.add(('link', url)),
   );
 
   setUp(() => acted = []);
@@ -81,8 +83,13 @@ void main() {
     await tester.pump();
   }
 
+  /// The card's words: the user's as text, an answer as its Markdown.
   String titleOf(WidgetTester tester, int index) =>
-      tester.widget<Text>(find.byKey(ValueKey('front-door-text-$index'))).data!;
+      switch (tester.widget(find.byKey(ValueKey('front-door-text-$index')))) {
+        final Text text => text.data!,
+        final AgentMarkdownView markdown => markdown.text,
+        final other => throw StateError('unexpected ${other.runtimeType}'),
+      };
   Text statusWidget(WidgetTester tester, int index) =>
       tester.widget<Text>(find.byKey(ValueKey('front-door-status-$index')));
   String statusOf(WidgetTester tester, int index) =>
@@ -111,6 +118,93 @@ void main() {
     await tester.tap(find.byKey(ValueKey('front-door-$name-$index')));
     await tester.pumpAndSettle();
   }
+
+  group('an answer is Markdown', () {
+    const owners = FrontDoorAnswer(
+      text:
+          '**Two steps** left:\n\n- Count the rookery\n'
+          '- Tell [Feed the penguins](lotti://task/feed-1)',
+      summaryBased: false,
+      incomplete: false,
+    );
+
+    testWidgets('an owner answer shows its formatting, not its marks, and '
+        'the user words stay plain text', (tester) async {
+      await pump(tester, [
+        entry(record(index: 0, text: 'What is left?', outcome: owners)),
+        entry(record(index: 1, text: 'Paint **the** shed')),
+      ]);
+
+      final answer = find.byKey(const ValueKey('front-door-text-0'));
+      expect(tester.widget(answer), isA<AgentMarkdownView>());
+      // The marks are gone from what is drawn; the words remain.
+      expect(
+        find.descendant(of: answer, matching: find.textContaining('**')),
+        findsNothing,
+      );
+      expect(
+        find.descendant(
+          of: answer,
+          matching: find.textContaining('Two steps', findRichText: true),
+        ),
+        findsWidgets,
+      );
+      // A waiting door's words are the user's, verbatim: text, marks kept.
+      final words = find.byKey(const ValueKey('front-door-text-1'));
+      expect(tester.widget<Text>(words).data, 'Paint **the** shed');
+    });
+
+    testWidgets('a link in an answer opens through the surface', (
+      tester,
+    ) async {
+      await pump(tester, [
+        entry(record(index: 0, text: 'What is left?', outcome: owners)),
+      ]);
+
+      await tester.tap(
+        find
+            .descendant(
+              of: find.byKey(const ValueKey('front-door-text-0')),
+              matching: find.textContaining(
+                'Feed the penguins',
+                findRichText: true,
+              ),
+            )
+            .last,
+      );
+      await tester.pump();
+
+      expect(acted, [('link', 'lotti://task/feed-1')]);
+    });
+
+    testWidgets("a specialist's mirrored reply is Markdown too", (
+      tester,
+    ) async {
+      await pump(tester, [
+        entry(
+          record(
+            index: 0,
+            text: 'How is the swim goal?',
+            kind: FrontDestinationKind.goal,
+            outcome: const FrontDoorChatTurn(
+              specialistAgentId: 'goal-agent',
+              specialistMessageId: 'm-1',
+            ),
+          ),
+          specialistReply: '*On track* this week.',
+        ),
+      ]);
+
+      expect(
+        tester
+            .widget<AgentMarkdownView>(
+              find.byKey(const ValueKey('front-door-text-0')),
+            )
+            .text,
+        '*On track* this week.',
+      );
+    });
+  });
 
   group('her journal answer', () {
     final category = categoryMindfulness;
@@ -273,7 +367,7 @@ void main() {
     expect(statusOf(tester, 1), 'From Fence');
     expect(glyph(tester, 1).icon, LottiIcons.folder);
     // The words outrank the status by size.
-    final title = tester.widget<Text>(
+    final title = tester.widget<AgentMarkdownView>(
       find.byKey(const ValueKey('front-door-text-0')),
     );
     expect(
