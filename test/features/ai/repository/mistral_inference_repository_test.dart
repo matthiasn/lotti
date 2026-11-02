@@ -1516,6 +1516,33 @@ void main() {
         },
       );
 
+      test('leaves temperature 0 out for Large 4, which refuses greedy '
+          'sampling while it reasons', () async {
+        final body = await sentBody(
+          () => repository.generateTextWithMessages(
+            messages: userHello,
+            model: 'mistral-large-4-0',
+            baseUrl: baseUrl,
+            apiKey: apiKey,
+            temperature: 0,
+          ),
+        );
+        expect(body.containsKey('temperature'), isFalse);
+      });
+
+      test('keeps temperature 0 for a model that can stop reasoning', () async {
+        final body = await sentBody(
+          () => repository.generateTextWithMessages(
+            messages: userHello,
+            model: 'mistral-medium-3-5',
+            baseUrl: baseUrl,
+            apiKey: apiKey,
+            temperature: 0,
+          ),
+        );
+        expect(body['temperature'], 0);
+      });
+
       test(
         "a caller's effort wins over the model row's thinking mode",
         () async {
