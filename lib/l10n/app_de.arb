@@ -440,6 +440,7 @@
   "agentSummaryCheckItem": "Abhaken: „{title}“",
   "agentSummaryCreateFollowUp": "Folgeaufgabe erstellen: „{title}“",
   "agentSummaryCreateFollowUpRelated": "Folgeaufgabe erstellen: „{title}“ — {relation}",
+  "agentSummaryCreateProject": "Projekt „{project}“ erstellen und die Aufgabe dorthin verschieben",
   "agentSummaryCreateTask": "Aufgabe erstellen: {title}",
   "agentSummaryFollowUpTask": "Folgeaufgabe: {title}",
   "agentSummaryGoalRevisionCadence": "Häufigkeit auf {value} ändern",

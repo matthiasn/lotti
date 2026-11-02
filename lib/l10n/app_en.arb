@@ -542,6 +542,12 @@
       "relation": {}
     }
   },
+  "agentSummaryCreateProject": "Create project \"{project}\" and move the task into it",
+  "@agentSummaryCreateProject": {
+    "placeholders": {
+      "project": {}
+    }
+  },
   "agentSummaryCreateTask": "Create task: {title}",
   "@agentSummaryCreateTask": {
     "placeholders": {

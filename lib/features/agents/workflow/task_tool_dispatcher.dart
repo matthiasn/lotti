@@ -278,6 +278,13 @@ class TaskToolDispatcher {
       case TaskAgentToolNames.setTaskProject:
         return handleSetTaskProject(taskEntity, normalizedArgs);
 
+      case TaskAgentToolNames.createTaskProject:
+        return handleCreateTaskProject(
+          taskEntity,
+          normalizedArgs,
+          effect: effect,
+        );
+
       case TaskAgentToolNames.linkPullRequest:
         return handleLinkPullRequest(taskId, normalizedArgs);
 
@@ -308,9 +315,10 @@ class TaskToolDispatcher {
   /// them, when nothing was recorded, or when the entity cannot be read — the
   /// handler then reports that as it always has.
   ///
-  /// For `set_task_project` the field is the project task [taskId] is linked
-  /// to, read past the private gate: a task moved to another project since
-  /// the proposal keeps that project when a second device confirms late.
+  /// For `set_task_project` and `create_task_project` the field is the
+  /// project task [taskId] is linked to, read past the private gate: a task
+  /// moved to another project since the proposal keeps that project when a
+  /// second device confirms late.
   Future<ToolExecutionResult?> _targetMovedOn(
     String toolName,
     Map<String, dynamic> args,
@@ -332,6 +340,7 @@ class TaskToolDispatcher {
         final entry = await read(args['entryId']);
         fields = entry is JournalEntry ? timeEntryFields(entry) : null;
       case TaskAgentToolNames.setTaskProject:
+      case TaskAgentToolNames.createTaskProject:
         final repository = projectRepository;
         if (repository == null) return null;
         what = 'task';

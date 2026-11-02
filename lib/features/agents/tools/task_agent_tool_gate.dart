@@ -61,8 +61,11 @@ class TaskAgentWakeFacts {
 
   /// The task's category has at least one project the task could belong to.
   ///
-  /// Gates both project tools: with no project to read there is none to
-  /// propose, and offering `set_task_project` would invite an invented id.
+  /// Gates `get_category_projects` and `set_task_project`: with no project to
+  /// read there is none to propose, and offering `set_task_project` would
+  /// invite an invented id. `create_task_project` is not gated by it — a
+  /// category with no projects is where a project the user names is most
+  /// likely missing.
   final bool hasCategoryProjects;
 
   /// The task's pull requests can be listed: its category names a GitHub
@@ -114,7 +117,8 @@ class TaskAgentWakeFacts {
 /// Tools with no precondition — `set_task_title`, `update_task_estimate`,
 /// `update_task_due_date`, `update_task_priority`, `set_task_status`,
 /// `set_task_language`, `add_multiple_checklist_items`, `create_follow_up_task`,
-/// `link_task`, `record_observations`, `request_attention` — are always offered.
+/// `link_task`, `create_task_project`, `record_observations`,
+/// `request_attention` — are always offered.
 /// `migrate_checklist_items` is deliberately among them: it is only meaningful
 /// after `create_follow_up_task`, but that happens mid-wake and the tool list is
 /// fixed for the turn.

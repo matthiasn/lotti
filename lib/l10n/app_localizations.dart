@@ -1789,6 +1789,12 @@ abstract class AppLocalizations {
   /// **'Create follow-up task: \"{title}\" — {relation}'**
   String agentSummaryCreateFollowUpRelated(Object title, Object relation);
 
+  /// No description provided for @agentSummaryCreateProject.
+  ///
+  /// In en, this message translates to:
+  /// **'Create project \"{project}\" and move the task into it'**
+  String agentSummaryCreateProject(Object project);
+
   /// No description provided for @agentSummaryCreateTask.
   ///
   /// In en, this message translates to:

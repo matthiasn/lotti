@@ -978,6 +978,11 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
+  String agentSummaryCreateProject(Object project) {
+    return 'Opret projektet \"$project\" og flyt opgaven dertil';
+  }
+
+  @override
   String agentSummaryCreateTask(Object title) {
     return 'Opret opgave: $title';
   }

@@ -179,6 +179,14 @@ void main() {
       expect(matchTaskProjectOption(options, 'COLONY CENSUS')?.id, 'p1');
     });
 
+    test(
+      'matches a title regardless of inner whitespace, as create_task_project '
+      'compares them',
+      () {
+        expect(matchTaskProjectOption(options, 'colony    census')?.id, 'p1');
+      },
+    );
+
     test('matches nothing for a shared title or an unknown reference', () {
       expect(matchTaskProjectOption(options, 'Fish stocks'), isNull);
       expect(matchTaskProjectOption(options, 'invented-id'), isNull);

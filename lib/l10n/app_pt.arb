@@ -465,6 +465,7 @@
   "agentSummaryCheckItem": "Marcar: \"{title}\"",
   "agentSummaryCreateFollowUp": "Criar tarefa de acompanhamento: \"{title}\"",
   "agentSummaryCreateFollowUpRelated": "Criar tarefa de acompanhamento: \"{title}\" — {relation}",
+  "agentSummaryCreateProject": "Criar o projeto \"{project}\" e mover a tarefa para lá",
   "agentSummaryCreateTask": "Criar tarefa: {title}",
   "agentSummaryFollowUpTask": "Tarefa de acompanhamento: {title}",
   "agentSummaryGoalRevisionCadence": "Alterar a cadência para {value}",

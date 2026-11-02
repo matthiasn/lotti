@@ -46,6 +46,11 @@ extension TaskAgentChangeHandlers on TaskAgentStrategy {
       return _queueSetTaskProjectProposal(csBuilder, args);
     }
 
+    // create_task_project: a named project the category does not have yet.
+    if (toolName == TaskAgentToolNames.createTaskProject) {
+      return _queueCreateTaskProjectProposal(csBuilder, args);
+    }
+
     // link_pull_request likewise: the number must be one of this wake's
     // unlinked pull requests.
     if (toolName == TaskAgentToolNames.linkPullRequest) {
@@ -279,6 +284,9 @@ extension TaskAgentChangeHandlers on TaskAgentStrategy {
     Map<String, dynamic> args,
   ) async {
     const tool = TaskAgentToolNames.setTaskProject;
+    if (_usedDeferredTools.contains(TaskAgentToolNames.createTaskProject)) {
+      return _projectAlreadyProposed;
+    }
     final rawProject = args['projectId'];
     final reference = rawProject is String ? rawProject.trim() : '';
     if (reference.isEmpty) {
@@ -344,6 +352,98 @@ extension TaskAgentChangeHandlers on TaskAgentStrategy {
 
     return 'OK — $tool proposal recorded successfully. '
         'Do NOT call $tool again.${_remainingDeferredToolHint(tool)}';
+  }
+
+  /// The answer to a second project proposal in one wake: a task belongs to
+  /// one project, so `set_task_project` and `create_task_project` exclude
+  /// each other.
+  static const _projectAlreadyProposed =
+      'Skipped: a project for this task was already proposed this wake. A '
+      'task belongs to one project; do NOT propose another.';
+
+  /// Validates and queues a `create_task_project` proposal.
+  ///
+  /// Fail-closed on a missing title and on a task with no category — the
+  /// project is created in the task's category. A project of that title
+  /// (compared by [projectTitleKey]) already in the category is not created
+  /// twice: the model is pointed at `set_task_project`, or told the task is
+  /// already in it. The queued args carry the normalized title, so two
+  /// spellings of one name share a fingerprint.
+  Future<String> _queueCreateTaskProjectProposal(
+    ChangeSetBuilder csBuilder,
+    Map<String, dynamic> args,
+  ) async {
+    const tool = TaskAgentToolNames.createTaskProject;
+    if (_usedDeferredTools.contains(TaskAgentToolNames.setTaskProject)) {
+      return _projectAlreadyProposed;
+    }
+    final title = normalizeProjectTitle(args['title']);
+    if (title == null) {
+      return 'ERROR: $tool requires a non-empty string "title": the project '
+          'name exactly as the user gave it. No proposal was queued.';
+    }
+
+    final categoryId = await resolveCategoryId(taskId);
+    if (categoryId == null || categoryId.isEmpty) {
+      return 'ERROR: this task has no category, and a project is created in '
+          "the task's category. No proposal was queued.";
+    }
+
+    // The project the task belonged to when this was proposed, recorded only
+    // when it could be read: a late second confirmation then cannot move the
+    // task back out of a project the user chose since (ADR 0097).
+    Map<String, dynamic>? targetBase;
+    final resolver = resolveCategoryProjects;
+    if (resolver != null) {
+      List<TaskProjectOption>? options;
+      try {
+        options = await resolver();
+      } catch (_) {
+        // Transient lookup failure — keep; the apply path checks again.
+        options = null;
+      }
+      if (options != null) {
+        final key = projectTitleKey(title);
+        final existing = options
+            .where((o) => projectTitleKey(o.title) == key)
+            .firstOrNull;
+        if (existing != null && existing.isCurrent) {
+          return 'Skipped: the task already belongs to project '
+              '"${existing.title}". Do NOT propose it again.';
+        }
+        if (existing != null) {
+          return 'ERROR: project "${existing.title}" already exists in this '
+              "task's category (id ${existing.id}). Propose it with "
+              '${TaskAgentToolNames.setTaskProject} instead. No proposal was '
+              'queued.';
+        }
+        targetBase = {
+          'projectId': options.where((o) => o.isCurrent).firstOrNull?.id,
+        };
+      }
+    }
+
+    final canonicalArgs = <String, dynamic>{'title': title};
+    final addRedundancy = await csBuilder.addItem(
+      toolName: tool,
+      args: canonicalArgs,
+      humanSummary: _generateHumanSummary(tool, canonicalArgs),
+      targetBase: targetBase,
+    );
+    if (addRedundancy != null) {
+      return 'Skipped: $addRedundancy';
+    }
+
+    _domainLogger.log(
+      LogDomain.agentWorkflow,
+      'Deferred tool $tool to change set '
+      '(${csBuilder.items.length} items total)',
+      subDomain: 'TaskAgentStrategy',
+    );
+
+    return 'OK — $tool proposal recorded successfully. Once the user '
+        'confirms, the project is created and the task moved into it. Do NOT '
+        'call $tool again.${_remainingDeferredToolHint(tool)}';
   }
 
   /// Validates and queues a `link_pull_request` proposal.
@@ -540,6 +640,8 @@ extension TaskAgentChangeHandlers on TaskAgentStrategy {
         'Set language to "${args['languageCode'] ?? '?'}"',
       TaskAgentToolNames.setTaskProject =>
         'Move to project "${args['projectTitle'] ?? args['projectId'] ?? '?'}"',
+      TaskAgentToolNames.createTaskProject =>
+        'Create project "${args['title'] ?? '?'}" and move the task into it',
       TaskAgentToolNames.linkPullRequest =>
         'Link pull request ${args['owner'] ?? '?'}/${args['repo'] ?? '?'}'
             '#${args['number'] ?? '?'} "${args['title'] ?? ''}"',

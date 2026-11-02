@@ -134,6 +134,9 @@ void main() {
       );
       expect(hidden, isNot(contains(TaskAgentToolNames.getCategoryProjects)));
       expect(hidden, isNot(contains(TaskAgentToolNames.setTaskProject)));
+      // A category with no projects is where a project the user names is most
+      // likely missing: creating one stays on offer.
+      expect(hidden, contains(TaskAgentToolNames.createTaskProject));
       // Only those two: everything else the permissive wake offers remains.
       expect(
         visibleTaskAgentToolNames(TaskAgentWakeFacts.permissive).difference(

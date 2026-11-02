@@ -131,6 +131,35 @@ void main() {
       expect(find.textContaining('Estimate: 1h 30m'), findsNothing);
     });
 
+    testWidgets('a new project reads as an addition naming the project', (
+      tester,
+    ) async {
+      final pending = makePending(
+        id: 'p1',
+        toolName: 'create_task_project',
+        args: const {'title': 'Igloo Repairs'},
+        humanSummary: 'persisted wording',
+      );
+      final bench = AgentTestBench(
+        suggestions: UnifiedSuggestionList(open: [pending], activity: const []),
+      );
+
+      await tester.pumpWidget(bench.build());
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      // It creates something, like a follow-up task — not an update.
+      expect(find.textContaining('Add · '), findsOneWidget);
+      expect(find.textContaining('Update · '), findsNothing);
+      expect(
+        find.textContaining(
+          'Create project "Igloo Repairs" and move the task into it',
+        ),
+        findsOneWidget,
+      );
+      expect(find.textContaining('persisted wording'), findsNothing);
+    });
+
     testWidgets('Confirm-all button is hidden with a single pending item', (
       tester,
     ) async {

@@ -440,6 +440,7 @@
   "agentSummaryCheckItem": "Marcar: «{title}»",
   "agentSummaryCreateFollowUp": "Crear tarea de seguimiento: «{title}»",
   "agentSummaryCreateFollowUpRelated": "Crear tarea de seguimiento: «{title}» — {relation}",
+  "agentSummaryCreateProject": "Crear el proyecto «{project}» y mover la tarea allí",
   "agentSummaryCreateTask": "Crear tarea: {title}",
   "agentSummaryFollowUpTask": "Tarea de seguimiento: {title}",
   "agentSummaryGoalRevisionCadence": "Cambiar la frecuencia a {value}",

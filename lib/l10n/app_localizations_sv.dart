@@ -985,6 +985,11 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String agentSummaryCreateProject(Object project) {
+    return 'Skapa projektet ”$project” och flytta uppgiften dit';
+  }
+
+  @override
   String agentSummaryCreateTask(Object title) {
     return 'Skapa uppgift: $title';
   }

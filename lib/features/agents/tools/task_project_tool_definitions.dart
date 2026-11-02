@@ -44,4 +44,30 @@ const taskProjectTools = <AgentToolDefinition>[
       'additionalProperties': false,
     },
   ),
+  AgentToolDefinition(
+    name: TaskAgentToolNames.createTaskProject,
+    description:
+        'Propose creating a NEW project and moving the current task into it. '
+        'The user must confirm it before anything changes. Only call this '
+        'when the user explicitly names a project for this task — "this is '
+        'part of the Garden Shed project" — and no project of that name '
+        "exists in the task's category (check the `## Project` section or "
+        'get_category_projects when offered). For an existing project use '
+        "set_task_project instead. The project is created in the task's "
+        'category, already active. Never invent a project the user did not '
+        'name. May be called once per wake.',
+    parameters: {
+      'type': 'object',
+      'properties': {
+        'title': {
+          'type': 'string',
+          'description':
+              'The project name exactly as the user wrote or said it. Do not '
+              'translate, shorten or embellish it.',
+        },
+      },
+      'required': ['title'],
+      'additionalProperties': false,
+    },
+  ),
 ];

@@ -423,6 +423,25 @@ Use the task language and omit empty sections.
       }
     });
 
+    test('both scaffolds tell the agent to propose a project the user names '
+        'but the category lacks — and only such a project', () {
+      const rule = TaskAgentPromptBuilder.createProjectCueRule;
+      expect(rule, contains('explicitly names a project'));
+      expect(rule, contains('`create_task_project`'));
+      expect(rule, contains('exactly as the user gave it'));
+      expect(rule, contains('`set_task_project` instead'));
+      expect(rule, contains('Never create a project the user did not name'));
+
+      expect(
+        TaskAgentPromptBuilder.taskAgentCompactScaffold,
+        contains(rule),
+      );
+      expect(
+        TaskAgentPromptBuilder.taskAgentScaffoldProjectContext,
+        contains(rule),
+      );
+    });
+
     test('both scaffolds teach the typed-relationship tools', () {
       // The full scaffold: relation-aware Linked Tasks reading plus the
       // link_task / create_follow_up_task+relation guidance.

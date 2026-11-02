@@ -440,6 +440,7 @@
   "agentSummaryCheckItem": "Cocher : « {title} »",
   "agentSummaryCreateFollowUp": "Créer une tâche de suivi : « {title} »",
   "agentSummaryCreateFollowUpRelated": "Créer une tâche de suivi : « {title} » — {relation}",
+  "agentSummaryCreateProject": "Créer le projet « {project} » et y déplacer la tâche",
   "agentSummaryCreateTask": "Créer une tâche : {title}",
   "agentSummaryFollowUpTask": "Tâche de suivi : {title}",
   "agentSummaryGoalRevisionCadence": "Changer la cadence à {value}",

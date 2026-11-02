@@ -466,6 +466,7 @@
   "agentSummaryCheckItem": "Markér: \"{title}\"",
   "agentSummaryCreateFollowUp": "Opret opfølgningsopgave: \"{title}\"",
   "agentSummaryCreateFollowUpRelated": "Opret opfølgningsopgave: \"{title}\" — {relation}",
+  "agentSummaryCreateProject": "Opret projektet \"{project}\" og flyt opgaven dertil",
   "agentSummaryCreateTask": "Opret opgave: {title}",
   "agentSummaryFollowUpTask": "Opfølgningsopgave: {title}",
   "agentSummaryGoalRevisionCadence": "Ændr kadencen til {value}",

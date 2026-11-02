@@ -162,8 +162,8 @@ void main() {
   });
 
   group('AgentToolRegistry.deferredTools', () {
-    test('contains exactly 16 deferred tool names', () {
-      expect(AgentToolRegistry.deferredTools, hasLength(16));
+    test('contains exactly 17 deferred tool names', () {
+      expect(AgentToolRegistry.deferredTools, hasLength(17));
     });
 
     test('includes all expected deferred tool names', () {
@@ -182,6 +182,7 @@ void main() {
           TaskAgentToolNames.createFollowUpTask,
           TaskAgentToolNames.linkTask,
           TaskAgentToolNames.setTaskProject,
+          TaskAgentToolNames.createTaskProject,
           TaskAgentToolNames.linkPullRequest,
           TaskAgentToolNames.migrateChecklistItems,
           TaskAgentToolNames.createTimeEntry,

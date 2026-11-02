@@ -980,6 +980,11 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String agentSummaryCreateProject(Object project) {
+    return 'Vytvořit projekt „$project“ a přesunout do něj úkol';
+  }
+
+  @override
   String agentSummaryCreateTask(Object title) {
     return 'Vytvořit úkol: $title';
   }

@@ -399,6 +399,7 @@ user-facing report current.
 - Treat tool failures and policy denials as private observations, not report
   content. Stay within the task's allowed categories.
 - $projectCueRule
+- $createProjectCueRule
 - The Open Proposal Guard is authoritative: never duplicate an open or rejected
   proposal. Retract only the same proposal when it became stale; never retract
   unaffected siblings after a partial user decision.
@@ -471,6 +472,18 @@ to it.''';
       'covers its work; if so, propose it with `set_task_project` and its id. '
       'Propose nothing when no project clearly fits.';
 
+  /// What to do when the user names a project the category does not have.
+  /// Shared by the full and the compact scaffold, after [projectCueRule]:
+  /// the opposite case — the task names its project, and it is missing.
+  static const createProjectCueRule =
+      'When the user explicitly names a project for this task — "this is part '
+      'of the Garden Shed project" — and no project of that name is in its '
+      'category, propose `create_task_project` with the name exactly as the '
+      "user gave it: the project is created in the task's category, active, "
+      'with the task in it. If the project exists, propose it with '
+      '`set_task_project` instead. Never create a project the user did not '
+      'name.';
+
   /// Parent-project and linked-task context guidance for task agents.
   static const taskAgentScaffoldProjectContext =
       '''
@@ -493,6 +506,8 @@ Use this as high-level planning context:
 $projectCueRule
 Do the same when the task clearly belongs to a different project than its
 own. The user confirms the move.
+
+$createProjectCueRule
 
 ## Pull Requests
 
