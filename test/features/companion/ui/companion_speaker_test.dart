@@ -156,8 +156,10 @@ void main() {
   ) async {
     await pumpSpeaker(tester);
     ProviderScope.containerOf(
-      tester.element(find.byType(CompanionSpeaker)),
-    ).read(companionOutfitProvider.notifier).next();
+          tester.element(find.byType(CompanionSpeaker)),
+        )
+        .read(companionOutfitProvider.notifier)
+        .next(from: CompanionLook.grandmaWinter);
     await tester.pump();
 
     final winter = companionOutfits.indexOf(CompanionLook.grandmaWinter);

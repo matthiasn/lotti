@@ -32,12 +32,13 @@ class CompanionSettingsPage extends StatelessWidget {
   }
 }
 
-/// Where a person makes her their own: her skin tone, her hairstyle and its
-/// colour, the outfit she wears or none, so she picks one each session, and
-/// how much sass she reads with.
+/// Where a person makes her their own: the outfit she wears or none, so she
+/// picks a fresh one every time she is shown, her skin tone, her hairstyle
+/// and its colour, and how much sass she reads with.
 ///
 /// She stands above the choices, head to toe and as a portrait, in what is
-/// chosen; every change shows at once and is stored
+/// chosen, with the outfit picker right under her; every change shows at
+/// once and is stored
 /// ([companionCustomizationProvider]). A sass picked shows too: she takes
 /// a slip that way ([companionReaction], [companionSignOff]). Shared by the
 /// mobile page and the desktop settings panel.
@@ -67,7 +68,7 @@ class _CompanionSettingsBodyState extends ConsumerState<CompanionSettingsBody> {
   Widget build(BuildContext context) {
     final custom = ref.watch(companionCustomizationProvider);
     final controller = ref.read(companionCustomizationProvider.notifier);
-    final look = ref.watch(companionLookProvider);
+    final look = ref.watch(companionLookRollProvider).draw();
     final messages = context.messages;
     final spacing = context.designTokens.spacing;
 
@@ -111,6 +112,33 @@ class _CompanionSettingsBodyState extends ConsumerState<CompanionSettingsBody> {
               ),
             ),
             SizedBox(height: spacing.step5),
+            // The outfit is picked right under the preview it changes.
+            SettingsFormSection(
+              title: messages.companionSettingsOutfitLabel,
+              description: messages.companionSettingsOutfitDescription,
+              children: [
+                Wrap(
+                  spacing: spacing.step2,
+                  runSpacing: spacing.step2,
+                  children: [
+                    DesignSystemChip(
+                      label: messages.companionSettingsOutfitSurprise,
+                      selected: custom.outfitId == null,
+                      onPressed: () =>
+                          controller.set(custom.copyWith(outfitId: () => null)),
+                    ),
+                    for (final outfit in companionOutfits)
+                      DesignSystemChip(
+                        label: outfitName(messages, outfit),
+                        selected: custom.outfitId == outfit.id,
+                        onPressed: () => controller.set(
+                          custom.copyWith(outfitId: () => outfit.id),
+                        ),
+                      ),
+                  ],
+                ),
+              ],
+            ),
             SettingsFormSection(
               title: messages.companionSettingsSkinToneLabel,
               children: [
@@ -189,32 +217,6 @@ class _CompanionSettingsBodyState extends ConsumerState<CompanionSettingsBody> {
                   value: custom.speaksReplies,
                   onChanged: (value) =>
                       controller.set(custom.copyWith(speaksReplies: value)),
-                ),
-              ],
-            ),
-            SettingsFormSection(
-              title: messages.companionSettingsOutfitLabel,
-              description: messages.companionSettingsOutfitDescription,
-              children: [
-                Wrap(
-                  spacing: spacing.step2,
-                  runSpacing: spacing.step2,
-                  children: [
-                    DesignSystemChip(
-                      label: messages.companionSettingsOutfitSurprise,
-                      selected: custom.outfitId == null,
-                      onPressed: () =>
-                          controller.set(custom.copyWith(outfitId: () => null)),
-                    ),
-                    for (final outfit in companionOutfits)
-                      DesignSystemChip(
-                        label: outfitName(messages, outfit),
-                        selected: custom.outfitId == outfit.id,
-                        onPressed: () => controller.set(
-                          custom.copyWith(outfitId: () => outfit.id),
-                        ),
-                      ),
-                  ],
                 ),
               ],
             ),

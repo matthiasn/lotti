@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/sync/sync_message.dart';
@@ -205,6 +207,21 @@ void main() {
     await _frames(tester);
     expect(chosen(tester).outfitId, isNull);
     expect(selected('Surprise me'), isTrue);
+  });
+
+  testWidgets('the outfit picker sits right under her preview, above the '
+      'other choices', (tester) async {
+    await pumpBody(tester);
+    final previewBottom = [
+      tester.getRect(find.byKey(const ValueKey('companionSettingsFull'))),
+      tester.getRect(find.byKey(const ValueKey('companionSettingsBust'))),
+    ].map((r) => r.bottom).reduce(math.max);
+    final outfitTop = tester.getTopLeft(find.text('Outfit')).dy;
+    expect(outfitTop, greaterThan(previewBottom));
+    expect(
+      tester.getTopLeft(find.text('Surprise me')).dy,
+      lessThan(tester.getTopLeft(find.text('Skin tone')).dy),
+    );
   });
 
   testWidgets('every choice is stored as it is made, and sent to the other '
