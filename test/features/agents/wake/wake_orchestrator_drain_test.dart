@@ -1936,12 +1936,38 @@ void main() {
         });
       });
 
-      test('stop() closes the stream so late listeners see it end', () {
+      test('stopped and started again, as initialization does when it '
+          'rebuilds, it still reports every run', () {
+        fakeAsync((async) {
+          var done = false;
+          WakeRunCompletion? received;
+          orchestrator.runCompletions.listen(
+            (event) => received = event,
+            onDone: () => done = true,
+          );
+
+          unawaited(orchestrator.stop());
+          async.flushMicrotasks();
+          final notifications = StreamController<Set<String>>();
+          addTearDown(notifications.close);
+          unawaited(orchestrator.start(notifications.stream));
+          orchestrator.enqueueManualWake(
+            agentId: 'agent-1',
+            reason: 'creation',
+          );
+          async.flushMicrotasks();
+
+          expect(done, isFalse);
+          expect(received, isNotNull);
+        });
+      });
+
+      test('dispose() closes the stream so late listeners see it end', () {
         fakeAsync((async) {
           var done = false;
           orchestrator.runCompletions.listen(null, onDone: () => done = true);
 
-          unawaited(orchestrator.stop());
+          unawaited(orchestrator.dispose());
           async.flushMicrotasks();
 
           expect(done, isTrue);

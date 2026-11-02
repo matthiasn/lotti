@@ -7,13 +7,13 @@ import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/ritual_summary.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/ritual_review_providers.dart';
+import 'package:lotti/features/agents/ui/chat/agent_typing_indicator.dart';
 import 'package:lotti/features/agents/ui/evolution/evolution_chat_message.dart';
 import 'package:lotti/features/agents/ui/evolution/evolution_chat_page.dart';
 import 'package:lotti/features/agents/ui/evolution/evolution_chat_state.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_chat_bubble.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_message_input.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_session_opening.dart';
-import 'package:lotti/features/agents/ui/evolution/widgets/evolution_typing_indicator.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/ritual_summary_card.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
@@ -367,7 +367,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       // A typing indicator, not a spinner beside a literal '...'.
-      expect(find.byType(EvolutionTypingIndicator), findsOneWidget);
+      expect(find.byType(AgentTypingIndicator), findsOneWidget);
       expect(find.text('...'), findsNothing);
       // Nothing spins any more: the transcript's own indicator is the only
       // signal that the agent is composing.

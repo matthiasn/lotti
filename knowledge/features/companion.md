@@ -412,7 +412,7 @@ sequenceDiagram
   utterance gets a fresh clock: two clips both open at zero, and a clock that
   still held the first one's zero would start the second at its full lead.
 
-She has five hosts, each with its own framing:
+She has six hosts, each with its own framing:
 
 | Host | Framing | Box | Utterance (`sourceId`) |
 |---|---|---|---|
@@ -421,6 +421,7 @@ She has five hosts, each with its own framing:
 | Onboarding welcome and first task ([onboarding](onboarding.md#the-companion)) | `full` in the welcome hero, `bust` on the first task | the hero frame's height; `ControlSizes.avatarHero` square | `onboarding-companion` |
 | Goal card on the Goals list (`goals/ui/unified/unified_goal_card.dart`, via `goals/ui/unified/goal_companion.dart`) | `bust`, silent `CompanionView` | `ControlSizes.avatarCompact` tile on the goal's status wash, in place of the persona monogram | none — goals have no read-aloud |
 | Goal agent's read card (`goals/ui/pages/goal_agent_detail_page_cards_part.dart`, placed by the shared `CompanionReportScaffold`) | as the AI summary card: `full` beside the read on a wide card, `bust` in the header's badge tile below that, in the goal's pose | as the AI summary card; the bust's tap opens her full-screen stage | `goal-report:<agentId>` (`goalReportSpeechSourceId`) |
+| [Front agent](front_agent.md#her-voice)'s surface (`front_agent/ui/front_chat_hero.dart`) | `bust` | `ControlSizes.avatarHero` square over the conversation; `ControlSizes.avatarCompact` in the header once the hero has scrolled away | `front-chat:<conversation>` (`frontVoiceSourceId`), her spoken reply in the voice of her own profile |
 
 On the goal card and the goal agent's read card her pose carries the
 goal's `GoalTrackStatus`

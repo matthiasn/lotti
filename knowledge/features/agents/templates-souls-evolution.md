@@ -270,7 +270,7 @@ system-token resolver differs (`resolveTemplateSystemText` /
 rather than by two competing fills: assistant prose is unbubbled, the user's
 turn is contained and narrower than the measure, and a system note is a quiet
 centred line. Until a session exists the chat shows `EvolutionSessionOpening`
-rather than a transcript, and `EvolutionTypingIndicator` marks the agent
+rather than a transcript, and `AgentTypingIndicator` marks the agent
 composing — it animates perpetually, so a test that reaches either must `pump`
 rather than `pumpAndSettle`.
 

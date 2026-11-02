@@ -1,5 +1,8 @@
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/agents/state/agent_chat_projection.dart';
+import 'package:lotti/features/front_agent/model/front_chat_thread.dart';
+import 'package:lotti/features/front_agent/model/front_door.dart';
 
 /// A turn the user spoke, whose reply she speaks back: the conversation it
 /// was spoken in, and when — her reply is the first of hers after it.
@@ -11,6 +14,56 @@ String frontVoiceSourceId(String conversationId) =>
     '$_frontVoicePrefix$conversationId';
 
 const _frontVoicePrefix = 'front-chat:';
+
+/// What she says aloud for a spoken [turn], as [thread] shows it: whether
+/// her answer has landed, and its words.
+///
+/// Her answer is her first reply after the turn, then the answer of each of
+/// the turn's doors — a journal answer, an owner's answer, a specialist's
+/// mirrored reply — in segment order. A journal question usually ends with
+/// a dispatch alone, no reply of hers, so a reply was never enough: the
+/// answer in its door went unspoken and she kept thinking. It has landed
+/// once the turn holds a reply or a door, every door is walked, and every
+/// goal or person a door handed the words to has replied: that door is done
+/// as soon as the turn is handed over, its reply mirrored later. An answer
+/// shown only while private entries are is not said aloud. Citation numbers
+/// are left out: they are for reading.
+({bool landed, String text}) frontSpokenAnswer(
+  FrontChatThread thread,
+  FrontSpokenTurn turn,
+) {
+  bool after(AgentChatMessage m) => !m.createdAt.isBefore(turn.spokenAt);
+  final asked = thread.messages
+      .where((m) => m.role == AgentChatRole.user && after(m))
+      .firstOrNull;
+  final reply = thread.messages
+      .where((m) => m.role == AgentChatRole.agent && after(m))
+      .firstOrNull;
+  final doors = asked == null
+      ? const <FrontDoorEntry>[]
+      : thread.doorsByMessageId[asked.id] ?? const <FrontDoorEntry>[];
+  bool answered(FrontDoorEntry door) =>
+      door.record.status == FrontDoorStatus.done &&
+      (door.record.outcome is! FrontDoorChatTurn ||
+          door.specialistReply != null);
+  final landed = (reply != null || doors.isNotEmpty) && doors.every(answered);
+  final parts = [
+    ?reply?.text,
+    for (final door in doors)
+      switch (door.record.outcome) {
+        FrontDoorAnswer(private: false, :final text) => text,
+        _ => door.specialistReply,
+      },
+  ];
+  final text = parts
+      .whereType<String>()
+      .map((part) => part.replaceAll(_citation, '').trim())
+      .where((part) => part.isNotEmpty)
+      .join('\n\n');
+  return (landed: landed, text: text);
+}
+
+final _citation = RegExp(r'\s*\[\d+\]');
 
 /// Whether [sourceId] is her voice in one of the conversations.
 bool isFrontVoiceSourceId(String sourceId) =>

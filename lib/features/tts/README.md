@@ -16,8 +16,9 @@ read-aloud model, and only when the user presses play.
 - **Works offline and privately.** The on-device model needs no cloud service
   and no API key.
 - **Speaks with a profile's cloud voice.** A profile's *Read aloud* slot can
-  name Voxtral TTS on Mistral; summaries and answers then speak in the task's
-  language with that language's voice — the user's pick in Speech settings,
+  name Voxtral TTS on Mistral; summaries, answers, the Day briefing and the
+  companion's spoken replies then speak in the text's language with that
+  language's voice — the user's pick in Speech settings,
   else its first female voice. Speech settings list the user's own languages
   first, and every voice can be heard before it is picked. The voice list is
   cached, so it still works offline once fetched; speech itself needs the

@@ -1,13 +1,16 @@
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:lotti/classes/day_agent_identity.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
+import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
 import 'package:lotti/features/companion/rig/companion_painter.dart';
 import 'package:lotti/features/companion/ui/companion_speaker.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_plan_models.dart';
 import 'package:lotti/features/daily_os_next/logic/day_briefing.dart';
 import 'package:lotti/features/daily_os_next/ui/time_format.dart';
 import 'package:lotti/features/design_system/theme/sizing_tokens.dart';
+import 'package:lotti/features/tts/cloud/tts_cloud_route.dart';
 import 'package:lotti/features/tts/state/tts_engine_provider.dart';
 import 'package:lotti/features/tts/state/tts_playback_controller.dart';
 import 'package:lotti/features/tts/ui/playback_failure_toast.dart';
@@ -23,8 +26,12 @@ import 'package:material_ui/material_ui.dart';
 /// no model call), written as of the tap; she only speaks them. A tap while
 /// she is preparing or speaking stops her; a tap while anything else is
 /// speaking stops that and briefs instead. She is shown only while
-/// `enable_companion` and the read-aloud flag are both on and the device has
-/// a voice; otherwise this takes no room.
+/// `enable_companion` and the read-aloud flag are both on and she has a
+/// voice; otherwise this takes no room.
+///
+/// Her voice is the Daily OS planner's: the read-aloud model of the profile
+/// its setup resolves to, in the app's language, else the on-device voice.
+/// The words go to that cloud voice only on a tap.
 class DayBriefingCompanion extends ConsumerWidget {
   const DayBriefingCompanion({
     required this.draft,
@@ -46,8 +53,16 @@ class DayBriefingCompanion extends ConsumerWidget {
         ref.watch(configFlagProvider(enableCompanionFlag)).value ?? false;
     final ttsEnabled =
         ref.watch(configFlagProvider(enableAiSummaryTtsFlag)).value ?? false;
-    final engineSupported = ref.watch(ttsEngineProvider).isSupported;
-    if (!companionEnabled || !ttsEnabled || !engineSupported) {
+    final cloudRoute = TtsCloudRoute.fromProfile(
+      ref
+          .watch(agentResolvedSetupProvider(dailyOsPlannerAgentId))
+          .value
+          ?.profile,
+      languageCode: Localizations.localeOf(context).languageCode,
+    );
+    final hasVoice =
+        cloudRoute != null || ref.watch(ttsEngineProvider).isSupported;
+    if (!companionEnabled || !ttsEnabled || !hasVoice) {
       return const SizedBox.shrink();
     }
 
@@ -80,6 +95,7 @@ class DayBriefingCompanion extends ConsumerWidget {
       await notifier.speak(
         sourceId: sourceId,
         text: text,
+        cloudRoute: cloudRoute,
         confirmModelDownload: (model) =>
             confirmTtsModelDownload(context, model),
       );

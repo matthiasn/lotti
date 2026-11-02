@@ -8,6 +8,9 @@ import 'package:lotti/features/agents/ui/chat/chat_recorder_controller.dart';
 import 'package:lotti/features/companion/model/companion_customization.dart';
 import 'package:lotti/features/companion/state/companion_customization_controller.dart';
 import 'package:lotti/features/front_agent/model/front_chat_thread.dart';
+import 'package:lotti/features/front_agent/model/front_dispatch.dart';
+import 'package:lotti/features/front_agent/model/front_door.dart';
+import 'package:lotti/features/front_agent/state/front_chat_controller.dart';
 import 'package:lotti/features/front_agent/state/front_chat_thread_provider.dart';
 import 'package:lotti/features/front_agent/state/front_conversation_providers.dart';
 import 'package:lotti/features/front_agent/state/front_inbox_filter.dart';
@@ -91,6 +94,18 @@ class _Custom extends CompanionCustomizationController {
   void mute() => state = state.copyWith(speaksReplies: false);
 }
 
+/// The composer, mid-send or settled as the test says.
+class _Composer extends FrontChatController {
+  _Composer({required this.sending});
+
+  final bool sending;
+
+  @override
+  FrontChatComposerState build() => FrontChatComposerState(isSending: sending);
+
+  void settle() => state = const FrontChatComposerState();
+}
+
 /// Hosts the voice as the pane does, and shows the pose she holds.
 class _Host extends ConsumerWidget {
   const _Host();
@@ -113,10 +128,13 @@ void main() {
   ) => AgentChatMessage(id: id, role: role, text: text, createdAt: at);
 
   late List<AgentChatMessage> thread;
+  late Map<String, List<FrontDoorEntry>> doors;
   late _Voice voice;
   late _Custom custom;
+  late _Composer composer;
 
   setUp(() {
+    doors = {};
     thread = [
       message('u-old', AgentChatRole.user, 'Earlier', DateTime(2026, 10, 30)),
       message('a-old', AgentChatRole.agent, 'Before', DateTime(2026, 10, 30)),
@@ -131,6 +149,7 @@ void main() {
     bool customizationKnown = true,
     ChatRecorderStatus recorder = ChatRecorderStatus.idle,
     TtsPlaybackState playing = const TtsPlaybackState(),
+    bool sending = false,
   }) async {
     voice = _Voice(playing);
     await tester.pumpWidget(
@@ -154,7 +173,13 @@ void main() {
           agentResolvedSetupProvider.overrideWith((ref, id) async => null),
           frontActiveConversationProvider.overrideWith((ref) async => active),
           frontChatThreadProvider.overrideWith(
-            (ref) async => FrontChatThread(messages: List.of(thread)),
+            (ref) async => FrontChatThread(
+              messages: List.of(thread),
+              doorsByMessageId: Map.of(doors),
+            ),
+          ),
+          frontChatControllerProvider.overrideWith(
+            () => composer = _Composer(sending: sending),
           ),
           chatRecorderControllerProvider.overrideWith(
             () => _Recorder(recorder),
@@ -355,6 +380,107 @@ void main() {
 
       expect(voice.spoken, isEmpty);
       expect(container.read(frontSpokenTurnProvider), isNull);
+    });
+  });
+
+  group('an answer that lives in a door', () {
+    /// A journal question routed with a dispatch alone: no reply of hers,
+    /// the answer in its door.
+    Future<void> answerInDoor(
+      WidgetTester tester,
+      ProviderContainer container, {
+      bool settleFirst = false,
+    }) async {
+      if (!thread.any((m) => m.id == 'u-1')) {
+        thread = [
+          ...thread,
+          message('u-1', AgentChatRole.user, 'What did I do?', spokenAt),
+        ];
+      }
+      if (settleFirst) composer.settle();
+      doors = {
+        'u-1': [
+          FrontDoorEntry(
+            doorId: 'd-1',
+            record: FrontDoorRecord(
+              segmentIndex: 0,
+              text: 'What did I do?',
+              kind: FrontDestinationKind.journal,
+              status: FrontDoorStatus.done,
+              claimedAt: spokenAt,
+              outcome: const FrontDoorAnswer(
+                text: 'You fixed the feeder [1].',
+                summaryBased: false,
+                incomplete: false,
+                fromJournal: true,
+              ),
+            ),
+          ),
+        ],
+      };
+      container.invalidate(frontChatThreadProvider);
+      await tester.pump();
+      await tester.pump();
+    }
+
+    testWidgets('is spoken, though she wrote no reply, and she stops '
+        'thinking', (tester) async {
+      final container = await pumpHost(tester);
+      speakTurn(container, 'c-1');
+
+      await answerInDoor(tester, container);
+
+      expect(voice.spoken, [
+        (sourceId: frontVoiceSourceId('c-1'), text: 'You fixed the feeder.'),
+      ]);
+      expect(container.read(frontSpokenTurnProvider), isNull);
+      expect(find.text('null'), findsOne);
+    });
+
+    testWidgets('waits for the send, whose wake walks the doors, to settle', (
+      tester,
+    ) async {
+      final container = await pumpHost(tester, sending: true);
+      speakTurn(container, 'c-1');
+
+      await answerInDoor(tester, container);
+      expect(voice.spoken, isEmpty);
+      expect(container.read(frontSpokenTurnProvider), isNotNull);
+
+      composer.settle();
+      container.invalidate(frontChatThreadProvider);
+      await tester.pump();
+      await tester.pump();
+
+      expect(voice.spoken.single.text, 'You fixed the feeder.');
+    });
+
+    testWidgets('a thread still reloading is not read: its old value may '
+        'hold the reply without the answers its doors brought', (
+      tester,
+    ) async {
+      final container = await pumpHost(tester, sending: true);
+      speakTurn(container, 'c-1');
+      // While she works, her reply is projected, its door not yet.
+      thread = [
+        ...thread,
+        message('u-1', AgentChatRole.user, 'What did I do?', spokenAt),
+        message(
+          'a-1',
+          AgentChatRole.agent,
+          'Let me look.',
+          spokenAt.add(const Duration(seconds: 1)),
+        ),
+      ];
+      container.invalidate(frontChatThreadProvider);
+      await tester.pump();
+      await tester.pump();
+
+      // The send settles and the thread reloads with the door's answer;
+      // the reload first holds the reply-only thread as its value.
+      await answerInDoor(tester, container, settleFirst: true);
+
+      expect(voice.spoken.single.text, 'Let me look.\n\nYou fixed the feeder.');
     });
   });
 

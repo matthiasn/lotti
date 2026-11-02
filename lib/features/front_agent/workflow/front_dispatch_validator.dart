@@ -15,7 +15,9 @@ typedef FrontDispatchValidation = ({FrontDispatch? dispatch, String? error});
 /// The rules the plan states in code, not prompt: at most
 /// [frontMaxSegments] segments; spans by offset, ordered and non-overlapping,
 /// `text` equal to the input slice, so a repeated or overlapping phrase can
-/// never stand in for words the model skipped; a destination id only where
+/// never stand in for words the model skipped — and where the offsets
+/// miscount, the `text` found verbatim after the previous segment places
+/// the span instead; a destination id only where
 /// [destinationExists] says so; a `new` segment names what it would become;
 /// a routed destination at or above [frontLowConfidence]. The spans and the
 /// gaps between them partition the input, and any gap holding at least
@@ -51,15 +53,30 @@ FrontDispatchValidation validateFrontDispatch({
       return (dispatch: null, error: 'Error: segment $i is not an object.');
     }
     final segment = Map<String, dynamic>.from(item);
-    final start = segment['start'];
-    final end = segment['end'];
-    if (start is! int || end is! int) {
+    final text = segment['text'];
+    final anchored = _anchored(input, cursor, text);
+    var start = segment['start'];
+    var end = segment['end'];
+    if (start is int &&
+        end is int &&
+        start >= cursor &&
+        end > start &&
+        end <= input.length &&
+        input.substring(start, end) == text) {
+      // The offsets and the words agree: taken as given, so a phrase said
+      // twice is the occurrence the model meant.
+    } else if (anchored != null) {
+      // The words are the user's, verbatim, where the count is not: a model
+      // copies text far better than it counts characters (Mistral Large 4
+      // put a 63-character message at [0, 54), then at [0, 64)). The words
+      // are placed where they stand after the previous segment.
+      (start, end) = anchored;
+    } else if (start is! int || end is! int) {
       return (
         dispatch: null,
         error: 'Error: segment $i needs integer start and end offsets.',
       );
-    }
-    if (start < cursor || end <= start || end > input.length) {
+    } else if (start < cursor || end <= start || end > input.length) {
       return (
         dispatch: null,
         error:
@@ -67,16 +84,16 @@ FrontDispatchValidation validateFrontDispatch({
             'pending message (length ${input.length}), after the previous '
             'segment, and must not overlap it.',
       );
-    }
-    final expected = input.substring(start, end);
-    if (segment['text'] != expected) {
+    } else {
       return (
         dispatch: null,
         error:
             'Error: segment $i text must equal the pending message '
-            'between $start and $end verbatim: "$expected".',
+            'between $start and $end verbatim: '
+            '"${input.substring(start, end)}".',
       );
     }
+    final expected = input.substring(start, end);
     final intent = FrontSegmentIntent.fromName(segment['intent']);
     if (intent == null) {
       return (
@@ -221,6 +238,14 @@ List<FrontDispatchSegment> _withUnroutedGaps(
   }
   gap(cursor, input.length);
   return result;
+}
+
+/// Where [text] stands in [input] at or after [cursor], its first
+/// occurrence there; null when it is not a non-empty string found there.
+(int, int)? _anchored(String input, int cursor, Object? text) {
+  if (text is! String || text.isEmpty) return null;
+  final at = input.indexOf(text, cursor);
+  return at < 0 ? null : (at, at + text.length);
 }
 
 int _nonWhitespace(String text) =>

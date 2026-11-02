@@ -7075,6 +7075,21 @@ class AppLocalizationsEs extends AppLocalizations {
   String get frontChatPrevious7Days => 'Últimos 7 días';
 
   @override
+  String frontChatProfileChanged(String profile) {
+    return 'La compañera ahora usa $profile';
+  }
+
+  @override
+  String get frontChatProfileFollowsDefault =>
+      'La compañera ahora sigue el perfil predeterminado de Ajustes';
+
+  @override
+  String get frontChatProfileMenuItem => 'Perfil de IA';
+
+  @override
+  String get frontChatProfileUseDefault => 'Predeterminado de Ajustes';
+
+  @override
   String get frontChatResponding => 'Buscando a quien lo sabe…';
 
   @override

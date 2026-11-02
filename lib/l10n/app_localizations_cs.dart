@@ -7067,6 +7067,21 @@ class AppLocalizationsCs extends AppLocalizations {
   String get frontChatPrevious7Days => 'Posledních 7 dní';
 
   @override
+  String frontChatProfileChanged(String profile) {
+    return 'Společnice nyní používá $profile';
+  }
+
+  @override
+  String get frontChatProfileFollowsDefault =>
+      'Společnice nyní sleduje výchozí profil z Nastavení';
+
+  @override
+  String get frontChatProfileMenuItem => 'AI profil';
+
+  @override
+  String get frontChatProfileUseDefault => 'Výchozí z Nastavení';
+
+  @override
   String get frontChatResponding => 'Hledá, kdo to ví…';
 
   @override

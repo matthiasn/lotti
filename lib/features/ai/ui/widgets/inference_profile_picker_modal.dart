@@ -38,6 +38,7 @@ class InferenceProfilePickerList extends StatelessWidget {
     required this.selectedProfileId,
     required this.onSelected,
     this.emptyLabel,
+    this.header,
     super.key,
   });
 
@@ -46,11 +47,14 @@ class InferenceProfilePickerList extends StatelessWidget {
   final ValueChanged<String> onSelected;
   final String? emptyLabel;
 
+  /// A row above the profiles, such as a choice that is not a profile.
+  final Widget? header;
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     if (profiles.isEmpty) {
-      return Padding(
+      final empty = Padding(
         padding: EdgeInsets.all(tokens.spacing.step5),
         child: Center(
           child: Text(
@@ -61,6 +65,13 @@ class InferenceProfilePickerList extends StatelessWidget {
           ),
         ),
       );
+      final header = this.header;
+      if (header == null) return empty;
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [header, empty],
+      );
     }
 
     return SingleChildScrollView(
@@ -68,6 +79,7 @@ class InferenceProfilePickerList extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          ?header,
           for (final profile in profiles)
             _InferenceProfileRow(
               profile: profile,

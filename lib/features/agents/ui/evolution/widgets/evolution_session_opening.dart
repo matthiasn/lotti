@@ -1,6 +1,6 @@
+import 'package:lotti/features/agents/ui/chat/agent_typing_indicator.dart';
 import 'package:lotti/features/agents/ui/evolution/evolution_chat_data.dart';
 import 'package:lotti/features/agents/ui/evolution/evolution_chat_message.dart';
-import 'package:lotti/features/agents/ui/evolution/widgets/evolution_typing_indicator.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/cards/modern_icon_container.dart';
@@ -69,7 +69,7 @@ class EvolutionSessionOpening extends StatelessWidget {
               ),
             ),
             SizedBox(height: tokens.spacing.step6),
-            const EvolutionTypingIndicator(announceComposing: false),
+            const AgentTypingIndicator(announceComposing: false),
           ],
         ),
       ),

@@ -1,5 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/agents/agent_domain_entity.dart';
+import 'package:lotti/features/agents/state/agent_query_providers.dart';
+import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
 import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
+import 'package:lotti/features/ai/state/ai_runtime_settings_controller.dart';
 import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
@@ -13,6 +17,7 @@ import 'package:lotti/features/front_agent/state/front_conversation_providers.da
 import 'package:lotti/features/front_agent/state/front_inbox_filter.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_hero.dart';
 import 'package:lotti/features/front_agent/ui/front_conversation_actions.dart';
+import 'package:lotti/features/front_agent/ui/front_profile_choice.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -26,6 +31,7 @@ abstract final class FrontChatHeaderKeys {
   static const Key more = Key('front-chat-more');
   static const Key newChat = Key('front-chat-new');
   static const Key internals = Key('front-chat-internals');
+  static const Key profile = Key('front-chat-profile');
   static const Key close = Key('front-chat-close');
 }
 
@@ -38,8 +44,9 @@ abstract final class FrontChatHeaderKeys {
 /// conversation's or her name for one not begun, taking the row's width.
 /// After it come the inbox
 /// chip while something waits on the user in any conversation, a new
-/// conversation, one overflow for the rest (her internals, where what the
-/// thread has cost is accounted), and the sheet's close.
+/// conversation, one overflow for the rest (her AI profile, which is also
+/// her voice, once she exists; her internals, where what the thread has
+/// cost is accounted), and the sheet's close.
 ///
 /// On the list the row is a page header: back to the conversation, "Chats",
 /// close — nothing that would duplicate the list's own new-chat row.
@@ -104,6 +111,15 @@ class FrontChatHeader extends ConsumerWidget {
         close,
       ];
     } else {
+      // Her profile can be chosen once she exists: her first turn creates
+      // her, and the choice is written onto her.
+      final identity = ref.watch(agentIdentityProvider(frontAgentId)).value;
+      // Watched, not read on the tap: the picker opens at once with what is
+      // current, and the catalog is never left loading with no listener.
+      final profiles = ref.watch(agentSetupOptionsProvider).value?.profiles;
+      final defaultProfileId = ref
+          .watch(defaultInferenceProfileControllerProvider)
+          .value;
       // Read through `.value`: a re-projection keeps the last count.
       final inboxCount =
           ref.watch(
@@ -203,12 +219,26 @@ class FrontChatHeader extends ConsumerWidget {
                 : const SizedBox.shrink(),
           ),
         ),
-        // Her internals, then the open conversation's own ways out — the
-        // same menu its row in the list has — so the destructive one is last.
+        // Her profile and internals, then the open conversation's own ways
+        // out — the same menu its row in the list has — so the destructive
+        // one is last.
         DesignSystemContextMenuButton(
           key: FrontChatHeaderKeys.more,
           iconColor: tokens.colors.text.mediumEmphasis,
           items: [
+            if (identity is AgentIdentityEntity && profiles != null)
+              DesignSystemContextMenuItem(
+                key: FrontChatHeaderKeys.profile,
+                label: messages.frontChatProfileMenuItem,
+                icon: LottiIcons.aiModel,
+                onTap: () => FrontProfileChoice.choose(
+                  context,
+                  ref,
+                  identity,
+                  profiles: profiles,
+                  defaultProfileId: defaultProfileId,
+                ).ignore(),
+              ),
             DesignSystemContextMenuItem(
               key: FrontChatHeaderKeys.internals,
               label: messages.aiInternalsTitle,

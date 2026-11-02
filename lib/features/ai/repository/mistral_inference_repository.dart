@@ -685,7 +685,7 @@ class MistralInferenceRepository {
       'model': model,
       'messages': messages,
       'stream': true,
-      'temperature': ?temperature,
+      'temperature': ?mistralRequestTemperature(model, temperature),
       'max_tokens': ?maxCompletionTokens,
       'reasoning_effort': ?reasoningEffort,
     };

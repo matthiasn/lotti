@@ -112,6 +112,10 @@ sources:
     resource: ../../lib/features/front_agent/ui/front_chat_voice.dart
     title: FrontVoice — her spoken reply, its gating, her pose
     last_modified: 2026-11-01
+  - id: profile-choice
+    resource: ../../lib/features/front_agent/ui/front_profile_choice.dart
+    title: FrontProfileChoice — her AI profile, and with it her voice
+    last_modified: 2026-11-01
   - id: voice-state
     resource: ../../lib/features/front_agent/state/front_voice_providers.dart
     title: The spoken turn awaiting her spoken reply, and her voice's source id
@@ -251,7 +255,12 @@ instead of ending on a sentence about a routing that never happened.
 In code, not prompt: at most `frontMaxSegments` (8) segments; spans by offset,
 **ordered and non-overlapping**, with `text` equal to the input slice, so a
 repeated or overlapping phrase can never stand in for words the model
-skipped; a `task` / `project` / `goal` / `person` destination needs an id
+skipped. Offsets that miscount are not a failure when the words are right:
+a segment whose `text` is found verbatim after the previous segment is
+placed there, its first occurrence (a model copies words far better than it
+counts characters — Mistral Large 4 put a 63-character message at
+`[0, 54)`, then at `[0, 64)`, and every turn failed). Offsets that agree with
+the words are kept, so a phrase said twice is the one the model meant; a `task` / `project` / `goal` / `person` destination needs an id
 the index or a lookup listed, at confidence ≥ `frontLowConfidence` (0.5);
 `new` needs a `newKind`; `day`, `journal` and `unrouted` need neither. The
 spans and the gaps between them partition the input and the gaps are never
@@ -659,14 +668,60 @@ stateDiagram-v2
 ```
 
 `FrontVoice.listenForSpokenReply`, called from the pane's build, watches the
-thread: when her first message after the spoken turn is on screen in that
-conversation it settles the turn and — with `enable_companion` and
+thread: once the spoken turn's answer has landed in that conversation it
+settles the turn and — with `enable_companion` and
 `enable_ai_summary_tts` on and a voice available (her profile's cloud voice
 in the app's language, else the on-device engine) — speaks it under
 `front-chat:<conversation>` (`frontVoiceSourceId`), stopping whatever else
 was speaking first. It keeps those flags and her resolved setup watched, so
 they are known the moment the reply lands. A voice that fails surfaces the
 shared playback toast.
+
+**What she says** is `frontSpokenAnswer`: her first reply after the turn,
+then the answer of each of the turn's doors — a journal or owner answer, a
+specialist's mirrored reply — in segment order, citation numbers left out.
+A journal question usually ends with a dispatch alone, no reply of hers, so
+speaking only a reply left the answer in its door unspoken and her pose on
+*think*. The answer has landed once the turn holds a reply or a door,
+every door is walked, and every goal or person a door handed the words to has
+replied (that door is done at the hand-over, its reply mirrored later); it is
+read only after the send settles, because the doors are walked inside the
+wake the send waits on, and only from a thread that is not reloading, whose
+held value may be the reply without its doors' answers. A turn that landed with nothing to say still settles.
+An answer shown only while private entries are is never said aloud.
+
+**Which voice is hers.** Her cloud voice is the read-aloud model of the
+profile her own setup resolves to ([where it plugs in](#where-it-plugs-in)).
+Her built-in fallback is a bare model with no read-aloud slot, so without a
+profile of her own or a Settings default she speaks with the on-device
+voice, however many other profiles name Voxtral TTS. The header's overflow
+offers *AI profile* once she exists (`FrontProfileChoice`). The picker leads
+with a *Settings default* row, named after that profile and marked while she
+has no profile of her own (or her own is gone), then lists every profile. A
+pick is written onto her identity as a user-configured setup
+(`FrontAgentService.chooseProfile`, synced with the identity); the default
+row clears it. The identity's update stream re-resolves her setup, on this
+device and on one the choice syncs to. Her routing then thinks with that
+profile's thinking model, and its read-aloud model is her voice. Her resolver
+also watches the Settings default, so changing it re-resolves her while her
+surface is open. A chosen profile that no longer resolves — deleted here or
+through sync — counts as no choice (`resolveFrontAgentModel`): she follows
+the Settings default rather than falling silent. A disabled setup still
+resolves to nothing.
+
+```mermaid
+flowchart TD
+  Setup["resolveFrontAgentSetup"] --> Own{"A profile chosen for her that still exists?"}
+  Own -->|yes| Chosen["That profile"]
+  Own -->|no| Default{"A Settings default profile?"}
+  Default -->|yes| Def["The default profile"]
+  Default -->|no| Builtin["Built-in model: no read-aloud slot"]
+  Chosen --> Slot{"Names a Mistral read-aloud model?"}
+  Def --> Slot
+  Slot -->|yes| Cloud["Voxtral TTS in the app's language"]
+  Slot -->|no| Device["On-device voice"]
+  Builtin --> Device
+```
 
 She speaks only while her customization lets her
 (`CompanionCustomization.speaksReplies`, Settings › Preferences ›
@@ -690,7 +745,9 @@ herself.
 `app_bootstrap.dart` into `agentWakeRunnersProvider` and
 `agentResolvedSetupResolversProvider` (see [the agents overview](agents/overview.md)),
 pinned by `test/app_bootstrap_test.dart`. Model resolution is the agent's
-own: explicit setup, then its profile, then the Settings default, then the
+own: explicit setup (the profile chosen for her from the header, see
+[her voice](#her-voice); one whose profile is gone counts as no choice), then
+its profile, then the Settings default, then the
 built-in cheap model (DeepSeek V4.1 Flash on Melious, else on Mistral —
 `frontAgentBuiltInModelIds`) — never a category's, because the front agent spans
 categories. The full-text index reaches the builder through

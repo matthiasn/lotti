@@ -197,7 +197,7 @@ class TtsPlaybackController extends Notifier<TtsPlaybackState> {
 
     final settings = ref.read(ttsSettingsControllerProvider);
     final prepared = _prepared;
-    final key = _keyFor(sourceId, text, language, settings, cloudRoute);
+    var key = _keyFor(sourceId, text, language, settings, cloudRoute);
     final matches = prepared?.key == key;
     if (!matches) discardPrepared();
     final repo = ref.read(ttsModelRepositoryProvider);
@@ -222,21 +222,40 @@ class TtsPlaybackController extends Notifier<TtsPlaybackState> {
         _prepared = null;
       }
       if (file == null && cloudRoute != null) {
-        // Checked again right before the text is uploaded: a stop, or the
-        // caller withdrawing permission, while the voice catalog loads must
-        // keep the text on the device.
-        file = await ref
-            .read(cloudSpeechSynthesizerProvider)
-            .synthesizeToFile(
-              route: cloudRoute,
-              text: text,
-              voiceByLanguage: settings.cloudVoiceByLanguage,
-              canSend: () async =>
-                  current() && (canPlay == null || await canPlay()),
-            );
-        if (file == null) {
-          if (current()) _onPlaybackEnded();
-          return;
+        try {
+          // Checked again right before the text is uploaded: a stop, or the
+          // caller withdrawing permission, while the voice catalog loads
+          // must keep the text on the device.
+          file = await ref
+              .read(cloudSpeechSynthesizerProvider)
+              .synthesizeToFile(
+                route: cloudRoute,
+                text: text,
+                voiceByLanguage: settings.cloudVoiceByLanguage,
+                canSend: () async =>
+                    current() && (canPlay == null || await canPlay()),
+              );
+          if (file == null) {
+            if (current()) _onPlaybackEnded();
+            return;
+          }
+        } on VoxtralTtsException catch (error) {
+          if (error.failure != VoxtralTtsFailure.noVoice ||
+              !engine.isSupported) {
+            rethrow;
+          }
+          // The cloud voice has no voice for the language, and nothing was
+          // sent; the on-device voice, which infers the language from the
+          // text, speaks it instead of a failure. Its clip is kept under the
+          // on-device key: replayed for the cloud route it would skip asking
+          // the cloud again, and outlive a change of the on-device voice.
+          key = _keyFor(sourceId, text, language, settings, null);
+          _logger.log(
+            LogDomain.speech,
+            'No cloud voice for ${cloudRoute.languageCode}; '
+            'the on-device voice speaks',
+            subDomain: 'ttsPlayback.speak',
+          );
         }
       }
       if (file == null) {

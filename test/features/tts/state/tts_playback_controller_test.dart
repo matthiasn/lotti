@@ -133,31 +133,103 @@ void main() {
     ),
   ).captured.cast<String?>();
 
-  test('a failed cloud synthesis ends in an error for its source, without '
-      'playback, and a missing voice is logged with its route', () async {
+  test(
+    'a missing cloud voice on a device without the on-device voice ends '
+    'in an error for its source, without playback, logged with its route',
+    () async {
+      final logger = await mockLogger();
+      final cloud = FakeCloudSpeechSynthesizer(
+        error: const VoxtralTtsException(
+          VoxtralTtsFailure.noVoice,
+          'No voice for language de',
+        ),
+      );
+      final player = FakeTtsAudioPlayer();
+      addTearDown(player.dispose);
+      final h = harness(
+        player: player,
+        cloud: cloud,
+        engine: FakeTtsEngine(supported: false),
+      );
+
+      await controllerOf(
+        h.container,
+      ).speak(sourceId: 'task-1', text: 'Hallo', cloudRoute: cloudRoute);
+
+      final state = h.container.read(ttsPlaybackControllerProvider);
+      expect(state.status, TtsPlaybackStatus.error);
+      expect(state.sourceId, 'task-1');
+      expect(state.errorMessage, contains('noVoice'));
+      expect(player.playCount, 0);
+      expect(speakErrorMessages(logger), [
+        'Cloud speech failed (${cloudRoute.cacheKey})',
+      ]);
+    },
+  );
+
+  test('a missing cloud voice falls back to the on-device voice where the '
+      'device has one: nothing was sent, and it is said, not failed', () async {
     final logger = await mockLogger();
-    final cloud = FakeCloudSpeechSynthesizer(
-      error: const VoxtralTtsException(
-        VoxtralTtsFailure.noVoice,
-        'No voice for language de',
-      ),
-    );
+    final engine = FakeTtsEngine();
     final player = FakeTtsAudioPlayer();
     addTearDown(player.dispose);
-    final h = harness(player: player, cloud: cloud);
+    final h = harness(
+      engine: engine,
+      player: player,
+      cloud: FakeCloudSpeechSynthesizer(
+        error: const VoxtralTtsException(
+          VoxtralTtsFailure.noVoice,
+          'No voice for language el',
+        ),
+      ),
+    );
 
     await controllerOf(
       h.container,
-    ).speak(sourceId: 'task-1', text: 'Hallo', cloudRoute: cloudRoute);
+    ).speak(sourceId: 'task-1', text: 'Γεια', cloudRoute: cloudRoute);
 
-    final state = h.container.read(ttsPlaybackControllerProvider);
-    expect(state.status, TtsPlaybackStatus.error);
-    expect(state.sourceId, 'task-1');
-    expect(state.errorMessage, contains('noVoice'));
-    expect(player.playCount, 0);
-    expect(speakErrorMessages(logger), [
-      'Cloud speech failed (${cloudRoute.cacheKey})',
-    ]);
+    expect(engine.calls.single.text, 'Γεια');
+    expect(player.playCount, 1);
+    expect(
+      h.container.read(ttsPlaybackControllerProvider).status,
+      TtsPlaybackStatus.playing,
+    );
+    verify(
+      () => logger.log(
+        LogDomain.speech,
+        'No cloud voice for ${cloudRoute.languageCode}; '
+        'the on-device voice speaks',
+        subDomain: 'ttsPlayback.speak',
+      ),
+    ).called(1);
+  });
+
+  test('the on-device clip a missing cloud voice fell back to is not '
+      'replayed for the cloud route: the cloud is asked again', () async {
+    final engine = FakeTtsEngine(output: preparedFile());
+    final player = FakeTtsAudioPlayer();
+    addTearDown(player.dispose);
+    final cloud = FakeCloudSpeechSynthesizer(
+      error: const VoxtralTtsException(
+        VoxtralTtsFailure.noVoice,
+        'No voice for language el',
+      ),
+    );
+    final h = harness(engine: engine, player: player, cloud: cloud);
+    final controller = controllerOf(h.container);
+    Future<void> speak() => controller.speak(
+      sourceId: 'task-1',
+      text: 'Γεια',
+      cloudRoute: cloudRoute,
+    );
+
+    await speak();
+    player.complete();
+    await pumpEventQueue();
+    await speak();
+
+    expect(cloud.calls, hasLength(2));
+    expect(engine.calls, hasLength(2));
   });
 
   test('a rejected cloud request is not logged twice: the Voxtral client '

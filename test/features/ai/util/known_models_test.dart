@@ -1540,4 +1540,26 @@ void main() {
       );
     });
   });
+
+  group('mistralRequestTemperature', () {
+    test('leaves out temperature 0 for Large 4, which always reasons', () {
+      expect(mistralRequestTemperature(mistralLarge4ModelId, 0), isNull);
+    });
+
+    test('matches Large 4 whatever its case and surrounding space', () {
+      expect(mistralRequestTemperature(' Mistral-Large-4-0 ', 0), isNull);
+    });
+
+    test('keeps any other temperature for Large 4', () {
+      expect(mistralRequestTemperature(mistralLarge4ModelId, 0.3), 0.3);
+    });
+
+    test('sends nothing when the caller set nothing', () {
+      expect(mistralRequestTemperature(mistralLarge4ModelId, null), isNull);
+    });
+
+    test('keeps temperature 0 for a model that can stop reasoning', () {
+      expect(mistralRequestTemperature('mistral-medium-3-5', 0), 0);
+    });
+  });
 }

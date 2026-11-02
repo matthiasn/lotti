@@ -1263,6 +1263,9 @@ void main() {
     Map<String, dynamic>? answerInput;
     Object? selected;
     void Function()? duringShortlist;
+    void Function(String source)? duringExtract;
+    late String answerText;
+    late List<String> shown;
     late QueryCancellation cancellation;
     late List<(int, bool)> progress;
     List<String>? plannedSearches;
@@ -1279,6 +1282,9 @@ void main() {
       progress = [];
       selected = ['source-41'];
       duringShortlist = null;
+      duringExtract = null;
+      answerText = 'Here is what the sources establish.';
+      shown = [];
       answerInput = null;
       cancellation = QueryCancellation();
     });
@@ -1309,6 +1315,7 @@ void main() {
               }
               if (system.contains('Extract passages')) {
                 calls.add('extract');
+                duringExtract?.call(input['source'] as String);
                 return Stream.value(
                   jsonEncode({
                     'passages': [
@@ -1320,10 +1327,7 @@ void main() {
               calls.add('answer');
               answerInput = input;
               return Stream.value(
-                jsonEncode({
-                  'answer': 'Here is what the sources establish.',
-                  'conclusion': '',
-                }),
+                jsonEncode({'answer': answerText, 'conclusion': ''}),
               );
             },
           ),
@@ -1334,6 +1338,7 @@ void main() {
           cancellation: cancellation,
           onProgress: (checked, {required expanded}) =>
               progress.add((checked, expanded)),
+          onAnswerText: shown.add,
         );
 
     test(
@@ -1591,17 +1596,55 @@ void main() {
       );
     }
 
+    test('a citation past the evidence is dropped, the answer kept', () async {
+      answerText = 'Feeder at noon [1], recounted at dusk [5].';
+
+      final result = await build();
+
+      expect(result.answer.evidence, hasLength(1));
+      expect(result.answer.text, 'Feeder at noon [1], recounted at dusk.');
+      // The draft that showed the dropped citation ends on the answer.
+      expect(shown.last, result.answer.text);
+    });
+
+    test('an answer that was nothing but a citation naming no evidence is '
+        'rejected', () async {
+      answerText = '[5]';
+
+      await expectLater(build(), throwsFormatException);
+    });
+
+    void hide(String id) {
+      final entry = bench.entries[id]!;
+      bench.entries[id] = entry.copyWith(
+        meta: entry.meta.copyWith(private: true),
+      );
+    }
+
+    test('a source hidden during shortlisting is left out, never inspected '
+        'or quoted, and the question is still answered', () async {
+      duringShortlist = () => hide('source-41');
+
+      final result = await build();
+
+      expect(calls, ['plan', 'shortlist', 'answer']);
+      expect(result.answer.evidence, isEmpty);
+      expect(jsonEncode(answerInput), isNot(contains('source-41')));
+      expect(result.answer.coverage.checked, 0);
+      expect(result.answer.coverage.incomplete, isTrue);
+    });
+
     test(
-      'a source hidden during shortlisting cannot be inspected or quoted',
+      'a source hidden after the answer quoted it still ends the '
+      'question: an answer never rests on what can no longer be seen',
       () async {
-        duringShortlist = () {
-          final entry = bench.entries['source-41']!;
-          bench.entries['source-41'] = entry.copyWith(
-            meta: entry.meta.copyWith(private: true),
-          );
+        selected = ['source-40', 'source-41'];
+        duringExtract = (source) {
+          if (source.contains('source-40')) hide('source-40');
         };
+
         await expectLater(build(), throwsA(isA<QueryScopeUnavailable>()));
-        expect(calls, ['plan', 'shortlist']);
+        expect(calls, ['plan', 'shortlist', 'extract']);
         expect(answerInput, isNull);
       },
     );

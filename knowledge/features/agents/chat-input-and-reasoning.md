@@ -25,7 +25,16 @@ relationship agents and [scoped queries](query-chat.md). Query hosts supply
 their own projected history and conversation ID, activity and footer slots,
 and turn off scrolling on new replies (`scrollOnReplies: false`) so a reader
 stays on earlier evidence; a new user turn, or the start of sending, still
-scrolls to the latest message.
+scrolls to the latest message. After that the thread **follows its latest
+message as it grows** while the reader is at the bottom: a reply's cards or a
+door's answer arrive after the reply's own frame, and a lazily built list's
+real height after the first jump, so one jump landed short. Where a scroll
+leaves the reader decides it — a drag as it moves, any scroll (wheel, fling)
+where it ends: away from the bottom stops the following, back resumes it, and a conversation
+restored where it was left keeps its place until something new arrives.
+While a reply is on its way the thread shows `AgentTypingIndicator`'s
+pulsing dots (unspaced inside the bubble), stopped under reduced motion; a
+test of a sending thread pumps frames rather than settling.
 `groupAttachmentsWithReply` places a consumer's supporting widgets inside the
 reply surface and its reading width, under a transparent Material ancestor for
 interactive disclosures. `composerShape` selects the input shell; pill composers

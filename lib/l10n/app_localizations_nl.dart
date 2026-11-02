@@ -7022,6 +7022,21 @@ class AppLocalizationsNl extends AppLocalizations {
   String get frontChatPrevious7Days => 'Afgelopen 7 dagen';
 
   @override
+  String frontChatProfileChanged(String profile) {
+    return 'De metgezel gebruikt nu $profile';
+  }
+
+  @override
+  String get frontChatProfileFollowsDefault =>
+      'De metgezel volgt nu het standaardprofiel uit Instellingen';
+
+  @override
+  String get frontChatProfileMenuItem => 'AI-profiel';
+
+  @override
+  String get frontChatProfileUseDefault => 'Standaard uit Instellingen';
+
+  @override
   String get frontChatResponding => 'Zoekt wie het weet…';
 
   @override

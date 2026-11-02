@@ -217,6 +217,21 @@ bool isMistralGradedReasoningModelId(String providerModelId) =>
       providerModelId.trim().toLowerCase(),
     );
 
+/// The temperature to send Mistral for [providerModelId]: [temperature], or
+/// null to leave it out and take the server's default.
+///
+/// The [mistralGradedReasoningModelIds] always reason (they refuse
+/// `reasoning_effort: none`), and the API refuses greedy sampling while a
+/// model reasons: temperature 0 on Large 4 is an HTTP 400
+/// `invalid_request_greedy_sampling` (code 3054), seen live on 2026-11-02.
+/// So 0 is left out for them; any other value goes through.
+double? mistralRequestTemperature(
+  String providerModelId,
+  double? temperature,
+) => temperature == 0 && isMistralGradedReasoningModelId(providerModelId)
+    ? null
+    : temperature;
+
 /// Whether [model] can receive instruction-following chat requests.
 ///
 /// Mistral OCR models advertise text and image modalities, but they accept

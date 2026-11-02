@@ -24,6 +24,10 @@ sources:
     resource: ../../../lib/features/agents/query/query_journal_crawler.dart
     title: Bounded journal discovery and project attribution
     last_modified: 2026-09-12
+  - id: guards
+    resource: ../../../lib/features/agents/query/query_answer_guards.dart
+    title: The per-window source gate and the citation guard
+    last_modified: 2026-11-02
   - id: builder
     resource: ../../../lib/features/agents/query/query_answer_builder.dart
     title: Summary-first routing and home-entry evidence verification
@@ -697,6 +701,25 @@ candidate text never reaches synthesis or durable history. Source instructions
 are treated as untrusted data. Window extraction can discard a malformed quote
 and mark coverage incomplete; batch response validation rejects malformed or
 foreign passages as a whole. Evidence summaries are interpretations, not quotes.
+
+**Rechecked before each window, skipped rather than failed.** Before every
+window of a source, `sourceGate` (`query_answer_guards.dart`) reloads access
+for what the answer already stands on and for the source with its linked
+task and project. If something the answer already quoted can no longer be
+read, the question ends (`QueryScopeUnavailable`): an answer never rests on
+what cannot be seen. If only the source about to be read is hidden now, or
+has left the scope, it is left out unread, it does not count as checked, and
+coverage is marked incomplete; the question is still answered. Failing the
+whole question for one entry the answer had not used made the front agent's
+journal answers fail at random.
+
+**Citations name evidence that exists.** Synthesis may cite only `[1]` to
+`[n]` for the `n` pieces of evidence it was given. `withKnownCitations` drops
+a citation outside that range, with the space before it, and keeps the
+answer; only an answer left empty is rejected (`FormatException`). A model
+sometimes numbers a remembered conclusion as if it were evidence, and
+rejecting the whole answer for it failed the question for nothing. Every
+citation that is published still opens its evidence card.
 
 `QueryTextInference` uses the profile's optional Chat route, falling back to
 resolved Thinking only when Chat is unset. An unavailable selected Chat model

@@ -177,6 +177,52 @@ void main() {
     );
   });
 
+  group('a profile the user chose for her that no longer exists', () {
+    const goneChoice = AgentConfig(
+      profileId: 'profile-gone',
+      inferenceSetup: AgentInferenceSetup(
+        mode: AgentInferenceSetupMode.configured,
+        origin: AgentInferenceSetupOrigin.user,
+        baseProfileId: 'profile-gone',
+      ),
+    );
+
+    test('falls back to the Settings default', () async {
+      when(
+        () => aiConfigRepository.getDefaultProfileId(),
+      ).thenAnswer((_) async => glmProfile.id);
+
+      final resolved = await resolve(goneChoice);
+
+      expect(resolved!.modelId, 'glm-5.2');
+      expect(resolved.setup.source, AgentSetupResolutionSource.baseProfile);
+    });
+
+    test('without a default, falls back to the built-in model', () async {
+      final resolved = await resolve(goneChoice);
+
+      expect(resolved!.modelId, meliousDeepseekV41FlashModelId);
+      expect(resolved.setup.source, AgentSetupResolutionSource.legacyModel);
+    });
+  });
+
+  test(
+    'a broken setup that is not a profile chosen for her stays broken',
+    () async {
+      final resolved = await resolve(
+        const AgentConfig(
+          inferenceSetup: AgentInferenceSetup(
+            mode: AgentInferenceSetupMode.configured,
+            origin: AgentInferenceSetupOrigin.templateSnapshot,
+            baseProfileId: 'profile-gone',
+          ),
+        ),
+      );
+
+      expect(resolved, isNull);
+    },
+  );
+
   test('a disabled explicit setup resolves to nothing — no fallback', () async {
     final resolved = await resolve(
       const AgentConfig(

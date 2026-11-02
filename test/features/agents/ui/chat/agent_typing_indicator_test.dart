@@ -1,15 +1,15 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/agents/ui/evolution/widgets/evolution_typing_indicator.dart';
+import 'package:lotti/features/agents/ui/chat/agent_typing_indicator.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
-import '../../../../../widget_test_utils.dart';
+import '../../../../widget_test_utils.dart';
 
 /// Reads the opacity of each dot, left to right.
 List<double> dotOpacities(WidgetTester tester) => tester
     .widgetList<Opacity>(
       find.descendant(
-        of: find.byType(EvolutionTypingIndicator),
+        of: find.byType(AgentTypingIndicator),
         matching: find.byType(Opacity),
       ),
     )
@@ -23,14 +23,33 @@ void main() {
   Widget subject({
     bool reduceMotion = false,
     bool announceComposing = true,
+    bool spaced = true,
   }) => makeTestableWidgetNoScroll(
     Center(
-      child: EvolutionTypingIndicator(announceComposing: announceComposing),
+      child: AgentTypingIndicator(
+        announceComposing: announceComposing,
+        spaced: spaced,
+      ),
     ),
     mediaQueryData: MediaQueryData(disableAnimations: reduceMotion),
   );
 
-  group('EvolutionTypingIndicator', () {
+  group('AgentTypingIndicator', () {
+    testWidgets('keeps the space below an evolution turn, and drops it '
+        'inside a bubble that frames the dots itself', (tester) async {
+      double height() =>
+          tester.getSize(find.byType(AgentTypingIndicator)).height;
+      await tester.pumpWidget(subject());
+      await tester.pump();
+      final spaced = height();
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpWidget(subject(spaced: false));
+      await tester.pump();
+
+      expect(height(), lessThan(spaced));
+    });
+
     testWidgets('renders three dots', (tester) async {
       await tester.pumpWidget(subject());
       await tester.pump();
@@ -75,13 +94,13 @@ void main() {
       await tester.pumpWidget(subject());
       await tester.pump();
 
-      final context = tester.element(find.byType(EvolutionTypingIndicator));
+      final context = tester.element(find.byType(AgentTypingIndicator));
       final handle = tester.ensureSemantics();
 
       // Without this a screen reader hears nothing at all between sending a
       // message and the reply arriving, with the composer disabled meanwhile.
       final node = tester.getSemantics(
-        find.byType(EvolutionTypingIndicator).first,
+        find.byType(AgentTypingIndicator).first,
       );
       expect(node.label, context.messages.agentRitualTypingSemantics);
       expect(node.flagsCollection.isLiveRegion, isTrue);
@@ -98,7 +117,7 @@ void main() {
       await tester.pumpWidget(subject(announceComposing: false));
       await tester.pump();
 
-      final context = tester.element(find.byType(EvolutionTypingIndicator));
+      final context = tester.element(find.byType(AgentTypingIndicator));
       final handle = tester.ensureSemantics();
 
       expect(

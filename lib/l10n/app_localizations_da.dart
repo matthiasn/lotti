@@ -6990,6 +6990,21 @@ class AppLocalizationsDa extends AppLocalizations {
   String get frontChatPrevious7Days => 'Seneste 7 dage';
 
   @override
+  String frontChatProfileChanged(String profile) {
+    return 'Ledsageren bruger nu $profile';
+  }
+
+  @override
+  String get frontChatProfileFollowsDefault =>
+      'Ledsageren følger nu standardprofilen fra Indstillinger';
+
+  @override
+  String get frontChatProfileMenuItem => 'AI-profil';
+
+  @override
+  String get frontChatProfileUseDefault => 'Standard fra Indstillinger';
+
+  @override
   String get frontChatResponding => 'Finder den, der ved det…';
 
   @override

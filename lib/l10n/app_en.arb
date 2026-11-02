@@ -4175,6 +4175,27 @@
   "frontChatOpen": "Ask the companion",
   "frontChatPlaceholder": "Ask anything…",
   "frontChatPrevious7Days": "Previous 7 days",
+  "frontChatProfileChanged": "The companion now uses {profile}",
+  "@frontChatProfileChanged": {
+    "description": "Toast after choosing the companion's AI profile.",
+    "placeholders": {
+      "profile": {
+        "type": "String"
+      }
+    }
+  },
+  "frontChatProfileFollowsDefault": "The companion now follows the Settings default",
+  "@frontChatProfileFollowsDefault": {
+    "description": "Toast after the companion's own AI profile choice is cleared, so she follows the default profile from Settings again."
+  },
+  "frontChatProfileMenuItem": "AI profile",
+  "@frontChatProfileMenuItem": {
+    "description": "Companion chat overflow item: choose the AI profile she thinks and speaks with (its read-aloud model is her voice)."
+  },
+  "frontChatProfileUseDefault": "Settings default",
+  "@frontChatProfileUseDefault": {
+    "description": "First row of the companion's AI profile picker: clear her own choice and follow the default profile set in Settings. Its subtitle names that profile."
+  },
   "frontChatResponding": "Finding who knows…",
   "frontChatRowMenuHint": "Chat actions",
   "frontChatScopeAll": "All",

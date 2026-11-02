@@ -386,6 +386,64 @@ void main() {
       },
     );
 
+    test('the box empties the moment the words are sent, not once her '
+        'answer is in', () async {
+      final answering = Completer<void>();
+      when(
+        () => chatService.sendMessage(text: 'Hello', conversationId: 'c-1'),
+      ).thenAnswer((_) => answering.future);
+      controller().updateDraft('Hello');
+
+      final sending = controller().send();
+      await pumpEventQueue();
+
+      expect(state().isSending, isTrue);
+      expect(state().draft, isEmpty);
+      answering.complete();
+      await sending;
+      expect(state().draft, isEmpty);
+    });
+
+    test('a failed send keeps what the user typed meanwhile, the failed '
+        'words still offered for a retry', () async {
+      final answering = Completer<void>();
+      when(
+        () => chatService.sendMessage(text: 'Hello', conversationId: 'c-1'),
+      ).thenAnswer((_) => answering.future);
+      controller().updateDraft('Hello');
+
+      final sending = controller().send();
+      await pumpEventQueue();
+      controller().updateDraft('And another thing');
+      answering.completeError(
+        const FrontChatTurnException('boom', messageId: 'm-1'),
+      );
+      await sending;
+
+      expect(state().draft, 'And another thing');
+      expect(state().failedMessage, 'Hello');
+    });
+
+    test(
+      'a send that goes through keeps what the user typed meanwhile',
+      () async {
+        final answering = Completer<void>();
+        when(
+          () => chatService.sendMessage(text: 'Hello', conversationId: 'c-1'),
+        ).thenAnswer((_) => answering.future);
+        controller().updateDraft('Hello');
+
+        final sending = controller().send();
+        await pumpEventQueue();
+        controller().updateDraft('And another thing');
+        answering.complete();
+        await sending;
+
+        expect(state().draft, 'And another thing');
+        expect(state().failedMessage, isNull);
+      },
+    );
+
     test('an unexpected error fails the turn without a durable id', () async {
       when(
         () => chatService.sendMessage(text: 'Hello', conversationId: 'c-1'),

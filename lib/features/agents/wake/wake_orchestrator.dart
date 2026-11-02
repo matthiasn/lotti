@@ -737,19 +737,30 @@ class WakeOrchestrator with AgentErrorLogging {
     _startSafetyNet();
   }
 
-  /// Stop listening, cancel the subscription, and clean up timers.
+  /// Stop listening, cancel the subscription, and clean up timers. A later
+  /// [start] resumes.
   ///
-  /// Terminal: also closes [runCompletions] (like the throttle coordinator,
-  /// the orchestrator is not restartable after [stop]). The close is
-  /// fire-and-forget — a broadcast controller's `close()` future only
-  /// settles once every active listener's cancellation round-trips, which
-  /// callers stopping the orchestrator have no reason to wait on.
+  /// Not terminal: agent initialization stops and restarts the orchestrator
+  /// whenever it rebuilds, while the instance lives on. [runCompletions]
+  /// therefore stays open — closing it here left every chat that waits on a
+  /// run's completion (the front agent's, a goal's) failing at once with
+  /// "the agent runtime stopped" after any such rebuild, while the wake still
+  /// ran and its reply landed later. [dispose] ends it.
   Future<void> stop() async {
     _safetyNetTimer?.cancel();
     _safetyNetTimer = null;
     _throttle.dispose();
     await _notificationSub?.cancel();
     _notificationSub = null;
+  }
+
+  /// Discards the orchestrator: [stop], then closes [runCompletions] so a
+  /// waiter still listening learns the runtime is gone. Its provider calls
+  /// this on disposal. The close is fire-and-forget — a broadcast
+  /// controller's `close()` future only settles once every active
+  /// listener's cancellation round-trips.
+  Future<void> dispose() async {
+    await stop();
     unawaited(_runCompletions.close());
   }
 

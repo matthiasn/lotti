@@ -6,7 +6,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/classes/ai/ai_config.dart';
+import 'package:lotti/classes/day_agent_identity.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
+import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
+import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/companion/animation/mouth_track.dart';
 import 'package:lotti/features/companion/rig/companion_painter.dart';
 import 'package:lotti/features/companion/state/spoken_track.dart';
@@ -17,6 +21,8 @@ import 'package:lotti/features/daily_os_next/logic/day_agent_timeline_models.dar
 import 'package:lotti/features/daily_os_next/logic/day_briefing.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_briefing_companion.dart';
 import 'package:lotti/features/design_system/theme/sizing_tokens.dart';
+import 'package:lotti/features/tts/cloud/cloud_speech_synthesizer.dart';
+import 'package:lotti/features/tts/cloud/voxtral_tts_service.dart';
 import 'package:lotti/features/tts/state/tts_audio_player.dart';
 import 'package:lotti/features/tts/state/tts_engine_provider.dart';
 import 'package:lotti/features/tts/state/tts_model_repository.dart';
@@ -26,6 +32,7 @@ import 'package:lotti/utils/consts.dart';
 
 import '../../../../mocks/mocks.dart';
 import '../../../../test_helper.dart';
+import '../../../agents/test_data/ai_config_factories.dart';
 import '../../../tts/test_utils.dart';
 
 final _day = DateTime(2026, 10, 15);
@@ -160,10 +167,12 @@ void main() {
   group('DayBriefingCompanion', () {
     late FakeTtsEngine engine;
     late FakeTtsAudioPlayer player;
+    late FakeCloudSpeechSynthesizer cloud;
 
     setUp(() {
       engine = FakeTtsEngine();
       player = FakeTtsAudioPlayer();
+      cloud = FakeCloudSpeechSynthesizer();
     });
 
     Future<void> pump(
@@ -173,6 +182,8 @@ void main() {
       bool engineSupported = true,
       bool hasPlan = true,
       FakeTtsModelRepository? models,
+      ResolvedAgentSetup? plannerSetup,
+      Locale locale = const Locale('en'),
     }) async {
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
@@ -197,7 +208,13 @@ void main() {
             spokenTrackLoaderProvider.overrideWithValue(
               (clip, text) => Completer<MouthTrack>().future,
             ),
+            agentResolvedSetupProvider.overrideWith(
+              (ref, agentId) async =>
+                  agentId == dailyOsPlannerAgentId ? plannerSetup : null,
+            ),
+            cloudSpeechSynthesizerProvider.overrideWithValue(cloud),
           ],
+          locale: locale,
           child: Align(
             alignment: Alignment.topLeft,
             child: DayBriefingCompanion(
@@ -227,6 +244,102 @@ void main() {
         expect(tester.getSize(find.byType(DayBriefingCompanion)), Size.zero);
       });
     }
+
+    group("the Daily OS planner's voice", () {
+      final mistral = testInferenceProvider(
+        id: 'mistral',
+        inferenceProviderType: InferenceProviderType.mistral,
+      );
+      final voxtral = testAiModel(
+        id: 'voice-row',
+        providerModelId: 'voxtral-mini-tts-3-0',
+      );
+
+      ResolvedAgentSetup setup({bool speaks = true}) => ResolvedAgentSetup(
+        status: AgentSetupResolutionStatus.resolved,
+        profile: ResolvedProfile(
+          thinkingModelId: 'thinking',
+          thinkingProvider: mistral,
+          speechModelId: speaks ? voxtral.providerModelId : null,
+          speechProvider: speaks ? mistral : null,
+          speechModel: speaks ? voxtral : null,
+        ),
+      );
+
+      testWidgets('shows her where the device has no on-device voice, '
+          "when the planner's profile names a cloud voice", (tester) async {
+        await pump(tester, engineSupported: false, plannerSetup: setup());
+
+        expect(find.byType(CompanionSpeaker), findsOneWidget);
+      });
+
+      testWidgets('a tap speaks the briefing with that cloud voice, in the '
+          "app's language, never through the on-device engine", (
+        tester,
+      ) async {
+        cloud.output = File('/tmp/fake_cloud_briefing.wav');
+        await pump(
+          tester,
+          plannerSetup: setup(),
+          locale: const Locale('de'),
+        );
+
+        await tester.tap(find.byType(CompanionSpeaker));
+        await _pumpFrames(tester);
+
+        final call = cloud.calls.single;
+        expect(call.route.provider, mistral);
+        expect(call.route.model, voxtral);
+        expect(call.route.languageCode, 'de');
+        expect(call.text, contains('Write'));
+        expect(call.sent, isTrue);
+        expect(engine.calls, isEmpty);
+        expect(player.playCount, 1);
+      });
+
+      testWidgets('a language the cloud voice has no voice for is spoken by '
+          'the on-device voice', (tester) async {
+        cloud = FakeCloudSpeechSynthesizer(
+          error: const VoxtralTtsException(
+            VoxtralTtsFailure.noVoice,
+            'No voice for language ro',
+          ),
+        );
+        await pump(
+          tester,
+          plannerSetup: setup(),
+          locale: const Locale('ro'),
+        );
+
+        await tester.tap(find.byType(CompanionSpeaker));
+        await _pumpFrames(tester);
+
+        expect(engine.calls, hasLength(1));
+        expect(player.playCount, 1);
+      });
+
+      testWidgets('a profile without a read-aloud model keeps the on-device '
+          'voice', (tester) async {
+        await pump(tester, plannerSetup: setup(speaks: false));
+
+        await tester.tap(find.byType(CompanionSpeaker));
+        await _pumpFrames(tester);
+
+        expect(cloud.calls, isEmpty);
+        expect(engine.calls, hasLength(1));
+      });
+
+      testWidgets('without a cloud voice, a device with no on-device voice '
+          'still shows nothing', (tester) async {
+        await pump(
+          tester,
+          engineSupported: false,
+          plannerSetup: setup(speaks: false),
+        );
+
+        expect(find.byType(CompanionSpeaker), findsNothing);
+      });
+    });
 
     testWidgets("shows her bust, an avatar's size, on the day's utterance", (
       tester,

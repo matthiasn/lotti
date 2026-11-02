@@ -5,7 +5,8 @@ import 'package:lotti/classes/ai/ai_config.dart';
 /// OpenAI's reasoning models accept only 1.0 while they reason, so a
 /// reasoning request gets 1.0 and anything else gets [fallback]. Mistral
 /// recommends 0.0–0.7 for all of its models, reasoning ones included, so a
-/// Mistral request keeps [fallback] either way.
+/// Mistral request keeps [fallback] either way — except that Large 4 refuses
+/// 0, which its client leaves out (`mistralRequestTemperature`).
 double samplingTemperature({
   required InferenceProviderType? providerType,
   required bool reasoning,

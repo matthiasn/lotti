@@ -1,11 +1,13 @@
 import 'dart:ui' show Tristate;
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/agents/ui/chat/agent_chat_view.dart';
+import 'package:lotti/features/agents/ui/chat/agent_typing_indicator.dart';
 import 'package:lotti/features/agents/ui/chat/chat_recorder_controller.dart';
 import 'package:lotti/features/agents/ui/chat/waveform_bars.dart';
 import 'package:lotti/features/ai/util/inference_provider_resolver.dart';
@@ -670,9 +672,12 @@ void main() {
         ],
       ),
     );
-    await tester.pumpAndSettle();
+    // The waiting dots pulse for as long as she answers, so the
+    // frame is pumped, not settled.
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
-    expect(find.text('•••'), findsOneWidget);
+    expect(find.byType(AgentTypingIndicator), findsOneWidget);
     expect(find.text("That didn't send."), findsOneWidget);
     expect(find.text('Juno is replying…'), findsOneWidget);
     await tester.tap(find.text('Try Again'));
@@ -1058,6 +1063,160 @@ void main() {
     expect(find.textContaining('Message 0'), findsNothing);
   });
 
+  group('following the latest as the thread grows', () {
+    late StateSetter updateHost;
+    late double cardHeight;
+
+    Future<void> pumpThread(
+      WidgetTester tester, {
+      bool scrollOnReplies = true,
+    }) async {
+      cardHeight = 10;
+      final history = [
+        for (var index = 0; index < 30; index++)
+          AgentChatMessage(
+            id: '$index',
+            role: AgentChatRole.agent,
+            text: 'Message $index with enough text to occupy a row.',
+            createdAt: DateTime(2026, 8, 11, 9, index),
+          ),
+      ];
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          StatefulBuilder(
+            builder: (context, setState) {
+              updateHost = setState;
+              return Scaffold(
+                body: SizedBox(
+                  height: 420,
+                  child: AgentChatView(
+                    agentId: 'goal-1',
+                    agentName: 'Juno',
+                    draft: '',
+                    isSending: false,
+                    history: AsyncData(history),
+                    scrollOnReplies: scrollOnReplies,
+                    onDraftChanged: (_) {},
+                    onSend: () {},
+                    onRetry: () {},
+                    // The latest reply's card arrives after the reply, as
+                    // a door's answer does, and grows the thread with no
+                    // new message.
+                    attachmentBuilder: (context, message) => message.id == '29'
+                        ? SizedBox(
+                            key: const ValueKey('late-card'),
+                            height: cardHeight,
+                          )
+                        : null,
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    ScrollPosition position(WidgetTester tester) => tester
+        .state<ScrollableState>(
+          find.descendant(
+            of: find.byType(ListView),
+            matching: find.byType(Scrollable),
+          ),
+        )
+        .position;
+
+    Future<void> grow(WidgetTester tester) async {
+      updateHost(() => cardHeight = 600);
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('at the bottom, it follows a card that lands after the '
+        'reply', (tester) async {
+      await pumpThread(tester);
+      expect(position(tester).extentAfter, 0);
+
+      await grow(tester);
+
+      expect(position(tester).extentAfter, 0);
+      expect(
+        tester.getRect(find.byKey(const ValueKey('late-card'))).bottom,
+        lessThanOrEqualTo(tester.getRect(find.byType(ListView)).bottom),
+      );
+    });
+
+    testWidgets('scrolled up to read, the reader keeps their place', (
+      tester,
+    ) async {
+      await pumpThread(tester);
+      await tester.drag(find.byType(ListView), const Offset(0, 5000));
+      await tester.pumpAndSettle();
+
+      await grow(tester);
+
+      expect(position(tester).pixels, 0);
+      expect(find.textContaining('Message 0'), findsOneWidget);
+    });
+
+    testWidgets('a host that keeps replies where they start is not '
+        'followed as they grow', (tester) async {
+      await pumpThread(tester, scrollOnReplies: false);
+      await tester.drag(find.byType(ListView), const Offset(0, -20000));
+      await tester.pumpAndSettle();
+      final before = position(tester).extentAfter;
+
+      await grow(tester);
+
+      // The card grew by hundreds of pixels below the reader, who stayed.
+      expect(position(tester).extentAfter, greaterThan(before + 400));
+    });
+
+    Future<void> wheel(WidgetTester tester, double dy) async {
+      final center = tester.getCenter(find.byType(ListView));
+      await tester.sendEventToBinding(PointerScrollEvent(position: center));
+      await tester.sendEventToBinding(
+        PointerScrollEvent(position: center, scrollDelta: Offset(0, dy)),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('scrolled up with a wheel, the reader keeps their place too', (
+      tester,
+    ) async {
+      await pumpThread(tester);
+      await wheel(tester, -5000);
+      final reading = position(tester).pixels;
+      expect(reading, lessThan(position(tester).maxScrollExtent));
+
+      await grow(tester);
+
+      expect(position(tester).pixels, reading);
+    });
+
+    testWidgets('wheeled back to the bottom, it follows again', (tester) async {
+      await pumpThread(tester);
+      await wheel(tester, -5000);
+      await wheel(tester, 20000);
+
+      await grow(tester);
+
+      expect(position(tester).extentAfter, 0);
+    });
+
+    testWidgets('back at the bottom, it follows again', (tester) async {
+      await pumpThread(tester);
+      await tester.drag(find.byType(ListView), const Offset(0, 5000));
+      await tester.pumpAndSettle();
+      await tester.drag(find.byType(ListView), const Offset(0, -20000));
+      await tester.pumpAndSettle();
+
+      await grow(tester);
+
+      expect(position(tester).extentAfter, 0);
+    });
+  });
+
   testWidgets('switching to an agent that is already sending keeps the '
       "reader's place instead of treating it as a new send", (tester) async {
     List<AgentChatMessage> transcript(String agentId) => [
@@ -1097,9 +1256,15 @@ void main() {
         ),
       ),
     );
-    await tester.pumpAndSettle();
+    // The waiting dots pulse for as long as she answers, so the
+    // frame is pumped, not settled.
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
     await tester.drag(find.byType(ListView), const Offset(0, 5000));
-    await tester.pumpAndSettle();
+    // The waiting dots pulse for as long as she answers, so the
+    // frame is pumped, not settled.
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     ScrollPosition position() => tester
         .state<ScrollableState>(
@@ -1149,7 +1314,10 @@ void main() {
           ],
         ),
       );
-      await tester.pumpAndSettle();
+      // The waiting dots pulse for as long as she answers, so the
+      // frame is pumped, not settled.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byIcon(LottiIcons.mic), findsOneWidget);
       expect(find.byIcon(LottiIcons.send), findsNothing);
@@ -1184,7 +1352,10 @@ void main() {
           ],
         ),
       );
-      await tester.pumpAndSettle();
+      // The waiting dots pulse for as long as she answers, so the
+      // frame is pumped, not settled.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byIcon(LottiIcons.mic), findsOneWidget);
       expect(find.byIcon(LottiIcons.send), findsNothing);
@@ -1238,7 +1409,10 @@ void main() {
           ],
         ),
       );
-      await tester.pumpAndSettle();
+      // The waiting dots pulse for as long as she answers, so the
+      // frame is pumped, not settled.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       await tester.tap(find.byIcon(LottiIcons.mic));
       await tester.pump();
@@ -1276,7 +1450,10 @@ void main() {
           ],
         ),
       );
-      await tester.pumpAndSettle();
+      // The waiting dots pulse for as long as she answers, so the
+      // frame is pumped, not settled.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byType(WaveformBars), findsOneWidget);
       expect(find.byIcon(LottiIcons.close), findsOneWidget);
@@ -1311,14 +1488,20 @@ void main() {
           ],
         ),
       );
-      await tester.pumpAndSettle();
+      // The waiting dots pulse for as long as she answers, so the
+      // frame is pumped, not settled.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       await tester.tap(find.byIcon(LottiIcons.close));
       await tester.pump();
       expect(cancelCalled, isTrue);
 
       // The controller transitions to idle, so the mic reappears.
-      await tester.pumpAndSettle();
+      // The waiting dots pulse for as long as she answers, so the
+      // frame is pumped, not settled.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
       expect(find.byIcon(LottiIcons.mic), findsOneWidget);
     });
 
@@ -1349,7 +1532,10 @@ void main() {
           ],
         ),
       );
-      await tester.pumpAndSettle();
+      // The waiting dots pulse for as long as she answers, so the
+      // frame is pumped, not settled.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       await tester.tap(find.byIcon(LottiIcons.stop));
       await tester.pump();
@@ -1384,10 +1570,16 @@ void main() {
           ],
         ),
       );
-      await tester.pumpAndSettle();
+      // The waiting dots pulse for as long as she answers, so the
+      // frame is pumped, not settled.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       controller.emitTranscript('I walked this morning.');
-      await tester.pumpAndSettle();
+      // The waiting dots pulse for as long as she answers, so the
+      // frame is pumped, not settled.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(
         tester.widget<TextField>(find.byType(TextField)).controller?.text,
@@ -1491,7 +1683,10 @@ void main() {
           ],
         ),
       );
-      await tester.pumpAndSettle();
+      // The waiting dots pulse for as long as she answers, so the
+      // frame is pumped, not settled.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       controller.emitError(
         'Microphone permission denied. Please enable it in Settings.',
@@ -1535,7 +1730,10 @@ void main() {
           ],
         ),
       );
-      await tester.pumpAndSettle();
+      // The waiting dots pulse for as long as she answers, so the
+      // frame is pumped, not settled.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       controller.emitError(
         'No audio-capable models configured',
@@ -1592,10 +1790,16 @@ void main() {
           ],
         ),
       );
-      await tester.pumpAndSettle();
+      // The waiting dots pulse for as long as she answers, so the
+      // frame is pumped, not settled.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       controller.emitTranscript('   ');
-      await tester.pumpAndSettle();
+      // The waiting dots pulse for as long as she answers, so the
+      // frame is pumped, not settled.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(draft, '');
       expect(controller.clearResultCalls, greaterThan(0));
@@ -1626,7 +1830,10 @@ void main() {
           ],
         ),
       );
-      await tester.pumpAndSettle();
+      // The waiting dots pulse for as long as she answers, so the
+      // frame is pumped, not settled.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byIcon(LottiIcons.mic), findsNothing);
       expect(find.byIcon(LottiIcons.send), findsNothing);

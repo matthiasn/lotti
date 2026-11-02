@@ -2,14 +2,25 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// Three dots pulsing in sequence while the agent composes its turn.
+/// Three dots pulsing in sequence while the agent composes its turn: in the
+/// evolution chat, and inside the waiting bubble of every agent chat
+/// (`AgentChatView`).
 ///
 /// Occupies the same left-aligned position as an assistant turn, so the
 /// answer lands where the waiting was rather than displacing it. Replaces a
 /// 16px spinner beside a literal `'...'`, which read as an unstyled loading
 /// artefact rather than a participant thinking.
-class EvolutionTypingIndicator extends StatefulWidget {
-  const EvolutionTypingIndicator({this.announceComposing = true, super.key});
+class AgentTypingIndicator extends StatefulWidget {
+  const AgentTypingIndicator({
+    this.announceComposing = true,
+    this.spaced = true,
+    super.key,
+  });
+
+  /// Whether the dots keep the space below them that a free-standing turn
+  /// has (the evolution chat's); false inside a bubble whose own padding
+  /// already frames them.
+  final bool spaced;
 
   /// Whether the dots announce themselves as *the agent composing a reply*.
   ///
@@ -23,11 +34,10 @@ class EvolutionTypingIndicator extends StatefulWidget {
   static const Duration cycle = Duration(milliseconds: 1200);
 
   @override
-  State<EvolutionTypingIndicator> createState() =>
-      _EvolutionTypingIndicatorState();
+  State<AgentTypingIndicator> createState() => _AgentTypingIndicatorState();
 }
 
-class _EvolutionTypingIndicatorState extends State<EvolutionTypingIndicator>
+class _AgentTypingIndicatorState extends State<AgentTypingIndicator>
     with SingleTickerProviderStateMixin {
   static const int _dotCount = 3;
 
@@ -38,7 +48,7 @@ class _EvolutionTypingIndicatorState extends State<EvolutionTypingIndicator>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: EvolutionTypingIndicator.cycle,
+      duration: AgentTypingIndicator.cycle,
     );
   }
 
@@ -77,7 +87,9 @@ class _EvolutionTypingIndicatorState extends State<EvolutionTypingIndicator>
           : null,
       child: ExcludeSemantics(
         child: Padding(
-          padding: EdgeInsets.only(bottom: tokens.spacing.step5),
+          padding: EdgeInsets.only(
+            bottom: widget.spaced ? tokens.spacing.step5 : 0,
+          ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [

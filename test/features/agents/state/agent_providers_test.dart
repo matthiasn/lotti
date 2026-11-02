@@ -2068,6 +2068,32 @@ void main() {
   });
 
   group('wakeOrchestratorProvider', () {
+    test('its disposal discards the orchestrator, ending its run '
+        'completions for anyone still waiting', () async {
+      final runner = WakeRunner();
+      addTearDown(runner.dispose);
+      final container = ProviderContainer(
+        overrides: withServiceOverrides([
+          loggingServiceProvider.overrideWithValue(LoggingService()),
+          agentRepositoryProvider.overrideWithValue(MockAgentRepository()),
+          wakeQueueProvider.overrideWithValue(WakeQueue()),
+          wakeRunnerProvider.overrideWithValue(runner),
+          domainLoggerProvider.overrideWithValue(
+            DomainLogger(loggingService: LoggingService()),
+          ),
+        ]),
+      );
+      final ended = Completer<void>();
+      container
+          .read(wakeOrchestratorProvider)
+          .runCompletions
+          .listen(null, onDone: ended.complete);
+
+      container.dispose();
+
+      await expectLater(ended.future, completes);
+    });
+
     test('creates orchestrator with injected dependencies', () {
       final mockRepo = MockAgentRepository();
       final queue = WakeQueue();

@@ -2,6 +2,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/state/agent_chat_projection.dart';
+import 'package:lotti/features/agents/ui/chat/agent_typing_indicator.dart';
 import 'package:lotti/features/agents/ui/chat/chat_recorder_controller.dart';
 import 'package:lotti/features/agents/ui/chat/chat_recorder_error_message.dart';
 import 'package:lotti/features/agents/ui/chat/waveform_bars.dart';
@@ -28,6 +29,14 @@ class _AgentChatViewState extends ConsumerState<AgentChatView> {
   String? _lastMessageId;
   bool _wasSending = false;
 
+  /// Whether the thread keeps to its latest message as it grows: set by
+  /// every scroll to the latest, cleared once the user scrolls away from
+  /// the bottom, set again when they come back. A reply's cards, a door's
+  /// answer and a lazily built list's real height all arrive after the
+  /// reply's own frame; following the growth keeps the newest in view
+  /// where a single jump landed short of it.
+  bool _followLatest = true;
+
   /// Laid-out reply heights, keyed by message id, owned by the LIST rather
   /// than by the item.
   ///
@@ -48,6 +57,9 @@ class _AgentChatViewState extends ConsumerState<AgentChatView> {
     _wasSending = widget.isSending;
     if (widget.conversationId != null) {
       _lastMessageId = widget.history?.value?.lastOrNull?.id;
+      // A conversation restored where it was left keeps its place until
+      // something new arrives or the user returns to the bottom.
+      _followLatest = false;
     }
     _recorderSubscription = ref.listenManual<ChatRecorderState>(
       chatRecorderControllerProvider,
@@ -117,17 +129,39 @@ class _AgentChatViewState extends ConsumerState<AgentChatView> {
   /// scroll, and on a layout — a thread restored where it was left moves
   /// without one. The thread's own list only (depth 0 here), never a scroll
   /// nested inside a message or the composer.
-  Widget _followThread(Widget list) {
+  ///
+  /// It also keeps the thread at its latest message while [_followLatest]
+  /// holds, whenever the content grows.
+  Widget _followThread(Widget list, {required double nearBottom}) {
     final follow = widget.onThreadScrolled;
-    if (follow == null) return list;
     return NotificationListener<Notification>(
       onNotification: (notification) {
+        switch (notification) {
+          // Where a scroll leaves the reader decides whether to follow: a
+          // drag as it moves, and every scroll — a wheel, a fling, a jump to
+          // the latest — where it ends. Content growing is no scroll.
+          case ScrollUpdateNotification(
+                depth: 0,
+                :final metrics,
+                dragDetails: _?,
+              ) ||
+              ScrollEndNotification(depth: 0, :final metrics):
+            _followLatest = metrics.extentAfter <= nearBottom;
+          // A host that keeps replies where they start (query chat, whose
+          // reader reads an answer and its evidence from the top) is not
+          // followed as they grow.
+          case ScrollMetricsNotification(depth: 0, :final metrics)
+              when widget.scrollOnReplies &&
+                  _followLatest &&
+                  metrics.extentAfter > 0:
+            _scrollToLatest();
+        }
         final metrics = switch (notification) {
           ScrollUpdateNotification(depth: 0, :final metrics) => metrics,
           ScrollMetricsNotification(depth: 0, :final metrics) => metrics,
           _ => null,
         };
-        if (metrics != null) follow(metrics);
+        if (metrics != null) follow?.call(metrics);
         return false;
       },
       child: list,
@@ -135,6 +169,7 @@ class _AgentChatViewState extends ConsumerState<AgentChatView> {
   }
 
   void _scrollToLatest() {
+    _followLatest = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || !_scrollController.hasClients) return;
       _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
@@ -200,6 +235,7 @@ class _AgentChatViewState extends ConsumerState<AgentChatView> {
                             ),
                           )
                     : _followThread(
+                        nearBottom: tokens.spacing.step9,
                         ListView.builder(
                           key: widget.conversationId == null
                               ? null

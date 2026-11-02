@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/agents/ui/chat/agent_typing_indicator.dart';
 import 'package:lotti/features/agents/ui/evolution/evolution_chat_message.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_chat_bubble.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_message_list.dart';
-import 'package:lotti/features/agents/ui/evolution/widgets/evolution_typing_indicator.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
@@ -40,7 +40,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(EvolutionChatBubble), findsNWidgets(2));
-      expect(find.byType(EvolutionTypingIndicator), findsNothing);
+      expect(find.byType(AgentTypingIndicator), findsNothing);
     });
 
     testWidgets('appends the typing indicator while waiting, after the last '
@@ -56,9 +56,9 @@ void main() {
       await tester.pump();
 
       expect(find.byType(EvolutionChatBubble), findsOneWidget);
-      expect(find.byType(EvolutionTypingIndicator), findsOneWidget);
+      expect(find.byType(AgentTypingIndicator), findsOneWidget);
       expect(
-        tester.getCenter(find.byType(EvolutionTypingIndicator)).dy,
+        tester.getCenter(find.byType(AgentTypingIndicator)).dy,
         greaterThan(tester.getCenter(find.byType(EvolutionChatBubble)).dy),
       );
     });

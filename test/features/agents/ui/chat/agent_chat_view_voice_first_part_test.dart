@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/agents/ui/chat/agent_chat_view.dart';
+import 'package:lotti/features/agents/ui/chat/agent_typing_indicator.dart';
 import 'package:lotti/features/agents/ui/chat/chat_recorder_controller.dart';
 import 'package:lotti/features/agents/ui/chat/waveform_bars.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
@@ -235,7 +236,7 @@ void main() {
       await pumpView(tester, isSending: true);
 
       final thinking = find.ancestor(
-        of: find.text('•••'),
+        of: find.byType(AgentTypingIndicator),
         matching: find.byType(DecoratedBox),
       );
       final box = tester.widget<DecoratedBox>(thinking.first);

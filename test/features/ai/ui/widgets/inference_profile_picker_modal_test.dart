@@ -59,6 +59,44 @@ void main() {
     },
   );
 
+  testWidgets('a header leads the profiles, and stays when there are none', (
+    tester,
+  ) async {
+    const header = Text('Header row');
+    await tester.pumpWidget(
+      WidgetTestBench(
+        child: InferenceProfilePickerList(
+          profiles: [_profile(id: 'fast', name: 'Fast profile')],
+          selectedProfileId: null,
+          onSelected: (_) {},
+          header: header,
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(
+      tester.getTopLeft(find.text('Header row')).dy,
+      lessThan(tester.getTopLeft(find.text('Fast profile')).dy),
+    );
+
+    await tester.pumpWidget(
+      WidgetTestBench(
+        child: InferenceProfilePickerList(
+          profiles: const [],
+          selectedProfileId: null,
+          onSelected: (_) {},
+          emptyLabel: 'Nothing here',
+          header: header,
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('Header row'), findsOneWidget);
+    expect(find.text('Nothing here'), findsOneWidget);
+  });
+
   testWidgets('returns the selected id and dismisses the modal', (
     tester,
   ) async {

@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/query_chat_models.dart';
+import 'package:lotti/features/agents/query/query_answer_guards.dart';
 import 'package:lotti/features/agents/query/query_chat_projection.dart';
 import 'package:lotti/features/agents/query/query_journal_crawler.dart';
 import 'package:lotti/features/agents/query/query_source_access.dart';
@@ -448,6 +449,7 @@ class QueryAnswerBuilder {
           corpus.affiliations[source.id] ??
           const (labels: <String>[], sources: <QuerySourceRef>[]);
       final sourceDependencies = [source, ...affiliations.sources];
+      var skipped = false;
       for (var offset = 0; offset < document.text.length; offset += 10000) {
         if ((batch == null && calls >= maxSourceCalls) ||
             evidence.length >= 12) {
@@ -459,15 +461,17 @@ class QueryAnswerBuilder {
           ...sourceDependencies.map((s) => s.id),
         ]);
         cancellation.check();
-        if (!current.allowsContent(
-              [...dependencies.values, ...sourceDependencies],
-              private: initial.showPrivate,
-            ) ||
-            !corpus.admits(
-              current,
-              current.entries[source.id]?.meta.categoryId,
-            )) {
-          throw const QueryScopeUnavailable();
+        final gate = sourceGate(
+          current,
+          corpus,
+          dependencies: dependencies.values,
+          sourceDependencies: sourceDependencies,
+          private: initial.showPrivate,
+        );
+        if (gate == QuerySourceGate.stop) throw const QueryScopeUnavailable();
+        if (gate == QuerySourceGate.skip) {
+          incomplete = skipped = true;
+          break;
         }
         final end = batch != null
             ? document.text.length
@@ -555,6 +559,7 @@ class QueryAnswerBuilder {
         }
         if (end == document.text.length) break;
       }
+      if (skipped) continue;
       checked++;
       if (!chat.scope.hasHome || corpus.homeIds.contains(source.id)) {
         homeChecked++;
@@ -694,15 +699,14 @@ class QueryAnswerBuilder {
       onAnswerText: onAnswerText,
       onFirstToken: onFirstSynthesisToken,
     );
-    final text = result['answer'];
-    if (text is! String ||
-        text.trim().isEmpty ||
-        RegExp(r'\[(\d+)\]').allMatches(text).any((m) {
-          final number = int.parse(m.group(1)!);
-          return number < 1 || number > evidence.length;
-        })) {
-      throw const FormatException('Invalid query answer');
-    }
+    final drafted = result['answer'];
+    // A citation naming no evidence is dropped, not the whole answer.
+    final text = drafted is String
+        ? withKnownCitations(drafted, evidence.length)
+        : '';
+    if (text.isEmpty) throw const FormatException('Invalid query answer');
+    // The draft on screen showed the dropped citation: it shows the answer.
+    if (text != drafted) onAnswerText?.call(text);
     final last = await access.load(dependencies.keys);
     cancellation.check();
     if (!last.allowsContent(

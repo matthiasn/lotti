@@ -1,4 +1,6 @@
+import 'package:lotti/classes/agents/agent_config.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
+import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
@@ -27,11 +29,16 @@ const List<String> frontAgentBuiltInModelIds = [
 
 /// Resolves the front agent's inference route through
 /// [ProfileResolver.resolveStandalone]: an explicit typed setup is
-/// authoritative (including disabled or broken); otherwise the identity's
-/// profile, then the Settings default, then the built-in cheap model
+/// authoritative (including disabled); otherwise the identity's profile,
+/// then the Settings default, then the built-in cheap model
 /// ([frontAgentBuiltInModelIds], in order). No
 /// category step — the front agent spans categories and must not inherit
 /// one of them. Null when no route resolves.
+///
+/// The one exception to an authoritative setup: a profile the user chose
+/// for her that no longer resolves — deleted here or through sync — counts
+/// as no choice, so she follows the Settings default again rather than
+/// falling silent.
 Future<FrontModelResolution?> resolveFrontAgentModel({
   required AgentIdentityEntity agentIdentity,
   required AiConfigRepository aiConfigRepository,
@@ -41,15 +48,13 @@ Future<FrontModelResolution?> resolveFrontAgentModel({
     aiConfigRepository: aiConfigRepository,
     domainLogger: domainLogger,
   );
-  late ResolvedAgentSetup setup;
-  for (final builtIn in frontAgentBuiltInModelIds) {
-    setup = await resolver.resolveStandalone(
-      agentConfig: agentIdentity.config,
-      legacyModelId: builtIn,
+  final config = agentIdentity.config;
+  var setup = await _resolveStandalone(resolver, config);
+  if (setup.profile == null && _isUserChoice(config.inferenceSetup)) {
+    setup = await _resolveStandalone(
+      resolver,
+      config.copyWith(profileId: null, inferenceSetup: null),
     );
-    // Only the built-in step tries the next provider: an explicit setup, a
-    // profile or the Settings default answers the same for every id.
-    if (setup.profile != null) break;
   }
   final profile = setup.profile;
   if (profile == null) return null;
@@ -60,3 +65,29 @@ Future<FrontModelResolution?> resolveFrontAgentModel({
     geminiThinkingMode: profile.thinkingModel?.geminiThinkingMode,
   );
 }
+
+/// [ProfileResolver.resolveStandalone] over each built-in model in turn.
+Future<ResolvedAgentSetup> _resolveStandalone(
+  ProfileResolver resolver,
+  AgentConfig config,
+) async {
+  late ResolvedAgentSetup setup;
+  for (final builtIn in frontAgentBuiltInModelIds) {
+    setup = await resolver.resolveStandalone(
+      agentConfig: config,
+      legacyModelId: builtIn,
+    );
+    // Only the built-in step tries the next provider: an explicit setup, a
+    // profile or the Settings default answers the same for every id.
+    if (setup.profile != null) break;
+  }
+  return setup;
+}
+
+/// A profile the user chose for her (`FrontAgentService.chooseProfile`),
+/// as opposed to a deliberately disabled setup.
+bool _isUserChoice(AgentInferenceSetup? setup) =>
+    setup != null &&
+    setup.mode == AgentInferenceSetupMode.configured &&
+    setup.origin == AgentInferenceSetupOrigin.user &&
+    setup.thinkingModelOverrideId == null;

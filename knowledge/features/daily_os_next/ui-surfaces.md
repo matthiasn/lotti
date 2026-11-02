@@ -187,8 +187,8 @@ stateDiagram-v2
 
 ## The day briefing
 
-With `enable_companion` and `enable_ai_summary_tts` on and a device voice,
-the [companion](../companion.md) leads the header's actions as a bust,
+With `enable_companion` and `enable_ai_summary_tts` on and a voice to speak
+with, the [companion](../companion.md) leads the header's actions as a bust,
 `ControlSizes.avatar` square (`DayBriefingCompanion`,
 `ui/widgets/day_briefing_companion.dart`). Off, she takes no room, so the
 header lays out exactly as before.
@@ -208,6 +208,13 @@ header lays out exactly as before.
   voice ignores `speak` while any utterance is busy, so a tap while another
   one is (another day's briefing, a task summary) stops that one first and
   then briefs.
+- **Her voice is the planner's.** The Daily OS planner's resolved setup
+  (`agentResolvedSetupProvider(dailyOsPlannerAgentId)`, the profile the
+  planner's setup sheet chooses) gives her its read-aloud model in the app's
+  language, through `TtsCloudRoute.fromProfile`; a profile that names none
+  leaves the on-device voice. A cloud voice needs no on-device engine, so she
+  is shown where either voice exists. The words leave the device only on the
+  tap, as every read-aloud does ([which voice speaks](../tts.md#which-voice-speaks)).
 
 ## Tracked time
 

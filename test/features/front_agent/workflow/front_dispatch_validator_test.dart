@@ -77,8 +77,9 @@ void main() {
       expect(validate(['text']).error, contains('segment 0 is not an object'));
     });
 
-    test('rejects non-integer offsets', () {
-      final bad = segment(span: gardenSpan)..['start'] = '0';
+    test('rejects non-integer offsets when the text is not in the message', () {
+      final bad = segment(span: gardenSpan, text: 'Buy a hose')
+        ..['start'] = '0';
       expect(validate([bad]).error, contains('integer start and end'));
     });
   });
@@ -100,7 +101,7 @@ void main() {
     test('must lie inside the input and be non-empty', () {
       expect(validate([segment(span: (0, 0))]).error, contains('inside'));
       expect(
-        validate([segment(span: (40, 99), text: 'Friday.')]).error,
+        validate([segment(span: (40, 99), text: 'Saturday.')]).error,
         contains('inside'),
       );
     });
@@ -119,6 +120,90 @@ void main() {
       ]);
       expect(result.dispatch, isNull);
       expect(result.error, contains('segment 1'));
+    });
+  });
+
+  group('miscounted offsets, verbatim words', () {
+    (int, int) placed(FrontDispatchValidation result, int i) => (
+      result.dispatch!.segments[i].start,
+      result.dispatch!.segments[i].end,
+    );
+
+    test('a span ending short of the words is placed by them', () {
+      // As Mistral Large 4 did: a 63-character message given as [0, 54).
+      final result = validate([
+        segment(span: (0, 20), text: 'Buy the hose for the garden.'),
+      ]);
+      expect(result.error, isNull);
+      expect(placed(result, 0), gardenSpan);
+    });
+
+    test('a span running past the message is placed by its words', () {
+      // And then as [0, 64): one past the end.
+      final result = validate([
+        segment(span: gardenSpan),
+        segment(
+          span: (29, 51),
+          text: 'Ask Pip about Friday.',
+          kind: 'person',
+          id: 'pip',
+        ),
+      ]);
+      expect(result.error, isNull);
+      expect(placed(result, 1), pipSpan);
+    });
+
+    test('words with no offsets at all are placed by them', () {
+      final bare = segment(span: gardenSpan)
+        ..remove('start')
+        ..remove('end');
+      final result = validate([bare]);
+      expect(result.error, isNull);
+      expect(placed(result, 0), gardenSpan);
+    });
+
+    test('offsets that agree with the words are kept, so a phrase said '
+        'twice is the one the model meant', () {
+      const twice = 'Call mom. Call mom.';
+      final result = validateFrontDispatch(
+        args: {
+          'segments': [
+            {
+              'start': 10,
+              'end': 19,
+              'text': 'Call mom.',
+              'intent': 'instruction',
+              'destination': {'kind': 'task', 'id': 'garden'},
+              'confidence': 0.9,
+            },
+          ],
+        },
+        input: twice,
+        destinationExists: exists,
+      );
+      expect(result.error, isNull);
+      final routed = result.dispatch!.segments.firstWhere(
+        (s) => s.destinationId == 'garden',
+      );
+      expect((routed.start, routed.end), (10, 19));
+    });
+
+    test('words placed by their text still leave nothing dropped: the '
+        'skipped part becomes its own unrouted segment', () {
+      final result = validate([
+        segment(
+          span: (40, 60),
+          text: 'Ask Pip about Friday.',
+          kind: 'person',
+          id: 'pip',
+        ),
+      ]);
+      expect(result.error, isNull);
+      final texts = result.dispatch!.segments
+          .map((s) => s.text.trim())
+          .toList();
+      expect(texts, contains('Buy the hose for the garden.'));
+      expect(texts, contains('Ask Pip about Friday.'));
     });
   });
 
