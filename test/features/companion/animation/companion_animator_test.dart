@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/companion/animation/companion_animator.dart';
 import 'package:lotti/features/companion/animation/speech_envelope.dart';
@@ -82,6 +84,70 @@ void main() {
     _run(a, 3);
     expect(a.gesture, isNull);
     expect(a.step(_dt).right.wrist.dy, greaterThan(-80));
+  });
+
+  test('a held gesture bounces once, then stands still', () {
+    // A goal on track: a raised thumb held over a bright face, both of
+    // which bounce.
+    final a = CompanionAnimator()..hold(GestureName.thumbs);
+    expect(a.held, GestureName.thumbs);
+    final first = _run(a, 1.2, mood: CompanionMood.bright);
+    expect(first.map((p) => p.lift).reduce(math.max), greaterThan(1));
+
+    // Once settled she keeps the thumb up without bobbing: replayed at
+    // every hold, her upper body went on lifting by over two units three
+    // times a second for as long as the card was open.
+    _run(a, 3, mood: CompanionMood.bright);
+    final settled = _run(a, 3, mood: CompanionMood.bright);
+    expect(a.gesture, GestureName.thumbs);
+    expect(settled.map((p) => p.lift).reduce(math.max), lessThan(0.05));
+    final ready = _run(CompanionAnimator(), 3).last.right.wrist.dy;
+    expect(settled.every((p) => p.right.wrist.dy < ready - 30), isTrue);
+
+    // Let go, she stands at ready.
+    a.hold(null);
+    _run(a, 3);
+    expect(a.gesture, isNull);
+  });
+
+  test('a held gesture with phases stays in its last phase', () {
+    final a = CompanionAnimator()..hold(GestureName.apart);
+    final early = _run(a, 0.25).last.left.wrist.dx;
+    _run(a, 2);
+    final xs = _run(a, 4).map((p) => p.left.wrist.dx).toList();
+    // Spread apart and kept there, not closed again at every hold.
+    expect(xs.reduce(math.max), lessThan(early - 20));
+    expect(xs.reduce(math.max) - xs.reduce(math.min), lessThan(8));
+  });
+
+  test('a held wave waves once, then keeps its hand up and still', () {
+    final a = CompanionAnimator()..hold(GestureName.wave);
+    double spread(List<CompanionPose> poses) {
+      final xs = poses.map((p) => p.right.wrist.dx);
+      return xs.reduce(math.max) - xs.reduce(math.min);
+    }
+
+    // Waving: the hand swings to and fro.
+    final waving = _run(a, 1.5);
+    _run(a, 3);
+    final settled = _run(a, 2);
+    expect(spread(waving.skip(30).toList()), greaterThan(4));
+    // Settled: still up, no longer waving.
+    expect(spread(settled), lessThan(spread(waving.skip(30).toList()) / 2));
+    final ready = _run(CompanionAnimator(), 3).last.right.wrist.dy;
+    expect(settled.every((p) => p.right.wrist.dy < ready - 30), isTrue);
+  });
+
+  test('a gesture played over a hold hands back to it', () {
+    final a = CompanionAnimator()..hold(GestureName.listen);
+    _run(a, 2);
+    a.play(GestureName.wave);
+    expect(a.gesture, GestureName.wave);
+    _run(a, 4);
+    expect(a.gesture, GestureName.listen);
+    // Holding the same gesture again does not start it over.
+    a.hold(GestureName.listen);
+    expect(_run(a, 1).every((p) => p.lift < 0.05), isTrue);
   });
 
   test('a hand-to-face gesture draws the hand over the face', () {

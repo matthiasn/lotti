@@ -81,6 +81,7 @@ class CompanionAnimator {
   Offset _glance = Offset.zero;
   GestureName? _gesture;
   double _gestureStart = 0;
+  GestureName? _held;
   CompanionFlourish? _flourish;
   double _flourishStart = 0;
   double _nextTalkGesture = 0;
@@ -94,12 +95,32 @@ class CompanionAnimator {
   double get time => _t;
 
   /// The gesture in play, or null when she stands at ready.
-  GestureName? get gesture => _gestureAt()?.$1;
+  GestureName? get gesture => _gestureAt()?.name;
 
-  /// Starts [name] now; it relaxes back to ready after its hold.
+  /// Starts [name] now; it relaxes back to ready after its hold — or, while
+  /// a gesture is [held], back into that one.
   void play(GestureName name) {
     _gesture = name;
     _gestureStart = _t;
+  }
+
+  /// The gesture she keeps up, or null while she keeps none.
+  GestureName? get held => _held;
+
+  /// Keeps [name] up until another call replaces it; null lets her stand at
+  /// ready again.
+  ///
+  /// A newly held gesture plays at once, its bounce of joy and all. Once its
+  /// own hold has run she stays in its settled phase, still: no replay, no
+  /// waving or wagging, and no bounce from it or from her mood. Replayed at every hold, a verdict
+  /// kept up on a card for minutes bobbed her upper body three times a
+  /// second and started its phases over every second or so. A gesture
+  /// played over it — a reaction while she reads — runs its course and
+  /// hands back to the hold.
+  void hold(GestureName? name) {
+    if (name == _held) return;
+    _held = name;
+    if (name != null) play(name);
   }
 
   /// Blinks now, as at the end of a phrase.
@@ -118,16 +139,32 @@ class CompanionAnimator {
     _flourishStart = _t;
   }
 
-  (GestureName, CompanionGesture)? _gestureAt() {
+  /// The gesture in play and its phase now; `steady` while the [held]
+  /// gesture stands settled after its first play.
+  ({GestureName name, CompanionGesture phase, bool steady})? _gestureAt() {
     final g = _gesture;
-    if (g == null) return null;
-    final since = _t - _gestureStart;
-    if (since >= g.gesture.hold) return null;
-    var phase = g.gesture;
-    for (final (delay, next) in g.gesture.then) {
+    if (g != null) {
+      final since = _t - _gestureStart;
+      if (since < g.gesture.hold) {
+        return (name: g, phase: _phaseAt(g.gesture, since), steady: false);
+      }
+    }
+    final held = _held;
+    if (held == null) return null;
+    return (
+      name: held,
+      phase: _phaseAt(held.gesture, held.gesture.hold),
+      steady: true,
+    );
+  }
+
+  /// The phase of [gesture] [since] seconds after it started.
+  static CompanionGesture _phaseAt(CompanionGesture gesture, double since) {
+    var phase = gesture;
+    for (final (delay, next) in gesture.then) {
       if (since >= delay) phase = next;
     }
-    return (g, phase);
+    return phase;
   }
 
   /// The ear flick now: a quick twitch out and a slower settle, signed by
@@ -212,7 +249,7 @@ class CompanionAnimator {
     }
 
     final current = _gestureAt();
-    final g = current?.$2 ?? CompanionGesture.ready;
+    final g = current?.phase ?? CompanionGesture.ready;
     // The flourish and how strongly it shows this frame. Without one, any
     // flourish at zero strength adds nothing, which keeps the sums below
     // free of null checks; one that has faded is at zero by its envelope.
@@ -224,7 +261,12 @@ class CompanionAnimator {
     if (lookAt == null && faceGaze != null) {
       gaze = Offset.lerp(gaze, Offset(faceGaze.$1, faceGaze.$2), fe)!;
     }
-    final bounceEnv = s['bounce']!.step(g.bounce + mood.bounce, dt);
+    // A held gesture, settled, stands still: its bounce eases out.
+    final steady = current?.steady ?? false;
+    final bounceEnv = s['bounce']!.step(
+      steady ? 0 : g.bounce + mood.bounce,
+      dt,
+    );
     // Up and down three times a second, smoothly — an |sin| bob reversed
     // with a jolt at every landing — and in the upper body only: through the
     // hips, a bob bent and stretched her legs three times a second.
@@ -289,14 +331,14 @@ class CompanionAnimator {
       mouth: mouth,
       left: _left.step(
         g.left ?? CompanionGesture.readyLeft,
-        g.oscLeft,
+        steady ? null : g.oscLeft,
         t,
         dt,
         beatKick: g.left == null ? kick : 0,
       ),
       right: _right.step(
         g.right ?? CompanionGesture.readyRight,
-        g.oscRight,
+        steady ? null : g.oscRight,
         t,
         dt,
         beatKick: g.right == null ? kick : 0,

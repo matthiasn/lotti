@@ -153,6 +153,7 @@ import 'package:lotti/features/goals/service/goal_checkin_digest_service.dart';
 import 'package:lotti/features/goals/service/goal_checkin_notifier.dart';
 import 'package:lotti/features/goals/service/goal_habit_completion_service.dart';
 import 'package:lotti/features/goals/service/goal_mirror_service.dart';
+import 'package:lotti/features/goals/service/goal_observation_digest_service.dart';
 import 'package:lotti/features/habits/repository/habits_repository.dart';
 import 'package:lotti/features/habits/service/habit_auto_completion_notifier.dart';
 import 'package:lotti/features/habits/service/habit_auto_completion_service.dart';
@@ -1253,6 +1254,9 @@ class MockGoalCheckInCompactor extends Mock implements GoalCheckInCompactor {}
 
 class MockGoalCheckInDigestService extends Mock
     implements GoalCheckInDigestService {}
+
+class MockGoalObservationDigestService extends Mock
+    implements GoalObservationDigestService {}
 
 class MockAgentRepository extends Mock implements AgentRepository {
   /// The stored-version read (`getEntityIncludingDeleted`, which the sync

@@ -10,9 +10,20 @@ void main() {
     // the same bound; this pins it for the production import path. The
     // ceiling is a discipline rather than a model limit — moved to 3.6k with
     // the standing-report rule, which has to hold in every language and so
-    // cannot live in the per-wake FACTS block, and to 3.9k with the
-    // user-voice rule, for the same reason.
-    expect(goalAgentSystemPrompt.length, lessThan(3900));
+    // cannot live in the per-wake FACTS block, to 3.9k with the user-voice
+    // rule, for the same reason, and to 4.0k with the memory step: told only
+    // what observations were NOT for, goal agents recorded next to none.
+    expect(goalAgentSystemPrompt.length, lessThan(4000));
+    expect(
+      goalAgentSystemPrompt,
+      contains(
+        'Memory: when a message or sinceLastReport userVoice shows something '
+        'new',
+      ),
+    );
+    // A check-in carried into later wakes must not be noted again.
+    expect(goalAgentSystemPrompt, contains('not in observations'));
+    expect(goalAgentSystemPrompt, isNot(contains('only for novel facts')));
     expect(
       goalAgentSystemPrompt,
       contains("The\nreport's reflection engages with them"),

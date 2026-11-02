@@ -366,7 +366,13 @@ class GoalAgentWorkflow with AgentErrorLogging {
     );
     final checkInSummaries = reconciled.summaries;
 
-    final observations = await _recentObservationFacts(agentId);
+    final observations = await _observationMemory(
+      agentId: agentId,
+      goalStatement: version.statement,
+      resolved: resolved,
+      allowInference: pendingUserMessage == null,
+      weight: checkInWeight,
+    );
     // What the user said, compacted. Bounded by tokens rather than by count,
     // so a talkative fortnight cannot push the deterministic FACTS out of the
     // wake's budget.
@@ -950,10 +956,6 @@ class GoalAgentWorkflow with AgentErrorLogging {
       return const {};
     }
   }
-
-  Future<List<GoalObservationFact>> _recentObservationFacts(
-    String agentId,
-  ) => goalObservationFacts(_repository, agentId);
 
   /// Visible for tests: the transactional output write is exercised
   /// directly to pin the ad-state guards (dismissal-terminal defense,

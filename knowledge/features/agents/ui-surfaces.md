@@ -741,7 +741,11 @@ box between those tiles and Material would trigger a framework assertion.
 
 `AgentInternalsBody` is the shared tabbed body — **Stats / Reports /
 Conversations / Observations / Activity** — used both inside the panel and as the
-body of the standalone `AgentDetailPage`. Each tab is owned by an existing
+body of the standalone `AgentDetailPage`. The Observations tab reads
+`agentObservationMessagesProvider`, which asks the repository for observation
+messages by kind (`getMessagesByKind`), so the limit of 200 counts
+observations: filtering the newest 200 messages of every kind let a goal
+agent's own wakes push its rarer notes out of view. Each tab is owned by an existing
 component plus a Stats card wrapping the agent's template, profile, controls and
 current `AgentStateEntity`. There is no panel-specific logic; both consumers see
 the same tabs and behaviour. The Stats tab's token-usage heading carries the

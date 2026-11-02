@@ -53,6 +53,11 @@ typedef GoalObservationFact = ({
   bool critical,
 });
 
+/// One finished month of the agent's older observations, condensed
+/// (`GoalObservationDigestService`): the month as `YYYY-MM`, how many notes
+/// it stands for, and the digest.
+typedef GoalObservationDigestFact = ({String month, int notes, String text});
+
 /// Renders the deterministic FACTS block for one Phase B wake.
 ///
 /// The output shape is EXACTLY the one the eval fixtures validated
@@ -72,6 +77,7 @@ class GoalFactsRenderer {
     required List<GoalNudgeEntity> nudges,
     required DateTime evaluationReference,
     List<GoalObservationFact> observations = const [],
+    List<GoalObservationDigestFact> observationDigests = const [],
     List<String> unansweredUserMessages = const [],
     List<Map<String, Object>> recentDialogue = const [],
     List<Map<String, Object?>> userVoice = const [],
@@ -266,6 +272,17 @@ class GoalFactsRenderer {
             if (observation.critical) 'critical': true,
           },
       ],
+      // The agent's older notes, a digest per finished month, newest first:
+      // its long memory of the person beyond the notes listed above.
+      if (observationDigests.isNotEmpty)
+        'observationDigests': [
+          for (final digest in observationDigests)
+            {
+              'month': digest.month,
+              'notes': digest.notes,
+              'text': digest.text,
+            },
+        ],
       // What the USER said, compacted — never their raw transcripts. Named to
       // make the distinction unmistakable: `observations` are the agent's own
       // notes, this is the person talking.

@@ -1069,72 +1069,51 @@ void main() {
     });
 
     group('agentObservationMessagesProvider', () {
-      test('returns only observation messages', () async {
+      test('asks for observations by kind, so a busy agent still shows '
+          'its older ones', () async {
         final obs = makeTestMessage(
           id: 'obs-1',
           kind: AgentMessageKind.observation,
           createdAt: DateTime(2024, 3, 15, 10),
         );
-        final thought = makeTestMessage(
-          id: 'thought-1',
-          createdAt: DateTime(2024, 3, 15, 11),
-        );
-        final action = makeTestMessage(
-          id: 'action-1',
-          kind: AgentMessageKind.action,
-          createdAt: DateTime(2024, 3, 15, 12),
-        );
-        final obs2 = makeTestMessage(
-          id: 'obs-2',
-          kind: AgentMessageKind.observation,
-          createdAt: DateTime(2024, 3, 15, 13),
-        );
-
+        // Two hundred newer messages of other kinds: the newest window of
+        // all messages holds no observation at all.
         when(
           () => mockRepository.getEntitiesByAgentId(
             kTestAgentId,
             type: 'agentMessage',
             limit: 200,
           ),
-        ).thenAnswer((_) async => [obs, thought, action, obs2]);
+        ).thenAnswer(
+          (_) async => [
+            for (var i = 0; i < 200; i++)
+              makeTestMessage(
+                id: 'thought-$i',
+                createdAt: DateTime(2024, 3, 16).add(Duration(minutes: i)),
+              ),
+          ],
+        );
+        when(
+          () => mockRepository.getMessagesByKind(
+            kTestAgentId,
+            AgentMessageKind.observation,
+            limit: 200,
+          ),
+        ).thenAnswer((_) async => [obs]);
 
         final container = createContainer();
         final result = await container.read(
           agentObservationMessagesProvider(kTestAgentId).future,
         );
 
-        expect(result, hasLength(2));
-        expect((result[0] as AgentMessageEntity).id, 'obs-1');
-        expect((result[1] as AgentMessageEntity).id, 'obs-2');
+        expect(result.map((m) => m.id), ['obs-1']);
       });
 
       test('returns empty list when no observations exist', () async {
-        final thought = makeTestMessage(
-          id: 'thought-1',
-          createdAt: DateTime(2024, 3, 15, 10),
-        );
-
         when(
-          () => mockRepository.getEntitiesByAgentId(
+          () => mockRepository.getMessagesByKind(
             kTestAgentId,
-            type: 'agentMessage',
-            limit: 200,
-          ),
-        ).thenAnswer((_) async => [thought]);
-
-        final container = createContainer();
-        final result = await container.read(
-          agentObservationMessagesProvider(kTestAgentId).future,
-        );
-
-        expect(result, isEmpty);
-      });
-
-      test('returns empty list when no messages exist at all', () async {
-        when(
-          () => mockRepository.getEntitiesByAgentId(
-            kTestAgentId,
-            type: 'agentMessage',
+            AgentMessageKind.observation,
             limit: 200,
           ),
         ).thenAnswer((_) async => []);
@@ -1145,30 +1124,6 @@ void main() {
         );
 
         expect(result, isEmpty);
-      });
-
-      test('filters out non-AgentMessageEntity types', () async {
-        final obs = makeTestMessage(
-          id: 'obs-1',
-          kind: AgentMessageKind.observation,
-        );
-        final report = makeTestReport(id: 'report-1');
-
-        when(
-          () => mockRepository.getEntitiesByAgentId(
-            kTestAgentId,
-            type: 'agentMessage',
-            limit: 200,
-          ),
-        ).thenAnswer((_) async => [obs, report]);
-
-        final container = createContainer();
-        final result = await container.read(
-          agentObservationMessagesProvider(kTestAgentId).future,
-        );
-
-        expect(result, hasLength(1));
-        expect((result[0] as AgentMessageEntity).id, 'obs-1');
       });
     });
 

@@ -255,3 +255,10 @@ final agentSeedInstant = DateTime.utc(1970);
 /// same row, so the user's removal of it removes every device's seed.
 String seededSoulAssignmentLinkId(String templateId) =>
     'soul_assignment_seed:$templateId';
+
+/// Tool name marking a goal agent's stored month of observations (ADR 0156).
+///
+/// Here rather than beside the digest service because the observation
+/// retention sweep in `lib/database` reads it: a goal agent's observation may
+/// only be pruned once a stored digest lists it.
+const goalObservationDigestToolName = 'goal_observation_digest';

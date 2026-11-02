@@ -46,6 +46,7 @@ import 'package:lotti/features/agents/projection/input_capture.dart';
 import 'package:lotti/features/agents/service/suggestion_retraction_service.dart';
 import 'package:lotti/features/agents/wake/wake_audit.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
+import 'package:lotti/features/agents/workflow/agent_observations.dart';
 import 'package:lotti/features/ai/database/embedding_register.dart';
 import 'package:lotti/features/ai/database/objectbox_embedding_entity.dart';
 import 'package:lotti/features/ai/embedding_sync/synced_embedding_sink.dart';
@@ -374,6 +375,7 @@ void registerAllFallbackValues() {
   );
   registerFallbackValue(fallbackRelationshipData);
   registerFallbackValue(GoalCheckInWeight.context);
+  registerFallbackValue(<RecalledObservation>[]);
   registerFallbackValue(fallbackCheckInEntry);
   registerFallbackValue(fallbackCheckInData);
   registerFallbackValue(fallbackSyncMessage);

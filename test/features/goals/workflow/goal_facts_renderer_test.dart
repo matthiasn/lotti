@@ -132,6 +132,7 @@ void main() {
     GoalCriterion? criteria,
     DateTime? evaluationReference,
     List<GoalObservationFact> observations = const [],
+    List<GoalObservationDigestFact> observationDigests = const [],
     List<String> unansweredUserMessages = const [],
     List<Map<String, Object>> recentDialogue = const [],
     Map<String, String> criterionNames = const {},
@@ -147,6 +148,7 @@ void main() {
         nudges: nudges,
         evaluationReference: evaluationReference ?? now,
         observations: observations,
+        observationDigests: observationDigests,
         unansweredUserMessages: unansweredUserMessages,
         recentDialogue: recentDialogue,
         criterionNames: criterionNames,
@@ -229,6 +231,27 @@ void main() {
     );
     final evaluation = json['evaluation'] as Map<String, dynamic>;
     expect(evaluation['referenceIsCurrentDay'], isFalse);
+  });
+
+  test('older observations ride beside the recent ones as month digests, '
+      'and only when there are any', () {
+    expect(renderedJson().containsKey('observationDigests'), isFalse);
+
+    final json = renderedJson(
+      observationDigests: const [
+        (month: '2026-07', notes: 9, text: 'July: mornings were the problem.'),
+        (month: '2026-06', notes: 4, text: 'June: started journaling.'),
+      ],
+    );
+
+    expect(json['observationDigests'], [
+      {
+        'month': '2026-07',
+        'notes': 9,
+        'text': 'July: mornings were the problem.',
+      },
+      {'month': '2026-06', 'notes': 4, 'text': 'June: started journaling.'},
+    ]);
   });
 
   test('renders dated observations and real pending dialogue context', () {

@@ -244,7 +244,7 @@ extension _GoalWakePhases on GoalAgentWorkflow {
     required GoalWakeDerivation derivation,
     required List<GoalNudgeEntity> nudges,
     required DateTime reference,
-    required List<GoalObservationFact> observations,
+    required GoalObservationMemory observations,
     required String? pendingUserMessage,
     required List<GoalChatHistoryEntry> recentDialogue,
     required List<Map<String, Object?>> userVoice,
@@ -263,7 +263,8 @@ extension _GoalWakePhases on GoalAgentWorkflow {
       priorRegisters: derivation.priors,
       nudges: nudges,
       evaluationReference: reference,
-      observations: observations,
+      observations: observations.recent,
+      observationDigests: observations.digests,
       unansweredUserMessages: [?pendingUserMessage],
       recentDialogue: [
         for (final entry in recentDialogue)

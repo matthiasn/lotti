@@ -271,6 +271,10 @@ class _AgentReadCardState extends ConsumerState<_AgentReadCard> {
   bool _automationBusy = false;
   bool _cancelledManually = false;
 
+  /// Whether the report's "Show more" is open: the body shows the sections
+  /// behind it, and the read-aloud control speaks them.
+  bool _reportExpanded = false;
+
   @override
   void dispose() {
     _ageTick?.cancel();
@@ -424,17 +428,15 @@ class _AgentReadCardState extends ConsumerState<_AgentReadCard> {
     // The companion reads this report aloud under its own utterance, and
     // stands in for the badge in the goal's own pose (as on the Goals list).
     final sourceId = goalReportSpeechSourceId(widget.agentId);
-    final spokenText =
-        [
-              report?.tldr,
-              report?.content,
-              oneLiner,
-            ]
-            .map((text) => text?.trim() ?? '')
-            .firstWhere(
-              (text) => text.isNotEmpty,
-              orElse: () => '',
-            );
+    // The whole report the card shows, not its first paragraph: the
+    // summary, what it made of the check-ins, what comes next, and — while
+    // Show more is open — the sections behind it.
+    final spokenText = goalReportSpokenText(
+      report: report,
+      fallback: oneLiner,
+      expanded: _reportExpanded,
+      messages: messages,
+    );
     // Goals carry no language of their own: the app's language picks the
     // voice of the goal agent's read-aloud model.
     final cloudRoute = TtsCloudRoute.fromProfile(
@@ -545,6 +547,9 @@ class _AgentReadCardState extends ConsumerState<_AgentReadCard> {
                           ? messages.goalDetailHealthUnavailable
                           : messages.goalDetailNoReport),
                   fallbackMuted: oneLiner == null,
+                  expanded: _reportExpanded,
+                  onToggle: () =>
+                      setState(() => _reportExpanded = !_reportExpanded),
                 ),
                 if (updateFailure != null) ...[
                   SizedBox(height: tokens.spacing.step3),
@@ -698,13 +703,41 @@ class _GoalBannerShellReturnCountdownState
   }
 }
 
-/// Width of the desktop check-in rail.
-const double kGoalTimelineRailWidth = 360;
+/// The widest the desktop check-in rail gets until it is dragged: an
+/// expanded check-in's transcript then sets about as wide as a phone's, and
+/// the dashboard keeps its full reading measure beside it on a wide window.
+const double kGoalTimelineRailMaxWidth = 560;
+
+/// The share of the pane the rail takes between those bounds.
+const double kGoalTimelineRailPaneShare = 0.4;
 
 /// Below this much room for the DASHBOARD beside it, the rail is dropped and
 /// the phone treatment runs inside the single column instead — the same fold
 /// guard the chat drawer applies.
 const double kGoalTimelineRailFoldWidth = 640;
+
+/// How wide the check-in rail is beside a pane [paneWidth] wide: the
+/// [dragged] width the person chose, or else one sized from the pane.
+///
+/// Undragged, it grows with the pane, a [kGoalTimelineRailPaneShare] of it
+/// between [kGoalTimelineRailMinWidth] and [kGoalTimelineRailMaxWidth]. A
+/// fixed 360 left an expanded check-in's words narrower than on a phone —
+/// the card, its padding and the timeline's tile column take a third of it
+/// — while a wide window spent the room the dashboard's measure left over on
+/// empty margins either side of it. Dragged, it may grow to
+/// [kGoalTimelineRailDragMaxWidth]. Either way it never leaves the dashboard
+/// less than [kGoalTimelineRailFoldWidth] beside it and its divider.
+double goalTimelineRailWidth(double paneWidth, {double? dragged}) => math
+    .min(
+      dragged ?? paneWidth * kGoalTimelineRailPaneShare,
+      paneWidth - kGoalTimelineRailFoldWidth - ResizableDivider.layoutWidth,
+    )
+    .clamp(
+      kGoalTimelineRailMinWidth,
+      dragged == null
+          ? kGoalTimelineRailMaxWidth
+          : kGoalTimelineRailDragMaxWidth,
+    );
 
 /// The desktop check-in rail: its own scroll axis beside the dashboard, so a
 /// long history never drags the cards with it.
