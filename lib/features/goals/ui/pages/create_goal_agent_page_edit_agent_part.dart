@@ -139,13 +139,28 @@ extension _GoalEditLeave on _CreateGoalAgentPageState {
     ].join('\u0000');
   }
 
-  /// Takes the edit's starting point once the goal and the catalogs it is
-  /// read against have loaded, so their arrival is never mistaken for an
-  /// edit.
-  void _settleEditBaseline({required bool loaded}) {
-    if (!_editing || !_initialized || !loaded) return;
-    if (!_measurableDefinitionsLoaded) return;
-    _editBaseline ??= _editFingerprint();
+  /// Keeps the edit's starting point. It is taken as soon as the goal is on
+  /// the form — the fields are editable from then on — and moved along with
+  /// what the app fills in by itself afterwards (the goal row's category,
+  /// catalog clean-ups as habits and measurables load), but only while the
+  /// form was untouched on the previous build: every edit rebuilds the page,
+  /// so a change typed before loading finished is seen first and stays a
+  /// change.
+  void _settleEditBaseline({required bool habitsLoaded}) {
+    if (!_editing || !_initialized) return;
+    final loading = [
+      _categoryInitialized,
+      habitsLoaded,
+      _measurableDefinitionsLoaded,
+    ].join(',');
+    final now = _editFingerprint();
+    final baseline = _editBaseline;
+    if (baseline == null ||
+        (loading != _editLoadingSeen && _editLastSeen == baseline)) {
+      _editBaseline = now;
+    }
+    _editLoadingSeen = loading;
+    _editLastSeen = now;
   }
 
   bool get _editLeaveNeedsConfirm =>

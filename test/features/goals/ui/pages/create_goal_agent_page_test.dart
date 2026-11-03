@@ -6451,6 +6451,81 @@ void main() {
       expect(navigated, ['/goals/details/goal-1']);
     });
 
+    Future<void> pumpEditWith(
+      WidgetTester tester, {
+      required Stream<List<MeasurableDataType>> measurables,
+      required Future<String?> category,
+    }) async {
+      navigated = <String>[];
+      beamToNamedOverride = navigated.add;
+      addTearDown(() => beamToNamedOverride = null);
+      tester.view.physicalSize = const Size(900, 2200);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const CreateGoalAgentPage(agentId: 'goal-1'),
+          overrides: [
+            ...overrides(editSpec: _spec()),
+            measurableDataTypesStreamProvider.overrideWith(
+              (ref) => measurables,
+            ),
+            goalCategoryIdProvider('goal-1').overrideWith((ref) => category),
+          ],
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+    }
+
+    testWidgets(
+      'an edit typed before the catalogs load is still an edit once they '
+      'arrive',
+      (tester) async {
+        final measurables = StreamController<List<MeasurableDataType>>();
+        addTearDown(measurables.close);
+        await pumpEditWith(
+          tester,
+          measurables: measurables.stream,
+          category: Future.value('cat-1'),
+        );
+
+        await tester.enterText(
+          find.byKey(const ValueKey('goal-form-title-mapping')),
+          'Weekly movement, gently',
+        );
+        await tester.pump();
+        measurables.add(const []);
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byKey(const ValueKey('goal-form-cancel')));
+        await tester.pumpAndSettle();
+        expect(find.text('Discard changes'), findsOneWidget);
+        expect(navigated, isEmpty);
+      },
+    );
+
+    testWidgets(
+      "the goal row's category arriving late is no edit of the user's",
+      (tester) async {
+        final category = Completer<String?>();
+        await pumpEditWith(
+          tester,
+          measurables: Stream.value(const []),
+          category: category.future,
+        );
+        await tester.pumpAndSettle();
+
+        category.complete('cat-1');
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byKey(const ValueKey('goal-form-cancel')));
+        await tester.pumpAndSettle();
+        expect(find.text('Discard changes'), findsNothing);
+        expect(navigated, ['/goals/details/goal-1']);
+      },
+    );
+
     testWidgets('creating has no Cancel: the back button walks the steps', (
       tester,
     ) async {

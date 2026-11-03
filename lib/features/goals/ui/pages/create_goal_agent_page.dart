@@ -130,6 +130,8 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage>
   String? _derivedLabelsFingerprint;
   late String _baseVersionId;
   String? _editBaseline;
+  String? _editLastSeen;
+  String? _editLoadingSeen;
   String? _validation;
 
   /// The wizard as the user actually walks it. Editing is one page: the
@@ -596,7 +598,7 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage>
     }
 
     _removeChoiceMeasurableTargets(_knownChoiceMeasurableIds);
-    _settleEditBaseline(loaded: habitsAsync.hasValue);
+    _settleEditBaseline(habitsLoaded: habitsAsync.hasValue);
 
     final pageTitle = _editing
         ? messages.goalFormEditTitle
