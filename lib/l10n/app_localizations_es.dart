@@ -7376,7 +7376,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get githubConnectSaveFailed =>
-      'GitHub lo aceptó, pero este dispositivo no pudo guardarlo. Inténtalo de nuevo.';
+      'GitHub lo aceptó, pero Lotti no pudo guardarlo en el llavero del dispositivo. Inténtalo de nuevo.';
 
   @override
   String get githubConnectSaveFailedTitle => 'Token no guardado';

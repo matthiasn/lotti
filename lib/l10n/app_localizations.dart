@@ -12392,7 +12392,7 @@ abstract class AppLocalizations {
   /// No description provided for @githubConnectSaveFailed.
   ///
   /// In en, this message translates to:
-  /// **'GitHub accepted it, but this device could not keep it. Try again.'**
+  /// **'GitHub accepted it, but Lotti couldn\'t save it in this device\'s keychain. Try again.'**
   String get githubConnectSaveFailed;
 
   /// No description provided for @githubConnectSaveFailedTitle.

@@ -38,6 +38,7 @@ import 'package:lotti/logic/repositories/journal_repository.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/providers/update_notifications_providers.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/notification_stream.dart';
 import 'package:lotti/services/secure_storage.dart';
 import 'package:openai_dart/openai_dart.dart' show ReasoningEffort;
@@ -509,6 +510,30 @@ final gitHubAccountSyncProvider = Provider<GitHubAccountSync>(
   name: 'gitHubAccountSyncProvider',
 );
 
+/// What connecting a token came to.
+sealed class GitHubConnectOutcome {
+  const GitHubConnectOutcome();
+}
+
+/// GitHub accepted the token and this device stored it, for [login].
+final class GitHubConnected extends GitHubConnectOutcome {
+  const GitHubConnected(this.login);
+
+  final String login;
+}
+
+/// The token was not checked, or GitHub refused it, for the reason [kind].
+final class GitHubConnectRefused extends GitHubConnectOutcome {
+  const GitHubConnectRefused(this.kind);
+
+  final GitHubFailureKind kind;
+}
+
+/// GitHub accepted the token, but this device's keychain would not store it.
+final class GitHubTokenNotStored extends GitHubConnectOutcome {
+  const GitHubTokenNotStored();
+}
+
 /// The GitHub login whose token this device holds, or null.
 ///
 /// The token syncs between the user's devices. One that arrived from another
@@ -561,44 +586,109 @@ class GitHubAccountController extends AsyncNotifier<String?> {
   }
 
   /// Whether a change made here has not reached the outbox yet; it is sent
-  /// again at the next start or the next change.
-  Future<bool> changeOwed() async =>
-      (await ref.read(gitHubTokenStorageProvider).read())?.owed ?? false;
-
-  /// Checks [token] with GitHub, stores it only if GitHub accepts it, and
-  /// sends it to the user's other devices. Returns why it was refused, or
-  /// null once it is stored.
-  Future<GitHubFailureKind?> connect(String token) async {
-    final trimmed = token.trim();
-    if (trimmed.isEmpty) return GitHubFailureKind.noToken;
+  /// again at the next start or the next change. A keychain that cannot be
+  /// read answers no, and is logged.
+  Future<bool> changeOwed() async {
+    final storage = ref.read(gitHubTokenStorageProvider);
+    final logger = ref.read(domainLoggerProvider);
     try {
-      final login = await ref
-          .read(gitHubClientProvider)
-          .fetchViewerLogin(trimmed);
-      await ref
-          .read(gitHubTokenStorageProvider)
-          .save(token: trimmed, login: login);
-      state = AsyncData(login);
-      _announce();
-      await ref.read(gitHubAccountSyncProvider).flushOwed();
-      return null;
-    } on GitHubException catch (e) {
-      return e.kind;
+      return (await storage.read())?.owed ?? false;
+    } on Exception catch (error, stackTrace) {
+      _logKeychainFailure(logger, error, stackTrace, 'changeOwed');
+      return false;
     }
   }
 
-  /// Forgets the token here and on the user's other devices.
-  Future<void> disconnect() async {
-    await ref.read(gitHubTokenStorageProvider).clear();
+  /// Checks [token] with GitHub, stores it only if GitHub accepts it, and
+  /// sends it to the user's other devices. A keychain that refuses the token
+  /// GitHub accepted is logged and answered with [GitHubTokenNotStored].
+  ///
+  /// A token GitHub accepted is stored even when this controller is disposed
+  /// while GitHub is asked; its change then stays owed, and the next start
+  /// sends it.
+  Future<GitHubConnectOutcome> connect(String token) async {
+    final trimmed = token.trim();
+    if (trimmed.isEmpty) {
+      return const GitHubConnectRefused(GitHubFailureKind.noToken);
+    }
+    final client = ref.read(gitHubClientProvider);
+    final storage = ref.read(gitHubTokenStorageProvider);
+    final logger = ref.read(domainLoggerProvider);
+    final String login;
+    try {
+      login = await client.fetchViewerLogin(trimmed);
+    } on GitHubException catch (e) {
+      return GitHubConnectRefused(e.kind);
+    }
+    try {
+      await storage.save(token: trimmed, login: login);
+    } on Exception catch (error, stackTrace) {
+      _logKeychainFailure(logger, error, stackTrace, 'connect');
+      return const GitHubTokenNotStored();
+    }
+    if (!ref.mounted) return GitHubConnected(login);
+    state = AsyncData(login);
+    await _announceAndSend();
+    return GitHubConnected(login);
+  }
+
+  /// Forgets the token here and on the user's other devices. Returns false,
+  /// and logs why, when this device's keychain would not forget it.
+  Future<bool> disconnect() async {
+    final storage = ref.read(gitHubTokenStorageProvider);
+    final logger = ref.read(domainLoggerProvider);
+    try {
+      await storage.clear();
+    } on Exception catch (error, stackTrace) {
+      _logKeychainFailure(logger, error, stackTrace, 'disconnect');
+      return false;
+    }
+    if (!ref.mounted) return true;
     state = const AsyncData(null);
-    _announce();
-    await ref.read(gitHubAccountSyncProvider).flushOwed();
+    await _announceAndSend();
+    return true;
   }
 
   /// Tells whoever follows the account — the token status — that the token
-  /// changed here, as sync does for one received from another device.
-  void _announce() =>
-      ref.read(updateNotificationsProvider).notify({gitHubAccountNotification});
+  /// changed here, as sync does for one received from another device, and
+  /// sends the change to the other devices. Both are best effort once the
+  /// change is stored: an announcement that fails is logged, and a change
+  /// the outbox refused stays owed.
+  Future<void> _announceAndSend() async {
+    final sync = ref.read(gitHubAccountSyncProvider);
+    try {
+      ref.read(updateNotificationsProvider).notify({
+        gitHubAccountNotification,
+      });
+    } on Exception catch (error, stackTrace) {
+      ref
+          .read(domainLoggerProvider)
+          .error(
+            LogDomain.settings,
+            error,
+            stackTrace: stackTrace,
+            subDomain: 'github.announce',
+          );
+    }
+    await sync.flushOwed();
+  }
+
+  /// Records a keychain that refused a GitHub token's read or write — the
+  /// error only, never the token. A stored record that is not valid JSON
+  /// fails with a [FormatException] that quotes the record, token and all, so
+  /// it is logged without its source and under its own type.
+  static void _logKeychainFailure(
+    DomainLogger logger,
+    Object error,
+    StackTrace stackTrace,
+    String operation,
+  ) => logger.error(
+    LogDomain.settings,
+    DomainLogger.withoutSource(error),
+    errorType: error.runtimeType,
+    stackTrace: stackTrace,
+    subDomain: 'github.keychain.$operation',
+  );
 
   /// Sends the token held here to the user's other devices again — one
   /// connected before tokens synced, or that a device joining later missed.

@@ -7410,7 +7410,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get githubConnectSaveFailed =>
-      'GitHub l-a acceptat, dar acest dispozitiv nu l-a putut salva. Încercați din nou.';
+      'GitHub l-a acceptat, dar Lotti nu l-a putut salva în spațiul securizat de chei. Încercați din nou.';
 
   @override
   String get githubConnectSaveFailedTitle => 'Tokenul nu a fost salvat';

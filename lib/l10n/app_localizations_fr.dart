@@ -7400,7 +7400,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get githubConnectSaveFailed =>
-      'GitHub l\'a accepté, mais cet appareil n\'a pas pu l\'enregistrer. Réessaie.';
+      'GitHub l\'a accepté, mais Lotti n\'a pas pu l\'enregistrer dans le trousseau. Réessaie.';
 
   @override
   String get githubConnectSaveFailedTitle => 'Jeton non enregistré';

@@ -4420,7 +4420,7 @@
       }
     }
   },
-  "githubConnectSaveFailed": "GitHub accepted it, but this device could not keep it. Try again.",
+  "githubConnectSaveFailed": "GitHub accepted it, but Lotti couldn't save it in this device's keychain. Try again.",
   "githubConnectSaveFailedTitle": "Token not stored",
   "githubCreateTokenButton": "Create a token on GitHub",
   "githubCreateTokenOpenFailed": "Create the token on github.com under Settings → Developer settings → Personal access tokens.",

@@ -4,7 +4,9 @@
 * **Update**: [GitHub pull requests](features/github.md) — the settings page
   opens GitHub's token form pre-filled with Lotti's read-only permissions
   (`gitHubTokenTemplateUri`); [Settings](features/settings.md) — the GitHub
-  page is behind no flag.
+  page is behind no flag; [Security and privacy](architecture/security-and-privacy.md)
+  — a write the keystore refuses leaves the key as it was: the previous
+  value put back, the new one never cached.
 ## 2026-11-02
 * **Update**: [Task agents](features/agents/task-agents.md) — linked tasks
   reach the wake as one-liners within a budget (`LinkedTaskDirectory`: 30

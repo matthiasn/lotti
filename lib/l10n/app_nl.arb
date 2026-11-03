@@ -3340,7 +3340,7 @@
       }
     }
   },
-  "githubConnectSaveFailed": "GitHub heeft het geaccepteerd, maar dit apparaat kon het niet opslaan. Probeer het opnieuw.",
+  "githubConnectSaveFailed": "GitHub heeft het geaccepteerd, maar Lotti kon het niet in de sleutelhanger opslaan. Probeer het opnieuw.",
   "githubConnectSaveFailedTitle": "Token niet opgeslagen",
   "githubCreateTokenButton": "Token aanmaken op GitHub",
   "githubCreateTokenOpenFailed": "Maak het token aan op github.com onder Settings → Developer settings → Personal access tokens.",
@@ -3453,7 +3453,7 @@
   "githubSummaryOnNextRefresh": "Er wordt een samenvatting geschreven wanneer deze pull request de volgende keer wordt vernieuwd, of vat hem nu samen.",
   "githubTokenChecksCaveat": "CI-checks van privérepository's kunnen onvolledig zijn: GitHub geeft deze tokens geen toegang tot check runs.",
   "githubTokenHide": "Token verbergen",
-  "githubTokenIntro": "Lotti leest de pull requests die je aan taken koppelt met een alleen-lezen token van je GitHub-account. Maak er een aan op GitHub — de rechten zijn al ingevuld —, kies je repository's en plak het token hier.",
+  "githubTokenIntro": "Lotti leest de pull requests die je aan taken koppelt met een alleen-lezen token van je GitHub-account. Maak er een aan op GitHub — de rechten zijn al ingevuld. Kies je repository's en plak het token hier.",
   "githubTokenLabel": "Persoonlijk toegangstoken",
   "githubTokenPrivacy": "Het token synchroniseert end-to-end versleuteld met je andere apparaten. Lotti gebruikt het alleen voor verzoeken aan api.github.com.",
   "githubTokenShow": "Token tonen",

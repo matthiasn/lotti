@@ -3341,7 +3341,7 @@
       }
     }
   },
-  "githubConnectSaveFailed": "GitHub godkände den, men den här enheten kunde inte spara den. Försök igen.",
+  "githubConnectSaveFailed": "GitHub godkände den, men Lotti kunde inte spara den i enhetens nyckelring. Försök igen.",
   "githubConnectSaveFailedTitle": "Token sparades inte",
   "githubCreateTokenButton": "Skapa en token på GitHub",
   "githubCreateTokenOpenFailed": "Skapa token på github.com under Settings → Developer settings → Personal access tokens.",
@@ -3454,7 +3454,7 @@
   "githubSummaryOnNextRefresh": "En sammanfattning skrivs nästa gång den här pull requesten uppdateras, eller sammanfatta den nu.",
   "githubTokenChecksCaveat": "CI-kontroller i privata repon kan vara ofullständiga: GitHub ger inte dessa tokens åtkomst till check runs.",
   "githubTokenHide": "Dölj token",
-  "githubTokenIntro": "Lotti läser de pull requests du kopplar till uppgifter med en skrivskyddad token från ditt GitHub-konto. Skapa den på GitHub – behörigheterna är redan ifyllda –, välj dina repon och klistra in token här.",
+  "githubTokenIntro": "Lotti läser de pull requests du kopplar till uppgifter med en skrivskyddad token från ditt GitHub-konto. Skapa den på GitHub – behörigheterna är redan ifyllda. Välj dina repon och klistra in token här.",
   "githubTokenLabel": "Personlig åtkomsttoken",
   "githubTokenPrivacy": "Token synkas end-to-end-krypterad till dina andra enheter. Lotti använder den bara för förfrågningar till api.github.com.",
   "githubTokenShow": "Visa token",

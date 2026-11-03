@@ -3003,7 +3003,7 @@
       }
     }
   },
-  "githubConnectSaveFailed": "GitHub ho přijal, ale toto zařízení ho nedokázalo uložit. Zkus to znovu.",
+  "githubConnectSaveFailed": "GitHub ho přijal, ale do klíčenky zařízení se ho nepodařilo uložit. Zkus to znovu.",
   "githubConnectSaveFailedTitle": "Token nebyl uložen",
   "githubCreateTokenButton": "Vytvořit token na GitHubu",
   "githubCreateTokenOpenFailed": "Vytvoř token na github.com v Settings → Developer settings → Personal access tokens.",

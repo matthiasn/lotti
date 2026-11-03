@@ -7324,7 +7324,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get githubConnectSaveFailed =>
-      'GitHub heeft het geaccepteerd, maar dit apparaat kon het niet opslaan. Probeer het opnieuw.';
+      'GitHub heeft het geaccepteerd, maar Lotti kon het niet in de sleutelhanger opslaan. Probeer het opnieuw.';
 
   @override
   String get githubConnectSaveFailedTitle => 'Token niet opgeslagen';
@@ -7634,7 +7634,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get githubTokenIntro =>
-      'Lotti leest de pull requests die je aan taken koppelt met een alleen-lezen token van je GitHub-account. Maak er een aan op GitHub — de rechten zijn al ingevuld —, kies je repository\'s en plak het token hier.';
+      'Lotti leest de pull requests die je aan taken koppelt met een alleen-lezen token van je GitHub-account. Maak er een aan op GitHub — de rechten zijn al ingevuld. Kies je repository\'s en plak het token hier.';
 
   @override
   String get githubTokenLabel => 'Persoonlijk toegangstoken';

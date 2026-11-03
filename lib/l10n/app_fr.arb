@@ -2996,7 +2996,7 @@
       }
     }
   },
-  "githubConnectSaveFailed": "GitHub l'a accepté, mais cet appareil n'a pas pu l'enregistrer. Réessaie.",
+  "githubConnectSaveFailed": "GitHub l'a accepté, mais Lotti n'a pas pu l'enregistrer dans le trousseau. Réessaie.",
   "githubConnectSaveFailedTitle": "Jeton non enregistré",
   "githubCreateTokenButton": "Créer un jeton sur GitHub",
   "githubCreateTokenOpenFailed": "Crée le jeton sur github.com sous Settings → Developer settings → Personal access tokens.",

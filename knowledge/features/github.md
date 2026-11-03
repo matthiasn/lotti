@@ -259,12 +259,17 @@ the refresh is the app's, the unlink is the user's.
   `github_token:`/`github_login:`, is moved into it once). It is never logged
   or exported. Settings → Advanced Settings → GitHub saves a token only after
   `GET /user` accepts it. Connect spins while GitHub is asked; a token GitHub
-  refuses is said in the field. One GitHub accepted that the keychain would
-  not store is said in an error toast — the page reads the account
-  afterwards, and a login there is what counts as connected. A connection and
-  a disconnection are confirmed with a toast, and a disconnection the keychain
-  refused with an error toast. The field's error is one line, so whatever
-  needs more goes in a toast.
+  refuses is said in the field. `GitHubAccountController.connect` answers
+  with a `GitHubConnectOutcome` — connected, refused with a failure kind, or
+  `GitHubTokenNotStored` when GitHub accepted the token and the keychain would
+  not store it — and the page says the last in an error toast. `disconnect`
+  answers false when the keychain would not forget the token. Every keychain
+  refusal is logged under `LogDomain.settings` (`github.keychain.*`), the
+  error only, never the token. A connection and a disconnection are confirmed
+  with a toast, and a disconnection the keychain refused with an error toast.
+  The field's error is one line, so whatever needs more goes in a toast. A
+  token GitHub accepted is stored even when the page closes while GitHub is
+  asked; its change stays owed until the next start sends it.
 - The user makes the token on GitHub. While the page holds none — or holds
   one GitHub rejected — its "Create a token on GitHub" opens the fine-grained
   form at `github.com/settings/personal-access-tokens/new`, filled in from the

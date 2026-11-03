@@ -7358,25 +7358,25 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String githubConnectedToast(String login) {
-    return 'Conectado ao GitHub como @$login';
+    return 'Ligado ao GitHub como @$login';
   }
 
   @override
   String get githubConnectSaveFailed =>
-      'O GitHub o aceitou, mas este dispositivo não conseguiu salvá-lo. Tente de novo.';
+      'O GitHub aceitou-o, mas o Lotti não o conseguiu guardar no porta-chaves do dispositivo. Tenta de novo.';
 
   @override
-  String get githubConnectSaveFailedTitle => 'Token não salvo';
+  String get githubConnectSaveFailedTitle => 'Token não guardado';
 
   @override
   String get githubCreateTokenButton => 'Criar um token no GitHub';
 
   @override
   String get githubCreateTokenOpenFailed =>
-      'Crie o token em github.com, em Settings → Developer settings → Personal access tokens.';
+      'Cria o token em github.com, em Settings → Developer settings → Personal access tokens.';
 
   @override
-  String get githubCreateTokenOpenFailedTitle => 'Seu navegador não abriu';
+  String get githubCreateTokenOpenFailedTitle => 'O teu navegador não abriu';
 
   @override
   String get githubDescriptionHeading => 'Descrição';
@@ -7385,11 +7385,11 @@ class AppLocalizationsPt extends AppLocalizations {
   String get githubDisconnectButton => 'Desconectar';
 
   @override
-  String get githubDisconnectedToast => 'Desconectado do GitHub';
+  String get githubDisconnectedToast => 'Desligado do GitHub';
 
   @override
   String get githubDisconnectFailed =>
-      'Este dispositivo não conseguiu remover o token. Tente de novo.';
+      'Este dispositivo não conseguiu remover o token. Tenta de novo.';
 
   @override
   String get githubDisconnectFailedTitle => 'Token não removido';
@@ -7665,14 +7665,14 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get githubTokenChecksCaveat =>
-      'As verificações de CI de repositórios privados podem ficar incompletas: o GitHub não dá a esses tokens acesso aos check runs.';
+      'As verificações de CI de repositórios privados podem ficar incompletas: o GitHub não dá a estes tokens acesso aos check runs.';
 
   @override
   String get githubTokenHide => 'Ocultar token';
 
   @override
   String get githubTokenIntro =>
-      'O Lotti lê as pull requests que você vincula às tarefas com um token somente leitura da sua conta do GitHub. Crie-o no GitHub — as permissões já vêm preenchidas —, escolha seus repositórios e cole o token aqui.';
+      'O Lotti lê os pull requests que associas às tarefas com um token só de leitura da tua conta do GitHub. Cria-o no GitHub (as permissões já vêm preenchidas), escolhe os teus repositórios e cola o token aqui.';
 
   @override
   String get githubTokenLabel => 'Token de acesso pessoal';

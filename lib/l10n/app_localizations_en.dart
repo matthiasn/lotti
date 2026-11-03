@@ -7262,7 +7262,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get githubConnectSaveFailed =>
-      'GitHub accepted it, but this device could not keep it. Try again.';
+      'GitHub accepted it, but Lotti couldn\'t save it in this device\'s keychain. Try again.';
 
   @override
   String get githubConnectSaveFailedTitle => 'Token not stored';

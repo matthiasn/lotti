@@ -3341,7 +3341,7 @@
       }
     }
   },
-  "githubConnectSaveFailed": "GitHub l'ha accettato, ma questo dispositivo non è riuscito a salvarlo. Riprova.",
+  "githubConnectSaveFailed": "GitHub l'ha accettato, ma Lotti non è riuscito a salvarlo nel portachiavi. Riprova.",
   "githubConnectSaveFailedTitle": "Token non salvato",
   "githubCreateTokenButton": "Crea un token su GitHub",
   "githubCreateTokenOpenFailed": "Crea il token su github.com in Settings → Developer settings → Personal access tokens.",

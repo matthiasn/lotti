@@ -2996,7 +2996,7 @@
       }
     }
   },
-  "githubConnectSaveFailed": "GitHub l-a acceptat, dar acest dispozitiv nu l-a putut salva. Încercați din nou.",
+  "githubConnectSaveFailed": "GitHub l-a acceptat, dar Lotti nu l-a putut salva în spațiul securizat de chei. Încercați din nou.",
   "githubConnectSaveFailedTitle": "Tokenul nu a fost salvat",
   "githubCreateTokenButton": "Creați un token pe GitHub",
   "githubCreateTokenOpenFailed": "Creați tokenul pe github.com, la Settings → Developer settings → Personal access tokens.",

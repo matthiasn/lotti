@@ -7369,7 +7369,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get githubConnectSaveFailed =>
-      'GitHub ho přijal, ale toto zařízení ho nedokázalo uložit. Zkus to znovu.';
+      'GitHub ho přijal, ale do klíčenky zařízení se ho nepodařilo uložit. Zkus to znovu.';
 
   @override
   String get githubConnectSaveFailedTitle => 'Token nebyl uložen';

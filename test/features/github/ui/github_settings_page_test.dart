@@ -655,7 +655,8 @@ void main() {
     const connectedToast = 'Connected to GitHub as @pingu';
     const saveFailedTitle = 'Token not stored';
     const saveFailed =
-        'GitHub accepted it, but this device could not keep it. Try again.';
+        "GitHub accepted it, but Lotti couldn't save it in this device's "
+        'keychain. Try again.';
     const disconnectedToast = 'Disconnected from GitHub';
     const disconnectFailedTitle = 'Token not removed';
     const disconnectFailed =

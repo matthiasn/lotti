@@ -2996,7 +2996,7 @@
       }
     }
   },
-  "githubConnectSaveFailed": "GitHub lo aceptó, pero este dispositivo no pudo guardarlo. Inténtalo de nuevo.",
+  "githubConnectSaveFailed": "GitHub lo aceptó, pero Lotti no pudo guardarlo en el llavero del dispositivo. Inténtalo de nuevo.",
   "githubConnectSaveFailedTitle": "Token no guardado",
   "githubCreateTokenButton": "Crear un token en GitHub",
   "githubCreateTokenOpenFailed": "Crea el token en github.com, en Settings → Developer settings → Personal access tokens.",

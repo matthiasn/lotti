@@ -7291,7 +7291,7 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get githubConnectSaveFailed =>
-      'GitHub accepterede det, men denne enhed kunne ikke gemme det. Prøv igen.';
+      'GitHub accepterede det, men Lotti kunne ikke gemme det i enhedens nøglering. Prøv igen.';
 
   @override
   String get githubConnectSaveFailedTitle => 'Token ikke gemt';
@@ -7599,7 +7599,7 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get githubTokenIntro =>
-      'Lotti læser de pull requests, du knytter til opgaver, med et skrivebeskyttet token fra din GitHub-konto. Opret det på GitHub – tilladelserne er allerede udfyldt –, vælg dine repositories, og indsæt tokenet her.';
+      'Lotti læser de pull requests, du knytter til opgaver, med et skrivebeskyttet token fra din GitHub-konto. Opret det på GitHub – tilladelserne er allerede udfyldt. Vælg dine repositories, og indsæt tokenet her.';
 
   @override
   String get githubTokenLabel => 'Personligt adgangstoken';

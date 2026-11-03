@@ -7338,7 +7338,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get githubConnectSaveFailed =>
-      'GitHub hat ihn akzeptiert, aber dieses Gerät konnte ihn nicht speichern. Versuch es noch einmal.';
+      'GitHub hat ihn akzeptiert, aber Lotti konnte ihn nicht im Schlüsselbund speichern. Versuch es erneut.';
 
   @override
   String get githubConnectSaveFailedTitle => 'Token nicht gespeichert';

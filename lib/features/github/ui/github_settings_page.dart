@@ -71,46 +71,46 @@ class _GitHubSettingsBodyState extends ConsumerState<GitHubSettingsBody> {
 
   /// Checks the typed token with GitHub and keeps it. A token GitHub refuses
   /// is said in the field's error slot; one this device could not keep — a
-  /// keychain that refuses the write — is said in an error toast, instead of
-  /// leaving the page waiting. A connection is confirmed with a toast.
+  /// keychain that refuses the write — is said in an error toast. A
+  /// connection is confirmed with a toast.
   Future<void> _connect() async {
     setState(() {
       _connecting = true;
       _error = null;
     });
-    GitHubFailureKind? failure;
-    try {
-      failure = await ref
-          .read(gitHubAccountControllerProvider.notifier)
-          .connect(_tokenController.text);
-    } on Exception {
-      // GitHub accepted the token; whether this device kept it, the account
-      // says below.
-    }
+    final outcome = await ref
+        .read(gitHubAccountControllerProvider.notifier)
+        .connect(_tokenController.text);
     if (!mounted) return;
-    // The account holds a login only once the token was stored.
-    final login = ref.read(gitHubAccountControllerProvider).value;
-    final connected = failure == null && login != null;
-    final owed = connected && await _changeOwed();
+    final owed = outcome is GitHubConnected && await _changeOwed();
     if (!mounted) return;
     final messages = context.messages;
     setState(() {
       _connecting = false;
-      _error = failure == null ? null : gitHubFailureMessage(messages, failure);
-      if (connected) _tokenController.clear();
+      _error = switch (outcome) {
+        GitHubConnectRefused(:final kind) => gitHubFailureMessage(
+          messages,
+          kind,
+        ),
+        GitHubConnected() || GitHubTokenNotStored() => null,
+      };
+      if (outcome is GitHubConnected) _tokenController.clear();
       _syncNote = owed ? _SyncNote.owed : null;
     });
-    if (connected) {
-      context.showToast(
-        tone: DesignSystemToastTone.success,
-        title: messages.githubConnectedToast(login),
-      );
-    } else if (failure == null) {
-      context.showToast(
-        tone: DesignSystemToastTone.error,
-        title: messages.githubConnectSaveFailedTitle,
-        description: messages.githubConnectSaveFailed,
-      );
+    switch (outcome) {
+      case GitHubConnected(:final login):
+        context.showToast(
+          tone: DesignSystemToastTone.success,
+          title: messages.githubConnectedToast(login),
+        );
+      case GitHubTokenNotStored():
+        context.showToast(
+          tone: DesignSystemToastTone.error,
+          title: messages.githubConnectSaveFailedTitle,
+          description: messages.githubConnectSaveFailed,
+        );
+      case GitHubConnectRefused():
+        break;
     }
   }
 
@@ -138,16 +138,16 @@ class _GitHubSettingsBodyState extends ConsumerState<GitHubSettingsBody> {
   /// Forgets the token here and on the other devices, and says so with a
   /// toast — or, when this device could not forget it, says that instead.
   Future<void> _disconnect() async {
-    try {
-      await ref.read(gitHubAccountControllerProvider.notifier).disconnect();
-    } on Exception {
-      if (mounted) {
-        context.showToast(
-          tone: DesignSystemToastTone.error,
-          title: context.messages.githubDisconnectFailedTitle,
-          description: context.messages.githubDisconnectFailed,
-        );
-      }
+    final forgotten = await ref
+        .read(gitHubAccountControllerProvider.notifier)
+        .disconnect();
+    if (!mounted) return;
+    if (!forgotten) {
+      context.showToast(
+        tone: DesignSystemToastTone.error,
+        title: context.messages.githubDisconnectFailedTitle,
+        description: context.messages.githubDisconnectFailed,
+      );
       return;
     }
     final owed = await _changeOwed();
@@ -161,15 +161,8 @@ class _GitHubSettingsBodyState extends ConsumerState<GitHubSettingsBody> {
 
   /// Whether a change made here still has to reach the outbox; a keychain
   /// that cannot be read answers no, which leaves the note unsaid.
-  Future<bool> _changeOwed() async {
-    try {
-      return await ref
-          .read(gitHubAccountControllerProvider.notifier)
-          .changeOwed();
-    } on Exception {
-      return false;
-    }
-  }
+  Future<bool> _changeOwed() =>
+      ref.read(gitHubAccountControllerProvider.notifier).changeOwed();
 
   Future<void> _sendToOtherDevices() async {
     setState(() {

@@ -2996,7 +2996,7 @@
       }
     }
   },
-  "githubConnectSaveFailed": "GitHub hat ihn akzeptiert, aber dieses Gerät konnte ihn nicht speichern. Versuch es noch einmal.",
+  "githubConnectSaveFailed": "GitHub hat ihn akzeptiert, aber Lotti konnte ihn nicht im Schlüsselbund speichern. Versuch es erneut.",
   "githubConnectSaveFailedTitle": "Token nicht gespeichert",
   "githubCreateTokenButton": "Token auf GitHub erstellen",
   "githubCreateTokenOpenFailed": "Erstelle den Token auf github.com unter Settings → Developer settings → Personal access tokens.",
