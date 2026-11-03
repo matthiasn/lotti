@@ -10,6 +10,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/database/agents/agent_database.dart';
 import 'package:lotti/features/agents/ui/agent_chat_button.dart';
+import 'package:lotti/features/agents/ui/agent_surface_menu.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
@@ -239,9 +240,21 @@ void main() {
       // The name belongs to the header block; the open hero shows none.
       expect(find.text('Commander Pip Frostbeak'), findsNothing);
 
+      // The menu every agent surface shares — the goal page's too.
+      expect(
+        tester.widget(find.byKey(const ValueKey('person-menu'))),
+        isA<AgentSurfaceMenuButton>(),
+      );
       await tester.tap(find.byKey(const ValueKey('person-menu')));
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('person-menu-edit')), findsOneWidget);
+      // Over a dimmed page, not floating on an undimmed one.
+      expect(
+        tester
+            .widgetList<ModalBarrier>(find.byType(ModalBarrier))
+            .any((barrier) => (barrier.color?.a ?? 0) > 0),
+        isTrue,
+      );
     });
 
     testWidgets("the menu's edit opens the person form prefilled with this "

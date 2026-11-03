@@ -6,9 +6,9 @@ import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/ui/agent_chat_button.dart';
 import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
+import 'package:lotti/features/agents/ui/agent_surface_menu.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
-import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu_anchor.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/photo_chrome_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
@@ -570,18 +570,20 @@ class PersonMenuButton extends ConsumerWidget {
       IconData icon,
       String label, {
       bool destructive = false,
+      bool startsGroup = false,
     }) => DesignSystemContextMenuItem(
       key: ValueKey('person-menu-${action.name}'),
       icon: icon,
       label: label,
       isDestructive: destructive,
       onTap: () => run(action),
+      startsGroup: startsGroup,
     );
 
-    // The design system's menu, under the same glass disc the hero's other
-    // controls wear — the person's own actions, then the agent's, delete
-    // last.
-    return DesignSystemContextMenuAnchor(
+    // The shared agent-surface menu, under the same glass disc the hero's
+    // other controls wear — the person's own actions, then the agent's,
+    // delete last: the goal page's menu, row for row.
+    return AgentSurfaceMenuButton(
       key: const ValueKey('person-menu'),
       semanticsLabel: messages.relationshipMoreActions,
       items: [
@@ -609,31 +611,32 @@ class PersonMenuButton extends ConsumerWidget {
           ),
         ],
         if (hasAgent)
-          item(
-            PersonMenuAction.internals,
-            LottiIcons.list,
-            messages.aiInternalsTitle,
+          agentInternalsMenuItem(
+            context: context,
+            key: ValueKey('person-menu-${PersonMenuAction.internals.name}'),
+            onTap: () => run(PersonMenuAction.internals),
+            startsGroup: true,
           ),
         item(
           PersonMenuAction.delete,
           LottiIcons.delete,
           messages.deleteButton,
           destructive: true,
+          startsGroup: true,
         ),
       ],
-      builder: (context, {required toggle, required isOpen}) =>
-          GlassActionButton(
-            key: const ValueKey('person-menu-trigger'),
-            tooltip: messages.relationshipMoreActions,
-            semanticLabel: messages.relationshipMoreActions,
-            fill: fill,
-            onTap: toggle,
-            child: Icon(
-              LottiIcons.moreVertical,
-              size: IconSizes.l,
-              color: triggerInk,
-            ),
-          ),
+      triggerBuilder: (context, open) => GlassActionButton(
+        key: const ValueKey('person-menu-trigger'),
+        tooltip: messages.relationshipMoreActions,
+        semanticLabel: messages.relationshipMoreActions,
+        fill: fill,
+        onTap: open,
+        child: Icon(
+          LottiIcons.moreVertical,
+          size: IconSizes.l,
+          color: triggerInk,
+        ),
+      ),
     );
   }
 }

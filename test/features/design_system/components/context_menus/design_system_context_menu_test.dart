@@ -53,6 +53,93 @@ void main() {
       );
     });
 
+    testWidgets(
+      'a row that starts a group gets a hairline above it, never the first',
+      (tester) async {
+        const key = Key('grouped-menu');
+
+        await _pumpContextMenu(
+          tester,
+          const DesignSystemContextMenu(
+            key: key,
+            items: [
+              DesignSystemContextMenuItem(label: 'Edit', startsGroup: true),
+              DesignSystemContextMenuItem(label: 'Update now'),
+              DesignSystemContextMenuItem(label: 'Delete', startsGroup: true),
+            ],
+          ),
+        );
+
+        final rules = find.descendant(
+          of: find.byKey(key),
+          matching: find.byType(Divider),
+        );
+        expect(rules, findsOneWidget);
+        // The one rule sits between *Update now* and *Delete*.
+        final ruleY = tester.getCenter(rules).dy;
+        expect(
+          ruleY,
+          greaterThan(tester.getCenter(find.text('Update now')).dy),
+        );
+        expect(ruleY, lessThan(tester.getCenter(find.text('Delete')).dy));
+      },
+    );
+
+    testWidgets(
+      'a checked row draws its state in the icon slot and announces it',
+      (tester) async {
+        final semantics = tester.ensureSemantics();
+        const key = Key('toggle-menu');
+
+        await _pumpContextMenu(
+          tester,
+          DesignSystemContextMenu(
+            key: key,
+            items: [
+              DesignSystemContextMenuItem(
+                label: 'Automatic updates',
+                checked: true,
+                onTap: () {},
+              ),
+              DesignSystemContextMenuItem(
+                label: 'Read aloud',
+                checked: false,
+                onTap: () {},
+              ),
+            ],
+          ),
+        );
+
+        expect(find.byIcon(LottiIcons.checkboxChecked), findsOneWidget);
+        expect(find.byIcon(LottiIcons.checkboxUnchecked), findsOneWidget);
+        expect(
+          tester.getSemantics(find.bySemanticsLabel('Automatic updates')),
+          isSemantics(
+            label: 'Automatic updates',
+            isButton: true,
+            hasCheckedState: true,
+            isChecked: true,
+            hasEnabledState: true,
+            isEnabled: true,
+            hasTapAction: true,
+          ),
+        );
+        expect(
+          tester.getSemantics(find.bySemanticsLabel('Read aloud')),
+          isSemantics(
+            label: 'Read aloud',
+            isButton: true,
+            hasCheckedState: true,
+            isChecked: false,
+            hasEnabledState: true,
+            isEnabled: true,
+            hasTapAction: true,
+          ),
+        );
+        semantics.dispose();
+      },
+    );
+
     testWidgets('calls onTap when item is tapped', (tester) async {
       var tapped = false;
 

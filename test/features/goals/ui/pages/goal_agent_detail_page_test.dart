@@ -24,6 +24,7 @@ import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/agents/ui/agent_automation_row.dart';
 import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
+import 'package:lotti/features/agents/ui/agent_surface_menu.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/companion_report_layout.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/companion_stage_page.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/summary_read_aloud_button.dart';
@@ -252,9 +253,21 @@ void main() {
       () => completionService.requestReportRefresh('goal-1'),
     ).called(1);
 
+    // The menu every agent surface shares — the person page's too.
+    expect(
+      tester.widget(find.byKey(const ValueKey('goal-menu'))),
+      isA<AgentSurfaceMenuButton>(),
+    );
     await tester.tap(find.byIcon(LottiIcons.moreVertical));
     await tester.pumpAndSettle();
     expect(find.text('Automatic updates'), findsOneWidget);
+    // Over a dimmed page, not floating on an undimmed one.
+    expect(
+      tester
+          .widgetList<ModalBarrier>(find.byType(ModalBarrier))
+          .any((barrier) => (barrier.color?.a ?? 0) > 0),
+      isTrue,
+    );
     await tester.tap(find.text('Edit goal'));
     expect(navigated, ['/goals/details/goal-1/edit']);
     navigated.clear();

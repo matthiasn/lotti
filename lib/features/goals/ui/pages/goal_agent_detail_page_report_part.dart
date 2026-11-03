@@ -254,85 +254,99 @@ class _GoalActionsMenuButton extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return PopupMenuButton<_GoalDetailMenuAction>(
-      icon: const Icon(LottiIcons.moreVertical),
-      onSelected: (action) async {
-        switch (action) {
-          case _GoalDetailMenuAction.edit:
-            beamToNamed(goalEditPath(agentId));
-          case _GoalDetailMenuAction.updateRead:
-            onUpdateRead?.call();
-          case _GoalDetailMenuAction.automaticUpdates:
-            final enabled = automaticUpdatesEnabled;
-            if (enabled != null) {
-              try {
-                await ref
-                    .read(goalAgentServiceProvider)
-                    .updateAutomaticUpdates(
-                      agentId: agentId,
-                      enabled: !enabled,
-                    );
-              } catch (_) {
-                if (!context.mounted) return;
-                ScaffoldMessenger.maybeOf(context)
-                  ?..hideCurrentSnackBar()
-                  ..showSnackBar(
-                    SnackBar(content: Text(context.messages.saveFailedRetry)),
+    final messages = context.messages;
+
+    Future<void> run(_GoalDetailMenuAction action) async {
+      switch (action) {
+        case _GoalDetailMenuAction.edit:
+          beamToNamed(goalEditPath(agentId));
+        case _GoalDetailMenuAction.updateRead:
+          onUpdateRead?.call();
+        case _GoalDetailMenuAction.automaticUpdates:
+          final enabled = automaticUpdatesEnabled;
+          if (enabled != null) {
+            try {
+              await ref
+                  .read(goalAgentServiceProvider)
+                  .updateAutomaticUpdates(
+                    agentId: agentId,
+                    enabled: !enabled,
                   );
-              }
+            } catch (_) {
+              if (!context.mounted) return;
+              ScaffoldMessenger.maybeOf(context)
+                ?..hideCurrentSnackBar()
+                ..showSnackBar(
+                  SnackBar(content: Text(messages.saveFailedRetry)),
+                );
             }
-          case _GoalDetailMenuAction.internals:
-            await AgentInternalsPanel.show(
-              context: context,
-              agentId: agentId,
-              agentName: agentName,
-              subjectEntityId: ref.read(goalEntryIdProvider(agentId)),
-            );
-          case _GoalDetailMenuAction.delete:
-            await _confirmAndDelete(context, ref);
-        }
-      },
-      // The shared agent-surface menu: the goal's own action, then the
-      // agent's, internals last among them, delete at the bottom — the same
-      // order and rows as the person page's menu.
-      itemBuilder: (context) => [
-        if (canEdit) ...[
-          agentMenuItem(
+          }
+        case _GoalDetailMenuAction.internals:
+          await AgentInternalsPanel.show(
             context: context,
-            value: _GoalDetailMenuAction.edit,
+            agentId: agentId,
+            agentName: agentName,
+            subjectEntityId: ref.read(goalEntryIdProvider(agentId)),
+          );
+        case _GoalDetailMenuAction.delete:
+          await _confirmAndDelete(context, ref);
+      }
+    }
+
+    VoidCallback runs(_GoalDetailMenuAction action) =>
+        () => unawaited(run(action));
+
+    // The shared agent-surface menu: the goal's own action, then the
+    // agent's, internals last among them, delete at the bottom — the same
+    // surface, order and rows as the person page's menu.
+    return AgentSurfaceMenuButton(
+      key: const ValueKey('goal-menu'),
+      semanticsLabel: MaterialLocalizations.of(context).showMenuTooltip,
+      items: [
+        if (canEdit)
+          DesignSystemContextMenuItem(
+            key: const ValueKey('goal-menu-edit'),
             icon: LottiIcons.edit,
-            label: context.messages.goalFormEditTitle,
+            label: messages.goalFormEditTitle,
+            onTap: runs(_GoalDetailMenuAction.edit),
           ),
-          const PopupMenuDivider(),
-        ],
         if (onUpdateRead != null)
-          agentMenuItem(
-            context: context,
-            value: _GoalDetailMenuAction.updateRead,
+          DesignSystemContextMenuItem(
+            key: const ValueKey('goal-menu-update'),
             icon: LottiIcons.refresh,
-            label: context.messages.taskAgentUpdateNow,
+            label: messages.taskAgentUpdateNow,
+            onTap: runs(_GoalDetailMenuAction.updateRead),
+            startsGroup: true,
           ),
-        if (automaticUpdatesEnabled != null)
-          agentToggleMenuItem(
-            context: context,
-            value: _GoalDetailMenuAction.automaticUpdates,
-            label: context.messages.taskAgentAutomaticUpdatesLabel,
-            checked: automaticUpdatesEnabled!,
+        if (automaticUpdatesEnabled case final enabled?)
+          DesignSystemContextMenuItem(
+            key: const ValueKey('goal-menu-automatic-updates'),
+            label: messages.taskAgentAutomaticUpdatesLabel,
+            checked: enabled,
+            onTap: runs(_GoalDetailMenuAction.automaticUpdates),
+            startsGroup: onUpdateRead == null,
           ),
         agentInternalsMenuItem(
           context: context,
-          value: _GoalDetailMenuAction.internals,
           key: const ValueKey('goal-menu-internals'),
+          onTap: runs(_GoalDetailMenuAction.internals),
+          startsGroup: onUpdateRead == null && automaticUpdatesEnabled == null,
         ),
-        const PopupMenuDivider(),
-        agentMenuItem(
-          context: context,
-          value: _GoalDetailMenuAction.delete,
+        DesignSystemContextMenuItem(
+          key: const ValueKey('goal-menu-delete'),
           icon: LottiIcons.delete,
-          label: context.messages.goalDeleteMenuItem,
-          destructive: true,
+          label: messages.goalDeleteMenuItem,
+          isDestructive: true,
+          onTap: runs(_GoalDetailMenuAction.delete),
+          startsGroup: true,
         ),
       ],
+      triggerBuilder: (context, open) => IconButton(
+        key: const ValueKey('goal-menu-trigger'),
+        tooltip: MaterialLocalizations.of(context).showMenuTooltip,
+        icon: const Icon(LottiIcons.moreVertical),
+        onPressed: open,
+      ),
     );
   }
 

@@ -411,8 +411,9 @@ void main() {
     );
   });
 
-  testWidgets("a person's agent the user set up keeps the profile they chose",
-      (tester) async {
+  testWidgets("a person's agent the user set up keeps the profile they chose", (
+    tester,
+  ) async {
     when(
       () => journalDb.journalEntityById(any()),
     ).thenAnswer((_) async => null);
