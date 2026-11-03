@@ -2741,6 +2741,127 @@ void main() {
       expect(resolved?.profileId, 'profile-1');
     });
 
+    group('a category snapshot follows the category as it is now', () {
+      AgentIdentityEntity snapshotOf(String profileId) => identity().copyWith(
+        config: AgentConfig(
+          profileId: profileId,
+          inferenceSetup: AgentInferenceSetup(
+            mode: AgentInferenceSetupMode.configured,
+            origin: AgentInferenceSetupOrigin.categorySnapshot,
+            baseProfileId: profileId,
+            originEntityId: 'cat-old',
+          ),
+        ),
+      );
+
+      test("the person's current category wins over the profile the old "
+          'category named at creation', () async {
+        stubCategoryProfileOnClaude();
+        // The stale snapshot points at a GLM profile that still resolves —
+        // the route must not take it.
+        when(() => aiConfigRepository.getConfigById('profile-old')).thenAnswer(
+          (_) async => AiConfig.inferenceProfile(
+            id: 'profile-old',
+            name: 'Old category',
+            createdAt: DateTime(2026),
+            thinkingModelId: 'model-glm',
+          ),
+        );
+
+        final resolved = await resolveRelationshipAgentModel(
+          relationship: personInCategory(),
+          agentIdentity: snapshotOf('profile-old'),
+          aiConfigRepository: aiConfigRepository,
+          domainLogger: MockDomainLogger(),
+          categoryProfileLookup: categoryLookup,
+        );
+
+        expect(resolved?.profileId, 'profile-cat');
+        expect(resolved?.provider.id, 'anthropic-provider');
+        verifyNever(() => aiConfigRepository.getConfigById('profile-old'));
+      });
+
+      test('a category that names no profile any more hands the person to '
+          'the Settings default, not the stale copy', () async {
+        stubCategoryProfileOnClaude();
+        when(
+          aiConfigRepository.getDefaultProfileId,
+        ).thenAnswer((_) async => 'profile-cat');
+
+        final resolved = await resolveRelationshipAgentModel(
+          relationship: personInCategory(),
+          agentIdentity: snapshotOf('profile-old'),
+          aiConfigRepository: aiConfigRepository,
+          domainLogger: MockDomainLogger(),
+          categoryProfileLookup: (_) async => null,
+        );
+
+        expect(resolved?.profileId, 'profile-cat');
+        verifyNever(() => aiConfigRepository.getConfigById('profile-old'));
+      });
+
+      test('a disabled snapshot — *Use category default* on a category '
+          'without a profile — follows the category once it names one', () async {
+        stubCategoryProfileOnClaude();
+
+        final resolved = await resolveRelationshipAgentModel(
+          relationship: personInCategory(),
+          agentIdentity: identity().copyWith(
+            config: const AgentConfig(
+              inferenceSetup: AgentInferenceSetup(
+                mode: AgentInferenceSetupMode.disabled,
+                origin: AgentInferenceSetupOrigin.categorySnapshot,
+                originEntityId: 'cat-1',
+              ),
+            ),
+          ),
+          aiConfigRepository: aiConfigRepository,
+          domainLogger: MockDomainLogger(),
+          categoryProfileLookup: categoryLookup,
+        );
+
+        expect(resolved?.profileId, 'profile-cat');
+      });
+
+      test('a profile the user chose in setup still outranks the category',
+          () async {
+        stubCategoryProfileOnClaude();
+        when(() => aiConfigRepository.getConfigById('profile-1')).thenAnswer(
+          (_) async => AiConfig.inferenceProfile(
+            id: 'profile-1',
+            name: 'Mine',
+            createdAt: DateTime(2026),
+            thinkingModelId: 'model-glm',
+          ),
+        );
+        when(
+          () => aiConfigRepository.getConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) async => [claudeModel, glmModel]);
+        when(
+          () => aiConfigRepository.getConfigById('melious-provider'),
+        ).thenAnswer((_) async => meliousProvider);
+
+        final resolved = await resolveRelationshipAgentModel(
+          relationship: personInCategory(),
+          agentIdentity: identity().copyWith(
+            config: const AgentConfig(
+              inferenceSetup: AgentInferenceSetup(
+                mode: AgentInferenceSetupMode.configured,
+                origin: AgentInferenceSetupOrigin.user,
+                baseProfileId: 'profile-1',
+              ),
+            ),
+          ),
+          aiConfigRepository: aiConfigRepository,
+          domainLogger: MockDomainLogger(),
+          categoryProfileLookup: categoryLookup,
+        );
+
+        expect(resolved?.profileId, 'profile-1');
+        expect(resolved?.provider.id, 'melious-provider');
+      });
+    });
+
     test('a person without a category never consults the lookup', () async {
       stubGlmResolution();
 
