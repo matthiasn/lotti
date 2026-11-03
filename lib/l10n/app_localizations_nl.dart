@@ -387,6 +387,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get agentFeedbackSourceRating => 'Waardering';
 
   @override
+  String get agentFormSectionTitle => 'Je agent';
+
+  @override
   String get agentInstancesEmptyFiltered =>
       'Geen instantie die overeenkomt met uw filters.';
 
@@ -8245,9 +8248,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get goalFormAddSignal => 'Signaal toevoegen';
 
   @override
-  String get goalFormAgentSectionTitle => 'Je agent';
-
-  @override
   String get goalFormBloodPressureSource =>
       'Systolisch en diastolisch · mmHg · 7-daags gemiddelde';
 
@@ -13835,6 +13835,10 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get relationshipErrorUpdateFailed =>
       'Kon de wijzigingen niet opslaan. Probeer het opnieuw.';
+
+  @override
+  String get relationshipFormCategoryProfileHint =>
+      'Hun agent maakt briefings met het AI-profiel dat deze categorie noemt, of met je standaard als ze er geen noemt.';
 
   @override
   String get relationshipFormImportantBody =>

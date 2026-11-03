@@ -2,7 +2,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
-import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -10,7 +9,6 @@ import 'package:lotti/features/journal/ui/widgets/journal_image_resolver.dart';
 import 'package:lotti/features/relationships/ui/shared/cover_crop_geometry.dart';
 import 'package:lotti/features/relationships/ui/shared/persona_avatar.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_header.dart';
-import 'package:lotti/features/relationships/ui/widgets/person_page_cards.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_photo_actions.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
@@ -137,19 +135,11 @@ class _PersonPhotoCardState extends ConsumerState<PersonPhotoCard> {
     );
     Widget gap(double height) => SizedBox(height: height);
 
-    return DesignSystemSectionCard(
+    return KeyedSubtree(
       key: const ValueKey('person-form-photo-card'),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          PersonCardHeader(title: messages.relationshipPhotoCardTitle),
-          gap(tokens.spacing.step1),
-          Text(
-            messages.relationshipPhotoPrivacy,
-            key: const ValueKey('person-form-photo-privacy'),
-            style: labelStyle,
-          ),
-          gap(tokens.spacing.step4),
           Text(messages.relationshipPhotoFace, style: labelStyle),
           gap(tokens.spacing.step2),
           Row(

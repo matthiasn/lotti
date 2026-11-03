@@ -389,6 +389,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentFeedbackSourceRating => 'Hodnocení';
 
   @override
+  String get agentFormSectionTitle => 'Tvůj agent';
+
+  @override
   String get agentInstancesEmptyFiltered =>
       'Žádné instance neodpovídají tvým filtrům.';
 
@@ -8290,9 +8293,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get goalFormAddSignal => 'Přidat signál';
 
   @override
-  String get goalFormAgentSectionTitle => 'Tvůj agent';
-
-  @override
   String get goalFormBloodPressureSource =>
       'Systolický a diastolický · mmHg · 7denní průměr';
 
@@ -13986,6 +13986,10 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get relationshipErrorUpdateFailed =>
       'Změny se nepodařilo uložit. Zkus to prosím znovu.';
+
+  @override
+  String get relationshipFormCategoryProfileHint =>
+      'Jejich agent připravuje přehledy s AI profilem, který tato kategorie určuje, nebo s tvým výchozím, když žádný neurčuje.';
 
   @override
   String get relationshipFormImportantBody =>

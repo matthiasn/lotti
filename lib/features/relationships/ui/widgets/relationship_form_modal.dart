@@ -6,12 +6,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
+import 'package:lotti/features/agents/ui/agent_form_section.dart';
 import 'package:lotti/features/categories/ui/widgets/category_field_row.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_modal_action_bar.dart';
 import 'package:lotti/features/design_system/components/calendar_pickers/design_system_date_picker_modal.dart';
-import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/design_system/components/ds_quiet_ink.dart';
 import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
@@ -26,7 +26,6 @@ import 'package:lotti/features/relationships/service/contacts_service.dart';
 import 'package:lotti/features/relationships/service/relationship_agent_service.dart';
 import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
 import 'package:lotti/features/relationships/ui/shared/ds_choice_pills.dart';
-import 'package:lotti/features/relationships/ui/widgets/person_page_cards.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_photo_card.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_photo_surfaces.dart';
 import 'package:lotti/features/speech_dictionary/domain/speech_dictionary_terms.dart';
@@ -453,35 +452,24 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
     // capped itself at `modalMaxHeightFraction` of the SCREEN overflowed the
     // page, and the inner scroll view ate the drag that would have reached
     // the action row.
+    final caption = tokens.typography.styles.others.caption.copyWith(
+      color: tokens.colors.text.mediumEmphasis,
+    );
+
+    // The goal form's grammar, section for section (`AgentFormSection`):
+    // a heading and a quiet line over open fields — no card boxed inside the
+    // modal's own surface — who the person is first, the agent last, as the
+    // goal editor ends on *Your agent*.
     final body = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Photo — only for a person who already exists: its actions write
-        // straight away, and there is nothing to write to before the first
-        // Save. A new person gets their pictures from the page's avatar.
-        if (_isEditing) ...[
-          PersonPhotoCard(
-            person: _person!,
-            actions: productionPersonPhotoActions(
-              ref,
-              context: context,
-              relationship: _person!,
-            ),
-            onChanged: _reloadPerson,
-            canPasteBanner: ref.watch(clipboardHasImageProvider).value ?? false,
-          ),
-          gap(tokens.spacing.step4),
-        ],
-        // Who — identity, and the category as a colour dot rather than a
-        // second large avatar competing with the person's own.
-        DesignSystemSectionCard(
-          key: const ValueKey('person-form-who-card'),
+        AgentFormSection(
+          key: const ValueKey('person-form-who-section'),
+          title: messages.relationshipFormWhoTitle,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              PersonCardHeader(title: messages.relationshipFormWhoTitle),
-              gap(tokens.spacing.step4),
               DesignSystemTextInput(
                 key: const ValueKey('person-form-name'),
                 controller: _nameController,
@@ -495,9 +483,7 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
                 Text(
                   messages.relationshipNameRequired,
                   key: const ValueKey('person-form-name-required'),
-                  style: tokens.typography.styles.others.caption.copyWith(
-                    color: tokens.colors.text.mediumEmphasis,
-                  ),
+                  style: caption,
                 ),
               ],
               gap(tokens.spacing.step4),
@@ -511,34 +497,6 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
               _BirthdayRow(
                 birthday: _birthday,
                 onChanged: (value) => setState(() => _birthday = value),
-              ),
-              gap(tokens.spacing.step4),
-              // The category speech dictionary's format, so one habit edits
-              // both lists.
-              DesignSystemTextInput(
-                key: const ValueKey('person-form-known-terms'),
-                controller: _knownTermsController,
-                label: messages.relationshipKnownTermsLabel,
-                hintText: messages.relationshipKnownTermsHint,
-                textCapitalization: TextCapitalization.words,
-                multiline: true,
-              ),
-              gap(tokens.spacing.step2),
-              Text(
-                messages.relationshipKnownTermsBody,
-                // The form's one supporting-text tier — the Reach card's
-                // caption — not a second, body-sized helper voice.
-                style: tokens.typography.styles.others.caption.copyWith(
-                  color: tokens.colors.text.mediumEmphasis,
-                ),
-              ),
-              gap(tokens.spacing.step4),
-              // Category scoping (the ProjectCreateForm precedent): the
-              // relationship's category also seeds every check-in created
-              // under it.
-              CategoryFieldRow(
-                categoryId: _categoryId,
-                onChanged: (id) => setState(() => _categoryId = id),
               ),
               if (_isEditing) ...[
                 gap(tokens.spacing.step4),
@@ -554,17 +512,72 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
             ],
           ),
         ),
-        gap(tokens.spacing.cardItemSpacing),
-        // Important — the consent switch, what it turns on, and the cadence
-        // it schedules. The cadence only exists for someone who is nurtured,
-        // so it appears with the switch rather than beside it.
-        DesignSystemSectionCard(
-          key: const ValueKey('person-form-important-card'),
+        // Photo — only for a person who already exists: its actions write
+        // straight away, and there is nothing to write to before the first
+        // Save. A new person gets their pictures from the page's avatar.
+        if (_isEditing) ...[
+          gap(tokens.spacing.sectionGap),
+          AgentFormSection(
+            key: const ValueKey('person-form-photo-section'),
+            title: messages.relationshipPhotoCardTitle,
+            intro: messages.relationshipPhotoPrivacy,
+            introKey: const ValueKey('person-form-photo-privacy'),
+            child: PersonPhotoCard(
+              person: _person!,
+              actions: productionPersonPhotoActions(
+                ref,
+                context: context,
+                relationship: _person!,
+              ),
+              onChanged: _reloadPerson,
+              canPasteBanner:
+                  ref.watch(clipboardHasImageProvider).value ?? false,
+            ),
+          ),
+        ],
+        gap(tokens.spacing.sectionGap),
+        // How to reach them — the channel editor under the privacy line the
+        // page's Reach card carries, so the promise is repeated where the
+        // numbers are actually typed.
+        AgentFormSection(
+          key: const ValueKey('person-form-reach-section'),
+          title: messages.relationshipFormReachTitle,
+          intro: messages.relationshipReachPrivacy,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              for (final (index, draft) in _channels.indexed) ...[
+                _ChannelEditorRow(
+                  key: ObjectKey(draft),
+                  draft: draft,
+                  onTypeChanged: (type) => setState(() => draft.type = type),
+                  onRemoved: () => setState(() {
+                    _channels.removeAt(index).dispose();
+                  }),
+                ),
+                gap(tokens.spacing.step4),
+              ],
+              _AddChannelActions(
+                onAdd: () => setState(() => _channels.add(_ChannelDraft())),
+                onFromContacts: ref.watch(contactsServiceProvider).isSupported
+                    ? () => unawaited(_addFromContacts())
+                    : null,
+              ),
+            ],
+          ),
+        ),
+        gap(tokens.spacing.sectionGap),
+        // The agent — the goal form's *Your agent*: the consent switch and
+        // the cadence it schedules, the category whose AI profile the agent
+        // briefs with, and the words its transcripts should know.
+        AgentFormSection(
+          key: const ValueKey('person-form-agent-section'),
+          title: messages.agentFormSectionTitle,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               // One labelled control, not a label sitting near a switch: a
-              // screen reader reads "Important" with the switch's state, and
+              // screen reader reads the label with the switch's state, and
               // the label itself toggles.
               MergeSemantics(
                 child: DsQuietInk(
@@ -596,13 +609,11 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
               // rebuilding the rest of the form on every keystroke.
               ValueListenableBuilder<TextEditingValue>(
                 valueListenable: _nameController,
-                builder: (context, _, _) => Text(
-                  _importantBody(context),
-                  style: tokens.typography.styles.others.caption.copyWith(
-                    color: tokens.colors.text.mediumEmphasis,
-                  ),
-                ),
+                builder: (context, _, _) =>
+                    Text(_importantBody(context), style: caption),
               ),
+              // The cadence only exists for someone who is nurtured, so it
+              // appears with the switch rather than beside it.
               if (_important) ...[
                 gap(tokens.spacing.step4),
                 sectionLabel(messages.relationshipCadencePromptLabel),
@@ -619,44 +630,33 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
                   onSelected: (preset) => setState(() => _cadenceDays = preset),
                 ),
               ],
-            ],
-          ),
-        ),
-        gap(tokens.spacing.cardItemSpacing),
-        // How to reach them — the channel editor under the privacy line the
-        // page's Reach card carries, so the promise is repeated where the
-        // numbers are actually typed.
-        DesignSystemSectionCard(
-          key: const ValueKey('person-form-reach-card'),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              PersonCardHeader(title: messages.relationshipFormReachTitle),
-              gap(tokens.spacing.step1),
+              gap(tokens.spacing.step5),
+              // Category scoping (the ProjectCreateForm precedent): the
+              // category seeds every check-in created under the person, and
+              // names the AI profile their agent briefs with.
+              CategoryFieldRow(
+                categoryId: _categoryId,
+                onChanged: (id) => setState(() => _categoryId = id),
+              ),
+              gap(tokens.spacing.step2),
               Text(
-                messages.relationshipReachPrivacy,
-                style: tokens.typography.styles.others.caption.copyWith(
-                  color: tokens.colors.text.lowEmphasis,
-                ),
+                messages.relationshipFormCategoryProfileHint,
+                key: const ValueKey('person-form-category-hint'),
+                style: caption,
               ),
-              gap(tokens.spacing.step3),
-              for (final (index, draft) in _channels.indexed) ...[
-                _ChannelEditorRow(
-                  key: ObjectKey(draft),
-                  draft: draft,
-                  onTypeChanged: (type) => setState(() => draft.type = type),
-                  onRemoved: () => setState(() {
-                    _channels.removeAt(index).dispose();
-                  }),
-                ),
-                gap(tokens.spacing.step4),
-              ],
-              _AddChannelActions(
-                onAdd: () => setState(() => _channels.add(_ChannelDraft())),
-                onFromContacts: ref.watch(contactsServiceProvider).isSupported
-                    ? () => unawaited(_addFromContacts())
-                    : null,
+              gap(tokens.spacing.step5),
+              // The category speech dictionary's format, so one habit edits
+              // both lists.
+              DesignSystemTextInput(
+                key: const ValueKey('person-form-known-terms'),
+                controller: _knownTermsController,
+                label: messages.relationshipKnownTermsLabel,
+                hintText: messages.relationshipKnownTermsHint,
+                textCapitalization: TextCapitalization.words,
+                multiline: true,
               ),
+              gap(tokens.spacing.step2),
+              Text(messages.relationshipKnownTermsBody, style: caption),
             ],
           ),
         ),

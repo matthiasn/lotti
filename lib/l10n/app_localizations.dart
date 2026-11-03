@@ -781,6 +781,12 @@ abstract class AppLocalizations {
   /// **'Rating'**
   String get agentFeedbackSourceRating;
 
+  /// No description provided for @agentFormSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your agent'**
+  String get agentFormSectionTitle;
+
   /// No description provided for @agentInstancesEmptyFiltered.
   ///
   /// In en, this message translates to:
@@ -13854,12 +13860,6 @@ abstract class AppLocalizations {
   /// **'Add a signal'**
   String get goalFormAddSignal;
 
-  /// No description provided for @goalFormAgentSectionTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Your agent'**
-  String get goalFormAgentSectionTitle;
-
   /// No description provided for @goalFormBloodPressureSource.
   ///
   /// In en, this message translates to:
@@ -22848,6 +22848,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not save the changes. Please try again.'**
   String get relationshipErrorUpdateFailed;
+
+  /// No description provided for @relationshipFormCategoryProfileHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Their agent briefs with the AI profile this category names, or with your default when it names none.'**
+  String get relationshipFormCategoryProfileHint;
 
   /// No description provided for @relationshipFormImportantBody.
   ///

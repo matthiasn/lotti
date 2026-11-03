@@ -225,6 +225,7 @@
   "agentFeedbackSourceMetric": "Metric",
   "agentFeedbackSourceObservation": "Observation",
   "agentFeedbackSourceRating": "Rating",
+  "agentFormSectionTitle": "Your agent",
   "agentInstancesEmptyFiltered": "No instances match your filters.",
   "agentInstancesFilterClearAll": "Clear all",
   "agentInstancesFilterClearSection": "Clear",
@@ -5264,7 +5265,6 @@
   "@goalFormAddSignal": {
     "description": "Button opening the unified signal picker on the mapping step."
   },
-  "goalFormAgentSectionTitle": "Your agent",
   "goalFormBloodPressureSource": "Systolic and diastolic · mmHg · 7-day average",
   "goalFormCategoryTimeCadence": "{categoryName}: {direction} {target} {target, select, 1{hour} other{hours}} per rolling 7 days",
   "@goalFormCategoryTimeCadence": {
@@ -8847,6 +8847,7 @@
   "relationshipErrorDeleteFailed": "Could not delete this person. Please try again.",
   "relationshipErrorLinkTaskFailed": "Could not link the task. Please try again.",
   "relationshipErrorUpdateFailed": "Could not save the changes. Please try again.",
+  "relationshipFormCategoryProfileHint": "Their agent briefs with the AI profile this category names, or with your default when it names none.",
   "relationshipFormImportantBody": "Turns on reminders, a briefing and a chat. Check-in notes go to the agent; contact channels never do.",
   "relationshipFormImportantBodyNamed": "Turns on reminders, a briefing and a chat for {name}. Check-in notes go to the agent; contact channels never do.",
   "@relationshipFormImportantBodyNamed": {

@@ -393,6 +393,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get agentFeedbackSourceRating => 'Calificación';
 
   @override
+  String get agentFormSectionTitle => 'Tu agente';
+
+  @override
   String get agentInstancesEmptyFiltered =>
       'Ninguna instancia coincide con tus filtros.';
 
@@ -8306,9 +8309,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get goalFormAddSignal => 'Añadir una señal';
 
   @override
-  String get goalFormAgentSectionTitle => 'Tu agente';
-
-  @override
   String get goalFormBloodPressureSource =>
       'Sistólica y diastólica · mmHg · promedio de 7 días';
 
@@ -13971,6 +13971,10 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get relationshipErrorUpdateFailed =>
       'No se pudieron guardar los cambios. Inténtalo de nuevo.';
+
+  @override
+  String get relationshipFormCategoryProfileHint =>
+      'Su agente prepara los resúmenes con el perfil de IA que indica esta categoría, o con tu perfil predeterminado si no indica ninguno.';
 
   @override
   String get relationshipFormImportantBody =>

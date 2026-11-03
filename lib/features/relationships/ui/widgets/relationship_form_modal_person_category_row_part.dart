@@ -176,6 +176,9 @@ class RelationshipFormStickyActions extends StatelessWidget {
       listenable: handle,
       builder: (context, _) => DesignSystemModalActionBar(
         glass: true,
+        // The goal form's footer: the confirming action at its own width on
+        // the trailing edge, the way out at the leading one.
+        layout: DesignSystemModalActionBarLayout.compactPrimary,
         padding: EdgeInsets.all(tokens.spacing.step5),
         secondary: [
           DesignSystemButton(
@@ -189,7 +192,6 @@ class RelationshipFormStickyActions extends StatelessWidget {
         primary: DesignSystemButton(
           key: const ValueKey('person-form-save'),
           label: handle.isEditing ? messages.saveButton : messages.createButton,
-          fullWidth: true,
           onPressed: handle.canSave ? handle.save : null,
         ),
       ),

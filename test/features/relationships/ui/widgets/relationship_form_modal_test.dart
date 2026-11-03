@@ -7,6 +7,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/features/categories/ui/widgets/category_field_row.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
 import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
@@ -62,7 +63,20 @@ class _FakeContactsService implements ContactsService {
 
 /// The first channel row's value field: name, nickname and the names that
 /// come up are the three text fields above it.
-final Finder firstChannelField = find.byType(TextField).at(3);
+/// The value field of the first channel row, found by its key rather than by
+/// its position among the form's text fields, which moves as sections do.
+final Finder firstChannelField = find
+    .descendant(
+      of: find.byWidgetPredicate(
+        (widget) =>
+            widget.key is ValueKey<String> &&
+            (widget.key! as ValueKey<String>).value.startsWith(
+              'person-form-channel-value-',
+            ),
+      ),
+      matching: find.byType(TextField),
+    )
+    .first;
 
 /// Taps [finder] once it is scrolled into view: everything below the Who
 /// card can sit past the bottom of the 800×600 test surface.
@@ -669,30 +683,61 @@ void main() {
       );
     });
 
-    testWidgets('groups the form as Who · Important · How to reach them', (
+    testWidgets('groups the form as the goal form does: Who · How to reach '
+        'them · Your agent, the agent last', (
       tester,
     ) async {
       await tester.pumpWidget(buildForm());
       await tester.pumpAndSettle();
 
       expect(
-        find.byKey(const ValueKey('person-form-who-card')),
+        find.byKey(const ValueKey('person-form-who-section')),
         findsOneWidget,
       );
       expect(
-        find.byKey(const ValueKey('person-form-important-card')),
+        find.byKey(const ValueKey('person-form-agent-section')),
         findsOneWidget,
       );
       expect(
-        find.byKey(const ValueKey('person-form-reach-card')),
+        find.byKey(const ValueKey('person-form-reach-section')),
         findsOneWidget,
       );
       expect(find.text('Who'), findsOneWidget);
       expect(find.text('How to reach them'), findsOneWidget);
-      // The channels card repeats the promise the person page makes.
+      expect(find.text('Your agent'), findsOneWidget);
+      // The channels section repeats the promise the person page makes.
       expect(
         find.text('Stays on this device · never shared with the AI'),
         findsOneWidget,
+      );
+      double top(String key) => tester.getTopLeft(find.byKey(ValueKey(key))).dy;
+      expect(
+        top('person-form-who-section'),
+        lessThan(top('person-form-reach-section')),
+      );
+      expect(
+        top('person-form-reach-section'),
+        lessThan(top('person-form-agent-section')),
+      );
+      // The agent's section holds what decides how it works: the switch,
+      // the category whose AI profile it briefs with, and the words its
+      // transcripts should know.
+      final agent = find.byKey(const ValueKey('person-form-agent-section'));
+      for (final inside in [
+        find.byKey(const ValueKey('person-form-reminders')),
+        find.byType(CategoryFieldRow),
+        find.byKey(const ValueKey('person-form-category-hint')),
+        find.byKey(const ValueKey('person-form-known-terms')),
+      ]) {
+        expect(find.descendant(of: agent, matching: inside), findsOneWidget);
+      }
+      // No section is boxed in a card inside the modal's own surface.
+      expect(
+        find.descendant(
+          of: find.byType(RelationshipForm),
+          matching: find.byType(DesignSystemSectionCard),
+        ),
+        findsNothing,
       );
     });
 

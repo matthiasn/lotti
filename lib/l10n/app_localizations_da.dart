@@ -388,6 +388,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get agentFeedbackSourceRating => 'Vurdering';
 
   @override
+  String get agentFormSectionTitle => 'Din agent';
+
+  @override
   String get agentInstancesEmptyFiltered =>
       'Ingen instanser matcher dine filtre.';
 
@@ -8206,9 +8209,6 @@ class AppLocalizationsDa extends AppLocalizations {
   String get goalFormAddSignal => 'Tilføj et signal';
 
   @override
-  String get goalFormAgentSectionTitle => 'Din agent';
-
-  @override
   String get goalFormBloodPressureSource =>
       'Systolisk og diastolisk · mmHg · 7-dages gennemsnit';
 
@@ -13795,6 +13795,10 @@ class AppLocalizationsDa extends AppLocalizations {
   @override
   String get relationshipErrorUpdateFailed =>
       'Ændringerne kunne ikke gemmes. Prøv igen.';
+
+  @override
+  String get relationshipFormCategoryProfileHint =>
+      'Deres agent laver briefinger med den AI-profil, som denne kategori angiver, eller med din standard, når den ikke angiver nogen.';
 
   @override
   String get relationshipFormImportantBody =>

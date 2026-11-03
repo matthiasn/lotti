@@ -391,6 +391,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get agentFeedbackSourceRating => 'Betyg';
 
   @override
+  String get agentFormSectionTitle => 'Din agent';
+
+  @override
   String get agentInstancesEmptyFiltered => 'Inga exempel matchar dina filter.';
 
   @override
@@ -8220,9 +8223,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get goalFormAddSignal => 'Lägg till en signal';
 
   @override
-  String get goalFormAgentSectionTitle => 'Din agent';
-
-  @override
   String get goalFormBloodPressureSource =>
       'Systoliskt och diastoliskt · mmHg · 7-dagarsgenomsnitt';
 
@@ -13815,6 +13815,10 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get relationshipErrorUpdateFailed =>
       'Ändringarna kunde inte sparas. Försök igen.';
+
+  @override
+  String get relationshipFormCategoryProfileHint =>
+      'Personens agent skriver sina genomgångar med den AI-profil som kategorin anger, eller med din standard när den inte anger någon.';
 
   @override
   String get relationshipFormImportantBody =>

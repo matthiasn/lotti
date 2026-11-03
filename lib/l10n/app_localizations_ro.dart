@@ -393,6 +393,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentFeedbackSourceRating => 'Evaluare';
 
   @override
+  String get agentFormSectionTitle => 'Agentul dvs.';
+
+  @override
   String get agentInstancesEmptyFiltered =>
       'Nicio instanță nu corespunde filtrelor dvs.';
 
@@ -8354,9 +8357,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get goalFormAddSignal => 'Adăugați un semnal';
 
   @override
-  String get goalFormAgentSectionTitle => 'Agentul dvs.';
-
-  @override
   String get goalFormBloodPressureSource =>
       'Sistolică și diastolică · mmHg · medie pe 7 zile';
 
@@ -14063,6 +14063,10 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get relationshipErrorUpdateFailed =>
       'Modificările nu au putut fi salvate. Încercați din nou.';
+
+  @override
+  String get relationshipFormCategoryProfileHint =>
+      'Agentul acestei persoane pregătește rezumatele cu profilul AI indicat de această categorie sau cu profilul dvs. implicit, dacă nu indică niciunul.';
 
   @override
   String get relationshipFormImportantBody =>

@@ -2689,11 +2689,11 @@ void main() {
       await openModal(tester);
 
       expect(
-        find.byKey(const ValueKey('person-form-who-card')),
+        find.byKey(const ValueKey('person-form-who-section')),
         findsOneWidget,
       );
       expect(
-        find.byKey(const ValueKey('person-form-reach-card')),
+        find.byKey(const ValueKey('person-form-reach-section')),
         findsOneWidget,
         reason: 'the form is three cards: Who, Important, How to reach them',
       );

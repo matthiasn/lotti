@@ -10,6 +10,7 @@ import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart';
+import 'package:lotti/features/agents/ui/agent_form_section.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/categories/state/categories_list_controller.dart';
 import 'package:lotti/features/categories/ui/widgets/category_field_row.dart';
@@ -43,14 +44,14 @@ import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 import 'package:material_ui/material_ui.dart';
 
 part 'create_goal_agent_mapping_step_part.dart';
+part 'create_goal_agent_page_category_part.dart';
+part 'create_goal_agent_page_composite_rule_label_part.dart';
+part 'create_goal_agent_page_edit_agent_part.dart';
+part 'create_goal_agent_page_form_helpers.dart';
+part 'create_goal_agent_page_internals.dart';
 part 'create_goal_agent_pickers_part.dart';
 part 'create_goal_agent_steps_part.dart';
 part 'create_goal_agent_target_inputs_part.dart';
-part 'create_goal_agent_page_composite_rule_label_part.dart';
-part 'create_goal_agent_page_edit_agent_part.dart';
-part 'create_goal_agent_page_internals.dart';
-part 'create_goal_agent_page_category_part.dart';
-part 'create_goal_agent_page_form_helpers.dart';
 
 class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage>
     with _GoalFormCategory {
@@ -307,6 +308,8 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage>
       _step = _GoalFormStep.mapping;
     });
   }
+
+  void _clearPersonaError() => setState(() => _personaError = null);
 
   void _continueToConfirmation(List<HabitDefinition> habits) {
     if (!_mappingIsValid()) return;
@@ -568,14 +571,16 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage>
           identity.lifecycle == AgentLifecycle.active;
       if (isActiveGoal && editSpec != null) {
         _initializeEdit(identity, editSpec);
-      } else if (identityAsync.hasError ||
-          healthAsync.hasError ||
-          (identity != null && !isActiveGoal) ||
-          (!identityAsync.isLoading && identity == null) ||
-          (!healthAsync.isLoading && editSpec == null)) {
-        return _EditLoadScaffold(onBack: _back, unavailable: true);
       } else {
-        return _EditLoadScaffold(onBack: _back, unavailable: false);
+        return _EditLoadScaffold(
+          onBack: _back,
+          unavailable:
+              identityAsync.hasError ||
+              healthAsync.hasError ||
+              (identity != null && !isActiveGoal) ||
+              (!identityAsync.isLoading && identity == null) ||
+              (!healthAsync.isLoading && editSpec == null),
+        );
       }
     }
 
@@ -924,17 +929,7 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage>
                                     }),
                                 enabled: !_saving,
                                 agentSection: _editing
-                                    ? _EditAgentSection(
-                                        persona: _persona,
-                                        personaError: _personaError,
-                                        onPersonaChanged: () => setState(
-                                          () => _personaError = null,
-                                        ),
-                                        enabled: !_saving,
-                                        categoryId: _categoryId,
-                                        onCategoryChanged: _categoryChanger,
-                                        editVersion: editSpec?.version,
-                                      )
+                                    ? _EditAgentSection.of(this, editSpec)
                                     : null,
                               ),
                               _GoalFormStep.confirmation => _ConfirmationStep(

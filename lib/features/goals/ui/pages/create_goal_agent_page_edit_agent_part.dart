@@ -15,6 +15,20 @@ class _EditAgentSection extends StatelessWidget {
     required this.editVersion,
   });
 
+  /// The section as [form] stands, editing [spec].
+  factory _EditAgentSection.of(
+    _CreateGoalAgentPageState form,
+    GoalSpecVersionEntity? spec,
+  ) => _EditAgentSection(
+    persona: form._persona,
+    personaError: form._personaError,
+    onPersonaChanged: form._clearPersonaError,
+    enabled: !form._saving,
+    categoryId: form._categoryId,
+    onCategoryChanged: form._categoryChanger,
+    editVersion: spec?.version,
+  );
+
   final TextEditingController persona;
   final String? personaError;
   final VoidCallback onPersonaChanged;
@@ -32,42 +46,42 @@ class _EditAgentSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
-    return Column(
+    // The shared section a person's form ends on too, so both editors close
+    // on the same *Your agent*.
+    return AgentFormSection(
       key: const ValueKey('goal-form-agent-section'),
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          messages.goalFormAgentSectionTitle,
-          style: tokens.typography.styles.heading.heading3,
-        ),
-        SizedBox(height: tokens.spacing.step5),
-        DesignSystemTextInput(
-          key: const ValueKey('goal-form-persona'),
-          controller: persona,
-          label: messages.goalFormPersonaLabel,
-          leadingIcon: LottiIcons.aiSpark,
-          errorText: personaError,
-          enabled: enabled,
-          onChanged: (_) => onPersonaChanged(),
-        ),
-        SizedBox(height: tokens.spacing.step4),
-        IgnorePointer(
-          ignoring: !enabled,
-          child: CategoryFieldRow(
-            categoryId: categoryId,
-            onChanged: onCategoryChanged,
+      title: messages.agentFormSectionTitle,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          DesignSystemTextInput(
+            key: const ValueKey('goal-form-persona'),
+            controller: persona,
+            label: messages.goalFormPersonaLabel,
+            leadingIcon: LottiIcons.aiSpark,
+            errorText: personaError,
+            enabled: enabled,
+            onChanged: (_) => onPersonaChanged(),
           ),
-        ),
-        if (editVersion case final version?) ...[
-          SizedBox(height: tokens.spacing.step5),
-          Text(
-            messages.goalFormEditVersion(version + 1),
-            style: tokens.typography.styles.others.caption.copyWith(
-              color: tokens.colors.text.mediumEmphasis,
+          SizedBox(height: tokens.spacing.step4),
+          IgnorePointer(
+            ignoring: !enabled,
+            child: CategoryFieldRow(
+              categoryId: categoryId,
+              onChanged: onCategoryChanged,
             ),
           ),
+          if (editVersion case final version?) ...[
+            SizedBox(height: tokens.spacing.step5),
+            Text(
+              messages.goalFormEditVersion(version + 1),
+              style: tokens.typography.styles.others.caption.copyWith(
+                color: tokens.colors.text.mediumEmphasis,
+              ),
+            ),
+          ],
         ],
-      ],
+      ),
     );
   }
 }
