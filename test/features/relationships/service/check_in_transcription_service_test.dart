@@ -3,9 +3,12 @@ import 'dart:async';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/agents/agent_config.dart';
+import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/ai/skill_type.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/ai/helpers/profile_automation_resolver.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/services/profile_automation_service.dart';
 import 'package:lotti/features/ai/services/skill_inference_runner.dart';
@@ -168,12 +171,18 @@ void main() {
     when(
       () => resolver.resolveTranscriptionProfile(
         categoryId: any(named: 'categoryId'),
+        subjectId: any(named: 'subjectId'),
       ),
     ).thenAnswer((_) async => value);
   }
 
+  /// Every People request names the person as the subject, so the rule asks
+  /// their agent's profile before their category's and the default.
   void verifyResolvedFor(String? categoryId, {int times = 1}) => verify(
-    () => resolver.resolveTranscriptionProfile(categoryId: categoryId),
+    () => resolver.resolveTranscriptionProfile(
+      subjectId: personId,
+      categoryId: categoryId,
+    ),
   ).called(times);
 
   setUp(() {
@@ -396,8 +405,9 @@ void main() {
 
   group('profile routing', () {
     test(
-      "asks for the person's category's transcription profile — a person "
-      'filed under a category is never sent past it to the default',
+      'asks the transcription rule for the person and their category — the '
+      "person's agent first, so a person filed under a category is never "
+      'sent past either to the default',
       () {
         when(() => journalDb.journalEntityById(personId)).thenAnswer(
           (_) async => testRelationship.copyWith(
@@ -671,6 +681,7 @@ void main() {
       when(
         () => resolver.resolveTranscriptionProfile(
           categoryId: any(named: 'categoryId'),
+          subjectId: any(named: 'subjectId'),
         ),
       ).thenAnswer((_) async => throw Exception('profile unavailable'));
 
@@ -787,6 +798,76 @@ void main() {
       verifyZeroInteractions(runner);
       verifyResolvedFor(null, times: 2);
       verifyNoMoreInteractions(resolver);
+    });
+  });
+
+  // People and goals share one transcription rule. Run over the real
+  // resolver, a person whose agent is assigned the Voxtral profile is heard by
+  // Voxtral even though their category names Whisper — the regression a goal
+  // agent hit, which People must not reproduce.
+  group('route over the shared transcription rule', () {
+    ResolvedProfile named(String profileId, String model, String provider) =>
+        ResolvedProfile(
+          profileId: profileId,
+          thinkingModelId: 'thinking',
+          thinkingProvider: testInferenceProvider(),
+          transcriptionModelId: model,
+          transcriptionModel: testAiModel(id: model).copyWith(name: model),
+          transcriptionProvider: testInferenceProvider(
+            id: provider,
+          ).copyWith(name: provider),
+        );
+
+    test("the person's agent profile outranks their category's", () async {
+      when(() => journalDb.journalEntityById(personId)).thenAnswer(
+        (_) async => testRelationship.copyWith(
+          meta: testRelationship.meta.copyWith(categoryId: 'people'),
+        ),
+      );
+      // Shaped as `RelationshipAgentService` makes it: no template, the
+      // profile in a configured setup alone.
+      final agent = makeTestIdentity(
+        agentId: 'person-agent',
+        config: const AgentConfig(
+          profileId: 'mistral-eu',
+          inferenceSetup: AgentInferenceSetup(
+            mode: AgentInferenceSetupMode.configured,
+            origin: AgentInferenceSetupOrigin.categorySnapshot,
+            baseProfileId: 'mistral-eu',
+          ),
+        ),
+      );
+      final templates = MockAgentTemplateService();
+      final profiles = MockProfileResolver();
+      when(() => profiles.resolveByProfileId('mistral-eu')).thenAnswer(
+        (_) async => named('mistral-eu', 'Voxtral Mini Transcribe', 'Mistral'),
+      );
+      when(() => profiles.resolveByProfileId('melious')).thenAnswer(
+        (_) async => named('melious', 'Whisper large v3', 'Melious'),
+      );
+      final service = CheckInTranscriptionService(
+        journalDb,
+        MockUpdateNotifications(),
+        ProfileAutomationResolver(
+          subjectAgentLookup: (subjectId) async =>
+              subjectId == personId ? agent : null,
+          templateService: templates,
+          profileResolver: profiles,
+          domainLogger: logger,
+          categoryProfileLookup: (categoryId) async =>
+              categoryId == 'people' ? 'melious' : null,
+        ),
+        runner,
+        relationships,
+        logger,
+      );
+
+      expect(
+        await service.route(relationshipId: personId),
+        (model: 'Voxtral Mini Transcribe', provider: 'Mistral'),
+      );
+      verifyNever(() => profiles.resolveByProfileId('melious'));
+      verifyNever(profiles.resolveDefaultProfile);
     });
   });
 

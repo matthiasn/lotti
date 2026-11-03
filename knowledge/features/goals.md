@@ -2030,14 +2030,19 @@ Invariants worth not breaking:
   sheet was dismissed — those reach `AudioRecorderController.stop` without the
   composer ever hearing back.
 - **A check-in transcribes through a profile the user chose.** The recording
-  inherits the goal's category, and when no automated skill owns its
-  transcription it takes the
-  [transcription profile](ai/profile-resolution.md#the-transcription-profile):
-  the category's profile, else the device's Settings default, whichever owns
-  a transcription slot (`ProfileAutomationService.resolveTranscriptionFallback`
-  on the trigger's path, the same rule inside `tryTranscribe`). When neither
-  can transcribe, the check-in declines visibly; no model is picked outside a
-  profile. Before, every check-in whose category automated nothing went to a
+  inherits the goal's category — the composer and the reflection's voice
+  note both read it from `goalCategoryIdProvider` — and when no automated
+  skill owns its transcription it takes the
+  [transcription profile](ai/profile-resolution.md#the-transcription-profile)
+  for the goal: the goal agent's profile, else the category's, else the
+  device's Settings default, whichever first owns a transcription slot
+  (`ProfileAutomationService.resolveTranscriptionFallback` on the trigger's
+  path, which finds the goal as the entry linking to the recording; the same
+  rule inside `tryTranscribe`). When none can transcribe, the check-in
+  declines visibly; no model is picked outside a profile. Until the rule had
+  the agent tier, a goal in no category reached only the Settings default, so
+  a goal agent set to Mistral had its check-ins heard by the default's
+  Whisper. Before, every check-in whose category automated nothing went to a
   fallback whose provider ranking put the on-device engine first —
   minutes per recording and the reported crashes, on a model the user never
   picked.

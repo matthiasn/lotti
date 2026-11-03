@@ -66,9 +66,9 @@ typedef CheckInTranscriptionRoute = ({String model, String provider});
 ///
 /// Transcribes through the transcription slot of the profile
 /// [ProfileAutomationResolver.resolveTranscriptionProfile] picks for the
-/// person's category: the category's profile when it can transcribe, else the
-/// device's Settings default — the same rule a goal's check-ins follow, so no
-/// model is ever chosen here. The words are corrected against the person's known
+/// person: their agent's profile, else their own, else their category's, else
+/// the device's Settings default — whichever first can transcribe. It is the
+/// same rule a goal's check-ins follow, so no model is ever chosen here. The words are corrected against the person's known
 /// terms ([relationshipKnownTerms]) plus the category speech dictionary, so
 /// a name the provider mishears still lands spelled the way the user writes
 /// it: by sound and spelling, and — on a speech-to-text engine — by the
@@ -107,7 +107,8 @@ class CheckInTranscriptionService {
   final PersonRecordingSummarizer? _summarizer;
 
   /// Whether anything can transcribe for the person [relationshipId]: their
-  /// category's profile or the Settings default owns a transcription slot.
+  /// agent's, their own, their category's or the Settings default profile
+  /// owns a transcription slot.
   Future<bool> canTranscribe({required String relationshipId}) async =>
       await _resolveProfile(relationshipId) != null;
 
@@ -126,9 +127,10 @@ class CheckInTranscriptionService {
   }
 
   /// The profile that transcribes for the person [relationshipId]: their
-  /// category's, else the Settings default — whichever first owns a
-  /// transcription slot. A person who cannot be read resolves as filed under
-  /// no category, so the default still transcribes.
+  /// agent's, their own, their category's, else the Settings default —
+  /// whichever first owns a transcription slot. A person whose category
+  /// cannot be read resolves as filed under no category, so the default
+  /// still transcribes.
   Future<ResolvedProfile?> _resolveProfile(String relationshipId) async =>
       (await _resolve(relationshipId)).profile;
 
@@ -140,6 +142,7 @@ class CheckInTranscriptionService {
     final categoryId = await _categoryOf(relationshipId);
     return (
       profile: await _automationResolver.resolveTranscriptionProfile(
+        subjectId: relationshipId,
         categoryId: categoryId,
       ),
       categoryId: categoryId,

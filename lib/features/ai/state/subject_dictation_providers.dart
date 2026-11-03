@@ -19,8 +19,9 @@ const _logTag = 'SubjectDictation';
 /// on the profile that subject's recordings transcribe through.
 ///
 /// Both halves follow `ProfileAutomationResolver.resolveTranscriptionProfile`
-/// for the subject's category: the category's profile when it can
-/// transcribe, else the device's Settings default. No model is chosen here,
+/// for the subject: its agent's profile, its own, its category's, else the
+/// device's Settings default — whichever first can transcribe, the same
+/// profile the subject's recordings transcribe through. No model is chosen here,
 /// and none is discovered: a subject whose profiles cannot transcribe gets
 /// the chat's "no audio model" error rather than a model the user never
 /// picked.
@@ -74,6 +75,7 @@ subjectDictationProvider = Provider.family<SubjectDictation, String>((
     final categoryId = await resolver.categoryOfSubject(subjectId);
     return (
       profile: await resolver.resolveTranscriptionProfile(
+        subjectId: subjectId,
         categoryId: categoryId,
       ),
       categoryId: categoryId,

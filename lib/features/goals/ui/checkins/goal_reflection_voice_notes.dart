@@ -48,6 +48,9 @@ class GoalReflectionVoiceNotes extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
     final goalEntryId = ref.watch(goalCaptureTargetProvider(agentId)).value;
+    // Watched so the goal's category is loaded, and kept, by the time the
+    // user taps record; the tap still awaits it in case it is not.
+    ref.watch(goalCategoryIdProvider(agentId));
     final reflectedDay = day.toLocal();
     final recordings = [
       for (final entity in ref.watch(goalCheckInEntriesProvider(agentId)))
@@ -81,9 +84,20 @@ class GoalReflectionVoiceNotes extends ConsumerWidget {
             child: DsQuietInk(
               key: const ValueKey('goal-reflection-add-voice-note'),
               // A voice note on a reflection IS a check-in: the recording is
-              // linked to the goal, and the recorder's stop path transcribes
-              // it like any other check-in.
-              onTap: () => openRecorder(context, goalEntryId: goalEntryId),
+              // linked to the goal, filed in the goal's category like the
+              // composer's check-ins, and the recorder's stop path
+              // transcribes it like any other check-in.
+              onTap: () async {
+                final categoryId = await ref.read(
+                  goalCategoryIdProvider(agentId).future,
+                );
+                if (!context.mounted) return;
+                await openRecorder(
+                  context,
+                  goalEntryId: goalEntryId,
+                  categoryId: categoryId,
+                );
+              },
               borderRadius: BorderRadius.circular(tokens.radii.s),
               builder: (context, highlighted) {
                 final ink = highlighted

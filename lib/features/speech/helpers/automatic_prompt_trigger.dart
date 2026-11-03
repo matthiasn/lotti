@@ -24,8 +24,9 @@ import 'package:lotti/services/domain_logging.dart';
 /// The subject is whatever the recording was linked to — a task, a project, an
 /// event, a person, or a goal. Everything here is kind-agnostic except the
 /// task context handed to the transcription prompt, which only a task can
-/// supply, and the consent question for a goal: a goal has no category to
-/// answer it, so its agent's automatic-updates switch decides instead.
+/// supply, and the consent question for a goal: when the goal's category does
+/// not answer it — a goal filed in no category, or in one whose automatic
+/// inference is off — its agent's automatic-updates switch decides instead.
 class AutomaticPromptTrigger {
   AutomaticPromptTrigger({
     required this.ref,
@@ -119,9 +120,10 @@ class AutomaticPromptTrigger {
   /// Transcribes a goal check-in that the category gate just declined.
   ///
   /// A check-in is an ordinary `JournalAudio` linked to a goal's journal
-  /// entry, which belongs to no task and no category — so the profile
-  /// automation above always declines it, and for a long time that decline was
-  /// a log line: every check-in saved, played back, and was never transcribed.
+  /// entry, which belongs to no task. Filed in no category, or in one whose
+  /// automatic inference is off, the profile automation above declines it,
+  /// and for a long time that decline was a log line: every check-in saved,
+  /// played back, and was never transcribed.
   ///
   /// This runs here, on the controller's stop path, rather than in the goal
   /// composer that opened the recorder, because the composer only learns of a
@@ -174,8 +176,9 @@ class AutomaticPromptTrigger {
     );
     // The shared skill trigger — the same entry point the AI popup and the
     // timeline's Retry use — so a check-in transcribes with the same skill,
-    // the same model resolution (including the category-less direct
-    // fallback) and the same failure reporting as every other recording.
+    // the same profile resolution (the goal agent's profile first, then the
+    // category's, then the Settings default) and the same failure reporting
+    // as every other recording.
     await ref.read(
       triggerSkillProvider((
         entityId: entryId,

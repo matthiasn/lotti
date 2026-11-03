@@ -1,3 +1,4 @@
+import 'package:lotti/classes/agents/agent_config.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
@@ -88,33 +89,108 @@ class ProfileAutomationResolver {
   Future<ResolvedProfile?> resolveDefaultProfile() =>
       _profileResolver.resolveDefaultProfile();
 
-  /// The profile a recording filed under [categoryId] transcribes through:
-  /// the category's default profile when it owns a transcription slot, else
-  /// the device's Settings default when that one does. Null when neither
-  /// can transcribe.
+  /// The profile a recording about [subjectId], filed under [categoryId],
+  /// transcribes through — the first of these that owns a transcription slot:
+  ///
+  /// 1. the profile assigned to [subjectId]'s agent: a typed
+  ///    `inferenceSetup`'s `assignedProfileId` (nothing when disabled, with
+  ///    no fall-through), else the legacy `agentConfig.profileId ??
+  ///    version.profileId ?? template.profileId`;
+  /// 2. [subjectId]'s own `profileId` (a person's, inherited at creation);
+  /// 3. [categoryId]'s default profile — [subjectId]'s category when
+  ///    [categoryId] is null;
+  /// 4. the device's Settings default.
+  ///
+  /// Null when none can transcribe.
   ///
   /// The one rule every recording without a task follows — a goal's
-  /// check-in, a person's, a voice note in a category — so the model and its
-  /// settings always come from a profile the user configured, never from a
-  /// model picked by provider type behind their back. A profile that
-  /// resolves but names no transcription model is passed over like a
-  /// missing one: it cannot transcribe either.
+  /// check-in, a person's, a voice note in a category, and the dictation
+  /// into their chats — so the model and its settings always come from a
+  /// profile the user configured, never from a model picked by provider type
+  /// behind their back. A profile that resolves but names no transcription
+  /// model is passed over like a missing one: it cannot transcribe either.
+  ///
+  /// The agent comes first because assigning it a profile is the most
+  /// specific choice the user makes: a goal agent set to a cloud profile
+  /// whose category, or whose Settings default, names an on-device or a
+  /// different cloud model used to transcribe on that one instead — a goal
+  /// filed in no category never even reached the agent's profile.
   ///
   /// Silent: render-time probes ask it on every rebuild. The run paths that
   /// act on its answer log which profile they transcribe through.
   Future<ResolvedProfile?> resolveTranscriptionProfile({
+    String? subjectId,
     String? categoryId,
   }) async {
-    final categoryProfileId = categoryId == null
-        ? null
-        : await _categoryProfileLookup?.call(categoryId);
-    if (categoryProfileId != null) {
-      final categoryProfile = _transcribing(
-        await _profileResolver.resolveByProfileId(categoryProfileId),
+    final candidateProfileIds = <String>[];
+    String? subjectCategoryId;
+    if (subjectId != null) {
+      final agentProfileId = await _readSubjectTier(
+        subjectId,
+        'agent profile',
+        () => _agentTranscriptionProfileId(subjectId),
       );
-      if (categoryProfile != null) return categoryProfile;
+      if (agentProfileId != null) candidateProfileIds.add(agentProfileId);
+      final subjectProfileId = await _readSubjectTier(
+        subjectId,
+        'own profile',
+        () async => _subjectProfileLookup?.call(subjectId),
+      );
+      if (subjectProfileId != null) candidateProfileIds.add(subjectProfileId);
+      if (categoryId == null) {
+        subjectCategoryId = await _readSubjectTier(
+          subjectId,
+          'category',
+          () => categoryOfSubject(subjectId),
+        );
+      }
+    }
+    final effectiveCategoryId = categoryId ?? subjectCategoryId;
+    if (effectiveCategoryId != null) {
+      final categoryProfileId = await _categoryProfileLookup?.call(
+        effectiveCategoryId,
+      );
+      if (categoryProfileId != null) candidateProfileIds.add(categoryProfileId);
+    }
+
+    final asked = <String>{};
+    for (final profileId in candidateProfileIds) {
+      if (!asked.add(profileId)) continue;
+      final profile = _transcribing(
+        await _profileResolver.resolveByProfileId(profileId),
+      );
+      if (profile != null) return profile;
     }
     return _transcribing(await resolveDefaultProfile());
+  }
+
+  /// One subject tier of [resolveTranscriptionProfile], read by [read]; null
+  /// — the tier passed over — when the read throws.
+  ///
+  /// A subject whose agent or journal row cannot be read must still reach
+  /// the category's profile and the Settings default: People check-ins have
+  /// always transcribed through the default when the person could not be
+  /// read, and the subject tiers must not take that away.
+  Future<String?> _readSubjectTier(
+    String subjectId,
+    String tier,
+    Future<String?> Function() read,
+  ) async {
+    try {
+      return await read();
+    } catch (error, stackTrace) {
+      _domainLogger.error(
+        LogDomain.ai,
+        error,
+        stackTrace: stackTrace,
+        subDomain: _logTag,
+        message:
+            'Could not read the $tier of subject '
+            '${DomainLogger.sanitizeId(subjectId)} for its transcription '
+            'profile — passing over that tier',
+      );
+      return null;
+    }
   }
 
   /// The category [subjectId] is filed under, or null when it has none or
@@ -234,6 +310,29 @@ class ProfileAutomationResolver {
     return subjectProfileId;
   }
 
+  /// The profile [subjectId]'s agent is assigned, for the transcription
+  /// rule's first tier — or null when it has no agent or no assignment.
+  ///
+  /// Goal and person agents are standalone: they have no template, and
+  /// their profile lives in `AgentConfig` alone. A typed `inferenceSetup` is
+  /// authoritative ([AgentConfigAssignedProfile.assignedProfileId]: its base
+  /// profile, or nothing when it is disabled); only an agent without one
+  /// keeps the legacy chain, ending on its template's profile when it has a
+  /// template at all.
+  Future<String?> _agentTranscriptionProfileId(String subjectId) async {
+    final agent = await _subjectAgentLookup(subjectId);
+    if (agent == null) return null;
+    final config = agent.config;
+    if (config.inferenceSetup != null) return config.assignedProfileId;
+    final assigned = config.assignedProfileId;
+    if (assigned != null) return assigned;
+
+    final template = await _templateService.getTemplateForAgent(agent.agentId);
+    if (template == null) return null;
+    final version = await _templateService.getActiveVersion(template.id);
+    return version?.profileId ?? template.profileId;
+  }
+
   Future<String?> _resolveProfileIdViaAgent(String subjectId) async {
     final agent = await _subjectAgentLookup(subjectId);
     if (agent == null) return null;
@@ -288,12 +387,21 @@ class ProfileAutomationResolver {
 
     final template = await _templateService.getTemplateForAgent(agent.agentId);
     if (template == null) {
-      _domainLogger.log(
-        LogDomain.ai,
-        'No template found for agent ${agent.agentId}',
-        subDomain: _logTag,
+      // A goal's or a person's agent has no template: its setup, or its own
+      // profile, is the whole assignment. Reading nothing here let a
+      // category's automated skill win over the agent's chosen profile.
+      final standalone = await _resolveStandaloneAgent(agent.config);
+      if (standalone == null) {
+        _domainLogger.log(
+          LogDomain.ai,
+          'No template and no assigned profile for agent ${agent.agentId}',
+          subDomain: _logTag,
+        );
+      }
+      return standalone?.forAgent(
+        agentId: agent.agentId,
+        agentName: agent.displayName,
       );
-      return null;
     }
 
     final version = await _templateService.getActiveVersion(template.id);
@@ -315,6 +423,21 @@ class ProfileAutomationResolver {
       agentId: agent.agentId,
       agentName: agent.displayName,
     );
+  }
+
+  /// The profile a template-less agent is assigned: its typed setup's, which
+  /// is authoritative (a disabled or broken one yields nothing), else its own
+  /// legacy `profileId`. No Settings default here — the callers' fallbacks
+  /// decide what comes after the agent.
+  Future<ResolvedProfile?> _resolveStandaloneAgent(AgentConfig config) async {
+    final setup = config.inferenceSetup;
+    if (setup != null) {
+      return (await _profileResolver.resolveSetup(setup)).profile;
+    }
+    final profileId = config.assignedProfileId;
+    return profileId == null
+        ? null
+        : _profileResolver.resolveByProfileId(profileId);
   }
 
   Future<ResolvedProfile?> _resolveViaSubjectProfile(String subjectId) async {

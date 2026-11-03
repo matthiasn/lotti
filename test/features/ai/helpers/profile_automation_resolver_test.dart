@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/agents/agent_config.dart';
+import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/ai/database/ai_config_db.dart';
@@ -8,6 +9,7 @@ import 'package:lotti/features/ai/helpers/profile_automation_resolver.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/util/profile_resolver.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -126,6 +128,75 @@ void main() {
       verifyNever(
         () => mockTemplateService.getActiveVersion(any()),
       );
+    });
+
+    // Goal and person agents are created without a template; their profile
+    // lives in their config alone. Reading nothing for them let a category's
+    // automated skill win over the profile the user gave the agent.
+    group('a template-less agent', () {
+      const setup = AgentInferenceSetup(
+        mode: AgentInferenceSetupMode.configured,
+        origin: AgentInferenceSetupOrigin.categorySnapshot,
+        baseProfileId: 'mistral-eu',
+      );
+
+      void stubStandalone(AgentConfig config) {
+        final agent = makeTestIdentity(config: config);
+        when(
+          () => mockTaskAgentService.getTaskAgentForTask('goal-1'),
+        ).thenAnswer((_) async => agent);
+        when(
+          () => mockTemplateService.getTemplateForAgent(agent.agentId),
+        ).thenAnswer((_) async => null);
+      }
+
+      test('resolves its typed setup, stamped with the agent', () async {
+        final mistral = makeResolvedProfile();
+        stubStandalone(const AgentConfig(inferenceSetup: setup));
+        when(() => mockProfileResolver.resolveSetup(setup)).thenAnswer(
+          (_) async => ResolvedAgentSetup(
+            status: AgentSetupResolutionStatus.resolved,
+            profile: mistral,
+          ),
+        );
+
+        final result = await resolver.resolveForSubject('goal-1');
+
+        expect(result?.thinkingModelId, mistral.thinkingModelId);
+        expect(result?.agentId, kTestAgentId);
+        verifyNever(() => mockTemplateService.getActiveVersion(any()));
+      });
+
+      test('resolves its legacy profileId when it has no setup', () async {
+        final mistral = makeResolvedProfile();
+        stubStandalone(const AgentConfig(profileId: 'mistral-eu'));
+        when(
+          () => mockProfileResolver.resolveByProfileId('mistral-eu'),
+        ).thenAnswer((_) async => mistral);
+
+        final result = await resolver.resolveForSubject('goal-1');
+
+        expect(result?.thinkingModelId, mistral.thinkingModelId);
+        expect(result?.agentId, kTestAgentId);
+      });
+
+      test('a disabled setup resolves nothing — no profile it still '
+          'carries is used', () async {
+        const disabled = AgentInferenceSetup(
+          mode: AgentInferenceSetupMode.disabled,
+          origin: AgentInferenceSetupOrigin.categorySnapshot,
+          baseProfileId: 'mistral-eu',
+        );
+        stubStandalone(const AgentConfig(inferenceSetup: disabled));
+        when(() => mockProfileResolver.resolveSetup(disabled)).thenAnswer(
+          (_) async => const ResolvedAgentSetup(
+            status: AgentSetupResolutionStatus.disabled,
+          ),
+        );
+
+        expect(await resolver.resolveForSubject('goal-1'), isNull);
+        verifyNever(() => mockProfileResolver.resolveByProfileId(any()));
+      });
     });
 
     test('returns null when template has no active version', () async {
@@ -374,6 +445,19 @@ void main() {
           );
         }
 
+        // A template-less agent is standalone: its own profile is asked. The
+        // generated scenarios model one whose profile does not resolve, so
+        // the walk still falls back to the task.
+        final standalone =
+            scenario.agentOutcome == GeneratedAgentResolutionOutcome.noTemplate;
+        if (standalone) {
+          when(
+            () => generatedProfileResolver.resolveByProfileId(
+              'generated-agent-profile',
+            ),
+          ).thenAnswer((_) async => null);
+        }
+
         if (scenario.reachesVersion) {
           when(
             () => generatedTemplateService.getActiveVersion(template.id),
@@ -442,6 +526,13 @@ void main() {
         verify(
           () => generatedTaskAgentService.getTaskAgentForTask(taskId),
         ).called(1);
+        if (standalone) {
+          verify(
+            () => generatedProfileResolver.resolveByProfileId(
+              'generated-agent-profile',
+            ),
+          ).called(1);
+        }
 
         if (scenario.reachesTemplate) {
           verify(
@@ -669,15 +760,41 @@ void main() {
 
     ProfileAutomationResolver withCategories({
       Map<String, String> categoryProfiles = const {},
+      Map<String, String> subjectProfiles = const {},
       SubjectCategoryLookup? subjectCategoryLookup,
     }) => ProfileAutomationResolver(
       subjectAgentLookup: mockTaskAgentService.getTaskAgentForTask,
       templateService: mockTemplateService,
       profileResolver: mockProfileResolver,
       domainLogger: logger,
+      subjectProfileLookup: (subjectId) async => subjectProfiles[subjectId],
       categoryProfileLookup: (categoryId) async => categoryProfiles[categoryId],
       subjectCategoryLookup: subjectCategoryLookup,
     );
+
+    /// Gives [subjectId] an agent the way `GoalAgentService.createGoalAgent`
+    /// and `RelationshipAgentService` make one: no template, and a configured
+    /// setup naming [profileId] (mirrored into the legacy field).
+    void stubAgent(String subjectId, {String? profileId}) {
+      final agent = makeTestIdentity(
+        agentId: 'agent-$subjectId',
+        config: AgentConfig(
+          profileId: profileId,
+          inferenceSetup: AgentInferenceSetup(
+            mode: AgentInferenceSetupMode.configured,
+            origin: AgentInferenceSetupOrigin.categorySnapshot,
+            baseProfileId: profileId,
+          ),
+        ),
+      );
+      when(
+        () => mockTaskAgentService.getTaskAgentForTask(subjectId),
+      ).thenAnswer((_) async => agent);
+    }
+
+    void stubNoAgent(String subjectId) => when(
+      () => mockTaskAgentService.getTaskAgentForTask(subjectId),
+    ).thenAnswer((_) async => null);
 
     void stubDefault(ResolvedProfile? profile) => when(
       () => mockProfileResolver.resolveDefaultProfile(),
@@ -758,6 +875,239 @@ void main() {
         },
       );
     }
+
+    // The regression: a goal agent assigned a Mistral profile transcribed on
+    // the category's or the Settings default's model, because the agent was
+    // never asked.
+    test(
+      "the subject's agent profile wins over its category and the default, "
+      'which are never resolved',
+      () async {
+        final agentProfile = transcribing('mistral');
+        stubAgent('goal-1', profileId: 'mistral');
+        stubProfile('mistral', agentProfile);
+        stubProfile('category-profile', transcribing('category-profile'));
+        stubDefault(transcribing('default'));
+
+        final result = await withCategories(
+          categoryProfiles: {'goals': 'category-profile'},
+        ).resolveTranscriptionProfile(subjectId: 'goal-1', categoryId: 'goals');
+
+        expect(result, same(agentProfile));
+        verifyNever(
+          () => mockProfileResolver.resolveByProfileId('category-profile'),
+        );
+        verifyNever(() => mockProfileResolver.resolveDefaultProfile());
+        expect(logged, isEmpty);
+      },
+    );
+
+    test(
+      'a disabled setup is not an assignment: the profile it still carries '
+      "is passed over for the subject's category",
+      () async {
+        final category = transcribing('goals-profile');
+        when(
+          () => mockTaskAgentService.getTaskAgentForTask('goal-1'),
+        ).thenAnswer(
+          (_) async => makeTestIdentity(
+            config: const AgentConfig(
+              profileId: 'mistral',
+              inferenceSetup: AgentInferenceSetup(
+                mode: AgentInferenceSetupMode.disabled,
+                origin: AgentInferenceSetupOrigin.categorySnapshot,
+                baseProfileId: 'mistral',
+              ),
+            ),
+          ),
+        );
+        stubProfile('goals-profile', category);
+
+        final result = await withCategories(
+          categoryProfiles: {'goals': 'goals-profile'},
+        ).resolveTranscriptionProfile(subjectId: 'goal-1', categoryId: 'goals');
+
+        expect(result, same(category));
+        verifyNever(() => mockProfileResolver.resolveByProfileId('mistral'));
+      },
+    );
+
+    test(
+      'an agent from an older client — no setup — is asked by its legacy '
+      'profileId, else its template, and needs no template for the first',
+      () async {
+        final legacy = transcribing('legacy');
+        final fromTemplate = transcribing('template-profile');
+        final legacyAgent = makeTestIdentity(
+          agentId: 'legacy-agent',
+          config: const AgentConfig(profileId: 'legacy'),
+        );
+        final templated = makeTestIdentity(agentId: 'templated-agent');
+        final template = makeTestTemplate(profileId: 'template-profile');
+        when(
+          () => mockTaskAgentService.getTaskAgentForTask('goal-1'),
+        ).thenAnswer((_) async => legacyAgent);
+        when(
+          () => mockTaskAgentService.getTaskAgentForTask('goal-2'),
+        ).thenAnswer((_) async => templated);
+        when(
+          () => mockTemplateService.getTemplateForAgent('templated-agent'),
+        ).thenAnswer((_) async => template);
+        when(
+          () => mockTemplateService.getActiveVersion(template.id),
+        ).thenAnswer((_) async => makeTestTemplateVersion());
+        stubProfile('legacy', legacy);
+        stubProfile('template-profile', fromTemplate);
+        final rule = withCategories();
+
+        expect(
+          await rule.resolveTranscriptionProfile(subjectId: 'goal-1'),
+          same(legacy),
+        );
+        verifyNever(
+          () => mockTemplateService.getTemplateForAgent('legacy-agent'),
+        );
+        expect(
+          await rule.resolveTranscriptionProfile(subjectId: 'goal-2'),
+          same(fromTemplate),
+        );
+      },
+    );
+
+    test(
+      "an agent profile that cannot transcribe falls to the subject's own "
+      'profile',
+      () async {
+        final own = transcribing('person-profile');
+        stubAgent('person-1', profileId: 'thinking-only');
+        stubProfile('thinking-only', transcribing('thinking', model: false));
+        stubProfile('person-profile', own);
+        stubDefault(transcribing('default'));
+
+        final result = await withCategories(
+          subjectProfiles: {'person-1': 'person-profile'},
+        ).resolveTranscriptionProfile(subjectId: 'person-1');
+
+        expect(result, same(own));
+        verifyNever(() => mockProfileResolver.resolveDefaultProfile());
+      },
+    );
+
+    test(
+      "a subject with no agent and no profile takes its own category's "
+      'profile when no category is passed',
+      () async {
+        final category = transcribing('goals-profile');
+        stubNoAgent('goal-1');
+        stubProfile('goals-profile', category);
+        stubDefault(transcribing('default'));
+
+        final result = await withCategories(
+          categoryProfiles: {'goals': 'goals-profile'},
+          subjectCategoryLookup: (subjectId) async =>
+              subjectId == 'goal-1' ? 'goals' : null,
+        ).resolveTranscriptionProfile(subjectId: 'goal-1');
+
+        expect(result, same(category));
+      },
+    );
+
+    test(
+      "a passed category — the recording's — outranks the subject's",
+      () async {
+        final recording = transcribing('recording-profile');
+        stubNoAgent('goal-1');
+        stubProfile('recording-profile', recording);
+
+        final result =
+            await withCategories(
+              categoryProfiles: {
+                'goals': 'goals-profile',
+                'filed': 'recording-profile',
+              },
+              subjectCategoryLookup: (_) async => 'goals',
+            ).resolveTranscriptionProfile(
+              subjectId: 'goal-1',
+              categoryId: 'filed',
+            );
+
+        expect(result, same(recording));
+        verifyNever(
+          () => mockProfileResolver.resolveByProfileId('goals-profile'),
+        );
+      },
+    );
+
+    test(
+      'a profile reached through several tiers is resolved once, then the '
+      'default is asked',
+      () async {
+        final fallback = transcribing('default');
+        stubAgent('goal-1', profileId: 'shared');
+        stubProfile('shared', transcribing('shared', model: false));
+        stubDefault(fallback);
+
+        final result = await withCategories(
+          categoryProfiles: {'goals': 'shared'},
+          subjectProfiles: {'goal-1': 'shared'},
+        ).resolveTranscriptionProfile(subjectId: 'goal-1', categoryId: 'goals');
+
+        expect(result, same(fallback));
+        verify(
+          () => mockProfileResolver.resolveByProfileId('shared'),
+        ).called(1);
+      },
+    );
+
+    // People check-ins have always transcribed through the Settings default
+    // when the person could not be read; the subject tiers must not throw
+    // that away.
+    test(
+      'subject reads that throw pass their tier over, and the category and '
+      'the Settings default still answer',
+      () async {
+        final fallback = transcribing('default');
+        final category = transcribing('goals-profile');
+        when(
+          () => mockTaskAgentService.getTaskAgentForTask('goal-1'),
+        ).thenAnswer((_) async => throw StateError('agents closed'));
+        stubProfile('goals-profile', category);
+        stubDefault(fallback);
+        final broken = ProfileAutomationResolver(
+          subjectAgentLookup: mockTaskAgentService.getTaskAgentForTask,
+          templateService: mockTemplateService,
+          profileResolver: mockProfileResolver,
+          domainLogger: logger,
+          subjectProfileLookup: (_) async => throw StateError('journal closed'),
+          categoryProfileLookup: (categoryId) async =>
+              categoryId == 'goals' ? 'goals-profile' : null,
+          subjectCategoryLookup: (_) async =>
+              throw StateError('journal closed'),
+        );
+
+        expect(
+          await broken.resolveTranscriptionProfile(
+            subjectId: 'goal-1',
+            categoryId: 'goals',
+          ),
+          same(category),
+        );
+        expect(
+          await broken.resolveTranscriptionProfile(subjectId: 'goal-1'),
+          same(fallback),
+        );
+        // agent + own profile on both calls, the category read on the second.
+        verify(
+          () => logger.error(
+            LogDomain.ai,
+            any<Object>(that: isA<StateError>()),
+            stackTrace: any(named: 'stackTrace'),
+            subDomain: 'ProfileAutomationResolver',
+            message: any(named: 'message'),
+          ),
+        ).called(5);
+      },
+    );
 
     test('categoryOfSubject reads the wired lookup, and is null without '
         'one', () async {
@@ -887,5 +1237,80 @@ void main() {
         expect(profile.transcriptionProvider!.id, 'melious');
       },
     );
+
+    group('a goal whose agent is assigned the Voxtral profile', () {
+      setUp(() {
+        // Shaped as `GoalAgentService.createGoalAgent` makes it: no template,
+        // the profile in a configured setup alone.
+        final agent = makeTestIdentity(
+          agentId: 'goal-agent',
+          config: const AgentConfig(
+            profileId: 'default-profile',
+            inferenceSetup: AgentInferenceSetup(
+              mode: AgentInferenceSetupMode.configured,
+              origin: AgentInferenceSetupOrigin.categorySnapshot,
+              baseProfileId: 'default-profile',
+            ),
+          ),
+        );
+        when(
+          () => mockTaskAgentService.getTaskAgentForTask('goal-entry'),
+        ).thenAnswer((_) async => agent);
+        when(
+          () => mockTemplateService.getTemplateForAgent('goal-agent'),
+        ).thenAnswer((_) async => null);
+      });
+
+      test(
+        'transcribes with Voxtral although its category names Whisper',
+        () async {
+          final profile = await realResolver.resolveTranscriptionProfile(
+            subjectId: 'goal-entry',
+            categoryId: 'family',
+          );
+
+          expect(profile!.transcriptionModel!.name, 'Voxtral Mini Transcribe');
+          expect(profile.transcriptionProvider!.id, 'mistral');
+        },
+      );
+
+      test(
+        'transcribes with Voxtral although the Settings default names '
+        'Whisper',
+        () async {
+          final settingsDb = SettingsDb(inMemoryDatabase: true);
+          addTearDown(settingsDb.close);
+          await settingsDb.saveSettingsItem(
+            AiConfigRepository.defaultProfileSettingsKey,
+            'family-profile',
+          );
+          final whisperDefault = ProfileAutomationResolver(
+            subjectAgentLookup: mockTaskAgentService.getTaskAgentForTask,
+            templateService: mockTemplateService,
+            profileResolver: ProfileResolver(
+              aiConfigRepository: AiConfigRepository(
+                configDb,
+                settingsDb: settingsDb,
+              ),
+              domainLogger: MockDomainLogger(),
+            ),
+            domainLogger: MockDomainLogger(),
+          );
+
+          // The device default alone would pick Whisper…
+          expect(
+            (await whisperDefault.resolveTranscriptionProfile())!
+                .transcriptionModel!
+                .name,
+            'Whisper large v3',
+          );
+          // …but a check-in about the goal goes through its agent's profile.
+          final profile = await whisperDefault.resolveTranscriptionProfile(
+            subjectId: 'goal-entry',
+          );
+          expect(profile!.transcriptionModel!.name, 'Voxtral Mini Transcribe');
+        },
+      );
+    });
   });
 }

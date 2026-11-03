@@ -10,6 +10,10 @@ import 'package:lotti/beamer/ai_skill_wiring.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/classes/ai_attribution.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/event_data.dart';
+import 'package:lotti/classes/event_status.dart';
+import 'package:lotti/classes/goal_criterion.dart';
+import 'package:lotti/classes/goal_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/conversions.dart' show toDbEntity;
@@ -44,8 +48,10 @@ import '../../../helpers/fake_entry_controller.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
+import '../../../test_data/test_data.dart';
 import '../../../widget_test_utils.dart';
 import '../../ai_consumption/test_utils.dart';
+import '../../projects/test_utils.dart';
 
 /// Hands a test a real `Ref`, which is what the public decline entry point
 /// takes — the goals provider passes its own.
@@ -1346,7 +1352,10 @@ void main() {
       // Default: nothing to fall back to. Tests that exercise the fallback
       // stub it to hand back a resolved speech-to-text route.
       when(
-        () => mockAutomationService.resolveTranscriptionFallback(),
+        () => mockAutomationService.resolveTranscriptionFallback(
+          subjectId: any(named: 'subjectId'),
+          categoryId: any(named: 'categoryId'),
+        ),
       ).thenAnswer((_) async => AutomationResult.notHandled);
     });
 
@@ -1544,7 +1553,10 @@ void main() {
                 )
                 as AiConfigInferenceProvider;
         when(
-          () => mockAutomationService.resolveTranscriptionFallback(),
+          () => mockAutomationService.resolveTranscriptionFallback(
+            subjectId: any(named: 'subjectId'),
+            categoryId: any(named: 'categoryId'),
+          ),
         ).thenAnswer(
           (_) async => AutomationResult(
             handled: true,
@@ -1625,7 +1637,10 @@ void main() {
         // decline is now visible, which is what makes the timeline offer
         // Retry instead of claiming it is still transcribing.
         when(
-          () => mockAutomationService.resolveTranscriptionFallback(),
+          () => mockAutomationService.resolveTranscriptionFallback(
+            subjectId: any(named: 'subjectId'),
+            categoryId: any(named: 'categoryId'),
+          ),
         ).thenAnswer((_) async => AutomationResult.notHandled);
         final declineContainer = ProviderContainer(
           overrides: withServiceOverrides([
@@ -1836,7 +1851,12 @@ void main() {
         // unrelated recording look like a failed transcription.
         verifyNever(() => bench.service.finalize(any()));
         // The fallback belongs to transcription alone.
-        verifyNever(() => mockAutomationService.resolveTranscriptionFallback());
+        verifyNever(
+          () => mockAutomationService.resolveTranscriptionFallback(
+            subjectId: any(named: 'subjectId'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        );
         verifyZeroInteractions(mockRunner);
 
         // Same for the other way in: a task whose profile does not resolve.
@@ -2172,7 +2192,8 @@ void main() {
 
     for (final policy in [ContextPolicy.none, ContextPolicy.fullTask]) {
       test(
-        'resolves via category and runs transcription for standalone audio '
+        'asks the transcription rule for the category of standalone audio '
+        'and runs it '
         '(${policy.name}) — the task-context skill too, as a goal check-in '
         'uses it, framed by what the recording belongs to',
         () async {
@@ -2237,9 +2258,21 @@ void main() {
           when(
             () => mockJournalDb.journalEntityById('standalone-audio-1'),
           ).thenAnswer((_) async => audioEntity);
+          // Nothing links to the recording, so it is about no subject: the
+          // rule is asked for the recording's category alone.
           when(
-            () => mockResolver.resolveForCategory('cat-journal'),
-          ).thenAnswer((_) async => resolvedProfile);
+            () => mockAutomationService.resolveTranscriptionFallback(
+              // ignore: avoid_redundant_argument_values
+              subjectId: null,
+              categoryId: 'cat-journal',
+            ),
+          ).thenAnswer(
+            (_) async => AutomationResult(
+              handled: true,
+              skill: skill,
+              resolvedProfile: resolvedProfile,
+            ),
+          );
           when(
             () => mockRunner.runTranscription(
               audioEntryId: any(named: 'audioEntryId'),
@@ -2274,18 +2307,262 @@ void main() {
             )).future,
           );
 
-          verify(
-            () => mockResolver.resolveForCategory('cat-journal'),
-          ).called(1);
+          // A transcription never takes the category's profile directly: a
+          // category profile without a transcription slot would otherwise
+          // hide the subject's and the default's.
+          verifyNever(() => mockResolver.resolveForCategory(any()));
           verifyNever(() => mockResolver.resolveForSubject(any()));
-          verify(
-            () => mockRunner.runTranscription(
-              audioEntryId: 'standalone-audio-1',
-              automationResult: any(named: 'automationResult'),
-              overrideModelId: any(named: 'overrideModelId'),
-              geminiThinkingMode: any(named: 'geminiThinkingMode'),
+          final captured =
+              verify(
+                    () => mockRunner.runTranscription(
+                      audioEntryId: 'standalone-audio-1',
+                      automationResult: captureAny(named: 'automationResult'),
+                      overrideModelId: any(named: 'overrideModelId'),
+                      geminiThinkingMode: any(named: 'geminiThinkingMode'),
+                    ),
+                  ).captured.single
+                  as AutomationResult;
+          expect(captured.resolvedProfile, same(resolvedProfile));
+        },
+      );
+    }
+
+    // The regression: a goal check-in reached the trigger with no task and
+    // no category, and transcribed on the Settings default's model because
+    // the goal agent the recording is about was never asked.
+    test(
+      'a recording linked from a goal asks the transcription rule for that '
+      "goal, so its agent's profile transcribes it",
+      () async {
+        final skill = findBuiltInSkill(skillTranscribeContextId)!;
+        final goal = JournalEntity.goal(
+          meta: Metadata(
+            id: 'goal-entry-1',
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            dateFrom: DateTime(2024, 3, 15),
+            dateTo: DateTime(2024, 3, 15),
+          ),
+          data: const GoalData(
+            title: 'Waddle daily',
+            statement: 'Waddle 2 km every day.',
+            criteria: GoalCriterion.allOf(
+              criterionId: 'all',
+              criteria: <GoalCriterion>[],
             ),
-          ).called(1);
+            specVersion: 1,
+            specVersionId: 'spec-1',
+          ),
+        );
+        final audio = JournalAudio(
+          meta: Metadata(
+            id: 'goal-checkin-1',
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            dateFrom: DateTime(2024, 3, 15),
+            dateTo: DateTime(2024, 3, 15),
+            categoryId: 'cat-goals',
+          ),
+          data: AudioData(
+            dateFrom: DateTime(2024, 3, 15),
+            dateTo: DateTime(2024, 3, 15),
+            audioFile: 'checkin.m4a',
+            audioDirectory: '/test',
+            duration: const Duration(minutes: 1),
+          ),
+        );
+        final mistral =
+            AiConfig.inferenceProvider(
+                  id: 'mistral',
+                  name: 'Mistral',
+                  inferenceProviderType: InferenceProviderType.mistral,
+                  apiKey: 'key',
+                  baseUrl: 'https://api.mistral.ai',
+                  createdAt: DateTime(2024, 3, 15),
+                )
+                as AiConfigInferenceProvider;
+        final voxtral = ResolvedProfile(
+          profileId: 'mistral-eu',
+          thinkingModelId: 'thinking',
+          thinkingProvider: mistral,
+          transcriptionModelId: 'voxtral-mini-transcribe',
+          transcriptionProvider: mistral,
+        );
+        when(
+          () => mockJournalDb.journalEntityById('goal-checkin-1'),
+        ).thenAnswer((_) async => audio);
+        when(
+          () => mockJournalDb.getLinkedToEntities('goal-checkin-1'),
+        ).thenAnswer((_) async => [toDbEntity(goal)]);
+        when(
+          () => mockAutomationService.resolveTranscriptionFallback(
+            subjectId: 'goal-entry-1',
+            categoryId: 'cat-goals',
+          ),
+        ).thenAnswer(
+          (_) async => AutomationResult(
+            handled: true,
+            skill: skill,
+            resolvedProfile: voxtral,
+          ),
+        );
+        when(
+          () => mockRunner.runTranscription(
+            audioEntryId: any(named: 'audioEntryId'),
+            automationResult: any(named: 'automationResult'),
+            linkedTaskId: any(named: 'linkedTaskId'),
+            overrideModelId: any(named: 'overrideModelId'),
+            geminiThinkingMode: any(named: 'geminiThinkingMode'),
+          ),
+        ).thenAnswer((_) async {});
+
+        final testContainer = ProviderContainer(
+          overrides: withServiceOverrides([
+            skillRegistryProvider.overrideWithValue([skill]),
+            profileAutomationResolverProvider.overrideWithValue(mockResolver),
+            profileAutomationServiceProvider.overrideWithValue(
+              mockAutomationService,
+            ),
+            skillInferenceRunnerProvider.overrideWithValue(mockRunner),
+            journalDbProvider.overrideWithValue(mockJournalDb),
+          ]),
+        );
+        containersToDispose.add(testContainer);
+
+        await testContainer.read(
+          triggerSkillProvider((
+            entityId: 'goal-checkin-1',
+            skillId: skillTranscribeContextId,
+            linkedTaskId: null,
+            referenceImages: null,
+            overrideModelId: null,
+            geminiThinkingMode: null,
+          )).future,
+        );
+
+        final captured =
+            verify(
+                  () => mockRunner.runTranscription(
+                    audioEntryId: 'goal-checkin-1',
+                    automationResult: captureAny(named: 'automationResult'),
+                    // ignore: avoid_redundant_argument_values
+                    linkedTaskId: null,
+                    overrideModelId: any(named: 'overrideModelId'),
+                    geminiThinkingMode: any(named: 'geminiThinkingMode'),
+                  ),
+                ).captured.single
+                as AutomationResult;
+        expect(
+          captured.resolvedProfile?.transcriptionModelId,
+          'voxtral-mini-transcribe',
+        );
+      },
+    );
+
+    // Every entry kind that owns an agent is a recording's subject; anything
+    // else linking to it — and a deleted subject — is not.
+    final eventAt = DateTime(2024, 3, 15);
+    final parentsAndSubjects = <String, (List<JournalEntity>, String?)>{
+      'a person': ([testRelationship], testRelationship.id),
+      'a project': (
+        [makeTestProject(id: 'project-1', title: 'Colony census')],
+        'project-1',
+      ),
+      'an event': (
+        [
+          JournalEvent(
+            meta: Metadata(
+              id: 'event-1',
+              createdAt: eventAt,
+              updatedAt: eventAt,
+              dateFrom: eventAt,
+              dateTo: eventAt,
+            ),
+            data: const EventData(
+              title: 'Huddle drill',
+              stars: 4,
+              status: EventStatus.completed,
+            ),
+          ),
+        ],
+        'event-1',
+      ),
+      'a deleted person': (
+        [
+          testRelationship.copyWith(
+            meta: testRelationship.meta.copyWith(deletedAt: eventAt),
+          ),
+        ],
+        null,
+      ),
+      'a plain note': ([testTextEntry], null),
+      // The subject is found among several links, not only in first place.
+      'a plain note and then a person': (
+        [testTextEntry, testRelationship],
+        testRelationship.id,
+      ),
+    };
+    for (final MapEntry(key: kind, value: (parents, subjectId))
+        in parentsAndSubjects.entries) {
+      test(
+        'a recording linked from $kind asks the transcription rule for '
+        '${subjectId == null ? 'no subject' : 'that subject'}',
+        () async {
+          final skill = findBuiltInSkill(skillTranscribeContextId)!;
+          final audio = JournalAudio(
+            meta: Metadata(
+              id: 'linked-audio-1',
+              createdAt: eventAt,
+              updatedAt: eventAt,
+              dateFrom: eventAt,
+              dateTo: eventAt,
+            ),
+            data: AudioData(
+              dateFrom: eventAt,
+              dateTo: eventAt,
+              audioFile: 'linked.m4a',
+              audioDirectory: '/test',
+              duration: const Duration(minutes: 1),
+            ),
+          );
+          when(
+            () => mockJournalDb.journalEntityById('linked-audio-1'),
+          ).thenAnswer((_) async => audio);
+          when(
+            () => mockJournalDb.getLinkedToEntities('linked-audio-1'),
+          ).thenAnswer((_) async => parents.map(toDbEntity).toList());
+
+          final testContainer = ProviderContainer(
+            overrides: withServiceOverrides([
+              skillRegistryProvider.overrideWithValue([skill]),
+              profileAutomationResolverProvider.overrideWithValue(mockResolver),
+              profileAutomationServiceProvider.overrideWithValue(
+                mockAutomationService,
+              ),
+              skillInferenceRunnerProvider.overrideWithValue(mockRunner),
+              journalDbProvider.overrideWithValue(mockJournalDb),
+            ]),
+          );
+          containersToDispose.add(testContainer);
+
+          await testContainer.read(
+            triggerSkillProvider((
+              entityId: 'linked-audio-1',
+              skillId: skillTranscribeContextId,
+              linkedTaskId: null,
+              referenceImages: null,
+              overrideModelId: null,
+              geminiThinkingMode: null,
+            )).future,
+          );
+
+          final asked = verify(
+            () => mockAutomationService.resolveTranscriptionFallback(
+              subjectId: captureAny(named: 'subjectId'),
+              categoryId: any(named: 'categoryId'),
+            ),
+          ).captured;
+          expect(asked, [subjectId]);
         },
       );
     }

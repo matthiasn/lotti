@@ -214,39 +214,49 @@ final triggerSkillProvider = FutureProvider.autoDispose
 
           // Resolve the inference profile. For task-linked entries we use the
           // task's agent / inherited profile; for standalone entries we fall
-          // back to the entry category's `defaultProfileId`.
+          // back to the entry category's `defaultProfileId`. A recording
+          // without a task resolves below, through the transcription rule.
           final resolver = ref.read(profileAutomationResolverProvider);
           final isTranscription = skill.skillType == SkillType.transcription;
           final isSummary = skill.skillType == SkillType.audioSummary;
           ResolvedProfile? resolvedProfile;
+          String? entryCategoryId;
           if (linkedTaskId != null) {
             resolvedProfile = await resolver.resolveForSubject(linkedTaskId);
           } else {
             final entity = await ref
                 .read(journalDbProvider)
                 .journalEntityById(params.entityId);
-            final categoryId = entity?.categoryId;
-            if (categoryId != null) {
-              resolvedProfile = await resolver.resolveForCategory(categoryId);
-            } else if (!isTranscription && !isSummary) {
-              await _declineSkill(
-                ref,
-                entityId: params.entityId,
-                linkedTaskId: params.linkedTaskId,
-                skill: skill,
-                reason: 'no linked task and entry has no category',
-                message: deviceMessages().aiSkillNoProfileConfigured,
-                loggingService: loggingService,
-              );
-              return;
+            final categoryId = entryCategoryId = entity?.categoryId;
+            // A transcription resolves below, where the recording's subject
+            // is asked before its category.
+            if (!isTranscription) {
+              if (categoryId != null) {
+                resolvedProfile = await resolver.resolveForCategory(
+                  categoryId,
+                );
+              } else if (!isSummary) {
+                await _declineSkill(
+                  ref,
+                  entityId: params.entityId,
+                  linkedTaskId: params.linkedTaskId,
+                  skill: skill,
+                  reason: 'no linked task and entry has no category',
+                  message: deviceMessages().aiSkillNoProfileConfigured,
+                  loggingService: loggingService,
+                );
+                return;
+              }
             }
           }
 
-          // Transcription has one more place to go, and it is the one that
-          // matters for an entry whose task or category profile cannot
-          // transcribe — a goal check-in, a standalone voice note: the
-          // Settings default profile's transcription slot. The category was
-          // asked above already. When the default cannot transcribe either,
+          // A recording with no task, or whose task's profile cannot
+          // transcribe, follows the one transcription rule
+          // (`resolveTranscriptionProfile`): the profile of the agent the
+          // recording is about — a goal's, a person's — then that subject's
+          // own, then the category's, then the Settings default. Asking only
+          // the category and the default is what sent a Mistral goal agent's
+          // check-ins to the default's Whisper. When nothing can transcribe,
           // the recording declines visibly below; no model is picked outside
           // a profile.
           if (isTranscription &&
@@ -254,7 +264,15 @@ final triggerSkillProvider = FutureProvider.autoDispose
                   resolvedProfile.transcriptionModelId == null)) {
             final fallback = await ref
                 .read(profileAutomationServiceProvider)
-                .resolveTranscriptionFallback();
+                .resolveTranscriptionFallback(
+                  subjectId:
+                      linkedTaskId ??
+                      await _findRecordingSubjectId(
+                        ref,
+                        entityId: params.entityId,
+                      ),
+                  categoryId: entryCategoryId,
+                );
             if (fallback.handled) {
               resolvedProfile = fallback.resolvedProfile;
             }
@@ -536,6 +554,36 @@ Future<String?> _findLinkedTaskId({
       .whereType<Task>()
       .firstOrNull;
   return incomingTask?.id;
+}
+
+/// The subject a task-less recording [entityId] is about — the goal, person,
+/// project or event whose entry links to it — or null when no such entry
+/// does.
+///
+/// The recorder links a recording FROM its subject, so the subject is among
+/// the entries linking *to* the recording. It is what the transcription rule
+/// asks first: the agent assigned to it chose a profile, and that choice
+/// outranks the category's and the Settings default's.
+Future<String?> _findRecordingSubjectId(
+  Ref ref, {
+  required String entityId,
+}) async {
+  final parents = await ref
+      .read(journalDbProvider)
+      .getLinkedToEntities(entityId);
+  return parents
+      .map(fromDbEntity)
+      .where(
+        (parent) => switch (parent) {
+          GoalEntry() ||
+          RelationshipEntry() ||
+          ProjectEntry() ||
+          JournalEvent() => !parent.isDeleted,
+          _ => false,
+        },
+      )
+      .firstOrNull
+      ?.id;
 }
 
 /// Record type for trigger new inference parameters.

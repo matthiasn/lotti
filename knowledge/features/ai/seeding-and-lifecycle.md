@@ -108,8 +108,9 @@ failing:
 
 - `ProfileAutomationService` matches nothing, and transcription falls through
   to the [transcription profile](profile-resolution.md#the-transcription-profile)
-  — the category's profile, else the Settings default, by their transcription
-  slot — even when the subject's own profile automates it. A category pinned
+  — the subject's agent profile, its own, the category's, else the Settings
+  default, by their transcription slot — even when the subject's own profile
+  automates it. A category pinned
   to one provider then transcribes through the default's.
 - `SyncedAudioInferenceDispatcher` has no fallback by design, so synced audio
   transcribes nothing at all.
