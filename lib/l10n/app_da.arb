@@ -3636,6 +3636,7 @@
   "goalFormDiastolicTarget": "Diastolisk (mmHg)",
   "goalFormDirectionAtLeast": "Mindst",
   "goalFormDirectionAtMost": "Højst",
+  "goalFormDiscardChangesMessage": "Kassér dine ændringer af dette mål? Intet er gemt endnu.",
   "goalFormEditTitle": "Rediger mål",
   "goalFormEditVersion": "Dette starter version {version}. Din historik bevares.",
   "goalFormExampleGym": "træn to gange om ugen",
@@ -3645,6 +3646,7 @@
   "goalFormFooter": "Du kan når som helst omdøbe, justere, sætte på pause eller slette denne agent.",
   "goalFormGenericIntentionWords": "og,konsekvent,dagligt,daglig,dag,dage,hver,hvert,mål,vane,måned,månedlig,måneder,per,regelmæssig,rutine,tid,gang,gange,uge,ugentlig,uger,år,årlig",
   "goalFormGoalNameLabel": "Målets navn",
+  "goalFormGoalSectionTitle": "Dit mål",
   "goalFormHabitCadence": "{habit} ({count}×/uge)",
   "goalFormHabitSignal": "tæller, når du krydser vanen af",
   "goalFormHealthBloodPressureDiastolic": "Diastolisk blodtryk",
@@ -5785,6 +5787,7 @@
   },
   "relationshipDeleteConfirmMessage": "Deres check-ins slettes også. Det kan ikke fortrydes.",
   "relationshipDeleteConfirmTitle": "Slet {name}?",
+  "relationshipDeleteMenuItem": "Slet person",
   "relationshipDiscardChangesMessage": "Kassér ændringerne? Intet af det, du har skrevet, er gemt.",
   "relationshipDueDay": "Senest {day}",
   "@relationshipDueDay": {

@@ -3298,6 +3298,7 @@
   "goalFormDiastolicTarget": "Diastolický (mmHg)",
   "goalFormDirectionAtLeast": "Alespoň",
   "goalFormDirectionAtMost": "Nejvýše",
+  "goalFormDiscardChangesMessage": "Zahodit tvoje změny tohoto cíle? Zatím nic nebylo uloženo.",
   "goalFormEditTitle": "Upravit cíl",
   "goalFormEditVersion": "Tím vznikne verze {version}. Historie zůstane zachovaná.",
   "goalFormExampleGym": "dvakrát týdně do posilovny",
@@ -3307,6 +3308,7 @@
   "goalFormFooter": "Agenta můžeš kdykoli přejmenovat, upravit, pozastavit nebo smazat.",
   "goalFormGenericIntentionWords": "konzistentní,pravidelně,denně,den,dny,dní,každý,každá,cíl,návyk,zvyk,měsíc,měsíčně,měsíce,pravidelný,rutina,čas,krát,týden,týdně,týdny,rok,ročně,roky,let,každé,denní,týdenní,měsíční,roční,dnů,týdnů,měsíců",
   "goalFormGoalNameLabel": "Název cíle",
+  "goalFormGoalSectionTitle": "Tvůj cíl",
   "goalFormHabitCadence": "{habit} ({count}×/týden)",
   "goalFormHabitSignal": "počítá se, když návyk odškrtneš",
   "goalFormHealthBloodPressureDiastolic": "Diastolický krevní tlak",
@@ -5182,6 +5184,7 @@
   },
   "relationshipDeleteConfirmMessage": "Smažou se i všechny záznamy kontaktů. Tohle nelze vrátit zpět.",
   "relationshipDeleteConfirmTitle": "Smazat {name}?",
+  "relationshipDeleteMenuItem": "Smazat osobu",
   "relationshipDiscardChangesMessage": "Zahodit změny? Nic z toho, co jsi zadal, se neuložilo.",
   "relationshipDueDay": "Do {day}",
   "@relationshipDueDay": {

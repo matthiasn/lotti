@@ -8378,6 +8378,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get goalFormDirectionAtMost => 'Höchstens';
 
   @override
+  String get goalFormDiscardChangesMessage =>
+      'Deine Änderungen an diesem Ziel verwerfen? Noch ist nichts gespeichert.';
+
+  @override
   String get goalFormEditTitle => 'Ziel bearbeiten';
 
   @override
@@ -8407,6 +8411,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get goalFormGoalNameLabel => 'Name des Ziels';
+
+  @override
+  String get goalFormGoalSectionTitle => 'Dein Ziel';
 
   @override
   String goalFormHabitCadence(String habit, int count) {
@@ -13832,6 +13839,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String relationshipDeleteConfirmTitle(String name) {
     return '$name löschen?';
   }
+
+  @override
+  String get relationshipDeleteMenuItem => 'Person löschen';
 
   @override
   String get relationshipDiscardChangesMessage =>

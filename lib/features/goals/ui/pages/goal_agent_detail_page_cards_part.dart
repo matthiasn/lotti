@@ -160,6 +160,25 @@ class _GoalHeader extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // The goal's category above its name, changeable in place — the
+        // person page's selector, so a category reads and moves the same
+        // way on every page an agent serves.
+        Consumer(
+          builder: (context, ref, _) {
+            final agentId = identity.agentId;
+            final categoryAsync = ref.watch(goalCategoryIdProvider(agentId));
+            if (!categoryAsync.hasValue) {
+              return const SizedBox(height: TapTargets.compact);
+            }
+            return CategoryCrumb(
+              key: const ValueKey('goal-category-crumb'),
+              entryId: ref.watch(goalEntryIdProvider(agentId)),
+              categoryId: categoryAsync.value,
+              onMoved: () => ref.invalidate(goalCategoryIdProvider(agentId)),
+            );
+          },
+        ),
+        SizedBox(height: tokens.spacing.step1),
         // The chip anchors to the title's FIRST line: as a Wrap sibling a
         // long goal name stranded the monogram alone on the top line.
         Row(
@@ -181,11 +200,11 @@ class _GoalHeader extends StatelessWidget {
                 runSpacing: tokens.spacing.step2,
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
+                  // The person page's name tier: both pages title their
+                  // subject alike, a step above their section headings.
                   Text(
                     spec?.title ?? identity.displayName,
-                    style: tokens.typography.styles.heading.heading3.copyWith(
-                      color: tokens.colors.text.highEmphasis,
-                    ),
+                    style: calmPageTitleStyle(tokens),
                   ),
                   if (showPill)
                     UnifiedGoalStatusPill(

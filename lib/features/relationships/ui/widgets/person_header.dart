@@ -620,7 +620,7 @@ class PersonMenuButton extends ConsumerWidget {
         item(
           PersonMenuAction.delete,
           LottiIcons.delete,
-          messages.deleteButton,
+          messages.relationshipDeleteMenuItem,
           destructive: true,
           startsGroup: true,
         ),

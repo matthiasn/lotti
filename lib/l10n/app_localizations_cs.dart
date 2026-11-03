@@ -8403,6 +8403,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get goalFormDirectionAtMost => 'Nejvýše';
 
   @override
+  String get goalFormDiscardChangesMessage =>
+      'Zahodit tvoje změny tohoto cíle? Zatím nic nebylo uloženo.';
+
+  @override
   String get goalFormEditTitle => 'Upravit cíl';
 
   @override
@@ -8432,6 +8436,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get goalFormGoalNameLabel => 'Název cíle';
+
+  @override
+  String get goalFormGoalSectionTitle => 'Tvůj cíl';
 
   @override
   String goalFormHabitCadence(String habit, int count) {
@@ -13928,6 +13935,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String relationshipDeleteConfirmTitle(String name) {
     return 'Smazat $name?';
   }
+
+  @override
+  String get relationshipDeleteMenuItem => 'Smazat osobu';
 
   @override
   String get relationshipDiscardChangesMessage =>

@@ -6,6 +6,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/features/categories/ui/widgets/category_field_row.dart';
+import 'package:lotti/features/categories/ui/widgets/category_icon_compact.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
@@ -197,6 +198,37 @@ void main() {
       ),
     );
 
+    testWidgets(
+      'editing, the status sits with the reminders it governs and the '
+      'photo closes the form',
+      (tester) async {
+        setTestSurfaceSize(tester, const Size(800, 3200));
+        await tester.pumpWidget(buildForm(initial: existing()));
+        await tester.pumpAndSettle();
+
+        final agent = find.byKey(const ValueKey('person-form-agent-section'));
+        expect(
+          find.descendant(of: agent, matching: find.text('Status')),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: find.byKey(const ValueKey('person-form-who-section')),
+            matching: find.text('Status'),
+          ),
+          findsNothing,
+        );
+        expect(
+          tester
+              .getTopLeft(
+                find.byKey(const ValueKey('person-form-photo-section')),
+              )
+              .dy,
+          greaterThan(tester.getBottomLeft(agent).dy),
+        );
+      },
+    );
+
     testWidgets('is offered only for a person who already exists', (
       tester,
     ) async {
@@ -264,15 +296,15 @@ void main() {
       ).thenAnswer((_) async => reread);
 
       await tester.pumpWidget(buildForm(initial: opened));
-      // Remove needs no picker, so the production flow runs end to end.
-      await tester.tap(find.byKey(const ValueKey('person-form-face-remove')));
+      // Remove needs no picker, so the production flow runs end to end. The
+      // Photo section closes the form, below the harness's fold.
+      await tapVisible(
+        tester,
+        find.byKey(const ValueKey('person-form-face-remove')),
+      );
       await tester.pumpAndSettle();
 
-      // The Photo card pushes Save below the harness's fold.
-      await tester.ensureVisible(
-        find.byKey(const ValueKey('person-form-save')),
-      );
-      await tester.tap(find.byKey(const ValueKey('person-form-save')));
+      await tapVisible(tester, find.byKey(const ValueKey('person-form-save')));
       await tester.pumpAndSettle();
 
       final writes = verify(
@@ -799,7 +831,7 @@ void main() {
       );
     });
 
-    testWidgets('the category shows as a colour dot, and none shows no dot', (
+    testWidgets('the category shows its own icon, and none shows no icon', (
       tester,
     ) async {
       when(() => mockCacheService.getCategoryById('cat-1')).thenReturn(
@@ -829,13 +861,14 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Family'), findsOneWidget);
-      final dot = tester.widget<Container>(
-        find.byKey(const ValueKey('category-field-dot')),
-      );
       expect(
-        (dot.decoration! as BoxDecoration).color,
-        const Color(0xFFFF0000),
-        reason: "the dot carries the category's own colour",
+        tester
+            .widget<CategoryIconCompact>(
+              find.byKey(const ValueKey('category-field-dot')),
+            )
+            .categoryId,
+        'cat-1',
+        reason: "the field wears the category's own icon",
       );
     });
   });
@@ -960,7 +993,7 @@ void main() {
       await tester.pumpWidget(buildForm());
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byKey(const ValueKey('category-field')));
+      await tapVisible(tester, find.byKey(const ValueKey('category-field')));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Family').last);
       await tester.pumpAndSettle();
@@ -1456,12 +1489,7 @@ void main() {
 
         expect(tester.takeException(), isNull);
         final row = tester.getRect(
-          find
-              .ancestor(
-                of: find.byKey(const ValueKey('person-form-birthday')),
-                matching: find.byType(Row),
-              )
-              .first,
+          find.byKey(const ValueKey('person-form-who-section')),
         );
         expect(
           tester

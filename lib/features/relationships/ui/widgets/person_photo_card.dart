@@ -130,6 +130,10 @@ class _PersonPhotoCardState extends ConsumerState<PersonPhotoCard> {
     final data = widget.person.data;
     final hasAvatar = data.avatarImageId != null;
     final hasBanner = data.bannerImageId != null;
+    // Face and Banner are fields of the form, labelled as its text inputs
+    // are; the drag hint is a caption.
+    final fieldLabelStyle = tokens.typography.styles.subtitle.subtitle2
+        .copyWith(color: tokens.colors.text.highEmphasis);
     final labelStyle = tokens.typography.styles.others.caption.copyWith(
       color: tokens.colors.text.lowEmphasis,
     );
@@ -140,7 +144,7 @@ class _PersonPhotoCardState extends ConsumerState<PersonPhotoCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(messages.relationshipPhotoFace, style: labelStyle),
+          Text(messages.relationshipPhotoFace, style: fieldLabelStyle),
           gap(tokens.spacing.step2),
           Row(
             children: [
@@ -195,7 +199,7 @@ class _PersonPhotoCardState extends ConsumerState<PersonPhotoCard> {
             ],
           ),
           gap(tokens.spacing.step5),
-          Text(messages.relationshipPhotoBanner, style: labelStyle),
+          Text(messages.relationshipPhotoBanner, style: fieldLabelStyle),
           gap(tokens.spacing.step2),
           if (hasBanner)
             _BannerPreview(

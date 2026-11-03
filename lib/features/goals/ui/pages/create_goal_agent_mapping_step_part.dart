@@ -567,6 +567,16 @@ class _MappingStep extends StatelessWidget {
       for (final descriptor in suggestedSignalOrder) ?signalRowFor(descriptor),
     ];
 
+    final nameField = DesignSystemTextInput(
+      key: const ValueKey('goal-form-title-mapping'),
+      controller: title,
+      label: messages.goalFormGoalNameLabel,
+      leadingIcon: LottiIcons.flag,
+      errorText: titleError,
+      enabled: enabled,
+      onChanged: (_) => onTitleChanged(),
+    );
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -574,28 +584,39 @@ class _MappingStep extends StatelessWidget {
         // with the example pills inline, no dead space and no page of its
         // own.
         if (statement case final statement?) ...[
-          DesignSystemTextInput(
-            key: const ValueKey('goal-form-intention'),
-            controller: statement,
-            label: messages.goalFormStatementLabel,
-            leadingIcon: LottiIcons.editNote,
-            errorText: statementError,
-            enabled: enabled,
-            onChanged: (_) => onStatementChanged?.call(),
-          ),
-          SizedBox(height: tokens.spacing.step3),
-          Wrap(
-            spacing: tokens.spacing.step2,
-            runSpacing: tokens.spacing.step2,
-            children: [
-              for (final example in _intentionExamples(context))
-                DsPill(
-                  variant: DsPillVariant.filled,
-                  label: example,
-                  bordered: true,
-                  onTap: () => onExampleSelected?.call(example),
+          AgentFormSection(
+            key: const ValueKey('goal-form-goal-section'),
+            title: messages.goalFormGoalSectionTitle,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                DesignSystemTextInput(
+                  key: const ValueKey('goal-form-intention'),
+                  controller: statement,
+                  label: messages.goalFormStatementLabel,
+                  leadingIcon: LottiIcons.editNote,
+                  errorText: statementError,
+                  enabled: enabled,
+                  onChanged: (_) => onStatementChanged?.call(),
                 ),
-            ],
+                SizedBox(height: tokens.spacing.step3),
+                Wrap(
+                  spacing: tokens.spacing.step2,
+                  runSpacing: tokens.spacing.step2,
+                  children: [
+                    for (final example in _intentionExamples(context))
+                      DsPill(
+                        variant: DsPillVariant.filled,
+                        label: example,
+                        bordered: true,
+                        onTap: () => onExampleSelected?.call(example),
+                      ),
+                  ],
+                ),
+                SizedBox(height: tokens.spacing.step4),
+                nameField,
+              ],
+            ),
           ),
           SizedBox(height: tokens.spacing.sectionGap),
         ],
@@ -804,6 +825,29 @@ class _MappingStep extends StatelessWidget {
                 : DesignSystemButtonVariant.secondary,
             fullWidth: !isDesktopLayout(context),
           ),
+          SizedBox(height: tokens.spacing.step3),
+          // A footnote under the signals it explains, not a card: the
+          // explainer must not impersonate a
+          // second input under the goal-name field.
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(
+                LottiIcons.viewColumns,
+                size: IconSizes.s,
+                color: tokens.colors.text.mediumEmphasis,
+              ),
+              SizedBox(width: tokens.spacing.step3),
+              Expanded(
+                child: Text(
+                  messages.goalFormRollingNote,
+                  style: tokens.typography.styles.others.caption.copyWith(
+                    color: tokens.colors.text.mediumEmphasis,
+                  ),
+                ),
+              ),
+            ],
+          ),
           if (dimensionCount > 1) ...[
             SizedBox(height: tokens.spacing.cardItemSpacing),
             DesignSystemSectionCard(
@@ -865,41 +909,14 @@ class _MappingStep extends StatelessWidget {
             value: checkInsAreSubstance,
             onChanged: onCheckInsAreSubstanceChanged,
           ),
-          SizedBox(height: tokens.spacing.sectionGap),
-          // The goal's NAME is authored here, after the signals that shape
-          // it — the derived value keeps following the selection until the
-          // user types their own.
-          DesignSystemTextInput(
-            key: const ValueKey('goal-form-title-mapping'),
-            controller: title,
-            label: messages.goalFormGoalNameLabel,
-            leadingIcon: LottiIcons.flag,
-            errorText: titleError,
-            enabled: enabled,
-            onChanged: (_) => onTitleChanged(),
-          ),
-          SizedBox(height: tokens.spacing.sectionGap),
-          // A footnote, not a card: the explainer must not impersonate a
-          // second input under the goal-name field.
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(
-                LottiIcons.viewColumns,
-                size: IconSizes.s,
-                color: tokens.colors.text.mediumEmphasis,
-              ),
-              SizedBox(width: tokens.spacing.step3),
-              Expanded(
-                child: Text(
-                  messages.goalFormRollingNote,
-                  style: tokens.typography.styles.others.caption.copyWith(
-                    color: tokens.colors.text.mediumEmphasis,
-                  ),
-                ),
-              ),
-            ],
-          ),
+          // Creating, the goal's NAME is authored here, after the signals
+          // that shape it — the derived value keeps following the selection
+          // until the user types their own. Editing, it sits with the
+          // statement at the top: the goal's identity, already settled.
+          if (statement == null) ...[
+            SizedBox(height: tokens.spacing.sectionGap),
+            nameField,
+          ],
           if (noObservableMatch) ...[
             SizedBox(height: tokens.spacing.step4),
             Text(

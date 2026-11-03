@@ -739,18 +739,18 @@ void main() {
 
       await tester.tap(find.byKey(const ValueKey('person-menu')));
       await tester.pumpAndSettle();
-      expect(find.text('Delete'), findsOneWidget);
+      expect(find.text('Delete person'), findsOneWidget);
       expect(find.text('Link contact'), findsNothing);
       // Destructive ink on the body token — not an ad hoc TextStyle.
-      final tokens = tester.element(find.text('Delete')).designTokens;
-      final style = tester.widget<Text>(find.text('Delete')).style!;
+      final tokens = tester.element(find.text('Delete person')).designTokens;
+      final style = tester.widget<Text>(find.text('Delete person')).style!;
       expect(style.color, tokens.colors.alert.error.ink);
       expect(
         style.fontSize,
         tokens.typography.styles.body.bodyMedium.fontSize,
       );
 
-      await tester.tap(find.text('Delete'));
+      await tester.tap(find.text('Delete person'));
       await tester.pumpAndSettle();
 
       expect(deletes, 1);

@@ -5335,6 +5335,7 @@
   },
   "goalFormDirectionAtLeast": "At least",
   "goalFormDirectionAtMost": "No more than",
+  "goalFormDiscardChangesMessage": "Discard your changes to this goal? Nothing has been saved yet.",
   "goalFormEditTitle": "Edit goal",
   "goalFormEditVersion": "This starts version {version}. Your history is kept.",
   "@goalFormEditVersion": {
@@ -5357,6 +5358,7 @@
   "@goalFormGoalNameLabel": {
     "description": "Label of the goal's editable name field on the mapping and confirmation steps."
   },
+  "goalFormGoalSectionTitle": "Your goal",
   "goalFormHabitCadence": "{habit} ({count}×/week)",
   "@goalFormHabitCadence": {
     "placeholders": {
@@ -8791,6 +8793,7 @@
       }
     }
   },
+  "relationshipDeleteMenuItem": "Delete person",
   "relationshipDiscardChangesMessage": "Discard your changes? Nothing you typed has been saved.",
   "@relationshipDiscardChangesMessage": {
     "description": "Asked when the add/edit person sheet is left with unsaved field edits, however it is left: Cancel, the back gesture, the barrier or Escape. The photo is not covered by it — photo actions write immediately."

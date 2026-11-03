@@ -3291,6 +3291,7 @@
   "goalFormDiastolicTarget": "Diastolică (mmHg)",
   "goalFormDirectionAtLeast": "Cel puțin",
   "goalFormDirectionAtMost": "Cel mult",
+  "goalFormDiscardChangesMessage": "Renunțați la modificările acestui obiectiv? Nimic nu a fost salvat încă.",
   "goalFormEditTitle": "Editați obiectivul",
   "goalFormEditVersion": "Aceasta pornește versiunea {version}. Istoricul dvs. este păstrat.",
   "goalFormExampleGym": "sală de două ori pe săptămână",
@@ -3300,6 +3301,7 @@
   "goalFormFooter": "Puteți redenumi, reajusta, întrerupe sau șterge oricând acest agent.",
   "goalFormGenericIntentionWords": "și,constant,consecvent,zilnic,zilnică,zi,zile,fiecare,obiectiv,scop,obicei,lună,lunar,luni,pe,regulat,rutină,timp,dată,ori,săptămână,săptămânal,săptămâni,an,anual,ani,constantă,regulată,regulate,obiective,obiceiuri",
   "goalFormGoalNameLabel": "Numele obiectivului",
+  "goalFormGoalSectionTitle": "Obiectivul dvs.",
   "goalFormHabitCadence": "{habit} ({count}×/săptămână)",
   "goalFormHabitSignal": "contează când bifați obiceiul",
   "goalFormHealthBloodPressureDiastolic": "Tensiune arterială diastolică",
@@ -5175,6 +5177,7 @@
   },
   "relationshipDeleteConfirmMessage": "Se vor șterge și toate înregistrările asociate. Acțiunea nu poate fi anulată.",
   "relationshipDeleteConfirmTitle": "Ștergeți {name}?",
+  "relationshipDeleteMenuItem": "Ștergeți persoana",
   "relationshipDiscardChangesMessage": "Renunțați la modificări? Nimic din ce ați introdus nu a fost salvat.",
   "relationshipDueDay": "Până {day}",
   "@relationshipDueDay": {

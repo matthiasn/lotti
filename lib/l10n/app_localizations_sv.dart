@@ -8331,6 +8331,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get goalFormDirectionAtMost => 'Högst';
 
   @override
+  String get goalFormDiscardChangesMessage =>
+      'Släng dina ändringar av det här målet? Inget har sparats än.';
+
+  @override
   String get goalFormEditTitle => 'Redigera mål';
 
   @override
@@ -8360,6 +8364,9 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get goalFormGoalNameLabel => 'Målets namn';
+
+  @override
+  String get goalFormGoalSectionTitle => 'Ditt mål';
 
   @override
   String goalFormHabitCadence(String habit, int count) {
@@ -13758,6 +13765,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String relationshipDeleteConfirmTitle(String name) {
     return 'Ta bort $name?';
   }
+
+  @override
+  String get relationshipDeleteMenuItem => 'Ta bort person';
 
   @override
   String get relationshipDiscardChangesMessage =>

@@ -404,42 +404,40 @@ class _BirthdayRow extends StatelessWidget {
     final messages = context.messages;
     final birthday = this.birthday;
     final locale = Localizations.localeOf(context).toString();
-    return Row(
+    final tokens = context.designTokens;
+    // A field like the others: the text inputs' label over its control,
+    // which starts on the same edge the inputs do.
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(
-          // The text fields' own label style, so the row reads as one more
-          // field of the card.
-          child: Text(
-            messages.relationshipBirthdayLabel,
-            style: context.designTokens.typography.styles.subtitle.subtitle2
-                .copyWith(color: context.designTokens.colors.text.highEmphasis),
+        Text(
+          messages.relationshipBirthdayLabel,
+          style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+            color: tokens.colors.text.highEmphasis,
           ),
         ),
-        // Flexible, so a long localized date on a narrow phone ellipsizes
-        // inside the button instead of pushing the row off the card.
-        Flexible(
-          child: DesignSystemButton(
-            key: const ValueKey('person-form-birthday'),
-            label: birthday == null
-                ? messages.relationshipBirthdayAdd
-                : DateFormat.yMMMMd(locale).format(birthday),
-            leadingIcon: LottiIcons.calendar,
-            variant: DesignSystemButtonVariant.secondary,
-            size: DesignSystemButtonSize.dense,
-            onPressed: () async {
-              final now = clock.now();
-              final picked = await showDesignSystemDatePicker(
-                context: context,
-                title: messages.relationshipBirthdayLabel,
-                initialDate: birthday ?? DateTime(now.year - 30, now.month),
-                firstDate: DateTime(1900),
-                lastDate: now,
-                allowClear: birthday != null,
-              );
-              if (picked == null) return;
-              onChanged(picked.cleared ? null : picked.date);
-            },
-          ),
+        SizedBox(height: tokens.spacing.step2),
+        DesignSystemButton(
+          key: const ValueKey('person-form-birthday'),
+          label: birthday == null
+              ? messages.relationshipBirthdayAdd
+              : DateFormat.yMMMMd(locale).format(birthday),
+          leadingIcon: LottiIcons.calendar,
+          variant: DesignSystemButtonVariant.secondary,
+          size: DesignSystemButtonSize.dense,
+          onPressed: () async {
+            final now = clock.now();
+            final picked = await showDesignSystemDatePicker(
+              context: context,
+              title: messages.relationshipBirthdayLabel,
+              initialDate: birthday ?? DateTime(now.year - 30, now.month),
+              firstDate: DateTime(1900),
+              lastDate: now,
+              allowClear: birthday != null,
+            );
+            if (picked == null) return;
+            onChanged(picked.cleared ? null : picked.date);
+          },
         ),
       ],
     );

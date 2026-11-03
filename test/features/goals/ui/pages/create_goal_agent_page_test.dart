@@ -6323,6 +6323,109 @@ void main() {
     expect(navigated, ['/goals/details/goal-1']);
   });
 
+  group('leaving an edit', () {
+    late List<String> navigated;
+
+    Future<void> pumpEdit(WidgetTester tester) async {
+      navigated = <String>[];
+      beamToNamedOverride = navigated.add;
+      addTearDown(() => beamToNamedOverride = null);
+      tester.view.physicalSize = const Size(900, 2200);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const CreateGoalAgentPage(agentId: 'goal-1'),
+          overrides: [
+            ...overrides(editSpec: _spec()),
+            // The catalog the edit's starting point waits for.
+            measurableDataTypesStreamProvider.overrideWith(
+              (ref) => Stream.value(const []),
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('the footer offers Cancel beside the save, as the person '
+        "editor's does, and an untouched edit leaves at once", (tester) async {
+      await pumpEdit(tester);
+
+      final cancel = find.byKey(const ValueKey('goal-form-cancel'));
+      expect(cancel, findsOneWidget);
+      expect(
+        tester.getCenter(cancel).dx,
+        lessThan(tester.getCenter(find.text('Save new version')).dx),
+      );
+      await tester.tap(cancel);
+      await tester.pumpAndSettle();
+
+      expect(navigated, ['/goals/details/goal-1']);
+      expect(find.text('Discard changes'), findsNothing);
+    });
+
+    testWidgets('a changed field asks before it is thrown away, and staying '
+        'keeps the edit', (tester) async {
+      await pumpEdit(tester);
+      await tester.enterText(
+        find.byKey(const ValueKey('goal-form-title-mapping')),
+        'Weekly movement, gently',
+      );
+      await tester.pump();
+
+      await tester.tap(find.byType(BackButton));
+      await tester.pumpAndSettle();
+      expect(
+        find.text(
+          'Discard your changes to this goal? Nothing has been saved yet.',
+        ),
+        findsOneWidget,
+      );
+      expect(navigated, isEmpty);
+
+      await tester.tap(find.text('Cancel').last);
+      await tester.pumpAndSettle();
+      expect(navigated, isEmpty);
+      expect(find.text('Weekly movement, gently'), findsOneWidget);
+
+      await tester.tap(find.byKey(const ValueKey('goal-form-cancel')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Discard changes'));
+      await tester.pumpAndSettle();
+      expect(navigated, ['/goals/details/goal-1']);
+    });
+
+    testWidgets('a habit ticked off and on again is no change', (
+      tester,
+    ) async {
+      await pumpEdit(tester);
+      final gym = find.byKey(const ValueKey('goal-form-habit-gym'));
+      await tester.tap(gym);
+      await tester.pump();
+      await tester.tap(gym);
+      await tester.pump();
+
+      await tester.tap(find.byKey(const ValueKey('goal-form-cancel')));
+      await tester.pumpAndSettle();
+      expect(navigated, ['/goals/details/goal-1']);
+    });
+
+    testWidgets('creating has no Cancel: the back button walks the steps', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const CreateGoalAgentPage(),
+          overrides: overrides(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const ValueKey('goal-form-cancel')), findsNothing);
+    });
+  });
+
   testWidgets('editing blocks the save while the statement is empty', (
     tester,
   ) async {

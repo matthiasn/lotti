@@ -8316,6 +8316,10 @@ class AppLocalizationsDa extends AppLocalizations {
   String get goalFormDirectionAtMost => 'Højst';
 
   @override
+  String get goalFormDiscardChangesMessage =>
+      'Kassér dine ændringer af dette mål? Intet er gemt endnu.';
+
+  @override
   String get goalFormEditTitle => 'Rediger mål';
 
   @override
@@ -8345,6 +8349,9 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get goalFormGoalNameLabel => 'Målets navn';
+
+  @override
+  String get goalFormGoalSectionTitle => 'Dit mål';
 
   @override
   String goalFormHabitCadence(String habit, int count) {
@@ -13738,6 +13745,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String relationshipDeleteConfirmTitle(String name) {
     return 'Slet $name?';
   }
+
+  @override
+  String get relationshipDeleteMenuItem => 'Slet person';
 
   @override
   String get relationshipDiscardChangesMessage =>

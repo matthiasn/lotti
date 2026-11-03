@@ -3291,6 +3291,7 @@
   "goalFormDiastolicTarget": "Diastólica (mmHg)",
   "goalFormDirectionAtLeast": "Como mínimo",
   "goalFormDirectionAtMost": "Como máximo",
+  "goalFormDiscardChangesMessage": "¿Descartar tus cambios en este objetivo? Aún no se ha guardado nada.",
   "goalFormEditTitle": "Editar objetivo",
   "goalFormEditVersion": "Esto inicia la versión {version}. Se conserva tu historial.",
   "goalFormExampleGym": "ir al gimnasio dos veces por semana",
@@ -3300,6 +3301,7 @@
   "goalFormFooter": "Puedes renombrar este agente, cambiar su objetivo, pausarlo o eliminarlo cuando quieras.",
   "goalFormGenericIntentionWords": "y,constante,consistente,diario,diaria,día,días,cada,objetivo,meta,hábito,mes,mensual,meses,por,regular,rutina,tiempo,vez,veces,semana,semanal,semanas,año,anual,años,regularmente,diariamente,semanalmente,mensualmente,anualmente,hábitos,metas,rutinas",
   "goalFormGoalNameLabel": "Nombre del objetivo",
+  "goalFormGoalSectionTitle": "Tu objetivo",
   "goalFormHabitCadence": "{habit} ({count}×/semana)",
   "goalFormHabitSignal": "cuenta cuando marcas el hábito",
   "goalFormHealthBloodPressureDiastolic": "Presión arterial diastólica",
@@ -5175,6 +5177,7 @@
   },
   "relationshipDeleteConfirmMessage": "También se eliminarán todos sus registros. Esta acción no se puede deshacer.",
   "relationshipDeleteConfirmTitle": "¿Eliminar a {name}?",
+  "relationshipDeleteMenuItem": "Eliminar persona",
   "relationshipDiscardChangesMessage": "¿Descartar los cambios? No se ha guardado nada de lo que escribiste.",
   "relationshipDueDay": "Tope {day}",
   "@relationshipDueDay": {

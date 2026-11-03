@@ -17,6 +17,7 @@ import 'package:lotti/features/categories/ui/widgets/category_field_row.dart';
 import 'package:lotti/features/dashboards/ui/pages/measurables/measurables_page.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_modal_action_bar.dart';
 import 'package:lotti/features/design_system/components/buttons/ds_segmented_toggle.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
@@ -40,6 +41,7 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/repositories/entry_category_move.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/goal_routes.dart';
+import 'package:lotti/widgets/modal/confirmation_modal.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -126,6 +128,7 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage>
   String? _derivedCategoriesFingerprint;
   String? _derivedLabelsFingerprint;
   late String _baseVersionId;
+  String? _editBaseline;
   String? _validation;
 
   /// The wizard as the user actually walks it. Editing is one page: the
@@ -520,6 +523,7 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage>
       });
       return;
     }
+    if (_editLeaveNeedsConfirm) return unawaited(_confirmLeaveEdit());
     final agentId = widget.agentId;
     beamToNamed(
       agentId == null ? goalsRootPath : goalDetailPath(agentId),
@@ -585,6 +589,7 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage>
     }
 
     _removeChoiceMeasurableTargets(_knownChoiceMeasurableIds);
+    _settleEditBaseline(loaded: habitsAsync.hasValue);
 
     final pageTitle = _editing
         ? messages.goalFormEditTitle
@@ -612,7 +617,7 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage>
       size: DesignSystemButtonSize.large,
     );
     return PopScope(
-      canPop: _step == _visibleSteps.first,
+      canPop: _step == _visibleSteps.first && !_editLeaveNeedsConfirm,
       onPopInvokedWithResult: (didPop, _) {
         if (didPop) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -954,34 +959,9 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage>
                         ),
                       ),
                     ),
-                    // The primary action is always on screen, on an opaque
-                    // band — scrolling content ends at a hairline instead of
-                    // being guillotined behind a floating pill.
-                    DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).scaffoldBackgroundColor,
-                        border: Border(
-                          top: BorderSide(
-                            color: tokens.colors.decorative.level01,
-                          ),
-                        ),
-                      ),
-                      child: Padding(
-                        padding: EdgeInsets.only(
-                          top: tokens.spacing.step4,
-                          bottom:
-                              tokens.spacing.step4 +
-                              DesignSystemBottomNavigationBar.occupiedHeight(
-                                context,
-                              ),
-                        ),
-                        // As wide as its label, on the trailing edge where a
-                        // form's forward action sits — not a bar to fill.
-                        child: Align(
-                          alignment: AlignmentDirectional.centerEnd,
-                          child: primaryAction,
-                        ),
-                      ),
+                    _GoalFormFooter(
+                      primary: primaryAction,
+                      onCancel: _editing && !_saving ? _back : null,
                     ),
                   ],
                 ),

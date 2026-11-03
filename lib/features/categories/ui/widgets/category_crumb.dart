@@ -31,11 +31,16 @@ class CategoryCrumb extends ConsumerStatefulWidget {
   const CategoryCrumb({
     required this.entryId,
     required this.categoryId,
+    this.onMoved,
     super.key,
   });
 
   final String? entryId;
   final String? categoryId;
+
+  /// Runs once a move has landed, for a host whose category read does not
+  /// follow the entry by itself.
+  final VoidCallback? onMoved;
 
   @override
   ConsumerState<CategoryCrumb> createState() => _CategoryCrumbState();
@@ -63,6 +68,7 @@ class _CategoryCrumbState extends ConsumerState<CategoryCrumb> {
     final moved = await move.move(entryId, categoryId);
     if (!mounted) return;
     setState(() => _moving = false);
+    if (moved) widget.onMoved?.call();
     if (!moved) {
       context.showToast(
         tone: DesignSystemToastTone.error,

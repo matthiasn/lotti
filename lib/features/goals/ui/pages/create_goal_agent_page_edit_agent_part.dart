@@ -3,7 +3,7 @@ part of 'create_goal_agent_page.dart';
 /// The goal's agent on the single edit page: its name and the goal's
 /// category, under the statement, signals and name — the fields creation's
 /// confirmation step asks for, here on the same page as everything else so
-/// an edit is one scroll and one *Save changes*.
+/// an edit is one scroll and one *Save new version*.
 class _EditAgentSection extends StatelessWidget {
   const _EditAgentSection({
     required this.persona,
@@ -113,6 +113,116 @@ class _EditLoadScaffold extends StatelessWidget {
                 ),
               )
             : const CircularProgressIndicator(),
+      ),
+    );
+  }
+}
+
+/// Leaving the single edit page with changes on it asks first, as the person
+/// editor does: the back button, *Cancel* and the system back all come
+/// through [_CreateGoalAgentPageState._back].
+extension _GoalEditLeave on _CreateGoalAgentPageState {
+  /// Everything an edit can change, in an order-free form: a signal ticked
+  /// off and on again is no change.
+  String _editFingerprint() {
+    String sorted(Map<String, Object?> map) =>
+        (map.entries.map((e) => '${e.key}=${e.value}').toList()..sort()).join(
+          ',',
+        );
+    return [
+      _statement.text,
+      _title.text,
+      _persona.text,
+      _categoryId,
+      sorted(_habitTargets),
+      sorted(_measurableTargets),
+      sorted(_healthTargets),
+      sorted(_healthDirections),
+      sorted(_categoryTimeTargets),
+      sorted(_categoryTimeDirections),
+      sorted(_labelTimeTargets),
+      sorted(_labelTimeDirections),
+      sorted(_labelTimeCategoryIds),
+      _watchesSteps,
+      _stepsTarget.text,
+      _watchesCheckInTime,
+      _checkInMinutes.text,
+      _checkInsAreSubstance,
+      _compositeRule,
+      _requiredSuccesses,
+    ].join('\u0000');
+  }
+
+  /// Takes the edit's starting point once the goal and the catalogs it is
+  /// read against have loaded, so their arrival is never mistaken for an
+  /// edit.
+  void _settleEditBaseline({required bool loaded}) {
+    if (!_editing || !_initialized || !loaded) return;
+    if (!_measurableDefinitionsLoaded) return;
+    _editBaseline ??= _editFingerprint();
+  }
+
+  bool get _editLeaveNeedsConfirm =>
+      _editing &&
+      !_saving &&
+      _editBaseline != null &&
+      _editFingerprint() != _editBaseline;
+
+  Future<void> _confirmLeaveEdit() async {
+    final messages = context.messages;
+    final confirmed = await showConfirmationModal(
+      context: context,
+      message: messages.goalFormDiscardChangesMessage,
+      confirmLabel: messages.editorDiscardChanges,
+    );
+    if (!confirmed || !mounted) return;
+    beamToNamed(goalDetailPath(widget.agentId!));
+  }
+}
+
+/// The form's footer: always on screen, on an opaque band — scrolling
+/// content ends at a hairline instead of being guillotined behind a floating
+/// pill. The primary action is as wide as its label, on the trailing edge
+/// where a form's forward action sits; editing puts *Cancel* on the leading
+/// edge, as the person editor's footer does.
+class _GoalFormFooter extends StatelessWidget {
+  const _GoalFormFooter({required this.primary, required this.onCancel});
+
+  final Widget primary;
+
+  /// Null while creating, where the app bar's back button walks the steps.
+  final VoidCallback? onCancel;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Theme.of(context).scaffoldBackgroundColor,
+        border: Border(
+          top: BorderSide(color: tokens.colors.decorative.level01),
+        ),
+      ),
+      child: Padding(
+        padding: EdgeInsets.only(
+          top: tokens.spacing.step4,
+          bottom:
+              tokens.spacing.step4 +
+              DesignSystemBottomNavigationBar.occupiedHeight(context),
+        ),
+        child: DesignSystemModalActionBar(
+          layout: DesignSystemModalActionBarLayout.compactPrimary,
+          secondary: [
+            if (onCancel case final onCancel?)
+              DesignSystemButton(
+                key: const ValueKey('goal-form-cancel'),
+                label: context.messages.cancelButton,
+                variant: DesignSystemButtonVariant.secondary,
+                onPressed: onCancel,
+              ),
+          ],
+          primary: primary,
+        ),
       ),
     );
   }

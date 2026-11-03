@@ -3636,6 +3636,7 @@
   "goalFormDiastolicTarget": "Diastoliskt (mmHg)",
   "goalFormDirectionAtLeast": "Minst",
   "goalFormDirectionAtMost": "Högst",
+  "goalFormDiscardChangesMessage": "Släng dina ändringar av det här målet? Inget har sparats än.",
   "goalFormEditTitle": "Redigera mål",
   "goalFormEditVersion": "Det här startar version {version}. Din historik sparas.",
   "goalFormExampleGym": "gymma två gånger i veckan",
@@ -3645,6 +3646,7 @@
   "goalFormFooter": "Du kan när som helst byta namn, justera, pausa eller ta bort agenten.",
   "goalFormGenericIntentionWords": "och,konsekvent,dagligen,daglig,dag,dagar,varje,mål,vana,månad,månatlig,månader,per,regelbunden,rutin,tid,gång,gånger,vecka,veckovis,veckor,år,årlig",
   "goalFormGoalNameLabel": "Målets namn",
+  "goalFormGoalSectionTitle": "Ditt mål",
   "goalFormHabitCadence": "{habit} ({count}×/vecka)",
   "goalFormHabitSignal": "räknas när du bockar av vanan",
   "goalFormHealthBloodPressureDiastolic": "Diastoliskt blodtryck",
@@ -5785,6 +5787,7 @@
   },
   "relationshipDeleteConfirmMessage": "Alla avstämningar tas också bort. Det går inte att ångra.",
   "relationshipDeleteConfirmTitle": "Ta bort {name}?",
+  "relationshipDeleteMenuItem": "Ta bort person",
   "relationshipDiscardChangesMessage": "Kasta ändringarna? Inget av det du skrivit har sparats.",
   "relationshipDueDay": "Senast {day}",
   "@relationshipDueDay": {

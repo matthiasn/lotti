@@ -437,9 +437,11 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
     // The bar mirrors this build's state; see `_publish`.
     _publish();
 
+    // The text inputs' own label, so every field of the form — typed,
+    // picked or chosen from pills — is named in one tier.
     Widget sectionLabel(String text) => Text(
       text,
-      style: tokens.typography.styles.body.bodySmall.copyWith(
+      style: tokens.typography.styles.subtitle.subtitle2.copyWith(
         color: tokens.colors.text.highEmphasis,
       ),
     );
@@ -498,43 +500,9 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
                 birthday: _birthday,
                 onChanged: (value) => setState(() => _birthday = value),
               ),
-              if (_isEditing) ...[
-                gap(tokens.spacing.step4),
-                sectionLabel(messages.relationshipStatusFieldLabel),
-                gap(tokens.spacing.step3),
-                DsChoicePills<_StatusKind>(
-                  value: _statusKind,
-                  values: _StatusKind.values,
-                  labelFor: (kind) => _statusKindLabel(context, kind),
-                  onSelected: (kind) => setState(() => _statusKind = kind),
-                ),
-              ],
             ],
           ),
         ),
-        // Photo — only for a person who already exists: its actions write
-        // straight away, and there is nothing to write to before the first
-        // Save. A new person gets their pictures from the page's avatar.
-        if (_isEditing) ...[
-          gap(tokens.spacing.sectionGap),
-          AgentFormSection(
-            key: const ValueKey('person-form-photo-section'),
-            title: messages.relationshipPhotoCardTitle,
-            intro: messages.relationshipPhotoPrivacy,
-            introKey: const ValueKey('person-form-photo-privacy'),
-            child: PersonPhotoCard(
-              person: _person!,
-              actions: productionPersonPhotoActions(
-                ref,
-                context: context,
-                relationship: _person!,
-              ),
-              onChanged: _reloadPerson,
-              canPasteBanner:
-                  ref.watch(clipboardHasImageProvider).value ?? false,
-            ),
-          ),
-        ],
         gap(tokens.spacing.sectionGap),
         // How to reach them — the channel editor under the privacy line the
         // page's Reach card carries, so the promise is repeated where the
@@ -617,7 +585,7 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
               if (_important) ...[
                 gap(tokens.spacing.step4),
                 sectionLabel(messages.relationshipCadencePromptLabel),
-                gap(tokens.spacing.step3),
+                gap(tokens.spacing.step2),
                 DsChoicePills<int>(
                   value: relationshipShownCadenceDays(_cadenceDays),
                   values: relationshipCadenceChoices(
@@ -628,6 +596,19 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
                     preset,
                   ),
                   onSelected: (preset) => setState(() => _cadenceDays = preset),
+                ),
+              ],
+              // Dormant and archived people keep the switch but get no
+              // reminders, so their state sits with it.
+              if (_isEditing) ...[
+                gap(tokens.spacing.step5),
+                sectionLabel(messages.relationshipStatusFieldLabel),
+                gap(tokens.spacing.step2),
+                DsChoicePills<_StatusKind>(
+                  value: _statusKind,
+                  values: _StatusKind.values,
+                  labelFor: (kind) => _statusKindLabel(context, kind),
+                  onSelected: (kind) => setState(() => _statusKind = kind),
                 ),
               ],
               gap(tokens.spacing.step5),
@@ -660,6 +641,30 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
             ],
           ),
         ),
+        // Photo last — the least-edited part, and only for a person who
+        // already exists: its actions write
+        // straight away, and there is nothing to write to before the first
+        // Save. A new person gets their pictures from the page's avatar.
+        if (_isEditing) ...[
+          gap(tokens.spacing.sectionGap),
+          AgentFormSection(
+            key: const ValueKey('person-form-photo-section'),
+            title: messages.relationshipPhotoCardTitle,
+            intro: messages.relationshipPhotoPrivacy,
+            introKey: const ValueKey('person-form-photo-privacy'),
+            child: PersonPhotoCard(
+              person: _person!,
+              actions: productionPersonPhotoActions(
+                ref,
+                context: context,
+                relationship: _person!,
+              ),
+              onChanged: _reloadPerson,
+              canPasteBanner:
+                  ref.watch(clipboardHasImageProvider).value ?? false,
+            ),
+          ),
+        ],
       ],
     );
 

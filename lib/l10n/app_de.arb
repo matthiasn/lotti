@@ -3291,6 +3291,7 @@
   "goalFormDiastolicTarget": "Diastolisch (mmHg)",
   "goalFormDirectionAtLeast": "Mindestens",
   "goalFormDirectionAtMost": "Höchstens",
+  "goalFormDiscardChangesMessage": "Deine Änderungen an diesem Ziel verwerfen? Noch ist nichts gespeichert.",
   "goalFormEditTitle": "Ziel bearbeiten",
   "goalFormEditVersion": "Damit beginnt Version {version}. Dein Verlauf bleibt erhalten.",
   "goalFormExampleGym": "zweimal pro Woche ins Fitnessstudio",
@@ -3300,6 +3301,7 @@
   "goalFormFooter": "Du kannst diesen Agenten jederzeit umbenennen, neu ausrichten, pausieren oder löschen.",
   "goalFormGenericIntentionWords": "und,konsequent,konstant,täglich,tag,tage,tagen,jeder,jede,jeden,ziel,gewohnheit,monat,monatlich,monate,pro,regelmäßig,routine,zeit,mal,woche,wöchentlich,wochen,jahr,jährlich,jahre,jedes",
   "goalFormGoalNameLabel": "Name des Ziels",
+  "goalFormGoalSectionTitle": "Dein Ziel",
   "goalFormHabitCadence": "{habit} ({count}×/Woche)",
   "goalFormHabitSignal": "zählt, wenn du die Gewohnheit abhakst",
   "goalFormHealthBloodPressureDiastolic": "Diastolischer Blutdruck",
@@ -5175,6 +5177,7 @@
   },
   "relationshipDeleteConfirmMessage": "Auch alle Check-ins werden gelöscht. Das lässt sich nicht rückgängig machen.",
   "relationshipDeleteConfirmTitle": "{name} löschen?",
+  "relationshipDeleteMenuItem": "Person löschen",
   "relationshipDiscardChangesMessage": "Änderungen verwerfen? Nichts von dem, was du eingegeben hast, wurde gespeichert.",
   "relationshipDueDay": "Fällig {day}",
   "@relationshipDueDay": {

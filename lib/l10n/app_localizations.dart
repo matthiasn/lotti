@@ -14020,6 +14020,12 @@ abstract class AppLocalizations {
   /// **'No more than'**
   String get goalFormDirectionAtMost;
 
+  /// No description provided for @goalFormDiscardChangesMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard your changes to this goal? Nothing has been saved yet.'**
+  String get goalFormDiscardChangesMessage;
+
   /// No description provided for @goalFormEditTitle.
   ///
   /// In en, this message translates to:
@@ -14073,6 +14079,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Goal name'**
   String get goalFormGoalNameLabel;
+
+  /// No description provided for @goalFormGoalSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your goal'**
+  String get goalFormGoalSectionTitle;
 
   /// No description provided for @goalFormHabitCadence.
   ///
@@ -22776,6 +22788,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Delete {name}?'**
   String relationshipDeleteConfirmTitle(String name);
+
+  /// No description provided for @relationshipDeleteMenuItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete person'**
+  String get relationshipDeleteMenuItem;
 
   /// Asked when the add/edit person sheet is left with unsaved field edits, however it is left: Cancel, the back gesture, the barrier or Escape. The photo is not covered by it — photo actions write immediately.
   ///
