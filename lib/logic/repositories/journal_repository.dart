@@ -871,6 +871,30 @@ class JournalRepository {
         .get();
     return rows.map(fromDbEntity).toList();
   }
+
+  /// The tasks that link to each of [childIds], keyed by child id. A child no
+  /// task links to has no key.
+  ///
+  /// Deleted tasks count: a child that belonged to a task still belongs to
+  /// it after the task is deleted, rather than becoming unowned. Two queries
+  /// regardless of how many children are asked about.
+  Future<Map<String, Set<String>>> getParentTaskIds(
+    Set<String> childIds,
+  ) async {
+    final links = await _journalDb.linksForEntryIds(childIds);
+    if (links.isEmpty) return const {};
+    final parents = await getJournalEntitiesByIdsIncludingDeleted(
+      links.map((link) => link.fromId).toSet(),
+    );
+    final taskIds = parents.whereType<Task>().map((task) => task.id).toSet();
+    final byChild = <String, Set<String>>{};
+    for (final link in links) {
+      if (taskIds.contains(link.fromId)) {
+        (byChild[link.toId] ??= <String>{}).add(link.fromId);
+      }
+    }
+    return byChild;
+  }
 }
 
 /// The app's [JournalRepository], its services read from their providers on

@@ -44,6 +44,7 @@ import '../../../helpers/fake_entry_controller.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
+import '../../../test_data/test_data.dart';
 import '../../../widget_test_utils.dart';
 import '../../ai_consumption/test_utils.dart';
 
@@ -1187,6 +1188,63 @@ void main() {
         ]);
       },
     );
+
+    test('offers the coding prompt for a recording in a task and its '
+        'follow-up only from inside one of them', () async {
+      final recording = testAudioEntry.copyWith(
+        meta: testAudioEntry.meta.copyWith(id: 'recording-in-two-tasks'),
+      );
+      Task task(String id) =>
+          testTask.copyWith(meta: testTask.meta.copyWith(id: id));
+      final plainTranscribe = createSkill(
+        id: 'skill-transcribe-plain',
+        name: 'Transcribe',
+        skillType: SkillType.transcription,
+        modalities: [Modality.audio],
+      );
+      final codingPrompt = createSkill(
+        id: 'skill-coding-prompt',
+        name: 'Generate Coding Prompt',
+        skillType: SkillType.promptGeneration,
+        modalities: [Modality.text],
+        contextPolicy: ContextPolicy.fullTask,
+      );
+      when(
+        () => mockJournalDb.getLinkedToEntities(recording.id),
+      ).thenAnswer(
+        (_) async => [toDbEntity(task('task-a')), toDbEntity(task('task-b'))],
+      );
+
+      final testContainer = ProviderContainer(
+        overrides: withServiceOverrides([
+          skillRegistryProvider.overrideWithValue([
+            plainTranscribe,
+            codingPrompt,
+          ]),
+          skillEntityProvider.overrideWith(skillEntityFromJournal),
+          createEntryControllerOverride(recording),
+        ]),
+      );
+      containersToDispose.add(testContainer);
+      await testContainer.read(entryControllerProvider(recording.id).future);
+
+      Future<List<String>> offeredFrom(String? taskId) async => [
+        for (final skill in await testContainer.read(
+          availableSkillsForEntityProvider((
+            entityId: recording.id,
+            linkedFromId: taskId,
+          )).future,
+        ))
+          skill.id,
+      ];
+
+      // From the logbook no link says which task a prompt would be for.
+      expect(await offeredFrom(null), ['skill-transcribe-plain']);
+      expect(await offeredFrom('task-b'), [
+        'skill-transcribe-plain',
+        'skill-coding-prompt',
+      ]);
+    });
 
     test(
       'hides imageGeneration skills for a Task entity because the runner '
@@ -2939,6 +2997,76 @@ void main() {
         },
       );
     }
+
+    test('does not guess a task for a recording in a task and its '
+        'follow-up when no task is given', () async {
+      final now = DateTime(2024, 3, 15);
+      final skill =
+          AiConfig.skill(
+                id: 'skill-prompt',
+                name: 'Generate Coding Prompt',
+                createdAt: now,
+                skillType: SkillType.promptGeneration,
+                requiredInputModalities: [Modality.text],
+                contextPolicy: ContextPolicy.fullTask,
+                systemInstructions: 'System',
+                userInstructions: 'User',
+              )
+              as AiConfigSkill;
+      final recording = testAudioEntry.copyWith(
+        meta: testAudioEntry.meta.copyWith(id: 'recording-in-two-tasks'),
+      );
+      Task task(String id) =>
+          testTask.copyWith(meta: testTask.meta.copyWith(id: id));
+
+      when(
+        () => mockJournalDb.journalEntityById(recording.id),
+      ).thenAnswer((_) async => recording);
+      // The recording links to Task A, and the follow-up Task B links to it.
+      when(
+        () => mockJournalDb.getLinkedEntities(recording.id),
+      ).thenAnswer((_) async => [task('task-a')]);
+      when(
+        () => mockJournalDb.getLinkedToEntities(recording.id),
+      ).thenAnswer((_) async => [toDbEntity(task('task-b'))]);
+
+      final testContainer = ProviderContainer(
+        overrides: withServiceOverrides([
+          skillRegistryProvider.overrideWithValue([skill]),
+          profileAutomationResolverProvider.overrideWithValue(mockResolver),
+          profileAutomationServiceProvider.overrideWithValue(
+            mockAutomationService,
+          ),
+          skillInferenceRunnerProvider.overrideWithValue(mockRunner),
+        ]),
+      );
+      containersToDispose.add(testContainer);
+
+      await testContainer.read(
+        triggerSkillProvider((
+          entityId: recording.id,
+          skillId: skill.id,
+          linkedTaskId: null,
+          referenceImages: null,
+          overrideModelId: null,
+          geminiThinkingMode: null,
+        )).future,
+      );
+
+      // Neither task's profile is asked and no prompt is generated: the
+      // prompt has no task it could be written to that someone chose.
+      verifyNever(() => mockResolver.resolveForSubject(any()));
+      verifyNever(
+        () => mockRunner.runPromptGeneration(
+          entryId: any(named: 'entryId'),
+          automationResult: any(named: 'automationResult'),
+          linkedTaskId: any(named: 'linkedTaskId'),
+          referenceImages: any(named: 'referenceImages'),
+          overrideModelId: any(named: 'overrideModelId'),
+          geminiThinkingMode: any(named: 'geminiThinkingMode'),
+        ),
+      );
+    });
 
     test('successfully routes image generation skill to runner', () async {
       final skill =

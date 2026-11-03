@@ -1245,6 +1245,124 @@ void main() {
         expect(capturedParams!.overrideModelId, isNull);
       },
     );
+
+    // A recording in Task A and its follow-up Task B: the popup dispatches
+    // for the task it was opened in, and opened from the logbook it names no
+    // task at all instead of whichever one the link graph lists first.
+    for (final (openedIn, expectedTask) in [
+      ('task-b', 'task-b'),
+      ('task-a', 'task-a'),
+      (null, null),
+    ]) {
+      testWidgets(
+        'prompt generation for a recording in two tasks dispatches for '
+        '${openedIn ?? 'no task, opened from the logbook'}',
+        (tester) async {
+          final now = DateTime(2024, 3, 15, 10);
+          final entity = _audioEntityFactory(
+            id: 'audio-in-two-tasks',
+            categoryId: 'cat-audio',
+          );
+          Task task(String id) => Task(
+            meta: Metadata(
+              id: id,
+              createdAt: now,
+              updatedAt: now,
+              dateFrom: now,
+              dateTo: now.add(const Duration(hours: 1)),
+              categoryId: 'cat-task',
+            ),
+            data: TaskData(
+              title: 'Task $id',
+              status: TaskStatus.open(
+                id: 'status-$id',
+                createdAt: now,
+                utcOffset: 0,
+              ),
+              statusHistory: const [],
+              dateFrom: now,
+              dateTo: now.add(const Duration(hours: 1)),
+            ),
+          );
+          final provider = _buildProvider(
+            id: 'p-text',
+            name: 'Text AI',
+            t: now,
+          );
+          final model = _buildModel(
+            id: 'm-text',
+            name: 'Prompt Model',
+            providerModelId: 'wire-text',
+            providerId: provider.id,
+            modality: Modality.text,
+            t: now,
+          );
+          final resolver = _RecordingProfileResolver(
+            ResolvedProfile(
+              thinkingModelId: model.providerModelId,
+              thinkingProvider: provider,
+              thinkingModel: model,
+            ),
+          );
+          TriggerSkillParams? capturedParams;
+
+          when(
+            () => mockJournalDb.journalEntityById(any()),
+          ).thenAnswer(
+            (invocation) async =>
+                switch (invocation.positionalArguments.first) {
+                  final String id when id.startsWith('task-') => task(id),
+                  _ => null,
+                },
+          );
+          when(
+            () => mockJournalDb.getLinkedEntities(entity.id),
+          ).thenAnswer((_) async => [task('task-a')]);
+          when(
+            () => mockJournalDb.getLinkedToEntities(entity.id),
+          ).thenAnswer((_) async => [toDbEntity(task('task-b'))]);
+
+          await tester.pumpWidget(
+            buildTestWidget(
+              UnifiedAiPopUpMenu(journalEntity: entity, linkedFromId: openedIn),
+              overrides: [
+                entryControllerProvider(
+                  entity.id,
+                ).overrideWith(() => FakeEntryController(entity)),
+                ..._baseOverrides(
+                  entity: entity,
+                  skill: testSkills.last,
+                  models: [model],
+                  resolver: resolver,
+                  configs: [model, provider],
+                  linkedFromId: openedIn,
+                ),
+                triggerSkillProvider.overrideWith((ref, params) async {
+                  capturedParams = params;
+                }),
+              ],
+            ),
+          );
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
+
+          await tester.tap(find.byIcon(LottiIcons.assistant));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
+          await tester.tap(find.text('Prompt Generation Skill'));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
+
+          expect(capturedParams, isNotNull);
+          expect(capturedParams!.entityId, entity.id);
+          expect(capturedParams!.linkedTaskId, expectedTask);
+          expect(
+            resolver.resolveForSubjectCalls,
+            [?expectedTask],
+          );
+        },
+      );
+    }
   });
 
   group('Image Generation Skill Handling', () {
@@ -2686,15 +2804,16 @@ List<Override> _baseOverrides({
   required List<AiConfigModel> models,
   required ProfileAutomationResolver resolver,
   required List<AiConfig> configs,
+  String? linkedFromId,
 }) {
   return withServiceOverrides([
     hasAvailableSkillsProvider((
       entityId: entity.id,
-      linkedFromId: null,
+      linkedFromId: linkedFromId,
     )).overrideWith((ref) => Future.value(true)),
     availableSkillsForEntityProvider((
       entityId: entity.id,
-      linkedFromId: null,
+      linkedFromId: linkedFromId,
     )).overrideWith((ref) => Future.value([skill])),
     profileAutomationResolverProvider.overrideWithValue(resolver),
     aiConfigByTypeControllerProvider(

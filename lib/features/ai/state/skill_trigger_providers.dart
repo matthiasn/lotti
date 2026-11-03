@@ -7,6 +7,7 @@ import 'package:lotti/classes/ai_attribution.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/ai/helpers/sole_linked_task.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/services/profile_automation_service.dart';
 import 'package:lotti/features/ai/services/skill_inference_runner.dart';
@@ -525,17 +526,13 @@ Future<String?> _findLinkedTaskId({
     incomingEntitiesFuture,
   ).wait;
 
-  // Preferred direction: the source entry explicitly links to a task.
-  final outgoingTask = outgoingEntities.whereType<Task>().firstOrNull;
-  if (outgoingTask != null) return outgoingTask.id;
-
-  // Fallback direction: a task links to the source entry as one of its
-  // children. This is the common task timeline direction.
-  final incomingTask = incomingDbEntities
-      .map(fromDbEntity)
-      .whereType<Task>()
-      .firstOrNull;
-  return incomingTask?.id;
+  // Either direction counts — the entry linking to a task, or a task linking
+  // to the entry as one of its children (the common timeline direction) —
+  // and only a single task is an answer.
+  return soleLinkedTask([
+    ...outgoingEntities,
+    ...incomingDbEntities.map(fromDbEntity),
+  ])?.id;
 }
 
 /// Record type for trigger new inference parameters.

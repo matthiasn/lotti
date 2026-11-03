@@ -187,6 +187,132 @@ extension _PromptGenerationLinkCases on _SkillInferenceTestSetup {
         },
       );
 
+      // A recording linked into Task A and its follow-up Task B gets a coding
+      // prompt in each, the second started before the first finishes, and
+      // the later run answers first. Each prompt must land on the task whose
+      // run produced it: the task id rides the call, never shared state.
+      test(
+        'concurrent runs for two tasks each persist to their own task',
+        () async {
+          final audio = makeAudioEntity(
+            id: 'audio-shared',
+            plainText: 'notes',
+            markdown: 'notes',
+            categoryId: 'cat-shared',
+          );
+          when(
+            () => mockAiInputRepo.getEntity('audio-shared'),
+          ).thenAnswer((_) async => audio);
+          for (final taskId in ['task-a', 'task-b']) {
+            when(
+              () => mockAiInputRepo.buildTaskDetailsJson(id: taskId),
+            ).thenAnswer((_) async => '{"id": "$taskId"}');
+            when(
+              () => mockAiInputRepo.buildLinkedTasksJson(taskId),
+            ).thenAnswer((_) async => '{"linked": []}');
+          }
+
+          // One provider stream per task, chosen by the task the request
+          // describes, so the test decides which run answers first.
+          final streams = {
+            'task-a': StreamController<CreateChatCompletionStreamResponse>(),
+            'task-b': StreamController<CreateChatCompletionStreamResponse>(),
+          };
+          final requestedFor = <String>[];
+          when(
+            () => mockCloudRepo.generate(
+              any(),
+              model: any(named: 'model'),
+              temperature: any(named: 'temperature'),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              provider: any(named: 'provider'),
+              systemMessage: any(named: 'systemMessage'),
+              impactCollector: any(named: 'impactCollector'),
+            ),
+          ).thenAnswer((invocation) {
+            final message = invocation.positionalArguments.first as String;
+            final taskId = streams.keys.singleWhere(
+              (id) => message.contains('"id": "$id"'),
+            );
+            requestedFor.add(taskId);
+            return streams[taskId]!.stream;
+          });
+
+          // The persisted response's id names the task it was linked to, so
+          // the back-link below shows which response went where.
+          when(
+            () => mockAiInputRepo.createAiResponseEntry(
+              data: any(named: 'data'),
+              start: any(named: 'start'),
+              linkedId: any(named: 'linkedId'),
+              categoryId: any(named: 'categoryId'),
+            ),
+          ).thenAnswer(
+            (invocation) async => makeResponseEntry(
+              'resp-for-${invocation.namedArguments[#linkedId]}',
+            ),
+          );
+          when(
+            () => mockAiInputRepo.createLink(
+              fromId: any(named: 'fromId'),
+              toId: any(named: 'toId'),
+            ),
+          ).thenAnswer((_) async => true);
+          stubLoggingEvent();
+
+          final runA = runner.runPromptGeneration(
+            entryId: 'audio-shared',
+            automationResult: makePromptGenerationResult(),
+            linkedTaskId: 'task-a',
+          );
+          final runB = runner.runPromptGeneration(
+            entryId: 'audio-shared',
+            automationResult: makePromptGenerationResult(),
+            linkedTaskId: 'task-b',
+          );
+          await pumpEventQueue();
+          // Both requests are in flight before either completes.
+          expect(requestedFor, unorderedEquals(['task-a', 'task-b']));
+
+          // The later run answers first.
+          streams['task-b']!.add(makeStreamChunk('Prompt for B'));
+          await streams['task-b']!.close();
+          await runB;
+          streams['task-a']!.add(makeStreamChunk('Prompt for A'));
+          await streams['task-a']!.close();
+          await runA;
+
+          final persisted = verify(
+            () => mockAiInputRepo.createAiResponseEntry(
+              data: captureAny(named: 'data'),
+              start: any(named: 'start'),
+              linkedId: captureAny(named: 'linkedId'),
+              categoryId: any(named: 'categoryId'),
+            ),
+          ).captured;
+          final promptByTask = <String, String>{
+            for (var i = 0; i < persisted.length; i += 2)
+              persisted[i + 1] as String:
+                  (persisted[i] as AiResponseData).response,
+          };
+          expect(promptByTask, {
+            'task-b': 'Prompt for B',
+            'task-a': 'Prompt for A',
+          });
+
+          // Each back-link from the recording points at that run's own
+          // response, never at the other task's.
+          final backLinks = verify(
+            () => mockAiInputRepo.createLink(
+              fromId: 'audio-shared',
+              toId: captureAny(named: 'toId'),
+            ),
+          ).captured;
+          expect(backLinks, ['resp-for-task-b', 'resp-for-task-a']);
+        },
+      );
+
       // Sets up a task-linked audio prompt whose secondary link fails, so the
       // failure-handling branches can be exercised. Returns after the run.
       Future<void> runWithFailingLink({

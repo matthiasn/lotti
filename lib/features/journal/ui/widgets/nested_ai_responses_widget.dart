@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/ui/ai_response_summary.dart';
 import 'package:lotti/features/design_system/components/motion/size_fade_entrance.dart';
@@ -28,6 +29,7 @@ class NestedAiResponsesWidget extends ConsumerStatefulWidget {
   const NestedAiResponsesWidget({
     required this.parentEntryId,
     required this.linkedFromEntity,
+    this.contextTaskId,
     super.key,
   });
 
@@ -39,6 +41,23 @@ class NestedAiResponsesWidget extends ConsumerStatefulWidget {
 
   /// The parent entity that AI responses are linked from (used for context in AI response display).
   final JournalEntity linkedFromEntity;
+
+  /// The task the parent entry is shown in, or null when it is shown on its
+  /// own. Coding prompts another task owns are left out of a task's view
+  /// ([taskScopedAiResponsesProvider]).
+  final String? contextTaskId;
+
+  /// The responses this widget lists: everything the entry carries when it
+  /// is shown on its own, the task's share of it inside a task.
+  ProviderListenable<AsyncValue<List<AiResponseEntry>>> get _responses {
+    final taskId = contextTaskId;
+    return taskId == null
+        ? linkedAiResponsesControllerProvider(parentEntryId)
+        : taskScopedAiResponsesProvider((
+            entryId: parentEntryId,
+            taskId: taskId,
+          ));
+  }
 
   @override
   ConsumerState<NestedAiResponsesWidget> createState() =>
@@ -95,7 +114,10 @@ class _NestedAiResponsesWidgetState
   @override
   void didUpdateWidget(covariant NestedAiResponsesWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.parentEntryId == widget.parentEntryId) return;
+    if (oldWidget.parentEntryId == widget.parentEntryId &&
+        oldWidget.contextTaskId == widget.contextTaskId) {
+      return;
+    }
 
     _responsesSubscription?.close();
     _seenResponseIds.clear();
@@ -114,7 +136,7 @@ class _NestedAiResponsesWidgetState
 
   void _listenToResponses() {
     _responsesSubscription = ref.listenManual(
-      linkedAiResponsesControllerProvider(widget.parentEntryId),
+      widget._responses,
       (_, next) => _trackResponses(next.value),
       fireImmediately: true,
     );
@@ -148,7 +170,7 @@ class _NestedAiResponsesWidgetState
   @override
   Widget build(BuildContext context) {
     final asyncAiResponses = ref.watch(
-      linkedAiResponsesControllerProvider(widget.parentEntryId),
+      widget._responses,
     );
 
     final aiResponses = asyncAiResponses.value;

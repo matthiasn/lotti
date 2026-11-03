@@ -407,6 +407,76 @@ void main() {
       },
     );
 
+    // A recording in Task A and its follow-up Task B carries the coding
+    // prompt made in each. Inside a task only that task's prompt shows under
+    // it; on its own, the recording shows both.
+    group('a recording in two tasks', () {
+      final promptForA = testAiResponseEntry1.copyWith(
+        meta: testAiResponseEntry1.meta.copyWith(id: 'prompt-for-a'),
+      );
+      final promptForB = testAiResponseEntry1.copyWith(
+        meta: testAiResponseEntry1.meta.copyWith(id: 'prompt-for-b'),
+      );
+
+      Future<void> pumpIn(WidgetTester tester, {String? taskId}) async {
+        when(
+          () => mockJournalRepository.getParentTaskIds(any()),
+        ).thenAnswer(
+          (_) async => {
+            'prompt-for-a': {'task-a'},
+            'prompt-for-b': {'task-b'},
+          },
+        );
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            NestedAiResponsesWidget(
+              parentEntryId: testAudioEntry.meta.id,
+              linkedFromEntity: testAudioEntry,
+              contextTaskId: taskId,
+            ),
+            overrides: [
+              journalRepositoryProvider.overrideWithValue(
+                mockJournalRepository,
+              ),
+              linkedAiResponsesControllerProvider(
+                testAudioEntry.meta.id,
+              ).overrideWith(
+                () => _ControllableLinkedAiResponsesController(
+                  entryId: testAudioEntry.meta.id,
+                  initialResponses: [promptForB, promptForA],
+                ),
+              ),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+      }
+
+      testWidgets("shows only Task B's prompt inside Task B", (tester) async {
+        await pumpIn(tester, taskId: 'task-b');
+
+        expect(find.byKey(const Key('prompt-for-b')), findsOneWidget);
+        expect(find.byKey(const Key('prompt-for-a')), findsNothing);
+      });
+
+      testWidgets("shows only Task A's prompt inside Task A", (tester) async {
+        await pumpIn(tester, taskId: 'task-a');
+
+        expect(find.byKey(const Key('prompt-for-a')), findsOneWidget);
+        expect(find.byKey(const Key('prompt-for-b')), findsNothing);
+      });
+
+      testWidgets('shows both prompts, asking about no owners, on its own', (
+        tester,
+      ) async {
+        await pumpIn(tester);
+
+        expect(find.byKey(const Key('prompt-for-a')), findsOneWidget);
+        expect(find.byKey(const Key('prompt-for-b')), findsOneWidget);
+        verifyNever(() => mockJournalRepository.getParentTaskIds(any()));
+      });
+    });
+
     testWidgets('renders multiple AI responses with correct count', (
       tester,
     ) async {

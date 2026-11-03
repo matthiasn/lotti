@@ -1706,6 +1706,57 @@ void main() {
       },
     );
 
+    // A recording in a task and its follow-up carries both tasks' coding
+    // prompts; its nested responses are scoped to the task it is shown in,
+    // and to nothing when the parent it is shown under is not a task.
+    for (final (parent, expectedTask) in [
+      (testTask as JournalEntity, testTask.meta.id),
+      (testTextEntry, null),
+    ]) {
+      testWidgets(
+        'scopes nested AI responses to ${expectedTask ?? 'no task'} when '
+        'shown under a ${parent.runtimeType}',
+        (tester) async {
+          final mockJournalRepository = MockJournalRepository();
+          when(
+            () => mockJournalRepository.getLinksFromId(any()),
+          ).thenAnswer((_) async => <EntryLink>[]);
+
+          await tester.pumpWidget(
+            makeTestableWidgetWithScaffold(
+              EntryDetailsWidget(
+                itemId: testAudioEntry.meta.id,
+                showAiEntry: false,
+                linkedFrom: parent,
+              ),
+              overrides: [
+                entryControllerProvider(
+                  testAudioEntry.meta.id,
+                ).overrideWith(() => _FakeEntryController(testAudioEntry)),
+                journalRepositoryProvider.overrideWithValue(
+                  mockJournalRepository,
+                ),
+                linkedAiResponsesControllerProvider(
+                  testAudioEntry.meta.id,
+                ).overrideWith(
+                  () => _FakeLinkedAiResponsesController(
+                    testAudioEntry.meta.id,
+                    const [],
+                  ),
+                ),
+              ],
+            ),
+          );
+          await tester.pump();
+
+          final nested = tester.widget<NestedAiResponsesWidget>(
+            find.byType(NestedAiResponsesWidget),
+          );
+          expect(nested.contextTaskId, expectedTask);
+        },
+      );
+    }
+
     // Audio entries keep a stable zero-height response host so a later result
     // can animate in without reserving an empty rhythm gap beforehand.
     testWidgets(
@@ -1817,31 +1868,34 @@ void main() {
         ).thenAnswer((_) async => <EntryLink>[]);
 
         await tester.pumpWidget(
+          // Overrides on the root scope: inside a task the nested responses
+          // come through a provider derived from these, which a nested scope
+          // would not reach.
           makeTestableWidgetWithScaffold(
-            ProviderScope(
-              overrides: withServiceOverrides([
-                entryControllerProvider(
-                  testAudioEntry.meta.id,
-                ).overrideWith(() => _FakeEntryController(testAudioEntry)),
-                journalRepositoryProvider.overrideWithValue(
-                  mockJournalRepository,
-                ),
-                linkedAiResponsesControllerProvider(
-                  testAudioEntry.meta.id,
-                ).overrideWith(
-                  () => _FakeLinkedAiResponsesController(
-                    testAudioEntry.meta.id,
-                    [_testLinkedAiResponse],
-                  ),
-                ),
-              ]),
-              child: EntryDetailsContent(
-                testAudioEntry.meta.id,
-                linkedFrom: testTask,
-              ),
+            EntryDetailsContent(
+              testAudioEntry.meta.id,
+              linkedFrom: testTask,
             ),
+            overrides: [
+              entryControllerProvider(
+                testAudioEntry.meta.id,
+              ).overrideWith(() => _FakeEntryController(testAudioEntry)),
+              journalRepositoryProvider.overrideWithValue(
+                mockJournalRepository,
+              ),
+              linkedAiResponsesControllerProvider(
+                testAudioEntry.meta.id,
+              ).overrideWith(
+                () => _FakeLinkedAiResponsesController(
+                  testAudioEntry.meta.id,
+                  [_testLinkedAiResponse],
+                ),
+              ),
+            ],
           ),
         );
+        // The scoped list arrives one async step after the entry's own.
+        await tester.pump();
         await tester.pump();
 
         // Two chevrons confirm the collapsible code path: the header's collapse

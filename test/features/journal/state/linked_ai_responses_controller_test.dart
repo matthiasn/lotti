@@ -1001,4 +1001,134 @@ void main() {
       container.dispose();
     });
   });
+
+  group('taskScopedAiResponsesProvider', () {
+    const recordingId = 'recording-in-two-tasks';
+
+    AiResponseEntry response(String id, AiResponseType type, int hour) =>
+        AiResponseEntry(
+          meta: Metadata(
+            id: id,
+            createdAt: DateTime(2024, 3, 1, hour),
+            dateFrom: DateTime(2024, 3, 1, hour),
+            dateTo: DateTime(2024, 3, 1, hour),
+            updatedAt: DateTime(2024, 3, 1, hour),
+          ),
+          data: AiResponseData(
+            model: 'test-model',
+            systemMessage: '',
+            prompt: '',
+            thoughts: '',
+            response: 'response $id',
+            type: type,
+          ),
+        );
+
+    // A recording in Task A and its follow-up Task B, carrying a coding
+    // prompt made for each, one made before it was in any task, and its
+    // transcript.
+    final promptForA = response(
+      'prompt-a',
+      AiResponseType.promptGeneration,
+      12,
+    );
+    final promptForB = response(
+      'prompt-b',
+      AiResponseType.promptGeneration,
+      11,
+    );
+    final unownedPrompt = response(
+      'prompt-unowned',
+      AiResponseType.promptGeneration,
+      10,
+    );
+    final transcript = response(
+      'transcript',
+      AiResponseType.audioTranscription,
+      9,
+    );
+    final all = [promptForA, promptForB, unownedPrompt, transcript];
+
+    late ProviderContainer container;
+
+    setUp(() {
+      when(
+        () => mockJournalRepository.getLinksFromId(recordingId),
+      ).thenAnswer(
+        (_) async => [
+          for (final entry in all)
+            EntryLink.basic(
+              id: 'link-${entry.meta.id}',
+              fromId: recordingId,
+              toId: entry.meta.id,
+              createdAt: DateTime(2024, 3),
+              updatedAt: DateTime(2024, 3),
+              vectorClock: null,
+            ),
+        ],
+      );
+      when(
+        () => mockJournalRepository.getJournalEntitiesByIds(any()),
+      ).thenAnswer((_) async => all);
+      when(
+        () => mockJournalRepository.getParentTaskIds(any()),
+      ).thenAnswer(
+        (_) async => {
+          'prompt-a': {'task-a'},
+          'prompt-b': {'task-b'},
+        },
+      );
+      container = ProviderContainer(
+        overrides: [
+          journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+        ],
+      );
+    });
+
+    tearDown(() => container.dispose());
+
+    Future<List<String>> idsSeenFrom(String taskId) async {
+      final responses = await container.read(
+        taskScopedAiResponsesProvider((
+          entryId: recordingId,
+          taskId: taskId,
+        )).future,
+      );
+      return responses.map((entry) => entry.meta.id).toList();
+    }
+
+    test("leaves out the other task's coding prompt, in either task", () async {
+      expect(await idsSeenFrom('task-b'), [
+        'prompt-b',
+        'prompt-unowned',
+        'transcript',
+      ]);
+      expect(await idsSeenFrom('task-a'), [
+        'prompt-a',
+        'prompt-unowned',
+        'transcript',
+      ]);
+      // Only coding prompts are asked about: a transcript is the
+      // recording's own in every task.
+      verify(
+        () => mockJournalRepository.getParentTaskIds({
+          'prompt-a',
+          'prompt-b',
+          'prompt-unowned',
+        }),
+      ).called(2);
+    });
+
+    test(
+      'asks about no owners when no coding prompt hangs off the entry',
+      () async {
+        when(
+          () => mockJournalRepository.getJournalEntitiesByIds(any()),
+        ).thenAnswer((_) async => [transcript]);
+
+        expect(await idsSeenFrom('task-a'), ['transcript']);
+        verifyNever(() => mockJournalRepository.getParentTaskIds(any()));
+      },
+    );
+  });
 }
