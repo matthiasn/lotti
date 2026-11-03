@@ -104,6 +104,9 @@ flowchart TD
 
   SubjectBranch --> AgentPath{"Agent, template and active version found?"}
   AgentPath -->|yes| ProfileResolve["ProfileResolver.resolve()"]
+  AgentPath -->|"agent without a template (goal, person)"| Standalone["Its typed setup (resolveSetup), else its own profileId"]
+  Standalone -->|nothing| SubjectProfile
+  Standalone -->|profile| Result
   AgentPath -->|no| SubjectProfile["resolveByProfileId(subject profileId)"]
 
   ProfileResolve --> Typed{"Typed setup present?"}
@@ -255,7 +258,7 @@ an id reached through two tiers is resolved once.
 
 ```mermaid
 flowchart TD
-  Start["resolveTranscriptionProfile(subjectId, categoryId)"] --> Agent["1. The subject's agent profile:<br/>agentConfig.profileId ?? version.profileId ?? template.profileId"]
+  Start["resolveTranscriptionProfile(subjectId, categoryId)"] --> Agent["1. The subject's agent profile: assignedProfileId<br/>(typed setup's base profile; legacy profileId, else template)"]
   Agent --> AgentSlot{"Transcription model and provider?"}
   AgentSlot -->|yes| UseAgent["The agent's profile"]
   AgentSlot -->|"no, or no agent"| Own["2. The subject's own profileId"]
@@ -269,6 +272,16 @@ flowchart TD
   DefSlot -->|yes| UseDef["The Settings default"]
   DefSlot -->|no| None["null: nothing can transcribe"]
 ```
+
+Goal and person agents have no template: `GoalAgentService` and
+`RelationshipAgentService` store the profile in `AgentConfig.inferenceSetup`
+(snapshotted from the category at creation, changeable in the agent's setup
+sheet). Tier 1 therefore reads `AgentConfig.assignedProfileId` — a typed
+setup is authoritative, and a disabled one assigns nothing — and only an
+agent without a setup falls back to its legacy `profileId`, then its
+template's. The same holds on the subject path above: a template-less agent
+resolves its own setup instead of nothing, so a category's automated skill
+cannot outrank the profile the user gave the agent.
 
 Without a `subjectId` the rule starts at tier 3. The agent tier comes first
 because assigning an agent a profile is the most specific choice the user

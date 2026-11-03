@@ -4,6 +4,7 @@ import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_config.dart';
+import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/ai/skill_type.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -823,18 +824,20 @@ void main() {
           meta: testRelationship.meta.copyWith(categoryId: 'people'),
         ),
       );
+      // Shaped as `RelationshipAgentService` makes it: no template, the
+      // profile in a configured setup alone.
       final agent = makeTestIdentity(
         agentId: 'person-agent',
-        config: const AgentConfig(profileId: 'mistral-eu'),
+        config: const AgentConfig(
+          profileId: 'mistral-eu',
+          inferenceSetup: AgentInferenceSetup(
+            mode: AgentInferenceSetupMode.configured,
+            origin: AgentInferenceSetupOrigin.categorySnapshot,
+            baseProfileId: 'mistral-eu',
+          ),
+        ),
       );
-      final template = makeTestTemplate();
       final templates = MockAgentTemplateService();
-      when(
-        () => templates.getTemplateForAgent('person-agent'),
-      ).thenAnswer((_) async => template);
-      when(
-        () => templates.getActiveVersion(template.id),
-      ).thenAnswer((_) async => makeTestTemplateVersion());
       final profiles = MockProfileResolver();
       when(() => profiles.resolveByProfileId('mistral-eu')).thenAnswer(
         (_) async => named('mistral-eu', 'Voxtral Mini Transcribe', 'Mistral'),

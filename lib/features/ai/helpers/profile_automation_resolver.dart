@@ -1,3 +1,4 @@
+import 'package:lotti/classes/agents/agent_config.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
@@ -121,7 +122,7 @@ class ProfileAutomationResolver {
   }) async {
     final candidateProfileIds = <String>[];
     if (subjectId != null) {
-      final agentProfileId = await _resolveProfileIdViaAgent(subjectId);
+      final agentProfileId = await _agentTranscriptionProfileId(subjectId);
       if (agentProfileId != null) candidateProfileIds.add(agentProfileId);
       final subjectProfileId = await _subjectProfileLookup?.call(subjectId);
       if (subjectProfileId != null) candidateProfileIds.add(subjectProfileId);
@@ -264,6 +265,29 @@ class ProfileAutomationResolver {
     return subjectProfileId;
   }
 
+  /// The profile [subjectId]'s agent is assigned, for the transcription
+  /// rule's first tier — or null when it has no agent or no assignment.
+  ///
+  /// Goal and person agents are standalone: they have no template, and
+  /// their profile lives in `AgentConfig` alone. A typed `inferenceSetup` is
+  /// authoritative ([AgentConfigAssignedProfile.assignedProfileId]: its base
+  /// profile, or nothing when it is disabled); only an agent without one
+  /// keeps the legacy chain, ending on its template's profile when it has a
+  /// template at all.
+  Future<String?> _agentTranscriptionProfileId(String subjectId) async {
+    final agent = await _subjectAgentLookup(subjectId);
+    if (agent == null) return null;
+    final config = agent.config;
+    if (config.inferenceSetup != null) return config.assignedProfileId;
+    final assigned = config.assignedProfileId;
+    if (assigned != null) return assigned;
+
+    final template = await _templateService.getTemplateForAgent(agent.agentId);
+    if (template == null) return null;
+    final version = await _templateService.getActiveVersion(template.id);
+    return version?.profileId ?? template.profileId;
+  }
+
   Future<String?> _resolveProfileIdViaAgent(String subjectId) async {
     final agent = await _subjectAgentLookup(subjectId);
     if (agent == null) return null;
@@ -318,12 +342,21 @@ class ProfileAutomationResolver {
 
     final template = await _templateService.getTemplateForAgent(agent.agentId);
     if (template == null) {
-      _domainLogger.log(
-        LogDomain.ai,
-        'No template found for agent ${agent.agentId}',
-        subDomain: _logTag,
+      // A goal's or a person's agent has no template: its setup, or its own
+      // profile, is the whole assignment. Reading nothing here let a
+      // category's automated skill win over the agent's chosen profile.
+      final standalone = await _resolveStandaloneAgent(agent.config);
+      if (standalone == null) {
+        _domainLogger.log(
+          LogDomain.ai,
+          'No template and no assigned profile for agent ${agent.agentId}',
+          subDomain: _logTag,
+        );
+      }
+      return standalone?.forAgent(
+        agentId: agent.agentId,
+        agentName: agent.displayName,
       );
-      return null;
     }
 
     final version = await _templateService.getActiveVersion(template.id);
@@ -345,6 +378,21 @@ class ProfileAutomationResolver {
       agentId: agent.agentId,
       agentName: agent.displayName,
     );
+  }
+
+  /// The profile a template-less agent is assigned: its typed setup's, which
+  /// is authoritative (a disabled or broken one yields nothing), else its own
+  /// legacy `profileId`. No Settings default here — the callers' fallbacks
+  /// decide what comes after the agent.
+  Future<ResolvedProfile?> _resolveStandaloneAgent(AgentConfig config) async {
+    final setup = config.inferenceSetup;
+    if (setup != null) {
+      return (await _profileResolver.resolveSetup(setup)).profile;
+    }
+    final profileId = config.assignedProfileId;
+    return profileId == null
+        ? null
+        : _profileResolver.resolveByProfileId(profileId);
   }
 
   Future<ResolvedProfile?> _resolveViaSubjectProfile(String subjectId) async {
