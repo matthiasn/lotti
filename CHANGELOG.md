@@ -75,6 +75,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   stored and lets you try again; a disconnection the device refuses is said
   too, instead of failing silently.
 
+
+
 ## [1.1.82]
 
 ### Added
