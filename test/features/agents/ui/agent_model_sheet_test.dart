@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_config.dart';
@@ -120,6 +121,7 @@ void main() {
     bool automaticUpdates = true,
     AgentConfig? config,
     ResolvedAgentSetup? resolvedSetup,
+    Future<ResolvedAgentSetup?> Function()? resolveSetup,
     TaskAgentSetupOptions? setupOptions,
     String? kind,
   }) {
@@ -140,7 +142,8 @@ void main() {
     return withServiceOverrides([
       agentIdentityProvider.overrideWith((ref, id) async => identity),
       taskAgentResolvedSetupProvider.overrideWith(
-        (ref, id) async => resolvedSetup ?? resolved,
+        (ref, id) =>
+            resolveSetup?.call() ?? Future.value(resolvedSetup ?? resolved),
       ),
       taskAgentSetupOptionsProvider.overrideWith(
         (ref) async => setupOptions ?? options,
@@ -155,6 +158,7 @@ void main() {
     bool automaticUpdates = true,
     AgentConfig? config,
     ResolvedAgentSetup? resolvedSetup,
+    Future<ResolvedAgentSetup?> Function()? resolveSetup,
     TaskAgentSetupOptions? setupOptions,
     String? taskId = 'task-1',
     String? kind,
@@ -181,6 +185,7 @@ void main() {
             automaticUpdates: automaticUpdates,
             config: config,
             resolvedSetup: resolvedSetup,
+            resolveSetup: resolveSetup,
             setupOptions: setupOptions,
             kind: kind,
           ),
@@ -410,6 +415,45 @@ void main() {
       isTrue,
     );
   });
+
+  testWidgets(
+    "a person's agent keeps its selection while its route re-resolves in "
+    'the background',
+    (tester) async {
+      when(
+        () => journalDb.journalEntityById(any()),
+      ).thenAnswer((_) async => null);
+      var resolutions = 0;
+      final pending = Completer<ResolvedAgentSetup?>();
+      await openSheet(
+        tester,
+        taskId: 'person-1',
+        kind: AgentKinds.relationshipAgent,
+        config: const AgentConfig(),
+        resolveSetup: () => resolutions++ == 0
+            ? Future.value(resolvedOn(profile.id))
+            : pending.future,
+      );
+      await openProfilePage(tester);
+
+      bool selected() => tester
+          .widget<DesignSystemSelectionRow>(
+            find.byKey(const ValueKey('agent-profile-profile-1')),
+          )
+          .selected;
+      expect(selected(), isTrue);
+
+      // A category notification invalidates the resolution; the new one is
+      // still in flight.
+      ProviderScope.containerOf(
+        tester.element(find.byKey(const ValueKey('agent-profile-profile-1'))),
+      ).invalidate(taskAgentResolvedSetupProvider('agent-1'));
+      await tester.pump();
+
+      expect(resolutions, 2);
+      expect(selected(), isTrue);
+    },
+  );
 
   testWidgets("a person's agent the user set up keeps the profile they chose", (
     tester,

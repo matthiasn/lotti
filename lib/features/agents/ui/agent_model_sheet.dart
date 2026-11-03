@@ -416,7 +416,9 @@ class _AgentSetupOverviewPage extends ConsumerWidget {
     final selectedProfileId = _selectedProfileId(
       identity,
       entityId: controller.entityId,
-      resolved: setup,
+      // The retained value, as on the profile page: a background reload
+      // never blanks the selection.
+      resolved: ref.watch(taskAgentResolvedSetupProvider(agentId)).value,
     );
     final currentProfile = options?.profiles
         .where((profile) => profile.id == selectedProfileId)
@@ -690,10 +692,9 @@ class _AgentProfilePage extends ConsumerWidget {
     final selectedProfileId = _selectedProfileId(
       identity,
       entityId: controller.entityId,
-      resolved: ref
-          .watch(taskAgentResolvedSetupProvider(agentId))
-          .unwrapPrevious()
-          .value,
+      // The retained value: a background re-resolution (a person moved, a
+      // category's profile changed) keeps the selection on screen.
+      resolved: ref.watch(taskAgentResolvedSetupProvider(agentId)).value,
     );
 
     return _AgentBusyGuard(

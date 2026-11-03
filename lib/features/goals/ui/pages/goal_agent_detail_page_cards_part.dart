@@ -167,11 +167,15 @@ class _GoalHeader extends StatelessWidget {
             if (!categoryAsync.hasValue) {
               return const SizedBox(height: TapTargets.compact);
             }
+            // The container, not this widget's ref: the crumb's Undo can run
+            // after the user has left the page.
+            final container = ProviderScope.containerOf(context);
             return CategoryCrumb(
               key: const ValueKey('goal-category-crumb'),
               entryId: ref.watch(goalEntryIdProvider(agentId)),
               categoryId: categoryAsync.value,
-              onMoved: () => ref.invalidate(goalCategoryIdProvider(agentId)),
+              onMoved: () =>
+                  container.invalidate(goalCategoryIdProvider(agentId)),
             );
           },
         ),
