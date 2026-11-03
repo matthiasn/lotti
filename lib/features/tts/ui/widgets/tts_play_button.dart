@@ -22,8 +22,12 @@ class TtsPlayButton extends StatelessWidget {
     required this.onPlay,
     required this.onStop,
     this.progress,
+    this.playLabel,
     super.key,
   });
+
+  /// What the idle control says it plays; a summary when null.
+  final String? playLabel;
 
   final TtsButtonMode mode;
 
@@ -47,7 +51,7 @@ class TtsPlayButton extends StatelessWidget {
     final label = switch (mode) {
       TtsButtonMode.playing => messages.aiSummaryStopTooltip,
       TtsButtonMode.preparing => messages.aiSummaryPreparingTooltip,
-      TtsButtonMode.idle => messages.aiSummaryPlayTooltip,
+      TtsButtonMode.idle => playLabel ?? messages.aiSummaryPlayTooltip,
     };
     // Three distinct glyphs so the states are legible by shape alone —
     // including under reduced motion, where the ring/arc difference vanishes.

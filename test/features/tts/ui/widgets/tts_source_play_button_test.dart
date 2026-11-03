@@ -25,12 +25,17 @@ void main() {
 
   Future<TtsPlayButton> pump(
     WidgetTester tester,
-    TtsPlaybackState state,
-  ) async {
+    TtsPlaybackState state, {
+    String? playLabel,
+  }) async {
     played = [];
     await tester.pumpWidget(
       makeTestableWidget(
-        TtsSourcePlayButton(sourceId: 'mine', onPlay: played.add),
+        TtsSourcePlayButton(
+          sourceId: 'mine',
+          onPlay: played.add,
+          playLabel: playLabel,
+        ),
         overrides: [
           ttsPlaybackControllerProvider.overrideWith(
             () => playback = _Playback(state),
@@ -46,8 +51,18 @@ void main() {
   ) async {
     final button = await pump(tester, const TtsPlaybackState());
     expect(button.mode, TtsButtonMode.idle);
+    expect(button.playLabel, isNull);
     button.onPlay();
     expect(played, [playback]);
+  });
+
+  testWidgets("passes the host's play label on", (tester) async {
+    final button = await pump(
+      tester,
+      const TtsPlaybackState(),
+      playLabel: 'Say it again',
+    );
+    expect(button.playLabel, 'Say it again');
   });
 
   testWidgets('its own utterance shows progress and a tap stops it', (

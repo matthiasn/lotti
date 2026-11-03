@@ -3237,6 +3237,7 @@
   "frontChatProfileFollowsDefault": "Följeslagaren följer nu standardprofilen från Inställningar",
   "frontChatProfileMenuItem": "AI-profil",
   "frontChatProfileUseDefault": "Standard från Inställningar",
+  "frontChatReplayAnswer": "Säg det igen",
   "frontChatResponding": "Letar efter den som vet…",
   "frontChatRowMenuHint": "Chattåtgärder",
   "frontChatScopeAll": "Allt",

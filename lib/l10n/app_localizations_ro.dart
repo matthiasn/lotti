@@ -7126,6 +7126,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get frontChatProfileUseDefault => 'Implicit din Setări';
 
   @override
+  String get frontChatReplayAnswer => 'Spuneți din nou';
+
+  @override
   String get frontChatResponding => 'Caută cine știe…';
 
   @override

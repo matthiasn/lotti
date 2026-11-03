@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
+import 'package:lotti/features/agents/query/query_source_access.dart';
 import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
 import 'package:lotti/features/agents/ui/chat/chat_recorder_controller.dart';
@@ -14,6 +17,7 @@ import 'package:lotti/features/front_agent/state/front_chat_controller.dart';
 import 'package:lotti/features/front_agent/state/front_chat_thread_provider.dart';
 import 'package:lotti/features/front_agent/state/front_conversation_providers.dart';
 import 'package:lotti/features/front_agent/state/front_inbox_filter.dart';
+import 'package:lotti/features/front_agent/state/front_journal_access_provider.dart';
 import 'package:lotti/features/front_agent/state/front_voice_providers.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_voice.dart';
 import 'package:lotti/features/tts/cloud/tts_cloud_route.dart';
@@ -150,6 +154,7 @@ void main() {
     ChatRecorderStatus recorder = ChatRecorderStatus.idle,
     TtsPlaybackState playing = const TtsPlaybackState(),
     bool sending = false,
+    Stream<QueryAccessSnapshot?>? journalAccess,
   }) async {
     voice = _Voice(playing);
     await tester.pumpWidget(
@@ -172,6 +177,18 @@ void main() {
           ttsPlaybackControllerProvider.overrideWith(() => voice),
           agentResolvedSetupProvider.overrideWith((ref, id) async => null),
           frontActiveConversationProvider.overrideWith((ref) async => active),
+          // Nothing her journal answers rest on is hidden.
+          frontJournalAccessProvider.overrideWith(
+            (ref) =>
+                journalAccess ??
+                Stream.value(
+                  const QueryAccessSnapshot(
+                    showPrivate: false,
+                    categories: {},
+                    entries: {},
+                  ),
+                ),
+          ),
           frontChatThreadProvider.overrideWith(
             (ref) async => FrontChatThread(
               messages: List.of(thread),
@@ -435,6 +452,33 @@ void main() {
       ]);
       expect(container.read(frontSpokenTurnProvider), isNull);
       expect(find.text('null'), findsOne);
+    });
+
+    testWidgets('waits until what the journal answer rests on is known, '
+        'then says it once it may be shown', (tester) async {
+      final access = StreamController<QueryAccessSnapshot?>();
+      addTearDown(access.close);
+      final container = await pumpHost(tester, journalAccess: access.stream);
+      // Kept alive as the pane's door cards keep it.
+      final keep = container.listen(frontJournalAccessProvider, (_, _) {});
+      addTearDown(keep.close);
+      speakTurn(container, 'c-1');
+
+      await answerInDoor(tester, container);
+      expect(voice.spoken, isEmpty);
+      expect(container.read(frontSpokenTurnProvider), isNotNull);
+
+      access.add(
+        const QueryAccessSnapshot(
+          showPrivate: false,
+          categories: {},
+          entries: {},
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      expect(voice.spoken.single.text, 'You fixed the feeder.');
     });
 
     testWidgets('waits for the send, whose wake walks the doors, to settle', (

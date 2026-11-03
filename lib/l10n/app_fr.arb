@@ -2892,6 +2892,7 @@
   "frontChatProfileFollowsDefault": "La compagne suit maintenant le profil par défaut des Paramètres",
   "frontChatProfileMenuItem": "Profil d'IA",
   "frontChatProfileUseDefault": "Par défaut des Paramètres",
+  "frontChatReplayAnswer": "Redis-le",
   "frontChatResponding": "Elle cherche qui sait…",
   "frontChatRowMenuHint": "Actions du chat",
   "frontChatScopeAll": "Tout",

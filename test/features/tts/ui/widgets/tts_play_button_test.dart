@@ -13,6 +13,7 @@ void main() {
     MediaQueryData? mediaQueryData,
     VoidCallback? onPlay,
     VoidCallback? onStop,
+    String? playLabel,
   }) {
     return tester.pumpWidget(
       makeTestableWidget(
@@ -20,6 +21,7 @@ void main() {
           child: TtsPlayButton(
             mode: mode,
             progress: progress,
+            playLabel: playLabel,
             onPlay: onPlay ?? () {},
             onStop: onStop ?? () {},
           ),
@@ -111,6 +113,25 @@ void main() {
     expect(find.bySemanticsLabel('Play summary'), findsOneWidget);
 
     await pumpButton(tester, mode: TtsButtonMode.playing, progress: 0.2);
+    expect(find.bySemanticsLabel('Stop'), findsOneWidget);
+  });
+
+  testWidgets("a host's play label names what idle plays; stop stays Stop", (
+    tester,
+  ) async {
+    await pumpButton(
+      tester,
+      mode: TtsButtonMode.idle,
+      playLabel: 'Say it again',
+    );
+    expect(find.bySemanticsLabel('Say it again'), findsOneWidget);
+    expect(find.bySemanticsLabel('Play summary'), findsNothing);
+
+    await pumpButton(
+      tester,
+      mode: TtsButtonMode.playing,
+      playLabel: 'Say it again',
+    );
     expect(find.bySemanticsLabel('Stop'), findsOneWidget);
   });
 

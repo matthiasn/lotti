@@ -120,6 +120,14 @@ sources:
     resource: ../../lib/features/front_agent/ui/front_chat_voice.dart
     title: FrontVoice — her spoken reply, its gating, her pose
     last_modified: 2026-11-01
+  - id: voice-controls
+    resource: ../../lib/features/front_agent/ui/front_voice_controls.dart
+    title: Her voice's stop / say-it-again control and the way to her full-screen stage
+    last_modified: 2026-11-03
+  - id: stage
+    resource: ../../lib/features/agents/ui/ai_summary_card/companion_stage_page.dart
+    title: CompanionStagePage — the shared full-screen stage
+    last_modified: 2026-11-03
   - id: profile-choice
     resource: ../../lib/features/front_agent/ui/front_profile_choice.dart
     title: FrontProfileChoice — her AI profile, and with it her voice
@@ -223,10 +231,18 @@ contained and logged under `FrontRuntimeMaintenance`.
 | goals | ≤50, newest first | active `goal_agent` identities, the spec head's version for the statement, the agent's report | **the goal agent's id** |
 | people | ≤50, newest first, only when `FrontRoutingScope.includePeople` | `getRelationships` | the relationship entry's id; names only |
 
-Tasks, projects and people are filtered through `FrontRoutingScope.categoryIds`
-(the identity's `allowedCategoryIds`; empty is unrestricted, the
-`categoryAllowed` convention). Goals carry no category and are listed
-whenever `includeGoals`.
+Tasks, projects and people are filtered through `FrontRoutingScope.categoryIds`:
+the identity's `allowedCategoryIds` narrowed by the chips the turn was sent
+with (`frontCategoriesOf` on the user turn's payload, read in
+`executeUserMessage`), never widened — `frontNarrowedCategories`, the same
+rule the journal door applies; empty is unrestricted, the `categoryAllowed`
+convention. Goals carry no category and are listed whenever `includeGoals`.
+
+The block opens with **`## Categories`**: every active category her
+allow-list lets her see (`JournalDb.getAllCategories`, the privacy-gated read
+the task queries share), `category:id | name`, by name, the ones the chips
+chose marked `chosen`. That is what a category the user *names* resolves
+against; a category is never a destination.
 
 The rendered block is **byte-stable**: rows sorted by id within each kind,
 one fixed format (`kind:id | title | status | due | one-liner`), a truncated
@@ -245,7 +261,7 @@ Six tools, never fewer (a single tool makes DeepSeek rewrite
 | `dispatch` | yes | once | refused |
 | `read_tldr(ids ≤ 5)` | no | 1 per turn | `frontTldrExhaustedAnswer` — the tool stays listed |
 | `match_to_corpus(phrase)` | no | 1 per turn | `frontCorpusMatchExhaustedAnswer`; unavailable when no FTS index is wired |
-| `list_due_tasks(daysAhead 0–7)` | no | 1 per turn | `frontDueListExhaustedAnswer`; unavailable when no lister is wired |
+| `list_due_tasks(which, daysAhead 0–7, categoryIds)` | no | 1 per turn | `frontDueListExhaustedAnswer`; unavailable when no lister is wired |
 | `ask_user(question, options ≤ 3)` | yes | once | refused |
 | `reply_to_user(text)` | yes | once | refused |
 
@@ -294,15 +310,32 @@ like a journal question; but she answers it from the record, not the
 journal. The prompt's rule 8 sends it to `list_due_tasks` and then
 `reply_to_user` alone; rule 7 keeps `day` for changes to today's plan, so a
 due question no longer lands on the day door, whose question outcome is
-`FrontDoorSkipped(noDoor)`. `FrontRoutingIndexBuilder.dueTaskLister`
-answers it with `JournalDb.getTasksDueOnOrBefore` — the read the Daily OS
-and the task list's *Due today* view share — from today's local midnight
-through `daysAhead` days past it, overdue tasks included, inside the
-identity's allow-list (not the conversation's chips, which scope journal
-answers), soonest due first, at most `frontDueTaskLimit` (30).
-`FrontDueTasks.render` is what the model reads: the days it spans, one row
-per task in the index's shape, an overdue one marked, or a plain *nothing
-is due*.
+`FrontDoorSkipped(noDoor)`.
+
+**Only what was asked comes back.** `which` names one `FrontDueWindow`, split
+at local midnight as the task list's *Due today* and *Overdue* views split
+it:
+
+| `which` | Holds | Never |
+|---------|-------|-------|
+| `today` | due on today's local day | overdue |
+| `overdue` | due on an earlier day | due today |
+| `upcoming` | due from today through `daysAhead` days past it | overdue |
+| `all` | both, only when both are asked for | — |
+
+`FrontRoutingIndexBuilder.dueTaskLister` reads
+`JournalDb.getTasksDueOnOrBefore` — the read the Daily OS and those views
+share — and checks both ends of the window itself, inside the turn's scope
+(her allow-list narrowed by the chips), soonest due first, at most
+`frontDueTaskLimit` (30). A category the user names (*overdue in Work*) is
+passed as its id from `## Categories` in `categoryIds` and narrows it
+further, never widens it: the strategy refuses an id the index does not
+list, and — in a conversation the chips narrowed — one they did not choose,
+telling her to say it is outside. So the chips alone, the words alone, and
+both together all filter the list. `FrontDueTasks.render` is what the model
+reads: the window and any named category in its heading, one row per task in
+the index's shape plus its category's name, an overdue one marked only in
+`all`, or a plain *None*.
 
 Her own words name a task or a project as a Markdown link titled as listed:
 `[title](lotti://task/<id>)`, `lotti://project/<id>` (`frontReferenceUrl`).
@@ -373,7 +406,7 @@ walker died. Outcomes:
 | `task` / `project` question with an active agent | the owner's query pipeline, headless: `QueryAnswerBuilder.build` over an in-memory `QueryChatHistory` whose one event is the segment, chat id the source message id | `FrontDoorAnswer(text, summaryBased, incomplete, ownerIds)` — the answer is the record's, attributed to the owner, never reworded |
 | `goal` / `person`, question or statement, with an active agent | that agent's own chat: `appendMessage` then `enqueueMessage`, **never awaited** | `FrontDoorChatTurn(specialistAgentId, specialistMessageId)`; the reply lands in the specialist's thread with the turn as its `operationId` |
 | `task` or `project` statement or instruction | none — the walker writes nothing | `FrontDoorProposal(ownerId)`: waits for the user's tap |
-| `journal` question | the journal answer engine, headless: `QueryAnswerBuilder.build` over `QueryScope.journalIn(her allowedCategoryIds)` (empty = every visible category), agent id `front_agent`, the Settings default profile | `FrontDoorAnswer(fromJournal: true, evidence, dependencies, private)` — her own answer, with the passages it cites |
+| `journal` question | the journal answer engine, headless: `QueryAnswerBuilder.build` over `QueryScope.journalIn(allowedCategoryIds)` narrowed by the turn's chips (`frontNarrowedCategories`) (empty = every visible category), agent id `front_agent`, the Settings default profile | `FrontDoorAnswer(fromJournal: true, evidence, dependencies, private)` — her own answer, with the passages it cites |
 | `new`, `journal` statement, `unrouted` | none | `FrontDoorInbox(newKind?)` — what the router thought it would become leads the chips |
 | `day` statement or instruction, while `enable_daily_os_page` is on | none — the walker writes nothing | `FrontDoorDay()`: waits for the user's tap |
 | `day` question, or anything about the day while the Daily OS is off | — | `FrontDoorSkipped(noDoor)` |
@@ -754,7 +787,10 @@ replied (that door is done at the hand-over, its reply mirrored later); it is
 read only after the send settles, because the doors are walked inside the
 wake the send waits on, and only from a thread that is not reloading, whose
 held value may be the reply without its doors' answers. A turn that landed with nothing to say still settles.
-An answer shown only while private entries are is never said aloud.
+An answer shown only while private entries are is never said aloud, and a
+journal answer is said only while `frontJournalAccessProvider` lets its door
+card show it (`QueryAccessSnapshot.allowsContent`): the listener waits until
+that visibility is read, and tries again when it arrives.
 
 **Which voice is hers.** Her cloud voice is the read-aloud model of the
 profile her own setup resolves to ([where it plugs in](#where-it-plugs-in)).
@@ -800,10 +836,29 @@ sources is playing (`isFrontVoiceSourceId`) — never another voice.
 Her bust is a `CompanionSpeaker` on that source, so her lips follow only her
 own words in the conversation on screen. She holds `listen` while the user
 records and `think` while a send is in flight or a spoken answer is owed
-(`FrontVoice.holdingOf`); a tap on her while she speaks stops her
-(`FrontChatHeroKeys.stop`). Starting to record stops any voice before the
+(`FrontVoice.holdingOf`). Starting to record stops any voice before the
 microphone opens (`ChatRecorderController.start`), so she never records
 herself.
+
+**Her voice's control and her stage** (`front_voice_controls.dart`) stand
+under her bust in the hero while the companion is on. `FrontVoiceButton` is
+the shared `TtsSourcePlayButton` on her source: while she speaks it stops
+her — shown then even if she was muted meanwhile, so a stop is always in
+reach — and once she has stopped, *Say it again* speaks her answer to the
+latest turn from the start (`frontLatestAnswer`, the same words
+`frontSpokenAnswer` gives a spoken turn) through `FrontVoice.speak`, so the
+mute, the voice route and the take-over hold as for a spoken reply — the
+mute read at playback start from the app's container, so closing the stage
+mid-synthesis does not cut her off. It is gone while she may not speak, in
+the inbox, for a conversation other than the one on screen, while a send is
+in flight or a spoken reply is still owed, while the thread or its journal
+access is being read, and before that answer has landed.
+`FrontStageButton` — and a tap on her bust or the header's — opens
+`openFrontStage`: the shared full-screen `CompanionStagePage`, head to toe,
+on a phone and on a desktop window alike, still speaking on her source,
+with `FrontVoiceButton` at her feet in place of a summary's read-aloud
+control (`readAloud`). The bust keeps one tree whatever she does, so her
+animator lives through a start and a stop.
 
 # Where it plugs in
 

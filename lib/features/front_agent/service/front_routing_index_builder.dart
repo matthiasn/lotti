@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
@@ -8,27 +9,36 @@ import 'package:lotti/database/agents/agent_repository.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/features/agents/service/open_task_corpus.dart';
+import 'package:lotti/features/front_agent/model/front_conversation.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_routing_index.dart';
 import 'package:lotti/utils/day_agent_capture_helpers.dart';
 
 /// What the front agent may see (the owner's decision 4: narrow by default).
 ///
-/// [categoryIds] is the allow-list every category-scoped kind — tasks,
-/// projects, people — filters through; empty means unrestricted, the
-/// `categoryAllowed` convention. Goals carry no category and are the user's
-/// own, so they are listed whenever [includeGoals]; people are listed only
-/// when [includePeople], a separate opt-in.
+/// [allowedCategoryIds] is her allow-list and [chosenCategoryIds] the
+/// conversation's chips for the turn; [categoryIds], the one narrowed by the
+/// other, is what every category-scoped kind — tasks, projects, people —
+/// filters through. Empty means unrestricted, the `categoryAllowed`
+/// convention. Goals carry no category and are the user's own, so they are
+/// listed whenever [includeGoals]; people are listed only when
+/// [includePeople], a separate opt-in.
 class FrontRoutingScope {
   const FrontRoutingScope({
-    this.categoryIds = const {},
+    this.allowedCategoryIds = const {},
+    this.chosenCategoryIds = const {},
     this.includeGoals = true,
     this.includePeople = false,
   });
 
-  final Set<String> categoryIds;
+  final Set<String> allowedCategoryIds;
+  final Set<String> chosenCategoryIds;
   final bool includeGoals;
   final bool includePeople;
+
+  /// The categories the turn reads: her allow-list narrowed by the chips.
+  Set<String> get categoryIds =>
+      frontNarrowedCategories(allowedCategoryIds, chosenCategoryIds);
 }
 
 /// Builds the routing index from existing reads — no model call, no raw
@@ -59,6 +69,7 @@ class FrontRoutingIndexBuilder {
         ? await _people(scope)
         : const <FrontIndexRow>[];
     return FrontRoutingIndex(
+      categories: await _categories(scope),
       tasks: tasks,
       tasksTruncated: tasks.length >= frontIndexMaxTasks,
       projects: projects.take(frontIndexMaxProjects).toList(),
@@ -96,24 +107,51 @@ class FrontRoutingIndexBuilder {
     };
   }
 
-  /// Lists the open tasks inside [scope] due by a day: today, on [now]'s
-  /// local day, through `daysAhead` days past it, overdue ones included —
-  /// soonest due first, then by title, at most [frontDueTaskLimit].
+  /// Lists the open tasks inside [scope] in one due window of [now]'s local
+  /// day — due today, overdue, or due through `daysAhead` days past today,
+  /// with or without the overdue ones — soonest due first, then by title,
+  /// at most [frontDueTaskLimit]. A query naming categories (one the user
+  /// named) narrows the scope further, never widens it.
   ///
-  /// The due-date read the Daily OS and the task list's *Due today* view
-  /// share, so she answers a due question with what those show.
-  Future<FrontDueTasks> Function(int daysAhead) dueTaskLister(
+  /// The due-date read the Daily OS and the task list's *Due today* and
+  /// *Overdue* views share, split at local midnight as they split it, so
+  /// she answers a due question with what those show.
+  Future<FrontDueTasks> Function(FrontDueQuery query) dueTaskLister(
     FrontRoutingScope scope, {
     required DateTime now,
   }) {
     final today = DateTime(now.year, now.month, now.day);
-    return (daysAhead) async {
-      final through = DateTime(today.year, today.month, today.day + daysAhead);
+    return (query) async {
+      final through = switch (query.window) {
+        FrontDueWindow.today || FrontDueWindow.overdue => today,
+        FrontDueWindow.upcoming || FrontDueWindow.all => DateTime(
+          today.year,
+          today.month,
+          today.day + query.daysAhead,
+        ),
+      };
+      final allowed = scope.categoryIds;
+      final narrowed = {
+        for (final id in query.categoryIds)
+          if (categoryAllowed(id, allowed)) id,
+      };
+      final within = narrowed.isEmpty ? allowed : narrowed;
+      // Both ends checked here, whatever bound the read applied.
+      final until = DateTime(through.year, through.month, through.day + 1);
+      bool inWindow(DateTime due) =>
+          due.isBefore(until) &&
+          switch (query.window) {
+            FrontDueWindow.overdue => due.isBefore(today),
+            FrontDueWindow.today ||
+            FrontDueWindow.upcoming => !due.isBefore(today),
+            FrontDueWindow.all => true,
+          };
       final tasks =
           (await journalDb.getTasksDueOnOrBefore(through))
               .where(
                 (task) =>
-                    categoryAllowed(task.meta.categoryId, scope.categoryIds),
+                    inWindow(task.data.due!) &&
+                    categoryAllowed(task.meta.categoryId, within),
               )
               .toList()
             ..sort((a, b) {
@@ -124,7 +162,12 @@ class FrontRoutingIndexBuilder {
                       b.data.title.toLowerCase(),
                     );
             });
+      final names = {
+        for (final category in await _categories(scope))
+          category.id: category.name,
+      };
       return FrontDueTasks(
+        window: query.window,
         today: today,
         through: through,
         rows: [
@@ -132,8 +175,34 @@ class FrontRoutingIndexBuilder {
             _taskRow(task, null),
         ],
         omitted: _omitted(tasks.length, frontDueTaskLimit),
+        categoryNames: names,
+        narrowedTo: [
+          for (final id in narrowed) ?names[id],
+        ]..sort(),
       );
     };
+  }
+
+  /// The active categories her allow-list lets her see, by name, those the
+  /// chips narrow the turn to marked. The privacy-gated read the task
+  /// queries share, so a hidden category is never named.
+  Future<List<FrontCategory>> _categories(FrontRoutingScope scope) async {
+    final narrowed = scope.categoryIds;
+    final chips = !const SetEquality<String>().equals(
+      narrowed,
+      scope.allowedCategoryIds,
+    );
+    return [
+      for (final category in await journalDb.getAllCategories())
+        if (category.active &&
+            category.deletedAt == null &&
+            categoryAllowed(category.id, scope.allowedCategoryIds))
+          FrontCategory(
+            id: category.id,
+            name: category.name,
+            chosen: chips && narrowed.contains(category.id),
+          ),
+    ];
   }
 
   static int _omitted(int total, int cap) => total > cap ? total - cap : 0;

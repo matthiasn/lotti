@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/features/companion/model/companion_reaction.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
+import 'package:lotti/features/front_agent/model/front_routing_index.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_contract.dart';
 
 void main() {
@@ -50,6 +51,21 @@ void main() {
       'goal',
       'project',
     ]);
+  });
+
+  test('list_due_tasks asks for one window by the names the strategy reads, '
+      'and the prompt tells today from overdue', () {
+    final properties =
+        frontAgentTools[3].parameters['properties'] as Map<String, Object?>;
+    expect(
+      (properties['which']! as Map)['enum'],
+      [for (final window in FrontDueWindow.values) window.name],
+    );
+    expect(frontAgentTools[3].parameters['required'], ['which']);
+    expect((properties['categoryIds']! as Map)['type'], 'array');
+    expect(frontAgentSystemPrompt, contains('`today` for due today (never'));
+    expect(frontAgentSystemPrompt, contains('`overdue` for overdue (never'));
+    expect(frontAgentSystemPrompt, contains('pass its id in `categoryIds`'));
   });
 
   test("lookup caps and the per-turn budget are the plan's", () {

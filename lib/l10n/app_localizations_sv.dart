@@ -7020,6 +7020,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get frontChatProfileUseDefault => 'Standard från Inställningar';
 
   @override
+  String get frontChatReplayAnswer => 'Säg det igen';
+
+  @override
   String get frontChatResponding => 'Letar efter den som vet…';
 
   @override

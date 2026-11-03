@@ -12,7 +12,7 @@ import 'package:lotti/features/front_agent/state/front_conversation_providers.da
 import 'package:lotti/features/front_agent/state/front_inbox_filter.dart';
 import 'package:lotti/features/front_agent/state/front_voice_providers.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_voice.dart';
-import 'package:lotti/features/tts/state/tts_playback_controller.dart';
+import 'package:lotti/features/front_agent/ui/front_voice_controls.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/consts.dart';
@@ -25,7 +25,7 @@ abstract final class FrontChatHeroKeys {
   static const Key figure = Key('front-chat-figure');
   static const Key title = Key('front-chat-hero-title');
   static const Key archived = Key('front-chat-archived');
-  static const Key stop = Key('front-chat-stop-voice');
+  static const Key openStage = Key('front-chat-figure-open-stage');
 }
 
 /// Whether the hero has scrolled out of view, so the header carries her
@@ -96,6 +96,11 @@ class FrontChatHero extends ConsumerWidget {
     final echoes =
         first != null &&
         open.title == FrontConversationService.titleOf(first.text);
+    // Her voice and her stage go with her figure: with the character off
+    // she neither stands up nor speaks.
+    final companionOn =
+        ref.watch(configFlagProvider(enableCompanionFlag)).value ?? false;
+    final conversationId = ref.watch(frontActiveConversationProvider).value;
     return Padding(
       key: FrontChatHeroKeys.hero,
       // A step more than between messages: the day below belongs to them.
@@ -103,6 +108,17 @@ class FrontChatHero extends ConsumerWidget {
       child: Column(
         children: [
           const FrontCompanionFigure(size: ControlSizes.avatarHero),
+          if (companionOn && conversationId != null) ...[
+            SizedBox(height: tokens.spacing.step3),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              spacing: tokens.spacing.step2,
+              children: [
+                FrontVoiceButton(conversationId: conversationId),
+                FrontStageButton(conversationId: conversationId),
+              ],
+            ),
+          ],
           if (!echoes || open.archived) ...[
             SizedBox(height: tokens.spacing.step3),
             Row(
@@ -183,8 +199,10 @@ class FrontCompanionFigure extends ConsumerWidget {
 }
 
 /// Her bust speaking: her lips follow her voice in [conversationId], she
-/// holds a pose for the turn (listening, thinking), and a tap stops her
-/// while she speaks. Before any conversation resolves, she simply stands.
+/// holds a pose for the turn (listening, thinking), and a tap stands her up
+/// full screen, still speaking — stopping her is her voice's control
+/// ([FrontVoiceButton]). Before any conversation resolves, she simply
+/// stands.
 class _SpeakingFigure extends ConsumerWidget {
   const _SpeakingFigure({required this.conversationId});
 
@@ -201,33 +219,19 @@ class _SpeakingFigure extends ConsumerWidget {
         holding: holding,
       );
     }
-    final sourceId = frontVoiceSourceId(id);
-    final speaking = ref.watch(
-      ttsPlaybackControllerProvider.select((s) => s.isActiveFor(sourceId)),
-    );
-    // The same tree speaking or not, so her animator — and the sign-off
-    // at the end of an utterance — lives through it: only what a tap does,
-    // and what it is called, come and go. (A tooltip that switches off
-    // re-parents its child, so there is none.)
-    return Semantics(
-      button: speaking,
-      label: speaking ? context.messages.aiSummaryStopTooltip : null,
-      child: MouseRegion(
-        cursor: speaking ? SystemMouseCursors.click : MouseCursor.defer,
-        child: GestureDetector(
-          key: FrontChatHeroKeys.stop,
-          behavior: HitTestBehavior.opaque,
-          onTap: speaking
-              ? () => ref
-                    .read(ttsPlaybackControllerProvider.notifier)
-                    .stop(sourceId: sourceId)
-                    .ignore()
-              : null,
-          child: CompanionSpeaker(
-            sourceId: sourceId,
-            framing: CompanionFraming.bust,
-            holding: holding,
-          ),
+    // One tree whatever she is doing, so her animator — and the sign-off at
+    // the end of an utterance — lives through it. Decorative to a screen
+    // reader: the stage control beside her carries the same action.
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        key: FrontChatHeroKeys.openStage,
+        behavior: HitTestBehavior.opaque,
+        onTap: () => openFrontStage(context, id).ignore(),
+        child: CompanionSpeaker(
+          sourceId: frontVoiceSourceId(id),
+          framing: CompanionFraming.bust,
+          holding: holding,
         ),
       ),
     );

@@ -15,10 +15,14 @@ class TtsSourcePlayButton extends ConsumerWidget {
   const TtsSourcePlayButton({
     required this.sourceId,
     required this.onPlay,
+    this.playLabel,
     super.key,
   });
 
   final String sourceId;
+
+  /// What the idle control says it plays; a summary when null.
+  final String? playLabel;
 
   /// Starts the utterance, typically `controller.speak(sourceId: …)`.
   final void Function(TtsPlaybackController controller) onPlay;
@@ -43,6 +47,7 @@ class TtsSourcePlayButton extends ConsumerWidget {
     return TtsPlayButton(
       mode: mode,
       progress: progress,
+      playLabel: playLabel,
       onPlay: () => onPlay(controller),
       onStop: controller.stop,
     );

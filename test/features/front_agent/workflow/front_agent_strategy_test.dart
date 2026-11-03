@@ -65,6 +65,7 @@ void main() {
   FrontAgentStrategy strategy({
     FrontCorpusMatcher? matcher,
     FrontDueTaskLister? dueLister,
+    FrontRoutingIndex? routingIndex,
   }) => FrontAgentStrategy(
     syncService: syncService,
     domainLogger: domainLogger,
@@ -72,7 +73,7 @@ void main() {
     threadId: 'thread-1',
     runKey: 'run-1',
     input: input,
-    index: index,
+    index: routingIndex ?? index,
     corpusMatcher: matcher,
     dueTaskLister: dueLister,
   );
@@ -313,13 +314,25 @@ hologram:x: not listed''');
       status: 'OPEN',
     );
 
+    // A record compares its set by identity: the query as one string.
+    String described(FrontDueQuery q) =>
+        '${q.window.name}/${q.daysAhead}/${(q.categoryIds.toList()..sort()).join(',')}';
+
+    FrontDueTasks none(FrontDueQuery query) => FrontDueTasks(
+      window: query.window,
+      today: today,
+      through: today,
+      rows: const [],
+    );
+
     test('answers with the tasks due, which the reply may then link and the '
         'dispatch route to', () async {
-      final asked = <int>[];
+      final asked = <FrontDueQuery>[];
       final s = strategy(
-        dueLister: (daysAhead) async {
-          asked.add(daysAhead);
+        dueLister: (query) async {
+          asked.add(query);
           return FrontDueTasks(
+            window: query.window,
             today: today,
             through: today,
             rows: [
@@ -336,14 +349,14 @@ hologram:x: not listed''');
       );
       await s.processToolCalls(
         toolCalls: [
-          _call('list_due_tasks', {'daysAhead': 0}),
+          _call('list_due_tasks', {'which': 'today'}),
         ],
         manager: manager,
       );
-      expect(asked, [0]);
+      expect(asked.map(described), ['today/0/']);
       expect(
         responses().single,
-        'Open tasks due today, 2026-11-02, overdue ones included (1):\n'
+        'Open tasks due today (2026-11-02) (1):\n'
         '- task:shed | Paint the shed | OPEN | due 2026-11-02',
       );
       expect(s.lookupCalls, 1);
@@ -365,35 +378,113 @@ hologram:x: not listed''');
       );
     });
 
-    test('refuses a second list, a reach past a week, and reports an '
-        'unwired lister', () async {
-      final s = strategy(
-        dueLister: (_) async =>
-            FrontDueTasks(today: today, through: today, rows: const []),
-      );
+    test('refuses a missing window, a reach past a week, a second list, and '
+        'reports an unwired lister', () async {
+      final s = strategy(dueLister: (query) async => none(query));
       await s.processToolCalls(
         toolCalls: [
-          _call('list_due_tasks', {'daysAhead': frontDueMaxDaysAhead + 1}),
-          _call('list_due_tasks', {'daysAhead': 1.5}, id: 'call-2'),
-          _call('list_due_tasks', const <String, dynamic>{}, id: 'call-3'),
-          _call('list_due_tasks', {'daysAhead': 0}, id: 'call-4'),
+          _call('list_due_tasks', const <String, dynamic>{}),
+          _call('list_due_tasks', {'which': 'soon'}, id: 'call-2'),
+          _call('list_due_tasks', {
+            'which': 'upcoming',
+            'daysAhead': frontDueMaxDaysAhead + 1,
+          }, id: 'call-3'),
+          _call('list_due_tasks', {
+            'which': 'all',
+            'daysAhead': 1.5,
+          }, id: 'call-4'),
+          _call('list_due_tasks', {'which': 'overdue'}, id: 'call-5'),
+          _call('list_due_tasks', {'which': 'today'}, id: 'call-6'),
         ],
         manager: manager,
       );
       expect(responses(), [
+        contains('needs which: one of today, overdue, upcoming, all'),
+        contains('needs which'),
         contains('whole number from 0 (today) to $frontDueMaxDaysAhead'),
         contains('whole number'),
-        'No open task is due today, 2026-11-02, and none is overdue.',
+        'None: no open task overdue (due before 2026-11-02).',
         frontDueListExhaustedAnswer,
       ]);
 
       await strategy().processToolCalls(
         toolCalls: [
-          _call('list_due_tasks', {'daysAhead': 0}),
+          _call('list_due_tasks', {'which': 'today'}),
         ],
         manager: manager,
       );
       expect(responses().last, contains('unavailable this turn'));
+    });
+
+    test('a named category is passed on by id; an unknown one, or one '
+        'outside the chosen chips, is refused', () async {
+      final asked = <FrontDueQuery>[];
+      FrontAgentStrategy narrowed() => strategy(
+        routingIndex: FrontRoutingIndex(
+          categories: const [
+            FrontCategory(id: 'work', name: 'Work', chosen: true),
+            FrontCategory(id: 'home', name: 'Home'),
+          ],
+        ),
+        dueLister: (query) async {
+          asked.add(query);
+          return none(query);
+        },
+      );
+
+      final s = narrowed();
+      await s.processToolCalls(
+        toolCalls: [
+          _call('list_due_tasks', {
+            'which': 'today',
+            'categoryIds': 'work',
+          }),
+          _call('list_due_tasks', {
+            'which': 'today',
+            'categoryIds': ['nope'],
+          }, id: 'call-2'),
+          _call('list_due_tasks', {
+            'which': 'today',
+            'categoryIds': ['home'],
+          }, id: 'call-3'),
+          _call('list_due_tasks', {
+            'which': 'overdue',
+            'categoryIds': ['work'],
+          }, id: 'call-4'),
+        ],
+        manager: manager,
+      );
+
+      expect(responses(), [
+        contains('categoryIds is a list of ids'),
+        contains('nope is not a category id'),
+        startsWith('Home is outside the categories this conversation'),
+        'None: no open task overdue (due before 2026-11-02).',
+      ]);
+      expect(asked.map(described), ['overdue/0/work']);
+    });
+
+    test('without chips any listed category may be named', () async {
+      final asked = <FrontDueQuery>[];
+      await strategy(
+        routingIndex: FrontRoutingIndex(
+          categories: const [FrontCategory(id: 'home', name: 'Home')],
+        ),
+        dueLister: (query) async {
+          asked.add(query);
+          return none(query);
+        },
+      ).processToolCalls(
+        toolCalls: [
+          _call('list_due_tasks', {
+            'which': 'upcoming',
+            'daysAhead': 3,
+            'categoryIds': ['home'],
+          }),
+        ],
+        manager: manager,
+      );
+      expect(asked.map(described), ['upcoming/3/home']);
     });
   });
 

@@ -4202,6 +4202,10 @@
   "@frontChatProfileUseDefault": {
     "description": "First row of the companion's AI profile picker: clear her own choice and follow the default profile set in Settings. Its subtitle names that profile."
   },
+  "frontChatReplayAnswer": "Say it again",
+  "@frontChatReplayAnswer": {
+    "description": "Front agent: the control that plays her last answer aloud again from the start (stops it while she speaks)"
+  },
   "frontChatResponding": "Finding who knows…",
   "frontChatRowMenuHint": "Chat actions",
   "frontChatScopeAll": "All",

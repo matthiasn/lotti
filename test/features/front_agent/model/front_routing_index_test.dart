@@ -106,44 +106,135 @@ void main() {
     expect(frontCorpusMatchLimit, 8);
   });
 
+  group('categories', () {
+    test('lead the block by name, the chosen ones marked and announced', () {
+      final index = FrontRoutingIndex(
+        categories: const [
+          FrontCategory(id: 'c-w', name: 'work'),
+          FrontCategory(id: 'c-c', name: 'Penguin  Colony', chosen: true),
+        ],
+      );
+
+      expect(
+        index.render(),
+        startsWith('''
+<routing_index>
+## Categories (2; this conversation is narrowed to the chosen ones)
+- category:c-c | Penguin Colony | chosen
+- category:c-w | work
+## Tasks (0 shown)'''),
+      );
+      expect(index.category('c-w')?.name, 'work');
+      expect(index.category('missing'), isNull);
+    });
+
+    test('say nothing of narrowing when no chip is chosen', () {
+      final rendered = FrontRoutingIndex(
+        categories: const [FrontCategory(id: 'c-w', name: 'Work')],
+      ).render();
+      expect(rendered, contains('## Categories (1)\n- category:c-w | Work\n'));
+      expect(rendered, isNot(contains('chosen')));
+    });
+  });
+
+  test('a wire name reads back as its window, anything else as none', () {
+    for (final window in FrontDueWindow.values) {
+      expect(FrontDueWindow.fromWire(window.name), window);
+    }
+    expect(FrontDueWindow.fromWire('soon'), isNull);
+    expect(FrontDueWindow.fromWire(null), isNull);
+  });
+
   group('FrontDueTasks.render', () {
     final today = DateTime(2026, 11, 2);
+    final late = FrontIndexRow(
+      kind: FrontDestinationKind.task,
+      id: 'late',
+      title: 'Fix   the\nfence',
+      status: 'BLOCKED',
+      categoryId: 'c-c',
+      due: DateTime(2026, 10, 30),
+    );
+    final feed = FrontIndexRow(
+      kind: FrontDestinationKind.task,
+      id: 'feed',
+      title: 'Feed the penguins',
+      due: DateTime(2026, 11, 3, 8),
+    );
 
-    test('names the days, marks what is overdue, and counts what was cut', () {
+    test('all names the days, marks what is overdue, and counts the cut', () {
       final rendered = FrontDueTasks(
+        window: FrontDueWindow.all,
         today: today,
         through: DateTime(2026, 11, 4),
-        rows: [
-          FrontIndexRow(
-            kind: FrontDestinationKind.task,
-            id: 'late',
-            title: 'Fix   the\nfence',
-            status: 'BLOCKED',
-            due: DateTime(2026, 10, 30),
-          ),
-          FrontIndexRow(
-            kind: FrontDestinationKind.task,
-            id: 'feed',
-            title: 'Feed the penguins',
-            due: DateTime(2026, 11, 3, 8),
-          ),
-        ],
+        rows: [late, feed],
         omitted: 4,
+        categoryNames: const {'c-c': 'Penguin Colony'},
       ).render();
 
       expect(
         rendered,
-        'Open tasks due 2026-11-02 through 2026-11-04, overdue ones '
-        'included (2, +4 not shown):\n'
-        '- task:late | Fix the fence | BLOCKED | due 2026-10-30 (overdue)\n'
+        'Open tasks overdue or due through 2026-11-04 (2, +4 not shown):\n'
+        '- task:late | Fix the fence | BLOCKED | due 2026-10-30 (overdue) '
+        '| Penguin Colony\n'
         '- task:feed | Feed the penguins | due 2026-11-03',
       );
     });
 
-    test('says plainly when nothing is due', () {
+    test('overdue alone needs no mark: the heading says it', () {
+      final rendered = FrontDueTasks(
+        window: FrontDueWindow.overdue,
+        today: today,
+        through: today,
+        rows: [late],
+        narrowedTo: const ['Penguin Colony'],
+      ).render();
+
       expect(
-        FrontDueTasks(today: today, through: today, rows: const []).render(),
-        'No open task is due today, 2026-11-02, and none is overdue.',
+        rendered,
+        'Open tasks overdue (due before 2026-11-02) in Penguin Colony (1):\n'
+        '- task:late | Fix the fence | BLOCKED | due 2026-10-30',
+      );
+    });
+
+    test('each window says plainly when it holds nothing', () {
+      String empty(FrontDueWindow window, DateTime through) => FrontDueTasks(
+        window: window,
+        today: today,
+        through: through,
+        rows: const [],
+      ).render();
+      final later = DateTime(2026, 11, 9);
+
+      expect(
+        empty(FrontDueWindow.today, today),
+        'None: no open task due today (2026-11-02).',
+      );
+      expect(
+        empty(FrontDueWindow.overdue, today),
+        'None: no open task overdue (due before 2026-11-02).',
+      );
+      expect(
+        empty(FrontDueWindow.upcoming, today),
+        'None: no open task due today (2026-11-02).',
+      );
+      expect(
+        empty(FrontDueWindow.upcoming, later),
+        'None: no open task due 2026-11-02 through 2026-11-09.',
+      );
+      expect(
+        empty(FrontDueWindow.all, today),
+        'None: no open task overdue or due today (2026-11-02).',
+      );
+      expect(
+        FrontDueTasks(
+          window: FrontDueWindow.today,
+          today: today,
+          through: today,
+          rows: const [],
+          narrowedTo: const ['Penguin Colony', 'Work'],
+        ).render(),
+        'None: no open task due today (2026-11-02) in Penguin Colony, Work.',
       );
     });
   });

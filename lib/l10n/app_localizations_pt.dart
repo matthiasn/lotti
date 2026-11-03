@@ -7082,6 +7082,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get frontChatProfileUseDefault => 'Predefinido das Configurações';
 
   @override
+  String get frontChatReplayAnswer => 'Diz outra vez';
+
+  @override
   String get frontChatResponding => 'A procurar quem sabe…';
 
   @override

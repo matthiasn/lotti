@@ -36,6 +36,7 @@ void main() {
     bool readAloud = true,
     bool engineSupported = true,
     Stream<bool>? readAloudFlag,
+    Widget? hostControl,
   }) async {
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
@@ -46,6 +47,7 @@ void main() {
                     context,
                     sourceId: 'task-1',
                     spokenText: 'Two items left.',
+                    readAloud: hostControl,
                   )
                 : openCompanionStage(
                     context,
@@ -137,6 +139,21 @@ void main() {
     // At her feet, below the close control.
     expect(
       tester.getCenter(find.byType(SummaryReadAloudButton)).dy,
+      greaterThan(tester.getCenter(find.byTooltip('Close')).dy),
+    );
+  });
+
+  testWidgets("a host's own read-aloud control stands at her feet in place "
+      "of the summary's", (tester) async {
+    await openStage(
+      tester,
+      hostControl: const SizedBox(key: Key('host-voice'), width: 44),
+    );
+
+    expect(find.byKey(const Key('host-voice')), findsOneWidget);
+    expect(find.byType(SummaryReadAloudButton), findsNothing);
+    expect(
+      tester.getCenter(find.byKey(const Key('host-voice'))).dy,
       greaterThan(tester.getCenter(find.byTooltip('Close')).dy),
     );
   });

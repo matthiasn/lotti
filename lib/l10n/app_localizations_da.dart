@@ -7010,6 +7010,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get frontChatProfileUseDefault => 'Standard fra Indstillinger';
 
   @override
+  String get frontChatReplayAnswer => 'Sig det igen';
+
+  @override
   String get frontChatResponding => 'Finder den, der ved det…';
 
   @override

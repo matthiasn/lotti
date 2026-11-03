@@ -23,11 +23,14 @@ import 'package:material_ui/material_ui.dart';
 /// aloud carries on in her mouth here, and the read-aloud control below her
 /// reads [spokenText], the words the card showed when she was opened. A host
 /// that poses her ([mood], [holding] — a goal's status pose) passes the pose
-/// on, so the figure the bust was tapped on stands up in the same pose.
+/// on, so the figure the bust was tapped on stands up in the same pose. A
+/// host whose voice is not a summary's — the front agent's answers — passes
+/// its own play and stop control as [readAloud] instead of the words.
 Future<void> openCompanionStage(
   BuildContext context, {
   required String sourceId,
-  required String spokenText,
+  String spokenText = '',
+  Widget? readAloud,
   CompanionMood mood = CompanionMood.calm,
   GestureName? holding,
   TtsCloudRoute? cloudRoute,
@@ -38,6 +41,7 @@ Future<void> openCompanionStage(
       builder: (_) => CompanionStagePage(
         sourceId: sourceId,
         spokenText: spokenText,
+        readAloud: readAloud,
         mood: mood,
         holding: holding,
         cloudRoute: cloudRoute,
@@ -63,11 +67,16 @@ class CompanionStagePage extends ConsumerWidget {
   const CompanionStagePage({
     required this.sourceId,
     required this.spokenText,
+    this.readAloud,
     this.mood = CompanionMood.calm,
     this.holding,
     this.cloudRoute,
     super.key,
   });
+
+  /// The host's own read-aloud control at her feet, in place of the
+  /// summary's; it gates itself.
+  final Widget? readAloud;
 
   /// The host's cloud voice, or `null` for the on-device voice.
   final TtsCloudRoute? cloudRoute;
@@ -149,7 +158,9 @@ class CompanionStagePage extends ConsumerWidget {
                               ],
                             ),
                             const Spacer(),
-                            if (canReadAloud)
+                            if (readAloud case final control?)
+                              control
+                            else if (canReadAloud)
                               SummaryReadAloudButton(
                                 sourceId: sourceId,
                                 text: spokenText,

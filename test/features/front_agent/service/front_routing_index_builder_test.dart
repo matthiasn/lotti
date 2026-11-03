@@ -19,6 +19,7 @@ import '../../../helpers/fallbacks.dart';
 import '../../../helpers/fts5_stubs.dart';
 import '../../../mocks/mocks.dart';
 import '../../agents/test_data/entity_factories.dart';
+import '../../categories/test_utils.dart';
 
 final _now = DateTime(2026, 10, 23, 9);
 final _stamp = DateTime(2026, 10);
@@ -155,6 +156,7 @@ void main() {
       () => journalDb.getVisibleProjects(),
     ).thenAnswer((_) async => const []);
     when(() => journalDb.getRelationships()).thenAnswer((_) async => const []);
+    when(() => journalDb.getAllCategories()).thenAnswer((_) async => const []);
     when(
       () => agentRepository.getLatestTaskReportsForTaskIds(any()),
     ).thenAnswer((_) async => const {});
@@ -196,7 +198,7 @@ void main() {
       );
 
       final index = await builder().build(
-        scope: const FrontRoutingScope(categoryIds: {'work'}),
+        scope: const FrontRoutingScope(allowedCategoryIds: {'work'}),
         now: _now,
       );
 
@@ -265,7 +267,7 @@ void main() {
       );
 
       final index = await builder().build(
-        scope: const FrontRoutingScope(categoryIds: {'work'}),
+        scope: const FrontRoutingScope(allowedCategoryIds: {'work'}),
         now: _now,
       );
 
@@ -362,7 +364,7 @@ void main() {
       );
 
       final without = await builder().build(
-        scope: const FrontRoutingScope(categoryIds: {'work'}),
+        scope: const FrontRoutingScope(allowedCategoryIds: {'work'}),
         now: _now,
       );
       expect(without.people, isEmpty);
@@ -370,7 +372,7 @@ void main() {
 
       final with_ = await builder().build(
         scope: const FrontRoutingScope(
-          categoryIds: {'work'},
+          allowedCategoryIds: {'work'},
           includePeople: true,
         ),
         now: _now,
@@ -407,7 +409,7 @@ void main() {
         );
 
         final matcher = builder().corpusMatcher(
-          const FrontRoutingScope(categoryIds: {'work'}),
+          const FrontRoutingScope(allowedCategoryIds: {'work'}),
         )!;
         final rows = await matcher('shed');
 
@@ -418,32 +420,181 @@ void main() {
     );
   });
 
+  group('categories', () {
+    setUp(() {
+      when(() => journalDb.getAllCategories()).thenAnswer(
+        (_) async => [
+          CategoryTestUtils.createTestCategory(id: 'work', name: 'Work'),
+          CategoryTestUtils.createTestCategory(id: 'home', name: 'Home'),
+          CategoryTestUtils.createTestCategory(id: 'secret', name: 'Secret'),
+          CategoryTestUtils.createTestCategory(
+            id: 'old',
+            name: 'Old',
+            active: false,
+          ),
+        ],
+      );
+    });
+
+    test('the index names the active categories in her allow-list, by '
+        'name, none chosen without chips', () async {
+      final index = await builder().build(
+        scope: const FrontRoutingScope(allowedCategoryIds: {'work', 'home'}),
+        now: _now,
+      );
+
+      expect(
+        [for (final c in index.categories) (c.id, c.name, c.chosen)],
+        [('home', 'Home', false), ('work', 'Work', false)],
+      );
+    });
+
+    test('the chips narrow every kind and mark what they chose', () async {
+      when(
+        () => journalDb.getVisibleProjects(),
+      ).thenAnswer(
+        (_) async => [_project('pw'), _project('ph', categoryId: 'home')],
+      );
+
+      final index = await builder().build(
+        scope: const FrontRoutingScope(
+          allowedCategoryIds: {'work', 'home'},
+          chosenCategoryIds: {'home'},
+        ),
+        now: _now,
+      );
+
+      verify(
+        () => journalDb.getOpenTasksForDayAgentCorpus(
+          categoryIds: {'home'},
+          limit: any(named: 'limit'),
+        ),
+      ).called(1);
+      expect(index.projects.map((r) => r.id), ['ph']);
+      expect(
+        [for (final c in index.categories) (c.id, c.chosen)],
+        [('home', true), ('work', false)],
+      );
+    });
+
+    test('chips outside the allow-list never widen it', () {
+      const scope = FrontRoutingScope(
+        allowedCategoryIds: {'work'},
+        chosenCategoryIds: {'secret'},
+      );
+      expect(scope.categoryIds, {'work'});
+      expect(
+        const FrontRoutingScope(chosenCategoryIds: {'home'}).categoryIds,
+        {'home'},
+      );
+    });
+  });
+
   group('dueTaskLister', () {
-    test('lists the open tasks in scope due through the days asked, '
-        'soonest first, then by title', () async {
+    // Today is 2026-10-23: one task overdue, two due today, one due in two
+    // days, one in another category.
+    setUp(() {
       when(() => journalDb.getTasksDueOnOrBefore(any())).thenAnswer(
         (_) async => [
           _task('b', due: DateTime(2026, 10, 23, 17)),
           _task('late', due: DateTime(2026, 10, 21)),
-          _task('a', due: DateTime(2026, 10, 23, 17)),
-          _task('hidden', categoryId: 'secret', due: DateTime(2026, 10, 23)),
+          _task('a', due: DateTime(2026, 10, 23)),
+          _task('soon', due: DateTime(2026, 10, 25, 9)),
+          _task('chores', categoryId: 'home', due: DateTime(2026, 10, 22)),
         ],
       );
+      when(() => journalDb.getAllCategories()).thenAnswer(
+        (_) async => [
+          CategoryTestUtils.createTestCategory(id: 'work', name: 'Work'),
+          CategoryTestUtils.createTestCategory(id: 'home', name: 'Home'),
+        ],
+      );
+    });
 
-      final due = await builder().dueTaskLister(
-        const FrontRoutingScope(categoryIds: {'work'}),
-        now: _now,
-      )(2);
+    Future<FrontDueTasks> list(
+      FrontDueWindow window, {
+      int daysAhead = 0,
+      Set<String> categoryIds = const {},
+      FrontRoutingScope scope = const FrontRoutingScope(),
+    }) => builder().dueTaskLister(scope, now: _now)((
+      window: window,
+      daysAhead: daysAhead,
+      categoryIds: categoryIds,
+    ));
+
+    test('today holds what is due today alone, never the overdue', () async {
+      final due = await list(FrontDueWindow.today);
 
       verify(
-        () => journalDb.getTasksDueOnOrBefore(DateTime(2026, 10, 25)),
+        () => journalDb.getTasksDueOnOrBefore(DateTime(2026, 10, 23)),
       ).called(1);
+      expect(due.window, FrontDueWindow.today);
       expect(due.today, DateTime(2026, 10, 23));
-      expect(due.through, DateTime(2026, 10, 25));
-      expect(due.rows.map((r) => r.id), ['late', 'a', 'b']);
+      expect(due.through, due.today);
+      expect(due.rows.map((r) => r.id), ['a', 'b']);
       expect(due.rows.first.kind, FrontDestinationKind.task);
       expect(due.rows.first.status, 'OPEN');
-      expect(due.omitted, 0);
+    });
+
+    test('overdue holds what was due before today alone', () async {
+      final due = await list(FrontDueWindow.overdue, daysAhead: 5);
+
+      // daysAhead does not reach past today for overdue.
+      verify(
+        () => journalDb.getTasksDueOnOrBefore(DateTime(2026, 10, 23)),
+      ).called(1);
+      expect(due.rows.map((r) => r.id), ['late', 'chores']);
+    });
+
+    test('upcoming reaches the days asked without the overdue; all adds '
+        'them, soonest first', () async {
+      final upcoming = await list(FrontDueWindow.upcoming, daysAhead: 2);
+      expect(upcoming.through, DateTime(2026, 10, 25));
+      expect(upcoming.rows.map((r) => r.id), ['a', 'b', 'soon']);
+
+      final all = await list(FrontDueWindow.all, daysAhead: 2);
+      expect(all.rows.map((r) => r.id), [
+        'late',
+        'chores',
+        'a',
+        'b',
+        'soon',
+      ]);
+      expect(all.categoryNames, {'work': 'Work', 'home': 'Home'});
+      expect(all.narrowedTo, isEmpty);
+    });
+
+    test('a category named in the question narrows the window', () async {
+      final due = await list(FrontDueWindow.overdue, categoryIds: {'home'});
+
+      expect(due.rows.map((r) => r.id), ['chores']);
+      expect(due.narrowedTo, ['Home']);
+    });
+
+    test('the chips narrow it as well, and a named category inside them '
+        'narrows it further', () async {
+      const chips = FrontRoutingScope(chosenCategoryIds: {'work'});
+      final chosen = await list(FrontDueWindow.overdue, scope: chips);
+      expect(chosen.rows.map((r) => r.id), ['late']);
+
+      const both = FrontRoutingScope(chosenCategoryIds: {'work', 'home'});
+      final named = await list(
+        FrontDueWindow.overdue,
+        scope: both,
+        categoryIds: {'home'},
+      );
+      expect(named.rows.map((r) => r.id), ['chores']);
+    });
+
+    test('a named category outside the scope never widens it', () async {
+      final due = await list(
+        FrontDueWindow.overdue,
+        scope: const FrontRoutingScope(allowedCategoryIds: {'work'}),
+        categoryIds: {'home'},
+      );
+
+      expect(due.rows.map((r) => r.id), ['late']);
+      expect(due.narrowedTo, isEmpty);
     });
 
     test('caps the list and counts what it left out', () async {
@@ -454,14 +605,10 @@ void main() {
         ],
       );
 
-      final due = await builder().dueTaskLister(
-        const FrontRoutingScope(),
-        now: _now,
-      )(0);
+      final due = await list(FrontDueWindow.today);
 
       expect(due.rows, hasLength(frontDueTaskLimit));
       expect(due.omitted, 3);
-      expect(due.through, due.today);
     });
   });
 }
