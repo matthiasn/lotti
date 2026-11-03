@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:clock/clock.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -520,33 +521,37 @@ void main() {
   });
 
   test('re-reads the selection per claim rather than at build time', () async {
-    final container = ProviderContainer(
-      overrides: withServiceOverrides([
-        audioTranscriptionServiceProvider.overrideWithValue(
-          MockAudioTranscriptionService(),
-        ),
-        ..._agentJobExecutorOverrides(),
-      ]),
-    );
-    addTearDown(container.dispose);
+    // On a day of its own: on the real clock, the day selected below is
+    // today once the calendar reaches it, and nothing changes.
+    await withClock(Clock.fixed(DateTime(2026, 10, 28, 9)), () async {
+      final container = ProviderContainer(
+        overrides: withServiceOverrides([
+          audioTranscriptionServiceProvider.overrideWithValue(
+            MockAudioTranscriptionService(),
+          ),
+          ..._agentJobExecutorOverrides(),
+        ]),
+      );
+      addTearDown(container.dispose);
 
-    final processor = container.read(dayProcessingOutboxProcessorProvider);
-    final before = processor.priority!().dayIds.first;
+      final processor = container.read(dayProcessingOutboxProcessorProvider);
+      final before = processor.priority!().dayIds.first;
 
-    container
-        .read(dailyOsNextSelectedDateProvider.notifier)
-        .select(DateTime(2026, 11, 3));
+      container
+          .read(dailyOsNextSelectedDateProvider.notifier)
+          .select(DateTime(2026, 11, 3));
 
-    // Same processor instance: navigating must not require rebuilding the
-    // long-lived runtime for the new day to win.
-    expect(
-      processor.priority!().dayIds.first,
-      isNot(before),
-    );
-    expect(
-      processor.priority!().dayIds.first,
-      dayAgentIdForDate(DateTime(2026, 11, 3)),
-    );
+      // Same processor instance: navigating must not require rebuilding the
+      // long-lived runtime for the new day to win.
+      expect(
+        processor.priority!().dayIds.first,
+        isNot(before),
+      );
+      expect(
+        processor.priority!().dayIds.first,
+        dayAgentIdForDate(DateTime(2026, 11, 3)),
+      );
+    });
   });
 
   test('drains the transcription and agent lanes as separate passes and '
