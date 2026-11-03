@@ -369,10 +369,24 @@ void main() {
           subDomain: 'wakeTrace',
         ),
       ).captured.cast<String>();
-      expect(logged.single, contains('wake trace: ok'));
-      expect(logged.single, contains('kind=draft'));
-      expect(logged.single, contains('model=models/day'));
-      expect(logged.single, contains('tools=[draft_day_plan:'));
+      final summary = logged.singleWhere((l) => l.startsWith('wake trace:'));
+      expect(summary, contains('wake trace: ok'));
+      expect(summary, contains('kind=draft'));
+      expect(summary, contains('model=models/day'));
+      expect(summary, contains('tools=[draft_day_plan:'));
+      expect(
+        logged
+            .where((l) => l.startsWith('wake step:'))
+            .map((l) => l.split(' ')[4]),
+        [
+          'preparingContext',
+          'compactingMemory',
+          'assemblingPrompt',
+          'runningTool',
+          'saving',
+        ],
+        reason: 'one line per step entered, so a hung wake shows where',
+      );
     });
 
     test(

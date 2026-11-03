@@ -24,6 +24,7 @@ class DayAgentWakeTrace {
          stepStartedAt: clock.now(),
        ) {
     _publish();
+    _logStep();
   }
 
   final DayAgentWakeProgressBus? bus;
@@ -39,9 +40,15 @@ class DayAgentWakeTrace {
 
   /// Moves to [step], closing the current one. Re-entering the active step is
   /// a no-op; after [finish] every call is ignored.
+  ///
+  /// The first entry into each step is also logged, so a wake that hangs —
+  /// and therefore never reaches [finish] — still leaves the step it is stuck
+  /// in as its last `wakeTrace` line.
   void enter(DayAgentWakeStep step) {
     if (_progress.isFinished || _progress.step == step) return;
     final now = clock.now();
+    final previous = _progress.step;
+    final previousElapsed = now.difference(_progress.stepStartedAt);
     _progress = _progress.copyWith(
       step: step,
       stepStartedAt: now,
@@ -54,6 +61,25 @@ class DayAgentWakeTrace {
       ],
     );
     _publish();
+    if (!_progress.isFinished) {
+      _logStep(after: (previous, previousElapsed));
+    }
+  }
+
+  final _loggedSteps = <DayAgentWakeStep>{};
+
+  void _logStep({(DayAgentWakeStep, Duration)? after}) {
+    final step = _progress.step;
+    if (!_loggedSteps.add(step)) return;
+    final since = after == null
+        ? ''
+        : ' after ${after.$1.name}=${after.$2.inMilliseconds}ms';
+    domainLogger?.log(
+      LogDomain.agentWorkflow,
+      'wake step: run=${DomainLogger.sanitizeId(_progress.runKey)} '
+      'day=${_progress.dayId} ${step.name}$since',
+      subDomain: 'wakeTrace',
+    );
   }
 
   /// Records the resolved thinking model.

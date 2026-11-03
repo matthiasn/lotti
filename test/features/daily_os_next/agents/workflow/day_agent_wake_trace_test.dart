@@ -186,15 +186,13 @@ void main() {
     at(() => trace.enter(DayAgentWakeStep.saving));
     at(() => trace.finish(succeeded: false, error: 'late'));
 
-    final line =
-        verify(
-              () => logger.log(
-                LogDomain.agentWorkflow,
-                captureAny(),
-                subDomain: 'wakeTrace',
-              ),
-            ).captured.single
-            as String;
+    final line = verify(
+      () => logger.log(
+        LogDomain.agentWorkflow,
+        captureAny(),
+        subDomain: 'wakeTrace',
+      ),
+    ).captured.cast<String>().singleWhere((l) => l.startsWith('wake trace:'));
     expect(line, startsWith('wake trace: ok '));
     expect(line, contains('kind=draft'));
     expect(line, contains('model=model-a'));
@@ -207,6 +205,35 @@ void main() {
     final wake = bus.statusFor(_dayId).wake!;
     expect(wake.step, DayAgentWakeStep.completed);
     expect(wake.error, isNull);
+  });
+
+  test('a wake that never finishes still logs the step it is stuck in', () {
+    final trace = newTrace();
+    time.advance(40);
+    at(() => trace.enter(DayAgentWakeStep.compactingMemory));
+    time.advance(5);
+    at(() => trace.enter(DayAgentWakeStep.assemblingPrompt));
+    // Model and tool turns alternate; only the first entry of each is logged.
+    for (var i = 0; i < 3; i++) {
+      at(() => trace.enter(DayAgentWakeStep.callingModel));
+      at(() => trace.enter(DayAgentWakeStep.runningTool));
+    }
+
+    final lines = verify(
+      () => logger.log(
+        LogDomain.agentWorkflow,
+        captureAny(),
+        subDomain: 'wakeTrace',
+      ),
+    ).captured.cast<String>();
+    const prefix = 'wake step: run=[id:run-1] day=$_dayId';
+    expect(lines, [
+      '$prefix preparingContext',
+      '$prefix compactingMemory after preparingContext=40ms',
+      '$prefix assemblingPrompt after compactingMemory=5ms',
+      '$prefix callingModel after assemblingPrompt=0ms',
+      '$prefix runningTool after callingModel=0ms',
+    ]);
   });
 
   test('a failed finish carries the error to the progress', () {

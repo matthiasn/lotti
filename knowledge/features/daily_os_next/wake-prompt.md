@@ -168,10 +168,14 @@ tools=[draft_day_plan:9ms]
 
 That line, taken from a live Mistral run of the `crowdedDay` scenario, is the
 first thing to read when a draft is slow: it separates a slow fold, a slow
-context load, a slow first token, a long tool loop and a slow save. A wake that
-never starts writes no line at all — the delay is then before the workflow, in
-the outbox lane or the wake queue, which the drafting screen shows as "Waiting
-for the agent to start".
+context load, a slow first token, a long tool loop and a slow save.
+
+A wake that hangs never reaches that line, so the trace also logs the first
+entry into each step — `wake step: run=[id:…] day=dayplan-… compactingMemory
+after preparingContext=13ms` — and a hung wake's last `wake step` line names the
+step it is stuck in. A wake that never starts writes no line at all: the delay
+is then before the workflow, in the outbox lane or the wake queue, which the
+drafting screen shows as "Waiting for the agent to start".
 
 # The payload is tagged plaintext, not JSON
 
