@@ -109,9 +109,11 @@ class _CategoryCrumbState extends ConsumerState<CategoryCrumb> {
       widget.onMoved?.call();
       return;
     }
+    // In place of the *Moved to* toast whose Undo this was.
     context.showToast(
       tone: DesignSystemToastTone.error,
       title: messages.saveFailedRetry,
+      replaceCurrent: true,
     );
   }
 
