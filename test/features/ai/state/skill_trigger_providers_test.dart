@@ -10,6 +10,8 @@ import 'package:lotti/beamer/ai_skill_wiring.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/classes/ai_attribution.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/event_data.dart';
+import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -46,8 +48,10 @@ import '../../../helpers/fake_entry_controller.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
+import '../../../test_data/test_data.dart';
 import '../../../widget_test_utils.dart';
 import '../../ai_consumption/test_utils.dart';
+import '../../projects/test_utils.dart';
 
 /// Hands a test a real `Ref`, which is what the public decline entry point
 /// takes — the goals provider passes its own.
@@ -2454,6 +2458,105 @@ void main() {
         );
       },
     );
+
+    // Every entry kind that owns an agent is a recording's subject; anything
+    // else linking to it — and a deleted subject — is not.
+    final eventAt = DateTime(2024, 3, 15);
+    final parentsAndSubjects = <String, (JournalEntity, String?)>{
+      'a person': (testRelationship, testRelationship.id),
+      'a project': (
+        makeTestProject(id: 'project-1', title: 'Colony census'),
+        'project-1',
+      ),
+      'an event': (
+        JournalEvent(
+          meta: Metadata(
+            id: 'event-1',
+            createdAt: eventAt,
+            updatedAt: eventAt,
+            dateFrom: eventAt,
+            dateTo: eventAt,
+          ),
+          data: const EventData(
+            title: 'Huddle drill',
+            stars: 4,
+            status: EventStatus.completed,
+          ),
+        ),
+        'event-1',
+      ),
+      'a deleted person': (
+        testRelationship.copyWith(
+          meta: testRelationship.meta.copyWith(deletedAt: eventAt),
+        ),
+        null,
+      ),
+      'a plain note': (testTextEntry, null),
+    };
+    for (final MapEntry(key: kind, value: (parent, subjectId))
+        in parentsAndSubjects.entries) {
+      test(
+        'a recording linked from $kind asks the transcription rule for '
+        '${subjectId == null ? 'no subject' : 'that subject'}',
+        () async {
+          final skill = findBuiltInSkill(skillTranscribeContextId)!;
+          final audio = JournalAudio(
+            meta: Metadata(
+              id: 'linked-audio-1',
+              createdAt: eventAt,
+              updatedAt: eventAt,
+              dateFrom: eventAt,
+              dateTo: eventAt,
+            ),
+            data: AudioData(
+              dateFrom: eventAt,
+              dateTo: eventAt,
+              audioFile: 'linked.m4a',
+              audioDirectory: '/test',
+              duration: const Duration(minutes: 1),
+            ),
+          );
+          when(
+            () => mockJournalDb.journalEntityById('linked-audio-1'),
+          ).thenAnswer((_) async => audio);
+          when(
+            () => mockJournalDb.getLinkedToEntities('linked-audio-1'),
+          ).thenAnswer((_) async => [toDbEntity(parent)]);
+
+          final testContainer = ProviderContainer(
+            overrides: withServiceOverrides([
+              skillRegistryProvider.overrideWithValue([skill]),
+              profileAutomationResolverProvider.overrideWithValue(mockResolver),
+              profileAutomationServiceProvider.overrideWithValue(
+                mockAutomationService,
+              ),
+              skillInferenceRunnerProvider.overrideWithValue(mockRunner),
+              journalDbProvider.overrideWithValue(mockJournalDb),
+            ]),
+          );
+          containersToDispose.add(testContainer);
+
+          await testContainer.read(
+            triggerSkillProvider((
+              entityId: 'linked-audio-1',
+              skillId: skillTranscribeContextId,
+              linkedTaskId: null,
+              referenceImages: null,
+              overrideModelId: null,
+              geminiThinkingMode: null,
+            )).future,
+          );
+
+          final asked = verify(
+            () => mockAutomationService.resolveTranscriptionFallback(
+              subjectId: captureAny(named: 'subjectId'),
+              categoryId: any(named: 'categoryId'),
+            ),
+          ).captured;
+          expect(asked, [subjectId]);
+        },
+      );
+    }
 
     test(
       'aborts standalone fullTask skill without invoking resolver',
