@@ -4,6 +4,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.84]
+
+### Added
+
+- **Agent token usage shows a cache hit rate.** Next to the cached token count,
+  each model's row now shows what share of its input was served from the
+  provider's cache — the part that is billed at a lower rate.
+
+### Changed
+
+- **"Drafting your day" now shows what the planner is actually doing.** The
+  rotating lines ("Placing deep work first…") and the stage chips used to run on
+  a timer, whatever the agent was doing. They now follow the real wake: which
+  step it's in and for how long, the model it uses, tokens in and out, time per
+  step, the tools it called, and, when an attempt fails, "Attempt 2 of 5" with
+  the reason and a countdown to the retry.
+
+### Fixed
+
+- **Mistral calls recorded no cached or reasoning tokens.** Mistral reports how
+  many prompt tokens it served from its cache, and how many the model spent
+  reasoning, but the app only kept the input, output and total counts, so an
+  agent running on Mistral always showed zero cached tokens. Both counts are now
+  recorded with every Mistral call.
+- **A day plan could sit queued while an audio note was being transcribed in
+  the background.** Planning now starts right away instead of waiting for the
+  transcription to finish.
+
 ## [1.1.83]
 
 ### Added
