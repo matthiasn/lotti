@@ -335,8 +335,11 @@ void main() {
       await pumpPage(tester);
 
       expect(find.text('Anna'), findsOneWidget);
-      // No category, and reminders are the pill's to say: no eyebrow.
-      expect(find.byKey(const ValueKey('person-eyebrow')), findsNothing);
+      // No category: the slot offers one. Reminders are the pill's to say.
+      expect(
+        tester.widget<Text>(find.byKey(const ValueKey('person-eyebrow'))).data,
+        'Set category',
+      );
       expect(
         tester
             .widget<RelationshipLineWithDate>(
@@ -584,9 +587,10 @@ void main() {
       ),
       findsOneWidget,
     );
-    // An unimportant person in no category has no eyebrow at all, and no
-    // status pill: the offer card says *no reminders* once, with the fix.
-    expect(find.byKey(const ValueKey('person-eyebrow')), findsNothing);
+    // An unimportant person in no category is offered one where the
+    // category goes, and has no status pill: the offer card says *no
+    // reminders* once, with the fix.
+    expect(find.text('Set category'), findsOneWidget);
     expect(find.byKey(const ValueKey('person-pill-status')), findsNothing);
   });
 

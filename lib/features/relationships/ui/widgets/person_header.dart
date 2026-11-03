@@ -23,6 +23,7 @@ import 'package:lotti/features/relationships/ui/shared/cadence_pill.dart';
 import 'package:lotti/features/relationships/ui/shared/persona_avatar.dart';
 import 'package:lotti/features/relationships/ui/shared/relationship_timestamps.dart';
 import 'package:lotti/features/relationships/ui/widgets/contact_link_action.dart';
+import 'package:lotti/features/relationships/ui/widgets/person_category_crumb.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_reminders_pill.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_form_modal.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -638,8 +639,8 @@ class PersonMenuButton extends ConsumerWidget {
 }
 
 /// The header block under the hero, starting below the avatar that hangs
-/// off it: the eyebrow (`Penguin Operations · Important`), the full wrapping
-/// name, the quiet one-liner (`"Pip" · last spoke Today 12:44`, its
+/// off it: the category as a selector ([PersonCategoryCrumb]), the full
+/// wrapping name, the quiet one-liner (`"Pip" · last spoke Today 12:44`, its
 /// timestamp in the mono voice), and the pills — the cadence fact the
 /// deterministic tier always knows, and the next due day.
 ///
@@ -668,9 +669,6 @@ class PersonHeaderBlock extends StatelessWidget {
     final data = item.relationship.data;
     final pills = personHeaderPills(context, item);
 
-    // The category alone: that reminders are on, and how often, is the
-    // reminders pill's to say — it says it in every state and can change it.
-    final eyebrow = categoryName ?? '';
     // The timestamp inside the one-liner, kept as its own substring so the
     // mono voice can be confined to it below — the same rule the list row
     // follows, so one point in time never renders in two typefaces on one
@@ -699,21 +697,14 @@ class PersonHeaderBlock extends StatelessWidget {
         // block, and the larger gap set the name across a void from the
         // face it belongs to.
         SizedBox(height: tokens.spacing.step4),
-        if (eyebrow.isNotEmpty) ...[
-          Text(
-            eyebrow,
-            key: const ValueKey('person-eyebrow'),
-            // `Penguin Operations · Important` is a label, not a reading on
-            // a clock. It used to borrow the mono timestamp style, which
-            // made the first string on the page the only monospaced one and
-            // cost it the measure the category name needs.
-            style: captionLabelStyle(
-              tokens,
-              color: tokens.colors.text.mediumEmphasis,
-            ),
-          ),
-          SizedBox(height: tokens.spacing.step2),
-        ],
+        // The category alone, and changeable where it is read: that
+        // reminders are on, and how often, is the reminders pill's to say.
+        PersonCategoryCrumb(
+          relationshipId: item.relationship.meta.id,
+          categoryId: item.relationship.meta.categoryId,
+          categoryName: categoryName,
+        ),
+        SizedBox(height: tokens.spacing.step1),
         Text(
           data.title,
           style: calmPageTitleStyle(tokens),

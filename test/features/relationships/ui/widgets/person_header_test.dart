@@ -909,11 +909,15 @@ void main() {
       expect(line.style.color, isNot(tokens.colors.interactive.enabled));
     });
 
-    testWidgets('no category and not important leaves the eyebrow out; no '
+    testWidgets('no category offers one where it goes; no '
         'check-in reads as just added', (tester) async {
       await pump(tester, relationship: person());
 
-      expect(find.byKey(const ValueKey('person-eyebrow')), findsNothing);
+      // No category: the selector stays, offering one.
+      expect(
+        tester.widget<Text>(find.byKey(const ValueKey('person-eyebrow'))).data,
+        'Set category',
+      );
       // No check-in means no date in the line, so nothing goes mono.
       final line = oneLiner(tester);
       expect(line.text, 'Just added');
