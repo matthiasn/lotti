@@ -4,6 +4,77 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.83]
+
+### Added
+
+- **An event keeps one language.** Once the first voice memo is added, the
+  event agent sets the event's language from what is spoken, and the recap,
+  its suggestions, the analyses of the event's photos and the summaries of its
+  recordings are all written in it — no more English photo descriptions under
+  German voice notes. The language shows beside the event's status; tap it to
+  pick another, and the agent never changes your choice.
+- **The event agent can suggest a note of what happened.** It shows under the
+  recap with the whole note to read, and confirming adds it to the event's
+  timeline as your own note.
+- **Events can be found by asking.** With on-device search on, an event and
+  its recap are indexed, so a question like "when did we last go to the ice
+  garden?" can find the event by its title, its note, or what its recap says
+  about who was there.
+- **Stop her, or have her say it again.** A control under the companion stops
+  her while she speaks, and plays her latest answer again from the start once
+  she has stopped.
+- **The companion full screen on every device.** A control under her — or a
+  tap on her — stands her up head to toe across the whole window, on a
+  desktop as on a phone, still speaking, with her voice control at her feet.
+- **Connecting GitHub no longer means hunting for the right token settings.**
+  Settings → Advanced Settings → GitHub has a "Create a token on GitHub"
+  button that opens GitHub's token form with Lotti's name, a one-year expiry
+  and the read-only pull request and commit status permissions already
+  filled in. Choose your repositories, create the token and paste it back.
+  If your browser cannot be opened, the page says where on github.com to make
+  the token by hand.
+- **Connecting and disconnecting GitHub now confirm themselves.** A toast says
+  "Connected to GitHub as @you" once the token is stored, and "Disconnected
+  from GitHub" once it is removed, and Connect shows a spinner while GitHub is
+  asked.
+
+### Changed
+
+- **Nicer curls, afro and locs for the companion.** The curls and the afro
+  are now drawn as soft, shaded coils with a rounded outline, instead of a
+  flat cap stamped with little hooks, and the afro no longer shows a dark
+  band beside her face. The locs sweep back from her hairline as twisted
+  ropes instead of fanning out from one point at the top of her head.
+
+### Fixed
+
+- **A photo added to an event was analysed as if it belonged to a task.** The
+  analysis asked whether the picture was relevant to a task there was none of,
+  and often answered that it was "nothing related to a task". An event's photo
+  is now described for what it shows, read in the light of the event's title,
+  time and note, and its caption under the timeline says what is in the
+  picture. Tap the photo to read the whole analysis.
+- **On "Surprise me" the companion changed clothes while you looked at her.**
+  Opening a task could show her in one outfit and, a moment later, in another,
+  because every redraw of the screen picked again. She now wears one outfit
+  per task, goal, day or conversation from the moment it opens, keeps it for
+  as long as the app runs, and wears the same one when you tap her to see her
+  full screen. Another task may still show another outfit, and the next start
+  of the app picks afresh.
+- **The companion keeps due and overdue apart.** Asked what is due today,
+  she names only today's tasks; asked what is overdue, only the overdue ones.
+  She mixes them only when you ask for both.
+- **Categories narrow her answers about what is due.** She knows your
+  categories by name, so "anything overdue in Work?" lists only Work's tasks.
+  The categories chosen above the composer now narrow her whole turn as well,
+  and both work together.
+- **Connecting GitHub could hang with no word when the device would not store
+  the token.** GitHub accepted it, the keychain refused to save it, and the
+  page sat there with Connect greyed out. It now says the token could not be
+  stored and lets you try again; a disconnection the device refuses is said
+  too, instead of failing silently.
+
 ## [1.1.82]
 
 ### Added
