@@ -20,6 +20,7 @@ import 'package:lotti/classes/agents/agent_config.dart';
 import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
@@ -41,9 +42,14 @@ import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
 import 'package:lotti/features/habits/state/habits_controller.dart';
 import 'package:lotti/features/habits/state/habits_state.dart';
 import 'package:lotti/features/tts/state/tts_engine_provider.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:mocktail/mocktail.dart';
 
+import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 import '../../../agents/test_data/entity_factories.dart';
 import '../../../companion/companion_overrides.dart';
@@ -223,6 +229,25 @@ Future<void> _capture(
     updatedAt: _now,
   ).copyWith(reportStaleAt: _now.subtract(const Duration(minutes: 30)));
 
+  // The goal is filed in a category, which its header's selector names.
+  final wellbeing = CategoryDefinition(
+    id: 'cat-wellbeing',
+    name: 'Wellbeing',
+    color: '#4CAF93',
+    createdAt: _now,
+    updatedAt: _now,
+    vectorClock: null,
+    private: false,
+    active: true,
+  );
+  final cache = MockEntitiesCacheService();
+  when(() => cache.getCategoryById(any())).thenReturn(null);
+  when(() => cache.getCategoryById(wellbeing.id)).thenReturn(wellbeing);
+  await setUpTestGetIt(
+    additionalSetup: () => getIt.registerSingleton<EntitiesCacheService>(cache),
+  );
+  addTearDown(tearDownTestGetIt);
+
   await withClock(Clock.fixed(_now), () async {
     await tester.pumpWidget(
       RepaintBoundary(
@@ -234,6 +259,10 @@ Future<void> _capture(
               : DesignSystemTheme.light(),
           mediaQueryData: MediaQueryData(size: device.size),
           overrides: [
+            entitiesCacheServiceProvider.overrideWithValue(cache),
+            goalCategoryIdProvider(
+              _agentId,
+            ).overrideWith((ref) async => wellbeing.id),
             configFlagProvider.overrideWith(
               (ref, flagName) => Stream.value(switch (flagName) {
                 enableCompanionFlag => companion,

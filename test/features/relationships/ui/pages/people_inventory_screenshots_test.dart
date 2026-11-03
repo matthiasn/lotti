@@ -2791,6 +2791,15 @@ void main() {
         'person_form_edit_${viewport}_dark',
         subdir: _subdir,
       );
+      // The form's close: the agent's section, as the goal editor ends.
+      final agent = find.byKey(const ValueKey('person-form-agent-section'));
+      await tester.ensureVisible(agent);
+      await tester.pumpAndSettle();
+      await captureScreenshot(
+        tester,
+        'person_form_edit_${viewport}_agent_dark',
+        subdir: _subdir,
+      );
     });
 
     testWidgets('$viewport person form, edit, image on clipboard — dark', (
