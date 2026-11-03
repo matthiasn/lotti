@@ -720,7 +720,11 @@ The editors of what an agent serves share a section too:
 [`AgentFormSection`](../../../lib/features/agents/ui/agent_form_section.dart),
 a heading, an optional quiet intro and open fields. The goal editor ends on
 it as *Your agent*; the person editor is built from it throughout and ends on
-the same *Your agent*.
+the same *Your agent*. A setting of the agent in that section is an
+[`AgentSwitchRow`](../../../lib/features/agents/ui/agent_switch_row.dart) —
+the label in the field tier, the switch on the trailing edge, the label
+itself toggling, a caption under it: the person's *Remind me to stay in
+touch* and, editing a goal, *I'll answer what you tell me*.
 
 # `AgentInternalsPanel` and `AgentInternalsBody`
 

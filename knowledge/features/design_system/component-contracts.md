@@ -217,7 +217,11 @@ the sheet. `shape: pill` uses `surface.enabled` and
 `radii.badgesPills` for conversation composers. The hairline itself is
 `designSystemFieldBorderColor` — error, then focus (the accent, 2 px), then
 hover, then a faint high-emphasis ink at rest — which multi-line fields that
-draw their own frame (the check-in narrative field) share. `emphasizeTrailingIcon` gives
+draw their own frame (the check-in narrative field) share. A value that is picked rather than typed — a category, a date — is a
+`DesignSystemPickerField`: the text input's label tier over a box of the same
+radius, field height, fill and hairline, holding an optional leading mark, the
+value (or its placeholder in the hint ink) and a trailing chevron, so an
+editor stays one column of one field silhouette. `emphasizeTrailingIcon` gives
 the actionable suffix the interactive fill, preserving its tooltip, enabled
 state, and button semantics. Placeholder hints remain a single ellipsized line
 inside the field, including at enlarged text scales; their full accessible label

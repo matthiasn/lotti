@@ -1562,10 +1562,13 @@ handler would retract it; that wiring is a follow-up.
   Creation and owner editing share one route through the same controls.
   Creation is a three-stage intention → mapping → confirmation flow; owner
   editing is one page: *Your goal* (an `AgentFormSection` holding the
-  single-line statement, its example pills and the goal's name) opens it, the
-  signals follow, and the agent's name, the goal's category and the next
-  version's note close it under *Your agent* (the section the person editor
-  ends on too). One *Save new version* runs the mapping's checks, then saves;
+  single-line statement — *In your words*, with no example pills, since one
+  tap would replace a real goal's statement and leave its signals as they
+  were — and the goal's name) opens it, the signals follow, and *Your agent*
+  closes it: whether the check-ins are the goal itself (an `AgentSwitchRow`,
+  the person editor's reminders row; creating, it stays a card among the
+  signals), the agent's name, the goal's category and the next version's
+  note (the section the person editor ends on too). One *Save new version* runs the mapping's checks, then saves;
   *Cancel*, the back button and the system back leave at once when nothing
   changed and ask first when something did (`_GoalEditLeave`, an order-free
   fingerprint baselined once the goal and its catalogs have loaded). The
@@ -2122,7 +2125,11 @@ The time chip (`GoalCheckInTimeChip`) is the check-in rows' trailing control.
 
 **A goal is filed in a category.** The goal page names it above the title
 with the person page's selector (`CategoryCrumb`), which moves the goal row
-through `EntryCategoryMove` and re-reads `goalCategoryIdProvider`. The goal
+through `EntryCategoryMove`, re-reads `goalCategoryIdProvider`, and confirms
+*Moved to …* with an Undo that moves it back. The title starts on the gutter
+under it — the agent's persona is named on its card, not as a letter disc
+beside the title — and a phone carries the person page's labelled *Talk to
+agent* pill. The goal
 form's *meet your agent* step (and, editing, its *Your agent* section) has
 the person form's category field (`CategoryFieldRow`; the form's
 `_GoalFormCategory` mixin holds its state). Editing, the row cannot be
