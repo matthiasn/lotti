@@ -234,6 +234,7 @@ void main() {
     when(
       () => mockResolver.resolveTranscriptionProfile(
         categoryId: any(named: 'categoryId'),
+        subjectId: any(named: 'subjectId'),
       ),
     ).thenAnswer((_) async => null);
     mockAiConfig = MockAiConfigRepository();
@@ -458,6 +459,7 @@ void main() {
         when(
           () => mockResolver.resolveTranscriptionProfile(
             categoryId: any(named: 'categoryId'),
+            subjectId: any(named: 'subjectId'),
           ),
         ).thenAnswer((_) async => makeProfile(withTranscription: true));
 
@@ -467,6 +469,7 @@ void main() {
         verifyNever(
           () => mockResolver.resolveTranscriptionProfile(
             categoryId: any(named: 'categoryId'),
+            subjectId: any(named: 'subjectId'),
           ),
         );
       });
@@ -682,6 +685,7 @@ void main() {
           verifyNever(
             () => mockResolver.resolveTranscriptionProfile(
               categoryId: any(named: 'categoryId'),
+              subjectId: any(named: 'subjectId'),
             ),
           );
         },
@@ -1278,6 +1282,7 @@ void main() {
         when(
           () => mockResolver.resolveTranscriptionProfile(
             categoryId: any(named: 'categoryId'),
+            subjectId: any(named: 'subjectId'),
           ),
         ).thenAnswer(
           (_) async => ResolvedProfile(
@@ -1631,6 +1636,7 @@ void main() {
           when(
             () => mockResolver.resolveTranscriptionProfile(
               categoryId: any(named: 'categoryId'),
+              subjectId: any(named: 'subjectId'),
             ),
           ).thenAnswer((_) async => fallback);
 
@@ -1678,6 +1684,7 @@ void main() {
         when(
           () => localResolver.resolveTranscriptionProfile(
             categoryId: any(named: 'categoryId'),
+            subjectId: any(named: 'subjectId'),
           ),
         ).thenAnswer((_) async => null);
         final localAiConfig = MockAiConfigRepository();
@@ -1777,8 +1784,9 @@ void main() {
 
     // A recording whose subject automates no transcription — every goal
     // check-in — used to go to a model fallback that ranked models by
-    // provider type and picked the on-device engine first. The category's
-    // profile and the Settings default are now the whole chain.
+    // provider type and picked the on-device engine first. The subject's
+    // agent and own profile, its category's profile and the Settings default
+    // are now the whole chain (`resolveTranscriptionProfile`).
     group('the transcription profile fallback', () {
       // The subject's agent owns no profile; the tests that need one say so.
       setUp(() {
@@ -1802,9 +1810,10 @@ void main() {
         transcriptionModelId: 'profile-transcription-model',
       );
 
-      void stubProfileFor(String? categoryId) {
+      void stubProfileFor({String? subjectId, String? categoryId}) {
         when(
           () => mockResolver.resolveTranscriptionProfile(
+            subjectId: subjectId,
             categoryId: categoryId,
           ),
         ).thenAnswer((_) async => configured);
@@ -1818,15 +1827,15 @@ void main() {
         verifyNever(() => mockAiConfig.getConfigsByType(AiConfigType.model));
       }
 
+      // The subject is what lets the rule ask the subject's agent first; a
+      // call that dropped it would send a goal agent's check-ins straight to
+      // its category's or the Settings default's model.
       test(
-        "an automatic run takes the subject's category's transcription "
-        'profile, never a model picked by provider type',
+        'an automatic run asks the transcription rule for the subject — its '
+        'agent, then its category — never a model picked by provider type',
         () async {
           stubDirectCandidate();
-          when(
-            () => mockResolver.categoryOfSubject('goal-1'),
-          ).thenAnswer((_) async => 'goals');
-          stubProfileFor('goals');
+          stubProfileFor(subjectId: 'goal-1');
 
           final result = await service.tryTranscribe(subjectId: 'goal-1');
 
@@ -1836,41 +1845,55 @@ void main() {
             contains(
               'resolved: no automated skill owns transcription — using the '
               'transcription slot of profile '
-              '${DomainLogger.sanitizeId('')} for category '
-              '${DomainLogger.sanitizeId('goals')}',
+              '${DomainLogger.sanitizeId('')} for subject '
+              '${DomainLogger.sanitizeId('goal-1')}',
             ),
           );
         },
       );
 
       test(
-        'a subject in no category takes the Settings default the resolver '
-        'falls to',
+        'a requested run asks the rule for the subject as well',
         () async {
           stubDirectCandidate();
-          stubProfileFor(null);
+          stubProfileFor(subjectId: 'goal-1');
 
           expectProfileRun(
             await service.requestTranscription(subjectId: 'goal-1'),
           );
           verify(
-            () => mockResolver.resolveTranscriptionProfile(),
+            () => mockResolver.resolveTranscriptionProfile(subjectId: 'goal-1'),
           ).called(1);
         },
       );
 
-      test('the manual fallback asks the category it is handed', () async {
-        stubDirectCandidate();
-        stubProfileFor('people');
+      test(
+        'the manual fallback asks the subject and category it is handed',
+        () async {
+          stubDirectCandidate();
+          stubProfileFor(subjectId: 'goal-1', categoryId: 'people');
 
-        expectProfileRun(
-          await service.resolveTranscriptionFallback(categoryId: 'people'),
-        );
-      });
+          expectProfileRun(
+            await service.resolveTranscriptionFallback(
+              subjectId: 'goal-1',
+              categoryId: 'people',
+            ),
+          );
+          expect(
+            loggedLines(),
+            contains(
+              endsWith(
+                'for subject ${DomainLogger.sanitizeId('goal-1')} in '
+                'category ${DomainLogger.sanitizeId('people')}',
+              ),
+            ),
+          );
+        },
+      );
 
       test('the probes answer yes from a profile alone, with no speech model '
           'configured', () async {
-        stubProfileFor(null);
+        stubProfileFor(subjectId: 'goal-1');
 
         expect(
           await service.canTranscribeOnRequest(subjectId: 'goal-1'),
@@ -1904,7 +1927,7 @@ void main() {
           when(() => mockAiConfig.getConfigById('skill-transcribe')).thenAnswer(
             (_) async => makeSkill(id: 'skill-transcribe'),
           );
-          stubProfileFor(null);
+          stubProfileFor(subjectId: 'task-1');
 
           final result = await service.tryTranscribe(subjectId: 'task-1');
 
@@ -1912,6 +1935,7 @@ void main() {
           verifyNever(
             () => mockResolver.resolveTranscriptionProfile(
               categoryId: any(named: 'categoryId'),
+              subjectId: any(named: 'subjectId'),
             ),
           );
         },
@@ -1991,6 +2015,7 @@ void main() {
           when(
             () => mockResolver.resolveTranscriptionProfile(
               categoryId: any(named: 'categoryId'),
+              subjectId: any(named: 'subjectId'),
             ),
           ).thenAnswer((_) async => makeProfile(withTranscription: true));
 

@@ -226,7 +226,7 @@ class ProfileAutomationService {
 
     return _tryTranscriptionFallbacks(
       _CallIntent.run,
-      categoryId: await _resolver.categoryOfSubject(subjectId),
+      subjectId: subjectId,
     );
   }
 
@@ -255,7 +255,7 @@ class ProfileAutomationService {
 
     return _tryTranscriptionFallbacks(
       _CallIntent.run,
-      categoryId: await _resolver.categoryOfSubject(subjectId),
+      subjectId: subjectId,
     );
   }
 
@@ -274,7 +274,7 @@ class ProfileAutomationService {
 
     final fallback = await _tryTranscriptionFallbacks(
       _CallIntent.probe,
-      categoryId: await _resolver.categoryOfSubject(subjectId),
+      subjectId: subjectId,
     );
     return fallback.handled;
   }
@@ -498,14 +498,15 @@ class ProfileAutomationService {
 
     final fallbackResult = await _tryTranscriptionFallbacks(
       _CallIntent.probe,
-      categoryId: await _resolver.categoryOfSubject(subjectId),
+      subjectId: subjectId,
     );
     return fallbackResult.handled;
   }
 
   /// Resolves transcription for a run the user asked for when no automated
-  /// skill owns it: [categoryId]'s profile, else the Settings default profile
-  /// ([_tryTranscriptionFallbacks]); not handled when neither can transcribe.
+  /// skill owns it, through [ProfileAutomationResolver.resolveTranscriptionProfile]
+  /// for the recording's [subjectId] and [categoryId]
+  /// ([_tryTranscriptionFallbacks]); not handled when nothing can transcribe.
   ///
   /// The automated-skill walk is the wrong question for an entry that
   /// belongs to no task — a goal check-in, a standalone voice note — and
@@ -514,36 +515,53 @@ class ProfileAutomationService {
   /// the same chain [tryTranscribe] already ends on, exposed so the manual
   /// path can end on it too.
   ///
+  /// [subjectId] is what the recording is about — a goal's entry, a person.
+  /// Without it the subject's agent profile is never asked, which is how a
+  /// goal agent set to Mistral transcribed its check-ins on whatever model
+  /// the Settings default named.
+  ///
   /// Runs as [_CallIntent.run]: it precedes real inference, so its decline
   /// belongs in the log.
   Future<AutomationResult> resolveTranscriptionFallback({
+    String? subjectId,
     String? categoryId,
-  }) => _tryTranscriptionFallbacks(_CallIntent.run, categoryId: categoryId);
+  }) => _tryTranscriptionFallbacks(
+    _CallIntent.run,
+    subjectId: subjectId,
+    categoryId: categoryId,
+  );
 
   /// Transcription when no automated skill owns it, in a fixed order:
   ///
-  /// 1. [categoryId]'s default profile, when it owns a transcription slot;
-  /// 2. the device's Settings default profile, when it does;
-  /// 3. otherwise nothing: not handled, and the caller declines visibly.
+  /// 1. the profile of [subjectId]'s agent, when it owns a transcription
+  ///    slot;
+  /// 2. [subjectId]'s own profile, when it does;
+  /// 3. [categoryId]'s default profile — [subjectId]'s category when
+  ///    [categoryId] is null — when it does;
+  /// 4. the device's Settings default profile, when it does;
+  /// 5. otherwise nothing: not handled, and the caller declines visibly.
   ///
-  /// Steps 1 and 2 are [ProfileAutomationResolver.resolveTranscriptionProfile],
+  /// Steps 1 to 4 are [ProfileAutomationResolver.resolveTranscriptionProfile],
   /// the rule People check-ins and subject dictation follow as well. There is
-  /// no third route that picks a configured speech model by provider type:
+  /// no further route that picks a configured speech model by provider type:
   /// that ranking put the on-device engine first and sent goal check-ins to
   /// it for minutes per recording, on a model no profile named.
   Future<AutomationResult> _tryTranscriptionFallbacks(
     _CallIntent intent, {
+    String? subjectId,
     String? categoryId,
   }) async {
     final profile = await _resolver.resolveTranscriptionProfile(
+      subjectId: subjectId,
       categoryId: categoryId,
     );
     // The transcribe skill is a compile-time entry in `builtInSkills`.
     final skill = findBuiltInSkill(skillTranscribeContextId)!;
+    final scope = _scopeLabel(subjectId: subjectId, categoryId: categoryId);
     if (profile == null) {
       _logSkip(
-        'neither the profile of ${_categoryLabel(categoryId)} nor the '
-        'Settings default owns a transcription slot — nothing transcribes',
+        'no profile for $scope and not the Settings default owns a '
+        'transcription slot — nothing transcribes',
         subDomain: 'transcriptionProfile',
         intent: intent,
       );
@@ -552,7 +570,7 @@ class ProfileAutomationService {
     _logRun(
       'no automated skill owns transcription — using the transcription '
       'slot of profile ${DomainLogger.sanitizeId(profile.profileId ?? '')} '
-      'for ${_categoryLabel(categoryId)}',
+      'for $scope',
       intent: intent,
     );
     return AutomationResult(
@@ -563,9 +581,15 @@ class ProfileAutomationService {
     );
   }
 
-  static String _categoryLabel(String? categoryId) => categoryId == null
-      ? 'no category'
-      : 'category ${DomainLogger.sanitizeId(categoryId)}';
+  /// What a transcription was resolved for, by sanitized id: the subject,
+  /// the category, or both — "no subject or category" when neither.
+  static String _scopeLabel({String? subjectId, String? categoryId}) {
+    final parts = [
+      if (subjectId != null) 'subject ${DomainLogger.sanitizeId(subjectId)}',
+      if (categoryId != null) 'category ${DomainLogger.sanitizeId(categoryId)}',
+    ];
+    return parts.isEmpty ? 'no subject or category' : parts.join(' in ');
+  }
 
   /// Checks whether the resolved profile has a model slot populated for
   /// the given skill type.

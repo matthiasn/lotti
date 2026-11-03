@@ -36,9 +36,11 @@ void main() {
       );
 
   late List<String> recorded;
+  late List<String?> recordedCategories;
 
   setUp(() {
     recorded = [];
+    recordedCategories = [];
   });
 
   Future<void> pump(
@@ -46,6 +48,7 @@ void main() {
     required DateTime day,
     List<JournalEntity> entries = const [],
     String? captureTarget = 'goal-1',
+    String? goalCategoryId,
     bool enabled = true,
   }) => withClock(
     Clock.fixed(today.add(const Duration(hours: 2))),
@@ -63,6 +66,7 @@ void main() {
             enabled: enabled,
             openRecorder: (context, {required goalEntryId, categoryId}) async {
               recorded.add(goalEntryId);
+              recordedCategories.add(categoryId);
               return 'audio-1';
             },
           ),
@@ -71,6 +75,9 @@ void main() {
             goalCaptureTargetProvider(
               'agent-1',
             ).overrideWith((ref) async => captureTarget),
+            goalCategoryIdProvider(
+              'agent-1',
+            ).overrideWith((ref) async => goalCategoryId),
           ],
         ),
       );
@@ -147,6 +154,24 @@ void main() {
     // and the link is what makes the recorder's stop path transcribe it as a
     // check-in.
     expect(recorded, ['goal-1']);
+    // A goal in no category files its voice note in none.
+    expect(recordedCategories, [null]);
+  });
+
+  // The reflection's voice note used to open the recorder with no category,
+  // so it was filed uncategorized even when the goal had one — unlike every
+  // check-in recorded from the composer.
+  testWidgets("a voice note is filed in the goal's category", (tester) async {
+    await pump(tester, day: today, goalCategoryId: 'cat-fitness');
+    await tester.pump();
+
+    await tester.tap(
+      find.byKey(const ValueKey('goal-reflection-add-voice-note')),
+    );
+    await tester.pump();
+
+    expect(recorded, ['goal-1']);
+    expect(recordedCategories, ['cat-fitness']);
   });
 
   testWidgets('a disabled sheet offers no capture', (tester) async {

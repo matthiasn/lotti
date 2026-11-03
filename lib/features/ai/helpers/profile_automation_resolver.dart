@@ -88,31 +88,61 @@ class ProfileAutomationResolver {
   Future<ResolvedProfile?> resolveDefaultProfile() =>
       _profileResolver.resolveDefaultProfile();
 
-  /// The profile a recording filed under [categoryId] transcribes through:
-  /// the category's default profile when it owns a transcription slot, else
-  /// the device's Settings default when that one does. Null when neither
-  /// can transcribe.
+  /// The profile a recording about [subjectId], filed under [categoryId],
+  /// transcribes through — the first of these that owns a transcription slot:
+  ///
+  /// 1. the profile assigned to [subjectId]'s agent (`agentConfig.profileId
+  ///    ?? version.profileId ?? template.profileId`);
+  /// 2. [subjectId]'s own `profileId` (a person's, inherited at creation);
+  /// 3. [categoryId]'s default profile — [subjectId]'s category when
+  ///    [categoryId] is null;
+  /// 4. the device's Settings default.
+  ///
+  /// Null when none can transcribe.
   ///
   /// The one rule every recording without a task follows — a goal's
-  /// check-in, a person's, a voice note in a category — so the model and its
-  /// settings always come from a profile the user configured, never from a
-  /// model picked by provider type behind their back. A profile that
-  /// resolves but names no transcription model is passed over like a
-  /// missing one: it cannot transcribe either.
+  /// check-in, a person's, a voice note in a category, and the dictation
+  /// into their chats — so the model and its settings always come from a
+  /// profile the user configured, never from a model picked by provider type
+  /// behind their back. A profile that resolves but names no transcription
+  /// model is passed over like a missing one: it cannot transcribe either.
+  ///
+  /// The agent comes first because assigning it a profile is the most
+  /// specific choice the user makes: a goal agent set to a cloud profile
+  /// whose category, or whose Settings default, names an on-device or a
+  /// different cloud model used to transcribe on that one instead — a goal
+  /// filed in no category never even reached the agent's profile.
   ///
   /// Silent: render-time probes ask it on every rebuild. The run paths that
   /// act on its answer log which profile they transcribe through.
   Future<ResolvedProfile?> resolveTranscriptionProfile({
+    String? subjectId,
     String? categoryId,
   }) async {
-    final categoryProfileId = categoryId == null
-        ? null
-        : await _categoryProfileLookup?.call(categoryId);
-    if (categoryProfileId != null) {
-      final categoryProfile = _transcribing(
-        await _profileResolver.resolveByProfileId(categoryProfileId),
+    final candidateProfileIds = <String>[];
+    if (subjectId != null) {
+      final agentProfileId = await _resolveProfileIdViaAgent(subjectId);
+      if (agentProfileId != null) candidateProfileIds.add(agentProfileId);
+      final subjectProfileId = await _subjectProfileLookup?.call(subjectId);
+      if (subjectProfileId != null) candidateProfileIds.add(subjectProfileId);
+    }
+    final effectiveCategoryId =
+        categoryId ??
+        (subjectId == null ? null : await categoryOfSubject(subjectId));
+    if (effectiveCategoryId != null) {
+      final categoryProfileId = await _categoryProfileLookup?.call(
+        effectiveCategoryId,
       );
-      if (categoryProfile != null) return categoryProfile;
+      if (categoryProfileId != null) candidateProfileIds.add(categoryProfileId);
+    }
+
+    final asked = <String>{};
+    for (final profileId in candidateProfileIds) {
+      if (!asked.add(profileId)) continue;
+      final profile = _transcribing(
+        await _profileResolver.resolveByProfileId(profileId),
+      );
+      if (profile != null) return profile;
     }
     return _transcribing(await resolveDefaultProfile());
   }

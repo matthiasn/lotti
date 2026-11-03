@@ -2291,16 +2291,17 @@ model and provider names only, resolved after the wait has started so a
 slow read never holds the transcript.
 Spoken check-ins transcribe through the
 [transcription profile](ai/profile-resolution.md#the-transcription-profile)
-of the person's category: `CheckInTranscriptionService` reads the person's
-`categoryId` and asks `ProfileAutomationResolver.resolveTranscriptionProfile`,
-which takes the category's profile when it owns a transcription slot, else
-the device's Settings default when that one does — the same rule a goal's
-check-ins follow. The transcription model and provider must both resolve.
-There is no provider ranking, model discovery, or fallback on failure. A
-person who cannot be read is treated as filed under no category, so the
-default still transcribes. Preflight refuses recording when neither profile
-can transcribe. `canTranscribe` and `route` take the person's id for that
-reason.
+for the person: `CheckInTranscriptionService` reads the person's
+`categoryId` and asks `ProfileAutomationResolver.resolveTranscriptionProfile`
+with the person as the subject, which takes the person's agent profile, else
+their own `profileId`, else the category's profile, else the device's
+Settings default — whichever first owns a transcription slot, the same rule
+a goal's check-ins follow. The transcription model and provider must both
+resolve. There is no provider ranking, model discovery, or fallback on
+failure. A person whose category cannot be read is treated as filed under no
+category, so the remaining tiers still transcribe. Preflight refuses
+recording when no profile can transcribe. `canTranscribe` and `route` take
+the person's id for that reason.
 
 Dictation into the person's agent chat follows the same rule:
 `RelationshipChatPane` hands `AgentChatView` the person's
@@ -2317,8 +2318,8 @@ sequenceDiagram
   participant Profile as ProfileAutomationResolver
   participant Runner as SkillInferenceRunner
   Sheet->>Svc: canTranscribe(person)
-  Svc->>Profile: resolveTranscriptionProfile(person's category)
-  Profile-->>Svc: category profile, Settings default, or null
+  Svc->>Profile: resolveTranscriptionProfile(person, person's category)
+  Profile-->>Svc: agent, own, category or Settings default profile, or null
   Svc-->>Sheet: transcription slot available
   Sheet->>Inline: mounted in place of the text
   Inline->>Rec: record(linkedId: person, transcriptionHandledByCaller: true)
@@ -2326,7 +2327,7 @@ sequenceDiagram
   Inline-->>Sheet: audio entry id, length
   Sheet->>Svc: transcribe(audioEntryId)
   Note over Svc: subscribe to transcript notifications first
-  Svc->>Profile: resolveTranscriptionProfile(person's category)
+  Svc->>Profile: resolveTranscriptionProfile(person, person's category)
   Svc->>Runner: runTranscription(resolved profile, explicit skill)
   Runner-->>Svc: onError cancels wait on failure
   Svc-->>Sheet: transcript or null

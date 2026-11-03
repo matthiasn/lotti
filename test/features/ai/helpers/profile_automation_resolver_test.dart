@@ -669,15 +669,40 @@ void main() {
 
     ProfileAutomationResolver withCategories({
       Map<String, String> categoryProfiles = const {},
+      Map<String, String> subjectProfiles = const {},
       SubjectCategoryLookup? subjectCategoryLookup,
     }) => ProfileAutomationResolver(
       subjectAgentLookup: mockTaskAgentService.getTaskAgentForTask,
       templateService: mockTemplateService,
       profileResolver: mockProfileResolver,
       domainLogger: logger,
+      subjectProfileLookup: (subjectId) async => subjectProfiles[subjectId],
       categoryProfileLookup: (categoryId) async => categoryProfiles[categoryId],
       subjectCategoryLookup: subjectCategoryLookup,
     );
+
+    /// Gives [subjectId] an agent whose own config names [profileId], with
+    /// a template and an active version that name none.
+    void stubAgent(String subjectId, {String? profileId}) {
+      final agent = makeTestIdentity(
+        agentId: 'agent-$subjectId',
+        config: AgentConfig(profileId: profileId),
+      );
+      final template = makeTestTemplate();
+      when(
+        () => mockTaskAgentService.getTaskAgentForTask(subjectId),
+      ).thenAnswer((_) async => agent);
+      when(
+        () => mockTemplateService.getTemplateForAgent(agent.agentId),
+      ).thenAnswer((_) async => template);
+      when(
+        () => mockTemplateService.getActiveVersion(template.id),
+      ).thenAnswer((_) async => makeTestTemplateVersion());
+    }
+
+    void stubNoAgent(String subjectId) => when(
+      () => mockTaskAgentService.getTaskAgentForTask(subjectId),
+    ).thenAnswer((_) async => null);
 
     void stubDefault(ResolvedProfile? profile) => when(
       () => mockProfileResolver.resolveDefaultProfile(),
@@ -758,6 +783,117 @@ void main() {
         },
       );
     }
+
+    // The regression: a goal agent assigned a Mistral profile transcribed on
+    // the category's or the Settings default's model, because the agent was
+    // never asked.
+    test(
+      "the subject's agent profile wins over its category and the default, "
+      'which are never resolved',
+      () async {
+        final agentProfile = transcribing('mistral');
+        stubAgent('goal-1', profileId: 'mistral');
+        stubProfile('mistral', agentProfile);
+        stubProfile('category-profile', transcribing('category-profile'));
+        stubDefault(transcribing('default'));
+
+        final result = await withCategories(
+          categoryProfiles: {'goals': 'category-profile'},
+        ).resolveTranscriptionProfile(subjectId: 'goal-1', categoryId: 'goals');
+
+        expect(result, same(agentProfile));
+        verifyNever(
+          () => mockProfileResolver.resolveByProfileId('category-profile'),
+        );
+        verifyNever(() => mockProfileResolver.resolveDefaultProfile());
+        expect(logged, isEmpty);
+      },
+    );
+
+    test(
+      "an agent profile that cannot transcribe falls to the subject's own "
+      'profile',
+      () async {
+        final own = transcribing('person-profile');
+        stubAgent('person-1', profileId: 'thinking-only');
+        stubProfile('thinking-only', transcribing('thinking', model: false));
+        stubProfile('person-profile', own);
+        stubDefault(transcribing('default'));
+
+        final result = await withCategories(
+          subjectProfiles: {'person-1': 'person-profile'},
+        ).resolveTranscriptionProfile(subjectId: 'person-1');
+
+        expect(result, same(own));
+        verifyNever(() => mockProfileResolver.resolveDefaultProfile());
+      },
+    );
+
+    test(
+      "a subject with no agent and no profile takes its own category's "
+      'profile when no category is passed',
+      () async {
+        final category = transcribing('goals-profile');
+        stubNoAgent('goal-1');
+        stubProfile('goals-profile', category);
+        stubDefault(transcribing('default'));
+
+        final result = await withCategories(
+          categoryProfiles: {'goals': 'goals-profile'},
+          subjectCategoryLookup: (subjectId) async =>
+              subjectId == 'goal-1' ? 'goals' : null,
+        ).resolveTranscriptionProfile(subjectId: 'goal-1');
+
+        expect(result, same(category));
+      },
+    );
+
+    test(
+      "a passed category — the recording's — outranks the subject's",
+      () async {
+        final recording = transcribing('recording-profile');
+        stubNoAgent('goal-1');
+        stubProfile('recording-profile', recording);
+
+        final result =
+            await withCategories(
+              categoryProfiles: {
+                'goals': 'goals-profile',
+                'filed': 'recording-profile',
+              },
+              subjectCategoryLookup: (_) async => 'goals',
+            ).resolveTranscriptionProfile(
+              subjectId: 'goal-1',
+              categoryId: 'filed',
+            );
+
+        expect(result, same(recording));
+        verifyNever(
+          () => mockProfileResolver.resolveByProfileId('goals-profile'),
+        );
+      },
+    );
+
+    test(
+      'a profile reached through several tiers is resolved once, then the '
+      'default is asked',
+      () async {
+        final fallback = transcribing('default');
+        stubAgent('goal-1', profileId: 'shared');
+        stubProfile('shared', transcribing('shared', model: false));
+        stubDefault(fallback);
+
+        final result = await withCategories(
+          categoryProfiles: {'goals': 'shared'},
+          subjectProfiles: {'goal-1': 'shared'},
+        ).resolveTranscriptionProfile(subjectId: 'goal-1', categoryId: 'goals');
+
+        expect(result, same(fallback));
+        verify(
+          () => mockProfileResolver.resolveByProfileId('shared'),
+        ).called(1);
+      },
+    );
 
     test('categoryOfSubject reads the wired lookup, and is null without '
         'one', () async {
@@ -887,5 +1023,75 @@ void main() {
         expect(profile.transcriptionProvider!.id, 'melious');
       },
     );
+
+    group('a goal whose agent is assigned the Voxtral profile', () {
+      setUp(() {
+        final agent = makeTestIdentity(
+          agentId: 'goal-agent',
+          config: const AgentConfig(profileId: 'default-profile'),
+        );
+        final template = makeTestTemplate();
+        when(
+          () => mockTaskAgentService.getTaskAgentForTask('goal-entry'),
+        ).thenAnswer((_) async => agent);
+        when(
+          () => mockTemplateService.getTemplateForAgent('goal-agent'),
+        ).thenAnswer((_) async => template);
+        when(
+          () => mockTemplateService.getActiveVersion(template.id),
+        ).thenAnswer((_) async => makeTestTemplateVersion());
+      });
+
+      test(
+        'transcribes with Voxtral although its category names Whisper',
+        () async {
+          final profile = await realResolver.resolveTranscriptionProfile(
+            subjectId: 'goal-entry',
+            categoryId: 'family',
+          );
+
+          expect(profile!.transcriptionModel!.name, 'Voxtral Mini Transcribe');
+          expect(profile.transcriptionProvider!.id, 'mistral');
+        },
+      );
+
+      test(
+        'transcribes with Voxtral although the Settings default names '
+        'Whisper',
+        () async {
+          final settingsDb = SettingsDb(inMemoryDatabase: true);
+          addTearDown(settingsDb.close);
+          await settingsDb.saveSettingsItem(
+            AiConfigRepository.defaultProfileSettingsKey,
+            'family-profile',
+          );
+          final whisperDefault = ProfileAutomationResolver(
+            subjectAgentLookup: mockTaskAgentService.getTaskAgentForTask,
+            templateService: mockTemplateService,
+            profileResolver: ProfileResolver(
+              aiConfigRepository: AiConfigRepository(
+                configDb,
+                settingsDb: settingsDb,
+              ),
+              domainLogger: MockDomainLogger(),
+            ),
+            domainLogger: MockDomainLogger(),
+          );
+
+          // The device default alone would pick Whisper…
+          expect(
+            (await whisperDefault.resolveTranscriptionProfile())!
+                .transcriptionModel!
+                .name,
+            'Whisper large v3',
+          );
+          // …but a check-in about the goal goes through its agent's profile.
+          final profile = await whisperDefault.resolveTranscriptionProfile(
+            subjectId: 'goal-entry',
+          );
+          expect(profile!.transcriptionModel!.name, 'Voxtral Mini Transcribe');
+        },
+      );
+    });
   });
 }

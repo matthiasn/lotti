@@ -68,6 +68,7 @@ void main() {
   void stubProfile(ResolvedProfile? value) => when(
     () => resolver.resolveTranscriptionProfile(
       categoryId: any(named: 'categoryId'),
+      subjectId: any(named: 'subjectId'),
     ),
   ).thenAnswer((_) async => value);
 
@@ -97,14 +98,18 @@ void main() {
 
   group('resolveTarget', () {
     test(
-      "is the transcription slot of the subject's category's profile",
+      'is the transcription slot of the profile the rule picks for the '
+      "subject — its agent's first — and the subject's category",
       () async {
         final target = await dictation().resolveTarget();
 
         expect(target.provider, same(whisper));
         expect(target.model.providerModelId, 'whisper-1');
         verify(
-          () => resolver.resolveTranscriptionProfile(categoryId: 'goals'),
+          () => resolver.resolveTranscriptionProfile(
+            subjectId: subjectId,
+            categoryId: 'goals',
+          ),
         ).called(1);
         // Once per take: which profile the dictation goes through.
         verify(
@@ -119,13 +124,19 @@ void main() {
       },
     );
 
-    test('a subject in no category asks for the default', () async {
-      stubCategory(null);
+    test(
+      'a subject in no category is still asked for by id, so its agent can '
+      'answer before the default',
+      () async {
+        stubCategory(null);
 
-      await dictation().resolveTarget();
+        await dictation().resolveTarget();
 
-      verify(() => resolver.resolveTranscriptionProfile()).called(1);
-    });
+        verify(
+          () => resolver.resolveTranscriptionProfile(subjectId: subjectId),
+        ).called(1);
+      },
+    );
 
     final unusable = <String, void Function()>{
       'no profile can transcribe': () => stubProfile(null),

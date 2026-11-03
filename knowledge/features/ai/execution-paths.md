@@ -162,17 +162,17 @@ flowchart TD
   Match -->|ambiguous| Walked{"Transcription?"}
   Match2 -->|no match or ambiguous| Walked
   Walked -->|no| Stop
-  Walked -->|yes| TxProfile["Transcription profile: category's, else Settings default<br/>(also behind the gate)"]
+  Walked -->|yes| TxProfile["Transcription profile for the subject: agent's, own, category's, else Settings default<br/>(also behind the gate)"]
   TxProfile --> Runner
-  TxProfile -->|neither owns a slot| Stop
+  TxProfile -->|none owns a slot| Stop
 
   Direct --> LinkTask["Resolve task id from caller or link graph"]
   LinkTask -->|task| ResolveDirect["ProfileAutomationResolver.resolveForSubject(task)"]
-  LinkTask -->|no task| ResolveCategory["ProfileAutomationResolver.resolveForCategory()<br/>when the entry has a category"]
+  LinkTask -->|"no task, not transcription"| ResolveCategory["ProfileAutomationResolver.resolveForCategory()<br/>when the entry has a category"]
+  LinkTask -->|"no task, transcription"| DirectFallback["resolveTranscriptionFallback(subject, category)<br/>the transcription profile, or nothing (no gate)"]
   ResolveDirect --> Runner
   ResolveCategory --> Runner
-  ResolveDirect -->|transcription without a transcription slot| DirectFallback["resolveTranscriptionFallback()<br/>Settings default, or nothing (no gate)"]
-  ResolveCategory -->|transcription without a transcription slot| DirectFallback
+  ResolveDirect -->|transcription without a transcription slot| DirectFallback
   ResolveDirect -->|audio summary without a profile| DefaultProfile["resolveDefaultProfile()"]
   ResolveCategory -->|audio summary without a profile| DefaultProfile
   DirectFallback --> Runner
@@ -201,14 +201,19 @@ tokens on its own after an upgrade.
 
 **On the automatic path the transcription fallbacks sit behind the same
 gate.** When no automated skill owns transcription, the service takes the
-[transcription profile](profile-resolution.md#the-transcription-profile) — the
-subject's category's profile, else the Settings default, whichever owns a
-transcription slot; when neither can, nothing transcribes. Leaving it
+[transcription profile](profile-resolution.md#the-transcription-profile) for
+the subject — its agent's profile, its own, its category's, else the Settings
+default, whichever first owns a transcription slot; when none can, nothing
+transcribes. Leaving it
 ungated would have preserved exactly the behaviour the
 switch is meant to make explicit. The gesture paths — `requestTranscription`,
 `canTranscribeOnRequest` and `resolveTranscriptionFallback`, which
-`triggerSkillProvider` uses when no profile owns a transcription slot — reach
-the same chain without the gate, because a gesture is its own consent.
+`triggerSkillProvider` uses for every task-less recording and when a task's
+profile owns no transcription slot — reach the same chain without the gate,
+because a gesture is its own consent. A goal check-in in no category is
+declined by the gate and handed to the trigger by `AutomaticPromptTrigger`,
+under the goal agent's automatic-updates switch, so this is the path that
+must ask the goal agent's profile first.
 
 [Inference backfill](inference-backfill.md#the-consent-gate) asks the same
 question twice: when it offers a suggestion, through `hasAutomatedSkillType`,
@@ -262,7 +267,7 @@ rejected a recording or an image:
 | `categoryGate` | the category's `automaticInferenceEnabled` is off, or no lookup is wired |
 | `profileResolution` | no profile resolved, or the whole walk finished without a match (reports how many profiles it tried) |
 | `skillMatch` | an assignment's skill config is missing, the profile's model slot for that type is empty or unresolvable, or two skills of the same type made it ambiguous |
-| `transcriptionProfile` | the profile walk found nothing **and** neither the category's profile nor the Settings default owns a transcription slot — nothing transcribes |
+| `transcriptionProfile` | the profile walk found nothing **and** no tier of the transcription profile — the subject's agent or own profile, the category's, the Settings default — owns a transcription slot; nothing transcribes |
 | `resolved` | it *did* run — names the skill and whether it came from the subject-linked or an inherited profile, or names the transcription profile by sanitized id when no automated skill owned the run |
 
 `resolved` is not decoration: a run against the wrong profile is as opaque as no
