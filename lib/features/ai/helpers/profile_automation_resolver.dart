@@ -92,8 +92,10 @@ class ProfileAutomationResolver {
   /// The profile a recording about [subjectId], filed under [categoryId],
   /// transcribes through — the first of these that owns a transcription slot:
   ///
-  /// 1. the profile assigned to [subjectId]'s agent (`agentConfig.profileId
-  ///    ?? version.profileId ?? template.profileId`);
+  /// 1. the profile assigned to [subjectId]'s agent: a typed
+  ///    `inferenceSetup`'s `assignedProfileId` (nothing when disabled, with
+  ///    no fall-through), else the legacy `agentConfig.profileId ??
+  ///    version.profileId ?? template.profileId`;
   /// 2. [subjectId]'s own `profileId` (a person's, inherited at creation);
   /// 3. [categoryId]'s default profile — [subjectId]'s category when
   ///    [categoryId] is null;
