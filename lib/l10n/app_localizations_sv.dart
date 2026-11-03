@@ -8314,9 +8314,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get goalFormCompositeRule => 'Hur detta mål går ihop';
 
   @override
-  String get goalFormCompositeRuleChange => 'Ändra';
-
-  @override
   String get goalFormConfirmTitle => 'Möt din agent';
 
   @override
@@ -14104,6 +14101,10 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get relationshipPhotoSaveFailed => 'Det gick inte att spara fotot';
+
+  @override
+  String get relationshipPhotoSectionIntro =>
+      'Bara på dina enheter · agenten ser det aldrig · ändringar sparas direkt';
 
   @override
   String relationshipPhotoSheetTitle(String name) {

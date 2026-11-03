@@ -158,6 +158,27 @@ void main() {
     verifyNever(() => move.move(any(), any()));
   });
 
+  testWidgets('an Undo that fails says so too, rather than failing silently', (
+    tester,
+  ) async {
+    when(
+      () => move.move('person-pip', 'cat-crew'),
+    ).thenAnswer((_) async => true);
+    when(
+      () => move.move('person-pip', 'cat-ops'),
+    ).thenAnswer((_) async => false);
+    await pump(tester);
+
+    await openPicker(tester);
+    await tester.tap(find.text('Launch crew'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Undo'));
+    await tester.pumpAndSettle();
+
+    verify(() => move.move('person-pip', 'cat-ops')).called(1);
+    expect(find.text("That didn't save — please try again."), findsOneWidget);
+  });
+
   testWidgets('a failed move says so', (tester) async {
     when(() => move.move(any(), any())).thenAnswer((_) async => false);
     await pump(tester);

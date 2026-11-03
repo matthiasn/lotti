@@ -59,6 +59,7 @@ class _MappingStep extends StatelessWidget {
     this.statementError,
     this.agentSection,
     this.editVersion,
+    this.categoryField,
     this.enabled = true,
     this.onStatementChanged,
   });
@@ -107,6 +108,9 @@ class _MappingStep extends StatelessWidget {
   /// The version being edited, on the single edit page; its save starts the
   /// next one, and the page says so under *Your goal*, with the history kept.
   final int? editVersion;
+
+  /// The goal's category, on the single edit page, under its name.
+  final Widget? categoryField;
 
   /// False while a save is in flight: the page's own text fields show they
   /// cannot change under the version being written.
@@ -608,6 +612,12 @@ class _MappingStep extends StatelessWidget {
                 // goal's statement and leave its signals as they were.
                 SizedBox(height: tokens.spacing.step4),
                 nameField,
+                // Filed where the goal page's header names it, with what
+                // the goal is.
+                if (categoryField case final categoryField?) ...[
+                  SizedBox(height: tokens.spacing.step4),
+                  categoryField,
+                ],
               ],
             ),
           ),
@@ -842,68 +852,48 @@ class _MappingStep extends StatelessWidget {
             ],
           ),
           if (dimensionCount > 1) ...[
-            SizedBox(height: tokens.spacing.cardItemSpacing),
-            DesignSystemSectionCard(
-              child: Row(
-                children: [
-                  Icon(
-                    LottiIcons.tree,
-                    color: tokens.colors.interactive.enabled,
-                  ),
-                  SizedBox(width: tokens.spacing.step3),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          context.messages.goalFormCompositeRule,
-                          style: tokens.typography.styles.subtitle.subtitle2,
-                        ),
-                        Text(
-                          _compositeRuleLabel(
-                            context,
-                            compositeRule,
-                            // Clamped for display: removing a dimension can
-                            // strand a stored "3 of" above a 2-dimension
-                            // goal, and the card must not promise the
-                            // impossible while buildCriteria would silently
-                            // save the clamped value anyway.
-                            requiredSuccesses.clamp(1, dimensionCount),
-                            dimensionCount,
-                          ),
-                          style: tokens.typography.styles.body.bodySmall
-                              .copyWith(
-                                color: tokens.colors.text.mediumEmphasis,
-                              ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  DesignSystemButton(
-                    label: context.messages.goalFormCompositeRuleChange,
-                    onPressed: () => showModalBottomSheet<void>(
-                      context: context,
-                      builder: (context) => _CompositeRulePicker(
-                        value: compositeRule,
-                        requiredSuccesses: requiredSuccesses,
-                        dimensionCount: dimensionCount,
-                        onChanged: onCompositeRuleChanged,
-                      ),
-                    ),
-                    variant: DesignSystemButtonVariant.tertiary,
-                    size: DesignSystemButtonSize.dense,
-                  ),
-                ],
+            SizedBox(height: tokens.spacing.step4),
+            // A picked value like any other: the editors' one picker field.
+            DesignSystemPickerField(
+              fieldKey: const ValueKey('goal-form-composite-rule'),
+              label: context.messages.goalFormCompositeRule,
+              leading: Icon(
+                LottiIcons.tree,
+                size: IconSizes.m,
+                color: tokens.colors.text.mediumEmphasis,
+              ),
+              value: _compositeRuleLabel(
+                context,
+                compositeRule,
+                // Clamped for display: removing a dimension can strand a
+                // stored "3 of" above a 2-dimension goal, and the field
+                // must not promise the impossible while buildCriteria would
+                // silently save the clamped value anyway.
+                requiredSuccesses.clamp(1, dimensionCount),
+                dimensionCount,
+              ),
+              placeholder: context.messages.goalFormCompositeRule,
+              onTap: () => showModalBottomSheet<void>(
+                context: context,
+                builder: (context) => _CompositeRulePicker(
+                  value: compositeRule,
+                  requiredSuccesses: requiredSuccesses,
+                  dimensionCount: dimensionCount,
+                  onChanged: onCompositeRuleChanged,
+                ),
               ),
             ),
           ],
-          // Editing, this agent setting sits in *Your agent*, as the
-          // person editor's switch does.
+          // Editing, this agent setting sits in *Your agent*; creating,
+          // here — the same switch row either way, the person editor's.
           if (statement == null) ...[
-            SizedBox(height: tokens.spacing.cardItemSpacing),
-            GoalFormCheckInWeightCard(
+            SizedBox(height: tokens.spacing.sectionGap),
+            AgentSwitchRow(
+              title: messages.goalFormCheckInsAreSubstanceTitle,
+              toggleKey: const ValueKey('goal-form-check-ins-are-substance'),
               value: checkInsAreSubstance,
               onChanged: onCheckInsAreSubstanceChanged,
+              body: Text(messages.goalFormCheckInsAreSubstanceSubtitle),
             ),
           ],
           // Creating, the goal's NAME is authored here, after the signals

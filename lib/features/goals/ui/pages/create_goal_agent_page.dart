@@ -23,6 +23,7 @@ import 'package:lotti/features/design_system/components/buttons/ds_segmented_tog
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/components/dropdowns/design_system_dropdown.dart';
+import 'package:lotti/features/design_system/components/inputs/design_system_picker_field.dart';
 import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
 import 'package:lotti/features/design_system/components/layout/detail_content_width.dart';
 import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
@@ -34,7 +35,6 @@ import 'package:lotti/features/goals/service/goal_spec_revision_service.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/state/goal_checkin_providers.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
-import 'package:lotti/features/goals/ui/pages/goal_form_check_in_weight_card.dart';
 import 'package:lotti/features/goals/ui/pages/goal_form_mapping.dart';
 import 'package:lotti/features/habits/repository/habits_repository.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
@@ -933,6 +933,9 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage>
                                     ? _EditAgentSection.of(this)
                                     : null,
                                 editVersion: editSpec?.version,
+                                categoryField: _editing
+                                    ? _editCategoryField(this)
+                                    : null,
                               ),
                               _GoalFormStep.confirmation => _ConfirmationStep(
                                 title: _title,

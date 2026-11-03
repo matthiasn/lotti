@@ -5334,7 +5334,6 @@
   },
   "goalFormCompositeAtLeastHint": "Choose how many dimensions must be met.",
   "goalFormCompositeRule": "How this goal comes together",
-  "goalFormCompositeRuleChange": "Change",
   "goalFormConfirmTitle": "Meet your agent",
   "goalFormContinue": "Continue",
   "goalFormCostHonesty": "Uses your configured AI provider. You can see what it has cost anytime on this goal's page.",
@@ -9082,6 +9081,7 @@
   "relationshipPhotoRemove": "Remove photo",
   "relationshipPhotoRemoveAction": "Remove",
   "relationshipPhotoSaveFailed": "Could not save the photo",
+  "relationshipPhotoSectionIntro": "Only on your devices · the agent never sees it · changes save right away",
   "relationshipPhotoSheetTitle": "Photo of {name}",
   "@relationshipPhotoSheetTitle": {
     "placeholders": {

@@ -13984,12 +13984,6 @@ abstract class AppLocalizations {
   /// **'How this goal comes together'**
   String get goalFormCompositeRule;
 
-  /// No description provided for @goalFormCompositeRuleChange.
-  ///
-  /// In en, this message translates to:
-  /// **'Change'**
-  String get goalFormCompositeRuleChange;
-
   /// No description provided for @goalFormConfirmTitle.
   ///
   /// In en, this message translates to:
@@ -23304,6 +23298,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not save the photo'**
   String get relationshipPhotoSaveFailed;
+
+  /// No description provided for @relationshipPhotoSectionIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Only on your devices · the agent never sees it · changes save right away'**
+  String get relationshipPhotoSectionIntro;
 
   /// No description provided for @relationshipPhotoSheetTitle.
   ///

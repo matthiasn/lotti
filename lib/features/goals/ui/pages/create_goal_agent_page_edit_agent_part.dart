@@ -1,7 +1,7 @@
 part of 'create_goal_agent_page.dart';
 
-/// The goal's agent on the single edit page: its name and the goal's
-/// category, under the statement, signals and name — the fields creation's
+/// The goal's agent on the single edit page: how it answers and its name,
+/// under the statement, signals and name — the fields creation's
 /// confirmation step asks for, here on the same page as everything else so
 /// an edit is one scroll and one *Save new version*.
 class _EditAgentSection extends StatelessWidget {
@@ -10,8 +10,6 @@ class _EditAgentSection extends StatelessWidget {
     required this.personaError,
     required this.onPersonaChanged,
     required this.enabled,
-    required this.categoryId,
-    required this.onCategoryChanged,
     required this.checkInsAreSubstance,
     required this.onCheckInsAreSubstanceChanged,
   });
@@ -23,8 +21,6 @@ class _EditAgentSection extends StatelessWidget {
         personaError: form._personaError,
         onPersonaChanged: form._clearPersonaError,
         enabled: !form._saving,
-        categoryId: form._categoryId,
-        onCategoryChanged: form._categoryChanger,
         checkInsAreSubstance: form._shownCheckInsAreSubstance,
         onCheckInsAreSubstanceChanged: form._setCheckInsAreSubstance,
       );
@@ -33,10 +29,6 @@ class _EditAgentSection extends StatelessWidget {
   final String? personaError;
   final VoidCallback onPersonaChanged;
   final bool enabled;
-  final String? categoryId;
-
-  /// Null while the goal's category has not been read yet.
-  final ValueChanged<String?>? onCategoryChanged;
 
   /// Whether the check-ins are the goal itself (ADR 0151) — a setting of
   /// how the agent answers, so it sits here, as the person editor's
@@ -71,14 +63,6 @@ class _EditAgentSection extends StatelessWidget {
             errorText: personaError,
             enabled: enabled,
             onChanged: (_) => onPersonaChanged(),
-          ),
-          SizedBox(height: tokens.spacing.step4),
-          IgnorePointer(
-            ignoring: !enabled,
-            child: CategoryFieldRow(
-              categoryId: categoryId,
-              onChanged: onCategoryChanged,
-            ),
           ),
         ],
       ),
@@ -227,3 +211,13 @@ class _GoalFormFooter extends StatelessWidget {
     );
   }
 }
+
+/// The goal's category on the single edit page, filed under its name. It
+/// cannot be changed until the goal row's own category has read.
+Widget _editCategoryField(_CreateGoalAgentPageState form) => IgnorePointer(
+  ignoring: form._saving,
+  child: CategoryFieldRow(
+    categoryId: form._categoryId,
+    onChanged: form._categoryChanger,
+  ),
+);

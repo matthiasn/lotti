@@ -8425,9 +8425,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get goalFormCompositeRule => 'Comment cet objectif se réalise';
 
   @override
-  String get goalFormCompositeRuleChange => 'Modifier';
-
-  @override
   String get goalFormConfirmTitle => 'Fais connaissance avec ton agent';
 
   @override
@@ -14316,6 +14313,10 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get relationshipPhotoSaveFailed =>
       'Impossible d\'enregistrer la photo';
+
+  @override
+  String get relationshipPhotoSectionIntro =>
+      'Seulement sur tes appareils · l\'agent ne la voit jamais · les changements sont enregistrés tout de suite';
 
   @override
   String relationshipPhotoSheetTitle(String name) {

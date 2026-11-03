@@ -500,6 +500,21 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
                 birthday: _birthday,
                 onChanged: (value) => setState(() => _birthday = value),
               ),
+              gap(tokens.spacing.step4),
+              // Filed where the page's header names it, right under who
+              // they are. Category scoping (the ProjectCreateForm precedent): the
+              // category seeds every check-in created under the person, and
+              // names the AI profile their agent briefs with.
+              CategoryFieldRow(
+                categoryId: _categoryId,
+                onChanged: (id) => setState(() => _categoryId = id),
+              ),
+              gap(tokens.spacing.step2),
+              Text(
+                messages.relationshipFormCategoryProfileHint,
+                key: const ValueKey('person-form-category-hint'),
+                style: caption,
+              ),
             ],
           ),
         ),
@@ -598,20 +613,6 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
                 ),
               ],
               gap(tokens.spacing.step5),
-              // Category scoping (the ProjectCreateForm precedent): the
-              // category seeds every check-in created under the person, and
-              // names the AI profile their agent briefs with.
-              CategoryFieldRow(
-                categoryId: _categoryId,
-                onChanged: (id) => setState(() => _categoryId = id),
-              ),
-              gap(tokens.spacing.step2),
-              Text(
-                messages.relationshipFormCategoryProfileHint,
-                key: const ValueKey('person-form-category-hint'),
-                style: caption,
-              ),
-              gap(tokens.spacing.step5),
               // The category speech dictionary's format, so one habit edits
               // both lists.
               DesignSystemTextInput(
@@ -636,7 +637,9 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
           AgentFormSection(
             key: const ValueKey('person-form-photo-section'),
             title: messages.relationshipPhotoCardTitle,
-            intro: messages.relationshipPhotoPrivacy,
+            // Its picks write at once, which the section says, so the
+            // editor's Cancel is never mistaken for an undo of them.
+            intro: messages.relationshipPhotoSectionIntro,
             introKey: const ValueKey('person-form-photo-privacy'),
             child: PersonPhotoCard(
               person: _person!,

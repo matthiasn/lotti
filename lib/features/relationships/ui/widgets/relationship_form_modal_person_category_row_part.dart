@@ -289,11 +289,14 @@ class _AddChannelActions extends StatelessWidget {
       child: Wrap(
         crossAxisAlignment: WrapCrossAlignment.center,
         children: [
-          TextButton.icon(
+          // The goal editor's *Add a signal*: the same button for adding a
+          // row to a list.
+          DesignSystemButton(
             key: const ValueKey('person-form-add-channel'),
+            label: messages.relationshipAddChannelButton,
+            leadingIcon: LottiIcons.add,
+            variant: DesignSystemButtonVariant.tertiary,
             onPressed: onAdd,
-            icon: const Icon(LottiIcons.add),
-            label: Text(messages.relationshipAddChannelButton),
           ),
           if (onFromContacts != null) ...[
             Text(
@@ -302,10 +305,11 @@ class _AddChannelActions extends StatelessWidget {
                 color: tokens.colors.text.lowEmphasis,
               ),
             ),
-            TextButton(
+            DesignSystemButton(
               key: const ValueKey('person-form-add-from-contacts'),
+              label: messages.relationshipAddChannelFromContacts,
+              variant: DesignSystemButtonVariant.tertiary,
               onPressed: onFromContacts,
-              child: Text(messages.relationshipAddChannelFromContacts),
             ),
           ],
         ],

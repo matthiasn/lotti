@@ -8299,9 +8299,6 @@ class AppLocalizationsDa extends AppLocalizations {
   String get goalFormCompositeRule => 'Hvordan dette mål hænger sammen';
 
   @override
-  String get goalFormCompositeRuleChange => 'Skift';
-
-  @override
   String get goalFormConfirmTitle => 'Mød din agent';
 
   @override
@@ -14084,6 +14081,10 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get relationshipPhotoSaveFailed => 'Kunne ikke gemme fotoet';
+
+  @override
+  String get relationshipPhotoSectionIntro =>
+      'Kun på dine enheder · agenten ser det aldrig · ændringer gemmes med det samme';
 
   @override
   String relationshipPhotoSheetTitle(String name) {

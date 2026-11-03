@@ -8448,9 +8448,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get goalFormCompositeRule => 'Cum se îmbină acest obiectiv';
 
   @override
-  String get goalFormCompositeRuleChange => 'Modificați';
-
-  @override
   String get goalFormConfirmTitle => 'Faceți cunoștință cu agentul dvs.';
 
   @override
@@ -14360,6 +14357,10 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get relationshipPhotoSaveFailed => 'Fotografia nu a putut fi salvată';
+
+  @override
+  String get relationshipPhotoSectionIntro =>
+      'Doar pe dispozitivele dvs. · agentul nu o vede niciodată · modificările se salvează imediat';
 
   @override
   String relationshipPhotoSheetTitle(String name) {

@@ -99,8 +99,20 @@ class _CategoryCrumbState extends ConsumerState<CategoryCrumb> {
     String entryId,
     String? previousId,
   ) async {
+    if (_moving) return;
+    final messages = context.messages;
+    setState(() => _moving = true);
     final moved = await move.move(entryId, previousId);
-    if (moved) widget.onMoved?.call();
+    if (!mounted) return;
+    setState(() => _moving = false);
+    if (moved) {
+      widget.onMoved?.call();
+      return;
+    }
+    context.showToast(
+      tone: DesignSystemToastTone.error,
+      title: messages.saveFailedRetry,
+    );
   }
 
   @override

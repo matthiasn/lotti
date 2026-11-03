@@ -35,7 +35,6 @@ import 'package:lotti/features/goals/service/goal_spec_revision_service.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/state/goal_checkin_providers.dart';
 import 'package:lotti/features/goals/ui/pages/create_goal_agent_page.dart';
-import 'package:lotti/features/goals/ui/pages/goal_form_check_in_weight_card.dart';
 import 'package:lotti/features/goals/ui/pages/goal_form_mapping.dart';
 import 'package:lotti/features/habits/repository/habits_repository.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
@@ -2755,7 +2754,7 @@ void main() {
       '80',
     );
 
-    await tester.tap(find.widgetWithText(DesignSystemButton, 'Change'));
+    await tester.tap(find.byKey(const ValueKey('goal-form-composite-rule')));
     await tester.pumpAndSettle();
     Finder selectionRow(String title) => find.byWidgetPredicate(
       (widget) => widget is DesignSystemSelectionRow && widget.title == title,
@@ -6287,13 +6286,6 @@ void main() {
       ),
       findsOneWidget,
     );
-    expect(
-      find.descendant(
-        of: agentSection,
-        matching: find.byType(CategoryFieldRow),
-      ),
-      findsOneWidget,
-    );
     // The agent's own setting sits here, as the person editor's switch
     // sits in theirs — not boxed among the signals.
     expect(
@@ -6305,7 +6297,15 @@ void main() {
       ),
       findsOneWidget,
     );
-    expect(find.byType(GoalFormCheckInWeightCard), findsNothing);
+    // The goal's category is filed with what the goal is, where the goal
+    // page's header names it.
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('goal-form-goal-section')),
+        matching: find.byType(CategoryFieldRow),
+      ),
+      findsOneWidget,
+    );
     expect(
       tester.getTopLeft(agentSection).dy,
       greaterThan(
@@ -6591,7 +6591,7 @@ void main() {
 
     // Done propagates the clamp to the page: re-adding the dimension keeps
     // the count the sheet showed, instead of resurrecting the stale 3.
-    await tester.tap(find.widgetWithText(DesignSystemButton, 'Change'));
+    await tester.tap(find.byKey(const ValueKey('goal-form-composite-rule')));
     await tester.pumpAndSettle();
     await tester.tap(
       find.byKey(const ValueKey('goal-form-composite-done')),
@@ -6615,7 +6615,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    final changeButton = find.widgetWithText(DesignSystemButton, 'Change');
+    final changeButton = find.byKey(const ValueKey('goal-form-composite-rule'));
     // Centred rather than merely visible: the pinned Continue band overlays
     // the bottom edge that ensureVisible stops at on a screen this short.
     Scrollable.ensureVisible(tester.element(changeButton), alignment: 0.5);

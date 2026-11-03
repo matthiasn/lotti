@@ -704,7 +704,7 @@ void main() {
       expect(semantics.label, contains('Remind me to stay in touch'));
       expect(find.text('Reminders on'), findsNothing);
 
-      await tester.tap(find.text('Remind me to stay in touch'));
+      await tapVisible(tester, find.text('Remind me to stay in touch'));
       await tester.pumpAndSettle();
 
       expect(
@@ -751,17 +751,23 @@ void main() {
         top('person-form-reach-section'),
         lessThan(top('person-form-agent-section')),
       );
-      // The agent's section holds what decides how it works: the switch,
-      // the category whose AI profile it briefs with, and the words its
-      // transcripts should know.
+      // The agent's section holds what decides how it works: the switch
+      // and the words its transcripts should know.
       final agent = find.byKey(const ValueKey('person-form-agent-section'));
       for (final inside in [
         find.byKey(const ValueKey('person-form-reminders')),
-        find.byType(CategoryFieldRow),
-        find.byKey(const ValueKey('person-form-category-hint')),
         find.byKey(const ValueKey('person-form-known-terms')),
       ]) {
         expect(find.descendant(of: agent, matching: inside), findsOneWidget);
+      }
+      // The category is filed with who they are — where the page's header
+      // names it — with what it means for their agent beneath it.
+      final who = find.byKey(const ValueKey('person-form-who-section'));
+      for (final inside in [
+        find.byType(CategoryFieldRow),
+        find.byKey(const ValueKey('person-form-category-hint')),
+      ]) {
+        expect(find.descendant(of: who, matching: inside), findsOneWidget);
       }
       // No section is boxed in a card inside the modal's own surface.
       expect(
@@ -781,7 +787,7 @@ void main() {
       expect(find.text('How often?'), findsNothing);
       expect(find.text('Weekly'), findsNothing);
 
-      await tester.tap(find.byType(DesignSystemToggle));
+      await tapVisible(tester, find.byType(DesignSystemToggle));
       await tester.pumpAndSettle();
 
       expect(find.text('How often?'), findsOneWidget);
@@ -792,7 +798,7 @@ void main() {
         'is preselected and "none" is not on offer', (tester) async {
       await tester.pumpWidget(buildForm());
       await tester.pumpAndSettle();
-      await tester.tap(find.byType(DesignSystemToggle));
+      await tapVisible(tester, find.byType(DesignSystemToggle));
       await tester.pumpAndSettle();
 
       final pills = tester.widgetList<DsPill>(find.byType(DsPill)).toList();

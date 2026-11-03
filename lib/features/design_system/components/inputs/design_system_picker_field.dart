@@ -97,8 +97,13 @@ class _DesignSystemPickerFieldState extends State<DesignSystemPickerField> {
                     ),
                     child: Row(
                       children: [
+                        // One square slot, whatever the mark, so every picked
+                        // value in a column starts on the same line.
                         if (widget.leading case final leading?) ...[
-                          leading,
+                          SizedBox.square(
+                            dimension: IconSizes.l,
+                            child: Center(child: leading),
+                          ),
                           SizedBox(width: tokens.spacing.step3),
                         ],
                         Expanded(
