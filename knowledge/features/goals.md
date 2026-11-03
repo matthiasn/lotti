@@ -1561,11 +1561,14 @@ handler would retract it; that wiring is a follow-up.
   readable as text-only objects instead of being assigned invented dates.
   Creation and owner editing share one route through the same controls.
   Creation is a three-stage intention → mapping → confirmation flow; owner
-  editing is one page: the statement is a single-line field (with the
-  example pills) at the top of the mapping page, and the agent's name, the
-  goal's category and the next version's note close the same page under
-  *Your agent* (`AgentFormSection`, the section the person editor ends on
-  too). One *Save new version* runs the mapping's checks, then saves; the
+  editing is one page: *Your goal* (an `AgentFormSection` holding the
+  single-line statement, its example pills and the goal's name) opens it, the
+  signals follow, and the agent's name, the goal's category and the next
+  version's note close it under *Your agent* (the section the person editor
+  ends on too). One *Save new version* runs the mapping's checks, then saves;
+  *Cancel*, the back button and the system back leave at once when nothing
+  changed and ask first when something did (`_GoalEditLeave`, an order-free
+  fingerprint baselined once the goal and its catalogs have loaded). The
   step indicator shows only when there is more than one step to walk, and
   the page absorbs input while a save is in flight. The mapping stage matches observable active habits and
   the supported steps metric, gives every selected habit its own one-to-seven
@@ -2117,8 +2120,11 @@ and in its body:
 A check-in row opens its journal entry; a reflection reopens its day's sheet.
 The time chip (`GoalCheckInTimeChip`) is the check-in rows' trailing control.
 
-**A goal is filed in a category.** The goal form's *meet your agent* step
-(and, editing, its *Your agent* section) has the person form's category row (`CategoryFieldRow`; the form's
+**A goal is filed in a category.** The goal page names it above the title
+with the person page's selector (`CategoryCrumb`), which moves the goal row
+through `EntryCategoryMove` and re-reads `goalCategoryIdProvider`. The goal
+form's *meet your agent* step (and, editing, its *Your agent* section) has
+the person form's category field (`CategoryFieldRow`; the form's
 `_GoalFormCategory` mixin holds its state). Editing, the row cannot be
 changed until the goal row's own category has read, so a late read never
 overwrites a pick, and a changed category with no goal row to move fails the

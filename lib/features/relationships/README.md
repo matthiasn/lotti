@@ -30,9 +30,10 @@ filterable by kind; a day's photos share one row. On a wide window *Before
 you talk* sits in a rail beside the timeline. The header opens the agent
 conversation, and its menu — the same menu, over the same dimmed page, as a
 goal's — the person editor; the editor reads like the goal editor: *Who*,
-*Photo*, *How to reach them*, then *Your agent* — reminders, the category
-whose AI profile the agent briefs with (or the Settings default when it
-names none), and the names its transcripts should know; tapping the avatar opens the
+*How to reach them*, *Your agent* — reminders and how often, the person's
+status, the category whose AI profile the agent briefs with (or the Settings
+default when it names none), and the names its transcripts should know — and
+the *Photo* last; tapping the avatar opens the
 person's photo: choose
 one from the library and pick which part of it is the face, adjust that
 later, or remove it. The photo shows wherever the person does, inside their
