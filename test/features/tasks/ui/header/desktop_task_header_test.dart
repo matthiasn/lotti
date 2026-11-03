@@ -1641,6 +1641,121 @@ void main() {
       },
     );
 
+    group('a title arriving while a blank task waits for a name', () {
+      // A blank task auto-opens the editor focused and empty; the task agent
+      // then names it in the background. These pump the header the way the
+      // connector does — stable widget, new `data.title`, still asking for
+      // `initialEditing` because the first build saw a blank title.
+      late StateSetter outerSetState;
+      late String currentTitle;
+      late List<String> saves;
+
+      Future<void> pumpBlankTask(WidgetTester tester) async {
+        currentTitle = '';
+        saves = [];
+        await _pumpDesktop(
+          tester,
+          StatefulBuilder(
+            builder: (context, setState) {
+              outerSetState = setState;
+              return DesktopTaskHeader(
+                data: _fixture(title: currentTitle),
+                onTitleSaved: saves.add,
+                initialEditing: true,
+              );
+            },
+          ),
+        );
+        await tester.pump();
+      }
+
+      bool editorFocused(WidgetTester tester) =>
+          tester.widget<TextField>(find.byType(TextField)).focusNode!.hasFocus;
+
+      testWidgets(
+        'closes the empty focused editor and shows the new title',
+        (tester) async {
+          await pumpBlankTask(tester);
+          expect(editorFocused(tester), isTrue);
+          final focusNode = tester
+              .widget<TextField>(find.byType(TextField))
+              .focusNode!;
+
+          outerSetState(() => currentTitle = 'Book the penguin enclosure');
+          await tester.pump();
+          await tester.pump();
+
+          expect(find.byType(TextField), findsNothing);
+          expect(find.text('Book the penguin enclosure'), findsOneWidget);
+          expect(find.text('Name this task'), findsNothing);
+          expect(focusNode.hasFocus, isFalse);
+          expect(
+            saves,
+            isEmpty,
+            reason: 'adopting the title must not save it back',
+          );
+
+          // The controller followed too: reopening edits the new title.
+          await tester.tap(find.text('Book the penguin enclosure'));
+          await tester.pump();
+          await tester.pump();
+          expect(
+            tester.widget<TextField>(find.byType(TextField)).controller!.text,
+            'Book the penguin enclosure',
+          );
+        },
+      );
+
+      testWidgets(
+        'treats whitespace-only text as empty',
+        (tester) async {
+          await pumpBlankTask(tester);
+          await tester.enterText(find.byType(TextField), '   ');
+          await tester.pump();
+
+          outerSetState(() => currentTitle = 'Feed the penguins');
+          await tester.pump();
+          await tester.pump();
+
+          expect(find.byType(TextField), findsNothing);
+          expect(find.text('Feed the penguins'), findsOneWidget);
+          expect(saves, isEmpty);
+        },
+      );
+
+      testWidgets(
+        'leaves typed text, the open editor and its focus alone',
+        (tester) async {
+          await pumpBlankTask(tester);
+          await tester.enterText(find.byType(TextField), 'My own name');
+          await tester.pump();
+
+          outerSetState(() => currentTitle = 'Book the penguin enclosure');
+          await tester.pump();
+          await tester.pump();
+
+          final field = tester.widget<TextField>(find.byType(TextField));
+          expect(field.controller!.text, 'My own name');
+          expect(editorFocused(tester), isTrue);
+          expect(saves, isEmpty);
+        },
+      );
+
+      testWidgets(
+        'keeps the editor open when the new title is itself blank',
+        (tester) async {
+          await pumpBlankTask(tester);
+
+          outerSetState(() => currentTitle = '  ');
+          await tester.pump();
+          await tester.pump();
+
+          expect(find.byType(TextField), findsOneWidget);
+          expect(editorFocused(tester), isTrue);
+        },
+      );
+    });
+
     testWidgets(
       'committing unchanged text does not fire onTitleSaved',
       (tester) async {

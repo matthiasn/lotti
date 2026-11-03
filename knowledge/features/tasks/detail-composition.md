@@ -212,12 +212,20 @@ stateDiagram-v2
   Editing --> Editing: Shift+Enter → newline
   Editing --> ReadOnly: focus lost → commit (deferred one frame)
   Editing --> ReadOnly: close button / Esc → revert
+  Editing --> ReadOnly: title arrives from outside while the field is blank → adopt, unfocus
 ```
 
 **A blank title opens straight into the editor.** The connector passes
 `initialEditing: data.title.trim().isEmpty`, keyed by task id so the decision is
 re-made per task. Naming the task is the one thing every new task needs, and the
 title was previously a read-only label whose only affordance was a hover cursor.
+
+**A title set elsewhere reaches an open editor only when it holds nothing.** The
+task agent often names a blank task moments after it opens, while the auto-opened
+editor is still focused and empty. `didUpdateWidget` then closes the editor, drops
+focus and shows the new title — blank text would be discarded on commit anyway, so
+nothing is lost. Anything the user typed wins: the editor stays open and keeps its
+text and focus. With the editor closed, the controller just follows the title.
 
 **ReadOnly** renders as plain text in Heading 2 Bold at 1.15 line-height, so a
 wrapping multi-line title reads as one cohesive block. **The whole title is the
@@ -228,7 +236,7 @@ button, and keyboard activation. The title spans the full content width and wrap
 freely; no control rides this line.
 
 A **blank** title is the exception: it renders an imperative prompt ("Name this
-task") at `text.lowEmphasis` and `w400` inside real field chrome — a
+task") at `text.mediumEmphasis` and `w400` inside real field chrome — a
 `decorative.level01` hairline on `surface.enabled`, `step4`/`step3` padding. It
 used to show the same "No title" *report* the task list shows, in italic, with no
 box: the largest mark on a new task's page announced an absence and offered
