@@ -3,6 +3,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/database/embedding_register.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
+import 'package:lotti/features/ai/embedding_sync/embedding_sync_receiver.dart';
 import 'package:lotti/features/ai/service/embedding_content_extractor.dart';
 import 'package:lotti/features/ai/service/embedding_processor.dart';
 
@@ -45,12 +46,18 @@ class EmbeddingReconciler {
     required this._store,
     required this._journalDb,
     required this._modelId,
+    this._reportContent,
     this._batchSize = 500,
   });
 
   final EmbeddingStore _store;
   final JournalDb _journalDb;
   final String _modelId;
+
+  /// Reads a report's text, to adopt only report vectors that still describe
+  /// it; without one, no report is adopted.
+  final ReportContentReader? _reportContent;
+
   final int _batchSize;
 
   /// The journal entities whose live vectors here — with a register or
@@ -72,7 +79,12 @@ class EmbeddingReconciler {
   /// Writes a register — unshared, no clock — for every chunk set stored
   /// without one whose text still matches: a journal entry's with the
   /// entry's clock as its source, a report's as it is (a report has no
-  /// source clock). Returns how many it adopted.
+  /// source clock) when the report is here and hashes as stored
+  /// ([agentReportContentHashes]). Returns how many it adopted.
+  ///
+  /// A report set that does not match stays unregistered, on this device
+  /// only: shared, it would wait forever on every peer, since a report never
+  /// changes.
   ///
   /// A journal entry with no row here is left alone, and one that no longer
   /// matches is [entriesToReprocess]'s. Under each entry's lock, and only
@@ -81,10 +93,13 @@ class EmbeddingReconciler {
     final unregistered = await _unregistered();
     var adopted = 0;
     for (final version in unregistered) {
-      if (version.entityType == kEntityTypeAgentReport &&
-          await _adopt(version)) {
-        adopted++;
+      if (version.entityType != kEntityTypeAgentReport) continue;
+      final report = await _reportContent?.call(version.entityId);
+      if (report == null ||
+          !agentReportContentHashes(report).contains(version.contentHash)) {
+        continue;
       }
+      if (await _adopt(version)) adopted++;
     }
     await _checkJournalVectors(
       unregistered.where(

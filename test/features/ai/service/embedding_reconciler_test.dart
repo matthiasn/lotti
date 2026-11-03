@@ -8,6 +8,7 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/features/ai/database/embedding_register.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
+import 'package:lotti/features/ai/embedding_sync/embedding_sync_receiver.dart';
 import 'package:lotti/features/ai/service/embedding_content_extractor.dart';
 import 'package:lotti/features/ai/service/embedding_processor.dart';
 import 'package:lotti/features/ai/service/embedding_reconciler.dart';
@@ -74,12 +75,16 @@ void main() {
   late Map<String, JournalEntity> rows;
   late List<LabelDefinition> labels;
 
+  /// The agent reports this device holds.
+  late Map<String, AgentReportText> reports;
+
   setUpAll(registerAllFallbackValues);
 
   setUp(() {
     store = InMemoryEmbeddingStore();
     rows = {};
     labels = [];
+    reports = {};
     journalDb = MockJournalDb();
     when(
       () => journalDb.getJournalEntitiesForIdsIncludingDeleted(any()),
@@ -99,6 +104,7 @@ void main() {
     store: store,
     journalDb: journalDb,
     modelId: _model,
+    reportContent: (id) async => reports[id],
     batchSize: batchSize,
   );
 
@@ -276,9 +282,34 @@ void main() {
       rows['deleted'] = clocked('deleted', text, deleted: true);
       unregistered('deleted', text);
       unregistered('absent', text);
+      reports['report'] = (
+        content: 'What the agent says about the task',
+        tldr: null,
+        oneLiner: null,
+      );
       unregistered(
         'report',
         'What the agent says about the task',
+        entityType: kEntityTypeAgentReport,
+        taskId: 'task-1',
+      );
+      // Embedded from a text the report here does not have: shared, it
+      // would wait forever on every peer.
+      reports['report-other'] = (
+        content: 'What the agent says about the task now',
+        tldr: null,
+        oneLiner: null,
+      );
+      unregistered(
+        'report-other',
+        'Some text this report never had at all',
+        entityType: kEntityTypeAgentReport,
+        taskId: 'task-1',
+      );
+      // Its report is not here.
+      unregistered(
+        'report-gone',
+        'What the agent said about the task',
         entityType: kEntityTypeAgentReport,
         taskId: 'task-1',
       );
@@ -290,7 +321,7 @@ void main() {
 
     test(
       'get a register when they still match: an entry with its clock as the '
-      'source, a report as it is',
+      'source, a report here that hashes as stored as it is',
       () async {
         expect(await reconciler().adoptUnregistered(), 2);
 
@@ -319,21 +350,33 @@ void main() {
       },
     );
 
+    test('without a report reader no report is adopted', () async {
+      final adopted = await EmbeddingReconciler(
+        store: store,
+        journalDb: journalDb,
+        modelId: _model,
+      ).adoptUnregistered();
+
+      expect(adopted, 1);
+      expect(store.registers.keys, ['matching']);
+    });
+
     test(
       'a set that gained a register or changed meanwhile is left as it is',
       () async {
+        rows['e1'] = clocked('e1', text);
         store = _StaleListingStore()
           ..listed = [
-            const EmbeddingRegister(
-              entityId: 'r1',
+            EmbeddingRegister(
+              entityId: 'e1',
               modelId: _model,
-              entityType: kEntityTypeAgentReport,
-              contentHash: 'the hash it had when listed',
+              entityType: kEntityTypeJournalText,
+              contentHash: _hash(text),
             ),
           ];
         (store as _StaleListingStore).replaceEntityEmbeddings(
-          entityId: 'r1',
-          entityType: kEntityTypeAgentReport,
+          entityId: 'e1',
+          entityType: kEntityTypeJournalText,
           modelId: _model,
           contentHash: 'the hash it has now',
           embeddings: [Float32List(kEmbeddingDimensions)],
