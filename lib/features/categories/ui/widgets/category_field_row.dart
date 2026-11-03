@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/categories/ui/widgets/category_icon_compact.dart';
 import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
 import 'package:lotti/features/design_system/components/inputs/design_system_picker_field.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:material_ui/material_ui.dart';
@@ -41,10 +42,14 @@ class CategoryFieldRow extends ConsumerWidget {
       label: messages.habitCategoryLabel,
       value: category?.name,
       placeholder: messages.habitCategoryHint,
-      // The category's own icon, as the page header's selector and every
-      // other row naming it draw it.
+      // Every picked field leads with a glyph, so its value starts where
+      // the others' do: the category's own icon, or the neutral one.
       leading: category == null
-          ? null
+          ? Icon(
+              LottiIcons.category,
+              size: IconSizes.m,
+              color: context.designTokens.colors.text.lowEmphasis,
+            )
           : CategoryIconCompact(
               category.id,
               key: const ValueKey('category-field-dot'),

@@ -930,8 +930,9 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage>
                                     }),
                                 enabled: !_saving,
                                 agentSection: _editing
-                                    ? _EditAgentSection.of(this, editSpec)
+                                    ? _EditAgentSection.of(this)
                                     : null,
+                                editVersion: editSpec?.version,
                               ),
                               _GoalFormStep.confirmation => _ConfirmationStep(
                                 title: _title,

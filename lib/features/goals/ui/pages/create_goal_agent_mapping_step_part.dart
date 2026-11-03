@@ -58,6 +58,7 @@ class _MappingStep extends StatelessWidget {
     this.statement,
     this.statementError,
     this.agentSection,
+    this.editVersion,
     this.enabled = true,
     this.onStatementChanged,
   });
@@ -102,6 +103,10 @@ class _MappingStep extends StatelessWidget {
   /// edit page, under the goal's own fields. Null while creating, where the
   /// confirmation step carries them.
   final Widget? agentSection;
+
+  /// The version being edited, on the single edit page; its save starts the
+  /// next one, and the page says so under *Your goal*, with the history kept.
+  final int? editVersion;
 
   /// False while a save is in flight: the page's own text fields show they
   /// cannot change under the version being written.
@@ -569,7 +574,6 @@ class _MappingStep extends StatelessWidget {
       key: const ValueKey('goal-form-title-mapping'),
       controller: title,
       label: messages.goalFormGoalNameLabel,
-      leadingIcon: LottiIcons.flag,
       errorText: titleError,
       enabled: enabled,
       onChanged: (_) => onTitleChanged(),
@@ -585,6 +589,10 @@ class _MappingStep extends StatelessWidget {
           AgentFormSection(
             key: const ValueKey('goal-form-goal-section'),
             title: messages.goalFormGoalSectionTitle,
+            // What the save will do, said before anything is changed.
+            intro: editVersion == null
+                ? null
+                : messages.goalFormEditVersion(editVersion! + 1),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -592,7 +600,6 @@ class _MappingStep extends StatelessWidget {
                   key: const ValueKey('goal-form-intention'),
                   controller: statement,
                   label: messages.goalFormStatementInWordsLabel,
-                  leadingIcon: LottiIcons.editNote,
                   errorText: statementError,
                   enabled: enabled,
                   onChanged: (_) => onStatementChanged?.call(),

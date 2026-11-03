@@ -12,26 +12,22 @@ class _EditAgentSection extends StatelessWidget {
     required this.enabled,
     required this.categoryId,
     required this.onCategoryChanged,
-    required this.editVersion,
     required this.checkInsAreSubstance,
     required this.onCheckInsAreSubstanceChanged,
   });
 
-  /// The section as [form] stands, editing [spec].
-  factory _EditAgentSection.of(
-    _CreateGoalAgentPageState form,
-    GoalSpecVersionEntity? spec,
-  ) => _EditAgentSection(
-    persona: form._persona,
-    personaError: form._personaError,
-    onPersonaChanged: form._clearPersonaError,
-    enabled: !form._saving,
-    categoryId: form._categoryId,
-    onCategoryChanged: form._categoryChanger,
-    editVersion: spec?.version,
-    checkInsAreSubstance: form._shownCheckInsAreSubstance,
-    onCheckInsAreSubstanceChanged: form._setCheckInsAreSubstance,
-  );
+  /// The section as [form] stands.
+  factory _EditAgentSection.of(_CreateGoalAgentPageState form) =>
+      _EditAgentSection(
+        persona: form._persona,
+        personaError: form._personaError,
+        onPersonaChanged: form._clearPersonaError,
+        enabled: !form._saving,
+        categoryId: form._categoryId,
+        onCategoryChanged: form._categoryChanger,
+        checkInsAreSubstance: form._shownCheckInsAreSubstance,
+        onCheckInsAreSubstanceChanged: form._setCheckInsAreSubstance,
+      );
 
   final TextEditingController persona;
   final String? personaError;
@@ -41,10 +37,6 @@ class _EditAgentSection extends StatelessWidget {
 
   /// Null while the goal's category has not been read yet.
   final ValueChanged<String?>? onCategoryChanged;
-
-  /// The version being edited; the save starts the next one, and the page
-  /// says so, with the history kept.
-  final int? editVersion;
 
   /// Whether the check-ins are the goal itself (ADR 0151) — a setting of
   /// how the agent answers, so it sits here, as the person editor's
@@ -76,7 +68,6 @@ class _EditAgentSection extends StatelessWidget {
             key: const ValueKey('goal-form-persona'),
             controller: persona,
             label: messages.goalFormPersonaLabel,
-            leadingIcon: LottiIcons.aiSpark,
             errorText: personaError,
             enabled: enabled,
             onChanged: (_) => onPersonaChanged(),
@@ -89,15 +80,6 @@ class _EditAgentSection extends StatelessWidget {
               onChanged: onCategoryChanged,
             ),
           ),
-          if (editVersion case final version?) ...[
-            SizedBox(height: tokens.spacing.step5),
-            Text(
-              messages.goalFormEditVersion(version + 1),
-              style: tokens.typography.styles.others.caption.copyWith(
-                color: tokens.colors.text.mediumEmphasis,
-              ),
-            ),
-          ],
         ],
       ),
     );
