@@ -548,6 +548,7 @@ class PersonMenuButton extends ConsumerWidget {
         context: context,
         agentId: relationshipAgentIdFor(relationship.id),
         agentName: null,
+        subjectEntityId: relationship.id,
       ),
       PersonMenuAction.linkContact ||
       PersonMenuAction.relinkContact => runContactLinkAction(

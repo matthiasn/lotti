@@ -66,6 +66,7 @@ class RelationshipChatPane extends ConsumerWidget {
         RelationshipChatHeader(
           agentId: agentId,
           agentName: name,
+          relationshipId: relationshipId,
           onBack: onBack,
           onClose: onClose,
           showInternalsAction: showInternalsAction && agent != null,
@@ -166,6 +167,7 @@ class RelationshipChatHeader extends StatelessWidget {
   const RelationshipChatHeader({
     required this.agentId,
     required this.agentName,
+    required this.relationshipId,
     this.onBack,
     this.onClose,
     this.showInternalsAction = false,
@@ -174,6 +176,9 @@ class RelationshipChatHeader extends StatelessWidget {
 
   final String agentId;
   final String agentName;
+
+  /// The person the agent serves, so its internals can open their setup.
+  final String relationshipId;
   final VoidCallback? onBack;
   final VoidCallback? onClose;
   final bool showInternalsAction;
@@ -253,6 +258,7 @@ class RelationshipChatHeader extends StatelessWidget {
                 _InternalsAction(
                   agentId: agentId,
                   agentName: agentName,
+                  relationshipId: relationshipId,
                   headerWidth: constraints.maxWidth,
                 ),
               ],
@@ -291,11 +297,13 @@ class _InternalsAction extends StatelessWidget {
   const _InternalsAction({
     required this.agentId,
     required this.agentName,
+    required this.relationshipId,
     required this.headerWidth,
   });
 
   final String agentId;
   final String agentName;
+  final String relationshipId;
 
   /// The width the header itself was laid out in.
   final double headerWidth;
@@ -307,6 +315,7 @@ class _InternalsAction extends StatelessWidget {
       context: context,
       agentId: agentId,
       agentName: agentName,
+      subjectEntityId: relationshipId,
     );
 
     return headerWidth >= kPageHeaderFoldWidth

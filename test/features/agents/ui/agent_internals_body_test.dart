@@ -17,6 +17,7 @@ import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_service.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/daily_os_inference_setup_sheet.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
+import 'package:lotti/features/design_system/theme/icon_tokens.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -498,9 +499,8 @@ void main() {
   });
 
   testWidgets(
-    'an agent kind with no resolvable setup shows no setup row at all — a '
-    'relationship agent owns neither a task nor a template, and the row used '
-    'to call that "No AI setup" under an error glyph',
+    "a person's agent opened without its person shows no setup row at all "
+    '— it would have nowhere to lead',
     (tester) async {
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
@@ -532,6 +532,65 @@ void main() {
       expect(find.text('No AI setup'), findsNothing);
       expect(find.text('AI setup'), findsNothing);
       expect(find.byType(DesignSystemListItem), findsNothing);
+    },
+  );
+
+  testWidgets(
+    "a person's agent opened for its person offers its setup — the route "
+    'that runs, one tap from the shared setup sheet',
+    (tester) async {
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          mediaQueryData: const MediaQueryData(size: Size(900, 800)),
+          overrides: [
+            agentIdentityProvider.overrideWith(
+              (ref, agentId) async => makeTestIdentity(
+                kind: AgentKinds.relationshipAgent,
+                displayName: 'Pip',
+              ),
+            ),
+            agentStateProvider.overrideWith((ref, agentId) async => null),
+            templateForAgentProvider.overrideWith((ref, agentId) async => null),
+            taskAgentResolvedSetupProvider.overrideWith(
+              (ref, agentId) async => ResolvedAgentSetup(
+                status: AgentSetupResolutionStatus.resolved,
+                profile: ResolvedProfile(
+                  thinkingModelId: 'model-1',
+                  thinkingModel: testAiModel(),
+                  thinkingProvider: testInferenceProvider(),
+                ),
+                source: AgentSetupResolutionSource.baseProfile,
+              ),
+            ),
+          ],
+          child: const SingleChildScrollView(
+            child: AgentInternalsBody(
+              agentId: 'agent-001',
+              lifecycle: AgentLifecycle.active,
+              stateAsync: AsyncValue.data(null),
+              subjectEntityId: 'person-1',
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Current setup'), findsOneWidget);
+      final setupRow = tester.widget<DesignSystemListItem>(
+        find.ancestor(
+          of: find.text('Current setup'),
+          matching: find.byType(DesignSystemListItem),
+        ),
+      );
+      expect(setupRow.onTap, isNotNull);
+      expect(setupRow.title, isNot('No AI setup'));
+      expect(
+        find.descendant(
+          of: find.byWidget(setupRow),
+          matching: find.byIcon(LottiIcons.chevronRight),
+        ),
+        findsOneWidget,
+      );
     },
   );
 

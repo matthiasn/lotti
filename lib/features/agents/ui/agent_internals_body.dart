@@ -43,7 +43,7 @@ class AgentInternalsBody extends StatefulWidget {
   final AgentLifecycle lifecycle;
   final AsyncValue<AgentDomainEntity?> stateAsync;
 
-  /// The goal row a goal's agent serves; see
+  /// The goal or person a goal's or relationship agent serves; see
   /// `AgentInternalsPanel.subjectEntityId`.
   final String? subjectEntityId;
 
@@ -345,9 +345,14 @@ class _ProfileSection extends ConsumerWidget {
         ? context.messages.taskAgentSetupBroken
         : context.messages.taskAgentNoProfileSelectedDescription;
     final taskId = state?.slots.activeTaskId;
+    // A goal's or a person's agent is set up against its own row, which the
+    // caller names; a task's agent against the task it is working on.
     final canOpenTaskSetup =
         identity != null &&
-        (identity.kind == AgentKinds.goalAgent || taskId != null);
+        (identity.kind == AgentKinds.goalAgent ||
+            taskId != null ||
+            (identity.kind == AgentKinds.relationshipAgent &&
+                subjectEntityId != null));
     final setupTap = isDailyOs
         ? (dailyOsSetupLauncher == null
               ? null
@@ -357,18 +362,16 @@ class _ProfileSection extends ConsumerWidget {
         : () => AgentModelSheet.show(
             context: context,
             agentId: agentId,
-            // A goal's row, so *Copy category default* reads its category.
+            // A goal's or person's row, so *Copy category default* reads
+            // its category.
             entityId: taskId ?? subjectEntityId,
           );
-    // This row reports and edits the task/goal/planner setup path. A
-    // relationship agent is on none of them: it owns no task and no
-    // template, so `agentResolvedSetupProvider` returns null *by
-    // construction* and the row turned that silence into "No AI setup"
-    // under an error glyph — about an agent that resolves a model perfectly
-    // well through the person's own profile and briefs with it every day.
-    // Keyed on the kind rather than on a null resolution, because a null
-    // resolution for a kind that SHOULD have one is a real misconfiguration
-    // this row is the only place to see.
+    // A person's agent is set up against the person: opened without them
+    // (the sidebar wake queue knows only the agent), the row would have
+    // nowhere to lead, so it stays hidden rather than a dead row. Keyed on
+    // the kind rather than on a null resolution, because a null resolution
+    // for a kind that SHOULD have one is a real misconfiguration this row is
+    // the only place to see.
     final kindOwnsSetupRow = identity?.kind != AgentKinds.relationshipAgent;
     final showSetupRow = kindOwnsSetupRow || setupTap != null;
 
