@@ -178,11 +178,32 @@ class _DesktopTaskHeaderState extends State<DesktopTaskHeader> {
     });
   }
 
+  /// Adopts a title that changed outside this widget — a save from the task
+  /// agent, or a sync from another device.
+  ///
+  /// While the read-only title shows, the controller simply follows. While the
+  /// editor is open, what the user typed wins and is left alone. The one
+  /// exception is an editor holding nothing: a blank task auto-opens it, so
+  /// when the agent names the task moments later the field sat focused and
+  /// empty, hiding the new title behind the "Name this task" hint. Leaving
+  /// that field loses nothing — `_commitEdit` would discard blank text anyway
+  /// — so the editor closes, focus drops, and the read-only title shows the
+  /// new name.
   @override
   void didUpdateWidget(covariant DesktopTaskHeader oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (!_isEditing && oldWidget.data.title != widget.data.title) {
-      _titleController.text = widget.data.title;
+    final next = widget.data.title;
+    if (oldWidget.data.title == next) return;
+    if (!_isEditing) {
+      _titleController.text = next;
+      return;
+    }
+    if (_titleController.text.trim().isEmpty && next.trim().isNotEmpty) {
+      _titleController.text = next;
+      // Cleared before unfocusing so `_onFocusChanged` backs off instead of
+      // trying to commit. No setState: a build always follows this method.
+      _isEditing = false;
+      _titleFocusNode.unfocus();
     }
   }
 
