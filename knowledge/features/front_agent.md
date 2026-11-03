@@ -406,7 +406,7 @@ walker died. Outcomes:
 | `task` / `project` question with an active agent | the owner's query pipeline, headless: `QueryAnswerBuilder.build` over an in-memory `QueryChatHistory` whose one event is the segment, chat id the source message id | `FrontDoorAnswer(text, summaryBased, incomplete, ownerIds)` — the answer is the record's, attributed to the owner, never reworded |
 | `goal` / `person`, question or statement, with an active agent | that agent's own chat: `appendMessage` then `enqueueMessage`, **never awaited** | `FrontDoorChatTurn(specialistAgentId, specialistMessageId)`; the reply lands in the specialist's thread with the turn as its `operationId` |
 | `task` or `project` statement or instruction | none — the walker writes nothing | `FrontDoorProposal(ownerId)`: waits for the user's tap |
-| `journal` question | the journal answer engine, headless: `QueryAnswerBuilder.build` over `QueryScope.journalIn(her allowedCategoryIds narrowed by the turn's chips, `frontNarrowedCategories`)` (empty = every visible category), agent id `front_agent`, the Settings default profile | `FrontDoorAnswer(fromJournal: true, evidence, dependencies, private)` — her own answer, with the passages it cites |
+| `journal` question | the journal answer engine, headless: `QueryAnswerBuilder.build` over `QueryScope.journalIn(allowedCategoryIds)` narrowed by the turn's chips (`frontNarrowedCategories`) (empty = every visible category), agent id `front_agent`, the Settings default profile | `FrontDoorAnswer(fromJournal: true, evidence, dependencies, private)` — her own answer, with the passages it cites |
 | `new`, `journal` statement, `unrouted` | none | `FrontDoorInbox(newKind?)` — what the router thought it would become leads the chips |
 | `day` statement or instruction, while `enable_daily_os_page` is on | none — the walker writes nothing | `FrontDoorDay()`: waits for the user's tap |
 | `day` question, or anything about the day while the Daily OS is off | — | `FrontDoorSkipped(noDoor)` |
@@ -787,7 +787,10 @@ replied (that door is done at the hand-over, its reply mirrored later); it is
 read only after the send settles, because the doors are walked inside the
 wake the send waits on, and only from a thread that is not reloading, whose
 held value may be the reply without its doors' answers. A turn that landed with nothing to say still settles.
-An answer shown only while private entries are is never said aloud.
+An answer shown only while private entries are is never said aloud, and a
+journal answer is said only while `frontJournalAccessProvider` lets its door
+card show it (`QueryAccessSnapshot.allowsContent`): the listener waits until
+that visibility is read, and tries again when it arrives.
 
 **Which voice is hers.** Her cloud voice is the read-aloud model of the
 profile her own setup resolves to ([where it plugs in](#where-it-plugs-in)).
@@ -844,9 +847,13 @@ her — shown then even if she was muted meanwhile, so a stop is always in
 reach — and once she has stopped, *Say it again* speaks her answer to the
 latest turn from the start (`frontLatestAnswer`, the same words
 `frontSpokenAnswer` gives a spoken turn) through `FrontVoice.speak`, so the
-mute, the voice route and the take-over hold as for a spoken reply. It is
-gone while she may not speak, in the inbox, or before that answer has
-landed. `FrontStageButton` — and a tap on her bust or the header's — opens
+mute, the voice route and the take-over hold as for a spoken reply — the
+mute read at playback start from the app's container, so closing the stage
+mid-synthesis does not cut her off. It is gone while she may not speak, in
+the inbox, for a conversation other than the one on screen, while a send is
+in flight or a spoken reply is still owed, while the thread or its journal
+access is being read, and before that answer has landed.
+`FrontStageButton` — and a tap on her bust or the header's — opens
 `openFrontStage`: the shared full-screen `CompanionStagePage`, head to toe,
 on a phone and on a desktop window alike, still speaking on her source,
 with `FrontVoiceButton` at her feet in place of a summary's read-aloud

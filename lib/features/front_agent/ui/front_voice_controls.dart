@@ -3,8 +3,11 @@ import 'package:lotti/features/agents/ui/ai_summary_card/companion_stage_page.da
 import 'package:lotti/features/design_system/components/buttons/ds_ai_disc_button.dart';
 import 'package:lotti/features/design_system/theme/icon_tokens.dart';
 import 'package:lotti/features/front_agent/model/front_chat_thread.dart';
+import 'package:lotti/features/front_agent/state/front_chat_controller.dart';
 import 'package:lotti/features/front_agent/state/front_chat_thread_provider.dart';
+import 'package:lotti/features/front_agent/state/front_conversation_providers.dart';
 import 'package:lotti/features/front_agent/state/front_inbox_filter.dart';
+import 'package:lotti/features/front_agent/state/front_journal_access_provider.dart';
 import 'package:lotti/features/front_agent/state/front_voice_providers.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_voice.dart';
 import 'package:lotti/features/tts/state/tts_playback_controller.dart';
@@ -33,8 +36,12 @@ Future<void> openFrontStage(BuildContext context, String conversationId) =>
 /// once she has stopped it says her latest answer again, from the start.
 ///
 /// Shown while she speaks — a stop is always within reach — and otherwise
-/// only while she may speak and there is an answer to say: never in the
-/// inbox, which gathers every conversation.
+/// only while she may speak and there is a settled answer to say: never in
+/// the inbox, which gathers every conversation; never for a conversation
+/// other than the one on screen, whose thread is the one read; never while
+/// a send is in flight, a spoken reply is still owed (her own voice is about
+/// to say it), or the thread or its journal answers' visibility is being
+/// read again — the answer then may be partial, or rest on what is hidden.
 class FrontVoiceButton extends ConsumerWidget {
   const FrontVoiceButton({required this.conversationId, super.key});
 
@@ -48,10 +55,20 @@ class FrontVoiceButton extends ConsumerWidget {
     );
     final maySpeak = FrontVoice.watchCanSpeak(ref, context);
     final inbox = ref.watch(frontInboxFilterProvider);
-    final answer = frontLatestAnswer(
-      ref.watch(frontChatThreadProvider).value ?? FrontChatThread.empty,
-    );
-    if (!speaking && (inbox || !maySpeak || answer.isEmpty)) {
+    final onScreen =
+        ref.watch(frontActiveConversationProvider).value == conversationId;
+    final settled =
+        !ref.watch(frontChatControllerProvider.select((s) => s.isSending)) &&
+        ref.watch(frontSpokenTurnProvider) == null;
+    final thread = ref.watch(frontChatThreadProvider);
+    final access = ref.watch(frontJournalAccessProvider);
+    final answer = onScreen && !thread.isLoading && !access.isLoading
+        ? frontLatestAnswer(
+            thread.value ?? FrontChatThread.empty,
+            journalAccess: access.value,
+          )
+        : '';
+    if (!speaking && (inbox || !maySpeak || !settled || answer.isEmpty)) {
       return const SizedBox.shrink();
     }
     return TtsSourcePlayButton(

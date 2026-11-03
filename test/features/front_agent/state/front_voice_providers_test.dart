@@ -1,6 +1,8 @@
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/agents/query_chat_models.dart';
+import 'package:lotti/features/agents/query/query_source_access.dart';
 import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/front_agent/model/front_chat_thread.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
@@ -34,6 +36,12 @@ void main() {
 
   group('frontSpokenAnswer', () {
     final at = DateTime(2026, 10, 31, 9);
+    // Nothing hidden: an answer resting on no source may be shown.
+    const visible = QueryAccessSnapshot(
+      showPrivate: false,
+      categories: {},
+      entries: {},
+    );
     const turnId = 'u-1';
     final turn = (conversationId: 'c-1', spokenAt: at);
 
@@ -91,6 +99,7 @@ void main() {
       final spoken = frontSpokenAnswer(
         thread(doors: [door(answer('You fixed the feeder [1] twice [2].'))]),
         turn,
+        journalAccess: visible,
       );
       expect(spoken.landed, isTrue);
       expect(spoken.text, 'You fixed the feeder twice.');
@@ -117,8 +126,36 @@ void main() {
           doors: [door(answer('Three tasks.'))],
         ),
         turn,
+        journalAccess: visible,
       );
       expect(spoken.text, 'Let me look.\n\nThree tasks.');
+    });
+
+    test('a journal answer is silent while what it rests on is unknown, '
+        'and once a source it cites is hidden', () {
+      const hiddenSource = FrontDoorAnswer(
+        text: 'From a note now private.',
+        summaryBased: false,
+        incomplete: false,
+        fromJournal: true,
+        dependencies: [
+          QuerySourceRef(id: 'n-1', private: false, categoryPrivate: false),
+        ],
+      );
+      final unknown = frontSpokenAnswer(
+        thread(reply: 'Let me look.', doors: [door(answer('Three tasks.'))]),
+        turn,
+      );
+      expect(unknown.landed, isTrue);
+      expect(unknown.text, 'Let me look.');
+
+      final hidden = frontSpokenAnswer(
+        thread(doors: [door(hiddenSource)]),
+        turn,
+        journalAccess: visible,
+      );
+      expect(hidden.landed, isTrue);
+      expect(hidden.text, isEmpty);
     });
 
     test('waits while a door is still being walked', () {

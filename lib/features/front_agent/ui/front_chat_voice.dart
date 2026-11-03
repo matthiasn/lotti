@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
 import 'package:lotti/features/agents/ui/chat/chat_recorder_controller.dart';
+import 'package:lotti/features/companion/model/companion_customization.dart';
 import 'package:lotti/features/companion/model/companion_gesture.dart';
 import 'package:lotti/features/companion/state/companion_customization_controller.dart';
 import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
@@ -9,6 +10,7 @@ import 'package:lotti/features/front_agent/state/front_chat_controller.dart';
 import 'package:lotti/features/front_agent/state/front_chat_thread_provider.dart';
 import 'package:lotti/features/front_agent/state/front_conversation_providers.dart';
 import 'package:lotti/features/front_agent/state/front_inbox_filter.dart';
+import 'package:lotti/features/front_agent/state/front_journal_access_provider.dart';
 import 'package:lotti/features/front_agent/state/front_voice_providers.dart';
 import 'package:lotti/features/tts/cloud/tts_cloud_route.dart';
 import 'package:lotti/features/tts/state/tts_engine_provider.dart';
@@ -53,9 +55,15 @@ abstract final class FrontVoice {
 
   /// Whether she answers aloud: only once her saved customization is known
   /// — a mute must never be guessed at — and while it lets her.
-  static bool _speaksReplies(WidgetRef ref) =>
-      ref.read(companionCustomizationProvider.notifier).loaded &&
-      ref.read(companionCustomizationProvider).speaksReplies;
+  static bool _speaksReplies(WidgetRef ref) => _speaks(
+    ref.read(companionCustomizationProvider.notifier),
+    ref.read(companionCustomizationProvider),
+  );
+
+  static bool _speaks(
+    CompanionCustomizationController controller,
+    CompanionCustomization customization,
+  ) => controller.loaded && customization.speaksReplies;
 
   /// The pose she holds: listening while the user speaks, thinking while
   /// her answer is on its way; none at rest.
@@ -105,11 +113,16 @@ abstract final class FrontVoice {
         frontVoiceSourceId(conversationId),
       );
     }
-    ref.listen(frontChatThreadProvider, (_, next) {
+    void speakWhenLanded() {
       final turn = ref.read(frontSpokenTurnProvider);
+      final next = ref.read(frontChatThreadProvider);
       // A thread reloading still holds its previous value, which may be the
       // reply without the answers its doors brought: wait for the new one.
-      if (next.isLoading) return;
+      // So is what its journal answers may show: until that is read, a
+      // journal answer is neither shown nor said.
+      if (next.isLoading || ref.read(frontJournalAccessProvider).isLoading) {
+        return;
+      }
       final thread = next.value;
       if (turn == null || thread == null) return;
       // The inbox gathers every conversation, so a reply there may be
@@ -123,12 +136,20 @@ abstract final class FrontVoice {
       // runs, a reply may have landed without the answers in its doors. The
       // thread is projected again when the send settles.
       if (ref.read(frontChatControllerProvider).isSending) return;
-      final answer = frontSpokenAnswer(thread, turn);
+      final answer = frontSpokenAnswer(
+        thread,
+        turn,
+        journalAccess: ref.read(frontJournalAccessProvider).value,
+      );
       if (!answer.landed) return;
       ref.read(frontSpokenTurnProvider.notifier).settle();
       if (answer.text.isEmpty) return;
       speak(ref, context, turn.conversationId, answer.text).ignore();
-    });
+    }
+
+    ref
+      ..listen(frontChatThreadProvider, (_, _) => speakWhenLanded())
+      ..listen(frontJournalAccessProvider, (_, _) => speakWhenLanded());
   }
 
   /// Speaks [text] as her voice in [conversationId], from the start: once
@@ -142,6 +163,9 @@ abstract final class FrontVoice {
   ) async {
     final route = routeOf(ref, context);
     if (!canSpeak(ref, route)) return;
+    // The app's container, not the caller's ref: the control that started
+    // her may be gone — her stage closed — by the time playback starts.
+    final container = ProviderScope.containerOf(context, listen: false);
     final voice = ref.read(ttsPlaybackControllerProvider.notifier);
     // One utterance at a time: her answer takes the voice over.
     if (ref.read(ttsPlaybackControllerProvider).isBusy) await voice.stop();
@@ -151,7 +175,10 @@ abstract final class FrontVoice {
       text: text,
       cloudRoute: route,
       // Asked again as playback starts: a mute while she was preparing holds.
-      canPlay: () async => _speaksReplies(ref),
+      canPlay: () async => _speaks(
+        container.read(companionCustomizationProvider.notifier),
+        container.read(companionCustomizationProvider),
+      ),
       confirmModelDownload: (model) => confirmTtsModelDownload(context, model),
     );
   }

@@ -1,13 +1,18 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
+import 'package:lotti/features/agents/query/query_source_access.dart';
 import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/companion_stage_page.dart';
 import 'package:lotti/features/companion/model/companion_customization.dart';
 import 'package:lotti/features/companion/state/companion_customization_controller.dart';
 import 'package:lotti/features/front_agent/model/front_chat_thread.dart';
+import 'package:lotti/features/front_agent/state/front_chat_controller.dart';
 import 'package:lotti/features/front_agent/state/front_chat_thread_provider.dart';
+import 'package:lotti/features/front_agent/state/front_conversation_providers.dart';
 import 'package:lotti/features/front_agent/state/front_inbox_filter.dart';
+import 'package:lotti/features/front_agent/state/front_journal_access_provider.dart';
+import 'package:lotti/features/front_agent/state/front_voice_providers.dart';
 import 'package:lotti/features/front_agent/ui/front_voice_controls.dart';
 import 'package:lotti/features/tts/cloud/tts_cloud_route.dart';
 import 'package:lotti/features/tts/model/tts_playback_state.dart';
@@ -27,6 +32,7 @@ class _Voice extends TtsPlaybackController {
   final TtsPlaybackState _initial;
   final spoken = <({String sourceId, String text})>[];
   final stoppedSources = <String?>[];
+  Future<bool> Function()? canPlay;
 
   @override
   TtsPlaybackState build() => _initial;
@@ -40,6 +46,7 @@ class _Voice extends TtsPlaybackController {
     TtsModelDownloadConsent? confirmModelDownload,
     TtsCloudRoute? cloudRoute,
   }) async {
+    this.canPlay = canPlay;
     spoken.add((sourceId: sourceId, text: text));
     state = TtsPlaybackState(
       status: TtsPlaybackStatus.playing,
@@ -76,6 +83,27 @@ class _Inbox extends FrontInboxFilter {
 
   @override
   bool build() => on;
+}
+
+/// The composer, mid-send or settled as the test says.
+class _Composer extends FrontChatController {
+  _Composer({required this.sending});
+
+  final bool sending;
+
+  @override
+  FrontChatComposerState build() => FrontChatComposerState(isSending: sending);
+}
+
+/// A spoken reply still owed, or none.
+class _Spoken extends FrontSpokenTurnNotifier {
+  _Spoken({required this.owed});
+
+  final bool owed;
+
+  @override
+  FrontSpokenTurn? build() =>
+      owed ? (conversationId: 'c-1', spokenAt: DateTime(2026, 11, 3)) : null;
 }
 
 void main() {
@@ -115,6 +143,9 @@ void main() {
     bool companion = true,
     bool speaks = true,
     bool inbox = false,
+    String active = 'c-1',
+    bool sending = false,
+    bool spokenOwed = false,
   }) async {
     voice = _Voice(playing);
     await tester.pumpWidget(
@@ -134,6 +165,25 @@ void main() {
           ),
           ttsPlaybackControllerProvider.overrideWith(() => voice),
           agentResolvedSetupProvider.overrideWith((ref, id) async => null),
+          // Nothing her journal answers rest on is hidden.
+          frontJournalAccessProvider.overrideWith(
+            (ref) => Stream.value(
+              const QueryAccessSnapshot(
+                showPrivate: false,
+                categories: {},
+                entries: {},
+              ),
+            ),
+          ),
+          frontActiveConversationProvider.overrideWith(
+            (ref) async => active,
+          ),
+          frontChatControllerProvider.overrideWith(
+            () => _Composer(sending: sending),
+          ),
+          frontSpokenTurnProvider.overrideWith(
+            () => _Spoken(owed: spokenOwed),
+          ),
           frontChatThreadProvider.overrideWith(
             (ref) async => thread ?? answered,
           ),
@@ -154,6 +204,29 @@ void main() {
       await tester.pump();
 
       expect(voice.spoken, [(sourceId: source, text: 'One: Count the eggs.')]);
+    });
+
+    testWidgets('the mute is still asked as playback starts after the '
+        'control that started her is gone — her stage closed', (tester) async {
+      final shown = ValueNotifier(true);
+      addTearDown(shown.dispose);
+      await pump(
+        tester,
+        child: ValueListenableBuilder<bool>(
+          valueListenable: shown,
+          builder: (_, on, _) => on
+              ? const FrontVoiceButton(conversationId: 'c-1')
+              : const SizedBox.shrink(),
+        ),
+      );
+      await tester.tap(find.byTooltip('Say it again'));
+      await tester.pump();
+
+      shown.value = false;
+      await tester.pump();
+      expect(find.byType(FrontVoiceButton), findsNothing);
+
+      expect(await voice.canPlay!(), isTrue);
     });
 
     testWidgets('stops her while she speaks, and a second tap restarts '
@@ -219,6 +292,34 @@ void main() {
         expect(find.byKey(FrontVoiceControlKeys.replay), findsNothing);
       });
     }
+
+    for (final (reason, active, sending, owed) in [
+      ('a send is in flight: the answer may be partial', 'c-1', true, false),
+      ('her spoken reply is still owed', 'c-1', false, true),
+      ('another conversation is on screen', 'c-2', false, false),
+    ]) {
+      testWidgets('offers no replay while $reason', (tester) async {
+        await pump(
+          tester,
+          active: active,
+          sending: sending,
+          spokenOwed: owed,
+        );
+        expect(find.byKey(FrontVoiceControlKeys.replay), findsNothing);
+      });
+    }
+
+    testWidgets('keeps the stop within reach mid-send', (tester) async {
+      await pump(
+        tester,
+        sending: true,
+        playing: const TtsPlaybackState(
+          status: TtsPlaybackStatus.playing,
+          sourceId: source,
+        ),
+      );
+      expect(find.byTooltip('Stop'), findsOneWidget);
+    });
 
     testWidgets('is gone while there is no answer yet to say', (tester) async {
       await pump(
