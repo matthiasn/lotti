@@ -1573,7 +1573,7 @@ handler would retract it; that wiring is a follow-up.
   name (the section the person editor ends on too). One *Save new version* runs the mapping's checks, then saves;
   *Cancel*, the back button and the system back leave at once when nothing
   changed and ask first when something did (`_GoalEditLeave`, an order-free
-  fingerprint baselined once the goal and its catalogs have loaded). The
+  fingerprint baselined as soon as the goal is on the form and moved along with what the app fills in by itself — the goal row's category, catalog clean-ups — only while the form was still untouched). The
   step indicator shows only when there is more than one step to walk, and
   the page absorbs input while a save is in flight. The mapping stage matches observable active habits and
   the supported steps metric, gives every selected habit its own one-to-seven
