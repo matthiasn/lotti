@@ -294,7 +294,9 @@ class _GoalActionsMenuButton extends ConsumerWidget {
     }
 
     VoidCallback runs(_GoalDetailMenuAction action) =>
-        () => unawaited(run(action));
+        // run answers its own failures (the automatic-updates write shows
+        // a snackbar); the menu row only starts it.
+        () => run(action);
 
     // The shared agent-surface menu: the goal's own action, then the
     // agent's, internals last among them, delete at the bottom — the same

@@ -169,12 +169,14 @@ void main() {
     await open(tester);
     final before = tester.getRect(find.byType(DesignSystemContextMenu));
 
-    tester.view.physicalSize = const Size(800, 300);
+    // Too short for the menu under its trigger any more: it re-places
+    // itself inside the window rather than running off its bottom.
+    tester.view.physicalSize = const Size(800, 200);
     await tester.pumpAndSettle();
 
     final after = tester.getRect(find.byType(DesignSystemContextMenu));
-    expect(after.bottom, lessThanOrEqualTo(300));
-    expect(after, isNot(before));
+    expect(after.bottom, lessThanOrEqualTo(200));
+    expect(after.top, lessThan(before.top));
   });
 
   testWidgets('opens upward when there is no room below the trigger', (

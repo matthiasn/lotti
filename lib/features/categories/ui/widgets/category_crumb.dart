@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/category_icon/category_icon.dart';
 import 'package:lotti/features/categories/ui/widgets/category_icon_compact.dart';
@@ -92,15 +90,15 @@ class _CategoryCrumbState extends ConsumerState<CategoryCrumb> {
           : messages.categoryCrumbMovedTo(picked.name),
       action: ToastAction(
         label: messages.designSystemUndoLabel,
-        onPressed: () => unawaited(
-          _undo(
-            move: move,
-            entryId: entryId,
-            previousId: previousId,
-            messenger: messenger,
-            failedTitle: messages.saveFailedRetry,
-            onMoved: onMoved,
-          ),
+        // _undo answers its own failure with a toast, so nothing it does
+        // can escape the tap that started it.
+        onPressed: () => _undo(
+          move: move,
+          entryId: entryId,
+          previousId: previousId,
+          messenger: messenger,
+          failedTitle: messages.saveFailedRetry,
+          onMoved: onMoved,
         ),
       ),
       replaceCurrent: true,
@@ -120,7 +118,12 @@ class _CategoryCrumbState extends ConsumerState<CategoryCrumb> {
   }) async {
     if (_moving) return;
     if (mounted) setState(() => _moving = true);
-    final moved = await move.move(entryId, previousId);
+    bool moved;
+    try {
+      moved = await move.move(entryId, previousId);
+    } on Object {
+      moved = false;
+    }
     if (mounted) setState(() => _moving = false);
     if (moved) {
       onMoved?.call();

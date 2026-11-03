@@ -526,7 +526,11 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage>
       });
       return;
     }
-    if (_editLeaveNeedsConfirm) return unawaited(_confirmLeaveEdit());
+    // The confirmation can only resolve to stay or leave; nothing to lose.
+    if (_editLeaveNeedsConfirm) {
+      _confirmLeaveEdit();
+      return;
+    }
     final agentId = widget.agentId;
     beamToNamed(
       agentId == null ? goalsRootPath : goalDetailPath(agentId),
@@ -611,7 +615,8 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage>
       onPressed: switch (_step) {
         _GoalFormStep.intention => () => _mapIntention(habits),
         _GoalFormStep.mapping when _editing => () {
-          if (_mappingIsValid()) unawaited(_save());
+          // _save reports its own failure on the form.
+          if (_mappingIsValid()) _save();
         },
         _GoalFormStep.mapping => () => _continueToConfirmation(habits),
         _GoalFormStep.confirmation => _save,

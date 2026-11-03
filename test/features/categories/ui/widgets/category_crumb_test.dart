@@ -249,9 +249,31 @@ void main() {
     await tester.pumpAndSettle();
     expect(wash(), tokens.colors.surface.hover);
 
-    await mouse.moveTo(Offset.zero);
+    // Well away from the crumb, which sits at the top of the surface.
+    await mouse.moveTo(const Offset(700, 500));
     await tester.pumpAndSettle();
     expect(wash(), Colors.transparent);
+  });
+
+  testWidgets('an Undo whose move throws still answers with the failure', (
+    tester,
+  ) async {
+    when(
+      () => move.move('person-pip', 'cat-crew'),
+    ).thenAnswer((_) async => true);
+    when(
+      () => move.move('person-pip', 'cat-ops'),
+    ).thenThrow(StateError('the journal is closed'));
+    await pump(tester);
+
+    await openPicker(tester);
+    await tester.tap(find.text('Launch crew'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Undo'));
+    await tester.pumpAndSettle();
+
+    expect(find.text("That didn't save — please try again."), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('a failed move says so', (tester) async {
