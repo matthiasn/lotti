@@ -703,14 +703,24 @@ A page an agent serves — a goal's, a person's — reaches that agent the same
 way. On desktop the conversation opens from
 [`AgentChatButton`](../../../lib/features/agents/ui/agent_chat_button.dart):
 the AI card's accent pair and the sparkle, the whole recommended touch target answering, one
-announcement for screen readers. The page's overflow menu is built from
-[`agent_menu_items.dart`](../../../lib/features/agents/ui/agent_menu_items.dart):
-one row style (`agentMenuItem`, with a destructive variant in the error ink),
-a switch row that keeps the same icon slot (`agentToggleMenuItem`) instead of
-Material's differently indented checked tile, and `agentInternalsMenuItem` —
-*Agent internals*, the panel's own title, under the tune glyph. Both menus
-order themselves the same way: the page's own actions, a divider, the agent's
-actions ending in the internals, a divider, delete.
+announcement for screen readers. The page's overflow menu is one widget,
+[`AgentSurfaceMenuButton`](../../../lib/features/agents/ui/agent_surface_menu.dart):
+the design-system menu surface (`DesignSystemContextMenu` — rounded, raised,
+rows in the system's type, a destructive row in the error ink, a setting as a
+`checked` row with a checkbox in the icon slot) opened in a popup route over
+the shared modal scrim (`ModalUtils.getModalBarrierColor`), under its trigger
+with the trailing edges aligned, and above it when there is no room below. A
+tap on the scrim or Escape closes it without acting; a row closes it, then
+acts. `agentInternalsMenuItem` is *Agent internals*, the panel's own title,
+under the tune glyph. Both menus order themselves the same way: the page's own
+actions, a hairline (`startsGroup`), the agent's actions ending in the
+internals, a hairline, delete.
+
+The editors of what an agent serves share a section too:
+[`AgentFormSection`](../../../lib/features/agents/ui/agent_form_section.dart),
+a heading, an optional quiet intro and open fields. The goal editor ends on
+it as *Your agent*; the person editor is built from it throughout and ends on
+the same *Your agent*.
 
 # `AgentInternalsPanel` and `AgentInternalsBody`
 

@@ -182,7 +182,7 @@ sources:
     last_modified: 2026-08-12
   - id: create-edit
     resource: ../../lib/features/goals/ui/pages/create_goal_agent_page.dart
-    title: Goal create/edit flow — three-step creation, two-step editing
+    title: Goal create/edit flow — three-step creation, one-page editing
     last_modified: 2026-09-05
   - id: unified-goals-page
     resource: ../../lib/features/goals/ui/pages/unified_goals_page.dart
@@ -1561,10 +1561,13 @@ handler would retract it; that wiring is a follow-up.
   readable as text-only objects instead of being assigned invented dates.
   Creation and owner editing share one route through the same controls.
   Creation is a three-stage intention → mapping → confirmation flow; owner
-  editing skips the intention stage — the statement is a single-line field
-  (with the example pills) at the top of the mapping page — so editing is two
-  steps, and the step indicator renders the count of the steps actually
-  walked. The mapping stage matches observable active habits and
+  editing is one page: the statement is a single-line field (with the
+  example pills) at the top of the mapping page, and the agent's name, the
+  goal's category and the next version's note close the same page under
+  *Your agent* (`AgentFormSection`, the section the person editor ends on
+  too). One *Save new version* runs the mapping's checks, then saves; the
+  step indicator shows only when there is more than one step to walk, and
+  the page absorbs input while a save is in flight. The mapping stage matches observable active habits and
   the supported steps metric, gives every selected habit its own one-to-seven
   rolling-week cadence, can add a searchable existing measurable with a
   numeric rolling-week target, and offers Weight or one Blood pressure source
@@ -2114,8 +2117,8 @@ and in its body:
 A check-in row opens its journal entry; a reflection reopens its day's sheet.
 The time chip (`GoalCheckInTimeChip`) is the check-in rows' trailing control.
 
-**A goal is filed in a category.** The goal form's *meet your agent* step has
-the person form's category row (`CategoryFieldRow`; the form's
+**A goal is filed in a category.** The goal form's *meet your agent* step
+(and, editing, its *Your agent* section) has the person form's category row (`CategoryFieldRow`; the form's
 `_GoalFormCategory` mixin holds its state). Editing, the row cannot be
 changed until the goal row's own category has read, so a late read never
 overwrites a pick, and a changed category with no goal row to move fails the

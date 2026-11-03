@@ -764,7 +764,8 @@ person with the flag off.
 
 Every create writes the entry first, in the person's category and privacy,
 then links it. **Changing the person's category moves everything they hold**:
-the form saves it through `EntryCategoryMove`, which takes their check-ins
+the form — or the header's category selector — saves it through
+`EntryCategoryMove`, which takes their check-ins
 and what each holds, their notes, voice notes, photos and meetings with them,
 across a crash, while a task linked to them keeps its own category and
 project (see the journal's
@@ -793,7 +794,7 @@ sequenceDiagram
 | Region | Widget | Notes |
 |---|---|---|
 | Hero | [`PersonHeroAppBar`](../../lib/features/relationships/ui/widgets/person_header.dart) | A pinned `SliverPersistentHeader`: the avatar hangs half its diameter below it, inside the sliver's own extent so all of it is tappable. Back, *Talk to agent* (labelled, the agent's violet) and the ⋮ menu — Edit, contact linking, the agent's internals, Delete. The avatar is gone by half the fold; the folded bar names the person by `shortName`. |
-| Header block | `PersonHeaderBlock` (same file) | Category · name · one-liner, then one row of actions: [`PersonContactRow`](../../lib/features/relationships/ui/widgets/person_contact_row.dart) — Call, Message, Email as dense labelled buttons, a call always confirming first — with `personHeaderPills` flowing after them: the cadence fact, [`PersonRemindersPill`](../../lib/features/relationships/ui/widgets/person_reminders_pill.dart) and the next due day. A lapsed cadence shows its overdue pill whether or not a meeting is booked — the list says it either way, and one rule serves both; here the pill is also the way out, a trailing chevron saying so: a tap opens the meeting sheet (`onPlanMeeting`). A person without reminders shows none, the offer card says it once. |
+| Header block | `PersonHeaderBlock` (same file) | Category · name · one-liner — the category a selector ([`PersonCategoryCrumb`](../../lib/features/relationships/ui/widgets/person_category_crumb.dart): its icon, name and a down chevron, *Set category* when there is none) that opens the shared `showCategoryPicker` and moves the person through `EntryCategoryMove`, as the editor does — then one row of actions: [`PersonContactRow`](../../lib/features/relationships/ui/widgets/person_contact_row.dart) — Call, Message, Email as dense labelled buttons, a call always confirming first — with `personHeaderPills` flowing after them: the cadence fact, [`PersonRemindersPill`](../../lib/features/relationships/ui/widgets/person_reminders_pill.dart) and the next due day. A lapsed cadence shows its overdue pill whether or not a meeting is booked — the list says it either way, and one rule serves both; here the pill is also the way out, a trailing chevron saying so: a tap opens the meeting sheet (`onPlanMeeting`). A person without reminders shows none, the offer card says it once. |
 | Callouts | `PostInteractionPrompt`, the paused-reminder callout | Where the user lands coming back from a call. |
 | Before you talk | [`PersonBriefCard`](../../lib/features/relationships/ui/widgets/person_brief_card.dart), `RelationshipBriefingCard`, [`PersonAboutSection`](../../lib/features/relationships/ui/widgets/person_timeline_view.dart) | One card with one thing that leads: the note to bring up, from the newest check-in that has notes (`PersonBriefCard.sourceOf`), set as a `heading3` headline; what to avoid under it in the quiet ink, marked by its glyph rather than a second label; a link into that check-in; and on a phone the next meeting as a row that opens it. With a meeting booked the label over the headline names its day — *Bring up before Sun 18 Oct* — on every width, rail included. Then the agent's briefing, then what the user pinned *About* the person. On a phone, when the user's notes lead, the briefing's calm faces (current, writing) fold to their header row (`RelationshipBriefingCard.folded`) and *About* to its heading — each opening in place — so the timeline starts on the first screen; a face that asks something is never folded. A wide pane shows the first three *About* notes, the rest behind `personDisclosure`. |
 | Timeline | [`PersonTimelineSliver`](../../lib/features/relationships/ui/widgets/person_timeline_view.dart) | The heading, the filter pills once there is enough to filter, then each section's rows on [`DesignSystemTimelineRow`](../../lib/features/design_system/components/timeline/design_system_timeline_row.dart): a tile on a continuous rail, the meta line (when · what · how long) shedding segments from the end on a narrow width, the words capped at the prose measure, and for a check-in a caption line of how it felt and its topics. A task row unlinks on a long press. Lazily built: the history grows without bound. |
@@ -1355,18 +1356,27 @@ removed:
   leaving the caller on a future that can no longer complete, which would
   strand the composer disabled.
 - **One resolution chain for runtime and status.**
-  `resolveRelationshipAgentModel` honors the typed setup saved by the shared
-  model picker, including direct thinking-model overrides. Disabled or broken
-  typed setups do not fall through. A person's agent is created with the
-  profile their category names at the time snapshotted as its typed setup
-  (`categorySnapshotSetup`, as a task's agent takes its category default);
-  a category naming none leaves the setup untyped. Legacy agents try the person's profile,
-  agent profile, category default, then the device's Settings default. The
+  `resolveRelationshipAgentModel` honors a typed setup the user chose in the
+  shared model picker (origin `user`), including direct thinking-model
+  overrides; disabled or broken user setups do not fall through. A person's
+  agent is created with the profile their category names at the time
+  snapshotted as its typed setup (`categorySnapshotSetup`), and *Use category
+  default* writes the same `categorySnapshot` origin — but for a person's
+  agent that copy is **not** authoritative: it follows the person's category
+  as it is now, so moving the person (from the header's category selector or
+  the editor) or changing the category's profile moves the agent with it.
+  The chain for every setup that is not the user's own is: the person's own
+  profile, the agent's legacy profile (ignored when it is the snapshot's
+  mirror), the category's profile, then the device's Settings default. The
   validated GLM built-in is used only if no Settings default was selected.
   A selected Settings default that cannot resolve is an error. The generic
   fallback contract is in [profile resolution](ai/profile-resolution.md).
   `relationshipAgentResolvedSetupProvider` follows the agent's relationship
-  link and uses this same resolver. The shared setup provider dispatches
+  link and uses this same resolver. The setup sheet (`AgentModelSheet`)
+  selects, for a person's agent the user has not set up, the profile this
+  chain resolves to rather than the stored copy, and the agent internals'
+  Stats tab shows the route with a way into that sheet whenever it is opened
+  for the person (`subjectEntityId`). The shared setup provider dispatches
   relationship identities there before asking for a task template. The card
   and configuration sheet therefore show the route that will actually run,
   including the Settings default, and refresh on identity, default-profile,
@@ -2199,8 +2209,12 @@ composer's field needs.
 
 The person hero's overflow menu offers *Agent internals* whenever the person
 has an agent, opening `AgentInternalsPanel` in the same side sheet — reports,
-conversations, activity and the agent's lifetime cost, without a trip to
-Settings.
+conversations, activity, the agent's lifetime cost and its AI setup (the
+route that runs, one tap from `AgentModelSheet`), without a trip to Settings.
+The menu is `AgentSurfaceMenuButton`, the one the goal page uses: the
+design-system menu surface opened in a popup route over the shared modal
+scrim, the page's own actions first, the agent's next, delete last, each
+group opened by a hairline.
 
 # Voice check-ins (plan v2 phase 6)
 
