@@ -178,11 +178,9 @@ class _CategoryCrumbState extends ConsumerState<CategoryCrumb> {
               ),
               // A touch-sized target around a caption-sized label.
               constraints: const BoxConstraints(minHeight: TapTargets.compact),
-              padding: EdgeInsetsDirectional.fromSTEB(
-                inset,
-                0,
-                tokens.spacing.step2,
-                0,
+              padding: EdgeInsetsDirectional.only(
+                start: inset,
+                end: tokens.spacing.step2,
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
