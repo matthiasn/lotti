@@ -63,19 +63,22 @@ nudges), is
   dress, ivory cardigan), rock (beret, yellow sunglasses, beads, a red
   glove), garden (sage and straw), lavender (lavender and dove grey) and
   winter (navy and red). A look is data: a palette and a few switches.
-- **She dresses for each showing.** In the app she wears the outfit the
+- **She dresses for what she presents.** In the app she wears the outfit the
   palette button on her full-screen stage moved her to this session, else the
-  one chosen in settings, else — on "Surprise me" — one of her outfits drawn
-  at random each time she is shown, so she may wear something new the next
-  time you look.
+  one chosen in settings, else — on "Surprise me" — one of her outfits picked
+  for the task, goal, day or conversation she is shown for. It stays the same
+  for as long as the app runs, through every reload of the screen and on her
+  full-screen stage; another task may show another, and the next start of
+  the app picks afresh.
 - **A person makes her their own.** In Settings › Preferences › Companion
   (shown with the flag) they pick her skin tone (six, numbered, never named
   after a people), her hairstyle (bun, curls, afro, locs, bob), her hair
   colour (silver, white, grey, black, brown, auburn, pink, lavender, blue),
   an outfit she always wears, or "Surprise me", and her sass — warm,
   cheeky (the default) or sassy — which her preview acts out when it is
-  picked. Every part combines with
-  every other. The choice is stored and synced to the person's other devices
+  picked. The curls and the afro are drawn as coils, shaded one over the
+  next; the locs as twisted ropes swept back from the hairline. Every part
+  combines with every other. The choice is stored and synced to the person's other devices
   (`companionCustomizationProvider`), the most recent change winning.
 - **She can be an animal.** A look names its species (`CompanionSpecies`):
   the grandmother, a silver tabby cat (`cat`, `cat_rock`) or a red panda

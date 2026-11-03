@@ -1,44 +1,22 @@
-import 'dart:math' as math;
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/companion/model/companion_customization.dart';
 import 'package:lotti/features/companion/model/companion_look.dart';
 import 'package:lotti/features/companion/model/companion_parts.dart';
+import 'package:lotti/features/companion/model/companion_reaction.dart';
 import 'package:lotti/features/companion/state/companion_customization_controller.dart';
 import 'package:lotti/features/companion/state/companion_look_controller.dart';
 
-/// Draws the scripted indices in turn, repeating the last, and counts draws.
-class _Scripted implements math.Random {
-  _Scripted(this.indices);
-
-  final List<int> indices;
-  int draws = 0;
-
-  @override
-  int nextInt(int max) {
-    final index = indices[draws < indices.length ? draws : indices.length - 1];
-    draws++;
-    return index;
-  }
-
-  @override
-  double nextDouble() => 0;
-
-  @override
-  bool nextBool() => false;
-}
-
 void main() {
-  /// A container whose surprise outfits are drawn by [random] and whose
-  /// customization is [customization], not read from storage.
-  ProviderContainer containerWith(
-    math.Random random, {
+  /// A container whose session seed is [seed] and whose customization is
+  /// [customization], not read from storage.
+  ProviderContainer containerWith({
+    int seed = 7,
     CompanionCustomization customization = const CompanionCustomization(),
   }) {
     final container = ProviderContainer(
       overrides: [
-        companionOutfitRandomProvider.overrideWithValue(random),
+        companionOutfitSeedProvider.overrideWithValue(seed),
         companionCustomizationProvider.overrideWithBuild(
           (ref, notifier) => customization,
         ),
@@ -48,137 +26,235 @@ void main() {
     return container;
   }
 
-  /// What she wears on a draw of the roll, by outfit id.
-  String wornAfterDraw(ProviderContainer container) =>
-      container.read(companionLookRollProvider).draw().id;
+  /// A roll with nothing picked and nothing chosen: every draw a surprise.
+  CompanionLookRoll surpriseRoll(int seed) => CompanionLookRoll(
+    customization: const CompanionCustomization(),
+    picked: null,
+    seed: seed,
+  );
+
+  /// What she wears for [subject], by outfit id.
+  String worn(ProviderContainer container, [String subject = 'task-1']) =>
+      container.read(companionLookRollProvider).draw(subject).id;
 
   test('her outfits are the grandmother looks, in order', () {
     expect(companionOutfits, CompanionLook.of(CompanionSpecies.grandma));
     expect(companionOutfits.length, greaterThanOrEqualTo(4));
   });
 
+  group('companionOutfitSeedProvider', () {
+    test('draws a non-negative 31-bit seed', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      final seed = container.read(companionOutfitSeedProvider);
+      expect(seed, inInclusiveRange(0, (1 << 31) - 1));
+    });
+
+    test('is drawn once: every read in a session sees the same seed', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      final first = container.read(companionOutfitSeedProvider);
+      expect(container.read(companionOutfitSeedProvider), first);
+    });
+  });
+
   group('surprise me', () {
-    test('draws one of her outfits', () {
-      for (var seed = 0; seed < 20; seed++) {
-        final container = containerWith(math.Random(seed));
+    test('dresses her in one of her outfits', () {
+      for (var seed = 0; seed < 50; seed++) {
         expect(
-          companionOutfits.map((o) => o.id),
-          contains(wornAfterDraw(container)),
+          companionOutfits,
+          contains(surpriseRoll(seed).outfitFor('task-$seed')),
         );
       }
     });
 
-    test('draws again on every render, so she changes clothes each time she '
-        'is shown', () {
-      final random = _Scripted([0, 1, 2, 3]);
-      final container = containerWith(random);
-      final shown = [for (var i = 0; i < 4; i++) wornAfterDraw(container)];
-      expect(shown, companionOutfits.take(4).map((o) => o.id).toList());
-      expect(random.draws, 4);
+    test('is the same outfit on every draw for the same subject', () {
+      final roll = surpriseRoll(7);
+      final first = roll.outfitFor('task-1');
+      for (var i = 0; i < 20; i++) {
+        expect(roll.outfitFor('task-1'), same(first));
+        expect(roll.draw('task-1').id, first.id);
+      }
     });
 
-    test('a draw records what the host shows, when the host asks', () {
-      final container = containerWith(_Scripted([2]));
-      final shown = CompanionShownOutfit();
-      expect(shown.last, isNull);
-      container.read(companionLookRollProvider).draw(shown: shown);
-      expect(shown.last, companionOutfits[2]);
+    test('is the same outfit from a roll built afresh with the same seed — '
+        'a remounted host dresses her as before', () {
+      expect(
+        surpriseRoll(7).outfitFor('task-1'),
+        surpriseRoll(7).outfitFor('task-1'),
+      );
     });
 
-    test('a host drawn without a holder cannot overwrite what the stage '
-        'shows', () {
-      final container = containerWith(_Scripted([1, 2]));
-      final stage = CompanionShownOutfit();
-      final roll = container.read(companionLookRollProvider);
-      final stageDraw = roll.draw(shown: stage);
-      expect(stageDraw.id, companionOutfits[1].id);
-      final cardDraw = roll.draw();
-      expect(cardDraw.id, companionOutfits[2].id);
-      expect(stage.last, companionOutfits[1]);
+    test('differs between subjects, so tasks do not all look alike', () {
+      final roll = surpriseRoll(7);
+      final outfits = {
+        for (var i = 0; i < 60; i++) roll.outfitFor('task-$i'),
+      };
+      expect(outfits.length, greaterThan(1));
     });
 
-    test('next steps from the outfit the stage shows', () {
-      final container = containerWith(_Scripted([1]));
-      final shown = CompanionShownOutfit();
-      container.read(companionLookRollProvider).draw(shown: shown);
-      container.read(companionOutfitProvider.notifier).next(from: shown.last);
-      expect(wornAfterDraw(container), companionOutfits[2].id);
+    test('differs between sessions for the same subject', () {
+      final outfits = {
+        for (var seed = 0; seed < 60; seed++)
+          surpriseRoll(seed).outfitFor('task-1'),
+      };
+      expect(outfits.length, greaterThan(1));
+    });
+
+    test('reaches every outfit across subjects', () {
+      final roll = surpriseRoll(7);
+      final outfits = {
+        for (var i = 0; i < 400; i++) roll.outfitFor('subject-$i'),
+      };
+      expect(outfits, companionOutfits.toSet());
+    });
+
+    test('dresses her for an empty subject too', () {
+      expect(companionOutfits, contains(surpriseRoll(7).outfitFor('')));
+    });
+  });
+
+  group('a rebuild of the roll', () {
+    // The regression: her outfit changed while a task was on screen,
+    // because every rebuild drew a new one.
+    test('for a change that is not her outfit keeps what she wears', () {
+      final container = containerWith();
+      final before = worn(container);
+      // Every skin tone at every sass: eighteen rebuilds, and not one may
+      // change her clothes.
+      for (final skinTone in CompanionSkinTone.values) {
+        for (final sass in CompanionSass.values) {
+          container
+              .read(companionCustomizationProvider.notifier)
+              .set(
+                CompanionCustomization(
+                  skinTone: skinTone,
+                  hairStyle: CompanionHairStyle.locs,
+                  sass: sass,
+                ),
+              );
+          expect(worn(container), before, reason: '$skinTone $sass');
+        }
+      }
+    });
+  });
+
+  group('precedence', () {
+    test('a chosen outfit is worn for every subject', () {
+      final container = containerWith(
+        customization: const CompanionCustomization(
+          outfitId: 'grandma_winter',
+        ),
+      );
+      for (var i = 0; i < 10; i++) {
+        expect(worn(container, 'task-$i'), CompanionLook.grandmaWinter.id);
+      }
+    });
+
+    test('a chosen outfit that is not one of hers falls back to the '
+        'surprise', () {
+      // A cat look is a known look, but not one of the grandmother's outfits.
+      final roll = CompanionLookRoll(
+        customization: const CompanionCustomization(outfitId: 'cat'),
+        picked: null,
+        seed: 7,
+      );
+      expect(roll.outfitFor('task-1'), surpriseRoll(7).outfitFor('task-1'));
+    });
+
+    test('the stage pick wins over a chosen outfit', () {
+      final roll = CompanionLookRoll(
+        customization: const CompanionCustomization(
+          outfitId: 'grandma_winter',
+        ),
+        picked: CompanionLook.grandmaRock,
+        seed: 7,
+      );
+      expect(roll.outfitFor('task-1'), CompanionLook.grandmaRock);
+    });
+
+    test('the stage pick wins over the surprise, for every subject', () {
+      final roll = CompanionLookRoll(
+        customization: const CompanionCustomization(),
+        picked: CompanionLook.grandmaGarden,
+        seed: 7,
+      );
+      for (var i = 0; i < 10; i++) {
+        expect(roll.outfitFor('task-$i'), CompanionLook.grandmaGarden);
+      }
+    });
+  });
+
+  group('draw', () {
+    test('is the outfit for the subject in the skin and hair of her '
+        'customization', () {
+      const custom = CompanionCustomization(
+        skinTone: CompanionSkinTone.tone6,
+        hairStyle: CompanionHairStyle.afro,
+        hairColour: CompanionHairColour.lavender,
+      );
+      final roll = CompanionLookRoll(
+        customization: custom,
+        picked: null,
+        seed: 7,
+      );
+      final outfit = roll.outfitFor('task-1');
+      final look = roll.draw('task-1');
+      expect(look.id, outfit.id);
+      expect(look.hairStyle, CompanionHairStyle.afro);
+      expect(look.palette.skin, CompanionSkinTone.tone6.skin);
+      expect(look.palette.hair, CompanionHairColour.lavender.hair);
+      expect(look.palette.dress, outfit.palette.dress);
+    });
+  });
+
+  group('the stage pick', () {
+    test('next steps from the outfit she wears for the subject', () {
+      final container = containerWith();
+      final from = container
+          .read(companionLookRollProvider)
+          .outfitFor('task-1');
+      container.read(companionOutfitProvider.notifier).next(from);
+      final at = companionOutfits.indexOf(from);
+      expect(
+        worn(container),
+        companionOutfits[(at + 1) % companionOutfits.length].id,
+      );
     });
 
     test('next from the last outfit goes back to the first', () {
-      final container = containerWith(_Scripted([0]));
+      final container = containerWith();
       container
           .read(companionOutfitProvider.notifier)
-          .next(from: companionOutfits.last);
-      expect(wornAfterDraw(container), companionOutfits.first.id);
+          .next(companionOutfits.last);
+      expect(worn(container), companionOutfits.first.id);
     });
 
-    test('next with nothing shown starts at the first outfit', () {
-      final container = containerWith(_Scripted([0]));
-      container.read(companionOutfitProvider.notifier).next();
-      expect(wornAfterDraw(container), companionOutfits.first.id);
-    });
-
-    test('a stage pick holds until she is shown again with a settings '
-        'change', () {
-      final random = _Scripted([0, 1, 2]);
-      final container = containerWith(random);
+    test('holds for every subject while nothing in settings changes', () {
+      final container = containerWith();
       final sub = container.listen(companionOutfitProvider, (_, _) {});
       addTearDown(sub.close);
       container
           .read(companionOutfitProvider.notifier)
-          .next(from: companionOutfits.first);
-      final drawsBefore = random.draws;
-      expect(wornAfterDraw(container), companionOutfits[1].id);
-      expect(wornAfterDraw(container), companionOutfits[1].id);
-      expect(random.draws, drawsBefore, reason: 'a pick draws nothing');
+          .next(companionOutfits.first);
+      expect(worn(container), companionOutfits[1].id);
+      expect(worn(container, 'goal-2'), companionOutfits[1].id);
     });
 
-    test('a new choice in settings clears the stage pick', () {
-      final container = containerWith(_Scripted([0]));
+    test('is cleared by a new outfit chosen in settings', () {
+      final container = containerWith();
       final sub = container.listen(companionOutfitProvider, (_, _) {});
       addTearDown(sub.close);
       container
           .read(companionOutfitProvider.notifier)
-          .next(from: companionOutfits.first);
+          .next(companionOutfits.first);
       expect(container.read(companionOutfitProvider), companionOutfits[1]);
 
       container
           .read(companionCustomizationProvider.notifier)
           .set(const CompanionCustomization(outfitId: 'grandma_rock'));
       expect(container.read(companionOutfitProvider), isNull);
-      expect(wornAfterDraw(container), CompanionLook.grandmaRock.id);
+      expect(worn(container), CompanionLook.grandmaRock.id);
     });
-  });
-
-  group('a chosen outfit', () {
-    test('is worn with no draw at all', () {
-      final random = _Scripted([0]);
-      final container = containerWith(
-        random,
-        customization: const CompanionCustomization(
-          outfitId: 'grandma_winter',
-        ),
-      );
-      expect(wornAfterDraw(container), CompanionLook.grandmaWinter.id);
-      expect(wornAfterDraw(container), CompanionLook.grandmaWinter.id);
-      expect(random.draws, 0);
-    });
-  });
-
-  test('she is drawn in the outfit, in the skin and hair of her '
-      'customization', () {
-    const custom = CompanionCustomization(
-      skinTone: CompanionSkinTone.tone6,
-      hairStyle: CompanionHairStyle.afro,
-      hairColour: CompanionHairColour.lavender,
-    );
-    final container = containerWith(_Scripted([3]), customization: custom);
-    final look = container.read(companionLookRollProvider).draw();
-    expect(look.id, companionOutfits[3].id);
-    expect(look.hairStyle, CompanionHairStyle.afro);
-    expect(look.palette.skin, CompanionSkinTone.tone6.skin);
-    expect(look.palette.hair, CompanionHairColour.lavender.hair);
-    expect(look.palette.dress, companionOutfits[3].palette.dress);
   });
 }

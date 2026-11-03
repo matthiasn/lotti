@@ -14,6 +14,7 @@ import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
 import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/companion_stage_page.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/companion/state/companion_look_controller.dart';
 import 'package:lotti/features/companion/ui/companion_speaker.dart';
 import 'package:lotti/features/companion/ui/companion_view.dart';
 import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
@@ -29,6 +30,7 @@ import 'package:lotti/features/front_agent/model/front_door.dart';
 import 'package:lotti/features/front_agent/state/front_chat_thread_provider.dart';
 import 'package:lotti/features/front_agent/state/front_conversation_providers.dart';
 import 'package:lotti/features/front_agent/state/front_inbox_filter.dart';
+import 'package:lotti/features/front_agent/state/front_voice_providers.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_header.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_hero.dart';
 import 'package:lotti/features/front_agent/ui/front_profile_choice.dart';
@@ -542,6 +544,9 @@ void main() {
         ),
       );
       expect(speaker.sourceId, 'front-chat:c-1');
+      // Dressed for her surface, not the conversation: opening another
+      // conversation keeps her outfit.
+      expect(speaker.dressedFor, frontCompanionDressedFor);
     });
 
     testWidgets('she stays the same figure as she starts and stops '
@@ -575,6 +580,8 @@ void main() {
         find.byType(CompanionStagePage),
       );
       expect(stage.sourceId, 'front-chat:c-1');
+      // In the outfit her bust wore.
+      expect(stage.dressedFor, frontCompanionDressedFor);
       // Her own voice control at her feet, not the summary's.
       expect(
         (stage.readAloud! as FrontVoiceButton).conversationId,
@@ -588,14 +595,20 @@ void main() {
     ) async {
       await pumpHeader(tester, companion: true, activeLoading: true);
 
-      expect(
-        find.descendant(
-          of: find.byKey(FrontChatHeroKeys.figure),
-          matching: find.byType(CompanionView),
-        ),
-        findsOne,
+      final standing = find.descendant(
+        of: find.byKey(FrontChatHeroKeys.figure),
+        matching: find.byType(CompanionView),
       );
+      expect(standing, findsOne);
       expect(find.byType(CompanionSpeaker), findsNothing);
+      // Already in the outfit she keeps once a conversation resolves.
+      final roll = ProviderScope.containerOf(
+        tester.element(standing),
+      ).read(companionLookRollProvider);
+      expect(
+        tester.widget<CompanionView>(standing).look.id,
+        roll.outfitFor(frontCompanionDressedFor).id,
+      );
     });
 
     testWidgets('her voice and her stage stand under her, for the open '

@@ -6,9 +6,11 @@ import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/companion_stage_page.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/summary_read_aloud_button.dart';
 import 'package:lotti/features/companion/animation/mouth_track.dart';
+import 'package:lotti/features/companion/model/companion_customization.dart';
 import 'package:lotti/features/companion/model/companion_gesture.dart';
 import 'package:lotti/features/companion/model/companion_mood.dart';
 import 'package:lotti/features/companion/rig/companion_painter.dart';
+import 'package:lotti/features/companion/state/companion_customization_controller.dart';
 import 'package:lotti/features/companion/state/companion_look_controller.dart';
 import 'package:lotti/features/companion/state/spoken_track.dart';
 import 'package:lotti/features/companion/ui/companion_speaker.dart';
@@ -37,6 +39,8 @@ void main() {
     bool engineSupported = true,
     Stream<bool>? readAloudFlag,
     Widget? hostControl,
+    String? dressedFor,
+    bool surprise = false,
   }) async {
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
@@ -48,6 +52,7 @@ void main() {
                     sourceId: 'task-1',
                     spokenText: 'Two items left.',
                     readAloud: hostControl,
+                    dressedFor: dressedFor,
                   )
                 : openCompanionStage(
                     context,
@@ -71,7 +76,13 @@ void main() {
           spokenTrackLoaderProvider.overrideWithValue(
             (clip, text) => Completer<MouthTrack>().future,
           ),
-          ...companionLookOverrides(outfit: companionOutfits.first),
+          if (surprise) ...[
+            companionOutfitSeedProvider.overrideWithValue(7),
+            companionCustomizationProvider.overrideWithBuild(
+              (ref, notifier) => const CompanionCustomization(),
+            ),
+          ] else
+            ...companionLookOverrides(outfit: companionOutfits.first),
         ],
       ),
     );
@@ -238,6 +249,54 @@ void main() {
       await tester.pump();
     }
     expect(worn(), companionOutfits.first.id);
+  });
+
+  group('her outfit', () {
+    CompanionSpeaker speaker(WidgetTester tester) =>
+        tester.widget<CompanionSpeaker>(find.byType(CompanionSpeaker));
+
+    testWidgets('is drawn for the summary she speaks, as on its card', (
+      tester,
+    ) async {
+      await openStage(tester);
+      expect(
+        tester
+            .widget<CompanionStagePage>(find.byType(CompanionStagePage))
+            .dressedFor,
+        'task-1',
+      );
+      expect(speaker(tester).dressedFor, 'task-1');
+    });
+
+    testWidgets('is drawn for the subject a host names instead', (
+      tester,
+    ) async {
+      await openStage(tester, dressedFor: 'front-chat');
+      expect(speaker(tester).sourceId, 'task-1');
+      expect(speaker(tester).dressedFor, 'front-chat');
+    });
+
+    testWidgets('on "Surprise me" the control steps on from the outfit she '
+        'is shown in', (tester) async {
+      await openStage(tester, surprise: true);
+      final roll = CompanionLookRoll(
+        customization: const CompanionCustomization(),
+        picked: null,
+        seed: 7,
+      );
+      final shown = roll.outfitFor('task-1');
+      String worn() =>
+          tester.widget<CompanionView>(find.byType(CompanionView)).look.id;
+      expect(worn(), shown.id);
+
+      await tester.tap(find.byKey(const ValueKey('companionStageOutfit')));
+      await tester.pump();
+      final at = companionOutfits.indexOf(shown);
+      expect(
+        worn(),
+        companionOutfits[(at + 1) % companionOutfits.length].id,
+      );
+    });
   });
 
   testWidgets('the close control takes her back to the card', (tester) async {

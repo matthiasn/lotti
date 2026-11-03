@@ -95,7 +95,7 @@ sources:
   - id: look-controller
     resource: ../../lib/features/companion/state/companion_look_controller.dart
     title: companionOutfitProvider and companionLookRollProvider
-    last_modified: 2026-11-02
+    last_modified: 2026-11-03
   - id: customization
     resource: ../../lib/features/companion/state/companion_customization_controller.dart
     title: companionCustomizationProvider, her stored customization
@@ -107,7 +107,7 @@ sources:
   - id: hair-styles
     resource: ../../lib/features/companion/rig/hair_styles_painter.dart
     title: The hairstyles' painters
-    last_modified: 2026-10-19
+    last_modified: 2026-11-03
   - id: settings-page
     resource: ../../lib/features/companion/ui/settings/companion_settings_page.dart
     title: The page that customizes her
@@ -434,12 +434,17 @@ never a scold — and no data a hand at her ear, listening for news. Until
 the health resolves she stands calm and at ready.
 
 **What she wears.** Every host shows her as `companionLookRollProvider`
-draws her, in `companion/state/`: each host calls `draw()` in its `build`
-(`CompanionSpeaker`, the goal card's silent bust, the front agent's bust and
-the settings preview). No host passes a look. The draw is never cached, so a
-rebuilt host may dress her in a new surprise outfit; hosts rebuild on what
-changes them (a setting, a voice starting or stopping), never per frame. It
-is three things together:
+draws her, in `companion/state/`: each host calls `draw(subject)` in its
+`build` (`CompanionSpeaker`, the goal card's silent bust, the front agent's
+bust and the settings preview). No host passes a look. The subject is what
+she presents — `CompanionSpeaker`'s `sourceId` (the task, the goal's report,
+the day, onboarding) unless the host names another as `dressedFor`: the
+front agent dresses her for `frontCompanionDressedFor`, one figure across its
+conversations, and the goal card's bust for its goal's report, as the goal's
+page does. The draw is a pure function of the roll and the subject, so a
+rebuild, a remount, or the stage opened from a card never changes her
+clothes: a host rebuilds on a voice starting or stopping, a sync, a setting,
+and she must stay as she was. It is three things together:
 
 ```mermaid
 flowchart LR
@@ -447,23 +452,23 @@ flowchart LR
   Settings[Settings › Preferences › Companion] -->|set| C
   Stage[stage palette button] -->|next| P[companionOutfitProvider<br/>the stage's pick, or none]
   C -->|a new outfit clears| P
-  R[companionOutfitRandomProvider] --> Roll
-  C --> Roll[companionLookRollProvider<br/>customization · pick · random]
+  R[companionOutfitSeedProvider<br/>once per session] --> Roll
+  C --> Roll[companionLookRollProvider<br/>customization · pick · seed]
   P --> Roll
-  Roll -->|draw in each host's build| Hosts[CompanionSpeaker · GoalCompanionBust · FrontCompanionFigure · settings preview]
-  Roll -.->|each draw records what she wears| W[companionWornOutfitProvider]
-  W -.->|next steps from| P
+  Roll -->|"draw(subject) in each host's build"| Hosts[CompanionSpeaker · GoalCompanionBust · front agent's bust · settings preview]
+  Roll -.->|"outfitFor(subject): next steps from"| P
   C -->|sass| Speaker[CompanionSpeaker]
 ```
 
 - **The outfit** (`companionOutfitProvider`): the stage's pick for the
   session wins; with none, the outfit chosen in her customization; with
-  "Surprise me", one of `companionOutfits` (the grandmother's looks) drawn by
-  `companionOutfitRandomProvider` at every draw, which a test pins. The
-  palette control on the stage calls `next`, stepping from the outfit the
-  last draw showed (`companionWornOutfitProvider`, a plain holder — a draw
-  runs in a build, where state may not change) and wrapping. A new choice in
-  settings clears the pick.
+  "Surprise me", one of `companionOutfits` (the grandmother's looks) picked
+  by an FNV-1a hash of the subject mixed with `companionOutfitSeedProvider`,
+  a seed drawn once per session, which a test pins. So the same task shows
+  her in the same outfit all session, another task may show another, and
+  the next session draws afresh. The palette control on the stage calls
+  `next` with `outfitFor(subject)`, the outfit she is shown in, stepping on
+  and wrapping. A new choice in settings clears the pick.
 - **The customization** (`companionCustomizationProvider`): her skin tone,
   hairstyle, hair colour, outfit, sass (default `cheeky`) and whether she
   answers a spoken question aloud (`speaksReplies`, default on; only an
@@ -519,7 +524,15 @@ skin tones are numbered, light to deep, and a screen reader says "Skin tone
 a back layer (behind the head and body), a front layer over the forehead
 whose outline also shades it, and hanging parts that trail the head's motion
 by the hair lag — the locs and the bob's ends; the bun keeps its painter,
-`hair_painter.dart`.
+`hair_painter.dart`. The curls and the afro are built of coils: a jittered,
+staggered grid of puffs inside the hair and one on each point of its outline,
+painted bottom-up so each overlaps and shades the one below, each lit as the
+sheen lights the hair at its place, so the silhouette is scalloped and the
+volume reads at 40 pixels. The afro's front mass comes down her sides to her
+ears, leaving only its underside to the back layer. The locs sweep back from
+the hairline to points spread over the crown, and each loc is a rope with a
+shaded side, a lit one and slanted twists. The jitter is a fixed hash, never
+`Random`, so a frame never shimmers.
 
 `full` is head to toe, wide enough that both wrists stay inside it with room
 for the hand in every gesture (a test walks each gesture through its phases).

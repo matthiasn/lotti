@@ -185,4 +185,101 @@ void main() {
       }
     },
   );
+
+  group('textured styles', () {
+    const white = Color(0xFFFFFFFF);
+
+    /// [draw] on white, head origin as in [_draw]: edges blend towards white,
+    /// so only shading reads darker than a fill.
+    Future<Raster> onWhite(void Function(Canvas canvas) draw) => Raster.of(
+      300,
+      300,
+      (canvas) {
+        canvas.translate(150, 170);
+        draw(canvas);
+      },
+      background: white,
+    );
+
+    double luminance(Color c) => 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b;
+
+    /// The pixel at head-local ([x], [y]).
+    Color local(Raster r, double x, double y) => r.at(150 + x, 170 + y);
+
+    test('every style draws the same picture on every frame: the coils and '
+        "locs' jitter is fixed, never random", () async {
+      for (final style in CompanionHairStyle.values) {
+        for (final layer in <void Function(Canvas)>[
+          (c) => drawBackHair(c, _c, const Offset(3, 1), style),
+          (c) => drawFrontHair(c, _c, const Offset(3, 1), 0.4, style),
+        ]) {
+          final a = await _draw(layer);
+          final b = await _draw(layer);
+          var differ = 0;
+          for (var y = 0; y < 300; y++) {
+            for (var x = 0; x < 300; x++) {
+              if (a.at(x, y) != b.at(x, y)) differ++;
+            }
+          }
+          expect(differ, 0, reason: style.name);
+        }
+      }
+    });
+
+    test('the curls and the afro are textured behind the head too, not a '
+        'flat fill', () async {
+      final flat = luminance(_c.hairBack);
+      for (final style in [CompanionHairStyle.curls, CompanionHairStyle.afro]) {
+        final r = await onWhite((c) => drawBackHair(c, _c, Offset.zero, style));
+        var shaded = 0;
+        for (var y = 0; y < 300; y++) {
+          for (var x = 0; x < 300; x++) {
+            if (luminance(r.at(x, y)) < flat - 0.04) shaded++;
+          }
+        }
+        expect(shaded, greaterThan(800), reason: style.name);
+      }
+    });
+
+    test("the afro's front comes down beside her face to her ears, so its "
+        'underside is all that is left dark', () async {
+      final r = await front(CompanionHairStyle.afro);
+      for (final x in [-58.0, 58.0]) {
+        expect(
+          near(local(r, x, -10), const Color(0xFF000000)),
+          isFalse,
+          reason: 'x $x',
+        );
+      }
+    });
+
+    test('the curls are rounded under at the jaw, never square', () async {
+      final r = await _draw(
+        (c) => drawBackHair(c, _c, Offset.zero, CompanionHairStyle.curls),
+      );
+      for (final x in [-44.0, 44.0]) {
+        expect(
+          near(local(r, x, 17), const Color(0xFF000000)),
+          isTrue,
+          reason: 'x $x',
+        );
+      }
+    });
+
+    test("the locs' strands sweep back side by side over the crown, never "
+        'meeting in one point', () async {
+      final r = await onWhite(
+        (c) => drawFrontHair(c, _c, Offset.zero, 0, CompanionHairStyle.locs),
+      );
+      final hair = luminance(_c.hair);
+      // The grooves between the strands just under the top of the crown,
+      // where strands that met in a point would all still be bunched.
+      final grooves = [
+        for (var x = -50; x <= 50; x++)
+          if (luminance(local(r, x.toDouble(), -88)) < hair - 0.08) x,
+      ];
+      expect(grooves, isNotEmpty);
+      expect(grooves.last - grooves.first, greaterThan(40));
+    });
+  });
 }

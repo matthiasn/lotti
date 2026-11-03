@@ -29,6 +29,7 @@ Future<void> openFrontStage(BuildContext context, String conversationId) =>
     openCompanionStage(
       context,
       sourceId: frontVoiceSourceId(conversationId),
+      dressedFor: frontCompanionDressedFor,
       readAloud: FrontVoiceButton(conversationId: conversationId),
     );
 

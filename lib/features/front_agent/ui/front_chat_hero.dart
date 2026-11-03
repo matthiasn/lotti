@@ -214,7 +214,9 @@ class _SpeakingFigure extends ConsumerWidget {
     final id = conversationId;
     if (id == null) {
       return CompanionView(
-        look: ref.watch(companionLookRollProvider).draw(),
+        look: ref
+            .watch(companionLookRollProvider)
+            .draw(frontCompanionDressedFor),
         framing: CompanionFraming.bust,
         holding: holding,
       );
@@ -230,6 +232,7 @@ class _SpeakingFigure extends ConsumerWidget {
         onTap: () => openFrontStage(context, id).ignore(),
         child: CompanionSpeaker(
           sourceId: frontVoiceSourceId(id),
+          dressedFor: frontCompanionDressedFor,
           framing: CompanionFraming.bust,
           holding: holding,
         ),

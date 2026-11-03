@@ -54,15 +54,16 @@ CompanionCue goalCompanionPose(
 /// pose says how the goal is going ([goalCompanionPose]).
 ///
 /// Silent: goals have no read-aloud, so she is a [CompanionView] that
-/// breathes, blinks and glances but never talks. [seed] keeps the cards of
-/// one list from blinking in step. She wears the session's outfit, as
-/// everywhere else. Decorative — the status pill beside her
+/// breathes, blinks and glances but never talks. Her goal's [agentId]
+/// seeds her animator, so the cards of one list never blink in step, and
+/// dresses her for the goal's report, as on the goal's own page
+/// ([goalReportSpeechSourceId]). Decorative — the status pill beside her
 /// carries the verdict in words.
 class GoalCompanionBust extends ConsumerWidget {
   const GoalCompanionBust({
     required this.pose,
     required this.fill,
-    required this.seed,
+    required this.agentId,
     super.key,
   });
 
@@ -70,7 +71,10 @@ class GoalCompanionBust extends ConsumerWidget {
 
   /// The goal's status wash, as the persona chip wears it.
   final Color fill;
-  final int seed;
+
+  /// The goal's agent: what her animator is seeded and her outfit drawn
+  /// for.
+  final String agentId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -86,14 +90,16 @@ class GoalCompanionBust extends ConsumerWidget {
           border: Border.all(color: tokens.colors.decorative.level01),
         ),
         child: CompanionView(
-          look: ref.watch(companionLookRollProvider).draw(),
+          look: ref
+              .watch(companionLookRollProvider)
+              .draw(goalReportSpeechSourceId(agentId)),
           framing: CompanionFraming.bust,
           mood: pose.mood,
           // Held, so the verdict never relaxes out of view; she picks no
           // talking gestures of her own, as she never talks here.
           holding: pose.gesture,
           autoGestures: false,
-          seed: seed,
+          seed: agentId.hashCode,
         ),
       ),
     );
