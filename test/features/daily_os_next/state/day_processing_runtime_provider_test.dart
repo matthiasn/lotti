@@ -711,4 +711,22 @@ void main() {
     releaseTranscript.complete('transcript');
     expect(await pass, 2);
   });
+
+  test('a lane whose drain throws ends the pass with its error instead of '
+      'leaving the idle sibling waiting', () async {
+    final processor = MockDayProcessingOutboxProcessor();
+    when(() => processor.repository).thenReturn(outbox);
+    when(
+      () => processor.drain(kinds: any(named: 'kinds')),
+    ).thenAnswer((invocation) async {
+      final kinds =
+          invocation.namedArguments[#kinds] as Set<DayProcessingJobKind>?;
+      if (kinds!.contains(DayProcessingJobKind.transcribeAudio)) return 0;
+      await pumpEventQueue();
+      throw StateError('claimNext failed');
+    });
+
+    await expectLater(drainDayProcessingLanes(processor), throwsStateError);
+    // A hang here is the regression: the test times out instead of failing.
+  }, timeout: const Timeout(Duration(seconds: 10)));
 }

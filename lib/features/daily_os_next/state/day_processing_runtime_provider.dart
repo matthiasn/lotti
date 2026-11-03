@@ -182,9 +182,19 @@ Future<int> drainDayProcessingLanes(
 
   Future<void> runLane(Set<DayProcessingJobKind> kinds) async {
     while (true) {
-      // Awaited into a local first: `processed += await …` reads the total
-      // before the await and would drop the sibling lane's concurrent count.
-      final drained = await processor.drain(kinds: kinds);
+      final int drained;
+      try {
+        // Awaited into a local first: `processed += await …` reads the total
+        // before the await and would drop the sibling lane's concurrent count.
+        drained = await processor.drain(kinds: kinds);
+      } catch (_) {
+        // A failed lane still counts as idle, or a sibling waiting for every
+        // lane to settle would wait forever and the error would never reach
+        // the runtime's retry.
+        busy -= 1;
+        laneIdle.add(null);
+        rethrow;
+      }
       processed += drained;
       busy -= 1;
       laneIdle.add(null);
@@ -199,8 +209,11 @@ Future<int> drainDayProcessingLanes(
     }
   }
 
-  await Future.wait([for (final kinds in lanes) runLane(kinds)]);
-  await laneIdle.close();
+  try {
+    await Future.wait([for (final kinds in lanes) runLane(kinds)]);
+  } finally {
+    await laneIdle.close();
+  }
   return processed;
 }
 
