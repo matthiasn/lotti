@@ -280,17 +280,21 @@ Future<void> _attachEmbeddingVectorsSync(EmbeddingStore store) async {
       journalDb: journalDb,
       held: held,
       readFlag: journalDb.getConfigFlag,
-      reportContent: agentReportTextReader(
-        () => getIt.isRegistered<AgentDatabase>()
-            ? AgentRepository(getIt<AgentDatabase>())
-            : null,
-      ),
+      reportContent: _agentReports,
     ),
     flagChanges: journalDb.watchConfigFlags(),
   );
   EmbeddingProcessor.share = vectorsSync;
   getIt<BackfillResponseHandler>().embeddingVectors = vectorsSync;
 }
+
+/// Agent reports' text from the agent database, `null` while it is not open:
+/// what the receiver and the reconciler hash report vectors against.
+final ReportContentReader _agentReports = agentReportTextReader(
+  () => getIt.isRegistered<AgentDatabase>()
+      ? AgentRepository(getIt<AgentDatabase>())
+      : null,
+);
 
 /// Undoes [_attachEmbeddingVectorsSync] as the store closes.
 Future<void> _detachEmbeddingVectorsSync() async {
@@ -334,6 +338,7 @@ Future<void> _registerEmbeddingPipeline() async {
             store: embeddingStore,
             journalDb: getIt<JournalDb>(),
             modelId: getIt<OnDeviceEmbeddingRepository>().modelId,
+            reportContent: _agentReports,
           ),
         ),
         dispose: (svc) async => svc.stop(),

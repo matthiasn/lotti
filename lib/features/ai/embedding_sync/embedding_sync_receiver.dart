@@ -39,6 +39,24 @@ ReportContentReader agentReportTextReader(
       : null;
 };
 
+/// The content hashes a version of [report]'s vectors may carry: its whole
+/// text (one-liner, TLDR and body), and its body alone, as writers before
+/// whole-report embedding hashed it. Both sides of vector sync use it — the
+/// receiver to store a version, the reconciler to adopt a chunk set.
+Set<String> agentReportContentHashes(AgentReportText report) {
+  final text = EmbeddingContentExtractor.extractAgentReportText(
+    content: report.content,
+    tldr: report.tldr,
+    oneLiner: report.oneLiner,
+  );
+  final body = report.content.trim();
+  return {
+    if (text != null) EmbeddingContentExtractor.contentHash(text),
+    if (body.length >= kMinEmbeddingTextLength)
+      EmbeddingContentExtractor.contentHash(body),
+  };
+}
+
 /// Reads a config flag.
 typedef EmbeddingFlagReader = Future<bool> Function(String flag);
 
@@ -78,7 +96,10 @@ typedef _LocalText = ({
 ///    report or a task's label arrives — or discarded once the entry has
 ///    moved past the version's source clock, or is deleted here (for a
 ///    report: its task). A deleted entry never arrives again; holding its
-///    vectors kept them waiting for good.
+///    vectors kept them waiting for good. A report is discarded, not held,
+///    when it is here and hashes differently — reports never change — and
+///    when it is gone though this device stores vectors of it: its agent
+///    was deleted here, reports and all, while peers keep both.
 ///
 /// An agent report is stored alone: the writer's tombstones remove a task's
 /// older reports, and the receiver writes none of its own.
@@ -242,6 +263,13 @@ class EmbeddingSyncReceiver implements SyncedEmbeddingSink {
       return;
     }
 
+    if (local.exists && candidate.entityType == kEntityTypeAgentReport) {
+      // A report never changes: text that does not hash the same now never
+      // will.
+      await _held.remove(candidate.id);
+      return;
+    }
+
     final source = candidate.sourceVectorClock;
     final localClock = local.vectorClock;
     if (source != null &&
@@ -310,23 +338,21 @@ class EmbeddingSyncReceiver implements SyncedEmbeddingSink {
       final task = await _journalDb.journalEntityById(candidate.taskId);
       if (task == null) return _absent(candidate.taskId);
       final report = await _reportContent(candidate.entityId);
-      if (report == null) return _missing;
-      final text = EmbeddingContentExtractor.extractAgentReportText(
-        content: report.content,
-        tldr: report.tldr,
-        oneLiner: report.oneLiner,
-      );
-      // A writer from before the whole report was embedded hashed the body
-      // alone; its vectors still describe this report.
-      final body = report.content.trim();
+      if (report == null) {
+        // Vectors of it stored here — a live register, or chunks from before
+        // registers existed — mean the report was here: it is gone, its
+        // agent deleted on this device with the reports, and no text will
+        // arrive. Otherwise it has not arrived yet.
+        final stored = await _store.getRegister(candidate.entityId);
+        final wasHere = stored != null
+            ? !stored.deleted
+            : await _store.hasEmbedding(candidate.entityId);
+        return wasHere ? _goneHere : _missing;
+      }
       return (
         exists: true,
         gone: false,
-        contentHashes: {
-          if (text != null) EmbeddingContentExtractor.contentHash(text),
-          if (body.length >= kMinEmbeddingTextLength)
-            EmbeddingContentExtractor.contentHash(body),
-        },
+        contentHashes: agentReportContentHashes(report),
         vectorClock: null,
         categoryId: task.meta.categoryId ?? '',
         labelIds: const <String>[],
@@ -360,19 +386,21 @@ class EmbeddingSyncReceiver implements SyncedEmbeddingSink {
     labelIds: <String>[],
   );
 
+  static const _LocalText _goneHere = (
+    exists: false,
+    gone: true,
+    contentHashes: <String>{},
+    vectorClock: null,
+    categoryId: '',
+    labelIds: <String>[],
+  );
+
   /// Entry [entityId], which the live read did not find: deleted here when
   /// its row remains, otherwise not arrived yet.
   Future<_LocalText> _absent(String entityId) async =>
       await _journalDb.journalEntityByIdIncludingDeleted(entityId) == null
       ? _missing
-      : (
-          exists: false,
-          gone: true,
-          contentHashes: const <String>{},
-          vectorClock: null,
-          categoryId: '',
-          labelIds: const <String>[],
-        );
+      : _goneHere;
 
   /// Whether [a] beats [over], two concurrent versions of one register: the
   /// larger source clock in the canonical order, then a tombstone over live

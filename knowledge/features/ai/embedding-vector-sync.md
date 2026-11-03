@@ -5,7 +5,7 @@ description: How one device's embeddings reach the user's other devices as a tra
 resource: ../../../lib/features/ai/embedding_sync
 tags: [ai, embeddings, sync, vector-clock, register, tombstone, tla]
 status: draft
-generated: { by: claude-code/opus-5.5, at: 2026-11-02T18:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-11-03T12:00:00Z }
 stale_after: 2027-04-30
 sources:
   - id: register
@@ -23,7 +23,7 @@ sources:
   - id: receiver
     resource: ../../../lib/features/ai/embedding_sync/embedding_sync_receiver.dart
     title: EmbeddingSyncReceiver, the merge and the hash check
-    last_modified: 2026-11-02
+    last_modified: 2026-11-03
   - id: held
     resource: ../../../lib/features/ai/embedding_sync/held_embedding_versions.dart
     title: HeldEmbeddingVersions, the persisted hold
@@ -43,7 +43,7 @@ sources:
   - id: reconciler
     resource: ../../../lib/features/ai/service/embedding_reconciler.dart
     title: EmbeddingReconciler, the stored vectors that drifted from their entry
-    last_modified: 2026-11-02
+    last_modified: 2026-11-03
   - id: vectors-sync
     resource: ../../../lib/features/sync/embedding_vectors/embedding_vectors_sync.dart
     title: EmbeddingVectorsSync, sync's half of the register
@@ -171,6 +171,7 @@ stateDiagram-v2
   Candidate --> Stored: own text hashes the same
   Candidate --> Discarded: the entry moved past the source clock
   Candidate --> Discarded: the entry (a report: its task) is deleted here
+  Candidate --> Discarded: a report here hashes differently, or is gone though its vectors are stored
   Candidate --> Held: text not here yet
   Held --> Merged: entry, report or label applied, the queue drained, or the pipeline attached
 ```
@@ -223,6 +224,15 @@ stateDiagram-v2
   hold never resolved: no text was coming, and no tombstone either when
   the deletion was made where vectors were not shared, or was a task's
   (its reports' vectors outlived it).
+- **Nor is a report that cannot come.** A report never changes, so one that
+  is here and hashes differently is discarded. One that is not here while
+  this device stores vectors of it — a live register, or chunks from
+  before registers existed — was here, and is gone: its agent was
+  deleted on this device, reports and all, while peers keep both and may
+  share a newer version. Waiting for it held that version for good — one
+  "Embeddings waiting" on that device alone, the totals still equal, since
+  both devices count the register. A report not here and never stored may
+  still arrive, and is held.
 - **Holds are shown, not counted missing.** Their receipts are recorded, so
   the sequence log never asks for them, and a deep backfill only delivers
   them to the hold again. Sync health lists their number under the
@@ -249,8 +259,11 @@ that finds embeddings on and the model downloaded:
 - **Chunk sets with no register** — embedded before registers existed —
   are checked the same way, and `adoptUnregistered` writes an unshared
   register for each that still matches: a journal entry's with the entry's
-  clock as its source, a report's as it is. Under the entry's lock, and only
-  while the set is still unregistered with the same content hash.
+  clock as its source, a report's as it is when the report is here and
+  hashes as stored (`agentReportContentHashes`, the receiver's own check).
+  A report set that does not match stays unregistered on this device:
+  shared, it would be discarded by every peer. Under the entry's lock, and
+  only while the set is still unregistered with the same content hash.
 - **`retireReportsOfDeletedTasks`** tombstones the report vectors of every
   task deleted here (`EmbeddingProcessor.retireAgentReport`). A task
   deleted from now on takes them along itself (`processEntity`).
@@ -355,8 +368,8 @@ Open questions it leaves as residuals:
   task is embedded once per device; the concurrent versions converge.
 - **Vectors of a report whose agent was deleted here** stay: the reports
   are gone with the agent, but the vectors carry no agent id, and a report
-  with no row is never taken for deleted. A peer that receives one later
-  holds it.
+  with no row is never taken for deleted. Newer versions a peer shares are
+  discarded, not held, so the stored one goes stale here.
 - **Clocks of a discarded version are not merged.** A device whose entry moved
   past a version drops it, clock and all; the content still converges.
 - **Windows** neither sends nor receives until its ONNX worker lands.

@@ -646,6 +646,116 @@ void main() {
     );
 
     test(
+      'a report gone here whose vectors this device stores is not waited '
+      'for: a newer version is dropped, and a hold of one is released',
+      () async {
+        final d = await device();
+        const content = 'The agent report about the task progress';
+        d.journal['t1'] = _task('t1', 'The task', labelIds: const []);
+        d.reports['r1'] = _report(content);
+        EmbeddingRegister report(Map<String, int> vc) => _version(
+          entityId: 'r1',
+          text: content,
+          vc: vc,
+          entityType: kEntityTypeAgentReport,
+          taskId: 't1',
+        );
+        await d.receive(report({'desktop': 1}));
+        expect(d.store.chunks.keys, ['r1']);
+
+        // Its agent is deleted here, reports and all; the peer keeps both
+        // and shares a newer version.
+        d.reports.remove('r1');
+        await d.receive(report({'desktop': 1, 'phone': 1}));
+
+        expect(d.held.all, isEmpty);
+        expect(
+          d.store.registers['r1']!.vectorClock,
+          const VectorClock({'desktop': 1}),
+          reason: 'what is stored stays, so the counts stay equal',
+        );
+
+        // Held by a build that waited for the report.
+        await d.held.put(
+          HeldEmbeddingVersion(
+            register: report({'desktop': 1, 'phone': 2}),
+            payload: _payload([0.5]),
+          ),
+        );
+        await d.receiver.recheckAll();
+        expect(d.held.all, isEmpty);
+        expect(await d.held.watchCount().first, 0);
+      },
+    );
+
+    test(
+      'a report gone here whose vectors are stored without a register, from '
+      'before registers existed, is not waited for either',
+      () async {
+        final d = await device();
+        const content = 'The agent report about the task progress';
+        d.journal['t1'] = _task('t1', 'The task', labelIds: const []);
+        d.store.replaceEntityEmbeddings(
+          entityId: 'r1',
+          entityType: kEntityTypeAgentReport,
+          modelId: _model,
+          contentHash: _hash(content),
+          embeddings: [_vector(0.2)],
+          taskId: 't1',
+        );
+
+        await d.receive(
+          _version(
+            entityId: 'r1',
+            text: content,
+            vc: {'phone': 1},
+            entityType: kEntityTypeAgentReport,
+            taskId: 't1',
+          ),
+        );
+
+        expect(d.held.all, isEmpty);
+        expect(d.store.registers, isEmpty);
+        expect(d.storedValues('r1'), [closeTo(0.2, 1e-6)]);
+
+        // A report never stored here may still arrive: it is held.
+        await d.receive(
+          _version(
+            entityId: 'r2',
+            text: content,
+            vc: {'phone': 1},
+            entityType: kEntityTypeAgentReport,
+            taskId: 't1',
+          ),
+        );
+        expect(d.held.all.single.register.entityId, 'r2');
+      },
+    );
+
+    test(
+      'a report here whose text hashes differently is dropped, not held: a '
+      'report never changes',
+      () async {
+        final d = await device();
+        d.journal['t1'] = _task('t1', 'The task', labelIds: const []);
+        d.reports['r1'] = _report('The agent report about the task progress');
+
+        await d.receive(
+          _version(
+            entityId: 'r1',
+            text: 'Some other text this report never had',
+            vc: {'phone': 1},
+            entityType: kEntityTypeAgentReport,
+            taskId: 't1',
+          ),
+        );
+
+        expect(d.held.all, isEmpty);
+        expect(d.store.chunks, isEmpty);
+      },
+    );
+
+    test(
       'a report vector whose task is deleted here is dropped, report or not',
       () async {
         final d = await device();
@@ -846,28 +956,6 @@ void main() {
 
         expect(d.store.registers['r1']!.contentHash, _hash(body));
         expect(d.held.all, isEmpty);
-      },
-    );
-
-    test(
-      'a report vector of a text this device does not hold is held',
-      () async {
-        final d = await device();
-        d.journal['t1'] = _task('t1', 'The task', labelIds: const []);
-        d.reports['r1'] = _report('The detailed body of the report.');
-
-        await d.receive(
-          _version(
-            entityId: 'r1',
-            text: 'Another report text entirely, not this one',
-            vc: {'a': 1},
-            entityType: kEntityTypeAgentReport,
-            taskId: 't1',
-          ),
-        );
-
-        expect(d.store.registers, isEmpty);
-        expect(d.held.all.single.register.entityId, 'r1');
       },
     );
 
