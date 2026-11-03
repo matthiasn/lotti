@@ -143,9 +143,9 @@ sources:
   - id: adr-0151
     resource: ../../docs/adr/0151-the-user-says-whether-a-goals-check-ins-are-its-substance.md
     title: ADR 0151 — The user says whether a goal's check-ins are its substance
-  - id: checkin-weight-card
-    resource: ../../lib/features/goals/ui/pages/goal_form_check_in_weight_card.dart
-    title: The goal form's "I'll answer what you tell me" switch
+  - id: checkin-weight-switch
+    resource: ../../lib/features/agents/ui/agent_switch_row.dart
+    title: AgentSwitchRow — the goal form's "I'll answer what you tell me" switch
   - id: adr-0152
     resource: ../../docs/adr/0152-a-reflection-names-the-check-ins-it-answers.md
     title: ADR 0152 — A reflection names the check-ins it answers
@@ -1564,11 +1564,13 @@ handler would retract it; that wiring is a follow-up.
   editing is one page: *Your goal* (an `AgentFormSection` holding the
   single-line statement — *In your words*, with no example pills, since one
   tap would replace a real goal's statement and leave its signals as they
-  were — and the goal's name) opens it, the signals follow, and *Your agent*
-  closes it: whether the check-ins are the goal itself (an `AgentSwitchRow`,
-  the person editor's reminders row; creating, it stays a card among the
-  signals), the agent's name, the goal's category and the next version's
-  note (the section the person editor ends on too). One *Save new version* runs the mapping's checks, then saves;
+  were — the goal's name and its category, filed where the goal page's
+  header names it; the intro says which version the save starts) opens it,
+  the signals follow — their combination rule a `DesignSystemPickerField`
+  like any other picked value — and *Your agent* closes it: whether the
+  check-ins are the goal itself (an `AgentSwitchRow`, the person editor's
+  reminders row, which creation shows under the signals) and the agent's
+  name (the section the person editor ends on too). One *Save new version* runs the mapping's checks, then saves;
   *Cancel*, the back button and the system back leave at once when nothing
   changed and ask first when something did (`_GoalEditLeave`, an order-free
   fingerprint baselined once the goal and its catalogs have loaded). The
@@ -1904,7 +1906,7 @@ agent's job is to answer them. `GoalCheckInWeight.of(spec)` decides which a
 goal is: the user's say in `GoalSpecVersionEntity.checkInsAreSubstance` when
 they gave one, otherwise `substance` exactly when a criterion measures
 check-in time. The goal form's "I'll answer what you tell me" switch
-(`GoalFormCheckInWeightCard`) shows that value and stores it only where it
+(an `AgentSwitchRow`) shows that value and stores it only where it
 departs from what the criteria imply, so a goal nobody decided for keeps
 following its criteria. Owner revisions compare it like any other field;
 agent proposals carry it over unchanged — an agent never decides what the
@@ -2130,7 +2132,7 @@ through `EntryCategoryMove`, re-reads `goalCategoryIdProvider`, and confirms
 under it — the agent's persona is named on its card, not as a letter disc
 beside the title — and a phone carries the person page's labelled *Talk to
 agent* pill. The goal
-form's *meet your agent* step (and, editing, its *Your agent* section) has
+form's *meet your agent* step (and, editing, its *Your goal* section) has
 the person form's category field (`CategoryFieldRow`; the form's
 `_GoalFormCategory` mixin holds its state). Editing, the row cannot be
 changed until the goal row's own category has read, so a late read never

@@ -220,10 +220,10 @@ the mapping step — derived from the selected habits' names (emoji-free),
 falling back to the steps label or the intention text when no habit is
 selected, until the user types their own — and reappears on the
 confirmation step as the same field rendered read-only behind a pencil
-affordance. Editing is one page: *Your goal* — the statement with its example pills and
-the goal's name — then the signals, then *Your agent* — the agent's name, the
-goal's category, the version the save starts — above *Cancel* and one *Save
-new version*; leaving with unsaved changes asks first, as the person editor
+affordance. Editing is one page: *Your goal* — the statement in your words, the goal's
+name and its category, under a line naming the version the save starts —
+then the signals, then *Your agent* — whether it answers what you tell it,
+and its name — above *Cancel* and one *Save new version*; leaving with unsaved changes asks first, as the person editor
 does. The goal page names the goal's category above its title with the person
 page's selector, so a goal moves to another category in two taps. The automatic step count
 is an always-visible signal row rather than an intention-gated one, and an
