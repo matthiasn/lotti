@@ -1,5 +1,10 @@
 # Knowledge Bundle Update Log
 
+## 2026-11-03
+* **Update**: [GitHub pull requests](features/github.md) — the settings page
+  opens GitHub's token form pre-filled with Lotti's read-only permissions
+  (`gitHubTokenTemplateUri`); [Settings](features/settings.md) — the GitHub
+  page is behind no flag.
 ## 2026-11-02
 * **Update**: [Task agents](features/agents/task-agents.md) — linked tasks
   reach the wake as one-liners within a budget (`LinkedTaskDirectory`: 30

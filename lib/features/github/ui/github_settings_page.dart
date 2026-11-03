@@ -3,11 +3,13 @@ import 'package:lotti/features/design_system/components/buttons/design_system_bu
 import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/github/api/github_client.dart';
+import 'package:lotti/features/github/domain/github_token_template.dart';
 import 'package:lotti/features/github/state/github_providers.dart';
 import 'package:lotti/features/github/ui/github_failure_message.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/pages/sliver_box_adapter_page.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 /// What the page last learned about the user's other devices.
 enum _SyncNote {
@@ -37,7 +39,9 @@ class GitHubSettingsPage extends StatelessWidget {
 }
 
 /// Connects to GitHub with the user's personal access token, or shows whose
-/// token it holds and lets the user remove it. The token syncs to the user's
+/// token it holds and lets the user remove it. Without one, it opens GitHub's
+/// token form with Lotti's read-only permissions filled in, for the user to
+/// paste the result back. The token syncs to the user's
 /// other devices; a small action sends it to them again, or — on a device
 /// without one — asks sync to catch up, rather than syncing on every visit.
 class GitHubSettingsBody extends ConsumerStatefulWidget {
@@ -81,6 +85,22 @@ class _GitHubSettingsBodyState extends ConsumerState<GitHubSettingsBody> {
       if (failure == null) _tokenController.clear();
       _syncNote = owed ? _SyncNote.owed : null;
     });
+  }
+
+  /// Opens GitHub's pre-filled token form in the browser. A browser that
+  /// cannot be opened is said in the field's error slot, never thrown.
+  Future<void> _createToken() async {
+    var opened = false;
+    try {
+      opened = await launchUrl(
+        gitHubTokenTemplateUri(),
+        mode: LaunchMode.externalApplication,
+      );
+    } on Exception {
+      opened = false;
+    }
+    if (opened || !mounted) return;
+    setState(() => _error = context.messages.githubCreateTokenOpenFailed);
   }
 
   Future<void> _disconnect() async {
@@ -193,6 +213,16 @@ class _GitHubSettingsBodyState extends ConsumerState<GitHubSettingsBody> {
           ] else ...[
             Text(messages.githubTokenIntro, style: secondary),
             SizedBox(height: tokens.spacing.step5),
+            DesignSystemButton(
+              key: const Key('github_create_token'),
+              label: messages.githubCreateTokenButton,
+              variant: DesignSystemButtonVariant.secondary,
+              leadingIcon: LottiIcons.openExternal,
+              size: DesignSystemButtonSize.large,
+              fullWidth: true,
+              onPressed: _createToken,
+            ),
+            SizedBox(height: tokens.spacing.step5),
             DesignSystemTextInput(
               key: const Key('github_token'),
               controller: _tokenController,
@@ -251,6 +281,14 @@ class _GitHubSettingsBodyState extends ConsumerState<GitHubSettingsBody> {
                 }
                 case final note?)
               Text(note, key: const Key('github_sync_note'), style: secondary),
+          ],
+          if (login == null) ...[
+            SizedBox(height: tokens.spacing.step5),
+            Text(
+              messages.githubTokenChecksCaveat,
+              key: const Key('github_token_checks_caveat'),
+              style: secondary,
+            ),
           ],
           SizedBox(height: tokens.spacing.step5),
           Row(

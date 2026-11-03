@@ -4410,6 +4410,8 @@
       }
     }
   },
+  "githubCreateTokenButton": "Create a token on GitHub",
+  "githubCreateTokenOpenFailed": "Lotti could not open your browser. Create the token on github.com under Settings → Developer settings → Personal access tokens.",
   "githubDescriptionHeading": "Description",
   "@githubDescriptionHeading": {
     "description": "Heading over a pull request's own description."
@@ -4611,8 +4613,9 @@
   "@githubSummaryOnNextRefresh": {
     "description": "Shown under the empty TL;DR in a pull request's details when a summary will be written automatically."
   },
+  "githubTokenChecksCaveat": "CI checks of private repositories may be incomplete: GitHub gives these tokens no access to check runs.",
   "githubTokenHide": "Hide token",
-  "githubTokenIntro": "Lotti reads the pull requests you link to tasks with your own personal access token. Create a fine-grained token for the repositories you work in, with read-only access to \"Pull requests\" and \"Commit statuses\". GitHub does not let such a token read check runs in a private repository, so CI may be incomplete there; a classic token with the \"repo\" scope can read them.",
+  "githubTokenIntro": "Lotti reads the pull requests you link to tasks with a read-only token from your GitHub account. Create one on GitHub — the permissions are filled in for you — choose your repositories, then paste the token here.",
   "githubTokenLabel": "Personal access token",
   "githubTokenPrivacy": "The token syncs end-to-end encrypted to your other devices. Lotti uses it only for requests to api.github.com.",
   "githubTokenShow": "Show token",

@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/sync/sync_message.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/github/api/github_client.dart';
+import 'package:lotti/features/github/domain/github_token_template.dart';
 import 'package:lotti/features/github/repository/github_account_sync.dart';
 import 'package:lotti/features/github/repository/github_token_storage.dart';
 import 'package:lotti/features/github/state/github_providers.dart';
@@ -14,6 +15,7 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/widgets/pages/sliver_box_adapter_page.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
@@ -425,6 +427,125 @@ void main() {
       expect(find.text('Connected as @pingu'), findsOneWidget);
     },
   );
+
+  group('creating a token', () {
+    const createToken = Key('github_create_token');
+    const caveat = Key('github_token_checks_caveat');
+    const openFailed =
+        'Lotti could not open your browser. Create the token on github.com '
+        'under Settings → Developer settings → Personal access tokens.';
+    late MockUrlLauncher launcher;
+
+    setUpAll(() => registerFallbackValue(FakeLaunchOptions()));
+
+    setUp(() {
+      final original = UrlLauncherPlatform.instance;
+      launcher = MockUrlLauncher();
+      UrlLauncherPlatform.instance = launcher;
+      addTearDown(() => UrlLauncherPlatform.instance = original);
+    });
+
+    Future<void> tapCreate(WidgetTester tester) async {
+      await tester.tap(find.byKey(createToken));
+      await tester.pump();
+      await tester.pump();
+    }
+
+    testWidgets(
+      "opens GitHub's pre-filled token form in the browser, and says nothing",
+      (tester) async {
+        when(
+          () => launcher.launchUrl(any(), any()),
+        ).thenAnswer((_) async => true);
+        await pump(tester);
+
+        await tapCreate(tester);
+
+        final captured = verify(
+          () => launcher.launchUrl(captureAny(), captureAny()),
+        ).captured;
+        expect(captured[0], gitHubTokenTemplateUri().toString());
+        expect(
+          (captured[1] as LaunchOptions).mode,
+          PreferredLaunchMode.externalApplication,
+        );
+        expect(find.text(openFailed), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'a browser that declines says where to make the token by hand, until '
+      'the user types',
+      (tester) async {
+        when(
+          () => launcher.launchUrl(any(), any()),
+        ).thenAnswer((_) async => false);
+        await pump(tester);
+
+        await tapCreate(tester);
+        expect(find.text(openFailed), findsOneWidget);
+
+        await tester.enterText(find.byKey(const Key('github_token')), 'ghp_');
+        await tester.pump();
+        expect(find.text(openFailed), findsNothing);
+      },
+    );
+
+    testWidgets('a launcher that throws says the same, and throws nothing', (
+      tester,
+    ) async {
+      when(
+        () => launcher.launchUrl(any(), any()),
+      ).thenThrow(Exception('no browser'));
+      await pump(tester);
+
+      await tapCreate(tester);
+
+      expect(tester.takeException(), isNull);
+      expect(find.text(openFailed), findsOneWidget);
+    });
+
+    testWidgets(
+      'not connected: offers the form and says what such a token cannot read',
+      (tester) async {
+        await pump(tester);
+
+        expect(button(tester, createToken).onPressed, isNotNull);
+        expect(
+          find.text(
+            'CI checks of private repositories may be incomplete: GitHub '
+            'gives these tokens no access to check runs.',
+          ),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets('a synced token GitHub rejected offers the form beside why', (
+      tester,
+    ) async {
+      await received('ghp_expired');
+      when(() => client.fetchViewerLogin('ghp_expired')).thenThrow(
+        const GitHubException(GitHubFailureKind.unauthorized),
+      );
+      await pump(tester);
+
+      expect(find.text(rejected), findsOneWidget);
+      expect(find.byKey(createToken), findsOneWidget);
+    });
+
+    testWidgets('connected: neither the form nor the caveat', (tester) async {
+      await received('ghp_ok');
+      when(
+        () => client.fetchViewerLogin('ghp_ok'),
+      ).thenAnswer((_) async => 'pingu');
+      await pump(tester);
+
+      expect(find.text('Connected as @pingu'), findsOneWidget);
+      expect(find.byKey(createToken), findsNothing);
+      expect(find.byKey(caveat), findsNothing);
+    });
+  });
 
   testWidgets('the mobile page titles itself GitHub around the same body', (
     tester,

@@ -3331,6 +3331,8 @@
       }
     }
   },
+  "githubCreateTokenButton": "Opret et token på GitHub",
+  "githubCreateTokenOpenFailed": "Lotti kunne ikke åbne din browser. Opret tokenet på github.com under Settings → Developer settings → Personal access tokens.",
   "githubDescriptionHeading": "Beskrivelse",
   "githubDisconnectButton": "Afbryd forbindelsen",
   "githubFailureForbidden": "Tokenet må ikke læse dette. Tjek dets tilladelser.",
@@ -3434,8 +3436,9 @@
   "githubSummaryHeading": "Kort fortalt",
   "githubSummaryNoModel": "Der er ingen model sat op til denne opgaves agent, så intet kan skrive opsummeringen.",
   "githubSummaryOnNextRefresh": "En opsummering skrives, næste gang denne pull request opdateres, eller opsummer den nu.",
+  "githubTokenChecksCaveat": "CI-checks i private repositories kan være ufuldstændige: GitHub giver ikke disse tokens adgang til check runs.",
   "githubTokenHide": "Skjul token",
-  "githubTokenIntro": "Lotti læser de pull requests, du knytter til opgaver, med dit eget personlige adgangstoken. Opret et fine-grained token til de repositories, du arbejder i, med skrivebeskyttet adgang til \"Pull requests\" og \"Commit statuses\". GitHub lader ikke sådan et token læse check runs i et privat repository, så CI kan være ufuldstændig dér; et klassisk token med scopet \"repo\" kan læse dem.",
+  "githubTokenIntro": "Lotti læser de pull requests, du knytter til opgaver, med et skrivebeskyttet token fra din GitHub-konto. Opret det på GitHub – tilladelserne er allerede udfyldt –, vælg dine repositories, og indsæt tokenet her.",
   "githubTokenLabel": "Personligt adgangstoken",
   "githubTokenPrivacy": "Tokenet synkroniseres end-to-end-krypteret til dine andre enheder. Lotti bruger det kun til forespørgsler til api.github.com.",
   "githubTokenShow": "Vis token",

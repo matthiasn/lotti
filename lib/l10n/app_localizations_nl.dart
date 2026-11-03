@@ -7318,6 +7318,13 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String get githubCreateTokenButton => 'Token aanmaken op GitHub';
+
+  @override
+  String get githubCreateTokenOpenFailed =>
+      'Lotti kon je browser niet openen. Maak het token aan op github.com onder Settings → Developer settings → Personal access tokens.';
+
+  @override
   String get githubDescriptionHeading => 'Beschrijving';
 
   @override
@@ -7594,11 +7601,15 @@ class AppLocalizationsNl extends AppLocalizations {
       'Er wordt een samenvatting geschreven wanneer deze pull request de volgende keer wordt vernieuwd, of vat hem nu samen.';
 
   @override
+  String get githubTokenChecksCaveat =>
+      'CI-checks van privérepository\'s kunnen onvolledig zijn: GitHub geeft deze tokens geen toegang tot check runs.';
+
+  @override
   String get githubTokenHide => 'Token verbergen';
 
   @override
   String get githubTokenIntro =>
-      'Lotti leest de pull requests die je aan taken koppelt met je eigen persoonlijke toegangstoken. Maak een fine-grained token voor de repository\'s waarin je werkt, met alleen-lezen toegang tot \"Pull requests\" en \"Commit statuses\". GitHub laat zo\'n token geen check runs lezen in een privérepository, dus daar kan CI onvolledig zijn; een klassiek token met de scope \"repo\" kan ze wel lezen.';
+      'Lotti leest de pull requests die je aan taken koppelt met een alleen-lezen token van je GitHub-account. Maak er een aan op GitHub — de rechten zijn al ingevuld —, kies je repository\'s en plak het token hier.';
 
   @override
   String get githubTokenLabel => 'Persoonlijk toegangstoken';

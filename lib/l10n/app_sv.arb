@@ -3331,6 +3331,8 @@
       }
     }
   },
+  "githubCreateTokenButton": "Skapa en token på GitHub",
+  "githubCreateTokenOpenFailed": "Lotti kunde inte öppna din webbläsare. Skapa token på github.com under Settings → Developer settings → Personal access tokens.",
   "githubDescriptionHeading": "Beskrivning",
   "githubDisconnectButton": "Koppla från",
   "githubFailureForbidden": "Din token får inte läsa det här. Kontrollera dess behörigheter.",
@@ -3434,8 +3436,9 @@
   "githubSummaryHeading": "Kort sagt",
   "githubSummaryNoModel": "Det finns ingen modell inställd för den här uppgiftens agent, så inget kan skriva sammanfattningen.",
   "githubSummaryOnNextRefresh": "En sammanfattning skrivs nästa gång den här pull requesten uppdateras, eller sammanfatta den nu.",
+  "githubTokenChecksCaveat": "CI-kontroller i privata repon kan vara ofullständiga: GitHub ger inte dessa tokens åtkomst till check runs.",
   "githubTokenHide": "Dölj token",
-  "githubTokenIntro": "Lotti läser de pull requests du kopplar till uppgifter med din egen personliga åtkomsttoken. Skapa en fine-grained token för de repon du arbetar i, med läsbehörighet till \"Pull requests\" och \"Commit statuses\". GitHub låter inte en sådan token läsa check runs i ett privat repo, så där kan CI vara ofullständig; en klassisk token med scopet \"repo\" kan läsa dem.",
+  "githubTokenIntro": "Lotti läser de pull requests du kopplar till uppgifter med en skrivskyddad token från ditt GitHub-konto. Skapa den på GitHub – behörigheterna är redan ifyllda –, välj dina repon och klistra in token här.",
   "githubTokenLabel": "Personlig åtkomsttoken",
   "githubTokenPrivacy": "Token synkas end-to-end-krypterad till dina andra enheter. Lotti använder den bara för förfrågningar till api.github.com.",
   "githubTokenShow": "Visa token",

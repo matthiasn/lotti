@@ -7394,6 +7394,13 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get githubCreateTokenButton => 'Créer un jeton sur GitHub';
+
+  @override
+  String get githubCreateTokenOpenFailed =>
+      'Lotti n\'a pas pu ouvrir ton navigateur. Crée le jeton sur github.com sous Settings → Developer settings → Personal access tokens.';
+
+  @override
   String get githubDescriptionHeading => 'Description';
 
   @override
@@ -7671,11 +7678,15 @@ class AppLocalizationsFr extends AppLocalizations {
       'Un résumé sera rédigé à la prochaine actualisation de cette pull request, ou résume-la maintenant.';
 
   @override
+  String get githubTokenChecksCaveat =>
+      'Les checks CI des dépôts privés peuvent être incomplets : GitHub ne donne à ces jetons aucun accès aux check runs.';
+
+  @override
   String get githubTokenHide => 'Masquer le jeton';
 
   @override
   String get githubTokenIntro =>
-      'Lotti lit les pull requests que tu lies à tes tâches avec ton propre jeton d\'accès personnel. Crée un jeton fine-grained pour les dépôts sur lesquels tu travailles, avec un accès en lecture seule à « Pull requests » et « Commit statuses ». GitHub ne laisse pas un tel jeton lire les check runs d\'un dépôt privé, la CI peut donc y être incomplète ; un jeton classique avec le scope « repo » peut les lire.';
+      'Lotti lit les pull requests que tu lies à tes tâches avec un jeton en lecture seule de ton compte GitHub. Crée-le sur GitHub — les autorisations sont déjà remplies —, choisis tes dépôts, puis colle le jeton ici.';
 
   @override
   String get githubTokenLabel => 'Jeton d\'accès personnel';

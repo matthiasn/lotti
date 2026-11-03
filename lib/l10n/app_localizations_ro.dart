@@ -7404,6 +7404,13 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get githubCreateTokenButton => 'Creați un token pe GitHub';
+
+  @override
+  String get githubCreateTokenOpenFailed =>
+      'Lotti nu a putut deschide browserul. Creați tokenul pe github.com, la Settings → Developer settings → Personal access tokens.';
+
+  @override
   String get githubDescriptionHeading => 'Descriere';
 
   @override
@@ -7682,11 +7689,15 @@ class AppLocalizationsRo extends AppLocalizations {
       'Un rezumat va fi scris la următoarea actualizare a acestui pull request sau îl puteți rezuma acum.';
 
   @override
+  String get githubTokenChecksCaveat =>
+      'Verificările CI ale depozitelor private pot fi incomplete: GitHub nu oferă acestor tokenuri acces la check run-uri.';
+
+  @override
   String get githubTokenHide => 'Ascundeți tokenul';
 
   @override
   String get githubTokenIntro =>
-      'Lotti citește pull request-urile pe care le legați de sarcini cu propriul dvs. token de acces personal. Creați un token fine-grained pentru depozitele în care lucrați, cu acces doar de citire la „Pull requests” și „Commit statuses”. GitHub nu permite unui astfel de token să citească check run-urile dintr-un depozit privat, așa că acolo CI poate fi incompletă; un token clasic cu scope-ul „repo” le poate citi.';
+      'Lotti citește pull request-urile pe care le legați de sarcini cu un token doar de citire din contul dvs. GitHub. Creați-l pe GitHub — permisiunile sunt deja completate —, alegeți depozitele, apoi lipiți tokenul aici.';
 
   @override
   String get githubTokenLabel => 'Token de acces personal';

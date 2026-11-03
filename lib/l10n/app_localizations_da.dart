@@ -7285,6 +7285,13 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
+  String get githubCreateTokenButton => 'Opret et token på GitHub';
+
+  @override
+  String get githubCreateTokenOpenFailed =>
+      'Lotti kunne ikke åbne din browser. Opret tokenet på github.com under Settings → Developer settings → Personal access tokens.';
+
+  @override
   String get githubDescriptionHeading => 'Beskrivelse';
 
   @override
@@ -7559,11 +7566,15 @@ class AppLocalizationsDa extends AppLocalizations {
       'En opsummering skrives, næste gang denne pull request opdateres, eller opsummer den nu.';
 
   @override
+  String get githubTokenChecksCaveat =>
+      'CI-checks i private repositories kan være ufuldstændige: GitHub giver ikke disse tokens adgang til check runs.';
+
+  @override
   String get githubTokenHide => 'Skjul token';
 
   @override
   String get githubTokenIntro =>
-      'Lotti læser de pull requests, du knytter til opgaver, med dit eget personlige adgangstoken. Opret et fine-grained token til de repositories, du arbejder i, med skrivebeskyttet adgang til \"Pull requests\" og \"Commit statuses\". GitHub lader ikke sådan et token læse check runs i et privat repository, så CI kan være ufuldstændig dér; et klassisk token med scopet \"repo\" kan læse dem.';
+      'Lotti læser de pull requests, du knytter til opgaver, med et skrivebeskyttet token fra din GitHub-konto. Opret det på GitHub – tilladelserne er allerede udfyldt –, vælg dine repositories, og indsæt tokenet her.';
 
   @override
   String get githubTokenLabel => 'Personligt adgangstoken';

@@ -2986,6 +2986,8 @@
       }
     }
   },
+  "githubCreateTokenButton": "Token auf GitHub erstellen",
+  "githubCreateTokenOpenFailed": "Lotti konnte deinen Browser nicht öffnen. Erstelle den Token auf github.com unter Settings → Developer settings → Personal access tokens.",
   "githubDescriptionHeading": "Beschreibung",
   "githubDisconnectButton": "Trennen",
   "githubFailureForbidden": "Der Token darf das nicht lesen. Prüfe seine Berechtigungen.",
@@ -3089,8 +3091,9 @@
   "githubSummaryHeading": "Kurz gesagt",
   "githubSummaryNoModel": "Für den Agenten dieser Aufgabe ist kein Modell eingerichtet, also kann niemand die Zusammenfassung schreiben.",
   "githubSummaryOnNextRefresh": "Eine Zusammenfassung wird beim nächsten Aktualisieren dieses Pull-Requests geschrieben – oder fass ihn jetzt zusammen.",
+  "githubTokenChecksCaveat": "CI-Checks privater Repositories können unvollständig sein: GitHub gibt diesen Tokens keinen Zugriff auf Check-Runs.",
   "githubTokenHide": "Token verbergen",
-  "githubTokenIntro": "Lotti liest die Pull-Requests, die du mit Aufgaben verknüpfst, mit deinem eigenen Personal Access Token. Erstelle einen Fine-grained Token für die Repositories, in denen du arbeitest, mit Lesezugriff auf \"Pull requests\" und \"Commit statuses\". GitHub lässt einen solchen Token in einem privaten Repository keine Check-Runs lesen, dort kann CI also unvollständig sein; ein klassischer Token mit dem Scope \"repo\" kann sie lesen.",
+  "githubTokenIntro": "Lotti liest die Pull-Requests, die du mit Aufgaben verknüpfst, mit einem Token deines GitHub-Kontos, der nur lesen darf. Erstelle ihn auf GitHub – die Berechtigungen sind schon ausgefüllt –, wähle deine Repositories und füge den Token hier ein.",
   "githubTokenLabel": "Personal Access Token",
   "githubTokenPrivacy": "Der Token wird Ende-zu-Ende-verschlüsselt mit deinen anderen Geräten synchronisiert. Lotti nutzt ihn nur für Anfragen an api.github.com.",
   "githubTokenShow": "Token anzeigen",
