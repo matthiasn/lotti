@@ -1119,6 +1119,43 @@ void main() {
       ).called(2);
     });
 
+    test('reads ownership again when a link to one of its prompts changes, '
+        'though no response changed', () async {
+      const params = (entryId: recordingId, taskId: 'task-b');
+      final updates = <List<String>>[];
+      final subscription = container.listen(
+        taskScopedAiResponsesProvider(params),
+        (_, next) {
+          if (next case AsyncData(:final value)) {
+            updates.add([for (final entry in value) entry.meta.id]);
+          }
+        },
+      );
+      addTearDown(subscription.close);
+      await container.read(taskScopedAiResponsesProvider(params).future);
+
+      // A notification about something else reads nothing again.
+      updateStreamController.add({'some-other-entry'});
+      await pumpEventQueue();
+      verify(() => mockJournalRepository.getParentTaskIds(any())).called(1);
+
+      // Task A now links to the prompt no task owned: only the link changed,
+      // and linking notifies both ends.
+      when(
+        () => mockJournalRepository.getParentTaskIds(any()),
+      ).thenAnswer(
+        (_) async => {
+          'prompt-a': {'task-a'},
+          'prompt-b': {'task-b'},
+          'prompt-unowned': {'task-a'},
+        },
+      );
+      updateStreamController.add({'task-a', 'prompt-unowned'});
+      await pumpEventQueue();
+
+      expect(updates.last, ['prompt-b', 'transcript']);
+    });
+
     test(
       'asks about no owners when no coding prompt hangs off the entry',
       () async {

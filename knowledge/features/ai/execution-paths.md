@@ -678,8 +678,10 @@ back-link is what lets a recording show its prompts nested under it, and it is
 also why a recording in two tasks carries both tasks' prompts. The nested view
 (`NestedAiResponsesWidget`) is therefore scoped: shown inside a task it reads
 `taskScopedAiResponsesProvider`, which drops a coding prompt that another task
-links to (`JournalRepository.getParentTaskIds`, deleted tasks included); shown
-on its own it lists everything. Transcripts, analyses and summaries describe
+links to (`JournalRepository.getParentTaskIds`, deleted tasks included), and
+reads ownership again whenever an update notification names one of its prompts,
+since linking a task to a prompt changes no response and so never reaches it
+through the response list; shown on its own it lists everything. Transcripts, analyses and summaries describe
 the entry itself and show in every task.
 
 ```mermaid

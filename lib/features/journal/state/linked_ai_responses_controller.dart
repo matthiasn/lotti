@@ -131,6 +131,20 @@ final taskScopedAiResponsesProvider = FutureProvider.autoDispose
         };
         if (promptIds.isEmpty) return responses;
 
+        // Ownership is links, not content: a task linked to or unlinked from
+        // a prompt leaves the response list unchanged, so the controller
+        // above does not emit. Linking notifies both ends, the prompt among
+        // them, so ownership is read again on any notification naming one of
+        // these prompts. Subscribed before the read, so a change landing
+        // while it runs is not lost; the last list stays on screen meanwhile.
+        final subscription = ref
+            .read(updateNotificationsProvider)
+            .updateStream
+            .listen((affectedIds) {
+              if (affectedIds.any(promptIds.contains)) ref.invalidateSelf();
+            });
+        ref.onDispose(subscription.cancel);
+
         final owners = await ref
             .read(journalRepositoryProvider)
             .getParentTaskIds(promptIds);
