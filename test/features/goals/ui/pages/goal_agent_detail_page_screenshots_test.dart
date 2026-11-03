@@ -32,6 +32,7 @@ import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/companion/state/spoken_track.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/model/goal_timeline_item.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/state/goal_checkin_providers.dart';
@@ -190,6 +191,7 @@ Future<void> _capture(
   required Brightness brightness,
   required bool companion,
   bool journal = false,
+  bool menuOpen = false,
 }) async {
   await tester.pumpWidget(const SizedBox.shrink());
   await tester.pump();
@@ -295,12 +297,19 @@ Future<void> _capture(
     // She never settles: pump frames by hand.
     await settleFrames(tester, 20);
   });
+  if (menuOpen) {
+    // The overflow menu every agent surface shares with the person page.
+    await tester.tap(find.byIcon(LottiIcons.moreVertical));
+    await settleFrames(tester, 20);
+  }
 
   final theme = brightness == Brightness.dark ? 'dark' : 'light';
   await captureScreenshot(
     tester,
     journal
         ? 'journal_report_${device.name}_$theme'
+        : menuOpen
+        ? 'menu_${device.name}_$theme'
         : '${device.name}_${companion ? 'companion' : 'badge'}_$theme',
     subdir: _subdir,
   );
@@ -335,6 +344,15 @@ void main() {
         });
       }
       final theme = brightness == Brightness.dark ? 'dark' : 'light';
+      testWidgets('${device.name} menu $theme', (tester) async {
+        await _capture(
+          tester,
+          device: device,
+          brightness: brightness,
+          companion: false,
+          menuOpen: true,
+        );
+      });
       testWidgets('${device.name} journal report $theme', (tester) async {
         await _capture(
           tester,

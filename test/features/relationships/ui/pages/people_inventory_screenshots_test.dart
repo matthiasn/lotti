@@ -1604,6 +1604,31 @@ void main() {
       );
     });
 
+    // The overflow menu every agent surface shares with the goal page.
+    testWidgets('$suffix person page, the overflow menu — dark', (
+      tester,
+    ) async {
+      await pumpSurface(
+        tester,
+        home: const RelationshipDetailsPage(relationshipId: _pipId),
+        device: device,
+        brightness: Brightness.dark,
+        overrides: personOverrides(
+          report: briefing(),
+          state: makeTestState(agentId: agentId),
+        ),
+      );
+      await tester.tap(find.byKey(const ValueKey('person-menu-trigger')));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const ValueKey('person-menu-edit')), findsOneWidget);
+      await captureScreenshot(
+        tester,
+        'person_overflow_menu_${suffix}_dark',
+        subdir: _subdir,
+      );
+    });
+
     testWidgets('$suffix person page, a new note — dark', (tester) async {
       await pumpSurface(
         tester,
