@@ -823,10 +823,9 @@ class _MappingStep extends StatelessWidget {
               ),
             ),
             leadingIcon: LottiIcons.add,
-            variant: isDesktopLayout(context)
-                ? DesignSystemButtonVariant.tertiary
-                : DesignSystemButtonVariant.secondary,
-            fullWidth: !isDesktopLayout(context),
+            // The person editor's *Add contact*: a quiet add-a-row action
+            // on every width, never heavier than the form's own fields.
+            variant: DesignSystemButtonVariant.tertiary,
           ),
           SizedBox(height: tokens.spacing.step3),
           // A footnote under the signals it explains, not a card: the

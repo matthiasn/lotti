@@ -79,6 +79,10 @@ class _CategoryCrumbState extends ConsumerState<CategoryCrumb> {
       return;
     }
     widget.onMoved?.call();
+    // Everything the undo needs is taken now, while the page is here: the
+    // toast can outlive it — the user may leave before tapping Undo.
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    final onMoved = widget.onMoved;
     // The header commits at once, where an editor waits for Save: the
     // toast says where the entry went and offers the way back.
     context.showToast(
@@ -88,31 +92,44 @@ class _CategoryCrumbState extends ConsumerState<CategoryCrumb> {
           : messages.categoryCrumbMovedTo(picked.name),
       action: ToastAction(
         label: messages.designSystemUndoLabel,
-        onPressed: () => unawaited(_undo(move, entryId, previousId)),
+        onPressed: () => unawaited(
+          _undo(
+            move: move,
+            entryId: entryId,
+            previousId: previousId,
+            messenger: messenger,
+            failedTitle: messages.saveFailedRetry,
+            onMoved: onMoved,
+          ),
+        ),
       ),
       replaceCurrent: true,
     );
   }
 
-  Future<void> _undo(
-    EntryCategoryMove move,
-    String entryId,
-    String? previousId,
-  ) async {
+  /// Moves the entry back. Only the busy state belongs to this widget, and
+  /// it is touched only while the widget is mounted; the move itself and its
+  /// failure toast go ahead after the page is gone.
+  Future<void> _undo({
+    required EntryCategoryMove move,
+    required String entryId,
+    required String? previousId,
+    required ScaffoldMessengerState? messenger,
+    required String failedTitle,
+    required VoidCallback? onMoved,
+  }) async {
     if (_moving) return;
-    final messages = context.messages;
-    setState(() => _moving = true);
+    if (mounted) setState(() => _moving = true);
     final moved = await move.move(entryId, previousId);
-    if (!mounted) return;
-    setState(() => _moving = false);
+    if (mounted) setState(() => _moving = false);
     if (moved) {
-      widget.onMoved?.call();
+      onMoved?.call();
       return;
     }
     // In place of the *Moved to* toast whose Undo this was.
-    context.showToast(
+    messenger?.showDesignSystemToast(
       tone: DesignSystemToastTone.error,
-      title: messages.saveFailedRetry,
+      title: failedTitle,
       replaceCurrent: true,
     );
   }

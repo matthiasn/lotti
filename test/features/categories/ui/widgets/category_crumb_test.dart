@@ -179,6 +179,34 @@ void main() {
     expect(find.text("That didn't save — please try again."), findsOneWidget);
   });
 
+  testWidgets(
+    'Undo still moves the entry back after the page that moved it is gone',
+    (tester) async {
+      when(() => move.move(any(), any())).thenAnswer((_) async => true);
+      await pump(tester);
+
+      await openPicker(tester);
+      await tester.tap(find.text('Launch crew'));
+      await tester.pumpAndSettle();
+      // The user leaves: the crumb is torn down, the toast stays up.
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const SizedBox.shrink(),
+          overrides: [
+            entryCategoryMoveProvider.overrideWithValue(move),
+            entitiesCacheServiceProvider.overrideWithValue(cache),
+          ],
+        ),
+      );
+      expect(find.byType(CategoryCrumb), findsNothing);
+      await tester.tap(find.text('Undo'));
+      await tester.pumpAndSettle();
+
+      verify(() => move.move('person-pip', 'cat-ops')).called(1);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('a failed move says so', (tester) async {
     when(() => move.move(any(), any())).thenAnswer((_) async => false);
     await pump(tester);
