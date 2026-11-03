@@ -1551,6 +1551,63 @@ void main() {
       );
     });
 
+    group('getParentTaskIds', () {
+      EntryLink link(String fromId, String toId) => EntryLink.basic(
+        id: '$fromId->$toId',
+        fromId: fromId,
+        toId: toId,
+        createdAt: DateTime(2024),
+        updatedAt: DateTime(2024),
+        vectorClock: null,
+      );
+
+      test('maps each child to the tasks linking to it, deleted ones '
+          'included, and ignores parents that are not tasks', () async {
+        final taskA = testTask.copyWith(meta: testTask.meta.copyWith(id: 'a'));
+        final deletedTaskB = testTask.copyWith(
+          meta: testTask.meta.copyWith(id: 'b', deletedAt: DateTime(2024)),
+        );
+        final recording = testJournalEntry(meta: testMeta(id: 'rec'));
+        when(
+          () => mockJournalDb.linksForEntryIds({'p1', 'p2', 'p3'}),
+        ).thenAnswer(
+          (_) async => [
+            link('a', 'p1'),
+            link('rec', 'p1'),
+            link('b', 'p2'),
+            link('rec', 'p3'),
+          ],
+        );
+        when(
+          () => mockJournalDb.entriesForIds(
+            any(that: unorderedEquals(['a', 'b', 'rec'])),
+          ),
+        ).thenReturn(
+          MockSelectable([
+            toDbEntity(taskA),
+            toDbEntity(deletedTaskB),
+            toDbEntity(recording),
+          ]),
+        );
+
+        final result = await repository.getParentTaskIds({'p1', 'p2', 'p3'});
+
+        expect(result, {
+          'p1': {'a'},
+          'p2': {'b'},
+        });
+      });
+
+      test('reads no entities when nothing links to the children', () async {
+        when(
+          () => mockJournalDb.linksForEntryIds({'orphan'}),
+        ).thenAnswer((_) async => const []);
+
+        expect(await repository.getParentTaskIds({'orphan'}), isEmpty);
+        verifyNever(() => mockJournalDb.entriesForIds(any()));
+      });
+    });
+
     group('getRelationships', () {
       test("answers the database's private-filtered people", () async {
         final people = [testRelationship];

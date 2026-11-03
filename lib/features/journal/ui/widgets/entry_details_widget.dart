@@ -466,6 +466,10 @@ class _EntryDetailsContentState extends ConsumerState<EntryDetailsContent> {
           }
         : null;
 
+    // A recording in two tasks carries both tasks' coding prompts; each task
+    // shows only its own under it.
+    final contextTaskId = linkedFrom is Task ? linkedFrom.id : null;
+
     final header = EntryDetailHeader(
       entryId: itemId,
       inLinkedEntries: linkedFrom != null,
@@ -527,6 +531,7 @@ class _EntryDetailsContentState extends ConsumerState<EntryDetailsContent> {
             NestedAiResponsesWidget(
               parentEntryId: itemId,
               linkedFromEntity: item,
+              contextTaskId: contextTaskId,
             ),
           // Footer self-collapses to zero when there is nothing to show, so it
           // carries its own (small) leading gap rather than a rhythm step.
@@ -566,6 +571,7 @@ class _EntryDetailsContentState extends ConsumerState<EntryDetailsContent> {
           NestedAiResponsesWidget(
             parentEntryId: itemId,
             linkedFromEntity: item,
+            contextTaskId: contextTaskId,
           ),
         footer,
       ],

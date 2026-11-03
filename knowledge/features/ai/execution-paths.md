@@ -673,6 +673,31 @@ In linked-entries lists, generated prompts render under the `Code` activity
 filter pill and are **exempt** from the generic `showAiEntry` gate that keeps
 transcripts and image analyses collapsed.
 
+**Which task a coding prompt belongs to.** The popup resolves the task once —
+the task the entry was opened in, else the entity itself when it is a `Task`,
+else the sole linked task — and that id rides the trigger parameters into
+`runPromptGeneration` as `linkedTaskId`. The runner keeps no per-run state, so
+any number of runs across tasks can be in flight at once: each persists its
+prompt linked **from its own task** and back-linked from the source entry. The
+back-link is what lets a recording show its prompts nested under it, and it is
+also why a recording in two tasks carries both tasks' prompts. The nested view
+(`NestedAiResponsesWidget`) is therefore scoped: shown inside a task it reads
+`taskScopedAiResponsesProvider`, which drops a coding prompt that another task
+links to (`JournalRepository.getParentTaskIds`, deleted tasks included), and
+reads ownership again whenever an update notification names one of its prompts,
+since linking a task to a prompt changes no response and so never reaches it
+through the response list; shown on its own it lists everything. Transcripts, analyses and summaries describe
+the entry itself and show in every task.
+
+```mermaid
+flowchart LR
+  Popup["AI popup<br/>opened in Task B"] -->|"linkedTaskId = B"| Trigger[triggerSkillProvider]
+  Trigger --> Runner["runPromptGeneration<br/>(stateless per call)"]
+  Runner -->|"primary link"| TaskB[Task B]
+  Runner -->|"back-link"| Rec[Recording<br/>in Task A and B]
+  Rec --> Nested["Nested view in Task B<br/>drops prompts Task A links to"]
+```
+
 # Context injection
 
 `SkillPromptBuilder` is the only place that assembles runtime skill messages,
@@ -729,9 +754,13 @@ per entity; the popup uses it via `hasAvailableSkillsProvider`.
   `contextPolicy == ContextPolicy.fullTask`, except `SkillType.audioSummary`,
   which frames itself by whatever the recording belongs to and is offered on
   every recording. Task context is present when the entity is a `Task`, when the
-  caller passes `linkedFromId`, or when the link graph resolves a parent task in
-  either direction. Other full-task skills are hidden only when **all three**
-  checks fail.
+  caller passes `linkedFromId`, or when the link graph resolves **exactly one**
+  parent task across both directions (`soleLinkedTask`). Other full-task skills
+  are hidden only when **all three** checks fail. An entry in two tasks — a task
+  and its follow-up — opened from the logbook therefore gets no coding prompt
+  or cover art: no link says which task the result belongs in, and the popup,
+  the trigger and the availability filter all share that one rule rather than
+  taking whichever task the database lists first.
 - **Audio-summary modality** — `SkillType.audioSummary` declares
   `Modality.audio` even though its input is the transcript's *text*. The field
   selects the source **entry** type, and `Modality.text` would also match

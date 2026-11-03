@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/logging_types.dart';
+import 'package:lotti/features/ai/helpers/sole_linked_task.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
@@ -549,18 +550,13 @@ class UnifiedAiModal {
       if (preferred is Task) return preferred;
     }
 
-    // Outgoing links: entities this entry links TO (entry → task).
-    final linkedEntities = await journalRepo.getLinkedEntities(
-      linkedTo: journalEntity.id,
-    );
-    final linkedTask = linkedEntities.whereType<Task>().firstOrNull;
-    if (linkedTask != null) return linkedTask;
-
-    // Incoming links: entities that link TO this entry (task → entry).
-    final fallbackEntities = await journalRepo.getLinkedToEntities(
-      linkedTo: journalEntity.id,
-    );
-    return fallbackEntities.whereType<Task>().firstOrNull;
+    // Otherwise the link graph, in both directions (entry → task and
+    // task → entry), and only when it names exactly one task.
+    final (outgoing, incoming) = await (
+      journalRepo.getLinkedEntities(linkedTo: journalEntity.id),
+      journalRepo.getLinkedToEntities(linkedTo: journalEntity.id),
+    ).wait;
+    return soleLinkedTask([...outgoing, ...incoming]);
   }
 }
 

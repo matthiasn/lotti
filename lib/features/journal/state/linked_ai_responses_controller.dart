@@ -3,6 +3,7 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/ai_response_type.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart';
 import 'package:lotti/providers/update_notifications_providers.dart';
@@ -98,3 +99,58 @@ class LinkedAiResponsesController extends AsyncNotifier<List<AiResponseEntry>> {
     return aiResponses;
   }
 }
+
+/// The entry AI responses hang off, and the task it is shown in.
+typedef TaskScopedAiResponsesParams = ({String entryId, String taskId});
+
+/// The AI responses nested under an entry, as they belong in the task the
+/// entry is shown in.
+///
+/// A coding prompt belongs to the task it was generated for — that task links
+/// to it — and is also linked back from the recording or note it was made
+/// from. A recording can sit in more than one task, a task and its follow-up
+/// being the usual pair, and then every prompt made from it hangs off it in
+/// both. Shown unscoped, Task A's prompt appears inside Task B, and two runs
+/// started close together look swapped. From inside a task, a coding prompt
+/// another task owns is left out; one no task owns stays, as does every
+/// response about the entry itself (transcripts, analyses, summaries), which
+/// reads the same in any task. An entry shown on its own reads
+/// [linkedAiResponsesControllerProvider] directly: there everything it carries
+/// is its own.
+final taskScopedAiResponsesProvider = FutureProvider.autoDispose
+    .family<List<AiResponseEntry>, TaskScopedAiResponsesParams>(
+      (ref, params) async {
+        final responses = await ref.watch(
+          linkedAiResponsesControllerProvider(params.entryId).future,
+        );
+        final taskId = params.taskId;
+        final promptIds = {
+          for (final response in responses)
+            if (response.data.type == AiResponseType.promptGeneration)
+              response.meta.id,
+        };
+        if (promptIds.isEmpty) return responses;
+
+        // Ownership is links, not content: a task linked to or unlinked from
+        // a prompt leaves the response list unchanged, so the controller
+        // above does not emit. Linking notifies both ends, the prompt among
+        // them, so ownership is read again on any notification naming one of
+        // these prompts. Subscribed before the read, so a change landing
+        // while it runs is not lost; the last list stays on screen meanwhile.
+        final subscription = ref
+            .read(updateNotificationsProvider)
+            .updateStream
+            .listen((affectedIds) {
+              if (affectedIds.any(promptIds.contains)) ref.invalidateSelf();
+            });
+        ref.onDispose(subscription.cancel);
+
+        final owners = await ref
+            .read(journalRepositoryProvider)
+            .getParentTaskIds(promptIds);
+        return responses.where((response) {
+          final ownerTasks = owners[response.meta.id];
+          return ownerTasks == null || ownerTasks.contains(taskId);
+        }).toList();
+      },
+    );
