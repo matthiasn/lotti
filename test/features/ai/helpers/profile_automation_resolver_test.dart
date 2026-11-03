@@ -9,6 +9,7 @@ import 'package:lotti/features/ai/helpers/profile_automation_resolver.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/util/profile_resolver.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -1055,6 +1056,56 @@ void main() {
         verify(
           () => mockProfileResolver.resolveByProfileId('shared'),
         ).called(1);
+      },
+    );
+
+    // People check-ins have always transcribed through the Settings default
+    // when the person could not be read; the subject tiers must not throw
+    // that away.
+    test(
+      'subject reads that throw pass their tier over, and the category and '
+      'the Settings default still answer',
+      () async {
+        final fallback = transcribing('default');
+        final category = transcribing('goals-profile');
+        when(
+          () => mockTaskAgentService.getTaskAgentForTask('goal-1'),
+        ).thenAnswer((_) async => throw StateError('agents closed'));
+        stubProfile('goals-profile', category);
+        stubDefault(fallback);
+        final broken = ProfileAutomationResolver(
+          subjectAgentLookup: mockTaskAgentService.getTaskAgentForTask,
+          templateService: mockTemplateService,
+          profileResolver: mockProfileResolver,
+          domainLogger: logger,
+          subjectProfileLookup: (_) async => throw StateError('journal closed'),
+          categoryProfileLookup: (categoryId) async =>
+              categoryId == 'goals' ? 'goals-profile' : null,
+          subjectCategoryLookup: (_) async =>
+              throw StateError('journal closed'),
+        );
+
+        expect(
+          await broken.resolveTranscriptionProfile(
+            subjectId: 'goal-1',
+            categoryId: 'goals',
+          ),
+          same(category),
+        );
+        expect(
+          await broken.resolveTranscriptionProfile(subjectId: 'goal-1'),
+          same(fallback),
+        );
+        // agent + own profile on both calls, the category read on the second.
+        verify(
+          () => logger.error(
+            LogDomain.ai,
+            any<Object>(that: isA<StateError>()),
+            stackTrace: any(named: 'stackTrace'),
+            subDomain: 'ProfileAutomationResolver',
+            message: any(named: 'message'),
+          ),
+        ).called(5);
       },
     );
 

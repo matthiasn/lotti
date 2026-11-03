@@ -2462,38 +2462,47 @@ void main() {
     // Every entry kind that owns an agent is a recording's subject; anything
     // else linking to it — and a deleted subject — is not.
     final eventAt = DateTime(2024, 3, 15);
-    final parentsAndSubjects = <String, (JournalEntity, String?)>{
-      'a person': (testRelationship, testRelationship.id),
+    final parentsAndSubjects = <String, (List<JournalEntity>, String?)>{
+      'a person': ([testRelationship], testRelationship.id),
       'a project': (
-        makeTestProject(id: 'project-1', title: 'Colony census'),
+        [makeTestProject(id: 'project-1', title: 'Colony census')],
         'project-1',
       ),
       'an event': (
-        JournalEvent(
-          meta: Metadata(
-            id: 'event-1',
-            createdAt: eventAt,
-            updatedAt: eventAt,
-            dateFrom: eventAt,
-            dateTo: eventAt,
+        [
+          JournalEvent(
+            meta: Metadata(
+              id: 'event-1',
+              createdAt: eventAt,
+              updatedAt: eventAt,
+              dateFrom: eventAt,
+              dateTo: eventAt,
+            ),
+            data: const EventData(
+              title: 'Huddle drill',
+              stars: 4,
+              status: EventStatus.completed,
+            ),
           ),
-          data: const EventData(
-            title: 'Huddle drill',
-            stars: 4,
-            status: EventStatus.completed,
-          ),
-        ),
+        ],
         'event-1',
       ),
       'a deleted person': (
-        testRelationship.copyWith(
-          meta: testRelationship.meta.copyWith(deletedAt: eventAt),
-        ),
+        [
+          testRelationship.copyWith(
+            meta: testRelationship.meta.copyWith(deletedAt: eventAt),
+          ),
+        ],
         null,
       ),
-      'a plain note': (testTextEntry, null),
+      'a plain note': ([testTextEntry], null),
+      // The subject is found among several links, not only in first place.
+      'a plain note and then a person': (
+        [testTextEntry, testRelationship],
+        testRelationship.id,
+      ),
     };
-    for (final MapEntry(key: kind, value: (parent, subjectId))
+    for (final MapEntry(key: kind, value: (parents, subjectId))
         in parentsAndSubjects.entries) {
       test(
         'a recording linked from $kind asks the transcription rule for '
@@ -2521,7 +2530,7 @@ void main() {
           ).thenAnswer((_) async => audio);
           when(
             () => mockJournalDb.getLinkedToEntities('linked-audio-1'),
-          ).thenAnswer((_) async => [toDbEntity(parent)]);
+          ).thenAnswer((_) async => parents.map(toDbEntity).toList());
 
           final testContainer = ProviderContainer(
             overrides: withServiceOverrides([

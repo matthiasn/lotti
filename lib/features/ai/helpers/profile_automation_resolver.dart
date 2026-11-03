@@ -121,15 +121,29 @@ class ProfileAutomationResolver {
     String? categoryId,
   }) async {
     final candidateProfileIds = <String>[];
+    String? subjectCategoryId;
     if (subjectId != null) {
-      final agentProfileId = await _agentTranscriptionProfileId(subjectId);
+      final agentProfileId = await _readSubjectTier(
+        subjectId,
+        'agent profile',
+        () => _agentTranscriptionProfileId(subjectId),
+      );
       if (agentProfileId != null) candidateProfileIds.add(agentProfileId);
-      final subjectProfileId = await _subjectProfileLookup?.call(subjectId);
+      final subjectProfileId = await _readSubjectTier(
+        subjectId,
+        'own profile',
+        () async => _subjectProfileLookup?.call(subjectId),
+      );
       if (subjectProfileId != null) candidateProfileIds.add(subjectProfileId);
+      if (categoryId == null) {
+        subjectCategoryId = await _readSubjectTier(
+          subjectId,
+          'category',
+          () => categoryOfSubject(subjectId),
+        );
+      }
     }
-    final effectiveCategoryId =
-        categoryId ??
-        (subjectId == null ? null : await categoryOfSubject(subjectId));
+    final effectiveCategoryId = categoryId ?? subjectCategoryId;
     if (effectiveCategoryId != null) {
       final categoryProfileId = await _categoryProfileLookup?.call(
         effectiveCategoryId,
@@ -146,6 +160,35 @@ class ProfileAutomationResolver {
       if (profile != null) return profile;
     }
     return _transcribing(await resolveDefaultProfile());
+  }
+
+  /// One subject tier of [resolveTranscriptionProfile], read by [read]; null
+  /// — the tier passed over — when the read throws.
+  ///
+  /// A subject whose agent or journal row cannot be read must still reach
+  /// the category's profile and the Settings default: People check-ins have
+  /// always transcribed through the default when the person could not be
+  /// read, and the subject tiers must not take that away.
+  Future<String?> _readSubjectTier(
+    String subjectId,
+    String tier,
+    Future<String?> Function() read,
+  ) async {
+    try {
+      return await read();
+    } catch (error, stackTrace) {
+      _domainLogger.error(
+        LogDomain.ai,
+        error,
+        stackTrace: stackTrace,
+        subDomain: _logTag,
+        message:
+            'Could not read the $tier of subject '
+            '${DomainLogger.sanitizeId(subjectId)} for its transcription '
+            'profile — passing over that tier',
+      );
+      return null;
+    }
   }
 
   /// The category [subjectId] is filed under, or null when it has none or
