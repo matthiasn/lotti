@@ -193,6 +193,99 @@ void main() {
     },
   );
 
+  testWidgets(
+    'names each step before the model, so a wake stuck there says where',
+    (tester) async {
+      now = _t0.add(const Duration(minutes: 3));
+      final messages = await pump(tester);
+      for (final (step, label) in [
+        (
+          DayAgentWakeStep.preparingContext,
+          messages.dailyOsNextDraftingStepContext,
+        ),
+        (
+          DayAgentWakeStep.compactingMemory,
+          messages.dailyOsNextDraftingStepMemory,
+        ),
+        (
+          DayAgentWakeStep.assemblingPrompt,
+          messages.dailyOsNextDraftingStepPrompt,
+        ),
+      ]) {
+        await withClock(Clock(() => now), () async {
+          statuses.add(
+            DayAgentLiveStatus(
+              wake: _wake(step: step, stepStartedAt: _t0),
+            ),
+          );
+          await tester.pump();
+          await tester.pump();
+        });
+
+        expect(
+          statusLine(tester),
+          '$label · ${messages.dailyOsNextDraftingSeconds('180')}',
+          reason: step.name,
+        );
+      }
+    },
+  );
+
+  testWidgets('times memory, prompt and saving steps under their own names', (
+    tester,
+  ) async {
+    now = _t0.add(_ms(5000));
+    final messages = await pump(
+      tester,
+      status: DayAgentLiveStatus(
+        wake: _wake(
+          step: DayAgentWakeStep.saving,
+          stepStartedAt: _t0.add(_ms(4800)),
+          completedSteps: [
+            DayAgentWakeStepTiming(
+              step: DayAgentWakeStep.compactingMemory,
+              elapsed: _ms(1500),
+            ),
+            DayAgentWakeStepTiming(
+              step: DayAgentWakeStep.assemblingPrompt,
+              elapsed: _ms(300),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    expect(
+      statusLine(tester),
+      startsWith(messages.dailyOsNextDraftingStepSaving),
+    );
+    expect(
+      find.textContaining(
+        '${messages.dailyOsNextDraftingTimingMemory} '
+        '${messages.dailyOsNextDraftingSeconds('1.5')} · '
+        '${messages.dailyOsNextDraftingTimingPrompt} '
+        '${messages.dailyOsNextDraftingSeconds('0.3')} · '
+        '${messages.dailyOsNextDraftingTimingSaving} '
+        '${messages.dailyOsNextDraftingSeconds('0.2')}',
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('resumes ticking when drafting becomes active again', (
+    tester,
+  ) async {
+    final messages = await pump(tester, active: false);
+    await pump(tester);
+
+    await elapse(tester, const Duration(seconds: 12));
+
+    expect(
+      statusLine(tester),
+      endsWith(messages.dailyOsNextDraftingSeconds('12')),
+    );
+  });
+
   testWidgets('names the tool that is running', (tester) async {
     final messages = await pump(
       tester,
