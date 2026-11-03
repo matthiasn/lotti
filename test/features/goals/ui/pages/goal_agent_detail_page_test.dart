@@ -480,6 +480,95 @@ void main() {
     },
   );
 
+  testWidgets(
+    "on a wide window the goal's category and name share the cards' left "
+    'edge, whatever the title length',
+    (tester) async {
+      tester.view.physicalSize = const Size(1600, 1000);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final cache = MockEntitiesCacheService();
+      final fitness = CategoryDefinition(
+        id: 'cat-fit',
+        name: 'Fitness',
+        color: '#3A7BD5',
+        createdAt: DateTime(2026),
+        updatedAt: DateTime(2026),
+        vectorClock: null,
+        private: false,
+        active: true,
+      );
+      final crew = fitness.copyWith(id: 'cat-crew', name: 'Launch crew');
+      when(() => cache.getCategoryById(any())).thenReturn(null);
+      when(() => cache.getCategoryById('cat-fit')).thenReturn(fitness);
+      when(() => cache.getCategoryById('cat-crew')).thenReturn(crew);
+      when(() => cache.sortedCategories).thenReturn([fitness, crew]);
+      await setUpTestGetIt(
+        additionalSetup: () =>
+            getIt.registerSingleton<EntitiesCacheService>(cache),
+      );
+      addTearDown(tearDownTestGetIt);
+      final move = MockEntryCategoryMove();
+      when(() => move.move(any(), any())).thenAnswer((_) async => true);
+
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const GoalAgentDetailPage(agentId: 'goal-1'),
+          overrides: [
+            habitsControllerProvider.overrideWith(
+              () => FakeHabitsController(
+                HabitsState.initial(now: DateTime(2026, 8, 11)),
+              ),
+            ),
+            agentIdentityProvider(
+              'goal-1',
+            ).overrideWith((ref) async => goalIdentity),
+            goalAgentHealthProvider('goal-1').overrideWith(
+              (ref) async => (
+                trackStatus: GoalTrackStatus.onTrack,
+                attainment: 1.0,
+                reportOneLiner: null,
+                pendingProposals: 0,
+                spec: null,
+                direction: null,
+                deficit: null,
+                buffer: null,
+              ),
+            ),
+            selfTargetedPendingChangeSetsProvider(
+              'goal-1',
+            ).overrideWith((ref) async => []),
+            agentMessagesByThreadProvider(
+              'goal-1',
+            ).overrideWith((ref) async => {}),
+            agentReportProvider('goal-1').overrideWith((ref) async => null),
+            entitiesCacheServiceProvider.overrideWithValue(cache),
+            entryCategoryMoveProvider.overrideWithValue(move),
+            goalEntryIdProvider('goal-1').overrideWithValue('goal-row-1'),
+            goalCategoryIdProvider(
+              'goal-1',
+            ).overrideWith((ref) async => 'cat-fit'),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final crumb = find.byKey(const ValueKey('goal-category-crumb'));
+      final card = find.byType(GoalCharterCard);
+      expect(card, findsOneWidget);
+      // The crumb hangs its hover wash a step outside the gutter, so its
+      // icon — not its box — starts where the cards do.
+      final tokens = tester.element(crumb).designTokens;
+      expect(
+        tester.getTopLeft(crumb).dx + tokens.spacing.step1,
+        moreOrLessEquals(
+          tester.getTopLeft(card).dx,
+          epsilon: tokens.spacing.step1,
+        ),
+      );
+    },
+  );
+
   group('update-failure feedback on the read card', () {
     Future<void> pump(
       WidgetTester tester, {
