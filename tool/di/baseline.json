@@ -169,7 +169,6 @@
     "lib/features/relationships/service/pending_interaction_store.dart": {"lookups": 1},
     "lib/features/relationships/state/relationship_agent_providers.dart": {"lookups": 1},
     "lib/features/relationships/state/relationship_proposal_providers.dart": {"lookups": 1},
-    "lib/features/relationships/ui/pages/relationship_details_page.dart": {"lookups": 1},
     "lib/features/relationships/ui/pages/relationships_page.dart": {"lookups": 1},
     "lib/features/relationships/workflow/relationship_agent_workflow.dart": {"lookups": 1},
     "lib/features/settings/state/health_import_controller.dart": {"lookups": 1},
