@@ -63,6 +63,8 @@ class DesignSystemContextMenu extends StatelessWidget {
     this.header,
     this.headerKey,
     this.edgeToEdge = false,
+    this.fitContent = false,
+    this.surfaceColor,
     super.key,
   });
 
@@ -85,6 +87,16 @@ class DesignSystemContextMenu extends StatelessWidget {
   /// Removes the normal outer row padding so the first and last interaction
   /// fills meet — and are clipped by — the menu's rounded outline.
   final bool edgeToEdge;
+
+  /// Sizes the menu to its widest row instead of [width], which then only
+  /// caps it — for a short menu whose labels leave most of a fixed width
+  /// empty. Ignored once the rows scroll, where a lazy list has no
+  /// intrinsic width to measure.
+  final bool fitContent;
+
+  /// The menu's surface, for a host that opens it over a dimmed page and
+  /// needs it raised off that page; the base level otherwise.
+  final Color? surfaceColor;
 
   @override
   Widget build(BuildContext context) {
@@ -131,12 +143,14 @@ class DesignSystemContextMenu extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: Container(
-          width: width,
+          width: fitContent && !needsScroll ? null : width,
           constraints: maxHeight != null
               ? BoxConstraints(maxHeight: maxHeight)
+              : fitContent
+              ? BoxConstraints(maxWidth: width)
               : const BoxConstraints(),
           decoration: BoxDecoration(
-            color: tokens.colors.background.level01,
+            color: surfaceColor ?? tokens.colors.background.level01,
             borderRadius: BorderRadius.circular(spec.borderRadius),
             boxShadow: DsShadows.floatingSurface,
           ),
@@ -147,39 +161,43 @@ class DesignSystemContextMenu extends StatelessWidget {
             // the bottom corners instead of stopping short of the border.
             child: Material(
               color: Colors.transparent,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (header case final header?)
-                    Container(
-                      key: headerKey,
-                      height: spec.headerHeight,
-                      alignment: AlignmentDirectional.centerStart,
-                      padding: EdgeInsets.symmetric(
-                        horizontal: spec.horizontalPadding,
-                      ),
-                      decoration: BoxDecoration(
-                        border: Border(
-                          bottom: BorderSide(
-                            color: tokens.colors.decorative.level01,
-                            width: spec.dividerWidth,
+              child: _FitWidth(
+                enabled: fitContent && !needsScroll,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (header case final header?)
+                      Container(
+                        key: headerKey,
+                        height: spec.headerHeight,
+                        alignment: AlignmentDirectional.centerStart,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: spec.horizontalPadding,
+                        ),
+                        decoration: BoxDecoration(
+                          border: Border(
+                            bottom: BorderSide(
+                              color: tokens.colors.decorative.level01,
+                              width: spec.dividerWidth,
+                            ),
                           ),
                         ),
-                      ),
-                      child: Text(
-                        header,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: tokens.typography.styles.others.caption.copyWith(
-                          color: tokens.colors.text.mediumEmphasis,
+                        child: Text(
+                          header,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: tokens.typography.styles.others.caption
+                              .copyWith(
+                                color: tokens.colors.text.mediumEmphasis,
+                              ),
                         ),
                       ),
+                    Padding(
+                      padding: EdgeInsets.symmetric(vertical: verticalPadding),
+                      child: itemList,
                     ),
-                  Padding(
-                    padding: EdgeInsets.symmetric(vertical: verticalPadding),
-                    child: itemList,
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -308,4 +326,16 @@ class _ContextMenuSpec {
   final double iconSize;
   final double iconGap;
   final TextStyle textStyle;
+}
+
+/// [IntrinsicWidth] around a fitted menu's rows, a pass-through otherwise.
+class _FitWidth extends StatelessWidget {
+  const _FitWidth({required this.enabled, required this.child});
+
+  final bool enabled;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) =>
+      enabled ? IntrinsicWidth(child: child) : child;
 }

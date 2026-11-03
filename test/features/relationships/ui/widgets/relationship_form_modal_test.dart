@@ -10,6 +10,7 @@ import 'package:lotti/features/categories/ui/widgets/category_icon_compact.dart'
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
+import 'package:lotti/features/design_system/components/inputs/design_system_picker_field.dart';
 import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
 import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
 import 'package:lotti/features/design_system/theme/icon_tokens.dart';
@@ -226,6 +227,27 @@ void main() {
               .dy,
           greaterThan(tester.getBottomLeft(agent).dy),
         );
+      },
+    );
+
+    testWidgets(
+      "every field is the design system's in-sheet field: unfilled, so the "
+      'sheet shows through and the hairline frames it',
+      (tester) async {
+        setTestSurfaceSize(tester, const Size(800, 3200));
+        await tester.pumpWidget(buildForm(initial: existing()));
+        await tester.pumpAndSettle();
+
+        final inputs = tester.widgetList<DesignSystemTextInput>(
+          find.byType(DesignSystemTextInput),
+        );
+        expect(inputs, isNotEmpty);
+        expect(inputs.every((input) => !input.filled), isTrue);
+        final pickers = tester.widgetList<DesignSystemPickerField>(
+          find.byType(DesignSystemPickerField),
+        );
+        expect(pickers, hasLength(2), reason: 'birthday and category');
+        expect(pickers.every((picker) => !picker.filled), isTrue);
       },
     );
 

@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:material_ui/material_ui.dart';
@@ -139,6 +140,10 @@ class _AgentSurfaceMenuRoute extends PopupRoute<void> {
     final tokens = context.designTokens;
     final menu = DesignSystemContextMenu(
       semanticsLabel: semanticsLabel,
+      // As wide as its longest row, and raised off the dimmed page on the
+      // card surface — the base level read as a dark hole in the scrim.
+      fitContent: true,
+      surfaceColor: dsCardSurface(context),
       items: [
         for (final item in items)
           DesignSystemContextMenuItem(

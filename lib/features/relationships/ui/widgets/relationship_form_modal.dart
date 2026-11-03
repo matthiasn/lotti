@@ -473,6 +473,8 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               DesignSystemTextInput(
+                // The sheet shows through; the hairline frames the field.
+                filled: false,
                 key: const ValueKey('person-form-name'),
                 controller: _nameController,
                 label: messages.relationshipNameLabel,
@@ -490,6 +492,8 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
               ],
               gap(tokens.spacing.step4),
               DesignSystemTextInput(
+                // The sheet shows through; the hairline frames the field.
+                filled: false,
                 key: const ValueKey('person-form-nickname'),
                 controller: _nicknameController,
                 label: messages.relationshipNicknameLabel,
@@ -506,6 +510,7 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
               // category seeds every check-in created under the person, and
               // names the AI profile their agent briefs with.
               CategoryFieldRow(
+                filled: false,
                 categoryId: _categoryId,
                 onChanged: (id) => setState(() => _categoryId = id),
               ),
@@ -616,6 +621,8 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
               // The category speech dictionary's format, so one habit edits
               // both lists.
               DesignSystemTextInput(
+                // The sheet shows through; the hairline frames the field.
+                filled: false,
                 key: const ValueKey('person-form-known-terms'),
                 controller: _knownTermsController,
                 label: messages.relationshipKnownTermsLabel,

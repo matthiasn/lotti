@@ -1,3 +1,4 @@
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
@@ -139,6 +140,63 @@ void main() {
         semantics.dispose();
       },
     );
+
+    testWidgets(
+      'a fitted menu is as wide as its longest row, capped at its width',
+      (tester) async {
+        await _pumpContextMenu(
+          tester,
+          const DesignSystemContextMenu(
+            key: Key('fitted'),
+            fitContent: true,
+            items: [
+              DesignSystemContextMenuItem(label: 'Edit', icon: LottiIcons.edit),
+              DesignSystemContextMenuItem(
+                label: 'Agent internals',
+                icon: LottiIcons.tune,
+              ),
+            ],
+          ),
+        );
+
+        final width = tester.getSize(find.byKey(const Key('fitted'))).width;
+        expect(width, lessThan(DesignSystemContextMenu.defaultWidth));
+        // Nothing is cut: the longest label keeps its full width.
+        final label = tester.getRect(find.text('Agent internals'));
+        final menu = tester.getRect(find.byKey(const Key('fitted')));
+        expect(label.right, lessThanOrEqualTo(menu.right));
+        expect(
+          tester
+              .renderObject<RenderParagraph>(find.text('Agent internals'))
+              .didExceedMaxLines,
+          isFalse,
+        );
+      },
+    );
+
+    testWidgets('a host can raise the surface off a dimmed page', (
+      tester,
+    ) async {
+      const raised = Color(0xFF222222);
+      await _pumpContextMenu(
+        tester,
+        const DesignSystemContextMenu(
+          key: Key('raised'),
+          surfaceColor: raised,
+          items: [DesignSystemContextMenuItem(label: 'Edit')],
+        ),
+      );
+
+      final box = tester.widget<Container>(
+        find
+            .descendant(
+              of: find.byKey(const Key('raised')),
+              matching: find.byType(Container),
+            )
+            .first,
+      );
+      expect((box.decoration! as BoxDecoration).color, raised);
+    });
 
     testWidgets('calls onTap when item is tapped', (tester) async {
       var tapped = false;

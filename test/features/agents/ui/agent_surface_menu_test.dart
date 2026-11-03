@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/ui/agent_surface_menu.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -87,6 +88,26 @@ void main() {
           .where((barrier) => barrier.color != null);
       expect(barriers.map((barrier) => barrier.color), contains(expected));
       expect(expected.a, greaterThan(0));
+    },
+  );
+
+  testWidgets(
+    'sits on the raised card surface, as wide as its rows need — not the '
+    "page's own level, not a fixed width",
+    (tester) async {
+      await pump(tester);
+      await open(tester);
+
+      final menu = find.byType(DesignSystemContextMenu);
+      expect(
+        tester.getSize(menu).width,
+        lessThan(DesignSystemContextMenu.defaultWidth),
+      );
+      // The card surface — a step off the page in either theme.
+      expect(
+        tester.widget<DesignSystemContextMenu>(menu).surfaceColor,
+        dsCardSurface(tester.element(menu)),
+      );
     },
   );
 

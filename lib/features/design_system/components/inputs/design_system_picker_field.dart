@@ -21,6 +21,7 @@ class DesignSystemPickerField extends StatefulWidget {
     this.trailingIcon = LottiIcons.chevronDown,
     this.fieldKey,
     this.trailingKey,
+    this.filled = true,
     super.key,
   });
 
@@ -38,6 +39,11 @@ class DesignSystemPickerField extends StatefulWidget {
 
   /// Identity for the trailing glyph.
   final Key? trailingKey;
+
+  /// [DesignSystemTextInput.filled]'s rule: false inside a modal sheet, so
+  /// the sheet's raised surface shows through and the hairline alone frames
+  /// the field, as the sheet's text inputs are framed.
+  final bool filled;
 
   @override
   State<DesignSystemPickerField> createState() =>
@@ -79,7 +85,9 @@ class _DesignSystemPickerFieldState extends State<DesignSystemPickerField> {
               onHover: (hovered) => setState(() => _hovered = hovered),
               child: Ink(
                 decoration: BoxDecoration(
-                  color: tokens.colors.background.level01,
+                  color: widget.filled
+                      ? tokens.colors.background.level01
+                      : Colors.transparent,
                   borderRadius: radius,
                   border: Border.all(
                     color: designSystemFieldBorderColor(

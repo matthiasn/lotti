@@ -22,11 +22,15 @@ class CategoryFieldRow extends ConsumerWidget {
   const CategoryFieldRow({
     required this.categoryId,
     required this.onChanged,
+    this.filled = true,
     super.key,
   });
 
   final String? categoryId;
   final ValueChanged<String?>? onChanged;
+
+  /// False inside a modal sheet; see [DesignSystemPickerField.filled].
+  final bool filled;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -38,6 +42,7 @@ class CategoryFieldRow extends ConsumerWidget {
 
     return DesignSystemPickerField(
       fieldKey: const ValueKey('category-field'),
+      filled: filled,
       trailingKey: const ValueKey('category-field-chevron'),
       label: messages.habitCategoryLabel,
       value: category?.name,

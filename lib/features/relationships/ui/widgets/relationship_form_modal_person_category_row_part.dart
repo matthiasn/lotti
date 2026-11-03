@@ -378,6 +378,8 @@ class _ChannelEditorRow extends StatelessWidget {
         ),
         SizedBox(height: tokens.spacing.step3),
         DesignSystemTextInput(
+          // The sheet shows through; the hairline frames the field.
+          filled: false,
           key: ValueKey('person-form-channel-value-${draft.hashCode}'),
           controller: draft.valueController,
           label: messages.contactChannelValueLabel,
@@ -385,6 +387,8 @@ class _ChannelEditorRow extends StatelessWidget {
         ),
         SizedBox(height: tokens.spacing.step3),
         DesignSystemTextInput(
+          // The sheet shows through; the hairline frames the field.
+          filled: false,
           controller: draft.labelController,
           label: messages.contactChannelLabelLabel,
           textCapitalization: TextCapitalization.sentences,
@@ -413,6 +417,7 @@ class _BirthdayRow extends StatelessWidget {
     // so the *Who* section is one column of one kind of control.
     return DesignSystemPickerField(
       fieldKey: const ValueKey('person-form-birthday'),
+      filled: false,
       label: messages.relationshipBirthdayLabel,
       value: birthday == null
           ? null
