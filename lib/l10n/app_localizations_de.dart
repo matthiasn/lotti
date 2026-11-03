@@ -5181,7 +5181,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get dailyOsNextDraftingStepContext =>
-      'Lese deinen Check-in und deine Aufgaben…';
+      'Dein Check-in und deine Aufgaben werden gelesen…';
 
   @override
   String get dailyOsNextDraftingStepDone => 'Plan fertig';
@@ -5192,15 +5192,16 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get dailyOsNextDraftingStepMemory =>
-      'Verdichte das Gedächtnis des Agenten…';
+      'Das Gedächtnis des Agenten wird verdichtet…';
 
   @override
   String dailyOsNextDraftingStepModel(int count) {
-    return 'Warte auf das Modell, Aufruf $count…';
+    return 'Warten auf das Modell, Aufruf $count…';
   }
 
   @override
-  String get dailyOsNextDraftingStepPrompt => 'Stelle den Prompt zusammen…';
+  String get dailyOsNextDraftingStepPrompt =>
+      'Der Prompt wird zusammengestellt…';
 
   @override
   String dailyOsNextDraftingStepRetrying(String seconds) {
@@ -5208,15 +5209,16 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get dailyOsNextDraftingStepSaving => 'Speichere deinen Plan…';
+  String get dailyOsNextDraftingStepSaving => 'Dein Plan wird gespeichert…';
 
   @override
   String dailyOsNextDraftingStepTool(String tool) {
-    return 'Führe $tool aus…';
+    return '$tool läuft…';
   }
 
   @override
-  String get dailyOsNextDraftingStepWaiting => 'Warte, bis der Agent startet…';
+  String get dailyOsNextDraftingStepWaiting =>
+      'Warten auf den Start des Agenten…';
 
   @override
   String get dailyOsNextDraftingTimingContext => 'Kontext';

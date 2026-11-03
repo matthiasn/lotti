@@ -2466,7 +2466,7 @@
   "dailyOsNextDraftingInternalsModel": "Modell",
   "dailyOsNextDraftingInternalsTime": "Tid",
   "dailyOsNextDraftingInternalsTokens": "Tokens",
-  "dailyOsNextDraftingInternalsTokensValue": "{input} in · {output} ut",
+  "dailyOsNextDraftingInternalsTokensValue": "{input} i · {output} ut",
   "dailyOsNextDraftingInternalsTools": "Verktygsanrop",
   "dailyOsNextDraftingNudgeAccept": "Ja, skydda morgnarna",
   "dailyOsNextDraftingNudgeDecline": "Inte idag",

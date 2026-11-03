@@ -41,9 +41,11 @@ class DayAgentWakeTrace {
   /// Moves to [step], closing the current one. Re-entering the active step is
   /// a no-op; after [finish] every call is ignored.
   ///
-  /// The first entry into each step is also logged, so a wake that hangs —
-  /// and therefore never reaches [finish] — still leaves the step it is stuck
-  /// in as its last `wakeTrace` line.
+  /// Every transition is also logged — model turns with their index, tool
+  /// steps with the tool's name — so a wake that hangs, and therefore never
+  /// reaches [finish], still leaves the step it is stuck in as its last
+  /// `wakeTrace` line. A wake has at most `maxTurnsPerWake` turns, which
+  /// bounds the line count.
   void enter(DayAgentWakeStep step) {
     if (_progress.isFinished || _progress.step == step) return;
     final now = clock.now();
@@ -66,18 +68,22 @@ class DayAgentWakeTrace {
     }
   }
 
-  final _loggedSteps = <DayAgentWakeStep>{};
-
   void _logStep({(DayAgentWakeStep, Duration)? after}) {
     final step = _progress.step;
-    if (!_loggedSteps.add(step)) return;
+    final detail = switch (step) {
+      DayAgentWakeStep.callingModel when _progress.turns.isNotEmpty =>
+        ' #${_progress.turns.last.index}',
+      DayAgentWakeStep.runningTool when _progress.toolCalls.isNotEmpty =>
+        ' ${_progress.toolCalls.last.name}',
+      _ => '',
+    };
     final since = after == null
         ? ''
         : ' after ${after.$1.name}=${after.$2.inMilliseconds}ms';
     domainLogger?.log(
       LogDomain.agentWorkflow,
       'wake step: run=${DomainLogger.sanitizeId(_progress.runKey)} '
-      'day=${_progress.dayId} ${step.name}$since',
+      'day=${_progress.dayId} ${step.name}$detail$since',
       subDomain: 'wakeTrace',
     );
   }
@@ -102,7 +108,7 @@ class DayAgentWakeTrace {
   int turnStarted() {
     final index = _progress.turns.length;
     _turnStarts[index] = clock.now();
-    enter(DayAgentWakeStep.callingModel);
+    final continuing = _progress.step == DayAgentWakeStep.callingModel;
     _progress = _progress.copyWith(
       turns: [
         ..._progress.turns,
@@ -110,6 +116,13 @@ class DayAgentWakeTrace {
       ],
     );
     _publish();
+    // Back-to-back turns (a forced retry) stay in the same step, which
+    // [enter] treats as a no-op; the new turn is still logged.
+    if (continuing) {
+      _logStep();
+    } else {
+      enter(DayAgentWakeStep.callingModel);
+    }
     return index;
   }
 
@@ -160,7 +173,7 @@ class DayAgentWakeTrace {
   int toolStarted(String name) {
     final index = _progress.toolCalls.length;
     _toolStarts[index] = clock.now();
-    enter(DayAgentWakeStep.runningTool);
+    final continuing = _progress.step == DayAgentWakeStep.runningTool;
     _progress = _progress.copyWith(
       toolCalls: [
         ..._progress.toolCalls,
@@ -168,6 +181,11 @@ class DayAgentWakeTrace {
       ],
     );
     _publish();
+    if (continuing) {
+      _logStep();
+    } else {
+      enter(DayAgentWakeStep.runningTool);
+    }
     return index;
   }
 

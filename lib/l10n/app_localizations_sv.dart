@@ -5107,7 +5107,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String dailyOsNextDraftingInternalsTokensValue(String input, String output) {
-    return '$input in · $output ut';
+    return '$input i · $output ut';
   }
 
   @override

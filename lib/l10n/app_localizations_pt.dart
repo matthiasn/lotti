@@ -5152,7 +5152,7 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String get dailyOsNextDraftingInternalsTools => 'Chamadas de ferramentas';
+  String get dailyOsNextDraftingInternalsTools => 'Chamadas a ferramentas';
 
   @override
   String get dailyOsNextDraftingNudgeAccept => 'Sim, proteja as manhãs';
@@ -5192,7 +5192,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get dailyOsNextDraftingStepContext =>
-      'Lendo seu check-in e suas tarefas…';
+      'A ler o teu check-in e as tuas tarefas…';
 
   @override
   String get dailyOsNextDraftingStepDone => 'Plano pronto';
@@ -5202,31 +5202,32 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get dailyOsNextDraftingStepMemory =>
-      'Compactando a memória do agente…';
+      'A compactar a memória do agente…';
 
   @override
   String dailyOsNextDraftingStepModel(int count) {
-    return 'Esperando o modelo, chamada $count…';
+    return 'À espera do modelo, chamada $count…';
   }
 
   @override
-  String get dailyOsNextDraftingStepPrompt => 'Montando o prompt…';
+  String get dailyOsNextDraftingStepPrompt => 'A montar o prompt…';
 
   @override
   String dailyOsNextDraftingStepRetrying(String seconds) {
-    return 'Tentando de novo em $seconds s…';
+    return 'Nova tentativa dentro de $seconds s…';
   }
 
   @override
-  String get dailyOsNextDraftingStepSaving => 'Salvando seu plano…';
+  String get dailyOsNextDraftingStepSaving => 'A guardar o teu plano…';
 
   @override
   String dailyOsNextDraftingStepTool(String tool) {
-    return 'Executando $tool…';
+    return 'A executar $tool…';
   }
 
   @override
-  String get dailyOsNextDraftingStepWaiting => 'Esperando o agente começar…';
+  String get dailyOsNextDraftingStepWaiting =>
+      'À espera de que o agente comece…';
 
   @override
   String get dailyOsNextDraftingTimingContext => 'contexto';
@@ -5241,7 +5242,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get dailyOsNextDraftingTimingPrompt => 'prompt';
 
   @override
-  String get dailyOsNextDraftingTimingSaving => 'salvamento';
+  String get dailyOsNextDraftingTimingSaving => 'gravação';
 
   @override
   String get dailyOsNextDraftingTimingTools => 'ferramentas';

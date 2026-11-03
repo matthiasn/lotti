@@ -207,17 +207,19 @@ void main() {
     expect(wake.error, isNull);
   });
 
-  test('a wake that never finishes still logs the step it is stuck in', () {
+  test('logs every transition, so a hung wake names the step and turn it is '
+      'stuck in', () {
     final trace = newTrace();
     time.advance(40);
     at(() => trace.enter(DayAgentWakeStep.compactingMemory));
     time.advance(5);
     at(() => trace.enter(DayAgentWakeStep.assemblingPrompt));
-    // Model and tool turns alternate; only the first entry of each is logged.
-    for (var i = 0; i < 3; i++) {
-      at(() => trace.enter(DayAgentWakeStep.callingModel));
-      at(() => trace.enter(DayAgentWakeStep.runningTool));
-    }
+    at(trace.turnStarted);
+    time.advance(900);
+    at(() => trace.toolStarted('search_memory'));
+    time.advance(30);
+    // The second model turn hangs: no finish ever comes.
+    at(trace.turnStarted);
 
     final lines = verify(
       () => logger.log(
@@ -231,9 +233,39 @@ void main() {
       '$prefix preparingContext',
       '$prefix compactingMemory after preparingContext=40ms',
       '$prefix assemblingPrompt after compactingMemory=5ms',
-      '$prefix callingModel after assemblingPrompt=0ms',
-      '$prefix runningTool after callingModel=0ms',
+      '$prefix callingModel #0 after assemblingPrompt=0ms',
+      '$prefix runningTool search_memory after callingModel=900ms',
+      '$prefix callingModel #1 after runningTool=30ms',
     ]);
+  });
+
+  test('back-to-back turns and back-to-back tool calls are each logged', () {
+    final trace = newTrace();
+    final first = at(trace.turnStarted);
+    at(() => trace.turnFinished(first));
+    // A forced retry: a second turn with no tool call in between.
+    at(trace.turnStarted);
+    at(() => trace.toolStarted('search_memory'));
+    at(() => trace.toolStarted('draft_day_plan'));
+
+    final lines = verify(
+      () => logger.log(
+        LogDomain.agentWorkflow,
+        captureAny(),
+        subDomain: 'wakeTrace',
+      ),
+    ).captured.cast<String>();
+    expect(
+      lines.skip(1).map((line) => line.split(' ').skip(4).take(2).join(' ')),
+      [
+        'callingModel #0',
+        'callingModel #1',
+        'runningTool search_memory',
+        'runningTool draft_day_plan',
+      ],
+    );
+    expect(trace.progress.turns, hasLength(2));
+    expect(trace.progress.toolCalls, hasLength(2));
   });
 
   test('a failed finish carries the error to the progress', () {

@@ -5186,7 +5186,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String dailyOsNextDraftingInternalsTokensValue(String input, String output) {
-    return '$input intrare · $output ieșire';
+    return '$input la intrare · $output la ieșire';
   }
 
   @override
@@ -5252,7 +5252,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String dailyOsNextDraftingStepRetrying(String seconds) {
-    return 'Nouă încercare în $seconds s…';
+    return 'O nouă încercare în $seconds s…';
   }
 
   @override

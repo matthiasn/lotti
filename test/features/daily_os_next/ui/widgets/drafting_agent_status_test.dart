@@ -331,6 +331,39 @@ void main() {
     expect(find.textContaining('old failure'), findsNothing);
   });
 
+  testWidgets('a wake still running from before this request is shown — '
+      'reopening drafting attaches to it', (tester) async {
+    now = _t0.add(const Duration(seconds: 20));
+    final messages = await pump(
+      tester,
+      status: DayAgentLiveStatus(
+        wake: _wake(
+          startedAt: _t0.subtract(const Duration(minutes: 2)),
+          stepStartedAt: _t0,
+          turns: const [DayAgentModelTurn(index: 0)],
+        ),
+        lastAttempt: DayAgentJobAttempt(
+          dayId: _dayId,
+          attempts: 1,
+          maxAttempts: 5,
+          updatedAt: _t0.subtract(const Duration(minutes: 1)),
+          willRetry: true,
+          lastError: 'earlier timeout',
+        ),
+      ),
+    );
+
+    expect(
+      statusLine(tester),
+      '${messages.dailyOsNextDraftingStepModel(1)} · '
+      '${messages.dailyOsNextDraftingSeconds('20')}',
+    );
+    expect(
+      find.textContaining(messages.dailyOsNextDraftingInternalsAttempt(2, 5)),
+      findsOneWidget,
+    );
+  });
+
   testWidgets(
     'a failed attempt awaiting retry counts down and shows the reason',
     (tester) async {

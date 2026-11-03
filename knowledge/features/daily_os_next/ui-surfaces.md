@@ -118,8 +118,10 @@ arbitrary five or six lines.
   calls, and — after a failed attempt — "Attempt n of 5" with the outbox's last
   error. The source is `dayAgentLiveStatusProvider`, fed by the wake trace and
   the outbox's job outcomes (see [wake prompt](wake-prompt.md#the-wake-trace));
-  progress older than the request's `requestedAt` is ignored, so a re-draft
-  never shows the previous run's numbers. If draft creation fails before
+  a finished wake or settled outcome older than the request's `requestedAt` is
+  ignored, so a re-draft never shows the previous run's numbers, while a wake
+  still running (or an attempt still waiting to retry) is shown whenever it
+  began — reopening drafting attaches to that in-flight job. If draft creation fails before
   auto-advance, `DraftingErrorRecovery` keeps the user in context with Retry and
   Back-to-decisions actions. The drafting step has no sticky bar while active — it
   offers no actions and auto-advances.

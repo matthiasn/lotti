@@ -15,9 +15,11 @@ import 'package:material_ui/material_ui.dart';
 /// per-step timings, tool calls, and any failed attempt the outbox is
 /// retrying.
 ///
-/// Progress from a wake or job outcome older than [requestedAt] belongs to an
-/// earlier request and is ignored, so a re-draft never shows the last run's
-/// numbers. While [active], the elapsed times tick once a second.
+/// A finished wake or a settled job outcome older than [requestedAt] belongs
+/// to an earlier request and is ignored, so a re-draft never shows the last
+/// run's numbers. A wake still running, or an attempt still waiting to retry,
+/// is shown whenever it began: reopening drafting attaches to that in-flight
+/// work. While [active], the elapsed times tick once a second.
 class DraftingAgentStatus extends ConsumerStatefulWidget {
   const DraftingAgentStatus({
     required this.dayId,
@@ -112,12 +114,19 @@ class _DraftingAgentStatusState extends ConsumerState<DraftingAgentStatus> {
     final live = ref.watch(dayAgentLiveStatusProvider(widget.dayId)).value;
     final wake = live?.wake;
     final attempt = live?.lastAttempt;
+    // Only settled progress from before this request is stale. A wake still
+    // running, or an attempt still waiting to retry, is the work this screen
+    // waits on even when it began earlier — reopening drafting attaches to the
+    // in-flight job rather than starting a new one.
     final currentWake =
-        wake != null && !wake.startedAt.isBefore(widget.requestedAt)
+        wake != null &&
+            (!wake.isFinished || !wake.startedAt.isBefore(widget.requestedAt))
         ? wake
         : null;
     final currentAttempt =
-        attempt != null && !attempt.updatedAt.isBefore(widget.requestedAt)
+        attempt != null &&
+            (attempt.willRetry ||
+                !attempt.updatedAt.isBefore(widget.requestedAt))
         ? attempt
         : null;
     final now = clock.now();
