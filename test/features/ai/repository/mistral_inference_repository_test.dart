@@ -2599,6 +2599,86 @@ data: not valid json 5
         expect(results[0].usage?.promptTokens, equals(10));
         expect(results[0].usage?.completionTokens, equals(5));
         expect(results[0].usage?.totalTokens, equals(15));
+        // No details in the payload: cached and reasoning stay unknown
+        // rather than reading as a measured zero.
+        expect(results[0].usage?.promptTokensDetails, isNull);
+        expect(results[0].usage?.completionTokensDetails, isNull);
+      });
+
+      test('should parse cached and reasoning tokens from details', () async {
+        // Shape of a live mistral-small-latest final chunk on a repeated
+        // 9k-token system prompt (probed 2026-11-03).
+        final event = createSseChunkEvent(
+          content: '!',
+          finishReason: 'stop',
+          usage: {
+            'prompt_tokens': 9014,
+            'total_tokens': 9018,
+            'completion_tokens': 4,
+            'prompt_tokens_details': {'cached_tokens': 8992},
+            'completion_tokens_details': {'reasoning_tokens': 3},
+            'service_tier': 'standard',
+          },
+        );
+
+        when(() => mockHttpClient.send(any())).thenAnswer(
+          (_) async => createSseStreamedResponse(events: [event]),
+        );
+
+        final results = await repository
+            .generateText(
+              prompt: 'Hi',
+              model: model,
+              baseUrl: baseUrl,
+              apiKey: apiKey,
+            )
+            .toList();
+
+        final usage = results.single.usage!;
+        expect(usage.promptTokens, 9014);
+        expect(usage.completionTokens, 4);
+        expect(usage.totalTokens, 9018);
+        expect(usage.promptTokensDetails?.cachedTokens, 8992);
+        expect(usage.completionTokensDetails?.reasoningTokens, 3);
+        expect(results.single.choices?.single.delta?.content, '!');
+      });
+
+      test('should keep a usage-only chunk that has no choices', () async {
+        final events = [
+          createSseChunkEvent(content: 'Hello'),
+          {
+            'id': 'chatcmpl-test',
+            'object': 'chat.completion.chunk',
+            'created': 1234567890,
+            'model': model,
+            'choices': <dynamic>[],
+            'usage': {
+              'prompt_tokens': 120,
+              'completion_tokens': 7,
+              'total_tokens': 127,
+              'prompt_tokens_details': {'cached_tokens': 96},
+            },
+          },
+        ];
+
+        when(() => mockHttpClient.send(any())).thenAnswer(
+          (_) async => createSseStreamedResponse(events: events),
+        );
+
+        final results = await repository
+            .generateText(
+              prompt: 'Hi',
+              model: model,
+              baseUrl: baseUrl,
+              apiKey: apiKey,
+            )
+            .toList();
+
+        expect(results, hasLength(2));
+        expect(results.first.usage, isNull);
+        expect(results.last.choices, isEmpty);
+        expect(results.last.usage?.promptTokens, 120);
+        expect(results.last.usage?.promptTokensDetails?.cachedTokens, 96);
       });
     });
 

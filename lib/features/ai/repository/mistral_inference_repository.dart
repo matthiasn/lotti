@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:clock/clock.dart';
 import 'package:http/http.dart' as http;
 import 'package:lotti/classes/ai/ai_config.dart';
+import 'package:lotti/features/ai/repository/completion_usage_parser.dart';
 import 'package:lotti/features/ai/repository/mistral_error_body.dart';
 import 'package:lotti/features/ai/repository/mistral_stream_content.dart';
 import 'package:lotti/features/ai/repository/model_catalog_mapping.dart';
@@ -850,14 +851,18 @@ class MistralInferenceRepository {
   ///
   /// Content may arrive as a string or as a list of chunks; [content] keeps
   /// the stream's thinking state across chunks (see [MistralStreamContent]).
+  ///
+  /// Usage goes through [parseCompletionUsage], so the final chunk's
+  /// `prompt_tokens_details.cached_tokens` and
+  /// `completion_tokens_details.reasoning_tokens` reach the wake and
+  /// consumption records. A chunk that carries usage but no choices is kept
+  /// rather than dropped, so its counts are not lost.
   CreateChatCompletionStreamResponse? _parseStreamResponse(
     Map<String, dynamic> json,
     MistralStreamContent content,
   ) {
-    final choices = json['choices'] as List<dynamic>?;
-    if (choices == null || choices.isEmpty) {
-      return null;
-    }
+    final usage = parseCompletionUsage(json['usage']);
+    final choices = json['choices'] as List<dynamic>? ?? const <dynamic>[];
 
     final parsedChoices = <ChatCompletionStreamResponseChoice>[];
 
@@ -908,19 +913,8 @@ class MistralInferenceRepository {
       );
     }
 
-    if (parsedChoices.isEmpty) {
+    if (parsedChoices.isEmpty && usage == null) {
       return null;
-    }
-
-    // Parse usage if present
-    CompletionUsage? usage;
-    final usageJson = json['usage'] as Map<String, dynamic>?;
-    if (usageJson != null) {
-      usage = CompletionUsage(
-        completionTokens: usageJson['completion_tokens'] as int? ?? 0,
-        promptTokens: usageJson['prompt_tokens'] as int? ?? 0,
-        totalTokens: usageJson['total_tokens'] as int? ?? 0,
-      );
     }
 
     return CreateChatCompletionStreamResponse(

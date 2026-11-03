@@ -30,6 +30,17 @@ class AgentTokenUsageSummary {
   /// served from cache), so it is not added separately.
   int get totalTokens => inputTokens + outputTokens + thoughtsTokens;
 
+  /// Share of [inputTokens] served from the provider's prompt cache, from 0
+  /// to 1, or null when there was no input to measure it against.
+  ///
+  /// Cached input is billed below fresh input, so this is the number that
+  /// says how much a model's repeated context is saving. Clamped because a
+  /// provider reporting more cached than prompt tokens is a provider bug,
+  /// not a hit rate above 100%.
+  double? get cacheHitRate => inputTokens > 0
+      ? (cachedInputTokens / inputTokens).clamp(0.0, 1.0)
+      : null;
+
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||

@@ -146,6 +146,19 @@ actually reports it. Voxtral's streaming adapter emits final usage-only SSE
 frames, which lets AI Consumption record tokens even when the accounting chunk
 has no text delta.
 
+Mistral chat streams are parsed by hand (array-shaped content, thinking
+chunks), but their `usage` goes through the same parser. Mistral reports it on
+the final chunk as `prompt_tokens`, `completion_tokens`, `total_tokens`,
+`prompt_tokens_details.cached_tokens` and
+`completion_tokens_details.reasoning_tokens`; a chunk that carries usage but no
+choices is kept rather than dropped. **Cached tokens are a subset of
+`prompt_tokens`, never added on top.** A live probe on 2026-11-03 with a
+repeated 9k-token system prompt reported 8,992 of 9,014 prompt tokens cached on
+`mistral-small-latest` and 8,832 of 9,002 on `mistral-large-latest`, so agent
+wakes, whose prompts are append-only, are expected to hit the cache heavily.
+The agent token usage table shows the cached count and its share of input as a
+cache hit rate.
+
 # Live catalogs
 
 Melious, Mistral, oMLX, Gemini and OpenAI settings use live catalogs

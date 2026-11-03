@@ -681,6 +681,7 @@
   },
   "agentThreadReportLabel": "Rapport udarbejdet under denne våge",
   "agentTokenUsageCachedTokens": "Cachet",
+  "agentTokenUsageCacheHitRate": "Cache-hits",
   "agentTokenUsageEmpty": "Ingen token-brug registreret endnu.",
   "agentTokenUsageErrorLoading": "Manglende indlæsning af token: {error}",
   "@agentTokenUsageErrorLoading": {

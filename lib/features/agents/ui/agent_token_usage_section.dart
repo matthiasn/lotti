@@ -118,7 +118,7 @@ class TokenUsageTable extends StatelessWidget {
   }
 }
 
-/// Wide layout: the original 6-column Table.
+/// Wide layout: a 7-column Table, one row per model.
 class _WideTokenUsageLayout extends StatelessWidget {
   const _WideTokenUsageLayout({required this.summaries});
 
@@ -128,6 +128,7 @@ class _WideTokenUsageLayout extends StatelessWidget {
   Widget build(BuildContext context) {
     final locale = Localizations.localeOf(context).toString();
     final numberFormat = NumberFormat.decimalPattern(locale);
+    final percentFormat = NumberFormat.percentPattern(locale);
     final messages = context.messages;
     final headerStyle = context.textTheme.bodySmall?.copyWith(
       color: context.colorScheme.onSurfaceVariant,
@@ -147,7 +148,8 @@ class _WideTokenUsageLayout extends StatelessWidget {
         2: FlexColumnWidth(),
         3: FlexColumnWidth(),
         4: FlexColumnWidth(),
-        5: IntrinsicColumnWidth(),
+        5: FlexColumnWidth(),
+        6: IntrinsicColumnWidth(),
       },
       defaultVerticalAlignment: TableCellVerticalAlignment.middle,
       children: [
@@ -159,6 +161,7 @@ class _WideTokenUsageLayout extends StatelessWidget {
             _cell(messages.agentTokenUsageOutputTokens, headerStyle),
             _cell(messages.agentTokenUsageThoughtsTokens, headerStyle),
             _cell(messages.agentTokenUsageCachedTokens, headerStyle),
+            _cell(messages.agentTokenUsageCacheHitRate, headerStyle),
             _cell(messages.agentTokenUsageWakeCount, headerStyle),
           ],
         ),
@@ -174,6 +177,7 @@ class _WideTokenUsageLayout extends StatelessWidget {
                 numberFormat.format(summary.cachedInputTokens),
                 valueStyle,
               ),
+              _cell(formatCacheHitRate(summary, percentFormat), valueStyle),
               _cell(summary.wakeCount.toString(), valueStyle),
             ],
           ),
@@ -195,6 +199,10 @@ class _WideTokenUsageLayout extends StatelessWidget {
               ),
               _cell(
                 numberFormat.format(grandTotal.cachedInputTokens),
+                valueStyle,
+              ),
+              _cell(
+                formatCacheHitRate(grandTotal, percentFormat),
                 valueStyle,
               ),
               _cell(grandTotal.wakeCount.toString(), valueStyle),
@@ -222,6 +230,7 @@ class _NarrowTokenUsageLayout extends StatelessWidget {
   Widget build(BuildContext context) {
     final locale = Localizations.localeOf(context).toString();
     final numberFormat = NumberFormat.decimalPattern(locale);
+    final percentFormat = NumberFormat.percentPattern(locale);
     final messages = context.messages;
     final grandTotal = _computeGrandTotal(summaries);
 
@@ -233,6 +242,7 @@ class _NarrowTokenUsageLayout extends StatelessWidget {
           _ModelCard(
             summary: summaries[i],
             numberFormat: numberFormat,
+            percentFormat: percentFormat,
             messages: messages,
           ),
         ],
@@ -243,6 +253,7 @@ class _NarrowTokenUsageLayout extends StatelessWidget {
           _ModelCard(
             summary: grandTotal,
             numberFormat: numberFormat,
+            percentFormat: percentFormat,
             messages: messages,
             isTotal: true,
           ),
@@ -257,12 +268,14 @@ class _ModelCard extends StatelessWidget {
   const _ModelCard({
     required this.summary,
     required this.numberFormat,
+    required this.percentFormat,
     required this.messages,
     this.isTotal = false,
   });
 
   final AgentTokenUsageSummary summary;
   final NumberFormat numberFormat;
+  final NumberFormat percentFormat;
   final AppLocalizations messages;
   final bool isTotal;
 
@@ -316,6 +329,12 @@ class _ModelCard extends StatelessWidget {
               valueStyle,
             ),
             _labelValue(
+              messages.agentTokenUsageCacheHitRate,
+              formatCacheHitRate(summary, percentFormat),
+              labelStyle,
+              valueStyle,
+            ),
+            _labelValue(
               messages.agentTokenUsageWakeCount,
               summary.wakeCount.toString(),
               labelStyle,
@@ -341,6 +360,17 @@ class _ModelCard extends StatelessWidget {
       ],
     );
   }
+}
+
+/// Formats [AgentTokenUsageSummary.cacheHitRate] with [percentFormat]
+/// (e.g. "46%"), or an em dash when there was no input to measure it
+/// against, so an empty rate never reads as a measured 0%.
+String formatCacheHitRate(
+  AgentTokenUsageSummary summary,
+  NumberFormat percentFormat,
+) {
+  final rate = summary.cacheHitRate;
+  return rate == null ? '\u2014' : percentFormat.format(rate);
 }
 
 /// Shorten model IDs like "models/gemini-2.5-pro" to "gemini-2.5-pro".

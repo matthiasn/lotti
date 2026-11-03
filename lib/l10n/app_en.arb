@@ -958,6 +958,10 @@
   },
   "agentThreadReportLabel": "Report produced during this wake",
   "agentTokenUsageCachedTokens": "Cached",
+  "agentTokenUsageCacheHitRate": "Cache hits",
+  "@agentTokenUsageCacheHitRate": {
+    "description": "Column header: share of input tokens served from the provider's prompt cache, shown as a percentage"
+  },
   "agentTokenUsageEmpty": "No token usage recorded yet.",
   "agentTokenUsageErrorLoading": "Failed to load token usage: {error}",
   "@agentTokenUsageErrorLoading": {

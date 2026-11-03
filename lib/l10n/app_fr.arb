@@ -547,6 +547,7 @@
   "agentTemplateVersionSaved": "Nouvelle version enregistrée",
   "agentThreadReportLabel": "Rapport produit pendant ce cycle",
   "agentTokenUsageCachedTokens": "En cache",
+  "agentTokenUsageCacheHitRate": "Succès du cache",
   "agentTokenUsageEmpty": "Aucune utilisation de jetons enregistrée.",
   "agentTokenUsageErrorLoading": "Échec du chargement de l'utilisation des jetons : {error}",
   "@agentTokenUsageErrorLoading": {

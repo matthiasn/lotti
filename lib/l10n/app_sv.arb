@@ -681,6 +681,7 @@
   },
   "agentThreadReportLabel": "Rapport producerad under denna vaka",
   "agentTokenUsageCachedTokens": "Cachad",
+  "agentTokenUsageCacheHitRate": "Cacheträffar",
   "agentTokenUsageEmpty": "Ingen tokenanvändning registrerad än.",
   "agentTokenUsageErrorLoading": "Misslyckades med att ladda tokenanvändning: {error}",
   "@agentTokenUsageErrorLoading": {
