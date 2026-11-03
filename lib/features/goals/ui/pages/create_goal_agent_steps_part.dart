@@ -126,7 +126,6 @@ class _ConfirmationStep extends StatefulWidget {
     required this.persona,
     required this.signalDescription,
     required this.preservesCriteria,
-    required this.editVersion,
     required this.validation,
     required this.personaError,
     required this.titleError,
@@ -141,7 +140,6 @@ class _ConfirmationStep extends StatefulWidget {
   final TextEditingController persona;
   final String signalDescription;
   final bool preservesCriteria;
-  final int? editVersion;
   final String? validation;
   final String? personaError;
   final String? titleError;
@@ -289,15 +287,6 @@ class _ConfirmationStepState extends State<_ConfirmationStep> {
             widget.validation!,
             style: tokens.typography.styles.body.bodySmall.copyWith(
               color: tokens.colors.alert.error.defaultColor,
-            ),
-          ),
-        ],
-        if (widget.editVersion != null) ...[
-          SizedBox(height: tokens.spacing.step4),
-          Text(
-            messages.goalFormEditVersion(widget.editVersion! + 1),
-            style: tokens.typography.styles.others.caption.copyWith(
-              color: tokens.colors.text.mediumEmphasis,
             ),
           ),
         ],

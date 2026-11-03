@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/categories/ui/widgets/category_crumb.dart';
@@ -206,6 +207,52 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets(
+    'clearing the category moves the entry out of it and says so',
+    (tester) async {
+      when(() => move.move(any(), any())).thenAnswer((_) async => true);
+      await pump(tester);
+
+      await openPicker(tester);
+      await tester.tap(find.byKey(const ValueKey('category-picker-clear')));
+      await tester.pumpAndSettle();
+
+      verify(() => move.move('person-pip', null)).called(1);
+      expect(find.text('No category now'), findsOneWidget);
+    },
+  );
+
+  testWidgets('a pointer over the crumb washes it, and leaving clears it', (
+    tester,
+  ) async {
+    await pump(tester);
+    final tokens = tester.element(find.byType(CategoryCrumb)).designTokens;
+    Color? wash() =>
+        (tester
+                    .widget<AnimatedContainer>(
+                      find.descendant(
+                        of: find.byKey(const ValueKey('category-crumb')),
+                        matching: find.byType(AnimatedContainer),
+                      ),
+                    )
+                    .decoration!
+                as BoxDecoration)
+            .color;
+
+    final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+    addTearDown(mouse.removePointer);
+    await mouse.addPointer(location: Offset.zero);
+    await mouse.moveTo(
+      tester.getCenter(find.byKey(const ValueKey('category-crumb'))),
+    );
+    await tester.pumpAndSettle();
+    expect(wash(), tokens.colors.surface.hover);
+
+    await mouse.moveTo(Offset.zero);
+    await tester.pumpAndSettle();
+    expect(wash(), Colors.transparent);
+  });
 
   testWidgets('a failed move says so', (tester) async {
     when(() => move.move(any(), any())).thenAnswer((_) async => false);

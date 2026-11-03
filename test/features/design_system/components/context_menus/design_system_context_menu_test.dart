@@ -198,6 +198,37 @@ void main() {
       expect((box.decoration! as BoxDecoration).color, raised);
     });
 
+    testWidgets('a long, scrolling menu keeps its group rules', (
+      tester,
+    ) async {
+      await _pumpContextMenu(
+        tester,
+        DesignSystemContextMenu(
+          key: const Key('long'),
+          items: [
+            for (var i = 0; i < 8; i++)
+              DesignSystemContextMenuItem(label: 'Row $i', startsGroup: i == 2),
+          ],
+        ),
+      );
+
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('long')),
+          matching: find.byType(ListView),
+        ),
+        findsOneWidget,
+      );
+      final rule = find.descendant(
+        of: find.byKey(const Key('long')),
+        matching: find.byType(Divider),
+      );
+      expect(rule, findsOneWidget);
+      final y = tester.getCenter(rule).dy;
+      expect(y, greaterThan(tester.getCenter(find.text('Row 1')).dy));
+      expect(y, lessThan(tester.getCenter(find.text('Row 2')).dy));
+    });
+
     testWidgets('calls onTap when item is tapped', (tester) async {
       var tapped = false;
 

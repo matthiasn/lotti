@@ -942,7 +942,6 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage>
                                 persona: _persona,
                                 signalDescription: _signalDescription(habits),
                                 preservesCriteria: !_mapping.isEditable,
-                                editVersion: editSpec?.version,
                                 validation: _validation,
                                 personaError: _personaError,
                                 titleError: _titleError,

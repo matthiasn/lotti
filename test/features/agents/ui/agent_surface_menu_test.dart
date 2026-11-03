@@ -125,6 +125,58 @@ void main() {
     expect(menu.right, greaterThan(trigger.left));
   });
 
+  testWidgets("right to left, it hangs from the trigger's leading edge", (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        Directionality(
+          textDirection: TextDirection.rtl,
+          child: Scaffold(
+            body: Align(
+              alignment: Alignment.topCenter,
+              child: Builder(
+                builder: (context) => AgentSurfaceMenuButton(
+                  items: items(context),
+                  triggerBuilder: (context, open) => IconButton(
+                    key: const ValueKey('trigger'),
+                    icon: const Icon(LottiIcons.moreVertical),
+                    onPressed: open,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+        mediaQueryData: const MediaQueryData(size: Size(800, 600)),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await open(tester);
+
+    final trigger = tester.getRect(find.byKey(const ValueKey('trigger')));
+    final menu = tester.getRect(find.byType(DesignSystemContextMenu));
+    expect(menu.left, moreOrLessEquals(trigger.left));
+  });
+
+  testWidgets('follows its trigger when the window changes under it', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(800, 600);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await pump(tester);
+    await open(tester);
+    final before = tester.getRect(find.byType(DesignSystemContextMenu));
+
+    tester.view.physicalSize = const Size(800, 300);
+    await tester.pumpAndSettle();
+
+    final after = tester.getRect(find.byType(DesignSystemContextMenu));
+    expect(after.bottom, lessThanOrEqualTo(300));
+    expect(after, isNot(before));
+  });
+
   testWidgets('opens upward when there is no room below the trigger', (
     tester,
   ) async {

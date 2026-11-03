@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:clock/clock.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_config.dart';
 import 'package:lotti/classes/agents/agent_constants.dart';
@@ -33,6 +34,7 @@ import 'package:lotti/features/agents/ui/change_set_summary_card.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart'
     show WakeRunCompletion;
 import 'package:lotti/features/ai_consumption/state/consumption_providers.dart';
+import 'package:lotti/features/categories/ui/widgets/category_crumb.dart';
 import 'package:lotti/features/companion/animation/mouth_track.dart';
 import 'package:lotti/features/companion/rig/companion_painter.dart';
 import 'package:lotti/features/companion/state/spoken_track.dart';
@@ -415,45 +417,46 @@ void main() {
       when(() => move.move(any(), any())).thenAnswer((_) async => true);
       var categoryReads = 0;
 
+      final overrides = <Override>[
+        habitsControllerProvider.overrideWith(
+          () => FakeHabitsController(
+            HabitsState.initial(now: DateTime(2026, 8, 11)),
+          ),
+        ),
+        agentIdentityProvider(
+          'goal-1',
+        ).overrideWith((ref) async => goalIdentity),
+        goalAgentHealthProvider('goal-1').overrideWith(
+          (ref) async => (
+            trackStatus: GoalTrackStatus.onTrack,
+            attainment: 1.0,
+            reportOneLiner: null,
+            pendingProposals: 0,
+            spec: null,
+            direction: null,
+            deficit: null,
+            buffer: null,
+          ),
+        ),
+        selfTargetedPendingChangeSetsProvider(
+          'goal-1',
+        ).overrideWith((ref) async => []),
+        agentMessagesByThreadProvider(
+          'goal-1',
+        ).overrideWith((ref) async => {}),
+        agentReportProvider('goal-1').overrideWith((ref) async => null),
+        entitiesCacheServiceProvider.overrideWithValue(cache),
+        entryCategoryMoveProvider.overrideWithValue(move),
+        goalEntryIdProvider('goal-1').overrideWithValue('goal-row-1'),
+        goalCategoryIdProvider('goal-1').overrideWith((ref) async {
+          categoryReads++;
+          return 'cat-fit';
+        }),
+      ];
       await tester.pumpWidget(
         makeTestableWidgetNoScroll(
           const GoalAgentDetailPage(agentId: 'goal-1'),
-          overrides: [
-            habitsControllerProvider.overrideWith(
-              () => FakeHabitsController(
-                HabitsState.initial(now: DateTime(2026, 8, 11)),
-              ),
-            ),
-            agentIdentityProvider(
-              'goal-1',
-            ).overrideWith((ref) async => goalIdentity),
-            goalAgentHealthProvider('goal-1').overrideWith(
-              (ref) async => (
-                trackStatus: GoalTrackStatus.onTrack,
-                attainment: 1.0,
-                reportOneLiner: null,
-                pendingProposals: 0,
-                spec: null,
-                direction: null,
-                deficit: null,
-                buffer: null,
-              ),
-            ),
-            selfTargetedPendingChangeSetsProvider(
-              'goal-1',
-            ).overrideWith((ref) async => []),
-            agentMessagesByThreadProvider(
-              'goal-1',
-            ).overrideWith((ref) async => {}),
-            agentReportProvider('goal-1').overrideWith((ref) async => null),
-            entitiesCacheServiceProvider.overrideWithValue(cache),
-            entryCategoryMoveProvider.overrideWithValue(move),
-            goalEntryIdProvider('goal-1').overrideWithValue('goal-row-1'),
-            goalCategoryIdProvider('goal-1').overrideWith((ref) async {
-              categoryReads++;
-              return 'cat-fit';
-            }),
-          ],
+          overrides: overrides,
         ),
       );
       await tester.pumpAndSettle();
@@ -477,6 +480,20 @@ void main() {
       verify(() => move.move('goal-row-1', 'cat-crew')).called(1);
       // The header reads the goal's category again once the move landed.
       expect(categoryReads, 2);
+
+      // The user leaves the goal while the toast's Undo is still live; the
+      // move it undoes then reports back to a page that is gone.
+      final onMoved = tester.widget<CategoryCrumb>(crumb).onMoved!;
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const SizedBox.shrink(),
+          overrides: overrides,
+        ),
+      );
+      onMoved();
+      await tester.pump();
+
+      expect(tester.takeException(), isNull);
     },
   );
 

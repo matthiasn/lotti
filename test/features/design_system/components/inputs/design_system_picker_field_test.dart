@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/inputs/design_system_picker_field.dart';
 import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
@@ -85,5 +86,67 @@ void main() {
         hasEnabledState: true,
       ),
     );
+  });
+
+  testWidgets('a pointer over an enabled field strengthens its hairline', (
+    tester,
+  ) async {
+    await pump(tester, value: 'Fitness', onTap: () {});
+    await tester.pumpAndSettle();
+    final tokens = tester.element(find.text('Birthday')).designTokens;
+    Color border() =>
+        ((tester
+                            .widget<Ink>(
+                              find.descendant(
+                                of: find.byKey(const ValueKey('field')),
+                                matching: find.byType(Ink),
+                              ),
+                            )
+                            .decoration!
+                        as BoxDecoration)
+                    .border!
+                as Border)
+            .top
+            .color;
+
+    final resting = border();
+    final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+    addTearDown(mouse.removePointer);
+    await mouse.addPointer(location: Offset.zero);
+    await mouse.moveTo(tester.getCenter(find.byKey(const ValueKey('field'))));
+    await tester.pumpAndSettle();
+
+    expect(border(), designSystemFieldBorderColor(tokens, hovered: true));
+    expect(border(), isNot(resting));
+  });
+
+  testWidgets('inside a sheet it is unfilled, so the sheet shows through', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        DesignSystemPickerField(
+          fieldKey: const ValueKey('field'),
+          label: 'Category',
+          value: null,
+          placeholder: 'Select a category',
+          onTap: () {},
+          filled: false,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final decoration =
+        tester
+                .widget<Ink>(
+                  find.descendant(
+                    of: find.byKey(const ValueKey('field')),
+                    matching: find.byType(Ink),
+                  ),
+                )
+                .decoration!
+            as BoxDecoration;
+    expect(decoration.color, Colors.transparent);
   });
 }
