@@ -86,6 +86,14 @@ void main() {
         hasEnabledState: true,
       ),
     );
+
+    // Enabled, a screen reader activates it the way a tap does.
+    final semantics = tester.ensureSemantics();
+    await pump(tester, value: 'Fitness', onTap: () => taps++);
+    await tester.pumpAndSettle();
+    tester.semantics.tap(find.semantics.byLabel('Birthday: Fitness'));
+    expect(taps, 2);
+    semantics.dispose();
   });
 
   testWidgets('a pointer over an enabled field strengthens its hairline', (

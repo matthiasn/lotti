@@ -624,7 +624,8 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage>
       isLoading: _saving,
     );
     return PopScope(
-      canPop: _step == _visibleSteps.first && !_editLeaveNeedsConfirm,
+      canPop:
+          _step == _visibleSteps.first && !_saving && !_editLeaveNeedsConfirm,
       onPopInvokedWithResult: (didPop, _) {
         if (didPop) {
           WidgetsBinding.instance.addPostFrameCallback((_) {

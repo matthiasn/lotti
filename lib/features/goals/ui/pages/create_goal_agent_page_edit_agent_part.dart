@@ -131,7 +131,9 @@ extension _GoalEditLeave on _CreateGoalAgentPageState {
       _stepsTarget.text,
       _watchesCheckInTime,
       _checkInMinutes.text,
-      _checkInsAreSubstance,
+      // What the switch shows, not the raw override: switching it off and
+      // on again is no change.
+      _shownCheckInsAreSubstance,
       _compositeRule,
       _requiredSuccesses,
     ].join('\u0000');

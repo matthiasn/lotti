@@ -3902,6 +3902,15 @@ void main() {
       expect(inputInside('goal-form-persona').enabled, isFalse);
       expect(inputInside('goal-form-title-mapping').enabled, isFalse);
       expect(inputInside('goal-form-intention').enabled, isFalse);
+      // The system back cannot pop the page out from under its own save.
+      expect(
+        tester
+            .widget<PopScope<Object?>>(
+              find.byWidgetPredicate((widget) => widget is PopScope<Object?>),
+            )
+            .canPop,
+        isFalse,
+      );
       expect(
         tester.widget<BackButton>(find.byType(BackButton)).onPressed,
         isNull,
@@ -6390,7 +6399,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(
         find.text(
-          'Discard your changes to this goal? Nothing has been saved yet.',
+          'Discard your changes to this goal? The saved version stays as it is.',
         ),
         findsOneWidget,
       );
@@ -6407,6 +6416,25 @@ void main() {
       await tester.pumpAndSettle();
       expect(navigated, ['/goals/details/goal-1']);
     });
+
+    testWidgets(
+      "the agent's check-ins switch turned off and on again is no change",
+      (tester) async {
+        await pumpEdit(tester);
+        final toggle = find.byKey(
+          const ValueKey('goal-form-check-ins-are-substance'),
+        );
+        await tester.ensureVisible(toggle);
+        await tester.tap(toggle);
+        await tester.pump();
+        await tester.tap(toggle);
+        await tester.pump();
+
+        await tester.tap(find.byKey(const ValueKey('goal-form-cancel')));
+        await tester.pumpAndSettle();
+        expect(navigated, ['/goals/details/goal-1']);
+      },
+    );
 
     testWidgets('a habit ticked off and on again is no change', (
       tester,

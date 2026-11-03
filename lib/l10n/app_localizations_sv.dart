@@ -3232,11 +3232,11 @@ class AppLocalizationsSv extends AppLocalizations {
       'Misslyckades med att skapa kategori. Försök igen, tack.';
 
   @override
-  String get categoryCrumbMovedOut => 'Ingen kategori nu';
+  String get categoryCrumbMovedOut => 'Utan kategori';
 
   @override
   String categoryCrumbMovedTo(String category) {
-    return 'Flyttad till $category';
+    return 'Nu i $category';
   }
 
   @override
@@ -8340,7 +8340,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get goalFormDiscardChangesMessage =>
-      'Släng dina ändringar av det här målet? Inget har sparats än.';
+      'Släng dina ändringar av det här målet? Den sparade versionen förblir som den är.';
 
   @override
   String get goalFormEditTitle => 'Redigera mål';
@@ -13839,7 +13839,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get relationshipFormCategoryProfileHint =>
-      'Personens agent skriver sina genomgångar med den AI-profil som kategorin anger, eller med din standard när den inte anger någon.';
+      'Om du inte själv väljer en AI-inställning för personens agent skriver den sina genomgångar med den AI-profil som kategorin anger, eller med din standard när den inte anger någon.';
 
   @override
   String get relationshipFormImportantBody =>

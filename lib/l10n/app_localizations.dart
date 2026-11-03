@@ -5451,13 +5451,13 @@ abstract class AppLocalizations {
   /// No description provided for @categoryCrumbMovedOut.
   ///
   /// In en, this message translates to:
-  /// **'No category now'**
+  /// **'No category'**
   String get categoryCrumbMovedOut;
 
   /// Toast after the header's category selector moved an entry
   ///
   /// In en, this message translates to:
-  /// **'Moved to {category}'**
+  /// **'Now in {category}'**
   String categoryCrumbMovedTo(String category);
 
   /// No description provided for @categoryDayPlanDescription.
@@ -14035,7 +14035,7 @@ abstract class AppLocalizations {
   /// No description provided for @goalFormDiscardChangesMessage.
   ///
   /// In en, this message translates to:
-  /// **'Discard your changes to this goal? Nothing has been saved yet.'**
+  /// **'Discard your changes to this goal? The saved version stays as it is.'**
   String get goalFormDiscardChangesMessage;
 
   /// No description provided for @goalFormEditTitle.
@@ -22888,7 +22888,7 @@ abstract class AppLocalizations {
   /// No description provided for @relationshipFormCategoryProfileHint.
   ///
   /// In en, this message translates to:
-  /// **'Their agent briefs with the AI profile this category names, or with your default when it names none.'**
+  /// **'Unless you choose an AI setup for their agent yourself, it briefs with the AI profile this category names, or with your default when it names none.'**
   String get relationshipFormCategoryProfileHint;
 
   /// No description provided for @relationshipFormImportantBody.

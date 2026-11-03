@@ -2827,6 +2827,39 @@ void main() {
       );
 
       test(
+        'a model the user picked on the copy is their choice, and the '
+        'category no longer moves it',
+        () async {
+          stubCategoryProfileOnClaude();
+          when(
+            () => aiConfigRepository.getConfigById(claudeModel.id),
+          ).thenAnswer((_) async => claudeModel);
+
+          final resolved = await resolveRelationshipAgentModel(
+            relationship: personInCategory(),
+            agentIdentity: identity().copyWith(
+              config: const AgentConfig(
+                inferenceSetup: AgentInferenceSetup(
+                  mode: AgentInferenceSetupMode.configured,
+                  origin: AgentInferenceSetupOrigin.categorySnapshot,
+                  baseProfileId: 'profile-old',
+                  thinkingModelOverrideId: 'model-claude',
+                ),
+              ),
+            ),
+            aiConfigRepository: aiConfigRepository,
+            domainLogger: MockDomainLogger(),
+            // A category that would route elsewhere is never consulted.
+            categoryProfileLookup: (_) async =>
+                throw StateError('the category must not decide'),
+          );
+
+          expect(resolved?.modelId, 'claude-x');
+          expect(resolved?.profileId, isNull);
+        },
+      );
+
+      test(
         'a profile the user chose in setup still outranks the category',
         () async {
           stubCategoryProfileOnClaude();

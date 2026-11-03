@@ -3274,11 +3274,11 @@ class AppLocalizationsRo extends AppLocalizations {
       'Nu s-a putut crea categoria. Vă rugăm să încercați din nou.';
 
   @override
-  String get categoryCrumbMovedOut => 'Acum fără categorie';
+  String get categoryCrumbMovedOut => 'Fără categorie';
 
   @override
   String categoryCrumbMovedTo(String category) {
-    return 'Mutat în $category';
+    return 'Acum în $category';
   }
 
   @override
@@ -8474,7 +8474,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get goalFormDiscardChangesMessage =>
-      'Renunțați la modificările acestui obiectiv? Nimic nu a fost salvat încă.';
+      'Renunțați la modificările acestui obiectiv? Versiunea salvată rămâne neschimbată.';
 
   @override
   String get goalFormEditTitle => 'Editați obiectivul';
@@ -14087,7 +14087,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get relationshipFormCategoryProfileHint =>
-      'Agentul acestei persoane pregătește rezumatele cu profilul AI indicat de această categorie sau cu profilul dvs. implicit, dacă nu indică niciunul.';
+      'Dacă nu alegeți dvs. o configurație AI pentru agentul acestei persoane, acesta pregătește rezumatele cu profilul AI indicat de această categorie sau cu profilul dvs. implicit, dacă nu indică niciunul.';
 
   @override
   String get relationshipFormImportantBody =>

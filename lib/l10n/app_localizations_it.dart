@@ -3265,11 +3265,11 @@ class AppLocalizationsIt extends AppLocalizations {
       'Non è riuscito a creare la categoria. Si prega di riprovare.';
 
   @override
-  String get categoryCrumbMovedOut => 'Ora senza categoria';
+  String get categoryCrumbMovedOut => 'Senza categoria';
 
   @override
   String categoryCrumbMovedTo(String category) {
-    return 'Spostato in $category';
+    return 'Ora in $category';
   }
 
   @override
@@ -8426,7 +8426,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get goalFormDiscardChangesMessage =>
-      'Scartare le tue modifiche a questo obiettivo? Non è ancora stato salvato niente.';
+      'Scartare le tue modifiche a questo obiettivo? La versione salvata resta com\'è.';
 
   @override
   String get goalFormEditTitle => 'Modifica obiettivo';
@@ -13982,7 +13982,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get relationshipFormCategoryProfileHint =>
-      'Il suo agente prepara i briefing con il profilo IA indicato da questa categoria, o con il tuo predefinito se non ne indica nessuno.';
+      'A meno che tu non scelga una configurazione IA per il suo agente, questo prepara i briefing con il profilo IA indicato da questa categoria, o con il tuo predefinito se non ne indica nessuno.';
 
   @override
   String get relationshipFormImportantBody =>

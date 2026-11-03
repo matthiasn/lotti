@@ -3259,11 +3259,11 @@ class AppLocalizationsCs extends AppLocalizations {
   String get categoryCreationError => 'Nepodařilo se vytvořit kategorii.';
 
   @override
-  String get categoryCrumbMovedOut => 'Teď bez kategorie';
+  String get categoryCrumbMovedOut => 'Bez kategorie';
 
   @override
   String categoryCrumbMovedTo(String category) {
-    return 'Přesunuto do $category';
+    return 'Nyní v kategorii $category';
   }
 
   @override
@@ -8412,7 +8412,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get goalFormDiscardChangesMessage =>
-      'Zahodit tvoje změny tohoto cíle? Zatím nic nebylo uloženo.';
+      'Zahodit tvoje změny tohoto cíle? Uložená verze zůstane, jak je.';
 
   @override
   String get goalFormEditTitle => 'Upravit cíl';
@@ -14010,7 +14010,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get relationshipFormCategoryProfileHint =>
-      'Jejich agent připravuje přehledy s AI profilem, který tato kategorie určuje, nebo s tvým výchozím, když žádný neurčuje.';
+      'Pokud jejich agentovi sám nevybereš nastavení AI, připravuje přehledy s AI profilem této kategorie, nebo s tvým výchozím, když žádný neurčuje.';
 
   @override
   String get relationshipFormImportantBody =>

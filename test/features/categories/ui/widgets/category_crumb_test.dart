@@ -80,6 +80,32 @@ void main() {
     verifyNever(() => move.move(any(), any()));
   });
 
+  testWidgets('a screen reader can open the picker from the crumb', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    await pump(tester);
+
+    expect(
+      tester.getSemantics(
+        find.bySemanticsLabel('Category: Penguin Operations'),
+      ),
+      isSemantics(
+        label: 'Category: Penguin Operations',
+        isButton: true,
+        hasEnabledState: true,
+        isEnabled: true,
+        hasTapAction: true,
+      ),
+    );
+    tester.semantics.tap(
+      find.semantics.byLabel('Category: Penguin Operations'),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byType(CategoryPickerSheet), findsOneWidget);
+    semantics.dispose();
+  });
+
   testWidgets('a caption-sized label still gets a touch-sized target', (
     tester,
   ) async {
@@ -105,7 +131,7 @@ void main() {
       verify(() => move.move('person-pip', 'cat-crew')).called(1);
       expect(find.byType(CategoryPickerSheet), findsNothing);
       // It committed at once, so it says where the entry went.
-      expect(find.text('Moved to Launch crew'), findsOneWidget);
+      expect(find.text('Now in Launch crew'), findsOneWidget);
     },
   );
 
@@ -219,7 +245,7 @@ void main() {
       await tester.pumpAndSettle();
 
       verify(() => move.move('person-pip', null)).called(1);
-      expect(find.text('No category now'), findsOneWidget);
+      expect(find.text('No category'), findsOneWidget);
     },
   );
 
@@ -300,7 +326,7 @@ void main() {
     await tester.pumpAndSettle();
 
     verify(() => move.move('person-pip', 'cat-ops')).called(1);
-    expect(find.text('Moved to Penguin Operations'), findsOneWidget);
+    expect(find.text('Now in Penguin Operations'), findsOneWidget);
   });
 
   testWidgets(

@@ -3211,11 +3211,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'Failed to create category. Please try again.';
 
   @override
-  String get categoryCrumbMovedOut => 'No category now';
+  String get categoryCrumbMovedOut => 'No category';
 
   @override
   String categoryCrumbMovedTo(String category) {
-    return 'Moved to $category';
+    return 'Now in $category';
   }
 
   @override
@@ -8301,7 +8301,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get goalFormDiscardChangesMessage =>
-      'Discard your changes to this goal? Nothing has been saved yet.';
+      'Discard your changes to this goal? The saved version stays as it is.';
 
   @override
   String get goalFormEditTitle => 'Edit goal';
@@ -13761,7 +13761,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get relationshipFormCategoryProfileHint =>
-      'Their agent briefs with the AI profile this category names, or with your default when it names none.';
+      'Unless you choose an AI setup for their agent yourself, it briefs with the AI profile this category names, or with your default when it names none.';
 
   @override
   String get relationshipFormImportantBody =>

@@ -64,6 +64,9 @@ class _DesignSystemPickerFieldState extends State<DesignSystemPickerField> {
       button: true,
       enabled: enabled,
       label: '${widget.label}: ${value ?? widget.placeholder}',
+      // The tap the excluded InkWell carried, on the node a screen reader
+      // activates.
+      onTap: widget.onTap,
       excludeSemantics: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

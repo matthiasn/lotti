@@ -163,6 +163,9 @@ class _CategoryCrumbState extends ConsumerState<CategoryCrumb> {
         button: true,
         enabled: onTap != null,
         label: '${messages.habitCategoryLabel}: $label',
+        // The tap the excluded InkWell carried, on the node a screen reader
+        // activates.
+        onTap: onTap,
         excludeSemantics: true,
         child: Material(
           type: MaterialType.transparency,

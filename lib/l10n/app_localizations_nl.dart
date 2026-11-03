@@ -3239,11 +3239,11 @@ class AppLocalizationsNl extends AppLocalizations {
       'Aanmaken van categorie is mislukt. Probeer het opnieuw.';
 
   @override
-  String get categoryCrumbMovedOut => 'Nu zonder categorie';
+  String get categoryCrumbMovedOut => 'Zonder categorie';
 
   @override
   String categoryCrumbMovedTo(String category) {
-    return 'Verplaatst naar $category';
+    return 'Nu in $category';
   }
 
   @override
@@ -8358,7 +8358,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get goalFormDiscardChangesMessage =>
-      'Je wijzigingen aan dit doel weggooien? Er is nog niets opgeslagen.';
+      'Je wijzigingen aan dit doel weggooien? De bewaarde versie blijft zoals ze is.';
 
   @override
   String get goalFormEditTitle => 'Doel bewerken';
@@ -13859,7 +13859,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get relationshipFormCategoryProfileHint =>
-      'Hun agent maakt briefings met het AI-profiel dat deze categorie noemt, of met je standaard als ze er geen noemt.';
+      'Tenzij je zelf een AI-instelling voor hun agent kiest, maakt die briefings met het AI-profiel dat deze categorie noemt, of met je standaard als ze er geen noemt.';
 
   @override
   String get relationshipFormImportantBody =>

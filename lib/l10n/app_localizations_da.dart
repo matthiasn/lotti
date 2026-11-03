@@ -3223,11 +3223,11 @@ class AppLocalizationsDa extends AppLocalizations {
       'Ikke i stand til at oprette kategori. Prøv venligst igen.';
 
   @override
-  String get categoryCrumbMovedOut => 'Ingen kategori nu';
+  String get categoryCrumbMovedOut => 'Uden kategori';
 
   @override
   String categoryCrumbMovedTo(String category) {
-    return 'Flyttet til $category';
+    return 'Nu i $category';
   }
 
   @override
@@ -8325,7 +8325,7 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get goalFormDiscardChangesMessage =>
-      'Kassér dine ændringer af dette mål? Intet er gemt endnu.';
+      'Kassér dine ændringer af dette mål? Den gemte version forbliver som den er.';
 
   @override
   String get goalFormEditTitle => 'Rediger mål';
@@ -13819,7 +13819,7 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get relationshipFormCategoryProfileHint =>
-      'Deres agent laver briefinger med den AI-profil, som denne kategori angiver, eller med din standard, når den ikke angiver nogen.';
+      'Medmindre du selv vælger en AI-opsætning til deres agent, laver den briefinger med den AI-profil, som denne kategori angiver, eller med din standard, når den ikke angiver nogen.';
 
   @override
   String get relationshipFormImportantBody =>
