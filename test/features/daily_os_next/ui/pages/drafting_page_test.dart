@@ -9,6 +9,7 @@ import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/state/drafting_controller.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/day_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/drafting_page.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/drafting_agent_status.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/learning_cards.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
@@ -330,10 +331,15 @@ void main() {
 
         final messages = tester.element(find.byType(DraftingPage)).messages;
         expect(find.text(messages.dailyOsNextDraftingHeader), findsOneWidget);
-        expect(find.byType(DraftingStatusTicker), findsOneWidget);
-        expect(find.byType(DraftingProgressTimeline), findsOneWidget);
+        expect(find.byType(DraftingAgentStatus), findsOneWidget);
         expect(
           find.text(messages.dailyOsNextDraftingProgressQueued),
+          findsOneWidget,
+        );
+        // No wake has reported progress, so the status line says so instead
+        // of narrating work that is not happening.
+        expect(
+          find.textContaining(messages.dailyOsNextDraftingStepWaiting),
           findsOneWidget,
         );
         expect(find.byType(LearningCardsColumn), findsOneWidget);
@@ -350,7 +356,7 @@ void main() {
 
       final messages = tester.element(find.byType(DraftingPage)).messages;
       expect(find.text(messages.dailyOsNextDraftingHeader), findsOneWidget);
-      expect(find.byType(DraftingStatusTicker), findsOneWidget);
+      expect(find.byType(DraftingAgentStatus), findsOneWidget);
       expect(find.text('YESTERDAY'), findsOneWidget);
 
       agent.learnings = Completer<List<LearningCard>>();
@@ -372,8 +378,7 @@ void main() {
       await tester.pump();
 
       expect(find.text(messages.dailyOsNextDraftingHeader), findsOneWidget);
-      expect(find.byType(DraftingStatusTicker), findsOneWidget);
-      expect(find.byType(DraftingProgressTimeline), findsOneWidget);
+      expect(find.byType(DraftingAgentStatus), findsOneWidget);
       expect(find.text('YESTERDAY'), findsOneWidget);
     });
 
@@ -390,8 +395,7 @@ void main() {
       // Page still renders the thinking hero + header, just no cards content.
       final messages = tester.element(find.byType(DraftingPage)).messages;
       expect(find.text(messages.dailyOsNextDraftingHeader), findsOneWidget);
-      expect(find.byType(DraftingStatusTicker), findsOneWidget);
-      expect(find.byType(DraftingProgressTimeline), findsOneWidget);
+      expect(find.byType(DraftingAgentStatus), findsOneWidget);
       // The learning cards column either isn't built or renders no cards.
       expect(find.text('YESTERDAY'), findsNothing);
     });
@@ -436,8 +440,7 @@ void main() {
         await _resolveLearnings(tester, agent);
 
         // Both sections rendered in vertical column.
-        expect(find.byType(DraftingStatusTicker), findsOneWidget);
-        expect(find.byType(DraftingProgressTimeline), findsOneWidget);
+        expect(find.byType(DraftingAgentStatus), findsOneWidget);
         expect(find.byType(LearningCardsColumn), findsOneWidget);
       },
     );
@@ -542,165 +545,9 @@ void main() {
 
         final messages = tester.element(find.byType(DraftingPage)).messages;
         expect(find.text(messages.dailyOsNextDraftingHeader), findsOneWidget);
-        expect(find.byType(DraftingStatusTicker), findsOneWidget);
+        expect(find.byType(DraftingAgentStatus), findsOneWidget);
         expect(find.textContaining('drafting blew up'), findsNothing);
       },
     );
-  });
-
-  group('DraftingProgressTimeline', () {
-    Future<void> pumpTimeline(WidgetTester tester, {required bool active}) {
-      return tester.pumpWidget(
-        makeTestableWidget2(
-          Scaffold(body: DraftingProgressTimeline(active: active)),
-          mediaQueryData: const MediaQueryData(size: Size(800, 600)),
-        ),
-      );
-    }
-
-    testWidgets('advances deterministically while active', (tester) async {
-      const interval = Duration(milliseconds: 3200);
-      await pumpTimeline(tester, active: true);
-
-      final messages = tester
-          .element(find.byType(DraftingProgressTimeline))
-          .messages;
-      expect(
-        find.text(messages.dailyOsNextDraftingProgressQueued),
-        findsOneWidget,
-      );
-
-      await tester.pump(interval);
-      expect(
-        find.text(messages.dailyOsNextDraftingProgressReading),
-        findsOneWidget,
-      );
-
-      await tester.pump(interval * 10);
-      expect(
-        find.text(messages.dailyOsNextDraftingProgressSaving),
-        findsOneWidget,
-      );
-    });
-
-    testWidgets('does not advance while inactive', (tester) async {
-      await pumpTimeline(tester, active: false);
-
-      final messages = tester
-          .element(find.byType(DraftingProgressTimeline))
-          .messages;
-      expect(
-        find.text(messages.dailyOsNextDraftingProgressQueued),
-        findsOneWidget,
-      );
-
-      await tester.pump(const Duration(seconds: 10));
-      expect(
-        find.text(messages.dailyOsNextDraftingProgressQueued),
-        findsOneWidget,
-      );
-    });
-
-    testWidgets('restarts only after being deactivated', (tester) async {
-      const interval = Duration(milliseconds: 3200);
-      await pumpTimeline(tester, active: true);
-
-      final messages = tester
-          .element(find.byType(DraftingProgressTimeline))
-          .messages;
-      await tester.pump(interval * 10);
-      expect(
-        find.text(messages.dailyOsNextDraftingProgressSaving),
-        findsOneWidget,
-      );
-
-      await pumpTimeline(tester, active: true);
-      expect(
-        find.text(messages.dailyOsNextDraftingProgressSaving),
-        findsOneWidget,
-      );
-
-      await pumpTimeline(tester, active: false);
-      await pumpTimeline(tester, active: true);
-      expect(
-        find.text(messages.dailyOsNextDraftingProgressQueued),
-        findsOneWidget,
-      );
-    });
-  });
-
-  group('DraftingStatusTicker', () {
-    Future<void> pumpTicker(WidgetTester tester, {required bool active}) {
-      return tester.pumpWidget(
-        makeTestableWidget2(
-          Scaffold(body: DraftingStatusTicker(active: active)),
-          mediaQueryData: const MediaQueryData(size: Size(800, 600)),
-        ),
-      );
-    }
-
-    testWidgets('rotates deterministically through the narration lines', (
-      tester,
-    ) async {
-      const interval = Duration(milliseconds: 2600);
-      await pumpTicker(tester, active: true);
-
-      final messages = tester
-          .element(find.byType(DraftingStatusTicker))
-          .messages;
-      final lines = DraftingStatusTicker.linesOf(messages);
-      expect(find.text(lines[0]), findsOneWidget);
-
-      await tester.pump(interval);
-      await tester.pump(const Duration(milliseconds: 500));
-      expect(find.text(lines[1]), findsOneWidget);
-      expect(find.text(lines[0]), findsNothing);
-
-      await tester.pump(interval);
-      await tester.pump(const Duration(milliseconds: 500));
-      expect(find.text(lines[2]), findsOneWidget);
-
-      // Wraps around after the last line instead of stalling. Pump exact
-      // interval multiples so the periodic timer fires once per step (the
-      // extra settle pumps above would otherwise drift past tick
-      // boundaries and double-fire).
-      await tester.pump(interval * (lines.length - 2));
-      await tester.pump(const Duration(milliseconds: 500));
-      expect(find.text(lines[0]), findsOneWidget);
-    });
-
-    testWidgets('holds the current line when inactive', (tester) async {
-      await pumpTicker(tester, active: false);
-
-      final messages = tester
-          .element(find.byType(DraftingStatusTicker))
-          .messages;
-      final lines = DraftingStatusTicker.linesOf(messages);
-      expect(find.text(lines[0]), findsOneWidget);
-
-      await tester.pump(const Duration(seconds: 6));
-      expect(find.text(lines[0]), findsOneWidget);
-      expect(find.text(lines[1]), findsNothing);
-    });
-
-    testWidgets('resumes rotating when drafting starts again', (tester) async {
-      const interval = Duration(milliseconds: 2600);
-      await pumpTicker(tester, active: false);
-      final messages = tester
-          .element(find.byType(DraftingStatusTicker))
-          .messages;
-      final lines = DraftingStatusTicker.linesOf(messages);
-
-      await pumpTicker(tester, active: true);
-      await tester.pump(interval);
-      await tester.pump(const Duration(milliseconds: 500));
-      expect(find.text(lines[1]), findsOneWidget);
-
-      // Pausing again freezes the line the rotation reached.
-      await pumpTicker(tester, active: false);
-      await tester.pump(interval * 3);
-      expect(find.text(lines[1]), findsOneWidget);
-      expect(find.text(lines[2]), findsNothing);
-    });
   });
 }

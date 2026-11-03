@@ -330,9 +330,23 @@ stateDiagram-v2
 
 ## Two independent drain lanes
 
-`DayProcessingRuntime`'s composed `drain` runs `drain(kinds: {transcribeAudio})`
-and `drain(kinds: dayAgentJobKinds)` **concurrently**, so a slow agent wake never
+`drainDayProcessingLanes` runs `drain(kinds: {transcribeAudio})` and
+`drain(kinds: dayAgentJobKinds)` **concurrently**, so a slow agent wake never
 blocks the transcription lane or vice versa.
+
+That needs one more rule than running them side by side. The runtime looks for
+new work only after a whole pass ends, and a pass ends only when **both** lanes
+are idle; meanwhile its own outbox subscription is paused and a `nudge()` joins
+the pass in flight. So a lane that runs dry does not return: it listens to
+`changes` and drains again when one arrives, and stops only once every lane is
+idle. Without it, a draft requested while a transcription retry was running
+waited for that transcription, with nothing running in its own lane.
+
+Every outcome the processor reports also reaches the drafting screen:
+`dayAgentJobAttemptOf` turns a `draftPlan` outcome into a `DayAgentJobAttempt`
+(attempts, cap, whether it will retry and when, last error) on the wake-progress
+bus. A `local` deferral — the executor coming back while its wake still runs —
+is not an attempt and is not published.
 
 ## Coalescing differs per kind
 

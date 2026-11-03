@@ -108,12 +108,18 @@ arbitrary five or six lines.
   until parsed and pending decisions resolve. The modal owns **one** indicator in
   the body — no duplicate footer animation.
 - **The Drafting wait is a hero thinking moment, not skeleton shimmer**: the
-  decoder-bars shader over a `DraftingStatusTicker` — a deterministic ~21 s
-  rotation of localized narration lines that cross-fade in place — with
-  yesterday's learning cards below as real content to read.
-  `DraftingProgressTimeline` adds a deterministic stage trail (queued → reading →
-  matching → blocks → validating → saving) **because the backend only exposes
-  completion, not individual tool checkpoints.** If draft creation fails before
+  decoder-bars shader over `DraftingAgentStatus`, with yesterday's learning
+  cards below as real content to read. **Everything under the shader is read
+  from the running wake, nothing is scripted**: one status line names the step
+  the wake is in and how long it has been there ("Waiting for the model, call
+  2… · 8 s", "Running draft_day_plan…", "Retrying in 7 s…"); four chips (queued →
+  reading → drafting → saving) follow the real step; a low-emphasis internals
+  block lists the resolved model, input/output tokens, time per step, the tool
+  calls, and — after a failed attempt — "Attempt n of 5" with the outbox's last
+  error. The source is `dayAgentLiveStatusProvider`, fed by the wake trace and
+  the outbox's job outcomes (see [wake prompt](wake-prompt.md#the-wake-trace));
+  progress older than the request's `requestedAt` is ignored, so a re-draft
+  never shows the previous run's numbers. If draft creation fails before
   auto-advance, `DraftingErrorRecovery` keeps the user in context with Retry and
   Back-to-decisions actions. The drafting step has no sticky bar while active — it
   offers no actions and auto-advances.

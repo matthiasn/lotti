@@ -5166,6 +5166,33 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsNextDraftingHeader => 'Schițez ziua dvs.…';
 
   @override
+  String dailyOsNextDraftingInternalsAttempt(int attempt, int max) {
+    return 'Încercarea $attempt din $max';
+  }
+
+  @override
+  String dailyOsNextDraftingInternalsLastError(String error) {
+    return 'Ultima încercare: $error';
+  }
+
+  @override
+  String get dailyOsNextDraftingInternalsModel => 'Model';
+
+  @override
+  String get dailyOsNextDraftingInternalsTime => 'Timp';
+
+  @override
+  String get dailyOsNextDraftingInternalsTokens => 'Tokenuri';
+
+  @override
+  String dailyOsNextDraftingInternalsTokensValue(String input, String output) {
+    return '$input intrare · $output ieșire';
+  }
+
+  @override
+  String get dailyOsNextDraftingInternalsTools => 'Apeluri de instrumente';
+
+  @override
   String get dailyOsNextDraftingNudgeAccept => 'Da, protejează dimineața';
 
   @override
@@ -5175,9 +5202,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsNextDraftingProgressBlocks => 'Se schițează blocurile';
 
   @override
-  String get dailyOsNextDraftingProgressMatching => 'Se potrivesc sarcinile';
-
-  @override
   String get dailyOsNextDraftingProgressQueued => 'În coadă';
 
   @override
@@ -5185,9 +5209,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get dailyOsNextDraftingProgressSaving => 'Se salvează planul';
-
-  @override
-  String get dailyOsNextDraftingProgressValidating => 'Se validează';
 
   @override
   String get dailyOsNextDraftingReasoningOverline => '✦ RAȚIONAMENT';
@@ -5203,31 +5224,67 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsNextDraftingRetry => 'Încercați din nou';
 
   @override
-  String get dailyOsNextDraftingStatusAfternoon => 'Se ordonează după-amiaza…';
+  String dailyOsNextDraftingSeconds(String seconds) {
+    return '$seconds s';
+  }
 
   @override
-  String get dailyOsNextDraftingStatusAlmost => 'Aproape gata…';
+  String get dailyOsNextDraftingStepContext =>
+      'Se citesc check-in-ul și sarcinile dumneavoastră…';
 
   @override
-  String get dailyOsNextDraftingStatusBreathing => 'Se lasă loc de respiro…';
+  String get dailyOsNextDraftingStepDone => 'Plan gata';
 
   @override
-  String get dailyOsNextDraftingStatusDeepWork =>
-      'Munca concentrată este plasată prima…';
+  String get dailyOsNextDraftingStepFailed => 'Această încercare a eșuat';
 
   @override
-  String get dailyOsNextDraftingStatusMatching =>
-      'Se potrivesc sarcinile cu ziua dvs.…';
+  String get dailyOsNextDraftingStepMemory =>
+      'Se compactează memoria agentului…';
 
   @override
-  String get dailyOsNextDraftingStatusReading => 'Se citește check-in-ul dvs.…';
+  String dailyOsNextDraftingStepModel(int count) {
+    return 'Se așteaptă modelul, apelul $count…';
+  }
 
   @override
-  String get dailyOsNextDraftingStatusTimings => 'Se verifică orarele…';
+  String get dailyOsNextDraftingStepPrompt => 'Se asamblează promptul…';
 
   @override
-  String get dailyOsNextDraftingStatusYesterday =>
-      'Se analizează ritmul de ieri…';
+  String dailyOsNextDraftingStepRetrying(String seconds) {
+    return 'Nouă încercare în $seconds s…';
+  }
+
+  @override
+  String get dailyOsNextDraftingStepSaving =>
+      'Se salvează planul dumneavoastră…';
+
+  @override
+  String dailyOsNextDraftingStepTool(String tool) {
+    return 'Se rulează $tool…';
+  }
+
+  @override
+  String get dailyOsNextDraftingStepWaiting =>
+      'Se așteaptă pornirea agentului…';
+
+  @override
+  String get dailyOsNextDraftingTimingContext => 'context';
+
+  @override
+  String get dailyOsNextDraftingTimingMemory => 'memorie';
+
+  @override
+  String get dailyOsNextDraftingTimingModel => 'model';
+
+  @override
+  String get dailyOsNextDraftingTimingPrompt => 'prompt';
+
+  @override
+  String get dailyOsNextDraftingTimingSaving => 'salvare';
+
+  @override
+  String get dailyOsNextDraftingTimingTools => 'instrumente';
 
   @override
   String get dailyOsNextEditTitleHint => 'Editați titlul';

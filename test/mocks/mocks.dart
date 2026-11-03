@@ -91,6 +91,7 @@ import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/dashscope_inference_repository.dart';
 import 'package:lotti/features/ai/repository/gemini_inference_repository.dart';
+import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
 import 'package:lotti/features/ai/repository/melious_inference_repository.dart';
 import 'package:lotti/features/ai/repository/mistral_inference_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
@@ -1783,6 +1784,9 @@ class MockQueuePipelineCoordinator extends Mock
 
 class MockCloudInferenceRepository extends Mock
     implements CloudInferenceRepository {}
+
+class MockInferenceRepositoryInterface extends Mock
+    implements InferenceRepositoryInterface {}
 
 class MockUnifiedAiInferenceRepository extends Mock
     implements UnifiedAiInferenceRepository {}

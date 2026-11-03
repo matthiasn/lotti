@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:clock/clock.dart';
@@ -14,6 +15,7 @@ import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/ai/services/audio_transcription_service.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
 import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.dart';
+import 'package:lotti/features/daily_os_next/services/day_agent_job_executor.dart';
 import 'package:lotti/features/daily_os_next/services/day_audio_transcript_writer.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_job.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_outbox_processor.dart';
@@ -138,6 +140,91 @@ void main() {
       );
     },
   );
+
+  DayProcessingJob draftJob({
+    DayProcessingJobStatus status = DayProcessingJobStatus.queued,
+    DayProcessingPayload payload = const DraftPlanPayload(),
+    DayProcessingFailureClass? failureClass = DayProcessingFailureClass.timeout,
+    int attempts = 1,
+  }) => DayProcessingJob(
+    id: 'draft_dayplan-2026-07-21',
+    status: status,
+    dayId: 'dayplan-2026-07-21',
+    payload: payload,
+    createdAt: DateTime.utc(2026, 7, 21),
+    updatedAt: DateTime.utc(2026, 7, 21, 9),
+    requestedAt: DateTime.utc(2026, 7, 21),
+    nextAttemptAt: DateTime.utc(2026, 7, 21, 9, 0, 10),
+    attempts: attempts,
+    generation: 1,
+    lastFailureClass: failureClass,
+    lastError: 'draft inference exceeded its 30s deadline',
+  );
+
+  test('a draft outcome reaches the drafting screen through the bus', () {
+    final container = ProviderContainer(
+      overrides: withServiceOverrides([
+        audioTranscriptionServiceProvider.overrideWithValue(
+          MockAudioTranscriptionService(),
+        ),
+        ..._agentJobExecutorOverrides(),
+      ]),
+    );
+    addTearDown(container.dispose);
+
+    container.read(dayProcessingOutboxProcessorProvider).onJobOutcome!(
+      draftJob(),
+    );
+
+    final attempt = container
+        .read(dayAgentWakeProgressBusProvider)
+        .statusFor('dayplan-2026-07-21')
+        .lastAttempt;
+    expect(attempt, isNotNull);
+    expect(attempt!.attempts, 1);
+    expect(attempt.maxAttempts, DayAgentJobExecutor.defaultMaxAttempts);
+    expect(attempt.willRetry, isTrue);
+    expect(attempt.nextAttemptAt, DateTime.utc(2026, 7, 21, 9, 0, 10));
+    expect(attempt.lastError, 'draft inference exceeded its 30s deadline');
+  });
+
+  group('dayAgentJobAttemptOf', () {
+    test('settled statuses are not retries', () {
+      for (final status in [
+        DayProcessingJobStatus.failed,
+        DayProcessingJobStatus.waitingForUser,
+        DayProcessingJobStatus.succeeded,
+      ]) {
+        expect(
+          dayAgentJobAttemptOf(draftJob(status: status))!.willRetry,
+          isFalse,
+          reason: status.name,
+        );
+      }
+      expect(
+        dayAgentJobAttemptOf(
+          draftJob(status: DayProcessingJobStatus.waitingForNetwork),
+        )!.willRetry,
+        isTrue,
+      );
+    });
+
+    test('ignores other job kinds and local deferrals', () {
+      expect(
+        dayAgentJobAttemptOf(
+          draftJob(payload: const ParseCapturePayload(captureId: 'cap-1')),
+        ),
+        isNull,
+      );
+      expect(
+        dayAgentJobAttemptOf(
+          draftJob(failureClass: DayProcessingFailureClass.local),
+        ),
+        isNull,
+        reason: 'a still-running wake is not a failed attempt',
+      );
+    });
+  });
 
   test('constructs every local-first runtime dependency', () async {
     final transcriber = MockAudioTranscriptionService();
@@ -567,6 +654,8 @@ void main() {
       return kinds!.contains(DayProcessingJobKind.transcribeAudio) ? 2 : 3;
     });
 
+    when(() => processor.repository).thenReturn(outbox);
+
     final processed = await drainDayProcessingLanes(processor);
 
     expect(drainedLanes, [
@@ -574,5 +663,52 @@ void main() {
       dayAgentJobKinds,
     ]);
     expect(processed, 5);
+  });
+
+  test('a draft enqueued while a transcription is running does not wait for '
+      'it', () async {
+    final releaseTranscript = Completer<String>();
+    final transcribing = Completer<void>();
+    final executed = <String>[];
+    final processor = DayProcessingOutboxProcessor(
+      repository: outbox,
+      transcribe: (_) {
+        transcribing.complete();
+        return releaseTranscript.future;
+      },
+      attachTranscript: (_, _) async => true,
+      agentJobExecutor: (job) async {
+        executed.add(job.id);
+        return const DayAgentJobSucceeded();
+      },
+    );
+    final audio = File('${root.path}/check-in.m4a')..writeAsStringSync('x');
+    await outbox.enqueueTranscription(
+      dayId: 'dayplan-2026-07-21',
+      activityEntryId: 'entry-1',
+      recordingSessionId: 'session-1',
+      audioId: 'audio-1',
+      audioPath: audio.path,
+      capturedAt: DateTime(2026, 7, 21, 8),
+    );
+
+    final pass = drainDayProcessingLanes(processor);
+    await transcribing.future;
+    await outbox.enqueueDraftPlan(
+      dayId: 'dayplan-2026-07-21',
+      payload: const DraftPlanPayload(),
+    );
+    await pumpEventQueue();
+
+    expect(
+      executed,
+      ['draft_dayplan-2026-07-21'],
+      reason:
+          'the agent lane was idle; a slow transcription in the other lane '
+          'must not hold the draft until the whole pass ends',
+    );
+
+    releaseTranscript.complete('transcript');
+    expect(await pass, 2);
   });
 }

@@ -5142,6 +5142,33 @@ class AppLocalizationsIt extends AppLocalizations {
   String get dailyOsNextDraftingHeader => 'Ti stai preparando la giornata...';
 
   @override
+  String dailyOsNextDraftingInternalsAttempt(int attempt, int max) {
+    return 'Tentativo $attempt di $max';
+  }
+
+  @override
+  String dailyOsNextDraftingInternalsLastError(String error) {
+    return 'Ultimo tentativo: $error';
+  }
+
+  @override
+  String get dailyOsNextDraftingInternalsModel => 'Modello';
+
+  @override
+  String get dailyOsNextDraftingInternalsTime => 'Tempo';
+
+  @override
+  String get dailyOsNextDraftingInternalsTokens => 'Token';
+
+  @override
+  String dailyOsNextDraftingInternalsTokensValue(String input, String output) {
+    return '$input in ingresso · $output in uscita';
+  }
+
+  @override
+  String get dailyOsNextDraftingInternalsTools => 'Chiamate agli strumenti';
+
+  @override
   String get dailyOsNextDraftingNudgeAccept => 'Sì, proteggi le mattine';
 
   @override
@@ -5151,10 +5178,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get dailyOsNextDraftingProgressBlocks => 'Blocchi di bozza';
 
   @override
-  String get dailyOsNextDraftingProgressMatching =>
-      'Competenze di corrispondenza';
-
-  @override
   String get dailyOsNextDraftingProgressQueued => 'In coda';
 
   @override
@@ -5162,9 +5185,6 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get dailyOsNextDraftingProgressSaving => 'Piano di risparmio';
-
-  @override
-  String get dailyOsNextDraftingProgressValidating => 'Validazione';
 
   @override
   String get dailyOsNextDraftingReasoningOverline => 'MOTIVAZIONE';
@@ -5180,33 +5200,65 @@ class AppLocalizationsIt extends AppLocalizations {
   String get dailyOsNextDraftingRetry => 'Prova di nuovo';
 
   @override
-  String get dailyOsNextDraftingStatusAfternoon =>
-      'Sequenziamento del pomeriggio...';
+  String dailyOsNextDraftingSeconds(String seconds) {
+    return '$seconds s';
+  }
 
   @override
-  String get dailyOsNextDraftingStatusAlmost => 'Ci siamo quasi...';
+  String get dailyOsNextDraftingStepContext =>
+      'Lettura del tuo check-in e delle tue attività…';
 
   @override
-  String get dailyOsNextDraftingStatusBreathing =>
-      'Lasciare spazio per respirare...';
+  String get dailyOsNextDraftingStepDone => 'Piano pronto';
 
   @override
-  String get dailyOsNextDraftingStatusDeepWork =>
-      'Prima di tutto, il lavoro profondo...';
+  String get dailyOsNextDraftingStepFailed => 'Questo tentativo non è riuscito';
 
   @override
-  String get dailyOsNextDraftingStatusMatching =>
-      'Compagni per la tua giornata...';
+  String get dailyOsNextDraftingStepMemory =>
+      'Compattazione della memoria dell\'agente…';
 
   @override
-  String get dailyOsNextDraftingStatusReading => 'Leggendo il tuo check-in...';
+  String dailyOsNextDraftingStepModel(int count) {
+    return 'In attesa del modello, chiamata $count…';
+  }
 
   @override
-  String get dailyOsNextDraftingStatusTimings => 'Tempi di ricontrollamento...';
+  String get dailyOsNextDraftingStepPrompt => 'Composizione del prompt…';
 
   @override
-  String get dailyOsNextDraftingStatusYesterday =>
-      'Guardando il ritmo di ieri...';
+  String dailyOsNextDraftingStepRetrying(String seconds) {
+    return 'Nuovo tentativo tra $seconds s…';
+  }
+
+  @override
+  String get dailyOsNextDraftingStepSaving => 'Salvataggio del tuo piano…';
+
+  @override
+  String dailyOsNextDraftingStepTool(String tool) {
+    return 'Esecuzione di $tool…';
+  }
+
+  @override
+  String get dailyOsNextDraftingStepWaiting => 'In attesa che l\'agente parta…';
+
+  @override
+  String get dailyOsNextDraftingTimingContext => 'contesto';
+
+  @override
+  String get dailyOsNextDraftingTimingMemory => 'memoria';
+
+  @override
+  String get dailyOsNextDraftingTimingModel => 'modello';
+
+  @override
+  String get dailyOsNextDraftingTimingPrompt => 'prompt';
+
+  @override
+  String get dailyOsNextDraftingTimingSaving => 'salvataggio';
+
+  @override
+  String get dailyOsNextDraftingTimingTools => 'strumenti';
 
   @override
   String get dailyOsNextEditTitleHint => 'Modifica del titolo';

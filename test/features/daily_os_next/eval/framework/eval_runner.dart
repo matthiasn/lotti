@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:clock/clock.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
@@ -398,6 +399,9 @@ Future<EvalRunResult> _runCell(
       // blockers supply an empty map.
       dependencyResolver: EvalFixtureDependencyResolver(scenario.blockedStatus),
       config: config,
+      // `DAY_PLANNING_EVAL_LOG=1` prints the domain log, including the
+      // per-wake `wakeTrace` timing line.
+      logToStdout: Platform.environment['DAY_PLANNING_EVAL_LOG'] == '1',
     );
     seedScenarioCorpus(
       journalDb: harness.journalDb,

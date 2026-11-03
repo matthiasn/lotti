@@ -8537,6 +8537,48 @@ abstract class AppLocalizations {
   /// **'Drafting your day…'**
   String get dailyOsNextDraftingHeader;
 
+  /// No description provided for @dailyOsNextDraftingInternalsAttempt.
+  ///
+  /// In en, this message translates to:
+  /// **'Attempt {attempt} of {max}'**
+  String dailyOsNextDraftingInternalsAttempt(int attempt, int max);
+
+  /// No description provided for @dailyOsNextDraftingInternalsLastError.
+  ///
+  /// In en, this message translates to:
+  /// **'Last attempt: {error}'**
+  String dailyOsNextDraftingInternalsLastError(String error);
+
+  /// No description provided for @dailyOsNextDraftingInternalsModel.
+  ///
+  /// In en, this message translates to:
+  /// **'Model'**
+  String get dailyOsNextDraftingInternalsModel;
+
+  /// No description provided for @dailyOsNextDraftingInternalsTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Time'**
+  String get dailyOsNextDraftingInternalsTime;
+
+  /// No description provided for @dailyOsNextDraftingInternalsTokens.
+  ///
+  /// In en, this message translates to:
+  /// **'Tokens'**
+  String get dailyOsNextDraftingInternalsTokens;
+
+  /// No description provided for @dailyOsNextDraftingInternalsTokensValue.
+  ///
+  /// In en, this message translates to:
+  /// **'{input} in · {output} out'**
+  String dailyOsNextDraftingInternalsTokensValue(String input, String output);
+
+  /// No description provided for @dailyOsNextDraftingInternalsTools.
+  ///
+  /// In en, this message translates to:
+  /// **'Tool calls'**
+  String get dailyOsNextDraftingInternalsTools;
+
   /// No description provided for @dailyOsNextDraftingNudgeAccept.
   ///
   /// In en, this message translates to:
@@ -8555,12 +8597,6 @@ abstract class AppLocalizations {
   /// **'Drafting blocks'**
   String get dailyOsNextDraftingProgressBlocks;
 
-  /// No description provided for @dailyOsNextDraftingProgressMatching.
-  ///
-  /// In en, this message translates to:
-  /// **'Matching tasks'**
-  String get dailyOsNextDraftingProgressMatching;
-
   /// No description provided for @dailyOsNextDraftingProgressQueued.
   ///
   /// In en, this message translates to:
@@ -8578,12 +8614,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Saving plan'**
   String get dailyOsNextDraftingProgressSaving;
-
-  /// No description provided for @dailyOsNextDraftingProgressValidating.
-  ///
-  /// In en, this message translates to:
-  /// **'Validating'**
-  String get dailyOsNextDraftingProgressValidating;
 
   /// No description provided for @dailyOsNextDraftingReasoningOverline.
   ///
@@ -8609,53 +8639,107 @@ abstract class AppLocalizations {
   /// **'Try again'**
   String get dailyOsNextDraftingRetry;
 
-  /// No description provided for @dailyOsNextDraftingStatusAfternoon.
+  /// No description provided for @dailyOsNextDraftingSeconds.
   ///
   /// In en, this message translates to:
-  /// **'Sequencing the afternoon…'**
-  String get dailyOsNextDraftingStatusAfternoon;
+  /// **'{seconds} s'**
+  String dailyOsNextDraftingSeconds(String seconds);
 
-  /// No description provided for @dailyOsNextDraftingStatusAlmost.
+  /// No description provided for @dailyOsNextDraftingStepContext.
   ///
   /// In en, this message translates to:
-  /// **'Almost there…'**
-  String get dailyOsNextDraftingStatusAlmost;
+  /// **'Reading your check-in and tasks…'**
+  String get dailyOsNextDraftingStepContext;
 
-  /// No description provided for @dailyOsNextDraftingStatusBreathing.
+  /// No description provided for @dailyOsNextDraftingStepDone.
   ///
   /// In en, this message translates to:
-  /// **'Leaving room to breathe…'**
-  String get dailyOsNextDraftingStatusBreathing;
+  /// **'Plan ready'**
+  String get dailyOsNextDraftingStepDone;
 
-  /// No description provided for @dailyOsNextDraftingStatusDeepWork.
+  /// No description provided for @dailyOsNextDraftingStepFailed.
   ///
   /// In en, this message translates to:
-  /// **'Placing deep work first…'**
-  String get dailyOsNextDraftingStatusDeepWork;
+  /// **'This attempt failed'**
+  String get dailyOsNextDraftingStepFailed;
 
-  /// No description provided for @dailyOsNextDraftingStatusMatching.
+  /// No description provided for @dailyOsNextDraftingStepMemory.
   ///
   /// In en, this message translates to:
-  /// **'Matching tasks to your day…'**
-  String get dailyOsNextDraftingStatusMatching;
+  /// **'Compacting the agent\'s memory…'**
+  String get dailyOsNextDraftingStepMemory;
 
-  /// No description provided for @dailyOsNextDraftingStatusReading.
+  /// No description provided for @dailyOsNextDraftingStepModel.
   ///
   /// In en, this message translates to:
-  /// **'Reading your check-in…'**
-  String get dailyOsNextDraftingStatusReading;
+  /// **'Waiting for the model, call {count}…'**
+  String dailyOsNextDraftingStepModel(int count);
 
-  /// No description provided for @dailyOsNextDraftingStatusTimings.
+  /// No description provided for @dailyOsNextDraftingStepPrompt.
   ///
   /// In en, this message translates to:
-  /// **'Double-checking timings…'**
-  String get dailyOsNextDraftingStatusTimings;
+  /// **'Assembling the prompt…'**
+  String get dailyOsNextDraftingStepPrompt;
 
-  /// No description provided for @dailyOsNextDraftingStatusYesterday.
+  /// No description provided for @dailyOsNextDraftingStepRetrying.
   ///
   /// In en, this message translates to:
-  /// **'Looking at yesterday\'s rhythm…'**
-  String get dailyOsNextDraftingStatusYesterday;
+  /// **'Retrying in {seconds} s…'**
+  String dailyOsNextDraftingStepRetrying(String seconds);
+
+  /// No description provided for @dailyOsNextDraftingStepSaving.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving your plan…'**
+  String get dailyOsNextDraftingStepSaving;
+
+  /// No description provided for @dailyOsNextDraftingStepTool.
+  ///
+  /// In en, this message translates to:
+  /// **'Running {tool}…'**
+  String dailyOsNextDraftingStepTool(String tool);
+
+  /// No description provided for @dailyOsNextDraftingStepWaiting.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for the agent to start…'**
+  String get dailyOsNextDraftingStepWaiting;
+
+  /// No description provided for @dailyOsNextDraftingTimingContext.
+  ///
+  /// In en, this message translates to:
+  /// **'context'**
+  String get dailyOsNextDraftingTimingContext;
+
+  /// No description provided for @dailyOsNextDraftingTimingMemory.
+  ///
+  /// In en, this message translates to:
+  /// **'memory'**
+  String get dailyOsNextDraftingTimingMemory;
+
+  /// No description provided for @dailyOsNextDraftingTimingModel.
+  ///
+  /// In en, this message translates to:
+  /// **'model'**
+  String get dailyOsNextDraftingTimingModel;
+
+  /// No description provided for @dailyOsNextDraftingTimingPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'prompt'**
+  String get dailyOsNextDraftingTimingPrompt;
+
+  /// No description provided for @dailyOsNextDraftingTimingSaving.
+  ///
+  /// In en, this message translates to:
+  /// **'saving'**
+  String get dailyOsNextDraftingTimingSaving;
+
+  /// No description provided for @dailyOsNextDraftingTimingTools.
+  ///
+  /// In en, this message translates to:
+  /// **'tools'**
+  String get dailyOsNextDraftingTimingTools;
 
   /// No description provided for @dailyOsNextEditTitleHint.
   ///

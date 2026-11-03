@@ -1,16 +1,14 @@
-import 'dart:async';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/state/drafting_controller.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/day_page.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/drafting_agent_status.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/edge_fade.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/learning_cards.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
-import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -18,9 +16,9 @@ import 'package:material_ui/material_ui.dart';
 /// Reconcile and the Day view.
 ///
 /// The wait is carried by a single hero moment: the decoder-bars thinking
-/// shader over a rotating one-line narration of what the agent is doing,
-/// with yesterday's learning cards below as real content to read while
-/// waiting. No skeleton shimmer — the narration is the progress indicator.
+/// shader over [DraftingAgentStatus] — the wake's real step, timings, model,
+/// tokens and tool calls — with yesterday's learning cards below as content
+/// to read while waiting.
 ///
 /// When the controller flips to [DraftingPhase.ready], the screen
 /// either returns to the route-level root (preferred in the full app,
@@ -118,7 +116,7 @@ class _DraftingPageState extends ConsumerState<DraftingPage> {
   }
 }
 
-/// Scaffold-free drafting wait content (thinking hero + narration ticker +
+/// Scaffold-free drafting wait content (thinking hero + live agent status +
 /// learning cards) for hosting inside the day-planning modal as well as
 /// the standalone [DraftingPage].
 class DraftingModalContent extends StatelessWidget {
@@ -173,9 +171,11 @@ class DraftingModalContent extends StatelessWidget {
                   indicatorKey: DraftingModalContent.thinkingShaderKey,
                 ),
                 SizedBox(height: tokens.spacing.step5),
-                DraftingStatusTicker(active: isDrafting),
-                SizedBox(height: tokens.spacing.step5),
-                DraftingProgressTimeline(active: isDrafting),
+                DraftingAgentStatus(
+                  dayId: state.dayId,
+                  requestedAt: state.requestedAt,
+                  active: isDrafting,
+                ),
                 SizedBox(height: tokens.spacing.step8),
                 // The learning cards arrive mid-draft, after the user is
                 // already reading the status ticker. Reveal their height open
@@ -202,165 +202,6 @@ class DraftingModalContent extends StatelessWidget {
   /// Stable key on the hero thinking shader, for presence asserts.
   @visibleForTesting
   static const Key thinkingShaderKey = ValueKey('drafting-thinking-shader');
-}
-
-/// Visible wake-progress ladder for the drafting wait.
-///
-/// The backend currently exposes completion, not per-tool progress events, so
-/// this is an honest deterministic presentation of the stages the wake is
-/// expected to move through. When the agent runtime grows streamed progress,
-/// this widget is the display seam to connect to it.
-class DraftingProgressTimeline extends StatefulWidget {
-  const DraftingProgressTimeline({
-    required this.active,
-    this.interval = const Duration(milliseconds: 3200),
-    super.key,
-  });
-
-  final bool active;
-  final Duration interval;
-
-  static List<String> stagesOf(AppLocalizations messages) => [
-    messages.dailyOsNextDraftingProgressQueued,
-    messages.dailyOsNextDraftingProgressReading,
-    messages.dailyOsNextDraftingProgressMatching,
-    messages.dailyOsNextDraftingProgressBlocks,
-    messages.dailyOsNextDraftingProgressValidating,
-    messages.dailyOsNextDraftingProgressSaving,
-  ];
-
-  @override
-  State<DraftingProgressTimeline> createState() =>
-      _DraftingProgressTimelineState();
-}
-
-class _DraftingProgressTimelineState extends State<DraftingProgressTimeline> {
-  Timer? _timer;
-  int _activeIndex = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    if (widget.active) _start();
-  }
-
-  @override
-  void didUpdateWidget(DraftingProgressTimeline oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.active && !oldWidget.active) {
-      _start();
-    } else if (!widget.active) {
-      _stop();
-    }
-  }
-
-  void _start() {
-    _activeIndex = 0;
-    _timer = Timer.periodic(widget.interval, (_) {
-      if (!mounted) return;
-      final stageCount = DraftingProgressTimeline.stagesOf(
-        context.messages,
-      ).length;
-      if (_activeIndex >= stageCount - 1) {
-        _stop();
-        return;
-      }
-      setState(() {
-        _activeIndex++;
-      });
-    });
-  }
-
-  void _stop() {
-    _timer?.cancel();
-    _timer = null;
-  }
-
-  @override
-  void dispose() {
-    _stop();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final stages = DraftingProgressTimeline.stagesOf(context.messages);
-    return Wrap(
-      alignment: WrapAlignment.center,
-      spacing: tokens.spacing.step2,
-      runSpacing: tokens.spacing.step2,
-      children: [
-        for (var i = 0; i < stages.length; i++)
-          _DraftingProgressChip(
-            label: stages[i],
-            state: i < _activeIndex
-                ? _DraftingProgressChipState.done
-                : i == _activeIndex
-                ? _DraftingProgressChipState.active
-                : _DraftingProgressChipState.pending,
-          ),
-      ],
-    );
-  }
-}
-
-enum _DraftingProgressChipState { done, active, pending }
-
-class _DraftingProgressChip extends StatelessWidget {
-  const _DraftingProgressChip({
-    required this.label,
-    required this.state,
-  });
-
-  final String label;
-  final _DraftingProgressChipState state;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final active = state == _DraftingProgressChipState.active;
-    final done = state == _DraftingProgressChipState.done;
-    final color = active || done
-        ? tokens.colors.interactive.enabled
-        : tokens.colors.text.lowEmphasis;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: active
-            ? tokens.colors.interactive.enabled.withValues(alpha: 0.12)
-            : tokens.colors.surface.enabled,
-        borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
-        border: Border.all(
-          color: active
-              ? tokens.colors.interactive.enabled.withValues(alpha: 0.36)
-              : tokens.colors.decorative.level01,
-        ),
-      ),
-      child: Padding(
-        padding: EdgeInsets.symmetric(
-          horizontal: tokens.spacing.step3,
-          vertical: tokens.spacing.step2,
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              done ? LottiIcons.confirm : LottiIcons.radioUnselected,
-              size: tokens.spacing.step3,
-              color: color,
-            ),
-            SizedBox(width: tokens.spacing.step2),
-            Text(
-              label,
-              style: tokens.typography.styles.others.caption.copyWith(
-                color: color,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }
 
 /// Recovery UI for a failed drafting wake.
@@ -426,115 +267,6 @@ class DraftingErrorRecovery extends StatelessWidget {
             ],
           ),
         ],
-      ),
-    );
-  }
-}
-
-/// One-line narration of what the agent is doing, rotating through a fixed
-/// localized sequence with a fade-through-slide transition.
-///
-/// The sequence is deterministic (no randomness — reproducible in tests
-/// and screenshots) and long enough (~20s per cycle) that a fast cloud
-/// draft never sees a repeat and a slow local first run doesn't feel like
-/// a stuck loop.
-class DraftingStatusTicker extends StatefulWidget {
-  const DraftingStatusTicker({
-    required this.active,
-    this.interval = const Duration(milliseconds: 2600),
-    super.key,
-  });
-
-  /// Whether the agent is currently drafting; pauses rotation when false.
-  final bool active;
-
-  /// Time each line stays on screen.
-  final Duration interval;
-
-  /// The localized narration lines, in rotation order.
-  static List<String> linesOf(AppLocalizations messages) => [
-    messages.dailyOsNextDraftingStatusReading,
-    messages.dailyOsNextDraftingStatusMatching,
-    messages.dailyOsNextDraftingStatusYesterday,
-    messages.dailyOsNextDraftingStatusDeepWork,
-    messages.dailyOsNextDraftingStatusBreathing,
-    messages.dailyOsNextDraftingStatusAfternoon,
-    messages.dailyOsNextDraftingStatusTimings,
-    messages.dailyOsNextDraftingStatusAlmost,
-  ];
-
-  @override
-  State<DraftingStatusTicker> createState() => _DraftingStatusTickerState();
-}
-
-class _DraftingStatusTickerState extends State<DraftingStatusTicker> {
-  Timer? _timer;
-  int _index = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    if (widget.active) _start();
-  }
-
-  @override
-  void didUpdateWidget(DraftingStatusTicker oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.active && _timer == null) {
-      _start();
-    } else if (!widget.active) {
-      _stop();
-    }
-  }
-
-  void _start() {
-    _timer = Timer.periodic(widget.interval, (_) {
-      setState(() => _index++);
-    });
-  }
-
-  void _stop() {
-    _timer?.cancel();
-    _timer = null;
-  }
-
-  @override
-  void dispose() {
-    _stop();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final lines = DraftingStatusTicker.linesOf(context.messages);
-    final text = lines[_index % lines.length];
-
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 420),
-      switchInCurve: Curves.easeOutCubic,
-      switchOutCurve: Curves.easeInCubic,
-      transitionBuilder: (child, animation) => FadeTransition(
-        opacity: animation,
-        child: SlideTransition(
-          position: Tween<Offset>(
-            begin: const Offset(0, 0.35),
-            end: Offset.zero,
-          ).animate(animation),
-          child: child,
-        ),
-      ),
-      layoutBuilder: (currentChild, previousChildren) => Stack(
-        alignment: Alignment.center,
-        children: [...previousChildren, ?currentChild],
-      ),
-      child: Text(
-        text,
-        key: ValueKey<String>(text),
-        textAlign: TextAlign.center,
-        style: tokens.typography.styles.body.bodySmall.copyWith(
-          color: tokens.colors.text.mediumEmphasis,
-        ),
       ),
     );
   }

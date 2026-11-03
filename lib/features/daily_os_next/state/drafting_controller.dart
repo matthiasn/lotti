@@ -2,8 +2,10 @@
 
 import 'dart:async';
 
+import 'package:clock/clock.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 
@@ -59,9 +61,19 @@ class DraftingState {
     required this.phase,
     required this.learningCards,
     required this.draft,
+    required this.dayId,
+    required this.requestedAt,
   });
 
   final DraftingPhase phase;
+
+  /// The day agent's id for the drafted day — the key its live wake
+  /// progress is published under.
+  final String dayId;
+
+  /// When this drafting request started. Live progress older than this
+  /// belongs to an earlier wake and is not shown.
+  final DateTime requestedAt;
 
   /// Learning-card payload from `summarize_recent_patterns`. Null
   /// while still loading.
@@ -79,6 +91,8 @@ class DraftingState {
       phase: phase ?? this.phase,
       learningCards: learningCards ?? this.learningCards,
       draft: draft ?? this.draft,
+      dayId: dayId,
+      requestedAt: requestedAt,
     );
   }
 }
@@ -99,6 +113,7 @@ class DraftingController extends AsyncNotifier<DraftingState> {
   @override
   Future<DraftingState> build() async {
     final agent = ref.read(dayAgentProvider);
+    final requestedAt = clock.now();
 
     // Track disposal locally so the polling loop in
     // `RealDayAgent.draftDayPlan` (up to 60s) exits the instant the
@@ -159,6 +174,8 @@ class DraftingController extends AsyncNotifier<DraftingState> {
       phase: draft == null ? DraftingPhase.drafting : DraftingPhase.ready,
       learningCards: learnings,
       draft: draft,
+      dayId: dayAgentIdForDate(params.dayDate),
+      requestedAt: requestedAt,
     );
   }
 }

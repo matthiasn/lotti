@@ -294,6 +294,114 @@ void main() {
   // record per past day; each fired a full ~200K-token wake that found the day
   // finished and re-armed itself. This gate stops that wake before any context
   // is assembled or the model is called.
+  group('wake trace', () {
+    test('publishes every phase, the model and the tool calls of a draft '
+        'wake, and logs one timing line', () async {
+      final bus = DayAgentWakeProgressBus();
+      addTearDown(bus.dispose);
+      final planService = MockDayAgentPlanService();
+      final baselineBlock = closedBaselineBlock(taskId: 'task-selected');
+      stubDraftingPlanContext(
+        planService,
+        baselinePlan: closedBaselinePlan(baselineBlock),
+        decidedTasks: const [
+          DecidedTaskRef(
+            id: 'task-selected',
+            title: 'Represented task',
+            categoryId: 'work',
+          ),
+        ],
+      );
+      stubSuccessfulDraftToolCall(planService);
+      conversationRepository.toolCalls = [
+        toolCall(
+          id: 'draft-call',
+          name: DayAgentToolNames.draftDayPlan,
+          args: {
+            'dayId': dayId,
+            'blocks': [closedBaselineBlockArgs(baselineBlock)],
+          },
+        ),
+      ];
+
+      final result = await withClock(
+        Clock.fixed(DateTime(2026, 5, 25, 18)),
+        () => workflow(planService: planService, progressBus: bus).execute(
+          agentIdentity: identity(),
+          runKey: runKey,
+          triggerTokens: {
+            dayAgentDraftingToken(dayId),
+            dayAgentPlanningDayToken(dayId),
+          },
+          threadId: threadId,
+        ),
+      );
+
+      expect(result.success, isTrue, reason: result.error);
+      final wake = bus.statusFor(dayId).wake!;
+      expect(wake.step, DayAgentWakeStep.completed);
+      expect(wake.runKey, runKey);
+      expect(wake.modelId, 'models/day');
+      expect(wake.promptChars, conversationRepository.lastUserMessage!.length);
+      expect(
+        [for (final timing in wake.completedSteps) timing.step],
+        [
+          DayAgentWakeStep.preparingContext,
+          DayAgentWakeStep.compactingMemory,
+          DayAgentWakeStep.assemblingPrompt,
+          DayAgentWakeStep.runningTool,
+          DayAgentWakeStep.saving,
+        ],
+      );
+      final call = wake.toolCalls.single;
+      expect(call.name, DayAgentToolNames.draftDayPlan);
+      expect(call.succeeded, isTrue);
+      // The provider turns are observed through the traced repository the
+      // conversation is handed.
+      expect(
+        conversationRepository.sendMessageCalls.single.inferenceRepo,
+        isA<DayAgentTracingInferenceRepository>(),
+      );
+      final logged = verify(
+        () => domainLogger.log(
+          LogDomain.agentWorkflow,
+          captureAny(),
+          subDomain: 'wakeTrace',
+        ),
+      ).captured.cast<String>();
+      expect(logged.single, contains('wake trace: ok'));
+      expect(logged.single, contains('kind=draft'));
+      expect(logged.single, contains('model=models/day'));
+      expect(logged.single, contains('tools=[draft_day_plan:'));
+    });
+
+    test(
+      'a wake whose inference throws finishes its trace failed',
+      () async {
+        final bus = DayAgentWakeProgressBus();
+        addTearDown(bus.dispose);
+        conversationRepository.errorToThrow = Exception('provider down');
+
+        final result = await withClock(
+          Clock.fixed(DateTime(2026, 5, 25, 9)),
+          () => workflow(progressBus: bus).execute(
+            agentIdentity: identity(),
+            runKey: runKey,
+            triggerTokens: {dayAgentPlanningDayToken(dayId)},
+            threadId: threadId,
+          ),
+        );
+
+        expect(result.success, isFalse);
+        final wake = bus.statusFor(dayId).wake!;
+        expect(wake.step, DayAgentWakeStep.failed);
+        // The wake result's sanitized error, never the raw exception text.
+        expect(wake.error, result.error);
+        expect(wake.error, isNot(contains('provider down')));
+      },
+    );
+  });
+
   group('stale-day wake gate', () {
     test(
       'skips a background planning_day wake for a finished day with no '

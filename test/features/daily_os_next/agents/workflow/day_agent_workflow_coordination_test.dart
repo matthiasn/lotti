@@ -981,8 +981,11 @@ void main() {
           );
 
           expect(result.success, isTrue, reason: result.error);
-          final inferenceRepo =
+          final traced =
               conversationRepository.sendMessageCalls.single.inferenceRepo;
+          expect(traced, isA<DayAgentTracingInferenceRepository>());
+          final inferenceRepo =
+              (traced as DayAgentTracingInferenceRepository).delegate;
           expect(inferenceRepo, isA<DayAgentTimeoutInferenceRepository>());
           final timeoutRepo =
               inferenceRepo as DayAgentTimeoutInferenceRepository;
