@@ -36,12 +36,10 @@ import 'package:lotti/features/relationships/ui/widgets/post_interaction_prompt.
 import 'package:lotti/features/relationships/ui/widgets/relationship_action_bar.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_briefing_card.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_chat_sheet.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/image_import.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
-import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/modal/confirmation_modal.dart';
 import 'package:material_ui/material_ui.dart';
@@ -226,9 +224,6 @@ class _RelationshipDetailsPageState
     final latest = checkIns.firstOrNull;
     final item = (relationship: relationship, lastCheckIn: latest);
     final categoryId = relationship.meta.categoryId;
-    final categoryName = categoryId == null
-        ? null
-        : getIt<EntitiesCacheService>().getCategoryById(categoryId)?.name;
 
     // The health band is not read here: it belongs to the briefing card,
     // which is the only surface that can date it ("Thriving · as of 3 h
@@ -361,7 +356,6 @@ class _RelationshipDetailsPageState
       PersonHeaderBlock(
         key: const ValueKey('person-block-header'),
         item: item,
-        categoryName: categoryName,
         // The verbs first, then the reminders control, as one row.
         actions: PersonContactRow(
           relationship: relationship,

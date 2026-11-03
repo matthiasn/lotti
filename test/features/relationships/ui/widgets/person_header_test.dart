@@ -5,6 +5,7 @@ import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/check_in_data.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
@@ -26,12 +27,14 @@ import 'package:lotti/features/relationships/ui/shared/relationship_timestamps.d
 import 'package:lotti/features/relationships/ui/widgets/person_header.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/widgets/app_bar/glass_action_button.dart';
 import 'package:lotti/widgets/app_bar/glass_back_button.dart';
 import 'package:lotti/widgets/media/thumb_hash_backed_image.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/fake_entry_controller.dart';
 import '../../../../helpers/journal_image_fixtures.dart';
@@ -846,13 +849,41 @@ void main() {
       CheckInEntry? lastCheckIn,
       String? categoryName,
     }) async {
+      // A named category files the person in it, read back through the
+      // category cache the header's selector resolves names with.
+      final cache = MockEntitiesCacheService();
+      when(() => cache.getCategoryById(any())).thenReturn(null);
+      if (categoryName != null) {
+        when(() => cache.getCategoryById('cat-ops')).thenReturn(
+          CategoryDefinition(
+            id: 'cat-ops',
+            name: categoryName,
+            color: '#3A7BD5',
+            createdAt: now,
+            updatedAt: now,
+            vectorClock: null,
+            private: false,
+            active: true,
+          ),
+        );
+      }
+      await setUpTestGetIt(
+        additionalSetup: () =>
+            getIt.registerSingleton<EntitiesCacheService>(cache),
+      );
+      addTearDown(tearDownTestGetIt);
+      final filed = categoryName == null
+          ? relationship
+          : relationship.copyWith(
+              meta: relationship.meta.copyWith(categoryId: 'cat-ops'),
+            );
       await withClock(Clock.fixed(now), () async {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             PersonHeaderBlock(
-              item: (relationship: relationship, lastCheckIn: lastCheckIn),
-              categoryName: categoryName,
+              item: (relationship: filed, lastCheckIn: lastCheckIn),
             ),
+            overrides: [entitiesCacheServiceProvider.overrideWithValue(cache)],
           ),
         );
         await tester.pumpAndSettle();
@@ -888,7 +919,9 @@ void main() {
       );
 
       expect(
-        tester.widget<Text>(find.byKey(const ValueKey('person-eyebrow'))).data,
+        tester
+            .widget<Text>(find.byKey(const ValueKey('category-crumb-label')))
+            .data,
         'Penguin Operations',
       );
       expect(find.text('Commander Pip Frostbeak'), findsOneWidget);
@@ -910,7 +943,7 @@ void main() {
           .designTokens;
       expect(
         tester
-            .widget<Text>(find.byKey(const ValueKey('person-eyebrow')))
+            .widget<Text>(find.byKey(const ValueKey('category-crumb-label')))
             .style
             ?.fontFamily,
         isNot('Inconsolata'),
@@ -928,7 +961,9 @@ void main() {
 
       // No category: the selector stays, offering one.
       expect(
-        tester.widget<Text>(find.byKey(const ValueKey('person-eyebrow'))).data,
+        tester
+            .widget<Text>(find.byKey(const ValueKey('category-crumb-label')))
+            .data,
         'Set category',
       );
       // No check-in means no date in the line, so nothing goes mono.
@@ -1045,7 +1080,9 @@ void main() {
       );
 
       expect(
-        tester.widget<Text>(find.byKey(const ValueKey('person-eyebrow'))).data,
+        tester
+            .widget<Text>(find.byKey(const ValueKey('category-crumb-label')))
+            .data,
         'Penguin Operations',
       );
       expect(find.textContaining('Reminders on'), findsNothing);

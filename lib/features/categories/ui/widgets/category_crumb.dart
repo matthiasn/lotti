@@ -8,46 +8,44 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/repositories/entry_category_move.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// The person's category above their name, as a selector: the category's
-/// icon, its name and a down chevron, opening the shared category picker —
-/// the one a journal entry, a task and an event reassign their category
-/// with.
+/// An entry's category above its title, as a selector: the category's icon,
+/// its name and a down chevron, opening the shared category picker — the
+/// one a journal entry, a task and an event reassign their category with.
+/// The person page and the goal page both carry it, so a category reads and
+/// changes the same way on every page an agent serves.
 ///
-/// A pick moves the person through [entryCategoryMoveProvider], the same
-/// move the person editor saves with, so their check-ins, notes, voice
-/// notes, photos and meetings travel with them, and the agent follows the
-/// new category's profile on its next run. Dismissing the picker changes
+/// A pick moves the entry through [entryCategoryMoveProvider], the move the
+/// editors save with, so what the entry holds — a person's check-ins and
+/// notes, a goal's check-ins — travels with it, and its agent follows the new
+/// category's profile on its next run. Dismissing the picker changes
 /// nothing; a failed move says so and leaves the old category showing.
 ///
-/// A person in no category gets the same control, worded as the offer to
-/// set one, so the place to change it never disappears.
-class PersonCategoryCrumb extends ConsumerStatefulWidget {
-  const PersonCategoryCrumb({
-    required this.relationshipId,
+/// An entry in no category gets the same control, worded as the offer to set
+/// one, so the place to change it never disappears. While [entryId] is null —
+/// a host still reading which row to move — the crumb shows the category but
+/// cannot be tapped.
+class CategoryCrumb extends ConsumerStatefulWidget {
+  const CategoryCrumb({
+    required this.entryId,
     required this.categoryId,
-    required this.categoryName,
     super.key,
   });
 
-  final String relationshipId;
+  final String? entryId;
   final String? categoryId;
 
-  /// The category's display name; null when the person is in none, or the
-  /// category is unknown on this device.
-  final String? categoryName;
-
   @override
-  ConsumerState<PersonCategoryCrumb> createState() =>
-      _PersonCategoryCrumbState();
+  ConsumerState<CategoryCrumb> createState() => _CategoryCrumbState();
 }
 
-class _PersonCategoryCrumbState extends ConsumerState<PersonCategoryCrumb> {
+class _CategoryCrumbState extends ConsumerState<CategoryCrumb> {
   var _hovered = false;
   var _moving = false;
 
-  Future<void> _pick() async {
+  Future<void> _pick(String entryId) async {
     if (_moving) return;
     final messages = context.messages;
     final move = ref.read(entryCategoryMoveProvider);
@@ -62,13 +60,13 @@ class _PersonCategoryCrumbState extends ConsumerState<PersonCategoryCrumb> {
     if (categoryId == widget.categoryId) return;
     if (!mounted) return;
     setState(() => _moving = true);
-    final moved = await move.move(widget.relationshipId, categoryId);
+    final moved = await move.move(entryId, categoryId);
     if (!mounted) return;
     setState(() => _moving = false);
     if (!moved) {
       context.showToast(
         tone: DesignSystemToastTone.error,
-        title: messages.relationshipErrorUpdateFailed,
+        title: messages.saveFailedRetry,
       );
     }
   }
@@ -77,29 +75,35 @@ class _PersonCategoryCrumbState extends ConsumerState<PersonCategoryCrumb> {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
-    final name = widget.categoryName;
+    final name = ref
+        .watch(entitiesCacheServiceProvider)
+        ?.getCategoryById(widget.categoryId)
+        ?.name;
     final ink = name == null
         ? tokens.colors.text.lowEmphasis
         : tokens.colors.text.mediumEmphasis;
     final label = name ?? messages.taskSetCategoryLabel;
     final radius = BorderRadius.circular(tokens.radii.s);
     // The inset the hover wash needs, given back as a negative offset so the
-    // icon still starts on the page's content gutter, where the name below
+    // icon still starts on the page's content gutter, where the title below
     // starts.
     final inset = tokens.spacing.step1;
+    final entryId = widget.entryId;
+    final onTap = entryId == null || _moving ? null : () => _pick(entryId);
 
     return Transform.translate(
       offset: Offset(-inset, 0),
       child: Semantics(
         button: true,
+        enabled: onTap != null,
         label: '${messages.habitCategoryLabel}: $label',
         excludeSemantics: true,
         child: Material(
           type: MaterialType.transparency,
           child: InkWell(
-            key: const ValueKey('person-category-crumb'),
+            key: const ValueKey('category-crumb'),
             borderRadius: radius,
-            onTap: _moving ? null : _pick,
+            onTap: onTap,
             onHover: (value) => setState(() => _hovered = value),
             child: AnimatedContainer(
               duration: MotionDurations.short2,
@@ -109,11 +113,13 @@ class _PersonCategoryCrumbState extends ConsumerState<PersonCategoryCrumb> {
                     : Colors.transparent,
                 borderRadius: radius,
               ),
+              // A touch-sized target around a caption-sized label.
+              constraints: const BoxConstraints(minHeight: TapTargets.compact),
               padding: EdgeInsetsDirectional.fromSTEB(
                 inset,
-                inset,
+                0,
                 tokens.spacing.step2,
-                inset,
+                0,
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -128,7 +134,7 @@ class _PersonCategoryCrumbState extends ConsumerState<PersonCategoryCrumb> {
                   Flexible(
                     child: Text(
                       label,
-                      key: const ValueKey('person-eyebrow'),
+                      key: const ValueKey('category-crumb-label'),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: captionLabelStyle(tokens, color: ink),

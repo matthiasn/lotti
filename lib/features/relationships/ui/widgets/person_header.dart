@@ -7,6 +7,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/ui/agent_chat_button.dart';
 import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
 import 'package:lotti/features/agents/ui/agent_surface_menu.dart';
+import 'package:lotti/features/categories/ui/widgets/category_crumb.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -23,7 +24,6 @@ import 'package:lotti/features/relationships/ui/shared/cadence_pill.dart';
 import 'package:lotti/features/relationships/ui/shared/persona_avatar.dart';
 import 'package:lotti/features/relationships/ui/shared/relationship_timestamps.dart';
 import 'package:lotti/features/relationships/ui/widgets/contact_link_action.dart';
-import 'package:lotti/features/relationships/ui/widgets/person_category_crumb.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_reminders_pill.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_form_modal.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -642,7 +642,7 @@ class PersonMenuButton extends ConsumerWidget {
 }
 
 /// The header block under the hero, starting below the avatar that hangs
-/// off it: the category as a selector ([PersonCategoryCrumb]), the full
+/// off it: the category as a selector ([CategoryCrumb]), the full
 /// wrapping name, the quiet one-liner (`"Pip" · last spoke Today 12:44`, its
 /// timestamp in the mono voice), and the pills — the cadence fact the
 /// deterministic tier always knows, and the next due day.
@@ -652,13 +652,11 @@ class PersonMenuButton extends ConsumerWidget {
 class PersonHeaderBlock extends StatelessWidget {
   const PersonHeaderBlock({
     required this.item,
-    required this.categoryName,
     this.actions,
     super.key,
   });
 
   final RelationshipListItem item;
-  final String? categoryName;
 
   /// The row of actions under the name — the contact verbs with the
   /// header's pills flowing on after them ([personHeaderPills]) — in place
@@ -702,10 +700,9 @@ class PersonHeaderBlock extends StatelessWidget {
         SizedBox(height: tokens.spacing.step4),
         // The category alone, and changeable where it is read: that
         // reminders are on, and how often, is the reminders pill's to say.
-        PersonCategoryCrumb(
-          relationshipId: item.relationship.meta.id,
+        CategoryCrumb(
+          entryId: item.relationship.meta.id,
           categoryId: item.relationship.meta.categoryId,
-          categoryName: categoryName,
         ),
         SizedBox(height: tokens.spacing.step1),
         Text(

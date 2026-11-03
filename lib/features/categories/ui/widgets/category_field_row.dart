@@ -1,23 +1,25 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/categories/ui/widgets/category_icon_compact.dart';
 import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
+import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
-import 'package:lotti/utils/color.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// A subject's category as one quiet row — a person's, a goal's: its name
-/// beside a colour dot, opening the shared picker on tap. The dot is the
-/// whole colour treatment — a second large avatar would compete with the
-/// person's own (design 2026-09-06 §6). One row for both, so a person and a
-/// goal are filed the same way.
+/// A subject's category as a field of its editor — a person's, a goal's:
+/// the text inputs' own label above a box of the same shape and border,
+/// holding the category's icon and name and a down chevron, opening the
+/// shared picker on tap. One field for both editors, sitting under an
+/// *Agent name* input without changing idiom, so a person and a goal are
+/// filed the same way.
 ///
 /// Clearing happens through the picker's own no-category row rather than an
 /// inline ×, so there is one way to change this field and one place that
 /// knows what the choices are. [onChanged] reports the picked category's id,
-/// or null for cleared; while it is null the row shows its value but cannot
-/// be changed — a host still reading the current one.
-class CategoryFieldRow extends ConsumerWidget {
+/// or null for cleared; while it is null the field shows its value but
+/// cannot be changed — a host still reading the current one.
+class CategoryFieldRow extends ConsumerStatefulWidget {
   const CategoryFieldRow({
     required this.categoryId,
     required this.onChanged,
@@ -28,87 +30,115 @@ class CategoryFieldRow extends ConsumerWidget {
   final ValueChanged<String?>? onChanged;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<CategoryFieldRow> createState() => _CategoryFieldRowState();
+}
+
+class _CategoryFieldRowState extends ConsumerState<CategoryFieldRow> {
+  var _hovered = false;
+
+  Future<void> _pick() async {
+    final result = await showCategoryPicker(
+      context: context,
+      title: context.messages.habitCategoryLabel,
+      currentCategoryId: widget.categoryId,
+    );
+    // null = dismissed (no change); otherwise apply the pick or the clear,
+    // which the picker reports as a category-less result.
+    if (result == null) return;
+    widget.onChanged?.call(result.categoryOrNull?.id);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
     final category = ref
         .watch(entitiesCacheServiceProvider)
-        ?.getCategoryById(categoryId);
+        ?.getCategoryById(widget.categoryId);
+    final enabled = widget.onChanged != null;
+    final radius = BorderRadius.circular(tokens.radii.l);
+    final value = category?.name ?? messages.habitCategoryHint;
 
-    return InkWell(
-      key: const ValueKey('category-field'),
-      borderRadius: BorderRadius.circular(tokens.radii.m),
-      onTap: onChanged == null
-          ? null
-          : () async {
-              final result = await showCategoryPicker(
-                context: context,
-                title: messages.habitCategoryLabel,
-                currentCategoryId: categoryId,
-              );
-              // null = dismissed (no change); otherwise apply the pick or the
-              // clear, which the picker reports as a category-less result.
-              if (result == null) return;
-              onChanged?.call(result.categoryOrNull?.id);
-            },
-      child: Padding(
-        padding: EdgeInsets.symmetric(vertical: tokens.spacing.step2),
-        child: Row(
-          children: [
-            // The swatch leads the value, as a category's colour does on
-            // every other row that names one; trailing, it sat where the
-            // chevron belongs.
-            if (category != null) ...[
-              Container(
-                key: const ValueKey('category-field-dot'),
-                width: tokens.spacing.step3,
-                height: tokens.spacing.step3,
+    return Semantics(
+      button: true,
+      enabled: enabled,
+      label: '${messages.habitCategoryLabel}: $value',
+      excludeSemantics: true,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            messages.habitCategoryLabel,
+            style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+              color: tokens.colors.text.highEmphasis,
+            ),
+          ),
+          SizedBox(height: tokens.spacing.step2),
+          Material(
+            type: MaterialType.transparency,
+            child: InkWell(
+              key: const ValueKey('category-field'),
+              borderRadius: radius,
+              onTap: enabled ? _pick : null,
+              onHover: (value) => setState(() => _hovered = value),
+              child: Ink(
                 decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: colorFromCssHex(
-                    category.color,
-                    substitute: tokens.colors.text.lowEmphasis,
+                  color: tokens.colors.background.level01,
+                  borderRadius: radius,
+                  border: Border.all(
+                    color: designSystemFieldBorderColor(
+                      tokens,
+                      hovered: _hovered && enabled,
+                    ),
+                  ),
+                ),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: tokens.spacing.step9),
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: tokens.spacing.step4,
+                      vertical: tokens.spacing.step2,
+                    ),
+                    child: Row(
+                      children: [
+                        // The category's own icon, as the person header's
+                        // selector and every other row naming it draw it.
+                        if (category != null) ...[
+                          CategoryIconCompact(
+                            category.id,
+                            key: const ValueKey('category-field-dot'),
+                          ),
+                          SizedBox(width: tokens.spacing.step3),
+                        ],
+                        Expanded(
+                          child: Text(
+                            value,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: tokens.typography.styles.body.bodyMedium
+                                .copyWith(
+                                  color: category == null
+                                      ? tokens.colors.text.lowEmphasis
+                                      : tokens.colors.text.highEmphasis,
+                                ),
+                          ),
+                        ),
+                        SizedBox(width: tokens.spacing.step3),
+                        Icon(
+                          LottiIcons.chevronDown,
+                          key: const ValueKey('category-field-chevron'),
+                          size: IconSizes.m,
+                          color: tokens.colors.text.mediumEmphasis,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
-              SizedBox(width: tokens.spacing.step3),
-            ],
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    messages.habitCategoryLabel,
-                    style: tokens.typography.styles.others.caption.copyWith(
-                      color: tokens.colors.text.lowEmphasis,
-                    ),
-                  ),
-                  SizedBox(height: tokens.spacing.step1),
-                  Text(
-                    category?.name ?? messages.habitCategoryHint,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: tokens.typography.styles.body.bodySmall.copyWith(
-                      color: category == null
-                          ? tokens.colors.text.lowEmphasis
-                          : tokens.colors.text.highEmphasis,
-                    ),
-                  ),
-                ],
-              ),
             ),
-            // The chevron the context chips wear, and it ends the row:
-            // without it the row read as a read-out between two fields,
-            // not the selector it is.
-            SizedBox(width: tokens.spacing.step3),
-            Icon(
-              LottiIcons.chevronDown,
-              key: const ValueKey('category-field-chevron'),
-              size: IconSizes.s,
-              color: tokens.colors.text.lowEmphasis,
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
