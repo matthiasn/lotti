@@ -75,7 +75,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   stored and lets you try again; a disconnection the device refuses is said
   too, instead of failing silently.
 
+- **A coding prompt made in one task could show up in another.** When a
+  recording or note belonged to both a task and its follow-up, every prompt
+  made from it was listed under it in both tasks. Two prompts generated close
+  together then looked swapped. Inside a task, a recording now shows only that
+  task's prompts. Opened from the logbook, an entry that belongs to more than
+  one task no longer offers a coding prompt or cover art, because it would
+  have to guess which task to save the result to. Open it from inside the task
+  you mean.
 
+- **Sync health could keep showing "Embeddings waiting: 1" on one device
+  while the embedding totals on both devices matched.** After you deleted an
+  agent on that device, its reports were gone there, but another device
+  still shared new embeddings for them. The device waited for a report that
+  would never come back. Those embeddings are now dropped instead of waited
+  for, and the count goes back to zero.
+
+- **Goal check-ins were transcribed by the wrong model.** A goal whose agent
+  you set to a profile such as Mistral still had its spoken check-ins
+  transcribed by your default profile's model, for example Whisper, whenever
+  the goal had no category. Recordings about a goal or a person now use the
+  agent's profile first. After that come the person's own profile, the
+  category's profile and your default profile. Dictating into a goal's or a
+  person's chat follows the same order.
+- **A voice note added to a goal's day reflection is now filed in the goal's
+  category,** like every other check-in.
+
+- **A new task's title field stayed blank after the task agent named the
+  task.** The empty title field opened with the cursor in it, and the name the
+  agent set in the background stayed hidden behind the "Name this task" prompt.
+  The field now closes and shows the new title, as long as you haven't typed
+  anything. Text you've typed is never replaced.
 
 ## [1.1.82]
 
