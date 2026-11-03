@@ -342,6 +342,18 @@ void main() {
     expect(find.text('Copy category default'), findsNothing);
   });
 
+  ResolvedAgentSetup resolvedOn(String profileId) => ResolvedAgentSetup(
+    status: AgentSetupResolutionStatus.resolved,
+    profile: ResolvedProfile(
+      profileId: profileId,
+      profileName: 'Saved profile',
+      thinkingModelId: model.providerModelId,
+      thinkingProvider: provider,
+      thinkingModel: model,
+    ),
+    source: AgentSetupResolutionSource.baseProfile,
+  );
+
   for (final kind in [AgentKinds.goalAgent, AgentKinds.relationshipAgent]) {
     testWidgets('a $kind opened for its own row still selects its legacy '
         'persisted profile', (tester) async {
@@ -353,6 +365,9 @@ void main() {
         taskId: 'subject-row',
         kind: kind,
         config: AgentConfig(profileId: profile.id),
+        // A person's agent selects what its chain resolves, which for a
+        // legacy profile is that profile.
+        resolvedSetup: resolvedOn(profile.id),
       );
 
       await openProfilePage(tester);
@@ -362,6 +377,69 @@ void main() {
       expect(profileRow.selected, isTrue);
     });
   }
+
+  testWidgets("a person's agent on a stale category copy selects the profile "
+      'its current category resolves to, not the copy', (tester) async {
+    when(
+      () => journalDb.journalEntityById(any()),
+    ).thenAnswer((_) async => null);
+    await openSheet(
+      tester,
+      taskId: 'person-1',
+      kind: AgentKinds.relationshipAgent,
+      config: const AgentConfig(
+        profileId: 'profile-stale',
+        inferenceSetup: AgentInferenceSetup(
+          mode: AgentInferenceSetupMode.configured,
+          origin: AgentInferenceSetupOrigin.categorySnapshot,
+          baseProfileId: 'profile-stale',
+        ),
+      ),
+      resolvedSetup: resolvedOn(profile.id),
+    );
+
+    expect(find.text('Saved profile'), findsOneWidget);
+    expect(find.text('No profile selected'), findsNothing);
+    await openProfilePage(tester);
+    expect(
+      tester
+          .widget<DesignSystemSelectionRow>(
+            find.byKey(const ValueKey('agent-profile-profile-1')),
+          )
+          .selected,
+      isTrue,
+    );
+  });
+
+  testWidgets("a person's agent the user set up keeps the profile they chose",
+      (tester) async {
+    when(
+      () => journalDb.journalEntityById(any()),
+    ).thenAnswer((_) async => null);
+    await openSheet(
+      tester,
+      taskId: 'person-1',
+      kind: AgentKinds.relationshipAgent,
+      config: AgentConfig(
+        inferenceSetup: AgentInferenceSetup(
+          mode: AgentInferenceSetupMode.configured,
+          origin: AgentInferenceSetupOrigin.user,
+          baseProfileId: profile.id,
+        ),
+      ),
+      resolvedSetup: resolvedOn('profile-other'),
+    );
+
+    await openProfilePage(tester);
+    expect(
+      tester
+          .widget<DesignSystemSelectionRow>(
+            find.byKey(const ValueKey('agent-profile-profile-1')),
+          )
+          .selected,
+      isTrue,
+    );
+  });
 
   testWidgets("a task's agent opened for its task reads only the typed setup, "
       'not a legacy profile', (tester) async {

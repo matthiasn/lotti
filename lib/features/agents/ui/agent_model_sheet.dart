@@ -142,8 +142,17 @@ List<String> _providerIdsForModels(TaskAgentSetupOptions options) {
 String? _selectedProfileId(
   AgentIdentityEntity? identity, {
   required String? entityId,
+  required ResolvedAgentSetup? resolved,
 }) {
   final config = identity?.config;
+  // A person's agent the user has not set up themselves follows the
+  // person's category, then the Settings default
+  // (`resolveRelationshipAgentModel`): the profile that runs is the one
+  // selected, never a copy the category has since moved away from.
+  if (identity?.kind == AgentKinds.relationshipAgent &&
+      config?.inferenceSetup?.origin != AgentInferenceSetupOrigin.user) {
+    return resolved?.profile?.profileId;
+  }
   // A task's or project's agent opened for its entity reads only the typed
   // setup; a goal's or person's agent keeps its legacy `profileId` as the
   // selection even when opened for its row, since their runtime still
@@ -407,6 +416,7 @@ class _AgentSetupOverviewPage extends ConsumerWidget {
     final selectedProfileId = _selectedProfileId(
       identity,
       entityId: controller.entityId,
+      resolved: setup,
     );
     final currentProfile = options?.profiles
         .where((profile) => profile.id == selectedProfileId)
@@ -680,6 +690,10 @@ class _AgentProfilePage extends ConsumerWidget {
     final selectedProfileId = _selectedProfileId(
       identity,
       entityId: controller.entityId,
+      resolved: ref
+          .watch(taskAgentResolvedSetupProvider(agentId))
+          .unwrapPrevious()
+          .value,
     );
 
     return _AgentBusyGuard(
