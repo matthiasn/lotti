@@ -3274,6 +3274,14 @@ class AppLocalizationsRo extends AppLocalizations {
       'Nu s-a putut crea categoria. Vă rugăm să încercați din nou.';
 
   @override
+  String get categoryCrumbMovedOut => 'Acum fără categorie';
+
+  @override
+  String categoryCrumbMovedTo(String category) {
+    return 'Mutat în $category';
+  }
+
+  @override
   String get categoryDayPlanDescription =>
       'Faceți această categorie disponibilă pentru selecție în planul zilei';
 
@@ -8440,6 +8448,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get goalFormCompositeRule => 'Cum se îmbină acest obiectiv';
 
   @override
+  String get goalFormCompositeRuleChange => 'Modificați';
+
+  @override
   String get goalFormConfirmTitle => 'Faceți cunoștință cu agentul dvs.';
 
   @override
@@ -8647,6 +8658,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get goalFormSaveChanges => 'Salvați versiunea nouă';
+
+  @override
+  String get goalFormStatementInWordsLabel => 'În cuvintele dvs.';
 
   @override
   String get goalFormStatementLabel => 'Obiectivul, în cuvintele dumneavoastră';

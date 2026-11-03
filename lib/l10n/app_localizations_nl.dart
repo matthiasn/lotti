@@ -3239,6 +3239,14 @@ class AppLocalizationsNl extends AppLocalizations {
       'Aanmaken van categorie is mislukt. Probeer het opnieuw.';
 
   @override
+  String get categoryCrumbMovedOut => 'Nu zonder categorie';
+
+  @override
+  String categoryCrumbMovedTo(String category) {
+    return 'Verplaatst naar $category';
+  }
+
+  @override
   String get categoryDayPlanDescription =>
       'Maak deze categorie beschikbaar voor selectie in het dagplan';
 
@@ -8324,6 +8332,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get goalFormCompositeRule => 'Hoe dit doel tot stand komt';
 
   @override
+  String get goalFormCompositeRuleChange => 'Wijzigen';
+
+  @override
   String get goalFormConfirmTitle => 'Maak kennis met je agent';
 
   @override
@@ -8522,6 +8533,9 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get goalFormSaveChanges => 'Nieuwe versie opslaan';
+
+  @override
+  String get goalFormStatementInWordsLabel => 'In je eigen woorden';
 
   @override
   String get goalFormStatementLabel => 'Je doel, in je eigen woorden';

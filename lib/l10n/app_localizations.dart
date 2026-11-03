@@ -5448,6 +5448,18 @@ abstract class AppLocalizations {
   /// **'Failed to create category. Please try again.'**
   String get categoryCreationError;
 
+  /// No description provided for @categoryCrumbMovedOut.
+  ///
+  /// In en, this message translates to:
+  /// **'No category now'**
+  String get categoryCrumbMovedOut;
+
+  /// Toast after the header's category selector moved an entry
+  ///
+  /// In en, this message translates to:
+  /// **'Moved to {category}'**
+  String categoryCrumbMovedTo(String category);
+
   /// No description provided for @categoryDayPlanDescription.
   ///
   /// In en, this message translates to:
@@ -13972,6 +13984,12 @@ abstract class AppLocalizations {
   /// **'How this goal comes together'**
   String get goalFormCompositeRule;
 
+  /// No description provided for @goalFormCompositeRuleChange.
+  ///
+  /// In en, this message translates to:
+  /// **'Change'**
+  String get goalFormCompositeRuleChange;
+
   /// No description provided for @goalFormConfirmTitle.
   ///
   /// In en, this message translates to:
@@ -14292,6 +14310,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Save new version'**
   String get goalFormSaveChanges;
+
+  /// No description provided for @goalFormStatementInWordsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'In your words'**
+  String get goalFormStatementInWordsLabel;
 
   /// No description provided for @goalFormStatementLabel.
   ///

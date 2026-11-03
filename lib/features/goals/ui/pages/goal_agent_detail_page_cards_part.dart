@@ -154,9 +154,6 @@ class _GoalHeader extends StatelessWidget {
       final int deficit when deficit > 0 => messages.goalDaysToRecover(deficit),
       _ => null,
     };
-    final color = status == null
-        ? tokens.colors.text.lowEmphasis
-        : unifiedGoalStatusColor(status, tokens.colors);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -179,49 +176,33 @@ class _GoalHeader extends StatelessWidget {
           },
         ),
         SizedBox(height: tokens.spacing.step1),
-        // The chip anchors to the title's FIRST line: as a Wrap sibling a
-        // long goal name stranded the monogram alone on the top line.
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        // The title starts on the gutter, under the category, as the
+        // person's name does: the agent is named on its card, and a letter
+        // disc here read as a second category.
+        Wrap(
+          spacing: tokens.spacing.step3,
+          runSpacing: tokens.spacing.step2,
+          crossAxisAlignment: WrapCrossAlignment.center,
           children: [
-            Padding(
-              padding: EdgeInsets.only(top: tokens.spacing.step1),
-              child: NudgeBannerPersonaChip(
-                monogram: NudgeBannerPersonaChip.monogramFor(
-                  identity.displayName,
-                ),
-                fill: color.withValues(alpha: SurfaceAlphas.washChip),
-              ),
+            // The person page's name tier: both pages title their
+            // subject alike, a step above their section headings.
+            Text(
+              spec?.title ?? identity.displayName,
+              style: calmPageTitleStyle(tokens),
             ),
-            SizedBox(width: tokens.spacing.step3),
-            Expanded(
-              child: Wrap(
-                spacing: tokens.spacing.step3,
-                runSpacing: tokens.spacing.step2,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: [
-                  // The person page's name tier: both pages title their
-                  // subject alike, a step above their section headings.
-                  Text(
-                    spec?.title ?? identity.displayName,
-                    style: calmPageTitleStyle(tokens),
-                  ),
-                  if (showPill)
-                    UnifiedGoalStatusPill(
-                      status: status,
-                      recoveryHint: recoveryHint,
-                    ),
-                  // Gated on the RAW health: with too little data to judge
-                  // the goal, a green "Trending up" was the most confident
-                  // statement in the header and the least supported by the
-                  // evidence under it.
-                  if (unifiedGoalStatusOf(health?.trackStatus) !=
-                      UnifiedGoalStatus.noData)
-                    if (health?.direction case final direction?)
-                      GoalHealthDirectionChip(direction: direction),
-                ],
+            if (showPill)
+              UnifiedGoalStatusPill(
+                status: status,
+                recoveryHint: recoveryHint,
               ),
-            ),
+            // Gated on the RAW health: with too little data to judge
+            // the goal, a green "Trending up" was the most confident
+            // statement in the header and the least supported by the
+            // evidence under it.
+            if (unifiedGoalStatusOf(health?.trackStatus) !=
+                UnifiedGoalStatus.noData)
+              if (health?.direction case final direction?)
+                GoalHealthDirectionChip(direction: direction),
           ],
         ),
         if (showStatement)

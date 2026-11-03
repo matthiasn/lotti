@@ -2158,6 +2158,16 @@
   "categoryAutomaticInferenceDescription": "Transcribe new audio, analyze new images and summarize pull requests in this category automatically",
   "categoryAutomaticInferenceLabel": "Automatic inference",
   "categoryCreationError": "Failed to create category. Please try again.",
+  "categoryCrumbMovedOut": "No category now",
+  "categoryCrumbMovedTo": "Moved to {category}",
+  "@categoryCrumbMovedTo": {
+    "description": "Toast after the header's category selector moved an entry",
+    "placeholders": {
+      "category": {
+        "type": "String"
+      }
+    }
+  },
   "categoryDayPlanDescription": "Make this category available for selection in the day plan",
   "categoryDayPlanLabel": "Day planning",
   "categoryDefaultEventTemplateHint": "Select a template",
@@ -5324,6 +5334,7 @@
   },
   "goalFormCompositeAtLeastHint": "Choose how many dimensions must be met.",
   "goalFormCompositeRule": "How this goal comes together",
+  "goalFormCompositeRuleChange": "Change",
   "goalFormConfirmTitle": "Meet your agent",
   "goalFormContinue": "Continue",
   "goalFormCostHonesty": "Uses your configured AI provider. You can see what it has cost anytime on this goal's page.",
@@ -5483,6 +5494,7 @@
   },
   "goalFormRollingNote": "Rolling week — the trailing 7 days, always. Counts are per signal; no dead weekends, no lost weeks.",
   "goalFormSaveChanges": "Save new version",
+  "goalFormStatementInWordsLabel": "In your words",
   "goalFormStatementLabel": "Your goal, in your words",
   "goalFormStepsCadence": "{target} steps a day",
   "@goalFormStepsCadence": {

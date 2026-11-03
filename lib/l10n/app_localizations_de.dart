@@ -3251,6 +3251,14 @@ class AppLocalizationsDe extends AppLocalizations {
       'Kategorie konnte nicht erstellt werden. Bitte versuche es erneut.';
 
   @override
+  String get categoryCrumbMovedOut => 'Jetzt ohne Kategorie';
+
+  @override
+  String categoryCrumbMovedTo(String category) {
+    return 'Nach $category verschoben';
+  }
+
+  @override
   String get categoryDayPlanDescription =>
       'Diese Kategorie für die Auswahl im Tagesplan verfügbar machen';
 
@@ -8353,6 +8361,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get goalFormCompositeRule => 'Wie dieses Ziel zusammenkommt';
 
   @override
+  String get goalFormCompositeRuleChange => 'Ändern';
+
+  @override
   String get goalFormConfirmTitle => 'Lern deinen Agenten kennen';
 
   @override
@@ -8557,6 +8568,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get goalFormSaveChanges => 'Neue Version speichern';
+
+  @override
+  String get goalFormStatementInWordsLabel => 'In deinen Worten';
 
   @override
   String get goalFormStatementLabel => 'Dein Ziel, in deinen Worten';

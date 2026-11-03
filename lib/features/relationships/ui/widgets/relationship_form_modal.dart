@@ -7,16 +7,16 @@ import 'package:intl/intl.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/features/agents/ui/agent_form_section.dart';
+import 'package:lotti/features/agents/ui/agent_switch_row.dart';
 import 'package:lotti/features/categories/ui/widgets/category_field_row.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_modal_action_bar.dart';
 import 'package:lotti/features/design_system/components/calendar_pickers/design_system_date_picker_modal.dart';
-import 'package:lotti/features/design_system/components/ds_quiet_ink.dart';
+import 'package:lotti/features/design_system/components/inputs/design_system_picker_field.dart';
 import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
-import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/repository/clipboard_images.dart';
 import 'package:lotti/features/relationships/model/imported_contact.dart';
@@ -515,6 +515,14 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               for (final (index, draft) in _channels.indexed) ...[
+                if (index > 0) ...[
+                  Divider(
+                    height: tokens.spacing.step1,
+                    thickness: BorderWidths.hairline,
+                    color: tokens.colors.decorative.level01,
+                  ),
+                  gap(tokens.spacing.step4),
+                ],
                 _ChannelEditorRow(
                   key: ObjectKey(draft),
                   draft: draft,
@@ -544,41 +552,19 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // One labelled control, not a label sitting near a switch: a
-              // screen reader reads the label with the switch's state, and
-              // the label itself toggles.
-              MergeSemantics(
-                child: DsQuietInk(
-                  onTap: () => setState(() => _important = !_important),
-                  builder: (BuildContext context, bool highlighted) => Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          messages.relationshipRemindersSwitchLabel,
-                          style: tokens.typography.styles.subtitle.subtitle2
-                              .copyWith(color: tokens.colors.text.highEmphasis),
-                        ),
-                      ),
-                      DesignSystemToggle(
-                        key: const ValueKey('person-form-reminders'),
-                        value: _important,
-                        semanticsLabel:
-                            messages.relationshipRemindersSwitchLabel,
-                        onChanged: (value) =>
-                            setState(() => _important = value),
-                      ),
-                    ],
-                  ),
+              // The goal editor's agent switch row: the label toggles, and
+              // the line under it follows the name field as it is typed, so
+              // it names the person the moment there is a person to name —
+              // without rebuilding the rest of the form on every keystroke.
+              AgentSwitchRow(
+                title: messages.relationshipRemindersSwitchLabel,
+                toggleKey: const ValueKey('person-form-reminders'),
+                value: _important,
+                onChanged: (value) => setState(() => _important = value),
+                body: ValueListenableBuilder<TextEditingValue>(
+                  valueListenable: _nameController,
+                  builder: (context, _, _) => Text(_importantBody(context)),
                 ),
-              ),
-              gap(tokens.spacing.step1),
-              // Follows the name field as it is typed, so the sentence names
-              // the person the moment there is a person to name — without
-              // rebuilding the rest of the form on every keystroke.
-              ValueListenableBuilder<TextEditingValue>(
-                valueListenable: _nameController,
-                builder: (context, _, _) =>
-                    Text(_importantBody(context), style: caption),
               ),
               // The cadence only exists for someone who is nurtured, so it
               // appears with the switch rather than beside it.

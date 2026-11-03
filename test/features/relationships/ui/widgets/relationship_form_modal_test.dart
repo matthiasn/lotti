@@ -1449,8 +1449,8 @@ void main() {
         await tester.pumpAndSettle();
         final button = find.byKey(const ValueKey('person-form-birthday'));
         expect(
-          tester.widget<DesignSystemButton>(button).label,
-          'Add birthday',
+          find.descendant(of: button, matching: find.text('Add birthday')),
+          findsOneWidget,
         );
 
         // The calendar opens thirty years back, on the first of this month.
@@ -1462,8 +1462,8 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(
-          tester.widget<DesignSystemButton>(button).label,
-          'August 1, 1996',
+          find.descendant(of: button, matching: find.text('August 1, 1996')),
+          findsOneWidget,
         );
         expect((await save(tester)).data.birthday, DateTime(1996, 8));
       });
@@ -1513,8 +1513,8 @@ void main() {
         await tester.pumpAndSettle();
         final button = find.byKey(const ValueKey('person-form-birthday'));
         expect(
-          tester.widget<DesignSystemButton>(button).label,
-          'March 14, 1990',
+          find.descendant(of: button, matching: find.text('March 14, 1990')),
+          findsOneWidget,
         );
 
         await withClock(Clock.fixed(DateTime(2026, 8, 13)), () async {
@@ -1525,8 +1525,8 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(
-          tester.widget<DesignSystemButton>(button).label,
-          'Add birthday',
+          find.descendant(of: button, matching: find.text('Add birthday')),
+          findsOneWidget,
         );
         expect((await save(tester)).data.birthday, isNull);
       });

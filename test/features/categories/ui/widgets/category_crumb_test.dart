@@ -2,7 +2,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/categories/ui/widgets/category_crumb.dart';
 import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
-import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/repositories/entry_category_move.dart';
@@ -104,9 +103,43 @@ void main() {
 
       verify(() => move.move('person-pip', 'cat-crew')).called(1);
       expect(find.byType(CategoryPickerSheet), findsNothing);
-      expect(find.byType(DesignSystemToast), findsNothing);
+      // It committed at once, so it says where the entry went.
+      expect(find.text('Moved to Launch crew'), findsOneWidget);
     },
   );
+
+  testWidgets('Undo on the toast moves the entry back where it was', (
+    tester,
+  ) async {
+    when(() => move.move(any(), any())).thenAnswer((_) async => true);
+    var moved = 0;
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        CategoryCrumb(
+          entryId: 'person-pip',
+          categoryId: 'cat-ops',
+          onMoved: () => moved++,
+        ),
+        overrides: [
+          entryCategoryMoveProvider.overrideWithValue(move),
+          entitiesCacheServiceProvider.overrideWithValue(cache),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await openPicker(tester);
+    await tester.tap(find.text('Launch crew'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Undo'));
+    await tester.pumpAndSettle();
+
+    verifyInOrder([
+      () => move.move('person-pip', 'cat-crew'),
+      () => move.move('person-pip', 'cat-ops'),
+    ]);
+    expect(moved, 2);
+  });
 
   testWidgets('picking the category the entry is already in writes nothing', (
     tester,
@@ -149,6 +182,7 @@ void main() {
     await tester.pumpAndSettle();
 
     verify(() => move.move('person-pip', 'cat-ops')).called(1);
+    expect(find.text('Moved to Penguin Operations'), findsOneWidget);
   });
 
   testWidgets(

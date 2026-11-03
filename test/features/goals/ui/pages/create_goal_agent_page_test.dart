@@ -24,6 +24,7 @@ import 'package:lotti/features/dashboards/ui/pages/measurables/measurables_page.
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
 import 'package:lotti/features/design_system/components/buttons/ds_segmented_toggle.dart';
+import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/components/dropdowns/design_system_dropdown.dart';
 import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
 import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
@@ -34,6 +35,7 @@ import 'package:lotti/features/goals/service/goal_spec_revision_service.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/state/goal_checkin_providers.dart';
 import 'package:lotti/features/goals/ui/pages/create_goal_agent_page.dart';
+import 'package:lotti/features/goals/ui/pages/goal_form_check_in_weight_card.dart';
 import 'package:lotti/features/goals/ui/pages/goal_form_mapping.dart';
 import 'package:lotti/features/habits/repository/habits_repository.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
@@ -6268,8 +6270,6 @@ void main() {
     );
     expect(editable.controller.text, 'Gym and run every week');
     expect(editable.maxLines, 1);
-    // The example pills fold in under the field.
-    expect(find.text('gym twice a week'), findsOneWidget);
 
     // The agent's own fields close the same page, under the goal's name,
     // with the version the save starts.
@@ -6294,6 +6294,18 @@ void main() {
       ),
       findsOneWidget,
     );
+    // The agent's own setting sits here, as the person editor's switch
+    // sits in theirs — not boxed among the signals.
+    expect(
+      find.descendant(
+        of: agentSection,
+        matching: find.byKey(
+          const ValueKey('goal-form-check-ins-are-substance'),
+        ),
+      ),
+      findsOneWidget,
+    );
+    expect(find.byType(GoalFormCheckInWeightCard), findsNothing);
     expect(
       tester.getTopLeft(agentSection).dy,
       greaterThan(
@@ -6466,64 +6478,35 @@ void main() {
     );
   });
 
-  testWidgets('an example pill rewrites the statement on the edit page', (
-    tester,
-  ) async {
-    tester.view.physicalSize = const Size(900, 2200);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.reset);
-    final current = _spec();
-    when(
-      () => revisionService.reviseFromOwner(
-        agentId: 'goal-1',
-        baseVersionId: current.id,
-        displayName: any(named: 'displayName'),
-        title: any(named: 'title'),
-        statement: any(named: 'statement'),
-        criteria: any(named: 'criteria'),
-      ),
-    ).thenAnswer(
-      (_) async => const GoalSpecRevisionRefused(
-        'the owner edit does not change the goal',
-      ),
-    );
-    await tester.pumpWidget(
-      makeTestableWidgetNoScroll(
-        const CreateGoalAgentPage(agentId: 'goal-1'),
-        overrides: withServiceOverrides(overrides(editSpec: current)),
-      ),
-    );
-    await tester.pumpAndSettle();
+  testWidgets(
+    'editing offers no example pills: one tap would replace a real goal '
+    'statement and leave its signals as they were',
+    (tester) async {
+      tester.view.physicalSize = const Size(900, 2200);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const CreateGoalAgentPage(agentId: 'goal-1'),
+          overrides: withServiceOverrides(overrides(editSpec: _spec())),
+        ),
+      );
+      await tester.pumpAndSettle();
 
-    await tester.tap(find.text('gym twice a week'));
-    await tester.pump();
-    expect(
-      tester
-          .widget<EditableText>(
-            find.descendant(
-              of: find.byKey(const ValueKey('goal-form-intention')),
-              matching: find.byType(EditableText),
-            ),
-          )
-          .controller
-          .text,
-      'gym twice a week',
-    );
-
-    await tester.tap(find.text('Save new version'));
-    await tester.pump();
-
-    verify(
-      () => revisionService.reviseFromOwner(
-        agentId: 'goal-1',
-        baseVersionId: current.id,
-        displayName: any(named: 'displayName'),
-        title: any(named: 'title'),
-        statement: 'gym twice a week',
-        criteria: any(named: 'criteria'),
-      ),
-    ).called(1);
-  });
+      expect(find.text('gym twice a week'), findsNothing);
+      expect(find.byType(DsPill), findsNothing);
+      // The section names the goal; the field under it says how.
+      final section = find.byKey(const ValueKey('goal-form-goal-section'));
+      expect(
+        find.descendant(of: section, matching: find.text('Your goal')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: section, matching: find.text('In your words')),
+        findsOneWidget,
+      );
+    },
+  );
 
   testWidgets('the steps input is labelled as the daily target, not a '
       'duplicate of the row title', (tester) async {

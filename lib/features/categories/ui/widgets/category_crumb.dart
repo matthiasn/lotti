@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/category_icon/category_icon.dart';
 import 'package:lotti/features/categories/ui/widgets/category_icon_compact.dart';
@@ -61,20 +63,44 @@ class _CategoryCrumbState extends ConsumerState<CategoryCrumb> {
     );
     // null = dismissed; a pick or an explicit clear is a change.
     if (result == null) return;
-    final categoryId = result.categoryOrNull?.id;
-    if (categoryId == widget.categoryId) return;
+    final picked = result.categoryOrNull;
+    final previousId = widget.categoryId;
+    if (picked?.id == previousId) return;
     if (!mounted) return;
     setState(() => _moving = true);
-    final moved = await move.move(entryId, categoryId);
+    final moved = await move.move(entryId, picked?.id);
     if (!mounted) return;
     setState(() => _moving = false);
-    if (moved) widget.onMoved?.call();
     if (!moved) {
       context.showToast(
         tone: DesignSystemToastTone.error,
         title: messages.saveFailedRetry,
       );
+      return;
     }
+    widget.onMoved?.call();
+    // The header commits at once, where an editor waits for Save: the
+    // toast says where the entry went and offers the way back.
+    context.showToast(
+      tone: DesignSystemToastTone.success,
+      title: picked == null
+          ? messages.categoryCrumbMovedOut
+          : messages.categoryCrumbMovedTo(picked.name),
+      action: ToastAction(
+        label: messages.designSystemUndoLabel,
+        onPressed: () => unawaited(_undo(move, entryId, previousId)),
+      ),
+      replaceCurrent: true,
+    );
+  }
+
+  Future<void> _undo(
+    EntryCategoryMove move,
+    String entryId,
+    String? previousId,
+  ) async {
+    final moved = await move.move(entryId, previousId);
+    if (moved) widget.onMoved?.call();
   }
 
   @override

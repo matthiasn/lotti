@@ -680,14 +680,18 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
                 tooltip: context.messages.goalCheckInRecordCta,
                 onPressed: openComposer,
               ),
+            // Phone: the same labelled doorway the person page's hero
+            // carries, opening the conversation's own route.
             if (!desktop && chatAvailable)
-              IconButton(
-                key: const ValueKey('goal-detail-chat-action'),
-                // The sparkle, as on the desktop button and the person
-                // page: it means "the agent" everywhere in the app.
-                icon: const Icon(LottiIcons.aiSpark),
-                tooltip: context.messages.goalChatTalkToAgent,
-                onPressed: () => beamToNamed(goalChatPath(agentId)),
+              Padding(
+                padding: EdgeInsetsDirectional.only(end: tokens.spacing.step1),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(maxWidth: tokens.spacing.step13),
+                  child: AgentChatButton(
+                    key: const ValueKey('goal-detail-chat-action'),
+                    onPressed: () => beamToNamed(goalChatPath(agentId)),
+                  ),
+                ),
               ),
             // Desktop: the conversation's named doorway (§4b header).
             if (desktop && chatAvailable)

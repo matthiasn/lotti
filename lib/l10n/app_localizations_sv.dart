@@ -3232,6 +3232,14 @@ class AppLocalizationsSv extends AppLocalizations {
       'Misslyckades med att skapa kategori. Försök igen, tack.';
 
   @override
+  String get categoryCrumbMovedOut => 'Ingen kategori nu';
+
+  @override
+  String categoryCrumbMovedTo(String category) {
+    return 'Flyttad till $category';
+  }
+
+  @override
   String get categoryDayPlanDescription =>
       'Gör denna kategori tillgänglig för val i dagsplanen';
 
@@ -8306,6 +8314,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get goalFormCompositeRule => 'Hur detta mål går ihop';
 
   @override
+  String get goalFormCompositeRuleChange => 'Ändra';
+
+  @override
   String get goalFormConfirmTitle => 'Möt din agent';
 
   @override
@@ -8510,6 +8521,9 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get goalFormSaveChanges => 'Spara ny version';
+
+  @override
+  String get goalFormStatementInWordsLabel => 'Med dina ord';
 
   @override
   String get goalFormStatementLabel => 'Ditt mål, med dina ord';

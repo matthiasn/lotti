@@ -13,6 +13,8 @@ class _EditAgentSection extends StatelessWidget {
     required this.categoryId,
     required this.onCategoryChanged,
     required this.editVersion,
+    required this.checkInsAreSubstance,
+    required this.onCheckInsAreSubstanceChanged,
   });
 
   /// The section as [form] stands, editing [spec].
@@ -27,6 +29,8 @@ class _EditAgentSection extends StatelessWidget {
     categoryId: form._categoryId,
     onCategoryChanged: form._categoryChanger,
     editVersion: spec?.version,
+    checkInsAreSubstance: form._shownCheckInsAreSubstance,
+    onCheckInsAreSubstanceChanged: form._setCheckInsAreSubstance,
   );
 
   final TextEditingController persona;
@@ -42,6 +46,12 @@ class _EditAgentSection extends StatelessWidget {
   /// says so, with the history kept.
   final int? editVersion;
 
+  /// Whether the check-ins are the goal itself (ADR 0151) — a setting of
+  /// how the agent answers, so it sits here, as the person editor's
+  /// reminders switch sits in theirs.
+  final bool checkInsAreSubstance;
+  final ValueChanged<bool> onCheckInsAreSubstanceChanged;
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
@@ -54,6 +64,14 @@ class _EditAgentSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          AgentSwitchRow(
+            title: messages.goalFormCheckInsAreSubstanceTitle,
+            toggleKey: const ValueKey('goal-form-check-ins-are-substance'),
+            value: checkInsAreSubstance,
+            onChanged: onCheckInsAreSubstanceChanged,
+            body: Text(messages.goalFormCheckInsAreSubstanceSubtitle),
+          ),
+          SizedBox(height: tokens.spacing.step5),
           DesignSystemTextInput(
             key: const ValueKey('goal-form-persona'),
             controller: persona,

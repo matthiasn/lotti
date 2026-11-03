@@ -11,6 +11,7 @@ import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/agents/ui/agent_form_section.dart';
+import 'package:lotti/features/agents/ui/agent_switch_row.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/categories/state/categories_list_controller.dart';
 import 'package:lotti/features/categories/ui/widgets/category_field_row.dart';
@@ -313,6 +314,8 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage>
   }
 
   void _clearPersonaError() => setState(() => _personaError = null);
+  void _setCheckInsAreSubstance(bool value) =>
+      setState(() => _checkInsAreSubstance = value);
 
   void _continueToConfirmation(List<HabitDefinition> habits) {
     if (!_mappingIsValid()) return;
@@ -614,7 +617,6 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage>
         _GoalFormStep.confirmation => _save,
       },
       isLoading: _saving,
-      size: DesignSystemButtonSize.large,
     );
     return PopScope(
       canPop: _step == _visibleSteps.first && !_editLeaveNeedsConfirm,
@@ -681,10 +683,6 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage>
                                 statementError: _statementError,
                                 onStatementChanged: () =>
                                     setState(() => _statementError = null),
-                                onExampleSelected: (example) => setState(() {
-                                  _statement.text = example;
-                                  _statementError = null;
-                                }),
                                 title: _title,
                                 habits: habits,
                                 habitsFailed:
@@ -728,10 +726,8 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage>
                                 }),
                                 checkInsAreSubstance:
                                     _shownCheckInsAreSubstance,
-                                onCheckInsAreSubstanceChanged: (value) =>
-                                    setState(
-                                      () => _checkInsAreSubstance = value,
-                                    ),
+                                onCheckInsAreSubstanceChanged:
+                                    _setCheckInsAreSubstance,
                                 onCheckInMinutesChanged: () => setState(() {
                                   _validation = null;
                                   _targetErrors.remove('check-in-time');

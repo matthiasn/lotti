@@ -3259,6 +3259,14 @@ class AppLocalizationsCs extends AppLocalizations {
   String get categoryCreationError => 'Nepodařilo se vytvořit kategorii.';
 
   @override
+  String get categoryCrumbMovedOut => 'Teď bez kategorie';
+
+  @override
+  String categoryCrumbMovedTo(String category) {
+    return 'Přesunuto do $category';
+  }
+
+  @override
   String get categoryDayPlanDescription =>
       'Zpřístupnit tuto kategorii pro výběr v denním plánu';
 
@@ -8378,6 +8386,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get goalFormCompositeRule => 'Jak se tento cíl spojuje';
 
   @override
+  String get goalFormCompositeRuleChange => 'Změnit';
+
+  @override
   String get goalFormConfirmTitle => 'Seznam se se svým agentem';
 
   @override
@@ -8586,6 +8597,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get goalFormSaveChanges => 'Uložit novou verzi';
+
+  @override
+  String get goalFormStatementInWordsLabel => 'Tvými slovy';
 
   @override
   String get goalFormStatementLabel => 'Tvůj cíl, tvými slovy';

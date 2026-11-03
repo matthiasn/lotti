@@ -287,7 +287,15 @@ void main() {
     scrollable.position.jumpTo(scrollable.position.maxScrollExtent);
     await tester.pump();
     expect(find.text('Signals'), findsOneWidget);
-    await tester.tap(find.text('Talk to agent'));
+    // The phone header's labelled doorway, as on the person page.
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('goal-detail-chat-action')),
+        matching: find.text('Talk to agent'),
+      ),
+      findsOneWidget,
+    );
+    await tester.tap(find.byKey(const ValueKey('goal-detail-chat-action')));
     await tester.pump();
     expect(navigated, ['/goals/details/goal-1/chat']);
   });

@@ -60,7 +60,6 @@ class _MappingStep extends StatelessWidget {
     this.agentSection,
     this.enabled = true,
     this.onStatementChanged,
-    this.onExampleSelected,
   });
 
   final List<HabitDefinition> habits;
@@ -108,7 +107,6 @@ class _MappingStep extends StatelessWidget {
   /// cannot change under the version being written.
   final bool enabled;
   final VoidCallback? onStatementChanged;
-  final ValueChanged<String>? onExampleSelected;
 
   /// Frozen row order for the signals card; see the page state's snapshot.
   final List<String> chosenSignalOrder;
@@ -593,26 +591,14 @@ class _MappingStep extends StatelessWidget {
                 DesignSystemTextInput(
                   key: const ValueKey('goal-form-intention'),
                   controller: statement,
-                  label: messages.goalFormStatementLabel,
+                  label: messages.goalFormStatementInWordsLabel,
                   leadingIcon: LottiIcons.editNote,
                   errorText: statementError,
                   enabled: enabled,
                   onChanged: (_) => onStatementChanged?.call(),
                 ),
-                SizedBox(height: tokens.spacing.step3),
-                Wrap(
-                  spacing: tokens.spacing.step2,
-                  runSpacing: tokens.spacing.step2,
-                  children: [
-                    for (final example in _intentionExamples(context))
-                      DsPill(
-                        variant: DsPillVariant.filled,
-                        label: example,
-                        bordered: true,
-                        onTap: () => onExampleSelected?.call(example),
-                      ),
-                  ],
-                ),
+                // No example pills when editing: one tap would replace a real
+                // goal's statement and leave its signals as they were.
                 SizedBox(height: tokens.spacing.step4),
                 nameField,
               ],
@@ -887,7 +873,7 @@ class _MappingStep extends StatelessWidget {
                     ),
                   ),
                   DesignSystemButton(
-                    label: context.messages.insightsTableDelta,
+                    label: context.messages.goalFormCompositeRuleChange,
                     onPressed: () => showModalBottomSheet<void>(
                       context: context,
                       builder: (context) => _CompositeRulePicker(
@@ -904,11 +890,15 @@ class _MappingStep extends StatelessWidget {
               ),
             ),
           ],
-          SizedBox(height: tokens.spacing.cardItemSpacing),
-          GoalFormCheckInWeightCard(
-            value: checkInsAreSubstance,
-            onChanged: onCheckInsAreSubstanceChanged,
-          ),
+          // Editing, this agent setting sits in *Your agent*, as the
+          // person editor's switch does.
+          if (statement == null) ...[
+            SizedBox(height: tokens.spacing.cardItemSpacing),
+            GoalFormCheckInWeightCard(
+              value: checkInsAreSubstance,
+              onChanged: onCheckInsAreSubstanceChanged,
+            ),
+          ],
           // Creating, the goal's NAME is authored here, after the signals
           // that shape it — the derived value keeps following the selection
           // until the user types their own. Editing, it sits with the
