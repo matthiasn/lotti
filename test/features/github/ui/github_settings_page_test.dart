@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/sync/sync_message.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/github/api/github_client.dart';
 import 'package:lotti/features/github/domain/github_token_template.dart';
 import 'package:lotti/features/github/repository/github_account_sync.dart';
@@ -82,6 +84,14 @@ void main() {
 
   DesignSystemButton button(WidgetTester tester, Key key) =>
       tester.widget<DesignSystemButton>(find.byKey(key));
+
+  /// The toast on screen, or null while none shows.
+  DesignSystemToast? shownToast(WidgetTester tester) {
+    final found = find.byType(DesignSystemToast);
+    return found.evaluate().isEmpty
+        ? null
+        : tester.widget<DesignSystemToast>(found);
+  }
 
   EditableText tokenField(WidgetTester tester) => tester.widget<EditableText>(
     find.descendant(
@@ -428,12 +438,13 @@ void main() {
     },
   );
 
-  group('creating a token', () {
+  group('creating a token on GitHub', () {
     const createToken = Key('github_create_token');
     const caveat = Key('github_token_checks_caveat');
+    const openFailedTitle = 'Your browser did not open';
     const openFailed =
-        'Lotti could not open your browser. Create the token on github.com '
-        'under Settings → Developer settings → Personal access tokens.';
+        'Create the token on github.com under Settings → Developer settings '
+        '→ Personal access tokens.';
     late MockUrlLauncher launcher;
 
     setUpAll(() => registerFallbackValue(FakeLaunchOptions()));
@@ -445,105 +456,427 @@ void main() {
       addTearDown(() => UrlLauncherPlatform.instance = original);
     });
 
+    void browserAnswers(Future<bool> Function() answer) => when(
+      () => launcher.launchUrl(any(), any()),
+    ).thenAnswer((_) => answer());
+
     Future<void> tapCreate(WidgetTester tester) async {
       await tester.tap(find.byKey(createToken));
       await tester.pump();
       await tester.pump();
     }
 
-    testWidgets(
-      "opens GitHub's pre-filled token form in the browser, and says nothing",
-      (tester) async {
-        when(
-          () => launcher.launchUrl(any(), any()),
-        ).thenAnswer((_) async => true);
+    Future<void> connectedAs(String login) async {
+      await received('ghp_ok');
+      when(
+        () => client.fetchViewerLogin('ghp_ok'),
+      ).thenAnswer((_) async => login);
+    }
+
+    group('where the button shows', () {
+      testWidgets('without a token: enabled, above the token field', (
+        tester,
+      ) async {
+        await pump(tester);
+
+        expect(button(tester, createToken).onPressed, isNotNull);
+        expect(
+          tester.getTopLeft(find.byKey(createToken)).dy,
+          lessThan(tester.getTopLeft(find.byKey(const Key('github_token'))).dy),
+        );
+      });
+
+      testWidgets('beside the reason a synced token was rejected', (
+        tester,
+      ) async {
+        await received('ghp_expired');
+        when(() => client.fetchViewerLogin('ghp_expired')).thenThrow(
+          const GitHubException(GitHubFailureKind.unauthorized),
+        );
+        await pump(tester);
+
+        expect(find.text(rejected), findsOneWidget);
+        expect(find.byKey(createToken), findsOneWidget);
+      });
+
+      testWidgets('not while connected', (tester) async {
+        await connectedAs('pingu');
+        await pump(tester);
+
+        expect(find.text('Connected as @pingu'), findsOneWidget);
+        expect(find.byKey(createToken), findsNothing);
+      });
+    });
+
+    group('opening the form', () {
+      testWidgets("launches exactly GitHub's pre-filled token form", (
+        tester,
+      ) async {
+        browserAnswers(() async => true);
         await pump(tester);
 
         await tapCreate(tester);
 
         final captured = verify(
-          () => launcher.launchUrl(captureAny(), captureAny()),
+          () => launcher.launchUrl(captureAny(), any()),
         ).captured;
-        expect(captured[0], gitHubTokenTemplateUri().toString());
-        expect(
-          (captured[1] as LaunchOptions).mode,
-          PreferredLaunchMode.externalApplication,
-        );
-        expect(find.text(openFailed), findsNothing);
-      },
-    );
+        expect(captured.single, gitHubTokenTemplateUri().toString());
+      });
 
-    testWidgets(
-      'a browser that declines says where to make the token by hand, until '
-      'the user types',
-      (tester) async {
-        when(
-          () => launcher.launchUrl(any(), any()),
-        ).thenAnswer((_) async => false);
+      testWidgets('in the browser, outside the app', (tester) async {
+        browserAnswers(() async => true);
         await pump(tester);
 
         await tapCreate(tester);
-        expect(find.text(openFailed), findsOneWidget);
 
-        await tester.enterText(find.byKey(const Key('github_token')), 'ghp_');
-        await tester.pump();
-        expect(find.text(openFailed), findsNothing);
-      },
-    );
+        final options =
+            verify(
+                  () => launcher.launchUrl(any(), captureAny()),
+                ).captured.single
+                as LaunchOptions;
+        expect(options.mode, PreferredLaunchMode.externalApplication);
+      });
 
-    testWidgets('a launcher that throws says the same, and throws nothing', (
-      tester,
-    ) async {
-      when(
-        () => launcher.launchUrl(any(), any()),
-      ).thenThrow(Exception('no browser'));
-      await pump(tester);
-
-      await tapCreate(tester);
-
-      expect(tester.takeException(), isNull);
-      expect(find.text(openFailed), findsOneWidget);
-    });
-
-    testWidgets(
-      'not connected: offers the form and says what such a token cannot read',
-      (tester) async {
+      testWidgets('an opened browser leaves the page without an error', (
+        tester,
+      ) async {
+        browserAnswers(() async => true);
         await pump(tester);
 
-        expect(button(tester, createToken).onPressed, isNotNull);
+        await tapCreate(tester);
+
+        expect(shownToast(tester), isNull);
+      });
+    });
+
+    group('when the browser does not open', () {
+      testWidgets(
+        'a declined launch says, in an error toast, where to make the token '
+        'by hand',
+        (tester) async {
+          browserAnswers(() async => false);
+          await pump(tester);
+
+          await tapCreate(tester);
+
+          final toast = shownToast(tester);
+          expect(toast?.tone, DesignSystemToastTone.error);
+          expect(toast?.title, openFailedTitle);
+          expect(toast?.description, openFailed);
+        },
+      );
+
+      testWidgets('a launch that throws says the same, and throws nothing', (
+        tester,
+      ) async {
+        when(
+          () => launcher.launchUrl(any(), any()),
+        ).thenThrow(Exception('no browser'));
+        await pump(tester);
+
+        await tapCreate(tester);
+
+        expect(tester.takeException(), isNull);
+        expect(shownToast(tester)?.title, openFailedTitle);
+      });
+
+      testWidgets('leaves the token field without an error', (tester) async {
+        browserAnswers(() async => false);
+        await pump(tester);
+
+        await tapCreate(tester);
+
+        final field = tester.widget<DesignSystemTextInput>(
+          find.byKey(const Key('github_token')),
+        );
+        expect(field.errorText, isNull);
+      });
+
+      testWidgets('a page closed before the browser answers is left alone', (
+        tester,
+      ) async {
+        final answer = Completer<bool>();
+        browserAnswers(() => answer.future);
+        await pump(tester);
+        await tapCreate(tester);
+
+        await tester.pumpWidget(const SizedBox());
+        answer.complete(false);
+        await tester.pump();
+
+        expect(tester.takeException(), isNull);
+        expect(shownToast(tester), isNull);
+      });
+    });
+
+    group('what the page says', () {
+      testWidgets('the intro points at the form, not at a classic token', (
+        tester,
+      ) async {
+        await pump(tester);
+
         expect(
           find.text(
-            'CI checks of private repositories may be incomplete: GitHub '
-            'gives these tokens no access to check runs.',
+            'Lotti reads the pull requests you link to tasks with a '
+            'read-only token from your GitHub account. Create one on GitHub '
+            '— the permissions are filled in for you — choose your '
+            'repositories, then paste the token here.',
           ),
           findsOneWidget,
         );
-      },
-    );
+        expect(find.textContaining('classic'), findsNothing);
+      });
 
-    testWidgets('a synced token GitHub rejected offers the form beside why', (
-      tester,
-    ) async {
-      await received('ghp_expired');
-      when(() => client.fetchViewerLogin('ghp_expired')).thenThrow(
-        const GitHubException(GitHubFailureKind.unauthorized),
-      );
-      await pump(tester);
+      testWidgets('without a token: what such a token cannot read', (
+        tester,
+      ) async {
+        await pump(tester);
 
-      expect(find.text(rejected), findsOneWidget);
-      expect(find.byKey(createToken), findsOneWidget);
+        expect(
+          tester.widget<Text>(find.byKey(caveat)).data,
+          'CI checks of private repositories may be incomplete: GitHub gives '
+          'these tokens no access to check runs.',
+        );
+      });
+
+      testWidgets('connected: no caveat about a token being made', (
+        tester,
+      ) async {
+        await connectedAs('pingu');
+        await pump(tester);
+
+        expect(find.text('Connected as @pingu'), findsOneWidget);
+        expect(find.byKey(caveat), findsNothing);
+      });
+    });
+  });
+
+  group('feedback', () {
+    const connectedToast = 'Connected to GitHub as @pingu';
+    const saveFailedTitle = 'Token not stored';
+    const saveFailed =
+        'GitHub accepted it, but this device could not keep it. Try again.';
+    const disconnectedToast = 'Disconnected from GitHub';
+    const disconnectFailedTitle = 'Token not removed';
+    const disconnectFailed =
+        'This device could not remove the token. Try again.';
+    const connectKey = Key('github_connect');
+
+    /// A keychain whose writes this test can make fail.
+    late MockSecureStorage keychain;
+
+    setUp(() {
+      keychain = inMemoryKeychain({});
+      storage = GitHubTokenStorage(keychain, namespace: 'real');
     });
 
-    testWidgets('connected: neither the form nor the caveat', (tester) async {
+    void writesFail() => when(
+      () => keychain.write(
+        key: any(named: 'key'),
+        value: any(named: 'value'),
+      ),
+    ).thenThrow(Exception('-34018: a required entitlement is not present'));
+
+    Future<void> typeAndConnect(WidgetTester tester, String token) async {
+      await tester.enterText(find.byKey(const Key('github_token')), token);
+      await tester.pump();
+      await tester.tap(find.byKey(connectKey));
+      await tester.pump();
+    }
+
+    Future<void> settle(WidgetTester tester) async {
+      await tester.pump();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+    }
+
+    Future<void> connectedAsPingu(WidgetTester tester) async {
       await received('ghp_ok');
       when(
         () => client.fetchViewerLogin('ghp_ok'),
       ).thenAnswer((_) async => 'pingu');
       await pump(tester);
-
       expect(find.text('Connected as @pingu'), findsOneWidget);
-      expect(find.byKey(createToken), findsNothing);
-      expect(find.byKey(caveat), findsNothing);
+    }
+
+    group('connecting', () {
+      testWidgets('Connect spins while GitHub is asked, and stops after', (
+        tester,
+      ) async {
+        final answer = Completer<String>();
+        when(
+          () => client.fetchViewerLogin('ghp_slow'),
+        ).thenAnswer((_) => answer.future);
+        await pump(tester);
+
+        await typeAndConnect(tester, 'ghp_slow');
+        expect(button(tester, connectKey).isLoading, isTrue);
+
+        answer.completeError(
+          const GitHubException(GitHubFailureKind.unauthorized),
+        );
+        await settle(tester);
+        expect(button(tester, connectKey).isLoading, isFalse);
+      });
+
+      testWidgets('a token GitHub accepts is confirmed with a success toast', (
+        tester,
+      ) async {
+        when(
+          () => client.fetchViewerLogin('ghp_ok'),
+        ).thenAnswer((_) async => 'pingu');
+        await pump(tester);
+
+        await typeAndConnect(tester, 'ghp_ok');
+        await settle(tester);
+
+        expect(find.text(connectedToast), findsOneWidget);
+        expect(shownToast(tester)?.tone, DesignSystemToastTone.success);
+      });
+
+      testWidgets('a token GitHub refuses gets no toast, only the reason', (
+        tester,
+      ) async {
+        when(() => client.fetchViewerLogin(any())).thenThrow(
+          const GitHubException(GitHubFailureKind.unauthorized),
+        );
+        await pump(tester);
+
+        await typeAndConnect(tester, 'ghp_old');
+        await settle(tester);
+
+        expect(find.text(rejected), findsOneWidget);
+        expect(shownToast(tester), isNull);
+      });
+
+      testWidgets(
+        'a keychain that refuses the write says so in an error toast, keeps '
+        'the token typed, and lets Connect be pressed again',
+        (tester) async {
+          when(
+            () => client.fetchViewerLogin('ghp_ok'),
+          ).thenAnswer((_) async => 'pingu');
+          await pump(tester);
+          writesFail();
+
+          await typeAndConnect(tester, 'ghp_ok');
+          await settle(tester);
+
+          final toast = shownToast(tester);
+          expect(toast?.tone, DesignSystemToastTone.error);
+          expect(toast?.title, saveFailedTitle);
+          expect(toast?.description, saveFailed);
+          expect(tokenField(tester).controller.text, 'ghp_ok');
+          expect(button(tester, connectKey).isLoading, isFalse);
+          expect(button(tester, connectKey).onPressed, isNotNull);
+          expect(find.text('Connected as @pingu'), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'a token stored whose change could not be announced still counts as '
+        'connected',
+        (tester) async {
+          final notifications =
+              getIt<UpdateNotifications>() as MockUpdateNotifications;
+          when(
+            () => notifications.notify(any(), fromSync: any(named: 'fromSync')),
+          ).thenThrow(Exception('notification failed'));
+          when(
+            () => client.fetchViewerLogin('ghp_ok'),
+          ).thenAnswer((_) async => 'pingu');
+          await pump(tester);
+
+          await typeAndConnect(tester, 'ghp_ok');
+          await settle(tester);
+
+          expect(await storage.readToken(), 'ghp_ok');
+          expect(shownToast(tester)?.title, connectedToast);
+          expect(shownToast(tester)?.tone, DesignSystemToastTone.success);
+        },
+      );
+
+      testWidgets('a page closed while GitHub is asked is left alone', (
+        tester,
+      ) async {
+        final answer = Completer<String>();
+        when(
+          () => client.fetchViewerLogin('ghp_slow'),
+        ).thenAnswer((_) => answer.future);
+        await pump(tester);
+        await typeAndConnect(tester, 'ghp_slow');
+
+        await tester.pumpWidget(const SizedBox());
+        answer.complete('pingu');
+        await tester.pump();
+
+        expect(tester.takeException(), isNull);
+        expect(find.byType(DesignSystemToast), findsNothing);
+      });
+    });
+
+    group('disconnecting', () {
+      testWidgets('is confirmed with a success toast', (tester) async {
+        await connectedAsPingu(tester);
+
+        await tester.tap(find.byKey(const Key('github_disconnect')));
+        await settle(tester);
+
+        expect(find.text(disconnectedToast), findsOneWidget);
+        expect(shownToast(tester)?.tone, DesignSystemToastTone.success);
+        expect(find.byKey(const Key('github_token')), findsOneWidget);
+      });
+
+      testWidgets(
+        'a keychain that refuses says so in an error toast, and stays '
+        'connected',
+        (tester) async {
+          await connectedAsPingu(tester);
+          writesFail();
+
+          await tester.tap(find.byKey(const Key('github_disconnect')));
+          await settle(tester);
+
+          final toast = shownToast(tester);
+          expect(toast?.tone, DesignSystemToastTone.error);
+          expect(toast?.title, disconnectFailedTitle);
+          expect(toast?.description, disconnectFailed);
+          expect(find.text('Connected as @pingu'), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'a keychain that cannot be read afterwards still confirms, with no '
+        'note about other devices',
+        (tester) async {
+          await connectedAsPingu(tester);
+          // Reads fail from the moment the disconnection is written.
+          var readsFail = false;
+          final values = <String, String>{};
+          when(
+            () => keychain.write(
+              key: any(named: 'key'),
+              value: any(named: 'value'),
+            ),
+          ).thenAnswer((invocation) async {
+            values[invocation.namedArguments[#key] as String] =
+                invocation.namedArguments[#value] as String;
+            readsFail = true;
+          });
+          when(() => keychain.read(key: any(named: 'key'))).thenAnswer((
+            invocation,
+          ) async {
+            if (readsFail) throw Exception('keychain locked');
+            return values[invocation.namedArguments[#key] as String];
+          });
+
+          await tester.tap(find.byKey(const Key('github_disconnect')));
+          await settle(tester);
+
+          expect(find.text(disconnectedToast), findsOneWidget);
+          expect(find.byKey(const Key('github_sync_note')), findsNothing);
+        },
+      );
     });
   });
 

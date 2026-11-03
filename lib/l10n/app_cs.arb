@@ -2993,10 +2993,26 @@
       }
     }
   },
+  "githubConnectedToast": "Připojeno ke GitHubu jako @{login}",
+  "@githubConnectedToast": {
+    "description": "Toast once GitHub accepted a token and this device stored it.",
+    "placeholders": {
+      "login": {
+        "type": "String",
+        "example": "octocat"
+      }
+    }
+  },
+  "githubConnectSaveFailed": "GitHub ho přijal, ale toto zařízení ho nedokázalo uložit. Zkus to znovu.",
+  "githubConnectSaveFailedTitle": "Token nebyl uložen",
   "githubCreateTokenButton": "Vytvořit token na GitHubu",
-  "githubCreateTokenOpenFailed": "Prohlížeč se nepodařilo otevřít. Vytvoř token na github.com v Settings → Developer settings → Personal access tokens.",
+  "githubCreateTokenOpenFailed": "Vytvoř token na github.com v Settings → Developer settings → Personal access tokens.",
+  "githubCreateTokenOpenFailedTitle": "Prohlížeč se neotevřel",
   "githubDescriptionHeading": "Popis",
   "githubDisconnectButton": "Odpojit",
+  "githubDisconnectedToast": "Odpojeno od GitHubu",
+  "githubDisconnectFailed": "Toto zařízení nedokázalo token odebrat. Zkus to znovu.",
+  "githubDisconnectFailedTitle": "Token nebyl odebrán",
   "githubFailureForbidden": "Token nemá oprávnění tohle číst. Zkontroluj jeho oprávnění.",
   "githubFailureInvalidResponse": "GitHub poslal odpověď, kterou Lotti nedokázal přečíst.",
   "githubFailureNotFound": "Nenalezeno, nebo tvůj token tento repozitář nevidí.",

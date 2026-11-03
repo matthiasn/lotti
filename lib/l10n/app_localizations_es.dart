@@ -7370,17 +7370,42 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String githubConnectedToast(String login) {
+    return 'Conectado a GitHub como @$login';
+  }
+
+  @override
+  String get githubConnectSaveFailed =>
+      'GitHub lo aceptó, pero este dispositivo no pudo guardarlo. Inténtalo de nuevo.';
+
+  @override
+  String get githubConnectSaveFailedTitle => 'Token no guardado';
+
+  @override
   String get githubCreateTokenButton => 'Crear un token en GitHub';
 
   @override
   String get githubCreateTokenOpenFailed =>
-      'Lotti no pudo abrir tu navegador. Crea el token en github.com, en Settings → Developer settings → Personal access tokens.';
+      'Crea el token en github.com, en Settings → Developer settings → Personal access tokens.';
+
+  @override
+  String get githubCreateTokenOpenFailedTitle => 'Tu navegador no se abrió';
 
   @override
   String get githubDescriptionHeading => 'Descripción';
 
   @override
   String get githubDisconnectButton => 'Desconectar';
+
+  @override
+  String get githubDisconnectedToast => 'Desconectado de GitHub';
+
+  @override
+  String get githubDisconnectFailed =>
+      'Este dispositivo no pudo quitar el token. Inténtalo de nuevo.';
+
+  @override
+  String get githubDisconnectFailedTitle => 'Token no quitado';
 
   @override
   String get githubFailureForbidden =>

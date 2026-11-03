@@ -3331,10 +3331,26 @@
       }
     }
   },
+  "githubConnectedToast": "Ansluten till GitHub som @{login}",
+  "@githubConnectedToast": {
+    "description": "Toast once GitHub accepted a token and this device stored it.",
+    "placeholders": {
+      "login": {
+        "type": "String",
+        "example": "octocat"
+      }
+    }
+  },
+  "githubConnectSaveFailed": "GitHub godkände den, men den här enheten kunde inte spara den. Försök igen.",
+  "githubConnectSaveFailedTitle": "Token sparades inte",
   "githubCreateTokenButton": "Skapa en token på GitHub",
-  "githubCreateTokenOpenFailed": "Lotti kunde inte öppna din webbläsare. Skapa token på github.com under Settings → Developer settings → Personal access tokens.",
+  "githubCreateTokenOpenFailed": "Skapa token på github.com under Settings → Developer settings → Personal access tokens.",
+  "githubCreateTokenOpenFailedTitle": "Din webbläsare öppnades inte",
   "githubDescriptionHeading": "Beskrivning",
   "githubDisconnectButton": "Koppla från",
+  "githubDisconnectedToast": "Frånkopplad från GitHub",
+  "githubDisconnectFailed": "Den här enheten kunde inte ta bort token. Försök igen.",
+  "githubDisconnectFailedTitle": "Token togs inte bort",
   "githubFailureForbidden": "Din token får inte läsa det här. Kontrollera dess behörigheter.",
   "githubFailureInvalidResponse": "GitHub skickade ett svar som Lotti inte kunde läsa.",
   "githubFailureNotFound": "Hittades inte, eller så kan din token inte se det här repot.",

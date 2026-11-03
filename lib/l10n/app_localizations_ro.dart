@@ -7404,17 +7404,42 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String githubConnectedToast(String login) {
+    return 'Conectat la GitHub ca @$login';
+  }
+
+  @override
+  String get githubConnectSaveFailed =>
+      'GitHub l-a acceptat, dar acest dispozitiv nu l-a putut salva. Încercați din nou.';
+
+  @override
+  String get githubConnectSaveFailedTitle => 'Tokenul nu a fost salvat';
+
+  @override
   String get githubCreateTokenButton => 'Creați un token pe GitHub';
 
   @override
   String get githubCreateTokenOpenFailed =>
-      'Lotti nu a putut deschide browserul. Creați tokenul pe github.com, la Settings → Developer settings → Personal access tokens.';
+      'Creați tokenul pe github.com, la Settings → Developer settings → Personal access tokens.';
+
+  @override
+  String get githubCreateTokenOpenFailedTitle => 'Browserul nu s-a deschis';
 
   @override
   String get githubDescriptionHeading => 'Descriere';
 
   @override
   String get githubDisconnectButton => 'Deconectați';
+
+  @override
+  String get githubDisconnectedToast => 'Deconectat de la GitHub';
+
+  @override
+  String get githubDisconnectFailed =>
+      'Acest dispozitiv nu a putut elimina tokenul. Încercați din nou.';
+
+  @override
+  String get githubDisconnectFailedTitle => 'Tokenul nu a fost eliminat';
 
   @override
   String get githubFailureForbidden =>

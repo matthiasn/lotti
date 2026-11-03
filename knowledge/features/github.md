@@ -258,7 +258,13 @@ the refresh is the app's, the unlink is the user's.
   real one (a token stored before the record existed, under
   `github_token:`/`github_login:`, is moved into it once). It is never logged
   or exported. Settings → Advanced Settings → GitHub saves a token only after
-  `GET /user` accepts it.
+  `GET /user` accepts it. Connect spins while GitHub is asked; a token GitHub
+  refuses is said in the field. One GitHub accepted that the keychain would
+  not store is said in an error toast — the page reads the account
+  afterwards, and a login there is what counts as connected. A connection and
+  a disconnection are confirmed with a toast, and a disconnection the keychain
+  refused with an error toast. The field's error is one line, so whatever
+  needs more goes in a toast.
 - The user makes the token on GitHub. While the page holds none — or holds
   one GitHub rejected — its "Create a token on GitHub" opens the fine-grained
   form at `github.com/settings/personal-access-tokens/new`, filled in from the
@@ -272,8 +278,8 @@ the refresh is the app's, the unlink is the user's.
   repositories, which the user picks, and Lotti sets no `target_name`: a
   fine-grained token reaches one owner, and a guess from the categories'
   repositories would be wrong for a user working under two. A browser that
-  cannot be opened is said in the field's error slot, with where to make the
-  token by hand. The classic token's `scopes=` pre-fill is undocumented, so
+  cannot be opened is said in an error toast, with where to make the token by
+  hand. The classic token's `scopes=` pre-fill is undocumented, so
   the page does not link to it.
 - The token **syncs to the user's other devices** (ADR 0117), the way an
   inference provider's API key does: a `gitHubAccount` sync message, end-to-end

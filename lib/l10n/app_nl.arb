@@ -3330,10 +3330,26 @@
       }
     }
   },
+  "githubConnectedToast": "Verbonden met GitHub als @{login}",
+  "@githubConnectedToast": {
+    "description": "Toast once GitHub accepted a token and this device stored it.",
+    "placeholders": {
+      "login": {
+        "type": "String",
+        "example": "octocat"
+      }
+    }
+  },
+  "githubConnectSaveFailed": "GitHub heeft het geaccepteerd, maar dit apparaat kon het niet opslaan. Probeer het opnieuw.",
+  "githubConnectSaveFailedTitle": "Token niet opgeslagen",
   "githubCreateTokenButton": "Token aanmaken op GitHub",
-  "githubCreateTokenOpenFailed": "Lotti kon je browser niet openen. Maak het token aan op github.com onder Settings → Developer settings → Personal access tokens.",
+  "githubCreateTokenOpenFailed": "Maak het token aan op github.com onder Settings → Developer settings → Personal access tokens.",
+  "githubCreateTokenOpenFailedTitle": "Je browser ging niet open",
   "githubDescriptionHeading": "Beschrijving",
   "githubDisconnectButton": "Verbinding verbreken",
+  "githubDisconnectedToast": "Verbinding met GitHub verbroken",
+  "githubDisconnectFailed": "Dit apparaat kon het token niet verwijderen. Probeer het opnieuw.",
+  "githubDisconnectFailedTitle": "Token niet verwijderd",
   "githubFailureForbidden": "Het token mag dit niet lezen. Controleer de rechten ervan.",
   "githubFailureInvalidResponse": "GitHub stuurde een antwoord dat Lotti niet kon lezen.",
   "githubFailureNotFound": "Niet gevonden, of je token kan deze repository niet zien.",

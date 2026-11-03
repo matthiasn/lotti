@@ -3,50 +3,105 @@ import 'package:lotti/features/github/domain/github_token_template.dart';
 
 void main() {
   final uri = gitHubTokenTemplateUri();
+  final query = uri.queryParameters;
 
-  test("opens GitHub's fine-grained token form over https", () {
-    expect(uri.scheme, 'https');
-    expect(uri.host, 'github.com');
-    expect(uri.path, '/settings/personal-access-tokens/new');
-  });
+  /// The query without the token's own fields: the permissions alone.
+  Map<String, String> permissions() => Map.of(query)
+    ..removeWhere(
+      (key, _) => const {'name', 'description', 'expires_in'}.contains(key),
+    );
 
-  test('fills in exactly the name, description, lifetime and permissions', () {
-    expect(uri.queryParameters, {
-      'name': 'Lotti',
-      'description':
-          'Lotti reads the pull requests you link to tasks: their status, '
-          'checks and reviews. Read-only.',
-      'expires_in': '366',
-      'pull_requests': 'read',
-      'statuses': 'read',
-      'metadata': 'read',
+  group('where it points', () {
+    test('over https', () {
+      expect(uri.scheme, 'https');
+    });
+
+    test('to github.com itself, not the API host', () {
+      expect(uri.host, 'github.com');
+    });
+
+    test("to the fine-grained token form, not the classic one's", () {
+      expect(uri.path, '/settings/personal-access-tokens/new');
+    });
+
+    test('with no fragment or credentials to leak', () {
+      expect(uri.fragment, isEmpty);
+      expect(uri.userInfo, isEmpty);
     });
   });
 
-  test('asks for no permission beyond read', () {
-    const fields = {'name', 'description', 'expires_in'};
-    final permissions = Map.of(uri.queryParameters)
-      ..removeWhere((key, _) => fields.contains(key));
+  group('what it names the token', () {
+    test('Lotti', () {
+      expect(query['name'], 'Lotti');
+    });
 
-    expect(permissions, isNotEmpty);
-    expect(permissions.values, everyElement('read'));
+    test('with an English description of what Lotti reads', () {
+      expect(
+        query['description'],
+        'Lotti reads the pull requests you link to tasks: their status, '
+        'checks and reviews. Read-only.',
+      );
+    });
   });
 
-  test("stays within GitHub's limits for the form's fields", () {
-    expect(uri.queryParameters['name']!.length, lessThanOrEqualTo(40));
-    expect(
-      uri.queryParameters['description']!.length,
-      lessThanOrEqualTo(1024),
-    );
-    final days = int.parse(uri.queryParameters['expires_in']!);
-    expect(days, inInclusiveRange(1, 366));
+  group('how long it lasts', () {
+    test('366 days, the longest short of never expiring', () {
+      expect(query['expires_in'], '366');
+    });
+
+    test('never `none`, which a lifetime policy refuses', () {
+      expect(query['expires_in'], isNot('none'));
+    });
   });
 
-  test('is encoded so that parsing it gives back the same fields', () {
-    final reparsed = Uri.parse(uri.toString());
+  group('which permissions it asks for', () {
+    test('exactly pull requests, commit statuses and metadata', () {
+      expect(permissions(), {
+        'pull_requests': 'read',
+        'statuses': 'read',
+        'metadata': 'read',
+      });
+    });
 
-    expect(reparsed, uri);
-    expect(reparsed.queryParameters, uri.queryParameters);
-    expect(uri.toString(), isNot(contains(' ')));
+    test('each read-only: never write or admin', () {
+      expect(permissions().values, everyElement('read'));
+    });
+
+    test('no owner: GitHub defaults to the user, the user may change it', () {
+      expect(query.containsKey('target_name'), isFalse);
+    });
+  });
+
+  group("GitHub's limits", () {
+    test('a name of at most 40 characters', () {
+      expect(query['name']!.length, lessThanOrEqualTo(40));
+    });
+
+    test('a description of at most 1024 characters', () {
+      expect(query['description']!.length, lessThanOrEqualTo(1024));
+    });
+
+    test('a lifetime of 1 to 366 days', () {
+      expect(int.parse(query['expires_in']!), inInclusiveRange(1, 366));
+    });
+  });
+
+  group('encoding', () {
+    test('parsing the link gives back the same link', () {
+      expect(Uri.parse(uri.toString()), uri);
+    });
+
+    test('parsing the link gives back the same fields', () {
+      expect(Uri.parse(uri.toString()).queryParameters, query);
+    });
+
+    test('carries no raw space or colon in its query', () {
+      expect(uri.query, isNot(contains(' ')));
+      expect(uri.query, isNot(contains(':')));
+    });
+
+    test('is the same link on every call', () {
+      expect(gitHubTokenTemplateUri(), uri);
+    });
   });
 }

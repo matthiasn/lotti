@@ -2986,10 +2986,26 @@
       }
     }
   },
+  "githubConnectedToast": "Conectat la GitHub ca @{login}",
+  "@githubConnectedToast": {
+    "description": "Toast once GitHub accepted a token and this device stored it.",
+    "placeholders": {
+      "login": {
+        "type": "String",
+        "example": "octocat"
+      }
+    }
+  },
+  "githubConnectSaveFailed": "GitHub l-a acceptat, dar acest dispozitiv nu l-a putut salva. Încercați din nou.",
+  "githubConnectSaveFailedTitle": "Tokenul nu a fost salvat",
   "githubCreateTokenButton": "Creați un token pe GitHub",
-  "githubCreateTokenOpenFailed": "Lotti nu a putut deschide browserul. Creați tokenul pe github.com, la Settings → Developer settings → Personal access tokens.",
+  "githubCreateTokenOpenFailed": "Creați tokenul pe github.com, la Settings → Developer settings → Personal access tokens.",
+  "githubCreateTokenOpenFailedTitle": "Browserul nu s-a deschis",
   "githubDescriptionHeading": "Descriere",
   "githubDisconnectButton": "Deconectați",
+  "githubDisconnectedToast": "Deconectat de la GitHub",
+  "githubDisconnectFailed": "Acest dispozitiv nu a putut elimina tokenul. Încercați din nou.",
+  "githubDisconnectFailedTitle": "Tokenul nu a fost eliminat",
   "githubFailureForbidden": "Tokenul nu are voie să citească acest lucru. Verificați-i permisiunile.",
   "githubFailureInvalidResponse": "GitHub a trimis un răspuns pe care Lotti nu l-a putut citi.",
   "githubFailureNotFound": "Nu a fost găsit sau tokenul dvs. nu vede acest depozit.",

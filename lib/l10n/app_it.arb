@@ -3331,10 +3331,26 @@
       }
     }
   },
+  "githubConnectedToast": "Connesso a GitHub come @{login}",
+  "@githubConnectedToast": {
+    "description": "Toast once GitHub accepted a token and this device stored it.",
+    "placeholders": {
+      "login": {
+        "type": "String",
+        "example": "octocat"
+      }
+    }
+  },
+  "githubConnectSaveFailed": "GitHub l'ha accettato, ma questo dispositivo non è riuscito a salvarlo. Riprova.",
+  "githubConnectSaveFailedTitle": "Token non salvato",
   "githubCreateTokenButton": "Crea un token su GitHub",
-  "githubCreateTokenOpenFailed": "Lotti non è riuscito ad aprire il tuo browser. Crea il token su github.com in Settings → Developer settings → Personal access tokens.",
+  "githubCreateTokenOpenFailed": "Crea il token su github.com in Settings → Developer settings → Personal access tokens.",
+  "githubCreateTokenOpenFailedTitle": "Il tuo browser non si è aperto",
   "githubDescriptionHeading": "Descrizione",
   "githubDisconnectButton": "Disconnetti",
+  "githubDisconnectedToast": "Disconnesso da GitHub",
+  "githubDisconnectFailed": "Questo dispositivo non è riuscito a rimuovere il token. Riprova.",
+  "githubDisconnectFailedTitle": "Token non rimosso",
   "githubFailureForbidden": "Il token non può leggere questo contenuto. Controlla i suoi permessi.",
   "githubFailureInvalidResponse": "GitHub ha inviato una risposta che Lotti non è riuscito a leggere.",
   "githubFailureNotFound": "Non trovato, oppure il tuo token non vede questo repository.",

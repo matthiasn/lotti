@@ -2986,10 +2986,26 @@
       }
     }
   },
+  "githubConnectedToast": "Connecté à GitHub en tant que @{login}",
+  "@githubConnectedToast": {
+    "description": "Toast once GitHub accepted a token and this device stored it.",
+    "placeholders": {
+      "login": {
+        "type": "String",
+        "example": "octocat"
+      }
+    }
+  },
+  "githubConnectSaveFailed": "GitHub l'a accepté, mais cet appareil n'a pas pu l'enregistrer. Réessaie.",
+  "githubConnectSaveFailedTitle": "Jeton non enregistré",
   "githubCreateTokenButton": "Créer un jeton sur GitHub",
-  "githubCreateTokenOpenFailed": "Lotti n'a pas pu ouvrir ton navigateur. Crée le jeton sur github.com sous Settings → Developer settings → Personal access tokens.",
+  "githubCreateTokenOpenFailed": "Crée le jeton sur github.com sous Settings → Developer settings → Personal access tokens.",
+  "githubCreateTokenOpenFailedTitle": "Ton navigateur ne s'est pas ouvert",
   "githubDescriptionHeading": "Description",
   "githubDisconnectButton": "Déconnecter",
+  "githubDisconnectedToast": "Déconnecté de GitHub",
+  "githubDisconnectFailed": "Cet appareil n'a pas pu supprimer le jeton. Réessaie.",
+  "githubDisconnectFailedTitle": "Jeton non supprimé",
   "githubFailureForbidden": "Le jeton n'a pas le droit de lire ceci. Vérifie ses autorisations.",
   "githubFailureInvalidResponse": "GitHub a envoyé une réponse que Lotti n'a pas pu lire.",
   "githubFailureNotFound": "Introuvable, ou ton jeton ne voit pas ce dépôt.",

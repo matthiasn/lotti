@@ -12383,6 +12383,24 @@ abstract class AppLocalizations {
   /// **'Connected as @{login}'**
   String githubConnectedAs(String login);
 
+  /// Toast once GitHub accepted a token and this device stored it.
+  ///
+  /// In en, this message translates to:
+  /// **'Connected to GitHub as @{login}'**
+  String githubConnectedToast(String login);
+
+  /// No description provided for @githubConnectSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'GitHub accepted it, but this device could not keep it. Try again.'**
+  String get githubConnectSaveFailed;
+
+  /// No description provided for @githubConnectSaveFailedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Token not stored'**
+  String get githubConnectSaveFailedTitle;
+
   /// No description provided for @githubCreateTokenButton.
   ///
   /// In en, this message translates to:
@@ -12392,8 +12410,14 @@ abstract class AppLocalizations {
   /// No description provided for @githubCreateTokenOpenFailed.
   ///
   /// In en, this message translates to:
-  /// **'Lotti could not open your browser. Create the token on github.com under Settings → Developer settings → Personal access tokens.'**
+  /// **'Create the token on github.com under Settings → Developer settings → Personal access tokens.'**
   String get githubCreateTokenOpenFailed;
+
+  /// No description provided for @githubCreateTokenOpenFailedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your browser did not open'**
+  String get githubCreateTokenOpenFailedTitle;
 
   /// Heading over a pull request's own description.
   ///
@@ -12406,6 +12430,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Disconnect'**
   String get githubDisconnectButton;
+
+  /// No description provided for @githubDisconnectedToast.
+  ///
+  /// In en, this message translates to:
+  /// **'Disconnected from GitHub'**
+  String get githubDisconnectedToast;
+
+  /// No description provided for @githubDisconnectFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'This device could not remove the token. Try again.'**
+  String get githubDisconnectFailed;
+
+  /// No description provided for @githubDisconnectFailedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Token not removed'**
+  String get githubDisconnectFailedTitle;
 
   /// No description provided for @githubFailureForbidden.
   ///

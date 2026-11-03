@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
+import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/github/api/github_client.dart';
 import 'package:lotti/features/github/domain/github_token_template.dart';
@@ -67,28 +69,54 @@ class _GitHubSettingsBodyState extends ConsumerState<GitHubSettingsBody> {
     super.dispose();
   }
 
+  /// Checks the typed token with GitHub and keeps it. A token GitHub refuses
+  /// is said in the field's error slot; one this device could not keep — a
+  /// keychain that refuses the write — is said in an error toast, instead of
+  /// leaving the page waiting. A connection is confirmed with a toast.
   Future<void> _connect() async {
     setState(() {
       _connecting = true;
       _error = null;
     });
-    final failure = await ref
-        .read(gitHubAccountControllerProvider.notifier)
-        .connect(_tokenController.text);
-    final owed = failure == null && await _changeOwed();
+    GitHubFailureKind? failure;
+    try {
+      failure = await ref
+          .read(gitHubAccountControllerProvider.notifier)
+          .connect(_tokenController.text);
+    } on Exception {
+      // GitHub accepted the token; whether this device kept it, the account
+      // says below.
+    }
     if (!mounted) return;
+    // The account holds a login only once the token was stored.
+    final login = ref.read(gitHubAccountControllerProvider).value;
+    final connected = failure == null && login != null;
+    final owed = connected && await _changeOwed();
+    if (!mounted) return;
+    final messages = context.messages;
     setState(() {
       _connecting = false;
-      _error = failure == null
-          ? null
-          : gitHubFailureMessage(context.messages, failure);
-      if (failure == null) _tokenController.clear();
+      _error = failure == null ? null : gitHubFailureMessage(messages, failure);
+      if (connected) _tokenController.clear();
       _syncNote = owed ? _SyncNote.owed : null;
     });
+    if (connected) {
+      context.showToast(
+        tone: DesignSystemToastTone.success,
+        title: messages.githubConnectedToast(login),
+      );
+    } else if (failure == null) {
+      context.showToast(
+        tone: DesignSystemToastTone.error,
+        title: messages.githubConnectSaveFailedTitle,
+        description: messages.githubConnectSaveFailed,
+      );
+    }
   }
 
   /// Opens GitHub's pre-filled token form in the browser. A browser that
-  /// cannot be opened is said in the field's error slot, never thrown.
+  /// cannot be opened is said in an error toast, with where to make the token
+  /// by hand — never thrown.
   Future<void> _createToken() async {
     var opened = false;
     try {
@@ -100,18 +128,48 @@ class _GitHubSettingsBodyState extends ConsumerState<GitHubSettingsBody> {
       opened = false;
     }
     if (opened || !mounted) return;
-    setState(() => _error = context.messages.githubCreateTokenOpenFailed);
+    context.showToast(
+      tone: DesignSystemToastTone.error,
+      title: context.messages.githubCreateTokenOpenFailedTitle,
+      description: context.messages.githubCreateTokenOpenFailed,
+    );
   }
 
+  /// Forgets the token here and on the other devices, and says so with a
+  /// toast — or, when this device could not forget it, says that instead.
   Future<void> _disconnect() async {
-    await ref.read(gitHubAccountControllerProvider.notifier).disconnect();
+    try {
+      await ref.read(gitHubAccountControllerProvider.notifier).disconnect();
+    } on Exception {
+      if (mounted) {
+        context.showToast(
+          tone: DesignSystemToastTone.error,
+          title: context.messages.githubDisconnectFailedTitle,
+          description: context.messages.githubDisconnectFailed,
+        );
+      }
+      return;
+    }
     final owed = await _changeOwed();
     if (!mounted) return;
     setState(() => _syncNote = owed ? _SyncNote.owed : null);
+    context.showToast(
+      tone: DesignSystemToastTone.success,
+      title: context.messages.githubDisconnectedToast,
+    );
   }
 
-  Future<bool> _changeOwed() =>
-      ref.read(gitHubAccountControllerProvider.notifier).changeOwed();
+  /// Whether a change made here still has to reach the outbox; a keychain
+  /// that cannot be read answers no, which leaves the note unsaid.
+  Future<bool> _changeOwed() async {
+    try {
+      return await ref
+          .read(gitHubAccountControllerProvider.notifier)
+          .changeOwed();
+    } on Exception {
+      return false;
+    }
+  }
 
   Future<void> _sendToOtherDevices() async {
     setState(() {
@@ -245,9 +303,8 @@ class _GitHubSettingsBodyState extends ConsumerState<GitHubSettingsBody> {
               leadingIcon: LottiIcons.key,
               size: DesignSystemButtonSize.large,
               fullWidth: true,
-              onPressed: _connecting || _tokenController.text.trim().isEmpty
-                  ? null
-                  : _connect,
+              isLoading: _connecting,
+              onPressed: _tokenController.text.trim().isEmpty ? null : _connect,
             ),
           ],
           if (canSync) ...[

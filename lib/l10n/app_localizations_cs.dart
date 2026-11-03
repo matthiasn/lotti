@@ -7363,17 +7363,42 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String githubConnectedToast(String login) {
+    return 'Připojeno ke GitHubu jako @$login';
+  }
+
+  @override
+  String get githubConnectSaveFailed =>
+      'GitHub ho přijal, ale toto zařízení ho nedokázalo uložit. Zkus to znovu.';
+
+  @override
+  String get githubConnectSaveFailedTitle => 'Token nebyl uložen';
+
+  @override
   String get githubCreateTokenButton => 'Vytvořit token na GitHubu';
 
   @override
   String get githubCreateTokenOpenFailed =>
-      'Prohlížeč se nepodařilo otevřít. Vytvoř token na github.com v Settings → Developer settings → Personal access tokens.';
+      'Vytvoř token na github.com v Settings → Developer settings → Personal access tokens.';
+
+  @override
+  String get githubCreateTokenOpenFailedTitle => 'Prohlížeč se neotevřel';
 
   @override
   String get githubDescriptionHeading => 'Popis';
 
   @override
   String get githubDisconnectButton => 'Odpojit';
+
+  @override
+  String get githubDisconnectedToast => 'Odpojeno od GitHubu';
+
+  @override
+  String get githubDisconnectFailed =>
+      'Toto zařízení nedokázalo token odebrat. Zkus to znovu.';
+
+  @override
+  String get githubDisconnectFailedTitle => 'Token nebyl odebrán';
 
   @override
   String get githubFailureForbidden =>
