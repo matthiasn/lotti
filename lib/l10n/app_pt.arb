@@ -486,6 +486,7 @@
   "agentSummarySetStatus": "Definir o estado como {status}",
   "agentSummarySetTitle": "Definir o título como \"{title}\"",
   "agentSummarySuggestFollowUpTask": "Propor uma tarefa de acompanhamento",
+  "agentSummarySuggestNote": "Adicionar esta nota ao evento",
   "agentSummarySuggestPerson": "{name} estava lá",
   "agentSummarySuggestPersonUnnamed": "Alguém estava lá",
   "agentSummaryTimeEntry": "Registro de tempo {range}: \"{summary}\"",
@@ -790,6 +791,7 @@
   "aiCardProposalKindEstimate": "Estimativa",
   "aiCardProposalKindLabel": "Etiqueta",
   "aiCardProposalKindMedia": "Multimédia",
+  "aiCardProposalKindNote": "Nota",
   "aiCardProposalKindPriority": "Prioridade",
   "aiCardProposalKindRemove": "Remover",
   "aiCardProposalKindStatus": "Estado",
@@ -3164,6 +3166,7 @@
   "eventsChangeCover": "Alterar capa",
   "eventsDeleteEvent": "Excluir evento",
   "eventsFilterTooltip": "Filtrar eventos",
+  "eventsLanguageLabel": "Idioma",
   "eventsMetricPhotos": "{count, plural, =1{1 foto} other{{count} fotos}}",
   "@eventsMetricPhotos": {
     "placeholders": {
@@ -3188,6 +3191,9 @@
   "eventsPeoplePickerTitle": "Quem estava lá?",
   "eventsPeopleSaveFailed": "Não foi possível atualizar quem estava lá.",
   "eventsPeopleSection": "Pessoas",
+  "eventsPhotoAnalysisOpen": "Abrir a análise da foto",
+  "eventsPhotoAnalysisOpenEntry": "Abrir foto",
+  "eventsPhotoAnalysisTitle": "O que a foto mostra",
   "eventsPhotosSection": "Fotos",
   "eventsRatingStarLabel": "Avalia com {starIndex} de {totalStars} estrelas",
   "eventsRecapAwaitingContent": "Adicione uma foto ou nota e a recapitulação aparecerá aqui.",

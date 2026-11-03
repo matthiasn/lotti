@@ -6,6 +6,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/flags/language_flag.dart';
+import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:lotti/widgets/settings/settings_card.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -142,5 +143,50 @@ class LanguageSelectionModalContent extends ConsumerWidget {
       onChanged: (value) => queryNotifier.value = value,
       onClear: () => queryNotifier.value = '',
     );
+  }
+}
+
+/// Opens the language picker: a search header over
+/// [LanguageSelectionModalContent] with [initialLanguageCode] pinned on top.
+/// [onSelected] receives the picked language's code, or null when the user
+/// clears it, and the sheet closes once it has run. The one way a task, an
+/// event and a category pick their language, so the pickers cannot drift.
+Future<void> showLanguageSelectionModal({
+  required BuildContext context,
+  required String? initialLanguageCode,
+  required Future<void> Function(String? languageCode) onSelected,
+  required EdgeInsets headerPadding,
+  EdgeInsets? padding,
+}) async {
+  final searchQuery = ValueNotifier<String>('');
+  final searchController = TextEditingController();
+
+  try {
+    await ModalUtils.showSinglePageModal<void>(
+      context: context,
+      titleWidget: Padding(
+        padding: headerPadding,
+        child: LanguageSelectionModalContent.buildHeader(
+          context: context,
+          controller: searchController,
+          queryNotifier: searchQuery,
+        ),
+      ),
+      padding: padding,
+      builder: (BuildContext modalContext) {
+        return LanguageSelectionModalContent(
+          initialLanguageCode: initialLanguageCode,
+          searchQuery: searchQuery,
+          onLanguageSelected: (SupportedLanguage? language) async {
+            await onSelected(language?.code);
+            if (!modalContext.mounted) return;
+            Navigator.pop(modalContext);
+          },
+        );
+      },
+    );
+  } finally {
+    searchController.dispose();
+    searchQuery.dispose();
   }
 }

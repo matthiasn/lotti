@@ -7,6 +7,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
+import 'package:lotti/classes/event_data.dart';
+import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
@@ -225,6 +227,95 @@ void main() {
             any(),
             stackTrace: any(named: 'stackTrace'),
             subDomain: 'updateCategoryId',
+          ),
+        ).called(1);
+      });
+    });
+
+    group('changeEventData', () {
+      final event = JournalEntity.event(
+        meta: testTask.meta.copyWith(id: 'event-1'),
+        data: const EventData(
+          title: 'Gala',
+          stars: 4,
+          status: EventStatus.completed,
+          coverArtId: 'cover-since',
+        ),
+        entryText: const EntryText(plainText: 'The note', markdown: 'The note'),
+      );
+
+      setUp(() {
+        when(
+          () => mockPersistenceLogic.updateEntity(any(), any()),
+        ).thenAnswer((_) async => true);
+      });
+
+      test('changes the stored data, keeping its note and every field the '
+          'change leaves alone (MetaOnStored)', () async {
+        final result = await repository.changeEventData(
+          'event-1',
+          (stored) => stored.copyWith(languageCode: 'de'),
+        );
+
+        expect(result, isTrue);
+        final written = changedOn('event-1', event)! as JournalEvent;
+        expect(written.data.languageCode, 'de');
+        expect(written.data.coverArtId, 'cover-since');
+        expect(written.entryText?.plainText, 'The note');
+      });
+
+      test('a change that declines writes nothing', () async {
+        await repository.changeEventData('event-1', (_) => null);
+
+        expect(changedOn('event-1', event), isNull);
+      });
+
+      test('an entry that is not an event is left alone and reported as a '
+          'failure', () async {
+        // The store hands the change the task it holds, as a write finds it.
+        when(
+          () => mockPersistenceLogic.updateEntity(testTask.id, any()),
+        ).thenAnswer((invocation) async {
+          final change =
+              invocation.positionalArguments[1]
+                  as JournalEntity? Function(JournalEntity);
+          return change(testTask) == null;
+        });
+
+        final result = await repository.changeEventData(
+          testTask.id,
+          (stored) => stored.copyWith(languageCode: 'de'),
+        );
+
+        expect(result, isFalse);
+      });
+
+      test('a write that is not stored is reported as a failure', () async {
+        when(
+          () => mockPersistenceLogic.updateEntity(any(), any()),
+        ).thenAnswer((_) async => false);
+
+        expect(
+          await repository.changeEventData('event-1', (stored) => stored),
+          isFalse,
+        );
+      });
+
+      test('a thrown exception is logged and reported as a failure', () async {
+        when(
+          () => mockPersistenceLogic.updateEntity(any(), any()),
+        ).thenThrow(Exception('Test exception'));
+
+        expect(
+          await repository.changeEventData('event-1', (stored) => stored),
+          isFalse,
+        );
+        verify(
+          () => mockDomainLogger.error(
+            LogDomain.persistence,
+            any(),
+            stackTrace: any(named: 'stackTrace'),
+            subDomain: 'changeEventData',
           ),
         ).called(1);
       });

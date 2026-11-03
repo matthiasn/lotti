@@ -19,7 +19,16 @@ mixin _$EventData {
 /// have none until the user picks one (or one is derived from a linked
 /// photo); the UI falls back to a category-tinted card.
  String? get coverArtId;/// Horizontal crop offset for the cover art (0.0 = left … 1.0 = right).
- double get coverArtCropX;
+ double get coverArtCropX;/// The language the event's record is kept in (a `SupportedLanguage`
+/// code such as `de`): the event agent's recap and suggestions, the
+/// analyses of its photos and the summaries of its recordings are all
+/// written in it. Null until the agent reads it from the first voice memo
+/// or the user picks one.
+ String? get languageCode;/// Who set [languageCode] — the agent (from a voice memo) or the user.
+/// The agent only ever fills an empty language; the user can change it
+/// any time. Defaults to [ChangeSource.user], the safe reading for a
+/// value whose author is unknown.
+@JsonKey(unknownEnumValue: ChangeSource.user) ChangeSource get languageSource;
 /// Create a copy of EventData
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -32,16 +41,16 @@ $EventDataCopyWith<EventData> get copyWith => _$EventDataCopyWithImpl<EventData>
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is EventData&&(identical(other.title, title) || other.title == title)&&(identical(other.stars, stars) || other.stars == stars)&&(identical(other.status, status) || other.status == status)&&(identical(other.coverArtId, coverArtId) || other.coverArtId == coverArtId)&&(identical(other.coverArtCropX, coverArtCropX) || other.coverArtCropX == coverArtCropX));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is EventData&&(identical(other.title, title) || other.title == title)&&(identical(other.stars, stars) || other.stars == stars)&&(identical(other.status, status) || other.status == status)&&(identical(other.coverArtId, coverArtId) || other.coverArtId == coverArtId)&&(identical(other.coverArtCropX, coverArtCropX) || other.coverArtCropX == coverArtCropX)&&(identical(other.languageCode, languageCode) || other.languageCode == languageCode)&&(identical(other.languageSource, languageSource) || other.languageSource == languageSource));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,title,stars,status,coverArtId,coverArtCropX);
+int get hashCode => Object.hash(runtimeType,title,stars,status,coverArtId,coverArtCropX,languageCode,languageSource);
 
 @override
 String toString() {
-  return 'EventData(title: $title, stars: $stars, status: $status, coverArtId: $coverArtId, coverArtCropX: $coverArtCropX)';
+  return 'EventData(title: $title, stars: $stars, status: $status, coverArtId: $coverArtId, coverArtCropX: $coverArtCropX, languageCode: $languageCode, languageSource: $languageSource)';
 }
 
 
@@ -52,7 +61,7 @@ abstract mixin class $EventDataCopyWith<$Res>  {
   factory $EventDataCopyWith(EventData value, $Res Function(EventData) _then) = _$EventDataCopyWithImpl;
 @useResult
 $Res call({
- String title, double stars, EventStatus status, String? coverArtId, double coverArtCropX
+ String title, double stars, EventStatus status, String? coverArtId, double coverArtCropX, String? languageCode,@JsonKey(unknownEnumValue: ChangeSource.user) ChangeSource languageSource
 });
 
 
@@ -69,14 +78,16 @@ class _$EventDataCopyWithImpl<$Res>
 
 /// Create a copy of EventData
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? title = null,Object? stars = null,Object? status = null,Object? coverArtId = freezed,Object? coverArtCropX = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? title = null,Object? stars = null,Object? status = null,Object? coverArtId = freezed,Object? coverArtCropX = null,Object? languageCode = freezed,Object? languageSource = null,}) {
   return _then(_self.copyWith(
 title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
 as String,stars: null == stars ? _self.stars : stars // ignore: cast_nullable_to_non_nullable
 as double,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as EventStatus,coverArtId: freezed == coverArtId ? _self.coverArtId : coverArtId // ignore: cast_nullable_to_non_nullable
 as String?,coverArtCropX: null == coverArtCropX ? _self.coverArtCropX : coverArtCropX // ignore: cast_nullable_to_non_nullable
-as double,
+as double,languageCode: freezed == languageCode ? _self.languageCode : languageCode // ignore: cast_nullable_to_non_nullable
+as String?,languageSource: null == languageSource ? _self.languageSource : languageSource // ignore: cast_nullable_to_non_nullable
+as ChangeSource,
   ));
 }
 
@@ -161,10 +172,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String title,  double stars,  EventStatus status,  String? coverArtId,  double coverArtCropX)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String title,  double stars,  EventStatus status,  String? coverArtId,  double coverArtCropX,  String? languageCode, @JsonKey(unknownEnumValue: ChangeSource.user)  ChangeSource languageSource)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _EventData() when $default != null:
-return $default(_that.title,_that.stars,_that.status,_that.coverArtId,_that.coverArtCropX);case _:
+return $default(_that.title,_that.stars,_that.status,_that.coverArtId,_that.coverArtCropX,_that.languageCode,_that.languageSource);case _:
   return orElse();
 
 }
@@ -182,10 +193,10 @@ return $default(_that.title,_that.stars,_that.status,_that.coverArtId,_that.cove
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String title,  double stars,  EventStatus status,  String? coverArtId,  double coverArtCropX)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String title,  double stars,  EventStatus status,  String? coverArtId,  double coverArtCropX,  String? languageCode, @JsonKey(unknownEnumValue: ChangeSource.user)  ChangeSource languageSource)  $default,) {final _that = this;
 switch (_that) {
 case _EventData():
-return $default(_that.title,_that.stars,_that.status,_that.coverArtId,_that.coverArtCropX);case _:
+return $default(_that.title,_that.stars,_that.status,_that.coverArtId,_that.coverArtCropX,_that.languageCode,_that.languageSource);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -202,10 +213,10 @@ return $default(_that.title,_that.stars,_that.status,_that.coverArtId,_that.cove
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String title,  double stars,  EventStatus status,  String? coverArtId,  double coverArtCropX)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String title,  double stars,  EventStatus status,  String? coverArtId,  double coverArtCropX,  String? languageCode, @JsonKey(unknownEnumValue: ChangeSource.user)  ChangeSource languageSource)?  $default,) {final _that = this;
 switch (_that) {
 case _EventData() when $default != null:
-return $default(_that.title,_that.stars,_that.status,_that.coverArtId,_that.coverArtCropX);case _:
+return $default(_that.title,_that.stars,_that.status,_that.coverArtId,_that.coverArtCropX,_that.languageCode,_that.languageSource);case _:
   return null;
 
 }
@@ -217,7 +228,7 @@ return $default(_that.title,_that.stars,_that.status,_that.coverArtId,_that.cove
 @JsonSerializable()
 
 class _EventData implements EventData {
-  const _EventData({required this.title, required this.stars, required this.status, this.coverArtId, this.coverArtCropX = 0.5});
+  const _EventData({required this.title, required this.stars, required this.status, this.coverArtId, this.coverArtCropX = 0.5, this.languageCode, @JsonKey(unknownEnumValue: ChangeSource.user) this.languageSource = ChangeSource.user});
   factory _EventData.fromJson(Map<String, dynamic> json) => _$EventDataFromJson(json);
 
 @override final  String title;
@@ -229,6 +240,17 @@ class _EventData implements EventData {
 @override final  String? coverArtId;
 /// Horizontal crop offset for the cover art (0.0 = left … 1.0 = right).
 @override@JsonKey() final  double coverArtCropX;
+/// The language the event's record is kept in (a `SupportedLanguage`
+/// code such as `de`): the event agent's recap and suggestions, the
+/// analyses of its photos and the summaries of its recordings are all
+/// written in it. Null until the agent reads it from the first voice memo
+/// or the user picks one.
+@override final  String? languageCode;
+/// Who set [languageCode] — the agent (from a voice memo) or the user.
+/// The agent only ever fills an empty language; the user can change it
+/// any time. Defaults to [ChangeSource.user], the safe reading for a
+/// value whose author is unknown.
+@override@JsonKey(unknownEnumValue: ChangeSource.user) final  ChangeSource languageSource;
 
 /// Create a copy of EventData
 /// with the given fields replaced by the non-null parameter values.
@@ -243,16 +265,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _EventData&&(identical(other.title, title) || other.title == title)&&(identical(other.stars, stars) || other.stars == stars)&&(identical(other.status, status) || other.status == status)&&(identical(other.coverArtId, coverArtId) || other.coverArtId == coverArtId)&&(identical(other.coverArtCropX, coverArtCropX) || other.coverArtCropX == coverArtCropX));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _EventData&&(identical(other.title, title) || other.title == title)&&(identical(other.stars, stars) || other.stars == stars)&&(identical(other.status, status) || other.status == status)&&(identical(other.coverArtId, coverArtId) || other.coverArtId == coverArtId)&&(identical(other.coverArtCropX, coverArtCropX) || other.coverArtCropX == coverArtCropX)&&(identical(other.languageCode, languageCode) || other.languageCode == languageCode)&&(identical(other.languageSource, languageSource) || other.languageSource == languageSource));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,title,stars,status,coverArtId,coverArtCropX);
+int get hashCode => Object.hash(runtimeType,title,stars,status,coverArtId,coverArtCropX,languageCode,languageSource);
 
 @override
 String toString() {
-  return 'EventData(title: $title, stars: $stars, status: $status, coverArtId: $coverArtId, coverArtCropX: $coverArtCropX)';
+  return 'EventData(title: $title, stars: $stars, status: $status, coverArtId: $coverArtId, coverArtCropX: $coverArtCropX, languageCode: $languageCode, languageSource: $languageSource)';
 }
 
 
@@ -263,7 +285,7 @@ abstract mixin class _$EventDataCopyWith<$Res> implements $EventDataCopyWith<$Re
   factory _$EventDataCopyWith(_EventData value, $Res Function(_EventData) _then) = __$EventDataCopyWithImpl;
 @override @useResult
 $Res call({
- String title, double stars, EventStatus status, String? coverArtId, double coverArtCropX
+ String title, double stars, EventStatus status, String? coverArtId, double coverArtCropX, String? languageCode,@JsonKey(unknownEnumValue: ChangeSource.user) ChangeSource languageSource
 });
 
 
@@ -280,14 +302,16 @@ class __$EventDataCopyWithImpl<$Res>
 
 /// Create a copy of EventData
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? title = null,Object? stars = null,Object? status = null,Object? coverArtId = freezed,Object? coverArtCropX = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? title = null,Object? stars = null,Object? status = null,Object? coverArtId = freezed,Object? coverArtCropX = null,Object? languageCode = freezed,Object? languageSource = null,}) {
   return _then(_EventData(
 title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
 as String,stars: null == stars ? _self.stars : stars // ignore: cast_nullable_to_non_nullable
 as double,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as EventStatus,coverArtId: freezed == coverArtId ? _self.coverArtId : coverArtId // ignore: cast_nullable_to_non_nullable
 as String?,coverArtCropX: null == coverArtCropX ? _self.coverArtCropX : coverArtCropX // ignore: cast_nullable_to_non_nullable
-as double,
+as double,languageCode: freezed == languageCode ? _self.languageCode : languageCode // ignore: cast_nullable_to_non_nullable
+as String?,languageSource: null == languageSource ? _self.languageSource : languageSource // ignore: cast_nullable_to_non_nullable
+as ChangeSource,
   ));
 }
 

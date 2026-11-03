@@ -251,8 +251,8 @@ Against `main` at #4937. Each verdict was checked in the code, not the PR text.
 |---|---|---|---|
 | 1 | Explore what an event agent needs for a good record | **Done (exploration)** | This document. The agent already exists (recap writer, `update_report` with `oneLiner`/`tldr`/`content`, content gate, auto-attach — `event_agent_workflow.dart`, `event_tool_definitions.dart`); what it lacks is inputs (people, see 5) and reach (search, see 4), not a new agent |
 | 2 | One-liner and TLDR in the header | **Done** | #4935: `recapOneLiner` under the title (`event_detail_view_hero_content_part.dart`, `EventDetailPage._recapOneLiner`); TLDR on the task agent's card since #4937 (`event_ai_summary_card.dart`) |
-| 3 | Image analysis automatically in event context | **Partly done** | Already runs: the Add sheet passes `linkedFromId: eventId`, the automatic trigger uses it as the subject, and `subjectAgentLinkTypes` resolves the event agent through `agentEvent` (`subject_agent_lookup.dart`). Since #4935 the result reaches the page (captions) and the agent (photo digest). Missing: event context in the analysis prompt (`ai_input_repository.dart` returns early for non-tasks), backfill for event photos (task-only), a deliberate rather than incidental wake (`linkedTaskId` in `skill_inference_runner.dart`), and a profile fallback for an event without an agent (`subjectProfileIdOf` has no event arm) |
-| 4 | Embeddings + natural-language search | **Open** | `EmbeddingContentExtractor` has no `JournalEvent` or image-analysis arm; event recaps are never embedded (only the task agent calls `processAgentReport`); `QueryJournalCrawler.sourceTypes` leaves out `JournalEvent`, so the front agent drops events even from full-text hits |
+| 3 | Image analysis automatically in event context | **Done (PR D), one gap** | Runs automatically as before; since PR D `frameImageAnalysis` runs the plain image skill for any subject that is not a task (every seeded profile automates the task-context skill, which answered "nothing related to a task"), framed by the event's title, time and note and written in its language; the tool and tier rules caption the photo; the wake of the events holding the photo is deliberate (`_notifyParentTasksOfNestedResponse`). A tap on a timeline photo opens its whole analysis. Still open: backfill for event photos (task-only) |
+| 4 | Embeddings + natural-language search | **Done (PR C), two gaps** | Events embed as title + note (`kEntityTypeEvent`, `EVENT` token); the recap embeds keyed to the event (`embedAgentReport`) and resolves to it in `searchRelatedEntries`; `QueryJournalCrawler` reads events while `enableEventsFlag` is on. Still open: image analyses are not embedded (their crawl kind does not exist), and "with Pip" is answered by meaning through the recap rather than by the exact person → event read |
 | 5 | Person tags linked to tracked relationships | **Done (PR A)** | No new link: an event's people are the `RelationshipLink`s from each person to it. `getPeopleOn` / `peopleOnEntryProvider` read them, `EventPeopleRow` shows them, `showPersonPicker` + `setPeopleOn` change them, and the event agent's digest lists them — see [events](../../knowledge/features/events.md#who-it-was-with) |
 | 6 | Inventory of the event UI elements | **Done** | [UI inventory](#ui-inventory), updated for #4937 |
 | 7 | Align the event timeline with the unified timeline | **Done (audit PR)** | `EventTimeline` renders on `DesignSystemTimelineRow` like goals and people; `lib/widgets/timeline/` deleted — what moved is in the [inventory](#ui-inventory) |
@@ -261,6 +261,8 @@ Against `main` at #4937. Each verdict was checked in the code, not the PR text.
 | 10 | Rating in the status row | **Done** | #4935: `EventStarRating` inside the state-row `Wrap` with category and status |
 | 11 | Hover on single stars only | **Done** | #4935: one `DsQuietInk` per star, `hoverScale` on the hovered star; per-star semantic actions and the `IconSizes.m` token added in review |
 | 12 | Coding prompt / audit | **Done** | This audit |
+| 13 | One language per event | **Done (PR D)** | `EventData.languageCode` + `languageSource`; the agent's `set_event_language` fills it from the first voice memo and never overrides it; the hero's language pill is the user's; recap, suggestions, photo analyses and recording summaries are written in it |
+| 14 | The agent's note of what happened, visible | **Done (PR D)** | There was no note tool: the agent's account landed in private observations. `suggest_note` is a deferred proposal shown in full under its row; confirming adds it to the timeline as the user's note |
 
 #4937 is not a checklist item of its own: it is part of item 2 (the TLDR now
 lives on the task agent's card) and of item 1 (the event agent shares the
@@ -290,6 +292,15 @@ open from this step: the relationship agent's facts renderer lists only
 The event timeline moved onto `DesignSystemTimelineRow` in the audit PR
 itself; see the [inventory](#ui-inventory) for what changed.
 
+### ~~PR C~~ — Events in natural-language search (item 4), landed with PR D
+
+Landed as below, except two choices. Events keep the crawl's `text` kind
+rather than a new `QuerySourceKind.event`: `QueryEvidence.kind` decodes
+without an unknown fallback, so a new value would break older peers reading
+a synced chat; a cited event opens on `/journal/:id`, whose linked-event card
+opens the event page. Image analyses stay unembedded until the crawl can
+resolve them. The original plan follows.
+
 ### PR C — Events in natural-language search (item 4)
 
 - **Index:** `EmbeddingContentExtractor` gains `JournalEvent` (title + note,
@@ -307,6 +318,12 @@ itself; see the [inventory](#ui-inventory) for what changed.
   reads PR A's links exactly; embeddings answer only the open half ("…at
   the Ice Garden"), intersected with that set and sorted by date for "when
   was the last time".
+
+### ~~PR D~~ — Image analysis with event context (item 3), landed
+
+Landed with the event language, the note suggestion and PR C; the backfill
+for event photos and the profile-fallback decision below remain open. The
+original plan follows.
 
 ### PR D — Image analysis with event context (item 3)
 

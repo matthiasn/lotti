@@ -102,6 +102,9 @@ String? localizedChangeSummary(
 
   EventAgentToolNames.suggestFollowUpTask => _suggestFollowUp(messages, args),
   EventAgentToolNames.suggestPerson => _suggestPerson(messages, args),
+  // The note itself is the row's detail; the sentence says what confirming
+  // does with it.
+  EventAgentToolNames.suggestNote => messages.agentSummarySuggestNote,
 
   // Batch tools reach the row already exploded into singular items, each
   // carrying the model's own element as its args.

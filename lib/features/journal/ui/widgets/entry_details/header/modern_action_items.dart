@@ -9,7 +9,6 @@ import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/labels/ui/widgets/label_selection_modal_utils.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/flags/language_flag.dart';
-import 'package:lotti/widgets/modal/index.dart';
 import 'package:lotti/widgets/modal/language_selection_modal_content.dart';
 import 'package:lotti/widgets/modal/modal_action_sheet.dart';
 import 'package:lotti/widgets/modal/modal_sheet_action.dart';
@@ -283,50 +282,14 @@ class ModernSetTaskLanguageItem extends ConsumerWidget {
       onTap: () async {
         Navigator.of(context).pop();
         if (!context.mounted) return;
-        await _openLanguageSelector(
+        await showLanguageSelectionModal(
           context: context,
           initialLanguageCode: task.data.languageCode,
-          onLanguageChanged: notifier.updateTaskLanguage,
+          onSelected: notifier.updateTaskLanguage,
+          headerPadding: const EdgeInsets.only(top: 10, bottom: 10),
+          padding: const EdgeInsets.symmetric(vertical: 20),
         );
       },
     );
-  }
-
-  Future<void> _openLanguageSelector({
-    required BuildContext context,
-    required String? initialLanguageCode,
-    required Future<void> Function(String?) onLanguageChanged,
-  }) async {
-    final searchQuery = ValueNotifier<String>('');
-    final searchController = TextEditingController();
-
-    try {
-      await ModalUtils.showSinglePageModal<void>(
-        context: context,
-        titleWidget: Padding(
-          padding: const EdgeInsets.only(top: 10, bottom: 10),
-          child: LanguageSelectionModalContent.buildHeader(
-            context: context,
-            controller: searchController,
-            queryNotifier: searchQuery,
-          ),
-        ),
-        padding: const EdgeInsets.symmetric(vertical: 20),
-        builder: (BuildContext modalContext) {
-          return LanguageSelectionModalContent(
-            initialLanguageCode: initialLanguageCode,
-            searchQuery: searchQuery,
-            onLanguageSelected: (SupportedLanguage? language) async {
-              await onLanguageChanged(language?.code);
-              if (!modalContext.mounted) return;
-              Navigator.pop(modalContext);
-            },
-          );
-        },
-      );
-    } finally {
-      searchController.dispose();
-      searchQuery.dispose();
-    }
   }
 }

@@ -1,4 +1,5 @@
 import 'package:lotti/classes/event_status.dart';
+import 'package:lotti/classes/supported_language.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
 import 'package:lotti/features/events/ui/model/event_view_data.dart';
@@ -42,6 +43,7 @@ class EventDetailView extends StatelessWidget {
     this.onRenameTitle,
     this.onTapCategory,
     this.onTapStatus,
+    this.onTapLanguage,
     this.onTapDateTime,
     this.onSetRating,
     this.onAddCover,
@@ -49,6 +51,7 @@ class EventDetailView extends StatelessWidget {
     this.onSetCover,
     this.onDelete,
     this.onOpenTimelineEntry,
+    this.onOpenPhoto,
     this.onOpenTask,
     this.aiSummaryCard,
     this.bottomBar,
@@ -78,6 +81,10 @@ class EventDetailView extends StatelessWidget {
   /// directly.
   final VoidCallback? onTapCategory;
   final VoidCallback? onTapStatus;
+
+  /// Opens the language picker for the event's record (see
+  /// `EventData.languageCode`).
+  final VoidCallback? onTapLanguage;
   final VoidCallback? onTapDateTime;
   final ValueChanged<double>? onSetRating;
 
@@ -102,6 +109,10 @@ class EventDetailView extends StatelessWidget {
   /// as static (and drop the trailing "open" chevron) so the affordance always
   /// matches the actual behavior.
   final ValueChanged<String>? onOpenTimelineEntry;
+
+  /// Opens a timeline photo's analysis (receives the image's entry id). When
+  /// null the photo is part of its row and opens the entry like the rest.
+  final ValueChanged<String>? onOpenPhoto;
 
   /// Opens a linked task's detail page (receives the task id). When null (or a
   /// row has no id) the task rows render as static.
@@ -152,6 +163,7 @@ class EventDetailView extends StatelessWidget {
               onRenameTitle: onRenameTitle,
               onTapCategory: onTapCategory,
               onTapStatus: onTapStatus,
+              onTapLanguage: onTapLanguage,
               onTapDateTime: onTapDateTime,
               onSetRating: onSetRating,
               onAddCover: onAddCover,
@@ -278,6 +290,7 @@ class EventDetailView extends StatelessWidget {
         EventTimeline(
           entries: data.timeline,
           onOpenEntry: onOpenTimelineEntry,
+          onOpenPhoto: onOpenPhoto,
         ),
     ];
   }

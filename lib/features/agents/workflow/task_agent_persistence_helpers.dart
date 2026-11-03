@@ -16,30 +16,15 @@ extension TaskAgentPersistenceHelpers on TaskAgentWorkflow {
     required String taskId,
     String? reportTldr,
     String? reportOneLiner,
-  }) async {
-    final store = embeddingStore;
-    final repo = embeddingRepository;
-    if (store == null || repo == null) return;
-
-    try {
-      if (!await journalDb.getConfigFlag(enableEmbeddingsFlag) ||
-          !await repo.isInstalled()) {
-        return;
-      }
-
-      await EmbeddingProcessor.processAgentReport(
-        reportId: reportId,
-        content: reportContent,
-        tldr: reportTldr,
-        oneLiner: reportOneLiner,
-        taskId: taskId,
-        subtype: AgentReportScopes.current,
-        journalDb: journalDb,
-        embeddingStore: store,
-        embeddingRepository: repo,
-      );
-    } catch (e, s) {
-      logError('failed to embed agent report', error: e, stackTrace: s);
-    }
-  }
+  }) => embedAgentReport(
+    embeddingStore: embeddingStore,
+    embeddingRepository: embeddingRepository,
+    journalDb: journalDb,
+    reportId: reportId,
+    reportContent: reportContent,
+    subjectId: taskId,
+    reportTldr: reportTldr,
+    reportOneLiner: reportOneLiner,
+    logError: logError,
+  );
 }

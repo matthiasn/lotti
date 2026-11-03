@@ -16,6 +16,7 @@ void main() {
     WidgetTester tester,
     List<EventTimelineEntry> entries, {
     ValueChanged<String>? onOpenEntry,
+    ValueChanged<String>? onOpenPhoto,
     double width = 400,
   }) async {
     await tester.pumpWidget(
@@ -24,7 +25,11 @@ void main() {
           alignment: Alignment.topLeft,
           child: SizedBox(
             width: width,
-            child: EventTimeline(entries: entries, onOpenEntry: onOpenEntry),
+            child: EventTimeline(
+              entries: entries,
+              onOpenEntry: onOpenEntry,
+              onOpenPhoto: onOpenPhoto,
+            ),
           ),
         ),
       ),
@@ -301,6 +306,53 @@ void main() {
       ], onOpenEntry: (_) => fail('nothing to open'));
 
       expect(rows(tester).single.onTap, isNull);
+    });
+
+    testWidgets('a photo opens what it was seen as, the rest of its row '
+        'still opens the entry', (tester) async {
+      final opened = <String>[];
+      final seen = <String>[];
+      await pumpTimeline(
+        tester,
+        [photo],
+        onOpenEntry: opened.add,
+        onOpenPhoto: seen.add,
+      );
+
+      await tester.tap(find.byType(EventTimelinePhotoBand));
+      await tester.tap(find.text('The orbital habitat at dusk.'));
+      expect(seen, ['photo-1', 'photo-1']);
+      expect(opened, isEmpty);
+
+      await tester.tap(find.text('19:05 · Photo'));
+      expect(opened, ['photo-1']);
+    });
+
+    testWidgets("a photo's own target is announced as its analysis", (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      try {
+        await pumpTimeline(tester, [photo], onOpenPhoto: (_) {});
+
+        expect(
+          find.bySemanticsLabel(RegExp("Open the photo's analysis")),
+          findsOneWidget,
+        );
+      } finally {
+        handle.dispose();
+      }
+    });
+
+    testWidgets('without a photo handler the photo is part of its row', (
+      tester,
+    ) async {
+      final opened = <String>[];
+      await pumpTimeline(tester, [photo], onOpenEntry: opened.add);
+
+      await tester.tap(find.byType(EventTimelinePhotoBand));
+
+      expect(opened, ['photo-1']);
     });
 
     testWidgets('without a handler every row is inert', (tester) async {

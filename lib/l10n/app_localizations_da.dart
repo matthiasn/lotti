@@ -1091,6 +1091,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get agentSummarySuggestFollowUpTask => 'Foreslå en opfølgningsopgave';
 
   @override
+  String get agentSummarySuggestNote => 'Tilføj denne note til begivenheden';
+
+  @override
   String agentSummarySuggestPerson(Object name) {
     return '$name var med';
   }
@@ -1671,6 +1674,9 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get aiCardProposalKindMedia => 'Medier';
+
+  @override
+  String get aiCardProposalKindNote => 'Note';
 
   @override
   String get aiCardProposalKindPriority => 'Prioritet';
@@ -6807,6 +6813,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get eventsFilterTooltip => 'Filtrer begivenheder';
 
   @override
+  String get eventsLanguageLabel => 'Sprog';
+
+  @override
   String eventsMetricPhotos(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -6851,6 +6860,15 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get eventsPeopleSection => 'Personer';
+
+  @override
+  String get eventsPhotoAnalysisOpen => 'Åbn fotoets analyse';
+
+  @override
+  String get eventsPhotoAnalysisOpenEntry => 'Åbn foto';
+
+  @override
+  String get eventsPhotoAnalysisTitle => 'Hvad fotoet viser';
 
   @override
   String get eventsPhotosSection => 'Fotos';

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/database/logging_types.dart';
+import 'package:lotti/features/agents/tools/event_language_handler.dart';
 import 'package:lotti/features/agents/tools/event_tool_definitions.dart';
 import 'package:lotti/features/agents/workflow/event_agent_strategy.dart';
 import 'package:lotti/features/agents/workflow/event_people_directory.dart';
@@ -54,6 +55,9 @@ void main() {
   late MockDomainLogger mockDomainLogger;
   late int peopleLoads;
   late Future<EventPeopleDirectory> Function() loadPeople;
+  late List<String> languageCalls;
+  late Future<EventLanguageResult> Function(String code) setLanguage;
+  late Future<bool> Function() hasPendingNote;
 
   /// Pip is free to suggest; Rocko is with the event already; Oona was
   /// suggested and still waits; Kai was dismissed.
@@ -83,6 +87,13 @@ void main() {
       peopleLoads++;
       return directory;
     };
+    languageCalls = [];
+    hasPendingNote = () async => false;
+    setLanguage = (code) async => EventLanguageResult(
+      success: true,
+      didWrite: true,
+      message: 'Event language set to "$code".',
+    );
     strategy = EventAgentStrategy(
       domainLogger: mockDomainLogger,
       syncService: mockSyncService,
@@ -90,8 +101,33 @@ void main() {
       threadId: _threadId,
       runKey: _runKey,
       loadPeople: () => loadPeople(),
+      setLanguage: (code) {
+        languageCalls.add(code);
+        return setLanguage(code);
+      },
+      hasPendingNote: () => hasPendingNote(),
     );
   });
+
+  /// Sends one call of [toolName] with [args] and answers what the model
+  /// was told.
+  Future<String> respond(
+    String toolName,
+    Map<String, dynamic> args, {
+    String id = 'c',
+  }) async {
+    await strategy.processToolCalls(
+      toolCalls: [_makeToolCall(id: id, name: toolName, args: args)],
+      manager: mockManager,
+    );
+    return verify(
+          () => mockManager.addToolResponse(
+            toolCallId: id,
+            response: captureAny(named: 'response'),
+          ),
+        ).captured.single
+        as String;
+  }
 
   group('update_report', () {
     test('accumulates oneLiner, tldr, and content', () async {
@@ -463,6 +499,123 @@ void main() {
         'Error: the people could not be read (StateError).',
       );
       expect(strategy.extractDeferredItems(), isEmpty);
+    });
+  });
+
+  group('set_event_language', () {
+    test(
+      'hands the code to the handler and tells the model its answer',
+      () async {
+        final response = await respond(EventAgentToolNames.setEventLanguage, {
+          'languageCode': 'de',
+        });
+
+        expect(languageCalls, ['de']);
+        expect(response, 'Event language set to "de".');
+        // Applied in the conversation, never queued for the user.
+        expect(strategy.extractDeferredItems(), isEmpty);
+      },
+    );
+
+    test('a refused call reaches the model as the refusal', () async {
+      setLanguage = (_) async => const EventLanguageResult(
+        success: false,
+        message: 'Not set: the event has no transcribed voice memo yet.',
+      );
+
+      expect(
+        await respond(EventAgentToolNames.setEventLanguage, {
+          'languageCode': 'de',
+        }),
+        'Not set: the event has no transcribed voice memo yet.',
+      );
+    });
+
+    test(
+      'a missing code is handed on as empty, for the handler to refuse',
+      () async {
+        await respond(EventAgentToolNames.setEventLanguage, {});
+
+        expect(languageCalls, ['']);
+      },
+    );
+
+    test('a handler that throws refuses instead of ending the wake', () async {
+      setLanguage = (_) async => throw StateError('db down');
+
+      expect(
+        await respond(EventAgentToolNames.setEventLanguage, {
+          'languageCode': 'de',
+        }),
+        'Error: the language could not be set (StateError).',
+      );
+    });
+  });
+
+  group('suggest_note (deferred)', () {
+    test('queues the trimmed note for the user to confirm', () async {
+      final response = await respond(EventAgentToolNames.suggestNote, {
+        'text': '  We skated on the frozen lake until dusk.  ',
+      });
+
+      expect(response, 'Queued the note for user review.');
+      expect(strategy.extractDeferredItems(), [
+        {
+          'toolName': EventAgentToolNames.suggestNote,
+          'args': {'text': 'We skated on the frozen lake until dusk.'},
+        },
+      ]);
+    });
+
+    test("refuses a note while an earlier wake's note still awaits the "
+        'user', () async {
+      hasPendingNote = () async => true;
+
+      expect(
+        await respond(EventAgentToolNames.suggestNote, {
+          'text': 'Another account of the day.',
+        }),
+        'Not suggested: a note for this event already awaits the user.',
+      );
+      expect(strategy.extractDeferredItems(), isEmpty);
+    });
+
+    test(
+      'a failed read of the pending notes refuses, queueing nothing',
+      () async {
+        hasPendingNote = () async => throw StateError('agent db closed');
+
+        expect(
+          await respond(EventAgentToolNames.suggestNote, {
+            'text': 'An account of the day.',
+          }),
+          'Error: the pending suggestions could not be read (StateError).',
+        );
+        expect(strategy.extractDeferredItems(), isEmpty);
+      },
+    );
+
+    test('refuses an empty note, queueing nothing', () async {
+      expect(
+        await respond(EventAgentToolNames.suggestNote, {'text': '   '}),
+        'Error: "text" is required and must not be empty.',
+      );
+      expect(strategy.extractDeferredItems(), isEmpty);
+    });
+
+    test('refuses a second note in the same wake', () async {
+      await respond(EventAgentToolNames.suggestNote, {
+        'text': 'First account of the day.',
+      }, id: 'c1');
+      final second = await respond(EventAgentToolNames.suggestNote, {
+        'text': 'Second account of the day.',
+      }, id: 'c2');
+
+      expect(
+        second,
+        'Not suggested: a note was already suggested in this wake.',
+      );
+      expect(strategy.extractDeferredItems(), hasLength(1));
     });
   });
 

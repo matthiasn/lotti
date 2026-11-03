@@ -75,6 +75,7 @@ class EmbeddingService {
     taskNotification,
     audioNotification,
     aiResponseNotification,
+    eventNotification,
   };
 
   /// Starts listening to local update notifications, and reconciles the

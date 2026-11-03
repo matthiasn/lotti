@@ -7,6 +7,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/ai_attribution.dart';
 import 'package:lotti/classes/entry_text.dart';
+import 'package:lotti/classes/event_data.dart';
+import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/classes/vector_clock.dart';
@@ -967,6 +969,40 @@ void main() {
         verify(
           () => mockEmbeddingStore.moveRelatedReportEmbeddings(
             task.id,
+            'cat-new',
+          ),
+        ).called(1);
+      });
+
+      test("an event's recap follows the event to its new category", () async {
+        final event = JournalEvent(
+          meta: _meta(categoryId: 'cat-new'),
+          data: const EventData(
+            title: 'Ice garden picnic',
+            stars: 0,
+            status: EventStatus.completed,
+          ),
+          entryText: const EntryText(plainText: _longText),
+        );
+        when(
+          () => mockEmbeddingStore.getContentHash(event.id),
+        ).thenReturn(_hashOf('Ice garden picnic\n$_longText'));
+        when(
+          () => mockEmbeddingStore.getCategoryId(event.id),
+        ).thenReturn('cat-old');
+        when(
+          () => mockEmbeddingStore.moveEntityToShard(any(), any()),
+        ).thenReturn(null);
+        when(
+          () => mockEmbeddingStore.moveRelatedReportEmbeddings(any(), any()),
+        ).thenReturn(null);
+
+        final result = await processEntity(entity: event);
+
+        expect(result, isTrue);
+        verify(
+          () => mockEmbeddingStore.moveRelatedReportEmbeddings(
+            event.id,
             'cat-new',
           ),
         ).called(1);

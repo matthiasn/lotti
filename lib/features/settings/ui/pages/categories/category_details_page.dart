@@ -31,7 +31,6 @@ import 'package:lotti/widgets/category_icon_data.dart';
 import 'package:lotti/widgets/form/agent_wake_cadence_field.dart';
 import 'package:lotti/widgets/modal/confirmation_modal.dart';
 import 'package:lotti/widgets/modal/language_selection_modal_content.dart';
-import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:lotti/widgets/settings/settings_detail_scaffold.dart';
 import 'package:lotti/widgets/settings/settings_form_action_bar.dart';
 import 'package:lotti/widgets/settings/settings_form_section.dart';

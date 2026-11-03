@@ -43,8 +43,11 @@ otherwise-convenient fallbacks are deliberately absent.
 platform, and advertised capabilities: `omlxLlm`, `ollamaLlm`,
 `voxtral`, `whisper`, `sherpa`.
 
-Capabilities are auto-detected at startup by
-`makeDefaultSyncNodeCapabilityProbe`:
+Capabilities are auto-detected at startup by `defaultSyncNodeCapabilityProbe`
+— `makeDefaultSyncNodeCapabilityProbe` with the real reachability probes and
+the sherpa check (`probeSherpaAvailability`) wired in; the factory alone checks
+sherpa only when a `sherpaProbe` is passed. The list comes out sherpa first,
+then `omlxLlm`, then `ollamaLlm`:
 
 | Capability | Detected by |
 |------------|-------------|

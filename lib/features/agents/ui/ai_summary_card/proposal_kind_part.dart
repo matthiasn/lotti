@@ -22,6 +22,10 @@ enum ProposalKind {
   /// Running inference an entry is missing — image analysis, transcription
   /// or a recording summary.
   media,
+
+  /// A note the agent wrote for the user to add as their own — an event's
+  /// account of what happened.
+  note,
 }
 
 class KindMeta {
@@ -44,6 +48,8 @@ ProposalKind resolveKind(String toolName, Map<String, dynamic> args) {
       return ProposalKind.task;
     case EventAgentToolNames.suggestPerson:
       return ProposalKind.add;
+    case EventAgentToolNames.suggestNote:
+      return ProposalKind.note;
     case TaskAgentToolNames.addMultipleChecklistItems:
     case TaskAgentToolNames.addChecklistItem:
     case TaskAgentToolNames.createFollowUpTask:
@@ -120,5 +126,7 @@ KindMeta kindMeta(BuildContext context, ProposalKind kind) {
       return KindMeta(
         label: messages.aiCardProposalKindMedia,
       );
+    case ProposalKind.note:
+      return KindMeta(label: messages.aiCardProposalKindNote);
   }
 }

@@ -40,6 +40,7 @@ EventCardData buildEventCardData({
   String? location = 'Rooftop Bar',
   int photoCount = 24,
   int taskCount = 2,
+  String? languageCode,
 }) {
   return EventCardData(
     id: id,
@@ -57,6 +58,7 @@ EventCardData buildEventCardData({
     location: location,
     photoCount: photoCount,
     taskCount: taskCount,
+    languageCode: languageCode,
   );
 }
 

@@ -1,6 +1,8 @@
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/event_data.dart';
+import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
@@ -703,6 +705,104 @@ void main() {
         expect(result.distances, {testTextEntry.meta.id: 0.4});
       },
     );
+
+    group('an agent report', () {
+      final event = JournalEvent(
+        meta: testTextEntry.meta.copyWith(id: 'event-1'),
+        data: const EventData(
+          title: 'Ice garden picnic',
+          stars: 0,
+          status: EventStatus.completed,
+        ),
+      );
+
+      void stubHits(List<EmbeddingSearchResult> hits) {
+        when(
+          () => mockEmbeddingRepo.embedQuery(any()),
+        ).thenAnswer((_) async => fakeVector);
+        when(
+          () => mockEmbeddingStore.search(
+            queryVector: any(named: 'queryVector'),
+            k: any(named: 'k'),
+            categoryIds: any(named: 'categoryIds'),
+          ),
+        ).thenReturn(hits);
+      }
+
+      test('finds its event: the recap names who was there, and the hit '
+          'is the event, once, at its best distance', () async {
+        stubHits([
+          const EmbeddingSearchResult(
+            entityId: 'recap-1',
+            distance: 0.2,
+            entityType: kEntityTypeAgentReport,
+            taskId: 'event-1',
+          ),
+          const EmbeddingSearchResult(
+            entityId: 'event-1',
+            distance: 0.6,
+            entityType: kEntityTypeEvent,
+          ),
+        ]);
+        when(
+          () => mockJournalDb.getJournalEntitiesForIdsUnordered({'event-1'}),
+        ).thenAnswer((_) async => [event]);
+
+        final result = await sut.searchRelatedEntries(query: 'with Pip');
+
+        expect(result.entities, [event]);
+        expect(result.distances, {'event-1': 0.2});
+      });
+
+      test(
+        "of a task never displaces the task's own hit, nearer or not",
+        () async {
+          stubHits([
+            EmbeddingSearchResult(
+              entityId: 'report-1',
+              distance: 0.1,
+              entityType: kEntityTypeAgentReport,
+              taskId: testTask.meta.id,
+            ),
+            EmbeddingSearchResult(
+              entityId: testTask.meta.id,
+              distance: 0.4,
+              entityType: kEntityTypeTask,
+            ),
+          ]);
+          when(
+            () => mockJournalDb.getJournalEntitiesForIdsUnordered(any()),
+          ).thenAnswer((_) async => [testTask]);
+
+          final result = await sut.searchRelatedEntries(query: 'report');
+
+          // The task is found by its own text, at its own distance.
+          expect(result.entities, [testTask]);
+          expect(result.distances, {testTask.meta.id: 0.4});
+        },
+      );
+
+      test(
+        "of a task stays with the task search, out of the journal's",
+        () async {
+          stubHits([
+            EmbeddingSearchResult(
+              entityId: 'report-1',
+              distance: 0.2,
+              entityType: kEntityTypeAgentReport,
+              taskId: testTask.meta.id,
+            ),
+          ]);
+          when(
+            () => mockJournalDb.getJournalEntitiesForIdsUnordered(any()),
+          ).thenAnswer((_) async => [testTask]);
+
+          final result = await sut.searchRelatedEntries(query: 'report');
+
+          expect(result.entities, isEmpty);
+        },
+      );
+    });
 
     test('returns empty while the model is not downloaded', () async {
       stubModelMissing();

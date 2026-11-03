@@ -12,6 +12,14 @@ _EventData _$EventDataFromJson(Map<String, dynamic> json) => _EventData(
   status: $enumDecode(_$EventStatusEnumMap, json['status']),
   coverArtId: json['coverArtId'] as String?,
   coverArtCropX: (json['coverArtCropX'] as num?)?.toDouble() ?? 0.5,
+  languageCode: json['languageCode'] as String?,
+  languageSource:
+      $enumDecodeNullable(
+        _$ChangeSourceEnumMap,
+        json['languageSource'],
+        unknownValue: ChangeSource.user,
+      ) ??
+      ChangeSource.user,
 );
 
 Map<String, dynamic> _$EventDataToJson(_EventData instance) =>
@@ -21,6 +29,8 @@ Map<String, dynamic> _$EventDataToJson(_EventData instance) =>
       'status': _$EventStatusEnumMap[instance.status]!,
       'coverArtId': instance.coverArtId,
       'coverArtCropX': instance.coverArtCropX,
+      'languageCode': instance.languageCode,
+      'languageSource': _$ChangeSourceEnumMap[instance.languageSource]!,
     };
 
 const _$EventStatusEnumMap = {
@@ -32,4 +42,9 @@ const _$EventStatusEnumMap = {
   EventStatus.postponed: 'postponed',
   EventStatus.rescheduled: 'rescheduled',
   EventStatus.missed: 'missed',
+};
+
+const _$ChangeSourceEnumMap = {
+  ChangeSource.user: 'user',
+  ChangeSource.agent: 'agent',
 };

@@ -30,6 +30,7 @@ import 'package:lotti/features/agents/tools/task_agent_staged_tool_exposure.dart
 import 'package:lotti/features/agents/tools/task_agent_tool_gate.dart';
 import 'package:lotti/features/agents/util/agent_error_logging.dart';
 import 'package:lotti/features/agents/workflow/agent_observations.dart';
+import 'package:lotti/features/agents/workflow/agent_report_embedding.dart';
 import 'package:lotti/features/agents/workflow/agent_template_context.dart';
 import 'package:lotti/features/agents/workflow/agent_wake_memory.dart';
 import 'package:lotti/features/agents/workflow/change_proposal_filter.dart';
@@ -78,7 +79,6 @@ import 'package:lotti/logic/repositories/project_repository.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/time_service.dart';
-import 'package:lotti/utils/consts.dart';
 import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
 

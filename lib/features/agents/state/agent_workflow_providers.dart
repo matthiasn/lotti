@@ -82,15 +82,21 @@ final taskAgentWorkflowProvider = Provider<TaskAgentWorkflow>(
   taskAgentWorkflow,
   name: 'taskAgentWorkflowProvider',
 );
-TaskAgentWorkflow taskAgentWorkflow(Ref ref) {
-  // Embedding dependencies are optional — the pipeline may not be available
-  // (e.g. ObjectBox initialization failure).
-  final embeddingStore = getIt.isRegistered<EmbeddingStore>()
-      ? getIt<EmbeddingStore>()
-      : null;
-  final embeddingRepository = getIt.isRegistered<OnDeviceEmbeddingRepository>()
+
+/// The embedding pipeline an agent indexes its report through. Both halves
+/// are optional — the pipeline may not be available (e.g. ObjectBox
+/// initialization failure), and then reports are simply not indexed.
+({EmbeddingStore? store, OnDeviceEmbeddingRepository? repository})
+_embeddingPipeline() => (
+  store: getIt.isRegistered<EmbeddingStore>() ? getIt<EmbeddingStore>() : null,
+  repository: getIt.isRegistered<OnDeviceEmbeddingRepository>()
       ? getIt<OnDeviceEmbeddingRepository>()
-      : null;
+      : null,
+);
+
+TaskAgentWorkflow taskAgentWorkflow(Ref ref) {
+  final (store: embeddingStore, repository: embeddingRepository) =
+      _embeddingPipeline();
   final notificationService = getIt.isRegistered<NotificationRepository>()
       ? ChangeSetNotificationService(
           notificationRepository: getIt<NotificationRepository>(),
@@ -167,6 +173,7 @@ final eventAgentWorkflowProvider = Provider<EventAgentWorkflow>(
 );
 EventAgentWorkflow eventAgentWorkflow(Ref ref) {
   final notifications = ref.watch(updateNotificationsProvider);
+  final embeddingPipeline = _embeddingPipeline();
   return EventAgentWorkflow(
     agentRepository: ref.watch(agentRepositoryProvider),
     conversationRepository: ref.watch(conversationRepositoryProvider.notifier),
@@ -178,5 +185,8 @@ EventAgentWorkflow eventAgentWorkflow(Ref ref) {
     soulDocumentService: ref.watch(soulDocumentServiceProvider),
     domainLogger: ref.watch(domainLoggerProvider),
     onPersistedStateChanged: persistedStateChangedNotifier(notifications),
+    journalDb: ref.watch(journalDbProvider),
+    embeddingStore: embeddingPipeline.store,
+    embeddingRepository: embeddingPipeline.repository,
   );
 }

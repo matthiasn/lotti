@@ -457,8 +457,8 @@ extension _ImageAnalysisPersistenceCases on _SkillInferenceTestSetup {
 
     test(
       'marks every parent task dirty with the standard child-changed '
-      'pairs once the attributed analysis is stored, skipping non-task '
-      'parents',
+      'pairs once the attributed analysis is stored, for task and event '
+      'parents, skipping the rest',
       () async {
         _registerInteractionCapture();
         final imageEntity = makeImageEntity();
@@ -481,7 +481,17 @@ extension _ImageAnalysisPersistenceCases on _SkillInferenceTestSetup {
           (_) async => [
             TestTaskFactory.create(id: 'task-1'),
             TestTaskFactory.create(id: 'task-2'),
-            // A non-task parent (e.g. a plain journal entry linking the
+            // An event captions its photos with the analysis and its agent
+            // reads it, so the event holding the photo hears of it too.
+            JournalEntity.event(
+              meta: TestMetadataFactory.create(id: 'event-parent'),
+              data: const EventData(
+                title: 'Gala',
+                stars: 0,
+                status: EventStatus.completed,
+              ),
+            ),
+            // Any other parent (e.g. a plain journal entry linking the
             // image) must NOT receive a synthetic stale notification.
             JournalEntity.journalEntry(
               meta: TestMetadataFactory.create(id: 'non-task-parent'),
@@ -538,6 +548,9 @@ extension _ImageAnalysisPersistenceCases on _SkillInferenceTestSetup {
             'task-2',
             propagatedNotification('task-2'),
             imageAnalysisNotification('task-2'),
+            'event-parent',
+            propagatedNotification('event-parent'),
+            imageAnalysisNotification('event-parent'),
           }),
         ).called(1);
       },

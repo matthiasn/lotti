@@ -272,4 +272,66 @@ void main() {
       expect(find.text('Twi'), findsOneWidget);
     });
   });
+
+  group('showLanguageSelectionModal', () {
+    testWidgets('hands the picked code on, then closes', (tester) async {
+      final picked = <String?>[];
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: Builder(
+            builder: (context) => TextButton(
+              onPressed: () => showLanguageSelectionModal(
+                context: context,
+                initialLanguageCode: 'fr',
+                onSelected: (code) async => picked.add(code),
+                headerPadding: EdgeInsets.zero,
+              ),
+              child: const Text('pick'),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('pick'));
+      await tester.pumpAndSettle();
+      // The current language is pinned on top.
+      expect(find.byKey(const ValueKey('flag-fr')), findsOneWidget);
+
+      await tester.ensureVisible(find.text('German'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('German'));
+      await tester.pumpAndSettle();
+
+      expect(picked, ['de']);
+      expect(find.byType(LanguageSelectionModalContent), findsNothing);
+    });
+
+    testWidgets('clearing hands on null', (tester) async {
+      final picked = <String?>[];
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: Builder(
+            builder: (context) => TextButton(
+              onPressed: () => showLanguageSelectionModal(
+                context: context,
+                initialLanguageCode: 'fr',
+                onSelected: (code) async => picked.add(code),
+                headerPadding: EdgeInsets.zero,
+              ),
+              child: const Text('pick'),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('pick'));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Clear'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Clear'));
+      await tester.pumpAndSettle();
+
+      expect(picked, [null]);
+    });
+  });
 }

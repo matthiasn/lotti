@@ -45,7 +45,9 @@ import 'package:lotti/features/events/state/events_overview_controller.dart';
 import 'package:lotti/features/events/ui/pages/event_detail_page.dart';
 import 'package:lotti/features/events/ui/pages/events_overview_page.dart';
 import 'package:lotti/features/events/ui/widgets/event_detail_view.dart';
+import 'package:lotti/features/events/ui/widgets/event_photo_analysis_sheet.dart';
 import 'package:lotti/features/events/ui/widgets/event_photo_gallery.dart';
+import 'package:lotti/features/events/ui/widgets/event_timeline.dart';
 import 'package:lotti/features/events/ui/widgets/events_overview_view.dart';
 import 'package:lotti/features/journal/state/linked_ai_responses_controller.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
@@ -139,6 +141,25 @@ const _suggestOona = ChangeItem(
   humanSummary: 'Add Sergeant Oona Icefin to the event',
 );
 
+/// The note the agent wrote of the gala from its voice memos, for the user
+/// to add as their own.
+ChangeItem _suggestNote() {
+  final note = _t(
+    'The gala opened on time. Mission Control cleared the ice-pad '
+        'trajectory, Oona counted the oxygen packs twice, and the Europa '
+        'cargo pods docked just in time for the ceremonial sardines.',
+    'Die Gala begann pünktlich. Die Missionskontrolle gab die '
+        'Eisplattform-Flugbahn frei, Oona zählte die Sauerstoffpacks zweimal, '
+        'und die Europa-Frachtkapseln dockten gerade rechtzeitig für die '
+        'Zeremonialsardinen an.',
+  );
+  return ChangeItem(
+    toolName: EventAgentToolNames.suggestNote,
+    args: {'text': note},
+    humanSummary: 'Add a note: $note',
+  );
+}
+
 /// Serves the image analyses a capture's photos carry, without a database.
 class _FixedImageAnalyses extends LinkedAiResponsesController {
   _FixedImageAnalyses(super.entryId, this.responses);
@@ -149,10 +170,14 @@ class _FixedImageAnalyses extends LinkedAiResponsesController {
   Future<List<AiResponseEntry>> build() async => responses;
 }
 
-AiResponseEntry _imageAnalysis(String imageId, String oneLiner) {
+AiResponseEntry _imageAnalysis(
+  String imageId,
+  String oneLiner, {
+  String? analysis,
+}) {
   final response = TestAiResponseFactory.create(
     id: 'analysis-$imageId',
-    response: oneLiner,
+    response: analysis ?? oneLiner,
     dateFrom: DateTime(2026, 7, 16, 20),
   );
   return response.copyWith(
@@ -255,6 +280,7 @@ void main() {
       required String coverArtId,
       required String summary,
       double stars = 0,
+      String? languageCode,
     }) => JournalEvent(
       meta: Metadata(
         id: id,
@@ -269,6 +295,7 @@ void main() {
         stars: stars,
         status: status,
         coverArtId: coverArtId,
+        languageCode: languageCode,
       ),
       entryText: EntryText(plainText: summary),
     );
@@ -281,6 +308,8 @@ void main() {
       category: world.category,
       coverArtId: manualLaunchReviewCoverImageId,
       stars: 5,
+      // Set by the agent from the gala's first voice memo.
+      languageCode: _t('en', 'de'),
       summary: _t(
         'The habitat passed inspection, all 37 emperor penguins saluted in '
             'roughly the same direction, and the sardine cargo arrived cold.',
@@ -522,7 +551,7 @@ void main() {
                 threadId: 'thread-gala',
                 runKey: 'run-gala',
                 status: ChangeSetStatus.pending,
-                items: const [_suggestOona],
+                items: [_suggestOona, _suggestNote()],
                 createdAt: DateTime(2026, 7, 16, 21, 40),
                 vectorClock: null,
               )
@@ -534,6 +563,12 @@ void main() {
             itemIndex: 0,
             item: _suggestOona,
             fingerprint: ChangeItem.fingerprint(_suggestOona),
+          ),
+          PendingSuggestion(
+            changeSet: changeSet,
+            itemIndex: 1,
+            item: _suggestNote(),
+            fingerprint: ChangeItem.fingerprint(_suggestNote()),
           ),
         ],
         activity: const [],
@@ -577,12 +612,30 @@ void main() {
     ),
     // Two photos carry an image analysis with a one-liner; the third keeps
     // only the user's note, so both caption sources render.
-    for (final (imageId, oneLiner) in [
+    for (final (imageId, oneLiner, analysis) in [
       (
         manualLaunchReviewCoverImageId,
         _t(
           'Penguins in flight suits beside a glowing launch pad.',
           'Pinguine in Fluganzügen neben einer leuchtenden Startrampe.',
+        ),
+        _t(
+          '## Scene\n'
+              'Three emperor penguins in matching flight suits stand on a '
+              'frosted launch pad at dusk, the gantry lights glowing blue '
+              'behind them.\n\n'
+              '## Details\n'
+              '- A rocket waits on the pad, its hull dusted with frost.\n'
+              '- One penguin holds a clipboard; another salutes.\n'
+              '- The ice field beyond is lit by the habitat floodlights.',
+          '## Szene\n'
+              'Drei Kaiserpinguine in passenden Fluganzügen stehen in der '
+              'Dämmerung auf einer bereiften Startrampe, hinter ihnen leuchten '
+              'die Lichter des Startturms blau.\n\n'
+              '## Details\n'
+              '- Eine Rakete wartet auf der Rampe, ihr Rumpf von Reif bedeckt.\n'
+              '- Ein Pinguin hält ein Klemmbrett, ein anderer salutiert.\n'
+              '- Das Eisfeld dahinter liegt im Flutlicht des Habitats.',
         ),
       ),
       (
@@ -591,11 +644,12 @@ void main() {
           'Frosted cargo pods stacked in the docking bay.',
           'Bereifte Frachtkapseln, gestapelt in der Andockbucht.',
         ),
+        null,
       ),
     ])
       linkedAiResponsesControllerProvider(imageId).overrideWith(
         () => _FixedImageAnalyses(imageId, [
-          _imageAnalysis(imageId, oneLiner),
+          _imageAnalysis(imageId, oneLiner, analysis: analysis),
         ]),
       ),
     // The page docks the entry action bar, whose mic watches the recorder.
@@ -877,6 +931,42 @@ void main() {
         );
       });
 
+      if (brightness == Brightness.light) {
+        testWidgets('$viewport event photo analysis — light', (tester) async {
+          await pumpSurface(
+            tester,
+            device: device,
+            brightness: brightness,
+            home: EventDetailPage(eventId: _detailEventId),
+            overrides: detailOverrides(),
+          );
+          final band = find.byType(EventTimelinePhotoBand).first;
+          await tester.scrollUntilVisible(
+            band,
+            320,
+            scrollable: find
+                .descendant(
+                  of: find.byType(EventDetailView),
+                  matching: find.byType(Scrollable),
+                )
+                .first,
+          );
+          await settleFrames(tester, 4);
+          await tester.tap(band);
+          await settleFrames(tester, 12);
+          expect(find.byType(EventPhotoAnalysisView), findsOneWidget);
+          expect(
+            find.text(_messages(tester).eventsPhotoAnalysisTitle),
+            findsOneWidget,
+          );
+          await captureScreenshot(
+            tester,
+            'events_photo_analysis_${viewport}_light',
+            subdir: _subdir,
+          );
+        });
+      }
+
       if (device.isPhone && brightness == Brightness.light) {
         testWidgets('mobile event photo viewer — light', (tester) async {
           await pumpSurface(
@@ -897,9 +987,15 @@ void main() {
                 )
                 .first,
           );
-          await tester.tap(
-            find.descendant(of: grid, matching: find.byType(InkWell)).first,
-          );
+          // The grid's first tile, scrolled clear of the docked action bar
+          // the taller recap card (two proposals) would otherwise leave it
+          // under.
+          final tile = find
+              .descendant(of: grid, matching: find.byType(InkWell))
+              .first;
+          await tester.ensureVisible(tile);
+          await settleFrames(tester, 4);
+          await tester.tap(tile);
           await settleFrames(tester, 8);
           expect(find.byType(EventPhotoGalleryViewer), findsOneWidget);
           expect(find.byType(CircularProgressIndicator), findsNothing);

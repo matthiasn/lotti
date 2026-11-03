@@ -550,6 +550,63 @@ void main() {
       },
     );
 
+    testWidgets("the event's language is a pill in the state row, named in "
+        "the reader's language, that opens the picker", (tester) async {
+      var languageTaps = 0;
+      await pumpEventScreen(
+        tester,
+        EventDetailView(
+          data: buildEventDetailData(
+            card: buildEventCardData(languageCode: 'de'),
+          ),
+          onTapLanguage: () => languageTaps++,
+        ),
+        size: _tallMobile,
+      );
+
+      await tester.tap(find.text('German'));
+      expect(languageTaps, 1);
+    });
+
+    testWidgets('without a language, an additive "+ Language" chip, only '
+        'while it can be set', (tester) async {
+      var languageTaps = 0;
+      await pumpEventScreen(
+        tester,
+        EventDetailView(
+          data: buildEventDetailData(),
+          onTapLanguage: () => languageTaps++,
+        ),
+        size: _tallMobile,
+      );
+
+      await tester.tap(find.text('Language'));
+      expect(languageTaps, 1);
+
+      await pumpEventScreen(
+        tester,
+        EventDetailView(data: buildEventDetailData()),
+        size: _tallMobile,
+      );
+      expect(find.text('Language'), findsNothing);
+    });
+
+    testWidgets('a language code this build does not know reads as its code', (
+      tester,
+    ) async {
+      await pumpEventScreen(
+        tester,
+        EventDetailView(
+          data: buildEventDetailData(
+            card: buildEventCardData(languageCode: 'tlh'),
+          ),
+        ),
+        size: _tallMobile,
+      );
+
+      expect(find.text('tlh'), findsOneWidget);
+    });
+
     testWidgets('reflects an external title change (rename round-trip)', (
       tester,
     ) async {

@@ -9,12 +9,12 @@ extension _SkillMediaRuns on SkillInferenceRunner {
     String? overrideModelId,
     GeminiThinkingMode? geminiThinkingMode,
   }) async {
-    final skill = automationResult.skill;
+    final assignedSkill = automationResult.skill;
     final profile = automationResult.resolvedProfile;
-    if (skill == null || profile == null) {
+    if (assignedSkill == null || profile == null) {
       throw StateError(
         'AutomationResult missing skill or profile for $imageEntryId: '
-        'skill=${skill != null}, profile=${profile != null}',
+        'skill=${assignedSkill != null}, profile=${profile != null}',
       );
     }
     // One analysis per image: a request while one is in flight joins it
@@ -42,7 +42,7 @@ extension _SkillMediaRuns on SkillInferenceRunner {
 
       await _withStatusTracking(
         entityId: imageEntryId,
-        responseType: skill.skillType.toResponseType,
+        responseType: assignedSkill.skillType.toResponseType,
         subDomain: 'runImageAnalysis',
         linkedTaskId: linkedTaskId,
         body: () async {
@@ -52,17 +52,28 @@ extension _SkillMediaRuns on SkillInferenceRunner {
             throw StateError('Entity $imageEntryId is not a JournalImage');
           }
 
-          // 2. Build context for prompts.
-          final taskContext = linkedTaskId != null
-              ? await _aiInputRepository.buildTaskDetailsJson(id: linkedTaskId)
+          // 2. Frame the analysis by what the image was added to. The id
+          // travels as `linkedTaskId`, but it is the subject: a task, or an
+          // event, a person or a project. Only a task is read as a task; any
+          // other subject runs the plain image skill, framed by the subject
+          // where it has something to say (see [frameImageAnalysis]).
+          final subject = linkedTaskId != null
+              ? await _aiInputRepository.getEntity(linkedTaskId)
               : null;
-          final linkedTasks = linkedTaskId != null
-              ? await _aiInputRepository.buildLinkedTasksJson(linkedTaskId)
-              : null;
-          final currentTaskSummary = await _buildCurrentTaskSummary(
-            entity,
-            linkedTaskId,
+          final framing = frameImageAnalysis(
+            skill: assignedSkill,
+            subject: subject,
           );
+          final skill = framing.skill;
+          final taskContext = framing.taskFramed
+              ? await _aiInputRepository.buildTaskDetailsJson(id: linkedTaskId!)
+              : null;
+          final linkedTasks = framing.taskFramed
+              ? await _aiInputRepository.buildLinkedTasksJson(linkedTaskId!)
+              : null;
+          final currentTaskSummary = framing.taskFramed
+              ? await _buildCurrentTaskSummary(entity, linkedTaskId)
+              : null;
 
           // 3. Build prompts via SkillPromptBuilder.
           //
@@ -88,6 +99,9 @@ extension _SkillMediaRuns on SkillInferenceRunner {
             linkedTasks: linkedTasks,
             currentTaskSummary: currentTaskSummary,
             requestTieredSummary: useTieredSummary,
+            subjectContext: framing.subjectContext,
+            contextLabel: framing.contextLabel,
+            languageCode: framing.languageCode,
           );
 
           // 4. Prepare image data.
@@ -120,7 +134,16 @@ extension _SkillMediaRuns on SkillInferenceRunner {
             images: images,
             provider: provider,
             systemMessage: promptResult.systemMessage,
-            tools: useTieredSummary ? [entrySummaryTool] : null,
+            // Worded as the prompt's tiers are: a task's analysis keeps the
+            // task wording, every other analysis captions the photo.
+            tools: useTieredSummary
+                ? [
+                    if (framing.taskFramed)
+                      entrySummaryTool
+                    else
+                      imageAnalysisSummaryTool,
+                  ]
+                : null,
             toolChoice: useTieredSummary
                 ? entrySummaryToolChoiceFor(modelId)
                 : null,

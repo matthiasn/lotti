@@ -16,6 +16,14 @@ sources:
     resource: ../../lib/features/events/ui/widgets/event_timeline.dart
     title: EventTimeline — the event's rows on DesignSystemTimelineRow, and its photo band
     last_modified: 2026-11-01
+  - id: framing
+    resource: ../../lib/features/ai/helpers/image_analysis_framing.dart
+    title: frameImageAnalysis — which skill an image runs, and the event it is read in
+    last_modified: 2026-11-02
+  - id: photo-analysis
+    resource: ../../lib/features/events/ui/widgets/event_photo_analysis_sheet.dart
+    title: The sheet a timeline photo opens — its whole analysis
+    last_modified: 2026-11-02
   - id: plan
     resource: ../../docs/implementation_plans/2026-11-01_event_agent_record.md
     title: Event agent record plan — image analysis, on-device search, person links
@@ -159,6 +167,17 @@ Title is tap-to-edit; category and status pills open shared pickers; the date
 line opens the shared date-time modal and is **the single source of the event's
 when** — the body no longer repeats it.
 
+**The event's language sits in the state row too.** `EventData.languageCode`
+is the language its record is kept in; the event agent sets it from the first
+voice memo (see [project and event agents](agents/project-and-event-agents.md#setting-the-language))
+and the user can change or clear it at any time. Set, it is a pill named in
+the reader's locale (`SupportedLanguage.localizedName`) that opens the shared
+language picker (`showLanguageSelectionModal`, the one tasks and categories
+use); unset, a "+ Language" chip does, as the category's does. The pick goes
+through `EntryController.updateEventLanguage` as the user's
+(`languageSource: user`), which the agent never overrides; clearing hands it
+back to the agent.
+
 **Rating stars only appear once the event has happened** or already carries a
 rating, so a fresh or tentative event is not pushed gold stars. When they do,
 they sit **in the state row** — category, status, stars — a `Wrap` that
@@ -188,7 +207,9 @@ proposals follow inside the same surface: `EventSuggestionsBand` reads
 `eventSuggestionListProvider` (pending items deduped, the proposal ledger as
 history) and renders the task card's `ProposalsSection` and `ProposalRow` —
 kind chip, sentence, the words it came from, ✕/✓ and *Confirm all* — through
-the event's `ChangeSetConfirmationService`; the history shows only with
+the event's `ChangeSetConfirmationService`; a suggested **note** of what
+happened carries the whole note under its row as `FoldedWords`, and confirming
+adds it to the timeline as the user's own note; the history shows only with
 *Read more*. Before the first recap
 the body is the awaiting hint; a failed load says so instead; a first load in
 flight shows the header alone. Without an agent, the passive summary (the
@@ -259,6 +280,45 @@ lines. The page watches each photo's analyses, so a caption appears in place
 when an analysis lands after the photo; the pure mapping receives them as
 `imageSummaryFor`.
 
+# What a photo shows
+
+A photo added to an event is analysed automatically, through the event's
+agent profile, its own or its category's default — the image-analysis skill
+the profile automates. Every seeded profile automates the **task-context**
+image skill, which asks what the image means for the task and says, salty,
+when it is "nothing related to a task"; outside a task that is the wrong
+question. So `frameImageAnalysis` reads the subject the run was framed by: a
+task keeps the assigned skill and its task JSON; anything else runs the plain
+image skill instead, and an event frames it — its title, when, and its note
+under an *Event Context* heading, read as the scene's setting, never as
+something the image must be relevant to — in the event's language. The
+publish tool and the tier rules are worded for an image
+(`imageAnalysisSummaryTool`): the one-liner is the photo's caption, saying
+what it shows, never a remark about relevance. The analysis then wakes the
+events that hold the photo, deliberately, as it wakes their tasks.
+
+```mermaid
+flowchart LR
+    P[Photo added to the event] --> T[Automatic image analysis<br/>subject = event]
+    T --> F{frameImageAnalysis}
+    F -->|subject is a task| TS[Task-context skill<br/>+ task JSON]
+    F -->|subject is an event| ES[Plain image skill<br/>+ Event Context + language]
+    F -->|anything else| PS[Plain image skill]
+    ES --> R[AiResponseEntry<br/>oneLiner · tldr · response]
+    R --> CAP[Timeline caption]
+    R --> W[Event agent wake<br/>photo digest]
+    CAP -->|tap the photo| SHEET[What the photo shows<br/>the whole analysis]
+    SHEET -->|Open photo| ENTRY[/journal/:id?linkedFromId=:eventId/]
+```
+
+**A tap on a timeline photo opens what it was seen as.** The band and its
+caption are a target of their own (`EventTimeline.onOpenPhoto`, announced as
+the photo's analysis): the page opens `showEventPhotoAnalysis` with the
+newest analysis (`latestImageAnalysis`) — the photo as its band, the
+one-liner, the whole analysis as markdown, and *Open photo* on to the photo's
+entry, where it can be analysed again. A photo without an analysis yet opens
+its entry straight away. The rest of the row still opens the entry.
+
 The overview controller refreshes its loaded window for event entity
 notifications and for `LINK_CHANGED` notifications whose endpoint ids include
 an event currently loaded in the overview. Photo links are separate rows from
@@ -291,6 +351,20 @@ deleting the photo entry.
 the same widget renders cleanly in screenshots and tests. An empty event renders
 the Timeline header over a quiet hint naming what the bar below adds — and no
 Tasks section at all.
+
+# Found by asking
+
+An event is in the on-device search index (behind `enableEmbeddingsFlag`,
+[embeddings and search](ai/embeddings-and-search.md)) twice over: the event
+itself, as its title and note (`kEntityTypeEvent`, re-embedded on every
+`EVENT` notification), and its agent's recap, keyed to the event — the recap
+is what names who was there and what happened. A meaning hit on either
+resolves to the event (`VectorSearchRepository.searchRelatedEntries`), and the
+front agent's journal crawl reads events while `enableEventsFlag` is on
+(`QueryJournalCrawler.eventSourceType`), as a document of its note, else its
+title. So "when did we last go to the ice garden?" can be answered from the
+journal; a cited event opens on `/journal/:id`, whose linked-event card opens
+the event page.
 
 # Who it was with
 

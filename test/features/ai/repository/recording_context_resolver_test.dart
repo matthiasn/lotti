@@ -373,6 +373,23 @@ void main() {
       expect(context.report, isNull);
     });
 
+    test("an event's language frames its recordings' summaries", () async {
+      final event = _event('event-1');
+      entityIs(
+        event.copyWith(data: event.data.copyWith(languageCode: 'de')),
+      );
+      linkedAgents('event-1', AgentLinkTypes.agentEvent, []);
+
+      final context = await resolver.contextFor(
+        const EventRecordingSubject('event-1'),
+      );
+
+      expect(header(context!), {
+        'title': 'Ice floe survey',
+        'languageCode': 'de',
+      });
+    });
+
     test('an empty report frames nothing', () async {
       entityIs(_event('event-1'));
       linkedAgents('event-1', AgentLinkTypes.agentEvent, ['agent-1']);

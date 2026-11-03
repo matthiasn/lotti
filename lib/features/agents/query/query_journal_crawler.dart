@@ -5,6 +5,7 @@ import 'package:lotti/classes/agents/query_chat_models.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/query/query_source_access.dart';
+import 'package:lotti/utils/consts.dart';
 
 class QueryScopeUnavailable implements Exception {
   const QueryScopeUnavailable();
@@ -33,6 +34,7 @@ class QuerySourceDocument {
     final title = switch (entry) {
       Task(:final data) => data.title,
       ProjectEntry(:final data) => data.title,
+      JournalEvent(:final data) => data.title,
       JournalAudio(:final data) => data.audioFile,
       _ => text.split('\n').first.trim(),
     };
@@ -55,6 +57,7 @@ class QuerySourceDocument {
         (text.trim().isEmpty &&
             (entry is Task ||
                 entry is ProjectEntry ||
+                entry is JournalEvent ||
                 entry is Checklist ||
                 entry is ChecklistItem))) {
       switch (entry) {
@@ -73,6 +76,11 @@ class QuerySourceDocument {
           text = data.title;
           version = 'title';
         case ProjectEntry(:final data):
+          text = data.title;
+          version = 'title';
+        // An event without a note reads as its title, the words it is
+        // known by; one with a note reads as the note.
+        case JournalEvent(:final data):
           text = data.title;
           version = 'title';
         case Checklist(:final data):
@@ -178,6 +186,12 @@ class QueryJournalCrawler {
     'Checklist',
     'ChecklistItem',
   ];
+
+  /// Read besides [sourceTypes] while events are on, like every other event
+  /// surface: what a question about an outing or a gathering is answered
+  /// from — the event, found by its title and note, or by meaning through
+  /// its recap.
+  static const eventSourceType = 'JournalEvent';
 
   Future<QueryCorpus> discover(
     QueryScope scope,
@@ -376,7 +390,10 @@ class QueryJournalCrawler {
     required int limit,
     List<String>? ids,
   }) async => journal.getJournalEntities(
-    types: sourceTypes,
+    types: [
+      ...sourceTypes,
+      if (await journal.getConfigFlag(enableEventsFlag)) eventSourceType,
+    ],
     starredStatuses: const [false, true],
     privateStatuses: await journal.getConfigFlag('private')
         ? const [false, true]

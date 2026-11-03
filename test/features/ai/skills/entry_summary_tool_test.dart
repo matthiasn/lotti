@@ -280,6 +280,40 @@ void main() {
     }
   });
 
+  group('imageAnalysisSummaryTool schema', () {
+    test('publishes the same three tiers under the same name, so the one '
+        'parser decodes it', () {
+      final function = imageAnalysisSummaryTool.function;
+      final parameters = function.parameters!;
+      final properties = parameters['properties']! as Map<String, dynamic>;
+
+      expect(function.name, entrySummaryToolName);
+      expect(properties.keys, unorderedEquals(EntrySummaryToolArgs.required));
+      expect(parameters['required'], EntrySummaryToolArgs.required);
+      expect(parameters['additionalProperties'], isFalse);
+    });
+
+    test('words the one-liner as the caption of a photo, not the label of '
+        'a recording in a task log', () {
+      final properties =
+          imageAnalysisSummaryTool.function.parameters!['properties']!
+              as Map<String, dynamic>;
+      final oneLiner =
+          (properties[EntrySummaryToolArgs.oneLiner]!
+                  as Map<String, dynamic>)['description']
+              as String;
+
+      expect(oneLiner, contains('what this image shows'));
+      expect(oneLiner, contains('captions the photo'));
+      expect(oneLiner, isNot(contains('recording')));
+      expect(oneLiner, isNot(contains('task')));
+      expect(
+        imageAnalysisSummaryTool.function.description,
+        contains('analysis of this image'),
+      );
+    });
+  });
+
   group('entrySummaryTool schema', () {
     test('requires exactly the three tiers and forbids extra properties', () {
       final parameters = entrySummaryTool.function.parameters!;

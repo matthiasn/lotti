@@ -219,7 +219,12 @@ class RecordingContextResolver {
       (EventRecordingSubject(), final JournalEvent event) => RecordingContext(
         label: 'Event',
         reportHeading: 'Event Report',
-        headerJson: _json.convert({'title': event.data.title}),
+        // The event's language frames its recordings' summaries as a task's
+        // does, so a memo recorded at the event reads in the event's language.
+        headerJson: _json.convert({
+          'title': event.data.title,
+          'languageCode': ?event.data.languageCode,
+        }),
         report: _reportBody(
           await _latestReport(subject, AgentLinkTypes.agentEvent),
         ),

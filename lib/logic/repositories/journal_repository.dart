@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
+import 'package:lotti/classes/event_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/sync/sync_message.dart';
 import 'package:lotti/classes/sync_sequence_payload_type.dart';
@@ -155,6 +156,44 @@ class JournalRepository {
         exception,
         stackTrace: stackTrace,
         subDomain: 'updateCategoryId',
+      );
+      return false;
+    }
+  }
+
+  /// Applies [change] to the data of the stored event [eventId] and writes
+  /// the result on that row — the event's note and every field [change]
+  /// leaves alone stay as stored (MetaOnStored). [change] answers `null`
+  /// when there is nothing to write, which is how a write that must only
+  /// fill an empty field declines one set since.
+  ///
+  /// Returns whether the change is stored: `true` when there was nothing to
+  /// write, `false` when the entry is missing or not an event, the write was
+  /// refused, or it failed.
+  Future<bool> changeEventData(
+    String eventId,
+    EventData? Function(EventData stored) change,
+  ) async {
+    var isEvent = true;
+    try {
+      final stored = await _services.persistenceLogic().updateEntity(
+        eventId,
+        (stored) {
+          if (stored is! JournalEvent) {
+            isEvent = false;
+            return null;
+          }
+          final next = change(stored.data);
+          return next == null ? null : stored.copyWith(data: next);
+        },
+      );
+      return stored && isEvent;
+    } catch (exception, stackTrace) {
+      _services.domainLogger().error(
+        LogDomain.persistence,
+        exception,
+        stackTrace: stackTrace,
+        subDomain: 'changeEventData',
       );
       return false;
     }

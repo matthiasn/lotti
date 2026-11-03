@@ -1,10 +1,12 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_config.dart';
 import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
+import 'package:lotti/classes/agents/change_set.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/classes/ai_attribution.dart';
 import 'package:lotti/classes/entry_text.dart';
@@ -17,12 +19,16 @@ import 'package:lotti/features/agents/sync/agent_concurrent_resolver.dart';
 import 'package:lotti/features/agents/tools/event_tool_definitions.dart';
 import 'package:lotti/features/agents/workflow/event_agent_context_builder.dart';
 import 'package:lotti/features/agents/workflow/event_agent_workflow.dart';
+import 'package:lotti/features/agents/workflow/event_people_directory.dart';
+import 'package:lotti/features/ai/database/embedding_store.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
+import 'package:lotti/features/ai/service/embedding_content_extractor.dart';
 import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -172,6 +178,7 @@ void main() {
     List<String> observations = const [],
     List<String> followUpTitles = const [],
     List<String> suggestedPersonIds = const [],
+    String? noteText,
     InferenceUsage? usage,
   }) {
     mockConversationRepository.sendMessageDelegate =
@@ -229,6 +236,15 @@ void main() {
                       'personId': suggestedPersonIds[i],
                       'mention': 'Pip brought the sardines',
                     }),
+                  ),
+                ),
+              if (noteText != null)
+                ChatCompletionMessageToolCall(
+                  id: 'call-note',
+                  type: ChatCompletionMessageToolCallType.function,
+                  function: ChatCompletionMessageFunctionCall(
+                    name: EventAgentToolNames.suggestNote,
+                    arguments: jsonEncode({'text': noteText}),
                   ),
                 ),
               for (var i = 0; i < followUpTitles.length; i++)
@@ -731,6 +747,127 @@ void main() {
     );
 
     test(
+      'indexes the recap under the event, so a meaning search finds it',
+      () async {
+        final journalDb = MockJournalDb();
+        final store = MockEmbeddingStore();
+        final repository = MockOnDeviceEmbeddingRepository();
+        stubEmbeddingRegisters(store);
+        when(
+          () => journalDb.getConfigFlag(enableEmbeddingsFlag),
+        ).thenAnswer((_) async => true);
+        when(
+          () => journalDb.journalEntityById(eventId),
+        ).thenAnswer((_) async => eventEntity());
+        when(repository.isInstalled).thenAnswer((_) async => true);
+        when(() => repository.modelId).thenReturn('test-embedding-model');
+        when(() => store.getContentHash(any())).thenReturn(null);
+        when(() => repository.embedDocument(any())).thenAnswer(
+          (_) async => Float32List.fromList(
+            List<double>.filled(kEmbeddingDimensions, 0.25),
+          ),
+        );
+        when(
+          () => store.replaceEntityEmbeddings(
+            entityId: any(named: 'entityId'),
+            entityType: any(named: 'entityType'),
+            modelId: any(named: 'modelId'),
+            contentHash: any(named: 'contentHash'),
+            embeddings: any(named: 'embeddings'),
+            categoryId: any(named: 'categoryId'),
+            taskId: any(named: 'taskId'),
+            subtype: any(named: 'subtype'),
+            register: any(named: 'register'),
+          ),
+        ).thenAnswer((_) async {});
+        when(
+          () => store.agentReportIdsForTask(eventId),
+        ).thenAnswer((_) async => {});
+        workflow = EventAgentWorkflow(
+          domainLogger: MockDomainLogger(),
+          agentRepository: mockAgentRepository,
+          conversationRepository: mockConversationRepository,
+          aiConfigRepository: mockAiConfigRepository,
+          cloudInferenceRepository: mockCloudInferenceRepository,
+          journalRepository: mockJournalRepository,
+          syncService: mockSyncService,
+          templateService: mockTemplateService,
+          journalDb: journalDb,
+          embeddingStore: store,
+          embeddingRepository: repository,
+        );
+        stubReportPublishingRun();
+
+        final result = await run();
+
+        expect(result.success, isTrue);
+        final report = verify(
+          () => mockSyncService.upsertEntity(captureAny()),
+        ).captured.whereType<AgentReportEntity>().single;
+        verify(
+          () => store.replaceEntityEmbeddings(
+            entityId: report.id,
+            entityType: kEntityTypeAgentReport,
+            modelId: any(named: 'modelId'),
+            contentHash: any(named: 'contentHash'),
+            embeddings: any(named: 'embeddings'),
+            categoryId: any(named: 'categoryId'),
+            taskId: eventId,
+            subtype: AgentReportScopes.current,
+            register: any(named: 'register'),
+          ),
+        ).called(1);
+      },
+    );
+
+    for (final earlierNotePending in [false, true]) {
+      test(
+        earlierNotePending
+            ? "a note while an earlier wake's note awaits the user is not "
+                  'suggested again'
+            : 'a suggested note becomes a pending change set on the event',
+        () async {
+          when(
+            () => mockAgentRepository.getPendingChangeSets(
+              agentId,
+              taskId: eventId,
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer(
+            (_) async => [
+              if (earlierNotePending)
+                makeTestChangeSet(
+                  taskId: eventId,
+                  items: const [
+                    ChangeItem(
+                      toolName: EventAgentToolNames.suggestNote,
+                      args: {'text': 'The earlier account.'},
+                      humanSummary: 'Add a note: The earlier account.',
+                    ),
+                  ],
+                ),
+            ],
+          );
+          stubReportPublishingRun(noteText: 'We skated until dusk.');
+
+          await run();
+
+          final changeSets = verify(
+            () => mockSyncService.upsertEntity(captureAny()),
+          ).captured.whereType<ChangeSetEntity>().toList();
+          if (earlierNotePending) {
+            expect(changeSets, isEmpty);
+          } else {
+            expect(
+              changeSets.single.items.single.args['text'],
+              'We skated until dusk.',
+            );
+          }
+        },
+      );
+    }
+
+    test(
       'persists suggested follow-ups as a pending change set on the event',
       () async {
         stubReportPublishingRun(
@@ -1090,6 +1227,56 @@ void main() {
       },
     );
 
+    group('hasPendingNote', () {
+      ChangeItem item(String toolName, ChangeItemStatus status) => ChangeItem(
+        toolName: toolName,
+        args: const {'text': 'We skated.'},
+        humanSummary: 'x',
+        status: status,
+      );
+
+      Future<bool> pendingWith(List<ChangeItem> items) {
+        when(
+          () => mockAgentRepository.getPendingChangeSets(
+            agentId,
+            taskId: eventId,
+            limit: EventPeopleDirectory.historyWindow,
+          ),
+        ).thenAnswer(
+          (_) async => [makeTestChangeSet(taskId: eventId, items: items)],
+        );
+        return EventAgentWorkflow.hasPendingNote(
+          agentRepository: mockAgentRepository,
+          agentId: agentId,
+          eventId: eventId,
+        );
+      }
+
+      test('a pending note in a pending set awaits the user', () async {
+        expect(
+          await pendingWith([
+            item(EventAgentToolNames.suggestPerson, ChangeItemStatus.pending),
+            item(EventAgentToolNames.suggestNote, ChangeItemStatus.pending),
+          ]),
+          isTrue,
+        );
+      });
+
+      test('a confirmed or dismissed note, or none, does not', () async {
+        expect(
+          await pendingWith([
+            item(EventAgentToolNames.suggestNote, ChangeItemStatus.confirmed),
+            item(EventAgentToolNames.suggestNote, ChangeItemStatus.rejected),
+            item(
+              EventAgentToolNames.suggestFollowUpTask,
+              ChangeItemStatus.pending,
+            ),
+          ]),
+          isFalse,
+        );
+      });
+    });
+
     test('buildHumanSummary labels follow-up proposals and falls back', () {
       expect(
         EventAgentWorkflow.buildHumanSummary(
@@ -1118,6 +1305,20 @@ void main() {
           {'personId': 'pip'},
         ),
         'Suggest a person for the event',
+      );
+      expect(
+        EventAgentWorkflow.buildHumanSummary(
+          EventAgentToolNames.suggestNote,
+          {'text': '  We skated until dusk.  '},
+        ),
+        'Add a note: We skated until dusk.',
+      );
+      expect(
+        EventAgentWorkflow.buildHumanSummary(
+          EventAgentToolNames.suggestNote,
+          {'text': '  '},
+        ),
+        'Suggest a note for the event',
       );
       // Defensive fallback for any other (future) deferred tool name.
       expect(

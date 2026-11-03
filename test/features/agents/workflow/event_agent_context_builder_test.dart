@@ -146,6 +146,17 @@ void main() {
       expect(prompt, contains('## People'));
       expect(prompt, contains('call\n`list_people`'));
       expect(prompt, contains('call `suggest_person`'));
+      // Everything it writes is in the event's language, which it sets from
+      // the first voice memo and never changes once set.
+      expect(prompt, contains('## Language'));
+      expect(prompt, contains('call `set_event_language` first'));
+      expect(
+        prompt,
+        contains("Never change a language that is set; that is the user's."),
+      );
+      // A note of what happened is proposed, never written on its own.
+      expect(prompt, contains('## Notes'));
+      expect(prompt, contains('propose one with `suggest_note`'));
       expect(prompt, isNot(contains('## Report Directive')));
       expect(prompt, isNot(contains('## Your Personality')));
     });
@@ -180,23 +191,20 @@ void main() {
   });
 
   group('buildToolDefinitions', () {
-    test('exposes the narrate, observe, people and follow-up tools', () {
+    test('exposes the narrate, observe, people, language, note and '
+        'follow-up tools', () {
       final tools = builder.buildToolDefinitions();
 
-      expect(tools, hasLength(5));
+      expect(tools, hasLength(7));
       final names = tools.map((t) => t.function.name).toSet();
       expect(names, {
         EventAgentToolNames.updateReport,
         EventAgentToolNames.recordObservations,
         EventAgentToolNames.listPeople,
+        EventAgentToolNames.setEventLanguage,
         EventAgentToolNames.suggestPerson,
         EventAgentToolNames.suggestFollowUpTask,
-      });
-      // The person suggestion is the user's to confirm, as follow-ups are;
-      // the list is a read and runs at once.
-      expect(eventDeferredTools, {
-        EventAgentToolNames.suggestFollowUpTask,
-        EventAgentToolNames.suggestPerson,
+        EventAgentToolNames.suggestNote,
       });
     });
   });
@@ -220,6 +228,7 @@ void main() {
 
       expect(message, contains("**Title**: Maya's 30th"));
       expect(message, contains('**Status**: ${EventStatus.completed.name}'));
+      expect(message, contains('**Language**: not set'));
       expect(message, contains('### Event note'));
       expect(message, contains('My note about the night.'));
       expect(message, contains('### Photos (3)'));
@@ -234,6 +243,32 @@ void main() {
       expect(message, isNot(contains('4.5')));
       expect(message.toLowerCase(), isNot(contains('star')));
       expect(message.toLowerCase(), isNot(contains('cover')));
+    });
+
+    test("names the event's language with its English name", () {
+      final message = builder.buildUserMessage(
+        eventEntity: JournalEntity.event(
+          meta: meta('event-001'),
+          data: const EventData(
+            title: 'Gala',
+            stars: 0,
+            status: EventStatus.completed,
+            languageCode: 'de',
+          ),
+        ),
+        lastReport: null,
+        observations: const [],
+        linkedEntriesContext: '',
+        triggerTokens: const {},
+      );
+
+      expect(message, contains('- **Language**: de (German)'));
+    });
+
+    test('eventLanguageLine keeps a code this build does not know', () {
+      expect(EventAgentContextBuilder.eventLanguageLine('tlh'), 'tlh');
+      expect(EventAgentContextBuilder.eventLanguageLine(' '), 'not set');
+      expect(EventAgentContextBuilder.eventLanguageLine(null), 'not set');
     });
 
     test('omits empty sections', () {

@@ -21,6 +21,7 @@ import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
+import 'package:lotti/classes/event_data.dart';
 import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/health.dart';
@@ -442,6 +443,9 @@ void registerAllFallbackValues() {
   registerFallbackValue((Task stored) => true);
   // The change `PersistenceLogic.updateEntity` applies to the stored entry.
   registerFallbackValue((JournalEntity stored) => stored);
+  // The change `JournalRepository.changeEventData` applies to the stored
+  // event data.
+  registerFallbackValue((EventData stored) => stored);
   // The change `ChecklistRepository.updateChecklistItem` applies to the
   // stored item data.
   registerFallbackValue((ChecklistItemData stored) => stored);

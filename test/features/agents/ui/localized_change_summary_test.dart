@@ -672,6 +672,14 @@ void main() {
         'Someone was there',
       );
     });
+
+    test('a note suggestion says what confirming does; the note itself is '
+        "the row's detail", () {
+      expect(
+        summary(EventAgentToolNames.suggestNote, {'text': 'We skated.'}),
+        'Add this note to the event',
+      );
+    });
   });
 
   group('exploded checklist items', () {

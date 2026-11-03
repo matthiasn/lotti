@@ -16,6 +16,8 @@ import 'package:lotti/classes/ai_consumption/ai_consumption_enums.dart';
 import 'package:lotti/classes/ai_consumption/ai_consumption_event.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
+import 'package:lotti/classes/event_data.dart';
+import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/ai/helpers/automatic_image_analysis_trigger.dart';

@@ -128,21 +128,27 @@ class VectorSearchRepository {
 
     final (stopwatch, searchResults) = prepared;
 
-    // Deduplicate: keep only the best (lowest distance) chunk per entity.
+    // Deduplicate: keep only the best (lowest distance) chunk per entity, a
+    // report's chunks apart from its subject's own: whether a report hit is
+    // admitted is known only once its subject is read, and a task report
+    // must not displace the task's own hit before it is dropped.
     final bestByEntity = <String, EmbeddingSearchResult>{};
     for (final result in searchResults) {
-      final existing = bestByEntity[result.entityId];
+      final key = result.entityType == kEntityTypeAgentReport
+          ? 'report:${_entryHitId(result)}'
+          : result.entityId;
+      final existing = bestByEntity[key];
       if (existing == null || result.distance < existing.distance) {
-        bestByEntity[result.entityId] = result;
+        bestByEntity[key] = result;
       }
     }
     final deduped = bestByEntity.values.toList()
       ..sort((a, b) => a.distance.compareTo(b.distance));
 
     // Resolve all deduped hits before trimming to k — some entity IDs may
-    // not resolve (deleted entries, agent reports), and trimming first would
-    // waste slots on unresolvable hits.
-    final entityIds = deduped.map((r) => r.entityId).toSet();
+    // not resolve (deleted entries, a report's vanished subject), and
+    // trimming first would waste slots on unresolvable hits.
+    final entityIds = deduped.map(_entryHitId).toSet();
     final entities = await _journalDb.getJournalEntitiesForIdsUnordered(
       entityIds,
     );
@@ -154,8 +160,17 @@ class VectorSearchRepository {
     final ordered = <JournalEntity>[];
     final distances = <String, double>{};
     for (final result in deduped) {
-      final entity = entityMap[result.entityId];
-      if (entity != null) {
+      final entity = entityMap[_entryHitId(result)];
+      // A report finds its subject only when that is an event: an event's
+      // recap is what names who was there and what happened, while a task's
+      // report stays with the task search, as before. Hits run nearest
+      // first, so an event reached by its recap and by its own text is
+      // listed once, at the better distance.
+      final admitted =
+          result.entityType != kEntityTypeAgentReport || entity is JournalEvent;
+      if (entity != null &&
+          admitted &&
+          !distances.containsKey(entity.meta.id)) {
         ordered.add(entity);
         distances[entity.meta.id] = result.distance;
       }
@@ -341,6 +356,13 @@ class VectorSearchRepository {
 
     return (tasks, distances);
   }
+
+  /// The journal entity a hit stands for in [searchRelatedEntries]: an
+  /// agent report's subject, any other hit's own entity.
+  static String _entryHitId(EmbeddingSearchResult result) =>
+      result.entityType == kEntityTypeAgentReport && result.taskId.isNotEmpty
+      ? result.taskId
+      : result.entityId;
 
   /// Records the best (lowest) distance for a given entity ID.
   static void _recordBestDistance(

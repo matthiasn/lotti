@@ -309,6 +309,7 @@ EventCardData eventCardDataFromEvent(
     summary: (note != null && note.isNotEmpty) ? note : null,
     photoCount: photoCount,
     taskCount: taskCount,
+    languageCode: event.data.languageCode,
   );
 }
 

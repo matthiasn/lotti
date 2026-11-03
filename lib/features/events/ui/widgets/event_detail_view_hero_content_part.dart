@@ -11,6 +11,7 @@ class _HeroSliver extends StatelessWidget {
     this.onRenameTitle,
     this.onTapCategory,
     this.onTapStatus,
+    this.onTapLanguage,
     this.onTapDateTime,
     this.onSetRating,
     this.onAddCover,
@@ -25,6 +26,7 @@ class _HeroSliver extends StatelessWidget {
   final ValueChanged<String>? onRenameTitle;
   final VoidCallback? onTapCategory;
   final VoidCallback? onTapStatus;
+  final VoidCallback? onTapLanguage;
   final VoidCallback? onTapDateTime;
   final ValueChanged<double>? onSetRating;
   final VoidCallback? onAddCover;
@@ -68,6 +70,7 @@ class _HeroSliver extends StatelessWidget {
                   onRenameTitle: onRenameTitle,
                   onTapCategory: onTapCategory,
                   onTapStatus: onTapStatus,
+                  onTapLanguage: onTapLanguage,
                   onTapDateTime: onTapDateTime,
                   onSetRating: onSetRating,
                   onAddCover: onAddCover,
@@ -90,6 +93,7 @@ class _HeroContent extends StatelessWidget {
     this.onRenameTitle,
     this.onTapCategory,
     this.onTapStatus,
+    this.onTapLanguage,
     this.onTapDateTime,
     this.onSetRating,
     this.onAddCover,
@@ -105,6 +109,11 @@ class _HeroContent extends StatelessWidget {
   final ValueChanged<String>? onRenameTitle;
   final VoidCallback? onTapCategory;
   final VoidCallback? onTapStatus;
+
+  /// Opens the language picker: the language every AI-written word about the
+  /// event is kept in. Null leaves a set language read-only and hides the
+  /// placeholder while none is set.
+  final VoidCallback? onTapLanguage;
   final VoidCallback? onTapDateTime;
   final ValueChanged<double>? onSetRating;
   final VoidCallback? onAddCover;
@@ -181,6 +190,16 @@ class _HeroContent extends StatelessWidget {
                 label: eventStatusLabel(context, card.status),
               ),
             ),
+            if (_languageName(context) case final language?)
+              _TappablePill(
+                onTap: onTapLanguage,
+                child: EventOverlayPill(label: language),
+              )
+            else if (onTapLanguage != null)
+              _SetChip(
+                label: context.messages.eventsLanguageLabel,
+                onTap: onTapLanguage,
+              ),
             if (showRating)
               EventStarRating(
                 rating: card.stars,
@@ -234,6 +253,16 @@ class _HeroContent extends StatelessWidget {
         ),
       ],
     );
+  }
+}
+
+extension on _HeroContent {
+  /// The event's language named in the reader's locale, or the bare code for
+  /// one this build does not know; null while none is set.
+  String? _languageName(BuildContext context) {
+    final code = card.languageCode?.trim();
+    if (code == null || code.isEmpty) return null;
+    return SupportedLanguage.fromCode(code)?.localizedName(context) ?? code;
   }
 }
 
