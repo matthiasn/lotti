@@ -175,7 +175,7 @@ class UnifiedGoalCard extends ConsumerWidget {
                       resolved: healthAsync.hasValue,
                     ),
                     fill: fill,
-                    seed: identity.agentId.hashCode,
+                    agentId: identity.agentId,
                   )
                 : NudgeBannerPersonaChip(
                     monogram: NudgeBannerPersonaChip.monogramFor(

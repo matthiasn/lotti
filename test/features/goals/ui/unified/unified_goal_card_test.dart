@@ -237,6 +237,8 @@ void main() {
         bust.pose,
         (mood: CompanionMood.bright, gesture: GestureName.thumbs),
       );
+      // Dressed for the goal's own agent, as on its page.
+      expect(bust.agentId, 'goal-1');
       final tokens = tester
           .element(find.byType(GoalCompanionBust))
           .designTokens;

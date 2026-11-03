@@ -54,6 +54,7 @@ void main() {
     WidgetTester tester, {
     CompanionCustomization customization = const CompanionCustomization(),
     Widget body = const CompanionSettingsBody(),
+    bool surprise = false,
   }) async {
     setTestSurfaceSize(tester, const Size(800, 1600));
     await tester.pumpWidget(
@@ -62,10 +63,16 @@ void main() {
         overrides: [
           settingsDbProvider.overrideWithValue(db),
           outboxServiceProvider.overrideWithValue(outbox),
-          ...companionLookOverrides(
-            outfit: CompanionLook.grandmaGarden,
-            customization: customization,
-          ),
+          if (surprise) ...[
+            companionOutfitSeedProvider.overrideWithValue(7),
+            companionCustomizationProvider.overrideWithBuild(
+              (ref, notifier) => customization,
+            ),
+          ] else
+            ...companionLookOverrides(
+              outfit: CompanionLook.grandmaGarden,
+              customization: customization,
+            ),
         ],
       ),
     );
@@ -207,6 +214,26 @@ void main() {
     await _frames(tester);
     expect(chosen(tester).outfitId, isNull);
     expect(selected('Surprise me'), isTrue);
+  });
+
+  testWidgets('on "Surprise me" her preview keeps the outfit drawn for her '
+      'settings while other choices change', (tester) async {
+    await pumpBody(tester, surprise: true);
+    final expected = CompanionLookRoll(
+      customization: const CompanionCustomization(),
+      picked: null,
+      seed: 7,
+    ).outfitFor(companionSettingsDressedFor).id;
+    expect(previews(tester).map((v) => v.look.id), everyElement(expected));
+
+    await tester.tap(find.text('Afro').last);
+    await _frames(tester);
+    expect(chosen(tester).hairStyle, CompanionHairStyle.afro);
+    expect(
+      previews(tester).map((v) => v.look.hairStyle),
+      everyElement(CompanionHairStyle.afro),
+    );
+    expect(previews(tester).map((v) => v.look.id), everyElement(expected));
   });
 
   testWidgets('the outfit picker sits right under her preview, above the '

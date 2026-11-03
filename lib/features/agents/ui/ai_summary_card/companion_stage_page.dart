@@ -25,7 +25,9 @@ import 'package:material_ui/material_ui.dart';
 /// that poses her ([mood], [holding] — a goal's status pose) passes the pose
 /// on, so the figure the bust was tapped on stands up in the same pose. A
 /// host whose voice is not a summary's — the front agent's answers — passes
-/// its own play and stop control as [readAloud] instead of the words.
+/// its own play and stop control as [readAloud] instead of the words. She
+/// wears what the card dressed her in: a host that dresses her for another
+/// subject than [sourceId] names it as [dressedFor].
 Future<void> openCompanionStage(
   BuildContext context, {
   required String sourceId,
@@ -34,6 +36,7 @@ Future<void> openCompanionStage(
   CompanionMood mood = CompanionMood.calm,
   GestureName? holding,
   TtsCloudRoute? cloudRoute,
+  String? dressedFor,
 }) {
   return Navigator.of(context, rootNavigator: true).push(
     MaterialPageRoute<void>(
@@ -45,6 +48,7 @@ Future<void> openCompanionStage(
         mood: mood,
         holding: holding,
         cloudRoute: cloudRoute,
+        dressedFor: dressedFor,
       ),
     ),
   );
@@ -71,8 +75,9 @@ class CompanionStagePage extends ConsumerWidget {
     this.mood = CompanionMood.calm,
     this.holding,
     this.cloudRoute,
+    String? dressedFor,
     super.key,
-  });
+  }) : dressedFor = dressedFor ?? sourceId;
 
   /// The host's own read-aloud control at her feet, in place of the
   /// summary's; it gates itself.
@@ -90,9 +95,11 @@ class CompanionStagePage extends ConsumerWidget {
   /// A gesture she keeps up here, as on the host card.
   final GestureName? holding;
 
+  /// The subject her outfit is drawn for, as on the host card.
+  final String dressedFor;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final shown = ref.watch(companionStageShownProvider(sourceId));
     final canReadAloud =
         spokenText.isNotEmpty &&
         (ref.watch(configFlagProvider(enableAiSummaryTtsFlag)).value ??
@@ -126,7 +133,7 @@ class CompanionStagePage extends ConsumerWidget {
                           stage: true,
                           mood: mood,
                           holding: holding,
-                          shown: shown,
+                          dressedFor: dressedFor,
                         ),
                       ),
                     ),
@@ -146,7 +153,11 @@ class CompanionStagePage extends ConsumerWidget {
                                       .aiCardCompanionStageNextOutfit,
                                   onPressed: () => ref
                                       .read(companionOutfitProvider.notifier)
-                                      .next(from: shown.last),
+                                      .next(
+                                        ref
+                                            .read(companionLookRollProvider)
+                                            .outfitFor(dressedFor),
+                                      ),
                                 ),
                                 DsAiDiscButton(
                                   icon: LottiIcons.close,

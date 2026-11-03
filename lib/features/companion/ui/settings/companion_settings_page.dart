@@ -18,6 +18,11 @@ import 'package:lotti/widgets/settings/settings_page_layout.dart';
 import 'package:lotti/widgets/settings/settings_switch_row.dart';
 import 'package:material_ui/material_ui.dart';
 
+/// The subject her preview here is dressed for: on "Surprise me", the
+/// session's outfit for her settings, steady while choices are made.
+@visibleForTesting
+const companionSettingsDressedFor = 'companion-settings';
+
 /// The mobile page for [CompanionSettingsBody], in the settings chrome.
 class CompanionSettingsPage extends StatelessWidget {
   const CompanionSettingsPage({super.key});
@@ -68,7 +73,9 @@ class _CompanionSettingsBodyState extends ConsumerState<CompanionSettingsBody> {
   Widget build(BuildContext context) {
     final custom = ref.watch(companionCustomizationProvider);
     final controller = ref.read(companionCustomizationProvider.notifier);
-    final look = ref.watch(companionLookRollProvider).draw();
+    final look = ref
+        .watch(companionLookRollProvider)
+        .draw(companionSettingsDressedFor);
     final messages = context.messages;
     final spacing = context.designTokens.spacing;
 

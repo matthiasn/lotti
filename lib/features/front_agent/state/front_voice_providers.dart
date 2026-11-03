@@ -17,6 +17,11 @@ String frontVoiceSourceId(String conversationId) =>
 
 const _frontVoicePrefix = 'front-chat:';
 
+/// The subject she is dressed for on the front agent's surface: one for all
+/// its conversations, so she keeps her outfit while a conversation resolves
+/// or another is opened, and on the stage her bust opens.
+const frontCompanionDressedFor = 'front-chat';
+
 /// What she says aloud for a spoken [turn], as [thread] shows it: whether
 /// her answer has landed, and its words.
 ///

@@ -31,6 +31,16 @@ import '../companion_overrides.dart';
 
 const _clip = '/tmp/clip.wav';
 
+/// The session seed a "Surprise me" test pins.
+const _seed = 7;
+
+/// The surprise outfit she wears for [subject] in a session seeded [_seed].
+String _surpriseFor(String subject) => CompanionLookRoll(
+  customization: const CompanionCustomization(),
+  picked: null,
+  seed: _seed,
+).outfitFor(subject).id;
+
 /// The app-wide playback state, set by the test instead of a real voice.
 class _Playback extends TtsPlaybackController {
   _Playback([this.initial = const TtsPlaybackState()]);
@@ -92,6 +102,8 @@ void main() {
     CompanionController? controller,
     GestureName? holding,
     bool stage = false,
+    String? dressedFor,
+    bool surprise = false,
   }) async {
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
@@ -104,6 +116,7 @@ void main() {
             controller: controller,
             holding: holding,
             stage: stage,
+            dressedFor: dressedFor,
           ),
         ),
         overrides: [
@@ -114,7 +127,13 @@ void main() {
             () => _Settings(TtsSettings(speed: speed)),
           ),
           spokenTrackLoaderProvider.overrideWithValue(loader.call),
-          ...companionLookOverrides(outfit: CompanionLook.grandmaWinter),
+          if (surprise) ...[
+            companionOutfitSeedProvider.overrideWithValue(_seed),
+            companionCustomizationProvider.overrideWithBuild(
+              (ref, notifier) => const CompanionCustomization(),
+            ),
+          ] else
+            ...companionLookOverrides(outfit: CompanionLook.grandmaWinter),
           domainLoggerProvider.overrideWithValue(logger),
         ],
       ),
@@ -156,10 +175,8 @@ void main() {
   ) async {
     await pumpSpeaker(tester);
     ProviderScope.containerOf(
-          tester.element(find.byType(CompanionSpeaker)),
-        )
-        .read(companionOutfitProvider.notifier)
-        .next(from: CompanionLook.grandmaWinter);
+      tester.element(find.byType(CompanionSpeaker)),
+    ).read(companionOutfitProvider.notifier).next(CompanionLook.grandmaWinter);
     await tester.pump();
 
     final winter = companionOutfits.indexOf(CompanionLook.grandmaWinter);
@@ -167,6 +184,63 @@ void main() {
       view(tester).look.id,
       companionOutfits[(winter + 1) % companionOutfits.length].id,
     );
+  });
+
+  group('on "Surprise me"', () {
+    testWidgets('is dressed for her sourceId by default', (tester) async {
+      await pumpSpeaker(tester, surprise: true);
+      expect(view(tester).look.id, _surpriseFor('task-1'));
+    });
+
+    testWidgets('is dressed for the subject the host names', (tester) async {
+      // A subject that draws another outfit than 'task-1' in this session,
+      // so the test tells which one she was dressed for.
+      final subject = [
+        for (var i = 0; i < 50; i++) 'front-$i',
+      ].firstWhere((s) => _surpriseFor(s) != _surpriseFor('task-1'));
+      await pumpSpeaker(tester, surprise: true, dressedFor: subject);
+      expect(view(tester).look.id, _surpriseFor(subject));
+    });
+
+    // The regression: on a task, she changed clothes while on screen.
+    testWidgets('keeps her outfit through every rebuild while she is shown', (
+      tester,
+    ) async {
+      await pumpSpeaker(tester, surprise: true);
+      final first = view(tester).look.id;
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(CompanionSpeaker)),
+      );
+      for (var i = 0; i < 6; i++) {
+        // Her voice starting and stopping rebuilds her …
+        playback.current = _playing('task-1');
+        await tester.pump();
+        expect(view(tester).look.id, first);
+        playback.current = const TtsPlaybackState();
+        await tester.pump();
+        expect(view(tester).look.id, first);
+        // … and so does a setting that is not her outfit.
+        container
+            .read(companionCustomizationProvider.notifier)
+            .set(
+              CompanionCustomization(
+                skinTone: CompanionSkinTone.values[i],
+                sass: CompanionSass.values[i % CompanionSass.values.length],
+              ),
+            );
+        await tester.pump();
+        expect(view(tester).look.id, first);
+      }
+    });
+
+    testWidgets('a remounted speaker for the same subject is dressed the '
+        'same', (tester) async {
+      await pumpSpeaker(tester, surprise: true);
+      final first = view(tester).look.id;
+      await tester.pumpWidget(const SizedBox());
+      await pumpSpeaker(tester, surprise: true);
+      expect(view(tester).look.id, first);
+    });
   });
 
   testWidgets('wears her customization: a new hairstyle shows at once', (

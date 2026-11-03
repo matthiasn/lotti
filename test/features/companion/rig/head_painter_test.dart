@@ -87,11 +87,12 @@ void main() {
     final afro = bun.copyWith(hairStyle: CompanionHairStyle.afro);
     final withBun = await _head(bun);
     final withAfro = await _head(afro);
-    // The afro is far more hair, behind and over the head.
-    expect(
-      withAfro.count(bun.palette.hairBack),
-      greaterThan(withBun.count(bun.palette.hairBack) + 2000),
-    );
+    // The afro is far more hair, behind and over the head: counted in
+    // either tone, as its coils mix the two.
+    int hair(Raster r) =>
+        r.count(bun.palette.hairBack, tolerance: 20) +
+        r.count(bun.palette.hair, tolerance: 20);
+    expect(hair(withAfro), greaterThan(hair(withBun) + 4000));
     expect(
       withAfro.count(bun.palette.hair, tolerance: 30),
       greaterThan(withBun.count(bun.palette.hair, tolerance: 30)),

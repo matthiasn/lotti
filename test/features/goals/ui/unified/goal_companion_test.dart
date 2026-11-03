@@ -1,9 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/goal_enums.dart';
+import 'package:lotti/features/companion/model/companion_customization.dart';
 import 'package:lotti/features/companion/model/companion_gesture.dart';
 import 'package:lotti/features/companion/model/companion_look.dart';
 import 'package:lotti/features/companion/model/companion_mood.dart';
 import 'package:lotti/features/companion/rig/companion_painter.dart';
+import 'package:lotti/features/companion/state/companion_customization_controller.dart';
+import 'package:lotti/features/companion/state/companion_look_controller.dart';
 import 'package:lotti/features/companion/ui/companion_view.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/ui/unified/goal_companion.dart';
@@ -96,7 +99,7 @@ void main() {
               gesture: GestureName.palmsDown,
             ),
             fill: fill,
-            seed: 7,
+            agentId: 'goal-agent-1',
           ),
         ),
         overrides: [
@@ -129,12 +132,42 @@ void main() {
     expect(view.holding, GestureName.palmsDown);
     expect(view.autoGestures, isFalse);
     expect(view.track, isNull);
-    expect(view.seed, 7);
+    expect(view.seed, 'goal-agent-1'.hashCode);
     // The session's outfit, as everywhere else she appears.
     expect(view.look.id, CompanionLook.grandmaWinter.id);
 
     // Decorative: the status pill carries the verdict in words.
     final semantics = tester.getSemantics(find.byType(GoalCompanionBust));
     expect(semantics.label, isEmpty);
+  });
+
+  testWidgets('GoalCompanionBust on "Surprise me" wears the outfit drawn for '
+      "the goal's report, as on the goal's own page", (tester) async {
+    await tester.pumpWidget(
+      makeTestableWidget(
+        const GoalCompanionBust(
+          pose: (mood: CompanionMood.calm, gesture: null),
+          fill: Color(0x3300FF00),
+          agentId: 'goal-agent-1',
+        ),
+        overrides: [
+          companionOutfitSeedProvider.overrideWithValue(7),
+          companionCustomizationProvider.overrideWithBuild(
+            (ref, notifier) => const CompanionCustomization(),
+          ),
+        ],
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 16));
+
+    final roll = CompanionLookRoll(
+      customization: const CompanionCustomization(),
+      picked: null,
+      seed: 7,
+    );
+    expect(
+      tester.widget<CompanionView>(find.byType(CompanionView)).look.id,
+      roll.outfitFor(goalReportSpeechSourceId('goal-agent-1')).id,
+    );
   });
 }
