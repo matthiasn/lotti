@@ -7404,10 +7404,42 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String githubConnectedToast(String login) {
+    return 'Conectat la GitHub ca @$login';
+  }
+
+  @override
+  String get githubConnectSaveFailed =>
+      'GitHub l-a acceptat, dar Lotti nu l-a putut salva în spațiul securizat de chei. Încercați din nou.';
+
+  @override
+  String get githubConnectSaveFailedTitle => 'Tokenul nu a fost salvat';
+
+  @override
+  String get githubCreateTokenButton => 'Creați un token pe GitHub';
+
+  @override
+  String get githubCreateTokenOpenFailed =>
+      'Creați tokenul pe github.com, la Settings → Developer settings → Personal access tokens.';
+
+  @override
+  String get githubCreateTokenOpenFailedTitle => 'Browserul nu s-a deschis';
+
+  @override
   String get githubDescriptionHeading => 'Descriere';
 
   @override
   String get githubDisconnectButton => 'Deconectați';
+
+  @override
+  String get githubDisconnectedToast => 'Deconectat de la GitHub';
+
+  @override
+  String get githubDisconnectFailed =>
+      'Acest dispozitiv nu a putut elimina tokenul. Încercați din nou.';
+
+  @override
+  String get githubDisconnectFailedTitle => 'Tokenul nu a fost eliminat';
 
   @override
   String get githubFailureForbidden =>
@@ -7682,11 +7714,15 @@ class AppLocalizationsRo extends AppLocalizations {
       'Un rezumat va fi scris la următoarea actualizare a acestui pull request sau îl puteți rezuma acum.';
 
   @override
+  String get githubTokenChecksCaveat =>
+      'Verificările CI ale depozitelor private pot fi incomplete: GitHub nu oferă acestor tokenuri acces la check run-uri.';
+
+  @override
   String get githubTokenHide => 'Ascundeți tokenul';
 
   @override
   String get githubTokenIntro =>
-      'Lotti citește pull request-urile pe care le legați de sarcini cu propriul dvs. token de acces personal. Creați un token fine-grained pentru depozitele în care lucrați, cu acces doar de citire la „Pull requests” și „Commit statuses”. GitHub nu permite unui astfel de token să citească check run-urile dintr-un depozit privat, așa că acolo CI poate fi incompletă; un token clasic cu scope-ul „repo” le poate citi.';
+      'Lotti citește pull request-urile pe care le legați de sarcini cu un token doar de citire din contul dvs. GitHub. Creați-l pe GitHub — permisiunile sunt deja completate —, alegeți depozitele, apoi lipiți tokenul aici.';
 
   @override
   String get githubTokenLabel => 'Token de acces personal';

@@ -12383,6 +12383,42 @@ abstract class AppLocalizations {
   /// **'Connected as @{login}'**
   String githubConnectedAs(String login);
 
+  /// Toast once GitHub accepted a token and this device stored it.
+  ///
+  /// In en, this message translates to:
+  /// **'Connected to GitHub as @{login}'**
+  String githubConnectedToast(String login);
+
+  /// No description provided for @githubConnectSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'GitHub accepted it, but Lotti couldn\'t save it in this device\'s keychain. Try again.'**
+  String get githubConnectSaveFailed;
+
+  /// No description provided for @githubConnectSaveFailedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Token not stored'**
+  String get githubConnectSaveFailedTitle;
+
+  /// No description provided for @githubCreateTokenButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a token on GitHub'**
+  String get githubCreateTokenButton;
+
+  /// No description provided for @githubCreateTokenOpenFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Create the token on github.com under Settings → Developer settings → Personal access tokens.'**
+  String get githubCreateTokenOpenFailed;
+
+  /// No description provided for @githubCreateTokenOpenFailedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your browser did not open'**
+  String get githubCreateTokenOpenFailedTitle;
+
   /// Heading over a pull request's own description.
   ///
   /// In en, this message translates to:
@@ -12394,6 +12430,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Disconnect'**
   String get githubDisconnectButton;
+
+  /// No description provided for @githubDisconnectedToast.
+  ///
+  /// In en, this message translates to:
+  /// **'Disconnected from GitHub'**
+  String get githubDisconnectedToast;
+
+  /// No description provided for @githubDisconnectFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'This device could not remove the token. Try again.'**
+  String get githubDisconnectFailed;
+
+  /// No description provided for @githubDisconnectFailedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Token not removed'**
+  String get githubDisconnectFailedTitle;
 
   /// No description provided for @githubFailureForbidden.
   ///
@@ -12839,6 +12893,12 @@ abstract class AppLocalizations {
   /// **'A summary is written the next time this pull request is refreshed, or summarize it now.'**
   String get githubSummaryOnNextRefresh;
 
+  /// No description provided for @githubTokenChecksCaveat.
+  ///
+  /// In en, this message translates to:
+  /// **'CI checks of private repositories may be incomplete: GitHub gives these tokens no access to check runs.'**
+  String get githubTokenChecksCaveat;
+
   /// No description provided for @githubTokenHide.
   ///
   /// In en, this message translates to:
@@ -12848,7 +12908,7 @@ abstract class AppLocalizations {
   /// No description provided for @githubTokenIntro.
   ///
   /// In en, this message translates to:
-  /// **'Lotti reads the pull requests you link to tasks with your own personal access token. Create a fine-grained token for the repositories you work in, with read-only access to \"Pull requests\" and \"Commit statuses\". GitHub does not let such a token read check runs in a private repository, so CI may be incomplete there; a classic token with the \"repo\" scope can read them.'**
+  /// **'Lotti reads the pull requests you link to tasks with a read-only token from your GitHub account. Create one on GitHub — the permissions are filled in for you — choose your repositories, then paste the token here.'**
   String get githubTokenIntro;
 
   /// No description provided for @githubTokenLabel.

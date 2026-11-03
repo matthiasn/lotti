@@ -7332,10 +7332,43 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String githubConnectedToast(String login) {
+    return 'Mit GitHub verbunden als @$login';
+  }
+
+  @override
+  String get githubConnectSaveFailed =>
+      'GitHub hat ihn akzeptiert, aber Lotti konnte ihn nicht im Schlüsselbund speichern. Versuch es erneut.';
+
+  @override
+  String get githubConnectSaveFailedTitle => 'Token nicht gespeichert';
+
+  @override
+  String get githubCreateTokenButton => 'Token auf GitHub erstellen';
+
+  @override
+  String get githubCreateTokenOpenFailed =>
+      'Erstelle den Token auf github.com unter Settings → Developer settings → Personal access tokens.';
+
+  @override
+  String get githubCreateTokenOpenFailedTitle =>
+      'Dein Browser hat sich nicht geöffnet';
+
+  @override
   String get githubDescriptionHeading => 'Beschreibung';
 
   @override
   String get githubDisconnectButton => 'Trennen';
+
+  @override
+  String get githubDisconnectedToast => 'Von GitHub getrennt';
+
+  @override
+  String get githubDisconnectFailed =>
+      'Dieses Gerät konnte den Token nicht entfernen. Versuch es noch einmal.';
+
+  @override
+  String get githubDisconnectFailedTitle => 'Token nicht entfernt';
 
   @override
   String get githubFailureForbidden =>
@@ -7609,11 +7642,15 @@ class AppLocalizationsDe extends AppLocalizations {
       'Eine Zusammenfassung wird beim nächsten Aktualisieren dieses Pull-Requests geschrieben – oder fass ihn jetzt zusammen.';
 
   @override
+  String get githubTokenChecksCaveat =>
+      'CI-Checks privater Repositories können unvollständig sein: GitHub gibt diesen Tokens keinen Zugriff auf Check-Runs.';
+
+  @override
   String get githubTokenHide => 'Token verbergen';
 
   @override
   String get githubTokenIntro =>
-      'Lotti liest die Pull-Requests, die du mit Aufgaben verknüpfst, mit deinem eigenen Personal Access Token. Erstelle einen Fine-grained Token für die Repositories, in denen du arbeitest, mit Lesezugriff auf \"Pull requests\" und \"Commit statuses\". GitHub lässt einen solchen Token in einem privaten Repository keine Check-Runs lesen, dort kann CI also unvollständig sein; ein klassischer Token mit dem Scope \"repo\" kann sie lesen.';
+      'Lotti liest die Pull-Requests, die du mit Aufgaben verknüpfst, mit einem Token deines GitHub-Kontos, der nur lesen darf. Erstelle ihn auf GitHub – die Berechtigungen sind schon ausgefüllt –, wähle deine Repositories und füge den Token hier ein.';
 
   @override
   String get githubTokenLabel => 'Personal Access Token';

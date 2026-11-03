@@ -3330,8 +3330,26 @@
       }
     }
   },
+  "githubConnectedToast": "Ligado ao GitHub como @{login}",
+  "@githubConnectedToast": {
+    "description": "Toast once GitHub accepted a token and this device stored it.",
+    "placeholders": {
+      "login": {
+        "type": "String",
+        "example": "octocat"
+      }
+    }
+  },
+  "githubConnectSaveFailed": "O GitHub aceitou-o, mas o Lotti não o conseguiu guardar no porta-chaves do dispositivo. Tenta de novo.",
+  "githubConnectSaveFailedTitle": "Token não guardado",
+  "githubCreateTokenButton": "Criar um token no GitHub",
+  "githubCreateTokenOpenFailed": "Cria o token em github.com, em Settings → Developer settings → Personal access tokens.",
+  "githubCreateTokenOpenFailedTitle": "O teu navegador não abriu",
   "githubDescriptionHeading": "Descrição",
   "githubDisconnectButton": "Desconectar",
+  "githubDisconnectedToast": "Desligado do GitHub",
+  "githubDisconnectFailed": "Este dispositivo não conseguiu remover o token. Tenta de novo.",
+  "githubDisconnectFailedTitle": "Token não removido",
   "githubFailureForbidden": "O token não tem permissão para ler isto. Verifique as permissões dele.",
   "githubFailureInvalidResponse": "O GitHub enviou uma resposta que o Lotti não conseguiu ler.",
   "githubFailureNotFound": "Não encontrado, ou seu token não consegue ver este repositório.",
@@ -3433,8 +3451,9 @@
   "githubSummaryHeading": "Em resumo",
   "githubSummaryNoModel": "Não há nenhum modelo configurado para o agente desta tarefa, então nada pode escrever o resumo.",
   "githubSummaryOnNextRefresh": "Um resumo será escrito na próxima vez que este pull request for atualizado, ou resume-o agora.",
+  "githubTokenChecksCaveat": "As verificações de CI de repositórios privados podem ficar incompletas: o GitHub não dá a estes tokens acesso aos check runs.",
   "githubTokenHide": "Ocultar token",
-  "githubTokenIntro": "O Lotti lê as pull requests que você vincula às tarefas com seu próprio token de acesso pessoal. Crie um token fine-grained para os repositórios em que você trabalha, com acesso somente leitura a \"Pull requests\" e \"Commit statuses\". O GitHub não deixa esse token ler os check runs de um repositório privado, então ali a CI pode ficar incompleta; um token clássico com o escopo \"repo\" consegue lê-los.",
+  "githubTokenIntro": "O Lotti lê os pull requests que associas às tarefas com um token só de leitura da tua conta do GitHub. Cria-o no GitHub (as permissões já vêm preenchidas), escolhe os teus repositórios e cola o token aqui.",
   "githubTokenLabel": "Token de acesso pessoal",
   "githubTokenPrivacy": "O token é sincronizado com criptografia de ponta a ponta com seus outros dispositivos. O Lotti só o usa para solicitações a api.github.com.",
   "githubTokenShow": "Mostrar token",

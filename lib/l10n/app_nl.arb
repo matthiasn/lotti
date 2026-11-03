@@ -3330,8 +3330,26 @@
       }
     }
   },
+  "githubConnectedToast": "Verbonden met GitHub als @{login}",
+  "@githubConnectedToast": {
+    "description": "Toast once GitHub accepted a token and this device stored it.",
+    "placeholders": {
+      "login": {
+        "type": "String",
+        "example": "octocat"
+      }
+    }
+  },
+  "githubConnectSaveFailed": "GitHub heeft het geaccepteerd, maar Lotti kon het niet in de sleutelhanger opslaan. Probeer het opnieuw.",
+  "githubConnectSaveFailedTitle": "Token niet opgeslagen",
+  "githubCreateTokenButton": "Token aanmaken op GitHub",
+  "githubCreateTokenOpenFailed": "Maak het token aan op github.com onder Settings → Developer settings → Personal access tokens.",
+  "githubCreateTokenOpenFailedTitle": "Je browser ging niet open",
   "githubDescriptionHeading": "Beschrijving",
   "githubDisconnectButton": "Verbinding verbreken",
+  "githubDisconnectedToast": "Verbinding met GitHub verbroken",
+  "githubDisconnectFailed": "Dit apparaat kon het token niet verwijderen. Probeer het opnieuw.",
+  "githubDisconnectFailedTitle": "Token niet verwijderd",
   "githubFailureForbidden": "Het token mag dit niet lezen. Controleer de rechten ervan.",
   "githubFailureInvalidResponse": "GitHub stuurde een antwoord dat Lotti niet kon lezen.",
   "githubFailureNotFound": "Niet gevonden, of je token kan deze repository niet zien.",
@@ -3433,8 +3451,9 @@
   "githubSummaryHeading": "In het kort",
   "githubSummaryNoModel": "Er is geen model ingesteld voor de agent van deze taak, dus niets kan de samenvatting schrijven.",
   "githubSummaryOnNextRefresh": "Er wordt een samenvatting geschreven wanneer deze pull request de volgende keer wordt vernieuwd, of vat hem nu samen.",
+  "githubTokenChecksCaveat": "CI-checks van privérepository's kunnen onvolledig zijn: GitHub geeft deze tokens geen toegang tot check runs.",
   "githubTokenHide": "Token verbergen",
-  "githubTokenIntro": "Lotti leest de pull requests die je aan taken koppelt met je eigen persoonlijke toegangstoken. Maak een fine-grained token voor de repository's waarin je werkt, met alleen-lezen toegang tot \"Pull requests\" en \"Commit statuses\". GitHub laat zo'n token geen check runs lezen in een privérepository, dus daar kan CI onvolledig zijn; een klassiek token met de scope \"repo\" kan ze wel lezen.",
+  "githubTokenIntro": "Lotti leest de pull requests die je aan taken koppelt met een alleen-lezen token van je GitHub-account. Maak er een aan op GitHub — de rechten zijn al ingevuld. Kies je repository's en plak het token hier.",
   "githubTokenLabel": "Persoonlijk toegangstoken",
   "githubTokenPrivacy": "Het token synchroniseert end-to-end versleuteld met je andere apparaten. Lotti gebruikt het alleen voor verzoeken aan api.github.com.",
   "githubTokenShow": "Token tonen",

@@ -7363,10 +7363,42 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String githubConnectedToast(String login) {
+    return 'Připojeno ke GitHubu jako @$login';
+  }
+
+  @override
+  String get githubConnectSaveFailed =>
+      'GitHub ho přijal, ale do klíčenky zařízení se ho nepodařilo uložit. Zkus to znovu.';
+
+  @override
+  String get githubConnectSaveFailedTitle => 'Token nebyl uložen';
+
+  @override
+  String get githubCreateTokenButton => 'Vytvořit token na GitHubu';
+
+  @override
+  String get githubCreateTokenOpenFailed =>
+      'Vytvoř token na github.com v Settings → Developer settings → Personal access tokens.';
+
+  @override
+  String get githubCreateTokenOpenFailedTitle => 'Prohlížeč se neotevřel';
+
+  @override
   String get githubDescriptionHeading => 'Popis';
 
   @override
   String get githubDisconnectButton => 'Odpojit';
+
+  @override
+  String get githubDisconnectedToast => 'Odpojeno od GitHubu';
+
+  @override
+  String get githubDisconnectFailed =>
+      'Toto zařízení nedokázalo token odebrat. Zkus to znovu.';
+
+  @override
+  String get githubDisconnectFailedTitle => 'Token nebyl odebrán';
 
   @override
   String get githubFailureForbidden =>
@@ -7638,11 +7670,15 @@ class AppLocalizationsCs extends AppLocalizations {
       'Shrnutí se napíše při příští aktualizaci tohoto pull requestu, nebo ho shrň hned teď.';
 
   @override
+  String get githubTokenChecksCaveat =>
+      'CI kontroly soukromých repozitářů můžou být neúplné: GitHub těmto tokenům nedává přístup ke check runs.';
+
+  @override
   String get githubTokenHide => 'Skrýt token';
 
   @override
   String get githubTokenIntro =>
-      'Lotti čte pull requesty, které propojíš s úkoly, pomocí tvého vlastního osobního přístupového tokenu. Vytvoř fine-grained token pro repozitáře, ve kterých pracuješ, s přístupem jen ke čtení k \"Pull requests\" a \"Commit statuses\". GitHub takovému tokenu nedovolí číst check runs v soukromém repozitáři, takže tam může být CI neúplné; klasický token se scope \"repo\" je přečte.';
+      'Lotti čte pull requesty, které propojíš s úkoly, pomocí tokenu jen pro čtení z tvého účtu GitHub. Vytvoř ho na GitHubu – oprávnění jsou už vyplněná –, vyber své repozitáře a token sem vlož.';
 
   @override
   String get githubTokenLabel => 'Osobní přístupový token';

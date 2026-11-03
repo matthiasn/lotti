@@ -4410,11 +4410,29 @@
       }
     }
   },
+  "githubConnectedToast": "Connected to GitHub as @{login}",
+  "@githubConnectedToast": {
+    "description": "Toast once GitHub accepted a token and this device stored it.",
+    "placeholders": {
+      "login": {
+        "type": "String",
+        "example": "octocat"
+      }
+    }
+  },
+  "githubConnectSaveFailed": "GitHub accepted it, but Lotti couldn't save it in this device's keychain. Try again.",
+  "githubConnectSaveFailedTitle": "Token not stored",
+  "githubCreateTokenButton": "Create a token on GitHub",
+  "githubCreateTokenOpenFailed": "Create the token on github.com under Settings → Developer settings → Personal access tokens.",
+  "githubCreateTokenOpenFailedTitle": "Your browser did not open",
   "githubDescriptionHeading": "Description",
   "@githubDescriptionHeading": {
     "description": "Heading over a pull request's own description."
   },
   "githubDisconnectButton": "Disconnect",
+  "githubDisconnectedToast": "Disconnected from GitHub",
+  "githubDisconnectFailed": "This device could not remove the token. Try again.",
+  "githubDisconnectFailedTitle": "Token not removed",
   "githubFailureForbidden": "The token is not allowed to read this. Check its permissions.",
   "githubFailureInvalidResponse": "GitHub sent a response Lotti could not read.",
   "githubFailureNotFound": "Not found, or your token cannot see this repository.",
@@ -4611,8 +4629,9 @@
   "@githubSummaryOnNextRefresh": {
     "description": "Shown under the empty TL;DR in a pull request's details when a summary will be written automatically."
   },
+  "githubTokenChecksCaveat": "CI checks of private repositories may be incomplete: GitHub gives these tokens no access to check runs.",
   "githubTokenHide": "Hide token",
-  "githubTokenIntro": "Lotti reads the pull requests you link to tasks with your own personal access token. Create a fine-grained token for the repositories you work in, with read-only access to \"Pull requests\" and \"Commit statuses\". GitHub does not let such a token read check runs in a private repository, so CI may be incomplete there; a classic token with the \"repo\" scope can read them.",
+  "githubTokenIntro": "Lotti reads the pull requests you link to tasks with a read-only token from your GitHub account. Create one on GitHub — the permissions are filled in for you — choose your repositories, then paste the token here.",
   "githubTokenLabel": "Personal access token",
   "githubTokenPrivacy": "The token syncs end-to-end encrypted to your other devices. Lotti uses it only for requests to api.github.com.",
   "githubTokenShow": "Show token",

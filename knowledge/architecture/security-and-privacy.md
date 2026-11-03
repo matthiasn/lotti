@@ -103,8 +103,15 @@ message, so neither the message nor a log line prints it.
 
 - **A read-through in-memory cache.** The first read of a key is memoised for
   the process lifetime; `writeValue` deletes before writing so the cache and the
-  keystore cannot disagree. Writes, deletes and cache-missing reads run one at
-  a time, so a read never caches a value a pending write or delete replaces.
+  keystore cannot disagree. A write the keystore refuses (macOS -34018, a
+  locked keyring) throws and leaves the key as it was: the previous value is
+  put back (a restore the keystore refuses too is logged as
+  `secureStorage.restore`), and the cache takes the new value only once the
+  keystore has — so no read returns a value that was never stored, a refused
+  replacement does not lose the value it was replacing, and the Linux repair
+  below never writes a refused value back. Writes,
+  deletes and cache-missing reads run one at a time, so a read never caches a
+  value a pending write or delete replaces.
 - **Namespacing by package name.** iOS and macOS entries carry the app's package
   name as `accountName`, so build flavours installed side by side do not collide
   in a shared keychain.

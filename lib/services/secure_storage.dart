@@ -63,18 +63,8 @@ class SecureStorage {
     if (cached != null) return cached;
 
     return _serially(() async {
-      final stored = await _storage.read(
-        key: key,
-        iOptions: await _iOptions(),
-        mOptions: await _mOptions(),
-      );
-      if (stored == null) return null;
-      final value = singleBundle && stored.startsWith(encodedPrefix)
-          ? utf8.decode(
-              base64Url.decode(stored.substring(encodedPrefix.length)),
-            )
-          : stored;
-      _state[key] = value;
+      final value = await _readStored(key);
+      if (value != null) _state[key] = value;
       return value;
     });
   }
@@ -85,11 +75,24 @@ class SecureStorage {
 
   /// Persists [value] under [key] in both the in-memory cache and the
   /// keychain, deleting any prior entry first so the two stay in sync.
+  ///
+  /// A write the keychain refuses (macOS -34018, a locked keyring) throws,
+  /// and leaves [key] as it was: the previous value is put back, and the
+  /// cache takes the new value only once the keychain has. So no later read
+  /// returns a value that was never stored, a refused replacement does not
+  /// lose the one it was replacing, and on a [singleBundle] keystore the
+  /// repair never writes a refused value back.
   Future<void> writeValue(String key, String value) => _serially(() async {
     await _repairBundle();
+    final previous = _state[key] ?? await _readStoredOrNull(key);
     await _remove(key);
+    try {
+      await _put(key, value);
+    } on Object {
+      await _restore(key, previous);
+      rethrow;
+    }
     _state[key] = value;
-    await _put(key, value);
   });
 
   Future<void> write({
@@ -124,6 +127,49 @@ class SecureStorage {
     );
     for (final key in keys) {
       await _put(key, _state[key]!);
+    }
+  }
+
+  /// The value stored under [key], decoded; null when there is none.
+  Future<String?> _readStored(String key) async {
+    final stored = await _storage.read(
+      key: key,
+      iOptions: await _iOptions(),
+      mOptions: await _mOptions(),
+    );
+    if (stored == null) return null;
+    return singleBundle && stored.startsWith(encodedPrefix)
+        ? utf8.decode(base64Url.decode(stored.substring(encodedPrefix.length)))
+        : stored;
+  }
+
+  /// [_readStored], for the value a write may have to put back: a keychain
+  /// that cannot read it leaves nothing to restore, and does not stop the
+  /// write.
+  Future<String?> _readStoredOrNull(String key) async {
+    try {
+      return await _readStored(key);
+    } on Object {
+      return null;
+    }
+  }
+
+  /// Puts [previous] back under [key] after a refused write deleted it. A
+  /// keychain that refuses this too is logged; the write's own error is what
+  /// the caller sees.
+  Future<void> _restore(String key, String? previous) async {
+    if (previous == null) return;
+    try {
+      await _put(key, previous);
+      _state[key] = previous;
+    } on Object catch (error, stackTrace) {
+      _logging?.error(
+        LogDomain.persistence,
+        error,
+        stackTrace: stackTrace,
+        subDomain: 'secureStorage.restore',
+        message: 'Could not put the previous value back after a refused write',
+      );
     }
   }
 

@@ -64,16 +64,20 @@ analysed by AI only once the user has added it to the task.
 
 ```text
 lib/classes/pull_request_data.dart        PullRequestData, PullRequestSnapshot
+lib/classes/github/
+  pull_request_ref.dart                   parsing a pasted pull request
+  github_repository.dart                  parsing a category's owner/repo
+  pull_request_order.dart                 observation order, digest, concurrent merge
 lib/features/github/
   api/github_client.dart                  REST reads, stamps, failures, rate limit, ETags
   api/pull_request_mapper.dart            responses to a PullRequestSnapshot
   context/                                refresh and render pull requests for task contexts
-  domain/pull_request_ref.dart            parsing a pasted pull request
-  domain/github_repository.dart           parsing a category's owner/repo
+  domain/distinct_pull_requests.dart      one entry per pull request, newest first
+  domain/github_token_template.dart       GitHub's token form, pre-filled with Lotti's permissions
   domain/open_pull_request.dart           what the picker lists
-  domain/pull_request_order.dart          observation order, digest, concurrent merge
   domain/pull_request_write_rule.dart     when an observation is written
   domain/pull_request_summary.dart        a summary's tiers and limits, and what it is written from
+  repository/github_account_sync.dart     the token sent to and taken from the other devices
   repository/github_token_storage.dart    the token in the keystore
   repository/pull_request_repository.dart link, unlink, track, persist an observation, summaries
   service/pull_request_image_attacher.dart a description's image recorded on the task
@@ -89,7 +93,10 @@ lib/features/github/
 ```
 
 There is no config flag. A token GitHub accepts, added under Settings →
-Advanced Settings → GitHub, makes pull requests trackable. A task shows its
+Advanced Settings → GitHub, makes pull requests trackable. That page's "Create
+a token on GitHub" opens GitHub's token form with Lotti's name, a one-year
+lifetime and the read-only permissions filled in; the user picks the
+repositories, creates the token and pastes it back. A task shows its
 Pull requests section once the user picks "Pull request tracking" from the
 "+" of its action bar — a choice stored on the task, so it holds on every
 device — or while a pull request is linked to it. A category names its

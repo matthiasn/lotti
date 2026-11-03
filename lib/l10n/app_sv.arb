@@ -3331,8 +3331,26 @@
       }
     }
   },
+  "githubConnectedToast": "Ansluten till GitHub som @{login}",
+  "@githubConnectedToast": {
+    "description": "Toast once GitHub accepted a token and this device stored it.",
+    "placeholders": {
+      "login": {
+        "type": "String",
+        "example": "octocat"
+      }
+    }
+  },
+  "githubConnectSaveFailed": "GitHub godkände den, men Lotti kunde inte spara den i enhetens nyckelring. Försök igen.",
+  "githubConnectSaveFailedTitle": "Token sparades inte",
+  "githubCreateTokenButton": "Skapa en token på GitHub",
+  "githubCreateTokenOpenFailed": "Skapa token på github.com under Settings → Developer settings → Personal access tokens.",
+  "githubCreateTokenOpenFailedTitle": "Din webbläsare öppnades inte",
   "githubDescriptionHeading": "Beskrivning",
   "githubDisconnectButton": "Koppla från",
+  "githubDisconnectedToast": "Frånkopplad från GitHub",
+  "githubDisconnectFailed": "Den här enheten kunde inte ta bort token. Försök igen.",
+  "githubDisconnectFailedTitle": "Token togs inte bort",
   "githubFailureForbidden": "Din token får inte läsa det här. Kontrollera dess behörigheter.",
   "githubFailureInvalidResponse": "GitHub skickade ett svar som Lotti inte kunde läsa.",
   "githubFailureNotFound": "Hittades inte, eller så kan din token inte se det här repot.",
@@ -3434,8 +3452,9 @@
   "githubSummaryHeading": "Kort sagt",
   "githubSummaryNoModel": "Det finns ingen modell inställd för den här uppgiftens agent, så inget kan skriva sammanfattningen.",
   "githubSummaryOnNextRefresh": "En sammanfattning skrivs nästa gång den här pull requesten uppdateras, eller sammanfatta den nu.",
+  "githubTokenChecksCaveat": "CI-kontroller i privata repon kan vara ofullständiga: GitHub ger inte dessa tokens åtkomst till check runs.",
   "githubTokenHide": "Dölj token",
-  "githubTokenIntro": "Lotti läser de pull requests du kopplar till uppgifter med din egen personliga åtkomsttoken. Skapa en fine-grained token för de repon du arbetar i, med läsbehörighet till \"Pull requests\" och \"Commit statuses\". GitHub låter inte en sådan token läsa check runs i ett privat repo, så där kan CI vara ofullständig; en klassisk token med scopet \"repo\" kan läsa dem.",
+  "githubTokenIntro": "Lotti läser de pull requests du kopplar till uppgifter med en skrivskyddad token från ditt GitHub-konto. Skapa den på GitHub – behörigheterna är redan ifyllda. Välj dina repon och klistra in token här.",
   "githubTokenLabel": "Personlig åtkomsttoken",
   "githubTokenPrivacy": "Token synkas end-to-end-krypterad till dina andra enheter. Lotti använder den bara för förfrågningar till api.github.com.",
   "githubTokenShow": "Visa token",

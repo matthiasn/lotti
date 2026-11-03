@@ -1,3 +1,4 @@
+import 'dart:collection';
 import 'dart:convert';
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -8,6 +9,56 @@ import 'package:mocktail/mocktail.dart';
 
 import '../helpers/package_info.dart';
 import '../mocks/mocks.dart';
+
+/// The plugin's in-memory keystore writes with `data[key] = value`; this map
+/// refuses writes the way a keychain answering -34018 does: every write while
+/// [refusingAll] is set, and otherwise any write of a value in [refused].
+class _RefusingKeystore extends MapBase<String, String> {
+  final _values = <String, String>{};
+  final refused = <String>{};
+  bool refusingAll = false;
+
+  @override
+  String? operator [](Object? key) => _values[key];
+
+  @override
+  void operator []=(String key, String value) {
+    if (refusingAll || refused.contains(value)) {
+      throw Exception('-34018: A required entitlement is not present');
+    }
+    _values[key] = value;
+  }
+
+  @override
+  void clear() => _values.clear();
+
+  @override
+  Iterable<String> get keys => _values.keys;
+
+  @override
+  String? remove(Object? key) => _values.remove(key);
+}
+
+/// A keystore whose reads fail, as a locked keyring's can, while its writes
+/// go through.
+class _UnreadableKeystore extends MapBase<String, String> {
+  final _values = <String, String>{};
+
+  @override
+  String? operator [](Object? key) => throw Exception('keyring locked');
+
+  @override
+  void operator []=(String key, String value) => _values[key] = value;
+
+  @override
+  void clear() => _values.clear();
+
+  @override
+  Iterable<String> get keys => _values.keys;
+
+  @override
+  String? remove(Object? key) => _values.remove(key);
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -128,6 +179,108 @@ void main() {
 
       expect(await storage.read(key: 'key_a'), 'value_a');
       expect(await storage.read(key: 'key_b'), 'value_b');
+    });
+  });
+
+  group('SecureStorage.write the keychain refuses', () {
+    late _RefusingKeystore keystore;
+    late MockDomainLogger logging;
+
+    setUp(() {
+      keystore = _RefusingKeystore();
+      FlutterSecureStorage.setMockInitialValues(keystore);
+      logging = MockDomainLogger();
+    });
+
+    SecureStorage storage({bool singleBundle = false}) =>
+        SecureStorage(singleBundle: singleBundle, logging: logging);
+
+    Future<void> refusedWrite(SecureStorage s, String value) => expectLater(
+      s.write(key: 'github', value: value),
+      throwsException,
+    );
+
+    test('a new key: throws, and nothing is read back or stored', () async {
+      final s = storage();
+      keystore.refused.add('ghp_refused');
+
+      await refusedWrite(s, 'ghp_refused');
+
+      expect(await s.read(key: 'github'), isNull);
+      expect(keystore.containsKey('github'), isFalse);
+    });
+
+    test(
+      'over a cached value: the previous value stays, cached and stored',
+      () async {
+        keystore['github'] = 'ghp_old';
+        final s = storage();
+        expect(await s.read(key: 'github'), 'ghp_old');
+        keystore.refused.add('ghp_refused');
+
+        await refusedWrite(s, 'ghp_refused');
+
+        expect(await s.read(key: 'github'), 'ghp_old');
+        expect(keystore['github'], 'ghp_old');
+      },
+    );
+
+    test('over a value never read here: the stored one is put back', () async {
+      keystore['github'] = 'ghp_old';
+      final s = storage();
+      keystore.refused.add('ghp_refused');
+
+      await refusedWrite(s, 'ghp_refused');
+
+      expect(keystore['github'], 'ghp_old');
+      expect(await s.read(key: 'github'), 'ghp_old');
+    });
+
+    test("a keychain that refuses the restore too: the write's error is "
+        'thrown, the restore logged, and no stale value is cached', () async {
+      keystore['github'] = 'ghp_old';
+      final s = storage();
+      expect(await s.read(key: 'github'), 'ghp_old');
+      keystore.refusingAll = true;
+
+      await refusedWrite(s, 'ghp_refused');
+
+      keystore.refusingAll = false;
+      expect(await s.read(key: 'github'), isNull);
+      verify(
+        () => logging.error(
+          LogDomain.persistence,
+          any(),
+          stackTrace: any(named: 'stackTrace'),
+          subDomain: 'secureStorage.restore',
+          message: any(named: 'message'),
+        ),
+      ).called(1);
+    });
+
+    test(
+      'a keychain that cannot read the previous value still writes',
+      () async {
+        final s = storage();
+        FlutterSecureStorage.setMockInitialValues(_UnreadableKeystore());
+
+        await s.write(key: 'github', value: 'ghp_new');
+
+        expect(await s.read(key: 'github'), 'ghp_new');
+      },
+    );
+
+    test('on a single-bundle keystore, the repair never writes the refused '
+        'value back', () async {
+      final s = storage(singleBundle: true);
+      await s.write(key: 'matrix', value: 'config');
+      keystore.refused.add('ghp_refused');
+
+      await refusedWrite(s, 'ghp_refused');
+
+      await s.write(key: 'other', value: 'value');
+
+      expect(keystore.keys, unorderedEquals(['matrix', 'other']));
     });
   });
 

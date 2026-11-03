@@ -233,7 +233,7 @@ flowchart LR
   Preferences --> Keyboard["Keyboard shortcuts"]
 
   Advanced --> Flags["Config flags — URL /settings/flags"]
-  Advanced --> GitHub["GitHub — if enableGitHubPullRequests"]
+  Advanced --> GitHub["GitHub"]
   Advanced --> ManualLanguage["Manual language"]
   Advanced --> Logging["Logging domains"]
   Advanced --> SystemHealth["System health"]

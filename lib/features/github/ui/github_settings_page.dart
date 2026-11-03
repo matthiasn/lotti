@@ -1,13 +1,17 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
+import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/github/api/github_client.dart';
+import 'package:lotti/features/github/domain/github_token_template.dart';
 import 'package:lotti/features/github/state/github_providers.dart';
 import 'package:lotti/features/github/ui/github_failure_message.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/pages/sliver_box_adapter_page.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 /// What the page last learned about the user's other devices.
 enum _SyncNote {
@@ -37,7 +41,9 @@ class GitHubSettingsPage extends StatelessWidget {
 }
 
 /// Connects to GitHub with the user's personal access token, or shows whose
-/// token it holds and lets the user remove it. The token syncs to the user's
+/// token it holds and lets the user remove it. Without one, it opens GitHub's
+/// token form with Lotti's read-only permissions filled in, for the user to
+/// paste the result back. The token syncs to the user's
 /// other devices; a small action sends it to them again, or — on a device
 /// without one — asks sync to catch up, rather than syncing on every visit.
 class GitHubSettingsBody extends ConsumerStatefulWidget {
@@ -63,33 +69,98 @@ class _GitHubSettingsBodyState extends ConsumerState<GitHubSettingsBody> {
     super.dispose();
   }
 
+  /// Checks the typed token with GitHub and keeps it. A token GitHub refuses
+  /// is said in the field's error slot; one this device could not keep — a
+  /// keychain that refuses the write — is said in an error toast. A
+  /// connection is confirmed with a toast.
   Future<void> _connect() async {
     setState(() {
       _connecting = true;
       _error = null;
     });
-    final failure = await ref
+    final outcome = await ref
         .read(gitHubAccountControllerProvider.notifier)
         .connect(_tokenController.text);
-    final owed = failure == null && await _changeOwed();
     if (!mounted) return;
+    final owed = outcome is GitHubConnected && await _changeOwed();
+    if (!mounted) return;
+    final messages = context.messages;
     setState(() {
       _connecting = false;
-      _error = failure == null
-          ? null
-          : gitHubFailureMessage(context.messages, failure);
-      if (failure == null) _tokenController.clear();
+      _error = switch (outcome) {
+        GitHubConnectRefused(:final kind) => gitHubFailureMessage(
+          messages,
+          kind,
+        ),
+        GitHubConnected() || GitHubTokenNotStored() => null,
+      };
+      if (outcome is GitHubConnected) _tokenController.clear();
       _syncNote = owed ? _SyncNote.owed : null;
     });
+    switch (outcome) {
+      case GitHubConnected(:final login):
+        context.showToast(
+          tone: DesignSystemToastTone.success,
+          title: messages.githubConnectedToast(login),
+        );
+      case GitHubTokenNotStored():
+        context.showToast(
+          tone: DesignSystemToastTone.error,
+          title: messages.githubConnectSaveFailedTitle,
+          description: messages.githubConnectSaveFailed,
+        );
+      case GitHubConnectRefused():
+        break;
+    }
   }
 
+  /// Opens GitHub's pre-filled token form in the browser. A browser that
+  /// cannot be opened is said in an error toast, with where to make the token
+  /// by hand — never thrown.
+  Future<void> _createToken() async {
+    var opened = false;
+    try {
+      opened = await launchUrl(
+        gitHubTokenTemplateUri(),
+        mode: LaunchMode.externalApplication,
+      );
+    } on Exception {
+      opened = false;
+    }
+    if (opened || !mounted) return;
+    context.showToast(
+      tone: DesignSystemToastTone.error,
+      title: context.messages.githubCreateTokenOpenFailedTitle,
+      description: context.messages.githubCreateTokenOpenFailed,
+    );
+  }
+
+  /// Forgets the token here and on the other devices, and says so with a
+  /// toast — or, when this device could not forget it, says that instead.
   Future<void> _disconnect() async {
-    await ref.read(gitHubAccountControllerProvider.notifier).disconnect();
+    final forgotten = await ref
+        .read(gitHubAccountControllerProvider.notifier)
+        .disconnect();
+    if (!mounted) return;
+    if (!forgotten) {
+      context.showToast(
+        tone: DesignSystemToastTone.error,
+        title: context.messages.githubDisconnectFailedTitle,
+        description: context.messages.githubDisconnectFailed,
+      );
+      return;
+    }
     final owed = await _changeOwed();
     if (!mounted) return;
     setState(() => _syncNote = owed ? _SyncNote.owed : null);
+    context.showToast(
+      tone: DesignSystemToastTone.success,
+      title: context.messages.githubDisconnectedToast,
+    );
   }
 
+  /// Whether a change made here still has to reach the outbox; a keychain
+  /// that cannot be read answers no, which leaves the note unsaid.
   Future<bool> _changeOwed() =>
       ref.read(gitHubAccountControllerProvider.notifier).changeOwed();
 
@@ -193,6 +264,16 @@ class _GitHubSettingsBodyState extends ConsumerState<GitHubSettingsBody> {
           ] else ...[
             Text(messages.githubTokenIntro, style: secondary),
             SizedBox(height: tokens.spacing.step5),
+            DesignSystemButton(
+              key: const Key('github_create_token'),
+              label: messages.githubCreateTokenButton,
+              variant: DesignSystemButtonVariant.secondary,
+              leadingIcon: LottiIcons.openExternal,
+              size: DesignSystemButtonSize.large,
+              fullWidth: true,
+              onPressed: _createToken,
+            ),
+            SizedBox(height: tokens.spacing.step5),
             DesignSystemTextInput(
               key: const Key('github_token'),
               controller: _tokenController,
@@ -215,9 +296,8 @@ class _GitHubSettingsBodyState extends ConsumerState<GitHubSettingsBody> {
               leadingIcon: LottiIcons.key,
               size: DesignSystemButtonSize.large,
               fullWidth: true,
-              onPressed: _connecting || _tokenController.text.trim().isEmpty
-                  ? null
-                  : _connect,
+              isLoading: _connecting,
+              onPressed: _tokenController.text.trim().isEmpty ? null : _connect,
             ),
           ],
           if (canSync) ...[
@@ -251,6 +331,14 @@ class _GitHubSettingsBodyState extends ConsumerState<GitHubSettingsBody> {
                 }
                 case final note?)
               Text(note, key: const Key('github_sync_note'), style: secondary),
+          ],
+          if (login == null) ...[
+            SizedBox(height: tokens.spacing.step5),
+            Text(
+              messages.githubTokenChecksCaveat,
+              key: const Key('github_token_checks_caveat'),
+              style: secondary,
+            ),
           ],
           SizedBox(height: tokens.spacing.step5),
           Row(

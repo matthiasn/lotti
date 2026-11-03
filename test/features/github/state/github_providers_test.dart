@@ -37,6 +37,7 @@ import 'package:lotti/logic/repositories/journal_repository.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/editor_state_service.dart';
+import 'package:lotti/services/logging_domains.dart';
 import 'package:lotti/services/outbox_service.dart';
 import 'package:lotti/services/secure_storage.dart';
 import 'package:mocktail/mocktail.dart';
@@ -170,11 +171,14 @@ void main() {
         final c = account();
         await c.read(gitHubAccountControllerProvider.future);
 
-        final failure = await c
+        final outcome = await c
             .read(gitHubAccountControllerProvider.notifier)
             .connect('  ghp_secret \n');
 
-        expect(failure, isNull);
+        expect(
+          outcome,
+          isA<GitHubConnected>().having((o) => o.login, 'login', 'pingu'),
+        );
         expect(c.read(gitHubAccountControllerProvider).value, 'pingu');
         expect(await storage.readToken(), 'ghp_secret');
         final message = sent.single as SyncGitHubAccount;
@@ -192,8 +196,22 @@ void main() {
       await c.read(gitHubAccountControllerProvider.future);
       final notifier = c.read(gitHubAccountControllerProvider.notifier);
 
-      expect(await notifier.connect('ghp_bad'), GitHubFailureKind.unauthorized);
-      expect(await notifier.connect('   '), GitHubFailureKind.noToken);
+      expect(
+        await notifier.connect('ghp_bad'),
+        isA<GitHubConnectRefused>().having(
+          (o) => o.kind,
+          'kind',
+          GitHubFailureKind.unauthorized,
+        ),
+      );
+      expect(
+        await notifier.connect('   '),
+        isA<GitHubConnectRefused>().having(
+          (o) => o.kind,
+          'kind',
+          GitHubFailureKind.noToken,
+        ),
+      );
       expect(c.read(gitHubAccountControllerProvider).value, isNull);
       expect(await storage.read(), isNull);
       expect(sent, isEmpty);
@@ -222,6 +240,210 @@ void main() {
       },
     );
 
+    group('a keychain that refuses', () {
+      late MockSecureStorage keystore;
+      late MockDomainLogger logger;
+
+      setUpAll(() => registerFallbackValue(LogDomain.settings));
+
+      setUp(() {
+        keystore = inMemoryKeychain(keychain);
+        storage = GitHubTokenStorage(keystore, namespace: 'real');
+        logger = MockDomainLogger();
+      });
+
+      ProviderContainer logged() {
+        final c = ProviderContainer(
+          overrides: withServiceOverrides([
+            gitHubClientProvider.overrideWithValue(client),
+            gitHubTokenStorageProvider.overrideWithValue(storage),
+            gitHubAccountSyncProvider.overrideWithValue(
+              GitHubAccountSync(
+                storage: storage,
+                enqueueOrThrow: (message) async => sent.add(message),
+              ),
+            ),
+            domainLoggerProvider.overrideWithValue(logger),
+          ]),
+        );
+        addTearDown(c.dispose);
+        return c;
+      }
+
+      final keychainError = Exception('-34018: entitlement missing');
+
+      void writesFail() => when(
+        () => keystore.write(
+          key: any(named: 'key'),
+          value: any(named: 'value'),
+        ),
+      ).thenThrow(keychainError);
+
+      void verifyLogged(String operation) => verify(
+        () => logger.error(
+          LogDomain.settings,
+          keychainError,
+          stackTrace: any(named: 'stackTrace'),
+          subDomain: 'github.keychain.$operation',
+          errorType: any(named: 'errorType'),
+        ),
+      ).called(1);
+
+      test(
+        'a token GitHub accepted but the keychain refused is answered as '
+        'not stored, logged, and neither held nor sent',
+        () async {
+          when(
+            () => client.fetchViewerLogin('ghp_secret'),
+          ).thenAnswer((_) async => 'pingu');
+          final c = logged();
+          await c.read(gitHubAccountControllerProvider.future);
+          writesFail();
+
+          final outcome = await c
+              .read(gitHubAccountControllerProvider.notifier)
+              .connect('ghp_secret');
+
+          expect(outcome, isA<GitHubTokenNotStored>());
+          expect(c.read(gitHubAccountControllerProvider).value, isNull);
+          expect(sent, isEmpty);
+          verifyLogged('connect');
+          verifyNever(
+            () => notifications.notify(any(), fromSync: any(named: 'fromSync')),
+          );
+        },
+      );
+
+      test(
+        'a disconnection the keychain refused answers false, is logged, and '
+        'leaves the account connected',
+        () async {
+          await storage.save(token: 'ghp_secret', login: 'pingu');
+          final c = logged();
+          await c.read(gitHubAccountControllerProvider.future);
+          writesFail();
+
+          final forgotten = await c
+              .read(gitHubAccountControllerProvider.notifier)
+              .disconnect();
+
+          expect(forgotten, isFalse);
+          expect(c.read(gitHubAccountControllerProvider).value, 'pingu');
+          expect(keychain.values.join(), contains('ghp_secret'));
+          expect(sent, isEmpty);
+          verifyLogged('disconnect');
+        },
+      );
+
+      test(
+        'a keychain that cannot be read owes nothing, and is logged',
+        () async {
+          final c = logged();
+          await c.read(gitHubAccountControllerProvider.future);
+          when(
+            () => keystore.read(key: any(named: 'key')),
+          ).thenThrow(keychainError);
+
+          expect(
+            await c.read(gitHubAccountControllerProvider.notifier).changeOwed(),
+            isFalse,
+          );
+          verifyLogged('changeOwed');
+        },
+      );
+
+      test(
+        'a stored record that is not JSON is logged without its text, so the '
+        'token in it stays out of the log',
+        () async {
+          keychain['github_account:real'] =
+              '{"token":"ghp_leaked_secret","login":"pingu",';
+          final c = logged();
+          // The controller's own first read fails on the same record.
+          await c
+              .read(gitHubAccountControllerProvider.future)
+              .then<void>((_) {}, onError: (_) {});
+
+          expect(
+            await c.read(gitHubAccountControllerProvider.notifier).changeOwed(),
+            isFalse,
+          );
+
+          final captured = verify(
+            () => logger.error(
+              LogDomain.settings,
+              captureAny(),
+              stackTrace: any(named: 'stackTrace'),
+              subDomain: 'github.keychain.changeOwed',
+              errorType: captureAny(named: 'errorType'),
+            ),
+          ).captured;
+          expect(captured[0], isA<FormatException>());
+          expect(captured[0].toString(), isNot(contains('ghp_leaked_secret')));
+          expect((captured[0] as FormatException).source, isNull);
+          expect(captured[1], FormatException);
+        },
+      );
+
+      test(
+        'a stored token whose announcement failed still connects, sends, '
+        'and logs the announcement',
+        () async {
+          final announceError = Exception('notification failed');
+          when(
+            () => notifications.notify(any(), fromSync: any(named: 'fromSync')),
+          ).thenThrow(announceError);
+          when(
+            () => client.fetchViewerLogin('ghp_secret'),
+          ).thenAnswer((_) async => 'pingu');
+          final c = logged();
+          await c.read(gitHubAccountControllerProvider.future);
+
+          final outcome = await c
+              .read(gitHubAccountControllerProvider.notifier)
+              .connect('ghp_secret');
+
+          expect(outcome, isA<GitHubConnected>());
+          expect(sent, hasLength(1));
+          verify(
+            () => logger.error(
+              LogDomain.settings,
+              announceError,
+              stackTrace: any(named: 'stackTrace'),
+              subDomain: 'github.announce',
+            ),
+          ).called(1);
+        },
+      );
+    });
+
+    test(
+      'a token GitHub accepts after the controller is disposed is still '
+      'stored, and owed to the other devices',
+      () async {
+        final answer = Completer<String>();
+        when(
+          () => client.fetchViewerLogin('ghp_secret'),
+        ).thenAnswer((_) => answer.future);
+        final c = account();
+        await c.read(gitHubAccountControllerProvider.future);
+        final pending = c
+            .read(gitHubAccountControllerProvider.notifier)
+            .connect('ghp_secret');
+
+        c.dispose();
+        answer.complete('pingu');
+
+        expect(
+          await pending,
+          isA<GitHubConnected>().having((o) => o.login, 'login', 'pingu'),
+        );
+        expect(await storage.readToken(), 'ghp_secret');
+        expect((await storage.read())!.owed, isTrue);
+        expect(sent, isEmpty);
+      },
+    );
+
     test(
       'disconnect forgets the token here and on the other devices',
       () async {
@@ -229,7 +451,10 @@ void main() {
         final c = account();
         await c.read(gitHubAccountControllerProvider.future);
 
-        await c.read(gitHubAccountControllerProvider.notifier).disconnect();
+        expect(
+          await c.read(gitHubAccountControllerProvider.notifier).disconnect(),
+          isTrue,
+        );
 
         expect(c.read(gitHubAccountControllerProvider).value, isNull);
         expect(await storage.readToken(), isNull);
@@ -373,7 +598,7 @@ void main() {
         await c.read(gitHubAccountControllerProvider.future);
         final notifier = c.read(gitHubAccountControllerProvider.notifier);
 
-        expect(await notifier.connect('ghp_secret'), isNull);
+        expect(await notifier.connect('ghp_secret'), isA<GitHubConnected>());
         expect(c.read(gitHubAccountControllerProvider).value, 'pingu');
         expect(sent, isEmpty);
         expect(await notifier.changeOwed(), isTrue);

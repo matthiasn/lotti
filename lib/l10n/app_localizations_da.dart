@@ -7285,10 +7285,42 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
+  String githubConnectedToast(String login) {
+    return 'Forbundet til GitHub som @$login';
+  }
+
+  @override
+  String get githubConnectSaveFailed =>
+      'GitHub accepterede det, men Lotti kunne ikke gemme det i enhedens nøglering. Prøv igen.';
+
+  @override
+  String get githubConnectSaveFailedTitle => 'Token ikke gemt';
+
+  @override
+  String get githubCreateTokenButton => 'Opret et token på GitHub';
+
+  @override
+  String get githubCreateTokenOpenFailed =>
+      'Opret tokenet på github.com under Settings → Developer settings → Personal access tokens.';
+
+  @override
+  String get githubCreateTokenOpenFailedTitle => 'Din browser åbnede ikke';
+
+  @override
   String get githubDescriptionHeading => 'Beskrivelse';
 
   @override
   String get githubDisconnectButton => 'Afbryd forbindelsen';
+
+  @override
+  String get githubDisconnectedToast => 'Afbrudt fra GitHub';
+
+  @override
+  String get githubDisconnectFailed =>
+      'Denne enhed kunne ikke fjerne tokenet. Prøv igen.';
+
+  @override
+  String get githubDisconnectFailedTitle => 'Token ikke fjernet';
 
   @override
   String get githubFailureForbidden =>
@@ -7559,11 +7591,15 @@ class AppLocalizationsDa extends AppLocalizations {
       'En opsummering skrives, næste gang denne pull request opdateres, eller opsummer den nu.';
 
   @override
+  String get githubTokenChecksCaveat =>
+      'CI-checks i private repositories kan være ufuldstændige: GitHub giver ikke disse tokens adgang til check runs.';
+
+  @override
   String get githubTokenHide => 'Skjul token';
 
   @override
   String get githubTokenIntro =>
-      'Lotti læser de pull requests, du knytter til opgaver, med dit eget personlige adgangstoken. Opret et fine-grained token til de repositories, du arbejder i, med skrivebeskyttet adgang til \"Pull requests\" og \"Commit statuses\". GitHub lader ikke sådan et token læse check runs i et privat repository, så CI kan være ufuldstændig dér; et klassisk token med scopet \"repo\" kan læse dem.';
+      'Lotti læser de pull requests, du knytter til opgaver, med et skrivebeskyttet token fra din GitHub-konto. Opret det på GitHub – tilladelserne er allerede udfyldt. Vælg dine repositories, og indsæt tokenet her.';
 
   @override
   String get githubTokenLabel => 'Personligt adgangstoken';

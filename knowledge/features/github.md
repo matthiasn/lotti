@@ -44,6 +44,12 @@ sources:
   - id: repository
     resource: ../../lib/features/github/repository/pull_request_repository.dart
     title: PullRequestRepository — link, unlink, and persistObservation through writeOnStored
+  - id: token-template
+    resource: ../../lib/features/github/domain/github_token_template.dart
+    title: gitHubTokenTemplateUri — GitHub's token form, pre-filled with the read-only permissions the client needs
+  - id: settings-page
+    resource: ../../lib/features/github/ui/github_settings_page.dart
+    title: GitHubSettingsBody — connect with a token, create one on GitHub, send it to the other devices
   - id: write-rule
     resource: ../../lib/features/github/domain/pull_request_write_rule.dart
     title: shouldWritePullRequestObservation — Persist's write rule
@@ -252,7 +258,34 @@ the refresh is the app's, the unlink is the user's.
   real one (a token stored before the record existed, under
   `github_token:`/`github_login:`, is moved into it once). It is never logged
   or exported. Settings → Advanced Settings → GitHub saves a token only after
-  `GET /user` accepts it.
+  `GET /user` accepts it. Connect spins while GitHub is asked; a token GitHub
+  refuses is said in the field. `GitHubAccountController.connect` answers
+  with a `GitHubConnectOutcome` — connected, refused with a failure kind, or
+  `GitHubTokenNotStored` when GitHub accepted the token and the keychain would
+  not store it — and the page says the last in an error toast. `disconnect`
+  answers false when the keychain would not forget the token. Every keychain
+  refusal is logged under `LogDomain.settings` (`github.keychain.*`), the
+  error only, never the token. A connection and a disconnection are confirmed
+  with a toast, and a disconnection the keychain refused with an error toast.
+  The field's error is one line, so whatever needs more goes in a toast. A
+  token GitHub accepted is stored even when the page closes while GitHub is
+  asked; its change stays owed until the next start sends it.
+- The user makes the token on GitHub. While the page holds none — or holds
+  one GitHub rejected — its "Create a token on GitHub" opens the fine-grained
+  form at `github.com/settings/personal-access-tokens/new`, filled in from the
+  query string by `gitHubTokenTemplateUri`: the name `Lotti`, an English
+  description (it is read on github.com), `expires_in=366` and
+  `pull_requests`, `statuses` and `metadata`, each `read`. The permissions are
+  exactly the ones `GitHubClient` reads with; a new endpoint adds its own
+  there. 366 days is the longest lifetime short of `none`, which an owner
+  with a token lifetime policy refuses; a shorter one would stop the tracking
+  on every device the token synced to. The form takes no parameter for the
+  repositories, which the user picks, and Lotti sets no `target_name`: a
+  fine-grained token reaches one owner, and a guess from the categories'
+  repositories would be wrong for a user working under two. A browser that
+  cannot be opened is said in an error toast, with where to make the token by
+  hand. The classic token's `scopes=` pre-fill is undocumented, so
+  the page does not link to it.
 - The token **syncs to the user's other devices** (ADR 0117), the way an
   inference provider's API key does: a `gitHubAccount` sync message, end-to-end
   encrypted, applied into the receiver's keychain, the later stamp winning

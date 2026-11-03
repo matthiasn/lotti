@@ -7394,10 +7394,43 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String githubConnectedToast(String login) {
+    return 'Connecté à GitHub en tant que @$login';
+  }
+
+  @override
+  String get githubConnectSaveFailed =>
+      'GitHub l\'a accepté, mais Lotti n\'a pas pu l\'enregistrer dans le trousseau. Réessaie.';
+
+  @override
+  String get githubConnectSaveFailedTitle => 'Jeton non enregistré';
+
+  @override
+  String get githubCreateTokenButton => 'Créer un jeton sur GitHub';
+
+  @override
+  String get githubCreateTokenOpenFailed =>
+      'Crée le jeton sur github.com sous Settings → Developer settings → Personal access tokens.';
+
+  @override
+  String get githubCreateTokenOpenFailedTitle =>
+      'Ton navigateur ne s\'est pas ouvert';
+
+  @override
   String get githubDescriptionHeading => 'Description';
 
   @override
   String get githubDisconnectButton => 'Déconnecter';
+
+  @override
+  String get githubDisconnectedToast => 'Déconnecté de GitHub';
+
+  @override
+  String get githubDisconnectFailed =>
+      'Cet appareil n\'a pas pu supprimer le jeton. Réessaie.';
+
+  @override
+  String get githubDisconnectFailedTitle => 'Jeton non supprimé';
 
   @override
   String get githubFailureForbidden =>
@@ -7671,11 +7704,15 @@ class AppLocalizationsFr extends AppLocalizations {
       'Un résumé sera rédigé à la prochaine actualisation de cette pull request, ou résume-la maintenant.';
 
   @override
+  String get githubTokenChecksCaveat =>
+      'Les checks CI des dépôts privés peuvent être incomplets : GitHub ne donne à ces jetons aucun accès aux check runs.';
+
+  @override
   String get githubTokenHide => 'Masquer le jeton';
 
   @override
   String get githubTokenIntro =>
-      'Lotti lit les pull requests que tu lies à tes tâches avec ton propre jeton d\'accès personnel. Crée un jeton fine-grained pour les dépôts sur lesquels tu travailles, avec un accès en lecture seule à « Pull requests » et « Commit statuses ». GitHub ne laisse pas un tel jeton lire les check runs d\'un dépôt privé, la CI peut donc y être incomplète ; un jeton classique avec le scope « repo » peut les lire.';
+      'Lotti lit les pull requests que tu lies à tes tâches avec un jeton en lecture seule de ton compte GitHub. Crée-le sur GitHub — les autorisations sont déjà remplies —, choisis tes dépôts, puis colle le jeton ici.';
 
   @override
   String get githubTokenLabel => 'Jeton d\'accès personnel';
