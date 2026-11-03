@@ -1350,6 +1350,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get agentTokenUsageCachedTokens => 'Cachad';
 
   @override
+  String get agentTokenUsageCacheHitRate => 'Cacheträffar';
+
+  @override
   String get agentTokenUsageEmpty => 'Ingen tokenanvändning registrerad än.';
 
   @override

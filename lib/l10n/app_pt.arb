@@ -680,6 +680,7 @@
   },
   "agentThreadReportLabel": "Relatório produzido durante este velório",
   "agentTokenUsageCachedTokens": "Em cache",
+  "agentTokenUsageCacheHitRate": "Acertos de cache",
   "agentTokenUsageEmpty": "Nenhum uso de token registrado ainda.",
   "agentTokenUsageErrorLoading": "Falha ao carregar o uso do token: {error}",
   "@agentTokenUsageErrorLoading": {

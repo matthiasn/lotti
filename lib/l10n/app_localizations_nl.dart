@@ -1349,6 +1349,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get agentTokenUsageCachedTokens => 'Gekacheld';
 
   @override
+  String get agentTokenUsageCacheHitRate => 'Cachehits';
+
+  @override
   String get agentTokenUsageEmpty =>
       'Nog geen gebruik van token geregistreerd.';
 

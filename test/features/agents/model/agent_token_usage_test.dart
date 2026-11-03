@@ -151,6 +151,46 @@ void main() {
       expect(summary.totalTokens, 0);
     });
 
+    group('cacheHitRate', () {
+      test('is the cached share of input tokens', () {
+        const summary = AgentTokenUsageSummary(
+          modelId: 'mistral-small-latest',
+          inputTokens: 1234,
+          cachedInputTokens: 567,
+        );
+
+        expect(summary.cacheHitRate, closeTo(0.4595, 0.0001));
+      });
+
+      test('is zero when input was sent but nothing was cached', () {
+        const summary = AgentTokenUsageSummary(
+          modelId: 'test',
+          inputTokens: 500,
+        );
+
+        expect(summary.cacheHitRate, 0.0);
+      });
+
+      test('is null without input tokens to measure against', () {
+        const summary = AgentTokenUsageSummary(
+          modelId: 'test',
+          cachedInputTokens: 10,
+        );
+
+        expect(summary.cacheHitRate, isNull);
+      });
+
+      test('is clamped to 1 when a provider over-reports cached tokens', () {
+        const summary = AgentTokenUsageSummary(
+          modelId: 'test',
+          inputTokens: 100,
+          cachedInputTokens: 150,
+        );
+
+        expect(summary.cacheHitRate, 1.0);
+      });
+    });
+
     test('equality compares all fields', () {
       const a = AgentTokenUsageSummary(
         modelId: 'model-a',

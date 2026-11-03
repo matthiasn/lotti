@@ -302,6 +302,56 @@ void main() {
 
       expect(find.text('gemini-2.5-pro'), findsOneWidget);
       expect(find.text('claude-sonnet'), findsOneWidget);
+
+      // Cache hit rate per model (50/1000, 25/500) and for the total
+      // (75/1500): 5% in all three rows.
+      expect(find.text('5%'), findsNWidgets(3));
+    });
+
+    testWidgets('shows the cache hit rate column in wide layout', (
+      tester,
+    ) async {
+      tester.view
+        ..physicalSize = const Size(800, 844)
+        ..devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view
+          ..resetPhysicalSize()
+          ..resetDevicePixelRatio();
+      });
+
+      await tester.pumpWidget(
+        _buildSubject(
+          summariesOverride: (ref, agentId) async => const [
+            AgentTokenUsageSummary(
+              modelId: 'mistral-small-latest',
+              inputTokens: 1234,
+              outputTokens: 89,
+              cachedInputTokens: 567,
+              wakeCount: 1,
+            ),
+            AgentTokenUsageSummary(
+              modelId: 'local-model',
+              outputTokens: 12,
+              wakeCount: 1,
+            ),
+          ],
+        ),
+      );
+      await tester.pump();
+
+      final context = tester.element(find.byType(AgentTokenUsageSection));
+      expect(
+        find.text(context.messages.agentTokenUsageCacheHitRate),
+        findsOneWidget,
+      );
+      // 567 of 1,234 input tokens cached; the total row carries the same
+      // share because the second model sent no input.
+      expect(find.text('567'), findsNWidgets(2));
+      expect(find.text('46%'), findsNWidgets(2));
+      // No input to measure against: a dash, never a measured 0%.
+      expect(find.text('—'), findsOneWidget);
+      expect(find.text('0%'), findsNothing);
     });
   });
 
@@ -369,6 +419,12 @@ void main() {
           find.textContaining(context.messages.agentTokenUsageOutputTokens),
           findsOneWidget,
         );
+        // 100 of 1,500 input tokens cached rounds to 7%.
+        expect(
+          find.text('${context.messages.agentTokenUsageCacheHitRate}: '),
+          findsOneWidget,
+        );
+        expect(find.text('7%'), findsOneWidget);
       },
     );
 

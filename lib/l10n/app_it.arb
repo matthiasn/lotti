@@ -681,6 +681,7 @@
   },
   "agentThreadReportLabel": "Rapporto prodotto durante la veglia",
   "agentTokenUsageCachedTokens": "In cache",
+  "agentTokenUsageCacheHitRate": "Hit della cache",
   "agentTokenUsageEmpty": "Nessun utilizzo di token registrato ancora.",
   "agentTokenUsageErrorLoading": "Non caricare l'utilizzo di token: {error}",
   "@agentTokenUsageErrorLoading": {

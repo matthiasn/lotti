@@ -554,6 +554,7 @@
   "agentTemplateVersionSaved": "Nová verze šablony uložena",
   "agentThreadReportLabel": "Zpráva vytvořená během tohoto probuzení",
   "agentTokenUsageCachedTokens": "Z mezipaměti",
+  "agentTokenUsageCacheHitRate": "Zásahy cache",
   "agentTokenUsageEmpty": "Zatím nebyla zaznamenána žádná spotřeba tokenů.",
   "agentTokenUsageErrorLoading": "Nepodařilo se načíst spotřebu tokenů: {error}",
   "@agentTokenUsageErrorLoading": {

@@ -1349,6 +1349,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentTokenUsageCachedTokens => 'Z mezipaměti';
 
   @override
+  String get agentTokenUsageCacheHitRate => 'Zásahy cache';
+
+  @override
   String get agentTokenUsageEmpty =>
       'Zatím nebyla zaznamenána žádná spotřeba tokenů.';
 

@@ -547,6 +547,7 @@
   "agentTemplateVersionSaved": "Neue Version gespeichert",
   "agentThreadReportLabel": "Bericht aus diesem Aufwachzyklus",
   "agentTokenUsageCachedTokens": "Gecacht",
+  "agentTokenUsageCacheHitRate": "Cache-Treffer",
   "agentTokenUsageEmpty": "Noch kein Token-Verbrauch aufgezeichnet.",
   "agentTokenUsageErrorLoading": "Fehler beim Laden des Token-Verbrauchs: {error}",
   "@agentTokenUsageErrorLoading": {

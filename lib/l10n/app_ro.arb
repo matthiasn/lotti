@@ -547,6 +547,7 @@
   "agentTemplateVersionSaved": "Versiune nouă salvată",
   "agentThreadReportLabel": "Raport generat în acest ciclu",
   "agentTokenUsageCachedTokens": "Din cache",
+  "agentTokenUsageCacheHitRate": "Accesări cache",
   "agentTokenUsageEmpty": "Nu s-a înregistrat încă nicio utilizare de tokeni.",
   "agentTokenUsageErrorLoading": "Eroare la încărcarea utilizării tokenilor: {error}",
   "@agentTokenUsageErrorLoading": {

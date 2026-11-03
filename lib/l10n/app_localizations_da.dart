@@ -1342,6 +1342,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get agentTokenUsageCachedTokens => 'Cachet';
 
   @override
+  String get agentTokenUsageCacheHitRate => 'Cache-hits';
+
+  @override
   String get agentTokenUsageEmpty => 'Ingen token-brug registreret endnu.';
 
   @override

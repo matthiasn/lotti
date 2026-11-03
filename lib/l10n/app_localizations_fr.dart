@@ -1360,6 +1360,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get agentTokenUsageCachedTokens => 'En cache';
 
   @override
+  String get agentTokenUsageCacheHitRate => 'Succès du cache';
+
+  @override
   String get agentTokenUsageEmpty =>
       'Aucune utilisation de jetons enregistrée.';
 

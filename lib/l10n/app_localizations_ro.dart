@@ -1357,6 +1357,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentTokenUsageCachedTokens => 'Din cache';
 
   @override
+  String get agentTokenUsageCacheHitRate => 'Accesări cache';
+
+  @override
   String get agentTokenUsageEmpty =>
       'Nu s-a înregistrat încă nicio utilizare de tokeni.';
 

@@ -680,6 +680,7 @@
   },
   "agentThreadReportLabel": "Verslag dat tijdens deze wake is opgesteld",
   "agentTokenUsageCachedTokens": "Gekacheld",
+  "agentTokenUsageCacheHitRate": "Cachehits",
   "agentTokenUsageEmpty": "Nog geen gebruik van token geregistreerd.",
   "agentTokenUsageErrorLoading": "Laden van token is mislukt: {error}",
   "@agentTokenUsageErrorLoading": {

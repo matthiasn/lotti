@@ -2347,6 +2347,12 @@ abstract class AppLocalizations {
   /// **'Cached'**
   String get agentTokenUsageCachedTokens;
 
+  /// Column header: share of input tokens served from the provider's prompt cache, shown as a percentage
+  ///
+  /// In en, this message translates to:
+  /// **'Cache hits'**
+  String get agentTokenUsageCacheHitRate;
+
   /// No description provided for @agentTokenUsageEmpty.
   ///
   /// In en, this message translates to:

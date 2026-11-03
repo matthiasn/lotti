@@ -1354,6 +1354,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get agentTokenUsageCachedTokens => 'En caché';
 
   @override
+  String get agentTokenUsageCacheHitRate => 'Aciertos de caché';
+
+  @override
   String get agentTokenUsageEmpty =>
       'Aún no se ha registrado el uso de tokens.';
 
