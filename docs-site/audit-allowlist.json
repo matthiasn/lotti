@@ -1,10 +1,4 @@
 {
   "$comment": "Advisories the docs site cannot currently resolve by any dependency change. Each entry must state why no fix is reachable and expire, so it fails the build rather than quietly becoming permanent. Re-check upstream before extending an expiry.",
-  "allow": [
-    {
-      "id": "GHSA-vfj7-8cjw-p6xm",
-      "reason": "Stack-exhaustion denial of service in braces through deeply nested brace patterns. The vulnerable range is <= 3.0.3, which is every published version, and npm reports fixAvailable: false, so no dependency change reaches a fix. Reached only through micromatch and chokidar, which Docusaurus uses at build time and in the dev server to match this repository's own source globs; the patterns are written by us, never supplied by a user, and the deployed artifact is a static site that runs none of it. Re-checked 2026-11-03: 3.0.3 is still the latest release and the advisory lists no patched version. Drop this entry once braces publishes a patched release.",
-      "expires": "2027-02-03"
-    }
-  ]
+  "allow": []
 }
