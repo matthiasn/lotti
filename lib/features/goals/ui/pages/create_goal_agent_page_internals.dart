@@ -157,8 +157,7 @@ extension _CreateGoalAgentPageStateInternals on _CreateGoalAgentPageState {
     if (currentTitle.isNotEmpty && currentTitle != _derivedTitle) return;
     final selectedNames = [
       for (final habit in habits)
-        if (_habitTargets.containsKey(habit.id))
-          _CreateGoalAgentPageState._plainName(habit.name),
+        if (_habitTargets.containsKey(habit.id)) _plainName(habit.name),
     ];
     final derivedTitle = selectedNames.isNotEmpty
         ? selectedNames.join(' & ')
@@ -267,7 +266,7 @@ extension _CreateGoalAgentPageStateInternals on _CreateGoalAgentPageState {
         ),
       for (final entry in _habitTargets.entries)
         context.messages.goalFormHabitCadence(
-          _CreateGoalAgentPageState._plainName(names[entry.key] ?? entry.key),
+          _plainName(names[entry.key] ?? entry.key),
           entry.value,
         ),
       for (final entry in _measurableTargets.entries)

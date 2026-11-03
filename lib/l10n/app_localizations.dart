@@ -13854,6 +13854,12 @@ abstract class AppLocalizations {
   /// **'Add a signal'**
   String get goalFormAddSignal;
 
+  /// No description provided for @goalFormAgentSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your agent'**
+  String get goalFormAgentSectionTitle;
+
   /// No description provided for @goalFormBloodPressureSource.
   ///
   /// In en, this message translates to:

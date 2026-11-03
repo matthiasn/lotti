@@ -8331,6 +8331,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get goalFormAddSignal => 'Ajouter un signal';
 
   @override
+  String get goalFormAgentSectionTitle => 'Ton agent';
+
+  @override
   String get goalFormBloodPressureSource =>
       'Systolique et diastolique · mmHg · moyenne sur 7 jours';
 

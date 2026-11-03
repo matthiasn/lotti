@@ -1,5 +1,26 @@
 part of 'create_goal_agent_page.dart';
 
+/// A habit name without its emoji decorations: the derived goal title is
+/// prose identity, and a red heart must not be the flow's loudest pixel.
+String _plainName(String name) => name
+    .replaceAll(
+      RegExp(
+        r'[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}\u{200D}]',
+        unicode: true,
+      ),
+      '',
+    )
+    .replaceAll(RegExp(r'\s+'), ' ')
+    .trim();
+
+/// A picked health signal starts from a sensible default target instead of
+/// an empty value the form would reject one step later.
+num? _defaultHealthTarget(String dataType) => switch (dataType) {
+  GoalHealthDataTypes.bloodPressureSystolic => 130,
+  GoalHealthDataTypes.bloodPressureDiastolic => 80,
+  _ => null,
+};
+
 /// Form helpers of the goal create and edit page that read or adjust its state without rebuilding it: intention-word matching, catalog fingerprints, criteria assembly and save-time target reconciliation.
 extension _GoalFormHelpers on _CreateGoalAgentPageState {
   /// Drops numeric goal targets whose measurable has since been converted to
@@ -64,7 +85,7 @@ extension _GoalFormHelpers on _CreateGoalAgentPageState {
   bool _overlapsMatchedHealthLabel(String habitName) {
     if (_matchedHealthTypes.isEmpty) return false;
     final habitWords = _words(
-      _CreateGoalAgentPageState._plainName(habitName),
+      _plainName(habitName),
     ).difference(_genericIntentionWords(context));
     if (habitWords.isEmpty) return false;
     final measurementVerbs = _measurementVerbs(context);

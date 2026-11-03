@@ -57,6 +57,8 @@ class _MappingStep extends StatelessWidget {
     required this.onCompositeRuleChanged,
     this.statement,
     this.statementError,
+    this.agentSection,
+    this.enabled = true,
     this.onStatementChanged,
     this.onExampleSelected,
   });
@@ -96,6 +98,15 @@ class _MappingStep extends StatelessWidget {
   /// this page instead of on a wizard step of its own.
   final TextEditingController? statement;
   final String? statementError;
+
+  /// The goal's agent — its name and the goal's category — on the single
+  /// edit page, under the goal's own fields. Null while creating, where the
+  /// confirmation step carries them.
+  final Widget? agentSection;
+
+  /// False while a save is in flight: the page's own text fields show they
+  /// cannot change under the version being written.
+  final bool enabled;
   final VoidCallback? onStatementChanged;
   final ValueChanged<String>? onExampleSelected;
 
@@ -161,7 +172,7 @@ class _MappingStep extends StatelessWidget {
             : null;
         final row = DesignSystemSelectionRow(
           key: ValueKey('goal-form-habit-${habit.id}'),
-          title: _CreateGoalAgentPageState._plainName(habit.name),
+          title: _plainName(habit.name),
           subtitle: messages.goalFormHabitSignal,
           titleMaxLines: 2,
           leading: Icon(
@@ -569,6 +580,7 @@ class _MappingStep extends StatelessWidget {
             label: messages.goalFormStatementLabel,
             leadingIcon: LottiIcons.editNote,
             errorText: statementError,
+            enabled: enabled,
             onChanged: (_) => onStatementChanged?.call(),
           ),
           SizedBox(height: tokens.spacing.step3),
@@ -863,6 +875,7 @@ class _MappingStep extends StatelessWidget {
             label: messages.goalFormGoalNameLabel,
             leadingIcon: LottiIcons.flag,
             errorText: titleError,
+            enabled: enabled,
             onChanged: (_) => onTitleChanged(),
           ),
           SizedBox(height: tokens.spacing.sectionGap),
@@ -896,6 +909,10 @@ class _MappingStep extends StatelessWidget {
               ),
             ),
           ],
+        ],
+        if (agentSection case final agentSection?) ...[
+          SizedBox(height: tokens.spacing.sectionGap),
+          agentSection,
         ],
       ],
     );

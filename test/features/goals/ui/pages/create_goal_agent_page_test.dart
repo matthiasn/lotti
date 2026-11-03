@@ -1290,12 +1290,6 @@ void main() {
       tester.widget<DesignSystemDropdown>(category).inputLabel,
       'archived-category',
     );
-    await tester.tap(find.text('Continue'));
-    await tester.pumpAndSettle();
-    expect(
-      find.textContaining('archived-label: At least 2 hours per day'),
-      findsOneWidget,
-    );
   });
 
   testWidgets('matches category time from the intention with safe defaults', (
@@ -1437,13 +1431,6 @@ void main() {
     );
     expect(
       find.descendant(of: card, matching: find.text('archived')),
-      findsOneWidget,
-    );
-
-    await tester.tap(find.text('Continue'));
-    await tester.pumpAndSettle();
-    expect(
-      find.textContaining('archived: No more than 5 hours per rolling 7 days'),
       findsOneWidget,
     );
     await tester.tap(find.text('Save new version'));
@@ -2589,8 +2576,6 @@ void main() {
         ),
         findsNothing,
       );
-      await tester.tap(find.text('Continue'));
-      await tester.pumpAndSettle();
       await tester.tap(find.text('Save new version'));
       await tester.pump();
       verifyNever(
@@ -3043,8 +3028,6 @@ void main() {
         entry.value,
       );
     }
-    await tester.tap(find.text('Continue'));
-    await tester.pumpAndSettle();
     await tester.tap(find.text('Save new version'));
     await tester.pump();
 
@@ -3220,8 +3203,6 @@ void main() {
     expect(find.text('2×/week', skipOffstage: false), findsOneWidget);
     expect(find.text('5×/week', skipOffstage: false), findsOneWidget);
 
-    await tester.tap(find.text('Continue'));
-    await tester.pumpAndSettle();
     expect(
       find.text('This starts version 4. Your history is kept.'),
       findsOneWidget,
@@ -3321,8 +3302,6 @@ void main() {
         await tester.pumpAndSettle();
         expect(shown(tester), !expectShownBefore!);
       }
-      await tester.tap(find.text('Continue'));
-      await tester.pumpAndSettle();
       await tester.tap(find.text('Save new version'));
       await tester.pump();
 
@@ -3505,8 +3484,6 @@ void main() {
         ),
       );
       await tester.pump();
-      await tester.tap(find.text('Continue'));
-      await tester.pump();
       await tester.tap(find.text('Save new version'));
       await tester.pump();
 
@@ -3560,8 +3537,6 @@ void main() {
         overrides: withServiceOverrides(overrides(editSpec: current)),
       ),
     );
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Continue'));
     await tester.pumpAndSettle();
     await tester.enterText(
       find.byKey(const ValueKey('goal-form-persona')),
@@ -3642,12 +3617,8 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Continue'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('goal-form-title-edit')));
-    await tester.pump();
     await tester.enterText(
-      find.byKey(const ValueKey('goal-form-title')),
+      find.byKey(const ValueKey('goal-form-title-mapping')),
       'Updated movement',
     );
     await tester.tap(find.text('Save new version'));
@@ -3693,8 +3664,6 @@ void main() {
           overrides: withServiceOverrides(overrides(editSpec: current)),
         ),
       );
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Continue'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Save new version'));
       await tester.pump();
@@ -3763,12 +3732,8 @@ void main() {
       await tester.pump();
       await tester.tap(find.byKey(const ValueKey('goal-form-picker-done')));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Continue'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const ValueKey('goal-form-title-edit')));
-      await tester.pump();
       await tester.enterText(
-        find.byKey(const ValueKey('goal-form-title')),
+        find.byKey(const ValueKey('goal-form-title-mapping')),
         'Updated movement',
       );
       await tester.tap(find.text('Save new version'));
@@ -3817,8 +3782,6 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Continue'));
-    await tester.pumpAndSettle();
     await tester.tap(find.text('Save new version'));
     await tester.pump();
 
@@ -3827,7 +3790,7 @@ void main() {
       findsOneWidget,
     );
     expect(
-      find.byKey(const ValueKey('goal-form-title-edit')),
+      find.byKey(const ValueKey('goal-form-title-mapping')),
       findsOneWidget,
     );
     verifyNever(
@@ -3865,8 +3828,6 @@ void main() {
         overrides: overrides(editSpec: _spec(criteria: hiddenCriteria)),
       ),
     );
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Continue'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Save new version'));
     await tester.pump();
@@ -3926,13 +3887,6 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Continue'));
-      await tester.pumpAndSettle();
-      // Open the title input so its disabled state is observable while the
-      // save is busy.
-      await tester.tap(find.byKey(const ValueKey('goal-form-title-edit')));
-      await tester.pump();
-
       final saveLabel = find.text('Save new version');
       await tester.tap(saveLabel);
       await tester.tap(saveLabel);
@@ -3945,17 +3899,21 @@ void main() {
         ),
       );
       expect(inputInside('goal-form-persona').enabled, isFalse);
-      expect(inputInside('goal-form-title').enabled, isFalse);
+      expect(inputInside('goal-form-title-mapping').enabled, isFalse);
+      expect(inputInside('goal-form-intention').enabled, isFalse);
       expect(
         tester.widget<BackButton>(find.byType(BackButton)).onPressed,
         isNull,
       );
       verify(() => habitsRepository.getHabitByIdForIntegrity('gym')).called(1);
 
+      // A system back while saving leaves the page where it is.
       await tester.binding.handlePopRoute();
       await tester.pump();
-      expect(find.byKey(const ValueKey('goal-form-title')), findsOneWidget);
-      expect(find.byKey(const ValueKey('goal-form-habit-gym')), findsNothing);
+      expect(
+        find.byKey(const ValueKey('goal-form-title-mapping')),
+        findsOneWidget,
+      );
 
       integrityLookup.complete(_habit('gym', 'Gym'));
       await tester.pump();
@@ -4014,12 +3972,6 @@ void main() {
     await tester.pumpAndSettle();
     expect(
       find.textContaining('uses a mapping this editor can’t safely rewrite'),
-      findsOneWidget,
-    );
-    await tester.tap(find.text('Continue'));
-    await tester.pumpAndSettle();
-    expect(
-      find.text('The existing signals and schedule will be preserved exactly.'),
       findsOneWidget,
     );
     await tester.tap(find.text('Save new version'));
@@ -4130,12 +4082,8 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Continue'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const ValueKey('goal-form-title-edit')));
-      await tester.pump();
       await tester.enterText(
-        find.byKey(const ValueKey('goal-form-title')),
+        find.byKey(const ValueKey('goal-form-title-mapping')),
         'Updated movement',
       );
       await tester.tap(find.text('Save new version'));
@@ -4180,12 +4128,8 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Continue'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('goal-form-title-edit')));
-    await tester.pump();
     await tester.enterText(
-      find.byKey(const ValueKey('goal-form-title')),
+      find.byKey(const ValueKey('goal-form-title-mapping')),
       'New name',
     );
     await tester.tap(find.text('Save new version'));
@@ -4234,12 +4178,8 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Continue'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('goal-form-title-edit')));
-    await tester.pump();
     await tester.enterText(
-      find.byKey(const ValueKey('goal-form-title')),
+      find.byKey(const ValueKey('goal-form-title-mapping')),
       'New name',
     );
     await tester.tap(find.text('Save new version'));
@@ -4303,12 +4243,8 @@ void main() {
     await tester.pumpWidget(harness.widget);
     await tester.pumpAndSettle();
     expect(pendingReads, 1);
-    await tester.tap(find.text('Continue'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('goal-form-title-edit')));
-    await tester.pump();
     await tester.enterText(
-      find.byKey(const ValueKey('goal-form-title')),
+      find.byKey(const ValueKey('goal-form-title-mapping')),
       'Updated movement',
     );
     await tester.tap(find.text('Save new version'));
@@ -5754,7 +5690,7 @@ void main() {
         ),
         findsNothing,
       );
-      await tester.tap(find.text('Continue'));
+      await tester.tap(find.text('Save new version'));
       await tester.pump();
       expect(
         find.text(
@@ -6087,16 +6023,6 @@ void main() {
             .selected,
         GoalDirection.atLeast,
       );
-
-      // The stored direction survives the round trip to confirmation.
-      await tester.tap(find.text('Continue'));
-      await tester.pumpAndSettle();
-      expect(
-        find.textContaining(
-          'Diastolic blood pressure: 7-day average At least 82 mmHg',
-        ),
-        findsOneWidget,
-      );
     },
   );
 
@@ -6276,21 +6202,6 @@ void main() {
         '128',
       );
       await tester.pump();
-      await tester.tap(find.text('Continue'));
-      await tester.pumpAndSettle();
-
-      expect(
-        find.textContaining(
-          'Systolic blood pressure: 7-day average At least 128 mmHg',
-        ),
-        findsOneWidget,
-      );
-      expect(
-        find.textContaining(
-          'Diastolic blood pressure: 7-day average At least 82 mmHg',
-        ),
-        findsOneWidget,
-      );
 
       await tester.tap(find.text('Save new version'));
       await tester.pump();
@@ -6326,7 +6237,8 @@ void main() {
     },
   );
 
-  testWidgets('editing is a two-step flow with the statement inline', (
+  testWidgets('editing is one page: the statement inline, the agent under '
+      'the signals, one save', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(900, 2200);
@@ -6340,9 +6252,10 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // No intention page: editing lands on the consolidated mapping page
-    // with the statement as a single-line field at the top.
-    expect(find.text('Step 1 of 2'), findsOneWidget);
+    // No intention page and no confirmation page: editing is the mapping
+    // page with the statement as a single-line field at the top, and no
+    // step dots promising a page that is not there.
+    expect(find.textContaining('Step 1 of'), findsNothing);
     expect(find.text('What do you want to work toward?'), findsNothing);
     expect(find.text('Here’s what I can watch'), findsOneWidget);
     final statementField = find.byKey(const ValueKey('goal-form-intention'));
@@ -6358,14 +6271,38 @@ void main() {
     // The example pills fold in under the field.
     expect(find.text('gym twice a week'), findsOneWidget);
 
-    await tester.tap(find.text('Continue'));
-    await tester.pumpAndSettle();
-    expect(find.text('Step 2 of 2'), findsOneWidget);
+    // The agent's own fields close the same page, under the goal's name,
+    // with the version the save starts.
+    expect(find.text('Continue'), findsNothing);
     expect(find.text('Save new version'), findsOneWidget);
-
-    await tester.tap(find.byType(BackButton));
-    await tester.pumpAndSettle();
-    expect(find.text('Step 1 of 2'), findsOneWidget);
+    final agentSection = find.byKey(const ValueKey('goal-form-agent-section'));
+    expect(
+      find.descendant(of: agentSection, matching: find.text('Your agent')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: agentSection,
+        matching: find.byKey(const ValueKey('goal-form-persona')),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: agentSection,
+        matching: find.byType(CategoryFieldRow),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      tester.getTopLeft(agentSection).dy,
+      greaterThan(
+        tester
+            .getTopLeft(find.byKey(const ValueKey('goal-form-title-mapping')))
+            .dy,
+      ),
+    );
+    expect(find.byKey(const ValueKey('goal-form-title')), findsNothing);
   });
 
   testWidgets('back from the consolidated edit page exits to goal details', (
@@ -6382,12 +6319,11 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Step 1 of 2'), findsOneWidget);
     await tester.tap(find.byType(BackButton));
     expect(navigated, ['/goals/details/goal-1']);
   });
 
-  testWidgets('editing blocks continue while the statement is empty', (
+  testWidgets('editing blocks the save while the statement is empty', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(900, 2200);
@@ -6405,16 +6341,15 @@ void main() {
       find.byKey(const ValueKey('goal-form-intention')),
       '',
     );
-    await tester.tap(find.text('Continue'));
+    await tester.tap(find.text('Save new version'));
     await tester.pumpAndSettle();
 
     expect(
       find.text('Describe what you want to work toward first.'),
       findsOneWidget,
     );
-    // Still on the mapping page, not the confirmation.
-    expect(find.text('Step 1 of 2'), findsOneWidget);
-    expect(find.text('Save new version'), findsNothing);
+    // Nothing was saved: the page and its button stay.
+    expect(find.text('Save new version'), findsOneWidget);
 
     // Typing clears the inline error.
     await tester.enterText(
@@ -6472,8 +6407,6 @@ void main() {
       'gym twice a week',
     );
 
-    await tester.tap(find.text('Continue'));
-    await tester.pumpAndSettle();
     await tester.tap(find.text('Save new version'));
     await tester.pump();
 
@@ -6760,8 +6693,6 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Continue'));
-      await tester.pumpAndSettle();
 
       expect(
         tester
@@ -6894,8 +6825,6 @@ void main() {
           ]),
         ),
       );
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Continue'));
       await tester.pumpAndSettle();
 
       CategoryFieldRow row() =>

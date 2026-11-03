@@ -3264,6 +3264,7 @@
   "goalDominantIssueBadge": "{dimensionName} a besoin d'attention",
   "goalFormAddDimension": "Ajouter une dimension",
   "goalFormAddSignal": "Ajouter un signal",
+  "goalFormAgentSectionTitle": "Ton agent",
   "goalFormBloodPressureSource": "Systolique et diastolique · mmHg · moyenne sur 7 jours",
   "goalFormCategoryTimeCadence": "{categoryName} : {direction} {target} {target, select, 1{heure} other{heures}} sur 7 jours glissants",
   "goalFormCategoryTimeSource": "Temps suivi · heures sur 7 jours glissants",

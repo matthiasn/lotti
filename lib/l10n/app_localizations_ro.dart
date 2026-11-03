@@ -8354,6 +8354,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get goalFormAddSignal => 'Adăugați un semnal';
 
   @override
+  String get goalFormAgentSectionTitle => 'Agentul dvs.';
+
+  @override
   String get goalFormBloodPressureSource =>
       'Sistolică și diastolică · mmHg · medie pe 7 zile';
 

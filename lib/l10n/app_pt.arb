@@ -3608,6 +3608,7 @@
   "goalDominantIssueBadge": "{dimensionName} precisa de atenção",
   "goalFormAddDimension": "Adicionar dimensão",
   "goalFormAddSignal": "Adicionar um sinal",
+  "goalFormAgentSectionTitle": "O teu agente",
   "goalFormBloodPressureSource": "Sistólica e diastólica · mmHg · média de 7 dias",
   "goalFormCategoryTimeCadence": "{categoryName}: {direction} {target} {target, select, 1{hora} other{horas}} por semana móvel",
   "goalFormCategoryTimeSource": "Tempo registrado · horas por semana móvel",

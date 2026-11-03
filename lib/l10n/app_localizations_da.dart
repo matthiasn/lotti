@@ -8206,6 +8206,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get goalFormAddSignal => 'Tilføj et signal';
 
   @override
+  String get goalFormAgentSectionTitle => 'Din agent';
+
+  @override
   String get goalFormBloodPressureSource =>
       'Systolisk og diastolisk · mmHg · 7-dages gennemsnit';
 

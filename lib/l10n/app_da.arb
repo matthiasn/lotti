@@ -3609,6 +3609,7 @@
   "goalDominantIssueBadge": "{dimensionName} har brug for opmærksomhed",
   "goalFormAddDimension": "Tilføj dimension",
   "goalFormAddSignal": "Tilføj et signal",
+  "goalFormAgentSectionTitle": "Din agent",
   "goalFormBloodPressureSource": "Systolisk og diastolisk · mmHg · 7-dages gennemsnit",
   "goalFormCategoryTimeCadence": "{categoryName}: {direction} {target} {target, select, 1{time} other{timer}} pr. rullende 7 dage",
   "goalFormCategoryTimeSource": "Registreret tid · timer pr. rullende 7 dage",

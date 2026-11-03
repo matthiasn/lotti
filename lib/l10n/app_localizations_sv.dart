@@ -8220,6 +8220,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get goalFormAddSignal => 'Lägg till en signal';
 
   @override
+  String get goalFormAgentSectionTitle => 'Din agent';
+
+  @override
   String get goalFormBloodPressureSource =>
       'Systoliskt och diastoliskt · mmHg · 7-dagarsgenomsnitt';
 

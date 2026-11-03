@@ -5264,6 +5264,7 @@
   "@goalFormAddSignal": {
     "description": "Button opening the unified signal picker on the mapping step."
   },
+  "goalFormAgentSectionTitle": "Your agent",
   "goalFormBloodPressureSource": "Systolic and diastolic · mmHg · 7-day average",
   "goalFormCategoryTimeCadence": "{categoryName}: {direction} {target} {target, select, 1{hour} other{hours}} per rolling 7 days",
   "@goalFormCategoryTimeCadence": {

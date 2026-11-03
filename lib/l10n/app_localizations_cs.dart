@@ -8290,6 +8290,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get goalFormAddSignal => 'Přidat signál';
 
   @override
+  String get goalFormAgentSectionTitle => 'Tvůj agent';
+
+  @override
   String get goalFormBloodPressureSource =>
       'Systolický a diastolický · mmHg · 7denní průměr';
 

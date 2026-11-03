@@ -3608,6 +3608,7 @@
   "goalDominantIssueBadge": "{dimensionName} heeft aandacht nodig",
   "goalFormAddDimension": "Voeg dimensie toe",
   "goalFormAddSignal": "Signaal toevoegen",
+  "goalFormAgentSectionTitle": "Je agent",
   "goalFormBloodPressureSource": "Systolisch en diastolisch · mmHg · 7-daags gemiddelde",
   "goalFormCategoryTimeCadence": "{categoryName}: {direction} {target} uur per voortschrijdende 7 dagen",
   "goalFormCategoryTimeSource": "Bijgehouden tijd · uren per voortschrijdende 7 dagen",
