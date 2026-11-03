@@ -43,6 +43,12 @@ import 'framework/eval_variant.dart';
 ///   fvm flutter test test/features/daily_os_next/eval/day_planning_eval_live_test.dart
 /// ```
 ///
+/// `DAY_PLANNING_EVAL_PROVIDER=mistral` runs the matrix against Mistral
+/// instead (`MISTRAL_API_KEY`, optional `MISTRAL_BASE_URL`), e.g. with
+/// `DAY_PLANNING_EVAL_MODELS=deepseek-v4-1-flash-1017` — the seeded Mistral
+/// profile's thinking model, and the default when the variable is unset.
+/// Any other provider name fails the run.
+///
 /// Also honours `DAY_PLANNING_EVAL_SCENARIOS` (comma-separated scenario ids,
 /// default all) and the `DAY_PLANNING_EVAL_DIR` / `_JSON` / `_MARKDOWN` output
 /// overrides.
@@ -56,7 +62,22 @@ void main() {
 
   final environment = Platform.environment;
   final live = environment['LOTTI_DAY_PLANNING_EVAL_LIVE'] == '1';
-  final modelIds = _csv(environment['DAY_PLANNING_EVAL_MODELS'], 'glm-5.2');
+  final providerName =
+      environment['DAY_PLANNING_EVAL_PROVIDER']?.trim().toLowerCase() ??
+      'melious';
+  // Unknown names stay null and fail the run below: a misspelled provider
+  // must not silently bill the default one.
+  final providerType = switch (providerName) {
+    'melious' => InferenceProviderType.melious,
+    'mistral' => InferenceProviderType.mistral,
+    _ => null,
+  };
+  final modelIds = _csv(
+    environment['DAY_PLANNING_EVAL_MODELS'],
+    providerType == InferenceProviderType.mistral
+        ? 'deepseek-v4-1-flash-1017'
+        : 'glm-5.2',
+  );
   final samples =
       int.tryParse(environment['DAY_PLANNING_EVAL_SAMPLES'] ?? '') ?? 1;
   final scenarioIds = _csv(environment['DAY_PLANNING_EVAL_SCENARIOS'], '');
@@ -90,12 +111,21 @@ void main() {
           '${evalScenarios.map((s) => s.id).join(', ')}.',
         );
       }
-      final apiKey = environment['MELIOUS_API_KEY'];
+      if (providerType == null) {
+        fail(
+          'DAY_PLANNING_EVAL_PROVIDER names unknown provider "$providerName". '
+          'Known: melious, mistral.',
+        );
+      }
+      final envPrefix = providerType == InferenceProviderType.mistral
+          ? 'MISTRAL'
+          : 'MELIOUS';
+      final apiKey = environment['${envPrefix}_API_KEY'];
       if (apiKey == null || apiKey.isEmpty) {
         // A setup error, not a model result — the one thing worth failing on.
         fail(
-          'MELIOUS_API_KEY is not set — source .env before running the live '
-          'day-planning eval.',
+          '${envPrefix}_API_KEY is not set — source .env before running the '
+          'live day-planning eval.',
         );
       }
 
@@ -123,13 +153,12 @@ void main() {
       final provider =
           AiConfig.inferenceProvider(
                 id: 'provider-day-planning-eval',
-                name: 'Melious (day-planning eval)',
+                name: '${providerType.name} (day-planning eval)',
                 baseUrl:
-                    environment['MELIOUS_BASE_URL'] ??
-                    ProviderConfig.defaultBaseUrls[InferenceProviderType
-                        .melious]!,
+                    environment['${envPrefix}_BASE_URL'] ??
+                    ProviderConfig.defaultBaseUrls[providerType]!,
                 apiKey: apiKey,
-                inferenceProviderType: InferenceProviderType.melious,
+                inferenceProviderType: providerType,
                 createdAt: DateTime(2026, 7, 25),
               )
               as AiConfigInferenceProvider;

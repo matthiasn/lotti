@@ -17,6 +17,7 @@ import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_wake_progress.dart';
 import 'package:lotti/features/daily_os_next/agents/prompt/day_agent_prompt_sections.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_audio_entry_context_service.dart';
@@ -59,16 +60,19 @@ export 'package:lotti/features/ai/repository/cloud_inference_wrapper.dart';
 export 'package:lotti/features/ai/repository/inference_repository_interface.dart';
 export 'package:lotti/features/ai_consumption/service/ai_interaction_capture.dart';
 export 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart';
+export 'package:lotti/features/daily_os_next/agents/domain/day_agent_wake_progress.dart';
 export 'package:lotti/features/daily_os_next/agents/domain/week_context.dart';
 export 'package:lotti/features/daily_os_next/agents/prompt/day_agent_prompt_sections.dart';
 export 'package:lotti/features/daily_os_next/agents/prompt/day_prompt_log_wraps.dart';
 export 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
 export 'package:lotti/features/daily_os_next/agents/service/day_audio_entry_context_service.dart';
 export 'package:lotti/features/daily_os_next/agents/tools/day_agent_tool_names.dart';
+export 'package:lotti/features/daily_os_next/agents/workflow/day_agent_tracing_inference_repository.dart';
 export 'package:lotti/features/daily_os_next/agents/workflow/day_agent_workflow.dart';
 export 'package:lotti/features/daily_os_next/agents/workflow/day_agent_workflow_models.dart';
 export 'package:lotti/features/tasks/repository/task_dependency_resolver.dart';
 export 'package:lotti/get_it.dart';
+export 'package:lotti/services/domain_logging.dart';
 export 'package:mocktail/mocktail.dart';
 export 'package:openai_dart/openai_dart.dart';
 
@@ -280,6 +284,7 @@ DayAgentWorkflow workflow({
   DayAudioEntryContextService? dayAudioEntryContextService,
   DayAgentOutputTokenBudgetPolicy outputTokenBudgets =
       const DayAgentOutputTokenBudgetPolicy(),
+  DayAgentWakeProgressBus? progressBus,
 }) {
   return DayAgentWorkflow(
     agentRepository: repository,
@@ -299,6 +304,7 @@ DayAgentWorkflow workflow({
     outputTokenBudgets: outputTokenBudgets,
     domainLogger: domainLogger,
     onPersistedStateChanged: changedTokens.add,
+    progressBus: progressBus,
   );
 }
 

@@ -1,7 +1,9 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/state/drafting_controller.dart';
@@ -126,6 +128,22 @@ void main() {
     });
 
     test(
+      'keys live progress by the day agent id and stamps the request time',
+      () async {
+        final requestedAt = DateTime(2026, 5, 24, 21, 30);
+        final initial = await withClock(
+          Clock.fixed(requestedAt),
+          () => makeContainer(
+            agent,
+          ).read(draftingControllerProvider(params()).future),
+        );
+
+        expect(initial.dayId, dayAgentIdForDate(DateTime(2026, 5, 25)));
+        expect(initial.requestedAt, requestedAt);
+      },
+    );
+
+    test(
       'phase flips to ready and draft is populated once draftDayPlan '
       'resolves',
       () async {
@@ -212,10 +230,12 @@ void main() {
       scheduledMinutes: 0,
     );
 
-    const base = DraftingState(
+    final base = DraftingState(
       phase: DraftingPhase.drafting,
-      learningCards: [card],
+      learningCards: const [card],
       draft: null,
+      dayId: 'day-2026-05-25',
+      requestedAt: DateTime(2026, 5, 24, 21),
     );
 
     test('returns provided values when arguments are supplied', () {
@@ -236,6 +256,8 @@ void main() {
       expect(unchanged.phase, DraftingPhase.drafting);
       expect(unchanged.learningCards, same(base.learningCards));
       expect(unchanged.draft, isNull);
+      expect(unchanged.dayId, base.dayId);
+      expect(unchanged.requestedAt, base.requestedAt);
     });
 
     test('updates a single field while preserving the rest', () {

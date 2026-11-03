@@ -5157,6 +5157,33 @@ class AppLocalizationsFr extends AppLocalizations {
   String get dailyOsNextDraftingHeader => 'Préparation de ta journée…';
 
   @override
+  String dailyOsNextDraftingInternalsAttempt(int attempt, int max) {
+    return 'Tentative $attempt sur $max';
+  }
+
+  @override
+  String dailyOsNextDraftingInternalsLastError(String error) {
+    return 'Dernière tentative : $error';
+  }
+
+  @override
+  String get dailyOsNextDraftingInternalsModel => 'Modèle';
+
+  @override
+  String get dailyOsNextDraftingInternalsTime => 'Durée';
+
+  @override
+  String get dailyOsNextDraftingInternalsTokens => 'Jetons';
+
+  @override
+  String dailyOsNextDraftingInternalsTokensValue(String input, String output) {
+    return '$input en entrée · $output en sortie';
+  }
+
+  @override
+  String get dailyOsNextDraftingInternalsTools => 'Appels d\'outils';
+
+  @override
   String get dailyOsNextDraftingNudgeAccept => 'Oui, protège les matinées';
 
   @override
@@ -5166,9 +5193,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get dailyOsNextDraftingProgressBlocks => 'Je prépare les blocs';
 
   @override
-  String get dailyOsNextDraftingProgressMatching => 'J\'associe les tâches';
-
-  @override
   String get dailyOsNextDraftingProgressQueued => 'En file';
 
   @override
@@ -5176,9 +5200,6 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get dailyOsNextDraftingProgressSaving => 'J\'enregistre le plan';
-
-  @override
-  String get dailyOsNextDraftingProgressValidating => 'Je valide';
 
   @override
   String get dailyOsNextDraftingReasoningOverline => '✦ RAISONNEMENT';
@@ -5194,32 +5215,66 @@ class AppLocalizationsFr extends AppLocalizations {
   String get dailyOsNextDraftingRetry => 'Réessayer';
 
   @override
-  String get dailyOsNextDraftingStatusAfternoon => 'J\'organise l\'après-midi…';
+  String dailyOsNextDraftingSeconds(String seconds) {
+    return '$seconds s';
+  }
 
   @override
-  String get dailyOsNextDraftingStatusAlmost => 'Presque fini…';
+  String get dailyOsNextDraftingStepContext =>
+      'Lecture de ton check-in et de tes tâches…';
 
   @override
-  String get dailyOsNextDraftingStatusBreathing =>
-      'Je laisse de l\'air dans le planning…';
+  String get dailyOsNextDraftingStepDone => 'Plan prêt';
 
   @override
-  String get dailyOsNextDraftingStatusDeepWork =>
-      'Je place le travail de fond en premier…';
+  String get dailyOsNextDraftingStepFailed => 'Cette tentative a échoué';
 
   @override
-  String get dailyOsNextDraftingStatusMatching =>
-      'J\'associe les tâches à ta journée…';
+  String get dailyOsNextDraftingStepMemory =>
+      'Compactage de la mémoire de l\'agent…';
 
   @override
-  String get dailyOsNextDraftingStatusReading => 'Je lis ton point du jour…';
+  String dailyOsNextDraftingStepModel(int count) {
+    return 'En attente du modèle, appel $count…';
+  }
 
   @override
-  String get dailyOsNextDraftingStatusTimings => 'Je vérifie les horaires…';
+  String get dailyOsNextDraftingStepPrompt => 'Assemblage du prompt…';
 
   @override
-  String get dailyOsNextDraftingStatusYesterday =>
-      'Je regarde le rythme d\'hier…';
+  String dailyOsNextDraftingStepRetrying(String seconds) {
+    return 'Nouvel essai dans $seconds s…';
+  }
+
+  @override
+  String get dailyOsNextDraftingStepSaving => 'Enregistrement de ton plan…';
+
+  @override
+  String dailyOsNextDraftingStepTool(String tool) {
+    return 'Exécution de $tool…';
+  }
+
+  @override
+  String get dailyOsNextDraftingStepWaiting =>
+      'En attente du démarrage de l\'agent…';
+
+  @override
+  String get dailyOsNextDraftingTimingContext => 'contexte';
+
+  @override
+  String get dailyOsNextDraftingTimingMemory => 'mémoire';
+
+  @override
+  String get dailyOsNextDraftingTimingModel => 'modèle';
+
+  @override
+  String get dailyOsNextDraftingTimingPrompt => 'prompt';
+
+  @override
+  String get dailyOsNextDraftingTimingSaving => 'enregistrement';
+
+  @override
+  String get dailyOsNextDraftingTimingTools => 'outils';
 
   @override
   String get dailyOsNextEditTitleHint => 'Modifier le titre';

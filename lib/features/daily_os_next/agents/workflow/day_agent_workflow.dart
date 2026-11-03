@@ -40,6 +40,7 @@ import 'package:lotti/features/daily_os_next/agents/domain/daily_os_planner_wake
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_config.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_wake_progress.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/week_context.dart';
 import 'package:lotti/features/daily_os_next/agents/prompt/day_agent_prompt_sections.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
@@ -58,6 +59,8 @@ import 'package:lotti/features/daily_os_next/agents/service/day_audio_entry_cont
 import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tool_names.dart';
 import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tools.dart';
 import 'package:lotti/features/daily_os_next/agents/workflow/day_agent_strategy.dart';
+import 'package:lotti/features/daily_os_next/agents/workflow/day_agent_tracing_inference_repository.dart';
+import 'package:lotti/features/daily_os_next/agents/workflow/day_agent_wake_trace.dart';
 import 'package:lotti/features/daily_os_next/agents/workflow/day_agent_workflow_models.dart';
 import 'package:lotti/features/tasks/repository/task_dependency_resolver.dart';
 import 'package:lotti/get_it.dart';
@@ -104,6 +107,7 @@ class DayAgentWorkflow with AgentErrorLogging {
     this.compactionTailRetainTokens = 20000,
     this.inferenceTimeouts = const DayAgentInferenceTimeoutPolicy(),
     this.outputTokenBudgets = const DayAgentOutputTokenBudgetPolicy(),
+    this.progressBus,
   });
 
   /// Agent repository.
@@ -176,6 +180,10 @@ class DayAgentWorkflow with AgentErrorLogging {
   /// Per-wake-kind provider output ceilings.
   final DayAgentOutputTokenBudgetPolicy outputTokenBudgets;
 
+  /// Receives live step, turn and tool-call progress of every wake; the
+  /// timing summary is logged whether or not a bus is attached.
+  final DayAgentWakeProgressBus? progressBus;
+
   static const minScheduledWakeLeadTime = Duration(minutes: 15);
   static const maxScheduledWakeWritesPerDay = 4;
 
@@ -212,6 +220,10 @@ class DayAgentWorkflow with AgentErrorLogging {
       );
     }
     var succeeded = false;
+    final traceSlot = DayAgentWakeTraceSlot(
+      bus: progressBus,
+      domainLogger: domainLogger,
+    );
     try {
       final result = await _execute(
         agentIdentity: agentIdentity,
@@ -219,9 +231,14 @@ class DayAgentWorkflow with AgentErrorLogging {
         triggerTokens: effectiveTokens,
         threadId: threadId,
         now: now,
+        traceSlot: traceSlot,
       );
       succeeded = result.success;
+      traceSlot.finish(succeeded: succeeded, error: result.error);
       return result;
+    } catch (e) {
+      traceSlot.finish(succeeded: false, error: e.toString());
+      rethrow;
     } finally {
       // A scheduled digest wake is consumed before execution starts. Protect
       // its next-morning cadence across every failure boundary, including
@@ -271,6 +288,7 @@ class DayAgentWorkflow with AgentErrorLogging {
     required Set<String> triggerTokens,
     required String threadId,
     required DateTime now,
+    required DayAgentWakeTraceSlot traceSlot,
   }) async {
     final agentId = agentIdentity.agentId;
     // The wake acts on the log-reconciled state (PR 4 B6).
@@ -319,6 +337,7 @@ class DayAgentWorkflow with AgentErrorLogging {
       return const WakeResult(success: false, error: 'No active day ID');
     }
 
+    final trace = traceSlot.start(dayId: resolvedDayId, runKey: runKey);
     final dayDate = dateFromDayId(resolvedDayId);
     if (dayDate == null) {
       return WakeResult(
@@ -397,6 +416,7 @@ class DayAgentWorkflow with AgentErrorLogging {
 
     final modelId = resolvedProfile.thinkingModelId;
     final provider = resolvedProfile.thinkingProvider;
+    trace.recordModel(modelId);
 
     // Memory substrate (ADR 0016/0017): the day agent's durable inputs —
     // submitted capture transcripts and its own observations — are ALREADY
@@ -423,6 +443,7 @@ class DayAgentWorkflow with AgentErrorLogging {
     } catch (e) {
       logError('failed to load capture metadata', error: e);
     }
+    trace.enter(DayAgentWakeStep.compactingMemory);
     final memoryView = await memory.compactAndAssemble(
       agentId: agentId,
       // Inline events derive from already-synced entities read in the same
@@ -440,6 +461,7 @@ class DayAgentWorkflow with AgentErrorLogging {
       resolveInlineContent: _resolveCaptureContent,
     );
 
+    trace.enter(DayAgentWakeStep.assemblingPrompt);
     final captureContext = await _captureContext(
       agentIdentity: agentIdentity,
       planDate: dayDate,
@@ -497,6 +519,7 @@ class DayAgentWorkflow with AgentErrorLogging {
         : wakeContext.isDigestWake
         ? DayAgentWakeKind.digest
         : DayAgentWakeKind.general;
+    trace.wakeKind = wakeKind.name;
     final systemPrompt = _buildSystemPrompt(
       templateCtx,
       agentId: agentId,
@@ -653,16 +676,20 @@ class DayAgentWorkflow with AgentErrorLogging {
           if (requiresDraftDayPlan) DayAgentToolNames.draftDayPlan,
         },
         requiresAttentionBeforeClosedDraft: closedDraftRequiresAttention,
-        executeToolHandler: (toolName, args, manager) => _executeToolHandler(
-          agentId: agentId,
-          threadId: threadId,
-          runKey: runKey,
-          dayId: resolvedDayId,
-          processingJobId: wakeContext.processingJobId,
-          planningSnapshotAt: planningSnapshotAt,
-          planningBaselinePlan: draftingContext?.baselinePlan,
-          toolName: toolName,
-          args: args,
+        executeToolHandler: (toolName, args, manager) => trace.traceTool(
+          toolName,
+          succeeded: (result) => result.success,
+          () => _executeToolHandler(
+            agentId: agentId,
+            threadId: threadId,
+            runKey: runKey,
+            dayId: resolvedDayId,
+            processingJobId: wakeContext.processingJobId,
+            planningSnapshotAt: planningSnapshotAt,
+            planningBaselinePlan: draftingContext?.baselinePlan,
+            toolName: toolName,
+            args: args,
+          ),
         ),
       );
 
@@ -672,12 +699,17 @@ class DayAgentWorkflow with AgentErrorLogging {
         captureContext: captureContext,
       );
       final recordConsumption = getIt.isRegistered<AiInteractionCapture>();
+      final tracedRepo = DayAgentTracingInferenceRepository(
+        delegate: inferenceRepo,
+        trace: trace,
+      );
+      trace.recordPrompt(userMessage.length);
       var usage = await conversationRepository.sendMessage(
         conversationId: conversationId,
         message: userMessage,
         model: modelId,
         provider: provider,
-        inferenceRepo: inferenceRepo,
+        inferenceRepo: tracedRepo,
         tools: tools,
         temperature: 0.3,
         strategy: strategy,
@@ -698,7 +730,7 @@ class DayAgentWorkflow with AgentErrorLogging {
             conversationId: conversationId,
             modelId: modelId,
             provider: provider,
-            inferenceRepo: inferenceRepo,
+            inferenceRepo: tracedRepo,
             tools: tools,
             strategy: strategy,
             captureId: captureId,
@@ -721,7 +753,7 @@ class DayAgentWorkflow with AgentErrorLogging {
             conversationId: conversationId,
             modelId: modelId,
             provider: provider,
-            inferenceRepo: inferenceRepo,
+            inferenceRepo: tracedRepo,
             tools: tools,
             strategy: strategy,
             consumptionAgentId: recordConsumption ? agentId : null,
@@ -737,6 +769,7 @@ class DayAgentWorkflow with AgentErrorLogging {
         }
       }
 
+      trace.enter(DayAgentWakeStep.saving);
       await persistWakeTokenUsage(
         syncService: syncService,
         usage: usage,

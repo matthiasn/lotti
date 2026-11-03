@@ -223,8 +223,11 @@ void main() {
           conversationRepository.sendMessageCalls.single.model,
           'models/gemini-3-flash-preview',
         );
-        final inferenceRepo =
+        final traced =
             conversationRepository.sendMessageCalls.single.inferenceRepo;
+        expect(traced, isA<DayAgentTracingInferenceRepository>());
+        final inferenceRepo =
+            (traced as DayAgentTracingInferenceRepository).delegate;
         expect(inferenceRepo, isA<DayAgentTimeoutInferenceRepository>());
         final bounded = inferenceRepo as DayAgentTimeoutInferenceRepository;
         expect(bounded.wakeKind, DayAgentWakeKind.general);

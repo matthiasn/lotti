@@ -3308,26 +3308,95 @@
   "dailyOsNextDayWrapUpCta": "Wrap up",
   "dailyOsNextDraftingBackToDecisions": "Back to decisions",
   "dailyOsNextDraftingHeader": "Drafting your day…",
+  "dailyOsNextDraftingInternalsAttempt": "Attempt {attempt} of {max}",
+  "@dailyOsNextDraftingInternalsAttempt": {
+    "placeholders": {
+      "attempt": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "dailyOsNextDraftingInternalsLastError": "Last attempt: {error}",
+  "@dailyOsNextDraftingInternalsLastError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "dailyOsNextDraftingInternalsModel": "Model",
+  "dailyOsNextDraftingInternalsTime": "Time",
+  "dailyOsNextDraftingInternalsTokens": "Tokens",
+  "dailyOsNextDraftingInternalsTokensValue": "{input} in · {output} out",
+  "@dailyOsNextDraftingInternalsTokensValue": {
+    "placeholders": {
+      "input": {
+        "type": "String"
+      },
+      "output": {
+        "type": "String"
+      }
+    }
+  },
+  "dailyOsNextDraftingInternalsTools": "Tool calls",
   "dailyOsNextDraftingNudgeAccept": "Yes, protect mornings",
   "dailyOsNextDraftingNudgeDecline": "Not today",
   "dailyOsNextDraftingProgressBlocks": "Drafting blocks",
-  "dailyOsNextDraftingProgressMatching": "Matching tasks",
   "dailyOsNextDraftingProgressQueued": "Queued",
   "dailyOsNextDraftingProgressReading": "Reading check-in",
   "dailyOsNextDraftingProgressSaving": "Saving plan",
-  "dailyOsNextDraftingProgressValidating": "Validating",
   "dailyOsNextDraftingReasoningOverline": "✦ REASONING",
   "dailyOsNextDraftingRecoveryBody": "The wake did not produce a plan. Try again, or go back and adjust the decisions before drafting.",
   "dailyOsNextDraftingRecoveryTitle": "Drafting stalled",
   "dailyOsNextDraftingRetry": "Try again",
-  "dailyOsNextDraftingStatusAfternoon": "Sequencing the afternoon…",
-  "dailyOsNextDraftingStatusAlmost": "Almost there…",
-  "dailyOsNextDraftingStatusBreathing": "Leaving room to breathe…",
-  "dailyOsNextDraftingStatusDeepWork": "Placing deep work first…",
-  "dailyOsNextDraftingStatusMatching": "Matching tasks to your day…",
-  "dailyOsNextDraftingStatusReading": "Reading your check-in…",
-  "dailyOsNextDraftingStatusTimings": "Double-checking timings…",
-  "dailyOsNextDraftingStatusYesterday": "Looking at yesterday's rhythm…",
+  "dailyOsNextDraftingSeconds": "{seconds} s",
+  "@dailyOsNextDraftingSeconds": {
+    "placeholders": {
+      "seconds": {
+        "type": "String"
+      }
+    }
+  },
+  "dailyOsNextDraftingStepContext": "Reading your check-in and tasks…",
+  "dailyOsNextDraftingStepDone": "Plan ready",
+  "dailyOsNextDraftingStepFailed": "This attempt failed",
+  "dailyOsNextDraftingStepMemory": "Compacting the agent's memory…",
+  "dailyOsNextDraftingStepModel": "Waiting for the model, call {count}…",
+  "@dailyOsNextDraftingStepModel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dailyOsNextDraftingStepPrompt": "Assembling the prompt…",
+  "dailyOsNextDraftingStepRetrying": "Retrying in {seconds} s…",
+  "@dailyOsNextDraftingStepRetrying": {
+    "placeholders": {
+      "seconds": {
+        "type": "String"
+      }
+    }
+  },
+  "dailyOsNextDraftingStepSaving": "Saving your plan…",
+  "dailyOsNextDraftingStepTool": "Running {tool}…",
+  "@dailyOsNextDraftingStepTool": {
+    "placeholders": {
+      "tool": {
+        "type": "String"
+      }
+    }
+  },
+  "dailyOsNextDraftingStepWaiting": "Waiting for the agent to start…",
+  "dailyOsNextDraftingTimingContext": "context",
+  "dailyOsNextDraftingTimingMemory": "memory",
+  "dailyOsNextDraftingTimingModel": "model",
+  "dailyOsNextDraftingTimingPrompt": "prompt",
+  "dailyOsNextDraftingTimingSaving": "saving",
+  "dailyOsNextDraftingTimingTools": "tools",
   "dailyOsNextEditTitleHint": "Edit title",
   "dailyOsNextGenericError": "Something went wrong. Try again in a moment.",
   "dailyOsNextGreetingAfternoon": "Good afternoon.",

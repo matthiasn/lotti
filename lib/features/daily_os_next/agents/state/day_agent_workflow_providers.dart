@@ -54,6 +54,7 @@ DayAgentWorkflow dayAgentWorkflow(Ref ref) {
     // No input capture service: the day agent's durable inputs (capture
     // transcripts, observations) are already synced log entities, projected as
     // inline events.
+    progressBus: ref.watch(dayAgentWakeProgressBusProvider),
   );
 }
 

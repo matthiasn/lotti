@@ -5062,6 +5062,33 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dailyOsNextDraftingHeader => 'Drafting your day…';
 
   @override
+  String dailyOsNextDraftingInternalsAttempt(int attempt, int max) {
+    return 'Attempt $attempt of $max';
+  }
+
+  @override
+  String dailyOsNextDraftingInternalsLastError(String error) {
+    return 'Last attempt: $error';
+  }
+
+  @override
+  String get dailyOsNextDraftingInternalsModel => 'Model';
+
+  @override
+  String get dailyOsNextDraftingInternalsTime => 'Time';
+
+  @override
+  String get dailyOsNextDraftingInternalsTokens => 'Tokens';
+
+  @override
+  String dailyOsNextDraftingInternalsTokensValue(String input, String output) {
+    return '$input in · $output out';
+  }
+
+  @override
+  String get dailyOsNextDraftingInternalsTools => 'Tool calls';
+
+  @override
   String get dailyOsNextDraftingNudgeAccept => 'Yes, protect mornings';
 
   @override
@@ -5071,9 +5098,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dailyOsNextDraftingProgressBlocks => 'Drafting blocks';
 
   @override
-  String get dailyOsNextDraftingProgressMatching => 'Matching tasks';
-
-  @override
   String get dailyOsNextDraftingProgressQueued => 'Queued';
 
   @override
@@ -5081,9 +5105,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dailyOsNextDraftingProgressSaving => 'Saving plan';
-
-  @override
-  String get dailyOsNextDraftingProgressValidating => 'Validating';
 
   @override
   String get dailyOsNextDraftingReasoningOverline => '✦ REASONING';
@@ -5099,29 +5120,65 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dailyOsNextDraftingRetry => 'Try again';
 
   @override
-  String get dailyOsNextDraftingStatusAfternoon => 'Sequencing the afternoon…';
+  String dailyOsNextDraftingSeconds(String seconds) {
+    return '$seconds s';
+  }
 
   @override
-  String get dailyOsNextDraftingStatusAlmost => 'Almost there…';
+  String get dailyOsNextDraftingStepContext =>
+      'Reading your check-in and tasks…';
 
   @override
-  String get dailyOsNextDraftingStatusBreathing => 'Leaving room to breathe…';
+  String get dailyOsNextDraftingStepDone => 'Plan ready';
 
   @override
-  String get dailyOsNextDraftingStatusDeepWork => 'Placing deep work first…';
+  String get dailyOsNextDraftingStepFailed => 'This attempt failed';
 
   @override
-  String get dailyOsNextDraftingStatusMatching => 'Matching tasks to your day…';
+  String get dailyOsNextDraftingStepMemory => 'Compacting the agent\'s memory…';
 
   @override
-  String get dailyOsNextDraftingStatusReading => 'Reading your check-in…';
+  String dailyOsNextDraftingStepModel(int count) {
+    return 'Waiting for the model, call $count…';
+  }
 
   @override
-  String get dailyOsNextDraftingStatusTimings => 'Double-checking timings…';
+  String get dailyOsNextDraftingStepPrompt => 'Assembling the prompt…';
 
   @override
-  String get dailyOsNextDraftingStatusYesterday =>
-      'Looking at yesterday\'s rhythm…';
+  String dailyOsNextDraftingStepRetrying(String seconds) {
+    return 'Retrying in $seconds s…';
+  }
+
+  @override
+  String get dailyOsNextDraftingStepSaving => 'Saving your plan…';
+
+  @override
+  String dailyOsNextDraftingStepTool(String tool) {
+    return 'Running $tool…';
+  }
+
+  @override
+  String get dailyOsNextDraftingStepWaiting =>
+      'Waiting for the agent to start…';
+
+  @override
+  String get dailyOsNextDraftingTimingContext => 'context';
+
+  @override
+  String get dailyOsNextDraftingTimingMemory => 'memory';
+
+  @override
+  String get dailyOsNextDraftingTimingModel => 'model';
+
+  @override
+  String get dailyOsNextDraftingTimingPrompt => 'prompt';
+
+  @override
+  String get dailyOsNextDraftingTimingSaving => 'saving';
+
+  @override
+  String get dailyOsNextDraftingTimingTools => 'tools';
 
   @override
   String get dailyOsNextEditTitleHint => 'Edit title';

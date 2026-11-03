@@ -5141,6 +5141,33 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dailyOsNextDraftingHeader => 'Připravuji tvůj den…';
 
   @override
+  String dailyOsNextDraftingInternalsAttempt(int attempt, int max) {
+    return 'Pokus $attempt z $max';
+  }
+
+  @override
+  String dailyOsNextDraftingInternalsLastError(String error) {
+    return 'Poslední pokus: $error';
+  }
+
+  @override
+  String get dailyOsNextDraftingInternalsModel => 'Model';
+
+  @override
+  String get dailyOsNextDraftingInternalsTime => 'Čas';
+
+  @override
+  String get dailyOsNextDraftingInternalsTokens => 'Tokeny';
+
+  @override
+  String dailyOsNextDraftingInternalsTokensValue(String input, String output) {
+    return '$input vstup · $output výstup';
+  }
+
+  @override
+  String get dailyOsNextDraftingInternalsTools => 'Volání nástrojů';
+
+  @override
   String get dailyOsNextDraftingNudgeAccept => 'Ano, chraň ranní hodiny';
 
   @override
@@ -5150,9 +5177,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dailyOsNextDraftingProgressBlocks => 'Skládám bloky';
 
   @override
-  String get dailyOsNextDraftingProgressMatching => 'Páruji úkoly';
-
-  @override
   String get dailyOsNextDraftingProgressQueued => 'Ve frontě';
 
   @override
@@ -5160,9 +5184,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get dailyOsNextDraftingProgressSaving => 'Ukládám plán';
-
-  @override
-  String get dailyOsNextDraftingProgressValidating => 'Ověřuji';
 
   @override
   String get dailyOsNextDraftingReasoningOverline => '✦ ÚVAHA';
@@ -5178,31 +5199,63 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dailyOsNextDraftingRetry => 'Zkusit znovu';
 
   @override
-  String get dailyOsNextDraftingStatusAfternoon => 'Skládám odpoledne…';
+  String dailyOsNextDraftingSeconds(String seconds) {
+    return '$seconds s';
+  }
 
   @override
-  String get dailyOsNextDraftingStatusAlmost => 'Už to skoro je…';
+  String get dailyOsNextDraftingStepContext => 'Čtu tvůj check-in a úkoly…';
 
   @override
-  String get dailyOsNextDraftingStatusBreathing =>
-      'Nechávám prostor k nadechnutí…';
+  String get dailyOsNextDraftingStepDone => 'Plán je hotový';
 
   @override
-  String get dailyOsNextDraftingStatusDeepWork =>
-      'Hluboká práce jde na začátek…';
+  String get dailyOsNextDraftingStepFailed => 'Tento pokus selhal';
 
   @override
-  String get dailyOsNextDraftingStatusMatching => 'Přiřazuji úkoly ke dni…';
+  String get dailyOsNextDraftingStepMemory => 'Zhušťuji paměť agenta…';
 
   @override
-  String get dailyOsNextDraftingStatusReading => 'Čtu tvůj check-in…';
+  String dailyOsNextDraftingStepModel(int count) {
+    return 'Čekám na model, volání $count…';
+  }
 
   @override
-  String get dailyOsNextDraftingStatusTimings => 'Kontroluji časy…';
+  String get dailyOsNextDraftingStepPrompt => 'Skládám prompt…';
 
   @override
-  String get dailyOsNextDraftingStatusYesterday =>
-      'Dívám se na včerejší rytmus…';
+  String dailyOsNextDraftingStepRetrying(String seconds) {
+    return 'Další pokus za $seconds s…';
+  }
+
+  @override
+  String get dailyOsNextDraftingStepSaving => 'Ukládám tvůj plán…';
+
+  @override
+  String dailyOsNextDraftingStepTool(String tool) {
+    return 'Spouštím $tool…';
+  }
+
+  @override
+  String get dailyOsNextDraftingStepWaiting => 'Čekám, až se agent spustí…';
+
+  @override
+  String get dailyOsNextDraftingTimingContext => 'kontext';
+
+  @override
+  String get dailyOsNextDraftingTimingMemory => 'paměť';
+
+  @override
+  String get dailyOsNextDraftingTimingModel => 'model';
+
+  @override
+  String get dailyOsNextDraftingTimingPrompt => 'prompt';
+
+  @override
+  String get dailyOsNextDraftingTimingSaving => 'ukládání';
+
+  @override
+  String get dailyOsNextDraftingTimingTools => 'nástroje';
 
   @override
   String get dailyOsNextEditTitleHint => 'Upravit název';

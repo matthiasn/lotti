@@ -5120,6 +5120,33 @@ class AppLocalizationsDe extends AppLocalizations {
   String get dailyOsNextDraftingHeader => 'Plane deinen Tag…';
 
   @override
+  String dailyOsNextDraftingInternalsAttempt(int attempt, int max) {
+    return 'Versuch $attempt von $max';
+  }
+
+  @override
+  String dailyOsNextDraftingInternalsLastError(String error) {
+    return 'Letzter Versuch: $error';
+  }
+
+  @override
+  String get dailyOsNextDraftingInternalsModel => 'Modell';
+
+  @override
+  String get dailyOsNextDraftingInternalsTime => 'Zeit';
+
+  @override
+  String get dailyOsNextDraftingInternalsTokens => 'Tokens';
+
+  @override
+  String dailyOsNextDraftingInternalsTokensValue(String input, String output) {
+    return '$input rein · $output raus';
+  }
+
+  @override
+  String get dailyOsNextDraftingInternalsTools => 'Tool-Aufrufe';
+
+  @override
   String get dailyOsNextDraftingNudgeAccept => 'Ja, Morgen schützen';
 
   @override
@@ -5129,9 +5156,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get dailyOsNextDraftingProgressBlocks => 'Baue Blöcke';
 
   @override
-  String get dailyOsNextDraftingProgressMatching => 'Ordne Aufgaben zu';
-
-  @override
   String get dailyOsNextDraftingProgressQueued => 'In der Warteschlange';
 
   @override
@@ -5139,9 +5163,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get dailyOsNextDraftingProgressSaving => 'Speichere Plan';
-
-  @override
-  String get dailyOsNextDraftingProgressValidating => 'Prüfe';
 
   @override
   String get dailyOsNextDraftingReasoningOverline => '✦ ÜBERLEGUNG';
@@ -5157,31 +5178,68 @@ class AppLocalizationsDe extends AppLocalizations {
   String get dailyOsNextDraftingRetry => 'Erneut versuchen';
 
   @override
-  String get dailyOsNextDraftingStatusAfternoon => 'Sortiere den Nachmittag…';
+  String dailyOsNextDraftingSeconds(String seconds) {
+    return '$seconds s';
+  }
 
   @override
-  String get dailyOsNextDraftingStatusAlmost => 'Fast fertig…';
+  String get dailyOsNextDraftingStepContext =>
+      'Dein Check-in und deine Aufgaben werden gelesen…';
 
   @override
-  String get dailyOsNextDraftingStatusBreathing => 'Lasse Raum zum Durchatmen…';
+  String get dailyOsNextDraftingStepDone => 'Plan fertig';
 
   @override
-  String get dailyOsNextDraftingStatusDeepWork => 'Plane Deep Work zuerst ein…';
+  String get dailyOsNextDraftingStepFailed =>
+      'Dieser Versuch ist fehlgeschlagen';
 
   @override
-  String get dailyOsNextDraftingStatusMatching =>
-      'Ordne Aufgaben deinem Tag zu…';
+  String get dailyOsNextDraftingStepMemory =>
+      'Das Gedächtnis des Agenten wird verdichtet…';
 
   @override
-  String get dailyOsNextDraftingStatusReading => 'Lese deinen Check-in…';
+  String dailyOsNextDraftingStepModel(int count) {
+    return 'Warten auf das Modell, Aufruf $count…';
+  }
 
   @override
-  String get dailyOsNextDraftingStatusTimings =>
-      'Prüfe die Zeiten noch einmal…';
+  String get dailyOsNextDraftingStepPrompt =>
+      'Der Prompt wird zusammengestellt…';
 
   @override
-  String get dailyOsNextDraftingStatusYesterday =>
-      'Schaue auf den gestrigen Rhythmus…';
+  String dailyOsNextDraftingStepRetrying(String seconds) {
+    return 'Neuer Versuch in $seconds s…';
+  }
+
+  @override
+  String get dailyOsNextDraftingStepSaving => 'Dein Plan wird gespeichert…';
+
+  @override
+  String dailyOsNextDraftingStepTool(String tool) {
+    return '$tool läuft…';
+  }
+
+  @override
+  String get dailyOsNextDraftingStepWaiting =>
+      'Warten auf den Start des Agenten…';
+
+  @override
+  String get dailyOsNextDraftingTimingContext => 'Kontext';
+
+  @override
+  String get dailyOsNextDraftingTimingMemory => 'Gedächtnis';
+
+  @override
+  String get dailyOsNextDraftingTimingModel => 'Modell';
+
+  @override
+  String get dailyOsNextDraftingTimingPrompt => 'Prompt';
+
+  @override
+  String get dailyOsNextDraftingTimingSaving => 'Speichern';
+
+  @override
+  String get dailyOsNextDraftingTimingTools => 'Tools';
 
   @override
   String get dailyOsNextEditTitleHint => 'Titel bearbeiten';

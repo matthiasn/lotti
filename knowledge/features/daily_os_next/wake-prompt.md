@@ -8,6 +8,18 @@ status: stable
 generated: { by: claude-code/fable-5.1, at: 2026-10-27T01:00:00Z }
 stale_after: 2027-02-01
 sources:
+  - id: wake-trace
+    resource: ../../../lib/features/daily_os_next/agents/workflow/day_agent_wake_trace.dart
+    title: Per-wake step, turn and tool-call trace
+    last_modified: 2026-11-03
+  - id: wake-progress
+    resource: ../../../lib/features/daily_os_next/agents/domain/day_agent_wake_progress.dart
+    title: Live wake progress and the in-memory bus
+    last_modified: 2026-11-03
+  - id: tracing-inference
+    resource: ../../../lib/features/daily_os_next/agents/workflow/day_agent_tracing_inference_repository.dart
+    title: Provider-turn timing decorator
+    last_modified: 2026-11-03
   - id: system-prompt
     resource: ../../../lib/features/daily_os_next/agents/workflow/day_agent_prompt_builder.dart
     title: Mode-specific system prompt and tool gating
@@ -109,6 +121,61 @@ this as provider work and retries; after the normal attempt limit it becomes a
 deterministic failure rather than retrying forever. Cancel errors from a detached
 HTTP request are absorbed during timeout teardown because the classified timeout
 has already crossed the durable-job boundary.
+
+# The wake trace
+
+Every wake records where its time goes. `DayAgentWakeTrace` is started once the
+wake's day resolves and finished by `execute` on every exit; the workflow moves
+it between steps, `DayAgentTracingInferenceRepository` — outermost in the
+repository chain, so a turn cut by the deadline or the output ceiling is
+recorded as failed with the time it really ran — reports each provider turn
+(time to first chunk, duration, prompt/completion/reasoning tokens), and the
+strategy's tool dispatch is wrapped in `traceTool`.
+
+```mermaid
+stateDiagram-v2
+  [*] --> preparingContext: day resolved
+  preparingContext --> compactingMemory: profile and model resolved
+  compactingMemory --> assemblingPrompt: log folded and assembled
+  assemblingPrompt --> callingModel: provider stream subscribed
+  callingModel --> runningTool: model called a tool
+  runningTool --> callingModel: next provider turn
+  callingModel --> saving: conversation done
+  runningTool --> saving: terminal tool persisted
+  saving --> completed
+  preparingContext --> failed
+  compactingMemory --> failed
+  assemblingPrompt --> failed
+  callingModel --> failed: deadline, ceiling or provider error
+  runningTool --> failed
+  saving --> failed
+  completed --> [*]
+  failed --> [*]
+```
+
+Each change is published to `DayAgentWakeProgressBus`, an in-memory,
+device-local fan-out keyed by day id that the drafting screen reads. Nothing in
+it is persisted or synced, and it carries names, counts and durations only. On
+finish the trace logs one `agentWorkflow` / `wakeTrace` line:
+
+```text
+wake trace: ok run=[id:…] kind=draft model=deepseek-v4-1-flash-1017 totalMs=5202
+stepsMs={preparingContext=13 compactingMemory=8 assemblingPrompt=82
+callingModel=5085 runningTool=10 saving=2} promptChars=2853 tokensIn=4926
+tokensOut=1217 turns=1 [#0 ttfc=2473 ms=5079 in=4926 out=1217 reasoning=null]
+tools=[draft_day_plan:9ms]
+```
+
+That line, taken from a live Mistral run of the `crowdedDay` scenario, is the
+first thing to read when a draft is slow: it separates a slow fold, a slow
+context load, a slow first token, a long tool loop and a slow save.
+
+A wake that hangs never reaches that line, so the trace also logs the first
+entry into each step — `wake step: run=[id:…] day=dayplan-… compactingMemory
+after preparingContext=13ms` — and a hung wake's last `wake step` line names the
+step it is stuck in. A wake that never starts writes no line at all: the delay
+is then before the workflow, in the outbox lane or the wake queue, which the
+drafting screen shows as "Waiting for the agent to start".
 
 # The payload is tagged plaintext, not JSON
 

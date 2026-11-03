@@ -79,8 +79,12 @@ class DayAgentJobExecutor {
     required this.liveWakeRunKey,
     DayAgentJobExecutions? executions,
     this.wakeTimeout = const Duration(minutes: 3),
-    this.maxAttempts = 5,
+    this.maxAttempts = defaultMaxAttempts,
   }) : _executions = executions ?? DayAgentJobExecutions();
+
+  /// The production attempt cap, shared with the drafting screen's
+  /// "attempt n of m" readout.
+  static const defaultMaxAttempts = 5;
 
   final DayAgentJobExecutions _executions;
 

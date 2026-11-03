@@ -11,6 +11,7 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/util/profile_resolver.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_wake_progress.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_directive_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_knowledge_service.dart';
@@ -208,3 +209,24 @@ Future<AgentDomainEntity?> draftedPlanForDate(
     dayId: dayId,
   );
 }
+
+/// Device-local live progress of day-agent wakes and job attempts, shared by
+/// the workflow (writer), the processing outbox (job outcomes) and the
+/// drafting screen (reader). Kept alive for the app's lifetime: a wake that
+/// started before the screen opened must still be readable.
+final dayAgentWakeProgressBusProvider = Provider<DayAgentWakeProgressBus>((
+  ref,
+) {
+  final bus = DayAgentWakeProgressBus();
+  ref.onDispose(bus.dispose);
+  return bus;
+}, name: 'dayAgentWakeProgressBusProvider');
+
+/// The live agent status for a day id: the newest wake's progress and the
+/// newest durable-job attempt.
+final StreamProviderFamily<DayAgentLiveStatus, String>
+dayAgentLiveStatusProvider = StreamProvider.autoDispose
+    .family<DayAgentLiveStatus, String>(
+      (ref, dayId) => ref.watch(dayAgentWakeProgressBusProvider).watch(dayId),
+      name: 'dayAgentLiveStatusProvider',
+    );
