@@ -396,6 +396,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get agentFeedbackSourceRating => 'Évaluation';
 
   @override
+  String get agentFormSectionTitle => 'Ton agent';
+
+  @override
   String get agentInstancesEmptyFiltered =>
       'Aucune instance ne correspond à tes filtres.';
 
@@ -3266,6 +3269,14 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get categoryCreationError =>
       'Impossible de créer la catégorie. Réessaie s\'il te plaît.';
+
+  @override
+  String get categoryCrumbMovedOut => 'Sans catégorie';
+
+  @override
+  String categoryCrumbMovedTo(String category) {
+    return 'Désormais dans $category';
+  }
 
   @override
   String get categoryDayPlanDescription =>
@@ -8439,6 +8450,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get goalFormDirectionAtMost => 'Au maximum';
 
   @override
+  String get goalFormDiscardChangesMessage =>
+      'Abandonner tes modifications de cet objectif ? La version enregistrée reste telle quelle.';
+
+  @override
   String get goalFormEditTitle => 'Modifier l’objectif';
 
   @override
@@ -8468,6 +8483,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get goalFormGoalNameLabel => 'Nom de l\'objectif';
+
+  @override
+  String get goalFormGoalSectionTitle => 'Ton objectif';
 
   @override
   String goalFormHabitCadence(String habit, int count) {
@@ -8614,6 +8632,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get goalFormSaveChanges => 'Enregistrer la nouvelle version';
+
+  @override
+  String get goalFormStatementInWordsLabel => 'Avec tes mots';
 
   @override
   String get goalFormStatementLabel => 'Ton objectif, avec tes mots';
@@ -13966,6 +13987,9 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get relationshipDeleteMenuItem => 'Supprimer la personne';
+
+  @override
   String get relationshipDiscardChangesMessage =>
       'Annuler tes modifications ? Rien de ce que tu as saisi n’a été enregistré.';
 
@@ -14021,6 +14045,10 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get relationshipErrorUpdateFailed =>
       'Impossible d\'enregistrer les modifications. Réessaie.';
+
+  @override
+  String get relationshipFormCategoryProfileHint =>
+      'Sauf si tu choisis toi-même une configuration d\'IA pour son agent, celui-ci rédige ses briefings avec le profil d\'IA de cette catégorie, ou avec ton profil par défaut si elle n\'en indique aucun.';
 
   @override
   String get relationshipFormImportantBody =>
@@ -14285,6 +14313,10 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get relationshipPhotoSaveFailed =>
       'Impossible d\'enregistrer la photo';
+
+  @override
+  String get relationshipPhotoSectionIntro =>
+      'Seulement sur tes appareils · l\'agent ne la voit jamais · les changements sont enregistrés tout de suite';
 
   @override
   String relationshipPhotoSheetTitle(String name) {

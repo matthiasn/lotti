@@ -1,3 +1,4 @@
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
@@ -51,6 +52,181 @@ void main() {
         ),
         findsOneWidget,
       );
+    });
+
+    testWidgets(
+      'a row that starts a group gets a hairline above it, never the first',
+      (tester) async {
+        const key = Key('grouped-menu');
+
+        await _pumpContextMenu(
+          tester,
+          const DesignSystemContextMenu(
+            key: key,
+            items: [
+              DesignSystemContextMenuItem(label: 'Edit', startsGroup: true),
+              DesignSystemContextMenuItem(label: 'Update now'),
+              DesignSystemContextMenuItem(label: 'Delete', startsGroup: true),
+            ],
+          ),
+        );
+
+        final rules = find.descendant(
+          of: find.byKey(key),
+          matching: find.byType(Divider),
+        );
+        expect(rules, findsOneWidget);
+        // The one rule sits between *Update now* and *Delete*.
+        final ruleY = tester.getCenter(rules).dy;
+        expect(
+          ruleY,
+          greaterThan(tester.getCenter(find.text('Update now')).dy),
+        );
+        expect(ruleY, lessThan(tester.getCenter(find.text('Delete')).dy));
+      },
+    );
+
+    testWidgets(
+      'a checked row draws its state in the icon slot and announces it',
+      (tester) async {
+        final semantics = tester.ensureSemantics();
+        const key = Key('toggle-menu');
+
+        await _pumpContextMenu(
+          tester,
+          DesignSystemContextMenu(
+            key: key,
+            items: [
+              DesignSystemContextMenuItem(
+                label: 'Automatic updates',
+                checked: true,
+                onTap: () {},
+              ),
+              DesignSystemContextMenuItem(
+                label: 'Read aloud',
+                checked: false,
+                onTap: () {},
+              ),
+            ],
+          ),
+        );
+
+        expect(find.byIcon(LottiIcons.checkboxChecked), findsOneWidget);
+        expect(find.byIcon(LottiIcons.checkboxUnchecked), findsOneWidget);
+        expect(
+          tester.getSemantics(find.bySemanticsLabel('Automatic updates')),
+          isSemantics(
+            label: 'Automatic updates',
+            isButton: true,
+            hasCheckedState: true,
+            isChecked: true,
+            hasEnabledState: true,
+            isEnabled: true,
+            hasTapAction: true,
+          ),
+        );
+        expect(
+          tester.getSemantics(find.bySemanticsLabel('Read aloud')),
+          isSemantics(
+            label: 'Read aloud',
+            isButton: true,
+            hasCheckedState: true,
+            isChecked: false,
+            hasEnabledState: true,
+            isEnabled: true,
+            hasTapAction: true,
+          ),
+        );
+        semantics.dispose();
+      },
+    );
+
+    testWidgets(
+      'a fitted menu is as wide as its longest row, capped at its width',
+      (tester) async {
+        await _pumpContextMenu(
+          tester,
+          const DesignSystemContextMenu(
+            key: Key('fitted'),
+            fitContent: true,
+            items: [
+              DesignSystemContextMenuItem(label: 'Edit', icon: LottiIcons.edit),
+              DesignSystemContextMenuItem(
+                label: 'Agent internals',
+                icon: LottiIcons.tune,
+              ),
+            ],
+          ),
+        );
+
+        final width = tester.getSize(find.byKey(const Key('fitted'))).width;
+        expect(width, lessThan(DesignSystemContextMenu.defaultWidth));
+        // Nothing is cut: the longest label keeps its full width.
+        final label = tester.getRect(find.text('Agent internals'));
+        final menu = tester.getRect(find.byKey(const Key('fitted')));
+        expect(label.right, lessThanOrEqualTo(menu.right));
+        expect(
+          tester
+              .renderObject<RenderParagraph>(find.text('Agent internals'))
+              .didExceedMaxLines,
+          isFalse,
+        );
+      },
+    );
+
+    testWidgets('a host can raise the surface off a dimmed page', (
+      tester,
+    ) async {
+      const raised = Color(0xFF222222);
+      await _pumpContextMenu(
+        tester,
+        const DesignSystemContextMenu(
+          key: Key('raised'),
+          surfaceColor: raised,
+          items: [DesignSystemContextMenuItem(label: 'Edit')],
+        ),
+      );
+
+      final box = tester.widget<Container>(
+        find
+            .descendant(
+              of: find.byKey(const Key('raised')),
+              matching: find.byType(Container),
+            )
+            .first,
+      );
+      expect((box.decoration! as BoxDecoration).color, raised);
+    });
+
+    testWidgets('a long, scrolling menu keeps its group rules', (
+      tester,
+    ) async {
+      await _pumpContextMenu(
+        tester,
+        DesignSystemContextMenu(
+          key: const Key('long'),
+          items: [
+            for (var i = 0; i < 8; i++)
+              DesignSystemContextMenuItem(label: 'Row $i', startsGroup: i == 2),
+          ],
+        ),
+      );
+
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('long')),
+          matching: find.byType(ListView),
+        ),
+        findsOneWidget,
+      );
+      final rule = find.descendant(
+        of: find.byKey(const Key('long')),
+        matching: find.byType(Divider),
+      );
+      expect(rule, findsOneWidget);
+      final y = tester.getCenter(rule).dy;
+      expect(y, greaterThan(tester.getCenter(find.text('Row 1')).dy));
+      expect(y, lessThan(tester.getCenter(find.text('Row 2')).dy));
     });
 
     testWidgets('calls onTap when item is tapped', (tester) async {

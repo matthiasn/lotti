@@ -2,7 +2,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
-import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -10,7 +9,6 @@ import 'package:lotti/features/journal/ui/widgets/journal_image_resolver.dart';
 import 'package:lotti/features/relationships/ui/shared/cover_crop_geometry.dart';
 import 'package:lotti/features/relationships/ui/shared/persona_avatar.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_header.dart';
-import 'package:lotti/features/relationships/ui/widgets/person_page_cards.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_photo_actions.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
@@ -132,25 +130,21 @@ class _PersonPhotoCardState extends ConsumerState<PersonPhotoCard> {
     final data = widget.person.data;
     final hasAvatar = data.avatarImageId != null;
     final hasBanner = data.bannerImageId != null;
+    // Face and Banner are fields of the form, labelled as its text inputs
+    // are; the drag hint is a caption.
+    final fieldLabelStyle = tokens.typography.styles.subtitle.subtitle2
+        .copyWith(color: tokens.colors.text.highEmphasis);
     final labelStyle = tokens.typography.styles.others.caption.copyWith(
       color: tokens.colors.text.lowEmphasis,
     );
     Widget gap(double height) => SizedBox(height: height);
 
-    return DesignSystemSectionCard(
+    return KeyedSubtree(
       key: const ValueKey('person-form-photo-card'),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          PersonCardHeader(title: messages.relationshipPhotoCardTitle),
-          gap(tokens.spacing.step1),
-          Text(
-            messages.relationshipPhotoPrivacy,
-            key: const ValueKey('person-form-photo-privacy'),
-            style: labelStyle,
-          ),
-          gap(tokens.spacing.step4),
-          Text(messages.relationshipPhotoFace, style: labelStyle),
+          Text(messages.relationshipPhotoFace, style: fieldLabelStyle),
           gap(tokens.spacing.step2),
           Row(
             children: [
@@ -205,7 +199,7 @@ class _PersonPhotoCardState extends ConsumerState<PersonPhotoCard> {
             ],
           ),
           gap(tokens.spacing.step5),
-          Text(messages.relationshipPhotoBanner, style: labelStyle),
+          Text(messages.relationshipPhotoBanner, style: fieldLabelStyle),
           gap(tokens.spacing.step2),
           if (hasBanner)
             _BannerPreview(

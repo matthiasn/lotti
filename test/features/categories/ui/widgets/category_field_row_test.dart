@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/categories/ui/widgets/category_field_row.dart';
+import 'package:lotti/features/categories/ui/widgets/category_icon_compact.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
@@ -65,20 +66,33 @@ void main() {
     );
   });
 
-  testWidgets('a category reads by name, led by a dot in its own colour', (
-    tester,
-  ) async {
-    await pump(tester, 'cat-1');
+  testWidgets(
+    'a category reads by name, led by its own icon, under the label the '
+    'text inputs wear',
+    (tester) async {
+      await pump(tester, 'cat-1');
 
-    expect(find.text('Family'), findsOneWidget);
-    final dot = tester.widget<Container>(
-      find.byKey(const ValueKey('category-field-dot')),
-    );
-    expect(
-      (dot.decoration! as BoxDecoration).color,
-      const Color(0xFF00FF00),
-    );
-  });
+      expect(find.text('Family'), findsOneWidget);
+      expect(
+        tester
+            .widget<CategoryIconCompact>(
+              find.byKey(const ValueKey('category-field-dot')),
+            )
+            .categoryId,
+        'cat-1',
+      );
+      final tokens = tester.element(find.byType(CategoryFieldRow)).designTokens;
+      expect(
+        tester.widget<Text>(find.text('Category')).style?.fontSize,
+        tokens.typography.styles.subtitle.subtitle2.fontSize,
+      );
+      // A box the height of a text input, not a bare line between fields.
+      expect(
+        tester.getSize(find.byKey(const ValueKey('category-field'))).height,
+        greaterThanOrEqualTo(tokens.spacing.step9),
+      );
+    },
+  );
 
   testWidgets('a tap opens the shared picker and reports the pick', (
     tester,

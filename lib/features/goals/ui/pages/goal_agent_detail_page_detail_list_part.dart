@@ -319,11 +319,16 @@ extension _GoalDetailList on _GoalAgentDetailPageState {
               // the measure's edge, floating mid-pane). CENTERED in the
               // available width: left-aligned, a wide window carried a
               // dead right half whenever the chat drawer was closed.
+              //
+              // Each section FILLS the measure: a loose one let a section
+              // narrower than it — the header, sized by its title — shrink
+              // and centre, so the title moved with its length instead of
+              // sharing the cards' left edge.
               Align(
                 alignment: Alignment.topCenter,
                 child: ConstrainedBox(
                   constraints: BoxConstraints(maxWidth: contentMaxWidth),
-                  child: section,
+                  child: SizedBox(width: double.infinity, child: section),
                 ),
               ),
         ],

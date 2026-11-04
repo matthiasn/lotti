@@ -6,8 +6,11 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/features/categories/ui/widgets/category_field_row.dart';
+import 'package:lotti/features/categories/ui/widgets/category_icon_compact.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
+import 'package:lotti/features/design_system/components/inputs/design_system_picker_field.dart';
 import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
 import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
 import 'package:lotti/features/design_system/theme/icon_tokens.dart';
@@ -62,7 +65,20 @@ class _FakeContactsService implements ContactsService {
 
 /// The first channel row's value field: name, nickname and the names that
 /// come up are the three text fields above it.
-final Finder firstChannelField = find.byType(TextField).at(3);
+/// The value field of the first channel row, found by its key rather than by
+/// its position among the form's text fields, which moves as sections do.
+final Finder firstChannelField = find
+    .descendant(
+      of: find.byWidgetPredicate(
+        (widget) =>
+            widget.key is ValueKey<String> &&
+            (widget.key! as ValueKey<String>).value.startsWith(
+              'person-form-channel-value-',
+            ),
+      ),
+      matching: find.byType(TextField),
+    )
+    .first;
 
 /// Taps [finder] once it is scrolled into view: everything below the Who
 /// card can sit past the bottom of the 800×600 test surface.
@@ -183,6 +199,58 @@ void main() {
       ),
     );
 
+    testWidgets(
+      'editing, the status sits with the reminders it governs and the '
+      'photo closes the form',
+      (tester) async {
+        setTestSurfaceSize(tester, const Size(800, 3200));
+        await tester.pumpWidget(buildForm(initial: existing()));
+        await tester.pumpAndSettle();
+
+        final agent = find.byKey(const ValueKey('person-form-agent-section'));
+        expect(
+          find.descendant(of: agent, matching: find.text('Status')),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: find.byKey(const ValueKey('person-form-who-section')),
+            matching: find.text('Status'),
+          ),
+          findsNothing,
+        );
+        expect(
+          tester
+              .getTopLeft(
+                find.byKey(const ValueKey('person-form-photo-section')),
+              )
+              .dy,
+          greaterThan(tester.getBottomLeft(agent).dy),
+        );
+      },
+    );
+
+    testWidgets(
+      "every field is the design system's in-sheet field: unfilled, so the "
+      'sheet shows through and the hairline frames it',
+      (tester) async {
+        setTestSurfaceSize(tester, const Size(800, 3200));
+        await tester.pumpWidget(buildForm(initial: existing()));
+        await tester.pumpAndSettle();
+
+        final inputs = tester.widgetList<DesignSystemTextInput>(
+          find.byType(DesignSystemTextInput),
+        );
+        expect(inputs, isNotEmpty);
+        expect(inputs.every((input) => !input.filled), isTrue);
+        final pickers = tester.widgetList<DesignSystemPickerField>(
+          find.byType(DesignSystemPickerField),
+        );
+        expect(pickers, hasLength(2), reason: 'birthday and category');
+        expect(pickers.every((picker) => !picker.filled), isTrue);
+      },
+    );
+
     testWidgets('is offered only for a person who already exists', (
       tester,
     ) async {
@@ -250,15 +318,15 @@ void main() {
       ).thenAnswer((_) async => reread);
 
       await tester.pumpWidget(buildForm(initial: opened));
-      // Remove needs no picker, so the production flow runs end to end.
-      await tester.tap(find.byKey(const ValueKey('person-form-face-remove')));
+      // Remove needs no picker, so the production flow runs end to end. The
+      // Photo section closes the form, below the harness's fold.
+      await tapVisible(
+        tester,
+        find.byKey(const ValueKey('person-form-face-remove')),
+      );
       await tester.pumpAndSettle();
 
-      // The Photo card pushes Save below the harness's fold.
-      await tester.ensureVisible(
-        find.byKey(const ValueKey('person-form-save')),
-      );
-      await tester.tap(find.byKey(const ValueKey('person-form-save')));
+      await tapVisible(tester, find.byKey(const ValueKey('person-form-save')));
       await tester.pumpAndSettle();
 
       final writes = verify(
@@ -658,7 +726,7 @@ void main() {
       expect(semantics.label, contains('Remind me to stay in touch'));
       expect(find.text('Reminders on'), findsNothing);
 
-      await tester.tap(find.text('Remind me to stay in touch'));
+      await tapVisible(tester, find.text('Remind me to stay in touch'));
       await tester.pumpAndSettle();
 
       expect(
@@ -669,30 +737,67 @@ void main() {
       );
     });
 
-    testWidgets('groups the form as Who · Important · How to reach them', (
+    testWidgets('groups the form as the goal form does: Who · How to reach '
+        'them · Your agent, the agent last', (
       tester,
     ) async {
       await tester.pumpWidget(buildForm());
       await tester.pumpAndSettle();
 
       expect(
-        find.byKey(const ValueKey('person-form-who-card')),
+        find.byKey(const ValueKey('person-form-who-section')),
         findsOneWidget,
       );
       expect(
-        find.byKey(const ValueKey('person-form-important-card')),
+        find.byKey(const ValueKey('person-form-agent-section')),
         findsOneWidget,
       );
       expect(
-        find.byKey(const ValueKey('person-form-reach-card')),
+        find.byKey(const ValueKey('person-form-reach-section')),
         findsOneWidget,
       );
       expect(find.text('Who'), findsOneWidget);
       expect(find.text('How to reach them'), findsOneWidget);
-      // The channels card repeats the promise the person page makes.
+      expect(find.text('Your agent'), findsOneWidget);
+      // The channels section repeats the promise the person page makes.
       expect(
         find.text('Stays on this device · never shared with the AI'),
         findsOneWidget,
+      );
+      double top(String key) => tester.getTopLeft(find.byKey(ValueKey(key))).dy;
+      expect(
+        top('person-form-who-section'),
+        lessThan(top('person-form-reach-section')),
+      );
+      expect(
+        top('person-form-reach-section'),
+        lessThan(top('person-form-agent-section')),
+      );
+      // The agent's section holds what decides how it works: the switch
+      // and the words its transcripts should know.
+      final agent = find.byKey(const ValueKey('person-form-agent-section'));
+      for (final inside in [
+        find.byKey(const ValueKey('person-form-reminders')),
+        find.byKey(const ValueKey('person-form-known-terms')),
+      ]) {
+        expect(find.descendant(of: agent, matching: inside), findsOneWidget);
+      }
+      // The category is filed with who they are — where the page's header
+      // names it — with what it means for their agent beneath it.
+      final who = find.byKey(const ValueKey('person-form-who-section'));
+      for (final inside in [
+        find.byType(CategoryFieldRow),
+        find.byKey(const ValueKey('person-form-category-hint')),
+      ]) {
+        expect(find.descendant(of: who, matching: inside), findsOneWidget);
+      }
+      // No section is boxed in a card inside the modal's own surface.
+      expect(
+        find.descendant(
+          of: find.byType(RelationshipForm),
+          matching: find.byType(DesignSystemSectionCard),
+        ),
+        findsNothing,
       );
     });
 
@@ -704,7 +809,7 @@ void main() {
       expect(find.text('How often?'), findsNothing);
       expect(find.text('Weekly'), findsNothing);
 
-      await tester.tap(find.byType(DesignSystemToggle));
+      await tapVisible(tester, find.byType(DesignSystemToggle));
       await tester.pumpAndSettle();
 
       expect(find.text('How often?'), findsOneWidget);
@@ -715,7 +820,7 @@ void main() {
         'is preselected and "none" is not on offer', (tester) async {
       await tester.pumpWidget(buildForm());
       await tester.pumpAndSettle();
-      await tester.tap(find.byType(DesignSystemToggle));
+      await tapVisible(tester, find.byType(DesignSystemToggle));
       await tester.pumpAndSettle();
 
       final pills = tester.widgetList<DsPill>(find.byType(DsPill)).toList();
@@ -754,7 +859,7 @@ void main() {
       );
     });
 
-    testWidgets('the category shows as a colour dot, and none shows no dot', (
+    testWidgets('the category shows its own icon, and none shows no icon', (
       tester,
     ) async {
       when(() => mockCacheService.getCategoryById('cat-1')).thenReturn(
@@ -784,13 +889,14 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Family'), findsOneWidget);
-      final dot = tester.widget<Container>(
-        find.byKey(const ValueKey('category-field-dot')),
-      );
       expect(
-        (dot.decoration! as BoxDecoration).color,
-        const Color(0xFFFF0000),
-        reason: "the dot carries the category's own colour",
+        tester
+            .widget<CategoryIconCompact>(
+              find.byKey(const ValueKey('category-field-dot')),
+            )
+            .categoryId,
+        'cat-1',
+        reason: "the field wears the category's own icon",
       );
     });
   });
@@ -915,7 +1021,7 @@ void main() {
       await tester.pumpWidget(buildForm());
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byKey(const ValueKey('category-field')));
+      await tapVisible(tester, find.byKey(const ValueKey('category-field')));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Family').last);
       await tester.pumpAndSettle();
@@ -1371,8 +1477,8 @@ void main() {
         await tester.pumpAndSettle();
         final button = find.byKey(const ValueKey('person-form-birthday'));
         expect(
-          tester.widget<DesignSystemButton>(button).label,
-          'Add birthday',
+          find.descendant(of: button, matching: find.text('Add birthday')),
+          findsOneWidget,
         );
 
         // The calendar opens thirty years back, on the first of this month.
@@ -1384,8 +1490,8 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(
-          tester.widget<DesignSystemButton>(button).label,
-          'August 1, 1996',
+          find.descendant(of: button, matching: find.text('August 1, 1996')),
+          findsOneWidget,
         );
         expect((await save(tester)).data.birthday, DateTime(1996, 8));
       });
@@ -1411,12 +1517,7 @@ void main() {
 
         expect(tester.takeException(), isNull);
         final row = tester.getRect(
-          find
-              .ancestor(
-                of: find.byKey(const ValueKey('person-form-birthday')),
-                matching: find.byType(Row),
-              )
-              .first,
+          find.byKey(const ValueKey('person-form-who-section')),
         );
         expect(
           tester
@@ -1440,8 +1541,8 @@ void main() {
         await tester.pumpAndSettle();
         final button = find.byKey(const ValueKey('person-form-birthday'));
         expect(
-          tester.widget<DesignSystemButton>(button).label,
-          'March 14, 1990',
+          find.descendant(of: button, matching: find.text('March 14, 1990')),
+          findsOneWidget,
         );
 
         await withClock(Clock.fixed(DateTime(2026, 8, 13)), () async {
@@ -1452,8 +1553,8 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(
-          tester.widget<DesignSystemButton>(button).label,
-          'Add birthday',
+          find.descendant(of: button, matching: find.text('Add birthday')),
+          findsOneWidget,
         );
         expect((await save(tester)).data.birthday, isNull);
       });

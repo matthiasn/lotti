@@ -6,9 +6,10 @@ import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/ui/agent_chat_button.dart';
 import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
+import 'package:lotti/features/agents/ui/agent_surface_menu.dart';
+import 'package:lotti/features/categories/ui/widgets/category_crumb.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
-import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu_anchor.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/photo_chrome_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
@@ -548,6 +549,7 @@ class PersonMenuButton extends ConsumerWidget {
         context: context,
         agentId: relationshipAgentIdFor(relationship.id),
         agentName: null,
+        subjectEntityId: relationship.id,
       ),
       PersonMenuAction.linkContact ||
       PersonMenuAction.relinkContact => runContactLinkAction(
@@ -568,18 +570,20 @@ class PersonMenuButton extends ConsumerWidget {
       IconData icon,
       String label, {
       bool destructive = false,
+      bool startsGroup = false,
     }) => DesignSystemContextMenuItem(
       key: ValueKey('person-menu-${action.name}'),
       icon: icon,
       label: label,
       isDestructive: destructive,
       onTap: () => run(action),
+      startsGroup: startsGroup,
     );
 
-    // The design system's menu, under the same glass disc the hero's other
-    // controls wear — the person's own actions, then the agent's, delete
-    // last.
-    return DesignSystemContextMenuAnchor(
+    // The shared agent-surface menu, under the same glass disc the hero's
+    // other controls wear — the person's own actions, then the agent's,
+    // delete last: the goal page's menu, row for row.
+    return AgentSurfaceMenuButton(
       key: const ValueKey('person-menu'),
       semanticsLabel: messages.relationshipMoreActions,
       items: [
@@ -607,38 +611,39 @@ class PersonMenuButton extends ConsumerWidget {
           ),
         ],
         if (hasAgent)
-          item(
-            PersonMenuAction.internals,
-            LottiIcons.list,
-            messages.aiInternalsTitle,
+          agentInternalsMenuItem(
+            context: context,
+            key: ValueKey('person-menu-${PersonMenuAction.internals.name}'),
+            onTap: () => run(PersonMenuAction.internals),
+            startsGroup: true,
           ),
         item(
           PersonMenuAction.delete,
           LottiIcons.delete,
-          messages.deleteButton,
+          messages.relationshipDeleteMenuItem,
           destructive: true,
+          startsGroup: true,
         ),
       ],
-      builder: (context, {required toggle, required isOpen}) =>
-          GlassActionButton(
-            key: const ValueKey('person-menu-trigger'),
-            tooltip: messages.relationshipMoreActions,
-            semanticLabel: messages.relationshipMoreActions,
-            fill: fill,
-            onTap: toggle,
-            child: Icon(
-              LottiIcons.moreVertical,
-              size: IconSizes.l,
-              color: triggerInk,
-            ),
-          ),
+      triggerBuilder: (context, open) => GlassActionButton(
+        key: const ValueKey('person-menu-trigger'),
+        tooltip: messages.relationshipMoreActions,
+        semanticLabel: messages.relationshipMoreActions,
+        fill: fill,
+        onTap: open,
+        child: Icon(
+          LottiIcons.moreVertical,
+          size: IconSizes.l,
+          color: triggerInk,
+        ),
+      ),
     );
   }
 }
 
 /// The header block under the hero, starting below the avatar that hangs
-/// off it: the eyebrow (`Penguin Operations · Important`), the full wrapping
-/// name, the quiet one-liner (`"Pip" · last spoke Today 12:44`, its
+/// off it: the category as a selector ([CategoryCrumb]), the full
+/// wrapping name, the quiet one-liner (`"Pip" · last spoke Today 12:44`, its
 /// timestamp in the mono voice), and the pills — the cadence fact the
 /// deterministic tier always knows, and the next due day.
 ///
@@ -647,13 +652,11 @@ class PersonMenuButton extends ConsumerWidget {
 class PersonHeaderBlock extends StatelessWidget {
   const PersonHeaderBlock({
     required this.item,
-    required this.categoryName,
     this.actions,
     super.key,
   });
 
   final RelationshipListItem item;
-  final String? categoryName;
 
   /// The row of actions under the name — the contact verbs with the
   /// header's pills flowing on after them ([personHeaderPills]) — in place
@@ -667,9 +670,6 @@ class PersonHeaderBlock extends StatelessWidget {
     final data = item.relationship.data;
     final pills = personHeaderPills(context, item);
 
-    // The category alone: that reminders are on, and how often, is the
-    // reminders pill's to say — it says it in every state and can change it.
-    final eyebrow = categoryName ?? '';
     // The timestamp inside the one-liner, kept as its own substring so the
     // mono voice can be confined to it below — the same rule the list row
     // follows, so one point in time never renders in two typefaces on one
@@ -698,21 +698,13 @@ class PersonHeaderBlock extends StatelessWidget {
         // block, and the larger gap set the name across a void from the
         // face it belongs to.
         SizedBox(height: tokens.spacing.step4),
-        if (eyebrow.isNotEmpty) ...[
-          Text(
-            eyebrow,
-            key: const ValueKey('person-eyebrow'),
-            // `Penguin Operations · Important` is a label, not a reading on
-            // a clock. It used to borrow the mono timestamp style, which
-            // made the first string on the page the only monospaced one and
-            // cost it the measure the category name needs.
-            style: captionLabelStyle(
-              tokens,
-              color: tokens.colors.text.mediumEmphasis,
-            ),
-          ),
-          SizedBox(height: tokens.spacing.step2),
-        ],
+        // The category alone, and changeable where it is read: that
+        // reminders are on, and how often, is the reminders pill's to say.
+        CategoryCrumb(
+          entryId: item.relationship.meta.id,
+          categoryId: item.relationship.meta.categoryId,
+        ),
+        SizedBox(height: tokens.spacing.step1),
         Text(
           data.title,
           style: calmPageTitleStyle(tokens),

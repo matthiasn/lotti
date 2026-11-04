@@ -5,11 +5,13 @@ import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/check_in_data.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/database/agents/agent_database.dart';
 import 'package:lotti/features/agents/ui/agent_chat_button.dart';
+import 'package:lotti/features/agents/ui/agent_surface_menu.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
@@ -25,12 +27,14 @@ import 'package:lotti/features/relationships/ui/shared/relationship_timestamps.d
 import 'package:lotti/features/relationships/ui/widgets/person_header.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/widgets/app_bar/glass_action_button.dart';
 import 'package:lotti/widgets/app_bar/glass_back_button.dart';
 import 'package:lotti/widgets/media/thumb_hash_backed_image.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/fake_entry_controller.dart';
 import '../../../../helpers/journal_image_fixtures.dart';
@@ -239,9 +243,21 @@ void main() {
       // The name belongs to the header block; the open hero shows none.
       expect(find.text('Commander Pip Frostbeak'), findsNothing);
 
+      // The menu every agent surface shares — the goal page's too.
+      expect(
+        tester.widget(find.byKey(const ValueKey('person-menu'))),
+        isA<AgentSurfaceMenuButton>(),
+      );
       await tester.tap(find.byKey(const ValueKey('person-menu')));
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('person-menu-edit')), findsOneWidget);
+      // Over a dimmed page, not floating on an undimmed one.
+      expect(
+        tester
+            .widgetList<ModalBarrier>(find.byType(ModalBarrier))
+            .any((barrier) => (barrier.color?.a ?? 0) > 0),
+        isTrue,
+      );
     });
 
     testWidgets("the menu's edit opens the person form prefilled with this "
@@ -723,18 +739,18 @@ void main() {
 
       await tester.tap(find.byKey(const ValueKey('person-menu')));
       await tester.pumpAndSettle();
-      expect(find.text('Delete'), findsOneWidget);
+      expect(find.text('Delete person'), findsOneWidget);
       expect(find.text('Link contact'), findsNothing);
       // Destructive ink on the body token — not an ad hoc TextStyle.
-      final tokens = tester.element(find.text('Delete')).designTokens;
-      final style = tester.widget<Text>(find.text('Delete')).style!;
+      final tokens = tester.element(find.text('Delete person')).designTokens;
+      final style = tester.widget<Text>(find.text('Delete person')).style!;
       expect(style.color, tokens.colors.alert.error.ink);
       expect(
         style.fontSize,
         tokens.typography.styles.body.bodyMedium.fontSize,
       );
 
-      await tester.tap(find.text('Delete'));
+      await tester.tap(find.text('Delete person'));
       await tester.pumpAndSettle();
 
       expect(deletes, 1);
@@ -833,13 +849,41 @@ void main() {
       CheckInEntry? lastCheckIn,
       String? categoryName,
     }) async {
+      // A named category files the person in it, read back through the
+      // category cache the header's selector resolves names with.
+      final cache = MockEntitiesCacheService();
+      when(() => cache.getCategoryById(any())).thenReturn(null);
+      if (categoryName != null) {
+        when(() => cache.getCategoryById('cat-ops')).thenReturn(
+          CategoryDefinition(
+            id: 'cat-ops',
+            name: categoryName,
+            color: '#3A7BD5',
+            createdAt: now,
+            updatedAt: now,
+            vectorClock: null,
+            private: false,
+            active: true,
+          ),
+        );
+      }
+      await setUpTestGetIt(
+        additionalSetup: () =>
+            getIt.registerSingleton<EntitiesCacheService>(cache),
+      );
+      addTearDown(tearDownTestGetIt);
+      final filed = categoryName == null
+          ? relationship
+          : relationship.copyWith(
+              meta: relationship.meta.copyWith(categoryId: 'cat-ops'),
+            );
       await withClock(Clock.fixed(now), () async {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             PersonHeaderBlock(
-              item: (relationship: relationship, lastCheckIn: lastCheckIn),
-              categoryName: categoryName,
+              item: (relationship: filed, lastCheckIn: lastCheckIn),
             ),
+            overrides: [entitiesCacheServiceProvider.overrideWithValue(cache)],
           ),
         );
         await tester.pumpAndSettle();
@@ -875,7 +919,9 @@ void main() {
       );
 
       expect(
-        tester.widget<Text>(find.byKey(const ValueKey('person-eyebrow'))).data,
+        tester
+            .widget<Text>(find.byKey(const ValueKey('category-crumb-label')))
+            .data,
         'Penguin Operations',
       );
       expect(find.text('Commander Pip Frostbeak'), findsOneWidget);
@@ -897,7 +943,7 @@ void main() {
           .designTokens;
       expect(
         tester
-            .widget<Text>(find.byKey(const ValueKey('person-eyebrow')))
+            .widget<Text>(find.byKey(const ValueKey('category-crumb-label')))
             .style
             ?.fontFamily,
         isNot('Inconsolata'),
@@ -909,11 +955,17 @@ void main() {
       expect(line.style.color, isNot(tokens.colors.interactive.enabled));
     });
 
-    testWidgets('no category and not important leaves the eyebrow out; no '
+    testWidgets('no category offers one where it goes; no '
         'check-in reads as just added', (tester) async {
       await pump(tester, relationship: person());
 
-      expect(find.byKey(const ValueKey('person-eyebrow')), findsNothing);
+      // No category: the selector stays, offering one.
+      expect(
+        tester
+            .widget<Text>(find.byKey(const ValueKey('category-crumb-label')))
+            .data,
+        'Set category',
+      );
       // No check-in means no date in the line, so nothing goes mono.
       final line = oneLiner(tester);
       expect(line.text, 'Just added');
@@ -1028,7 +1080,9 @@ void main() {
       );
 
       expect(
-        tester.widget<Text>(find.byKey(const ValueKey('person-eyebrow'))).data,
+        tester
+            .widget<Text>(find.byKey(const ValueKey('category-crumb-label')))
+            .data,
         'Penguin Operations',
       );
       expect(find.textContaining('Reminders on'), findsNothing);

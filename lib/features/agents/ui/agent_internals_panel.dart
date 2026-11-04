@@ -52,9 +52,10 @@ class AgentInternalsPanel extends ConsumerWidget {
   /// govern from here.
   final AgentMaintenanceScope? maintenance;
 
-  /// The entry the agent serves when it is not a task — a goal's journal
-  /// row — so the setup row's sheet can copy that entry's category default,
-  /// as it does a task's.
+  /// The entry the agent serves when it is not a task — a goal's or a
+  /// person's journal row — so the setup row's sheet can copy that entry's
+  /// category default, as it does a task's. A person's agent shows its setup
+  /// row only when this is given.
   final String? subjectEntityId;
 
   /// Opens the internals for [agentId] in the shared side sheet — the same

@@ -154,55 +154,59 @@ class _GoalHeader extends StatelessWidget {
       final int deficit when deficit > 0 => messages.goalDaysToRecover(deficit),
       _ => null,
     };
-    final color = status == null
-        ? tokens.colors.text.lowEmphasis
-        : unifiedGoalStatusColor(status, tokens.colors);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // The chip anchors to the title's FIRST line: as a Wrap sibling a
-        // long goal name stranded the monogram alone on the top line.
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        // The goal's category above its name, changeable in place — the
+        // person page's selector, so a category reads and moves the same
+        // way on every page an agent serves.
+        Consumer(
+          builder: (context, ref, _) {
+            final agentId = identity.agentId;
+            final categoryAsync = ref.watch(goalCategoryIdProvider(agentId));
+            if (!categoryAsync.hasValue) {
+              return const SizedBox(height: TapTargets.compact);
+            }
+            // The container, not this widget's ref: the crumb's Undo can run
+            // after the user has left the page.
+            final container = ProviderScope.containerOf(context);
+            return CategoryCrumb(
+              key: const ValueKey('goal-category-crumb'),
+              entryId: ref.watch(goalEntryIdProvider(agentId)),
+              categoryId: categoryAsync.value,
+              onMoved: () =>
+                  container.invalidate(goalCategoryIdProvider(agentId)),
+            );
+          },
+        ),
+        SizedBox(height: tokens.spacing.step1),
+        // The title starts on the gutter, under the category, as the
+        // person's name does: the agent is named on its card, and a letter
+        // disc here read as a second category.
+        Wrap(
+          spacing: tokens.spacing.step3,
+          runSpacing: tokens.spacing.step2,
+          crossAxisAlignment: WrapCrossAlignment.center,
           children: [
-            Padding(
-              padding: EdgeInsets.only(top: tokens.spacing.step1),
-              child: NudgeBannerPersonaChip(
-                monogram: NudgeBannerPersonaChip.monogramFor(
-                  identity.displayName,
-                ),
-                fill: color.withValues(alpha: SurfaceAlphas.washChip),
-              ),
+            // The person page's name tier: both pages title their
+            // subject alike, a step above their section headings.
+            Text(
+              spec?.title ?? identity.displayName,
+              style: calmPageTitleStyle(tokens),
             ),
-            SizedBox(width: tokens.spacing.step3),
-            Expanded(
-              child: Wrap(
-                spacing: tokens.spacing.step3,
-                runSpacing: tokens.spacing.step2,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: [
-                  Text(
-                    spec?.title ?? identity.displayName,
-                    style: tokens.typography.styles.heading.heading3.copyWith(
-                      color: tokens.colors.text.highEmphasis,
-                    ),
-                  ),
-                  if (showPill)
-                    UnifiedGoalStatusPill(
-                      status: status,
-                      recoveryHint: recoveryHint,
-                    ),
-                  // Gated on the RAW health: with too little data to judge
-                  // the goal, a green "Trending up" was the most confident
-                  // statement in the header and the least supported by the
-                  // evidence under it.
-                  if (unifiedGoalStatusOf(health?.trackStatus) !=
-                      UnifiedGoalStatus.noData)
-                    if (health?.direction case final direction?)
-                      GoalHealthDirectionChip(direction: direction),
-                ],
+            if (showPill)
+              UnifiedGoalStatusPill(
+                status: status,
+                recoveryHint: recoveryHint,
               ),
-            ),
+            // Gated on the RAW health: with too little data to judge
+            // the goal, a green "Trending up" was the most confident
+            // statement in the header and the least supported by the
+            // evidence under it.
+            if (unifiedGoalStatusOf(health?.trackStatus) !=
+                UnifiedGoalStatus.noData)
+              if (health?.direction case final direction?)
+                GoalHealthDirectionChip(direction: direction),
           ],
         ),
         if (showStatement)

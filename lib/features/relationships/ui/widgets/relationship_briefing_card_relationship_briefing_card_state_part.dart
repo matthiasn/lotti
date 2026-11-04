@@ -235,6 +235,7 @@ class _RelationshipBriefingCardState
       context: context,
       agentId: _agentId,
       agentName: agentName,
+      subjectEntityId: widget.relationship.meta.id,
     );
   }
 

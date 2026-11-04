@@ -387,6 +387,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get agentFeedbackSourceRating => 'Rating';
 
   @override
+  String get agentFormSectionTitle => 'Your agent';
+
+  @override
   String get agentInstancesEmptyFiltered => 'No instances match your filters.';
 
   @override
@@ -3206,6 +3209,14 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get categoryCreationError =>
       'Failed to create category. Please try again.';
+
+  @override
+  String get categoryCrumbMovedOut => 'No category';
+
+  @override
+  String categoryCrumbMovedTo(String category) {
+    return 'Now in $category';
+  }
 
   @override
   String get categoryDayPlanDescription =>
@@ -8289,6 +8300,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get goalFormDirectionAtMost => 'No more than';
 
   @override
+  String get goalFormDiscardChangesMessage =>
+      'Discard your changes to this goal? The saved version stays as it is.';
+
+  @override
   String get goalFormEditTitle => 'Edit goal';
 
   @override
@@ -8318,6 +8333,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get goalFormGoalNameLabel => 'Goal name';
+
+  @override
+  String get goalFormGoalSectionTitle => 'Your goal';
 
   @override
   String goalFormHabitCadence(String habit, int count) {
@@ -8461,6 +8479,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get goalFormSaveChanges => 'Save new version';
+
+  @override
+  String get goalFormStatementInWordsLabel => 'In your words';
 
   @override
   String get goalFormStatementLabel => 'Your goal, in your words';
@@ -13679,6 +13700,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get relationshipDeleteMenuItem => 'Delete person';
+
+  @override
   String get relationshipDiscardChangesMessage =>
       'Discard your changes? Nothing you typed has been saved.';
 
@@ -13734,6 +13758,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get relationshipErrorUpdateFailed =>
       'Could not save the changes. Please try again.';
+
+  @override
+  String get relationshipFormCategoryProfileHint =>
+      'Unless you choose an AI setup for their agent yourself, it briefs with the AI profile this category names, or with your default when it names none.';
 
   @override
   String get relationshipFormImportantBody =>
@@ -13993,6 +14021,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get relationshipPhotoSaveFailed => 'Could not save the photo';
+
+  @override
+  String get relationshipPhotoSectionIntro =>
+      'Only on your devices · the agent never sees it · changes save right away';
 
   @override
   String relationshipPhotoSheetTitle(String name) {

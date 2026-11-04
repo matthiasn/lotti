@@ -389,6 +389,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentFeedbackSourceRating => 'Hodnocení';
 
   @override
+  String get agentFormSectionTitle => 'Tvůj agent';
+
+  @override
   String get agentInstancesEmptyFiltered =>
       'Žádné instance neodpovídají tvým filtrům.';
 
@@ -3254,6 +3257,14 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get categoryCreationError => 'Nepodařilo se vytvořit kategorii.';
+
+  @override
+  String get categoryCrumbMovedOut => 'Bez kategorie';
+
+  @override
+  String categoryCrumbMovedTo(String category) {
+    return 'Nyní v kategorii $category';
+  }
 
   @override
   String get categoryDayPlanDescription =>
@@ -8400,6 +8411,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get goalFormDirectionAtMost => 'Nejvýše';
 
   @override
+  String get goalFormDiscardChangesMessage =>
+      'Zahodit tvoje změny tohoto cíle? Uložená verze zůstane, jak je.';
+
+  @override
   String get goalFormEditTitle => 'Upravit cíl';
 
   @override
@@ -8429,6 +8444,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get goalFormGoalNameLabel => 'Název cíle';
+
+  @override
+  String get goalFormGoalSectionTitle => 'Tvůj cíl';
 
   @override
   String goalFormHabitCadence(String habit, int count) {
@@ -8576,6 +8594,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get goalFormSaveChanges => 'Uložit novou verzi';
+
+  @override
+  String get goalFormStatementInWordsLabel => 'Tvými slovy';
 
   @override
   String get goalFormStatementLabel => 'Tvůj cíl, tvými slovy';
@@ -13927,6 +13948,9 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get relationshipDeleteMenuItem => 'Smazat osobu';
+
+  @override
   String get relationshipDiscardChangesMessage =>
       'Zahodit změny? Nic z toho, co jsi zadal, se neuložilo.';
 
@@ -13983,6 +14007,10 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get relationshipErrorUpdateFailed =>
       'Změny se nepodařilo uložit. Zkus to prosím znovu.';
+
+  @override
+  String get relationshipFormCategoryProfileHint =>
+      'Pokud jejich agentovi sám nevybereš nastavení AI, připravuje přehledy s AI profilem této kategorie, nebo s tvým výchozím, když žádný neurčuje.';
 
   @override
   String get relationshipFormImportantBody =>
@@ -14250,6 +14278,10 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get relationshipPhotoSaveFailed => 'Fotku se nepodařilo uložit';
+
+  @override
+  String get relationshipPhotoSectionIntro =>
+      'Jen na tvých zařízeních · agent ji nikdy nevidí · změny se ukládají hned';
 
   @override
   String relationshipPhotoSheetTitle(String name) {

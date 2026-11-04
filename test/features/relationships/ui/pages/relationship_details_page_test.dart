@@ -46,6 +46,7 @@ import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/repositories/project_repository.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -226,6 +227,9 @@ void main() {
     RelationshipDetailsPage(relationshipId: relationshipId),
     mediaQueryData: mediaQueryData,
     overrides: [
+      // The app bootstrap's override: the header's category selector names
+      // the category through it.
+      entitiesCacheServiceProvider.overrideWithValue(mockCache),
       relationshipRepositoryProvider.overrideWithValue(mockRepository),
       personTimelineOverride(entries: timelineEntries),
       // The action bar's record button watches the app-wide recorder.
@@ -335,8 +339,13 @@ void main() {
       await pumpPage(tester);
 
       expect(find.text('Anna'), findsOneWidget);
-      // No category, and reminders are the pill's to say: no eyebrow.
-      expect(find.byKey(const ValueKey('person-eyebrow')), findsNothing);
+      // No category: the slot offers one. Reminders are the pill's to say.
+      expect(
+        tester
+            .widget<Text>(find.byKey(const ValueKey('category-crumb-label')))
+            .data,
+        'Set category',
+      );
       expect(
         tester
             .widget<RelationshipLineWithDate>(
@@ -393,7 +402,9 @@ void main() {
     await pumpPage(tester);
 
     expect(
-      tester.widget<Text>(find.byKey(const ValueKey('person-eyebrow'))).data,
+      tester
+          .widget<Text>(find.byKey(const ValueKey('category-crumb-label')))
+          .data,
       'Penguin Operations',
     );
   });
@@ -584,9 +595,10 @@ void main() {
       ),
       findsOneWidget,
     );
-    // An unimportant person in no category has no eyebrow at all, and no
-    // status pill: the offer card says *no reminders* once, with the fix.
-    expect(find.byKey(const ValueKey('person-eyebrow')), findsNothing);
+    // An unimportant person in no category is offered one where the
+    // category goes, and has no status pill: the offer card says *no
+    // reminders* once, with the fix.
+    expect(find.text('Set category'), findsOneWidget);
     expect(find.byKey(const ValueKey('person-pill-status')), findsNothing);
   });
 

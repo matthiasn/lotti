@@ -225,6 +225,7 @@
   "agentFeedbackSourceMetric": "Metric",
   "agentFeedbackSourceObservation": "Observation",
   "agentFeedbackSourceRating": "Rating",
+  "agentFormSectionTitle": "Your agent",
   "agentInstancesEmptyFiltered": "No instances match your filters.",
   "agentInstancesFilterClearAll": "Clear all",
   "agentInstancesFilterClearSection": "Clear",
@@ -2157,6 +2158,16 @@
   "categoryAutomaticInferenceDescription": "Transcribe new audio, analyze new images and summarize pull requests in this category automatically",
   "categoryAutomaticInferenceLabel": "Automatic inference",
   "categoryCreationError": "Failed to create category. Please try again.",
+  "categoryCrumbMovedOut": "No category",
+  "categoryCrumbMovedTo": "Now in {category}",
+  "@categoryCrumbMovedTo": {
+    "description": "Toast after the header's category selector moved an entry",
+    "placeholders": {
+      "category": {
+        "type": "String"
+      }
+    }
+  },
   "categoryDayPlanDescription": "Make this category available for selection in the day plan",
   "categoryDayPlanLabel": "Day planning",
   "categoryDefaultEventTemplateHint": "Select a template",
@@ -5334,6 +5345,7 @@
   },
   "goalFormDirectionAtLeast": "At least",
   "goalFormDirectionAtMost": "No more than",
+  "goalFormDiscardChangesMessage": "Discard your changes to this goal? The saved version stays as it is.",
   "goalFormEditTitle": "Edit goal",
   "goalFormEditVersion": "This starts version {version}. Your history is kept.",
   "@goalFormEditVersion": {
@@ -5356,6 +5368,7 @@
   "@goalFormGoalNameLabel": {
     "description": "Label of the goal's editable name field on the mapping and confirmation steps."
   },
+  "goalFormGoalSectionTitle": "Your goal",
   "goalFormHabitCadence": "{habit} ({count}×/week)",
   "@goalFormHabitCadence": {
     "placeholders": {
@@ -5480,6 +5493,7 @@
   },
   "goalFormRollingNote": "Rolling week — the trailing 7 days, always. Counts are per signal; no dead weekends, no lost weeks.",
   "goalFormSaveChanges": "Save new version",
+  "goalFormStatementInWordsLabel": "In your words",
   "goalFormStatementLabel": "Your goal, in your words",
   "goalFormStepsCadence": "{target} steps a day",
   "@goalFormStepsCadence": {
@@ -8790,6 +8804,7 @@
       }
     }
   },
+  "relationshipDeleteMenuItem": "Delete person",
   "relationshipDiscardChangesMessage": "Discard your changes? Nothing you typed has been saved.",
   "@relationshipDiscardChangesMessage": {
     "description": "Asked when the add/edit person sheet is left with unsaved field edits, however it is left: Cancel, the back gesture, the barrier or Escape. The photo is not covered by it — photo actions write immediately."
@@ -8846,6 +8861,7 @@
   "relationshipErrorDeleteFailed": "Could not delete this person. Please try again.",
   "relationshipErrorLinkTaskFailed": "Could not link the task. Please try again.",
   "relationshipErrorUpdateFailed": "Could not save the changes. Please try again.",
+  "relationshipFormCategoryProfileHint": "Unless you choose an AI setup for their agent yourself, it briefs with the AI profile this category names, or with your default when it names none.",
   "relationshipFormImportantBody": "Turns on reminders, a briefing and a chat. Check-in notes go to the agent; contact channels never do.",
   "relationshipFormImportantBodyNamed": "Turns on reminders, a briefing and a chat for {name}. Check-in notes go to the agent; contact channels never do.",
   "@relationshipFormImportantBodyNamed": {
@@ -9065,6 +9081,7 @@
   "relationshipPhotoRemove": "Remove photo",
   "relationshipPhotoRemoveAction": "Remove",
   "relationshipPhotoSaveFailed": "Could not save the photo",
+  "relationshipPhotoSectionIntro": "Only on your devices · the agent never sees it · changes save right away",
   "relationshipPhotoSheetTitle": "Photo of {name}",
   "@relationshipPhotoSheetTitle": {
     "placeholders": {

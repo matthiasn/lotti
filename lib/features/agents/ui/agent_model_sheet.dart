@@ -142,8 +142,17 @@ List<String> _providerIdsForModels(TaskAgentSetupOptions options) {
 String? _selectedProfileId(
   AgentIdentityEntity? identity, {
   required String? entityId,
+  required ResolvedAgentSetup? resolved,
 }) {
   final config = identity?.config;
+  // A person's agent the user has not set up themselves follows the
+  // person's category, then the Settings default
+  // (`resolveRelationshipAgentModel`): the profile that runs is the one
+  // selected, never a copy the category has since moved away from.
+  if (identity?.kind == AgentKinds.relationshipAgent &&
+      config?.inferenceSetup?.origin != AgentInferenceSetupOrigin.user) {
+    return resolved?.profile?.profileId;
+  }
   // A task's or project's agent opened for its entity reads only the typed
   // setup; a goal's or person's agent keeps its legacy `profileId` as the
   // selection even when opened for its row, since their runtime still
@@ -407,6 +416,9 @@ class _AgentSetupOverviewPage extends ConsumerWidget {
     final selectedProfileId = _selectedProfileId(
       identity,
       entityId: controller.entityId,
+      // The retained value, as on the profile page: a background reload
+      // never blanks the selection.
+      resolved: ref.watch(taskAgentResolvedSetupProvider(agentId)).value,
     );
     final currentProfile = options?.profiles
         .where((profile) => profile.id == selectedProfileId)
@@ -680,6 +692,9 @@ class _AgentProfilePage extends ConsumerWidget {
     final selectedProfileId = _selectedProfileId(
       identity,
       entityId: controller.entityId,
+      // The retained value: a background re-resolution (a person moved, a
+      // category's profile changed) keeps the selection on screen.
+      resolved: ref.watch(taskAgentResolvedSetupProvider(agentId)).value,
     );
 
     return _AgentBusyGuard(

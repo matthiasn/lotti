@@ -14,7 +14,7 @@ import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
 import 'package:lotti/features/agents/ui/agent_automation_row.dart';
 import 'package:lotti/features/agents/ui/agent_chat_button.dart';
 import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
-import 'package:lotti/features/agents/ui/agent_menu_items.dart';
+import 'package:lotti/features/agents/ui/agent_surface_menu.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/companion_report_layout.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/companion_stage_page.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/summary_read_aloud_button.dart';
@@ -24,13 +24,16 @@ import 'package:lotti/features/agents/ui/wake_countdown_state.dart';
 import 'package:lotti/features/agents/ui/widgets/ai_card_chrome.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart'
     show WakeRunCompletion;
+import 'package:lotti/features/categories/ui/widgets/category_crumb.dart';
 import 'package:lotti/features/companion/ui/companion_speaker.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/callouts/design_system_inline_callout.dart';
+import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
 import 'package:lotti/features/design_system/components/navigation/resizable_divider.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
+import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/features/goals/model/goal_assessment.dart';
 import 'package:lotti/features/goals/service/goal_agent_service.dart';
 import 'package:lotti/features/goals/service/goal_habit_completion_service.dart';
@@ -677,14 +680,18 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
                 tooltip: context.messages.goalCheckInRecordCta,
                 onPressed: openComposer,
               ),
+            // Phone: the same labelled doorway the person page's hero
+            // carries, opening the conversation's own route.
             if (!desktop && chatAvailable)
-              IconButton(
-                key: const ValueKey('goal-detail-chat-action'),
-                // The sparkle, as on the desktop button and the person
-                // page: it means "the agent" everywhere in the app.
-                icon: const Icon(LottiIcons.aiSpark),
-                tooltip: context.messages.goalChatTalkToAgent,
-                onPressed: () => beamToNamed(goalChatPath(agentId)),
+              Padding(
+                padding: EdgeInsetsDirectional.only(end: tokens.spacing.step1),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(maxWidth: tokens.spacing.step13),
+                  child: AgentChatButton(
+                    key: const ValueKey('goal-detail-chat-action'),
+                    onPressed: () => beamToNamed(goalChatPath(agentId)),
+                  ),
+                ),
               ),
             // Desktop: the conversation's named doorway (§4b header).
             if (desktop && chatAvailable)

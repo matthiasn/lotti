@@ -57,8 +57,11 @@ class _MappingStep extends StatelessWidget {
     required this.onCompositeRuleChanged,
     this.statement,
     this.statementError,
+    this.agentSection,
+    this.editVersion,
+    this.categoryField,
+    this.enabled = true,
     this.onStatementChanged,
-    this.onExampleSelected,
   });
 
   final List<HabitDefinition> habits;
@@ -96,8 +99,23 @@ class _MappingStep extends StatelessWidget {
   /// this page instead of on a wizard step of its own.
   final TextEditingController? statement;
   final String? statementError;
+
+  /// The goal's agent — its name and the goal's category — on the single
+  /// edit page, under the goal's own fields. Null while creating, where the
+  /// confirmation step carries them.
+  final Widget? agentSection;
+
+  /// The version being edited, on the single edit page; its save starts the
+  /// next one, and the page says so under *Your goal*, with the history kept.
+  final int? editVersion;
+
+  /// The goal's category, on the single edit page, under its name.
+  final Widget? categoryField;
+
+  /// False while a save is in flight: the page's own text fields show they
+  /// cannot change under the version being written.
+  final bool enabled;
   final VoidCallback? onStatementChanged;
-  final ValueChanged<String>? onExampleSelected;
 
   /// Frozen row order for the signals card; see the page state's snapshot.
   final List<String> chosenSignalOrder;
@@ -161,7 +179,7 @@ class _MappingStep extends StatelessWidget {
             : null;
         final row = DesignSystemSelectionRow(
           key: ValueKey('goal-form-habit-${habit.id}'),
-          title: _CreateGoalAgentPageState._plainName(habit.name),
+          title: _plainName(habit.name),
           subtitle: messages.goalFormHabitSignal,
           titleMaxLines: 2,
           leading: Icon(
@@ -556,6 +574,15 @@ class _MappingStep extends StatelessWidget {
       for (final descriptor in suggestedSignalOrder) ?signalRowFor(descriptor),
     ];
 
+    final nameField = DesignSystemTextInput(
+      key: const ValueKey('goal-form-title-mapping'),
+      controller: title,
+      label: messages.goalFormGoalNameLabel,
+      errorText: titleError,
+      enabled: enabled,
+      onChanged: (_) => onTitleChanged(),
+    );
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -563,27 +590,36 @@ class _MappingStep extends StatelessWidget {
         // with the example pills inline, no dead space and no page of its
         // own.
         if (statement case final statement?) ...[
-          DesignSystemTextInput(
-            key: const ValueKey('goal-form-intention'),
-            controller: statement,
-            label: messages.goalFormStatementLabel,
-            leadingIcon: LottiIcons.editNote,
-            errorText: statementError,
-            onChanged: (_) => onStatementChanged?.call(),
-          ),
-          SizedBox(height: tokens.spacing.step3),
-          Wrap(
-            spacing: tokens.spacing.step2,
-            runSpacing: tokens.spacing.step2,
-            children: [
-              for (final example in _intentionExamples(context))
-                DsPill(
-                  variant: DsPillVariant.filled,
-                  label: example,
-                  bordered: true,
-                  onTap: () => onExampleSelected?.call(example),
+          AgentFormSection(
+            key: const ValueKey('goal-form-goal-section'),
+            title: messages.goalFormGoalSectionTitle,
+            // What the save will do, said before anything is changed.
+            intro: editVersion == null
+                ? null
+                : messages.goalFormEditVersion(editVersion! + 1),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                DesignSystemTextInput(
+                  key: const ValueKey('goal-form-intention'),
+                  controller: statement,
+                  label: messages.goalFormStatementInWordsLabel,
+                  errorText: statementError,
+                  enabled: enabled,
+                  onChanged: (_) => onStatementChanged?.call(),
                 ),
-            ],
+                // No example pills when editing: one tap would replace a real
+                // goal's statement and leave its signals as they were.
+                SizedBox(height: tokens.spacing.step4),
+                nameField,
+                // Filed where the goal page's header names it, with what
+                // the goal is.
+                if (categoryField case final categoryField?) ...[
+                  SizedBox(height: tokens.spacing.step4),
+                  categoryField,
+                ],
+              ],
+            ),
           ),
           SizedBox(height: tokens.spacing.sectionGap),
         ],
@@ -787,86 +823,13 @@ class _MappingStep extends StatelessWidget {
               ),
             ),
             leadingIcon: LottiIcons.add,
-            variant: isDesktopLayout(context)
-                ? DesignSystemButtonVariant.tertiary
-                : DesignSystemButtonVariant.secondary,
-            fullWidth: !isDesktopLayout(context),
+            // The person editor's *Add contact*: a quiet add-a-row action
+            // on every width, never heavier than the form's own fields.
+            variant: DesignSystemButtonVariant.tertiary,
           ),
-          if (dimensionCount > 1) ...[
-            SizedBox(height: tokens.spacing.cardItemSpacing),
-            DesignSystemSectionCard(
-              child: Row(
-                children: [
-                  Icon(
-                    LottiIcons.tree,
-                    color: tokens.colors.interactive.enabled,
-                  ),
-                  SizedBox(width: tokens.spacing.step3),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          context.messages.goalFormCompositeRule,
-                          style: tokens.typography.styles.subtitle.subtitle2,
-                        ),
-                        Text(
-                          _compositeRuleLabel(
-                            context,
-                            compositeRule,
-                            // Clamped for display: removing a dimension can
-                            // strand a stored "3 of" above a 2-dimension
-                            // goal, and the card must not promise the
-                            // impossible while buildCriteria would silently
-                            // save the clamped value anyway.
-                            requiredSuccesses.clamp(1, dimensionCount),
-                            dimensionCount,
-                          ),
-                          style: tokens.typography.styles.body.bodySmall
-                              .copyWith(
-                                color: tokens.colors.text.mediumEmphasis,
-                              ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  DesignSystemButton(
-                    label: context.messages.insightsTableDelta,
-                    onPressed: () => showModalBottomSheet<void>(
-                      context: context,
-                      builder: (context) => _CompositeRulePicker(
-                        value: compositeRule,
-                        requiredSuccesses: requiredSuccesses,
-                        dimensionCount: dimensionCount,
-                        onChanged: onCompositeRuleChanged,
-                      ),
-                    ),
-                    variant: DesignSystemButtonVariant.tertiary,
-                    size: DesignSystemButtonSize.dense,
-                  ),
-                ],
-              ),
-            ),
-          ],
-          SizedBox(height: tokens.spacing.cardItemSpacing),
-          GoalFormCheckInWeightCard(
-            value: checkInsAreSubstance,
-            onChanged: onCheckInsAreSubstanceChanged,
-          ),
-          SizedBox(height: tokens.spacing.sectionGap),
-          // The goal's NAME is authored here, after the signals that shape
-          // it — the derived value keeps following the selection until the
-          // user types their own.
-          DesignSystemTextInput(
-            key: const ValueKey('goal-form-title-mapping'),
-            controller: title,
-            label: messages.goalFormGoalNameLabel,
-            leadingIcon: LottiIcons.flag,
-            errorText: titleError,
-            onChanged: (_) => onTitleChanged(),
-          ),
-          SizedBox(height: tokens.spacing.sectionGap),
-          // A footnote, not a card: the explainer must not impersonate a
+          SizedBox(height: tokens.spacing.step3),
+          // A footnote under the signals it explains, not a card: the
+          // explainer must not impersonate a
           // second input under the goal-name field.
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -887,6 +850,59 @@ class _MappingStep extends StatelessWidget {
               ),
             ],
           ),
+          if (dimensionCount > 1) ...[
+            SizedBox(height: tokens.spacing.step4),
+            // A picked value like any other: the editors' one picker field.
+            DesignSystemPickerField(
+              fieldKey: const ValueKey('goal-form-composite-rule'),
+              label: context.messages.goalFormCompositeRule,
+              leading: Icon(
+                LottiIcons.tree,
+                size: IconSizes.m,
+                color: tokens.colors.text.mediumEmphasis,
+              ),
+              value: _compositeRuleLabel(
+                context,
+                compositeRule,
+                // Clamped for display: removing a dimension can strand a
+                // stored "3 of" above a 2-dimension goal, and the field
+                // must not promise the impossible while buildCriteria would
+                // silently save the clamped value anyway.
+                requiredSuccesses.clamp(1, dimensionCount),
+                dimensionCount,
+              ),
+              placeholder: context.messages.goalFormCompositeRule,
+              onTap: () => showModalBottomSheet<void>(
+                context: context,
+                builder: (context) => _CompositeRulePicker(
+                  value: compositeRule,
+                  requiredSuccesses: requiredSuccesses,
+                  dimensionCount: dimensionCount,
+                  onChanged: onCompositeRuleChanged,
+                ),
+              ),
+            ),
+          ],
+          // Editing, this agent setting sits in *Your agent*; creating,
+          // here — the same switch row either way, the person editor's.
+          if (statement == null) ...[
+            SizedBox(height: tokens.spacing.sectionGap),
+            AgentSwitchRow(
+              title: messages.goalFormCheckInsAreSubstanceTitle,
+              toggleKey: const ValueKey('goal-form-check-ins-are-substance'),
+              value: checkInsAreSubstance,
+              onChanged: onCheckInsAreSubstanceChanged,
+              body: Text(messages.goalFormCheckInsAreSubstanceSubtitle),
+            ),
+          ],
+          // Creating, the goal's NAME is authored here, after the signals
+          // that shape it — the derived value keeps following the selection
+          // until the user types their own. Editing, it sits with the
+          // statement at the top: the goal's identity, already settled.
+          if (statement == null) ...[
+            SizedBox(height: tokens.spacing.sectionGap),
+            nameField,
+          ],
           if (noObservableMatch) ...[
             SizedBox(height: tokens.spacing.step4),
             Text(
@@ -896,6 +912,10 @@ class _MappingStep extends StatelessWidget {
               ),
             ),
           ],
+        ],
+        if (agentSection case final agentSection?) ...[
+          SizedBox(height: tokens.spacing.sectionGap),
+          agentSection,
         ],
       ],
     );

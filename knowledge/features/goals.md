@@ -143,9 +143,9 @@ sources:
   - id: adr-0151
     resource: ../../docs/adr/0151-the-user-says-whether-a-goals-check-ins-are-its-substance.md
     title: ADR 0151 — The user says whether a goal's check-ins are its substance
-  - id: checkin-weight-card
-    resource: ../../lib/features/goals/ui/pages/goal_form_check_in_weight_card.dart
-    title: The goal form's "I'll answer what you tell me" switch
+  - id: checkin-weight-switch
+    resource: ../../lib/features/agents/ui/agent_switch_row.dart
+    title: AgentSwitchRow — the goal form's "I'll answer what you tell me" switch
   - id: adr-0152
     resource: ../../docs/adr/0152-a-reflection-names-the-check-ins-it-answers.md
     title: ADR 0152 — A reflection names the check-ins it answers
@@ -182,7 +182,7 @@ sources:
     last_modified: 2026-08-12
   - id: create-edit
     resource: ../../lib/features/goals/ui/pages/create_goal_agent_page.dart
-    title: Goal create/edit flow — three-step creation, two-step editing
+    title: Goal create/edit flow — three-step creation, one-page editing
     last_modified: 2026-09-05
   - id: unified-goals-page
     resource: ../../lib/features/goals/ui/pages/unified_goals_page.dart
@@ -1561,10 +1561,21 @@ handler would retract it; that wiring is a follow-up.
   readable as text-only objects instead of being assigned invented dates.
   Creation and owner editing share one route through the same controls.
   Creation is a three-stage intention → mapping → confirmation flow; owner
-  editing skips the intention stage — the statement is a single-line field
-  (with the example pills) at the top of the mapping page — so editing is two
-  steps, and the step indicator renders the count of the steps actually
-  walked. The mapping stage matches observable active habits and
+  editing is one page: *Your goal* (an `AgentFormSection` holding the
+  single-line statement — *In your words*, with no example pills, since one
+  tap would replace a real goal's statement and leave its signals as they
+  were — the goal's name and its category, filed where the goal page's
+  header names it; the intro says which version the save starts) opens it,
+  the signals follow — their combination rule a `DesignSystemPickerField`
+  like any other picked value — and *Your agent* closes it: whether the
+  check-ins are the goal itself (an `AgentSwitchRow`, the person editor's
+  reminders row, which creation shows under the signals) and the agent's
+  name (the section the person editor ends on too). One *Save new version* runs the mapping's checks, then saves;
+  *Cancel*, the back button and the system back leave at once when nothing
+  changed and ask first when something did (`_GoalEditLeave`, an order-free
+  fingerprint baselined as soon as the goal is on the form and moved along with what the app fills in by itself — the goal row's category, catalog clean-ups — only while the form was still untouched). The
+  step indicator shows only when there is more than one step to walk, and
+  the page absorbs input while a save is in flight. The mapping stage matches observable active habits and
   the supported steps metric, gives every selected habit its own one-to-seven
   rolling-week cadence, can add a searchable existing measurable with a
   numeric rolling-week target, and offers Weight or one Blood pressure source
@@ -1895,7 +1906,7 @@ agent's job is to answer them. `GoalCheckInWeight.of(spec)` decides which a
 goal is: the user's say in `GoalSpecVersionEntity.checkInsAreSubstance` when
 they gave one, otherwise `substance` exactly when a criterion measures
 check-in time. The goal form's "I'll answer what you tell me" switch
-(`GoalFormCheckInWeightCard`) shows that value and stores it only where it
+(an `AgentSwitchRow`) shows that value and stores it only where it
 departs from what the criteria imply, so a goal nobody decided for keeps
 following its criteria. Owner revisions compare it like any other field;
 agent proposals carry it over unchanged — an agent never decides what the
@@ -2114,8 +2125,15 @@ and in its body:
 A check-in row opens its journal entry; a reflection reopens its day's sheet.
 The time chip (`GoalCheckInTimeChip`) is the check-in rows' trailing control.
 
-**A goal is filed in a category.** The goal form's *meet your agent* step has
-the person form's category row (`CategoryFieldRow`; the form's
+**A goal is filed in a category.** The goal page names it above the title
+with the person page's selector (`CategoryCrumb`), which moves the goal row
+through `EntryCategoryMove`, re-reads `goalCategoryIdProvider`, and confirms
+*Moved to …* with an Undo that moves it back. The title starts on the gutter
+under it — the agent's persona is named on its card, not as a letter disc
+beside the title — and a phone carries the person page's labelled *Talk to
+agent* pill. The goal
+form's *meet your agent* step (and, editing, its *Your goal* section) has
+the person form's category field (`CategoryFieldRow`; the form's
 `_GoalFormCategory` mixin holds its state). Editing, the row cannot be
 changed until the goal row's own category has read, so a late read never
 overwrites a pick, and a changed category with no goal row to move fails the

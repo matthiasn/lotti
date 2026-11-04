@@ -393,6 +393,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentFeedbackSourceRating => 'Evaluare';
 
   @override
+  String get agentFormSectionTitle => 'Agentul dvs.';
+
+  @override
   String get agentInstancesEmptyFiltered =>
       'Nicio instanță nu corespunde filtrelor dvs.';
 
@@ -3269,6 +3272,14 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get categoryCreationError =>
       'Nu s-a putut crea categoria. Vă rugăm să încercați din nou.';
+
+  @override
+  String get categoryCrumbMovedOut => 'Fără categorie';
+
+  @override
+  String categoryCrumbMovedTo(String category) {
+    return 'Acum în $category';
+  }
 
   @override
   String get categoryDayPlanDescription =>
@@ -8462,6 +8473,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get goalFormDirectionAtMost => 'Cel mult';
 
   @override
+  String get goalFormDiscardChangesMessage =>
+      'Renunțați la modificările acestui obiectiv? Versiunea salvată rămâne neschimbată.';
+
+  @override
   String get goalFormEditTitle => 'Editați obiectivul';
 
   @override
@@ -8491,6 +8506,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get goalFormGoalNameLabel => 'Numele obiectivului';
+
+  @override
+  String get goalFormGoalSectionTitle => 'Obiectivul dvs.';
 
   @override
   String goalFormHabitCadence(String habit, int count) {
@@ -8637,6 +8655,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get goalFormSaveChanges => 'Salvați versiunea nouă';
+
+  @override
+  String get goalFormStatementInWordsLabel => 'În cuvintele dvs.';
 
   @override
   String get goalFormStatementLabel => 'Obiectivul, în cuvintele dumneavoastră';
@@ -14004,6 +14025,9 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get relationshipDeleteMenuItem => 'Ștergeți persoana';
+
+  @override
   String get relationshipDiscardChangesMessage =>
       'Renunțați la modificări? Nimic din ce ați introdus nu a fost salvat.';
 
@@ -14060,6 +14084,10 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get relationshipErrorUpdateFailed =>
       'Modificările nu au putut fi salvate. Încercați din nou.';
+
+  @override
+  String get relationshipFormCategoryProfileHint =>
+      'Dacă nu alegeți dvs. o configurație AI pentru agentul acestei persoane, acesta pregătește rezumatele cu profilul AI indicat de această categorie sau cu profilul dvs. implicit, dacă nu indică niciunul.';
 
   @override
   String get relationshipFormImportantBody =>
@@ -14329,6 +14357,10 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get relationshipPhotoSaveFailed => 'Fotografia nu a putut fi salvată';
+
+  @override
+  String get relationshipPhotoSectionIntro =>
+      'Doar pe dispozitivele dvs. · agentul nu o vede niciodată · modificările se salvează imediat';
 
   @override
   String relationshipPhotoSheetTitle(String name) {

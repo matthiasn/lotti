@@ -220,10 +220,12 @@ the mapping step — derived from the selected habits' names (emoji-free),
 falling back to the steps label or the intention text when no habit is
 selected, until the user types their own — and reappears on the
 confirmation step as the same field rendered read-only behind a pencil
-affordance. Editing skips the intention page entirely: the statement is a
-single-line field with the example pills at the top of the mapping page, so
-the edit flow is two steps where creation is three, and the step indicator
-reflects the count the user actually walks. The automatic step count
+affordance. Editing is one page: *Your goal* — the statement in your words, the goal's
+name and its category, under a line naming the version the save starts —
+then the signals, then *Your agent* — whether it answers what you tell it,
+and its name — above *Cancel* and one *Save new version*; leaving with unsaved changes asks first, as the person editor
+does. The goal page names the goal's category above its title with the person
+page's selector, so a goal moves to another category in two taps. The automatic step count
 is an always-visible signal row rather than an intention-gated one, and an
 intention that names a health capability (blood pressure, weight) arrives
 with that signal pre-selected and seeded (130/80 mmHg, at-most), while a

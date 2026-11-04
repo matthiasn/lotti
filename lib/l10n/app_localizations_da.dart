@@ -388,6 +388,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get agentFeedbackSourceRating => 'Vurdering';
 
   @override
+  String get agentFormSectionTitle => 'Din agent';
+
+  @override
   String get agentInstancesEmptyFiltered =>
       'Ingen instanser matcher dine filtre.';
 
@@ -3218,6 +3221,14 @@ class AppLocalizationsDa extends AppLocalizations {
   @override
   String get categoryCreationError =>
       'Ikke i stand til at oprette kategori. Prøv venligst igen.';
+
+  @override
+  String get categoryCrumbMovedOut => 'Uden kategori';
+
+  @override
+  String categoryCrumbMovedTo(String category) {
+    return 'Nu i $category';
+  }
 
   @override
   String get categoryDayPlanDescription =>
@@ -8313,6 +8324,10 @@ class AppLocalizationsDa extends AppLocalizations {
   String get goalFormDirectionAtMost => 'Højst';
 
   @override
+  String get goalFormDiscardChangesMessage =>
+      'Kassér dine ændringer af dette mål? Den gemte version forbliver som den er.';
+
+  @override
   String get goalFormEditTitle => 'Rediger mål';
 
   @override
@@ -8342,6 +8357,9 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get goalFormGoalNameLabel => 'Målets navn';
+
+  @override
+  String get goalFormGoalSectionTitle => 'Dit mål';
 
   @override
   String goalFormHabitCadence(String habit, int count) {
@@ -8485,6 +8503,9 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get goalFormSaveChanges => 'Gem ny version';
+
+  @override
+  String get goalFormStatementInWordsLabel => 'Med dine ord';
 
   @override
   String get goalFormStatementLabel => 'Dit mål, med dine ord';
@@ -13737,6 +13758,9 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
+  String get relationshipDeleteMenuItem => 'Slet person';
+
+  @override
   String get relationshipDiscardChangesMessage =>
       'Kassér ændringerne? Intet af det, du har skrevet, er gemt.';
 
@@ -13792,6 +13816,10 @@ class AppLocalizationsDa extends AppLocalizations {
   @override
   String get relationshipErrorUpdateFailed =>
       'Ændringerne kunne ikke gemmes. Prøv igen.';
+
+  @override
+  String get relationshipFormCategoryProfileHint =>
+      'Medmindre du selv vælger en AI-opsætning til deres agent, laver den briefinger med den AI-profil, som denne kategori angiver, eller med din standard, når den ikke angiver nogen.';
 
   @override
   String get relationshipFormImportantBody =>
@@ -14053,6 +14081,10 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get relationshipPhotoSaveFailed => 'Kunne ikke gemme fotoet';
+
+  @override
+  String get relationshipPhotoSectionIntro =>
+      'Kun på dine enheder · agenten ser det aldrig · ændringer gemmes med det samme';
 
   @override
   String relationshipPhotoSheetTitle(String name) {

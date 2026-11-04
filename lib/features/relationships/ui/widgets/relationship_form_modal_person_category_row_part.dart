@@ -176,6 +176,9 @@ class RelationshipFormStickyActions extends StatelessWidget {
       listenable: handle,
       builder: (context, _) => DesignSystemModalActionBar(
         glass: true,
+        // The goal form's footer: the confirming action at its own width on
+        // the trailing edge, the way out at the leading one.
+        layout: DesignSystemModalActionBarLayout.compactPrimary,
         padding: EdgeInsets.all(tokens.spacing.step5),
         secondary: [
           DesignSystemButton(
@@ -189,7 +192,6 @@ class RelationshipFormStickyActions extends StatelessWidget {
         primary: DesignSystemButton(
           key: const ValueKey('person-form-save'),
           label: handle.isEditing ? messages.saveButton : messages.createButton,
-          fullWidth: true,
           onPressed: handle.canSave ? handle.save : null,
         ),
       ),
@@ -287,11 +289,14 @@ class _AddChannelActions extends StatelessWidget {
       child: Wrap(
         crossAxisAlignment: WrapCrossAlignment.center,
         children: [
-          TextButton.icon(
+          // The goal editor's *Add a signal*: the same button for adding a
+          // row to a list.
+          DesignSystemButton(
             key: const ValueKey('person-form-add-channel'),
+            label: messages.relationshipAddChannelButton,
+            leadingIcon: LottiIcons.add,
+            variant: DesignSystemButtonVariant.tertiary,
             onPressed: onAdd,
-            icon: const Icon(LottiIcons.add),
-            label: Text(messages.relationshipAddChannelButton),
           ),
           if (onFromContacts != null) ...[
             Text(
@@ -300,10 +305,11 @@ class _AddChannelActions extends StatelessWidget {
                 color: tokens.colors.text.lowEmphasis,
               ),
             ),
-            TextButton(
+            DesignSystemButton(
               key: const ValueKey('person-form-add-from-contacts'),
+              label: messages.relationshipAddChannelFromContacts,
+              variant: DesignSystemButtonVariant.tertiary,
               onPressed: onFromContacts,
-              child: Text(messages.relationshipAddChannelFromContacts),
             ),
           ],
         ],
@@ -372,6 +378,8 @@ class _ChannelEditorRow extends StatelessWidget {
         ),
         SizedBox(height: tokens.spacing.step3),
         DesignSystemTextInput(
+          // The sheet shows through; the hairline frames the field.
+          filled: false,
           key: ValueKey('person-form-channel-value-${draft.hashCode}'),
           controller: draft.valueController,
           label: messages.contactChannelValueLabel,
@@ -379,6 +387,8 @@ class _ChannelEditorRow extends StatelessWidget {
         ),
         SizedBox(height: tokens.spacing.step3),
         DesignSystemTextInput(
+          // The sheet shows through; the hairline frames the field.
+          filled: false,
           controller: draft.labelController,
           label: messages.contactChannelLabelLabel,
           textCapitalization: TextCapitalization.sentences,
@@ -402,44 +412,35 @@ class _BirthdayRow extends StatelessWidget {
     final messages = context.messages;
     final birthday = this.birthday;
     final locale = Localizations.localeOf(context).toString();
-    return Row(
-      children: [
-        Expanded(
-          // The text fields' own label style, so the row reads as one more
-          // field of the card.
-          child: Text(
-            messages.relationshipBirthdayLabel,
-            style: context.designTokens.typography.styles.subtitle.subtitle2
-                .copyWith(color: context.designTokens.colors.text.highEmphasis),
-          ),
-        ),
-        // Flexible, so a long localized date on a narrow phone ellipsizes
-        // inside the button instead of pushing the row off the card.
-        Flexible(
-          child: DesignSystemButton(
-            key: const ValueKey('person-form-birthday'),
-            label: birthday == null
-                ? messages.relationshipBirthdayAdd
-                : DateFormat.yMMMMd(locale).format(birthday),
-            leadingIcon: LottiIcons.calendar,
-            variant: DesignSystemButtonVariant.secondary,
-            size: DesignSystemButtonSize.dense,
-            onPressed: () async {
-              final now = clock.now();
-              final picked = await showDesignSystemDatePicker(
-                context: context,
-                title: messages.relationshipBirthdayLabel,
-                initialDate: birthday ?? DateTime(now.year - 30, now.month),
-                firstDate: DateTime(1900),
-                lastDate: now,
-                allowClear: birthday != null,
-              );
-              if (picked == null) return;
-              onChanged(picked.cleared ? null : picked.date);
-            },
-          ),
-        ),
-      ],
+    final tokens = context.designTokens;
+    // A field like the others: the inputs' label over a box of their shape,
+    // so the *Who* section is one column of one kind of control.
+    return DesignSystemPickerField(
+      fieldKey: const ValueKey('person-form-birthday'),
+      filled: false,
+      label: messages.relationshipBirthdayLabel,
+      value: birthday == null
+          ? null
+          : DateFormat.yMMMMd(locale).format(birthday),
+      placeholder: messages.relationshipBirthdayAdd,
+      leading: Icon(
+        LottiIcons.calendar,
+        size: IconSizes.m,
+        color: tokens.colors.text.mediumEmphasis,
+      ),
+      onTap: () async {
+        final now = clock.now();
+        final picked = await showDesignSystemDatePicker(
+          context: context,
+          title: messages.relationshipBirthdayLabel,
+          initialDate: birthday ?? DateTime(now.year - 30, now.month),
+          firstDate: DateTime(1900),
+          lastDate: now,
+          allowClear: birthday != null,
+        );
+        if (picked == null) return;
+        onChanged(picked.cleared ? null : picked.date);
+      },
     );
   }
 }

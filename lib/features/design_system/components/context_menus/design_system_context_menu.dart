@@ -20,6 +20,8 @@ class DesignSystemContextMenuItem {
     this.onTap,
     this.isDestructive = false,
     this.isSelected = false,
+    this.checked,
+    this.startsGroup = false,
   });
 
   final String label;
@@ -29,6 +31,16 @@ class DesignSystemContextMenuItem {
   final VoidCallback? onTap;
   final bool isDestructive;
   final bool isSelected;
+
+  /// A setting the row switches in place: non-null makes the row a toggle,
+  /// drawn with a checkbox glyph in the icon slot and announced as checked
+  /// or not. Null for an ordinary action.
+  final bool? checked;
+
+  /// Draws a hairline above the row, opening a new group — a page's own
+  /// actions apart from its agent's, delete apart from the rest. Ignored on
+  /// the first row.
+  final bool startsGroup;
 }
 
 enum DesignSystemContextMenuSize {
@@ -51,6 +63,8 @@ class DesignSystemContextMenu extends StatelessWidget {
     this.header,
     this.headerKey,
     this.edgeToEdge = false,
+    this.fitContent = false,
+    this.surfaceColor,
     super.key,
   });
 
@@ -74,6 +88,16 @@ class DesignSystemContextMenu extends StatelessWidget {
   /// fills meet — and are clipped by — the menu's rounded outline.
   final bool edgeToEdge;
 
+  /// Sizes the menu to its widest row instead of [width], which then only
+  /// caps it — for a short menu whose labels leave most of a fixed width
+  /// empty. Ignored once the rows scroll, where a lazy list has no
+  /// intrinsic width to measure.
+  final bool fitContent;
+
+  /// The menu's surface, for a host that opens it over a dimmed page and
+  /// needs it raised off that page; the base level otherwise.
+  final Color? surfaceColor;
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
@@ -93,15 +117,24 @@ class DesignSystemContextMenu extends StatelessWidget {
             child: ListView.builder(
               padding: EdgeInsets.zero,
               itemCount: items.length,
-              itemBuilder: (context, index) =>
+              itemBuilder: (context, index) => Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (items[index].startsGroup && index > 0)
+                    _groupRule(tokens, spec),
                   _buildItem(tokens, spec, items[index]),
+                ],
+              ),
             ),
           )
         : Column(
             mainAxisSize: MainAxisSize.min,
-            children: items
-                .map((item) => _buildItem(tokens, spec, item))
-                .toList(),
+            children: [
+              for (final (index, item) in items.indexed) ...[
+                if (item.startsGroup && index > 0) _groupRule(tokens, spec),
+                _buildItem(tokens, spec, item),
+              ],
+            ],
           );
 
     return Semantics(
@@ -110,12 +143,14 @@ class DesignSystemContextMenu extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: Container(
-          width: width,
+          width: fitContent && !needsScroll ? null : width,
           constraints: maxHeight != null
               ? BoxConstraints(maxHeight: maxHeight)
+              : fitContent
+              ? BoxConstraints(maxWidth: width)
               : const BoxConstraints(),
           decoration: BoxDecoration(
-            color: tokens.colors.background.level01,
+            color: surfaceColor ?? tokens.colors.background.level01,
             borderRadius: BorderRadius.circular(spec.borderRadius),
             boxShadow: DsShadows.floatingSurface,
           ),
@@ -126,39 +161,43 @@ class DesignSystemContextMenu extends StatelessWidget {
             // the bottom corners instead of stopping short of the border.
             child: Material(
               color: Colors.transparent,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (header case final header?)
-                    Container(
-                      key: headerKey,
-                      height: spec.headerHeight,
-                      alignment: AlignmentDirectional.centerStart,
-                      padding: EdgeInsets.symmetric(
-                        horizontal: spec.horizontalPadding,
-                      ),
-                      decoration: BoxDecoration(
-                        border: Border(
-                          bottom: BorderSide(
-                            color: tokens.colors.decorative.level01,
-                            width: spec.dividerWidth,
+              child: _FitWidth(
+                enabled: fitContent && !needsScroll,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (header case final header?)
+                      Container(
+                        key: headerKey,
+                        height: spec.headerHeight,
+                        alignment: AlignmentDirectional.centerStart,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: spec.horizontalPadding,
+                        ),
+                        decoration: BoxDecoration(
+                          border: Border(
+                            bottom: BorderSide(
+                              color: tokens.colors.decorative.level01,
+                              width: spec.dividerWidth,
+                            ),
                           ),
                         ),
-                      ),
-                      child: Text(
-                        header,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: tokens.typography.styles.others.caption.copyWith(
-                          color: tokens.colors.text.mediumEmphasis,
+                        child: Text(
+                          header,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: tokens.typography.styles.others.caption
+                              .copyWith(
+                                color: tokens.colors.text.mediumEmphasis,
+                              ),
                         ),
                       ),
+                    Padding(
+                      padding: EdgeInsets.symmetric(vertical: verticalPadding),
+                      child: itemList,
                     ),
-                  Padding(
-                    padding: EdgeInsets.symmetric(vertical: verticalPadding),
-                    child: itemList,
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -166,6 +205,15 @@ class DesignSystemContextMenu extends StatelessWidget {
       ),
     );
   }
+
+  Widget _groupRule(DsTokens tokens, _ContextMenuSpec spec) => Padding(
+    padding: EdgeInsets.symmetric(vertical: spec.verticalPadding),
+    child: Divider(
+      height: spec.dividerWidth,
+      thickness: spec.dividerWidth,
+      color: tokens.colors.decorative.level01,
+    ),
+  );
 
   Widget _buildItem(
     DsTokens tokens,
@@ -184,6 +232,7 @@ class DesignSystemContextMenu extends StatelessWidget {
       button: true,
       enabled: item.onTap != null,
       selected: item.isSelected ? true : null,
+      checked: item.checked,
       label: item.label,
       onTap: item.onTap,
       child: ExcludeSemantics(
@@ -201,9 +250,13 @@ class DesignSystemContextMenu extends StatelessWidget {
                 ),
                 child: Row(
                   children: [
-                    if (item.icon != null) ...[
+                    if (item.icon != null || item.checked != null) ...[
                       Icon(
-                        item.icon,
+                        switch (item.checked) {
+                          true => LottiIcons.checkboxChecked,
+                          false => LottiIcons.checkboxUnchecked,
+                          null => item.icon,
+                        },
                         size: spec.iconSize,
                         color: item.iconColor ?? textColor,
                       ),
@@ -273,4 +326,16 @@ class _ContextMenuSpec {
   final double iconSize;
   final double iconGap;
   final TextStyle textStyle;
+}
+
+/// [IntrinsicWidth] around a fitted menu's rows, a pass-through otherwise.
+class _FitWidth extends StatelessWidget {
+  const _FitWidth({required this.enabled, required this.child});
+
+  final bool enabled;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) =>
+      enabled ? IntrinsicWidth(child: child) : child;
 }

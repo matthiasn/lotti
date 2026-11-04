@@ -391,6 +391,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get agentFeedbackSourceRating => 'Betyg';
 
   @override
+  String get agentFormSectionTitle => 'Din agent';
+
+  @override
   String get agentInstancesEmptyFiltered => 'Inga exempel matchar dina filter.';
 
   @override
@@ -3227,6 +3230,14 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get categoryCreationError =>
       'Misslyckades med att skapa kategori. Försök igen, tack.';
+
+  @override
+  String get categoryCrumbMovedOut => 'Utan kategori';
+
+  @override
+  String categoryCrumbMovedTo(String category) {
+    return 'Nu i $category';
+  }
 
   @override
   String get categoryDayPlanDescription =>
@@ -8328,6 +8339,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get goalFormDirectionAtMost => 'Högst';
 
   @override
+  String get goalFormDiscardChangesMessage =>
+      'Släng dina ändringar av det här målet? Den sparade versionen förblir som den är.';
+
+  @override
   String get goalFormEditTitle => 'Redigera mål';
 
   @override
@@ -8357,6 +8372,9 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get goalFormGoalNameLabel => 'Målets namn';
+
+  @override
+  String get goalFormGoalSectionTitle => 'Ditt mål';
 
   @override
   String goalFormHabitCadence(String habit, int count) {
@@ -8500,6 +8518,9 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get goalFormSaveChanges => 'Spara ny version';
+
+  @override
+  String get goalFormStatementInWordsLabel => 'Med dina ord';
 
   @override
   String get goalFormStatementLabel => 'Ditt mål, med dina ord';
@@ -13757,6 +13778,9 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String get relationshipDeleteMenuItem => 'Ta bort person';
+
+  @override
   String get relationshipDiscardChangesMessage =>
       'Kasta ändringarna? Inget av det du skrivit har sparats.';
 
@@ -13812,6 +13836,10 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get relationshipErrorUpdateFailed =>
       'Ändringarna kunde inte sparas. Försök igen.';
+
+  @override
+  String get relationshipFormCategoryProfileHint =>
+      'Om du inte själv väljer en AI-inställning för personens agent skriver den sina genomgångar med den AI-profil som kategorin anger, eller med din standard när den inte anger någon.';
 
   @override
   String get relationshipFormImportantBody =>
@@ -14073,6 +14101,10 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get relationshipPhotoSaveFailed => 'Det gick inte att spara fotot';
+
+  @override
+  String get relationshipPhotoSectionIntro =>
+      'Bara på dina enheter · agenten ser det aldrig · ändringar sparas direkt';
 
   @override
   String relationshipPhotoSheetTitle(String name) {

@@ -158,10 +158,6 @@ void main() {
     await pumpCard(tester, person());
 
     expect(
-      find.byKey(const ValueKey('person-form-photo-privacy')),
-      findsOneWidget,
-    );
-    expect(
       buttonLabel(tester, 'person-form-face-change'),
       'Choose from library',
     );

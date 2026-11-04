@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:clock/clock.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_config.dart';
 import 'package:lotti/classes/agents/agent_constants.dart';
@@ -24,6 +25,7 @@ import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/agents/ui/agent_automation_row.dart';
 import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
+import 'package:lotti/features/agents/ui/agent_surface_menu.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/companion_report_layout.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/companion_stage_page.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/summary_read_aloud_button.dart';
@@ -32,6 +34,7 @@ import 'package:lotti/features/agents/ui/change_set_summary_card.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart'
     show WakeRunCompletion;
 import 'package:lotti/features/ai_consumption/state/consumption_providers.dart';
+import 'package:lotti/features/categories/ui/widgets/category_crumb.dart';
 import 'package:lotti/features/companion/animation/mouth_track.dart';
 import 'package:lotti/features/companion/rig/companion_painter.dart';
 import 'package:lotti/features/companion/state/spoken_track.dart';
@@ -70,6 +73,10 @@ import 'package:lotti/features/nudges/model/nudge_entity_view.dart';
 import 'package:lotti/features/nudges/state/nudge_banner_providers.dart';
 import 'package:lotti/features/nudges/ui/nudge_banner_exposure_tracker.dart';
 import 'package:lotti/features/tts/state/tts_engine_provider.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/repositories/entry_category_move.dart';
+import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/day_indicators/day_mark.dart';
@@ -252,9 +259,21 @@ void main() {
       () => completionService.requestReportRefresh('goal-1'),
     ).called(1);
 
+    // The menu every agent surface shares — the person page's too.
+    expect(
+      tester.widget(find.byKey(const ValueKey('goal-menu'))),
+      isA<AgentSurfaceMenuButton>(),
+    );
     await tester.tap(find.byIcon(LottiIcons.moreVertical));
     await tester.pumpAndSettle();
     expect(find.text('Automatic updates'), findsOneWidget);
+    // Over a dimmed page, not floating on an undimmed one.
+    expect(
+      tester
+          .widgetList<ModalBarrier>(find.byType(ModalBarrier))
+          .any((barrier) => (barrier.color?.a ?? 0) > 0),
+      isTrue,
+    );
     await tester.tap(find.text('Edit goal'));
     expect(navigated, ['/goals/details/goal-1/edit']);
     navigated.clear();
@@ -270,7 +289,15 @@ void main() {
     scrollable.position.jumpTo(scrollable.position.maxScrollExtent);
     await tester.pump();
     expect(find.text('Signals'), findsOneWidget);
-    await tester.tap(find.text('Talk to agent'));
+    // The phone header's labelled doorway, as on the person page.
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('goal-detail-chat-action')),
+        matching: find.text('Talk to agent'),
+      ),
+      findsOneWidget,
+    );
+    await tester.tap(find.byKey(const ValueKey('goal-detail-chat-action')));
     await tester.pump();
     expect(navigated, ['/goals/details/goal-1/chat']);
   });
@@ -360,6 +387,204 @@ void main() {
     await tester.pumpAndSettle();
     verifyNoMoreInteractions(healthImport);
   });
+
+  testWidgets(
+    "the goal's category sits above its name as the person page's selector, "
+    'and a pick moves the goal there',
+    (tester) async {
+      final cache = MockEntitiesCacheService();
+      final fitness = CategoryDefinition(
+        id: 'cat-fit',
+        name: 'Fitness',
+        color: '#3A7BD5',
+        createdAt: DateTime(2026),
+        updatedAt: DateTime(2026),
+        vectorClock: null,
+        private: false,
+        active: true,
+      );
+      final crew = fitness.copyWith(id: 'cat-crew', name: 'Launch crew');
+      when(() => cache.getCategoryById(any())).thenReturn(null);
+      when(() => cache.getCategoryById('cat-fit')).thenReturn(fitness);
+      when(() => cache.getCategoryById('cat-crew')).thenReturn(crew);
+      when(() => cache.sortedCategories).thenReturn([fitness, crew]);
+      await setUpTestGetIt(
+        additionalSetup: () =>
+            getIt.registerSingleton<EntitiesCacheService>(cache),
+      );
+      addTearDown(tearDownTestGetIt);
+      final move = MockEntryCategoryMove();
+      when(() => move.move(any(), any())).thenAnswer((_) async => true);
+      var categoryReads = 0;
+
+      final overrides = <Override>[
+        habitsControllerProvider.overrideWith(
+          () => FakeHabitsController(
+            HabitsState.initial(now: DateTime(2026, 8, 11)),
+          ),
+        ),
+        agentIdentityProvider(
+          'goal-1',
+        ).overrideWith((ref) async => goalIdentity),
+        goalAgentHealthProvider('goal-1').overrideWith(
+          (ref) async => (
+            trackStatus: GoalTrackStatus.onTrack,
+            attainment: 1.0,
+            reportOneLiner: null,
+            pendingProposals: 0,
+            spec: null,
+            direction: null,
+            deficit: null,
+            buffer: null,
+          ),
+        ),
+        selfTargetedPendingChangeSetsProvider(
+          'goal-1',
+        ).overrideWith((ref) async => []),
+        agentMessagesByThreadProvider(
+          'goal-1',
+        ).overrideWith((ref) async => {}),
+        agentReportProvider('goal-1').overrideWith((ref) async => null),
+        entitiesCacheServiceProvider.overrideWithValue(cache),
+        entryCategoryMoveProvider.overrideWithValue(move),
+        goalEntryIdProvider('goal-1').overrideWithValue('goal-row-1'),
+        goalCategoryIdProvider('goal-1').overrideWith((ref) async {
+          categoryReads++;
+          return 'cat-fit';
+        }),
+      ];
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const GoalAgentDetailPage(agentId: 'goal-1'),
+          overrides: overrides,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final crumb = find.byKey(const ValueKey('goal-category-crumb'));
+      expect(
+        find.descendant(of: crumb, matching: find.text('Fitness')),
+        findsOneWidget,
+      );
+      // Above the goal's name, as the person's category sits above theirs.
+      expect(
+        tester.getTopLeft(crumb).dy,
+        lessThan(tester.getTopLeft(find.text('Move more').first).dy),
+      );
+
+      await tester.tap(crumb);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Launch crew'));
+      await tester.pumpAndSettle();
+
+      verify(() => move.move('goal-row-1', 'cat-crew')).called(1);
+      // The header reads the goal's category again once the move landed.
+      expect(categoryReads, 2);
+
+      // The user leaves the goal while the toast's Undo is still live; the
+      // move it undoes then reports back to a page that is gone.
+      final onMoved = tester.widget<CategoryCrumb>(crumb).onMoved!;
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const SizedBox.shrink(),
+          overrides: overrides,
+        ),
+      );
+      onMoved();
+      await tester.pump();
+
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    "on a wide window the goal's category and name share the cards' left "
+    'edge, whatever the title length',
+    (tester) async {
+      tester.view.physicalSize = const Size(1600, 1000);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final cache = MockEntitiesCacheService();
+      final fitness = CategoryDefinition(
+        id: 'cat-fit',
+        name: 'Fitness',
+        color: '#3A7BD5',
+        createdAt: DateTime(2026),
+        updatedAt: DateTime(2026),
+        vectorClock: null,
+        private: false,
+        active: true,
+      );
+      final crew = fitness.copyWith(id: 'cat-crew', name: 'Launch crew');
+      when(() => cache.getCategoryById(any())).thenReturn(null);
+      when(() => cache.getCategoryById('cat-fit')).thenReturn(fitness);
+      when(() => cache.getCategoryById('cat-crew')).thenReturn(crew);
+      when(() => cache.sortedCategories).thenReturn([fitness, crew]);
+      await setUpTestGetIt(
+        additionalSetup: () =>
+            getIt.registerSingleton<EntitiesCacheService>(cache),
+      );
+      addTearDown(tearDownTestGetIt);
+      final move = MockEntryCategoryMove();
+      when(() => move.move(any(), any())).thenAnswer((_) async => true);
+
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const GoalAgentDetailPage(agentId: 'goal-1'),
+          overrides: [
+            habitsControllerProvider.overrideWith(
+              () => FakeHabitsController(
+                HabitsState.initial(now: DateTime(2026, 8, 11)),
+              ),
+            ),
+            agentIdentityProvider(
+              'goal-1',
+            ).overrideWith((ref) async => goalIdentity),
+            goalAgentHealthProvider('goal-1').overrideWith(
+              (ref) async => (
+                trackStatus: GoalTrackStatus.onTrack,
+                attainment: 1.0,
+                reportOneLiner: null,
+                pendingProposals: 0,
+                spec: null,
+                direction: null,
+                deficit: null,
+                buffer: null,
+              ),
+            ),
+            selfTargetedPendingChangeSetsProvider(
+              'goal-1',
+            ).overrideWith((ref) async => []),
+            agentMessagesByThreadProvider(
+              'goal-1',
+            ).overrideWith((ref) async => {}),
+            agentReportProvider('goal-1').overrideWith((ref) async => null),
+            entitiesCacheServiceProvider.overrideWithValue(cache),
+            entryCategoryMoveProvider.overrideWithValue(move),
+            goalEntryIdProvider('goal-1').overrideWithValue('goal-row-1'),
+            goalCategoryIdProvider(
+              'goal-1',
+            ).overrideWith((ref) async => 'cat-fit'),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final crumb = find.byKey(const ValueKey('goal-category-crumb'));
+      final card = find.byType(GoalCharterCard);
+      expect(card, findsOneWidget);
+      // The crumb hangs its hover wash a step outside the gutter, so its
+      // icon — not its box — starts where the cards do.
+      final tokens = tester.element(crumb).designTokens;
+      expect(
+        tester.getTopLeft(crumb).dx + tokens.spacing.step1,
+        moreOrLessEquals(
+          tester.getTopLeft(card).dx,
+          epsilon: tokens.spacing.step1,
+        ),
+      );
+    },
+  );
 
   group('update-failure feedback on the read card', () {
     Future<void> pump(

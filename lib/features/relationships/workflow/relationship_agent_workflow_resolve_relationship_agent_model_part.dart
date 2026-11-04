@@ -133,12 +133,17 @@ typedef RelationshipModelResolution = ({
 });
 
 /// Shared by Phase B, setup status and disclosure so each names the same route.
-/// An explicit typed setup is authoritative (including disabled/broken).
-/// Legacy agents try person profile, agent profile, category default, Settings
-/// default, then the validated built-in model. Explicit/category lookups are
-/// lazy; a transient fallback read cannot break an already resolved route.
-/// A selected Settings default that no longer resolves fails closed instead
-/// of silently sending inference to the built-in cloud model.
+/// A setup the user chose in the agent's setup sheet is authoritative
+/// (including disabled/broken). A setup copied from the category — at
+/// creation, or by *Use category default* — is not: it follows the person's
+/// category as it is NOW, so moving the person or changing the category's
+/// profile moves the agent with it instead of leaving it on whatever the old
+/// category named. Otherwise the chain is the person's own profile, the
+/// agent's legacy profile, the category's profile, the Settings default, then
+/// the validated built-in model. Explicit/category lookups are lazy; a
+/// transient fallback read cannot break an already resolved route. A selected
+/// Settings default that no longer resolves fails closed instead of silently
+/// sending inference to the built-in cloud model.
 Future<RelationshipModelResolution?> resolveRelationshipAgentModel({
   required RelationshipEntry? relationship,
   required AgentIdentityEntity? agentIdentity,
@@ -151,7 +156,14 @@ Future<RelationshipModelResolution?> resolveRelationshipAgentModel({
     domainLogger: domainLogger,
   );
   final setup = agentIdentity?.config.inferenceSetup;
-  if (setup != null) {
+  // A copy of the category's profile follows the category — unless the
+  // user has since picked a thinking model on it, which is their own choice
+  // and keeps the snapshot's origin only because the override is layered on
+  // it (`updateAgentThinkingModelOverride`).
+  final followsCategory =
+      setup?.origin == AgentInferenceSetupOrigin.categorySnapshot &&
+      setup?.thinkingModelOverrideId == null;
+  if (setup != null && !followsCategory) {
     final details = await profileResolver.resolveSetup(setup);
     final profile = details.profile;
     if (profile == null) return null;
@@ -185,7 +197,9 @@ Future<RelationshipModelResolution?> resolveRelationshipAgentModel({
 
   final explicitProfileIds = <String>{
     ?relationship?.data.profileId,
-    ?agentIdentity?.config.profileId,
+    // The legacy mirror of a category snapshot is that same copy, and just
+    // as stale once the person's category moves on.
+    if (!followsCategory) ?agentIdentity?.config.profileId,
   };
   for (final profileId in explicitProfileIds) {
     final resolved = await viaProfile(profileId);

@@ -781,6 +781,12 @@ abstract class AppLocalizations {
   /// **'Rating'**
   String get agentFeedbackSourceRating;
 
+  /// No description provided for @agentFormSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your agent'**
+  String get agentFormSectionTitle;
+
   /// No description provided for @agentInstancesEmptyFiltered.
   ///
   /// In en, this message translates to:
@@ -5441,6 +5447,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Failed to create category. Please try again.'**
   String get categoryCreationError;
+
+  /// No description provided for @categoryCrumbMovedOut.
+  ///
+  /// In en, this message translates to:
+  /// **'No category'**
+  String get categoryCrumbMovedOut;
+
+  /// Toast after the header's category selector moved an entry
+  ///
+  /// In en, this message translates to:
+  /// **'Now in {category}'**
+  String categoryCrumbMovedTo(String category);
 
   /// No description provided for @categoryDayPlanDescription.
   ///
@@ -14014,6 +14032,12 @@ abstract class AppLocalizations {
   /// **'No more than'**
   String get goalFormDirectionAtMost;
 
+  /// No description provided for @goalFormDiscardChangesMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard your changes to this goal? The saved version stays as it is.'**
+  String get goalFormDiscardChangesMessage;
+
   /// No description provided for @goalFormEditTitle.
   ///
   /// In en, this message translates to:
@@ -14067,6 +14091,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Goal name'**
   String get goalFormGoalNameLabel;
+
+  /// No description provided for @goalFormGoalSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your goal'**
+  String get goalFormGoalSectionTitle;
 
   /// No description provided for @goalFormHabitCadence.
   ///
@@ -14274,6 +14304,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Save new version'**
   String get goalFormSaveChanges;
+
+  /// No description provided for @goalFormStatementInWordsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'In your words'**
+  String get goalFormStatementInWordsLabel;
 
   /// No description provided for @goalFormStatementLabel.
   ///
@@ -22771,6 +22807,12 @@ abstract class AppLocalizations {
   /// **'Delete {name}?'**
   String relationshipDeleteConfirmTitle(String name);
 
+  /// No description provided for @relationshipDeleteMenuItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete person'**
+  String get relationshipDeleteMenuItem;
+
   /// Asked when the add/edit person sheet is left with unsaved field edits, however it is left: Cancel, the back gesture, the barrier or Escape. The photo is not covered by it — photo actions write immediately.
   ///
   /// In en, this message translates to:
@@ -22842,6 +22884,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not save the changes. Please try again.'**
   String get relationshipErrorUpdateFailed;
+
+  /// No description provided for @relationshipFormCategoryProfileHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Unless you choose an AI setup for their agent yourself, it briefs with the AI profile this category names, or with your default when it names none.'**
+  String get relationshipFormCategoryProfileHint;
 
   /// No description provided for @relationshipFormImportantBody.
   ///
@@ -23250,6 +23298,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not save the photo'**
   String get relationshipPhotoSaveFailed;
+
+  /// No description provided for @relationshipPhotoSectionIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Only on your devices · the agent never sees it · changes save right away'**
+  String get relationshipPhotoSectionIntro;
 
   /// No description provided for @relationshipPhotoSheetTitle.
   ///

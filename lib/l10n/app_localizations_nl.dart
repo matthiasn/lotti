@@ -387,6 +387,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get agentFeedbackSourceRating => 'Waardering';
 
   @override
+  String get agentFormSectionTitle => 'Je agent';
+
+  @override
   String get agentInstancesEmptyFiltered =>
       'Geen instantie die overeenkomt met uw filters.';
 
@@ -3234,6 +3237,14 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get categoryCreationError =>
       'Aanmaken van categorie is mislukt. Probeer het opnieuw.';
+
+  @override
+  String get categoryCrumbMovedOut => 'Zonder categorie';
+
+  @override
+  String categoryCrumbMovedTo(String category) {
+    return 'Nu in $category';
+  }
 
   @override
   String get categoryDayPlanDescription =>
@@ -8346,6 +8357,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get goalFormDirectionAtMost => 'Maximaal';
 
   @override
+  String get goalFormDiscardChangesMessage =>
+      'Je wijzigingen aan dit doel weggooien? De bewaarde versie blijft zoals ze is.';
+
+  @override
   String get goalFormEditTitle => 'Doel bewerken';
 
   @override
@@ -8375,6 +8390,9 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get goalFormGoalNameLabel => 'Naam van het doel';
+
+  @override
+  String get goalFormGoalSectionTitle => 'Je doel';
 
   @override
   String goalFormHabitCadence(String habit, int count) {
@@ -8512,6 +8530,9 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get goalFormSaveChanges => 'Nieuwe versie opslaan';
+
+  @override
+  String get goalFormStatementInWordsLabel => 'In je eigen woorden';
 
   @override
   String get goalFormStatementLabel => 'Je doel, in je eigen woorden';
@@ -13777,6 +13798,9 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String get relationshipDeleteMenuItem => 'Persoon verwijderen';
+
+  @override
   String get relationshipDiscardChangesMessage =>
       'Je wijzigingen verwerpen? Niets van wat je hebt ingevuld is opgeslagen.';
 
@@ -13832,6 +13856,10 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get relationshipErrorUpdateFailed =>
       'Kon de wijzigingen niet opslaan. Probeer het opnieuw.';
+
+  @override
+  String get relationshipFormCategoryProfileHint =>
+      'Tenzij je zelf een AI-instelling voor hun agent kiest, maakt die briefings met het AI-profiel dat deze categorie noemt, of met je standaard als ze er geen noemt.';
 
   @override
   String get relationshipFormImportantBody =>
@@ -14096,6 +14124,10 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get relationshipPhotoSaveFailed => 'Kon de foto niet opslaan';
+
+  @override
+  String get relationshipPhotoSectionIntro =>
+      'Alleen op je apparaten · de agent ziet hem nooit · wijzigingen worden meteen bewaard';
 
   @override
   String relationshipPhotoSheetTitle(String name) {
