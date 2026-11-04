@@ -185,22 +185,26 @@ class DayProcessingOutboxProcessor {
       );
       return DayProcessingRunResult.failed;
     }
-    if (!await _isOnline()) {
-      // Same cheap preflight as the transcription lane: without it, every
-      // offline probe cycle ran a FULL wake attempt (state fold + prompt
-      // assembly) per waiting job just to hit a SocketException.
-      await repository.markFailure(
-        jobId: job.id,
-        claimToken: claim.token,
-        failureClass: DayProcessingFailureClass.network,
-        error: 'Offline',
-      );
-      _onOutcome(
-        job.copyWith(status: DayProcessingJobStatus.waitingForNetwork),
-      );
-      return DayProcessingRunResult.deferred;
-    }
     try {
+      // Inside the try, like everything after the claim: a preflight that
+      // throws must settle the claimed row through the failure path below.
+      // Escaping here left it `running` under its lease and re-claimed it every
+      // lease period, forever, without a wake, an outcome or an error shown.
+      if (!await _isOnline()) {
+        // Same cheap preflight as the transcription lane: without it, every
+        // offline probe cycle ran a FULL wake attempt (state fold + prompt
+        // assembly) per waiting job just to hit a SocketException.
+        await repository.markFailure(
+          jobId: job.id,
+          claimToken: claim.token,
+          failureClass: DayProcessingFailureClass.network,
+          error: 'Offline',
+        );
+        _onOutcome(
+          job.copyWith(status: DayProcessingJobStatus.waitingForNetwork),
+        );
+        return DayProcessingRunResult.deferred;
+      }
       final outcome = await executor(job);
       switch (outcome) {
         case DayAgentJobSucceeded(:final resultEntityId):

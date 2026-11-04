@@ -9,6 +9,7 @@ import 'package:lotti/features/sync/state/matrix_service_provider.dart';
 import 'package:lotti/providers/agent_repository_providers.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/utils/consts.dart';
+import 'package:lotti/utils/network_reachability.dart';
 
 /// Sync's [AgentSyncAttachment]: the [SyncEventProcessor] stores another
 /// device's agents and hands their lifecycle changes to the wake runtime.
@@ -69,10 +70,10 @@ SyncLeaseGate buildSyncLeaseGate(Ref ref) {
     syncEnabled: () => journalDb.getConfigFlag(enableMatrixFlag),
     connected: matrixService.isLoggedIn,
     connectivityChanges: Connectivity().onConnectivityChanged
-        .map(reachesSyncServer)
+        .map(reachesNetwork)
         .handleError((Object _) {}),
     currentlyOnline: () async =>
-        reachesSyncServer(await Connectivity().checkConnectivity()),
+        reachesNetwork(await Connectivity().checkConnectivity()),
     waitForInboxDrained: (timeout) =>
         matrixService.inboundQueue.waitForDrainAtMostTo(0, timeout: timeout),
   );
