@@ -3929,6 +3929,37 @@ class AppLocalizationsRo extends AppLocalizations {
   String get companionSettingsCharacterUncle => 'Unchiul';
 
   @override
+  String get companionSettingsEyeColourAmber => 'Chihlimbar';
+
+  @override
+  String get companionSettingsEyeColourBlue => 'Albaștri';
+
+  @override
+  String get companionSettingsEyeColourBrown => 'Căprui';
+
+  @override
+  String get companionSettingsEyeColourDarkBrown => 'Căprui închis';
+
+  @override
+  String get companionSettingsEyeColourDescription =>
+      'Se potrivește cu nuanța pielii până alegeți o culoare.';
+
+  @override
+  String get companionSettingsEyeColourGreen => 'Verde';
+
+  @override
+  String get companionSettingsEyeColourGrey => 'Gri';
+
+  @override
+  String get companionSettingsEyeColourHazel => 'Alune';
+
+  @override
+  String get companionSettingsEyeColourLabel => 'Culoarea ochilor';
+
+  @override
+  String get companionSettingsEyeColourMatch => 'Ca pielea';
+
+  @override
   String get companionSettingsHairColourAuburn => 'Arămiu';
 
   @override

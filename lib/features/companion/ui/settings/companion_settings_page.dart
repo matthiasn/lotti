@@ -39,7 +39,7 @@ class CompanionSettingsPage extends StatelessWidget {
 
 /// Where a person makes the companion their own: who it is (Lotti, the
 /// grandpa, the aunt or the uncle), the outfit worn or none, so a fresh one is picked every time it
-/// is shown, the skin tone, the hairstyle and its colour, and how much sass
+/// is shown, the skin tone, the hairstyle and its colour, the eyes, and how much sass
 /// it reads with.
 ///
 /// The companion stands above the choices, head to toe and as a portrait,
@@ -208,6 +208,36 @@ class _CompanionSettingsBodyState extends ConsumerState<CompanionSettingsBody> {
               ],
             ),
             SettingsFormSection(
+              title: messages.companionSettingsEyeColourLabel,
+              description: messages.companionSettingsEyeColourDescription,
+              children: [
+                Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: DesignSystemChip(
+                    label: messages.companionSettingsEyeColourMatch,
+                    outlined: true,
+                    size: DesignSystemChipSize.touch,
+                    selected: custom.eyeColour == null,
+                    onPressed: () =>
+                        controller.set(custom.copyWith(eyeColour: () => null)),
+                  ),
+                ),
+                CompanionSwatchRow<CompanionEyeColour?>(
+                  selected: custom.eyeColour,
+                  onSelected: (eyes) =>
+                      controller.set(custom.copyWith(eyeColour: () => eyes)),
+                  swatches: [
+                    for (final eyes in CompanionEyeColour.values)
+                      (
+                        value: eyes,
+                        colour: eyes.iris,
+                        label: eyeColourName(messages, eyes),
+                      ),
+                  ],
+                ),
+              ],
+            ),
+            SettingsFormSection(
               title: messages.companionSettingsSassLabel,
               description: messages.companionSettingsSassDescription,
               children: [
@@ -331,6 +361,18 @@ String outfitName(AppLocalizations m, CompanionLook outfit) =>
       'uncle_skate' => m.companionSettingsOutfitSkate,
       'uncle_snow' => m.companionSettingsOutfitSnow,
       _ => m.companionSettingsOutfitEveryday,
+    };
+
+/// [eyes]' name in the picker, as a screen reader says it.
+String eyeColourName(AppLocalizations m, CompanionEyeColour eyes) =>
+    switch (eyes) {
+      CompanionEyeColour.darkBrown => m.companionSettingsEyeColourDarkBrown,
+      CompanionEyeColour.brown => m.companionSettingsEyeColourBrown,
+      CompanionEyeColour.hazel => m.companionSettingsEyeColourHazel,
+      CompanionEyeColour.amber => m.companionSettingsEyeColourAmber,
+      CompanionEyeColour.green => m.companionSettingsEyeColourGreen,
+      CompanionEyeColour.grey => m.companionSettingsEyeColourGrey,
+      CompanionEyeColour.blue => m.companionSettingsEyeColourBlue,
     };
 
 /// [sass]'s name in the picker.

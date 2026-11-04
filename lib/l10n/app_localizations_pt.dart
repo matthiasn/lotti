@@ -3903,6 +3903,37 @@ class AppLocalizationsPt extends AppLocalizations {
   String get companionSettingsCharacterUncle => 'Tio';
 
   @override
+  String get companionSettingsEyeColourAmber => 'Âmbar';
+
+  @override
+  String get companionSettingsEyeColourBlue => 'Azul';
+
+  @override
+  String get companionSettingsEyeColourBrown => 'Castanho';
+
+  @override
+  String get companionSettingsEyeColourDarkBrown => 'Castanho-escuro';
+
+  @override
+  String get companionSettingsEyeColourDescription =>
+      'Combina com o tom de pele até escolheres uma cor.';
+
+  @override
+  String get companionSettingsEyeColourGreen => 'Verde';
+
+  @override
+  String get companionSettingsEyeColourGrey => 'Cinzento';
+
+  @override
+  String get companionSettingsEyeColourHazel => 'Avelã';
+
+  @override
+  String get companionSettingsEyeColourLabel => 'Cor dos olhos';
+
+  @override
+  String get companionSettingsEyeColourMatch => 'Como a pele';
+
+  @override
   String get companionSettingsHairColourAuburn => 'Ruivo';
 
   @override

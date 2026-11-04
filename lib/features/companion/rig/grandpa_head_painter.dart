@@ -6,7 +6,8 @@ import 'package:lotti/features/companion/rig/paint_kit.dart';
 /// What the grandpa has on and about his face, in head-local units (origin
 /// at the face's centre, y down; the face spans x ±45 and y -58..40): a
 /// trimmed beard along the jaw, a moustache over the lip, both in his hair's
-/// colour, and the flat cap of his market outfit.
+/// colour, and the flat cap of his market outfit — and, from the same
+/// outline, the uncle's stubble.
 ///
 /// The beard is painted under the mouth and the moustache over it, so
 /// every mouth shape still opens and reads through them.
@@ -62,6 +63,20 @@ void drawBeard(Canvas canvas, CompanionPalette c, double yaw) {
     );
   }
   canvas.restore();
+}
+
+/// A shadow of stubble where a beard would grow — along the jaw, round the
+/// chin and over the lip — the hair's colour laid faintly over the skin.
+void drawStubble(
+  Canvas canvas,
+  CompanionPalette c,
+  double fx,
+  double fy,
+  double yaw,
+) {
+  final shadow = Color.lerp(c.hair, c.skinDeep, 0.35)!.withValues(alpha: 0.2);
+  fillPath(canvas, smoothClosed(beardOutline(yaw), 0.2), shadow);
+  fillPath(canvas, moustachePath(fx, fy), shadow);
 }
 
 /// The moustache: two soft wings from under the nose, their tips at the

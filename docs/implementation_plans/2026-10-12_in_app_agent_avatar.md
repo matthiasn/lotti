@@ -838,6 +838,14 @@ Asked for after the cast was built, from screenshots of the app:
   shape, for every character.
 - **The voice stopped in the background**: it now holds the phone's audio
   session while it speaks (TTS, not the companion, but heard through her).
+- **Eye colour** (`feat/companion-eye-colour`): blue eyes on every skin tone
+  did not fit. Each tone now matches eyes of its own by default, and a
+  person may pick from seven — the parts' rule holds: any colour with any
+  tone.
+- **The uncle read as a lady**, with rosy cheeks and lipstick: the grandpa
+  and the uncle now have a man's face — a squarer jaw, straighter heavier
+  brows, lips in the skin's own colour, little blush — and the uncle
+  stubble.
 
 ### Later
 

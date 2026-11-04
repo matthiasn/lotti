@@ -425,6 +425,65 @@ void main() {
     expect(chosen(tester).hairStyle, CompanionHairStyle.ponytail);
   });
 
+  group('the eyes', () {
+    bool matching(WidgetTester tester) => tester
+        .widget<DesignSystemChip>(
+          find.widgetWithText(DesignSystemChip, 'Match skin tone'),
+        )
+        .selected;
+
+    testWidgets('match the skin tone until a colour is picked', (tester) async {
+      await pumpBody(
+        tester,
+        customization: const CompanionCustomization(
+          skinTone: CompanionSkinTone.tone6,
+        ),
+      );
+      expect(matching(tester), isTrue);
+      expect(
+        previews(tester).first.look.palette.iris,
+        CompanionSkinTone.tone6.eyes.iris,
+      );
+    });
+
+    testWidgets('a swatch picks the colour, and the chip lets them match '
+        'again', (tester) async {
+      await pumpBody(tester);
+      await tester.tap(
+        find.byKey(const ValueKey('companionSwatch-CompanionEyeColour.green')),
+      );
+      await _frames(tester);
+      expect(chosen(tester).eyeColour, CompanionEyeColour.green);
+      expect(matching(tester), isFalse);
+      expect(
+        previews(tester).first.look.palette.iris,
+        CompanionEyeColour.green.iris,
+      );
+
+      await tester.tap(find.text('Match skin tone'));
+      await _frames(tester);
+      expect(chosen(tester).eyeColour, isNull);
+      expect(matching(tester), isTrue);
+    });
+
+    testWidgets('every colour says its name to a screen reader', (
+      tester,
+    ) async {
+      await pumpBody(tester);
+      for (final name in ['Dark brown', 'Hazel', 'Amber', 'Gray', 'Blue']) {
+        expect(find.bySemanticsLabel(name), findsWidgets, reason: name);
+      }
+    });
+  });
+
+  test('every eye colour has its own name', () {
+    final AppLocalizations m = AppLocalizationsEn();
+    expect(
+      CompanionEyeColour.values.map((e) => eyeColourName(m, e)).toSet(),
+      hasLength(CompanionEyeColour.values.length),
+    );
+  });
+
   group('the character', () {
     const grandpa = CompanionCustomization(
       character: CompanionSpecies.grandpa,

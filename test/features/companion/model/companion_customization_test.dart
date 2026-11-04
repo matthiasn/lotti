@@ -349,4 +349,96 @@ void main() {
       expect(other.hashCode, isNot(grandpa.hashCode));
     });
   });
+
+  group('the eyes', () {
+    test('match the skin tone by default, and follow a change of tone', () {
+      const custom = CompanionCustomization();
+      expect(custom.eyeColour, isNull);
+      expect(custom.eyes, CompanionSkinTone.tone1.eyes);
+      expect(
+        custom.copyWith(skinTone: CompanionSkinTone.tone6).eyes,
+        CompanionSkinTone.tone6.eyes,
+      );
+    });
+
+    test('a picked colour wins over the tone, whatever the tone', () {
+      const custom = CompanionCustomization(
+        skinTone: CompanionSkinTone.tone7,
+        eyeColour: CompanionEyeColour.green,
+      );
+      expect(custom.eyes, CompanionEyeColour.green);
+      expect(
+        custom.copyWith(skinTone: CompanionSkinTone.tone1).eyes,
+        CompanionEyeColour.green,
+      );
+    });
+
+    test('dress draws the eyes, on every character', () {
+      for (final outfit in [
+        CompanionLook.grandma,
+        CompanionLook.grandpa,
+        CompanionLook.aunt,
+        CompanionLook.uncle,
+      ]) {
+        final dressed = const CompanionCustomization(
+          skinTone: CompanionSkinTone.tone5,
+        ).dress(outfit);
+        expect(
+          dressed.palette.iris,
+          CompanionSkinTone.tone5.eyes.iris,
+          reason: outfit.id,
+        );
+        expect(dressed.palette.irisLight, CompanionSkinTone.tone5.eyes.light);
+      }
+    });
+
+    test('a picked colour round-trips; matching the tone writes nothing', () {
+      const picked = CompanionCustomization(
+        eyeColour: CompanionEyeColour.hazel,
+      );
+      expect(picked.toJson()['eyeColour'], 'hazel');
+      expect(CompanionCustomization.fromJson(picked.toJson()), picked);
+      expect(
+        const CompanionCustomization().toJson(),
+        isNot(contains('eyeColour')),
+      );
+    });
+
+    test('an unknown colour, written by a newer version, matches the tone', () {
+      expect(
+        CompanionCustomization.fromJson(const {
+          'eyeColour': 'violet',
+        }).eyeColour,
+        isNull,
+      );
+    });
+
+    test('copyWith picks and clears it; changedParts names it; adopting '
+        'takes it', () {
+      const base = CompanionCustomization();
+      final picked = base.copyWith(eyeColour: () => CompanionEyeColour.grey);
+      expect(picked.eyeColour, CompanionEyeColour.grey);
+      expect(picked.copyWith(eyeColour: () => null).eyeColour, isNull);
+      expect(picked.copyWith().eyeColour, CompanionEyeColour.grey);
+      expect(CompanionCustomization.changedParts(base, picked), {'eyeColour'});
+      expect(base.adopting(picked, {'eyeColour'}), picked);
+      expect(base.adopting(picked, {'sass'}).eyeColour, isNull);
+      expect(picked, isNot(base));
+      expect(picked.hashCode, isNot(base.hashCode));
+    });
+  });
+
+  test("dress gives a man the skin's own lips, a woman her rose ones", () {
+    const custom = CompanionCustomization(skinTone: CompanionSkinTone.tone4);
+    final uncle = custom.dress(CompanionLook.uncle).palette;
+    final aunt = custom.dress(CompanionLook.aunt).palette;
+    expect(uncle.lips, CompanionSkinTone.tone4.naturalLips.lips);
+    expect(uncle.lipsUpper, CompanionSkinTone.tone4.naturalLips.upper);
+    expect(uncle.lipsLight, CompanionSkinTone.tone4.naturalLips.light);
+    expect(aunt.lips, CompanionSkinTone.tone4.lips);
+    expect(
+      custom.dress(CompanionLook.grandpa).palette.lips,
+      CompanionSkinTone.tone4.naturalLips.lips,
+    );
+  });
 }

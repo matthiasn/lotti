@@ -3861,6 +3861,37 @@ class AppLocalizationsDa extends AppLocalizations {
   String get companionSettingsCharacterUncle => 'Onkel';
 
   @override
+  String get companionSettingsEyeColourAmber => 'Rav';
+
+  @override
+  String get companionSettingsEyeColourBlue => 'Blå';
+
+  @override
+  String get companionSettingsEyeColourBrown => 'Brune';
+
+  @override
+  String get companionSettingsEyeColourDarkBrown => 'Mørkebrune';
+
+  @override
+  String get companionSettingsEyeColourDescription =>
+      'Passer til hudtonen, indtil du vælger en farve.';
+
+  @override
+  String get companionSettingsEyeColourGreen => 'Grønne';
+
+  @override
+  String get companionSettingsEyeColourGrey => 'Grå';
+
+  @override
+  String get companionSettingsEyeColourHazel => 'Nøddebrune';
+
+  @override
+  String get companionSettingsEyeColourLabel => 'Øjenfarve';
+
+  @override
+  String get companionSettingsEyeColourMatch => 'Som hudtonen';
+
+  @override
   String get companionSettingsHairColourAuburn => 'Kobberrød';
 
   @override

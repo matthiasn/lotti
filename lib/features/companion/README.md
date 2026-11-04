@@ -95,6 +95,10 @@ back, nudges), is
   everyday (denim blue), studio (blush pink), festival (tangerine, with a
   turquoise headband) and weekend (brick red). Her suit's legs are the
   trousers the grandpa wears, in her colour, ending in her own shoes.
+- **A man's face.** The grandpa and the uncle have a squarer jaw,
+  straighter and heavier brows, lips in their skin's own colour rather than
+  a woman's rose, hardly any blush and no flicked lashes; the uncle a
+  shadow of stubble.
 - **The uncle.** About thirty, terse and dry, in clothes of his own: a
   bomber jacket worn open over a crew-neck tee, its collar, cuffs and hem
   ribbed and its sleeves to the wrist, chinos turned up over lace-up boots,
@@ -109,6 +113,9 @@ back, nudges), is
   deep, never named after a people), the hairstyle (bun, curls, afro, locs,
   bob, short, balding, long, waves, ponytail), the hair
   colour (silver, white, grey, black, brown, auburn, pink, lavender, blue),
+  the eyes (matched to the skin tone by default — blue on the first, Lotti's
+  own, hazel, brown and dark brown down the deeper tones — or picked: dark
+  brown, brown, hazel, amber, green, grey, blue),
   an outfit of the character's always worn, or "Surprise me", and the
   sass — warm,
   cheeky (the default) or sassy — which her preview acts out when it is

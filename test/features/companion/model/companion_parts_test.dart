@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/companion/model/companion_look.dart';
 import 'package:lotti/features/companion/model/companion_parts.dart';
@@ -91,5 +93,77 @@ void main() {
         reason: c.name,
       );
     }
+  });
+
+  group('eye colours', () {
+    test('are their own, the lit side lighter than the iris', () {
+      expect(
+        CompanionEyeColour.values.map((e) => e.iris).toSet(),
+        hasLength(CompanionEyeColour.values.length),
+      );
+      for (final e in CompanionEyeColour.values) {
+        expect(
+          e.light.computeLuminance(),
+          greaterThan(e.iris.computeLuminance()),
+          reason: e.name,
+        );
+      }
+    });
+
+    test("blue is the pitch videos' blue, Lotti's own on the first tone", () {
+      const c = CompanionPalette();
+      expect(CompanionEyeColour.blue.iris, c.iris);
+      expect(CompanionEyeColour.blue.light, c.irisLight);
+      expect(CompanionSkinTone.tone1.eyes, CompanionEyeColour.blue);
+    });
+
+    // The ask: blue eyes on every skin tone did not fit.
+    test('every tone past the first matches eyes darker than blue, and the '
+        'deeper the tone the darker its eyes', () {
+      for (final t in CompanionSkinTone.values.skip(1)) {
+        expect(t.eyes, isNot(CompanionEyeColour.blue), reason: t.name);
+      }
+      const tones = CompanionSkinTone.values;
+      for (var i = 2; i < tones.length; i++) {
+        expect(
+          tones[i].eyes.iris.computeLuminance(),
+          lessThanOrEqualTo(tones[i - 1].eyes.iris.computeLuminance()),
+          reason: tones[i].name,
+        );
+      }
+    });
+  });
+
+  group("a man's natural lips", () {
+    /// How much redder than its own greens and blues a colour is.
+    double redness(Color c) => c.r - (c.g + c.b) / 2;
+
+    // The ask: the uncle read as a lady wearing lipstick.
+    test('are less red than the rose lips of the same tone', () {
+      const rose = CompanionPalette();
+      for (final t in CompanionSkinTone.values) {
+        expect(
+          redness(t.naturalLips.lips),
+          lessThan(redness(t.lips ?? rose.lips)),
+          reason: t.name,
+        );
+      }
+    });
+
+    test('the upper lip in shade below the lower, lit one', () {
+      for (final t in CompanionSkinTone.values) {
+        final lips = t.naturalLips;
+        expect(
+          lips.upper.computeLuminance(),
+          lessThan(lips.lips.computeLuminance()),
+          reason: t.name,
+        );
+        expect(
+          lips.light.computeLuminance(),
+          greaterThan(lips.lips.computeLuminance()),
+          reason: t.name,
+        );
+      }
+    });
   });
 }

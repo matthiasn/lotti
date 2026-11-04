@@ -38,13 +38,33 @@ void drawBackOfHead(Canvas canvas, RigFrame f, CompanionLook look) {
   canvas.restore();
 }
 
-Path facePath(double yaw) => Path()
-  ..moveTo(0, -58)
-  ..cubicTo(26, -58, 45 - yaw * 2, -40, 45 - yaw * 2, -8)
-  ..cubicTo(45 - yaw * 2, 16, 26 + yaw, 38, yaw * 3, 40)
-  ..cubicTo(-26 + yaw, 38, -45 - yaw * 2, 16, -45 - yaw * 2, -8)
-  ..cubicTo(-45 - yaw * 2, -40, -26, -58, 0, -58)
-  ..close();
+/// The face's outline, turned by [yaw]. [jaw] squares it: 0 is the soft,
+/// rounded chin Lotti has, 1 a man's squarer jaw, wider at its corners and
+/// a little lower at the chin.
+Path facePath(double yaw, {double jaw = 0}) {
+  double l(double soft, double square) => soft + (square - soft) * jaw;
+  return Path()
+    ..moveTo(0, -58)
+    ..cubicTo(26, -58, 45 - yaw * 2, -40, 45 - yaw * 2, -8)
+    ..cubicTo(
+      45 - yaw * 2,
+      l(16, 26),
+      l(26, 36) + yaw,
+      l(38, 41),
+      yaw * 3,
+      l(40, 42),
+    )
+    ..cubicTo(
+      l(-26, -36) + yaw,
+      l(38, 41),
+      -45 - yaw * 2,
+      l(16, 26),
+      -45 - yaw * 2,
+      -8,
+    )
+    ..cubicTo(-45 - yaw * 2, -40, -26, -58, 0, -58)
+    ..close();
+}
 
 /// The face, the features and everything worn on the head.
 void drawHead(Canvas canvas, RigFrame f, CompanionLook look) {
@@ -101,7 +121,8 @@ void _humanFace(Canvas canvas, CompanionLook look, CompanionPose p) {
       c.skinShade,
     );
   }
-  final face = facePath(yaw);
+  final masculine = look.species.masculine;
+  final face = facePath(yaw, jaw: masculine ? 1 : 0);
   fillPath(canvas, face, c.skin);
   canvas
     ..save()
@@ -147,12 +168,14 @@ void _humanFace(Canvas canvas, CompanionLook look, CompanionPose p) {
       s,
       p.browRaise + s * p.browSkew,
       p.browTilt,
-      fullness: look.species.aged ? 1 : 1.5,
+      fullness: (look.species.aged ? 1 : 1.5) + (masculine ? 0.4 : 0),
+      arch: masculine ? 0.4 : 1,
     );
   }
   drawNose(canvas, c, fx * 1.25, 8 + fy * 1.1);
   if (look.species.aged) _laughLines(canvas, c, fx, fy, p.smile);
   if (look.species.bearded) drawBeard(canvas, c, yaw);
+  if (look.species.stubble) drawStubble(canvas, c, fx, fy, yaw);
   canvas
     ..save()
     ..translate(fx * 1.1, 22 + fy)

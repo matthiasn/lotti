@@ -352,13 +352,16 @@ double browLift(double raise) {
 /// The brow's three anchor points for [centre], [side], [raise] and [tilt]:
 /// its inner end, its peak and its outer end. The [tilt] — the inner end
 /// drawn down in a frown, or up in worry — is limited, and gives way as the
-/// brow rises: a brow lifted high cannot also knot at the nose.
+/// brow rises: a brow lifted high cannot also knot at the nose. [arch] is how
+/// high its peak stands over its ends: 1 for a woman's arched brow, less for
+/// a man's straighter one.
 ({Offset inner, Offset peak, Offset outer}) browShape(
   Offset centre,
   int side,
   double raise,
-  double tilt,
-) {
+  double tilt, {
+  double arch = 1,
+}) {
   final s = side.toDouble();
   final cx = centre.dx;
   final lift = browLift(raise);
@@ -367,14 +370,15 @@ double browLift(double raise) {
   final y = centre.dy - lift * 3.5;
   return (
     inner: Offset(cx - s * 10, y + 2 - t * 2.5),
-    peak: Offset(cx + s * 2, y - 3.2 - lift * 0.6),
+    peak: Offset(cx + s * 2, y - 3.2 * arch - lift * 0.6),
     outer: Offset(cx + s * 12.5, y + 1 + t * 0.8),
   );
 }
 
 /// Draws one brow centred on [centre]; [raise] lifts it, [tilt] lifts its
 /// inner end, both within what a brow can do ([browShape]). [fullness]
-/// thickens it downwards: above 1 for a younger face.
+/// thickens it downwards: above 1 for a younger face or a man's; [arch] is
+/// [browShape]'s.
 void drawBrow(
   Canvas canvas,
   CompanionPalette c,
@@ -383,10 +387,17 @@ void drawBrow(
   double raise,
   double tilt, {
   double fullness = 1,
+  double arch = 1,
 }) {
   final f = fullness;
   final s = side.toDouble();
-  final (:inner, :peak, :outer) = browShape(centre, side, raise, tilt);
+  final (:inner, :peak, :outer) = browShape(
+    centre,
+    side,
+    raise,
+    tilt,
+    arch: arch,
+  );
   fillPath(
     canvas,
     Path()

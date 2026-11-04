@@ -18,6 +18,10 @@
 - **Two more hairstyles for the companion: short and balding.** Every
   character can wear them, and the hairstyle picker now shows its choices as
   buttons that wrap, so all seven fit on a phone.
+- **The companion's eyes have a colour of their own.** They match the skin
+  tone by default — no more blue eyes on every tone — and Settings ›
+  Companion lets you pick dark brown, brown, hazel, amber, green, grey or
+  blue.
 - **A seventh, deeper skin tone for the companion,** after the six, and
   three more hairstyles for every character: long and straight, soft waves,
   and a ponytail.

@@ -45,6 +45,7 @@ enum CompanionSpecies {
     bearded: true,
     aged: true,
     lashes: false,
+    masculine: true,
   ),
 
   /// The aunt, about forty: a boiler suit, high-tops, hoops, no glasses.
@@ -64,6 +65,8 @@ enum CompanionSpecies {
     shoes: CompanionShoes.boots,
     cuffedTrousers: true,
     lashes: false,
+    masculine: true,
+    stubble: true,
   ),
 
   /// Plain proportions, tall pointed ears and a thin tail.
@@ -82,6 +85,8 @@ enum CompanionSpecies {
     this.shoes = CompanionShoes.brogues,
     this.cuffedTrousers = false,
     this.lashes = true,
+    this.masculine = false,
+    this.stubble = false,
   });
 
   /// The head's size relative to the grandmother's.
@@ -109,6 +114,13 @@ enum CompanionSpecies {
   /// The two flicked lashes at each eye's outer corner, as Lotti and the
   /// aunt wear them; the lash line itself every human face has.
   final bool lashes;
+
+  /// A man's face: a squarer jaw, straighter and heavier brows, and lips in
+  /// the skin's own colour rather than a woman's rose.
+  final bool masculine;
+
+  /// A shadow of stubble along the jaw and over the lip.
+  final bool stubble;
 
   bool get isAnimal => legs == CompanionLegs.paws;
 
@@ -334,7 +346,7 @@ class CompanionLook {
     glasses: false,
     readingGlasses: true,
     earring: EarringKind.none,
-    blush: 0.24,
+    blush: 0.08,
     hairStyle: CompanionHairStyle.short,
   );
 
@@ -361,7 +373,7 @@ class CompanionLook {
     glasses: false,
     readingGlasses: true,
     earring: EarringKind.none,
-    blush: 0.24,
+    blush: 0.08,
     hairStyle: CompanionHairStyle.short,
   );
 
@@ -386,7 +398,7 @@ class CompanionLook {
     glasses: false,
     readingGlasses: true,
     earring: EarringKind.none,
-    blush: 0.28,
+    blush: 0.08,
     hairStyle: CompanionHairStyle.short,
   );
 
@@ -412,7 +424,7 @@ class CompanionLook {
     readingGlasses: true,
     flatCap: true,
     earring: EarringKind.none,
-    blush: 0.24,
+    blush: 0.08,
     hairStyle: CompanionHairStyle.short,
   );
 
@@ -512,7 +524,7 @@ class CompanionLook {
     ),
     glasses: false,
     earring: EarringKind.none,
-    blush: 0.2,
+    blush: 0.05,
     hairStyle: CompanionHairStyle.curls,
   );
 
@@ -538,7 +550,7 @@ class CompanionLook {
     ),
     glasses: false,
     earring: EarringKind.none,
-    blush: 0.2,
+    blush: 0.05,
     hairStyle: CompanionHairStyle.curls,
   );
 
@@ -564,7 +576,7 @@ class CompanionLook {
     ),
     glasses: false,
     earring: EarringKind.none,
-    blush: 0.22,
+    blush: 0.05,
     hairStyle: CompanionHairStyle.curls,
   );
 
@@ -593,7 +605,7 @@ class CompanionLook {
     glasses: false,
     earring: EarringKind.none,
     beanie: true,
-    blush: 0.24,
+    blush: 0.05,
     hairStyle: CompanionHairStyle.curls,
   );
 

@@ -6528,6 +6528,66 @@ abstract class AppLocalizations {
   /// **'Uncle'**
   String get companionSettingsCharacterUncle;
 
+  /// Name of one eye colour the companion can have, as a screen reader says it.
+  ///
+  /// In en, this message translates to:
+  /// **'Amber'**
+  String get companionSettingsEyeColourAmber;
+
+  /// Name of one eye colour the companion can have, as a screen reader says it.
+  ///
+  /// In en, this message translates to:
+  /// **'Blue'**
+  String get companionSettingsEyeColourBlue;
+
+  /// Name of one eye colour the companion can have, as a screen reader says it.
+  ///
+  /// In en, this message translates to:
+  /// **'Brown'**
+  String get companionSettingsEyeColourBrown;
+
+  /// Name of one eye colour the companion can have, as a screen reader says it.
+  ///
+  /// In en, this message translates to:
+  /// **'Dark brown'**
+  String get companionSettingsEyeColourDarkBrown;
+
+  /// Explains the eye colour choice: by default the eyes match the chosen skin tone.
+  ///
+  /// In en, this message translates to:
+  /// **'Matched to the skin tone until you pick a color.'**
+  String get companionSettingsEyeColourDescription;
+
+  /// Name of one eye colour the companion can have, as a screen reader says it.
+  ///
+  /// In en, this message translates to:
+  /// **'Green'**
+  String get companionSettingsEyeColourGreen;
+
+  /// Name of one eye colour the companion can have, as a screen reader says it.
+  ///
+  /// In en, this message translates to:
+  /// **'Gray'**
+  String get companionSettingsEyeColourGrey;
+
+  /// Name of one eye colour the companion can have, as a screen reader says it.
+  ///
+  /// In en, this message translates to:
+  /// **'Hazel'**
+  String get companionSettingsEyeColourHazel;
+
+  /// Section title in the companion settings: the colour of the character's eyes.
+  ///
+  /// In en, this message translates to:
+  /// **'Eye color'**
+  String get companionSettingsEyeColourLabel;
+
+  /// Chip that lets the eye colour follow the skin tone instead of a picked colour.
+  ///
+  /// In en, this message translates to:
+  /// **'Match skin tone'**
+  String get companionSettingsEyeColourMatch;
+
   /// Name of one hair colour the companion can have.
   ///
   /// In en, this message translates to:

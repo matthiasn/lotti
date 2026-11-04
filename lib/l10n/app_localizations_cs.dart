@@ -3910,6 +3910,37 @@ class AppLocalizationsCs extends AppLocalizations {
   String get companionSettingsCharacterUncle => 'Strejda';
 
   @override
+  String get companionSettingsEyeColourAmber => 'Jantarové';
+
+  @override
+  String get companionSettingsEyeColourBlue => 'Modré';
+
+  @override
+  String get companionSettingsEyeColourBrown => 'Hnědé';
+
+  @override
+  String get companionSettingsEyeColourDarkBrown => 'Tmavě hnědé';
+
+  @override
+  String get companionSettingsEyeColourDescription =>
+      'Ladí s odstínem pleti, dokud si barvu nevybereš.';
+
+  @override
+  String get companionSettingsEyeColourGreen => 'Zelené';
+
+  @override
+  String get companionSettingsEyeColourGrey => 'Šedé';
+
+  @override
+  String get companionSettingsEyeColourHazel => 'Oříškové';
+
+  @override
+  String get companionSettingsEyeColourLabel => 'Barva očí';
+
+  @override
+  String get companionSettingsEyeColourMatch => 'Podle pleti';
+
+  @override
   String get companionSettingsHairColourAuburn => 'Kaštanová';
 
   @override

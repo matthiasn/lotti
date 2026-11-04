@@ -307,10 +307,26 @@ void main() {
     });
 
     test('has no corner lashes; the aunt, with the same eyes, has', () async {
-      final ink = uncle.palette.ink;
-      final his = (await _head(uncle)).count(ink, tolerance: 12);
-      final hers = (await _head(CompanionLook.aunt)).count(ink, tolerance: 12);
-      expect(hers, greaterThan(his + 10));
+      /// Ink at both eyes' outer corners, where the two lashes flick out:
+      /// head-local x 26..34 beside each eye, y -14..-4, at twice the size.
+      Future<int> corners(CompanionLook look) async {
+        final r = await _head(look);
+        var n = 0;
+        for (final s in [-1, 1]) {
+          for (var x = 26; x <= 34; x++) {
+            for (var y = -14; y <= -4; y++) {
+              final px = r.at(240 + s * x * 2, 260 + y * 2);
+              if (near(px, look.palette.ink, tolerance: 12)) n++;
+            }
+          }
+        }
+        return n;
+      }
+
+      expect(
+        await corners(CompanionLook.aunt),
+        greaterThan(await corners(uncle) + 4),
+      );
     });
 
     test('has the younger face: no glasses, no beard', () async {
@@ -374,6 +390,33 @@ void main() {
     test('an animal wears its hat as the plain head does', () async {
       final r = await _head(CompanionLook.catRock);
       expect(r.count(CompanionLook.catRock.palette.hat), greaterThan(500));
+    });
+  });
+
+  group("a man's face", () {
+    test('the squarer jaw is wider at its corners than the soft one', () {
+      final soft = facePath(0);
+      final square = facePath(0, jaw: 1);
+      // Near the jaw's corner, below and beside the mouth.
+      expect(square.contains(const Offset(33, 32)), isTrue);
+      expect(soft.contains(const Offset(33, 32)), isFalse);
+      expect(square.getBounds().bottom, greaterThan(soft.getBounds().bottom));
+    });
+
+    test('the uncle is drawn with it; the aunt keeps the soft one', () async {
+      // Head-local (35, 32), at twice the size: inside the square jaw only.
+      // Beside her soft jaw the bob's hair shows there; on him, his face.
+      final his = (await _head(CompanionLook.uncle)).at(240 + 70, 260 + 64);
+      final hers = (await _head(CompanionLook.aunt)).at(240 + 70, 260 + 64);
+      expect(
+        near(hers, CompanionLook.aunt.palette.hairBack, tolerance: 10),
+        isTrue,
+      );
+      expect(
+        near(his, CompanionLook.uncle.palette.hairBack, tolerance: 10),
+        isFalse,
+      );
+      expect(his, isNot(const Color(0xFF000000)));
     });
   });
 }

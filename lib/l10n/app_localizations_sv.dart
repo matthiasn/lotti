@@ -3869,6 +3869,37 @@ class AppLocalizationsSv extends AppLocalizations {
   String get companionSettingsCharacterUncle => 'Morbror';
 
   @override
+  String get companionSettingsEyeColourAmber => 'Bärnsten';
+
+  @override
+  String get companionSettingsEyeColourBlue => 'Blå';
+
+  @override
+  String get companionSettingsEyeColourBrown => 'Bruna';
+
+  @override
+  String get companionSettingsEyeColourDarkBrown => 'Mörkbruna';
+
+  @override
+  String get companionSettingsEyeColourDescription =>
+      'Matchar hudtonen tills du väljer en färg.';
+
+  @override
+  String get companionSettingsEyeColourGreen => 'Gröna';
+
+  @override
+  String get companionSettingsEyeColourGrey => 'Grå';
+
+  @override
+  String get companionSettingsEyeColourHazel => 'Nötbruna';
+
+  @override
+  String get companionSettingsEyeColourLabel => 'Ögonfärg';
+
+  @override
+  String get companionSettingsEyeColourMatch => 'Som hudtonen';
+
+  @override
   String get companionSettingsHairColourAuburn => 'Kopparröd';
 
   @override

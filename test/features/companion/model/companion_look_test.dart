@@ -481,4 +481,45 @@ void main() {
       expect(dressed.species, CompanionSpecies.uncle);
     });
   });
+
+  group("the men's faces", () {
+    test("only the grandpa and the uncle have a man's face; only the uncle "
+        'stubble', () {
+      expect(
+        [
+          for (final s in CompanionSpecies.values)
+            if (s.masculine) s,
+        ],
+        [CompanionSpecies.grandpa, CompanionSpecies.uncle],
+      );
+      expect(
+        [
+          for (final s in CompanionSpecies.values)
+            if (s.stubble) s,
+        ],
+        [CompanionSpecies.uncle],
+      );
+    });
+
+    // The ask: the uncle read as a lady, with rosy cheeks.
+    test("carry far less blush than any woman's look", () {
+      final men = [
+        ...CompanionLook.of(CompanionSpecies.grandpa),
+        ...CompanionLook.of(CompanionSpecies.uncle),
+      ];
+      final women = [
+        ...CompanionLook.of(CompanionSpecies.grandma),
+        ...CompanionLook.of(CompanionSpecies.aunt),
+      ];
+      final leastOfHers = women
+          .map((l) => l.blush)
+          .reduce(
+            (a, b) => a < b ? a : b,
+          );
+      for (final look in men) {
+        expect(look.blush, lessThanOrEqualTo(0.1), reason: look.id);
+        expect(look.blush, lessThan(leastOfHers / 2), reason: look.id);
+      }
+    });
+  });
 }

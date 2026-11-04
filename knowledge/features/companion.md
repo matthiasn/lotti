@@ -510,7 +510,9 @@ flowchart LR
   watches both.
 - **The customization** (`companionCustomizationProvider`): the character
   (`CompanionSpecies.choosable`, the humans: Lotti by default, the
-  grandpa, the aunt or the uncle), the skin tone, hairstyle, hair colour, outfit, sass (default `cheeky`) and whether she
+  grandpa, the aunt or the uncle), the skin tone, hairstyle, hair colour,
+  eye colour (`eyeColour`; null, the default, matches the skin tone's
+  `CompanionSkinTone.eyes` and follows a change of tone), outfit, sass (default `cheeky`) and whether she
   answers a spoken question aloud (`speaksReplies`, default on; only an
   explicit false mutes her). `loaded` says whether that is known yet — the
   stored value read (nothing stored counts) or set. It stays false while the
@@ -554,8 +556,9 @@ flowchart LR
   triggers while a local save is still committing waits for the save, so the
   page never shows the value the save is replacing. "Send settings" re-sends
   it with the other preferences.
-- **Dressing** (`CompanionCustomization.dress`) lays the skin tone and hair
-  colour over the outfit's palette and sets its hairstyle; the outfit keeps
+- **Dressing** (`CompanionCustomization.dress`) lays the skin tone, the hair
+  colour and the eyes (`eyes`: the picked colour, else the tone's) over the
+  outfit's palette and sets its hairstyle; the outfit keeps
   its clothes and props. A deeper tone deepens plain lips, never lipstick an
   outfit paints (the rock look's red). `asCharacter` is how settings
   switches character: it clears the outfit, since outfits belong to one,
@@ -612,8 +615,13 @@ traits rather than its name where a trait will do: `legs` (bare under a
 dress, trousers, or an animal's paws) picks the leg painter, `shoes` the
 trousers' footwear (brogues, high-tops or boots), `cuffedTrousers` the
 turn-ups, `bearded` the beard, `lashes` the flicked lashes at the eyes'
-outer corners, and `aged` the laugh lines — an unaged face draws none, and
-its brows fuller (`drawBrow`'s `fullness`). Their garments' colours sit in
+outer corners, `aged` the laugh lines — an unaged face draws none, and
+its brows fuller (`drawBrow`'s `fullness`) — `masculine` a man's face (the
+squarer jaw of `facePath`'s `jaw`, straighter and heavier brows through
+`browShape`'s `arch`, and in `dress` the lips of
+`CompanionSkinTone.naturalLips` instead of a woman's rose), and `stubble` a
+shadow along the beard's outline (`drawStubble`). The men's looks carry
+hardly any blush. Their garments' colours sit in
 `CompanionPalette` (`model/companion_palette.dart`) beside hers, each
 defaulting to its everyday outfit; the uncle's tee takes the shirt's
 colours, his chinos the trousers', his beanie the cap's. Only the upper

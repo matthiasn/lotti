@@ -260,4 +260,12 @@ void main() {
       }
     });
   });
+
+  test("a man's straighter brow stands its peak lower over the same ends", () {
+    final arched = browShape(Offset.zero, 1, 0, 0);
+    final straight = browShape(Offset.zero, 1, 0, 0, arch: 0.4);
+    expect(straight.peak.dy, greaterThan(arched.peak.dy + 1.5));
+    expect(straight.inner, arched.inner);
+    expect(straight.outer, arched.outer);
+  });
 }

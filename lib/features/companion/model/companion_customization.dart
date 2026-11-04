@@ -4,7 +4,8 @@ import 'package:lotti/features/companion/model/companion_parts.dart';
 import 'package:lotti/features/companion/model/companion_reaction.dart';
 
 /// How a person has made the companion their own: who it is (Lotti, the
-/// grandpa, the aunt or the uncle), the skin, the hair and its colour, the outfit worn, or none to
+/// grandpa, the aunt or the uncle), the skin, the hair and its colour, the
+/// eyes, the outfit worn, or none to
 /// pick one each session, and how much sass it reads with.
 ///
 /// The default is Lotti as the pitch videos draw her: [CompanionSkinTone.tone1],
@@ -17,6 +18,7 @@ class CompanionCustomization {
     this.skinTone = CompanionSkinTone.tone1,
     this.hairStyle = CompanionHairStyle.bun,
     this.hairColour = CompanionHairColour.silver,
+    this.eyeColour,
     this.outfitId,
     this.sass = CompanionSass.cheeky,
     this.speaksReplies = true,
@@ -53,6 +55,7 @@ class CompanionCustomization {
         json['hairColour'],
         CompanionHairColour.silver,
       ),
+      eyeColour: CompanionEyeColour.values.asNameMap()[json['eyeColour']],
       outfitId: CompanionLook.of(character).any((l) => l.id == outfit)
           ? outfit as String
           : null,
@@ -69,6 +72,13 @@ class CompanionCustomization {
   final CompanionHairStyle hairStyle;
   final CompanionHairColour hairColour;
 
+  /// The eyes picked, or null for the ones the skin tone matches
+  /// ([CompanionSkinTone.eyes]): they then follow a change of tone.
+  final CompanionEyeColour? eyeColour;
+
+  /// The eyes she is drawn with: the ones picked, else the skin tone's.
+  CompanionEyeColour get eyes => eyeColour ?? skinTone.eyes;
+
   /// The `CompanionLook.id` of the [character]'s outfit always worn, or null
   /// for one drawn at random each session.
   final String? outfitId;
@@ -82,9 +92,11 @@ class CompanionCustomization {
 
   /// [outfit] in this skin and hair: the outfit keeps its clothes and props,
   /// and takes the face and hair from here. Lips an outfit paints — the rock
-  /// look's red — stay; plain lips follow the skin tone.
+  /// look's red — stay; plain lips follow the skin tone, and a man's are the
+  /// skin's own ([CompanionSkinTone.naturalLips]).
   CompanionLook dress(CompanionLook outfit) {
     final painted = outfit.palette.lips != const CompanionPalette().lips;
+    final natural = outfit.species.masculine ? skinTone.naturalLips : null;
     return outfit.copyWith(
       hairStyle: hairStyle,
       palette: outfit.palette.copyWith(
@@ -92,14 +104,16 @@ class CompanionCustomization {
         skinShade: skinTone.shade,
         skinDeep: skinTone.deep,
         skinLight: skinTone.light,
-        lips: painted ? null : skinTone.lips,
-        lipsUpper: painted ? null : skinTone.lipsUpper,
-        lipsLight: painted ? null : skinTone.lipsLight,
+        lips: natural?.lips ?? (painted ? null : skinTone.lips),
+        lipsUpper: natural?.upper ?? (painted ? null : skinTone.lipsUpper),
+        lipsLight: natural?.light ?? (painted ? null : skinTone.lipsLight),
         hair: hairColour.hair,
         hairBack: hairColour.back,
         hairShade: hairColour.shade,
         hairLight: hairColour.light,
         brow: hairColour.brow,
+        iris: eyes.iris,
+        irisLight: eyes.light,
       ),
     );
   }
@@ -118,6 +132,7 @@ class CompanionCustomization {
     CompanionSkinTone? skinTone,
     CompanionHairStyle? hairStyle,
     CompanionHairColour? hairColour,
+    ValueGetter<CompanionEyeColour?>? eyeColour,
     ValueGetter<String?>? outfitId,
     CompanionSass? sass,
     bool? speaksReplies,
@@ -126,6 +141,7 @@ class CompanionCustomization {
     skinTone: skinTone ?? this.skinTone,
     hairStyle: hairStyle ?? this.hairStyle,
     hairColour: hairColour ?? this.hairColour,
+    eyeColour: eyeColour == null ? this.eyeColour : eyeColour(),
     outfitId: outfitId == null ? this.outfitId : outfitId(),
     sass: sass ?? this.sass,
     speaksReplies: speaksReplies ?? this.speaksReplies,
@@ -140,6 +156,7 @@ class CompanionCustomization {
     if (a.skinTone != b.skinTone) 'skinTone',
     if (a.hairStyle != b.hairStyle) 'hairStyle',
     if (a.hairColour != b.hairColour) 'hairColour',
+    if (a.eyeColour != b.eyeColour) 'eyeColour',
     if (a.outfitId != b.outfitId) 'outfit',
     if (a.sass != b.sass) 'sass',
     if (a.speaksReplies != b.speaksReplies) 'speaksReplies',
@@ -155,6 +172,7 @@ class CompanionCustomization {
     skinTone: parts.contains('skinTone') ? other.skinTone : skinTone,
     hairStyle: parts.contains('hairStyle') ? other.hairStyle : hairStyle,
     hairColour: parts.contains('hairColour') ? other.hairColour : hairColour,
+    eyeColour: parts.contains('eyeColour') ? other.eyeColour : eyeColour,
     outfitId: parts.contains('outfit') ? other.outfitId : outfitId,
     sass: parts.contains('sass') ? other.sass : sass,
     speaksReplies: parts.contains('speaksReplies')
@@ -167,6 +185,7 @@ class CompanionCustomization {
     'skinTone': skinTone.name,
     'hairStyle': hairStyle.name,
     'hairColour': hairColour.name,
+    'eyeColour': ?eyeColour?.name,
     'outfit': ?outfitId,
     'sass': sass.name,
     'speaksReplies': speaksReplies,
@@ -199,6 +218,7 @@ class CompanionCustomization {
       other.skinTone == skinTone &&
       other.hairStyle == hairStyle &&
       other.hairColour == hairColour &&
+      other.eyeColour == eyeColour &&
       other.outfitId == outfitId &&
       other.sass == sass &&
       other.speaksReplies == speaksReplies;
@@ -209,6 +229,7 @@ class CompanionCustomization {
     skinTone,
     hairStyle,
     hairColour,
+    eyeColour,
     outfitId,
     sass,
     speaksReplies,

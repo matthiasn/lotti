@@ -103,4 +103,27 @@ void main() {
       expect(near(r.at(peak.dx, peak.dy), _c.capShade), isTrue);
     });
   });
+
+  group('the stubble', () {
+    test('shadows the jaw and the lip faintly, never the eyes', () async {
+      const skin = Color(0xFFE0B090);
+      final r = await Raster.of(240, 260, (canvas) {
+        canvas
+          ..drawColor(skin, BlendMode.src)
+          ..translate(120, 140)
+          ..scale(2);
+        drawStubble(canvas, _c, 0, 0, 0);
+      }, background: skin);
+      final jaw = _px(0, 40);
+      final eye = _px(19, -6);
+      final shaded = r.at(jaw.dx, jaw.dy);
+      expect(shaded, isNot(skin));
+      // Faint: still closer to the skin than to the hair.
+      expect(
+        (shaded.computeLuminance() - skin.computeLuminance()).abs(),
+        lessThan((_c.hair.computeLuminance() - skin.computeLuminance()).abs()),
+      );
+      expect(r.at(eye.dx, eye.dy), skin);
+    });
+  });
 }

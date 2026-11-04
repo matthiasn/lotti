@@ -2550,6 +2550,46 @@
   "@companionSettingsCharacterUncle": {
     "description": "Name of the uncle character, a man of about thirty, shown on his chip."
   },
+  "companionSettingsEyeColourAmber": "Amber",
+  "@companionSettingsEyeColourAmber": {
+    "description": "Name of one eye colour the companion can have, as a screen reader says it."
+  },
+  "companionSettingsEyeColourBlue": "Blue",
+  "@companionSettingsEyeColourBlue": {
+    "description": "Name of one eye colour the companion can have, as a screen reader says it."
+  },
+  "companionSettingsEyeColourBrown": "Brown",
+  "@companionSettingsEyeColourBrown": {
+    "description": "Name of one eye colour the companion can have, as a screen reader says it."
+  },
+  "companionSettingsEyeColourDarkBrown": "Dark brown",
+  "@companionSettingsEyeColourDarkBrown": {
+    "description": "Name of one eye colour the companion can have, as a screen reader says it."
+  },
+  "companionSettingsEyeColourDescription": "Matched to the skin tone until you pick a color.",
+  "@companionSettingsEyeColourDescription": {
+    "description": "Explains the eye colour choice: by default the eyes match the chosen skin tone."
+  },
+  "companionSettingsEyeColourGreen": "Green",
+  "@companionSettingsEyeColourGreen": {
+    "description": "Name of one eye colour the companion can have, as a screen reader says it."
+  },
+  "companionSettingsEyeColourGrey": "Gray",
+  "@companionSettingsEyeColourGrey": {
+    "description": "Name of one eye colour the companion can have, as a screen reader says it."
+  },
+  "companionSettingsEyeColourHazel": "Hazel",
+  "@companionSettingsEyeColourHazel": {
+    "description": "Name of one eye colour the companion can have, as a screen reader says it."
+  },
+  "companionSettingsEyeColourLabel": "Eye color",
+  "@companionSettingsEyeColourLabel": {
+    "description": "Section title in the companion settings: the colour of the character's eyes."
+  },
+  "companionSettingsEyeColourMatch": "Match skin tone",
+  "@companionSettingsEyeColourMatch": {
+    "description": "Chip that lets the eye colour follow the skin tone instead of a picked colour."
+  },
   "companionSettingsHairColourAuburn": "Auburn",
   "@companionSettingsHairColourAuburn": {
     "description": "Name of one hair colour the companion can have."

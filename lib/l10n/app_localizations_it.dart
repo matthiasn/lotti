@@ -3913,6 +3913,37 @@ class AppLocalizationsIt extends AppLocalizations {
   String get companionSettingsCharacterUncle => 'Zio';
 
   @override
+  String get companionSettingsEyeColourAmber => 'Ambra';
+
+  @override
+  String get companionSettingsEyeColourBlue => 'Azzurro';
+
+  @override
+  String get companionSettingsEyeColourBrown => 'Castano';
+
+  @override
+  String get companionSettingsEyeColourDarkBrown => 'Castano scuro';
+
+  @override
+  String get companionSettingsEyeColourDescription =>
+      'Abbinato alla carnagione finché non scegli un colore.';
+
+  @override
+  String get companionSettingsEyeColourGreen => 'Verde';
+
+  @override
+  String get companionSettingsEyeColourGrey => 'Grigio';
+
+  @override
+  String get companionSettingsEyeColourHazel => 'Nocciola';
+
+  @override
+  String get companionSettingsEyeColourLabel => 'Colore degli occhi';
+
+  @override
+  String get companionSettingsEyeColourMatch => 'Come la pelle';
+
+  @override
   String get companionSettingsHairColourAuburn => 'Ramato';
 
   @override

@@ -3884,6 +3884,37 @@ class AppLocalizationsNl extends AppLocalizations {
   String get companionSettingsCharacterUncle => 'Oom';
 
   @override
+  String get companionSettingsEyeColourAmber => 'Amber';
+
+  @override
+  String get companionSettingsEyeColourBlue => 'Blauw';
+
+  @override
+  String get companionSettingsEyeColourBrown => 'Bruin';
+
+  @override
+  String get companionSettingsEyeColourDarkBrown => 'Donkerbruin';
+
+  @override
+  String get companionSettingsEyeColourDescription =>
+      'Past bij de huidtint tot je een kleur kiest.';
+
+  @override
+  String get companionSettingsEyeColourGreen => 'Groen';
+
+  @override
+  String get companionSettingsEyeColourGrey => 'Grijs';
+
+  @override
+  String get companionSettingsEyeColourHazel => 'Hazelnoot';
+
+  @override
+  String get companionSettingsEyeColourLabel => 'Oogkleur';
+
+  @override
+  String get companionSettingsEyeColourMatch => 'Passend bij huid';
+
+  @override
   String get companionSettingsHairColourAuburn => 'Koperrood';
 
   @override
