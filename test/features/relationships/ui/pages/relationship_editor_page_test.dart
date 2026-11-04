@@ -260,14 +260,28 @@ void main() {
     expect(navigated, ['/people/rel-1']);
   });
 
-  testWidgets('a read that failed says so instead of spinning', (
-    tester,
-  ) async {
-    await pumpPage(
-      tester,
-      relationshipId: 'rel-1',
-      load: () async => throw StateError('read failed'),
+  testWidgets('a read that failed says so while Riverpod retries it, '
+      'instead of spinning through the backoff', (tester) async {
+    tester.view
+      ..physicalSize = const Size(900, 2400)
+      ..devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    // A plain Exception is retryable, so the provider sits loading *and*
+    // errored between attempts.
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const RelationshipEditorPage(relationshipId: 'rel-1'),
+        overrides: [
+          relationshipDetailControllerProvider('rel-1').overrideWith(
+            () => _FakeDetailController(
+              () async => throw Exception('read failed'),
+            ),
+          ),
+        ],
+      ),
     );
+    await tester.pump();
+    await tester.pump();
 
     expect(find.byType(DesignSystemSpinner), findsNothing);
     expect(
@@ -276,8 +290,11 @@ void main() {
           .data,
       'Error',
     );
-    expect(find.text('This person is no longer tracked.'), findsNothing);
     expect(find.byType(RelationshipForm), findsNothing);
+
+    // Tear the scope down so the pending retry timer goes with it.
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump(const Duration(minutes: 1));
   });
 
   testWidgets(
@@ -304,6 +321,11 @@ void main() {
       await tester.pump();
 
       expect(find.byType(DesignSystemSpinner), findsOneWidget);
+      expect(
+        find.bySemanticsLabel('Loading...'),
+        findsOneWidget,
+        reason: 'a screen reader hears that the person is loading',
+      );
       expect(find.text('Edit person'), findsOneWidget);
       expect(find.byType(RelationshipForm), findsNothing);
       await tester.tap(find.byType(BackButton));

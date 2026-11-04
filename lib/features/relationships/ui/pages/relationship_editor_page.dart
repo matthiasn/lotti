@@ -63,11 +63,14 @@ class _RelationshipEditorPageState
       if (person == null) {
         // Until the first read lands, a spinner. After it, a person who
         // resolved to null is gone (deleted, here or on another device) and a
-        // failed read stays failed — both say so, as the person page does,
-        // rather than spinning forever.
+        // failed read says so, as the person page does, rather than spinning
+        // forever. The error is checked first: while Riverpod retries a failed
+        // read the state is loading *and* errored, and the retry's backoff
+        // must not read as a load still on its way.
         final tokens = context.designTokens;
-        final body = detailAsync.isLoading
-            ? const DesignSystemSpinner()
+        final stillLoading = detailAsync.isLoading && !detailAsync.hasError;
+        final body = stillLoading
+            ? DesignSystemSpinner(semanticsLabel: messages.commonLoading)
             : Text(
                 detailAsync.hasError
                     ? messages.commonError
