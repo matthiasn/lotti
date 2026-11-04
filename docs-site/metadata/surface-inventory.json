@@ -1406,7 +1406,9 @@
       "locator": "/people",
       "routes": [
         "/people",
+        "/people/new",
         "/people/:relationshipId",
+        "/people/:relationshipId/edit",
         "/people/:relationshipId/chat",
         "/people/:relationshipId/check-ins/:checkInId"
       ],
