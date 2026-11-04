@@ -439,16 +439,17 @@ void main() {
       'deepseek-v4-flash-candidate',
       'glm-5.2-reference',
     ]);
-    // 17: the twelve core scenarios, two held-out ones, and the three added
-    // to give the suite cases that summarising well cannot pass.
-    expect(defaultScenarios, hasLength(17));
+    // 18: the twelve core scenarios, two held-out ones, the three added
+    // to give the suite cases that summarising well cannot pass, and the
+    // dictated time blocks.
+    expect(defaultScenarios, hasLength(18));
     expect(
       defaultScenarios.map((scenario) => scenario.promptVariant).toSet(),
       {LocalTaskAgentEvalPromptVariant.production},
     );
     expect(
       scenarios,
-      hasLength(17 * LocalTaskAgentEvalPromptVariant.values.length),
+      hasLength(18 * LocalTaskAgentEvalPromptVariant.values.length),
     );
     expect(
       scenarios.map((scenario) => scenario.promptVariant).toSet(),
@@ -507,6 +508,54 @@ void main() {
     expect(qualityFocused.systemPrompt, contains('Report Quality Gate'));
     expect(qualityFocused.systemPrompt, contains('Omit empty sections'));
   });
+
+  test(
+    'dictated time blocks pass only as one create_time_entry with all four',
+    () {
+      final scenario = defaultMeliousTaskAgentEvalScenarios().singleWhere(
+        (scenario) => scenario.id == 'dictated_time_blocks_production',
+      );
+      final expected = scenario.expectedToolCalls.single;
+      expect(expected.name, TaskAgentToolNames.createTimeEntry);
+      expect(
+        scenario.forbiddenToolNames,
+        contains(TaskAgentToolNames.updateTimeEntry),
+      );
+
+      Map<String, String> block(String from, String to) => {
+        'startTime': '2026-07-10T$from:00',
+        'endTime': '2026-07-10T$to:00',
+        'summary': 'Feeder work',
+      };
+      final blocks = [
+        block('11:30', '13:00'),
+        block('14:00', '15:30'),
+        block('16:00', '17:00'),
+        block('18:00', '19:30'),
+      ];
+      LocalTaskAgentEvalToolCall call(List<Map<String, String>> entries) =>
+          LocalTaskAgentEvalToolCall(
+            name: TaskAgentToolNames.createTimeEntry,
+            argumentsJson: jsonEncode({'entries': entries}),
+          );
+
+      expect(
+        call(
+          blocks,
+        ).containsExpectedArguments(expected.expectedArgumentsSubset),
+        isTrue,
+      );
+      // One block per call — the behaviour this scenario exists to catch.
+      for (final single in blocks) {
+        expect(
+          call([single]).containsExpectedArguments(
+            expected.expectedArgumentsSubset,
+          ),
+          isFalse,
+        );
+      }
+    },
+  );
 
   test('every scenario embeds valid current-task JSON', () {
     final contextPattern = RegExp(

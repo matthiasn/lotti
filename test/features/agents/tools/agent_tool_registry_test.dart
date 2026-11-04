@@ -233,8 +233,8 @@ void main() {
   });
 
   group('AgentToolRegistry.explodedBatchTools', () {
-    test('contains exactly 4 entries', () {
-      expect(AgentToolRegistry.explodedBatchTools, hasLength(4));
+    test('contains exactly 5 entries', () {
+      expect(AgentToolRegistry.explodedBatchTools, hasLength(5));
     });
 
     test('addMultipleChecklistItems maps to items key', () {
@@ -262,6 +262,31 @@ void main() {
       expect(
         AgentToolRegistry.explodedBatchTools,
         containsPair(TaskAgentToolNames.migrateChecklistItems, 'items'),
+      );
+    });
+
+    test('createTimeEntry maps to entries key', () {
+      expect(
+        AgentToolRegistry.explodedBatchTools,
+        containsPair(TaskAgentToolNames.createTimeEntry, 'entries'),
+      );
+    });
+  });
+
+  group('repeatableDeferredTools', () {
+    test('holds every batch tool and the multi-call tools, nothing else', () {
+      expect(AgentToolRegistry.repeatableDeferredTools, {
+        ...AgentToolRegistry.explodedBatchTools.keys,
+        TaskAgentToolNames.createFollowUpTask,
+        TaskAgentToolNames.linkTask,
+        TaskAgentToolNames.updateTimeEntry,
+      });
+    });
+
+    test('is a subset of the deferred tools', () {
+      expect(
+        AgentToolRegistry.deferredTools,
+        containsAll(AgentToolRegistry.repeatableDeferredTools),
       );
     });
   });

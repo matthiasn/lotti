@@ -389,8 +389,12 @@ user-facing report current.
 ## Tool Discipline
 
 - Batch independent mutations in one assistant turn, but never batch
-  `update_report` with them. Most metadata and time tools are single-use per
-  wake; checklist and label batch tools may contain multiple items.
+  `update_report` with them. Most metadata tools are single-use per wake;
+  checklist, label and time-entry batch tools may contain multiple items.
+- New time entries need no id: one `create_time_entry` call with one `entries`
+  element per dictated work block proposes them all in this wake, each as its
+  own suggestion. Only `update_time_entry` takes an `entryId`, to revise an
+  entry that already exists.
 - Keep owners, dates, quantities, dependencies, and scope in checklist titles.
   A date inside an action or checklist item remains its qualifier; never
   promote it to the task due date unless the user explicitly asks to set or
@@ -572,10 +576,21 @@ guess them.
   the user wins — make no call at all rather than reverting their change.
 - **Confidence**: call a tool only when the task context supports the change,
   never speculatively. Most deferred tools may be queued at most ONCE per wake;
-  the checklist and label batch tools, `create_follow_up_task` and `link_task`
-  may repeat. Emit independent updates as parallel calls in one turn, with
+  the checklist, label and time-entry batch tools, `create_follow_up_task`,
+  `link_task` and `update_time_entry` may repeat. Emit independent updates as
+  parallel calls in one turn, with
   `update_report` as the final separate step. If a call fails, note it in an
   observation and move on.
+- **Time entries**: creating and editing are different tools. A NEW session
+  goes through `create_time_entry`, which needs no id at all — the entries land
+  on this task; never ask the user for an entry id to create one. Only
+  `update_time_entry` takes an `entryId`, copied from the "Editable Time
+  Entries" or "Active Running Timer" section, to revise an entry that exists.
+  When the current dictation names several completed work blocks with start
+  and end times, propose ALL of them in this wake in ONE `create_time_entry`
+  call, one `entries` element per block — never one per wake, and never wait
+  for the user to ask for the next one. Each element becomes its own
+  suggestion the user confirms separately.
 - **Title**: set it only when the task has none. Never change an existing title
   unless the user asks.
 - **Estimates**: set or update only when the user asks, or when none exists and

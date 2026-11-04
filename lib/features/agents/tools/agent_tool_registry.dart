@@ -4,6 +4,7 @@ import 'dart:convert';
 
 import 'package:lotti/features/agents/tools/evolution_tool_definitions.dart';
 import 'package:lotti/features/agents/tools/task_agent_tool_definitions.dart';
+import 'package:lotti/features/agents/tools/task_time_tool_definitions.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 export 'package:lotti/features/agents/tools/evolution_tool_definitions.dart';
@@ -206,6 +207,25 @@ abstract final class AgentToolRegistry {
     TaskAgentToolNames.updateChecklistItems: 'items',
     TaskAgentToolNames.assignTaskLabels: 'labels',
     TaskAgentToolNames.migrateChecklistItems: 'items',
+    // Explodes into items under the same name, each holding one session's
+    // flat fields — the form the dispatcher applies.
+    TaskAgentToolNames.createTimeEntry: createTimeEntryArrayKey,
+  };
+
+  /// Deferred tools a wake may call more than once.
+  ///
+  /// Every other deferred tool is single-use: the strategy rejects a second
+  /// call in the same wake, because smaller models otherwise burn their turns
+  /// re-proposing one field (e.g. `set_task_title` four times). The tools
+  /// here legitimately repeat — a batch adds to what an earlier call queued,
+  /// a wake may split off and link several tasks, and `update_time_entry`
+  /// targets one entry per call (a repeat for the same entry replaces the
+  /// earlier proposal in the builder rather than piling up).
+  static final repeatableDeferredTools = <String>{
+    ...explodedBatchTools.keys,
+    TaskAgentToolNames.createFollowUpTask,
+    TaskAgentToolNames.linkTask,
+    TaskAgentToolNames.updateTimeEntry,
   };
 
   /// All tools available to the Task Agent.

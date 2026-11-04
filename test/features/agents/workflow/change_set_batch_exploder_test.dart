@@ -1849,6 +1849,106 @@ void main() {
     });
   });
 
+  group('addBatchItem — time entry explosion', () {
+    Future<BatchAddResult> addEntries(List<Object> entries) =>
+        builder.addBatchItem(
+          toolName: TaskAgentToolNames.createTimeEntry,
+          args: {'entries': entries},
+          summaryPrefix: 'Time entry',
+        );
+
+    test(
+      'keeps the tool name and gives each session its own flat item',
+      () async {
+        const morning = {
+          'startTime': '2026-03-17T09:00:00',
+          'endTime': '2026-03-17T10:30:00',
+          'summary': '  Planned the sprint  ',
+        };
+        const lateNight = {
+          'startTime': '2026-03-17T23:30:00',
+          'endTime': '2026-03-18T00:15:00',
+          'summary': 'Deployed the fix',
+        };
+
+        final result = await addEntries([morning, lateNight]);
+
+        expect(result.added, 2);
+        expect(
+          builder.items.map((item) => item.toolName),
+          everyElement(TaskAgentToolNames.createTimeEntry),
+        );
+        expect(builder.items.map((item) => item.args), [morning, lateNight]);
+        expect(builder.items.map((item) => item.humanSummary), [
+          'Time entry 09:00–10:30: "Planned the sprint"',
+          'Time entry 23:30–00:15: "Deployed the fix"',
+        ]);
+      },
+    );
+
+    test('summarizes a running timer and unparseable times verbatim', () async {
+      await addEntries([
+        {'startTime': '2026-03-17T09:05:00', 'summary': 'Standup'},
+        {
+          'startTime': 'nine-ish',
+          'endTime': '2026-03-17T25:00:00',
+          'summary': 'Garbled',
+        },
+      ]);
+
+      expect(builder.items.map((item) => item.humanSummary), [
+        'Time entry from 09:05: "Standup"',
+        'Time entry nine-ish–2026-03-17T25:00:00: "Garbled"',
+      ]);
+    });
+
+    test(
+      'rejects a missing start and a second running timer, skips non-maps',
+      () async {
+        final result = await addEntries([
+          {'endTime': '2026-03-17T10:00:00', 'summary': 'No start'},
+          {'startTime': '2026-03-17T11:00:00', 'summary': 'First timer'},
+          'not-a-session',
+          {'startTime': '2026-03-17T11:05:00', 'summary': 'Second timer'},
+        ]);
+
+        expect(result.added, 1);
+        expect(result.skipped, 1);
+        expect(result.rejected, 2);
+        expect(result.rejectedDetails, [
+          'time entry is missing a string "startTime"',
+          contains('at most one entry may omit endTime'),
+        ]);
+        expect(builder.items.single.args['summary'], 'First timer');
+      },
+    );
+
+    test(
+      'rejects a running timer when an earlier call already proposed one',
+      () async {
+        await addEntries([
+          {'startTime': '2026-03-17T11:00:00', 'summary': 'First timer'},
+        ]);
+
+        final result = await addEntries([
+          {
+            'startTime': '2026-03-17T08:00:00',
+            'endTime': '2026-03-17T09:00:00',
+            'summary': 'Completed',
+          },
+          {'startTime': '2026-03-17T11:05:00', 'summary': 'Second timer'},
+        ]);
+
+        expect(result.added, 1);
+        expect(result.rejected, 1);
+        expect(builder.items.map((item) => item.args['summary']), [
+          'First timer',
+          'Completed',
+        ]);
+      },
+    );
+  });
+
   group('task splitting — migrate batch explosion', () {
     test(
       'singularizes migrate_checklist_items to migrate_checklist_item',

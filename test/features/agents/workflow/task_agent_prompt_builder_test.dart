@@ -474,6 +474,30 @@ Use the task language and omit empty sections.
       expect(compact, contains('`find_related_tasks`'));
     });
 
+    test(
+      'both scaffolds batch dictated work blocks into one id-free create '
+      'call and keep entryId for edits',
+      () {
+        const trailing = TaskAgentPromptBuilder.taskAgentScaffoldTrailing;
+        expect(trailing, contains('needs no id at all'));
+        expect(trailing, contains('never ask the user for an entry id'));
+        expect(
+          trailing,
+          contains(
+            'propose ALL of them in this wake in ONE `create_time_entry`',
+          ),
+        );
+        expect(trailing, contains('Only\n  `update_time_entry` takes an'));
+        // The time-entry batch is among the deferred tools that may repeat.
+        expect(trailing, contains('the checklist, label and time-entry batch'));
+
+        const compact = TaskAgentPromptBuilder.taskAgentCompactScaffold;
+        expect(compact, contains('New time entries need no id'));
+        expect(compact, contains('one `entries`\n  element per dictated'));
+        expect(compact, isNot(contains('metadata and time tools are single')));
+      },
+    );
+
     test('keeps one open text proposal per time entry', () {
       // The running timer's text is revised through update_time_entry like
       // any other entry's; the retired timer tool is never named.

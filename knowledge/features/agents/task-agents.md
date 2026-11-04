@@ -864,9 +864,27 @@ Two run immediately but route through `AgentToolExecutor` → `TaskToolDispatche
 `link_task`, `set_task_project`, `create_task_project`, `link_pull_request`,
 `migrate_checklist_items`, `create_time_entry`, `update_time_entry`.
 
-`update_time_entry` is also exempt from the one-call-per-wake rule that stops a
-small model burning its turns on one tool: each call names one entry, so the
-running timer's text and a completed entry's correction are two calls.
+The one-call-per-wake rule stops a small model burning its turns on one tool.
+`AgentToolRegistry.repeatableDeferredTools` is its carve-out, and the strategy
+and its "consider using" hint both read that one set: the batch tools,
+`create_follow_up_task`, `link_task`, and `update_time_entry` — each of whose
+calls names one entry, so the running timer's text and a completed entry's
+correction are two calls.
+
+`create_time_entry` is a batch tool. The model sends every session of one
+dictation as `{"entries": [...]}` in a single call, and the builder explodes the
+array into one `create_time_entry` item per session, each carrying that
+session's flat `startTime` / `endTime` / `summary` — so every dictated block
+is its own confirmable suggestion, and persisted items, the dispatcher and
+`TimeEntryHandler` keep the single-session form they always had. Creating
+takes no id: the entries land on the wake's task, and only `update_time_entry`
+takes an `entryId`. Before this, the tool took one session and was single-use,
+so a dictation naming four blocks needed four wakes and a user asking for "the
+next one" each time. A model still sending the old flat form is wrapped into a
+one-element batch (`wrapFlatCreateTimeEntryCall`). At queue time the builder
+rejects only what no apply could survive — a missing `startTime`, and a second
+running timer in one wake, since `TimeEntryHandler` refuses to start a timer
+while one runs; every other time rule stays with the apply-time handler.
 
 ## Typed-relationship tools (ADR 0042)
 

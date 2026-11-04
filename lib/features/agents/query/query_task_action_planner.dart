@@ -144,9 +144,12 @@ class QueryTaskActionPlanner {
             // explicit chat request. Schemas stay shared with the handlers.
             'description': switch (tool.name) {
               TaskAgentToolNames.createTimeEntry =>
-                'Propose a completed work session or running timer requested '
-                    'in this chat. Use update_time_entry with runningTimerId to '
-                    'describe the active session.',
+                'Propose the new work sessions requested in this chat — '
+                    'completed ones, or at most one running timer — all in '
+                    'one call through "entries"; each becomes its own '
+                    'reviewable change. Creating takes no entry id. Use '
+                    'update_time_entry with runningTimerId to describe the '
+                    'active session.',
               TaskAgentToolNames.updateTimeEntry =>
                 'Propose the requested correction to a supplied time entry. '
                     'For runningTimerId, propose only a new summary.',
@@ -274,7 +277,7 @@ class QueryTaskActionPlanner {
         ),
       );
       final name = call.toolName;
-      final args = call.args;
+      final args = wrapFlatCreateTimeEntryCall(name, call.args);
       await validate(name, args, context, allowNewTask: newTaskId != null);
       final summary = name == TaskAgentToolNames.linkTask
           ? 'Link: this task ${DirectedRelation.fromWireName(args['relation'] as String)!.englishPhrase} '
@@ -342,37 +345,13 @@ class QueryTaskActionPlanner {
         (args.containsKey('startTime') || args.containsKey('endTime'))) {
       throw const FormatException('A running timer only takes a new summary');
     }
-    if (name == TaskAgentToolNames.createTimeEntry ||
-        name == TaskAgentToolNames.updateTimeEntry) {
-      for (final key in ['startTime', 'endTime']) {
-        if (args.containsKey(key) &&
-            parseTimeEntryLocalDateTime(args[key] as String) == null) {
-          throw const FormatException('Invalid local time');
-        }
+    if (name == TaskAgentToolNames.createTimeEntry) {
+      for (final entry in args[createTimeEntryArrayKey] as List) {
+        _validateTimeRange(name, entry as Map<String, dynamic>, context);
       }
-      // A partial correction retains the other endpoint from live task state.
-      // Validate the resulting range before presenting immutable review args.
-      final stored = name == TaskAgentToolNames.updateTimeEntry
-          ? (context.input['timeEntries'] as List?)
-                ?.whereType<Map<String, dynamic>>()
-                .where((entry) => entry['id'] == args['entryId'])
-                .firstOrNull
-          : null;
-      if (args.containsKey('startTime') || args.containsKey('endTime')) {
-        final start = args['startTime'] ?? stored?['startTime'];
-        final end = args['endTime'] ?? stored?['endTime'];
-        if (name == TaskAgentToolNames.updateTimeEntry &&
-            (start is! String || end is! String)) {
-          throw const FormatException('Stored time range unavailable');
-        }
-        if (start is String && end is String) {
-          final from = parseTimeEntryLocalDateTime(start);
-          final to = parseTimeEntryLocalDateTime(end);
-          if (from == null || to == null || !to.isAfter(from)) {
-            throw const FormatException('End time must follow start time');
-          }
-        }
-      }
+    }
+    if (name == TaskAgentToolNames.updateTimeEntry) {
+      _validateTimeRange(name, args, context);
     }
     bool idsIn(String key, Set<String> allowed) => (args[key] as List).every(
       (item) => item is Map && allowed.contains(item['id']),
@@ -396,6 +375,44 @@ class QueryTaskActionPlanner {
       _ => true,
     };
     if (!valid) throw const QueryTaskActionTargetUnavailable();
+  }
+
+  /// Validates the local times of one time-entry change: a new session (one
+  /// element of a `create_time_entry` batch) or an `update_time_entry`.
+  static void _validateTimeRange(
+    String name,
+    Map<String, dynamic> args,
+    QueryTaskActionContext context,
+  ) {
+    for (final key in ['startTime', 'endTime']) {
+      if (args.containsKey(key) &&
+          parseTimeEntryLocalDateTime(args[key] as String) == null) {
+        throw const FormatException('Invalid local time');
+      }
+    }
+    // A partial correction retains the other endpoint from live task state.
+    // Validate the resulting range before presenting immutable review args.
+    final stored = name == TaskAgentToolNames.updateTimeEntry
+        ? (context.input['timeEntries'] as List?)
+              ?.whereType<Map<String, dynamic>>()
+              .where((entry) => entry['id'] == args['entryId'])
+              .firstOrNull
+        : null;
+    if (args.containsKey('startTime') || args.containsKey('endTime')) {
+      final start = args['startTime'] ?? stored?['startTime'];
+      final end = args['endTime'] ?? stored?['endTime'];
+      if (name == TaskAgentToolNames.updateTimeEntry &&
+          (start is! String || end is! String)) {
+        throw const FormatException('Stored time range unavailable');
+      }
+      if (start is String && end is String) {
+        final from = parseTimeEntryLocalDateTime(start);
+        final to = parseTimeEntryLocalDateTime(end);
+        if (from == null || to == null || !to.isAfter(from)) {
+          throw const FormatException('End time must follow start time');
+        }
+      }
+    }
   }
 
   /// Reconstructs the registry's batch schema for an exploded review item.
@@ -438,6 +455,13 @@ class QueryTaskActionPlanner {
         {
           'targetTaskId': args.remove('targetTaskId'),
           'items': [args],
+        },
+        context,
+      ),
+      TaskAgentToolNames.createTimeEntry => validate(
+        TaskAgentToolNames.createTimeEntry,
+        {
+          createTimeEntryArrayKey: [args],
         },
         context,
       ),

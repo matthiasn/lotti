@@ -325,6 +325,95 @@ void main() {
   });
 
   test(
+    'one create_time_entry call becomes one reviewable item per session, '
+    'each still valid when it is confirmed',
+    () async {
+      const sessions = [
+        {
+          'startTime': '2026-09-13T08:00:00',
+          'endTime': '2026-09-13T09:00:00',
+          'summary': 'Fed the colony',
+        },
+        {
+          'startTime': '2026-09-13T10:00:00',
+          'endTime': '2026-09-13T11:30:00',
+          'summary': 'Cleaned the feeder',
+        },
+        {
+          'startTime': '2026-09-13T13:00:00',
+          'endTime': '2026-09-13T14:00:00',
+          'summary': 'Logged the headcount',
+        },
+      ];
+      final result = await plan([
+        {
+          'name': 'create_time_entry',
+          'arguments': {'entries': sessions},
+          'summary': 'Three sessions',
+        },
+      ]);
+
+      expect(result.items.map((item) => item.toolName), [
+        'create_time_entry',
+        'create_time_entry',
+        'create_time_entry',
+      ]);
+      expect(result.items.map((item) => item.args), sessions);
+      // The stored, flat item re-validates before confirmation.
+      for (final item in result.items) {
+        await QueryTaskActionPlanner.validateItem(item, context);
+      }
+    },
+  );
+
+  test('one session with its end before its start rejects the call', () async {
+    await expectLater(
+      plan([
+        {
+          'name': 'create_time_entry',
+          'arguments': {
+            'entries': [
+              {
+                'startTime': '2026-09-13T08:00:00',
+                'endTime': '2026-09-13T09:00:00',
+                'summary': 'Fed the colony',
+              },
+              {
+                'startTime': '2026-09-13T11:00:00',
+                'endTime': '2026-09-13T10:00:00',
+                'summary': 'Maintenance',
+              },
+            ],
+          },
+          'summary': 'Two sessions',
+        },
+      ]),
+      throwsA(isA<FormatException>()),
+    );
+  });
+
+  test(
+    'a confirmed time-entry item with an invalid range fails re-validation',
+    () async {
+      await expectLater(
+        QueryTaskActionPlanner.validateItem(
+          const ChangeItem(
+            toolName: 'create_time_entry',
+            args: {
+              'startTime': '2026-09-13T11:00:00',
+              'endTime': '2026-09-13T10:00:00',
+              'summary': 'Maintenance',
+            },
+            humanSummary: 'Maintenance',
+          ),
+          context,
+        ),
+        throwsA(isA<FormatException>()),
+      );
+    },
+  );
+
+  test(
     'live IDs support links, timer updates and completed-entry corrections',
     () async {
       final result = await plan([

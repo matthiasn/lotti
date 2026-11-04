@@ -352,7 +352,7 @@ class TaskAgentStrategy extends ConversationStrategy {
         decodeStringifiedJsonArguments(parsedArgs),
       );
       final toolName = resolved.toolName;
-      final args = resolved.args;
+      final args = wrapFlatCreateTimeEntryCall(toolName, resolved.args);
       if (toolName != rawToolName) {
         _domainLogger.log(
           LogDomain.agentWorkflow,
@@ -482,19 +482,11 @@ class TaskAgentStrategy extends ConversationStrategy {
       if (csBuilder != null &&
           AgentToolRegistry.deferredTools.contains(toolName)) {
         // Reject repeat calls to the same single-use deferred tool name
-        // (even with different args). Smaller models tend to burn all
-        // turns on one tool (e.g. calling set_task_title 4 times).
-        // Batch tools, create_follow_up_task, link_task, and
-        // update_time_entry are excluded — they may legitimately be called
-        // multiple times in one wake. update_time_entry targets one entry per
-        // call (the running timer's text and a completed entry's correction
-        // are two calls), and a repeat for the same entry replaces the
-        // earlier proposal in the builder rather than piling up.
-        final isSingleUse =
-            !AgentToolRegistry.explodedBatchTools.containsKey(toolName) &&
-            toolName != TaskAgentToolNames.createFollowUpTask &&
-            toolName != TaskAgentToolNames.linkTask &&
-            toolName != TaskAgentToolNames.updateTimeEntry;
+        // (even with different args); see
+        // [AgentToolRegistry.repeatableDeferredTools] for the tools exempt.
+        final isSingleUse = !AgentToolRegistry.repeatableDeferredTools.contains(
+          toolName,
+        );
         if (isSingleUse && _usedDeferredTools.contains(toolName)) {
           await _recordActionMessage(toolName: toolName, args: args);
           final errorResponse =
