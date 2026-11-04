@@ -6,9 +6,11 @@ import 'package:lotti/features/companion/model/companion_look.dart';
 import 'package:lotti/features/companion/model/companion_parts.dart';
 import 'package:lotti/features/companion/rig/hair_painter.dart';
 import 'package:lotti/features/companion/rig/paint_kit.dart';
+import 'package:lotti/features/companion/rig/short_hair_painter.dart';
 
-/// Her hair in every style: the bun of the pitch videos (`hair_painter.dart`)
-/// and the styles a person may give her instead, in head-local units (origin at the face's centre,
+/// The hair in every style: the bun of the pitch videos (`hair_painter.dart`),
+/// the short and balding cuts (`short_hair_painter.dart`) and the styles a
+/// person may give instead, in head-local units (origin at the face's centre,
 /// y down; the face spans x ±45 and y -58..40).
 ///
 /// Each style has a back layer, drawn behind the head and the body, and a
@@ -583,6 +585,8 @@ void drawBackHair(
     smoothClosed(_bobBack(lag), 0.2),
     c.hairBack,
   ),
+  CompanionHairStyle.short => drawShortBack(canvas, c),
+  CompanionHairStyle.balding => drawBaldingBack(canvas, c),
 };
 
 /// The hair over the forehead, in [style].
@@ -598,10 +602,12 @@ void drawFrontHair(
   CompanionHairStyle.afro => _drawAfroFront(canvas, c, lag, yaw),
   CompanionHairStyle.locs => _drawLocsFront(canvas, c, lag, yaw),
   CompanionHairStyle.bob => _drawBobFront(canvas, c, lag, yaw),
+  CompanionHairStyle.short => drawShortFront(canvas, c, yaw),
+  CompanionHairStyle.balding => drawBaldingFront(canvas, c, yaw),
 };
 
 /// The outline of the front hair in [style]: what shades the forehead below
-/// it.
+/// it. Empty for a bare crown, which shades nothing.
 List<Offset> fringeFor(CompanionHairStyle style, Offset lag, double yaw) =>
     switch (style) {
       CompanionHairStyle.bun => bunFringe(lag, yaw),
@@ -609,19 +615,24 @@ List<Offset> fringeFor(CompanionHairStyle style, Offset lag, double yaw) =>
       CompanionHairStyle.afro => _afroFront(lag, yaw),
       CompanionHairStyle.locs => _locsFront(yaw),
       CompanionHairStyle.bob => _bobFront(lag, yaw),
+      CompanionHairStyle.short => shortFringe(yaw),
+      CompanionHairStyle.balding => const [],
     };
 
-/// The front hair's shadow on the forehead, in [style].
+/// The front hair's shadow on the forehead, in [style]; none where no hair
+/// falls over it.
 void drawForeheadShadow(
   Canvas canvas,
   CompanionPalette c,
   Offset lag,
   double yaw,
   CompanionHairStyle style,
-) => fillPath(
-  canvas,
-  smoothClosed([
-    for (final p in fringeFor(style, lag, yaw)) p + const Offset(0, 3.5),
-  ], 0.24),
-  c.skinDeep.withValues(alpha: 0.3),
-);
+) {
+  final fringe = fringeFor(style, lag, yaw);
+  if (fringe.isEmpty) return;
+  fillPath(
+    canvas,
+    smoothClosed([for (final p in fringe) p + const Offset(0, 3.5)], 0.24),
+    c.skinDeep.withValues(alpha: 0.3),
+  );
+}

@@ -3,12 +3,12 @@ import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:lotti/features/companion/model/companion_parts.dart';
 
-/// Who the companion is dressed as: her colours, and the few switches that
+/// Who the companion is dressed as: the colours, and the few switches that
 /// differ between outfits.
 ///
-/// These are the looks of the pitch videos' grandmother (their rig's
+/// Lotti's are the looks of the pitch videos' grandmother (their rig's
 /// `looks.py`; see the feature README for where that rig lives), carried
-/// over as data. They are illustration colours — the character's skin, hair and
+/// over as data; the grandpa's and the animals' were drawn here. They are illustration colours — the character's skin, hair and
 /// clothes, like the pixels of a drawing — not interface colours, so they do
 /// not come from the design system's tokens.
 @immutable
@@ -57,6 +57,17 @@ class CompanionPalette {
     this.glove = const Color(0xFFD8322C),
     this.gloveDeep = const Color(0xFF8F1A18),
     this.earring = const Color(0xFFD8322C),
+    this.shirt = const Color(0xFFB9D3EA),
+    this.shirtShade = const Color(0xFF93B2D0),
+    this.shirtLight = const Color(0xFFD9E8F5),
+    this.trousers = const Color(0xFF44474D),
+    this.trousersShade = const Color(0xFF2F3135),
+    this.trousersLight = const Color(0xFF5D6169),
+    this.braces = const Color(0xFFB4532A),
+    this.bowTie = const Color(0xFF6E2C5C),
+    this.bowTieShade = const Color(0xFF4E1E41),
+    this.cap = const Color(0xFF8E8A86),
+    this.capShade = const Color(0xFF6F6B67),
     this.muzzle,
     this.earInner,
     this.furMark,
@@ -112,6 +123,20 @@ class CompanionPalette {
   final Color glove;
   final Color gloveDeep;
   final Color earring;
+
+  // The grandpa's garments: a shirt tucked into trousers, braces, a bow tie
+  // and, in one outfit, a flat cap. The defaults are his everyday outfit.
+  final Color shirt;
+  final Color shirtShade;
+  final Color shirtLight;
+  final Color trousers;
+  final Color trousersShade;
+  final Color trousersLight;
+  final Color braces;
+  final Color bowTie;
+  final Color bowTieShade;
+  final Color cap;
+  final Color capShade;
 
   // An animal's own colours. Each is null on the grandmother, whose skin
   // stands in for the ones she has a counterpart of.
@@ -180,6 +205,17 @@ class CompanionPalette {
     Color? glove,
     Color? gloveDeep,
     Color? earring,
+    Color? shirt,
+    Color? shirtShade,
+    Color? shirtLight,
+    Color? trousers,
+    Color? trousersShade,
+    Color? trousersLight,
+    Color? braces,
+    Color? bowTie,
+    Color? bowTieShade,
+    Color? cap,
+    Color? capShade,
     Color? muzzle,
     Color? earInner,
     Color? furMark,
@@ -234,6 +270,17 @@ class CompanionPalette {
     glove: glove ?? this.glove,
     gloveDeep: gloveDeep ?? this.gloveDeep,
     earring: earring ?? this.earring,
+    shirt: shirt ?? this.shirt,
+    shirtShade: shirtShade ?? this.shirtShade,
+    shirtLight: shirtLight ?? this.shirtLight,
+    trousers: trousers ?? this.trousers,
+    trousersShade: trousersShade ?? this.trousersShade,
+    trousersLight: trousersLight ?? this.trousersLight,
+    braces: braces ?? this.braces,
+    bowTie: bowTie ?? this.bowTie,
+    bowTieShade: bowTieShade ?? this.bowTieShade,
+    cap: cap ?? this.cap,
+    capShade: capShade ?? this.capShade,
     muzzle: muzzle ?? this.muzzle,
     earInner: earInner ?? this.earInner,
     furMark: furMark ?? this.furMark,
@@ -255,25 +302,67 @@ class CompanionPalette {
   Color get tailRingColor => tailRing ?? furMarkColor;
 }
 
-/// Who the companion is: each species is its own rig on the same skeleton.
-/// The animals have ears, a muzzle and a tail where she has hair, a bun and
-/// shoes.
+/// What a character stands on: what the leg painter draws below the hips.
+enum CompanionLegs {
+  /// Bare legs under a dress, in shoes.
+  bare,
+
+  /// Trouser legs down to the shoes.
+  trousers,
+
+  /// An animal's furred legs and paws.
+  paws,
+}
+
+/// Who the companion is: each character is its own rig on the same
+/// skeleton. The humans share a face and differ in their clothes; the
+/// animals have ears, a muzzle and a tail where a human has hair and shoes.
 enum CompanionSpecies {
-  grandma(headScale: 1),
+  /// Lotti, the grandmother the app is named after.
+  grandma(headScale: 1, legs: CompanionLegs.bare),
+
+  /// A grandfather: shirt and braces, trousers, a trimmed beard.
+  grandpa(
+    headScale: 1,
+    legs: CompanionLegs.trousers,
+    hairStyle: CompanionHairStyle.short,
+    bearded: true,
+  ),
 
   /// Plain proportions, tall pointed ears and a thin tail.
-  cat(headScale: 1.02),
+  cat(headScale: 1.02, legs: CompanionLegs.paws),
 
   /// The cat rig with new proportions: a bigger, rounder head, big rimmed
   /// ears and a thick ringed tail.
-  redPanda(headScale: 1.08);
+  redPanda(headScale: 1.08, legs: CompanionLegs.paws);
 
-  const CompanionSpecies({required this.headScale});
+  const CompanionSpecies({
+    required this.headScale,
+    required this.legs,
+    this.hairStyle = CompanionHairStyle.bun,
+    this.bearded = false,
+  });
 
   /// The head's size relative to the grandmother's.
   final double headScale;
+  final CompanionLegs legs;
 
-  bool get isAnimal => this != grandma;
+  /// The hair this character has until a person chooses another; an animal
+  /// has fur and ignores it.
+  final CompanionHairStyle hairStyle;
+
+  /// A trimmed beard along the jaw and a moustache over the lip, in the
+  /// hair's colour.
+  final bool bearded;
+
+  bool get isAnimal => legs == CompanionLegs.paws;
+
+  /// The characters a person can choose in settings: the humans, whose
+  /// skin and hair the customization dresses.
+  static List<CompanionSpecies> get choosable => [
+    for (final species in values)
+      if (!species.isAnimal) species,
+  ];
 }
 
 /// What sits on her ears.
@@ -294,6 +383,8 @@ class CompanionLook {
     this.earring = EarringKind.pearl,
     this.blush = 0.38,
     this.hairStyle = CompanionHairStyle.bun,
+    this.readingGlasses = false,
+    this.flatCap = false,
   });
 
   /// Stable identifier, as stored when the look becomes a setting.
@@ -322,6 +413,12 @@ class CompanionLook {
   /// it.
   final CompanionHairStyle hairStyle;
 
+  /// Half-moon reading frames low on the nose, worn in place of [glasses].
+  final bool readingGlasses;
+
+  /// A flat cap, its peak over the brow.
+  final bool flatCap;
+
   /// This look with [palette] or [hairStyle] changed: an outfit dressed in a
   /// person's own choice of skin and hair.
   CompanionLook copyWith({
@@ -339,6 +436,8 @@ class CompanionLook {
     earring: earring,
     blush: blush,
     hairStyle: hairStyle ?? this.hairStyle,
+    readingGlasses: readingGlasses,
+    flatCap: flatCap,
   );
 
   /// Lotti, the grandmother the app is named after: silver bun, glasses, a
@@ -445,6 +544,103 @@ class CompanionLook {
       shoe: Color(0xFF2A2A2E),
       shoeShade: Color(0xFF18181B),
     ),
+  );
+
+  /// The grandpa every day: a pale blue shirt with its sleeves rolled, rust
+  /// braces, a plum bow tie, charcoal trousers, tan brogues and gold
+  /// half-moon readers.
+  static const grandpa = CompanionLook(
+    id: 'grandpa',
+    species: CompanionSpecies.grandpa,
+    palette: CompanionPalette(
+      glasses: Color(0xFFB08A3E),
+      glassesLight: Color(0xFFD8B866),
+      shoe: Color(0xFF9A6234),
+      shoeShade: Color(0xFF6E4322),
+    ),
+    glasses: false,
+    readingGlasses: true,
+    earring: EarringKind.none,
+    blush: 0.24,
+    hairStyle: CompanionHairStyle.short,
+  );
+
+  /// A night at the jazz club: a black shirt, ivory trousers, silver braces,
+  /// a cobalt bow tie and white shoes.
+  static const grandpaJazz = CompanionLook(
+    id: 'grandpa_jazz',
+    species: CompanionSpecies.grandpa,
+    palette: CompanionPalette(
+      shirt: Color(0xFF2A2A30),
+      shirtShade: Color(0xFF18181C),
+      shirtLight: Color(0xFF43434C),
+      trousers: Color(0xFFE9E2D2),
+      trousersShade: Color(0xFFC6BCA6),
+      trousersLight: Color(0xFFF7F2E7),
+      braces: Color(0xFFB9BCC4),
+      bowTie: Color(0xFF2747B8),
+      bowTieShade: Color(0xFF1A3184),
+      glasses: Color(0xFF1E1E22),
+      glassesLight: Color(0xFF55555E),
+      shoe: Color(0xFFF2EFE8),
+      shoeShade: Color(0xFFCFCAC0),
+    ),
+    glasses: false,
+    readingGlasses: true,
+    earring: EarringKind.none,
+    blush: 0.24,
+    hairStyle: CompanionHairStyle.short,
+  );
+
+  /// A day by the sea: a peach shirt, white trousers, cornflower braces and
+  /// bow tie, and sand suede shoes.
+  static const grandpaSeaside = CompanionLook(
+    id: 'grandpa_seaside',
+    species: CompanionSpecies.grandpa,
+    palette: CompanionPalette(
+      shirt: Color(0xFFF2C2A2),
+      shirtShade: Color(0xFFD9A383),
+      shirtLight: Color(0xFFF8D9C4),
+      trousers: Color(0xFFF1EFEA),
+      trousersShade: Color(0xFFD3CFC6),
+      trousersLight: Color(0xFFFFFFFF),
+      braces: Color(0xFF6A8FD6),
+      bowTie: Color(0xFF4A6DB5),
+      bowTieShade: Color(0xFF35528C),
+      shoe: Color(0xFFC9A877),
+      shoeShade: Color(0xFFA88956),
+    ),
+    glasses: false,
+    readingGlasses: true,
+    earring: EarringKind.none,
+    blush: 0.28,
+    hairStyle: CompanionHairStyle.short,
+  );
+
+  /// Market day: a heather flat cap, an olive shirt, chestnut trousers,
+  /// oxblood braces, a slate bow tie and dark brown brogues.
+  static const grandpaMarket = CompanionLook(
+    id: 'grandpa_market',
+    species: CompanionSpecies.grandpa,
+    palette: CompanionPalette(
+      shirt: Color(0xFF7D7F45),
+      shirtShade: Color(0xFF62643A),
+      shirtLight: Color(0xFF999B5E),
+      trousers: Color(0xFF6E4630),
+      trousersShade: Color(0xFF52331F),
+      trousersLight: Color(0xFF8A5C42),
+      braces: Color(0xFF7A2430),
+      bowTie: Color(0xFF56708A),
+      bowTieShade: Color(0xFF3F5468),
+      shoe: Color(0xFF4A3020),
+      shoeShade: Color(0xFF2F1E14),
+    ),
+    glasses: false,
+    readingGlasses: true,
+    flatCap: true,
+    earring: EarringKind.none,
+    blush: 0.24,
+    hairStyle: CompanionHairStyle.short,
   );
 
   /// A silver tabby: green eyes, a white muzzle and white socks, in a navy
@@ -563,6 +759,10 @@ class CompanionLook {
     grandmaGarden,
     grandmaLavender,
     grandmaWinter,
+    grandpa,
+    grandpaJazz,
+    grandpaSeaside,
+    grandpaMarket,
     cat,
     catRock,
     redPanda,

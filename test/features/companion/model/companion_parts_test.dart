@@ -5,9 +5,16 @@ import 'package:lotti/features/companion/model/companion_parts.dart';
 double _luminance(CompanionSkinTone t) => t.skin.computeLuminance();
 
 void main() {
-  test('five hairstyles, the bun first, as the pitch videos draw her', () {
-    expect(CompanionHairStyle.values, hasLength(5));
+  test('seven hairstyles, the bun first, as the pitch videos draw her', () {
+    expect(CompanionHairStyle.values, hasLength(7));
     expect(CompanionHairStyle.values.first, CompanionHairStyle.bun);
+  });
+
+  test('the short and balding cuts come after the five longer styles', () {
+    expect(
+      CompanionHairStyle.values.skip(5),
+      [CompanionHairStyle.short, CompanionHairStyle.balding],
+    );
   });
 
   test('the skin tones run light to deep, each shade below its skin', () {

@@ -1,12 +1,13 @@
 import 'dart:ui';
 
-/// The parts a person puts her together from. Every part combines with every
-/// other: no hairstyle or colour belongs to a skin tone, and no part is named
-/// after a people (plan 2026-10-12, "Revision"). They are illustration
-/// colours, like the rest of her, not interface colours.
+/// The parts a person puts a character together from. Every part combines
+/// with every other, and with every human character: no hairstyle or colour
+/// belongs to a skin tone or to one character, and no part is named after a
+/// people (plan 2026-10-12, "Revision"). They are illustration colours, like
+/// the rest of the character, not interface colours.
 
-/// Her hair's shape: the bun of the pitch videos, and the styles a person may
-/// give her instead.
+/// The hair's shape: Lotti's bun of the pitch videos, the grandpa's short
+/// cut, and the styles a person may give either instead.
 enum CompanionHairStyle {
   /// A soft low bun behind the left of her neck, waves swept back.
   bun,
@@ -22,6 +23,12 @@ enum CompanionHairStyle {
 
   /// A chin-length bob with a straight fringe.
   bob,
+
+  /// Short and neat, parted at the side, clear of the ears.
+  short,
+
+  /// A bare crown with a fringe of hair round the back and over the ears.
+  balding,
 }
 
 /// Her skin, light to deep. Numbered rather than named: the picker shows a

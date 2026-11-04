@@ -60,6 +60,8 @@ void main() {
     'the dress wears a cardigan and a scarf; beads only on stage rock',
     () async {
       for (final look in CompanionLook.all) {
+        // The grandpa wears no dress; his clothes are their own painter's.
+        if (look.species == CompanionSpecies.grandpa) continue;
         final r = await _body((c, f) => drawDress(c, f, look));
         final p = look.palette;
         expect(r.count(p.dress), greaterThan(2000), reason: look.id);
@@ -123,5 +125,38 @@ void main() {
       expect(right.count(look.palette.glove, tolerance: 2), greaterThan(100));
       expect(left.count(look.palette.glove, tolerance: 2), 0);
     });
+  });
+
+  group('the grandpa', () {
+    const look = CompanionLook.grandpa;
+    final p = look.palette;
+
+    test('stands in trousers and brogues, with no bare leg', () async {
+      final r = await _body((c, f) => drawLegs(c, f, look));
+      expect(r.count(p.trousers), greaterThan(1500));
+      expect(r.count(p.shoe), greaterThan(100));
+      expect(r.centroid(p.shoe)!.dy, greaterThan(440));
+      expect(r.count(p.skin), 0);
+    });
+
+    test('wears his shirt sleeve rolled past the elbow, his forearm bare, no '
+        'cardigan', () async {
+      final r = await _body(
+        (c, f) => drawArm(c, f, look, const CompanionPose().right, 1),
+      );
+      expect(r.count(p.shirt), greaterThan(200));
+      expect(r.count(p.shirtLight), greaterThan(30));
+      expect(r.count(p.cardigan), 0);
+      expect(r.count(p.skin), greaterThan(100));
+    });
+  });
+
+  test("Lotti's sleeve is her cardigan's, never a shirt's", () async {
+    const look = CompanionLook.grandma;
+    final r = await _body(
+      (c, f) => drawArm(c, f, look, const CompanionPose().right, 1),
+    );
+    expect(r.count(look.palette.cardigan), greaterThan(200));
+    expect(r.count(look.palette.shirt), 0);
   });
 }

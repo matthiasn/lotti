@@ -171,10 +171,9 @@ void main() {
     semantics.dispose();
   });
 
-  testWidgets('a hairstyle segment changes her hair', (tester) async {
+  testWidgets('a hairstyle chip changes her hair', (tester) async {
     await pumpBody(tester);
-    // The visible label; the toggle lays an invisible bold twin under it.
-    await tester.tap(find.text('Afro').last);
+    await tester.tap(find.text('Afro'));
     await _frames(tester);
     expect(chosen(tester).hairStyle, CompanionHairStyle.afro);
     expect(previews(tester).last.look.hairStyle, CompanionHairStyle.afro);
@@ -236,15 +235,17 @@ void main() {
     expect(previews(tester).map((v) => v.look.id), everyElement(expected));
   });
 
-  testWidgets('the outfit picker sits right under her preview, above the '
-      'other choices', (tester) async {
+  testWidgets('the character and outfit pickers sit right under her '
+      'preview, above the other choices', (tester) async {
     await pumpBody(tester);
     final previewBottom = [
       tester.getRect(find.byKey(const ValueKey('companionSettingsFull'))),
       tester.getRect(find.byKey(const ValueKey('companionSettingsBust'))),
     ].map((r) => r.bottom).reduce(math.max);
+    final characterTop = tester.getTopLeft(find.text('Character')).dy;
     final outfitTop = tester.getTopLeft(find.text('Outfit')).dy;
-    expect(outfitTop, greaterThan(previewBottom));
+    expect(characterTop, greaterThan(previewBottom));
+    expect(outfitTop, greaterThan(characterTop));
     expect(
       tester.getTopLeft(find.text('Surprise me')).dy,
       lessThan(tester.getTopLeft(find.text('Skin tone')).dy),
@@ -347,13 +348,107 @@ void main() {
       CompanionHairColour.values.map((c) => hairColourName(m, c)).toSet(),
       hasLength(CompanionHairColour.values.length),
     );
+    for (final species in CompanionSpecies.choosable) {
+      final outfits = CompanionLook.of(species);
+      expect(
+        outfits.map((o) => outfitName(m, o)).toSet(),
+        hasLength(outfits.length),
+        reason: species.name,
+      );
+    }
     expect(
-      companionOutfits.map((o) => outfitName(m, o)).toSet(),
-      hasLength(companionOutfits.length),
+      CompanionSpecies.choosable.map((s) => characterName(m, s)).toList(),
+      ['Lotti', 'Grandpa'],
     );
     expect(
       CompanionSass.values.map((s) => sassName(m, s)).toSet(),
       hasLength(CompanionSass.values.length),
     );
+  });
+
+  test("each character's first outfit is called Everyday", () {
+    final AppLocalizations m = AppLocalizationsEn();
+    expect(outfitName(m, CompanionLook.grandma), 'Everyday');
+    expect(outfitName(m, CompanionLook.grandpa), 'Everyday');
+    expect(
+      [
+        CompanionLook.grandpaJazz,
+        CompanionLook.grandpaSeaside,
+        CompanionLook.grandpaMarket,
+      ].map((o) => outfitName(m, o)),
+      ['Jazz', 'Seaside', 'Market day'],
+    );
+  });
+
+  group('the character', () {
+    const grandpa = CompanionCustomization(
+      character: CompanionSpecies.grandpa,
+      hairStyle: CompanionHairStyle.short,
+    );
+
+    bool selected(WidgetTester tester, String label) => tester
+        .widget<DesignSystemChip>(find.widgetWithText(DesignSystemChip, label))
+        .selected;
+
+    testWidgets('is Lotti until another is chosen', (tester) async {
+      await pumpBody(tester, surprise: true);
+      expect(selected(tester, 'Lotti'), isTrue);
+      expect(selected(tester, 'Grandpa'), isFalse);
+      expect(
+        previews(tester).map((v) => v.look.species),
+        everyElement(CompanionSpecies.grandma),
+      );
+    });
+
+    testWidgets('choosing the grandpa shows him, in his own hair and a '
+        'surprise outfit of his', (tester) async {
+      await pumpBody(
+        tester,
+        surprise: true,
+        customization: const CompanionCustomization(
+          hairStyle: CompanionHairStyle.locs,
+          outfitId: 'grandma_winter',
+          skinTone: CompanionSkinTone.tone5,
+        ),
+      );
+      await tester.tap(find.text('Grandpa'));
+      await _frames(tester);
+      final custom = chosen(tester);
+      expect(custom.character, CompanionSpecies.grandpa);
+      expect(custom.outfitId, isNull);
+      expect(custom.hairStyle, CompanionHairStyle.short);
+      expect(custom.skinTone, CompanionSkinTone.tone5);
+      expect(selected(tester, 'Grandpa'), isTrue);
+      for (final view in previews(tester)) {
+        expect(view.look.species, CompanionSpecies.grandpa);
+        expect(view.look.palette.skin, CompanionSkinTone.tone5.skin);
+      }
+    });
+
+    testWidgets("lists his outfits, not Lotti's, and dresses him in one", (
+      tester,
+    ) async {
+      await pumpBody(tester, surprise: true, customization: grandpa);
+      for (final label in ['Everyday', 'Jazz', 'Seaside', 'Market day']) {
+        expect(find.text(label), findsOneWidget, reason: label);
+      }
+      expect(find.text('Winter'), findsNothing);
+
+      await tester.tap(find.text('Market day'));
+      await _frames(tester);
+      expect(chosen(tester).outfitId, 'grandpa_market');
+      expect(
+        previews(tester).map((v) => v.look.id),
+        everyElement('grandpa_market'),
+      );
+    });
+
+    testWidgets('a bare crown can be chosen for Lotti too', (tester) async {
+      await pumpBody(tester);
+      await tester.tap(find.text('Balding'));
+      await _frames(tester);
+      expect(chosen(tester).hairStyle, CompanionHairStyle.balding);
+      expect(chosen(tester).character, CompanionSpecies.grandma);
+    });
   });
 }

@@ -52,10 +52,17 @@ void main() {
   Future<Raster> front(CompanionHairStyle style, [Offset lag = Offset.zero]) =>
       _draw((c) => drawFrontHair(c, _c, lag, 0, style));
 
+  /// The styles with hair over the forehead: all but the bare crown.
+  final fringed = [
+    for (final style in CompanionHairStyle.values)
+      if (style != CompanionHairStyle.balding) style,
+  ];
+
   test(
-    'every style draws hair behind the head and over the forehead',
+    'every style but the bare crown draws hair behind the head and over the '
+    'forehead',
     () async {
-      for (final style in CompanionHairStyle.values) {
+      for (final style in fringed) {
         final behind = await _draw(
           (c) => drawBackHair(c, _c, Offset.zero, style),
         );
@@ -154,7 +161,7 @@ void main() {
   });
 
   test('the hairline, and the shadow under it, turns with the head', () {
-    for (final style in CompanionHairStyle.values) {
+    for (final style in fringed) {
       final ahead = fringeFor(style, Offset.zero, 0);
       final turned = fringeFor(style, Offset.zero, 1);
       double meanX(List<Offset> pts) =>
@@ -181,8 +188,30 @@ void main() {
             if (r.at(x, y) != const Color(0xFF000000)) n++;
           }
         }
-        expect(n, greaterThan(1000), reason: style.name);
+        // A bare crown has no fringe to cast one.
+        expect(
+          n,
+          style == CompanionHairStyle.balding ? 0 : greaterThan(1000),
+          reason: style.name,
+        );
       }
+    },
+  );
+
+  test(
+    'the bare crown has no hairline, but hair behind and over the ears',
+    () async {
+      expect(fringeFor(CompanionHairStyle.balding, Offset.zero, 0), isEmpty);
+      expect(
+        (await _draw(
+          (c) => drawBackHair(c, _c, Offset.zero, CompanionHairStyle.balding),
+        )).count(_c.hairBack),
+        greaterThan(2000),
+      );
+      expect(
+        (await front(CompanionHairStyle.balding)).count(_c.hair, tolerance: 30),
+        greaterThan(200),
+      );
     },
   );
 

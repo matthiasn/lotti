@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:ui' as ui;
 import 'dart:ui';
 
@@ -5,6 +6,7 @@ import 'package:lotti/features/companion/model/companion_look.dart';
 import 'package:lotti/features/companion/model/companion_pose.dart';
 import 'package:lotti/features/companion/rig/animal_head_painter.dart';
 import 'package:lotti/features/companion/rig/face_painter.dart';
+import 'package:lotti/features/companion/rig/grandpa_head_painter.dart';
 import 'package:lotti/features/companion/rig/hair_styles_painter.dart';
 import 'package:lotti/features/companion/rig/paint_kit.dart';
 import 'package:lotti/features/companion/rig/rig_frame.dart';
@@ -59,6 +61,8 @@ void drawHead(Canvas canvas, RigFrame f, CompanionLook look) {
   }
   if (look.sunglasses) {
     _sunglasses(canvas, c, fx, fy, yaw);
+  } else if (look.readingGlasses) {
+    _readingGlasses(canvas, c, fx, fy, yaw);
   } else if (look.glasses) {
     _glasses(canvas, c, fx, fy, yaw);
   }
@@ -71,10 +75,12 @@ void drawHead(Canvas canvas, RigFrame f, CompanionLook look) {
     drawFrontHair(canvas, c, p.hairLag, yaw, look.hairStyle);
   }
   if (look.beret) _beret(canvas, c, yaw);
+  if (look.flatCap) drawFlatCap(canvas, c, yaw);
   canvas.restore();
 }
 
-/// The grandmother's face: its shading, the features and her laugh lines.
+/// A human face: its shading, the features and the laugh lines; for a
+/// bearded character, the beard under the mouth and the moustache over it.
 void _humanFace(Canvas canvas, CompanionLook look, CompanionPose p) {
   final c = look.palette;
   final yaw = p.headYaw;
@@ -135,12 +141,14 @@ void _humanFace(Canvas canvas, CompanionLook look, CompanionPose p) {
   }
   drawNose(canvas, c, fx * 1.25, 8 + fy * 1.1);
   _laughLines(canvas, c, fx, fy, p.smile);
+  if (look.species.bearded) drawBeard(canvas, c, yaw);
   canvas
     ..save()
     ..translate(fx * 1.1, 22 + fy)
     ..scale(1.25);
   drawMouth(canvas, c, 0, 0, p.mouth, p.smile, skew: p.smileSkew);
   canvas.restore();
+  if (look.species.bearded) drawMoustache(canvas, c, fx, fy);
 }
 
 /// Soft creases beside the mouth and under the eyes: a face that has smiled
@@ -258,6 +266,53 @@ void _glasses(
       ..cubicTo(-6 + fx, -11 + fy, 6 + fx, -11 + fy, 19 + fx - r, -7 + fy),
     c.glasses,
     2.8,
+  );
+}
+
+/// Half-moon reading frames, low on the nose: a straight top edge under the
+/// eyes' centres and a round rim below, their arms back to the ears.
+void _readingGlasses(
+  Canvas canvas,
+  CompanionPalette c,
+  double fx,
+  double fy,
+  double yaw,
+) {
+  const r = 13.0;
+  for (final s in [-1, 1]) {
+    final centre = Offset(s * 19 + fx, 1 + fy);
+    final lens = Path()
+      ..moveTo(centre.dx - r, centre.dy)
+      ..lineTo(centre.dx + r, centre.dy)
+      ..arcTo(Rect.fromCircle(center: centre, radius: r), 0, math.pi, false)
+      ..close();
+    fillPath(canvas, lens, const Color(0x1AFFFFFF));
+    strokePath(canvas, lens, c.glasses, 2.2);
+    strokePath(
+      canvas,
+      arc(centre, r - 1.4, 0.4, 1.6),
+      c.glassesLight.withValues(alpha: 0.7),
+      0.9,
+    );
+    _templeArm(
+      canvas,
+      c.glasses,
+      centre.dx + s * r,
+      centre.dy,
+      s,
+      fx,
+      yaw,
+      1.8,
+      -2,
+    );
+  }
+  strokePath(
+    canvas,
+    Path()
+      ..moveTo(-19 + fx + r, 1 + fy)
+      ..cubicTo(-6 + fx, -3 + fy, 6 + fx, -3 + fy, 19 + fx - r, 1 + fy),
+    c.glasses,
+    2,
   );
 }
 

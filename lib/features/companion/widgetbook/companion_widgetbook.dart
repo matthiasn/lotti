@@ -22,8 +22,7 @@ const defaultCompanionLine =
     'The parser finally shipped!';
 
 /// Widgetbook folder for the in-app companion: Lotti, the grandmother of the
-/// pitch videos, and the animals a person may pick instead, drawn live in
-/// Flutter. One component per character, each with the same use cases.
+/// pitch videos, the grandpa, and the animals, drawn live in Flutter. One component per character, each with the same use cases.
 WidgetbookFolder buildCompanionWidgetbookFolder() {
   return WidgetbookFolder(
     name: 'Companion',
@@ -37,6 +36,7 @@ WidgetbookFolder buildCompanionWidgetbookFolder() {
 /// The component's name for [species].
 String companionCharacterName(CompanionSpecies species) => switch (species) {
   CompanionSpecies.grandma => 'Lotti (grandma)',
+  CompanionSpecies.grandpa => 'Grandpa',
   CompanionSpecies.cat => 'Cat',
   CompanionSpecies.redPanda => 'Red panda',
 };

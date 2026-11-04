@@ -2526,6 +2526,22 @@
   "commonError": "Error",
   "commonLoading": "Loading...",
   "commonUnknown": "Unknown",
+  "companionSettingsCharacterDescription": "Who keeps you company. Each has their own outfits; skin, hair color and sass stay as you set them.",
+  "@companionSettingsCharacterDescription": {
+    "description": "Explains the character choice: outfits belong to each character, the other choices carry over."
+  },
+  "companionSettingsCharacterGrandpa": "Grandpa",
+  "@companionSettingsCharacterGrandpa": {
+    "description": "Name of the grandfather character, shown on his chip."
+  },
+  "companionSettingsCharacterLabel": "Character",
+  "@companionSettingsCharacterLabel": {
+    "description": "Section title in the companion settings: which character keeps the user company."
+  },
+  "companionSettingsCharacterLotti": "Lotti",
+  "@companionSettingsCharacterLotti": {
+    "description": "Name of the grandmother character, Lotti; a proper name, kept as is."
+  },
   "companionSettingsHairColourAuburn": "Auburn",
   "@companionSettingsHairColourAuburn": {
     "description": "Name of one hair colour the companion can have."
@@ -2570,6 +2586,10 @@
   "@companionSettingsHairStyleAfro": {
     "description": "Name of one hairstyle the companion can wear."
   },
+  "companionSettingsHairStyleBalding": "Balding",
+  "@companionSettingsHairStyleBalding": {
+    "description": "Name of one hairstyle the companion can wear: a bald crown with hair round the sides."
+  },
   "companionSettingsHairStyleBob": "Bob",
   "@companionSettingsHairStyleBob": {
     "description": "Name of one hairstyle the companion can wear."
@@ -2590,7 +2610,11 @@
   "@companionSettingsHairStyleLocs": {
     "description": "Name of one hairstyle the companion can wear."
   },
-  "companionSettingsOutfitDescription": "Choose one she always wears, or let her pick one each time you open the app.",
+  "companionSettingsHairStyleShort": "Short",
+  "@companionSettingsHairStyleShort": {
+    "description": "Name of one hairstyle the companion can wear."
+  },
+  "companionSettingsOutfitDescription": "Choose an outfit to keep, or get a fresh one each time you open the app.",
   "@companionSettingsOutfitDescription": {
     "description": "Explains the outfit choice on the companion settings page: a fixed outfit, or a random one per app launch."
   },
@@ -2602,6 +2626,10 @@
   "@companionSettingsOutfitGarden": {
     "description": "Name of one of the companion's outfits."
   },
+  "companionSettingsOutfitJazz": "Jazz",
+  "@companionSettingsOutfitJazz": {
+    "description": "Name of one of the grandfather's outfits: an evening at a jazz club."
+  },
   "companionSettingsOutfitLabel": "Outfit",
   "@companionSettingsOutfitLabel": {
     "description": "Section title on the companion settings page for choosing her outfit."
@@ -2610,9 +2638,17 @@
   "@companionSettingsOutfitLavender": {
     "description": "Name of one of the companion's outfits."
   },
+  "companionSettingsOutfitMarket": "Market day",
+  "@companionSettingsOutfitMarket": {
+    "description": "Name of one of the grandfather's outfits, with a flat cap: a market day."
+  },
   "companionSettingsOutfitRock": "Rock",
   "@companionSettingsOutfitRock": {
     "description": "Name of one of the companion's outfits."
+  },
+  "companionSettingsOutfitSeaside": "Seaside",
+  "@companionSettingsOutfitSeaside": {
+    "description": "Name of one of the grandfather's outfits: a day by the sea."
   },
   "companionSettingsOutfitStage": "Keynote",
   "@companionSettingsOutfitStage": {
@@ -2630,7 +2666,7 @@
   "@companionSettingsSassCheeky": {
     "description": "Sass level: teasing, with a smirk, a raised brow or a side-eye."
   },
-  "companionSettingsSassDescription": "How she takes what she reads to you: a warm cheer, a cheeky tease, or full grandma, with eye rolls and the look over her glasses.",
+  "companionSettingsSassDescription": "How your companion takes what it reads to you: a warm cheer, a cheeky tease, or full sass, with eye rolls and a look over the glasses.",
   "@companionSettingsSassDescription": {
     "description": "Explains the companion's sass setting: warm, cheeky, or fully sassy reactions to what she reads."
   },
@@ -2660,8 +2696,8 @@
     "description": "Section title on the companion settings page for choosing her skin tone."
   },
   "companionSettingsSpeakRepliesTitle": "Answer spoken questions aloud",
-  "companionSettingsVoiceDescription": "Ask her something by voice and she answers out loud. A typed question always gets a written answer.",
-  "companionSettingsVoiceLabel": "Her voice",
+  "companionSettingsVoiceDescription": "Ask something by voice and your companion answers out loud. A typed question always gets a written answer.",
+  "companionSettingsVoiceLabel": "Voice",
   "completeHabitFailButton": "Missed",
   "completeHabitSkipButton": "Skip",
   "completeHabitSuccessButton": "Success",
@@ -9570,7 +9606,7 @@
   "settingsCelebrationsVariantRandom": "Random",
   "settingsCelebrationsVariantRandomDescription": "A fresh style on every completion",
   "settingsCelebrationsVariantSparks": "Sparks",
-  "settingsCompanionSubtitle": "Her skin, hair and outfit",
+  "settingsCompanionSubtitle": "Character, skin, hair and outfit",
   "@settingsCompanionSubtitle": {
     "description": "Subtitle of the companion settings entry in the settings tree."
   },

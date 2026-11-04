@@ -4,21 +4,28 @@ import 'dart:ui';
 import 'package:lotti/features/companion/model/companion_look.dart';
 import 'package:lotti/features/companion/model/companion_pose.dart';
 import 'package:lotti/features/companion/rig/arm_solver.dart';
+import 'package:lotti/features/companion/rig/grandpa_outfit_painter.dart';
 import 'package:lotti/features/companion/rig/hand_painter.dart';
 import 'package:lotti/features/companion/rig/paint_kit.dart';
 import 'package:lotti/features/companion/rig/ribbon.dart';
 import 'package:lotti/features/companion/rig/rig_frame.dart';
+import 'package:lotti/features/companion/rig/trousers_painter.dart';
 
-/// The body below the head: legs and shoes (an animal's paws), the neck, the
-/// dress with its cardigan and scarf, and the arms with their sleeves and
-/// hands.
+/// The body below the head: legs and shoes (an animal's paws, the grandpa's
+/// trousers), the neck, Lotti's dress with its cardigan and scarf, and the
+/// arms with their sleeves and hands.
 
 const handScale = 1.45;
 
 /// Soft through the shoulder, firmer at the elbow so a bend still reads.
 const armTension = [0.5, 0.45, 0.28, 0.5];
 
+/// The legs below the hips, as the character's [CompanionSpecies.legs] are.
 void drawLegs(Canvas canvas, RigFrame f, CompanionLook look) {
+  if (look.species.legs == CompanionLegs.trousers) {
+    drawTrouserLegs(canvas, f, look);
+    return;
+  }
   final c = look.palette;
   for (final s in [-1, 1]) {
     final hip = f.hip(s);
@@ -334,7 +341,8 @@ void _beads(Canvas canvas, RigFrame f, CompanionPalette c) {
 }
 
 /// One arm: the bare arm as one ribbon, the hand at the wrist, and the
-/// cardigan's sleeve pushed up short of the elbow.
+/// sleeve: the cardigan's pushed up short of the elbow, or the grandpa's
+/// shirt rolled to the forearm.
 void drawArm(
   Canvas canvas,
   RigFrame f,
@@ -376,7 +384,11 @@ void drawArm(
     deep: gloved ? c.gloveDeep : deep,
   );
   canvas.restore();
-  _sleeve(canvas, spine, side, c);
+  if (look.species == CompanionSpecies.grandpa) {
+    drawShirtSleeve(canvas, spine, side, c, tension: armTension);
+  } else {
+    _sleeve(canvas, spine, side, c);
+  }
 }
 
 void _sleeve(Canvas canvas, List<Offset> spine, int side, CompanionPalette c) {

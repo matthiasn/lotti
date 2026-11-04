@@ -3902,6 +3902,19 @@ class AppLocalizationsFr extends AppLocalizations {
   String get commonUnknown => 'Inconnu';
 
   @override
+  String get companionSettingsCharacterDescription =>
+      'Qui te tient compagnie. Chaque personnage a ses propres tenues ; la peau, la couleur des cheveux et la répartie restent comme tu les as choisies.';
+
+  @override
+  String get companionSettingsCharacterGrandpa => 'Papi';
+
+  @override
+  String get companionSettingsCharacterLabel => 'Personnage';
+
+  @override
+  String get companionSettingsCharacterLotti => 'Lotti';
+
+  @override
   String get companionSettingsHairColourAuburn => 'Auburn';
 
   @override
@@ -3935,6 +3948,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get companionSettingsHairStyleAfro => 'Afro';
 
   @override
+  String get companionSettingsHairStyleBalding => 'Dégarni';
+
+  @override
   String get companionSettingsHairStyleBob => 'Carré';
 
   @override
@@ -3950,8 +3966,11 @@ class AppLocalizationsFr extends AppLocalizations {
   String get companionSettingsHairStyleLocs => 'Locks';
 
   @override
+  String get companionSettingsHairStyleShort => 'Court';
+
+  @override
   String get companionSettingsOutfitDescription =>
-      'Choisis une tenue qu\'elle porte toujours, ou laisse-la en choisir une à chaque ouverture de l\'app.';
+      'Choisis une tenue à garder, ou reçois-en une nouvelle à chaque ouverture de l\'app.';
 
   @override
   String get companionSettingsOutfitEveryday => 'Quotidien';
@@ -3960,13 +3979,22 @@ class AppLocalizationsFr extends AppLocalizations {
   String get companionSettingsOutfitGarden => 'Jardin';
 
   @override
+  String get companionSettingsOutfitJazz => 'Jazz';
+
+  @override
   String get companionSettingsOutfitLabel => 'Tenue';
 
   @override
   String get companionSettingsOutfitLavender => 'Lavande';
 
   @override
+  String get companionSettingsOutfitMarket => 'Jour de marché';
+
+  @override
   String get companionSettingsOutfitRock => 'Rock';
+
+  @override
+  String get companionSettingsOutfitSeaside => 'Bord de mer';
 
   @override
   String get companionSettingsOutfitStage => 'Scène';
@@ -3982,7 +4010,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get companionSettingsSassDescription =>
-      'Comment elle prend ce qu\'elle te lit : un encouragement chaleureux, une taquinerie espiègle, ou la grand-mère au complet, yeux au ciel et regard par-dessus les lunettes.';
+      'Comment ton compagnon prend ce qu\'il te lit : un encouragement chaleureux, une taquinerie espiègle, ou la répartie au complet, yeux au ciel et regard par-dessus les lunettes.';
 
   @override
   String get companionSettingsSassLabel => 'Répartie';
@@ -4007,10 +4035,10 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get companionSettingsVoiceDescription =>
-      'Pose-lui une question à voix haute et elle te répond à voix haute. Une question écrite reçoit toujours une réponse écrite.';
+      'Pose une question à voix haute et ton compagnon te répond à voix haute. Une question écrite reçoit toujours une réponse écrite.';
 
   @override
-  String get companionSettingsVoiceLabel => 'Sa voix';
+  String get companionSettingsVoiceLabel => 'Voix';
 
   @override
   String get completeHabitFailButton => 'Manqué';
@@ -15117,7 +15145,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingsCelebrationsVariantSparks => 'Étincelles';
 
   @override
-  String get settingsCompanionSubtitle => 'Sa peau, ses cheveux et sa tenue';
+  String get settingsCompanionSubtitle => 'Personnage, peau, cheveux et tenue';
 
   @override
   String get settingsCompanionTitle => 'Compagne';

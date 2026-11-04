@@ -715,10 +715,10 @@ hairstyles are, dispatched on the character. No painter grows past the
 
 - **A character is a `CompanionSpecies`.** The enum already means "who the
   companion is", and every look already names one. The grandpa, and later
-  the younger two, are new values; `isAnimal` stays false for them. Two
-  traits answer what the painters ask, so no painter switches on a name
-  where a trait will do: `legs` (bare under a dress, trousers, or an
-  animal's) and `aged` (laugh lines).
+  the younger two, are new values; `isAnimal` stays false for them. Traits
+  answer what the painters ask, so no painter switches on a name where a
+  trait will do: `legs` (bare under a dress, trousers, or an animal's),
+  `bearded`, and, from task 2, `aged` (laugh lines).
 - **His colours join the palette** as nullable fields, the way the animals'
   muzzle and tail did: shirt, trousers, braces, bow tie, cap. His glasses
   take the existing frame colours and his brogues the shoe colours, which
@@ -754,8 +754,10 @@ branch, and a single changelog fragment covering everything a user sees.
 
 #### 1 · `feat/companion-grandpa`: choose who, and the grandpa
 
-- `CompanionSpecies.grandpa` with its traits; `legs` and `aged` on every
-  species.
+- `CompanionSpecies.grandpa` with its traits; `legs` on every species, and
+  `bearded`. **Changed from the first draft:** `aged` waits for task 2, the
+  first to draw a face without laugh lines; until then every human has
+  them and the trait would have nothing to decide.
 - His painters: trousers and brogues (`trousers_painter.dart`), the shirt,
   braces and bow tie with rolled sleeves (`grandpa_outfit_painter.dart`),
   the beard, moustache, reading glasses and flat cap

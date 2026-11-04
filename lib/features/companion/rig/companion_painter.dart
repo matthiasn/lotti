@@ -4,6 +4,7 @@ import 'package:flutter/widgets.dart';
 import 'package:lotti/features/companion/model/companion_look.dart';
 import 'package:lotti/features/companion/model/companion_pose.dart';
 import 'package:lotti/features/companion/rig/body_painter.dart';
+import 'package:lotti/features/companion/rig/grandpa_outfit_painter.dart';
 import 'package:lotti/features/companion/rig/head_painter.dart';
 import 'package:lotti/features/companion/rig/rig_frame.dart';
 import 'package:lotti/features/companion/rig/stage_painter.dart';
@@ -76,7 +77,11 @@ class CompanionPainter extends CustomPainter {
     drawTail(canvas, f, look);
     drawLegs(canvas, f, look);
     drawNeck(canvas, f, look);
-    drawDress(canvas, f, look);
+    if (look.species == CompanionSpecies.grandpa) {
+      drawGrandpaOutfit(canvas, f, look);
+    } else {
+      drawDress(canvas, f, look);
+    }
     if (!pose.handInFrontOfFace) drawHead(canvas, f, look);
     drawArm(canvas, f, look, pose.left, -1);
     drawArm(canvas, f, look, pose.right, 1);

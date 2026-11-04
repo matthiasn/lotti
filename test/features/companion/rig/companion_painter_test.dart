@@ -92,6 +92,21 @@ void main() {
     expect(r.count(look.palette.hair, tolerance: 12), greaterThan(100));
   });
 
+  test(
+    'paints the grandpa in his shirt and trousers, never the dress',
+    () async {
+      const look = CompanionLook.grandpa;
+      final r = await _paint(
+        CompanionPainter(pose: const CompanionPose(), look: look),
+        const Size(160, 240),
+      );
+      expect(r.count(look.palette.shirt), greaterThan(300));
+      expect(r.count(look.palette.trousers), greaterThan(300));
+      expect(r.count(look.palette.dress), 0);
+      expect(r.count(look.palette.cardigan), 0);
+    },
+  );
+
   test('paints an animal with its tail, behind the dress', () async {
     const look = CompanionLook.redPanda;
     final r = await _paint(

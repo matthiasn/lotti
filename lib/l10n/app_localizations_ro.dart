@@ -3910,6 +3910,19 @@ class AppLocalizationsRo extends AppLocalizations {
   String get commonUnknown => 'Necunoscut';
 
   @override
+  String get companionSettingsCharacterDescription =>
+      'Cine vă ține companie. Fiecare personaj are ținutele lui; pielea, culoarea părului și îndrăzneala rămân cum le-ați ales.';
+
+  @override
+  String get companionSettingsCharacterGrandpa => 'Bunicul';
+
+  @override
+  String get companionSettingsCharacterLabel => 'Personaj';
+
+  @override
+  String get companionSettingsCharacterLotti => 'Lotti';
+
+  @override
   String get companionSettingsHairColourAuburn => 'Arămiu';
 
   @override
@@ -3943,6 +3956,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get companionSettingsHairStyleAfro => 'Afro';
 
   @override
+  String get companionSettingsHairStyleBalding => 'Chel';
+
+  @override
   String get companionSettingsHairStyleBob => 'Bob';
 
   @override
@@ -3958,8 +3974,11 @@ class AppLocalizationsRo extends AppLocalizations {
   String get companionSettingsHairStyleLocs => 'Dreaduri';
 
   @override
+  String get companionSettingsHairStyleShort => 'Scurt';
+
+  @override
   String get companionSettingsOutfitDescription =>
-      'Alegeți o ținută pe care o poartă mereu sau lăsați-o să aleagă una de fiecare dată când deschideți aplicația.';
+      'Alegeți o ținută care rămâne sau primiți una nouă de fiecare dată când deschideți aplicația.';
 
   @override
   String get companionSettingsOutfitEveryday => 'De zi cu zi';
@@ -3968,13 +3987,22 @@ class AppLocalizationsRo extends AppLocalizations {
   String get companionSettingsOutfitGarden => 'Grădină';
 
   @override
+  String get companionSettingsOutfitJazz => 'Jazz';
+
+  @override
   String get companionSettingsOutfitLabel => 'Ținută';
 
   @override
   String get companionSettingsOutfitLavender => 'Lavandă';
 
   @override
+  String get companionSettingsOutfitMarket => 'Zi de piață';
+
+  @override
   String get companionSettingsOutfitRock => 'Rock';
+
+  @override
+  String get companionSettingsOutfitSeaside => 'La mare';
 
   @override
   String get companionSettingsOutfitStage => 'Scenă';
@@ -3990,7 +4018,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get companionSettingsSassDescription =>
-      'Cum reacționează la ceea ce vă citește: o încurajare caldă, o tachinare poznașă sau bunica în toată splendoarea, cu ochii dați peste cap și privirea pe deasupra ochelarilor.';
+      'Cum reacționează însoțitorul la ceea ce vă citește: o încurajare caldă, o tachinare poznașă sau îndrăzneală din plin, cu ochii dați peste cap și privirea pe deasupra ochelarilor.';
 
   @override
   String get companionSettingsSassLabel => 'Îndrăzneală';
@@ -4015,10 +4043,10 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get companionSettingsVoiceDescription =>
-      'Întrebați-o ceva cu vocea și vă răspunde cu voce tare. O întrebare scrisă primește întotdeauna un răspuns scris.';
+      'Întrebați ceva cu vocea și însoțitorul vă răspunde cu voce tare. O întrebare scrisă primește întotdeauna un răspuns scris.';
 
   @override
-  String get companionSettingsVoiceLabel => 'Vocea ei';
+  String get companionSettingsVoiceLabel => 'Voce';
 
   @override
   String get completeHabitFailButton => 'Ratat';
@@ -15155,7 +15183,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsCelebrationsVariantSparks => 'Scântei';
 
   @override
-  String get settingsCompanionSubtitle => 'Pielea, părul și ținuta ei';
+  String get settingsCompanionSubtitle => 'Personaj, piele, păr și ținută';
 
   @override
   String get settingsCompanionTitle => 'Însoțitoare';

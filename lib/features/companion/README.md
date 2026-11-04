@@ -2,8 +2,9 @@
 
 Lotti, the grandmother who presents the app in the pitch videos, drawn live in
 Flutter: a character who can sit in the app and talk, instead of only
-appearing in a video. A cat and a red panda can stand in for her: the same
-rig, another species.
+appearing in a video. A person can choose a grandpa in her place, and a cat
+and a red panda stand in for her in the widgetbook: the same rig, another
+species.
 
 **Status: first appearance, behind a flag.** With **Companion**
 (`enable_companion`, Settings › Advanced Settings › Config Flags) and **AI
@@ -11,8 +12,8 @@ summary playback** on, she stands beside a task's AI summary and speaks it
 when its read-aloud control is pressed, sits in the Day page header,
 briefing the day when tapped, and greets a new user in onboarding. Everywhere
 else she is in the widgetbook only. The plan she comes from, and the branches
-still ahead (a mood read from the record, character choice, talking back,
-nudges), is
+still ahead (a mood read from the record, the younger two of the cast,
+talking back, nudges), is
 [docs/implementation_plans/2026-10-12_in_app_agent_avatar.md](../../../docs/implementation_plans/2026-10-12_in_app_agent_avatar.md).
 
 ## What it does
@@ -70,18 +71,34 @@ nudges), is
   for as long as the app runs, through every reload of the screen and on her
   full-screen stage; another task may show another, and the next start of
   the app picks afresh.
-- **A person makes her their own.** In Settings › Preferences › Companion
-  (shown with the flag) they pick her skin tone (six, numbered, never named
-  after a people), her hairstyle (bun, curls, afro, locs, bob), her hair
+- **The grandpa.** Calm and dry, in clothes that are none of hers: a
+  collared shirt with its sleeves rolled to the forearm, braces, a bow tie,
+  pleated trousers and brogues, half-moon reading glasses low on his nose,
+  a trimmed beard and moustache in his hair's colour, short hair. His four
+  outfits are everyday (pale blue shirt, rust braces, plum bow tie), jazz
+  (black shirt, ivory trousers), seaside (peach and white) and market (olive
+  and chestnut, with a flat cap). He has every gesture, mood and mouth
+  shape she has: the beard is drawn under the mouth and the moustache over
+  it, so every shape still reads, and his trousers hang from the pelvis,
+  as her legs do, so a bounce of joy lifts his shirt and never parts it
+  from them. He and the two younger people still to come are planned in
+  "Revision: a cast of four" of the plan above.
+- **A person makes the companion their own.** In Settings › Preferences ›
+  Companion (shown with the flag) they choose the character (Lotti or the
+  grandpa), the skin tone (six, numbered, never named after a people), the
+  hairstyle (bun, curls, afro, locs, bob, short, balding), the hair
   colour (silver, white, grey, black, brown, auburn, pink, lavender, blue),
-  an outfit she always wears, or "Surprise me", and her sass — warm,
+  an outfit of the character's always worn, or "Surprise me", and the
+  sass — warm,
   cheeky (the default) or sassy — which her preview acts out when it is
   picked. The curls and the afro are drawn as coils, shaded one over the
   next; the locs as twisted ropes swept back from the hairline. Every part
-  combines with every other. The choice is stored and synced to the person's other devices
+  combines with every other, and with either character. Choosing another
+  character clears the outfit, since outfits belong to one, and puts the
+  hair back to that character's own; the rest carries over. The choice is stored and synced to the person's other devices
   (`companionCustomizationProvider`), the most recent change winning.
 - **She can be an animal.** A look names its species (`CompanionSpecies`):
-  the grandmother, a silver tabby cat (`cat`, `cat_rock`) or a red panda
+  the grandmother, the grandpa, a silver tabby cat (`cat`, `cat_rock`) or a red panda
   (`red_panda`, `red_panda_bookish`). An animal keeps her skeleton, gestures,
   moods and mouth, and swaps the hair for ears, the face for a furred head
   with a muzzle and whiskers, the shoes for paws, and gains a tail that
@@ -93,7 +110,7 @@ nudges), is
 | Directory | What |
 |---|---|
 | `model/` | The data: looks and their palettes, poses, gestures, hand and mouth shapes, moods, the reaction scale with its beats and last word, the faces she pulls for a moment (`companion_flourish.dart`), and the parts a person dresses her in (`companion_parts.dart`, `companion_customization.dart`) |
-| `rig/` | Drawing: the arm solver, the limb ribbon, the frames a pose resolves into, and one painter per body part, composed by `CompanionPainter`; the animals' head and tail in `animal_head_painter.dart` and `tail_painter.dart`; her hairstyles in `hair_styles_painter.dart`, the bun in `hair_painter.dart` |
+| `rig/` | Drawing: the arm solver, the limb ribbon, the frames a pose resolves into, and one painter per body part, composed by `CompanionPainter`; the animals' head and tail in `animal_head_painter.dart` and `tail_painter.dart`; the hairstyles in `hair_styles_painter.dart`, the bun in `hair_painter.dart`, short and balding in `short_hair_painter.dart`; the grandpa's shirt, braces and bow tie in `grandpa_outfit_painter.dart`, his beard, moustache and cap in `grandpa_head_painter.dart`, and trousers and brogues in `trousers_painter.dart` |
 | `animation/` | Motion: `CompanionAnimator` turns time, a mood, gestures and speech into a pose per frame; the mouth tracks; `PlayheadClock`, the playhead between a player's reports |
 | `state/` | `loadSpokenTrack`: the mouth for a clip the voice plays, read once off the UI isolate; the outfit pick, her stored customization, and `companionLookRollProvider`, which dresses her |
 | `ui/` | `CompanionView`, the live widget, and its `CompanionController`; `CompanionSpeaker`, the view bound to the on-device voice; `settings/`, the page that customizes her |
@@ -125,7 +142,7 @@ come from the design system's tokens.
 ## Trying her out
 
 Run the widgetbook (`fvm flutter run -d <device> -t lib/widgetbook.dart`) and
-open **Companion → Lotti (grandma)**, **Cat** or **Red panda**; each has the
+open **Companion → Lotti (grandma)**, **Grandpa**, **Cat** or **Red panda**; each has the
 same use cases, its look knob limited to its own looks:
 
 - **Playground**: the look, mood, framing, stage, smoothing and sass as

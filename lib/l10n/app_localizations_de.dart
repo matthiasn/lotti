@@ -3876,6 +3876,19 @@ class AppLocalizationsDe extends AppLocalizations {
   String get commonUnknown => 'Unbekannt';
 
   @override
+  String get companionSettingsCharacterDescription =>
+      'Wer dir Gesellschaft leistet. Jede Figur hat eigene Outfits; Haut, Haarfarbe und Frechheit bleiben, wie du sie eingestellt hast.';
+
+  @override
+  String get companionSettingsCharacterGrandpa => 'Opa';
+
+  @override
+  String get companionSettingsCharacterLabel => 'Figur';
+
+  @override
+  String get companionSettingsCharacterLotti => 'Lotti';
+
+  @override
   String get companionSettingsHairColourAuburn => 'Kupferrot';
 
   @override
@@ -3909,6 +3922,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get companionSettingsHairStyleAfro => 'Afro';
 
   @override
+  String get companionSettingsHairStyleBalding => 'Halbglatze';
+
+  @override
   String get companionSettingsHairStyleBob => 'Bob';
 
   @override
@@ -3924,8 +3940,11 @@ class AppLocalizationsDe extends AppLocalizations {
   String get companionSettingsHairStyleLocs => 'Locs';
 
   @override
+  String get companionSettingsHairStyleShort => 'Kurz';
+
+  @override
   String get companionSettingsOutfitDescription =>
-      'Wähle eins, das sie immer trägt, oder lass sie bei jedem Öffnen der App selbst eins aussuchen.';
+      'Wähle ein Outfit, das bleibt, oder bekomm bei jedem Öffnen der App ein neues.';
 
   @override
   String get companionSettingsOutfitEveryday => 'Alltag';
@@ -3934,13 +3953,22 @@ class AppLocalizationsDe extends AppLocalizations {
   String get companionSettingsOutfitGarden => 'Garten';
 
   @override
+  String get companionSettingsOutfitJazz => 'Jazz';
+
+  @override
   String get companionSettingsOutfitLabel => 'Outfit';
 
   @override
   String get companionSettingsOutfitLavender => 'Lavendel';
 
   @override
+  String get companionSettingsOutfitMarket => 'Markttag';
+
+  @override
   String get companionSettingsOutfitRock => 'Rock';
+
+  @override
+  String get companionSettingsOutfitSeaside => 'Am Meer';
 
   @override
   String get companionSettingsOutfitStage => 'Bühne';
@@ -3956,7 +3984,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get companionSettingsSassDescription =>
-      'Wie sie auf das reagiert, was sie dir vorliest: herzlich aufmunternd, frech neckend oder volle Oma, mit Augenrollen und dem Blick über die Brille.';
+      'Wie deine Begleitung auf das reagiert, was sie dir vorliest: herzlich aufmunternd, frech neckend oder volle Frechheit, mit Augenrollen und dem Blick über die Brille.';
 
   @override
   String get companionSettingsSassLabel => 'Frechheit';
@@ -3981,10 +4009,10 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get companionSettingsVoiceDescription =>
-      'Frag sie etwas per Stimme, und sie antwortet laut. Eine getippte Frage bekommt immer eine geschriebene Antwort.';
+      'Frag etwas per Stimme, und deine Begleitung antwortet laut. Eine getippte Frage bekommt immer eine geschriebene Antwort.';
 
   @override
-  String get companionSettingsVoiceLabel => 'Ihre Stimme';
+  String get companionSettingsVoiceLabel => 'Stimme';
 
   @override
   String get completeHabitFailButton => 'Verpasst';
@@ -14979,7 +15007,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsCelebrationsVariantSparks => 'Funken';
 
   @override
-  String get settingsCompanionSubtitle => 'Ihre Haut, Haare und Kleidung';
+  String get settingsCompanionSubtitle => 'Figur, Haut, Haare und Kleidung';
 
   @override
   String get settingsCompanionTitle => 'Begleiterin';

@@ -1,5 +1,8 @@
+import 'dart:ui';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/companion/model/companion_look.dart';
+import 'package:lotti/features/companion/model/companion_parts.dart';
 
 void main() {
   test('every look has its own id', () {
@@ -11,6 +14,10 @@ void main() {
       'grandma_garden',
       'grandma_lavender',
       'grandma_winter',
+      'grandpa',
+      'grandpa_jazz',
+      'grandpa_seaside',
+      'grandpa_market',
       'cat',
       'cat_rock',
       'red_panda',
@@ -32,6 +39,7 @@ void main() {
 
   test('only the animals are animals, and the red panda has the big head', () {
     expect(CompanionSpecies.grandma.isAnimal, isFalse);
+    expect(CompanionSpecies.grandpa.isAnimal, isFalse);
     expect(CompanionSpecies.cat.isAnimal, isTrue);
     expect(CompanionSpecies.redPanda.isAnimal, isTrue);
     expect(
@@ -172,5 +180,154 @@ void main() {
       [same.id, same.sunglasses, same.beret, same.beads, same.glove],
       [look.id, look.sunglasses, look.beret, look.beads, look.glove],
     );
+  });
+
+  group('characters', () {
+    test('each stands on the legs its body has', () {
+      expect(
+        {for (final s in CompanionSpecies.values) s: s.legs},
+        {
+          CompanionSpecies.grandma: CompanionLegs.bare,
+          CompanionSpecies.grandpa: CompanionLegs.trousers,
+          CompanionSpecies.cat: CompanionLegs.paws,
+          CompanionSpecies.redPanda: CompanionLegs.paws,
+        },
+      );
+    });
+
+    test('a person chooses among the humans, Lotti first', () {
+      expect(CompanionSpecies.choosable, [
+        CompanionSpecies.grandma,
+        CompanionSpecies.grandpa,
+      ]);
+    });
+
+    test('only the grandpa is bearded, and his own hair is short', () {
+      expect(
+        [
+          for (final s in CompanionSpecies.values)
+            if (s.bearded) s,
+        ],
+        [CompanionSpecies.grandpa],
+      );
+      expect(CompanionSpecies.grandpa.hairStyle, CompanionHairStyle.short);
+      expect(CompanionSpecies.grandma.hairStyle, CompanionHairStyle.bun);
+    });
+  });
+
+  group("the grandpa's outfits", () {
+    final his = CompanionLook.of(CompanionSpecies.grandpa);
+
+    test('are four, his everyday one first', () {
+      expect(his, [
+        CompanionLook.grandpa,
+        CompanionLook.grandpaJazz,
+        CompanionLook.grandpaSeaside,
+        CompanionLook.grandpaMarket,
+      ]);
+    });
+
+    test("wear readers and short hair, and none of Lotti's props", () {
+      for (final look in his) {
+        expect(look.readingGlasses, isTrue, reason: look.id);
+        expect(look.hairStyle, CompanionHairStyle.short, reason: look.id);
+        expect(
+          [look.glasses, look.sunglasses, look.beret, look.beads, look.glove],
+          everyElement(isFalse),
+          reason: look.id,
+        );
+        expect(look.earring, EarringKind.none, reason: look.id);
+      }
+    });
+
+    test('put the flat cap on for the market only', () {
+      expect(
+        [
+          for (final look in his)
+            if (look.flatCap) look,
+        ],
+        [CompanionLook.grandpaMarket],
+      );
+    });
+
+    test('no two share a shirt and trousers', () {
+      expect(
+        his.map((l) => (l.palette.shirt, l.palette.trousers)).toSet(),
+        hasLength(his.length),
+      );
+    });
+
+    test("repeat none of the colours of Lotti's dresses and cardigans", () {
+      final hers = {
+        for (final look in CompanionLook.of(CompanionSpecies.grandma)) ...[
+          look.palette.dress,
+          look.palette.cardigan,
+        ],
+      };
+      for (final look in his) {
+        final c = look.palette;
+        expect(
+          [c.shirt, c.trousers, c.braces, c.bowTie],
+          everyElement(isNot(isIn(hers))),
+          reason: look.id,
+        );
+      }
+    });
+
+    test('the everyday one wears the palette defaults for his garments', () {
+      const base = CompanionPalette();
+      final c = CompanionLook.grandpa.palette;
+      expect(
+        [c.shirt, c.trousers, c.braces, c.bowTie, c.cap],
+        [base.shirt, base.trousers, base.braces, base.bowTie, base.cap],
+      );
+    });
+
+    test('copyWith keeps the readers and the cap', () {
+      final dressed = CompanionLook.grandpaMarket.copyWith(
+        hairStyle: CompanionHairStyle.balding,
+      );
+      expect(dressed.readingGlasses, isTrue);
+      expect(dressed.flatCap, isTrue);
+      expect(dressed.hairStyle, CompanionHairStyle.balding);
+      expect(dressed.species, CompanionSpecies.grandpa);
+    });
+  });
+
+  test('palette copyWith changes only the garment colours it is given', () {
+    const red = Color(0xFFFF0000);
+    const base = CompanionPalette();
+    final changed = base.copyWith(
+      shirt: red,
+      shirtShade: red,
+      shirtLight: red,
+      trousers: red,
+      trousersShade: red,
+      trousersLight: red,
+      braces: red,
+      bowTie: red,
+      bowTieShade: red,
+      cap: red,
+      capShade: red,
+    );
+    expect(
+      [
+        changed.shirt,
+        changed.shirtShade,
+        changed.shirtLight,
+        changed.trousers,
+        changed.trousersShade,
+        changed.trousersLight,
+        changed.braces,
+        changed.bowTie,
+        changed.bowTieShade,
+        changed.cap,
+        changed.capShade,
+      ],
+      everyElement(red),
+    );
+    expect([changed.dress, changed.skin], [base.dress, base.skin]);
+    final kept = changed.copyWith();
+    expect([kept.shirt, kept.cap], [red, red]);
   });
 }

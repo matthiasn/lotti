@@ -1,7 +1,10 @@
+import 'dart:ui';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/companion/model/companion_look.dart';
 import 'package:lotti/features/companion/model/companion_parts.dart';
 import 'package:lotti/features/companion/model/companion_pose.dart';
+import 'package:lotti/features/companion/model/mouth_shape.dart';
 import 'package:lotti/features/companion/rig/head_painter.dart';
 import 'package:lotti/features/companion/rig/rig_frame.dart';
 
@@ -155,5 +158,82 @@ void main() {
             cat.count(CompanionLook.cat.palette.muzzleColor),
       ),
     );
+  });
+
+  group('the grandpa', () {
+    /// How many pixels of [colour] lie below head-local [y].
+    int below(Raster r, Color colour, double y, {int tolerance = 20}) {
+      var n = 0;
+      for (var py = (260 + y * 2).round(); py < 480; py++) {
+        for (var x = 0; x < 480; x++) {
+          if (near(r.at(x, py), colour, tolerance: tolerance)) n++;
+        }
+      }
+      return n;
+    }
+
+    test(
+      'wears his readers low on the nose, Lotti hers round her eyes',
+      () async {
+        Future<double> drop(CompanionLook look) async {
+          final r = await _head(look);
+          return r.centroid(look.palette.glasses)!.dy -
+              r.centroid(look.palette.eyeWhite)!.dy;
+        }
+
+        expect(
+          await drop(CompanionLook.grandpa),
+          greaterThan(await drop(CompanionLook.grandma) + 4),
+        );
+      },
+    );
+
+    test(
+      'has a beard below the nose; Lotti, in the same short hair, none',
+      () async {
+        const his = CompanionLook.grandpa;
+        final lotti = CompanionLook.grandma.copyWith(
+          hairStyle: CompanionHairStyle.short,
+        );
+        // Her pearls are near the silver of the hair: a few pixels, not a
+        // beard's thousands.
+        expect(
+          below(await _head(his), his.palette.hair, 12),
+          greaterThan(below(await _head(lotti), lotti.palette.hair, 12) + 1500),
+        );
+      },
+    );
+
+    test('still shows his mouth through the beard', () async {
+      const look = CompanionLook.grandpa;
+      final r = await _head(
+        look,
+        pose: CompanionPose(mouth: Viseme.d.shape),
+      );
+      expect(r.count(look.palette.mouthIn, tolerance: 10), greaterThan(40));
+    });
+
+    test('wears the moustache over his lip', () async {
+      final r = await _head(CompanionLook.grandpa);
+      // Head-local (0, 15): between the nose and the mouth.
+      expect(
+        near(
+          r.at(240, 260 + 30),
+          CompanionLook.grandpa.palette.hair,
+          tolerance: 30,
+        ),
+        isTrue,
+      );
+    });
+
+    test('wears the flat cap to market only', () async {
+      const market = CompanionLook.grandpaMarket;
+      // A grey near the cap's blends at a few hair edges without one.
+      final cap = market.palette.cap;
+      expect(
+        (await _head(market)).count(cap),
+        greaterThan((await _head(CompanionLook.grandpa)).count(cap) + 1500),
+      );
+    });
   });
 }
