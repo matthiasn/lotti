@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/features/agents/ui/agent_editor_scaffold.dart';
+import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
 import 'package:lotti/features/relationships/state/relationships_providers.dart';
@@ -248,6 +249,54 @@ void main() {
     expect(find.widgetWithText(TextField, 'Tilly Snowdrift'), findsOneWidget);
   });
 
+  testWidgets('a person who is gone says so instead of spinning, and the '
+      'way back still leaves', (tester) async {
+    await pumpPage(tester, relationshipId: 'rel-1', load: () async => null);
+
+    expect(find.byType(DesignSystemSpinner), findsNothing);
+    expect(find.text('This person is no longer tracked.'), findsOneWidget);
+    expect(find.byType(RelationshipForm), findsNothing);
+    await tester.tap(find.byType(BackButton));
+    expect(navigated, ['/people/rel-1']);
+  });
+
+  testWidgets('a read that failed says so while Riverpod retries it, '
+      'instead of spinning through the backoff', (tester) async {
+    tester.view
+      ..physicalSize = const Size(900, 2400)
+      ..devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    // A plain Exception is retryable, so the provider sits loading *and*
+    // errored between attempts.
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const RelationshipEditorPage(relationshipId: 'rel-1'),
+        overrides: [
+          relationshipDetailControllerProvider('rel-1').overrideWith(
+            () => _FakeDetailController(
+              () async => throw Exception('read failed'),
+            ),
+          ),
+        ],
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.byType(DesignSystemSpinner), findsNothing);
+    expect(
+      tester
+          .widget<Text>(find.byKey(const ValueKey('person-editor-unavailable')))
+          .data,
+      'Error',
+    );
+    expect(find.byType(RelationshipForm), findsNothing);
+
+    // Tear the scope down so the pending retry timer goes with it.
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump(const Duration(minutes: 1));
+  });
+
   testWidgets(
     'before the person has read the page holds its title and way back over a '
     'spinner, not an empty form',
@@ -271,7 +320,12 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.byType(DesignSystemSpinner), findsOneWidget);
+      expect(
+        find.bySemanticsLabel('Loading...'),
+        findsOneWidget,
+        reason: 'a screen reader hears that the person is loading',
+      );
       expect(find.text('Edit person'), findsOneWidget);
       expect(find.byType(RelationshipForm), findsNothing);
       await tester.tap(find.byType(BackButton));

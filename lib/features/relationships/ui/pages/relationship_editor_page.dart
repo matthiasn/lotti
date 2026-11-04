@@ -2,6 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/ui/agent_editor_scaffold.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/state/relationships_providers.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_form.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -56,17 +58,34 @@ class _RelationshipEditorPageState
     // a reload under it (a photo it just wrote, a sync) never swaps it out.
     final RelationshipEntry? initial;
     if (editing) {
-      final person = ref
-          .watch(relationshipDetailControllerProvider(id))
-          .value
-          ?.relationship;
+      final detailAsync = ref.watch(relationshipDetailControllerProvider(id));
+      final person = detailAsync.value?.relationship;
       if (person == null) {
+        // Until the first read lands, a spinner. After it, a person who
+        // resolved to null is gone (deleted, here or on another device) and a
+        // failed read says so, as the person page does, rather than spinning
+        // forever. The error is checked first: while Riverpod retries a failed
+        // read the state is loading *and* errored, and the retry's backoff
+        // must not read as a load still on its way.
+        final tokens = context.designTokens;
+        final stillLoading = detailAsync.isLoading && !detailAsync.hasError;
+        final body = stillLoading
+            ? DesignSystemSpinner(semanticsLabel: messages.commonLoading)
+            : Text(
+                detailAsync.hasError
+                    ? messages.commonError
+                    : messages.relationshipNotFound,
+                key: const ValueKey('person-editor-unavailable'),
+                style: tokens.typography.styles.body.bodySmall.copyWith(
+                  color: tokens.colors.text.mediumEmphasis,
+                ),
+              );
         return Scaffold(
           appBar: AppBar(
             leading: BackButton(onPressed: _leave),
             title: Text(title),
           ),
-          body: const Center(child: CircularProgressIndicator()),
+          body: Center(child: body),
         );
       }
       initial = person;
