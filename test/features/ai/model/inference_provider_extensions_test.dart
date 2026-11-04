@@ -13,6 +13,7 @@ void main() {
         final icons = <InferenceProviderType, IconData>{
           InferenceProviderType.alibaba: LottiIcons.cloud,
           InferenceProviderType.anthropic: LottiIcons.aiSpark,
+          InferenceProviderType.elevenLabs: LottiIcons.volume,
           InferenceProviderType.openAi: LottiIcons.reasoning,
           InferenceProviderType.gemini: LottiIcons.gem,
           InferenceProviderType.melious: LottiIcons.eco,
@@ -41,6 +42,7 @@ void main() {
         final pinned = <InferenceProviderType>{
           InferenceProviderType.alibaba,
           InferenceProviderType.anthropic,
+          InferenceProviderType.elevenLabs,
           InferenceProviderType.openAi,
           InferenceProviderType.gemini,
           InferenceProviderType.melious,

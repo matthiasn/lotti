@@ -153,6 +153,7 @@ String? aiProviderKeyConsoleUrl(InferenceProviderType? type) {
     InferenceProviderType.gemini => 'aistudio.google.com',
     InferenceProviderType.openAi => 'platform.openai.com',
     InferenceProviderType.anthropic => 'console.anthropic.com',
+    InferenceProviderType.elevenLabs => 'elevenlabs.io',
     InferenceProviderType.melious => 'melious.ai',
     InferenceProviderType.mistral => 'console.mistral.ai',
     InferenceProviderType.alibaba => 'dashscope.console.aliyun.com',
@@ -174,6 +175,7 @@ IconData aiProviderIcon(InferenceProviderType? type) {
     InferenceProviderType.melious => LottiIcons.eco,
     InferenceProviderType.mistral => LottiIcons.air,
     InferenceProviderType.alibaba => LottiIcons.cloud,
+    InferenceProviderType.elevenLabs => LottiIcons.volume,
     _ => LottiIcons.aiModel,
   };
 }
@@ -191,6 +193,7 @@ String aiProviderDisplayName({
     InferenceProviderType.gemini => messages.aiProviderGeminiName,
     InferenceProviderType.openAi => messages.aiProviderOpenAiName,
     InferenceProviderType.anthropic => messages.aiProviderAnthropicName,
+    InferenceProviderType.elevenLabs => messages.aiProviderElevenLabsName,
     InferenceProviderType.ollama => messages.aiProviderOllamaName,
     InferenceProviderType.mistral => messages.aiProviderMistralName,
     InferenceProviderType.omlx => messages.aiProviderOmlxName,
@@ -223,6 +226,7 @@ String aiProviderTagline({
     InferenceProviderType.omlx => messages.aiProviderTaglineOmlx,
     InferenceProviderType.melious => messages.aiProviderTaglineMelious,
     InferenceProviderType.alibaba => messages.aiProviderTaglineAlibaba,
+    InferenceProviderType.elevenLabs => messages.aiProviderTaglineElevenLabs,
     _ => '',
   };
 }

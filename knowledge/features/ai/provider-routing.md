@@ -5,7 +5,7 @@ description: The routing table behind CloudInferenceRepository, per-provider cat
 resource: ../../../lib/features/ai/repository/cloud_inference_repository.dart
 tags: [ai, providers, routing, audio, gemini, reasoning, thinking]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-10-28T09:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-11-04T12:00:00Z }
 stale_after: 2026-12-19
 sources:
   - id: ollama-client
@@ -90,8 +90,13 @@ streaming while keeping an impact collector for buffered fallback.
 | `generateImage()` | Gemini, Alibaba DashScope, Melious | Unsupported — throws for every other provider type |
 
 Speech synthesis is not routed here. A profile's read-aloud model reaches
-Mistral's `/v1/audio/speech` through the text-to-speech feature's own client —
-see [text-to-speech](../tts.md#cloud-voices). The catalog side is shared:
+Mistral's `/v1/audio/speech` or ElevenLabs' `/v1/text-to-speech/{voice}`
+through the text-to-speech feature's own clients — see
+[text-to-speech](../tts.md#cloud-voices). An ElevenLabs provider is
+speech-only: its curated models are text in / audio out, so no other slot
+offers them, and it has no chat, transcription or image route here. Its
+connection check refuses a plain-HTTP base URL off loopback before sending
+the `xi-api-key`, and follows no redirect, which could carry the key on. The catalog side is shared:
 Voxtral ships transcription and TTS models under one prefix, and
 `isSpeechSynthesisModelId` (a `tts` segment, separated by `-`, `_`, `.`, `/`
 or `:`) maps the TTS rows

@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/tts/cloud/cloud_speech_synthesizer.dart';
-import 'package:lotti/features/tts/cloud/voxtral_voice_catalog.dart';
+import 'package:lotti/features/tts/cloud/cloud_voice_catalog.dart';
 import 'package:lotti/features/tts/state/cloud_voice_settings_providers.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -24,6 +24,20 @@ void main() {
   final mistral = testInferenceProvider(
     id: 'mistral',
     inferenceProviderType: InferenceProviderType.mistral,
+  );
+  final elevenLabs = testInferenceProvider(
+    id: 'eleven',
+    inferenceProviderType: InferenceProviderType.elevenLabs,
+  );
+  final elevenVoice = testAiModel(
+    id: 'eleven-voice',
+    providerModelId: 'eleven_multilingual_v2',
+    inferenceProviderId: 'eleven',
+  );
+  final elevenFlash = testAiModel(
+    id: 'eleven-flash',
+    providerModelId: 'eleven_flash_v2_5',
+    inferenceProviderId: 'eleven',
   );
   final openAi = testInferenceProvider(
     id: 'openai',
@@ -53,8 +67,14 @@ void main() {
   }) {
     final byType = <AiConfigType, List<AiConfig>>{
       AiConfigType.inferenceProfile: profiles,
-      AiConfigType.inferenceProvider: [mistral, openAi],
-      AiConfigType.model: [voice, secondVoice, openAiVoice],
+      AiConfigType.inferenceProvider: [mistral, elevenLabs, openAi],
+      AiConfigType.model: [
+        voice,
+        secondVoice,
+        elevenVoice,
+        elevenFlash,
+        openAiVoice,
+      ],
     };
     final container = ProviderContainer(
       overrides: [
@@ -87,26 +107,62 @@ void main() {
     expect(found.single.model, anyOf(voice, secondVoice));
   });
 
+  test('an ElevenLabs read-aloud model is a service of its own beside '
+      'Mistral', () async {
+    final found = await services(
+      profiles: [profile('a', 'voice-row'), profile('b', 'eleven-voice')],
+    );
+    expect(
+      {for (final service in found) service.provider: service.model},
+      {mistral: voice, elevenLabs: elevenVoice},
+    );
+  });
+
+  test('two ElevenLabs models are two services, since each model has its '
+      'own languages; two Mistral models stay one', () async {
+    final found = await services(
+      profiles: [
+        profile('a', 'voice-row'),
+        profile('b', 'voice-row-2'),
+        profile('c', 'eleven-voice'),
+        profile('d', 'eleven-flash'),
+      ],
+    );
+    expect(found.where((s) => s.provider == mistral), hasLength(1));
+    expect(
+      {
+        for (final s in found)
+          if (s.provider == elevenLabs) s.model.id,
+      },
+      {'eleven-voice', 'eleven-flash'},
+    );
+    expect(found, hasLength(3));
+  });
+
   test('a provider without a speech client is left out', () async {
     expect(await services(profiles: [profile('a', 'openai-voice')]), isEmpty);
   });
 
   test('the catalog provider reads through the device cache', () async {
-    final catalogs = MockVoxtralVoiceCatalogRepository();
-    final catalog = VoxtralVoiceCatalog(
+    final catalogs = MockCloudVoiceCatalogRepository();
+    final catalog = CloudVoiceCatalog(
       voices: const [],
       fetchedAt: DateTime.utc(2026, 10, 27),
     );
-    when(() => catalogs.catalogFor(mistral)).thenAnswer((_) async => catalog);
+    when(
+      () => catalogs.catalogFor(mistral, voice),
+    ).thenAnswer((_) async => catalog);
     final container = ProviderContainer(
       overrides: [
-        voxtralVoiceCatalogRepositoryProvider.overrideWithValue(catalogs),
+        cloudVoiceCatalogRepositoryProvider.overrideWithValue(catalogs),
       ],
     );
     addTearDown(container.dispose);
 
     expect(
-      await container.read(voxtralVoiceCatalogProvider(mistral).future),
+      await container.read(
+        cloudVoiceCatalogProvider((provider: mistral, model: voice)).future,
+      ),
       catalog,
     );
   });

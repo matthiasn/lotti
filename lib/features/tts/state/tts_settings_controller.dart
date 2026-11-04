@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/tts/model/tts_settings.dart';
 import 'package:lotti/providers/service_providers.dart';
@@ -89,15 +90,22 @@ class TtsSettingsController extends Notifier<TtsSettings> {
     );
   }
 
-  /// Chooses [voiceId] as the cloud voice for [languageCode], or clears the
-  /// choice when it is `null` so the language's default voice speaks again.
-  void setCloudVoice(String languageCode, String? voiceId) {
+  /// Chooses [voiceId] as the cloud voice for [languageCode] on [provider],
+  /// or clears the choice when it is `null` so the language's default voice
+  /// speaks again. Another provider's choice for the language is left as it
+  /// is.
+  void setCloudVoice(
+    AiConfigInferenceProvider provider,
+    String languageCode,
+    String? voiceId,
+  ) {
     _userChanged = true;
     final voices = Map<String, String>.of(state.cloudVoiceByLanguage);
+    final key = cloudVoiceChoiceKey(provider, languageCode);
     if (voiceId == null) {
-      voices.remove(languageCode);
+      voices.remove(key);
     } else {
-      voices[languageCode] = voiceId;
+      voices[key] = voiceId;
     }
     state = state.copyWith(cloudVoiceByLanguage: voices);
     // Saves queue behind each other, so the last choice is the one stored.

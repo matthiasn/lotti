@@ -3,8 +3,8 @@ import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/tts/cloud/cloud_speech_synthesizer.dart';
+import 'package:lotti/features/tts/cloud/cloud_tts_exception.dart';
 import 'package:lotti/features/tts/cloud/tts_cloud_route.dart';
-import 'package:lotti/features/tts/cloud/voxtral_tts_service.dart';
 import 'package:lotti/features/tts/model/tts_model_option.dart';
 import 'package:lotti/features/tts/model/tts_playback_state.dart';
 import 'package:lotti/features/tts/model/tts_settings.dart';
@@ -231,7 +231,7 @@ class TtsPlaybackController extends Notifier<TtsPlaybackState> {
               .synthesizeToFile(
                 route: cloudRoute,
                 text: text,
-                voiceByLanguage: settings.cloudVoiceByLanguage,
+                chosenVoices: settings.cloudVoiceByLanguage,
                 canSend: () async =>
                     current() && (canPlay == null || await canPlay()),
               );
@@ -239,9 +239,8 @@ class TtsPlaybackController extends Notifier<TtsPlaybackState> {
             if (current()) _onPlaybackEnded();
             return;
           }
-        } on VoxtralTtsException catch (error) {
-          if (error.failure != VoxtralTtsFailure.noVoice ||
-              !engine.isSupported) {
+        } on CloudTtsException catch (error) {
+          if (error.failure != CloudTtsFailure.noVoice || !engine.isSupported) {
             rethrow;
           }
           // The cloud voice has no voice for the language, and nothing was
@@ -307,11 +306,11 @@ class TtsPlaybackController extends Notifier<TtsPlaybackState> {
       await player.play(file, speed: settings.speed);
     } catch (error, stackTrace) {
       if (!current()) return;
-      // The Voxtral client logs its own request failures with their detail;
+      // The cloud clients log their own request failures with their detail;
       // everything else — the on-device engine, the player, a language with
       // no cloud voice — would otherwise surface only as the generic toast.
-      if (error is! VoxtralTtsException ||
-          error.failure == VoxtralTtsFailure.noVoice) {
+      if (error is! CloudTtsException ||
+          error.failure == CloudTtsFailure.noVoice) {
         _logger.error(
           LogDomain.speech,
           error,
@@ -445,7 +444,10 @@ class TtsPlaybackController extends Notifier<TtsPlaybackState> {
     voice: cloudRoute == null
         ? settings.voiceId
         : cloudRoute.voiceId ??
-              settings.cloudVoiceByLanguage[cloudRoute.languageCode] ??
+              settings.cloudVoiceFor(
+                cloudRoute.provider,
+                cloudRoute.languageCode,
+              ) ??
               '',
     model: cloudRoute?.cacheKey ?? settings.modelId,
     language: language,

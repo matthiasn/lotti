@@ -5,8 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/features/tts/cloud/cloud_speech_synthesizer.dart';
+import 'package:lotti/features/tts/cloud/cloud_tts_exception.dart';
 import 'package:lotti/features/tts/cloud/tts_cloud_route.dart';
-import 'package:lotti/features/tts/cloud/voxtral_tts_service.dart';
 import 'package:lotti/features/tts/model/tts_model_option.dart';
 import 'package:lotti/features/tts/model/tts_playback_state.dart';
 import 'package:lotti/features/tts/state/tts_audio_player.dart';
@@ -24,6 +24,10 @@ import '../../../widget_test_utils.dart';
 import '../../agents/test_data/ai_config_factories.dart';
 import '../test_utils.dart';
 
+final AiConfigInferenceProvider _mistral = testInferenceProvider(
+  id: 'mistral',
+  inferenceProviderType: InferenceProviderType.mistral,
+);
 void main() {
   setUp(() async {
     await setUpTestGetIt();
@@ -92,7 +96,7 @@ void main() {
     final controller = controllerOf(h.container);
     h.container
         .read(ttsSettingsControllerProvider.notifier)
-        .setCloudVoice('de', 'v-de-2');
+        .setCloudVoice(_mistral, 'de', 'v-de-2');
     var asked = false;
 
     await controller.speak(
@@ -139,8 +143,8 @@ void main() {
     () async {
       final logger = await mockLogger();
       final cloud = FakeCloudSpeechSynthesizer(
-        error: const VoxtralTtsException(
-          VoxtralTtsFailure.noVoice,
+        error: const CloudTtsException(
+          CloudTtsFailure.noVoice,
           'No voice for language de',
         ),
       );
@@ -177,8 +181,8 @@ void main() {
       engine: engine,
       player: player,
       cloud: FakeCloudSpeechSynthesizer(
-        error: const VoxtralTtsException(
-          VoxtralTtsFailure.noVoice,
+        error: const CloudTtsException(
+          CloudTtsFailure.noVoice,
           'No voice for language el',
         ),
       ),
@@ -210,8 +214,8 @@ void main() {
     final player = FakeTtsAudioPlayer();
     addTearDown(player.dispose);
     final cloud = FakeCloudSpeechSynthesizer(
-      error: const VoxtralTtsException(
-        VoxtralTtsFailure.noVoice,
+      error: const CloudTtsException(
+        CloudTtsFailure.noVoice,
         'No voice for language el',
       ),
     );
@@ -237,8 +241,8 @@ void main() {
     final logger = await mockLogger();
     final h = harness(
       cloud: FakeCloudSpeechSynthesizer(
-        error: const VoxtralTtsException(
-          VoxtralTtsFailure.rejected,
+        error: const CloudTtsException(
+          CloudTtsFailure.rejected,
           'Request rejected by the Mistral API',
           statusCode: 422,
         ),
@@ -916,7 +920,7 @@ void main() {
       await pumpEventQueue();
       h.container
           .read(ttsSettingsControllerProvider.notifier)
-          .setCloudVoice('de', 'v-de-2');
+          .setCloudVoice(_mistral, 'de', 'v-de-2');
       await speak();
       expect(cloud.calls, hasLength(2));
     });

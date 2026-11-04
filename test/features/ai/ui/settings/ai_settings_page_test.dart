@@ -1718,6 +1718,12 @@ void main() {
         // Ollama, then tap Continue to pop the result.
         await tester.tap(find.text(messages.aiProviderOllamaName));
         await tester.pump();
+        // The list of every provider type is taller than the test
+        // surface, so Continue sits below it: scroll it into view.
+        await tester.ensureVisible(
+          find.text(messages.aiPickProviderContinueButton),
+        );
+        await tester.pump();
         await tester.tap(find.text(messages.aiPickProviderContinueButton));
         // Drain the pop + the subsequent navigateToCreateProvider push.
         await tester.pump();

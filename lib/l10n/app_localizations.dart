@@ -4056,6 +4056,12 @@ abstract class AppLocalizations {
   /// **'Not set'**
   String get aiProviderDetailValueUnset;
 
+  /// No description provided for @aiProviderElevenLabsName.
+  ///
+  /// In en, this message translates to:
+  /// **'ElevenLabs'**
+  String get aiProviderElevenLabsName;
+
   /// No description provided for @aiProviderGeminiName.
   ///
   /// In en, this message translates to:
@@ -4127,6 +4133,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Claude family · long context'**
   String get aiProviderTaglineAnthropic;
+
+  /// No description provided for @aiProviderTaglineElevenLabs.
+  ///
+  /// In en, this message translates to:
+  /// **'Natural voices for reading aloud'**
+  String get aiProviderTaglineElevenLabs;
 
   /// No description provided for @aiProviderTaglineGemini.
   ///

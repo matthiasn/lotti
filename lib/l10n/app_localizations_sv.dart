@@ -2389,6 +2389,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get aiProviderDetailValueUnset => 'Inte inställt';
 
   @override
+  String get aiProviderElevenLabsName => 'ElevenLabs';
+
+  @override
   String get aiProviderGeminiName => 'Googla Gemini';
 
   @override
@@ -2424,6 +2427,9 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get aiProviderTaglineAnthropic => 'Familjen Claude · Lång kontext';
+
+  @override
+  String get aiProviderTaglineElevenLabs => 'Naturliga röster för uppläsning';
 
   @override
   String get aiProviderTaglineGemini => 'Multimodal · Ljudtranskription';

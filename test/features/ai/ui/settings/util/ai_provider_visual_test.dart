@@ -188,6 +188,13 @@ void main() {
       );
       expect(
         aiProviderDisplayName(
+          type: InferenceProviderType.elevenLabs,
+          messages: messages,
+        ),
+        equals('ElevenLabs'),
+      );
+      expect(
+        aiProviderDisplayName(
           type: InferenceProviderType.ollama,
           messages: messages,
         ),
@@ -215,6 +222,7 @@ void main() {
           InferenceProviderType.omlx,
           InferenceProviderType.melious,
           InferenceProviderType.alibaba,
+          InferenceProviderType.elevenLabs,
         };
         for (final type in InferenceProviderType.values) {
           final tagline = aiProviderTagline(type: type, messages: messages);
@@ -262,10 +270,11 @@ void main() {
         aiProviderIcon(InferenceProviderType.melious),
         aiProviderIcon(InferenceProviderType.mistral),
         aiProviderIcon(InferenceProviderType.alibaba),
+        aiProviderIcon(InferenceProviderType.elevenLabs),
       };
       expect(
         icons.length,
-        equals(8),
+        equals(9),
         reason: 'Each named provider should have a distinct icon glyph',
       );
     });
@@ -329,6 +338,10 @@ void main() {
         expect(
           aiProviderKeyConsoleUrl(InferenceProviderType.melious),
           equals('melious.ai'),
+        );
+        expect(
+          aiProviderKeyConsoleUrl(InferenceProviderType.elevenLabs),
+          equals('elevenlabs.io'),
         );
         expect(
           aiProviderKeyConsoleUrl(InferenceProviderType.mistral),

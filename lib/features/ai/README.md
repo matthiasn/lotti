@@ -14,6 +14,8 @@ one.
   Mistral, Melious, Alibaba) and local ones (Ollama, oMLX, Whisper, Voxtral)
   are set up the same way. Connecting a provider automatically offers a matching
   ready-made setup, so nobody has to assemble one model slot at a time.
+  ElevenLabs connects the same way but only speaks: its voices fill a profile's
+  *Read aloud* slot.
 - **Transcribes voice notes**, using a cloud service, a local server, or
   downloaded sherpa-onnx speech models running directly on the device.
 - **Summarises a recording in three depths** — a one-line label, a short TLDR,

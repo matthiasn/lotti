@@ -182,12 +182,12 @@ class FakeCloudSpeechSynthesizer implements CloudSpeechSynthesizer {
   Future<File?> synthesizeToFile({
     required TtsCloudRoute route,
     required String text,
-    required Map<String, String> voiceByLanguage,
+    required Map<String, String> chosenVoices,
     required Future<bool> Function() canSend,
   }) async {
     await catalogLoaded;
     final sent = await canSend();
-    calls.add((route: route, text: text, voices: voiceByLanguage, sent: sent));
+    calls.add((route: route, text: text, voices: chosenVoices, sent: sent));
     if (!sent) return null;
     if (error case final error?) throw error;
     return output ?? (throw StateError('no cloud output configured'));

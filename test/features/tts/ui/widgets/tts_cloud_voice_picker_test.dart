@@ -6,8 +6,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/features/design_system/components/buttons/ds_segmented_toggle.dart';
 import 'package:lotti/features/tts/cloud/cloud_speech_synthesizer.dart';
-import 'package:lotti/features/tts/cloud/voxtral_voice_catalog.dart';
+import 'package:lotti/features/tts/cloud/cloud_voice_catalog.dart';
 import 'package:lotti/features/tts/model/tts_settings.dart';
+import 'package:lotti/features/tts/state/cloud_voice_settings_providers.dart';
 import 'package:lotti/features/tts/state/tts_audio_player.dart';
 import 'package:lotti/features/tts/state/tts_engine_provider.dart';
 import 'package:lotti/features/tts/state/tts_playback_controller.dart';
@@ -32,26 +33,26 @@ void main() {
 
   /// [female] female and [male] male English voices; the first female is
   /// the default. Every third voice carries mood tags.
-  VoxtralVoiceCatalog catalogOf({int female = 2, int male = 1}) =>
-      VoxtralVoiceCatalog(
+  CloudVoiceCatalog catalogOf({int female = 2, int male = 1}) =>
+      CloudVoiceCatalog(
         fetchedAt: DateTime.utc(2026, 10, 27),
         voices: [
           for (var i = 0; i < female; i++)
-            VoxtralVoice(
+            CloudVoice(
               id: 'f$i',
               name: 'Female voice $i',
               gender: 'female',
               languages: const ['en_us'],
               tags: i == 1 ? const ['sunny', 'easygoing'] : const [],
-              type: VoxtralVoiceType.preset,
+              type: CloudVoiceType.preset,
             ),
           for (var i = 0; i < male; i++)
-            VoxtralVoice(
+            CloudVoice(
               id: 'm$i',
               name: 'Male voice $i',
               gender: 'male',
               languages: const ['en_us'],
-              type: VoxtralVoiceType.preset,
+              type: CloudVoiceType.preset,
             ),
         ],
       );
@@ -70,8 +71,9 @@ void main() {
 
   Future<void> pump(
     WidgetTester tester,
-    VoxtralVoiceCatalog catalog, {
+    CloudVoiceCatalog catalog, {
     Map<String, String> stored = const {},
+    CloudVoiceService? on,
   }) async {
     when(() => mocks.settingsDb.itemsByKeys(any())).thenAnswer(
       (_) async => {ttsCloudVoicesKey: jsonEncode(stored)},
@@ -96,7 +98,7 @@ void main() {
             }
             return SingleChildScrollView(
               child: CloudVoicePicker(
-                service: service,
+                service: on ?? service,
                 catalog: catalog,
                 language: 'en',
               ),
@@ -266,11 +268,11 @@ void main() {
     final base = catalogOf(female: 5, male: 5);
     await pump(
       tester,
-      VoxtralVoiceCatalog(
+      CloudVoiceCatalog(
         fetchedAt: base.fetchedAt,
         voices: [
           ...base.voices,
-          const VoxtralVoice(
+          const CloudVoice(
             id: 'n0',
             name: 'Unlabelled voice',
             languages: ['en_us'],
@@ -293,6 +295,47 @@ void main() {
     await tester.pump();
 
     expect(picks(), isEmpty);
+  });
+
+  testWidgets('an ElevenLabs sheet reads and writes its own pick, and leaves '
+      "Mistral's for the language alone", (tester) async {
+    await pump(
+      tester,
+      catalogOf(),
+      stored: {'en': 'm0'},
+      on: (
+        provider: testInferenceProvider(
+          id: 'eleven',
+          inferenceProviderType: InferenceProviderType.elevenLabs,
+        ),
+        model: testAiModel(
+          id: 'eleven-row',
+          providerModelId: 'eleven_multilingual_v2',
+        ),
+      ),
+    );
+
+    // Mistral's pick is not this provider's: the default is in use.
+    bool selected(String title) => tester
+        .widget<TtsVoiceRadioRow>(
+          find.ancestor(
+            of: find.text(title),
+            matching: find.byType(TtsVoiceRadioRow),
+          ),
+        )
+        .selected;
+    expect(selected('Female voice 0'), isTrue);
+    expect(selected('Male voice 0'), isFalse);
+
+    await tester.tap(find.text('Female voice 1'));
+    await tester.pump();
+
+    expect(picks(), {'en': 'm0', 'eleven/en': 'f1'});
+    expect(
+      cloud.calls.single.route.provider.inferenceProviderType,
+      InferenceProviderType.elevenLabs,
+    );
+    await tester.pumpAndSettle();
   });
 
   testWidgets('the pick the sheet opened with stays pinned while others are '

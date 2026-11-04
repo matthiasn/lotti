@@ -18,6 +18,7 @@ abstract final class ProviderConfig {
   static const Map<InferenceProviderType, String> defaultBaseUrls = {
     InferenceProviderType.alibaba:
         'https://dashscope-intl.aliyuncs.com/compatible-mode/v1',
+    InferenceProviderType.elevenLabs: 'https://api.elevenlabs.io/v1',
     InferenceProviderType.gemini:
         'https://generativelanguage.googleapis.com/v1beta/openai',
     InferenceProviderType.genericOpenAi: 'http://localhost:8002/v1',
@@ -39,6 +40,7 @@ abstract final class ProviderConfig {
   /// These names are displayed in the UI when creating or editing provider configurations.
   static const Map<InferenceProviderType, String> defaultNames = {
     InferenceProviderType.alibaba: 'Alibaba Cloud (Qwen)',
+    InferenceProviderType.elevenLabs: 'ElevenLabs',
     InferenceProviderType.gemini: 'Gemini',
     InferenceProviderType.genericOpenAi: 'AI Proxy (local)',
     InferenceProviderType.melious: 'Melious.ai',

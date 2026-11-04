@@ -85,6 +85,7 @@ String? publisherForCuratedModel(String providerModelId) {
   if (id.contains('claude')) return 'Anthropic';
   if (id.contains('minimax')) return 'MiniMax';
   if (id.contains('flux')) return 'Black Forest Labs';
+  if (modelId.startsWith('eleven_')) return 'ElevenLabs';
   if (id.contains('whisper') ||
       modelId.startsWith('gpt-') ||
       modelId.startsWith('o1') ||
@@ -107,6 +108,7 @@ final Map<InferenceProviderType, List<KnownModel>> knownModelsByProvider = {
   InferenceProviderType.ollama: ollamaModels,
   InferenceProviderType.openAi: openaiModels,
   InferenceProviderType.anthropic: anthropicModels,
+  InferenceProviderType.elevenLabs: elevenLabsModels,
   InferenceProviderType.openRouter: openRouterModels,
   InferenceProviderType.whisper: whisperModels,
   InferenceProviderType.voxtral: voxtralModels,
@@ -183,6 +185,14 @@ const String mistralVoxtralMiniTranscribe3ModelId =
 /// The Mistral profile's read-aloud model. Mistral documents no `-latest`
 /// alias for it, so the release id is pinned.
 const String mistralVoxtralTtsModelId = 'voxtral-mini-tts-3-0';
+
+/// ElevenLabs' read-aloud models: the API's default, the most natural of the
+/// stable ones, and the low-latency one at half the price. `eleven_v3` is not
+/// curated: it takes a few thousand characters per request, and a long report
+/// is sent whole, so it would fail where these two (10k and 40k) do not. It
+/// can still be added by hand.
+const String elevenLabsMultilingualV2ModelId = 'eleven_multilingual_v2';
+const String elevenLabsFlashV25ModelId = 'eleven_flash_v2_5';
 
 /// Whether [providerModelId] identifies Mistral's dedicated OCR endpoint.
 bool isMistralOcrModelId(String providerModelId) =>

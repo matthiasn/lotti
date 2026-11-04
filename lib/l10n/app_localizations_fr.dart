@@ -2413,6 +2413,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get aiProviderDetailValueUnset => 'Non défini';
 
   @override
+  String get aiProviderElevenLabsName => 'ElevenLabs';
+
+  @override
   String get aiProviderGeminiName => 'Google Gemini';
 
   @override
@@ -2448,6 +2451,10 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get aiProviderTaglineAnthropic => 'Famille Claude · contexte long';
+
+  @override
+  String get aiProviderTaglineElevenLabs =>
+      'Des voix naturelles pour la lecture à voix haute';
 
   @override
   String get aiProviderTaglineGemini => 'Multimodal · transcription audio';

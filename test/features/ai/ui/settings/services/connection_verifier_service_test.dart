@@ -696,6 +696,7 @@ void main() {
 
     const whitespaceAtoms = ['', ' ', '  ', '\t', '\n', '\r', ' \t '];
     const cloudTypes = [
+      InferenceProviderType.elevenLabs,
       InferenceProviderType.gemini,
       InferenceProviderType.melious,
       InferenceProviderType.openAi,
@@ -734,6 +735,169 @@ void main() {
   });
 
   group('Per-provider probe — endpoint + auth shape', () {
+    test('ElevenLabs probe sends the key as `xi-api-key` to '
+        '`<baseUrl>/models` and counts the models it lists', () async {
+      http.BaseRequest? captured;
+      final container = _makeContainer(
+        client: MockClient((req) async {
+          captured = req;
+          return http.Response(
+            jsonEncode([
+              {'model_id': 'eleven_multilingual_v2'},
+              {'model_id': 'eleven_flash_v2_5'},
+            ]),
+            200,
+          );
+        }),
+      );
+      addTearDown(container.dispose);
+      await container
+          .read(
+            connectionVerifierControllerProvider(
+              InferenceProviderType.elevenLabs,
+            ).notifier,
+          )
+          .verify(baseUrl: '', apiKey: ' xi-key ');
+
+      expect(captured!.url.toString(), 'https://api.elevenlabs.io/v1/models');
+      expect(captured!.headers['xi-api-key'], 'xi-key');
+      expect(captured!.headers.containsKey('Authorization'), isFalse);
+      final state = _readState(container, InferenceProviderType.elevenLabs);
+      expect(
+        state,
+        isA<ConnectionCheckVerified>().having(
+          (s) => s.modelCount,
+          'modelCount',
+          2,
+        ),
+      );
+    });
+
+    test('ElevenLabs probe reports a rejected key with its status', () async {
+      final container = _makeContainer(
+        client: MockClient(
+          (_) async => http.Response(
+            jsonEncode({
+              'detail': {'status': 'invalid_api_key', 'message': 'Invalid'},
+            }),
+            401,
+          ),
+        ),
+      );
+      addTearDown(container.dispose);
+      await container
+          .read(
+            connectionVerifierControllerProvider(
+              InferenceProviderType.elevenLabs,
+            ).notifier,
+          )
+          .verify(baseUrl: 'https://api.elevenlabs.io/v1/', apiKey: 'bad');
+
+      expect(
+        _readState(container, InferenceProviderType.elevenLabs),
+        isA<ConnectionCheckFailedHttp>().having((s) => s.status, 'status', 401),
+      );
+    });
+
+    test('ElevenLabs probe never sends the key over plain HTTP to another '
+        'host, but still reaches loopback', () async {
+      final sent = <Uri>[];
+      final container = _makeContainer(
+        client: MockClient((req) async {
+          sent.add(req.url);
+          return http.Response('[]', 200);
+        }),
+      );
+      addTearDown(container.dispose);
+      final notifier = container.read(
+        connectionVerifierControllerProvider(
+          InferenceProviderType.elevenLabs,
+        ).notifier,
+      );
+
+      await notifier.verify(
+        baseUrl: 'http://api.elevenlabs.io/v1',
+        apiKey: 'xi-key',
+      );
+      expect(sent, isEmpty);
+      expect(
+        _readState(container, InferenceProviderType.elevenLabs),
+        isA<ConnectionCheckFailedNetwork>().having(
+          (s) => s.code,
+          'code',
+          ConnectionFailureCode.invalidBaseUrl,
+        ),
+      );
+
+      for (final local in [
+        'http://localhost:9000/v1',
+        'http://127.0.0.1:9000/v1',
+      ]) {
+        await notifier.verify(baseUrl: local, apiKey: 'xi-key');
+      }
+      expect(sent.map((u) => u.host), ['localhost', '127.0.0.1']);
+      expect(
+        _readState(container, InferenceProviderType.elevenLabs),
+        isA<ConnectionCheckVerified>(),
+      );
+    });
+
+    test('ElevenLabs probe follows no redirect, so the key never travels '
+        'on to another host', () async {
+      final requests = <http.BaseRequest>[];
+      final container = _makeContainer(
+        client: MockClient((req) async {
+          requests.add(req);
+          return http.Response(
+            '',
+            302,
+            headers: {'location': 'http://elsewhere.test/models'},
+          );
+        }),
+      );
+      addTearDown(container.dispose);
+      await container
+          .read(
+            connectionVerifierControllerProvider(
+              InferenceProviderType.elevenLabs,
+            ).notifier,
+          )
+          .verify(baseUrl: '', apiKey: 'xi-key');
+
+      expect(requests.single.followRedirects, isFalse);
+      expect(
+        _readState(container, InferenceProviderType.elevenLabs),
+        isA<ConnectionCheckFailedHttp>().having((s) => s.status, 'status', 302),
+      );
+    });
+
+    test(
+      'ElevenLabs probe rejects an object body: its API answers with a list, '
+      'and voice loading would fail on anything else',
+      () async {
+        final container = _makeContainer(
+          client: MockClient((_) async => http.Response('{"models": []}', 200)),
+        );
+        addTearDown(container.dispose);
+        await container
+            .read(
+              connectionVerifierControllerProvider(
+                InferenceProviderType.elevenLabs,
+              ).notifier,
+            )
+            .verify(baseUrl: '', apiKey: 'xi-key');
+
+        expect(
+          _readState(container, InferenceProviderType.elevenLabs),
+          isA<ConnectionCheckFailedNetwork>().having(
+            (s) => s.code,
+            'code',
+            ConnectionFailureCode.badResponseShape,
+          ),
+        );
+      },
+    );
+
     test(
       'Gemini probe routes through the OpenAI-compat shape (Bearer auth on '
       "`<baseUrl>/models`) — Gemini's app-configured base URL is its "

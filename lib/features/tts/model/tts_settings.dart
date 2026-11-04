@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/features/tts/model/tts_model_option.dart';
 import 'package:lotti/features/tts/model/tts_voice.dart';
 
@@ -8,6 +9,19 @@ const String ttsModelIdKey = 'TTS_MODEL_ID';
 const String ttsSpeedKey = 'TTS_SPEED';
 const String ttsAutoPrepareChatAudioKey = 'TTS_AUTO_PREPARE_CHAT_AUDIO';
 const String ttsCloudVoicesKey = 'TTS_CLOUD_VOICES';
+
+/// The key [TtsSettings.cloudVoiceByLanguage] holds the voice chosen for
+/// [language] on [provider] under: the bare language for a Mistral provider —
+/// the format from before a second provider type spoke, so those choices
+/// stay — and `<providerId>/<language>` for every other provider, so a voice
+/// from one account's catalog (a cloned voice, say) never stands in for
+/// another account's, of the same type or not.
+String cloudVoiceChoiceKey(
+  AiConfigInferenceProvider provider,
+  String language,
+) => provider.inferenceProviderType == InferenceProviderType.mistral
+    ? language
+    : '${provider.id}/$language';
 
 /// Playback speed bounds and default, matching the recordings audio player's
 /// range so the two players feel consistent.
@@ -51,9 +65,15 @@ class TtsSettings {
   /// Opt-in preparation of published chat replies; never starts playback.
   final bool autoPrepareChatAudio;
 
-  /// The cloud voice chosen per language, keyed by primary language subtag
-  /// (`de`). A language without an entry speaks with its default voice.
+  /// The cloud voice chosen per provider and language, keyed by
+  /// [cloudVoiceChoiceKey] over the primary language subtag (`de` for
+  /// Mistral, `<providerId>/de` otherwise). A language without an entry
+  /// speaks with its default voice.
   final Map<String, String> cloudVoiceByLanguage;
+
+  /// The voice chosen for [language] on [provider], or `null`.
+  String? cloudVoiceFor(AiConfigInferenceProvider provider, String language) =>
+      cloudVoiceByLanguage[cloudVoiceChoiceKey(provider, language)];
 
   /// Clamps an arbitrary speed into the supported range.
   static double clampSpeed(double value) =>

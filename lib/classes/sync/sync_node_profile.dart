@@ -34,6 +34,7 @@ NodeCapability? nodeCapabilityFromProviderType(
       return NodeCapability.whisper;
     case InferenceProviderType.alibaba:
     case InferenceProviderType.anthropic:
+    case InferenceProviderType.elevenLabs:
     case InferenceProviderType.gemini:
     case InferenceProviderType.genericOpenAi:
     case InferenceProviderType.melious:

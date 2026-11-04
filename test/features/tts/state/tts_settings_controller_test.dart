@@ -1,11 +1,22 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/features/tts/model/tts_settings.dart';
 import 'package:lotti/features/tts/state/tts_settings_controller.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/service_overrides.dart';
 import '../../../widget_test_utils.dart';
+import '../../agents/test_data/ai_config_factories.dart';
+
+final AiConfigInferenceProvider _mistral = testInferenceProvider(
+  id: 'mistral',
+  inferenceProviderType: InferenceProviderType.mistral,
+);
+final AiConfigInferenceProvider _eleven = testInferenceProvider(
+  id: 'eleven',
+  inferenceProviderType: InferenceProviderType.elevenLabs,
+);
 
 void main() {
   late TestGetItMocks mocks;
@@ -124,13 +135,13 @@ void main() {
       'choice', () async {
     final container = makeContainer();
     final controller = container.read(ttsSettingsControllerProvider.notifier)
-      ..setCloudVoice('de', 'v-de-2')
-      ..setCloudVoice('en', 'v-en-1');
+      ..setCloudVoice(_mistral, 'de', 'v-de-2')
+      ..setCloudVoice(_mistral, 'en', 'v-en-1');
     expect(
       container.read(ttsSettingsControllerProvider).cloudVoiceByLanguage,
       {'de': 'v-de-2', 'en': 'v-en-1'},
     );
-    controller.setCloudVoice('de', null);
+    controller.setCloudVoice(_mistral, 'de', null);
     expect(
       container.read(ttsSettingsControllerProvider).cloudVoiceByLanguage,
       {'en': 'v-en-1'},
@@ -152,6 +163,48 @@ void main() {
     ]);
   });
 
+  test("each provider type keeps its own choice: ElevenLabs' never "
+      "replaces Mistral's for the same language", () {
+    final container = makeContainer();
+    final controller = container.read(ttsSettingsControllerProvider.notifier)
+      ..setCloudVoice(_mistral, 'de', 'mistral-voice')
+      ..setCloudVoice(_eleven, 'de', 'eleven-voice');
+    final settings = container.read(ttsSettingsControllerProvider);
+    expect(settings.cloudVoiceByLanguage, {
+      'de': 'mistral-voice',
+      'eleven/de': 'eleven-voice',
+    });
+    expect(
+      settings.cloudVoiceFor(_mistral, 'de'),
+      'mistral-voice',
+    );
+    expect(
+      settings.cloudVoiceFor(_eleven, 'de'),
+      'eleven-voice',
+    );
+
+    controller.setCloudVoice(_eleven, 'de', null);
+    expect(
+      container.read(ttsSettingsControllerProvider).cloudVoiceByLanguage,
+      {'de': 'mistral-voice'},
+    );
+  });
+
+  test('two accounts of one provider type keep their own choices', () {
+    final work = testInferenceProvider(
+      id: 'eleven-work',
+      inferenceProviderType: InferenceProviderType.elevenLabs,
+    );
+    final container = makeContainer();
+    container.read(ttsSettingsControllerProvider.notifier)
+      ..setCloudVoice(_eleven, 'en', 'my-clone')
+      ..setCloudVoice(work, 'en', 'work-clone');
+    final settings = container.read(ttsSettingsControllerProvider);
+
+    expect(settings.cloudVoiceFor(_eleven, 'en'), 'my-clone');
+    expect(settings.cloudVoiceFor(work, 'en'), 'work-clone');
+  });
+
   test('a failed cloud-voice save keeps the choice and later saves', () async {
     var calls = 0;
     when(
@@ -162,8 +215,8 @@ void main() {
     });
     final container = makeContainer();
     container.read(ttsSettingsControllerProvider.notifier)
-      ..setCloudVoice('de', 'v-de-1')
-      ..setCloudVoice('de', 'v-de-2');
+      ..setCloudVoice(_mistral, 'de', 'v-de-1')
+      ..setCloudVoice(_mistral, 'de', 'v-de-2');
     await pumpEventQueue();
     expect(
       container.read(ttsSettingsControllerProvider).cloudVoiceByLanguage,

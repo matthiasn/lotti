@@ -25,6 +25,7 @@ void main() {
         );
         // Remaining advanced types are the advanced types appended alphabetically.
         expect(types.skip(AiPickProviderModal.defaultTiles.length).toList(), [
+          InferenceProviderType.elevenLabs,
           InferenceProviderType.genericOpenAi,
           InferenceProviderType.nebiusAiStudio,
           InferenceProviderType.openRouter,

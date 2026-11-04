@@ -10,11 +10,14 @@ part 'ai_config.g.dart';
 ///
 /// Drives request shaping (auth, base URL defaults, payload quirks), the
 /// provider picker chrome, and FTUE presets. Most entries are OpenAI-compatible
-/// cloud APIs; [ollama] and [omlx] connect to local services. The value is
-/// persisted as the enum name, so order can change freely but names must not.
+/// cloud APIs; [ollama] and [omlx] connect to local services, and
+/// [elevenLabs] only speaks — its models fill a profile's read-aloud slot.
+/// The value is persisted as the enum name, so order can change freely but
+/// names must not.
 enum InferenceProviderType {
   alibaba,
   anthropic,
+  elevenLabs,
   gemini,
   genericOpenAi,
   melious,

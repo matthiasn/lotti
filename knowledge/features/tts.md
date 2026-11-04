@@ -3,27 +3,39 @@ type: Feature Module
 title: Text-to-speech
 description: Speech for task summaries, goal reports and query answers — the on-device Supertonic voice, or the cloud voice a profile's read-aloud slot names — with cancellable preparation and temporary audio cleanup.
 resource: ../../lib/features/tts
-tags: [tts, onnx, on-device, cloud, voxtral, ios, macos]
+tags: [tts, onnx, on-device, cloud, voxtral, elevenlabs, ios, macos]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-11-01T12:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-11-04T12:00:00Z }
 stale_after: 2027-04-26
 sources:
   - id: src
     resource: ../../lib/features/tts
     title: Text-to-speech source
-    last_modified: 2026-11-01
+    last_modified: 2026-11-04
   - id: cloud-route
     resource: ../../lib/features/tts/cloud/tts_cloud_route.dart
     title: The cloud route a profile's read-aloud slot names
-    last_modified: 2026-10-30
+    last_modified: 2026-11-04
+  - id: cloud-tts-http
+    resource: ../../lib/features/tts/cloud/cloud_tts_http.dart
+    title: The HTTP transport and typed failures every speech client shares
+    last_modified: 2026-11-04
   - id: voxtral-service
     resource: ../../lib/features/tts/cloud/voxtral_tts_service.dart
     title: Voxtral speech and voice-catalog client
-    last_modified: 2026-10-30
+    last_modified: 2026-11-04
+  - id: elevenlabs-service
+    resource: ../../lib/features/tts/cloud/elevenlabs_tts_service.dart
+    title: ElevenLabs speech and voice-catalog client
+    last_modified: 2026-11-04
+  - id: voice-catalog-repository
+    resource: ../../lib/features/tts/cloud/cloud_voice_catalog_repository.dart
+    title: The device cache of each provider's voice catalog
+    last_modified: 2026-11-04
   - id: voice-catalog
-    resource: ../../lib/features/tts/cloud/voxtral_voice_catalog.dart
+    resource: ../../lib/features/tts/cloud/cloud_voice_catalog.dart
     title: Voice catalog and per-language voice resolution
-    last_modified: 2026-10-30
+    last_modified: 2026-11-04
   - id: cloud-voices-section
     resource: ../../lib/features/tts/ui/widgets/tts_cloud_voices_section.dart
     title: The Cloud voices section of Speech settings
@@ -73,7 +85,9 @@ together with the text's language:
 | Onboarding companion | none: she speaks unasked, so only the on-device voice | — |
 
 `fromProfile` returns a route only for a provider with a speech client here —
-Mistral (Voxtral TTS) today; another provider joins by adding its case. Every
+`cloudSpeechProviderTypes`: Mistral (Voxtral TTS) and ElevenLabs. Another
+provider joins by adding its type there and its `CloudTtsClient` to
+`cloudTtsClientsProvider`. Every
 other outcome, including an empty slot or one that no longer resolves, is the
 on-device voice. The on-device voice is never replaced silently by a cloud one,
 and a cloud voice never falls back to sending the text somewhere else.
@@ -84,9 +98,9 @@ flowchart TD
   Profile -->|no, or it did not resolve| Local["On-device Supertonic voice"]
   Profile -->|yes| Client{"Provider has a speech client?"}
   Client -->|no| Local
-  Client -->|Mistral| Cloud["TtsCloudRoute: Voxtral TTS in the text's language"]
+  Client -->|Mistral or ElevenLabs| Cloud["TtsCloudRoute: the provider's voice in the text's language"]
   Cloud --> Voice{"Voice for the language?"}
-  Voice -->|user's choice, else first female preset, else any| Speak["POST /v1/audio/speech → temporary WAV"]
+  Voice -->|user's choice, else first female preset, else any| Speak["provider's speech endpoint → temporary WAV"]
   Voice -->|none, on-device voice supported| Local
   Voice -->|none, no on-device voice| NoVoice["error: noVoice — nothing sent"]
   Local --> Play["Shared playback, cancellation and cleanup"]
@@ -99,39 +113,71 @@ supported **or** a cloud route exists.
 
 # Cloud voices
 
-`VoxtralTtsService` is the client: `synthesize` posts `model`, `input`,
-`voice_id` and `response_format: wav` to the provider's `audio/speech` and
-decodes the base64 `audio_data`; `fetchVoices` pages `audio/voices` with
-`type=all` at `limit=100` — the API's maximum, a larger page is a 422. The
-provider's base URL and API key come from its inference provider config on
-every call. Failures are typed (`VoxtralTtsFailure`: network, timeout,
-unauthorized, rate limited with `Retry-After`, rejected, server, invalid
-response, no voice) with `isRetryable`. A non-200 answer also keeps the
-server's own reason (`apiError`: its `message`, or each validation detail as
-`loc: msg`, so a 422 names the field) and its request id. Every failure is
-logged with the call it ended — endpoint, text length, voice, model, format
-or catalog page. Its logs carry text lengths, voice and model ids and byte
-counts — never the text, the key, or the raw response body: a validation
-detail's `input` is dropped because it echoes the rejected value, and a body
-that is not JSON is not kept at all. Failures the client does not log itself —
-a missing voice, the on-device engine, the player — are logged by
-`TtsPlaybackController` before it turns to the error state the toast reports.
-It refuses redirects, which would carry the bearer token to another host, and
-plain HTTP anywhere but loopback.
+Each speaking provider has a `CloudTtsClient` — `synthesize` returns a WAV,
+`fetchVoices` a `CloudVoiceCatalog` for a model — and `cloudTtsClientsProvider`
+holds one per type in `cloudSpeechProviderTypes`. The provider's base URL and
+API key come from its inference provider config on every call.
+
+- **`VoxtralTtsService` (Mistral)** posts `model`, `input`, `voice_id` and
+  `response_format: wav` to `audio/speech` with a bearer token and decodes the
+  base64 `audio_data`; `fetchVoices` pages `audio/voices` with `type=all` at
+  `limit=100` — the API's maximum, a larger page is a 422. The catalog is the
+  account's, whatever the model.
+- **`ElevenLabsTtsService`** authenticates with the `xi-api-key` header.
+  `synthesize` posts `text` and `model_id` to
+  `text-to-speech/{voice_id}?output_format=wav_24000` and checks the answer
+  is RIFF/WAVE audio — 24 kHz WAV is on every plan, 44.1 kHz needs Pro. No
+  `language_code` is sent: `eleven_multilingual_v2` does not take it, and the
+  multilingual models read the language from the text. `fetchVoices` reads
+  `GET models` for the languages the model speaks, then `GET voices` (premade,
+  cloned and saved voices in one list). Every ElevenLabs voice speaks every
+  language of a multilingual model, so each is offered for all of them — the
+  per-language choice below works exactly as for Mistral. A model the list
+  does not name falls back to each voice's `verified_languages`. Its labels
+  become the voice's `gender` and `tags` (accent, character, age, use case);
+  `category: premade` is a preset, any other category a custom voice.
+
+Both run on `CloudTtsHttp`, the shared transport. Failures are typed
+(`CloudTtsFailure`: network, timeout, unauthorized, rate limited with
+`Retry-After`, rejected, server, invalid response, no voice) with
+`isRetryable`; ElevenLabs answers a used-up quota with a 401, so it reads as
+unauthorized with the server's reason attached. A non-200 answer also keeps
+the server's own reason (`apiError`: its `message`, ElevenLabs'
+`detail.message`, or each validation detail as `loc: msg`, so a 422 names the
+field) and its request id. Every failure is logged with the call it ended —
+endpoint, text length, voice, model, format or catalog page. Its logs carry
+text lengths, voice and model ids and byte counts — never the text, the key,
+or the raw response body: a validation detail's `input` is dropped because it
+echoes the rejected value, and a body that is not JSON is not kept at all.
+Failures the client does not log itself — a missing voice, the on-device
+engine, the player — are logged by `TtsPlaybackController` before it turns to
+the error state the toast reports. It refuses redirects, which would carry the
+credential to another host, and plain HTTP anywhere but loopback.
 
 `CloudSpeechSynthesizer` turns a route and a text into the same temporary WAV
 the on-device engine writes, so everything after synthesis — playback,
 `canPlay`, stop, deletion — is the path described below.
 
-**Voices.** `VoxtralVoiceCatalogRepository` caches each provider's catalog in
-`SettingsDb` (`TTS_VOXTRAL_VOICES_<providerId>`), device-locally like the
-provider's credentials. A cached catalog younger than a day answers without a
+**Voices.** `CloudVoiceCatalogRepository` caches each catalog in `SettingsDb`,
+device-locally like the provider's credentials: per provider for Mistral
+(`TTS_VOXTRAL_VOICES_<providerId>`), per provider and model for ElevenLabs
+(`TTS_ELEVENLABS_VOICES_<providerId>/<modelId>`), whose voices' languages are
+the model's. A cached catalog younger than a day answers without a
 request; an older one is refreshed and kept if the refresh fails, so voices
-still resolve offline. `VoxtralVoiceCatalog.resolve` picks the voice for a
+still resolve offline. Each cache records the account it was fetched for —
+`accountFingerprint`, the first 16 hex digits of the SHA-256 of base URL and
+key, never either itself. A provider edited to another account or base URL
+never answers from the old account's voices, fresh or offline; a cache
+written before accounts were recorded is refreshed at once and answers only
+when that refresh fails. `CloudVoiceCatalog.resolve` picks the voice for a
 language: the user's choice for that language while the catalog still has it
 (`TtsSettings.cloudVoiceByLanguage`, `TTS_CLOUD_VOICES`), else the language's
-first female preset, else its first voice. The API has no voice-per-language
-default of its own. A language with no voice raises `noVoice` before any
+first female preset, else its first voice. No provider names a voice per
+language, so this default is ours. Choices are kept per provider
+(`cloudVoiceChoiceKey`): Mistral's under the bare language — the format from
+before a second provider type spoke, so earlier picks stay — every other
+provider's under `<providerId>/<language>`, so a voice of one account (a
+cloned voice, say) never stands in for another's, of the same type or not. A language with no voice raises `noVoice` before any
 text is sent, rather than reading German in an English voice; where the
 device has the on-device voice, which infers the language from the text,
 `TtsPlaybackController` speaks with it instead, and only a device without one
@@ -139,8 +185,11 @@ ends in the error. Each voice
 keeps the API's mood `tags` (cached with it) so voices of one language can
 be told apart before they are heard.
 
-**Speech settings → Cloud voices.** `TtsCloudVoicesSection` lists, per
-provider, the user's own languages — the app's and every language with a
+**Speech settings → Cloud voices.** `cloudVoiceServicesProvider` names one
+service per catalog — per provider for Mistral, per provider and model for
+ElevenLabs, so two profiles on different ElevenLabs models each keep their
+languages; a provider listed twice is captioned with its model.
+`TtsCloudVoicesSection` lists, per service, the user's own languages — the app's and every language with a
 pick — then folds the rest of the catalog behind one "Other languages (N)"
 header, which says how many of them have a choice of voices. Each row names the voice in use, "Your pick" when chosen, and the
 number of voices when there is a choice; its speaker plays the voice in use.
@@ -160,15 +209,27 @@ shows a toast with Undo back to that voice. Previews go through a
 choice and is part of the route's cache key, so a preview never plays as
 another voice. The sentence is `cloudVoiceSample`: the app's own
 `speechSettingsCloudVoiceSample` for a shipped language, a native sentence
-for the other languages Voxtral speaks, else English — every voice can be
+for the other languages Voxtral speaks, else English (also for an
+ElevenLabs language without either) — every voice can be
 heard before it is picked. The on-device voice list and the picker share one
 row, `TtsVoiceRadioRow`.
 
-**Model and speed.** There is one hosted TTS family and no quality or speed
-parameter to tune; the curated model is `voxtral-mini-tts-3-0` (Mistral
-documents no `-latest` alias for it). WAV keeps the uncompressed format's
-lower time to first audio. Speed stays a playback rate, as for the on-device
-voice.
+**Model and speed.** Mistral has one hosted TTS family and no quality or
+speed parameter to tune; the curated model is `voxtral-mini-tts-3-0` (Mistral
+documents no `-latest` alias for it). ElevenLabs' curated models are
+`eleven_multilingual_v2` (its default, the most natural) and
+`eleven_flash_v2_5` (low latency, half the price); an ElevenLabs provider is
+speech-only, so these fill the *Read aloud* slot and nothing else. The text
+goes in one request, unsplit, so `eleven_v3` — a few thousand characters per
+request against their 10k and 40k — is not curated; added by hand, a long
+report read with it is rejected. WAV keeps the uncompressed format's lower
+time to first audio. Speed stays a playback rate, as for the on-device voice,
+so changing it never costs a new request.
+
+**Previews cost characters.** A preview synthesizes the sample sentence
+through the provider, as a read does — on ElevenLabs about 60 characters of
+the plan's quota per voice heard. A sample that played to its end is kept
+like any utterance, so replaying the one just heard sends nothing.
 
 **Catalog classification.** Voxtral ships transcription and TTS models under
 one prefix. `isSpeechSynthesisModelId` (a `tts` segment, separated by `-`, `_`, `.`,

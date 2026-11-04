@@ -151,6 +151,7 @@ class AiPickProviderModal extends StatefulWidget {
   static const List<AiPickProviderTileSpec> allTypesTiles =
       <AiPickProviderTileSpec>[
         ...defaultTiles,
+        AiPickProviderTileSpec(providerType: InferenceProviderType.elevenLabs),
         AiPickProviderTileSpec(
           providerType: InferenceProviderType.genericOpenAi,
         ),

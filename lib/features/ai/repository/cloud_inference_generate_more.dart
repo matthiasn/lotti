@@ -610,6 +610,7 @@ class CloudInferenceGenerateMore {
           impactCollector: impactCollector,
         );
       case InferenceProviderType.anthropic:
+      case InferenceProviderType.elevenLabs:
       case InferenceProviderType.genericOpenAi:
       case InferenceProviderType.mistral:
       case InferenceProviderType.nebiusAiStudio:

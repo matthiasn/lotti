@@ -16,7 +16,8 @@ read-aloud model, and only when the user presses play.
 - **Works offline and privately.** The on-device model needs no cloud service
   and no API key.
 - **Speaks with a profile's cloud voice.** A profile's *Read aloud* slot can
-  name Voxtral TTS on Mistral; summaries, answers, the Day briefing and the
+  name Voxtral TTS on Mistral or a model on ElevenLabs (added under
+  Settings → AI with its API key); summaries, answers, the Day briefing and the
   companion's spoken replies then speak in the text's language with that
   language's voice — the user's pick in Speech settings,
   else its first female voice. Speech settings list the user's own languages
@@ -32,7 +33,7 @@ quality is still being evaluated.
 ## What it owns
 
 The engine interface and its on-device implementation, the model assets, the
-cloud voice client with its cached voice catalog, the per-language voice
+cloud voice clients (Mistral and ElevenLabs) with their cached voice catalogs, the per-language voice
 choices, and the playback wiring for spoken content. Which profile a surface
 uses, and its read-aloud slot, belong to the AI feature.
 

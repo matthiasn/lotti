@@ -7,7 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/tts/cloud/cloud_speech_synthesizer.dart';
-import 'package:lotti/features/tts/cloud/voxtral_voice_catalog.dart';
+import 'package:lotti/features/tts/cloud/cloud_voice_catalog.dart';
 import 'package:lotti/features/tts/model/tts_settings.dart';
 import 'package:lotti/features/tts/state/cloud_voice_settings_providers.dart';
 import 'package:lotti/features/tts/state/tts_audio_player.dart';
@@ -34,21 +34,21 @@ void main() {
     inferenceProviderId: 'mistral',
   );
   // The test locale is English: English is the user's own language.
-  final catalog = VoxtralVoiceCatalog(
+  final catalog = CloudVoiceCatalog(
     fetchedAt: DateTime.utc(2026, 10, 27),
     voices: const [
-      VoxtralVoice(
+      CloudVoice(
         id: 'v-en-f',
         name: 'Ada',
         gender: 'female',
         languages: ['en_us'],
-        type: VoxtralVoiceType.preset,
+        type: CloudVoiceType.preset,
       ),
-      VoxtralVoice(id: 'v-en-m', name: 'Bram', languages: ['en_us']),
-      VoxtralVoice(id: 'v-de', name: 'Heidi', languages: ['de']),
-      VoxtralVoice(id: 'v-ca', name: 'Núria', languages: ['ca']),
-      VoxtralVoice(id: 'v-fr-1', name: 'Amélie', languages: ['fr']),
-      VoxtralVoice(id: 'v-fr-2', name: 'Damien', languages: ['fr']),
+      CloudVoice(id: 'v-en-m', name: 'Bram', languages: ['en_us']),
+      CloudVoice(id: 'v-de', name: 'Heidi', languages: ['de']),
+      CloudVoice(id: 'v-ca', name: 'Núria', languages: ['ca']),
+      CloudVoice(id: 'v-fr-1', name: 'Amélie', languages: ['fr']),
+      CloudVoice(id: 'v-fr-2', name: 'Damien', languages: ['fr']),
     ],
   );
   final services = <CloudVoiceService>[(provider: mistral, model: voiceModel)];
@@ -75,7 +75,7 @@ void main() {
   Future<void> pump(
     WidgetTester tester, {
     List<CloudVoiceService> services = const [],
-    FutureOr<VoxtralVoiceCatalog> Function()? loadCatalog,
+    FutureOr<CloudVoiceCatalog> Function()? loadCatalog,
   }) async {
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
@@ -87,7 +87,7 @@ void main() {
         ),
         overrides: [
           cloudVoiceServicesProvider.overrideWith((ref) async => services),
-          voxtralVoiceCatalogProvider.overrideWith(
+          cloudVoiceCatalogProvider.overrideWith(
             (ref, provider) async => (loadCatalog ?? () => catalog)(),
           ),
           cloudSpeechSynthesizerProvider.overrideWithValue(cloud),
@@ -184,7 +184,7 @@ void main() {
     expect(find.text('French voice'), findsOneWidget);
     container
         .read(ttsSettingsControllerProvider.notifier)
-        .setCloudVoice('fr', 'v-fr-2');
+        .setCloudVoice(mistral, 'fr', 'v-fr-2');
     Navigator.of(tester.element(find.text('French voice'))).pop();
     await tester.pumpAndSettle();
 
@@ -206,6 +206,66 @@ void main() {
     );
   });
 
+  testWidgets('beside Mistral, ElevenLabs lists its own picks: one '
+      "provider's pick for a language never shows on the other's row", (
+    tester,
+  ) async {
+    storePicks({'en': 'v-en-m', 'eleven/de': 'v-de'});
+    final elevenLabs = testInferenceProvider(
+      id: 'eleven',
+      inferenceProviderType: InferenceProviderType.elevenLabs,
+    );
+    await pump(
+      tester,
+      services: [
+        ...services,
+        (
+          provider: elevenLabs,
+          model: testAiModel(
+            id: 'eleven-row',
+            providerModelId: 'eleven_multilingual_v2',
+            inferenceProviderId: 'eleven',
+          ),
+        ),
+      ],
+    );
+    await tester.pumpAndSettle();
+
+    // Mistral: English is the user's pick, German stays among the others.
+    expect(rich('Bram · Your pick'), findsOneWidget);
+    // ElevenLabs: English keeps its default, German joins its own languages.
+    expect(rich('Ada · 2 voices'), findsOneWidget);
+    expect(rich('Heidi · Your pick'), findsOneWidget);
+    expect(find.text('German'), findsOneWidget);
+  });
+
+  testWidgets('one provider with two read-aloud models shows a section '
+      'for each, captioned by its model', (tester) async {
+    final elevenLabs = testInferenceProvider(
+      id: 'eleven',
+      inferenceProviderType: InferenceProviderType.elevenLabs,
+    ).copyWith(name: 'ElevenLabs');
+    AiConfigModel model(String id, String name) => testAiModel(
+      id: id,
+      providerModelId: id,
+      inferenceProviderId: 'eleven',
+    ).copyWith(name: name);
+    await pump(
+      tester,
+      services: [
+        (provider: mistral.copyWith(name: 'Mistral'), model: voiceModel),
+        (provider: elevenLabs, model: model('v2', 'Multilingual v2')),
+        (provider: elevenLabs, model: model('flash', 'Flash v2.5')),
+      ],
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Mistral'), findsOneWidget);
+    expect(find.text('ElevenLabs · Multilingual v2'), findsOneWidget);
+    expect(find.text('ElevenLabs · Flash v2.5'), findsOneWidget);
+    expect(find.text('English'), findsNWidgets(3));
+  });
+
   testWidgets('a sheet that closes on another voice says so, and Undo '
       'restores the voice it opened with', (tester) async {
     await pump(tester, services: services);
@@ -214,7 +274,7 @@ void main() {
     await tester.pumpAndSettle();
     container
         .read(ttsSettingsControllerProvider.notifier)
-        .setCloudVoice('en', 'v-en-m');
+        .setCloudVoice(mistral, 'en', 'v-en-m');
     Navigator.of(tester.element(find.text('English voice'))).pop();
     await tester.pumpAndSettle();
 
@@ -273,11 +333,11 @@ void main() {
 
   testWidgets("with none of the user's languages in the catalog every "
       'language shows, without a disclosure row', (tester) async {
-    final german = VoxtralVoiceCatalog(
+    final german = CloudVoiceCatalog(
       fetchedAt: catalog.fetchedAt,
       voices: const [
-        VoxtralVoice(id: 'v-de', name: 'Heidi', languages: ['de']),
-        VoxtralVoice(id: 'v-ca', name: 'Núria', languages: ['ca']),
+        CloudVoice(id: 'v-de', name: 'Heidi', languages: ['de']),
+        CloudVoice(id: 'v-ca', name: 'Núria', languages: ['ca']),
       ],
     );
     await pump(tester, services: services, loadCatalog: () => german);
@@ -327,14 +387,14 @@ void main() {
     await pump(tester, services: services, loadCatalog: () => current);
     expect(find.text('English'), findsOneWidget);
 
-    current = VoxtralVoiceCatalog(
+    current = CloudVoiceCatalog(
       fetchedAt: catalog.fetchedAt,
       voices: [
         for (final voice in catalog.voices)
           if (!voice.languages.contains('en_us')) voice,
       ],
     );
-    container.invalidate(voxtralVoiceCatalogProvider);
+    container.invalidate(cloudVoiceCatalogProvider);
     await tester.pumpAndSettle();
 
     expect(tester.takeException(), isNull);
@@ -369,7 +429,7 @@ void main() {
   });
 
   testWidgets('a loading catalog shows a labelled spinner', (tester) async {
-    final pending = Completer<VoxtralVoiceCatalog>();
+    final pending = Completer<CloudVoiceCatalog>();
     await pump(tester, services: services, loadCatalog: () => pending.future);
 
     final spinner = tester.widget<DesignSystemSpinner>(

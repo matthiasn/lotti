@@ -22,6 +22,13 @@ class ProviderChipConstants {
     light: Color(0xFFFF5722),
   );
 
+  /// The neutral grey of a provider without a colour of its own: the
+  /// fallback, and ElevenLabs', whose black-and-white identity has no hue.
+  static const ({Color dark, Color light}) _neutralColors = (
+    dark: Color(0xFF9E9E9E),
+    light: Color(0xFF757575),
+  );
+
   /// Provider-specific colors that work in both light and dark themes
   static const Map<InferenceProviderType, ({Color dark, Color light})>
   providerColors = {
@@ -65,6 +72,7 @@ class ProviderChipConstants {
       dark: Color(0xFF7DD3FC),
       light: Color(0xFF0284C7), // Sky blue
     ),
+    InferenceProviderType.elevenLabs: _neutralColors,
     InferenceProviderType.whisper: _whisperColors,
     InferenceProviderType.sherpa: _whisperColors,
     InferenceProviderType.voxtral: (
@@ -82,11 +90,7 @@ class ProviderChipConstants {
     InferenceProviderType type, {
     required bool isDark,
   }) {
-    final colors = providerColors[type];
-    if (colors == null) {
-      // Fallback color if provider type not found
-      return isDark ? const Color(0xFF9E9E9E) : const Color(0xFF757575);
-    }
+    final colors = providerColors[type] ?? _neutralColors;
     return isDark ? colors.dark : colors.light;
   }
 }
