@@ -92,11 +92,16 @@ void main() {
     Widget? indicator,
     AgentDomainEntity? taskAgent,
     Future<AgentDomainEntity?>? taskAgentLookup,
+    // One lookup per fetch, in order — for refetch scenarios.
+    List<Future<AgentDomainEntity?>>? taskAgentLookups,
   }) {
     return ProviderScope(
       overrides: withServiceOverrides([
         taskAgentProvider(taskId).overrideWith(
-          (ref) => taskAgentLookup ?? Future.value(taskAgent),
+          (ref) =>
+              taskAgentLookups?.removeAt(0) ??
+              taskAgentLookup ??
+              Future.value(taskAgent),
         ),
         // The internals panel resolves the identity; keeping it in flight
         // renders the panel shell without the tab bodies' providers.
@@ -201,6 +206,59 @@ void main() {
     expect(find.byType(AgentInternalsPanel), findsNothing);
 
     lookup.complete(agent);
+    for (var i = 0; i < 10; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+
+    expectInternalsOpened(tester);
+  });
+
+  testWidgets('taps repeated during the lookup open the internals once', (
+    tester,
+  ) async {
+    final lookup = Completer<AgentDomainEntity?>();
+    await tester.pumpWidget(
+      pump(callCount: 4, taskAgentLookup: lookup.future),
+    );
+    await settle(tester);
+
+    // No route is up while the lookup is pending, so nothing blocks the
+    // second tap — the indicator must coalesce it.
+    await tester.tap(find.text('€0.35'));
+    await tester.pump();
+    await tester.tap(find.text('€0.35'));
+    await tester.pump();
+    lookup.complete(agent);
+    for (var i = 0; i < 10; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+
+    expect(find.byType(AgentInternalsPanel), findsOneWidget);
+  });
+
+  testWidgets('a refetch after "no agent" is waited for, not routed to the '
+      'details', (tester) async {
+    final refetch = Completer<AgentDomainEntity?>();
+    await tester.pumpWidget(
+      pump(
+        callCount: 4,
+        taskAgentLookups: [Future.value(null), refetch.future],
+      ),
+    );
+    await settle(tester);
+
+    // An agent gets linked: the lookup refetches while still holding the
+    // earlier "none".
+    ProviderScope.containerOf(
+      tester.element(find.byType(AiCostIndicator)),
+    ).invalidate(taskAgentProvider(taskId));
+    await tester.pump();
+
+    await tester.tap(find.text('€0.35'));
+    await tester.pump();
+    expect(find.text('Task details'), findsNothing);
+
+    refetch.complete(agent);
     for (var i = 0; i < 10; i++) {
       await tester.pump(const Duration(milliseconds: 50));
     }

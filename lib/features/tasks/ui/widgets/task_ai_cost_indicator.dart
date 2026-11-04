@@ -26,7 +26,7 @@ import 'package:material_ui/material_ui.dart';
 /// falls back to the task details, where the AI spend is shown in full, and
 /// [TaskAiCostIndicator.inDetails] — for surfaces that already *are* those
 /// details — is a plain read-out with no tap.
-class TaskAiCostIndicator extends ConsumerWidget {
+class TaskAiCostIndicator extends ConsumerStatefulWidget {
   const TaskAiCostIndicator({
     required this.taskId,
     this.density = AiCostDensity.compact,
@@ -55,25 +55,40 @@ class TaskAiCostIndicator extends ConsumerWidget {
   final bool _hostedInDetails;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<TaskAiCostIndicator> createState() =>
+      _TaskAiCostIndicatorState();
+}
+
+class _TaskAiCostIndicatorState extends ConsumerState<TaskAiCostIndicator> {
+  /// Set while a tap waits for the agent lookup. Further taps in that window
+  /// join it instead of each opening its own sheet when the lookup settles —
+  /// no route is up yet, so no scrim blocks them.
+  bool _deferredOpenPending = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final taskId = widget.taskId;
     // `.value`: a background refetch (a sync notification, another AI call
     // landing) must not blink an established read-out out of the row.
     final totals = ref.watch(taskConsumptionTotalsProvider(taskId)).value;
     if (totals == null || totals.callCount == 0) return const SizedBox.shrink();
 
     final agentLookup = ref.watch(taskAgentProvider(taskId));
+    final knownAgent = _agentOf(agentLookup.value);
 
     return AiCostIndicator(
       totals: totals,
-      density: density,
-      foregroundColor: foregroundColor,
+      density: widget.density,
+      foregroundColor: widget.foregroundColor,
       onTap:
-          onTap ??
-          // Still resolving is not "no agent": the tap waits for the lookup
-          // rather than sending a task that has one to the details.
-          (agentLookup.isLoading && !agentLookup.hasValue
-              ? () => _openResolved(context, ref)
-              : _drillDown(context, _agentOf(agentLookup.value))),
+          widget.onTap ??
+          // Still resolving is not "no agent" — neither on the first lookup
+          // nor on a refetch that kept an earlier "none", which may be the
+          // refetch finding a newly linked agent. The tap waits for it. A
+          // known agent opens at once.
+          (agentLookup.isLoading && knownAgent == null
+              ? _openResolved
+              : _drillDown(knownAgent)),
     );
   }
 
@@ -81,21 +96,27 @@ class TaskAiCostIndicator extends ConsumerWidget {
       entity?.mapOrNull(agent: (e) => e);
 
   /// Resolves the agent lookup, then opens what [_drillDown] picks for it.
-  /// A failed lookup counts as no agent.
-  Future<void> _openResolved(BuildContext context, WidgetRef ref) async {
+  /// A failed lookup counts as no agent. Only one deferred open runs at a
+  /// time.
+  Future<void> _openResolved() async {
+    if (_deferredOpenPending) return;
+    _deferredOpenPending = true;
     AgentDomainEntity? entity;
     try {
-      entity = await ref.read(taskAgentProvider(taskId).future);
+      entity = await ref.read(taskAgentProvider(widget.taskId).future);
     } on Object {
       entity = null;
+    } finally {
+      _deferredOpenPending = false;
     }
-    if (!context.mounted) return;
-    _drillDown(context, _agentOf(entity))?.call();
+    if (!mounted) return;
+    _drillDown(_agentOf(entity))?.call();
   }
 
   /// The agent's internals when there is one; otherwise the task details,
   /// unless this indicator already sits inside them.
-  VoidCallback? _drillDown(BuildContext context, AgentIdentityEntity? agent) {
+  VoidCallback? _drillDown(AgentIdentityEntity? agent) {
+    final taskId = widget.taskId;
     if (agent != null) {
       return () => AgentInternalsPanel.show(
         context: context,
@@ -107,7 +128,7 @@ class TaskAiCostIndicator extends ConsumerWidget {
         ),
       );
     }
-    if (_hostedInDetails) return null;
+    if (widget._hostedInDetails) return null;
     return () => TaskMetaFlyout.show(context, taskId: taskId);
   }
 }
