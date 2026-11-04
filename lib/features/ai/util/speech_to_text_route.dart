@@ -32,6 +32,7 @@ bool routesToSpeechToText(AiConfigInferenceProvider provider, String model) =>
         OmlxTranscriptionRepository.isOmlxTranscriptionModel(model),
       InferenceProviderType.alibaba ||
       InferenceProviderType.anthropic ||
+      InferenceProviderType.elevenLabs ||
       InferenceProviderType.gemini ||
       InferenceProviderType.genericOpenAi ||
       InferenceProviderType.nebiusAiStudio ||

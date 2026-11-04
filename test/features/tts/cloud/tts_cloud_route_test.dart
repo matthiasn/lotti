@@ -39,6 +39,33 @@ void main() {
     expect(route?.cacheKey, 'mistral/voice-row/de');
   });
 
+  test('an ElevenLabs read-aloud slot routes to the cloud too, so the '
+      'companion and every surface speak in an ElevenLabs voice', () {
+    final elevenLabs = testInferenceProvider(
+      id: 'eleven',
+      inferenceProviderType: InferenceProviderType.elevenLabs,
+    );
+    final elevenVoice = testAiModel(
+      id: 'eleven-row',
+      providerModelId: 'eleven_multilingual_v2',
+      inferenceProviderId: 'eleven',
+    );
+    final route = TtsCloudRoute.fromProfile(
+      profile(speechProvider: elevenLabs, speechModel: elevenVoice),
+      languageCode: 'en-GB',
+    );
+    expect(route?.provider, elevenLabs);
+    expect(route?.model, elevenVoice);
+    expect(route?.cacheKey, 'eleven/eleven-row/en');
+  });
+
+  test('the speaking provider types are Mistral and ElevenLabs', () {
+    expect(cloudSpeechProviderTypes, {
+      InferenceProviderType.mistral,
+      InferenceProviderType.elevenLabs,
+    });
+  });
+
   test('no profile, an empty slot, or a provider without a speech client '
       'stays on the on-device voice', () {
     expect(TtsCloudRoute.fromProfile(null, languageCode: 'de'), isNull);

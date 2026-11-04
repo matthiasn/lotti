@@ -1,38 +1,38 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
-import 'package:lotti/features/tts/cloud/voxtral_voice_catalog.dart';
+import 'package:lotti/features/tts/cloud/cloud_voice_catalog.dart';
 
-const _heidi = VoxtralVoice(
+const _heidi = CloudVoice(
   id: 'v-de-1',
   name: 'Heidi',
   slug: 'heidi',
   gender: 'female',
   languages: ['de'],
-  type: VoxtralVoiceType.preset,
+  type: CloudVoiceType.preset,
 );
-const _emma = VoxtralVoice(
+const _emma = CloudVoice(
   id: 'v-en-1',
   name: 'Emma',
   languages: ['en-GB'],
-  type: VoxtralVoiceType.preset,
+  type: CloudVoiceType.preset,
 );
-const _klaus = VoxtralVoice(
+const _klaus = CloudVoice(
   id: 'v-de-2',
   name: 'Klaus',
   languages: ['German'],
-  type: VoxtralVoiceType.custom,
+  type: CloudVoiceType.custom,
 );
 
 final _fetchedAt = DateTime.utc(2026, 10, 27, 9);
 
-VoxtralVoiceCatalog _catalog([
-  List<VoxtralVoice> voices = const [_emma, _heidi, _klaus],
-]) => VoxtralVoiceCatalog(voices: voices, fetchedAt: _fetchedAt);
+CloudVoiceCatalog _catalog([
+  List<CloudVoice> voices = const [_emma, _heidi, _klaus],
+]) => CloudVoiceCatalog(voices: voices, fetchedAt: _fetchedAt);
 
 void main() {
-  group('VoxtralVoice.fromJson', () {
+  group('CloudVoice.fromJson', () {
     test('reads the documented voice fields', () {
-      final voice = VoxtralVoice.fromJson(const {
+      final voice = CloudVoice.fromJson(const {
         'id': 'v-de-1',
         'name': 'Heidi',
         'slug': 'heidi',
@@ -48,19 +48,19 @@ void main() {
       expect(voice.gender, 'female');
       // Non-string entries are dropped, strings kept verbatim.
       expect(voice.languages, ['de', 'de-AT']);
-      expect(voice.type, VoxtralVoiceType.preset);
+      expect(voice.type, CloudVoiceType.preset);
       expect(voice.tags, isEmpty);
     });
 
     test('keeps the mood tags, and through the device cache', () {
-      final voice = VoxtralVoice.fromJson(const {
+      final voice = CloudVoice.fromJson(const {
         'id': 'v-en-1',
         'name': 'Ada',
         'languages': ['en_us'],
         'tags': ['sunny', 3, 'easygoing'],
       });
       expect(voice.tags, ['sunny', 'easygoing']);
-      final restored = VoxtralVoice.fromJson(voice.toJson());
+      final restored = CloudVoice.fromJson(voice.toJson());
       expect(restored, voice);
       expect(restored.hashCode, voice.hashCode);
       // Tags are part of a voice's identity: a catalog refresh that only
@@ -68,7 +68,7 @@ void main() {
       expect(
         voice,
         isNot(
-          VoxtralVoice(
+          CloudVoice(
             id: voice.id,
             name: voice.name,
             languages: voice.languages,
@@ -76,7 +76,7 @@ void main() {
         ),
       );
       expect(
-        VoxtralVoice.fromJson(const {
+        CloudVoice.fromJson(const {
           'id': 'x',
           'name': 'X',
           'tags': 'sunny',
@@ -86,7 +86,7 @@ void main() {
     });
 
     test('tolerates missing optional fields and an unknown type', () {
-      final voice = VoxtralVoice.fromJson(const {
+      final voice = CloudVoice.fromJson(const {
         'id': 'x',
         'name': 'X',
         'type': 'studio',
@@ -94,26 +94,30 @@ void main() {
       expect(voice.languages, isEmpty);
       expect(voice.slug, isNull);
       expect(voice.gender, isNull);
-      expect(voice.type, VoxtralVoiceType.unknown);
+      expect(voice.type, CloudVoiceType.unknown);
     });
 
     test('rejects an entry without id or name', () {
       expect(
-        () => VoxtralVoice.fromJson(const {'name': 'No id'}),
+        () => CloudVoice.fromJson(const {'name': 'No id'}),
         throwsFormatException,
       );
       expect(
-        () => VoxtralVoice.fromJson(const {'id': '', 'name': 'Empty id'}),
+        () => CloudVoice.fromJson(const {'id': '', 'name': 'Empty id'}),
         throwsFormatException,
       );
       expect(
-        () => VoxtralVoice.fromJson(const {'id': 'no-name'}),
+        () => CloudVoice.fromJson(const {'id': 'no-name'}),
         throwsFormatException,
       );
     });
   });
 
-  group('VoxtralVoice.speaks', () {
+  test('a voice describes itself by id, name and languages', () {
+    expect(_heidi.toString(), 'CloudVoice(v-de-1, Heidi, [de])');
+  });
+
+  group('CloudVoice.speaks', () {
     test('matches codes ignoring region and case, and English names', () {
       expect(_heidi.speaks('de'), isTrue);
       expect(_heidi.speaks('DE-at'), isTrue);
@@ -126,13 +130,13 @@ void main() {
     });
 
     test('matches a listed code that has no name alias', () {
-      const voice = VoxtralVoice(id: 'p', name: 'P', languages: ['pl-PL']);
+      const voice = CloudVoice(id: 'p', name: 'P', languages: ['pl-PL']);
       expect(voice.speaks('pl'), isTrue);
       expect(voice.speaks('de'), isFalse);
     });
   });
 
-  group('VoxtralVoiceCatalog.resolve', () {
+  group('CloudVoiceCatalog.resolve', () {
     test('picks the language voice, a female preset before a custom', () {
       expect(_catalog().resolve(languageCode: 'de'), _heidi);
       expect(
@@ -146,19 +150,19 @@ void main() {
     });
 
     test('defaults to the first female preset over earlier voices', () {
-      const maleFirst = VoxtralVoice(
+      const maleFirst = CloudVoice(
         id: 'v-de-m',
         name: 'Male',
         gender: 'male',
         languages: ['de'],
-        type: VoxtralVoiceType.preset,
+        type: CloudVoiceType.preset,
       );
-      const femaleCustom = VoxtralVoice(
+      const femaleCustom = CloudVoice(
         id: 'v-de-fc',
         name: 'Clone',
         gender: 'Female',
         languages: ['de'],
-        type: VoxtralVoiceType.custom,
+        type: CloudVoiceType.custom,
       );
       expect(
         _catalog(const [
@@ -209,7 +213,7 @@ void main() {
 
   test('languageCodes lists each language once, by code, sorted', () {
     expect(_catalog().languageCodes, ['de', 'en']);
-    const mixed = VoxtralVoice(
+    const mixed = CloudVoice(
       id: 'mixed',
       name: 'Mixed',
       languages: ['pt-BR', 'Portuguese', ' ', 'Dutch', 'xx'],
@@ -218,15 +222,15 @@ void main() {
     expect(_catalog(const []).languageCodes, isEmpty);
   });
 
-  group('VoxtralVoiceCatalog cache', () {
+  group('CloudVoiceCatalog cache', () {
     test('round-trips through JSON', () {
-      final restored = VoxtralVoiceCatalog.fromJson(_catalog().toJson());
+      final restored = CloudVoiceCatalog.fromJson(_catalog().toJson());
       expect(restored, _catalog());
       expect(restored.hashCode, _catalog().hashCode);
     });
 
     test('skips malformed cached entries instead of dropping the cache', () {
-      final restored = VoxtralVoiceCatalog.fromJson({
+      final restored = CloudVoiceCatalog.fromJson({
         'fetchedAt': _fetchedAt.toIso8601String(),
         'voices': [
           _heidi.toJson(),
@@ -240,11 +244,11 @@ void main() {
 
     test('is stale once maxAge has passed', () {
       final catalog = _catalog();
-      final justUnder = VoxtralVoiceCatalog.maxAge - const Duration(minutes: 1);
+      final justUnder = CloudVoiceCatalog.maxAge - const Duration(minutes: 1);
       expect(catalog.isStale(_fetchedAt), isFalse);
       expect(catalog.isStale(_fetchedAt.add(justUnder)), isFalse);
       expect(
-        catalog.isStale(_fetchedAt.add(VoxtralVoiceCatalog.maxAge)),
+        catalog.isStale(_fetchedAt.add(CloudVoiceCatalog.maxAge)),
         isTrue,
       );
     });

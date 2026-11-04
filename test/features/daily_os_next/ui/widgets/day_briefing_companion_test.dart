@@ -22,7 +22,7 @@ import 'package:lotti/features/daily_os_next/logic/day_briefing.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_briefing_companion.dart';
 import 'package:lotti/features/design_system/theme/sizing_tokens.dart';
 import 'package:lotti/features/tts/cloud/cloud_speech_synthesizer.dart';
-import 'package:lotti/features/tts/cloud/voxtral_tts_service.dart';
+import 'package:lotti/features/tts/cloud/cloud_tts_exception.dart';
 import 'package:lotti/features/tts/state/tts_audio_player.dart';
 import 'package:lotti/features/tts/state/tts_engine_provider.dart';
 import 'package:lotti/features/tts/state/tts_model_repository.dart';
@@ -300,8 +300,8 @@ void main() {
       testWidgets('a language the cloud voice has no voice for is spoken by '
           'the on-device voice', (tester) async {
         cloud = FakeCloudSpeechSynthesizer(
-          error: const VoxtralTtsException(
-            VoxtralTtsFailure.noVoice,
+          error: const CloudTtsException(
+            CloudTtsFailure.noVoice,
             'No voice for language ro',
           ),
         );

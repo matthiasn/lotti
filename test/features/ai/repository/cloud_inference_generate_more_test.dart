@@ -827,14 +827,20 @@ void main() {
     });
 
     test('throws UnsupportedError for providers without image generation', () {
-      expect(
-        () => generateMore.generateImage(
-          prompt: 'x',
-          model: model,
-          provider: providerOfType(InferenceProviderType.openAi),
-        ),
-        throwsA(isA<UnsupportedError>()),
-      );
+      for (final type in [
+        InferenceProviderType.openAi,
+        InferenceProviderType.elevenLabs,
+      ]) {
+        expect(
+          () => generateMore.generateImage(
+            prompt: 'x',
+            model: model,
+            provider: providerOfType(type),
+          ),
+          throwsA(isA<UnsupportedError>()),
+          reason: '$type',
+        );
+      }
     });
   });
 

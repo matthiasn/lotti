@@ -8,6 +8,7 @@ import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:lotti/features/tts/cloud/cloud_tts_exception.dart';
 import 'package:lotti/features/tts/cloud/voxtral_tts_service.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
@@ -48,13 +49,13 @@ void main() {
     }),
   );
 
-  Future<VoxtralTtsException> failure(Future<Object?> call) async {
+  Future<CloudTtsException> failure(Future<Object?> call) async {
     try {
       await call;
-    } on VoxtralTtsException catch (error) {
+    } on CloudTtsException catch (error) {
       return error;
     }
-    fail('expected a VoxtralTtsException');
+    fail('expected a CloudTtsException');
   }
 
   List<String> loggedText() => [
@@ -212,14 +213,14 @@ void main() {
 
     test('maps HTTP statuses to failures', () async {
       const cases = {
-        401: VoxtralTtsFailure.unauthorized,
-        403: VoxtralTtsFailure.unauthorized,
-        400: VoxtralTtsFailure.rejected,
-        404: VoxtralTtsFailure.rejected,
-        422: VoxtralTtsFailure.rejected,
-        500: VoxtralTtsFailure.server,
-        503: VoxtralTtsFailure.server,
-        302: VoxtralTtsFailure.invalidResponse,
+        401: CloudTtsFailure.unauthorized,
+        403: CloudTtsFailure.unauthorized,
+        400: CloudTtsFailure.rejected,
+        404: CloudTtsFailure.rejected,
+        422: CloudTtsFailure.rejected,
+        500: CloudTtsFailure.server,
+        503: CloudTtsFailure.server,
+        302: CloudTtsFailure.invalidResponse,
       };
       for (final entry in cases.entries) {
         final error = await failure(
@@ -281,7 +282,7 @@ void main() {
       expect(error.requestId, 'req-7');
       expect(
         error.toString(),
-        'VoxtralTtsException(rejected, HTTP 400): Request rejected by the '
+        'CloudTtsException(rejected, HTTP 400): Request rejected by the '
         'Mistral API — server: Invalid model: voxtral-nope (request req-7)',
       );
       final message =
@@ -360,7 +361,7 @@ void main() {
           apiKey: _apiKey,
         ),
       );
-      expect(limited.failure, VoxtralTtsFailure.rateLimited);
+      expect(limited.failure, CloudTtsFailure.rateLimited);
       expect(limited.retryAfter, const Duration(seconds: 12));
       expect(limited.isRetryable, isTrue);
 
@@ -398,13 +399,13 @@ void main() {
             apiKey: _apiKey,
           ),
         );
-        expect(error.failure, VoxtralTtsFailure.invalidResponse, reason: body);
+        expect(error.failure, CloudTtsFailure.invalidResponse, reason: body);
         expect(error.isRetryable, isFalse);
       }
       verify(
         () => logger.error(
           LogDomain.speech,
-          any<Object>(that: isA<VoxtralTtsException>()),
+          any<Object>(that: isA<CloudTtsException>()),
           subDomain: 'VoxtralTts',
           message: any(named: 'message'),
         ),
@@ -425,13 +426,13 @@ void main() {
             apiKey: _apiKey,
           ),
         );
-        expect(error.failure, VoxtralTtsFailure.network);
+        expect(error.failure, CloudTtsFailure.network);
         expect(error.isRetryable, isTrue);
       }
       verify(
         () => logger.error(
           LogDomain.speech,
-          any<Object>(that: isA<VoxtralTtsException>()),
+          any<Object>(that: isA<CloudTtsException>()),
           subDomain: 'VoxtralTts',
           message: any(named: 'message'),
         ),
@@ -441,7 +442,7 @@ void main() {
     test('times out instead of waiting forever', () {
       fakeAsync((async) {
         final never = Completer<http.Response>();
-        VoxtralTtsException? error;
+        CloudTtsException? error;
         VoxtralTtsService(
               domainLogger: logger,
               httpClient: MockClient((_) => never.future),
@@ -455,13 +456,13 @@ void main() {
             )
             .then<void>(
               (_) {},
-              onError: (Object e) => error = e as VoxtralTtsException,
+              onError: (Object e) => error = e as CloudTtsException,
             );
 
         async.elapse(const Duration(seconds: 4));
         expect(error, isNull);
         async.elapse(const Duration(seconds: 1));
-        expect(error?.failure, VoxtralTtsFailure.timeout);
+        expect(error?.failure, CloudTtsFailure.timeout);
         expect(error?.isRetryable, isTrue);
       });
     });
@@ -549,7 +550,7 @@ void main() {
           (_) => http.Response('{"voices": []}', 200),
         ).fetchVoices(baseUrl: _baseUrl, apiKey: _apiKey),
       );
-      expect(error.failure, VoxtralTtsFailure.invalidResponse);
+      expect(error.failure, CloudTtsFailure.invalidResponse);
     });
 
     test('logs a rejected page with the field the server named', () async {
@@ -570,7 +571,7 @@ void main() {
           ),
         ).fetchVoices(baseUrl: _baseUrl, apiKey: _apiKey),
       );
-      expect(error.failure, VoxtralTtsFailure.rejected);
+      expect(error.failure, CloudTtsFailure.rejected);
       expect(
         error.apiError,
         'query.limit: Input should be less than or equal to 100',
@@ -591,7 +592,7 @@ void main() {
           (_) => http.Response('', 401),
         ).fetchVoices(baseUrl: _baseUrl, apiKey: _apiKey),
       );
-      expect(error.failure, VoxtralTtsFailure.unauthorized);
+      expect(error.failure, CloudTtsFailure.unauthorized);
       expect(error.isRetryable, isFalse);
     });
 
@@ -604,33 +605,6 @@ void main() {
       );
       expect(requests, isEmpty);
     });
-  });
-
-  test('VoxtralTtsException describes itself without secrets', () {
-    const error = VoxtralTtsException(
-      VoxtralTtsFailure.rejected,
-      'Request rejected by the Mistral API',
-      statusCode: 422,
-    );
-    expect(
-      error.toString(),
-      'VoxtralTtsException(rejected, HTTP 422): '
-      'Request rejected by the Mistral API',
-    );
-    expect(
-      const VoxtralTtsException(VoxtralTtsFailure.timeout, 'x').toString(),
-      'VoxtralTtsException(timeout): x',
-    );
-    expect(
-      const VoxtralTtsException(
-        VoxtralTtsFailure.invalidResponse,
-        'Unexpected redirect, not followed',
-        statusCode: 302,
-        requestId: 'r1',
-      ).toString(),
-      'VoxtralTtsException(invalidResponse, HTTP 302): '
-      'Unexpected redirect, not followed (request r1)',
-    );
   });
 
   test('close closes the injected client', () async {

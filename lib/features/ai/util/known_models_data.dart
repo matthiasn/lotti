@@ -694,6 +694,32 @@ const List<KnownModel> voxtralModels = [
   ),
 ];
 
+/// ElevenLabs text-to-speech models. ElevenLabs only speaks, so each one is
+/// a read-aloud model (text in, audio out) and nothing else: no profile slot
+/// but *Read aloud* offers them.
+const List<KnownModel> elevenLabsModels = [
+  KnownModel(
+    providerModelId: elevenLabsMultilingualV2ModelId,
+    name: 'Eleven Multilingual v2',
+    inputModalities: [Modality.text],
+    outputModalities: [Modality.audio],
+    isReasoningModel: false,
+    description:
+        'The most natural, lifelike voices in 29 languages. Reads summaries '
+        'and answers aloud.',
+  ),
+  KnownModel(
+    providerModelId: elevenLabsFlashV25ModelId,
+    name: 'Eleven Flash v2.5',
+    inputModalities: [Modality.text],
+    outputModalities: [Modality.audio],
+    isReasoningModel: false,
+    description:
+        'Fast, low-cost speech in 32 languages, for replies that should start '
+        'at once.',
+  ),
+];
+
 /// Mistral models - Mistral AI cloud models
 ///
 /// These models run on Mistral's cloud API (api.mistral.ai) and include

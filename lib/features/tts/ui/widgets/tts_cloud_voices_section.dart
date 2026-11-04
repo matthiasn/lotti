@@ -5,8 +5,9 @@ import 'package:lotti/features/design_system/components/lists/design_system_grou
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/tts/cloud/voxtral_voice_catalog.dart';
+import 'package:lotti/features/tts/cloud/cloud_voice_catalog.dart';
 import 'package:lotti/features/tts/model/tts_playback_state.dart';
+import 'package:lotti/features/tts/model/tts_settings.dart';
 import 'package:lotti/features/tts/state/cloud_voice_settings_providers.dart';
 import 'package:lotti/features/tts/state/tts_playback_controller.dart';
 import 'package:lotti/features/tts/state/tts_settings_controller.dart';
@@ -61,15 +62,26 @@ class TtsCloudVoicesSection extends ConsumerWidget {
         children: [
           // The heading brings its own gap to what follows it.
           heading,
-          // Keyed by identity, not position: a provider added or removed
-          // must not hand one provider's rows to another.
+          // Keyed by identity, not position: a service added or removed
+          // must not hand one service's rows to another.
           for (final (i, service) in services.indexed)
             Padding(
-              key: ValueKey(service.provider.id),
+              key: ValueKey((service.provider.id, service.model.id)),
               padding: EdgeInsets.only(top: i == 0 ? 0 : spacing.step5),
               child: _ServiceVoices(
                 service: service,
-                showName: services.length > 1,
+                name: services.length < 2
+                    ? null
+                    // A provider listed twice — two ElevenLabs models — is
+                    // told apart by its model.
+                    : services
+                              .where(
+                                (s) => s.provider.id == service.provider.id,
+                              )
+                              .length >
+                          1
+                    ? '${service.provider.name} · ${service.model.name}'
+                    : service.provider.name,
               ),
             ),
         ],
@@ -87,17 +99,19 @@ String cloudVoiceLanguageName(BuildContext context, String language) =>
 class _ServiceVoices extends ConsumerWidget {
   const _ServiceVoices({
     required this.service,
-    required this.showName,
+    required this.name,
   });
 
   final CloudVoiceService service;
-  final bool showName;
+
+  /// The caption naming the service, or `null` when it is the only one.
+  final String? name;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
     final messages = context.messages;
-    final provider = voxtralVoiceCatalogProvider(service.provider);
+    final provider = cloudVoiceCatalogProvider(service);
     final catalog = ref.watch(provider);
     final caption = tokens.typography.styles.others.caption.copyWith(
       color: tokens.colors.text.mediumEmphasis,
@@ -131,7 +145,7 @@ class _ServiceVoices extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       spacing: tokens.spacing.step2,
       children: [
-        if (showName) Text(service.provider.name, style: caption),
+        if (name case final name?) Text(name, style: caption),
         if (catalog.value case final value?)
           _LanguageList(service: service, catalog: value)
         else
@@ -153,7 +167,7 @@ class _LanguageList extends ConsumerStatefulWidget {
   const _LanguageList({required this.service, required this.catalog});
 
   final CloudVoiceService service;
-  final VoxtralVoiceCatalog catalog;
+  final CloudVoiceCatalog catalog;
 
   @override
   ConsumerState<_LanguageList> createState() => _LanguageListState();
@@ -179,9 +193,16 @@ class _LanguageListState extends ConsumerState<_LanguageList> {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
-    final chosen = ref.watch(
+    final provider = widget.service.provider;
+    final choices = ref.watch(
       ttsSettingsControllerProvider.select((s) => s.cloudVoiceByLanguage),
     );
+    // This provider's picks only, by language: another provider's pick for
+    // a language names a voice of another catalog.
+    final chosen = {
+      for (final language in widget.catalog.languageCodes)
+        language: ?choices[cloudVoiceChoiceKey(provider, language)],
+    };
     final appLanguage = Localizations.localeOf(context).languageCode;
     final names = {
       for (final language in widget.catalog.languageCodes)
@@ -337,7 +358,7 @@ class _LanguageRow extends ConsumerWidget {
   });
 
   final CloudVoiceService service;
-  final VoxtralVoiceCatalog catalog;
+  final CloudVoiceCatalog catalog;
   final String language;
   final String languageName;
   final String? chosenVoiceId;

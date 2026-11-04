@@ -34,6 +34,8 @@ void main() {
       (InferenceProviderType.alibaba, 'qwen3-omni-flash'),
       (InferenceProviderType.openRouter, 'whisper-like-name'),
       (InferenceProviderType.ollama, 'gemma3'),
+      // ElevenLabs only speaks; it never transcribes.
+      (InferenceProviderType.elevenLabs, 'eleven_multilingual_v2'),
     ]) {
       test('${type.name} $model is a multimodal model', () {
         expect(route(type, model), isFalse);

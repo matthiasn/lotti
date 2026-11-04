@@ -5,17 +5,22 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/features/tts/cloud/cloud_speech_synthesizer.dart';
+import 'package:lotti/features/tts/cloud/cloud_tts_exception.dart';
+import 'package:lotti/features/tts/cloud/cloud_voice_catalog.dart';
+import 'package:lotti/features/tts/cloud/elevenlabs_tts_service.dart';
 import 'package:lotti/features/tts/cloud/tts_cloud_route.dart';
 import 'package:lotti/features/tts/cloud/voxtral_tts_service.dart';
-import 'package:lotti/features/tts/cloud/voxtral_voice_catalog.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/fallbacks.dart';
 import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 import '../../agents/test_data/ai_config_factories.dart';
 
 void main() {
+  setUpAll(registerAllFallbackValues);
+
   final provider = testInferenceProvider(
     id: 'mistral',
     apiKey: 'key',
@@ -29,38 +34,45 @@ void main() {
     ),
     languageCode: 'de',
   );
-  final catalog = VoxtralVoiceCatalog(
+  final catalog = CloudVoiceCatalog(
     fetchedAt: DateTime.utc(2026, 10, 27),
     voices: const [
-      VoxtralVoice(
+      CloudVoice(
         id: 'v-de-f',
         name: 'Heidi',
         gender: 'female',
         languages: ['de'],
-        type: VoxtralVoiceType.preset,
+        type: CloudVoiceType.preset,
       ),
-      VoxtralVoice(id: 'v-de-m', name: 'Klaus', languages: ['de']),
+      CloudVoice(id: 'v-de-m', name: 'Klaus', languages: ['de']),
     ],
   );
   final audio = Uint8List.fromList([82, 73, 70, 70]);
   Future<bool> allow() async => true;
 
-  late MockVoxtralTtsService service;
-  late MockVoxtralVoiceCatalogRepository catalogs;
+  late MockCloudTtsClient service;
+  late MockCloudTtsClient elevenLabs;
+  late MockCloudVoiceCatalogRepository catalogs;
   late Directory temp;
   late CloudSpeechSynthesizer synthesizer;
 
   setUp(() {
-    service = MockVoxtralTtsService();
-    catalogs = MockVoxtralVoiceCatalogRepository();
+    service = MockCloudTtsClient();
+    elevenLabs = MockCloudTtsClient();
+    catalogs = MockCloudVoiceCatalogRepository();
     temp = Directory.systemTemp.createTempSync('cloud_speech_test');
     addTearDown(() => temp.deleteSync(recursive: true));
     synthesizer = CloudSpeechSynthesizer(
-      service: service,
+      clients: {
+        InferenceProviderType.mistral: service,
+        InferenceProviderType.elevenLabs: elevenLabs,
+      },
       catalogs: catalogs,
       tempDirectory: () async => temp,
     );
-    when(() => catalogs.catalogFor(provider)).thenAnswer((_) async => catalog);
+    when(
+      () => catalogs.catalogFor(any(), any()),
+    ).thenAnswer((_) async => catalog);
     when(
       () => service.synthesize(
         text: any(named: 'text'),
@@ -77,7 +89,7 @@ void main() {
     final file = await synthesizer.synthesizeToFile(
       route: route,
       text: 'Grüß dich',
-      voiceByLanguage: const {},
+      chosenVoices: const {},
       canSend: allow,
     );
 
@@ -99,13 +111,13 @@ void main() {
     final first = await synthesizer.synthesizeToFile(
       route: route,
       text: 'Hallo',
-      voiceByLanguage: const {'de': 'v-de-m', 'en': 'v-en'},
+      chosenVoices: const {'de': 'v-de-m', 'en': 'v-en'},
       canSend: allow,
     );
     final second = await synthesizer.synthesizeToFile(
       route: route,
       text: 'Hallo',
-      voiceByLanguage: const {'de': 'v-de-m'},
+      chosenVoices: const {'de': 'v-de-m'},
       canSend: allow,
     );
 
@@ -130,7 +142,7 @@ void main() {
         voiceId: 'v-de-m',
       ),
       text: 'Hallo',
-      voiceByLanguage: const {'de': 'v-de-f'},
+      chosenVoices: const {'de': 'v-de-f'},
       canSend: allow,
     );
 
@@ -149,7 +161,7 @@ void main() {
     await synthesizer.synthesizeToFile(
       route: route,
       text: 'Gut gemacht 🎉! Weiter 🐧',
-      voiceByLanguage: const {},
+      chosenVoices: const {},
       canSend: allow,
     );
 
@@ -169,7 +181,7 @@ void main() {
     final file = await synthesizer.synthesizeToFile(
       route: route,
       text: '🎉 👍🏽',
-      voiceByLanguage: const {},
+      chosenVoices: const {},
       canSend: () async => asked = true,
     );
 
@@ -192,10 +204,10 @@ void main() {
     final file = await synthesizer.synthesizeToFile(
       route: route,
       text: 'Privat',
-      voiceByLanguage: const {},
+      chosenVoices: const {},
       canSend: () async {
         // Asked only once the catalog — the slow, networked step — is in.
-        verify(() => catalogs.catalogFor(provider)).called(1);
+        verify(() => catalogs.catalogFor(provider, route.model)).called(1);
         loaded.add('checked');
         return false;
       },
@@ -224,12 +236,12 @@ void main() {
           languageCode: 'fr',
         ),
         text: 'Bonjour',
-        voiceByLanguage: const {},
+        chosenVoices: const {},
         canSend: allow,
       ),
       throwsA(
-        isA<VoxtralTtsException>()
-            .having((e) => e.failure, 'failure', VoxtralTtsFailure.noVoice)
+        isA<CloudTtsException>()
+            .having((e) => e.failure, 'failure', CloudTtsFailure.noVoice)
             .having((e) => e.isRetryable, 'retryable', isFalse),
       ),
     );
@@ -244,21 +256,146 @@ void main() {
     );
   });
 
+  group('provider types', () {
+    final elevenProvider = testInferenceProvider(
+      id: 'eleven',
+      apiKey: 'xi-key',
+      inferenceProviderType: InferenceProviderType.elevenLabs,
+    );
+    final elevenRoute = TtsCloudRoute(
+      provider: elevenProvider,
+      model: testAiModel(
+        id: 'eleven-row',
+        providerModelId: 'eleven_multilingual_v2',
+      ),
+      languageCode: 'de',
+    );
+
+    setUp(() {
+      when(
+        () => elevenLabs.synthesize(
+          text: any(named: 'text'),
+          voiceId: any(named: 'voiceId'),
+          baseUrl: any(named: 'baseUrl'),
+          apiKey: any(named: 'apiKey'),
+          model: any(named: 'model'),
+        ),
+      ).thenAnswer((_) async => audio);
+    });
+
+    test("an ElevenLabs route speaks through ElevenLabs' client, with its "
+        'own provider and model', () async {
+      final file = await synthesizer.synthesizeToFile(
+        route: elevenRoute,
+        text: 'Hallo',
+        chosenVoices: const {},
+        canSend: allow,
+      );
+
+      expect(file!.readAsBytesSync(), audio);
+      verify(
+        () => catalogs.catalogFor(elevenProvider, elevenRoute.model),
+      ).called(1);
+      verify(
+        () => elevenLabs.synthesize(
+          text: 'Hallo',
+          voiceId: 'v-de-f',
+          baseUrl: elevenProvider.baseUrl,
+          apiKey: 'xi-key',
+          model: 'eleven_multilingual_v2',
+        ),
+      ).called(1);
+      verifyNever(
+        () => service.synthesize(
+          text: any(named: 'text'),
+          voiceId: any(named: 'voiceId'),
+          baseUrl: any(named: 'baseUrl'),
+          apiKey: any(named: 'apiKey'),
+          model: any(named: 'model'),
+        ),
+      );
+    });
+
+    test("an ElevenLabs route follows its own pick and ignores Mistral's "
+        'for the same language', () async {
+      await synthesizer.synthesizeToFile(
+        route: elevenRoute,
+        text: 'Hallo',
+        chosenVoices: const {'de': 'v-de-f', 'eleven/de': 'v-de-m'},
+        canSend: allow,
+      );
+      await synthesizer.synthesizeToFile(
+        route: route,
+        text: 'Hallo',
+        chosenVoices: const {'eleven/de': 'v-de-m'},
+        canSend: allow,
+      );
+
+      verify(
+        () => elevenLabs.synthesize(
+          text: 'Hallo',
+          voiceId: 'v-de-m',
+          baseUrl: any(named: 'baseUrl'),
+          apiKey: any(named: 'apiKey'),
+          model: any(named: 'model'),
+        ),
+      ).called(1);
+      // The ElevenLabs pick is not Mistral's: its default voice speaks.
+      verify(
+        () => service.synthesize(
+          text: 'Hallo',
+          voiceId: 'v-de-f',
+          baseUrl: any(named: 'baseUrl'),
+          apiKey: any(named: 'apiKey'),
+          model: any(named: 'model'),
+        ),
+      ).called(1);
+    });
+
+    test('a provider without a speech client fails before the catalog is '
+        'asked for', () async {
+      await expectLater(
+        synthesizer.synthesizeToFile(
+          route: TtsCloudRoute(
+            provider: testInferenceProvider(
+              id: 'openai',
+              inferenceProviderType: InferenceProviderType.openAi,
+            ),
+            model: route.model,
+            languageCode: 'de',
+          ),
+          text: 'Hallo',
+          chosenVoices: const {},
+          canSend: allow,
+        ),
+        throwsArgumentError,
+      );
+      verifyNever(() => catalogs.catalogFor(any(), any()));
+    });
+  });
+
   group('providers', () {
     setUp(() async {
       await setUpTestGetIt();
     });
     tearDown(tearDownTestGetIt);
 
-    test('the synthesizer and the catalog cache share one Voxtral client', () {
+    test('every speaking provider type has its client, shared by the '
+        'synthesizer and the catalog cache', () {
       final container = ProviderContainer(overrides: getItServiceOverrides());
       addTearDown(container.dispose);
 
-      final service = container.read(voxtralTtsServiceProvider);
+      final clients = container.read(cloudTtsClientsProvider);
+      expect(clients.keys.toSet(), cloudSpeechProviderTypes);
+      expect(clients[InferenceProviderType.mistral], isA<VoxtralTtsService>());
+      expect(
+        clients[InferenceProviderType.elevenLabs],
+        isA<ElevenLabsTtsService>(),
+      );
       expect(container.read(cloudSpeechSynthesizerProvider), isNotNull);
-      expect(container.read(voxtralVoiceCatalogRepositoryProvider), isNotNull);
-      // Reading again yields the same client: no second HTTP pool.
-      expect(container.read(voxtralTtsServiceProvider), same(service));
+      expect(container.read(cloudVoiceCatalogRepositoryProvider), isNotNull);
+      // Reading again yields the same clients: no second HTTP pool.
+      expect(container.read(cloudTtsClientsProvider), same(clients));
     });
   });
 }

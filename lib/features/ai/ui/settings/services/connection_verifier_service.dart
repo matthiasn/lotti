@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -128,6 +129,7 @@ const Map<InferenceProviderType, ConnectionProbe> _defaultConnectionProbes =
       InferenceProviderType.alibaba: _OpenAiCompatibleProbe(),
       InferenceProviderType.omlx: _OpenAiCompatibleProbe(),
       InferenceProviderType.anthropic: _AnthropicProbe(),
+      InferenceProviderType.elevenLabs: _ElevenLabsProbe(),
       InferenceProviderType.ollama: _OllamaProbe(),
     };
 
@@ -325,11 +327,13 @@ class ConnectionVerifierController extends Notifier<ConnectionCheckState> {
 /// to a `ConnectionCheckState`. Body parsing is delegated to
 /// [parseModels] which returns the model count from a successful
 /// payload (throws on malformed JSON, which surfaces as a network
-/// failure).
+/// failure). A probe whose API answers with a top-level list only passes no
+/// [parseModels], so an object body is a bad response shape rather than a
+/// verified endpoint with no models.
 Future<ConnectionCheckState> _runProbe({
   required Future<http.Response> Function() request,
-  required int Function(Map<String, dynamic> body) parseModels,
   required Duration timeout,
+  int Function(Map<String, dynamic> body)? parseModels,
 }) async {
   final stopwatch = Stopwatch()..start();
   try {
@@ -338,7 +342,7 @@ Future<ConnectionCheckState> _runProbe({
     if (response.statusCode >= 200 && response.statusCode < 300) {
       try {
         final decoded = jsonDecode(response.body);
-        if (decoded is Map<String, dynamic>) {
+        if (decoded is Map<String, dynamic> && parseModels != null) {
           final count = parseModels(decoded);
           return ConnectionCheckVerified(
             modelCount: count,
@@ -407,6 +411,51 @@ class _OpenAiCompatibleProbe implements ConnectionProbe {
         final data = body['data'];
         return data is List ? data.length : 0;
       },
+      timeout: timeout,
+    );
+  }
+}
+
+/// ElevenLabs authenticates with an `xi-api-key` header and lists its
+/// models as a top-level JSON array at `<baseUrl>/models`, which
+/// [_runProbe] counts. As the speech client does, it refuses plain HTTP
+/// except on loopback before anything is sent, and follows no redirect: either
+/// would let the key cross the network readable, or reach another host.
+class _ElevenLabsProbe implements ConnectionProbe {
+  const _ElevenLabsProbe();
+
+  @override
+  Future<ConnectionCheckState> probe({
+    required Uri baseUri,
+    required String apiKey,
+    required Duration timeout,
+    required http.Client client,
+  }) async {
+    final loopback =
+        baseUri.host == 'localhost' ||
+        (InternetAddress.tryParse(baseUri.host)?.isLoopback ?? false);
+    if (baseUri.scheme.toLowerCase() != 'https' && !loopback) {
+      return const ConnectionCheckFailedNetwork(
+        message: '',
+        code: ConnectionFailureCode.invalidBaseUrl,
+      );
+    }
+    final uri = baseUri.replace(
+      path: '${baseUri.path.replaceAll(RegExp(r'/+$'), '')}/models',
+    );
+    return _runProbe(
+      // Not followed: a redirect would carry the key to another host, or
+      // to plain HTTP. A 3xx ends the probe as an HTTP failure instead.
+      request: () async => http.Response.fromStream(
+        await client.send(
+          http.Request('GET', uri)
+            ..followRedirects = false
+            ..headers['xi-api-key'] = apiKey,
+        ),
+      ),
+      // No parseModels: ElevenLabs answers with a top-level list, which
+      // `_runProbe` counts; an object is not that API, and voice loading
+      // would reject it.
       timeout: timeout,
     );
   }

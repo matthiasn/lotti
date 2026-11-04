@@ -1,7 +1,19 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/features/tts/model/tts_model_option.dart';
 import 'package:lotti/features/tts/model/tts_settings.dart';
 import 'package:lotti/features/tts/model/tts_voice.dart';
+
+import '../../agents/test_data/ai_config_factories.dart';
+
+final AiConfigInferenceProvider _mistral = testInferenceProvider(
+  id: 'mistral',
+  inferenceProviderType: InferenceProviderType.mistral,
+);
+final AiConfigInferenceProvider _eleven = testInferenceProvider(
+  id: 'eleven',
+  inferenceProviderType: InferenceProviderType.elevenLabs,
+);
 
 void main() {
   group('TtsSettings defaults', () {
@@ -67,6 +79,35 @@ void main() {
       expect(ttsVoiceIdKey, 'TTS_VOICE_ID');
       expect(ttsModelIdKey, 'TTS_MODEL_ID');
       expect(ttsSpeedKey, 'TTS_SPEED');
+    });
+  });
+
+  group('cloud voice choices', () {
+    test('Mistral keeps the bare language key, so earlier picks stay; '
+        'any other provider is scoped by its own config id', () {
+      expect(cloudVoiceChoiceKey(_mistral, 'de'), 'de');
+      expect(cloudVoiceChoiceKey(_eleven, 'de'), 'eleven/de');
+      // A second account of the same type keeps its own choice.
+      expect(
+        cloudVoiceChoiceKey(
+          testInferenceProvider(
+            id: 'eleven-work',
+            inferenceProviderType: InferenceProviderType.elevenLabs,
+          ),
+          'de',
+        ),
+        'eleven-work/de',
+      );
+    });
+
+    test('cloudVoiceFor reads only the choice of the asked provider', () {
+      const settings = TtsSettings(
+        cloudVoiceByLanguage: {'de': 'mistral-de', 'eleven/en': 'xi-en'},
+      );
+      expect(settings.cloudVoiceFor(_mistral, 'de'), 'mistral-de');
+      expect(settings.cloudVoiceFor(_eleven, 'de'), isNull);
+      expect(settings.cloudVoiceFor(_eleven, 'en'), 'xi-en');
+      expect(settings.cloudVoiceFor(_mistral, 'en'), isNull);
     });
   });
 

@@ -1,33 +1,36 @@
 import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
 
-/// Whether a voice is one of Mistral's presets or one the account created.
+/// Whether a voice is one of the provider's presets or one the account
+/// created (or saved from a library).
 ///
-/// Mirrors the `type` field of `GET /v1/audio/voices`; anything the API adds
-/// later reads as [unknown] rather than failing the whole catalog.
-enum VoxtralVoiceType { preset, custom, unknown }
+/// Mirrors Mistral's `type` field of `GET /v1/audio/voices` (ElevenLabs'
+/// `category` is mapped onto it); anything an API adds later reads as
+/// [unknown] rather than failing the whole catalog.
+enum CloudVoiceType { preset, custom, unknown }
 
-/// One voice from Mistral's voice catalog.
+/// One voice from a cloud provider's voice catalog.
 ///
-/// Only the fields the voice picker and the selection strategy need are kept.
-/// The API also returns `age`, `color` and sample metadata; those stay on the
-/// server.
+/// Only the fields the voice picker and the selection strategy need are kept;
+/// the rest of what the APIs return (sample metadata, voice settings, …)
+/// stays on the server.
 @immutable
-class VoxtralVoice {
-  const VoxtralVoice({
+class CloudVoice {
+  const CloudVoice({
     required this.id,
     required this.name,
     required this.languages,
     this.slug,
     this.gender,
     this.tags = const [],
-    this.type = VoxtralVoiceType.unknown,
+    this.type = CloudVoiceType.unknown,
   });
 
-  /// Reads one entry of the catalog's `items` array. Throws [FormatException]
+  /// Reads one entry of Mistral's `items` array, which is also the shape
+  /// [toJson] caches every provider's voices in. Throws [FormatException]
   /// when `id` or `name` is missing, because a voice without either can be
   /// neither sent nor shown.
-  factory VoxtralVoice.fromJson(Map<String, dynamic> json) {
+  factory CloudVoice.fromJson(Map<String, dynamic> json) {
     final id = json['id'];
     final name = json['name'];
     if (id is! String || id.isEmpty || name is! String) {
@@ -35,7 +38,7 @@ class VoxtralVoice {
     }
     final languages = json['languages'];
     final tags = json['tags'];
-    return VoxtralVoice(
+    return CloudVoice(
       id: id,
       name: name,
       slug: json['slug'] as String?,
@@ -47,9 +50,9 @@ class VoxtralVoice {
           ? tags.whereType<String>().toList(growable: false)
           : const <String>[],
       type: switch (json['type']) {
-        'preset' => VoxtralVoiceType.preset,
-        'custom' => VoxtralVoiceType.custom,
-        _ => VoxtralVoiceType.unknown,
+        'preset' => CloudVoiceType.preset,
+        'custom' => CloudVoiceType.custom,
+        _ => CloudVoiceType.unknown,
       },
     );
   }
@@ -76,7 +79,7 @@ class VoxtralVoice {
   /// picker so voices of one language can be told apart before a preview.
   final List<String> tags;
 
-  final VoxtralVoiceType type;
+  final CloudVoiceType type;
 
   /// Whether this voice is advertised for [languageCode] (`de`, `de-AT`, …).
   ///
@@ -109,7 +112,7 @@ class VoxtralVoice {
 
   @override
   bool operator ==(Object other) =>
-      other is VoxtralVoice &&
+      other is CloudVoice &&
       other.id == id &&
       other.name == name &&
       other.slug == slug &&
@@ -130,11 +133,11 @@ class VoxtralVoice {
   );
 
   @override
-  String toString() => 'VoxtralVoice($id, $name, $languages)';
+  String toString() => 'CloudVoice($id, $name, $languages)';
 }
 
 /// English names for the languages Voxtral TTS launched with, keyed by ISO
-/// 639-1 code, so [VoxtralVoice.speaks] also matches a catalog that spells
+/// 639-1 code, so [CloudVoice.speaks] also matches a catalog that spells
 /// languages out. Codes match for every language without an entry here.
 const Map<String, String> _languageNames = <String, String>{
   'ar': 'arabic',
@@ -152,21 +155,21 @@ const Map<String, String> _languageNames = <String, String>{
 String primaryLanguageSubtag(String languageCode) =>
     languageCode.trim().toLowerCase().split(RegExp('[-_]')).first;
 
-/// A snapshot of the voices Mistral offered at [fetchedAt].
+/// A snapshot of the voices a provider offered at [fetchedAt].
 ///
 /// Serializable so the last good catalog can be persisted and used offline;
 /// [isStale] tells a caller when to refresh it in the background.
 @immutable
-class VoxtralVoiceCatalog {
-  const VoxtralVoiceCatalog({required this.voices, required this.fetchedAt});
+class CloudVoiceCatalog {
+  const CloudVoiceCatalog({required this.voices, required this.fetchedAt});
 
   /// Restores a catalog written by [toJson]. Malformed entries are skipped
   /// rather than discarding the whole cache.
-  factory VoxtralVoiceCatalog.fromJson(Map<String, dynamic> json) {
+  factory CloudVoiceCatalog.fromJson(Map<String, dynamic> json) {
     final items = json['voices'];
-    return VoxtralVoiceCatalog(
+    return CloudVoiceCatalog(
       fetchedAt: DateTime.parse(json['fetchedAt'] as String),
-      voices: <VoxtralVoice>[
+      voices: <CloudVoice>[
         if (items is List)
           for (final item in items.whereType<Map<String, dynamic>>())
             ?_tryParse(item),
@@ -176,7 +179,7 @@ class VoxtralVoiceCatalog {
 
   /// Catalog order is the API's order, which is what "the first available
   /// voice for a language" refers to.
-  final List<VoxtralVoice> voices;
+  final List<CloudVoice> voices;
 
   final DateTime fetchedAt;
 
@@ -187,7 +190,7 @@ class VoxtralVoiceCatalog {
 
   bool isStale(DateTime now) => now.difference(fetchedAt) >= maxAge;
 
-  VoxtralVoice? byId(String id) {
+  CloudVoice? byId(String id) {
     for (final voice in voices) {
       if (voice.id == id) return voice;
     }
@@ -215,7 +218,7 @@ class VoxtralVoiceCatalog {
   }
 
   /// Every voice advertised for [languageCode], in catalog order.
-  List<VoxtralVoice> forLanguage(String languageCode) =>
+  List<CloudVoice> forLanguage(String languageCode) =>
       voices.where((voice) => voice.speaks(languageCode)).toList();
 
   /// The voice to speak [languageCode] with.
@@ -223,11 +226,11 @@ class VoxtralVoiceCatalog {
   /// [preferredVoiceId] — the user's choice for this language — wins whenever
   /// the catalog still has it, even if the catalog does not list the language
   /// for it: the user picked it deliberately. Otherwise the language's
-  /// default: its first female preset, then its first voice of any kind. The
-  /// API has no automatic voice per language, so this default is ours.
+  /// default: its first female preset, then its first voice of any kind. No
+  /// provider names a voice per language, so this default is ours.
   /// `null` when the language has no voice, so nothing is read rather than
   /// German text in an English voice.
-  VoxtralVoice? resolve({
+  CloudVoice? resolve({
     required String languageCode,
     String? preferredVoiceId,
   }) {
@@ -240,8 +243,8 @@ class VoxtralVoiceCatalog {
         candidates.firstOrNull;
   }
 
-  static bool _isFemalePreset(VoxtralVoice voice) =>
-      voice.type == VoxtralVoiceType.preset &&
+  static bool _isFemalePreset(CloudVoice voice) =>
+      voice.type == CloudVoiceType.preset &&
       voice.gender?.trim().toLowerCase() == 'female';
 
   Map<String, dynamic> toJson() => <String, dynamic>{
@@ -251,7 +254,7 @@ class VoxtralVoiceCatalog {
 
   @override
   bool operator ==(Object other) =>
-      other is VoxtralVoiceCatalog &&
+      other is CloudVoiceCatalog &&
       other.fetchedAt == fetchedAt &&
       listEquals(other.voices, voices);
 
@@ -259,9 +262,9 @@ class VoxtralVoiceCatalog {
   int get hashCode => Object.hash(fetchedAt, Object.hashAll(voices));
 }
 
-VoxtralVoice? _tryParse(Map<String, dynamic> json) {
+CloudVoice? _tryParse(Map<String, dynamic> json) {
   try {
-    return VoxtralVoice.fromJson(json);
+    return CloudVoice.fromJson(json);
   } on FormatException {
     return null;
   }

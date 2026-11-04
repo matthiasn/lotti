@@ -706,8 +706,29 @@ void main() {
             InferenceProviderType.whisper,
             InferenceProviderType.voxtral,
             InferenceProviderType.mistral,
+            InferenceProviderType.elevenLabs,
           ]),
         );
+      });
+
+      test('ElevenLabs offers only read-aloud models: text in, audio out, '
+          'published by ElevenLabs', () {
+        final models = knownModelsByProvider[InferenceProviderType.elevenLabs]!;
+        expect(models.map((m) => m.providerModelId), [
+          elevenLabsMultilingualV2ModelId,
+          elevenLabsFlashV25ModelId,
+        ]);
+        for (final model in models) {
+          final row = model.toAiConfigModel(
+            id: model.providerModelId,
+            inferenceProviderId: 'eleven',
+          );
+          expect(row.inputModalities, [Modality.text]);
+          expect(row.outputModalities, [Modality.audio]);
+          expect(row.isReasoningModel, isFalse);
+          expect(row.supportsFunctionCalling, isFalse);
+          expect(row.publisher, 'ElevenLabs');
+        }
       });
 
       test('all models should have valid configurations', () {
@@ -1360,6 +1381,7 @@ void main() {
         expect(publisherForCuratedModel('glm-5.2'), 'Zhipu AI');
         expect(publisherForCuratedModel('openai/gpt-4.1'), 'OpenAI');
         expect(publisherForCuratedModel('openai/o4-mini'), 'OpenAI');
+        expect(publisherForCuratedModel('eleven_flash_v2_5'), 'ElevenLabs');
         expect(publisherForCuratedModel('custom-model'), isNull);
       });
 

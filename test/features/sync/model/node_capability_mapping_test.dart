@@ -42,6 +42,7 @@ void main() {
       const cloudTypes = [
         InferenceProviderType.alibaba,
         InferenceProviderType.anthropic,
+        InferenceProviderType.elevenLabs,
         InferenceProviderType.gemini,
         InferenceProviderType.genericOpenAi,
         InferenceProviderType.melious,

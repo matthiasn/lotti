@@ -1,11 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/features/design_system/components/buttons/ds_ai_disc_button.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/tts/cloud/cloud_voice_catalog.dart';
 import 'package:lotti/features/tts/cloud/cloud_voice_samples.dart';
 import 'package:lotti/features/tts/cloud/tts_cloud_route.dart';
-import 'package:lotti/features/tts/cloud/voxtral_voice_catalog.dart';
 import 'package:lotti/features/tts/model/tts_playback_state.dart';
 import 'package:lotti/features/tts/state/cloud_voice_settings_providers.dart';
 import 'package:lotti/features/tts/state/tts_playback_controller.dart';
@@ -120,13 +121,14 @@ Future<void> showCloudVoicePicker(
   BuildContext context,
   WidgetRef ref, {
   required CloudVoiceService service,
-  required VoxtralVoiceCatalog catalog,
+  required CloudVoiceCatalog catalog,
   required String language,
   required String languageName,
 }) async {
   final settings = ref.read(ttsSettingsControllerProvider.notifier);
+  final provider = service.provider;
   String? pick() =>
-      ref.read(ttsSettingsControllerProvider).cloudVoiceByLanguage[language];
+      ref.read(ttsSettingsControllerProvider).cloudVoiceFor(provider, language);
   final before = pick();
   await ModalUtils.showSinglePageModal<void>(
     context: context,
@@ -160,7 +162,7 @@ Future<void> showCloudVoicePicker(
     duration: const Duration(seconds: 8),
     action: ToastAction(
       label: context.messages.designSystemUndoLabel,
-      onPressed: () => settings.setCloudVoice(language, before),
+      onPressed: () => settings.setCloudVoice(provider, language, before),
     ),
   );
 }
@@ -186,7 +188,7 @@ class CloudVoicePicker extends ConsumerStatefulWidget {
   });
 
   final CloudVoiceService service;
-  final VoxtralVoiceCatalog catalog;
+  final CloudVoiceCatalog catalog;
   final String language;
 
   /// A list this long or shorter is read whole; longer, and splitting it by
@@ -203,15 +205,18 @@ class _CloudVoicePickerState extends ConsumerState<CloudVoicePicker> {
   /// The user's own pick when the sheet opened, kept above the filter.
   late final String? _openedWith = ref
       .read(ttsSettingsControllerProvider)
-      .cloudVoiceByLanguage[widget.language];
+      .cloudVoiceFor(_provider, widget.language);
 
-  static String? _genderOf(VoxtralVoice voice) =>
+  AiConfigInferenceProvider get _provider => widget.service.provider;
+
+  static String? _genderOf(CloudVoice voice) =>
       voice.gender?.trim().toLowerCase();
 
-  void _pick(VoxtralVoice voice, VoxtralVoice? defaultVoice) {
+  void _pick(CloudVoice voice, CloudVoice? defaultVoice) {
     ref
         .read(ttsSettingsControllerProvider.notifier)
         .setCloudVoice(
+          _provider,
           widget.language,
           voice.id == defaultVoice?.id ? null : voice.id,
         );
@@ -229,7 +234,7 @@ class _CloudVoicePickerState extends ConsumerState<CloudVoicePicker> {
     final messages = context.messages;
     final chosenId = ref.watch(
       ttsSettingsControllerProvider.select(
-        (s) => s.cloudVoiceByLanguage[widget.language],
+        (s) => s.cloudVoiceFor(_provider, widget.language),
       ),
     );
     final voices = widget.catalog.forLanguage(widget.language);
@@ -252,7 +257,7 @@ class _CloudVoicePickerState extends ConsumerState<CloudVoicePicker> {
     ];
     // A voice the API gives no female or male gender has no tab of its
     // own: it stays in the list under either, so it is always reachable.
-    bool passesFilter(VoxtralVoice voice) {
+    bool passesFilter(CloudVoice voice) {
       final own = _genderOf(voice);
       return !filtered || own == gender || (own != 'female' && own != 'male');
     }
@@ -263,7 +268,7 @@ class _CloudVoicePickerState extends ConsumerState<CloudVoicePicker> {
     ];
 
     Widget option(
-      VoxtralVoice voice, {
+      CloudVoice voice, {
       bool pinnedRow = false,
       bool groupEnd = false,
     }) => _VoiceOption(
@@ -358,7 +363,7 @@ class _VoiceOption extends ConsumerWidget {
 
   final CloudVoiceService service;
   final String language;
-  final VoxtralVoice voice;
+  final CloudVoice voice;
   final bool selected;
   final bool isDefault;
 

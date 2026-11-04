@@ -81,6 +81,13 @@ void main() {
         );
       });
 
+      test('should have correct URL for elevenLabs', () {
+        expect(
+          ProviderConfig.defaultBaseUrls[InferenceProviderType.elevenLabs],
+          equals('https://api.elevenlabs.io/v1'),
+        );
+      });
+
       test('should have correct URL for melious', () {
         expect(
           ProviderConfig.defaultBaseUrls[InferenceProviderType.melious],
@@ -148,6 +155,17 @@ void main() {
         expect(
           ProviderConfig.defaultNames[InferenceProviderType.genericOpenAi],
           equals('AI Proxy (local)'),
+        );
+      });
+
+      test('should have correct name for elevenLabs', () {
+        expect(
+          ProviderConfig.defaultNames[InferenceProviderType.elevenLabs],
+          equals('ElevenLabs'),
+        );
+        expect(
+          ProviderConfig.requiresApiKey(InferenceProviderType.elevenLabs),
+          isTrue,
         );
       });
 

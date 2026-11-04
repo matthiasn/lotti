@@ -14,6 +14,8 @@ extension InferenceProviderTypeExtension on InferenceProviderType {
         return context.messages.aiProviderAlibabaName;
       case InferenceProviderType.anthropic:
         return context.messages.aiProviderAnthropicName;
+      case InferenceProviderType.elevenLabs:
+        return context.messages.aiProviderElevenLabsName;
       case InferenceProviderType.gemini:
         return context.messages.aiProviderGeminiName;
       case InferenceProviderType.genericOpenAi:
@@ -51,6 +53,8 @@ extension InferenceProviderTypeExtension on InferenceProviderType {
         return LottiIcons.aiSpark;
       case InferenceProviderType.openAi:
         return LottiIcons.reasoning;
+      case InferenceProviderType.elevenLabs:
+        return LottiIcons.volume;
       case InferenceProviderType.gemini:
         return LottiIcons.gem;
       case InferenceProviderType.melious:

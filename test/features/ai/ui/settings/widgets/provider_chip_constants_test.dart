@@ -86,6 +86,23 @@ void main() {
       });
     });
 
+    test('ElevenLabs wears the neutral grey in both themes', () {
+      expect(
+        ProviderChipConstants.getProviderColor(
+          InferenceProviderType.elevenLabs,
+          isDark: true,
+        ),
+        const Color(0xFF9E9E9E),
+      );
+      expect(
+        ProviderChipConstants.getProviderColor(
+          InferenceProviderType.elevenLabs,
+          isDark: false,
+        ),
+        const Color(0xFF757575),
+      );
+    });
+
     group('providerColors map', () {
       test('contains an entry for every provider type', () {
         final mapKeys = ProviderChipConstants.providerColors.keys.toSet();
