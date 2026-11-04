@@ -3827,6 +3827,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get commonUnknown => 'Unknown';
 
   @override
+  String get companionSettingsCharacterAunt => 'Aunt';
+
+  @override
   String get companionSettingsCharacterDescription =>
       'Who keeps you company. Each has their own outfits; skin, hair color and sass stay as you set them.';
 
@@ -3901,6 +3904,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get companionSettingsOutfitEveryday => 'Everyday';
 
   @override
+  String get companionSettingsOutfitFestival => 'Festival';
+
+  @override
   String get companionSettingsOutfitGarden => 'Garden';
 
   @override
@@ -3925,7 +3931,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get companionSettingsOutfitStage => 'Keynote';
 
   @override
+  String get companionSettingsOutfitStudio => 'Studio';
+
+  @override
   String get companionSettingsOutfitSurprise => 'Surprise me';
+
+  @override
+  String get companionSettingsOutfitWeekend => 'Weekend';
 
   @override
   String get companionSettingsOutfitWinter => 'Winter';

@@ -3842,6 +3842,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get commonUnknown => 'Ukendt';
 
   @override
+  String get companionSettingsCharacterAunt => 'Tante';
+
+  @override
   String get companionSettingsCharacterDescription =>
       'Hvem der holder dig med selskab. Hver har sit eget tøj; hud, hårfarve og frækhed bliver, som du har valgt dem.';
 
@@ -3916,6 +3919,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get companionSettingsOutfitEveryday => 'Hverdag';
 
   @override
+  String get companionSettingsOutfitFestival => 'Festival';
+
+  @override
   String get companionSettingsOutfitGarden => 'Have';
 
   @override
@@ -3940,7 +3946,13 @@ class AppLocalizationsDa extends AppLocalizations {
   String get companionSettingsOutfitStage => 'Scene';
 
   @override
+  String get companionSettingsOutfitStudio => 'Atelier';
+
+  @override
   String get companionSettingsOutfitSurprise => 'Overrask mig';
+
+  @override
+  String get companionSettingsOutfitWeekend => 'Weekend';
 
   @override
   String get companionSettingsOutfitWinter => 'Vinter';

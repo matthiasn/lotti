@@ -1,7 +1,7 @@
 # In-App Agent Avatar: a Character You Talk To
 
 Date: 2026-10-12
-Status: proof of concept built (2026-10-13); delivery as a branch stack (2026-10-15), branches 1 (`feat/companion-speaks`), 2 (`feat/companion-day-briefing`) and 3 (`feat/companion-onboarding`) built — see "Delivery"; revised 2026-10-19 for her range and customization, branches A (`feat/companion-expressions`), B (`feat/companion-tone-track`), C (`feat/companion-outfits`), D (`feat/companion-customization`) and E (`feat/companion-customization-sync`) built — see "Revision: her range, and making her your own"; revised 2026-11-04 for three more people beside her, task 1 (`feat/companion-grandpa`) in progress — see "Revision: a cast of four"
+Status: proof of concept built (2026-10-13); delivery as a branch stack (2026-10-15), branches 1 (`feat/companion-speaks`), 2 (`feat/companion-day-briefing`) and 3 (`feat/companion-onboarding`) built — see "Delivery"; revised 2026-10-19 for her range and customization, branches A (`feat/companion-expressions`), B (`feat/companion-tone-track`), C (`feat/companion-outfits`), D (`feat/companion-customization`) and E (`feat/companion-customization-sync`) built — see "Revision: her range, and making her your own"; revised 2026-11-04 for three more people beside her, tasks 1 (`feat/companion-grandpa`) and 2 (`feat/companion-aunt`) built — see "Revision: a cast of four"
 Branch: `feat/companion-widgetbook` (PR #4782), the parent of the stack
 Builds on: [2026-06-22_bones_animation_framework.md](2026-06-22_bones_animation_framework.md)
 (the rig engine and its locked runtime decisions) and
@@ -785,7 +785,10 @@ branch, and a single changelog fragment covering everything a user sees.
 - **Screenshots:** Settings › Companion before and after, phone and
   desktop, light, Lotti and the grandpa; and a sheet of his four outfits.
 
-#### 2 · the younger woman
+#### 2 · `feat/companion-aunt`: the younger woman, named the Aunt
+
+Named "Aunt" on 2026-11-04: a role label like the grandpa's, in every
+catalog. Her default hair is the bob.
 
 - The young face: `aged: false` drops the laugh lines; fuller brows, no
   glasses.

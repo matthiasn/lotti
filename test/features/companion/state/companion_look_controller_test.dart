@@ -337,4 +337,28 @@ void main() {
       );
     });
   });
+
+  group('with the aunt chosen', () {
+    const aunt = CompanionCustomization(character: CompanionSpecies.aunt);
+    final herOutfits = CompanionLook.of(CompanionSpecies.aunt);
+
+    test('surprise me draws only her outfits, and reaches every one', () {
+      final roll = CompanionLookRoll(
+        customization: aunt,
+        picked: null,
+        seed: 7,
+      );
+      expect(roll.outfits, herOutfits);
+      final drawn = {for (var i = 0; i < 400; i++) roll.outfitFor('s-$i')};
+      expect(drawn, herOutfits.toSet());
+    });
+
+    test('next steps among her outfits and wraps from the last', () {
+      final container = containerWith(customization: aunt);
+      container
+          .read(companionOutfitProvider.notifier)
+          .next(CompanionLook.auntWeekend);
+      expect(worn(container), CompanionLook.aunt.id);
+    });
+  });
 }

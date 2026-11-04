@@ -3910,6 +3910,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get commonUnknown => 'Necunoscut';
 
   @override
+  String get companionSettingsCharacterAunt => 'Mătușa';
+
+  @override
   String get companionSettingsCharacterDescription =>
       'Cine vă ține companie. Fiecare personaj are ținutele lui; pielea, culoarea părului și îndrăzneala rămân cum le-ați ales.';
 
@@ -3984,6 +3987,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get companionSettingsOutfitEveryday => 'De zi cu zi';
 
   @override
+  String get companionSettingsOutfitFestival => 'Festival';
+
+  @override
   String get companionSettingsOutfitGarden => 'Grădină';
 
   @override
@@ -4008,7 +4014,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get companionSettingsOutfitStage => 'Scenă';
 
   @override
+  String get companionSettingsOutfitStudio => 'Atelier';
+
+  @override
   String get companionSettingsOutfitSurprise => 'Surprindeți-mă';
+
+  @override
+  String get companionSettingsOutfitWeekend => 'Weekend';
 
   @override
   String get companionSettingsOutfitWinter => 'Iarnă';

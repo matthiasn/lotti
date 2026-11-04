@@ -120,4 +120,67 @@ void main() {
       }
     });
   });
+
+  group('tuckedTopPath', () {
+    test("rises at the shoulder of an arm that lifts, and only that one's", () {
+      final rest = tuckedTopPath(RigFrame(const CompanionPose())).getBounds();
+      final lifted = tuckedTopPath(
+        RigFrame(
+          CompanionPose(
+            right: ArmPose(
+              wrist: const CompanionPose().right.wrist,
+              handAngle: 0,
+              lift: 10,
+            ),
+          ),
+        ),
+      ).getBounds();
+      expect(lifted.top, lessThan(rest.top - 5));
+      expect(lifted.bottom, rest.bottom);
+    });
+
+    test('ends inside the waistband, so its hem is always tucked', () {
+      final hem = tuckedTopPath(RigFrame(const CompanionPose())).getBounds();
+      // The band runs from 36 to 28 above the pelvis; the hem is lower.
+      expect(hem.bottom, greaterThan(pelvisY - 28));
+      expect(hem.bottom, lessThan(pelvisY));
+    });
+  });
+
+  group('the shoes', () {
+    const aunt = CompanionLook.aunt;
+
+    /// The highest canvas row [colour] reaches near the floor.
+    int top(Raster r, Color colour) {
+      for (var y = 380; y < 480; y++) {
+        for (var x = 0; x < 320; x++) {
+          if (near(r.at(x, y), colour)) return y;
+        }
+      }
+      return 480;
+    }
+
+    test(
+      "are the character's: high-tops for the aunt, brogues for him",
+      () async {
+        final his = await _body((c, f) => drawTrouserLegs(c, f, _look));
+        final hers = await _body((c, f) => drawTrouserLegs(c, f, aunt));
+        // A high-top reaches well above a brogue, over the ankle.
+        expect(
+          top(hers, aunt.palette.shoe),
+          lessThan(top(his, _c.shoe) - 8),
+        );
+        // Its thick rubber sole, and no leather sole.
+        expect(hers.count(const Color(0xFFF7F5F0)), greaterThan(80));
+        // An edge pixel or two may blend near it; a brogue's sole is dozens.
+        expect(hers.count(aunt.palette.sole), lessThan(10));
+        expect(his.count(_c.sole), greaterThan(40));
+      },
+    );
+
+    test('her suit legs are her suit colour', () async {
+      final r = await _body((c, f) => drawTrouserLegs(c, f, aunt));
+      expect(r.count(aunt.palette.trousers), greaterThan(1500));
+    });
+  });
 }

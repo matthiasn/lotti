@@ -159,4 +159,34 @@ void main() {
     expect(r.count(look.palette.cardigan), greaterThan(200));
     expect(r.count(look.palette.shirt), 0);
   });
+
+  group('the aunt', () {
+    const look = CompanionLook.aunt;
+    final p = look.palette;
+
+    test('stands in her suit legs and high-tops, no bare leg', () async {
+      final r = await _body((c, f) => drawLegs(c, f, look));
+      expect(r.count(p.trousers), greaterThan(1500));
+      expect(r.count(p.shoe), greaterThan(150));
+      expect(r.count(p.skin), 0);
+    });
+
+    test(
+      'bares more arm than the grandpa: her sleeve stops above the elbow',
+      () async {
+        Future<int> skin(CompanionLook l) async => (await _body(
+          (c, f) => drawArm(c, f, l, const CompanionPose().right, 1),
+        )).count(l.palette.skin);
+        expect(
+          await skin(look),
+          greaterThan(await skin(CompanionLook.grandpa)),
+        );
+        final r = await _body(
+          (c, f) => drawArm(c, f, look, const CompanionPose().right, 1),
+        );
+        expect(r.count(p.trousersLight), greaterThan(30));
+        expect(r.count(p.shirt), 0);
+      },
+    );
+  });
 }

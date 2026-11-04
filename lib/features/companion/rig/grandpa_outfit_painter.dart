@@ -11,33 +11,12 @@ import 'package:lotti/features/companion/rig/trousers_painter.dart';
 /// collar, and sleeves rolled to the forearm. All in the torso frame, so
 /// they lean, breathe and bounce with him.
 
-/// The shirt's outline: the shoulders, which rise with the arms, down to a
-/// hem tucked well inside the waistband.
-Path shirtPath(RigFrame f) {
-  final t = f.torso;
-  final ll = f.pose.left.lift;
-  final lr = f.pose.right.lift;
-  return Path()
-    ..moveToPoint(t(-15, -112))
-    ..curve(t(-8, -108), t(8, -108), t(15, -112))
-    ..curve(t(28, -114 - lr), t(40, -113 - lr), t(46, -108 - lr))
-    ..curve(t(51, -100), t(46, -86), t(43, -76))
-    ..curve(t(40, -60), t(38, -44), t(39, -30))
-    ..lineToPoint(t(39, -20))
-    ..lineToPoint(t(-39, -20))
-    ..lineToPoint(t(-39, -30))
-    ..curve(t(-38, -44), t(-40, -60), t(-43, -76))
-    ..curve(t(-46, -86), t(-51, -100), t(-46, -108 - ll))
-    ..curve(t(-40, -113 - ll), t(-28, -114 - ll), t(-15, -112))
-    ..close();
-}
-
 /// The shirt, then the trousers' top over its hem, the braces, the collar
 /// and the bow tie.
 void drawGrandpaOutfit(Canvas canvas, RigFrame f, CompanionLook look) {
   final c = look.palette;
   final t = f.torso;
-  final shirt = shirtPath(f);
+  final shirt = tuckedTopPath(f);
   fillPath(canvas, shirt, c.shirt);
   canvas
     ..save()

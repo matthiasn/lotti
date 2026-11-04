@@ -333,15 +333,17 @@ void drawEye(
 }
 
 /// Draws one brow centred on [centre]; [raise] lifts it, [tilt] lifts its
-/// inner end.
+/// inner end. [fullness] thickens it downwards: above 1 for a younger face.
 void drawBrow(
   Canvas canvas,
   CompanionPalette c,
   Offset centre,
   int side,
   double raise,
-  double tilt,
-) {
+  double tilt, {
+  double fullness = 1,
+}) {
+  final f = fullness;
   final s = side.toDouble();
   final cx = centre.dx;
   final y = centre.dy - raise * 3.5;
@@ -351,7 +353,7 @@ void drawBrow(
   fillPath(
     canvas,
     Path()
-      ..moveTo(inner.dx, inner.dy + 2.6)
+      ..moveTo(inner.dx, inner.dy + 2.6 * f)
       ..cubicTo(
         inner.dx + s,
         inner.dy - 2.2,
@@ -372,17 +374,17 @@ void drawBrow(
         outer.dx - s * 3,
         outer.dy + 0.6,
         peak.dx + s * 4,
-        peak.dy + 1.6,
+        peak.dy + 1.6 * f,
         peak.dx,
-        peak.dy + 1.6,
+        peak.dy + 1.6 * f,
       )
       ..cubicTo(
         peak.dx - s * 5,
-        peak.dy + 1.8,
+        peak.dy + 1.8 * f,
         inner.dx + s,
-        inner.dy + 2.4,
+        inner.dy + 2.4 * f,
         inner.dx,
-        inner.dy + 2.6,
+        inner.dy + 2.6 * f,
       )
       ..close(),
     c.brow,

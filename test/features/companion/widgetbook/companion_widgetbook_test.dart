@@ -58,6 +58,7 @@ void main() {
     expect(components().map((c) => c.name), [
       'Lotti (grandma)',
       'Grandpa',
+      'Aunt',
       'Cat',
       'Red panda',
     ]);

@@ -5,15 +5,16 @@ import 'package:lotti/features/companion/rig/paint_kit.dart';
 import 'package:lotti/features/companion/rig/rig_frame.dart';
 
 /// Trousers, for every character who wears them: the legs from the hips to
-/// the shoes, and the seat and waistband, which the torso's garments tuck
-/// into. The legs hang from the pelvis, which a bounce of joy never moves;
+/// the shoes — brogues or high-tops, as the character's
+/// [CompanionSpecies.shoes] are — the seat and waistband, and the outline of
+/// the top that tucks into them. The legs hang from the pelvis, which a bounce of joy never moves;
 /// the seat rides on the torso frame, a little lifted by a bounce, and
 /// overlaps the legs' tops by far more than a bounce lifts it, so no gap
 /// opens between them.
 
 /// The trouser legs, straight from the hip to the hem — the cloth hides the
 /// knee, so a leg reads straight even where the bare one bends a little —
-/// with a crease down each front, and the brogues over their hems.
+/// with a crease down each front, and the shoes over their hems.
 void drawTrouserLegs(Canvas canvas, RigFrame f, CompanionLook look) {
   final c = look.palette;
   for (final s in [-1, 1]) {
@@ -33,7 +34,12 @@ void drawTrouserLegs(Canvas canvas, RigFrame f, CompanionLook look) {
       c.trousersLight.withValues(alpha: 0.6),
       1.2,
     );
-    _brogue(canvas, c, f.ankle(s), s);
+    switch (look.species.shoes) {
+      case CompanionShoes.brogues:
+        _brogue(canvas, c, f.ankle(s), s);
+      case CompanionShoes.highTops:
+        _highTop(canvas, c, f.ankle(s), s);
+    }
   }
 }
 
@@ -92,6 +98,82 @@ void _brogue(Canvas canvas, CompanionPalette c, Offset ankle, int s) {
     );
   }
   canvas.restore();
+}
+
+/// A canvas high-top: laced up past the ankle, a thick white sole with a
+/// toe cap, and a round patch on the ankle.
+void _highTop(Canvas canvas, CompanionPalette c, Offset ankle, int s) {
+  canvas
+    ..save()
+    ..translate(ankle.dx + s * 3, ankle.dy + 4)
+    ..scale(s * 1.15, 1.15);
+  final upper = Path()
+    ..moveTo(-13, 8)
+    ..lineTo(-13, -14)
+    ..cubicTo(-8, -16, 0, -16, 4, -14)
+    ..lineTo(6, -4)
+    ..cubicTo(14, -2, 22, 2, 23, 8)
+    ..close();
+  fillPath(canvas, upper, c.shoe);
+  fillPath(
+    canvas,
+    Path()
+      ..moveTo(-13, 8)
+      ..lineTo(-13, -14)
+      ..cubicTo(-11, -15, -9, -15, -8, -15)
+      ..lineTo(-8, 8)
+      ..close(),
+    c.shoeShade,
+  );
+  // The sole, its toe cap, and the patch on the ankle.
+  fillPath(canvas, roundedRect(-15, 7, 41, 6, 3), _rubber);
+  fillPath(
+    canvas,
+    Path()
+      ..moveTo(15, 8)
+      ..cubicTo(19, 3, 24, 4, 25, 8)
+      ..close(),
+    _rubber,
+  );
+  strokePath(canvas, roundedRect(-15, 7, 41, 6, 3), c.shoeShade, 0.8);
+  fillCircle(canvas, const Offset(-6, -6), 3.2, _rubber);
+  strokePath(canvas, circle(const Offset(-6, -6), 3.2), c.shoeShade, 0.8);
+  for (final y in const [-12.0, -8.5, -5.0, -1.5]) {
+    strokePath(
+      canvas,
+      Path()
+        ..moveTo(-1, y)
+        ..lineTo(5, y + 1.5),
+      c.shoeShade,
+      1.1,
+    );
+  }
+  canvas.restore();
+}
+
+/// A high-top's rubber: its sole, toe cap and ankle patch.
+const _rubber = Color(0xFFF7F5F0);
+
+/// The outline of a top tucked into trousers — the grandpa's shirt, the
+/// aunt's boiler suit — from the shoulders, which rise with the arms, down
+/// to a hem tucked well inside the waistband.
+Path tuckedTopPath(RigFrame f) {
+  final t = f.torso;
+  final ll = f.pose.left.lift;
+  final lr = f.pose.right.lift;
+  return Path()
+    ..moveToPoint(t(-15, -112))
+    ..curve(t(-8, -108), t(8, -108), t(15, -112))
+    ..curve(t(28, -114 - lr), t(40, -113 - lr), t(46, -108 - lr))
+    ..curve(t(51, -100), t(46, -86), t(43, -76))
+    ..curve(t(40, -60), t(38, -44), t(39, -30))
+    ..lineToPoint(t(39, -20))
+    ..lineToPoint(t(-39, -20))
+    ..lineToPoint(t(-39, -30))
+    ..curve(t(-38, -44), t(-40, -60), t(-43, -76))
+    ..curve(t(-46, -86), t(-51, -100), t(-46, -108 - ll))
+    ..curve(t(-40, -113 - ll), t(-28, -114 - ll), t(-15, -112))
+    ..close();
 }
 
 /// The seat and the waistband, in the torso frame: drawn over the shirt's

@@ -3865,6 +3865,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get commonUnknown => 'Onbekend';
 
   @override
+  String get companionSettingsCharacterAunt => 'Tante';
+
+  @override
   String get companionSettingsCharacterDescription =>
       'Wie je gezelschap houdt. Elk personage heeft eigen outfits; huid, haarkleur en pit blijven zoals je ze hebt ingesteld.';
 
@@ -3939,6 +3942,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get companionSettingsOutfitEveryday => 'Dagelijks';
 
   @override
+  String get companionSettingsOutfitFestival => 'Festival';
+
+  @override
   String get companionSettingsOutfitGarden => 'Tuin';
 
   @override
@@ -3963,7 +3969,13 @@ class AppLocalizationsNl extends AppLocalizations {
   String get companionSettingsOutfitStage => 'Podium';
 
   @override
+  String get companionSettingsOutfitStudio => 'Atelier';
+
+  @override
   String get companionSettingsOutfitSurprise => 'Verras me';
+
+  @override
+  String get companionSettingsOutfitWeekend => 'Weekend';
 
   @override
   String get companionSettingsOutfitWinter => 'Winter';

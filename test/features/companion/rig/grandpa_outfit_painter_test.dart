@@ -77,25 +77,6 @@ void main() {
     });
   });
 
-  group('shirtPath', () {
-    test("rises at the shoulder of an arm that lifts, and only that one's", () {
-      final rest = shirtPath(RigFrame(const CompanionPose())).getBounds();
-      final lifted = shirtPath(
-        RigFrame(
-          CompanionPose(
-            right: ArmPose(
-              wrist: const CompanionPose().right.wrist,
-              handAngle: 0,
-              lift: 10,
-            ),
-          ),
-        ),
-      ).getBounds();
-      expect(lifted.top, lessThan(rest.top - 5));
-      expect(lifted.bottom, rest.bottom);
-    });
-  });
-
   group('drawShirtSleeve', () {
     // A straight arm along x: root, shoulder, elbow, wrist.
     const spine = [Offset.zero, Offset(20, 0), Offset(80, 0), Offset(140, 0)];

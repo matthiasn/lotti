@@ -3850,6 +3850,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get commonUnknown => 'Okänt';
 
   @override
+  String get companionSettingsCharacterAunt => 'Moster';
+
+  @override
   String get companionSettingsCharacterDescription =>
       'Vem som håller dig sällskap. Var och en har egna kläder; hud, hårfärg och kaxighet blir som du har valt dem.';
 
@@ -3924,6 +3927,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get companionSettingsOutfitEveryday => 'Vardag';
 
   @override
+  String get companionSettingsOutfitFestival => 'Festival';
+
+  @override
   String get companionSettingsOutfitGarden => 'Trädgård';
 
   @override
@@ -3948,7 +3954,13 @@ class AppLocalizationsSv extends AppLocalizations {
   String get companionSettingsOutfitStage => 'Scen';
 
   @override
+  String get companionSettingsOutfitStudio => 'Ateljé';
+
+  @override
   String get companionSettingsOutfitSurprise => 'Överraska mig';
+
+  @override
+  String get companionSettingsOutfitWeekend => 'Helg';
 
   @override
   String get companionSettingsOutfitWinter => 'Vinter';

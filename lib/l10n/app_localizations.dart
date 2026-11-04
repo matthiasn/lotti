@@ -6492,6 +6492,12 @@ abstract class AppLocalizations {
   /// **'Unknown'**
   String get commonUnknown;
 
+  /// Name of the aunt character, a woman of about forty, shown on her chip.
+  ///
+  /// In en, this message translates to:
+  /// **'Aunt'**
+  String get companionSettingsCharacterAunt;
+
   /// Explains the character choice: outfits belong to each character, the other choices carry over.
   ///
   /// In en, this message translates to:
@@ -6636,6 +6642,12 @@ abstract class AppLocalizations {
   /// **'Everyday'**
   String get companionSettingsOutfitEveryday;
 
+  /// Name of one of the aunt's outfits, with a headband: a music festival.
+  ///
+  /// In en, this message translates to:
+  /// **'Festival'**
+  String get companionSettingsOutfitFestival;
+
   /// Name of one of the companion's outfits.
   ///
   /// In en, this message translates to:
@@ -6684,11 +6696,23 @@ abstract class AppLocalizations {
   /// **'Keynote'**
   String get companionSettingsOutfitStage;
 
+  /// Name of one of the aunt's outfits: a day in an artist's studio.
+  ///
+  /// In en, this message translates to:
+  /// **'Studio'**
+  String get companionSettingsOutfitStudio;
+
   /// Outfit option that lets the companion pick a random outfit each time the app opens.
   ///
   /// In en, this message translates to:
   /// **'Surprise me'**
   String get companionSettingsOutfitSurprise;
+
+  /// Name of one of the aunt's outfits: a weekend.
+  ///
+  /// In en, this message translates to:
+  /// **'Weekend'**
+  String get companionSettingsOutfitWeekend;
 
   /// Name of one of the companion's outfits.
   ///

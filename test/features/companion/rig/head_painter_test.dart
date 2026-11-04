@@ -236,4 +236,61 @@ void main() {
       );
     });
   });
+
+  group('the aunt', () {
+    const aunt = CompanionLook.aunt;
+
+    test('wears gold hoops and no glasses', () async {
+      final r = await _head(aunt);
+      expect(r.count(aunt.palette.earring, tolerance: 12), greaterThan(40));
+      // Bare skin where Lotti's frames cross the bridge of the nose.
+      expect(
+        near(r.at(240, 260 - 18), aunt.palette.skin, tolerance: 8),
+        isTrue,
+      );
+      final lotti = await _head(CompanionLook.grandma);
+      expect(
+        near(lotti.at(240, 260 - 18), aunt.palette.skin, tolerance: 8),
+        isFalse,
+      );
+    });
+
+    test('has no laugh lines beside her mouth; Lotti does', () async {
+      /// Pixels off the bare skin beside the mouth, head-local x 16..23,
+      /// y 14..32 on both sides.
+      Future<int> creases(CompanionLook look) async {
+        final r = await _head(look);
+        var n = 0;
+        for (final side in [-1, 1]) {
+          for (var x = 16; x <= 23; x++) {
+            for (var y = 14; y <= 32; y++) {
+              final px = r.at(240 + side * x * 2, 260 + y * 2);
+              if (!near(px, look.palette.skin, tolerance: 4)) n++;
+            }
+          }
+        }
+        return n;
+      }
+
+      expect(
+        await creases(aunt),
+        lessThan(await creases(CompanionLook.grandma) - 10),
+      );
+    });
+
+    test('has fuller brows than Lotti', () async {
+      final hers = (await _head(aunt)).count(aunt.palette.brow);
+      final lottis = (await _head(CompanionLook.grandma)).count(
+        CompanionLook.grandma.palette.brow,
+      );
+      expect(hers, greaterThan(lottis * 1.2));
+    });
+
+    test('wears the headband to the festival only', () async {
+      const festival = CompanionLook.auntFestival;
+      final band = festival.palette.headband;
+      expect((await _head(festival)).count(band), greaterThan(500));
+      expect((await _head(aunt)).count(band), 0);
+    });
+  });
 }

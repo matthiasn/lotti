@@ -18,6 +18,10 @@ void main() {
       'grandpa_jazz',
       'grandpa_seaside',
       'grandpa_market',
+      'aunt',
+      'aunt_studio',
+      'aunt_festival',
+      'aunt_weekend',
       'cat',
       'cat_rock',
       'red_panda',
@@ -189,6 +193,7 @@ void main() {
         {
           CompanionSpecies.grandma: CompanionLegs.bare,
           CompanionSpecies.grandpa: CompanionLegs.trousers,
+          CompanionSpecies.aunt: CompanionLegs.trousers,
           CompanionSpecies.cat: CompanionLegs.paws,
           CompanionSpecies.redPanda: CompanionLegs.paws,
         },
@@ -199,6 +204,7 @@ void main() {
       expect(CompanionSpecies.choosable, [
         CompanionSpecies.grandma,
         CompanionSpecies.grandpa,
+        CompanionSpecies.aunt,
       ]);
     });
 
@@ -212,6 +218,22 @@ void main() {
       );
       expect(CompanionSpecies.grandpa.hairStyle, CompanionHairStyle.short);
       expect(CompanionSpecies.grandma.hairStyle, CompanionHairStyle.bun);
+      expect(CompanionSpecies.aunt.hairStyle, CompanionHairStyle.bob);
+    });
+
+    test('only the grandparents are aged', () {
+      expect(
+        [
+          for (final s in CompanionSpecies.values)
+            if (s.aged) s,
+        ],
+        [CompanionSpecies.grandma, CompanionSpecies.grandpa],
+      );
+    });
+
+    test('the grandpa wears brogues and the aunt high-tops', () {
+      expect(CompanionSpecies.grandpa.shoes, CompanionShoes.brogues);
+      expect(CompanionSpecies.aunt.shoes, CompanionShoes.highTops);
     });
   });
 
@@ -329,5 +351,87 @@ void main() {
     expect([changed.dress, changed.skin], [base.dress, base.skin]);
     final kept = changed.copyWith();
     expect([kept.shirt, kept.cap], [red, red]);
+  });
+
+  group("the aunt's outfits", () {
+    final hers = CompanionLook.of(CompanionSpecies.aunt);
+
+    test('are four, her everyday one first', () {
+      expect(hers, [
+        CompanionLook.aunt,
+        CompanionLook.auntStudio,
+        CompanionLook.auntFestival,
+        CompanionLook.auntWeekend,
+      ]);
+    });
+
+    test('wear gold hoops and no frames or props of the others', () {
+      for (final look in hers) {
+        expect(look.earring, EarringKind.hoop, reason: look.id);
+        expect(look.hairStyle, CompanionHairStyle.bob, reason: look.id);
+        expect(
+          [
+            look.glasses,
+            look.sunglasses,
+            look.readingGlasses,
+            look.beret,
+            look.beads,
+            look.glove,
+            look.flatCap,
+          ],
+          everyElement(isFalse),
+          reason: look.id,
+        );
+      }
+    });
+
+    test('put the headband on for the festival only', () {
+      expect(
+        [
+          for (final look in hers)
+            if (look.headband) look,
+        ],
+        [CompanionLook.auntFestival],
+      );
+    });
+
+    test('no two share a suit colour', () {
+      expect(hers.map((l) => l.palette.trousers).toSet(), hasLength(4));
+    });
+
+    test("repeat no garment colour of Lotti's or the grandpa's", () {
+      final theirs = {
+        for (final look in CompanionLook.of(CompanionSpecies.grandma)) ...[
+          look.palette.dress,
+          look.palette.cardigan,
+        ],
+        for (final look in CompanionLook.of(CompanionSpecies.grandpa)) ...[
+          look.palette.shirt,
+          look.palette.trousers,
+          look.palette.braces,
+          look.palette.bowTie,
+        ],
+      };
+      for (final look in hers) {
+        expect(theirs, isNot(contains(look.palette.trousers)), reason: look.id);
+      }
+    });
+
+    test('copyWith keeps the headband', () {
+      final dressed = CompanionLook.auntFestival.copyWith(
+        hairStyle: CompanionHairStyle.afro,
+      );
+      expect(dressed.headband, isTrue);
+      expect(dressed.earring, EarringKind.hoop);
+    });
+
+    test('the palette changes her belt and headband alone', () {
+      const red = Color(0xFFFF0000);
+      const base = CompanionPalette();
+      final changed = base.copyWith(belt: red, headband: red);
+      expect([changed.belt, changed.headband], [red, red]);
+      expect(changed.trousers, base.trousers);
+      expect(changed.copyWith().belt, red);
+    });
   });
 }

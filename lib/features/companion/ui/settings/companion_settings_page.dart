@@ -37,8 +37,8 @@ class CompanionSettingsPage extends StatelessWidget {
   }
 }
 
-/// Where a person makes the companion their own: who it is (Lotti or the
-/// grandpa), the outfit worn or none, so a fresh one is picked every time it
+/// Where a person makes the companion their own: who it is (Lotti, the
+/// grandpa or the aunt), the outfit worn or none, so a fresh one is picked every time it
 /// is shown, the skin tone, the hairstyle and its colour, and how much sass
 /// it reads with.
 ///
@@ -278,6 +278,7 @@ class _ChipChoice<T> extends StatelessWidget {
 String characterName(AppLocalizations m, CompanionSpecies species) =>
     switch (species) {
       CompanionSpecies.grandpa => m.companionSettingsCharacterGrandpa,
+      CompanionSpecies.aunt => m.companionSettingsCharacterAunt,
       _ => m.companionSettingsCharacterLotti,
     };
 
@@ -319,6 +320,9 @@ String outfitName(AppLocalizations m, CompanionLook outfit) =>
       'grandpa_jazz' => m.companionSettingsOutfitJazz,
       'grandpa_seaside' => m.companionSettingsOutfitSeaside,
       'grandpa_market' => m.companionSettingsOutfitMarket,
+      'aunt_studio' => m.companionSettingsOutfitStudio,
+      'aunt_festival' => m.companionSettingsOutfitFestival,
+      'aunt_weekend' => m.companionSettingsOutfitWeekend,
       _ => m.companionSettingsOutfitEveryday,
     };
 

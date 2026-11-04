@@ -68,6 +68,8 @@ class CompanionPalette {
     this.bowTieShade = const Color(0xFF4E1E41),
     this.cap = const Color(0xFF8E8A86),
     this.capShade = const Color(0xFF6F6B67),
+    this.belt = const Color(0xFF8C5530),
+    this.headband = const Color(0xFF2FB5A8),
     this.muzzle,
     this.earInner,
     this.furMark,
@@ -137,6 +139,11 @@ class CompanionPalette {
   final Color bowTieShade;
   final Color cap;
   final Color capShade;
+
+  // The aunt's: the belt of her boiler suit — the suit itself takes the
+  // trousers' colours — and the headband of one outfit.
+  final Color belt;
+  final Color headband;
 
   // An animal's own colours. Each is null on the grandmother, whose skin
   // stands in for the ones she has a counterpart of.
@@ -216,6 +223,8 @@ class CompanionPalette {
     Color? bowTieShade,
     Color? cap,
     Color? capShade,
+    Color? belt,
+    Color? headband,
     Color? muzzle,
     Color? earInner,
     Color? furMark,
@@ -281,6 +290,8 @@ class CompanionPalette {
     bowTieShade: bowTieShade ?? this.bowTieShade,
     cap: cap ?? this.cap,
     capShade: capShade ?? this.capShade,
+    belt: belt ?? this.belt,
+    headband: headband ?? this.headband,
     muzzle: muzzle ?? this.muzzle,
     earInner: earInner ?? this.earInner,
     furMark: furMark ?? this.furMark,
@@ -314,12 +325,21 @@ enum CompanionLegs {
   paws,
 }
 
+/// What a character in trousers wears on its feet.
+enum CompanionShoes {
+  /// Lace-ups with a punched toe cap.
+  brogues,
+
+  /// Canvas high-tops, laced to above the ankle.
+  highTops,
+}
+
 /// Who the companion is: each character is its own rig on the same
 /// skeleton. The humans share a face and differ in their clothes; the
 /// animals have ears, a muzzle and a tail where a human has hair and shoes.
 enum CompanionSpecies {
   /// Lotti, the grandmother the app is named after.
-  grandma(headScale: 1, legs: CompanionLegs.bare),
+  grandma(headScale: 1, legs: CompanionLegs.bare, aged: true),
 
   /// A grandfather: shirt and braces, trousers, a trimmed beard.
   grandpa(
@@ -327,6 +347,15 @@ enum CompanionSpecies {
     legs: CompanionLegs.trousers,
     hairStyle: CompanionHairStyle.short,
     bearded: true,
+    aged: true,
+  ),
+
+  /// The aunt, about forty: a boiler suit, high-tops, hoops, no glasses.
+  aunt(
+    headScale: 1,
+    legs: CompanionLegs.trousers,
+    hairStyle: CompanionHairStyle.bob,
+    shoes: CompanionShoes.highTops,
   ),
 
   /// Plain proportions, tall pointed ears and a thin tail.
@@ -341,6 +370,8 @@ enum CompanionSpecies {
     required this.legs,
     this.hairStyle = CompanionHairStyle.bun,
     this.bearded = false,
+    this.aged = false,
+    this.shoes = CompanionShoes.brogues,
   });
 
   /// The head's size relative to the grandmother's.
@@ -355,6 +386,13 @@ enum CompanionSpecies {
   /// hair's colour.
   final bool bearded;
 
+  /// A face that has smiled for decades: laugh lines beside the mouth and
+  /// under the eyes. A younger face has none, and fuller brows.
+  final bool aged;
+
+  /// What [CompanionLegs.trousers] stand in; the other legs ignore it.
+  final CompanionShoes shoes;
+
   bool get isAnimal => legs == CompanionLegs.paws;
 
   /// The characters a person can choose in settings: the humans, whose
@@ -365,8 +403,15 @@ enum CompanionSpecies {
   ];
 }
 
-/// What sits on her ears.
-enum EarringKind { none, pearl, disc }
+/// What sits on the ears.
+enum EarringKind {
+  none,
+  pearl,
+  disc,
+
+  /// A gold ring hanging from the lobe.
+  hoop,
+}
 
 /// A named outfit: a palette plus the shapes that come and go with it.
 @immutable
@@ -385,6 +430,7 @@ class CompanionLook {
     this.hairStyle = CompanionHairStyle.bun,
     this.readingGlasses = false,
     this.flatCap = false,
+    this.headband = false,
   });
 
   /// Stable identifier, as stored when the look becomes a setting.
@@ -419,6 +465,9 @@ class CompanionLook {
   /// A flat cap, its peak over the brow.
   final bool flatCap;
 
+  /// A wide band across the hair behind the hairline.
+  final bool headband;
+
   /// This look with [palette] or [hairStyle] changed: an outfit dressed in a
   /// person's own choice of skin and hair.
   CompanionLook copyWith({
@@ -438,6 +487,7 @@ class CompanionLook {
     hairStyle: hairStyle ?? this.hairStyle,
     readingGlasses: readingGlasses,
     flatCap: flatCap,
+    headband: headband,
   );
 
   /// Lotti, the grandmother the app is named after: silver bun, glasses, a
@@ -643,6 +693,85 @@ class CompanionLook {
     hairStyle: CompanionHairStyle.short,
   );
 
+  /// The aunt every day: a denim-blue boiler suit, a cognac belt, white
+  /// high-tops and gold hoops.
+  static const aunt = CompanionLook(
+    id: 'aunt',
+    species: CompanionSpecies.aunt,
+    palette: CompanionPalette(
+      trousers: Color(0xFF4A6A8C),
+      trousersShade: Color(0xFF37516D),
+      trousersLight: Color(0xFF6688AB),
+      shoe: Color(0xFFF3F1EC),
+      shoeShade: Color(0xFFCFCBC2),
+      earring: _gold,
+    ),
+    glasses: false,
+    earring: EarringKind.hoop,
+    blush: 0.3,
+    hairStyle: CompanionHairStyle.bob,
+  );
+
+  /// In the studio: a blush-pink boiler suit, a black belt and black
+  /// high-tops.
+  static const auntStudio = CompanionLook(
+    id: 'aunt_studio',
+    species: CompanionSpecies.aunt,
+    palette: CompanionPalette(
+      trousers: Color(0xFFE7A9A0),
+      trousersShade: Color(0xFFCB8B82),
+      trousersLight: Color(0xFFF3C6BF),
+      belt: Color(0xFF2A2A2E),
+      shoe: Color(0xFF2B2B30),
+      shoeShade: Color(0xFF18181B),
+      earring: _gold,
+    ),
+    glasses: false,
+    earring: EarringKind.hoop,
+    blush: 0.3,
+    hairStyle: CompanionHairStyle.bob,
+  );
+
+  /// Off to a festival: a tangerine boiler suit, a cream belt, lilac
+  /// high-tops and a turquoise headband.
+  static const auntFestival = CompanionLook(
+    id: 'aunt_festival',
+    species: CompanionSpecies.aunt,
+    palette: CompanionPalette(
+      trousers: Color(0xFFE9813A),
+      trousersShade: Color(0xFFC9662A),
+      trousersLight: Color(0xFFF5A066),
+      belt: Color(0xFFEDE3CF),
+      shoe: Color(0xFFB9A6E0),
+      shoeShade: Color(0xFF9682C4),
+      earring: _gold,
+    ),
+    glasses: false,
+    earring: EarringKind.hoop,
+    headband: true,
+    blush: 0.32,
+    hairStyle: CompanionHairStyle.bob,
+  );
+
+  /// A weekend: a brick-red boiler suit, a black belt and cream high-tops.
+  static const auntWeekend = CompanionLook(
+    id: 'aunt_weekend',
+    species: CompanionSpecies.aunt,
+    palette: CompanionPalette(
+      trousers: Color(0xFF9E3B32),
+      trousersShade: Color(0xFF7B2C25),
+      trousersLight: Color(0xFFBA5A50),
+      belt: Color(0xFF2A2A2E),
+      shoe: Color(0xFFEFE6D4),
+      shoeShade: Color(0xFFCDBFA6),
+      earring: _gold,
+    ),
+    glasses: false,
+    earring: EarringKind.hoop,
+    blush: 0.3,
+    hairStyle: CompanionHairStyle.bob,
+  );
+
   /// A silver tabby: green eyes, a white muzzle and white socks, in a navy
   /// dress under a coral cardigan with a mint scarf.
   static const cat = CompanionLook(
@@ -763,6 +892,10 @@ class CompanionLook {
     grandpaJazz,
     grandpaSeaside,
     grandpaMarket,
+    aunt,
+    auntStudio,
+    auntFestival,
+    auntWeekend,
     cat,
     catRock,
     redPanda,
@@ -775,6 +908,9 @@ class CompanionLook {
       if (look.species == species) look,
   ];
 }
+
+/// The aunt's gold hoops.
+const _gold = Color(0xFFD4A637);
 
 /// The silver tabby. The lips take the muzzle's colour, so only the mouth's
 /// opening and seam show, the way a cat's mouth does.

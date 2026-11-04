@@ -3,8 +3,8 @@ import 'package:lotti/features/companion/model/companion_look.dart';
 import 'package:lotti/features/companion/model/companion_parts.dart';
 import 'package:lotti/features/companion/model/companion_reaction.dart';
 
-/// How a person has made the companion their own: who it is (Lotti or the
-/// grandpa), the skin, the hair and its colour, the outfit worn, or none to
+/// How a person has made the companion their own: who it is (Lotti, the
+/// grandpa or the aunt), the skin, the hair and its colour, the outfit worn, or none to
 /// pick one each session, and how much sass it reads with.
 ///
 /// The default is Lotti as the pitch videos draw her: [CompanionSkinTone.tone1],

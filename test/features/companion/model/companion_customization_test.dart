@@ -286,6 +286,19 @@ void main() {
       );
     });
 
+    test('asCharacter gives the aunt her bob, outfit cleared', () {
+      final aunt = grandpa.asCharacter(CompanionSpecies.aunt);
+      expect(aunt.character, CompanionSpecies.aunt);
+      expect(aunt.hairStyle, CompanionHairStyle.bob);
+      expect(aunt.outfitId, isNull);
+      expect(
+        CompanionCustomization.fromJson(
+          aunt.copyWith(outfitId: () => 'aunt_studio').toJson(),
+        ).outfitId,
+        'aunt_studio',
+      );
+    });
+
     test('dresses his outfit in the chosen skin and hair', () {
       final dressed = grandpa.dress(CompanionLook.grandpaJazz);
       expect(dressed.species, CompanionSpecies.grandpa);

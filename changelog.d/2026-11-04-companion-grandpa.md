@@ -6,6 +6,11 @@
   own (everyday, jazz, seaside, and market day with a flat cap), and
   "Surprise me" and the outfit button on the full-screen stage pick among
   them. Skin tone, hair colour and sass carry over when you switch.
-- **Two more hairstyles for the companion: short and balding.** Either
+- **The companion can be an aunt.** A third character in the same choice:
+  a woman of about forty in a boiler suit with a belt and a chest pocket,
+  short turned-up sleeves, high-top trainers and gold hoops, with fuller
+  brows and no glasses. Her four outfits are everyday, studio, festival
+  (with a headband) and weekend.
+- **Two more hairstyles for the companion: short and balding.** Every
   character can wear them, and the hairstyle picker now shows its choices as
   buttons that wrap, so all seven fit on a phone.

@@ -2526,6 +2526,10 @@
   "commonError": "Error",
   "commonLoading": "Loading...",
   "commonUnknown": "Unknown",
+  "companionSettingsCharacterAunt": "Aunt",
+  "@companionSettingsCharacterAunt": {
+    "description": "Name of the aunt character, a woman of about forty, shown on her chip."
+  },
   "companionSettingsCharacterDescription": "Who keeps you company. Each has their own outfits; skin, hair color and sass stay as you set them.",
   "@companionSettingsCharacterDescription": {
     "description": "Explains the character choice: outfits belong to each character, the other choices carry over."
@@ -2622,6 +2626,10 @@
   "@companionSettingsOutfitEveryday": {
     "description": "Name of one of the companion's outfits."
   },
+  "companionSettingsOutfitFestival": "Festival",
+  "@companionSettingsOutfitFestival": {
+    "description": "Name of one of the aunt's outfits, with a headband: a music festival."
+  },
   "companionSettingsOutfitGarden": "Garden",
   "@companionSettingsOutfitGarden": {
     "description": "Name of one of the companion's outfits."
@@ -2654,9 +2662,17 @@
   "@companionSettingsOutfitStage": {
     "description": "Name of one of the companion's outfits."
   },
+  "companionSettingsOutfitStudio": "Studio",
+  "@companionSettingsOutfitStudio": {
+    "description": "Name of one of the aunt's outfits: a day in an artist's studio."
+  },
   "companionSettingsOutfitSurprise": "Surprise me",
   "@companionSettingsOutfitSurprise": {
     "description": "Outfit option that lets the companion pick a random outfit each time the app opens."
+  },
+  "companionSettingsOutfitWeekend": "Weekend",
+  "@companionSettingsOutfitWeekend": {
+    "description": "Name of one of the aunt's outfits: a weekend."
   },
   "companionSettingsOutfitWinter": "Winter",
   "@companionSettingsOutfitWinter": {

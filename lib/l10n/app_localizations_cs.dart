@@ -3891,6 +3891,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get commonUnknown => 'Neznámé';
 
   @override
+  String get companionSettingsCharacterAunt => 'Teta';
+
+  @override
   String get companionSettingsCharacterDescription =>
       'Kdo ti dělá společnost. Každá postava má vlastní oblečení; pleť, barva vlasů a drzost zůstanou, jak je nastavíš.';
 
@@ -3965,6 +3968,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get companionSettingsOutfitEveryday => 'Všední';
 
   @override
+  String get companionSettingsOutfitFestival => 'Festival';
+
+  @override
   String get companionSettingsOutfitGarden => 'Zahrada';
 
   @override
@@ -3989,7 +3995,13 @@ class AppLocalizationsCs extends AppLocalizations {
   String get companionSettingsOutfitStage => 'Pódium';
 
   @override
+  String get companionSettingsOutfitStudio => 'Ateliér';
+
+  @override
   String get companionSettingsOutfitSurprise => 'Překvap mě';
+
+  @override
+  String get companionSettingsOutfitWeekend => 'Víkend';
 
   @override
   String get companionSettingsOutfitWinter => 'Zima';

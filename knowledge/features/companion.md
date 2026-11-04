@@ -124,6 +124,10 @@ sources:
     resource: ../../lib/features/companion/rig/grandpa_head_painter.dart
     title: The grandpa's beard, moustache and flat cap
     last_modified: 2026-11-04
+  - id: aunt-outfit
+    resource: ../../lib/features/companion/rig/aunt_outfit_painter.dart
+    title: The aunt's boiler suit, belt and short sleeves
+    last_modified: 2026-11-04
   - id: short-hair
     resource: ../../lib/features/companion/rig/short_hair_painter.dart
     title: The short and balding cuts
@@ -489,8 +493,8 @@ flowchart LR
   kept, the outfit id does not change when the character does, so the pick
   watches both.
 - **The customization** (`companionCustomizationProvider`): the character
-  (`CompanionSpecies.choosable`, the humans: Lotti by default, or the
-  grandpa), the skin tone, hairstyle, hair colour, outfit, sass (default `cheeky`) and whether she
+  (`CompanionSpecies.choosable`, the humans: Lotti by default, the grandpa
+  or the aunt), the skin tone, hairstyle, hair colour, outfit, sass (default `cheeky`) and whether she
   answers a spoken question aloud (`speaksReplies`, default on; only an
   explicit false mutes her). `loaded` says whether that is known yet — the
   stored value read (nothing stored counts) or set. It stays false while the
@@ -540,7 +544,8 @@ flowchart LR
   outfit paints (the rock look's red). `asCharacter` is how settings
   switches character: it clears the outfit, since outfits belong to one,
   and sets the hairstyle to that character's own
-  (`CompanionSpecies.hairStyle`: the bun, or the grandpa's short cut).
+  (`CompanionSpecies.hairStyle`: the bun, the grandpa's short cut, the
+  aunt's bob).
 
 Every part combines with every other, and none is named after a people:
 skin tones are numbered, light to deep, and a screen reader says "Skin tone
@@ -561,19 +566,27 @@ the hairline to points spread over the crown, and each loc is a rope with a
 shaded side, a lit one and slanted twists. The jitter is a fixed hash, never
 `Random`, so a frame never shimmers.
 
-# The grandpa
+# The grandpa and the aunt
 
-He is a species of the same rig (`CompanionSpecies.grandpa`) with clothes of
-his own, none of them hers. The painters ask the species' traits rather than
-its name where a trait will do: `legs` (bare under a dress, trousers, or an
-animal's paws) picks the leg painter, `bearded` the beard. His garments are
-his own painters:
+They are species of the same rig (`CompanionSpecies.grandpa`,
+`CompanionSpecies.aunt`) with clothes of their own, none of them Lotti's or
+each other's. The painters ask the species' traits rather than its name
+where a trait will do: `legs` (bare under a dress, trousers, or an animal's
+paws) picks the leg painter, `shoes` the trousers' footwear (brogues or
+high-tops), `bearded` the beard, and `aged` the laugh lines — an unaged face
+draws none, and its brows fuller (`drawBrow`'s `fullness`). Only the upper
+garments and the sleeve are dispatched on the character itself, since each
+character's are its own:
 
 | Painter | Draws |
 |---|---|
-| `rig/trousers_painter.dart` | the trouser legs, straight from hip to hem, and brogues; the seat and waistband, in the torso frame |
+| `rig/trousers_painter.dart` | the trouser legs, straight from hip to hem, and the character's shoes; the seat and waistband, in the torso frame; `tuckedTopPath`, the outline of any top tucked into them |
 | `rig/grandpa_outfit_painter.dart` | the shirt, then the trousers' top over its tucked hem, the braces, the collar and the bow tie; the shirt sleeve rolled to the forearm |
 | `rig/grandpa_head_painter.dart` | the beard, the moustache and the flat cap |
+| `rig/aunt_outfit_painter.dart` | the boiler suit in the trousers' colours, its zip, chest pocket and open collar, then the seat and the belt over the band; the short sleeve turned up above the elbow |
+
+Her hoops (`EarringKind.hoop`) and headband (`CompanionLook.headband`) sit
+with the other things worn on the head, in `head_painter.dart`.
 
 His half-moon readers sit with the other frames in `head_painter.dart`
 (`CompanionLook.readingGlasses`).
@@ -582,8 +595,8 @@ His half-moon readers sit with the other frames in `head_painter.dart`
 face the order is laugh lines, beard, mouth, moustache, so every mouth shape
 opens over the beard and the moustache tops the upper lip.
 
-**A bounce of joy never parts his shirt from his trousers.** Like her legs,
-his trouser legs hang from the pelvis, which a bounce never moves; the seat
+**A bounce of joy never parts a tucked top from the trousers.** Like
+Lotti's legs, trouser legs hang from the pelvis, which a bounce never moves; the seat
 rides on the lifted torso frame. The seat reaches 30 below the waist, past
 the legs' tops at the hips, and a bounce lifts it by at most a few units, so
 a test walks each leg from the waistband to the ankle at the biggest bounce

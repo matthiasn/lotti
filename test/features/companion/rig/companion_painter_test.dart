@@ -107,6 +107,17 @@ void main() {
     },
   );
 
+  test('paints the aunt in her boiler suit, never the dress', () async {
+    const look = CompanionLook.aunt;
+    final r = await _paint(
+      CompanionPainter(pose: const CompanionPose(), look: look),
+      const Size(160, 240),
+    );
+    expect(r.count(look.palette.trousers), greaterThan(600));
+    expect(r.count(look.palette.dress), 0);
+    expect(r.count(look.palette.shirt), 0);
+  });
+
   test('paints an animal with its tail, behind the dress', () async {
     const look = CompanionLook.redPanda;
     final r = await _paint(

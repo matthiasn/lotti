@@ -358,7 +358,7 @@ void main() {
     }
     expect(
       CompanionSpecies.choosable.map((s) => characterName(m, s)).toList(),
-      ['Lotti', 'Grandpa'],
+      ['Lotti', 'Grandpa', 'Aunt'],
     );
     expect(
       CompanionSass.values.map((s) => sassName(m, s)).toSet(),
@@ -377,6 +377,15 @@ void main() {
         CompanionLook.grandpaMarket,
       ].map((o) => outfitName(m, o)),
       ['Jazz', 'Seaside', 'Market day'],
+    );
+    expect(outfitName(m, CompanionLook.aunt), 'Everyday');
+    expect(
+      [
+        CompanionLook.auntStudio,
+        CompanionLook.auntFestival,
+        CompanionLook.auntWeekend,
+      ].map((o) => outfitName(m, o)),
+      ['Studio', 'Festival', 'Weekend'],
     );
   });
 
@@ -440,6 +449,25 @@ void main() {
       expect(
         previews(tester).map((v) => v.look.id),
         everyElement('grandpa_market'),
+      );
+    });
+
+    testWidgets('choosing the aunt shows her in her bob, among her outfits', (
+      tester,
+    ) async {
+      await pumpBody(tester, surprise: true);
+      await tester.tap(find.text('Aunt'));
+      await _frames(tester);
+      expect(chosen(tester).character, CompanionSpecies.aunt);
+      expect(chosen(tester).hairStyle, CompanionHairStyle.bob);
+      expect(selected(tester, 'Aunt'), isTrue);
+      for (final label in ['Studio', 'Festival', 'Weekend']) {
+        expect(find.text(label), findsOneWidget, reason: label);
+      }
+      expect(find.text('Jazz'), findsNothing);
+      expect(
+        previews(tester).map((v) => v.look.species),
+        everyElement(CompanionSpecies.aunt),
       );
     });
 

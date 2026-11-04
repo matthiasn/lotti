@@ -76,11 +76,13 @@ void drawHead(Canvas canvas, RigFrame f, CompanionLook look) {
   }
   if (look.beret) _beret(canvas, c, yaw);
   if (look.flatCap) drawFlatCap(canvas, c, yaw);
+  if (look.headband) _headband(canvas, c, yaw);
   canvas.restore();
 }
 
-/// A human face: its shading, the features and the laugh lines; for a
-/// bearded character, the beard under the mouth and the moustache over it.
+/// A human face: its shading, the features, and for an older face the laugh
+/// lines; for a younger one fuller brows; for a bearded character, the beard
+/// under the mouth and the moustache over it.
 void _humanFace(Canvas canvas, CompanionLook look, CompanionPose p) {
   final c = look.palette;
   final yaw = p.headYaw;
@@ -137,10 +139,11 @@ void _humanFace(Canvas canvas, CompanionLook look, CompanionPose p) {
       s,
       p.browRaise + s * p.browSkew,
       p.browTilt,
+      fullness: look.species.aged ? 1 : 1.5,
     );
   }
   drawNose(canvas, c, fx * 1.25, 8 + fy * 1.1);
-  _laughLines(canvas, c, fx, fy, p.smile);
+  if (look.species.aged) _laughLines(canvas, c, fx, fy, p.smile);
   if (look.species.bearded) drawBeard(canvas, c, yaw);
   canvas
     ..save()
@@ -354,7 +357,7 @@ void _sunglasses(
   );
 }
 
-/// A pearl on a short hook, or a flat coloured disc.
+/// A pearl on a short hook, a flat coloured disc, or a hoop.
 void _earring(
   Canvas canvas,
   CompanionPalette c,
@@ -369,6 +372,10 @@ void _earring(
     const Color(0xFFD9B859),
     1,
   );
+  if (kind == EarringKind.hoop) {
+    strokePath(canvas, circle(at + const Offset(0, 6), 6), c.earring, 1.8);
+    return;
+  }
   if (kind == EarringKind.disc) {
     fillCircle(canvas, at + const Offset(0, 4), 5.2, c.earring);
     fillCircle(
@@ -382,6 +389,19 @@ void _earring(
   fillCircle(canvas, at + const Offset(0, 3), 3.6, c.pearlShade);
   fillCircle(canvas, at + const Offset(-0.6, 2.4), 2.8, c.pearl);
   fillCircle(canvas, at + const Offset(-1.4, 1.4), 1, const Color(0xFFFFFFFF));
+}
+
+/// A wide band over the crown, behind the hairline, with a thin light
+/// stripe along it.
+void _headband(Canvas canvas, CompanionPalette c, double yaw) {
+  final centre = Offset(yaw * 4, -16);
+  strokePath(canvas, arc(centre, 50, 3.6, 5.82), c.headband, 9);
+  strokePath(
+    canvas,
+    arc(centre, 52, 3.75, 5.67),
+    const Color(0x55FFFFFF),
+    1.4,
+  );
 }
 
 /// A red beret pulled down to the left, its stalk on top.

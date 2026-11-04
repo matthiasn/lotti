@@ -188,6 +188,19 @@ void main() {
     expect(up.centroid(_c.brow)!.dy, lessThan(rest.centroid(_c.brow)!.dy - 5));
   });
 
+  test('a fuller brow is thicker, grown downwards from the same top', () async {
+    final plain = await _draw((c) => drawBrow(c, _c, Offset.zero, 1, 0, 0));
+    final full = await _draw(
+      (c) => drawBrow(c, _c, Offset.zero, 1, 0, 0, fullness: 1.5),
+    );
+    expect(full.count(_c.brow), greaterThan(plain.count(_c.brow) * 1.15));
+    // Its centre sits lower: the extra is below, not above.
+    expect(
+      full.centroid(_c.brow)!.dy,
+      greaterThan(plain.centroid(_c.brow)!.dy),
+    );
+  });
+
   test('drawNose paints the nostril shade', () async {
     final r = await _draw((c) => drawNose(c, _c, 0, 0));
     expect(r.count(_c.skinDeep), greaterThan(10));
