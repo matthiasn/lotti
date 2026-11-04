@@ -170,7 +170,7 @@ points of the page. The header now contributes vertical padding only.
 
 `TaskDetailsPage` composes `TaskSliverAppBar` and `TaskForm`. Lifetime AI
 cost, energy and CO₂e for tasks with recorded AI calls surface as the
-read-only **AI spend** row in the metadata fly-out (hidden entirely for tasks
+**AI spend** row in the metadata fly-out (hidden entirely for tasks
 without recorded calls). An `EditorWidget` appears **only** for legacy tasks
 that already have non-empty entry text.
 
@@ -346,9 +346,12 @@ about the *open* task, so it lives on the detail surfaces only — the browse
 list stays a list of tasks, not of invoices. It renders nothing until the task
 has recorded AI
 calls, so the lane is unchanged for a task that never met the machine. Its tap
-opens the fly-out that holds the full breakdown; where the details column is
-already mounted the connector passes the read-only form instead, for the same
-reason the Details trigger stands down there. The section's own **AI spend**
+opens the task agent's `AgentInternalsPanel` — the per-model token breakdown
+with input, output and cached tokens and the cache-hit rate, which no task
+surface shows. A task without an agent has no internals, so there the tap
+falls back to the fly-out; where the details column is already mounted the
+connector passes `TaskAiCostIndicator.inDetails`, which drops that fallback
+for the same reason the Details trigger stands down there. The section's own **AI spend**
 row keeps the fuller cost / energy / carbon read-out — the same fact at two
 densities, not two facts.
 Every read-out wears `DsPillShape.tag` — the tight `radii.xs` (4) corner —
@@ -356,15 +359,15 @@ so a fact can never be mistaken for the fully-rounded filter/action pills
 elsewhere on the page. The one lever in the lane, the **Details** trigger,
 keeps the fully-rounded interactive pill shape. Tapping any **editable**
 read-out — status, priority, due, estimate, labels — opens the same fly-out, so a tap on
-the fact lands on its editor. The AI cost is the exception in both directions:
-it has no editor, and its tap opens the details for the fuller reading, which
-is why it stands down to a plain read-out once the column is showing them.
+the fact lands on its editor. The AI cost is the exception: it has no editor, and
+its tap opens the agent's token breakdown rather than the task details, which
+stay on the Details trigger and the editable read-outs.
 
 ### One section, two hosts
 
 `TaskMetaSection` lists every attribute as a descriptive **label + value**
 row — Status, Priority, Category, Project (once a category exists), Due date,
-**Estimate**, Labels, and a read-only AI spend row for tasks with recorded AI
+**Estimate**, Labels, and an AI spend row for tasks with recorded AI
 calls. Each editable row opens its existing modal picker through the shared
 `TaskMetaPickers` (also used by the crumb), and the section watches the task
 so a persisted edit updates the open host immediately. The Estimate row keeps

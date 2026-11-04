@@ -32,12 +32,13 @@ enum AiCostDensity {
 ///
 /// ## Making it a drill-down
 ///
-/// [onTap] is the extension point. It is currently wired to "open the task
-/// details", but the widget is deliberately a self-contained, positioned
-/// target rather than a span of text inside a row: a future cost **breakdown**
-/// (per model, per call, per component) can be anchored to this box — an
-/// `OverlayPortal` or `showMenu` at this widget's position — by replacing the
-/// callback, with no change to any caller's layout. Tapped or not, the shape
+/// [onTap] is the extension point. On a task it opens the task agent's
+/// internals — the per-model token breakdown with cached tokens and the
+/// cache-hit rate — and falls back to the task details when there is no
+/// agent. The widget is deliberately a self-contained, positioned target
+/// rather than a span of text inside a row, so a host can anchor a different
+/// drill-down to this box by replacing the callback, with no change to any
+/// caller's layout. Tapped or not, the shape
 /// follows the corner-radius convention: a fully-rounded shell when it acts,
 /// tight tag corners when it only informs.
 class AiCostIndicator extends StatelessWidget {

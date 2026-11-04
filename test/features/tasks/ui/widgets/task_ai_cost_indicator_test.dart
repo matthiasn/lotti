@@ -1,9 +1,16 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/classes/task_progress_state.dart';
+import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/agents/state/task_agent_providers.dart';
+import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
+import 'package:lotti/features/agents/ui/agent_maintenance_section.dart';
 import 'package:lotti/features/ai_consumption/state/consumption_providers.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/ai_cost_indicator.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
@@ -23,6 +30,7 @@ import '../../../../helpers/fake_entry_controller.dart';
 import '../../../../helpers/service_overrides.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
+import '../../../agents/test_data/entity_factories.dart';
 import '../../../ai_consumption/test_utils.dart';
 
 class _FakeTaskProgressController extends TaskProgressController {
@@ -74,9 +82,25 @@ void main() {
 
   tearDown(tearDownTestGetIt);
 
-  Widget pump({required int callCount, Widget? indicator}) {
+  final agent = makeTestIdentity(
+    agentId: 'task-agent-1',
+    displayName: 'Planning Agent',
+  );
+
+  Widget pump({
+    required int callCount,
+    Widget? indicator,
+    AgentDomainEntity? taskAgent,
+  }) {
     return ProviderScope(
       overrides: withServiceOverrides([
+        taskAgentProvider(taskId).overrideWith((ref) async => taskAgent),
+        // The internals panel resolves the identity; keeping it in flight
+        // renders the panel shell without the tab bodies' providers.
+        agentIdentityProvider.overrideWith(
+          (ref, agentId) => Completer<AgentDomainEntity?>().future,
+        ),
+        agentStateProvider.overrideWith((ref, agentId) async => null),
         entryControllerProvider(taskId).overrideWith(
           () => FakeEntryController(task),
         ),
@@ -126,7 +150,41 @@ void main() {
     expect(find.byType(AiCostIndicator), findsNothing);
   });
 
-  testWidgets('tapping opens the task details', (tester) async {
+  Future<void> tapCost(WidgetTester tester) async {
+    await tester.tap(find.text('€0.35'));
+    for (var i = 0; i < 10; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+  }
+
+  void expectInternalsOpened(WidgetTester tester) {
+    final panel = tester.widget<AgentInternalsPanel>(
+      find.byType(AgentInternalsPanel),
+    );
+    expect(panel.agentId, 'task-agent-1');
+    expect(panel.agentName, 'Planning Agent');
+    // The task's maintenance band rides along, as from the summary card.
+    expect(panel.maintenance?.kind, AgentMaintenanceKind.task);
+    expect(panel.maintenance?.entityId, taskId);
+    expect(find.text('Agent internals'), findsOneWidget);
+    expect(find.text('Task details'), findsNothing);
+  }
+
+  testWidgets(
+    'tapping opens the task agent internals, not the task details',
+    (tester) async {
+      await tester.pumpWidget(pump(callCount: 4, taskAgent: agent));
+      await settle(tester);
+
+      await tapCost(tester);
+
+      expectInternalsOpened(tester);
+    },
+  );
+
+  testWidgets('without an agent, tapping falls back to the task details', (
+    tester,
+  ) async {
     await tester.pumpWidget(pump(callCount: 4));
     await settle(tester);
 
@@ -136,6 +194,7 @@ void main() {
     // The metadata fly-out, with the rows the compact indicator summarizes.
     expect(find.text('Task details'), findsOneWidget);
     expect(find.text('AI spend'), findsOneWidget);
+    expect(find.byType(AgentInternalsPanel), findsNothing);
   });
 
   testWidgets('an explicit callback replaces the default drill-down', (
@@ -160,11 +219,13 @@ void main() {
     expect(find.text('Task details'), findsNothing);
   });
 
-  testWidgets('the read-only form carries no tap at all', (tester) async {
+  testWidgets('inside the details, a task without an agent carries no tap', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       pump(
         callCount: 4,
-        indicator: const TaskAiCostIndicator.readOnly(taskId: taskId),
+        indicator: const TaskAiCostIndicator.inDetails(taskId: taskId),
       ),
     );
     await settle(tester);
@@ -173,5 +234,22 @@ void main() {
       tester.widget<AiCostIndicator>(find.byType(AiCostIndicator)).onTap,
       isNull,
     );
+  });
+
+  testWidgets('inside the details, tapping still opens the agent internals', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      pump(
+        callCount: 4,
+        taskAgent: agent,
+        indicator: const TaskAiCostIndicator.inDetails(taskId: taskId),
+      ),
+    );
+    await settle(tester);
+
+    await tapCost(tester);
+
+    expectInternalsOpened(tester);
   });
 }

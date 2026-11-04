@@ -89,10 +89,11 @@ class DesktopTaskHeaderConnector extends ConsumerWidget {
       blockedBySlot: _TaskBlockedByChip(taskId: task.meta.id),
       // The cost rides in the summary lane with the other facts, so it is
       // readable at the same glance as the status rather than one panel away.
-      // Read-only where the details column already shows the full breakdown;
-      // otherwise a tap opens the fly-out that holds it.
+      // A tap opens the task agent's internals and their token breakdown.
+      // Without an agent it falls back to the fly-out — unless the details
+      // column is already on screen, where it stays a plain read-out.
       aiCostSlot: hasMetaColumn
-          ? TaskAiCostIndicator.readOnly(taskId: task.meta.id)
+          ? TaskAiCostIndicator.inDetails(taskId: task.meta.id)
           : TaskAiCostIndicator(taskId: task.meta.id),
       onTitleSaved: (newTitle) {
         controller.save(title: newTitle);
