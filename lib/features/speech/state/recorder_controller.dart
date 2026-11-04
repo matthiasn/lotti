@@ -7,6 +7,7 @@ import 'package:lotti/features/speech/helpers/automatic_prompt_trigger.dart';
 import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/features/speech/state/vu_meter.dart';
+import 'package:lotti/features/tts/state/tts_playback_controller.dart';
 import 'package:lotti/logic/repositories/speech_repository.dart';
 import 'package:lotti/providers/audio_player_controller.dart';
 import 'package:lotti/providers/service_providers.dart';
@@ -26,6 +27,7 @@ enum AudioRecordingFailure { permissionDenied, startFailed, busy }
 /// - Recording state (start, stop, pause, resume)
 /// - Real-time audio level monitoring for VU meter display
 /// - Integration with audio player to pause playback during recording
+/// - Stopping the read-aloud voice, so the microphone never records it
 /// - UI state management (modal visibility, indicator visibility)
 ///
 /// The controller is kept alive to maintain recording state across navigation.
@@ -117,6 +119,7 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
   ///
   /// This method handles:
   /// - Pausing any currently playing audio
+  /// - Stopping the read-aloud voice (summaries, answers, the companion)
   /// - Checking recording permissions
   /// - Resume if paused, stop if recording, or start new recording
   /// - Setting the linked entry ID for the recording
@@ -141,6 +144,7 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
 
     try {
       await _pauseAudioPlayer();
+      await stopReadAloudForRecording(ref);
       if (shouldCancel?.call() ?? false) return null;
 
       if (await _recorderRepository.hasPermission()) {

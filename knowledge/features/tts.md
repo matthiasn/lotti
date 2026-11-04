@@ -371,6 +371,21 @@ stateDiagram-v2
   error --> synthesizing: Retry
 ```
 
+# A microphone stops the voice
+
+A recording must never capture Lotti speaking. `stopReadAloudForRecording`
+(in `state/tts_playback_controller.dart`) stops the voice when it is
+downloading, synthesizing or playing, and is awaited before a microphone
+opens: by `AudioRecorderController.record()` — every record button that opens
+the recording sheet, so a task's summary read aloud stops at the press — and
+by Daily OS Capture's `CaptureController`, so the Day briefing does too.
+
+The voice is stopped, not paused: it has no pause, and its control only plays
+and stops. The helper leaves a quiet voice alone, never builds the controller
+just to silence it (`ref.exists`), and logs and swallows a failure to stop,
+since the recording must start regardless. The agent chat's microphone and the
+front agent's voice guard their own starts the same way.
+
 # Who else listens to an utterance
 
 `TtsPlaybackState` is the one thing a surface reads about an utterance: its
