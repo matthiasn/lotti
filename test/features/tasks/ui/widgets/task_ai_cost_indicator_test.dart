@@ -242,7 +242,7 @@ void main() {
     await tester.pumpWidget(
       pump(
         callCount: 4,
-        taskAgentLookups: [Future.value(null), refetch.future],
+        taskAgentLookups: [Future<AgentDomainEntity?>.value(), refetch.future],
       ),
     );
     await settle(tester);
