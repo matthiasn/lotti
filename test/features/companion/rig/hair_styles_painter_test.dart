@@ -311,4 +311,80 @@ void main() {
       expect(grooves.last - grooves.first, greaterThan(40));
     });
   });
+
+  group('a hat on the hair', () {
+    test('sits on an afro higher and much wider than on close styles', () {
+      final afro = hatSeat(CompanionHairStyle.afro);
+      for (final style in [
+        CompanionHairStyle.bun,
+        CompanionHairStyle.short,
+        CompanionHairStyle.balding,
+        CompanionHairStyle.ponytail,
+      ]) {
+        expect(hatSeat(style), (lift: 0.0, widen: 1.0), reason: style.name);
+      }
+      for (final style in CompanionHairStyle.values) {
+        final seat = hatSeat(style);
+        expect(seat.widen, lessThanOrEqualTo(afro.widen), reason: style.name);
+        expect(seat.lift, lessThanOrEqualTo(afro.lift), reason: style.name);
+      }
+      expect(afro.widen, greaterThan(1.3));
+    });
+
+    test(
+      'seatHat widens what it draws about the hairline and lifts it',
+      () async {
+        Future<Rect> drawn(CompanionHairStyle style) async {
+          final r = await _draw(
+            (c) => seatHat(c, style, 0, () {
+              c.drawRect(
+                const Rect.fromLTRB(-40, -90, 40, -45),
+                Paint()..color = const Color(0xFFFF0000),
+              );
+            }),
+          );
+          return _extent(r, const Color(0xFFFF0000));
+        }
+
+        final plain = await drawn(CompanionHairStyle.bun);
+        final afro = await drawn(CompanionHairStyle.afro);
+        expect(plain.width, closeTo(80, 2));
+        expect(afro.width, closeTo(80 * 1.36, 3));
+        expect(afro.bottom, lessThan(plain.bottom - 3));
+        expect(afro.center.dx, closeTo(plain.center.dx, 1));
+      },
+    );
+  });
+
+  test(
+    'the long, wavy and ponytail styles swing with the lag at their ends',
+    () async {
+      Future<double> meanX(CompanionHairStyle style, Offset lag) async {
+        final r = await _draw((c) => drawBackHair(c, _c, lag, style));
+        var sum = 0.0;
+        var n = 0;
+        for (var y = 170 + 40; y < 300; y++) {
+          for (var x = 0; x < 300; x++) {
+            if (near(r.at(x, y), _c.hairBack)) {
+              sum += x;
+              n++;
+            }
+          }
+        }
+        return sum / n;
+      }
+
+      for (final style in [
+        CompanionHairStyle.long,
+        CompanionHairStyle.waves,
+        CompanionHairStyle.ponytail,
+      ]) {
+        expect(
+          await meanX(style, const Offset(8, 0)),
+          greaterThan(await meanX(style, Offset.zero) + 2),
+          reason: style.name,
+        );
+      }
+    },
+  );
 }

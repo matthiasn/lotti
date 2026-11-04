@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/tts/state/tts_audio_focus.dart';
 import 'package:media_kit/media_kit.dart';
 
 /// Plays a synthesized WAV file and exposes position / duration / completion
@@ -31,10 +32,24 @@ abstract interface class TtsAudioPlayer {
 
 /// `media_kit`-backed [TtsAudioPlayer], mirroring the recordings player's use
 /// of the same `Player` API.
+///
+/// It holds the phone's audio focus ([TtsAudioFocus]) from the moment it
+/// starts playing until it stops, finishes or is disposed, so the voice
+/// keeps speaking while its listener is in another app.
 class MediaKitTtsAudioPlayer implements TtsAudioPlayer {
-  MediaKitTtsAudioPlayer([Player? player]) : _player = player ?? Player();
+  MediaKitTtsAudioPlayer([Player? player, TtsAudioFocus? focus])
+    // The native player needs media_kit's bindings, which a unit test has
+    // not; tests hand in a mock.
+    : _player = player ?? Player(), // coverage:ignore-line
+      _focus = focus ?? platformTtsAudioFocus() {
+    _finished = _player.stream.completed
+        .where((done) => done)
+        .listen((_) => _focus.release());
+  }
 
   final Player _player;
+  final TtsAudioFocus _focus;
+  late final StreamSubscription<bool> _finished;
   int _generation = 0;
 
   @override
@@ -44,13 +59,19 @@ class MediaKitTtsAudioPlayer implements TtsAudioPlayer {
     if (generation != _generation) return;
     await _player.setRate(speed);
     if (generation != _generation) return;
+    await _focus.acquire();
+    if (generation != _generation) {
+      await _focus.release();
+      return;
+    }
     await _player.play();
   }
 
   @override
-  Future<void> stop() {
+  Future<void> stop() async {
     _generation++;
-    return _player.stop();
+    await _player.stop();
+    await _focus.release();
   }
 
   @override
@@ -64,9 +85,11 @@ class MediaKitTtsAudioPlayer implements TtsAudioPlayer {
       _player.stream.completed.where((done) => done).map((_) {});
 
   @override
-  Future<void> dispose() {
+  Future<void> dispose() async {
     _generation++;
-    return _player.dispose();
+    await _finished.cancel();
+    await _player.dispose();
+    await _focus.release();
   }
 }
 

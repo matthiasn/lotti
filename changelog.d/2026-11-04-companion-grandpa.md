@@ -18,3 +18,17 @@
 - **Two more hairstyles for the companion: short and balding.** Every
   character can wear them, and the hairstyle picker now shows its choices as
   buttons that wrap, so all seven fit on a phone.
+- **A seventh, deeper skin tone for the companion,** after the six, and
+  three more hairstyles for every character: long and straight, soft waves,
+  and a ponytail.
+
+### Fixed
+- **A summary read aloud stopped when you switched to another app.** On a
+  phone the voice now keeps speaking in the background, other apps' sound
+  ducks under it, and it comes back when the voice ends.
+- **The companion's hats sat inside an afro.** The rock beret, the flat cap
+  and the beanie now sit on top of the hair, as wide as the hairstyle needs.
+- **One raised brow could hook up off the companion's eye.** A brow now
+  rises only as far as a brow can.
+- **The bun looked like a grey loaf in dark hair colours.** Its knot now
+  shows beside her jaw, and the hair reads as hair in every colour.

@@ -2618,8 +2618,20 @@
   "@companionSettingsHairStyleLocs": {
     "description": "Name of one hairstyle the companion can wear."
   },
+  "companionSettingsHairStyleLong": "Long",
+  "@companionSettingsHairStyleLong": {
+    "description": "Name of one hairstyle the companion can wear."
+  },
+  "companionSettingsHairStylePonytail": "Ponytail",
+  "@companionSettingsHairStylePonytail": {
+    "description": "Name of one hairstyle the companion can wear."
+  },
   "companionSettingsHairStyleShort": "Short",
   "@companionSettingsHairStyleShort": {
+    "description": "Name of one hairstyle the companion can wear."
+  },
+  "companionSettingsHairStyleWaves": "Waves",
+  "@companionSettingsHairStyleWaves": {
     "description": "Name of one hairstyle the companion can wear."
   },
   "companionSettingsOutfitDescription": "Choose an outfit to keep, or get a fresh one each time you open the app.",

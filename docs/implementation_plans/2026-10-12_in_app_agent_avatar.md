@@ -823,6 +823,22 @@ moved to its own file, `model/companion_palette.dart`, to keep
 - Its own design pass before it starts: what the setting looks like, and
   what Tom and Iris show.
 
+### Refinements (`feat/companion-refine`, 2026-11-04)
+
+Asked for after the cast was built, from screenshots of the app:
+
+- **A deeper skin tone**, a seventh after the six — the six unchanged.
+- **The brow that hooked off the eye** (one brow up on a skeptical face)
+  is bounded by its geometry, not by the moods that drive it.
+- **The rock beret floating in an afro**: every hat sits on the hair's
+  crown, widened for big hair.
+- **The bun in a dark colour** read as a bent grey loaf: its knot shows,
+  its marks stay inside the hair, its sheen is soft.
+- **Straight and wavy styles**: long, waves and a ponytail, named for their
+  shape, for every character.
+- **The voice stopped in the background**: it now holds the phone's audio
+  session while it speaks (TTS, not the companion, but heard through her).
+
 ### Later
 
 - The cat and the red panda in the character choice: their looks exist, but

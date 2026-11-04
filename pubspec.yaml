@@ -22,6 +22,7 @@ dependencies:
   a2ui_core: ^0.1.1
   async: ^2.13.1
   audio_decoder: ^0.8.1
+  audio_session: ^0.1.25
   beamer: ^1.7.0
   cached_network_image: ^4.0.4
   camera: ^0.12.1

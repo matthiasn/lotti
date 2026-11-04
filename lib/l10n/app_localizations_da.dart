@@ -3912,7 +3912,16 @@ class AppLocalizationsDa extends AppLocalizations {
   String get companionSettingsHairStyleLocs => 'Locs';
 
   @override
+  String get companionSettingsHairStyleLong => 'Langt';
+
+  @override
+  String get companionSettingsHairStylePonytail => 'Hestehale';
+
+  @override
   String get companionSettingsHairStyleShort => 'Kort';
+
+  @override
+  String get companionSettingsHairStyleWaves => 'Bølger';
 
   @override
   String get companionSettingsOutfitDescription =>

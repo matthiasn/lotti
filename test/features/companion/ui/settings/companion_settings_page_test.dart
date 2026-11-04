@@ -398,6 +398,33 @@ void main() {
     );
   });
 
+  testWidgets('offers the deepest skin tone as a seventh swatch', (
+    tester,
+  ) async {
+    await pumpBody(tester);
+    await tester.tap(
+      find.byKey(const ValueKey('companionSwatch-CompanionSkinTone.tone7')),
+    );
+    await _frames(tester);
+    expect(chosen(tester).skinTone, CompanionSkinTone.tone7);
+    expect(
+      previews(tester).first.look.palette.skin,
+      CompanionSkinTone.tone7.skin,
+    );
+  });
+
+  testWidgets('offers the long, wavy and ponytail styles as chips', (
+    tester,
+  ) async {
+    await pumpBody(tester);
+    for (final label in ['Long', 'Waves', 'Ponytail']) {
+      expect(find.text(label), findsOneWidget, reason: label);
+    }
+    await tester.tap(find.text('Ponytail'));
+    await _frames(tester);
+    expect(chosen(tester).hairStyle, CompanionHairStyle.ponytail);
+  });
+
   group('the character', () {
     const grandpa = CompanionCustomization(
       character: CompanionSpecies.grandpa,

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/tts/state/tts_audio_focus.dart';
 import 'package:lotti/features/tts/state/tts_audio_player.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -120,4 +121,78 @@ void main() {
     await build().dispose();
     verify(() => player.dispose()).called(1);
   });
+
+  group('the audio focus', () {
+    late _RecordingFocus focus;
+
+    setUp(() => focus = _RecordingFocus());
+
+    MediaKitTtsAudioPlayer withFocus() => MediaKitTtsAudioPlayer(player, focus);
+
+    test('is taken after the clip is ready and before it plays', () async {
+      when(() => player.play()).thenAnswer((_) async {
+        focus.calls.add('play');
+      });
+      await withFocus().play(File('/tmp/tts.wav'), speed: 1);
+      expect(focus.calls, ['acquire', 'play']);
+    });
+
+    test('is given back when the voice is stopped', () async {
+      final audio = withFocus();
+      await audio.play(File('/tmp/tts.wav'), speed: 1);
+      await audio.stop();
+      expect(focus.calls, ['acquire', 'release']);
+    });
+
+    test('is given back when the clip plays to its end, not before', () async {
+      withFocus();
+      completedController.add(false);
+      await pumpEventQueue();
+      expect(focus.calls, isEmpty);
+      completedController.add(true);
+      await pumpEventQueue();
+      expect(focus.calls, ['release']);
+    });
+
+    test(
+      'a stop while the focus is being taken gives it back, never plays',
+      () async {
+        final taking = Completer<void>();
+        focus.acquiring = taking.future;
+        final audio = withFocus();
+        final play = audio.play(File('/tmp/tts.wav'), speed: 1);
+        await pumpEventQueue();
+        await audio.stop();
+        taking.complete();
+        await play;
+        verifyNever(() => player.play());
+        expect(focus.calls, ['acquire', 'release', 'release']);
+      },
+    );
+
+    test('is given back on dispose, and the end of a clip after it is not '
+        'heard', () async {
+      final audio = withFocus();
+      await audio.dispose();
+      completedController.add(true);
+      await pumpEventQueue();
+      expect(focus.calls, ['release']);
+    });
+  });
+}
+
+/// Records when the player takes and gives back the focus; [acquiring]
+/// holds the taking open when a test needs it to.
+class _RecordingFocus implements TtsAudioFocus {
+  final calls = <String>[];
+  Future<void>? acquiring;
+
+  @override
+  Future<void> acquire() async {
+    calls.add('acquire');
+    await acquiring;
+  }
+
+  @override
+  Future<void> release() async => calls.add('release');
 }

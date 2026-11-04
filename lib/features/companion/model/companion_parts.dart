@@ -29,6 +29,15 @@ enum CompanionHairStyle {
 
   /// A bare crown with a fringe of hair round the back and over the ears.
   balding,
+
+  /// Straight, parted in the middle, falling past the shoulders.
+  long,
+
+  /// Soft waves to the shoulders, parted on the left, a fringe swept across.
+  waves,
+
+  /// Pulled back smooth into a tail that swings behind.
+  ponytail,
 }
 
 /// Her skin, light to deep. Numbered rather than named: the picker shows a
@@ -78,6 +87,17 @@ enum CompanionSkinTone {
     lips: Color(0xFF7E3C3E),
     lipsUpper: Color(0xFF6A3133),
     lipsLight: Color(0xFF9C5A5C),
+  ),
+
+  /// The deepest: added after the six, so a stored tone keeps its number.
+  tone7(
+    skin: Color(0xFF452A19),
+    shade: Color(0xFF382114),
+    deep: Color(0xFF29170C),
+    light: Color(0xFF5E3D29),
+    lips: Color(0xFF6E3638),
+    lipsUpper: Color(0xFF5C2C2E),
+    lipsLight: Color(0xFF8A4E50),
   );
 
   const CompanionSkinTone({

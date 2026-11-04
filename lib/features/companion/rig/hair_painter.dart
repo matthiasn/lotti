@@ -10,7 +10,9 @@ import 'package:lotti/features/companion/rig/paint_kit.dart';
 ///
 /// The cap sits close to the head, parted a little off centre, with soft
 /// waves swept back over the ears into a bun low behind the left side of the
-/// neck. A few loose strands at the temples carry the lag the spring gives
+/// neck, where it shows beside the jaw — hidden behind the head, the hair
+/// read as a smooth helmet, and in a dark colour as a bent grey loaf. Fine
+/// strands follow the sweep, and every mark stays inside the hair. A few loose strands at the temples carry the lag the spring gives
 /// the hair, so a nod still moves something, the way a bun's wisps do.
 
 List<Offset> _lagged(List<Offset> pts, Offset lag) => [
@@ -54,17 +56,38 @@ List<Offset> fringeOutline() => [
   const Offset(-54, -24),
 ];
 
+/// Where the bun sits at rest: low behind the left of the neck, far enough
+/// out to show beside the jaw.
+const bunCentre = Offset(-44, 14);
+
 /// The bun and the cap behind the face.
 void drawBunBack(Canvas canvas, CompanionPalette c, Offset lag) {
-  final bun = Offset(-26 + lag.dx * 0.6, 26 + lag.dy * 0.4);
-  fillPath(canvas, ellipse(bun, 21, 18), c.hairBack);
+  final bun = bunCentre + Offset(lag.dx * 0.6, lag.dy * 0.4);
+  final knot = ellipse(bun, 19, 16);
+  fillPath(canvas, knot, c.hairBack);
+  // The coil wound round it, lit on top, and the shade it sits in.
+  canvas
+    ..save()
+    ..clipPath(knot);
+  fillPath(
+    canvas,
+    ellipse(bun + const Offset(4, 8), 18, 10),
+    c.hairShade.withValues(alpha: 0.45),
+  );
+  canvas.restore();
   for (var k = 0; k < 4; k++) {
     final a = -0.6 + k * 0.9;
     strokePath(
       canvas,
-      arc(bun, 12 - k * 1.5, a, a + 1.9),
-      c.hairShade.withValues(alpha: 0.7),
-      1.5,
+      arc(bun, 13 - k * 2.5, a, a + 2.2),
+      c.hairShade.withValues(alpha: 0.8),
+      1.4,
+    );
+    strokePath(
+      canvas,
+      arc(bun + const Offset(-0.6, -0.8), 13 - k * 2.5, a + 0.2, a + 1.2),
+      c.hairLight.withValues(alpha: 0.5),
+      0.9,
     );
   }
   fillPath(
@@ -84,6 +107,10 @@ List<Offset> bunFringe(Offset lag, double yaw) => [
 ];
 
 /// The hair over the forehead, its waves and the loose strands.
+///
+/// The sheen is soft and kept to the crown's near side: a broad light
+/// gradient turned dark hair into a grey band. The waves and the strands
+/// are clipped to the hair, so none stands off the head like a wire.
 void drawBunFront(Canvas canvas, CompanionPalette c, Offset lag, double yaw) {
   final fringe = smoothClosed(bunFringe(lag, yaw), 0.24);
   fillPath(canvas, fringe, c.hair);
@@ -93,19 +120,45 @@ void drawBunFront(Canvas canvas, CompanionPalette c, Offset lag, double yaw) {
     ..drawPaint(
       Paint()
         ..shader = ui.Gradient.linear(
-          const Offset(-60, -100),
-          const Offset(60, -10),
+          const Offset(-50, -95),
+          const Offset(50, -10),
           [
-            c.hairLight.withValues(alpha: 0.55),
+            c.hairLight.withValues(alpha: 0.32),
             const Color(0x00FFFFFF),
-            c.hairShade.withValues(alpha: 0.5),
+            c.hairShade.withValues(alpha: 0.4),
           ],
-          [0, 0.5, 1],
+          [0, 0.45, 1],
         ),
-    )
-    ..restore();
+    );
+  _strands(canvas, c, yaw);
   _waveMarks(canvas, c, yaw);
+  canvas.restore();
   _wisps(canvas, c, lag, yaw);
+}
+
+/// Fine strands swept back from the parting, a little off centre on the
+/// left, over the crown to either ear.
+void _strands(Canvas canvas, CompanionPalette c, double yaw) {
+  const part = Offset(-10, -56);
+  for (var k = 0; k < 14; k++) {
+    final side = k.isEven ? 1.0 : -1.0;
+    final spread = (k ~/ 2) / 7;
+    final from = part + Offset(yaw * 4 + side * (2 + spread * 6), 2);
+    final to = Offset(side * (34 + spread * 20) + yaw * 3, -40 + spread * 34);
+    strokePath(
+      canvas,
+      Path()
+        ..moveToPoint(from)
+        ..quadraticBezierTo(
+          from.dx + side * (18 + spread * 14),
+          from.dy - 4 + spread * 6,
+          to.dx,
+          to.dy,
+        ),
+      (k % 3 == 0 ? c.hairLight : c.hairShade).withValues(alpha: 0.3),
+      0.9,
+    );
+  }
 }
 
 /// Swept-back waves: arcs that follow the hair from the parting to the ears.

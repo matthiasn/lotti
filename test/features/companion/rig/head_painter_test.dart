@@ -325,4 +325,55 @@ void main() {
       );
     });
   });
+
+  group('a hat on big hair', () {
+    /// The topmost canvas row [colour] reaches.
+    int top(Raster r, Color colour, {int tolerance = 12}) {
+      for (var y = 0; y < 480; y++) {
+        for (var x = 0; x < 480; x++) {
+          if (near(r.at(x, y), colour, tolerance: tolerance)) return y;
+        }
+      }
+      return 480;
+    }
+
+    // The regression: the rock beret sat inside an afro, the hair rising
+    // round and above it, so her head seemed to float in her hair.
+    test('the rock beret sits on top of an afro, no hair above it', () async {
+      final look = CompanionLook.grandmaRock.copyWith(
+        hairStyle: CompanionHairStyle.afro,
+      );
+      final r = await _head(look);
+      final hat = top(r, look.palette.hat);
+      final hair = top(r, look.palette.hair, tolerance: 20);
+      expect(hat, lessThanOrEqualTo(hair));
+    });
+
+    test('and is widened to cover the afro, as it is not on a bun', () async {
+      Future<int> width(CompanionHairStyle style) async {
+        final look = CompanionLook.grandmaRock.copyWith(hairStyle: style);
+        final r = await _head(look);
+        var left = 480;
+        var right = 0;
+        for (var y = 0; y < 480; y++) {
+          for (var x = 0; x < 480; x++) {
+            if (!near(r.at(x, y), look.palette.hat, tolerance: 12)) continue;
+            if (x < left) left = x;
+            if (x > right) right = x;
+          }
+        }
+        return right - left;
+      }
+
+      expect(
+        await width(CompanionHairStyle.afro),
+        greaterThan(await width(CompanionHairStyle.bun) * 1.15),
+      );
+    });
+
+    test('an animal wears its hat as the plain head does', () async {
+      final r = await _head(CompanionLook.catRock);
+      expect(r.count(CompanionLook.catRock.palette.hat), greaterThan(500));
+    });
+  });
 }

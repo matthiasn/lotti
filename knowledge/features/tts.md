@@ -44,6 +44,10 @@ sources:
     resource: ../../lib/features/tts/ui/widgets/tts_cloud_voice_picker.dart
     title: The per-language voice picker sheet and its previews
     last_modified: 2026-10-30
+  - id: audio-focus
+    resource: ../../lib/features/tts/state/tts_audio_focus.dart
+    title: TtsAudioFocus, the phone's audio session while the voice speaks
+    last_modified: 2026-11-04
   - id: cloud-voice-samples
     resource: ../../lib/features/tts/cloud/cloud_voice_samples.dart
     title: The sentence each language's voices preview with
@@ -65,6 +69,36 @@ six files the model's `TtsModelOption.files` lists (four `.onnx` graphs plus
 `https://huggingface.co/<repo>/resolve/<revision>/onnx/<file>`. So the first
 synthesis on a fresh install needs the network; every one after it does not, and
 no text or audio is sent anywhere.
+
+# Speaking in the background
+
+`media_kit` never configures the phone's audio session, so the app sat in
+the default one — which falls silent the moment the app leaves the screen,
+however `UIBackgroundModes` lists `audio`. A summary read aloud stopped when
+its listener switched to another app.
+
+`MediaKitTtsAudioPlayer` now holds a `TtsAudioFocus` while it plays. On iOS
+and Android (`platformTtsAudioFocus`) that is `SessionTtsAudioFocus`, which
+configures the `audio_session` once as spoken audio for playback
+(`ttsAudioSessionConfiguration`: iOS `playback` / `spokenAudio`, ducking
+other apps; Android speech, a transient focus that may duck) and activates
+it; on a desktop it is `NoTtsAudioFocus`, which does nothing.
+
+```mermaid
+stateDiagram-v2
+  [*] --> Free
+  Free --> Held: play — after open and rate, before the player plays
+  Held --> Free: stop
+  Held --> Free: the clip plays to its end
+  Held --> Free: dispose
+  Held --> Free: a stop while the focus was being taken (never plays)
+```
+
+Releasing deactivates the session with `notifyOthersOnDeactivation`, so a
+paused podcast resumes. The focus is best effort: a session that cannot be
+configured or activated is absorbed, and the voice plays in the foreground
+as it did before — it never stops speaking for it. A release only gives back
+a session it holds.
 
 # Which voice speaks
 

@@ -176,7 +176,7 @@ class _CompanionSettingsBodyState extends ConsumerState<CompanionSettingsBody> {
             SettingsFormSection(
               title: messages.companionSettingsHairStyleLabel,
               children: [
-                // Chips, not a segmented toggle: seven styles do not fit a
+                // Chips, not a segmented toggle: ten styles do not fit a
                 // phone's width in one row.
                 _ChipChoice<CompanionHairStyle>(
                   selected: custom.hairStyle,
@@ -293,6 +293,9 @@ String hairStyleName(AppLocalizations m, CompanionHairStyle style) =>
       CompanionHairStyle.bob => m.companionSettingsHairStyleBob,
       CompanionHairStyle.short => m.companionSettingsHairStyleShort,
       CompanionHairStyle.balding => m.companionSettingsHairStyleBalding,
+      CompanionHairStyle.long => m.companionSettingsHairStyleLong,
+      CompanionHairStyle.waves => m.companionSettingsHairStyleWaves,
+      CompanionHairStyle.ponytail => m.companionSettingsHairStylePonytail,
     };
 
 /// [colour]'s name in the picker, as a screen reader says it.

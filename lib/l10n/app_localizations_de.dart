@@ -3946,7 +3946,16 @@ class AppLocalizationsDe extends AppLocalizations {
   String get companionSettingsHairStyleLocs => 'Locs';
 
   @override
+  String get companionSettingsHairStyleLong => 'Lang';
+
+  @override
+  String get companionSettingsHairStylePonytail => 'Pferdeschwanz';
+
+  @override
   String get companionSettingsHairStyleShort => 'Kurz';
+
+  @override
+  String get companionSettingsHairStyleWaves => 'Wellen';
 
   @override
   String get companionSettingsOutfitDescription =>

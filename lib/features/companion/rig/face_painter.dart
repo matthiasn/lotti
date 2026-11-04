@@ -332,8 +332,49 @@ void drawEye(
   }
 }
 
+/// How far a brow may rise (positive) or fall (negative), in units of its
+/// raise. A brow sits on a bone under skin: it travels a little and then
+/// stops, so the lift saturates instead of growing with every mood, gesture,
+/// flourish and spring overshoot added up — one brow up at its height
+/// (`CompanionFlourish.oneBrow`) on a skeptical face once carried it far off
+/// the eye into a hook.
+const browMaxRise = 1.3;
+const browMaxFall = 1.0;
+
+/// [raise] as the brow can travel it: smoothly saturating at
+/// [browMaxRise] going up, stopping at [browMaxFall] going down.
+double browLift(double raise) {
+  if (raise <= 0) return math.max(raise, -browMaxFall);
+  final e = math.exp(2 * raise / browMaxRise);
+  return browMaxRise * (e - 1) / (e + 1);
+}
+
+/// The brow's three anchor points for [centre], [side], [raise] and [tilt]:
+/// its inner end, its peak and its outer end. The [tilt] — the inner end
+/// drawn down in a frown, or up in worry — is limited, and gives way as the
+/// brow rises: a brow lifted high cannot also knot at the nose.
+({Offset inner, Offset peak, Offset outer}) browShape(
+  Offset centre,
+  int side,
+  double raise,
+  double tilt,
+) {
+  final s = side.toDouble();
+  final cx = centre.dx;
+  final lift = browLift(raise);
+  final give = 1 - 0.6 * math.max(0, lift) / browMaxRise;
+  final t = tilt.clamp(-1.2, 1.2) * give;
+  final y = centre.dy - lift * 3.5;
+  return (
+    inner: Offset(cx - s * 10, y + 2 - t * 2.5),
+    peak: Offset(cx + s * 2, y - 3.2 - lift * 0.6),
+    outer: Offset(cx + s * 12.5, y + 1 + t * 0.8),
+  );
+}
+
 /// Draws one brow centred on [centre]; [raise] lifts it, [tilt] lifts its
-/// inner end. [fullness] thickens it downwards: above 1 for a younger face.
+/// inner end, both within what a brow can do ([browShape]). [fullness]
+/// thickens it downwards: above 1 for a younger face.
 void drawBrow(
   Canvas canvas,
   CompanionPalette c,
@@ -345,11 +386,7 @@ void drawBrow(
 }) {
   final f = fullness;
   final s = side.toDouble();
-  final cx = centre.dx;
-  final y = centre.dy - raise * 3.5;
-  final inner = Offset(cx - s * 10, y + 2 - tilt * 2.5);
-  final peak = Offset(cx + s * 2, y - 3.2 - raise * 0.6);
-  final outer = Offset(cx + s * 12.5, y + 1 + tilt * 0.8);
+  final (:inner, :peak, :outer) = browShape(centre, side, raise, tilt);
   fillPath(
     canvas,
     Path()

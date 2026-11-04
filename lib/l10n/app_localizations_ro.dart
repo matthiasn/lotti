@@ -3980,7 +3980,16 @@ class AppLocalizationsRo extends AppLocalizations {
   String get companionSettingsHairStyleLocs => 'Dreaduri';
 
   @override
+  String get companionSettingsHairStyleLong => 'Lung';
+
+  @override
+  String get companionSettingsHairStylePonytail => 'Coadă';
+
+  @override
   String get companionSettingsHairStyleShort => 'Scurt';
+
+  @override
+  String get companionSettingsHairStyleWaves => 'Ondulat';
 
   @override
   String get companionSettingsOutfitDescription =>

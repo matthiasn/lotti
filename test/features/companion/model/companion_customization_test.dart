@@ -119,6 +119,14 @@ void main() {
     expect(stored.adopting(shown, {'speaksReplies'}).speaksReplies, isTrue);
   });
 
+  test('the deepest tone and the new styles round-trip', () {
+    const custom = CompanionCustomization(
+      skinTone: CompanionSkinTone.tone7,
+      hairStyle: CompanionHairStyle.ponytail,
+    );
+    expect(CompanionCustomization.fromJson(custom.toJson()), custom);
+  });
+
   test('a part a newer version wrote falls back to its default', () {
     final read = CompanionCustomization.fromJson(const {
       'skinTone': 'tone9',

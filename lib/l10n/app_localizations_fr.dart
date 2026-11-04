@@ -3972,7 +3972,16 @@ class AppLocalizationsFr extends AppLocalizations {
   String get companionSettingsHairStyleLocs => 'Locks';
 
   @override
+  String get companionSettingsHairStyleLong => 'Longs';
+
+  @override
+  String get companionSettingsHairStylePonytail => 'Queue-de-cheval';
+
+  @override
   String get companionSettingsHairStyleShort => 'Court';
+
+  @override
+  String get companionSettingsHairStyleWaves => 'Ondulés';
 
   @override
   String get companionSettingsOutfitDescription =>

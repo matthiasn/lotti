@@ -3935,7 +3935,16 @@ class AppLocalizationsNl extends AppLocalizations {
   String get companionSettingsHairStyleLocs => 'Locs';
 
   @override
+  String get companionSettingsHairStyleLong => 'Lang';
+
+  @override
+  String get companionSettingsHairStylePonytail => 'Paardenstaart';
+
+  @override
   String get companionSettingsHairStyleShort => 'Kort';
+
+  @override
+  String get companionSettingsHairStyleWaves => 'Golven';
 
   @override
   String get companionSettingsOutfitDescription =>

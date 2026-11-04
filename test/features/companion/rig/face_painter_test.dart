@@ -205,4 +205,59 @@ void main() {
     final r = await _draw((c) => drawNose(c, _c, 0, 0));
     expect(r.count(_c.skinDeep), greaterThan(10));
   });
+
+  group('how far a brow can go', () {
+    test('a small raise passes almost as it is', () {
+      expect(browLift(0), 0);
+      expect(browLift(0.3), closeTo(0.3, 0.03));
+      expect(browLift(-0.5), -0.5);
+    });
+
+    test('rising saturates, falling stops, and both keep their order', () {
+      var last = browLift(-5);
+      for (var r = -5.0; r <= 5; r += 0.25) {
+        final lift = browLift(r);
+        expect(lift, greaterThanOrEqualTo(last), reason: 'raise $r');
+        expect(lift, inInclusiveRange(-browMaxFall, browMaxRise));
+        last = lift;
+      }
+      expect(browLift(5), closeTo(browMaxRise, 0.01));
+      expect(browLift(-5), -browMaxFall);
+    });
+
+    // The regression: the "one brow" flourish at its spring's overshoot, on
+    // a skeptical face, hooked the brow far off the eye.
+    test('no raise and tilt lifts a brow off the eye or hooks it', () {
+      const eyeTop = -6.0 - 8;
+      for (var r = -4.0; r <= 4; r += 0.5) {
+        for (var t = -3.0; t <= 3; t += 0.5) {
+          for (final side in [-1, 1]) {
+            final b = browShape(const Offset(20, -27), side, r, t);
+            final why = 'raise $r, tilt $t, side $side';
+            // Never more than a brow's travel above where it rests.
+            expect(
+              b.peak.dy,
+              greaterThan(-27 - 3.2 - 4.1 * browMaxRise - 0.01),
+              reason: why,
+            );
+            // Never down into the eye.
+            expect(b.inner.dy, lessThan(eyeTop + 4), reason: why);
+            // Never a hook: the inner end at most a few units below the peak.
+            expect(b.inner.dy - b.peak.dy, lessThan(10.5), reason: why);
+          }
+        }
+      }
+    });
+
+    test('a brow raised high gives way on its tilt', () {
+      double slant(double raise, double tilt) {
+        final b = browShape(Offset.zero, 1, raise, tilt);
+        return (b.inner.dy - b.outer.dy).abs();
+      }
+
+      for (final tilt in [-1.2, 1.2]) {
+        expect(slant(3, tilt), lessThan(slant(0, tilt) * 0.6), reason: '$tilt');
+      }
+    });
+  });
 }

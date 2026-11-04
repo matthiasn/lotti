@@ -3920,7 +3920,16 @@ class AppLocalizationsSv extends AppLocalizations {
   String get companionSettingsHairStyleLocs => 'Locs';
 
   @override
+  String get companionSettingsHairStyleLong => 'Långt';
+
+  @override
+  String get companionSettingsHairStylePonytail => 'Hästsvans';
+
+  @override
   String get companionSettingsHairStyleShort => 'Kort';
+
+  @override
+  String get companionSettingsHairStyleWaves => 'Vågor';
 
   @override
   String get companionSettingsOutfitDescription =>

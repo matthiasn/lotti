@@ -136,6 +136,14 @@ sources:
     resource: ../../lib/features/companion/model/companion_palette.dart
     title: CompanionPalette, every character's colours
     last_modified: 2026-11-04
+  - id: long-hair
+    resource: ../../lib/features/companion/rig/long_hair_painter.dart
+    title: The long, wavy and ponytail styles
+    last_modified: 2026-11-04
+  - id: face
+    resource: ../../lib/features/companion/rig/face_painter.dart
+    title: Eyes, brows (browShape, browLift), nose and mouth
+    last_modified: 2026-11-04
   - id: short-hair
     resource: ../../lib/features/companion/rig/short_hair_painter.dart
     title: The short and balding cuts
@@ -557,12 +565,33 @@ flowchart LR
 
 Every part combines with every other, and none is named after a people:
 skin tones are numbered, light to deep, and a screen reader says "Skin tone
-3". Seven hairstyles share one dispatch, `hair_styles_painter.dart`: each has
+3" (seven tones; the seventh, the deepest, was added last so a stored tone
+keeps its number). Ten hairstyles share one dispatch,
+`hair_styles_painter.dart`: each has
 a back layer (behind the head and body), a front layer over the forehead
 whose outline also shades it, and hanging parts that trail the head's motion
 by the hair lag — the locs and the bob's ends; the bun keeps its painter,
 `hair_painter.dart`, and the short and balding cuts theirs,
-`short_hair_painter.dart`. Neither close crop takes the lag. Balding's
+`short_hair_painter.dart`, and long, waves and ponytail theirs,
+`long_hair_painter.dart` (the long sheets, the waves' ends and the tail
+trail the lag). Neither close crop takes the lag. The bun's knot sits at
+`bunCentre`, out beside the jaw where it shows; its waves and strands are
+clipped to the hair and its sheen kept soft, so a dark colour reads as hair.
+
+**A hat sits on the hair, not in it.** `hatSeat` gives each style a lift and
+a widening about the hairline, and `seatHat` draws the beret, flat cap or
+beanie through it: none for close styles, a little for the bob, locs, long
+hair, waves and curls, and for the afro lifted and widened by 1.36 so the
+hat covers its crown — and only a little taller, so it stays inside the
+bust framing. An animal wears a hat as the plain head does.
+
+**A brow travels only as far as a brow can.** `browShape` turns a raise and
+a tilt into the brow's inner end, peak and outer end: `browLift` saturates
+the raise smoothly at `browMaxRise` and stops a fall at `browMaxFall`, and
+the tilt is limited and gives way as the brow rises. The sum of mood,
+gesture, flourish and spring overshoot reaches the painter unchanged; only
+the geometry is bounded, so one brow up on a skeptical face no longer hooks
+off the eye. Balding's
 front is only a tuft over each ear and the light on the bare crown, so its
 hairline is empty and `drawForeheadShadow` casts nothing. The curls and the afro are built of coils: a jittered,
 staggered grid of puffs inside the hair and one on each point of its outline,

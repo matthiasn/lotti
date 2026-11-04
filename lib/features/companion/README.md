@@ -45,6 +45,10 @@ back, nudges), is
   praise, neither, or something that needs work, read on the device from its
   words, its emoji and its section's heading (`ToneTrack`) — gives her the
   matching reaction, timed by the same playhead as her mouth.
+- **Her brows stay on her face.** However a mood, a gesture, a flourish and
+  a spring's overshoot add up, a brow rises only as far as a brow can and
+  gives way on its tilt as it rises, so one brow up never hooks off the
+  eye.
 - **She pulls faces on the beats.** A question, a "but", an "again", a
   "finally" each get a face of their own for a moment (`CompanionFlourish`):
   one brow up, the side-eye, narrowed eyes, the look over her glasses, a
@@ -101,14 +105,21 @@ back, nudges), is
   beanie).
 - **A person makes the companion their own.** In Settings › Preferences ›
   Companion (shown with the flag) they choose the character (Lotti, the
-  grandpa, the aunt or the uncle), the skin tone (six, numbered, never named after a people), the
-  hairstyle (bun, curls, afro, locs, bob, short, balding), the hair
+  grandpa, the aunt or the uncle), the skin tone (seven, numbered light to
+  deep, never named after a people), the hairstyle (bun, curls, afro, locs,
+  bob, short, balding, long, waves, ponytail), the hair
   colour (silver, white, grey, black, brown, auburn, pink, lavender, blue),
   an outfit of the character's always worn, or "Surprise me", and the
   sass — warm,
   cheeky (the default) or sassy — which her preview acts out when it is
   picked. The curls and the afro are drawn as coils, shaded one over the
-  next; the locs as twisted ropes swept back from the hairline. Every part
+  next; the locs as twisted ropes swept back from the hairline; long hair
+  falls straight from a middle parting past the shoulders, waves reach the
+  shoulders from a side parting, and a ponytail swings behind. The bun's
+  knot shows beside her jaw, its waves and strands kept inside the hair, so
+  a dark colour reads as hair, not a grey loaf. A hat sits on the hair's
+  crown, as high and as wide as the style needs: the rock beret covers an
+  afro instead of sinking into it. Every part
   combines with every other, and with every character. Choosing another
   character clears the outfit, since outfits belong to one, and puts the
   hair back to that character's own; the rest carries over. The choice is stored and synced to the person's other devices
@@ -126,7 +137,7 @@ back, nudges), is
 | Directory | What |
 |---|---|
 | `model/` | The data: looks and their palettes (`companion_palette.dart`), poses, gestures, hand and mouth shapes, moods, the reaction scale with its beats and last word, the faces she pulls for a moment (`companion_flourish.dart`), and the parts a person dresses her in (`companion_parts.dart`, `companion_customization.dart`) |
-| `rig/` | Drawing: the arm solver, the limb ribbon, the frames a pose resolves into, and one painter per body part, composed by `CompanionPainter`; the animals' head and tail in `animal_head_painter.dart` and `tail_painter.dart`; the hairstyles in `hair_styles_painter.dart`, the bun in `hair_painter.dart`, short and balding in `short_hair_painter.dart`; the grandpa's shirt, braces and bow tie in `grandpa_outfit_painter.dart`, his beard, moustache and cap in `grandpa_head_painter.dart`; the aunt's boiler suit and short sleeves in `aunt_outfit_painter.dart`; the uncle's jacket, tee, headphones and jacket sleeves in `uncle_outfit_painter.dart`; and trousers, their turn-ups, brogues, high-tops, boots and the outline of a top tucked into them in `trousers_painter.dart` |
+| `rig/` | Drawing: the arm solver, the limb ribbon, the frames a pose resolves into, and one painter per body part, composed by `CompanionPainter`; the animals' head and tail in `animal_head_painter.dart` and `tail_painter.dart`; the hairstyles in `hair_styles_painter.dart`, the bun in `hair_painter.dart`, short and balding in `short_hair_painter.dart`, long, waves and ponytail in `long_hair_painter.dart`; the grandpa's shirt, braces and bow tie in `grandpa_outfit_painter.dart`, his beard, moustache and cap in `grandpa_head_painter.dart`; the aunt's boiler suit and short sleeves in `aunt_outfit_painter.dart`; the uncle's jacket, tee, headphones and jacket sleeves in `uncle_outfit_painter.dart`; and trousers, their turn-ups, brogues, high-tops, boots and the outline of a top tucked into them in `trousers_painter.dart` |
 | `animation/` | Motion: `CompanionAnimator` turns time, a mood, gestures and speech into a pose per frame; the mouth tracks; `PlayheadClock`, the playhead between a player's reports |
 | `state/` | `loadSpokenTrack`: the mouth for a clip the voice plays, read once off the UI isolate; the outfit pick, her stored customization, and `companionLookRollProvider`, which dresses her |
 | `ui/` | `CompanionView`, the live widget, and its `CompanionController`; `CompanionSpeaker`, the view bound to the on-device voice; `settings/`, the page that customizes her |

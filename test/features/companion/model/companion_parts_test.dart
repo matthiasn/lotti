@@ -5,16 +5,36 @@ import 'package:lotti/features/companion/model/companion_parts.dart';
 double _luminance(CompanionSkinTone t) => t.skin.computeLuminance();
 
 void main() {
-  test('seven hairstyles, the bun first, as the pitch videos draw her', () {
-    expect(CompanionHairStyle.values, hasLength(7));
+  test('ten hairstyles, the bun first, as the pitch videos draw her', () {
+    expect(CompanionHairStyle.values, hasLength(10));
     expect(CompanionHairStyle.values.first, CompanionHairStyle.bun);
   });
 
-  test('the short and balding cuts come after the five longer styles', () {
-    expect(
-      CompanionHairStyle.values.skip(5),
-      [CompanionHairStyle.short, CompanionHairStyle.balding],
-    );
+  test(
+    'new styles come after the ones already stored, keeping their order',
+    () {
+      expect(CompanionHairStyle.values.skip(5), [
+        CompanionHairStyle.short,
+        CompanionHairStyle.balding,
+        CompanionHairStyle.long,
+        CompanionHairStyle.waves,
+        CompanionHairStyle.ponytail,
+      ]);
+    },
+  );
+
+  test('seven skin tones, the seventh the deepest, added last', () {
+    expect(CompanionSkinTone.values, hasLength(7));
+    expect(CompanionSkinTone.values.last, CompanionSkinTone.tone7);
+    for (final t in CompanionSkinTone.values.take(6)) {
+      expect(
+        CompanionSkinTone.tone7.skin.computeLuminance(),
+        lessThan(t.skin.computeLuminance()),
+        reason: t.name,
+      );
+    }
+    // Lips deep enough to read on it.
+    expect(CompanionSkinTone.tone7.lips, isNotNull);
   });
 
   test('the skin tones run light to deep, each shade below its skin', () {

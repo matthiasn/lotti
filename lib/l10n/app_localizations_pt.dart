@@ -3954,7 +3954,16 @@ class AppLocalizationsPt extends AppLocalizations {
   String get companionSettingsHairStyleLocs => 'Dreads';
 
   @override
+  String get companionSettingsHairStyleLong => 'Comprido';
+
+  @override
+  String get companionSettingsHairStylePonytail => 'Rabo de cavalo';
+
+  @override
   String get companionSettingsHairStyleShort => 'Curto';
+
+  @override
+  String get companionSettingsHairStyleWaves => 'Ondulado';
 
   @override
   String get companionSettingsOutfitDescription =>

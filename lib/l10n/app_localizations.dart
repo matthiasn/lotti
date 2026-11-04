@@ -6633,8 +6633,26 @@ abstract class AppLocalizations {
   /// Name of one hairstyle the companion can wear.
   ///
   /// In en, this message translates to:
+  /// **'Long'**
+  String get companionSettingsHairStyleLong;
+
+  /// Name of one hairstyle the companion can wear.
+  ///
+  /// In en, this message translates to:
+  /// **'Ponytail'**
+  String get companionSettingsHairStylePonytail;
+
+  /// Name of one hairstyle the companion can wear.
+  ///
+  /// In en, this message translates to:
   /// **'Short'**
   String get companionSettingsHairStyleShort;
+
+  /// Name of one hairstyle the companion can wear.
+  ///
+  /// In en, this message translates to:
+  /// **'Waves'**
+  String get companionSettingsHairStyleWaves;
 
   /// Explains the outfit choice on the companion settings page: a fixed outfit, or a random one per app launch.
   ///

@@ -3,6 +3,7 @@ import 'dart:ui' as ui;
 import 'dart:ui';
 
 import 'package:lotti/features/companion/model/companion_look.dart';
+import 'package:lotti/features/companion/model/companion_parts.dart';
 import 'package:lotti/features/companion/model/companion_pose.dart';
 import 'package:lotti/features/companion/rig/animal_head_painter.dart';
 import 'package:lotti/features/companion/rig/face_painter.dart';
@@ -74,10 +75,15 @@ void drawHead(Canvas canvas, RigFrame f, CompanionLook look) {
   if (!look.species.isAnimal) {
     drawFrontHair(canvas, c, p.hairLag, yaw, look.hairStyle);
   }
-  if (look.beret) _beret(canvas, c, yaw);
-  if (look.flatCap) drawFlatCap(canvas, c, yaw);
   if (look.headband) _headband(canvas, c, yaw);
-  if (look.beanie) _beanie(canvas, c, yaw);
+  // A hat sits on the hair, as high and as wide as the hair needs; an
+  // animal's head wears it as the plain head does.
+  final hair = look.species.isAnimal ? CompanionHairStyle.bun : look.hairStyle;
+  if (look.beret) seatHat(canvas, hair, yaw, () => _beret(canvas, c, yaw));
+  if (look.flatCap) {
+    seatHat(canvas, hair, yaw, () => drawFlatCap(canvas, c, yaw));
+  }
+  if (look.beanie) seatHat(canvas, hair, yaw, () => _beanie(canvas, c, yaw));
   canvas.restore();
 }
 
