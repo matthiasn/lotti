@@ -10,6 +10,7 @@ import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart';
+import 'package:lotti/features/agents/ui/agent_editor_scaffold.dart';
 import 'package:lotti/features/agents/ui/agent_form_section.dart';
 import 'package:lotti/features/agents/ui/agent_switch_row.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
@@ -18,14 +19,12 @@ import 'package:lotti/features/categories/ui/widgets/category_field_row.dart';
 import 'package:lotti/features/dashboards/ui/pages/measurables/measurables_page.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
-import 'package:lotti/features/design_system/components/buttons/design_system_modal_action_bar.dart';
 import 'package:lotti/features/design_system/components/buttons/ds_segmented_toggle.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/components/dropdowns/design_system_dropdown.dart';
 import 'package:lotti/features/design_system/components/inputs/design_system_picker_field.dart';
 import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
-import 'package:lotti/features/design_system/components/layout/detail_content_width.dart';
 import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
 import 'package:lotti/features/design_system/components/steppers/design_system_stepper.dart';
 import 'package:lotti/features/design_system/components/textareas/design_system_textarea.dart';
@@ -43,7 +42,6 @@ import 'package:lotti/logic/repositories/entry_category_move.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/goal_routes.dart';
 import 'package:lotti/widgets/modal/confirmation_modal.dart';
-import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 import 'package:material_ui/material_ui.dart';
 
 part 'create_goal_agent_mapping_step_part.dart';
@@ -640,342 +638,286 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage>
           _back();
         }
       },
-      child: Scaffold(
-        appBar: AppBar(
-          leading: BackButton(onPressed: _saving ? null : _back),
-          title: Text(pageTitle),
-        ),
-        body: SafeArea(
-          child: DetailContentWidth(
-            // A form is a reading column, not a pane: cap it at the
-            // action-list measure so desktop stops stretching rows and the
-            // CTA across a void.
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(
-                  maxWidth: kActionListContentMaxWidth,
-                ),
-                child: Column(
-                  children: [
-                    if (_visibleSteps.length > 1)
-                      Padding(
-                        padding: EdgeInsets.only(top: tokens.spacing.step4),
-                        child: _StepProgress(steps: _visibleSteps, step: _step),
-                      ),
-                    Expanded(
-                      // Held still while a save writes the version.
-                      child: AbsorbPointer(
-                        absorbing: _saving,
-                        child: ListView(
-                          padding: EdgeInsets.symmetric(
-                            vertical: tokens.spacing.step5,
-                          ),
-                          children: [
-                            switch (_step) {
-                              _GoalFormStep.intention => _IntentionStep(
-                                controller: _statement,
-                                validation: _validation,
-                                onExampleSelected: (example) {
-                                  setState(() {
-                                    _statement.text = example;
-                                    _validation = null;
-                                    _targetErrors.clear();
-                                  });
-                                },
-                              ),
-                              _GoalFormStep.mapping => _MappingStep(
-                                // Editing has no intention page: the statement
-                                // is a single-line field at the top of this
-                                // page instead.
-                                statement: _editing ? _statement : null,
-                                statementError: _statementError,
-                                onStatementChanged: () =>
-                                    setState(() => _statementError = null),
-                                title: _title,
-                                habits: habits,
-                                habitsFailed:
-                                    habitsAsync.hasError &&
-                                    habitsAsync.value == null,
-                                mapping: _mapping,
-                                measurables: measurables,
-                                categories: categories,
-                                labels: labels,
-                                measurableTargets: _measurableTargets,
-                                healthTargets: _healthTargets,
-                                healthDirections: _healthDirections,
-                                categoryTimeTargets: _categoryTimeTargets,
-                                categoryTimeDirections: _categoryTimeDirections,
-                                labelTimeTargets: _labelTimeTargets,
-                                labelTimeDirections: _labelTimeDirections,
-                                labelTimeCategoryIds: _labelTimeCategoryIds,
-                                compositeRule: _compositeRule,
-                                requiredSuccesses: _requiredSuccesses,
-                                habitTargets: _habitTargets,
-                                watchesSteps: _watchesSteps,
-                                stepsTarget: _stepsTarget,
-                                watchesCheckInTime: _watchesCheckInTime,
-                                checkInMinutes: _checkInMinutes,
-                                onCheckInTimeChanged: (selected) => setState(() {
-                                  _watchesCheckInTime = selected;
-                                  // Picked after the order was frozen: it joins
-                                  // the chosen group, and keeps its place there
-                                  // when deselected.
-                                  if (selected &&
-                                      !_chosenSignalOrder.contains(
-                                        'check-in-time',
-                                      )) {
-                                    _chosenSignalOrder = [
-                                      ..._chosenSignalOrder,
-                                      'check-in-time',
-                                    ];
-                                  }
-                                  _validation = null;
-                                  _targetErrors.remove('check-in-time');
-                                }),
-                                checkInsAreSubstance:
-                                    _shownCheckInsAreSubstance,
-                                onCheckInsAreSubstanceChanged:
-                                    _setCheckInsAreSubstance,
-                                onCheckInMinutesChanged: () => setState(() {
-                                  _validation = null;
-                                  _targetErrors.remove('check-in-time');
-                                }),
-                                chosenSignalOrder: _chosenSignalOrder,
-                                suggestedSignalOrder: _suggestedSignalOrder,
-                                targetErrors: _targetErrors,
-                                anchorFor: _anchorFor,
-                                titleError: _titleError,
-                                validation: _validation,
-                                onTitleChanged: () =>
-                                    setState(() => _titleError = null),
-                                onStepsChanged: (selected) => setState(() {
-                                  _watchesSteps = selected;
-                                  _refreshDerivedTitle(habits);
-                                  _validation = null;
-                                  _targetErrors.remove('steps');
-                                }),
-                                onStepsTargetChanged: () => setState(() {
-                                  _validation = null;
-                                  _targetErrors.remove('steps');
-                                }),
-                                onHabitChanged:
-                                    ({
-                                      required habitId,
-                                      required selected,
-                                    }) => setState(() {
-                                      if (selected) {
-                                        _habitTargets.putIfAbsent(
-                                          habitId,
-                                          () =>
-                                              _rememberedHabitTargets[habitId] ??
-                                              3,
-                                        );
-                                        _appendHabitDescriptor(habitId);
-                                      } else {
-                                        final removed = _habitTargets.remove(
-                                          habitId,
-                                        );
-                                        if (removed != null) {
-                                          _rememberedHabitTargets[habitId] =
-                                              removed;
-                                        }
-                                      }
-                                      _refreshDerivedTitle(habits);
-                                      _validation = null;
-                                    }),
-                                onTargetChanged: (habitId, target) =>
-                                    setState(() {
-                                      _habitTargets[habitId] = target;
-                                      _validation = null;
-                                    }),
-                                onMeasurableChanged:
-                                    ({
-                                      required measurableId,
-                                      required selected,
-                                    }) => setState(() {
-                                      if (selected) {
-                                        _measurableTargets.putIfAbsent(
-                                          measurableId,
-                                          () => 1,
-                                        );
-                                      } else {
-                                        _measurableTargets.remove(measurableId);
-                                      }
-                                      _validation = null;
-                                      _targetErrors.remove(
-                                        'measurable:$measurableId',
-                                      );
-                                    }),
-                                onMeasurableTargetChanged: (id, target) =>
-                                    setState(() {
-                                      _measurableTargets[id] = target;
-                                      _validation = null;
-                                      _targetErrors.remove('measurable:$id');
-                                    }),
-                                onHealthSelected: (dataTypes) => setState(() {
-                                  for (final dataType in dataTypes) {
-                                    _suppressedHealthTypes.remove(dataType);
-                                    _healthTargets.putIfAbsent(
-                                      dataType,
-                                      () => _defaultHealthTarget(dataType),
-                                    );
-                                    _healthDirections.putIfAbsent(
-                                      dataType,
-                                      () => GoalDirection.atMost,
-                                    );
-                                  }
-                                  _appendSignalDescriptors(dataTypes);
-                                  _validation = null;
-                                }),
-                                onHealthRemoved: (dataType) => setState(() {
-                                  _suppressedHealthTypes.add(dataType);
-                                  _healthTargets.remove(dataType);
-                                  _healthDirections.remove(dataType);
-                                  _validation = null;
-                                  _targetErrors.remove('health:$dataType');
-                                }),
-                                onHealthTargetChanged: (dataType, target) =>
-                                    setState(() {
-                                      _healthTargets[dataType] = target;
-                                      _adoptSharedBloodPressureDirection(
-                                        dataType,
-                                      );
-                                      _validation = null;
-                                      _targetErrors.remove('health:$dataType');
-                                    }),
-                                onHealthDirectionChanged:
-                                    (dataType, direction) => setState(() {
-                                      _healthDirections[dataType] = direction;
-                                      _validation = null;
-                                    }),
-                                onCategoryTimeSelected: (categoryId) =>
-                                    setState(
-                                      () {
-                                        _suppressedCategoryTimeIds.remove(
-                                          categoryId,
-                                        );
-                                        _categoryTimeTargets.putIfAbsent(
-                                          categoryId,
-                                          () => 1,
-                                        );
-                                        _categoryTimeDirections.putIfAbsent(
-                                          categoryId,
-                                          () => GoalDirection.atMost,
-                                        );
-                                        _validation = null;
-                                      },
-                                    ),
-                                onCategoryTimeRemoved: (categoryId) => setState(
-                                  () {
-                                    _suppressedCategoryTimeIds.add(categoryId);
-                                    _categoryTimeTargets.remove(categoryId);
-                                    _categoryTimeDirections.remove(categoryId);
-                                    _validation = null;
-                                    _targetErrors.remove(
-                                      'category:$categoryId',
-                                    );
-                                  },
-                                ),
-                                onCategoryTimeTargetChanged:
-                                    (categoryId, target) => setState(() {
-                                      _categoryTimeTargets[categoryId] = target;
-                                      _validation = null;
-                                      _targetErrors.remove(
-                                        'category:$categoryId',
-                                      );
-                                    }),
-                                onCategoryTimeDirectionChanged:
-                                    (categoryId, direction) => setState(() {
-                                      _categoryTimeDirections[categoryId] =
-                                          direction;
-                                      _validation = null;
-                                    }),
-                                onLabelTimeSelected: (labelId) => setState(() {
-                                  _suppressedLabelTimeIds.remove(labelId);
-                                  _labelTimeTargets.putIfAbsent(
-                                    labelId,
-                                    () => 1,
-                                  );
-                                  _labelTimeDirections.putIfAbsent(
-                                    labelId,
-                                    () => GoalDirection.atLeast,
-                                  );
-                                  _labelTimeCategoryIds.putIfAbsent(
-                                    labelId,
-                                    () => null,
-                                  );
-                                  _validation = null;
-                                }),
-                                onLabelTimeRemoved: (labelId) => setState(() {
-                                  _suppressedLabelTimeIds.add(labelId);
-                                  _labelTimeTargets.remove(labelId);
-                                  _labelTimeDirections.remove(labelId);
-                                  _labelTimeCategoryIds.remove(labelId);
-                                  _validation = null;
-                                  _targetErrors.remove('label:$labelId');
-                                }),
-                                onLabelTimeTargetChanged: (labelId, target) =>
-                                    setState(() {
-                                      _labelTimeTargets[labelId] = target;
-                                      _validation = null;
-                                      _targetErrors.remove('label:$labelId');
-                                    }),
-                                onLabelTimeDirectionChanged:
-                                    (labelId, direction) => setState(() {
-                                      _labelTimeDirections[labelId] = direction;
-                                      _validation = null;
-                                    }),
-                                onLabelTimeCategoryChanged:
-                                    (labelId, categoryId) => setState(() {
-                                      _labelTimeCategoryIds[labelId] =
-                                          categoryId;
-                                      _validation = null;
-                                    }),
-                                onCompositeRuleChanged: (rule, required) =>
-                                    setState(() {
-                                      _compositeRule = rule;
-                                      _requiredSuccesses = required;
-                                    }),
-                                enabled: !_saving,
-                                agentSection: _editing
-                                    ? _EditAgentSection.of(this)
-                                    : null,
-                                editVersion: editSpec?.version,
-                                categoryField: _editing
-                                    ? _editCategoryField(this)
-                                    : null,
-                              ),
-                              _GoalFormStep.confirmation => _ConfirmationStep(
-                                title: _title,
-                                persona: _persona,
-                                signalDescription: _signalDescription(habits),
-                                preservesCriteria: !_mapping.isEditable,
-                                validation: _validation,
-                                personaError: _personaError,
-                                titleError: _titleError,
-                                onPersonaChanged: () =>
-                                    setState(() => _personaError = null),
-                                onTitleChanged: () =>
-                                    setState(() => _titleError = null),
-                                enabled: !_saving,
-                                categoryId: _categoryId,
-                                onCategoryChanged: _categoryChanger,
-                              ),
-                            },
-                          ],
-                        ),
-                      ),
-                    ),
-                    _GoalFormFooter(
-                      primary: primaryAction,
-                      onCancel: _editing && !_saving ? _back : null,
-                    ),
-                  ],
-                ),
-              ),
+      // The editor page the person editor uses too.
+      child: AgentEditorScaffold(
+        title: pageTitle,
+        onBack: _saving ? null : _back,
+        busy: _saving,
+        header: _visibleSteps.length > 1
+            ? Padding(
+                padding: EdgeInsets.only(top: tokens.spacing.step4),
+                child: _StepProgress(steps: _visibleSteps, step: _step),
+              )
+            : null,
+        primary: primaryAction,
+        onCancel: _editing && !_saving ? _back : null,
+        cancelKey: const ValueKey('goal-form-cancel'),
+        body: [
+          switch (_step) {
+            _GoalFormStep.intention => _IntentionStep(
+              controller: _statement,
+              validation: _validation,
+              onExampleSelected: (example) {
+                setState(() {
+                  _statement.text = example;
+                  _validation = null;
+                  _targetErrors.clear();
+                });
+              },
             ),
-          ),
-        ),
+            _GoalFormStep.mapping => _MappingStep(
+              // Editing has no intention page: the statement
+              // is a single-line field at the top of this
+              // page instead.
+              statement: _editing ? _statement : null,
+              statementError: _statementError,
+              onStatementChanged: () => setState(() => _statementError = null),
+              title: _title,
+              habits: habits,
+              habitsFailed: habitsAsync.hasError && habitsAsync.value == null,
+              mapping: _mapping,
+              measurables: measurables,
+              categories: categories,
+              labels: labels,
+              measurableTargets: _measurableTargets,
+              healthTargets: _healthTargets,
+              healthDirections: _healthDirections,
+              categoryTimeTargets: _categoryTimeTargets,
+              categoryTimeDirections: _categoryTimeDirections,
+              labelTimeTargets: _labelTimeTargets,
+              labelTimeDirections: _labelTimeDirections,
+              labelTimeCategoryIds: _labelTimeCategoryIds,
+              compositeRule: _compositeRule,
+              requiredSuccesses: _requiredSuccesses,
+              habitTargets: _habitTargets,
+              watchesSteps: _watchesSteps,
+              stepsTarget: _stepsTarget,
+              watchesCheckInTime: _watchesCheckInTime,
+              checkInMinutes: _checkInMinutes,
+              onCheckInTimeChanged: (selected) => setState(() {
+                _watchesCheckInTime = selected;
+                // Picked after the order was frozen: it joins
+                // the chosen group, and keeps its place there
+                // when deselected.
+                if (selected &&
+                    !_chosenSignalOrder.contains(
+                      'check-in-time',
+                    )) {
+                  _chosenSignalOrder = [
+                    ..._chosenSignalOrder,
+                    'check-in-time',
+                  ];
+                }
+                _validation = null;
+                _targetErrors.remove('check-in-time');
+              }),
+              checkInsAreSubstance: _shownCheckInsAreSubstance,
+              onCheckInsAreSubstanceChanged: _setCheckInsAreSubstance,
+              onCheckInMinutesChanged: () => setState(() {
+                _validation = null;
+                _targetErrors.remove('check-in-time');
+              }),
+              chosenSignalOrder: _chosenSignalOrder,
+              suggestedSignalOrder: _suggestedSignalOrder,
+              targetErrors: _targetErrors,
+              anchorFor: _anchorFor,
+              titleError: _titleError,
+              validation: _validation,
+              onTitleChanged: () => setState(() => _titleError = null),
+              onStepsChanged: (selected) => setState(() {
+                _watchesSteps = selected;
+                _refreshDerivedTitle(habits);
+                _validation = null;
+                _targetErrors.remove('steps');
+              }),
+              onStepsTargetChanged: () => setState(() {
+                _validation = null;
+                _targetErrors.remove('steps');
+              }),
+              onHabitChanged:
+                  ({
+                    required habitId,
+                    required selected,
+                  }) => setState(() {
+                    if (selected) {
+                      _habitTargets.putIfAbsent(
+                        habitId,
+                        () => _rememberedHabitTargets[habitId] ?? 3,
+                      );
+                      _appendHabitDescriptor(habitId);
+                    } else {
+                      final removed = _habitTargets.remove(
+                        habitId,
+                      );
+                      if (removed != null) {
+                        _rememberedHabitTargets[habitId] = removed;
+                      }
+                    }
+                    _refreshDerivedTitle(habits);
+                    _validation = null;
+                  }),
+              onTargetChanged: (habitId, target) => setState(() {
+                _habitTargets[habitId] = target;
+                _validation = null;
+              }),
+              onMeasurableChanged:
+                  ({
+                    required measurableId,
+                    required selected,
+                  }) => setState(() {
+                    if (selected) {
+                      _measurableTargets.putIfAbsent(
+                        measurableId,
+                        () => 1,
+                      );
+                    } else {
+                      _measurableTargets.remove(measurableId);
+                    }
+                    _validation = null;
+                    _targetErrors.remove(
+                      'measurable:$measurableId',
+                    );
+                  }),
+              onMeasurableTargetChanged: (id, target) => setState(() {
+                _measurableTargets[id] = target;
+                _validation = null;
+                _targetErrors.remove('measurable:$id');
+              }),
+              onHealthSelected: (dataTypes) => setState(() {
+                for (final dataType in dataTypes) {
+                  _suppressedHealthTypes.remove(dataType);
+                  _healthTargets.putIfAbsent(
+                    dataType,
+                    () => _defaultHealthTarget(dataType),
+                  );
+                  _healthDirections.putIfAbsent(
+                    dataType,
+                    () => GoalDirection.atMost,
+                  );
+                }
+                _appendSignalDescriptors(dataTypes);
+                _validation = null;
+              }),
+              onHealthRemoved: (dataType) => setState(() {
+                _suppressedHealthTypes.add(dataType);
+                _healthTargets.remove(dataType);
+                _healthDirections.remove(dataType);
+                _validation = null;
+                _targetErrors.remove('health:$dataType');
+              }),
+              onHealthTargetChanged: (dataType, target) => setState(() {
+                _healthTargets[dataType] = target;
+                _adoptSharedBloodPressureDirection(
+                  dataType,
+                );
+                _validation = null;
+                _targetErrors.remove('health:$dataType');
+              }),
+              onHealthDirectionChanged: (dataType, direction) => setState(() {
+                _healthDirections[dataType] = direction;
+                _validation = null;
+              }),
+              onCategoryTimeSelected: (categoryId) => setState(
+                () {
+                  _suppressedCategoryTimeIds.remove(
+                    categoryId,
+                  );
+                  _categoryTimeTargets.putIfAbsent(
+                    categoryId,
+                    () => 1,
+                  );
+                  _categoryTimeDirections.putIfAbsent(
+                    categoryId,
+                    () => GoalDirection.atMost,
+                  );
+                  _validation = null;
+                },
+              ),
+              onCategoryTimeRemoved: (categoryId) => setState(
+                () {
+                  _suppressedCategoryTimeIds.add(categoryId);
+                  _categoryTimeTargets.remove(categoryId);
+                  _categoryTimeDirections.remove(categoryId);
+                  _validation = null;
+                  _targetErrors.remove(
+                    'category:$categoryId',
+                  );
+                },
+              ),
+              onCategoryTimeTargetChanged: (categoryId, target) => setState(() {
+                _categoryTimeTargets[categoryId] = target;
+                _validation = null;
+                _targetErrors.remove(
+                  'category:$categoryId',
+                );
+              }),
+              onCategoryTimeDirectionChanged: (categoryId, direction) =>
+                  setState(() {
+                    _categoryTimeDirections[categoryId] = direction;
+                    _validation = null;
+                  }),
+              onLabelTimeSelected: (labelId) => setState(() {
+                _suppressedLabelTimeIds.remove(labelId);
+                _labelTimeTargets.putIfAbsent(
+                  labelId,
+                  () => 1,
+                );
+                _labelTimeDirections.putIfAbsent(
+                  labelId,
+                  () => GoalDirection.atLeast,
+                );
+                _labelTimeCategoryIds.putIfAbsent(
+                  labelId,
+                  () => null,
+                );
+                _validation = null;
+              }),
+              onLabelTimeRemoved: (labelId) => setState(() {
+                _suppressedLabelTimeIds.add(labelId);
+                _labelTimeTargets.remove(labelId);
+                _labelTimeDirections.remove(labelId);
+                _labelTimeCategoryIds.remove(labelId);
+                _validation = null;
+                _targetErrors.remove('label:$labelId');
+              }),
+              onLabelTimeTargetChanged: (labelId, target) => setState(() {
+                _labelTimeTargets[labelId] = target;
+                _validation = null;
+                _targetErrors.remove('label:$labelId');
+              }),
+              onLabelTimeDirectionChanged: (labelId, direction) => setState(() {
+                _labelTimeDirections[labelId] = direction;
+                _validation = null;
+              }),
+              onLabelTimeCategoryChanged: (labelId, categoryId) => setState(() {
+                _labelTimeCategoryIds[labelId] = categoryId;
+                _validation = null;
+              }),
+              onCompositeRuleChanged: (rule, required) => setState(() {
+                _compositeRule = rule;
+                _requiredSuccesses = required;
+              }),
+              enabled: !_saving,
+              agentSection: _editing ? _EditAgentSection.of(this) : null,
+              editVersion: editSpec?.version,
+              categoryField: _editing ? _editCategoryField(this) : null,
+            ),
+            _GoalFormStep.confirmation => _ConfirmationStep(
+              title: _title,
+              persona: _persona,
+              signalDescription: _signalDescription(habits),
+              preservesCriteria: !_mapping.isEditable,
+              validation: _validation,
+              personaError: _personaError,
+              titleError: _titleError,
+              onPersonaChanged: () => setState(() => _personaError = null),
+              onTitleChanged: () => setState(() => _titleError = null),
+              enabled: !_saving,
+              categoryId: _categoryId,
+              onCategoryChanged: _categoryChanger,
+            ),
+          },
+        ],
       ),
     );
   }

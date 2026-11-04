@@ -628,7 +628,7 @@ void main() {
     expect(find.text('Error'), findsOneWidget);
   });
 
-  testWidgets("the menu's edit opens the form prefilled with the person", (
+  testWidgets("the menu's edit beams to the person's editor page", (
     tester,
   ) async {
     when(() => mockRepository.getRelationshipById('rel-1')).thenAnswer(
@@ -637,6 +637,9 @@ void main() {
     when(
       () => mockRepository.getCheckInsForRelationship('rel-1'),
     ).thenAnswer((_) async => []);
+    final beamedTo = <String>[];
+    beamToNamedOverride = beamedTo.add;
+    addTearDown(() => beamToNamedOverride = null);
 
     await tester.pumpWidget(buildPage());
     await tester.pumpAndSettle();
@@ -646,16 +649,7 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('person-menu-edit')));
     await tester.pumpAndSettle();
 
-    // Prefilled name and nickname fields, and the edit-only status picker.
-    expect(
-      find.widgetWithText(TextField, 'Anna'),
-      findsOneWidget,
-    );
-    expect(
-      find.widgetWithText(TextField, 'Sis'),
-      findsOneWidget,
-    );
-    expect(find.text('Status'), findsOneWidget);
+    expect(beamedTo, ['/people/rel-1/edit']);
   });
 
   testWidgets(

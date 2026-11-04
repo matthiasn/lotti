@@ -5,7 +5,7 @@ description: A personal CRM carried by two journal variants — why check-ins ar
 resource: ../../lib/features/relationships
 tags: [relationships, check-ins, journal-entity, privacy]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-11-01T18:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-11-04T12:00:00Z }
 stale_after: 2027-03-01
 sources:
   - id: tla-lifecycle
@@ -133,9 +133,17 @@ sources:
     title: showDurationPicker — the design-system duration modal both hosts share
     last_modified: 2026-09-06
   - id: person-form
-    resource: ../../lib/features/relationships/ui/widgets/relationship_form_modal.dart
-    title: The add/edit person form — three cards, pinned actions
-    last_modified: 2026-09-09
+    resource: ../../lib/features/relationships/ui/widgets/relationship_form.dart
+    title: The add/edit person form — its sections, driven through a handle
+    last_modified: 2026-11-04
+  - id: person-editor-page
+    resource: ../../lib/features/relationships/ui/pages/relationship_editor_page.dart
+    title: The person editor page — /people/new and /people/<id>/edit
+    last_modified: 2026-11-04
+  - id: agent-editor-scaffold
+    resource: ../../lib/features/agents/ui/agent_editor_scaffold.dart
+    title: AgentEditorScaffold — the page both the goal and the person editor are
+    last_modified: 2026-11-04
   - id: chat-pane
     resource: ../../lib/features/relationships/ui/widgets/relationship_chat_pane.dart
     title: The per-person chat pane and its agent header
@@ -698,12 +706,25 @@ full touch target and a spoken label) whose only name is a tooltip a phone
 never shows. Both doors go through `_openContactImport`. The header keeps only
 the title, the count and that door.
 
-Both doors call `createPersonAndOpen`, which beams to `/people/<id>` with what
-the sheet resolved to, the way the task list opens the task it just created.
-Creating used to return to the list, leaving the user to find the row they had
-just made; the page they arrive on is where the first check-in is logged. A
-dismissed sheet resolves to null and navigates nowhere, and so does a refused
-write — the sheet stays open with its toast.
+Both doors beam to `/people/new`, the person editor page. A save there beams
+to `/people/<id>` of the person it created, the way the task list opens the
+task it just created: the page they arrive on is where the first check-in is
+logged. Leaving it beams back to `/people`, and a refused write keeps the
+editor open with its toast. The person page's menu *Edit* beams to
+`/people/<id>/edit`, which returns to the person either way.
+
+The editor is a page on every screen size, as the goal editor is — the same
+[`AgentEditorScaffold`](../../lib/features/agents/ui/agent_editor_scaffold.dart)
+(app bar with the way back, the scaffold's canvas, a reading column capped at
+the action-list measure, an opaque footer with *Cancel* and the primary). It
+was a modal sheet on a different surface colour while goals edited on a page,
+which made the two editors look like two products.
+[`RelationshipEditorPage`](../../lib/features/relationships/ui/pages/relationship_editor_page.dart)
+reads the person through `relationshipDetailControllerProvider` (the person
+page's own read, so arriving from it costs nothing) and shows its title and
+back over a spinner only until that first value lands. On a desktop the
+person stays selected in the split behind the editor; `/people/new` selects
+no one, since nobody is called "new".
 
 ```mermaid
 flowchart LR
@@ -713,6 +734,12 @@ flowchart LR
   Sel --> Split[RelationshipsPage split: list pane · divider · detail pane]
   Split -->|row wears surface.selected| Row[PeopleListRow]
   Split --> Pane[detail pane: RelationshipDetailsPage or empty state]
+  New["/people/new"] --> Loc
+  Edit["/people/&lt;id&gt;/edit"] --> Loc
+  Loc -->|every size| Editor[push RelationshipEditorPage]
+  Editor -->|saved| URL
+  Editor -->|left, editing| URL
+  Editor -->|left, adding| List["/people"]
 ```
 
 # The person page
@@ -2096,26 +2123,27 @@ Three surfaces finish the redesign (design 2026-09-06 §6), and all three say
 the same thing in the same words: what *important* turns on, and where a
 phone number does not go.
 
-**The form** ([relationship_form_modal.dart](../../lib/features/relationships/ui/widgets/relationship_form_modal.dart))
-groups into three `DesignSystemSectionCard`s — **Who** (name, nickname, the
-names that come up with them — the speech dictionary's semicolon format,
-parsed by the same `parseSpeechTerms` — the category, and while
-editing the status), **Important** (the consent switch — labelled as the
-request it grants, *Remind me to stay in touch*, so it reads true while off —
-one line saying what it enables, and the cadence presets *only* once it is
-on, the applied interval preselected), **How to reach them** (the channel editor, under a line saying the
-channels stay on this device and are never shared with the AI). The category is a name beside a 10px colour
-dot rather than a second large avatar competing with the person's own;
-clearing it goes through the picker's own no-category row, so one component
-owns what the choices are. Like the capture sheet, the form draws no actions:
-it publishes `save`, `dismiss` and `canSave` to a `RelationshipFormHandle` and
-`RelationshipFormStickyActions` renders them in the modal's pinned bar, which
-is what keeps Save reachable over three cards of fields.
+**The form** ([relationship_form.dart](../../lib/features/relationships/ui/widgets/relationship_form.dart))
+is the goal editor's `AgentFormSection`s — **Who** (name, nickname and the
+category), **How to reach them** (the channel editor, under a line saying the
+channels stay on this device and are never shared with the AI), **Your
+agent** (the consent switch — labelled as the request it grants, *Remind me
+to stay in touch*, so it reads true while off — one line saying what it
+enables, the cadence presets *only* once it is on, the status while editing,
+and the names that come up with them in the speech dictionary's semicolon
+format, parsed by the same `parseSpeechTerms`), and while editing **Photo**.
+Clearing the category goes through the picker's own no-category row, so one
+component owns what the choices are. Like the capture sheet, the form draws
+no actions: it publishes `save`, `dismiss` and `canSave` to a
+`RelationshipFormHandle`, and the editor page renders them in the shared
+footer, which keeps Save reachable over every section. What a save or a
+leave does next is the host's — `onSaved` and `onDismissed` — so the form
+knows nothing of routes.
 
-Leaving asks first. Cancel, the back gesture, the barrier and Escape all route
+Leaving asks first. Cancel, the app bar's back and the system back all route
 through the form's `_dismiss`, which compares every field against what the
-sheet opened with and shows `showConfirmationModal` only when something would
-be lost; an untouched sheet still closes on the first tap. The `PopScope`
+form opened with and shows `showConfirmationModal` only when something would
+be lost; an untouched form still leaves on the first tap. The `PopScope`
 around the form sets `canPop: false` unconditionally rather than `!_isDirty`,
 because the fields are plain controllers with no `onChanged`: the form does
 not rebuild while you type, so a dirtiness captured at build time would still

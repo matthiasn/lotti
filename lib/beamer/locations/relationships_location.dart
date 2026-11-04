@@ -2,6 +2,7 @@ import 'package:beamer/beamer.dart';
 import 'package:lotti/features/relationships/ui/pages/check_in_detail_page.dart';
 import 'package:lotti/features/relationships/ui/pages/relationship_chat_page.dart';
 import 'package:lotti/features/relationships/ui/pages/relationship_details_page.dart';
+import 'package:lotti/features/relationships/ui/pages/relationship_editor_page.dart';
 import 'package:lotti/features/relationships/ui/pages/relationships_page.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -18,21 +19,33 @@ import 'package:material_ui/material_ui.dart';
 /// (design 2026-09-06 §6), so `/chat` sets
 /// `NavService.desktopRelationshipChatOpen` there and still pushes a page
 /// only on phones. A check-in (`/check-ins/<id>`) is the pane's third face,
-/// through `NavService.desktopRelationshipCheckInId`.
+/// through `NavService.desktopRelationshipCheckInId`. The editor
+/// (`/people/new`, `/people/<id>/edit`) is a page pushed over all of it on
+/// every screen size, as a goal's editor is.
 class RelationshipsLocation extends BeamLocation<BeamState> {
   RelationshipsLocation(RouteInformation super.routeInformation);
 
   @override
   List<String> get pathPatterns => [
     '/people',
+    '/people/new',
     '/people/:relationshipId',
+    '/people/:relationshipId/edit',
     '/people/:relationshipId/chat',
     '/people/:relationshipId/check-ins/:checkInId',
   ];
 
   @override
   List<BeamPage> buildPages(BuildContext context, BeamState state) {
-    final relationshipId = state.pathParameters['relationshipId'];
+    // `/people/new` is the editor adding someone, not a person called "new".
+    final creating = state.uri.path == '/people/new';
+    final relationshipId = creating
+        ? null
+        : state.pathParameters['relationshipId'];
+    final isEdit =
+        relationshipId != null &&
+        state.uri.pathSegments.length == 3 &&
+        state.uri.pathSegments[2] == 'edit';
     final messages = context.messages;
     final navService = getIt<NavService>();
     final isDesktop = navService.isDesktopMode;
@@ -66,6 +79,20 @@ class RelationshipsLocation extends BeamLocation<BeamState> {
         BeamPage(
           key: ValueKey('people-chat-$relationshipId'),
           child: RelationshipChatPage(relationshipId: relationshipId),
+        ),
+      // The editor is a page on every screen size, over the list and the
+      // person — as a goal's editor is over the goal.
+      if (creating)
+        BeamPage(
+          key: const ValueKey('people-new'),
+          title: messages.relationshipCreateTitle,
+          child: const RelationshipEditorPage(),
+        ),
+      if (isEdit)
+        BeamPage(
+          key: ValueKey('people-edit-$relationshipId'),
+          title: messages.relationshipEditTitle,
+          child: RelationshipEditorPage(relationshipId: relationshipId),
         ),
       if (!isDesktop && checkInId != null)
         BeamPage(

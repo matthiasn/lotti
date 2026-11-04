@@ -274,7 +274,10 @@ void main() {
   });
 
   testWidgets('peopleTabDockAction is a worded Add person action that opens '
-      'the create form', (tester) async {
+      'the editor page', (tester) async {
+    final beamedTo = <String>[];
+    beamToNamedOverride = beamedTo.add;
+    addTearDown(() => beamToNamedOverride = null);
     MobileNavDockAction? action;
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
@@ -306,131 +309,9 @@ void main() {
     action!.onPressed();
     await tester.pumpAndSettle();
 
-    expect(find.text('Name'), findsOneWidget);
-    expect(find.text('Status'), findsNothing);
-  });
-
-  // Creating a person used to drop the user back on the list to find the row
-  // they had just made. The task list has always opened the new task.
-  group('creating a person opens that person', () {
-    RelationshipEntry created() => RelationshipEntry(
-      meta: Metadata(
-        id: 'rel-new',
-        createdAt: testDate,
-        updatedAt: testDate,
-        dateFrom: testDate,
-        dateTo: testDate,
-      ),
-      data: RelationshipData(
-        title: 'Pip Frostbeak',
-        status: RelationshipStatus.active(
-          id: 'status-new',
-          createdAt: testDate,
-          utcOffset: 0,
-        ),
-      ),
-    );
-
-    late List<String> beamedTo;
-
-    setUp(() {
-      when(
-        () => mockRepository.getRelationshipsByRecency(),
-      ).thenAnswer((_) async => []);
-      beamedTo = <String>[];
-      beamToNamedOverride = beamedTo.add;
-      addTearDown(() => beamToNamedOverride = null);
-    });
-
-    /// The docked action is the one add control a phone shows.
-    Future<void> openCreateSheet(WidgetTester tester) async {
-      MobileNavDockAction? action;
-      await tester.pumpWidget(
-        makeTestableWidgetNoScroll(
-          Consumer(
-            builder: (context, ref, _) {
-              action = peopleTabDockAction(context);
-              return const SizedBox.shrink();
-            },
-          ),
-          overrides: [
-            relationshipRepositoryProvider.overrideWithValue(mockRepository),
-            personTimelineOverride(),
-            // The person page's record button watches the app-wide recorder.
-            audioRecorderControllerProvider.overrideWith(
-              FakeAudioRecorderController.new,
-            ),
-          ],
-        ),
-      );
-      await tester.pump();
-      action!.onPressed();
-      await tester.pumpAndSettle();
-    }
-
-    testWidgets('lands on the person the sheet created', (tester) async {
-      when(
-        () => mockRepository.createRelationship(
-          data: any(named: 'data'),
-          entryText: any(named: 'entryText'),
-          categoryId: any(named: 'categoryId'),
-          id: any(named: 'id'),
-        ),
-      ).thenAnswer((_) async => created());
-
-      await openCreateSheet(tester);
-      await tester.enterText(find.byType(TextField).first, 'Pip Frostbeak');
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Create'));
-      await tester.pumpAndSettle();
-
-      expect(
-        beamedTo,
-        ['/people/rel-new'],
-        reason:
-            'the page they arrive on is where the first check-in is '
-            'logged, so it is where creating should leave them',
-      );
-    });
-
-    testWidgets('goes nowhere when the sheet is dismissed', (tester) async {
-      await openCreateSheet(tester);
-      await tester.tap(find.byKey(const ValueKey('person-form-cancel')));
-      await tester.pumpAndSettle();
-
-      expect(beamedTo, isEmpty);
-      verifyNever(
-        () => mockRepository.createRelationship(
-          data: any(named: 'data'),
-          entryText: any(named: 'entryText'),
-          categoryId: any(named: 'categoryId'),
-          id: any(named: 'id'),
-        ),
-      );
-    });
-
-    testWidgets('goes nowhere when the write fails', (tester) async {
-      when(
-        () => mockRepository.createRelationship(
-          data: any(named: 'data'),
-          entryText: any(named: 'entryText'),
-          categoryId: any(named: 'categoryId'),
-          id: any(named: 'id'),
-        ),
-      ).thenAnswer((_) async => null);
-
-      await openCreateSheet(tester);
-      await tester.enterText(find.byType(TextField).first, 'Pip Frostbeak');
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Create'));
-      await tester.pumpAndSettle();
-
-      expect(
-        beamedTo,
-        isEmpty,
-        reason: 'a refused write leaves the sheet open with the toast',
-      );
-    });
+    // A page, as a new goal's editor is — what saving or leaving it does is
+    // the editor page's to test.
+    expect(beamedTo, ['/people/new']);
   });
 
   testWidgets('a long press on a person opens Speak about them, already '
@@ -972,19 +853,21 @@ void main() {
       expect(find.byType(RelationshipDetailsPage), findsNothing);
     });
 
-    testWidgets('the floating Add person button opens the create form', (
+    testWidgets('the floating Add person button opens the editor page', (
       tester,
     ) async {
       when(
         () => mockRepository.getRelationshipsByRecency(),
       ).thenAnswer((_) async => crew());
+      final beamedTo = <String>[];
+      beamToNamedOverride = beamedTo.add;
+      addTearDown(() => beamToNamedOverride = null);
 
       await pumpDesktop(tester);
       await tester.tap(find.byKey(const ValueKey('people-add-person-fab')));
       await tester.pumpAndSettle();
 
-      expect(find.text('Name'), findsOneWidget);
-      expect(find.text('Status'), findsNothing);
+      expect(beamedTo, ['/people/new']);
     });
 
     testWidgets('an empty list keeps the floating button as its one add '
