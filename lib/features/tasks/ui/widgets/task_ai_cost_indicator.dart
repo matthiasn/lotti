@@ -61,10 +61,7 @@ class TaskAiCostIndicator extends ConsumerWidget {
     final totals = ref.watch(taskConsumptionTotalsProvider(taskId)).value;
     if (totals == null || totals.callCount == 0) return const SizedBox.shrink();
 
-    final agent = ref
-        .watch(taskAgentProvider(taskId))
-        .value
-        ?.mapOrNull(agent: (e) => e);
+    final agentLookup = ref.watch(taskAgentProvider(taskId));
 
     return AiCostIndicator(
       totals: totals,
@@ -72,19 +69,45 @@ class TaskAiCostIndicator extends ConsumerWidget {
       foregroundColor: foregroundColor,
       onTap:
           onTap ??
-          (agent != null
-              ? () => AgentInternalsPanel.show(
-                  context: context,
-                  agentId: agent.agentId,
-                  agentName: agent.displayName,
-                  maintenance: AgentMaintenanceScope(
-                    kind: AgentMaintenanceKind.task,
-                    entityId: taskId,
-                  ),
-                )
-              : _hostedInDetails
-              ? null
-              : () => TaskMetaFlyout.show(context, taskId: taskId)),
+          // Still resolving is not "no agent": the tap waits for the lookup
+          // rather than sending a task that has one to the details.
+          (agentLookup.isLoading && !agentLookup.hasValue
+              ? () => _openResolved(context, ref)
+              : _drillDown(context, _agentOf(agentLookup.value))),
     );
+  }
+
+  static AgentIdentityEntity? _agentOf(AgentDomainEntity? entity) =>
+      entity?.mapOrNull(agent: (e) => e);
+
+  /// Resolves the agent lookup, then opens what [_drillDown] picks for it.
+  /// A failed lookup counts as no agent.
+  Future<void> _openResolved(BuildContext context, WidgetRef ref) async {
+    AgentDomainEntity? entity;
+    try {
+      entity = await ref.read(taskAgentProvider(taskId).future);
+    } on Object {
+      entity = null;
+    }
+    if (!context.mounted) return;
+    _drillDown(context, _agentOf(entity))?.call();
+  }
+
+  /// The agent's internals when there is one; otherwise the task details,
+  /// unless this indicator already sits inside them.
+  VoidCallback? _drillDown(BuildContext context, AgentIdentityEntity? agent) {
+    if (agent != null) {
+      return () => AgentInternalsPanel.show(
+        context: context,
+        agentId: agent.agentId,
+        agentName: agent.displayName,
+        maintenance: AgentMaintenanceScope(
+          kind: AgentMaintenanceKind.task,
+          entityId: taskId,
+        ),
+      );
+    }
+    if (_hostedInDetails) return null;
+    return () => TaskMetaFlyout.show(context, taskId: taskId);
   }
 }

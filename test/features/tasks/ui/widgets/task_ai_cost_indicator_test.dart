@@ -91,10 +91,13 @@ void main() {
     required int callCount,
     Widget? indicator,
     AgentDomainEntity? taskAgent,
+    Future<AgentDomainEntity?>? taskAgentLookup,
   }) {
     return ProviderScope(
       overrides: withServiceOverrides([
-        taskAgentProvider(taskId).overrideWith((ref) async => taskAgent),
+        taskAgentProvider(taskId).overrideWith(
+          (ref) => taskAgentLookup ?? Future.value(taskAgent),
+        ),
         // The internals panel resolves the identity; keeping it in flight
         // renders the panel shell without the tab bodies' providers.
         agentIdentityProvider.overrideWith(
@@ -181,6 +184,65 @@ void main() {
       expectInternalsOpened(tester);
     },
   );
+
+  testWidgets('a tap during the agent lookup waits for it, then opens the '
+      'internals', (tester) async {
+    final lookup = Completer<AgentDomainEntity?>();
+    await tester.pumpWidget(
+      pump(callCount: 4, taskAgentLookup: lookup.future),
+    );
+    await settle(tester);
+
+    await tester.tap(find.text('€0.35'));
+    await tester.pump();
+    // Nothing opens while the lookup is unresolved, least of all the
+    // details a task with an agent should not land on.
+    expect(find.text('Task details'), findsNothing);
+    expect(find.byType(AgentInternalsPanel), findsNothing);
+
+    lookup.complete(agent);
+    for (var i = 0; i < 10; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+
+    expectInternalsOpened(tester);
+  });
+
+  testWidgets('a tap during a lookup that finds no agent opens the details', (
+    tester,
+  ) async {
+    final lookup = Completer<AgentDomainEntity?>();
+    await tester.pumpWidget(
+      pump(callCount: 4, taskAgentLookup: lookup.future),
+    );
+    await settle(tester);
+
+    await tester.tap(find.text('€0.35'));
+    await tester.pump();
+    lookup.complete(null);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Task details'), findsOneWidget);
+    expect(find.byType(AgentInternalsPanel), findsNothing);
+  });
+
+  testWidgets('a tap during a lookup that fails opens the details', (
+    tester,
+  ) async {
+    final lookup = Completer<AgentDomainEntity?>();
+    await tester.pumpWidget(
+      pump(callCount: 4, taskAgentLookup: lookup.future),
+    );
+    await settle(tester);
+
+    await tester.tap(find.text('€0.35'));
+    await tester.pump();
+    lookup.completeError(StateError('agent repository unavailable'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Task details'), findsOneWidget);
+    expect(find.byType(AgentInternalsPanel), findsNothing);
+  });
 
   testWidgets('without an agent, tapping falls back to the task details', (
     tester,
