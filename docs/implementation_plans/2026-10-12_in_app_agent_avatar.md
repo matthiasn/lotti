@@ -1,7 +1,7 @@
 # In-App Agent Avatar: a Character You Talk To
 
 Date: 2026-10-12
-Status: proof of concept built (2026-10-13); delivery as a branch stack (2026-10-15), branches 1 (`feat/companion-speaks`), 2 (`feat/companion-day-briefing`) and 3 (`feat/companion-onboarding`) built — see "Delivery"; revised 2026-10-19 for her range and customization, branches A (`feat/companion-expressions`), B (`feat/companion-tone-track`), C (`feat/companion-outfits`), D (`feat/companion-customization`) and E (`feat/companion-customization-sync`) built — see "Revision: her range, and making her your own"
+Status: proof of concept built (2026-10-13); delivery as a branch stack (2026-10-15), branches 1 (`feat/companion-speaks`), 2 (`feat/companion-day-briefing`) and 3 (`feat/companion-onboarding`) built — see "Delivery"; revised 2026-10-19 for her range and customization, branches A (`feat/companion-expressions`), B (`feat/companion-tone-track`), C (`feat/companion-outfits`), D (`feat/companion-customization`) and E (`feat/companion-customization-sync`) built — see "Revision: her range, and making her your own"; revised 2026-11-04 for three more people beside her, task 1 (`feat/companion-grandpa`) in progress — see "Revision: a cast of four"
 Branch: `feat/companion-widgetbook` (PR #4782), the parent of the stack
 Builds on: [2026-06-22_bones_animation_framework.md](2026-06-22_bones_animation_framework.md)
 (the rig engine and its locked runtime decisions) and
@@ -645,9 +645,179 @@ flowchart TD
 ### Later
 
 - **A grandpa**: trousers, a beard, a different silhouette, so a change to
-  the body painters rather than a palette.
+  the body painters rather than a palette. Planned, with two more people,
+  in "Revision: a cast of four" below.
 - **Sass from the coach**: the coaching agent's charter or persona sets her
   sass, so a coach told to be blunt gets an eyebrow.
+
+## Revision: a cast of four (2026-11-04)
+
+From the product conversation of 2026-11-04. Three characters exist — Lotti,
+the cat and the red panda — and only Lotti can be chosen in the app: the
+animals live in the widgetbook (`companionOutfits` is her looks alone). The
+ask is more people: human like her, but not her. Three are chosen.
+
+### Who
+
+| | Lotti (exists) | The grandpa | The younger woman | The younger man |
+|---|---|---|---|---|
+| Age | in her nineties | about eighty | about forty | about thirty |
+| Legs | bare, under a dress | trousers | trousers (a boiler suit) | trousers |
+| Face | laugh lines, glasses | laugh lines, half-moon reading glasses, a trimmed beard and moustache | smooth, no glasses | smooth, no glasses |
+| Temperament | sharp, "1 %" humour | calm, methodical, dry | energetic, celebrates progress | terse, dry wit |
+| Soul it suits | Laura | Sage | Kit | Max |
+| Default hair | silver bun | silver, short | the person's choice | the person's choice |
+| Task | — | 1 | 2 | 3 |
+
+The pairing with a soul is a suggestion of temperament until task 4 makes
+it real: a character is a face, and the soul still says the words.
+
+### Rules carried over, and three new ones
+
+Carried over unchanged: **every part combines with every other** and no part
+is named after a people (skin tone, hairstyle and hair colour apply to every
+human character); **disapproval is sass, never guilt**; **nobody is the
+app** — each talks about Lotti in the third person.
+
+New:
+
+- **No garment is reused.** Each character's clothes are new garments, not a
+  new palette on hers. The ones she owns — dress, cardigan, small silk scarf,
+  pearls, beads, beret, square sunglasses, round tortoiseshell glasses, Mary
+  Janes, the red glove, pearl and disc earrings — stay hers. No outfit of a
+  new character repeats an existing look's colour pairing either (teal and
+  mustard, raspberry and ivory, sage and straw, lavender and dove grey, navy
+  and red, the rock yellow and red, the animals' looks).
+- **No one looks like a real person, the owner least of all.** The younger
+  man is never framed as a grandson — in an app named after its maker's
+  grandmother, that reads as the maker — and he stays unlike the video
+  series' founder character (blond, bearded, plaid shirt, jeans). None of
+  the three is her family; they are a cast.
+- **Names are chosen before a character ships under one.** The series bible
+  holds a name to be said plainly and kept. The grandpa ships labelled with
+  his role, "Grandpa", in every catalog; the younger two get their names, or
+  role labels, before tasks 2 and 3 start.
+
+### Their wardrobes
+
+| | Garments | Outfits |
+|---|---|---|
+| Grandpa | a collared shirt, sleeves rolled to the forearm; braces; pleated trousers; a bow tie; lace-up brogues; half-moon reading glasses; a flat cap in one outfit | Everyday, Jazz, Seaside, Market (the cap) |
+| Younger woman | a short-sleeved boiler suit with a belt and a chest pocket; high-top trainers; gold hoop earrings; a wide headband in one outfit | to be drawn in task 2, four |
+| Younger man | a bomber jacket over a crew-neck tee; chinos with turned-up cuffs; lace-up boots; over-ear headphones round his neck; a beanie in one outfit | to be drawn in task 3, four |
+
+The trousers the three share are drawn once (`rig/trousers_painter.dart`);
+each character's upper garments are a painter file of their own, as the
+hairstyles are, dispatched on the character. No painter grows past the
+1,000-line cap.
+
+### The model
+
+- **A character is a `CompanionSpecies`.** The enum already means "who the
+  companion is", and every look already names one. The grandpa, and later
+  the younger two, are new values; `isAnimal` stays false for them. Two
+  traits answer what the painters ask, so no painter switches on a name
+  where a trait will do: `legs` (bare under a dress, trousers, or an
+  animal's) and `aged` (laugh lines).
+- **His colours join the palette** as nullable fields, the way the animals'
+  muzzle and tail did: shirt, trousers, braces, bow tie, cap. His glasses
+  take the existing frame colours and his brogues the shoe colours, which
+  are not garments of hers but colours any shoe or frame has.
+- **The character is a part of the customization** (`character`, stored as
+  its name; Lotti by default). Choosing another one clears the outfit —
+  outfits belong to one character — and puts the hairstyle back to that
+  character's own; skin, hair colour, sass and the voice switch carry over.
+  An unknown name reads as Lotti, so a newer device's choice never breaks an
+  older one; sync carries the JSON as it already does, with no new
+  `SyncMessage` variant.
+- **Two hairstyles join the five**: short (a side-parted crop) and balding (a
+  crown with a fringe of hair round the back and sides). Like the others,
+  they are for every human character. The beard takes the hair colour.
+- **The outfits a host sees are the chosen character's.** "Surprise me",
+  the stage's palette control and the settings chips draw from
+  `CompanionLook.of(character)`. Every host already asks
+  `companionLookRollProvider` for her look, so none of them changes.
+
+### Delivery
+
+```mermaid
+flowchart TD
+  M["main"] --> P["docs/companion-cast-plan<br/>this revision"]
+  P --> T1["1 · feat/companion-grandpa<br/>character choice, the grandpa, short and balding hair"]
+  T1 --> T2["2 · the younger woman<br/>the young face, her boiler suit"]
+  T2 --> T3["3 · the younger man<br/>bomber jacket, chinos, boots"]
+  T3 --> T4["4 · each soul its face<br/>a character and a voice per soul"]
+```
+
+One pull request for the stack, from its head into `main`, one commit per
+branch, and a single changelog fragment covering everything a user sees.
+
+#### 1 · `feat/companion-grandpa`: choose who, and the grandpa
+
+- `CompanionSpecies.grandpa` with its traits; `legs` and `aged` on every
+  species.
+- His painters: trousers and brogues (`trousers_painter.dart`), the shirt,
+  braces and bow tie with rolled sleeves (`grandpa_outfit_painter.dart`),
+  the beard, moustache, reading glasses and flat cap
+  (`grandpa_head_painter.dart`). The moustache sits above the upper lip and
+  the beard round the chin, so every mouth shape still reads. The shirt is
+  tucked deep enough that a bounce of joy never shows a gap at his waist;
+  his legs, like hers, never move with it.
+- His four outfits, in colours none of hers or the animals' use.
+- The short and balding hairstyles, for every human character.
+- `CompanionCustomization.character`, its JSON, and the switch that clears
+  the outfit and resets the hairstyle.
+- Settings › Companion: a **Character** choice above the outfit, as chips
+  (Lotti, Grandpa). The outfit chips list the chosen character's outfits.
+  The hairstyle picker moves from a segmented toggle to chips: seven
+  segments do not fit a phone.
+- The stage's palette control and "Surprise me" draw from the chosen
+  character's outfits.
+- The widgetbook gets a **Grandpa** component from the species loop, with
+  the same use cases as the others.
+- New labels, translated, in every catalog: the character section, Lotti,
+  Grandpa, the two hairstyles, and three outfit names (Everyday is reused).
+- A changelog fragment: with Companion on, a person can choose the grandpa.
+- **Not in this task:** his voice. He speaks in whatever voice the person
+  chose; a voice per character is task 4.
+- **Screenshots:** Settings › Companion before and after, phone and
+  desktop, light, Lotti and the grandpa; and a sheet of his four outfits.
+
+#### 2 · the younger woman
+
+- The young face: `aged: false` drops the laugh lines; fuller brows, no
+  glasses.
+- Her painters: the boiler suit over the shared trousers, the trainers, the
+  hoops and the headband. Four outfits.
+- In the character chips and the widgetbook, labelled by the name chosen
+  for her.
+
+#### 3 · the younger man
+
+- His painters: the bomber jacket and tee, chinos with turned-up cuffs (the
+  shared trousers), boots, the headphones and the beanie. Four outfits.
+- In the character chips and the widgetbook, labelled by the name chosen
+  for him.
+
+#### 4 · each soul its face
+
+- Answers this plan's open question "one companion, or a face per soul?":
+  the companion shown for an agent is its soul's character (Laura → Lotti,
+  Sage → the grandpa, Kit → the younger woman, Max → the younger man), unless
+  the person has chosen one character for all.
+- A default voice per character — the on-device voice has five male
+  voices — chosen by ear, never swapped without a listen, as the series
+  bible holds.
+- Its own design pass before it starts: what the setting looks like, and
+  what Tom and Iris show.
+
+### Later
+
+- The cat and the red panda in the character choice: their looks exist, but
+  skin tone and hairstyle mean nothing to them, so the settings page has to
+  hide what does not apply.
+- The cast in the videos: a character presenting in the pitch series is the
+  series lead's call (`docs/presenter/grandma_series_bible.md`).
 
 ## Testing
 
