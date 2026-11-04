@@ -21,6 +21,7 @@ import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
+import 'package:lotti/features/ai/ui/ai_response_summary.dart';
 import 'package:lotti/features/ai_consumption/state/consumption_providers.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/ai_attribution_summary.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
@@ -38,6 +39,7 @@ import 'package:lotti/features/journal/ui/widgets/entry_details/header/entry_det
 import 'package:lotti/features/journal/ui/widgets/entry_details/measurement_summary.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_image_widget.dart';
+import 'package:lotti/features/journal/ui/widgets/entry_labels_display.dart';
 import 'package:lotti/features/journal/ui/widgets/list_cards/card_image_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/nested_ai_responses_widget.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
@@ -267,6 +269,33 @@ Future<_EntryDetailsMocks> _registerEntryDetailsMocks() async {
     editorStateService: editorStateService,
   );
 }
+
+/// An AI response entry of [type], dated 2024-03-15, whose response carries
+/// both the Summary and Prompt sections a generated prompt card parses.
+AiResponseEntry _aiResponseEntry({
+  required String id,
+  required AiResponseType? type,
+  List<String>? labelIds,
+}) =>
+    JournalEntity.aiResponse(
+          meta: Metadata(
+            id: id,
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            dateFrom: DateTime(2024, 3, 15),
+            dateTo: DateTime(2024, 3, 15),
+            labelIds: labelIds,
+          ),
+          data: AiResponseData(
+            model: 'test-model',
+            systemMessage: '',
+            prompt: 'test prompt',
+            thoughts: '',
+            response: '## Summary\nFix the gap\n\n## Prompt\nDo the work',
+            type: type,
+          ),
+        )
+        as AiResponseEntry;
 
 /// The link a collapse toggle wrote, from what one `changeLink` call
 /// [captured] — its id and its change — applied to that link as stored.
@@ -902,23 +931,7 @@ void main() {
         required AiResponseType? type,
         required bool showAiEntry,
       }) async {
-        final aiEntry = JournalEntity.aiResponse(
-          meta: Metadata(
-            id: 'ai-gate-id',
-            createdAt: DateTime(2024, 3, 15),
-            updatedAt: DateTime(2024, 3, 15),
-            dateFrom: DateTime(2024, 3, 15),
-            dateTo: DateTime(2024, 3, 15),
-          ),
-          data: AiResponseData(
-            model: 'test-model',
-            systemMessage: '',
-            prompt: 'test prompt',
-            thoughts: '',
-            response: '## Prompt\nDo the work',
-            type: type,
-          ),
-        );
+        final aiEntry = _aiResponseEntry(id: 'ai-gate-id', type: type);
 
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
@@ -996,6 +1009,186 @@ void main() {
         (tester) async {
           await pumpAiResponse(tester, type: null, showAiEntry: false);
           expect(find.byType(EntryDetailsContent), findsNothing);
+        },
+      );
+    });
+
+    // The header→body gap: every body gets a step3 gap under the header,
+    // except a generated prompt that opens the body with its own title row,
+    // whose copy/expand buttons already add the space.
+    group('header to body gap', () {
+      AiResponseEntry buildAiResponse({
+        required AiResponseType? type,
+        List<String>? labelIds,
+      }) => _aiResponseEntry(id: 'ai-gap-id', type: type, labelIds: labelIds);
+
+      Future<void> pumpContent(
+        WidgetTester tester,
+        AiResponseEntry entry,
+      ) async {
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            ProviderScope(
+              overrides: withServiceOverrides([
+                entryControllerProvider(
+                  entry.meta.id,
+                ).overrideWith(() => _FakeEntryController(entry)),
+                labelsStreamProvider.overrideWith(
+                  (ref) => Stream.value(const <LabelDefinition>[]),
+                ),
+              ]),
+              child: EntryDetailsContent(entry.meta.id),
+            ),
+          ),
+        );
+        await tester.pump();
+      }
+
+      /// Vertical distance from the header's bottom edge to [body]'s top.
+      double gapBelowHeader(WidgetTester tester, Finder body) {
+        final headerBottom = tester
+            .getBottomLeft(find.byType(EntryDetailHeader))
+            .dy;
+        return tester.getTopLeft(body).dy - headerBottom;
+      }
+
+      double step3(WidgetTester tester) => tester
+          .element(find.byType(EntryDetailsContent))
+          .designTokens
+          .spacing
+          .step3;
+
+      testWidgets(
+        'coding prompt title row sits directly under the header',
+        (tester) async {
+          await pumpContent(
+            tester,
+            buildAiResponse(type: AiResponseType.promptGeneration),
+          );
+
+          expect(gapBelowHeader(tester, find.byType(AiResponseSummary)), 0);
+        },
+      );
+
+      testWidgets(
+        'image prompt title row sits directly under the header',
+        (tester) async {
+          await pumpContent(
+            tester,
+            buildAiResponse(type: AiResponseType.imagePromptGeneration),
+          );
+
+          expect(gapBelowHeader(tester, find.byType(AiResponseSummary)), 0);
+        },
+      );
+
+      testWidgets(
+        'labelled coding prompt keeps the step3 gap above its label chips',
+        (tester) async {
+          final cache =
+              getIt<EntitiesCacheService>() as MockEntitiesCacheService;
+          when(() => cache.getLabelById('label-1')).thenReturn(
+            LabelDefinition(
+              id: 'label-1',
+              createdAt: DateTime(2024, 3, 15),
+              updatedAt: DateTime(2024, 3, 15),
+              name: 'Important',
+              color: '#FF0000',
+              vectorClock: null,
+            ),
+          );
+
+          await pumpContent(
+            tester,
+            buildAiResponse(
+              type: AiResponseType.promptGeneration,
+              labelIds: const ['label-1'],
+            ),
+          );
+
+          expect(find.text('Important'), findsOneWidget);
+          expect(
+            gapBelowHeader(tester, find.byType(EntryLabelsDisplay)),
+            step3(tester),
+          );
+        },
+      );
+
+      // Label ids that render no chip leave the body opening on the title
+      // row, so the prompt still sits directly under the header.
+      testWidgets(
+        'coding prompt whose only label was deleted sits directly under '
+        'the header',
+        (tester) async {
+          // The shared cache mock resolves every label id to null.
+          await pumpContent(
+            tester,
+            buildAiResponse(
+              type: AiResponseType.promptGeneration,
+              labelIds: const ['label-deleted'],
+            ),
+          );
+
+          expect(gapBelowHeader(tester, find.byType(AiResponseSummary)), 0);
+        },
+      );
+
+      testWidgets(
+        'coding prompt whose only label is private sits directly under the '
+        'header while private entries are hidden',
+        (tester) async {
+          final cache =
+              getIt<EntitiesCacheService>() as MockEntitiesCacheService;
+          when(() => cache.showPrivateEntries).thenReturn(false);
+          when(() => cache.getLabelById('label-private')).thenReturn(
+            LabelDefinition(
+              id: 'label-private',
+              createdAt: DateTime(2024, 3, 15),
+              updatedAt: DateTime(2024, 3, 15),
+              name: 'Secret',
+              color: '#FF0000',
+              private: true,
+              vectorClock: null,
+            ),
+          );
+
+          await pumpContent(
+            tester,
+            buildAiResponse(
+              type: AiResponseType.promptGeneration,
+              labelIds: const ['label-private'],
+            ),
+          );
+
+          expect(find.text('Secret'), findsNothing);
+          expect(gapBelowHeader(tester, find.byType(AiResponseSummary)), 0);
+        },
+      );
+
+      testWidgets(
+        'non-prompt AI response keeps the step3 gap',
+        (tester) async {
+          await pumpContent(
+            tester,
+            buildAiResponse(type: AiResponseType.imageAnalysis),
+          );
+
+          expect(
+            gapBelowHeader(tester, find.byType(AiResponseSummary)),
+            step3(tester),
+          );
+        },
+      );
+
+      testWidgets(
+        'AI response without a type keeps the step3 gap',
+        (tester) async {
+          await pumpContent(tester, buildAiResponse(type: null));
+
+          expect(
+            gapBelowHeader(tester, find.byType(AiResponseSummary)),
+            step3(tester),
+          );
         },
       );
     });
