@@ -584,6 +584,26 @@ void main() {
       );
     });
 
+    // The regression: tapping the chosen character's own chip reset its
+    // hair and cleared its outfit.
+    testWidgets('re-choosing the chosen character keeps its hair and outfit', (
+      tester,
+    ) async {
+      await pumpBody(
+        tester,
+        surprise: true,
+        customization: const CompanionCustomization(
+          character: CompanionSpecies.aunt,
+          hairStyle: CompanionHairStyle.locs,
+          outfitId: 'aunt_studio',
+        ),
+      );
+      await tester.tap(find.text('Aunt'));
+      await _frames(tester);
+      expect(chosen(tester).hairStyle, CompanionHairStyle.locs);
+      expect(chosen(tester).outfitId, 'aunt_studio');
+    });
+
     testWidgets('a bare crown can be chosen for Lotti too', (tester) async {
       await pumpBody(tester);
       await tester.tap(find.text('Balding'));

@@ -441,4 +441,18 @@ void main() {
       CompanionSkinTone.tone4.naturalLips.lips,
     );
   });
+
+  // The regression: tapping the already chosen character's chip reset its
+  // hair and cleared its outfit.
+  test('asCharacter as the same character changes nothing', () {
+    const custom = CompanionCustomization(
+      character: CompanionSpecies.aunt,
+      hairStyle: CompanionHairStyle.locs,
+      outfitId: 'aunt_studio',
+    );
+    expect(
+      identical(custom.asCharacter(CompanionSpecies.aunt), custom),
+      isTrue,
+    );
+  });
 }

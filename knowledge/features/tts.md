@@ -106,7 +106,17 @@ switch: a summary the listener asked to hear is heard. Only the ringer's
 sounds obey that switch.
 
 Releasing deactivates the session with `notifyOthersOnDeactivation`, so a
-paused podcast resumes. The focus is best effort: a session that cannot be
+paused podcast resumes.
+
+**One claim or release at a time.** `SessionTtsAudioFocus` runs its claims
+and releases in turn on one queue: a clip's end releases the session without
+anyone awaiting it, and a claim for the next clip made meanwhile would
+otherwise reach the platform first and be undone by the stale deactivation.
+`settled` completes once every step so far has run, and the player exposes
+it (`TtsAudioPlayer.settled`). `stopReadAloudForRecording` awaits it before
+a microphone opens — also after a clip that already ended, when there is no
+voice to stop — so a late deactivation never lands under the recording. It
+never builds the player just to wait for it. The focus is best effort: a session that cannot be
 configured or activated is absorbed, and the voice plays in the foreground
 as it did before — it never stops speaking for it; the failure is logged
 (`LogDomain.speech`, `ttsAudioFocus.acquire` / `.release`) with the logger

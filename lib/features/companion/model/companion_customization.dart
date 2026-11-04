@@ -120,12 +120,16 @@ class CompanionCustomization {
 
   /// This, as [species]: the outfit cleared, since outfits belong to one
   /// character, and the hair back to [species]' own style. Skin, hair
-  /// colour, sass and the voice switch stay.
-  CompanionCustomization asCharacter(CompanionSpecies species) => copyWith(
-    character: species,
-    hairStyle: species.hairStyle,
-    outfitId: () => null,
-  );
+  /// colour, sass and the voice switch stay. As the character it already is,
+  /// nothing changes: re-choosing it never discards its outfit or hair.
+  CompanionCustomization asCharacter(CompanionSpecies species) =>
+      species == character
+      ? this
+      : copyWith(
+          character: species,
+          hairStyle: species.hairStyle,
+          outfitId: () => null,
+        );
 
   CompanionCustomization copyWith({
     CompanionSpecies? character,

@@ -16,6 +16,10 @@ abstract interface class TtsAudioFocus {
 
   /// Gives it back once the voice has stopped or finished.
   Future<void> release();
+
+  /// Completes once every claim and release made so far has reached the
+  /// platform: what another user of the session — the recorder — waits for.
+  Future<void> get settled;
 }
 
 /// The focus on a desktop, which has no audio session to claim: nothing.
@@ -27,6 +31,9 @@ class NoTtsAudioFocus implements TtsAudioFocus {
 
   @override
   Future<void> release() async {}
+
+  @override
+  Future<void> get settled => Future<void>.value();
 }
 
 /// How the voice's session is configured: spoken audio for playback, other
@@ -45,6 +52,12 @@ final AudioSessionConfiguration ttsAudioSessionConfiguration =
 /// which would otherwise leave the voice in the earpiece and out of the
 /// background.
 ///
+/// Claims and releases run one after another, never overlapping: a release
+/// at the end of a clip is still deactivating the session when the next clip
+/// claims it, and run side by side the stale deactivation could land after
+/// the claim and silence the new clip. [settled] completes when all of them
+/// have run.
+///
 /// Best effort: a session that cannot be configured or activated leaves the
 /// voice to play as it did before — in the foreground — and never stops it
 /// from speaking. Its failures are logged, not thrown.
@@ -59,9 +72,23 @@ class SessionTtsAudioFocus implements TtsAudioFocus {
   /// Where a session that failed is reported.
   final DomainLogger? logger;
   bool _held = false;
+  Future<void> _queue = Future<void>.value();
+
+  /// Runs [step] after every step before it. Steps catch their own failures,
+  /// so the queue never breaks.
+  Future<void> _inTurn(Future<void> Function() step) =>
+      _queue = _queue.then((_) => step());
 
   @override
-  Future<void> acquire() async {
+  Future<void> get settled => _queue;
+
+  @override
+  Future<void> acquire() => _inTurn(_claim);
+
+  @override
+  Future<void> release() => _inTurn(_giveBack);
+
+  Future<void> _claim() async {
     try {
       final session = await _session();
       await session.configure(ttsAudioSessionConfiguration);
@@ -77,8 +104,7 @@ class SessionTtsAudioFocus implements TtsAudioFocus {
     }
   }
 
-  @override
-  Future<void> release() async {
+  Future<void> _giveBack() async {
     if (!_held) return;
     _held = false;
     try {

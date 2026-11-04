@@ -129,6 +129,18 @@ void main() {
 
     MediaKitTtsAudioPlayer withFocus() => MediaKitTtsAudioPlayer(player, focus);
 
+    test('settled is the focus letting go', () async {
+      final letting = Completer<void>();
+      focus.settling = letting.future;
+      var settled = false;
+      unawaited(withFocus().settled.then((_) => settled = true));
+      await pumpEventQueue();
+      expect(settled, isFalse);
+      letting.complete();
+      await pumpEventQueue();
+      expect(settled, isTrue);
+    });
+
     test('is taken after the clip is ready and before it plays', () async {
       when(() => player.play()).thenAnswer((_) async {
         focus.calls.add('play');
@@ -186,6 +198,10 @@ void main() {
 class _RecordingFocus implements TtsAudioFocus {
   final calls = <String>[];
   Future<void>? acquiring;
+  Future<void>? settling;
+
+  @override
+  Future<void> get settled => settling ?? Future<void>.value();
 
   @override
   Future<void> acquire() async {

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:audio_session/audio_session.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/tts/state/tts_audio_focus.dart';
@@ -205,6 +207,71 @@ void main() {
     final real = SessionTtsAudioFocus();
     await expectLater(real.acquire(), completes);
     await expectLater(real.release(), completes);
+  });
+
+  group('one claim or release at a time', () {
+    // The regression: a release at a clip's end was still deactivating the
+    // session when the next clip claimed it, and could land after the claim.
+    test(
+      'a claim waits for the release before it, never overtaking it',
+      () async {
+        final deactivating = Completer<bool>();
+        final f = focus();
+        await f.acquire();
+        when(
+          () => session.setActive(
+            false,
+            avAudioSessionSetActiveOptions: any(
+              named: 'avAudioSessionSetActiveOptions',
+            ),
+          ),
+        ).thenAnswer((_) => deactivating.future);
+        final releasing = f.release();
+        final claiming = f.acquire();
+        await pumpEventQueue();
+        // The second claim has not reached the platform yet.
+        verify(() => session.configure(any())).called(1);
+        deactivating.complete(true);
+        await Future.wait([releasing, claiming]);
+        verify(() => session.configure(any())).called(1);
+        verify(() => session.setActive(true)).called(2);
+      },
+    );
+
+    test('settled completes once every step so far has run', () async {
+      final deactivating = Completer<bool>();
+      final f = focus();
+      await f.acquire();
+      when(
+        () => session.setActive(
+          false,
+          avAudioSessionSetActiveOptions: any(
+            named: 'avAudioSessionSetActiveOptions',
+          ),
+        ),
+      ).thenAnswer((_) => deactivating.future);
+      unawaited(f.release());
+      var settled = false;
+      unawaited(f.settled.then((_) => settled = true));
+      await pumpEventQueue();
+      expect(settled, isFalse);
+      deactivating.complete(true);
+      await pumpEventQueue();
+      expect(settled, isTrue);
+    });
+
+    test('a failed step does not stop the ones after it', () async {
+      final f = focus();
+      when(() => session.configure(any())).thenThrow(StateError('busy'));
+      await f.acquire();
+      when(() => session.configure(any())).thenAnswer((_) async {});
+      await f.acquire();
+      verify(() => session.setActive(true)).called(1);
+    });
+
+    test('nothing is pending on a desktop', () async {
+      await expectLater(const NoTtsAudioFocus().settled, completes);
+    });
   });
 
   group('platformTtsAudioFocus', () {

@@ -28,6 +28,11 @@ abstract interface class TtsAudioPlayer {
   /// Emits once each time playback reaches the end.
   Stream<void> get completedStream;
 
+  /// Completes once the player has let go of the phone's audio session — a
+  /// release at the end of a clip may still be under way — so the recorder
+  /// can take the session after it.
+  Future<void> get settled;
+
   Future<void> dispose();
 }
 
@@ -80,6 +85,9 @@ class MediaKitTtsAudioPlayer implements TtsAudioPlayer {
 
   @override
   Stream<Duration> get durationStream => _player.stream.duration;
+
+  @override
+  Future<void> get settled => _focus.settled;
 
   @override
   Stream<void> get completedStream =>

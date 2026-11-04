@@ -564,7 +564,9 @@ flowchart LR
   switches character: it clears the outfit, since outfits belong to one,
   and sets the hairstyle to that character's own
   (`CompanionSpecies.hairStyle`: the bun, the grandpa's short cut, the
-  aunt's bob, the uncle's curls).
+  aunt's bob, the uncle's curls). As the character it already is it changes
+  nothing, so tapping the chosen character's chip again never discards its
+  outfit or hair.
 
 Every part combines with every other, and none is named after a people:
 skin tones are numbered, light to deep, and a screen reader says "Skin tone
