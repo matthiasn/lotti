@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/classes/ai_attribution.dart';
@@ -16,6 +17,8 @@ import 'package:lotti/features/daily_os_next/services/day_processing_job.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_outbox_repository.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_inference_providers.dart';
+import 'package:lotti/features/tts/model/tts_playback_state.dart';
+import 'package:lotti/features/tts/state/tts_playback_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/vector_clock_service.dart';
@@ -26,6 +29,7 @@ import '../../../helpers/fallbacks.dart';
 import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../ai_consumption/test_utils.dart';
+import '../../tts/test_utils.dart';
 import '../services/day_processing_test_db.dart';
 
 final _now = DateTime(2026, 7, 20, 9);
@@ -162,6 +166,7 @@ class _Bench {
     DailyOsTranscriptionTarget? transcriptionTarget,
     DailyOsTranscriptionTarget? correctionTarget,
     bool correctionTargetFromProvider = false,
+    List<Override> extraOverrides = const [],
   }) {
     final container = ProviderContainer(
       overrides: withServiceOverrides([
@@ -185,6 +190,7 @@ class _Bench {
           dailyOsTranscriptCorrectionTargetProvider.overrideWith(
             (ref) async => correctionTarget,
           ),
+        ...extraOverrides,
       ]),
     )..listen(captureControllerProvider, (_, _) {});
     return container;
@@ -664,6 +670,62 @@ void main() {
       expect(
         container.read(captureControllerProvider).error,
         CaptureError.noAudioRecorded,
+      );
+    });
+  });
+
+  group('CaptureController read-aloud voice', () {
+    /// A container whose voice is a playing [FixedTtsPlayback], built — as
+    /// it is while the Day briefing speaks.
+    ProviderContainer withPlayingVoice(FixedTtsPlayback voice) {
+      final container = bench.aliveContainer(
+        extraOverrides: [
+          ttsPlaybackControllerProvider.overrideWith(() => voice),
+        ],
+      );
+      addTearDown(container.dispose);
+      container.read(ttsPlaybackControllerProvider);
+      return container;
+    }
+
+    test('stops the Day briefing before the microphone opens', () async {
+      final events = <String>[];
+      when(bench.recorder.startRecording).thenAnswer((_) async {
+        events.add('mic.start');
+        return _audioNoteFixture();
+      });
+      final container = withPlayingVoice(
+        FixedTtsPlayback(
+          const TtsPlaybackState(status: TtsPlaybackStatus.playing),
+          events: events,
+        ),
+      );
+
+      await container.read(captureControllerProvider.notifier).toggle();
+
+      expect(events, ['tts.stop', 'mic.start']);
+      expect(
+        container.read(captureControllerProvider).phase,
+        CapturePhase.listening,
+      );
+    });
+
+    test('a reset while the voice stops never opens the microphone', () async {
+      late ProviderContainer container;
+      container = withPlayingVoice(
+        FixedTtsPlayback(
+          const TtsPlaybackState(status: TtsPlaybackStatus.playing),
+          onStop: () =>
+              container.read(captureControllerProvider.notifier).reset(),
+        ),
+      );
+
+      await container.read(captureControllerProvider.notifier).toggle();
+
+      verifyNever(bench.recorder.startRecording);
+      expect(
+        container.read(captureControllerProvider).phase,
+        CapturePhase.idle,
       );
     });
   });

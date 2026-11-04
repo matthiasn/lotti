@@ -15,6 +15,7 @@ import 'package:lotti/features/tts/state/tts_model_repository.dart';
 import 'package:lotti/features/tts/state/tts_playback_controller.dart';
 import 'package:lotti/features/tts/state/tts_settings_controller.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -1268,6 +1269,81 @@ void main() {
       expect(state.clip, isNull);
       // It was named while playback was attempted.
       expect(h.states.map((s) => s.clip), contains((path: path, text: 'x')));
+    });
+  });
+
+  group('stopReadAloudForRecording', () {
+    late MockDomainLogger logger;
+
+    setUp(() => logger = MockDomainLogger());
+
+    /// Runs the helper on a fresh container; [voice] is built first unless
+    /// null, as it is once any surface has shown a play control.
+    Future<ProviderContainer> run(FixedTtsPlayback? voice) async {
+      final silence = FutureProvider<void>(stopReadAloudForRecording);
+      final container = ProviderContainer(
+        overrides: withServiceOverrides([
+          domainLoggerProvider.overrideWithValue(logger),
+          if (voice != null)
+            ttsPlaybackControllerProvider.overrideWith(() => voice),
+        ]),
+      );
+      addTearDown(container.dispose);
+      if (voice != null) container.read(ttsPlaybackControllerProvider);
+      await container.read(silence.future);
+      return container;
+    }
+
+    for (final status in [
+      TtsPlaybackStatus.playing,
+      TtsPlaybackStatus.synthesizing,
+      TtsPlaybackStatus.downloadingModel,
+    ]) {
+      test('stops a voice that is ${status.name}', () async {
+        final voice = FixedTtsPlayback(TtsPlaybackState(status: status));
+
+        await run(voice);
+
+        expect(voice.events, ['tts.stop']);
+      });
+    }
+
+    for (final status in [
+      TtsPlaybackStatus.idle,
+      TtsPlaybackStatus.stopped,
+      TtsPlaybackStatus.error,
+    ]) {
+      test('leaves a voice that is ${status.name} alone', () async {
+        final voice = FixedTtsPlayback(TtsPlaybackState(status: status));
+
+        await run(voice);
+
+        expect(voice.events, isEmpty);
+      });
+    }
+
+    test('does not build a voice that was never used', () async {
+      final container = await run(null);
+
+      expect(container.exists(ttsPlaybackControllerProvider), isFalse);
+    });
+
+    test('logs and swallows a failure to stop', () async {
+      final voice = FixedTtsPlayback(
+        const TtsPlaybackState(status: TtsPlaybackStatus.playing),
+        stopError: StateError('player gone'),
+      );
+
+      await run(voice);
+
+      expect(voice.events, ['tts.stop']);
+      verify(
+        () => logger.log(
+          LogDomain.speech,
+          any<String>(that: contains('player gone')),
+          subDomain: 'stopReadAloudForRecording',
+        ),
+      ).called(1);
     });
   });
 }

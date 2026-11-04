@@ -526,6 +526,11 @@ as a successful empty capture or a lost recording.
 **Controller lifecycle epochs fence each start boundary**, so a reset, route
 disposal, or superseding start cannot resurrect an obsolete microphone session.
 
+Just before the microphone opens, the read-aloud voice is stopped, so a Day
+briefing still speaking is never recorded
+([text-to-speech](../tts.md#a-microphone-stops-the-voice)); a reset during that
+stop is fenced by the same epoch check.
+
 There is **no streaming/realtime transcription path and no live transcript**. The
 orb caption carries listening/transcribing status and the waveform freezes dimmed
 in its slot — deliberately no inference-bars animation on the recorder surface.

@@ -4,8 +4,10 @@ import 'dart:io';
 import 'package:lotti/features/tts/cloud/cloud_speech_synthesizer.dart';
 import 'package:lotti/features/tts/cloud/tts_cloud_route.dart';
 import 'package:lotti/features/tts/engine/tts_engine.dart';
+import 'package:lotti/features/tts/model/tts_playback_state.dart';
 import 'package:lotti/features/tts/state/tts_audio_player.dart';
 import 'package:lotti/features/tts/state/tts_model_repository.dart';
+import 'package:lotti/features/tts/state/tts_playback_controller.dart';
 
 /// Records of a synthesis request, for asserting what the engine was asked to
 /// speak.
@@ -191,5 +193,33 @@ class FakeCloudSpeechSynthesizer implements CloudSpeechSynthesizer {
     if (!sent) return null;
     if (error case final error?) throw error;
     return output ?? (throw StateError('no cloud output configured'));
+  }
+}
+
+/// The app-wide voice held at [initial], for a test about what *another*
+/// feature does to it. Each [stop] is appended to [events] as `'tts.stop'`,
+/// so a test can order it against its own events, then runs [onStop] and
+/// throws [stopError] when given.
+class FixedTtsPlayback extends TtsPlaybackController {
+  FixedTtsPlayback(
+    this.initial, {
+    List<String>? events,
+    this.stopError,
+    this.onStop,
+  }) : events = events ?? <String>[];
+
+  final TtsPlaybackState initial;
+  final List<String> events;
+  final Error? stopError;
+  final void Function()? onStop;
+
+  @override
+  TtsPlaybackState build() => initial;
+
+  @override
+  Future<void> stop({String? sourceId}) async {
+    events.add('tts.stop');
+    onStop?.call();
+    if (stopError != null) throw stopError!;
   }
 }

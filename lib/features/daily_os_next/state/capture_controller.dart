@@ -21,6 +21,7 @@ import 'package:lotti/features/daily_os_next/state/capture_state.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_inference_providers.dart';
 import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
 import 'package:lotti/features/speech/state/recording_levels.dart';
+import 'package:lotti/features/tts/state/tts_playback_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/repositories/speech_repository.dart';
 import 'package:lotti/providers/service_providers.dart';
@@ -262,6 +263,11 @@ class CaptureController extends Notifier<CaptureState> {
       );
       return;
     }
+
+    // The Day briefing may still be speaking: the microphone must not
+    // record it.
+    await stopReadAloudForRecording(ref);
+    if (!_isCurrentLifecycle(epoch)) return;
 
     final note = await _recorder.startRecording();
     if (!_isCurrentLifecycle(epoch)) {

@@ -14,6 +14,11 @@ import 'package:lotti/features/speech/helpers/automatic_prompt_trigger.dart';
 import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
+import 'package:lotti/features/tts/model/tts_playback_state.dart';
+import 'package:lotti/features/tts/state/tts_audio_player.dart';
+import 'package:lotti/features/tts/state/tts_engine_provider.dart';
+import 'package:lotti/features/tts/state/tts_model_repository.dart';
+import 'package:lotti/features/tts/state/tts_playback_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/providers/audio_player_controller.dart';
@@ -23,6 +28,7 @@ import 'package:record/record.dart';
 
 import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
+import '../../tts/test_utils.dart';
 
 class MockAmplitude extends Mock implements Amplitude {}
 
@@ -1833,6 +1839,118 @@ void main() {
             ),
           ).called(1);
         },
+      );
+    });
+  });
+  group('AudioRecorderController - read-aloud voice', () {
+    final events = <String>[];
+
+    setUp(() {
+      events.clear();
+      when(
+        () => mockAudioRecorderRepository.hasPermission(),
+      ).thenAnswer((_) async => true);
+      when(() => mockAudioRecorderRepository.startRecording()).thenAnswer((
+        _,
+      ) async {
+        events.add('mic.start');
+        return AudioNote(
+          createdAt: DateTime(2026, 11, 4),
+          audioFile: 'take.m4a',
+          audioDirectory: '/audio/2026-11-04/',
+          duration: Duration.zero,
+        );
+      });
+    });
+
+    /// A container whose voice is a playing [FixedTtsPlayback], built.
+    ProviderContainer withPlayingVoice({Error? stopError}) {
+      final local = ProviderContainer(
+        overrides: withServiceOverrides([
+          audioRecorderRepositoryProvider.overrideWithValue(
+            mockAudioRecorderRepository,
+          ),
+          ttsPlaybackControllerProvider.overrideWith(
+            () => FixedTtsPlayback(
+              const TtsPlaybackState(
+                status: TtsPlaybackStatus.playing,
+                sourceId: 'task-1',
+              ),
+              events: events,
+              stopError: stopError,
+            ),
+          ),
+        ]),
+      );
+      addTearDown(local.dispose);
+      local.read(ttsPlaybackControllerProvider);
+      return local;
+    }
+
+    test(
+      'pressing record stops a summary being read aloud and records',
+      () async {
+        // The real voice, mid-utterance, with a fake player behind it.
+        final player = FakeTtsAudioPlayer();
+        final local = ProviderContainer(
+          overrides: withServiceOverrides([
+            audioRecorderRepositoryProvider.overrideWithValue(
+              mockAudioRecorderRepository,
+            ),
+            ttsEngineProvider.overrideWithValue(FakeTtsEngine()),
+            ttsAudioPlayerProvider.overrideWithValue(player),
+            ttsModelRepositoryProvider.overrideWithValue(
+              FakeTtsModelRepository(),
+            ),
+          ]),
+        );
+        addTearDown(local.dispose);
+        addTearDown(player.dispose);
+        await local
+            .read(ttsPlaybackControllerProvider.notifier)
+            .speak(sourceId: 'task-1', text: 'Two items are left.');
+        expect(
+          local.read(ttsPlaybackControllerProvider).status,
+          TtsPlaybackStatus.playing,
+        );
+
+        final failure = await local
+            .read(audioRecorderControllerProvider.notifier)
+            .record(linkedId: 'task-1');
+
+        expect(failure, isNull);
+        expect(player.stopCount, 1);
+        expect(
+          local.read(ttsPlaybackControllerProvider).status,
+          TtsPlaybackStatus.stopped,
+        );
+        expect(
+          local.read(audioRecorderControllerProvider).status,
+          AudioRecorderStatus.recording,
+        );
+      },
+    );
+
+    test('the voice stops before the microphone opens', () async {
+      final local = withPlayingVoice();
+
+      await local.read(audioRecorderControllerProvider.notifier).record();
+
+      expect(events, ['tts.stop', 'mic.start']);
+    });
+
+    test('records anyway when the voice fails to stop', () async {
+      final local = withPlayingVoice(stopError: StateError('player gone'));
+
+      final failure = await local
+          .read(audioRecorderControllerProvider.notifier)
+          .record();
+
+      expect(failure, isNull);
+      expect(events, ['tts.stop', 'mic.start']);
+      expect(
+        local.read(audioRecorderControllerProvider).status,
+        AudioRecorderStatus.recording,
       );
     });
   });

@@ -61,6 +61,30 @@ final ttsPlaybackControllerProvider =
       name: 'ttsPlaybackControllerProvider',
     );
 
+/// Stops the read-aloud voice before a microphone opens, so a recording never
+/// captures Lotti reading a summary, an answer or the Day briefing aloud. The
+/// voice has no pause — its control only plays and stops — so it stops.
+///
+/// Leaves the voice alone when it is not downloading, synthesizing or playing,
+/// and never builds it just to silence it. A failure to stop is logged and
+/// swallowed: the recording must start regardless.
+Future<void> stopReadAloudForRecording(Ref ref) async {
+  if (!ref.exists(ttsPlaybackControllerProvider)) return;
+  try {
+    if (ref.read(ttsPlaybackControllerProvider).isBusy) {
+      await ref.read(ttsPlaybackControllerProvider.notifier).stop();
+    }
+  } catch (error) {
+    ref
+        .read(domainLoggerProvider)
+        .log(
+          LogDomain.speech,
+          'Read-aloud voice could not be stopped, recording anyway: $error',
+          subDomain: 'stopReadAloudForRecording',
+        );
+  }
+}
+
 class TtsPlaybackController extends Notifier<TtsPlaybackState> {
   TtsPlaybackController({DomainLogger? logger}) : _injectedLogger = logger;
 
