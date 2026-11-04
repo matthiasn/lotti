@@ -25,7 +25,8 @@
 ### Fixed
 - **A summary read aloud stopped when you switched to another app.** On a
   phone the voice now keeps speaking in the background, other apps' sound
-  ducks under it, and it comes back when the voice ends.
+  ducks under it, and it comes back when the voice ends. Like any app that
+  speaks, it now plays with the iPhone's silent switch on.
 - **The companion's hats sat inside an afro.** The rock beret, the flat cap
   and the beanie now sit on top of the hair, as wide as the hairstyle needs.
 - **One raised brow could hook up off the companion's eye.** A brow now

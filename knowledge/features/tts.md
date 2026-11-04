@@ -94,11 +94,23 @@ stateDiagram-v2
   Held --> Free: a stop while the focus was being taken (never plays)
 ```
 
+The session is configured afresh on every claim, not once: it is shared, and
+the recorder (`record_ios`) sets it to play-and-record for each dictation,
+which would otherwise leave the voice in the earpiece and out of the
+background.
+
+**The voice plays through the iPhone's silent switch.** The `playback`
+category is what keeps it speaking in the background, and like every app
+that speaks — a podcast player, navigation — it ignores the ring/silent
+switch: a summary the listener asked to hear is heard. Only the ringer's
+sounds obey that switch.
+
 Releasing deactivates the session with `notifyOthersOnDeactivation`, so a
 paused podcast resumes. The focus is best effort: a session that cannot be
 configured or activated is absorbed, and the voice plays in the foreground
-as it did before — it never stops speaking for it. A release only gives back
-a session it holds.
+as it did before — it never stops speaking for it; the failure is logged
+(`LogDomain.speech`, `ttsAudioFocus.acquire` / `.release`) with the logger
+the provider hands in. A release only gives back a session it holds.
 
 # Which voice speaks
 

@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/tts/state/tts_audio_focus.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:media_kit/media_kit.dart';
 
 /// Plays a synthesized WAV file and exposes position / duration / completion
@@ -107,7 +108,10 @@ final ttsAudioPlayerProvider = Provider<TtsAudioPlayer>(
   name: 'ttsAudioPlayerProvider',
 );
 TtsAudioPlayer ttsAudioPlayer(Ref ref) {
-  final player = MediaKitTtsAudioPlayer();
+  final player = MediaKitTtsAudioPlayer(
+    null,
+    platformTtsAudioFocus(logger: ref.read(domainLoggerProvider)),
+  );
   ref.onDispose(() => unawaited(player.dispose()));
   return player;
 }

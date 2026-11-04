@@ -1,6 +1,7 @@
 import 'package:audio_session/audio_session.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/tts/state/tts_audio_focus.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/platform.dart' as platform;
 import 'package:mocktail/mocktail.dart';
 
@@ -74,12 +75,14 @@ void main() {
       },
     );
 
-    test('configures only once, however often it is acquired', () async {
+    // The regression: configured once, the session stayed in whatever the
+    // recorder last set it to — play-and-record, in the earpiece.
+    test('configures the session afresh on every claim', () async {
       final f = focus();
       await f.acquire();
       await f.release();
       await f.acquire();
-      verify(() => session.configure(any())).called(1);
+      verify(() => session.configure(any())).called(2);
       verify(() => session.setActive(true)).called(2);
     });
 
@@ -135,6 +138,53 @@ void main() {
       },
     );
 
+    test('a failed claim is logged, with its trace', () async {
+      final logger = MockDomainLogger();
+      final error = StateError('no session');
+      when(() => session.configure(any())).thenThrow(error);
+      await SessionTtsAudioFocus(
+        session: () async => session,
+        logger: logger,
+      ).acquire();
+      verify(
+        () => logger.error(
+          LogDomain.speech,
+          error,
+          stackTrace: any(named: 'stackTrace', that: isNotNull),
+          subDomain: 'ttsAudioFocus.acquire',
+          message: any(named: 'message'),
+        ),
+      ).called(1);
+    });
+
+    test('a failed release is logged, with its trace', () async {
+      final logger = MockDomainLogger();
+      final error = StateError('gone');
+      final f = SessionTtsAudioFocus(
+        session: () async => session,
+        logger: logger,
+      );
+      await f.acquire();
+      when(
+        () => session.setActive(
+          false,
+          avAudioSessionSetActiveOptions: any(
+            named: 'avAudioSessionSetActiveOptions',
+          ),
+        ),
+      ).thenThrow(error);
+      await f.release();
+      verify(
+        () => logger.error(
+          LogDomain.speech,
+          error,
+          stackTrace: any(named: 'stackTrace', that: isNotNull),
+          subDomain: 'ttsAudioFocus.release',
+          message: any(named: 'message'),
+        ),
+      ).called(1);
+    });
+
     test('a failing release is absorbed too', () async {
       final f = focus();
       await f.acquire();
@@ -163,13 +213,19 @@ void main() {
       platform.isAndroid = false;
     });
 
-    test('claims the audio session on a phone', () {
-      platform.isIOS = true;
-      expect(platformTtsAudioFocus(), isA<SessionTtsAudioFocus>());
-      platform.isIOS = false;
-      platform.isAndroid = true;
-      expect(platformTtsAudioFocus(), isA<SessionTtsAudioFocus>());
-    });
+    test(
+      'claims the audio session on a phone, logging to the given logger',
+      () {
+        platform.isIOS = true;
+        final logger = MockDomainLogger();
+        final f = platformTtsAudioFocus(logger: logger);
+        expect(f, isA<SessionTtsAudioFocus>());
+        expect((f as SessionTtsAudioFocus).logger, same(logger));
+        platform.isIOS = false;
+        platform.isAndroid = true;
+        expect(platformTtsAudioFocus(), isA<SessionTtsAudioFocus>());
+      },
+    );
 
     test('claims nothing on a desktop, and its no-op completes', () async {
       final f = platformTtsAudioFocus();

@@ -1,4 +1,5 @@
 import 'package:audio_session/audio_session.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/platform.dart';
 
 /// Holds the phone's audio focus while the voice speaks.
@@ -39,28 +40,40 @@ final AudioSessionConfiguration ttsAudioSessionConfiguration =
 
 /// The phone's audio session, through `audio_session`.
 ///
+/// The session is configured afresh on every [acquire], not once: it is
+/// shared, and the recorder sets it to play-and-record for each dictation,
+/// which would otherwise leave the voice in the earpiece and out of the
+/// background.
+///
 /// Best effort: a session that cannot be configured or activated leaves the
 /// voice to play as it did before — in the foreground — and never stops it
-/// from speaking, so its failures are absorbed here.
+/// from speaking. Its failures are logged, not thrown.
 class SessionTtsAudioFocus implements TtsAudioFocus {
-  SessionTtsAudioFocus({Future<AudioSession> Function()? session})
-    : _session = session ?? (() => AudioSession.instance);
+  SessionTtsAudioFocus({
+    Future<AudioSession> Function()? session,
+    this.logger,
+  }) : _session = session ?? (() => AudioSession.instance);
 
   final Future<AudioSession> Function() _session;
-  bool _configured = false;
+
+  /// Where a session that failed is reported.
+  final DomainLogger? logger;
   bool _held = false;
 
   @override
   Future<void> acquire() async {
     try {
       final session = await _session();
-      if (!_configured) {
-        await session.configure(ttsAudioSessionConfiguration);
-        _configured = true;
-      }
+      await session.configure(ttsAudioSessionConfiguration);
       _held = await session.setActive(true);
-    } on Object {
-      // Speaks in the foreground, as without a session.
+    } on Object catch (error, stackTrace) {
+      logger?.error(
+        LogDomain.speech,
+        error,
+        stackTrace: stackTrace,
+        subDomain: 'ttsAudioFocus.acquire',
+        message: 'The voice could not claim the audio session',
+      );
     }
   }
 
@@ -75,13 +88,21 @@ class SessionTtsAudioFocus implements TtsAudioFocus {
         avAudioSessionSetActiveOptions:
             AVAudioSessionSetActiveOptions.notifyOthersOnDeactivation,
       );
-    } on Object {
-      // Nothing to give back that the platform will take.
+    } on Object catch (error, stackTrace) {
+      logger?.error(
+        LogDomain.speech,
+        error,
+        stackTrace: stackTrace,
+        subDomain: 'ttsAudioFocus.release',
+        message: 'The voice could not give the audio session back',
+      );
     }
   }
 }
 
-/// The focus for this platform: the audio session on a phone, nothing on a
-/// desktop.
-TtsAudioFocus platformTtsAudioFocus() =>
-    isIOS || isAndroid ? SessionTtsAudioFocus() : const NoTtsAudioFocus();
+/// The focus for this platform: the audio session on a phone, its failures
+/// logged to [logger], and nothing on a desktop.
+TtsAudioFocus platformTtsAudioFocus({DomainLogger? logger}) =>
+    isIOS || isAndroid
+    ? SessionTtsAudioFocus(logger: logger)
+    : const NoTtsAudioFocus();
