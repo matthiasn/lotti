@@ -82,6 +82,7 @@ abstract class ChangeItem with _$ChangeItem {
   static final RegExp _whitespaceRegExp = RegExp(r'\s+');
 
   static const _updateTimeEntryToolName = 'update_time_entry';
+  static const _createTimeEntryToolName = 'create_time_entry';
 
   /// Structural fingerprint from raw parts, without requiring a [ChangeItem].
   ///
@@ -118,7 +119,9 @@ abstract class ChangeItem with _$ChangeItem {
   ///
   /// A time-entry edit is keyed per target entry as well: two entries given
   /// the same new text render the same line, yet are two different edits. A
-  /// proposal under a retired tool name is keyed as its successor.
+  /// new time entry is keyed by its full start and end: its line shows only
+  /// `HH:mm`, so the same hours on two days read identically, yet are two
+  /// sessions. A proposal under a retired tool name is keyed as its successor.
   static String? displayDuplicateKeyFromParts(
     String toolName,
     String humanSummary, {
@@ -136,6 +139,11 @@ abstract class ChangeItem with _$ChangeItem {
         ? _trimmedId(call.args['entryId'])
         : null;
     if (entryId != null) buffer.write('|entry:$entryId');
+    if (call.toolName == _createTimeEntryToolName) {
+      buffer.write(
+        '|start:${call.args['startTime']}|end:${call.args['endTime']}',
+      );
+    }
     return buffer.toString();
   }
 

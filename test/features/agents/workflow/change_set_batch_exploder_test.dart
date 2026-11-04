@@ -1923,6 +1923,27 @@ void main() {
       },
     );
 
+    test('keeps the same hours on two days as two sessions', () async {
+      // Both render "Time entry 09:00–10:00", so only the dates in the
+      // duplicate key tell them apart.
+      final result = await addEntries([
+        {
+          'startTime': '2026-03-16T09:00:00',
+          'endTime': '2026-03-16T10:00:00',
+          'summary': 'Maintenance',
+        },
+        {
+          'startTime': '2026-03-17T09:00:00',
+          'endTime': '2026-03-17T10:00:00',
+          'summary': 'Maintenance',
+        },
+      ]);
+
+      expect(result.added, 2);
+      expect(result.redundant, 0);
+      expect(builder.items, hasLength(2));
+    });
+
     test(
       'rejects a running timer when an earlier call already proposed one',
       () async {

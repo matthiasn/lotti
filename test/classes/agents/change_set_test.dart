@@ -214,6 +214,28 @@ void main() {
         expect(ChangeItem.displayDuplicateKey(second), '$text|entry:entry-2');
       });
 
+      test('keys the same hours on two days apart for a new entry', () {
+        ChangeItem session(String day) => ChangeItem(
+          toolName: 'create_time_entry',
+          args: {
+            'startTime': '${day}T09:00:00',
+            'endTime': '${day}T10:00:00',
+            'summary': 'Maintenance',
+          },
+          humanSummary: 'Time entry 09:00–10:00: "Maintenance"',
+        );
+
+        const text = 'create_time_entry:time entry 09:00–10:00: "maintenance"';
+        expect(
+          ChangeItem.displayDuplicateKey(session('2026-03-16')),
+          '$text|start:2026-03-16T09:00:00|end:2026-03-16T10:00:00',
+        );
+        expect(
+          ChangeItem.displayDuplicateKey(session('2026-03-17')),
+          '$text|start:2026-03-17T09:00:00|end:2026-03-17T10:00:00',
+        );
+      });
+
       test('keys a retired running-timer proposal as its successor', () {
         const legacy = ChangeItem(
           toolName: 'update_running_timer',
