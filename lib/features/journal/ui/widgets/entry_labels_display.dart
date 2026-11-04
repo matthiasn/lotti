@@ -11,6 +11,24 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:material_ui/material_ui.dart';
 
+/// The labels among [labelIds] that render as chips, sorted by name
+/// (case-insensitive).
+///
+/// A label renders only when [EntitiesCacheService] knows it (an id of a
+/// deleted label resolves to nothing) and, while private entries are hidden,
+/// when it is not private. Callers that lay out around the chips use this to
+/// tell whether [EntryLabelsDisplay] will take up any space at all.
+List<LabelDefinition> visibleEntryLabels(List<String> labelIds) {
+  final cache = getIt<EntitiesCacheService>();
+  final showPrivate = cache.showPrivateEntries;
+  return labelIds
+      .map(cache.getLabelById)
+      .whereType<LabelDefinition>()
+      .where((label) => showPrivate || !(label.private ?? false))
+      .toList()
+    ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+}
+
 /// Displays assigned labels for any journal entry type.
 ///
 /// Uses [EntitiesCacheService] for fast label lookups. Supports:
@@ -48,20 +66,7 @@ class EntryLabelsDisplay extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    final cache = getIt<EntitiesCacheService>();
-    final labelIds = entry.meta.labelIds ?? <String>[];
-    final showPrivate = cache.showPrivateEntries;
-
-    // Use cache for fast label lookups
-    final labels =
-        labelIds
-            .map(cache.getLabelById)
-            .whereType<LabelDefinition>()
-            .where((label) => showPrivate || !(label.private ?? false))
-            .toList()
-          ..sort(
-            (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
-          );
+    final labels = visibleEntryLabels(entry.meta.labelIds ?? const []);
 
     if (labels.isEmpty && !showEditButton) {
       return const SizedBox.shrink();

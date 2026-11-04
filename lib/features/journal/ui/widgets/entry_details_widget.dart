@@ -3,10 +3,10 @@ import 'dart:async';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/ai_attribution.dart';
-import 'package:lotti/classes/ai_response_type.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
+import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/ui/ai_response_summary.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/ai_attribution_summary.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
@@ -29,6 +29,7 @@ import 'package:lotti/features/journal/ui/widgets/list_cards/card_image_widget.d
 import 'package:lotti/features/journal/ui/widgets/list_cards/journal_card.dart';
 import 'package:lotti/features/journal/ui/widgets/nested_ai_responses_widget.dart';
 import 'package:lotti/features/journal/util/audio_entry_one_liner.dart';
+import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:lotti/features/ratings/ui/rating_summary.dart';
 import 'package:lotti/features/speech/ui/widgets/audio_player.dart';
 import 'package:lotti/get_it.dart';
@@ -481,8 +482,18 @@ class _EntryDetailsContentState extends ConsumerState<EntryDetailsContent> {
     );
 
     // Only count labels that will actually render, so the rhythm never inserts
-    // a gap before an empty (collapsed) labels row.
-    final hasLabels = showLabels && (item.meta.labelIds?.isNotEmpty ?? false);
+    // a gap before an empty (collapsed) labels row: an id of a deleted label,
+    // or a private label while private entries are hidden, renders nothing.
+    // The labels stream is watched like EntryLabelsDisplay watches it, so the
+    // count follows a label being deleted or edited.
+    final labelIds = showLabels ? item.meta.labelIds ?? const <String>[] : null;
+    if (labelIds != null && labelIds.isNotEmpty) {
+      ref.watch(labelsStreamProvider);
+    }
+    final hasLabels =
+        labelIds != null &&
+        labelIds.isNotEmpty &&
+        visibleEntryLabels(labelIds).isNotEmpty;
 
     final footer = EntryDetailFooter(
       entryId: itemId,
@@ -524,8 +535,13 @@ class _EntryDetailsContentState extends ConsumerState<EntryDetailsContent> {
           header,
           // Explicit header→body boundary. The header's action buttons carry
           // tap-target overhang, but overhang is not rhythm — without a real
-          // gap the first body line crowds the header on phones.
-          SizedBox(height: context.designTokens.spacing.step3),
+          // gap the first body line crowds the header on phones. A body that
+          // opens on a generated prompt's own title row is the exception:
+          // that row's copy/expand buttons bring the same overhang, so the
+          // two overhangs already separate the rows and a gap on top of them
+          // reads as a hole.
+          if (!_bodyOpensWithPromptTitleRow(item, hasLabels: hasLabels))
+            SizedBox(height: context.designTokens.spacing.step3),
           ..._withRhythm(context, body),
           if (item is JournalAudio || item is JournalImage)
             NestedAiResponsesWidget(
@@ -643,6 +659,18 @@ class _EntryDetailsContentState extends ConsumerState<EntryDetailsContent> {
           .whereType<AiWorkAttribution>()
           .toList() ??
       const [];
+
+  /// Whether the first body section under the header is a generated prompt's
+  /// title row (coding or image prompt), which already has icon-button
+  /// padding above it. A labels row renders ahead of the prompt when the
+  /// entry has labels, and then the body opens with plain chips instead.
+  static bool _bodyOpensWithPromptTitleRow(
+    JournalEntity item, {
+    required bool hasLabels,
+  }) =>
+      !hasLabels &&
+      item is AiResponseEntry &&
+      (item.data.type?.isPromptGenerationType ?? false);
 
   /// Interleaves ONE shared vertical-rhythm step (`cardItemSpacing`) *between*
   /// stacked body sections — but not before the first one. The header row is

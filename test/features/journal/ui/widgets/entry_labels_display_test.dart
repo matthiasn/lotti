@@ -137,6 +137,48 @@ void main() {
     );
   }
 
+  group('visibleEntryLabels', () {
+    test('returns nothing for no label ids', () {
+      expect(visibleEntryLabels(const []), isEmpty);
+    });
+
+    test('drops ids the cache does not know', () {
+      expect(
+        visibleEntryLabels(const ['label-a', 'label-deleted']),
+        [labelA],
+      );
+    });
+
+    test('drops private labels while private entries are hidden', () {
+      when(() => cacheService.showPrivateEntries).thenReturn(false);
+
+      expect(
+        visibleEntryLabels(const ['label-private', 'label-b']),
+        [labelB],
+      );
+    });
+
+    test('keeps private labels while private entries are shown', () {
+      expect(
+        visibleEntryLabels(const ['label-private', 'label-b']),
+        [labelB, privateLabel],
+      );
+    });
+
+    test('sorts by name, ignoring case', () {
+      final lowerZulu = testLabelDefinition1.copyWith(
+        id: 'label-a',
+        name: 'zulu',
+      );
+      when(() => cacheService.getLabelById('label-a')).thenReturn(lowerZulu);
+
+      expect(
+        visibleEntryLabels(const ['label-a', 'label-c', 'label-b']),
+        [labelB, labelC, lowerZulu],
+      );
+    });
+  });
+
   group('EntryLabelsDisplay basic rendering', () {
     testWidgets('returns empty when entry is null', (tester) async {
       await tester.pumpWidget(buildWrapper(null));
