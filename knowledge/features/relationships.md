@@ -722,7 +722,10 @@ which made the two editors look like two products.
 [`RelationshipEditorPage`](../../lib/features/relationships/ui/pages/relationship_editor_page.dart)
 reads the person through `relationshipDetailControllerProvider` (the person
 page's own read, so arriving from it costs nothing) and shows its title and
-back over a spinner only until that first value lands. On a desktop the
+back over a spinner only until that first value lands. A read that resolves
+to no one (the person was deleted, here or on another device) says *This
+person is no longer tracked*, and a failed read says so, as the person page
+does — neither spins forever. On a desktop the
 person stays selected in the split behind the editor; `/people/new` selects
 no one, since nobody is called "new".
 
