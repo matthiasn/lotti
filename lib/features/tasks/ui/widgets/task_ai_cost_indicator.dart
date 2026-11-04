@@ -1,4 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/agents/agent_domain_entity.dart';
+import 'package:lotti/features/agents/state/task_agent_providers.dart';
+import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
+import 'package:lotti/features/agents/ui/agent_maintenance_section.dart';
 import 'package:lotti/features/ai_consumption/state/consumption_providers.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/ai_cost_indicator.dart';
 import 'package:lotti/features/tasks/ui/header/task_meta_flyout.dart';
@@ -12,11 +16,16 @@ import 'package:material_ui/material_ui.dart';
 /// never been near the machine carries no chrome for it. The totals provider
 /// is throttled and auto-disposing, so the watch ends with the surface.
 ///
-/// The default constructor is interactive: a tap opens the task's metadata
-/// details, which is where the AI spend is shown in full. See
-/// [AiCostIndicator] for how a cost **breakdown** later takes that tap over.
-/// [TaskAiCostIndicator.readOnly] is the plain read-out, for surfaces that
-/// already *are* the details a tap would open.
+/// A tap opens the task agent's internals — the per-model token breakdown
+/// with input, output and cached tokens and the cache-hit rate — because that
+/// is what a reader tapping a cost wants to see, and no task surface shows it.
+/// The task details stay one tap away on their own affordance (the header's
+/// Details button), not on this read-out.
+///
+/// A task without an agent has no internals. There the default constructor
+/// falls back to the task details, where the AI spend is shown in full, and
+/// [TaskAiCostIndicator.inDetails] — for surfaces that already *are* those
+/// details — is a plain read-out with no tap.
 class TaskAiCostIndicator extends ConsumerWidget {
   const TaskAiCostIndicator({
     required this.taskId,
@@ -24,24 +33,26 @@ class TaskAiCostIndicator extends ConsumerWidget {
     this.foregroundColor,
     this.onTap,
     super.key,
-  }) : _interactive = true;
+  }) : _hostedInDetails = false;
 
-  const TaskAiCostIndicator.readOnly({
+  const TaskAiCostIndicator.inDetails({
     required this.taskId,
     this.density = AiCostDensity.compact,
     this.foregroundColor,
     super.key,
   }) : onTap = null,
-       _interactive = false;
+       _hostedInDetails = true;
 
   final String taskId;
   final AiCostDensity density;
   final Color? foregroundColor;
 
-  /// Overrides the default "open the task details" tap.
+  /// Overrides the default drill-down (agent internals, else task details).
   final VoidCallback? onTap;
 
-  final bool _interactive;
+  /// Whether the indicator sits inside the task details, which it must then
+  /// not open again when the task has no agent.
+  final bool _hostedInDetails;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -50,13 +61,30 @@ class TaskAiCostIndicator extends ConsumerWidget {
     final totals = ref.watch(taskConsumptionTotalsProvider(taskId)).value;
     if (totals == null || totals.callCount == 0) return const SizedBox.shrink();
 
+    final agent = ref
+        .watch(taskAgentProvider(taskId))
+        .value
+        ?.mapOrNull(agent: (e) => e);
+
     return AiCostIndicator(
       totals: totals,
       density: density,
       foregroundColor: foregroundColor,
-      onTap: _interactive
-          ? (onTap ?? () => TaskMetaFlyout.show(context, taskId: taskId))
-          : null,
+      onTap:
+          onTap ??
+          (agent != null
+              ? () => AgentInternalsPanel.show(
+                  context: context,
+                  agentId: agent.agentId,
+                  agentName: agent.displayName,
+                  maintenance: AgentMaintenanceScope(
+                    kind: AgentMaintenanceKind.task,
+                    entityId: taskId,
+                  ),
+                )
+              : _hostedInDetails
+              ? null
+              : () => TaskMetaFlyout.show(context, taskId: taskId)),
     );
   }
 }

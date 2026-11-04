@@ -160,9 +160,10 @@ class TaskMetaSection extends ConsumerWidget {
   /// carries no edit affordance and disappears entirely for tasks without
   /// recorded AI calls.
   ///
-  /// The read-only indicator: the same leaf-and-amount component the task
-  /// list rows carry, but without their tap. Here it already *is* the details
-  /// that tap would open.
+  /// The in-details indicator: the same leaf-and-amount component the task
+  /// header carries. A tap opens the task agent's token breakdown; without an
+  /// agent it is a plain read-out, since this already *is* the details the
+  /// header's fallback would open.
   List<Widget> _aiSpendRow(BuildContext context, WidgetRef ref) {
     final totals = ref.watch(taskConsumptionTotalsProvider(taskId)).value;
     if (totals == null || totals.callCount == 0) return const [];
@@ -172,7 +173,7 @@ class TaskMetaSection extends ConsumerWidget {
         label: context.messages.taskMetaAiSpendLabel,
         value: Align(
           alignment: AlignmentDirectional.centerStart,
-          child: TaskAiCostIndicator.readOnly(
+          child: TaskAiCostIndicator.inDetails(
             taskId: taskId,
             // The section owns a full row for this, so it spells the whole
             // story out: cost, energy, carbon.
