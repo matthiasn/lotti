@@ -98,6 +98,14 @@ extension ChangeSetBatchExplosion on ChangeSetBuilder {
           element = {...element, 'id': rawElementId.trim()};
         }
         if (isTimeEntryBatch) {
+          // One spelling per instant, so `T09:00` and `T09:00:00` are one
+          // session to the fingerprint and the duplicate key alike.
+          element = {
+            ...element,
+            for (final key in const ['startTime', 'endTime'])
+              if (element[key] case final String raw)
+                key: canonicalTimeEntryLocalDateTime(raw),
+          };
           final timeEntryRejection = _checkTimeEntryElement(element);
           if (timeEntryRejection != null) {
             rejected++;

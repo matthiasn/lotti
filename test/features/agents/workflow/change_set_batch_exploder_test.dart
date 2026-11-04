@@ -1923,6 +1923,29 @@ void main() {
       },
     );
 
+    test('queues one session spelled two ways once, canonically', () async {
+      final result = await addEntries([
+        {
+          'startTime': '2026-03-17T09:00',
+          'endTime': '2026-03-17T10:00',
+          'summary': 'Maintenance',
+        },
+        {
+          'startTime': '2026-03-17T09:00:00',
+          'endTime': '2026-03-17T10:00:00.000',
+          'summary': 'Maintenance',
+        },
+      ]);
+
+      expect(result.added, 1);
+      expect(result.redundant, 1);
+      expect(builder.items.single.args, {
+        'startTime': '2026-03-17T09:00:00',
+        'endTime': '2026-03-17T10:00:00',
+        'summary': 'Maintenance',
+      });
+    });
+
     test('keeps the same hours on two days as two sessions', () async {
       // Both render "Time entry 09:00–10:00", so only the dates in the
       // duplicate key tell them apart.

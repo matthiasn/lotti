@@ -30,6 +30,24 @@ DateTime? parseTimeEntryLocalDateTime(String raw) {
   return DateTime.tryParse(raw);
 }
 
+/// The one spelling of an accepted local timestamp: `yyyy-MM-ddTHH:mm:ss`,
+/// with a fraction only when it is not zero — so `T09:00`, `T09:00:00` and
+/// `T09:00:00.0` all become `T09:00:00` and compare equal as strings.
+///
+/// Returns [raw] unchanged when it is not an accepted timestamp, leaving the
+/// rejection to whoever validates it.
+String canonicalTimeEntryLocalDateTime(String raw) {
+  final parsed = parseTimeEntryLocalDateTime(raw);
+  if (parsed == null) return raw;
+  String two(int value) => value.toString().padLeft(2, '0');
+  final base =
+      '${parsed.year.toString().padLeft(4, '0')}-${two(parsed.month)}-'
+      '${two(parsed.day)}T${two(parsed.hour)}:${two(parsed.minute)}:'
+      '${two(parsed.second)}';
+  final micros = parsed.millisecond * 1000 + parsed.microsecond;
+  return micros == 0 ? base : '$base.${micros.toString().padLeft(6, '0')}';
+}
+
 /// Formats a wall-clock time as `HH:mm`.
 String formatTimeEntryHhMm(DateTime dt) =>
     '${dt.hour.toString().padLeft(2, '0')}:'
