@@ -88,6 +88,7 @@ import 'package:lotti/features/relationships/state/relationship_nudge_providers.
 import 'package:lotti/features/relationships/state/relationship_proposal_providers.dart';
 import 'package:lotti/features/relationships/ui/pages/contact_import_page.dart';
 import 'package:lotti/features/relationships/ui/pages/relationship_details_page.dart';
+import 'package:lotti/features/relationships/ui/pages/relationship_editor_page.dart';
 import 'package:lotti/features/relationships/ui/pages/relationships_page.dart';
 import 'package:lotti/features/relationships/ui/shared/persona_avatar.dart';
 import 'package:lotti/features/relationships/ui/widgets/avatar_crop_sheet.dart';
@@ -100,7 +101,6 @@ import 'package:lotti/features/relationships/ui/widgets/person_header.dart';
 import 'package:lotti/features/relationships/ui/widgets/post_interaction_prompt.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_briefing_card.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_chat_pane.dart';
-import 'package:lotti/features/relationships/ui/widgets/relationship_form_modal.dart';
 import 'package:lotti/features/relationships/util/contact_channel_uri.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/recording_controls.dart';
@@ -340,6 +340,15 @@ class _FixedResponses extends LinkedAiResponsesController {
   @override
   Future<List<AiResponseEntry>> build() async => responses;
 }
+
+/// Pushes the person editor page — the route `/people/new` and
+/// `/people/<id>/edit` render — over the host.
+Future<void> _pushEditor(BuildContext context, String? relationshipId) =>
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => RelationshipEditorPage(relationshipId: relationshipId),
+      ),
+    );
 
 class _ModalHost extends StatelessWidget {
   const _ModalHost({required this.open});
@@ -2705,7 +2714,7 @@ void main() {
       await pumpSurface(
         tester,
         home: _ModalHost(
-          open: (context) => showRelationshipCreateModal(context: context),
+          open: (context) => _pushEditor(context, null),
         ),
         device: device,
         brightness: Brightness.dark,
@@ -2720,7 +2729,7 @@ void main() {
       expect(
         find.byKey(const ValueKey('person-form-reach-section')),
         findsOneWidget,
-        reason: 'the form is three cards: Who, Important, How to reach them',
+        reason: 'the form is its sections: Who, How to reach them, Your agent',
       );
       await captureScreenshot(
         tester,
@@ -2749,8 +2758,7 @@ void main() {
       await pumpSurface(
         tester,
         home: _ModalHost(
-          open: (context) =>
-              showRelationshipEditModal(context: context, relationship: pip),
+          open: (context) => _pushEditor(context, _pipId),
         ),
         device: device,
         brightness: Brightness.dark,
@@ -2760,8 +2768,8 @@ void main() {
       await warmAfterDryRun(
         tester,
         open: () => openModal(tester),
-        close: () =>
-            tester.tap(find.byKey(const ValueKey('person-form-cancel'))),
+        close: () async =>
+            tester.state<NavigatorState>(find.byType(Navigator).last).pop(),
         measure: find.byKey(const ValueKey('person-form-banner-preview')),
         keyFor: (strip) => boundedFileImage(
           getFullImagePath(_pipBanner),
@@ -2808,8 +2816,7 @@ void main() {
       await pumpSurface(
         tester,
         home: _ModalHost(
-          open: (context) =>
-              showRelationshipEditModal(context: context, relationship: pip),
+          open: (context) => _pushEditor(context, _pipId),
         ),
         device: device,
         brightness: Brightness.dark,
@@ -2822,8 +2829,8 @@ void main() {
       await warmAfterDryRun(
         tester,
         open: () => openModal(tester),
-        close: () =>
-            tester.tap(find.byKey(const ValueKey('person-form-cancel'))),
+        close: () async =>
+            tester.state<NavigatorState>(find.byType(Navigator).last).pop(),
         measure: find.byKey(const ValueKey('person-form-banner-preview')),
         keyFor: (strip) => boundedFileImage(
           getFullImagePath(_pipBanner),

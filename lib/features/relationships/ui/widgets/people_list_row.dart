@@ -7,7 +7,7 @@ import 'package:lotti/features/relationships/ui/shared/cadence_pill.dart';
 import 'package:lotti/features/relationships/ui/shared/persona_avatar.dart';
 import 'package:lotti/features/relationships/ui/shared/relationship_timestamps.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_capture_sheet.dart';
-import 'package:lotti/features/relationships/ui/widgets/relationship_form_modal.dart';
+import 'package:lotti/features/relationships/ui/widgets/relationship_form.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 

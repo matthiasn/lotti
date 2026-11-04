@@ -10,7 +10,7 @@ import 'package:lotti/features/relationships/runtime/relationship_agent_phase_a.
 import 'package:lotti/features/relationships/service/relationship_agent_service.dart';
 import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
 import 'package:lotti/features/relationships/ui/shared/ds_choice_pills.dart';
-import 'package:lotti/features/relationships/ui/widgets/relationship_form_modal.dart';
+import 'package:lotti/features/relationships/ui/widgets/relationship_form.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';

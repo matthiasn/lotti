@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
+import 'package:lotti/features/agents/ui/agent_editor_scaffold.dart';
 import 'package:lotti/features/categories/ui/widgets/category_field_row.dart';
 import 'package:lotti/features/categories/ui/widgets/category_icon_compact.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
@@ -20,8 +21,9 @@ import 'package:lotti/features/relationships/repository/relationship_repository.
 import 'package:lotti/features/relationships/runtime/relationship_agent_phase_a.dart';
 import 'package:lotti/features/relationships/service/contacts_service.dart';
 import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
-import 'package:lotti/features/relationships/ui/widgets/relationship_form_modal.dart';
+import 'package:lotti/features/relationships/ui/widgets/relationship_form.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/repositories/entry_category_move.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart';
 import 'package:lotti/providers/service_providers.dart';
@@ -94,6 +96,51 @@ Future<void> tapVisible(WidgetTester tester, Finder finder) async {
   await tester.tap(finder);
 }
 
+/// The form framed the way `RelationshipEditorPage` frames it — the shared
+/// editor page with the form's footer — except that leaving and saving pop
+/// this route, so a test sees the editor close where the page would beam.
+Widget editorFor(
+  BuildContext context,
+  RelationshipFormHandle handle, {
+  RelationshipEntry? initial,
+}) => AgentEditorScaffold(
+  title: initial == null
+      ? context.messages.relationshipCreateTitle
+      : context.messages.relationshipEditTitle,
+  onBack: handle.dismiss,
+  onCancel: handle.dismiss,
+  cancelKey: const ValueKey('person-form-cancel'),
+  primary: ListenableBuilder(
+    listenable: handle,
+    builder: (context, _) => DesignSystemButton(
+      key: const ValueKey('person-form-save'),
+      label: handle.isEditing
+          ? context.messages.saveButton
+          : context.messages.createButton,
+      onPressed: handle.canSave ? handle.save : null,
+    ),
+  ),
+  body: [
+    RelationshipForm(
+      initial: initial,
+      handle: handle,
+      onSaved: (_) => Navigator.of(context).pop(),
+      onDismissed: () => Navigator.of(context).pop(),
+    ),
+  ],
+);
+
+/// Pushes [editorFor] as a page over the current one.
+Future<void> pushEditor(BuildContext context, {RelationshipEntry? initial}) {
+  final handle = RelationshipFormHandle();
+  return Navigator.of(context).push(
+    MaterialPageRoute<void>(
+      builder: (routeContext) =>
+          editorFor(routeContext, handle, initial: initial),
+    ),
+  );
+}
+
 void main() {
   final testDate = DateTime(2026, 8, 13, 10, 30);
 
@@ -153,15 +200,10 @@ void main() {
     MediaQueryData? mediaQueryData,
   }) {
     final handle = RelationshipFormHandle();
-    return makeTestableWidgetWithScaffold(
+    return makeTestableWidgetNoScroll(
       mediaQueryData: mediaQueryData,
-      SingleChildScrollView(
-        child: Column(
-          children: [
-            RelationshipForm(initial: initial, handle: handle),
-            RelationshipFormStickyActions(handle: handle),
-          ],
-        ),
+      Builder(
+        builder: (context) => editorFor(context, handle, initial: initial),
       ),
       overrides: [
         relationshipRepositoryProvider.overrideWithValue(mockRepository),
@@ -231,8 +273,8 @@ void main() {
     );
 
     testWidgets(
-      "every field is the design system's in-sheet field: unfilled, so the "
-      'sheet shows through and the hairline frames it',
+      "every field is the page's field, as on the goal editor: filled on "
+      'the canvas, typed and picked alike',
       (tester) async {
         setTestSurfaceSize(tester, const Size(800, 3200));
         await tester.pumpWidget(buildForm(initial: existing()));
@@ -242,12 +284,12 @@ void main() {
           find.byType(DesignSystemTextInput),
         );
         expect(inputs, isNotEmpty);
-        expect(inputs.every((input) => !input.filled), isTrue);
-        final pickers = tester.widgetList<DesignSystemPickerField>(
+        expect(inputs.every((input) => input.filled), isTrue);
+        expect(
           find.byType(DesignSystemPickerField),
+          findsNWidgets(2),
+          reason: 'birthday and category',
         );
-        expect(pickers, hasLength(2), reason: 'birthday and category');
-        expect(pickers.every((picker) => !picker.filled), isTrue);
       },
     );
 
@@ -378,10 +420,7 @@ void main() {
         makeTestableWidgetWithScaffold(
           Builder(
             builder: (context) => ElevatedButton(
-              onPressed: () => showRelationshipEditModal(
-                context: context,
-                relationship: person(),
-              ),
+              onPressed: () => pushEditor(context, initial: person()),
               child: const Text('Open'),
             ),
           ),
@@ -470,8 +509,7 @@ void main() {
     await tester.pumpWidget(buildForm());
     await tester.pumpAndSettle();
 
-    await tester.ensureVisible(find.text('Create'));
-    await tester.tap(find.text('Create'));
+    await tapVisible(tester, find.text('Create'));
     await tester.pumpAndSettle();
 
     verifyNever(
@@ -505,15 +543,13 @@ void main() {
       await tester.enterText(find.byType(TextField).first, 'Anna Example');
       await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextField).at(1), 'Sis');
-      await tester.ensureVisible(find.byType(DesignSystemToggle));
-      await tester.tap(find.byType(DesignSystemToggle));
       await tester.pumpAndSettle();
-      await tester.ensureVisible(find.text('Every two weeks'));
-      await tester.tap(find.text('Every two weeks'));
+      await tapVisible(tester, find.byType(DesignSystemToggle));
+      await tester.pumpAndSettle();
+      await tapVisible(tester, find.text('Every two weeks'));
       await tester.pumpAndSettle();
 
-      await tester.ensureVisible(find.text('Create'));
-      await tester.tap(find.text('Create'));
+      await tapVisible(tester, find.text('Create'));
       await tester.pumpAndSettle();
 
       final data =
@@ -549,8 +585,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField).first, 'Anna');
     await tester.pumpAndSettle();
-    await tester.ensureVisible(find.text('Create'));
-    await tester.tap(find.text('Create'));
+    await tapVisible(tester, find.text('Create'));
     await tester.pumpAndSettle();
 
     expect(
@@ -576,8 +611,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField).first, 'Anna');
     await tester.pumpAndSettle();
-    await tester.ensureVisible(find.text('Create'));
-    await tester.tap(find.text('Create'));
+    await tapVisible(tester, find.text('Create'));
     await tester.pumpAndSettle();
 
     // The create-mode copy, not the edit-mode one.
@@ -597,8 +631,7 @@ void main() {
 
     await tester.enterText(find.byType(TextField).first, 'Anna');
     await tester.pumpAndSettle();
-    await tester.ensureVisible(find.text('Cancel'));
-    await tester.tap(find.text('Cancel'));
+    await tapVisible(tester, find.text('Cancel'));
     await tester.pumpAndSettle();
 
     verifyNever(
@@ -635,11 +668,9 @@ void main() {
       await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextField).first, 'Anna Example');
       await tester.pumpAndSettle();
-      await tester.ensureVisible(find.byType(DesignSystemToggle));
-      await tester.tap(find.byType(DesignSystemToggle));
+      await tapVisible(tester, find.byType(DesignSystemToggle));
       await tester.pumpAndSettle();
-      await tester.ensureVisible(find.text('Create'));
-      await tester.tap(find.text('Create'));
+      await tapVisible(tester, find.text('Create'));
       await tester.pumpAndSettle();
 
       final entry =
@@ -672,8 +703,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextField).first, 'Anna Example');
       await tester.pumpAndSettle();
-      await tester.ensureVisible(find.text('Create'));
-      await tester.tap(find.text('Create'));
+      await tapVisible(tester, find.text('Create'));
       await tester.pumpAndSettle();
 
       verifyNever(() => mockAgentService.ensureAgentForRelationship(any()));
@@ -701,11 +731,9 @@ void main() {
       await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextField).first, 'Anna Example');
       await tester.pumpAndSettle();
-      await tester.ensureVisible(find.byType(DesignSystemToggle));
-      await tester.tap(find.byType(DesignSystemToggle));
+      await tapVisible(tester, find.byType(DesignSystemToggle));
       await tester.pumpAndSettle();
-      await tester.ensureVisible(find.text('Create'));
-      await tester.tap(find.text('Create'));
+      await tapVisible(tester, find.text('Create'));
       await tester.pumpAndSettle();
 
       expect(find.byType(RelationshipForm), findsNothing);
@@ -939,8 +967,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.ensureVisible(find.text('Create'));
-      await tester.tap(find.text('Create'));
+      await tapVisible(tester, find.text('Create'));
       await tester.pumpAndSettle();
 
       final data =
@@ -986,8 +1013,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('+1 555'), findsNothing);
-      await tester.ensureVisible(find.text('Create'));
-      await tester.tap(find.text('Create'));
+      await tapVisible(tester, find.text('Create'));
       await tester.pumpAndSettle();
 
       final data =
@@ -1220,8 +1246,7 @@ void main() {
 
     await tester.enterText(find.byType(TextField).first, 'Ben');
     await tester.pumpAndSettle();
-    await tester.ensureVisible(find.text('Create'));
-    await tester.tap(find.text('Create'));
+    await tapVisible(tester, find.text('Create'));
     await tester.pumpAndSettle();
 
     final data =
@@ -1257,11 +1282,9 @@ void main() {
 
     await tester.enterText(find.byType(TextField).first, 'Ben');
     await tester.pumpAndSettle();
-    await tester.ensureVisible(find.byType(DesignSystemToggle));
-    await tester.tap(find.byType(DesignSystemToggle));
+    await tapVisible(tester, find.byType(DesignSystemToggle));
     await tester.pumpAndSettle();
-    await tester.ensureVisible(find.text('Create'));
-    await tester.tap(find.text('Create'));
+    await tapVisible(tester, find.text('Create'));
     await tester.pumpAndSettle();
 
     final data =
@@ -1306,8 +1329,7 @@ void main() {
       findsOneWidget,
       reason: 'the field says what the names are for',
     );
-    await tester.ensureVisible(find.text('Create'));
-    await tester.tap(find.text('Create'));
+    await tapVisible(tester, find.text('Create'));
     await tester.pumpAndSettle();
 
     final data =
@@ -1447,8 +1469,7 @@ void main() {
       );
 
       await tester.enterText(field, 'Wanja; Pingo Floe');
-      await tester.ensureVisible(find.text('Save'));
-      await tester.tap(find.text('Save'));
+      await tapVisible(tester, find.text('Save'));
       await tester.pumpAndSettle();
 
       final updated =
@@ -1461,8 +1482,7 @@ void main() {
 
     group('the birthday', () {
       Future<RelationshipEntry> save(WidgetTester tester) async {
-        await tester.ensureVisible(find.text('Save'));
-        await tester.tap(find.text('Save'));
+        await tapVisible(tester, find.text('Save'));
         await tester.pumpAndSettle();
         return verify(
               () => mockRepository.updateRelationship(captureAny()),
@@ -1593,8 +1613,7 @@ void main() {
 
       await tester.enterText(find.byType(TextField).first, 'Anna Example');
       await tester.pumpAndSettle();
-      await tester.ensureVisible(find.text('Save'));
-      await tester.tap(find.text('Save'));
+      await tapVisible(tester, find.text('Save'));
       await tester.pumpAndSettle();
 
       final updated =
@@ -1617,8 +1636,7 @@ void main() {
       await tester.pumpAndSettle();
       await tapVisible(tester, find.text('Monthly'));
       await tester.pumpAndSettle();
-      await tester.ensureVisible(find.text('Save'));
-      await tester.tap(find.text('Save'));
+      await tapVisible(tester, find.text('Save'));
       await tester.pumpAndSettle();
 
       final updated =
@@ -1643,11 +1661,9 @@ void main() {
         await tester.pumpWidget(buildForm(initial: existing()));
         await tester.pumpAndSettle();
 
-        await tester.ensureVisible(find.text('Dormant'));
-        await tester.tap(find.text('Dormant'));
+        await tapVisible(tester, find.text('Dormant'));
         await tester.pumpAndSettle();
-        await tester.ensureVisible(find.text('Save'));
-        await tester.tap(find.text('Save'));
+        await tapVisible(tester, find.text('Save'));
         await tester.pumpAndSettle();
 
         final updated =
@@ -1668,8 +1684,7 @@ void main() {
 
       await tester.enterText(find.byType(TextField).first, '   ');
       await tester.pumpAndSettle();
-      await tester.ensureVisible(find.text('Save'));
-      await tester.tap(find.text('Save'));
+      await tapVisible(tester, find.text('Save'));
       await tester.pumpAndSettle();
 
       verifyNever(() => mockRepository.updateRelationship(any()));
@@ -1679,11 +1694,9 @@ void main() {
       await tester.pumpWidget(buildForm(initial: existing()));
       await tester.pumpAndSettle();
 
-      await tester.ensureVisible(find.text('Archived'));
-      await tester.tap(find.text('Archived'));
+      await tapVisible(tester, find.text('Archived'));
       await tester.pumpAndSettle();
-      await tester.ensureVisible(find.text('Save'));
-      await tester.tap(find.text('Save'));
+      await tapVisible(tester, find.text('Save'));
       await tester.pumpAndSettle();
 
       final updated =
@@ -1722,8 +1735,7 @@ void main() {
             ),
           );
           await tester.pumpAndSettle();
-          await tester.ensureVisible(find.text('Save'));
-          await tester.tap(find.text('Save'));
+          await tapVisible(tester, find.text('Save'));
           await tester.pumpAndSettle();
 
           final updated =
@@ -1754,8 +1766,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextField).first, 'Anna Example');
       await tester.pumpAndSettle();
-      await tester.ensureVisible(find.text('Save'));
-      await tester.tap(find.text('Save'));
+      await tapVisible(tester, find.text('Save'));
       await tester.pumpAndSettle();
 
       expect(
@@ -1777,8 +1788,7 @@ void main() {
 
       await tester.pumpWidget(buildForm(initial: existing()));
       await tester.pumpAndSettle();
-      await tester.ensureVisible(find.text('Save'));
-      await tester.tap(find.text('Save'));
+      await tapVisible(tester, find.text('Save'));
       await tester.pumpAndSettle();
 
       // The edit-mode copy, not the create-mode one.
@@ -1808,8 +1818,7 @@ void main() {
 
       await tester.enterText(find.byType(TextField).first, 'Anna');
       await tester.pumpAndSettle();
-      await tester.ensureVisible(find.text('Create'));
-      await tester.tap(find.text('Create'));
+      await tapVisible(tester, find.text('Create'));
       await tester.pumpAndSettle();
 
       expect(
@@ -1833,8 +1842,7 @@ void main() {
 
       await tester.enterText(find.byType(TextField).first, 'Anna');
       await tester.pumpAndSettle();
-      await tester.ensureVisible(find.text('Create'));
-      await tester.tap(find.text('Create'));
+      await tapVisible(tester, find.text('Create'));
       await tester.pumpAndSettle();
 
       expect(
@@ -1879,8 +1887,7 @@ void main() {
       await tester.pumpWidget(buildForm(initial: initial));
       await tester.pumpAndSettle();
 
-      await tester.ensureVisible(find.text('Save'));
-      await tester.tap(find.text('Save'));
+      await tapVisible(tester, find.text('Save'));
       await tester.pumpAndSettle();
 
       expect(
@@ -1915,8 +1922,7 @@ void main() {
       await tester.pumpWidget(buildForm(initial: initial));
       await tester.pumpAndSettle();
 
-      await tester.ensureVisible(find.text('Save'));
-      await tester.tap(find.text('Save'));
+      await tapVisible(tester, find.text('Save'));
       await tester.pumpAndSettle();
 
       expect(
@@ -1971,8 +1977,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.ensureVisible(find.text('Save'));
-      await tester.tap(find.text('Save'));
+      await tapVisible(tester, find.text('Save'));
       await tester.pumpAndSettle();
     }
 
@@ -2039,8 +2044,7 @@ void main() {
       await tapVisible(tester, find.byType(DesignSystemToggle));
       await tester.pumpAndSettle();
 
-      await tester.ensureVisible(find.text('Save'));
-      await tester.tap(find.text('Save'));
+      await tapVisible(tester, find.text('Save'));
       await tester.pumpAndSettle();
 
       verify(
@@ -2084,12 +2088,8 @@ void main() {
         makeTestableWidgetWithScaffold(
           Builder(
             builder: (context) => ElevatedButton(
-              onPressed: () => editing
-                  ? showRelationshipEditModal(
-                      context: context,
-                      relationship: person(),
-                    )
-                  : showRelationshipCreateModal(context: context),
+              onPressed: () =>
+                  pushEditor(context, initial: editing ? person() : null),
               child: const Text('Open'),
             ),
           ),

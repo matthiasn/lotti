@@ -4,6 +4,7 @@ import 'package:lotti/beamer/locations/relationships_location.dart';
 import 'package:lotti/features/relationships/ui/pages/check_in_detail_page.dart';
 import 'package:lotti/features/relationships/ui/pages/relationship_chat_page.dart';
 import 'package:lotti/features/relationships/ui/pages/relationship_details_page.dart';
+import 'package:lotti/features/relationships/ui/pages/relationship_editor_page.dart';
 import 'package:lotti/features/relationships/ui/pages/relationships_page.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -75,7 +76,9 @@ void main() {
       );
       expect(location.pathPatterns, [
         '/people',
+        '/people/new',
         '/people/:relationshipId',
+        '/people/:relationshipId/edit',
         '/people/:relationshipId/chat',
         '/people/:relationshipId/check-ins/:checkInId',
       ]);
@@ -133,6 +136,34 @@ void main() {
       expect(pages[2].key, const ValueKey('people-check-in-c-1'));
     });
 
+    testWidgets('adding someone is the editor page over the list, not a '
+        'person called "new"', (tester) async {
+      final context = await localizedContext(tester);
+
+      final pages = pagesFor(context, '/people/new');
+
+      expect(pages, hasLength(2));
+      expect(pages[0].child, isA<RelationshipsPage>());
+      final editor = pages[1].child as RelationshipEditorPage;
+      expect(editor.relationshipId, isNull);
+      expect(pages[1].key, const ValueKey('people-new'));
+      expect(pages[1].title, 'Add person');
+    });
+
+    testWidgets('editing stacks the editor page above its person for '
+        '/people/<id>/edit', (tester) async {
+      final context = await localizedContext(tester);
+
+      final pages = pagesFor(context, '/people/rel-1/edit');
+
+      expect(pages, hasLength(3));
+      expect(pages[1].child, isA<RelationshipDetailsPage>());
+      final editor = pages[2].child as RelationshipEditorPage;
+      expect(editor.relationshipId, 'rel-1');
+      expect(pages[2].key, const ValueKey('people-edit-rel-1'));
+      expect(pages[2].title, 'Edit person');
+    });
+
     testWidgets('a plain detail path never mounts the chat page', (
       tester,
     ) async {
@@ -158,6 +189,27 @@ void main() {
         expect(pages, hasLength(1));
         expect(pages.single.child, isA<RelationshipsPage>());
         expect(selected.value, 'rel-1');
+      });
+
+      testWidgets('the editor is still a page — over the split, with the '
+          'person it edits selected behind it', (tester) async {
+        final context = await localizedContext(tester);
+
+        final pages = pagesFor(context, '/people/rel-1/edit');
+
+        expect(pages, hasLength(2));
+        expect(pages[0].child, isA<RelationshipsPage>());
+        expect(
+          (pages[1].child as RelationshipEditorPage).relationshipId,
+          'rel-1',
+        );
+        expect(selected.value, 'rel-1');
+
+        final creating = pagesFor(context, '/people/new');
+
+        expect(creating, hasLength(2));
+        expect(creating[1].child, isA<RelationshipEditorPage>());
+        expect(selected.value, isNull, reason: 'no one is called "new"');
       });
 
       testWidgets('the bare list route clears the selection', (tester) async {

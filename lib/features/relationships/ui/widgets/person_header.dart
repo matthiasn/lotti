@@ -25,8 +25,8 @@ import 'package:lotti/features/relationships/ui/shared/persona_avatar.dart';
 import 'package:lotti/features/relationships/ui/shared/relationship_timestamps.dart';
 import 'package:lotti/features/relationships/ui/widgets/contact_link_action.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_reminders_pill.dart';
-import 'package:lotti/features/relationships/ui/widgets/relationship_form_modal.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/app_bar/glass_action_button.dart';
 import 'package:lotti/widgets/app_bar/glass_back_button.dart';
 import 'package:lotti/widgets/media/thumb_hash_backed_image.dart';
@@ -539,9 +539,9 @@ class PersonMenuButton extends ConsumerWidget {
         );
 
     void run(PersonMenuAction action) => unawaited(switch (action) {
-      PersonMenuAction.edit => showRelationshipEditModal(
-        context: context,
-        relationship: relationship,
+      // The person editor, a page like the goal editor.
+      PersonMenuAction.edit => Future<void>.sync(
+        () => beamToNamed('/people/${relationship.id}/edit'),
       ),
       // The person's agent, in the side sheet over this page: its reports,
       // conversations and what it has cost — never a trip to Settings.

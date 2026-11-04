@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
@@ -25,7 +23,6 @@ import 'package:lotti/features/relationships/ui/widgets/people_list_row.dart';
 import 'package:lotti/features/relationships/ui/widgets/people_summary_card.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_capture_sheet.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_chat_sheet.dart';
-import 'package:lotti/features/relationships/ui/widgets/relationship_form_modal.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
@@ -212,7 +209,7 @@ class _PeopleListScaffold extends ConsumerWidget {
                 // Worded like the task list's: the app adds entries, tasks,
                 // habits and people from the same glyph in the same corner.
                 label: context.messages.relationshipCreateTitle,
-                onPressed: () => unawaited(createPersonAndOpen(context)),
+                onPressed: openPersonCreator,
               ),
             )
           : null,
@@ -451,19 +448,14 @@ class _EmptyState extends ConsumerWidget {
   }
 }
 
-/// Opens the add-person sheet and lands on the person it created.
+/// Opens the person editor to add someone (`/people/new`), the page a goal
+/// is created on's counterpart.
 ///
-/// Creating a person used to drop the user back on the list to find the row
-/// they had just made — the task list has always opened the new task instead
-/// (`_defaultCreateTaskPressed`), and a person is no different: the page they
-/// arrive on is where the check-in they came to log is logged.
-///
-/// A dismissed sheet resolves to null and goes nowhere.
-Future<void> createPersonAndOpen(BuildContext context) async {
-  final created = await showRelationshipCreateModal(context: context);
-  if (created == null) return;
-  beamToNamed('/people/${created.id}');
-}
+/// Its save lands on the person it created — the task list has always
+/// opened the new task too (`_defaultCreateTaskPressed`), and the page they
+/// arrive on is where the check-in they came to log is logged. Leaving it
+/// returns to the list.
+void openPersonCreator() => beamToNamed('/people/new');
 
 /// The People list's create action as the mobile navigation launcher shows
 /// it.
@@ -475,5 +467,5 @@ MobileNavDockAction peopleTabDockAction(BuildContext context) =>
     MobileNavDockAction.worded(
       label: context.messages.relationshipCreateTitle,
       icon: LottiIcons.add,
-      onPressed: () => unawaited(createPersonAndOpen(context)),
+      onPressed: openPersonCreator,
     );

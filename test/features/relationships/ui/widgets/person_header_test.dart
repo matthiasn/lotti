@@ -9,7 +9,6 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
-import 'package:lotti/database/agents/agent_database.dart';
 import 'package:lotti/features/agents/ui/agent_chat_button.dart';
 import 'package:lotti/features/agents/ui/agent_surface_menu.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
@@ -30,6 +29,7 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/app_bar/glass_action_button.dart';
 import 'package:lotti/widgets/app_bar/glass_back_button.dart';
 import 'package:lotti/widgets/media/thumb_hash_backed_image.dart';
@@ -260,27 +260,11 @@ void main() {
       );
     });
 
-    testWidgets("the menu's edit opens the person form prefilled with this "
-        'person', (
-      tester,
-    ) async {
-      // The form behind the button reads GetIt: the shared setup, plus the
-      // category cache its category row consults, and the agent store the
-      // relationship repository is built over — read only when a person is
-      // marked important, which opening the form never does, so a mock
-      // that refuses every call proves it.
-      await setUpTestGetIt(
-        additionalSetup: () {
-          getIt
-            ..registerSingleton<EntitiesCacheService>(
-              MockEntitiesCacheService(),
-            )
-            ..registerSingleton<PersistenceLogic>(MockPersistenceLogic())
-            ..registerSingleton<EditorStateService>(MockEditorStateService())
-            ..registerSingleton<AgentDatabase>(MockAgentDatabase());
-        },
-      );
-      addTearDown(tearDownTestGetIt);
+    testWidgets("the menu's edit opens this person's editor page — the "
+        "goal editor's page, not a sheet over the person", (tester) async {
+      final navigated = <String>[];
+      beamToNamedOverride = navigated.add;
+      addTearDown(() => beamToNamedOverride = null);
       await pump(tester);
 
       await tester.tap(find.byKey(const ValueKey('person-menu')));
@@ -288,12 +272,7 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('person-menu-edit')));
       await tester.pumpAndSettle();
 
-      expect(find.text('Edit person'), findsOneWidget);
-      expect(
-        find.widgetWithText(TextField, person().data.title),
-        findsOneWidget,
-        reason: 'the form edits this person, not a blank one',
-      );
+      expect(navigated, ['/people/${person().meta.id}/edit']);
     });
 
     testWidgets('a person with no agent gets no agent entry — a chat bubble '

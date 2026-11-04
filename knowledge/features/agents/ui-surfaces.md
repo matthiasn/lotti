@@ -5,7 +5,7 @@ description: The AI summary card and its proposal choreography, the internals pa
 resource: ../../../lib/features/agents/ui
 tags: [agents, ui, motion, accessibility]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-11-01T12:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-11-04T12:00:00Z }
 stale_after: 2027-02-01
 sources:
   - id: task-preview
@@ -716,7 +716,19 @@ under the tune glyph. Both menus order themselves the same way: the page's own
 actions, a hairline (`startsGroup`), the agent's actions ending in the
 internals, a hairline, delete.
 
-The editors of what an agent serves share a section too:
+The editors of what an agent serves are one page:
+[`AgentEditorScaffold`](../../../lib/features/agents/ui/agent_editor_scaffold.dart)
+— the app bar with the way back and the editor's title, the scaffold's
+canvas, a reading column capped at `kActionListContentMaxWidth` with an
+optional pinned header (the goal wizard's step progress) over the scrolling
+body, and an opaque footer under a hairline holding *Cancel* on the leading
+edge and the primary at its own width on the trailing one
+(`DesignSystemModalActionBar`'s `compactPrimary`). While `busy` the body
+absorbs input and the footer stays live. The goal editor and the person
+editor (`/people/new`, `/people/<id>/edit`) both render in it, so neither is a
+sheet beside the other's page.
+
+They share a section too:
 [`AgentFormSection`](../../../lib/features/agents/ui/agent_form_section.dart),
 a heading, an optional quiet intro and open fields. The goal editor ends on
 it as *Your agent*; the person editor is built from it throughout and ends on

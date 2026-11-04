@@ -29,7 +29,8 @@ and open in place. Then the timeline, newest first under *Upcoming*, *Today*, *T
 filterable by kind; a day's photos share one row. On a wide window *Before
 you talk* sits in a rail beside the timeline. The header opens the agent
 conversation, and its menu — the same menu, over the same dimmed page, as a
-goal's — the person editor; the editor reads like the goal editor: *Who* —
+goal's — the person editor, a page like the goal editor's in the same
+container, which reads like it too: *Who* —
 with the category, whose AI profile the agent briefs with (or the Settings
 default when it names none) — *How to reach them*, *Your agent* — reminders
 and how often, the person's status and the names its transcripts should

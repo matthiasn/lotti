@@ -37,7 +37,7 @@ import 'package:lotti/features/relationships/state/relationship_agent_providers.
 import 'package:lotti/features/relationships/ui/model/people_list_model.dart';
 import 'package:lotti/features/relationships/ui/shared/ds_choice_pills.dart';
 import 'package:lotti/features/relationships/ui/shared/relationship_timestamps.dart';
-import 'package:lotti/features/relationships/ui/widgets/relationship_form_modal.dart';
+import 'package:lotti/features/relationships/ui/widgets/relationship_form.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_suggestions_band.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';

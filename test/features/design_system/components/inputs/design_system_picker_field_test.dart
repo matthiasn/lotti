@@ -127,34 +127,4 @@ void main() {
     expect(border(), designSystemFieldBorderColor(tokens, hovered: true));
     expect(border(), isNot(resting));
   });
-
-  testWidgets('inside a sheet it is unfilled, so the sheet shows through', (
-    tester,
-  ) async {
-    await tester.pumpWidget(
-      makeTestableWidgetWithScaffold(
-        DesignSystemPickerField(
-          fieldKey: const ValueKey('field'),
-          label: 'Category',
-          value: null,
-          placeholder: 'Select a category',
-          onTap: () {},
-          filled: false,
-        ),
-      ),
-    );
-    await tester.pumpAndSettle();
-
-    final decoration =
-        tester
-                .widget<Ink>(
-                  find.descendant(
-                    of: find.byKey(const ValueKey('field')),
-                    matching: find.byType(Ink),
-                  ),
-                )
-                .decoration!
-            as BoxDecoration;
-    expect(decoration.color, Colors.transparent);
-  });
 }

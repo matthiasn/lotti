@@ -11,7 +11,6 @@ import 'package:lotti/features/agents/ui/agent_switch_row.dart';
 import 'package:lotti/features/categories/ui/widgets/category_field_row.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
-import 'package:lotti/features/design_system/components/buttons/design_system_modal_action_bar.dart';
 import 'package:lotti/features/design_system/components/calendar_pickers/design_system_date_picker_modal.dart';
 import 'package:lotti/features/design_system/components/inputs/design_system_picker_field.dart';
 import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
@@ -35,10 +34,9 @@ import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/widgets/modal/confirmation_modal.dart';
-import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:material_ui/material_ui.dart';
 
-part 'relationship_form_modal_person_category_row_part.dart';
+part 'relationship_form_parts.dart';
 
 class _RelationshipFormState extends ConsumerState<RelationshipForm> {
   late final TextEditingController _nameController;
@@ -183,7 +181,7 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
     if (name.isEmpty) return;
 
     setState(() => _isSaving = true);
-    // Every provider is read before the first `await`. Saving pops the sheet,
+    // Every provider is read before the first `await`. Saving leaves the page,
     // and the category write, the agent hand-off and any retry that follows
     // all run past that point — reading through `ref` once the element is
     // unmounted throws and aborts the save mid-way.
@@ -233,7 +231,7 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
         // them — their check-ins and what each holds, their notes, voice
         // notes, photos and meetings — across a crash, the way a task's move
         // takes its entries. Its result is part of the save's verdict: a
-        // swallowed category write would otherwise pop the modal on a
+        // swallowed category write would otherwise leave the editor on a
         // half-saved person, and the user would see the old category with
         // nothing to retry.
         var success = saved;
@@ -246,7 +244,7 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
         if (saved) _ensureAgentIfImportant(agentService, logger, updated);
         if (!mounted) return;
         if (success) {
-          Navigator.of(context).pop(updated);
+          widget.onSaved(updated);
         } else {
           context.showToast(
             tone: DesignSystemToastTone.error,
@@ -272,7 +270,7 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
         }
         if (!mounted) return;
         if (created != null) {
-          Navigator.of(context).pop(created);
+          widget.onSaved(created);
         } else {
           context.showToast(
             tone: DesignSystemToastTone.error,
@@ -320,9 +318,9 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
     );
   }
 
-  /// Republishes the pinned bar's view of this form. Deferred to the end of
-  /// the frame because the bar lives in the modal's sticky slot — a sibling
-  /// subtree — and notifying a listener that is mid-build throws.
+  /// Republishes the footer's view of this form. Deferred to the end of the
+  /// frame because the footer is the editor page's — a sibling subtree — and
+  /// notifying a listener that is mid-build throws.
   void _publish() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -365,9 +363,9 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
     return !listEquals(_editedChannels, data?.contactChannels ?? const []);
   }
 
-  /// Leaves the form, asking first when [_isDirty]. Cancel, the back gesture,
-  /// the barrier tap and Escape all arrive here, so none of them can drop a
-  /// half-filled person without a word.
+  /// Leaves the form, asking first when [_isDirty]. Cancel, the app bar's
+  /// back button and the system back all arrive here, so none of them can
+  /// drop a half-filled person without a word.
   Future<void> _dismiss() async {
     // A second gesture while the question is still on screen would stack a
     // second confirmation, and answering the top one would then pop the
@@ -375,7 +373,7 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
     // *Discard changes* and stay exactly where they were.
     if (_dismissing) return;
     if (!_isDirty) {
-      Navigator.of(context).pop();
+      widget.onDismissed();
       return;
     }
     final messages = context.messages;
@@ -387,7 +385,7 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
         confirmLabel: messages.editorDiscardChanges,
       );
       if (!confirmed || !mounted) return;
-      Navigator.of(context).pop();
+      widget.onDismissed();
     } finally {
       _dismissing = false;
     }
@@ -448,19 +446,15 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
 
     Widget gap(double height) => SizedBox(height: height);
 
-    // One scrollable, not two — see the same note on the check-in capture
-    // sheet. The modal page already scrolls its child and stacks a top bar,
-    // padding and the bottom safe area on top of it, so a form that also
-    // capped itself at `modalMaxHeightFraction` of the SCREEN overflowed the
-    // page, and the inner scroll view ate the drag that would have reached
-    // the action row.
+    // One scrollable, not two: the editor page scrolls its body, so the
+    // form is a plain column that never scrolls on its own.
     final caption = tokens.typography.styles.others.caption.copyWith(
       color: tokens.colors.text.mediumEmphasis,
     );
 
     // The goal form's grammar, section for section (`AgentFormSection`):
     // a heading and a quiet line over open fields — no card boxed inside the
-    // modal's own surface — who the person is first, the agent last, as the
+    // page's own canvas — who the person is first, the agent last, as the
     // goal editor ends on *Your agent*.
     final body = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -473,8 +467,6 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               DesignSystemTextInput(
-                // The sheet shows through; the hairline frames the field.
-                filled: false,
                 key: const ValueKey('person-form-name'),
                 controller: _nameController,
                 label: messages.relationshipNameLabel,
@@ -492,8 +484,6 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
               ],
               gap(tokens.spacing.step4),
               DesignSystemTextInput(
-                // The sheet shows through; the hairline frames the field.
-                filled: false,
                 key: const ValueKey('person-form-nickname'),
                 controller: _nicknameController,
                 label: messages.relationshipNicknameLabel,
@@ -510,7 +500,6 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
               // category seeds every check-in created under the person, and
               // names the AI profile their agent briefs with.
               CategoryFieldRow(
-                filled: false,
                 categoryId: _categoryId,
                 onChanged: (id) => setState(() => _categoryId = id),
               ),
@@ -621,8 +610,6 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
               // The category speech dictionary's format, so one habit edits
               // both lists.
               DesignSystemTextInput(
-                // The sheet shows through; the hairline frames the field.
-                filled: false,
                 key: const ValueKey('person-form-known-terms'),
                 controller: _knownTermsController,
                 label: messages.relationshipKnownTermsLabel,
@@ -664,15 +651,15 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
       ],
     );
 
-    // The modal's own ways out — the back gesture, the barrier, Escape —
+    // The page's own ways out — the system back and the back gesture —
     // come through here, so typed work is guarded however the user leaves.
     //
     // `canPop` is false rather than `!_isDirty` because the form does not
     // rebuild while you type: its fields are plain controllers with no
     // onChanged, so a dirtiness computed at build time would still say
     // "clean" for the name you just entered. Every pop is intercepted and
-    // `_dismiss` decides at the moment of leaving; an untouched sheet still
-    // closes on the first tap, without a question.
+    // `_dismiss` decides at the moment of leaving; an untouched form still
+    // leaves on the first tap, without a question.
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) {

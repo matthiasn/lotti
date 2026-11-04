@@ -5,7 +5,7 @@ description: Goal-driven agents — the deterministic Phase A tier evaluating cr
 resource: ../../lib/features/goals
 tags: [goals, agents, runtime, wake, evaluation]
 status: draft
-generated: { by: claude-code/opus-5.5, at: 2026-11-01T20:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-11-04T12:00:00Z }
 stale_after: 2027-02-22
 sources:
   - id: goals-src
@@ -1581,6 +1581,9 @@ handler would retract it; that wiring is a follow-up.
   numeric rolling-week target, and offers Weight or one Blood pressure source
   that expands to separate systolic and diastolic targets. Every health target
   chooses `at least` or `no more than` and uses a rolling seven-day average.
+  Both renderings sit in
+  [`AgentEditorScaffold`](../../lib/features/agents/ui/agent_editor_scaffold.dart),
+  the page the person editor uses too.
   The same controls load during owner editing, retain existing criterion ids,
   and expose `all`, `any`, or `at least N` when multiple dimensions are
   selected. The combination sheet applies every choice to the page

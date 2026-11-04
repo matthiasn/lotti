@@ -181,54 +181,6 @@ extension _GoalEditLeave on _CreateGoalAgentPageState {
   }
 }
 
-/// The form's footer: always on screen, on an opaque band — scrolling
-/// content ends at a hairline instead of being guillotined behind a floating
-/// pill. The primary action is as wide as its label, on the trailing edge
-/// where a form's forward action sits; editing puts *Cancel* on the leading
-/// edge, as the person editor's footer does.
-class _GoalFormFooter extends StatelessWidget {
-  const _GoalFormFooter({required this.primary, required this.onCancel});
-
-  final Widget primary;
-
-  /// Null while creating, where the app bar's back button walks the steps.
-  final VoidCallback? onCancel;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: Theme.of(context).scaffoldBackgroundColor,
-        border: Border(
-          top: BorderSide(color: tokens.colors.decorative.level01),
-        ),
-      ),
-      child: Padding(
-        padding: EdgeInsets.only(
-          top: tokens.spacing.step4,
-          bottom:
-              tokens.spacing.step4 +
-              DesignSystemBottomNavigationBar.occupiedHeight(context),
-        ),
-        child: DesignSystemModalActionBar(
-          layout: DesignSystemModalActionBarLayout.compactPrimary,
-          secondary: [
-            if (onCancel case final onCancel?)
-              DesignSystemButton(
-                key: const ValueKey('goal-form-cancel'),
-                label: context.messages.cancelButton,
-                variant: DesignSystemButtonVariant.secondary,
-                onPressed: onCancel,
-              ),
-          ],
-          primary: primary,
-        ),
-      ),
-    );
-  }
-}
-
 /// The goal's category on the single edit page, filed under its name. It
 /// cannot be changed until the goal row's own category has read.
 Widget _editCategoryField(_CreateGoalAgentPageState form) => IgnorePointer(

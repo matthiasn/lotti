@@ -1,4 +1,4 @@
-part of 'relationship_form_modal.dart';
+part of 'relationship_form.dart';
 
 /// How often a reminder can come, as offered wherever reminders are turned
 /// on (plan v2 D1: presets over a free integer field).
@@ -64,10 +64,11 @@ String relationshipStatusLabel(
   RelationshipArchived() => context.messages.relationshipStatusArchived,
 };
 
-/// What the modal's pinned action bar needs from the form inside it: the
-/// save intent and whether it is currently allowed. The form publishes after
-/// every state change; the bar listens. Delete is not here — a person is
-/// deleted from the page's kebab, never from inside their own edit sheet.
+/// What the editor page's footer needs from the form inside it: the save
+/// intent, the way out and whether saving is currently allowed. The form
+/// publishes after every state change; the footer listens. Delete is not
+/// here — a person is deleted from the page's kebab, never from inside their
+/// own editor.
 class RelationshipFormHandle extends ChangeNotifier {
   Future<void> Function()? _save;
   Future<void> Function()? _dismiss;
@@ -76,7 +77,7 @@ class RelationshipFormHandle extends ChangeNotifier {
 
   bool get canSave => _canSave;
 
-  /// Whether the sheet is editing an existing person, which decides the
+  /// Whether the form is editing an existing person, which decides the
   /// primary action's label (*Save* versus *Create*).
   bool get isEditing => _isEditing;
 
@@ -102,100 +103,6 @@ class RelationshipFormHandle extends ChangeNotifier {
     _canSave = canSave;
     _isEditing = isEditing;
     if (changed) notifyListeners();
-  }
-}
-
-/// Room under the form for the pinned action bar, so the last field can
-/// scroll clear of it (the check-in sheet's measurement).
-EdgeInsets _formPadding(BuildContext context) {
-  final tokens = context.designTokens;
-  return EdgeInsets.fromLTRB(
-    tokens.spacing.step5,
-    tokens.spacing.step4,
-    tokens.spacing.step5,
-    tokens.spacing.step11 + tokens.spacing.step6,
-  );
-}
-
-/// Opens the responsive add-person overlay. Resolves to the created
-/// [RelationshipEntry], or `null` when dismissed.
-Future<RelationshipEntry?> showRelationshipCreateModal({
-  required BuildContext context,
-}) {
-  final handle = RelationshipFormHandle();
-  return ModalUtils.showSinglePageModal<RelationshipEntry>(
-    context: context,
-    title: context.messages.relationshipCreateTitle,
-    // The generic close button pops the route itself, which bypasses the
-    // form's PopScope and takes the typed person with it. The check-in
-    // composer hides it for the same reason; Cancel is in the pinned bar.
-    showCloseButton: false,
-    padding: _formPadding(context),
-    stickyActionBarBuilder: (_) => RelationshipFormStickyActions(
-      handle: handle,
-    ),
-    builder: (modalContext) => RelationshipForm(handle: handle),
-  );
-}
-
-/// Opens the edit overlay prefilled from [relationship]. Resolves to the
-/// updated [RelationshipEntry], or `null` when dismissed.
-Future<RelationshipEntry?> showRelationshipEditModal({
-  required BuildContext context,
-  required RelationshipEntry relationship,
-}) {
-  final handle = RelationshipFormHandle();
-  return ModalUtils.showSinglePageModal<RelationshipEntry>(
-    context: context,
-    title: context.messages.relationshipEditTitle,
-    // See the create sheet: a close button that pops directly cannot ask.
-    showCloseButton: false,
-    padding: _formPadding(context),
-    stickyActionBarBuilder: (_) => RelationshipFormStickyActions(
-      handle: handle,
-    ),
-    builder: (modalContext) => RelationshipForm(
-      initial: relationship,
-      handle: handle,
-    ),
-  );
-}
-
-/// The modal's pinned actions: *Save* reachable without scrolling past three
-/// cards of fields, Cancel beside it. Reads the form through its [handle].
-class RelationshipFormStickyActions extends StatelessWidget {
-  const RelationshipFormStickyActions({required this.handle, super.key});
-
-  final RelationshipFormHandle handle;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final messages = context.messages;
-    return ListenableBuilder(
-      listenable: handle,
-      builder: (context, _) => DesignSystemModalActionBar(
-        glass: true,
-        // The goal form's footer: the confirming action at its own width on
-        // the trailing edge, the way out at the leading one.
-        layout: DesignSystemModalActionBarLayout.compactPrimary,
-        padding: EdgeInsets.all(tokens.spacing.step5),
-        secondary: [
-          DesignSystemButton(
-            key: const ValueKey('person-form-cancel'),
-            label: messages.cancelButton,
-            variant: DesignSystemButtonVariant.secondary,
-            // Not a bare pop: the form asks before dropping typed work.
-            onPressed: () => unawaited(handle.dismiss()),
-          ),
-        ],
-        primary: DesignSystemButton(
-          key: const ValueKey('person-form-save'),
-          label: handle.isEditing ? messages.saveButton : messages.createButton,
-          onPressed: handle.canSave ? handle.save : null,
-        ),
-      ),
-    );
   }
 }
 
@@ -245,24 +152,36 @@ _StatusKind _kindOf(RelationshipStatus status) => switch (status) {
   RelationshipArchived() => _StatusKind.archived,
 };
 
-/// The add/edit person form rendered inside [showRelationshipCreateModal]
-/// and [showRelationshipEditModal].
+/// The add/edit person form, the body of `RelationshipEditorPage`.
 ///
-/// Three cards, in the design's order (2026-09-06 §6): **Who** (name,
-/// nickname, the names that come up with them, category as a colour dot), **Important** (the consent switch,
-/// what it turns on, and — only once it is on — the cadence presets), and
-/// **How to reach them** (the channel editor under its privacy line). The
-/// status picker joins the first card while editing. Persists through
-/// [RelationshipRepository]; pops with the saved entry on success.
+/// Built in the goal editor's grammar (`AgentFormSection`): **Who** (name,
+/// nickname, birthday, and the category whose AI profile the agent briefs
+/// with), **How to reach them** (the channel editor under its privacy line),
+/// **Your agent** (the reminders switch, the cadence once it is on, the
+/// person's status while editing, the names that come up with them) and,
+/// editing, **Photo** last. Persists through [RelationshipRepository] and
+/// hands the saved entry to [onSaved].
 ///
-/// The form has no inline action row: it publishes save and can-save to its
-/// [handle], and [RelationshipFormStickyActions] renders them in the modal's
-/// pinned bar, so Save stays reachable without scrolling three cards.
+/// The form has no action row of its own: it publishes save, can-save and
+/// its way out to [handle], which the editor page's footer renders.
 class RelationshipForm extends ConsumerStatefulWidget {
-  const RelationshipForm({required this.handle, this.initial, super.key});
+  const RelationshipForm({
+    required this.handle,
+    required this.onSaved,
+    required this.onDismissed,
+    this.initial,
+    super.key,
+  });
 
-  /// The channel through which the pinned action bar reads this form.
+  /// The channel through which the editor page's footer reads this form.
   final RelationshipFormHandle handle;
+
+  /// Runs with the saved person once the save has landed.
+  final ValueChanged<RelationshipEntry> onSaved;
+
+  /// Runs when the user leaves without saving — at once for an untouched
+  /// form, after *Discard changes* for one with work in it.
+  final VoidCallback onDismissed;
 
   /// When set, the form edits this relationship instead of creating one.
   final RelationshipEntry? initial;
@@ -378,8 +297,6 @@ class _ChannelEditorRow extends StatelessWidget {
         ),
         SizedBox(height: tokens.spacing.step3),
         DesignSystemTextInput(
-          // The sheet shows through; the hairline frames the field.
-          filled: false,
           key: ValueKey('person-form-channel-value-${draft.hashCode}'),
           controller: draft.valueController,
           label: messages.contactChannelValueLabel,
@@ -387,8 +304,6 @@ class _ChannelEditorRow extends StatelessWidget {
         ),
         SizedBox(height: tokens.spacing.step3),
         DesignSystemTextInput(
-          // The sheet shows through; the hairline frames the field.
-          filled: false,
           controller: draft.labelController,
           label: messages.contactChannelLabelLabel,
           textCapitalization: TextCapitalization.sentences,
@@ -417,7 +332,6 @@ class _BirthdayRow extends StatelessWidget {
     // so the *Who* section is one column of one kind of control.
     return DesignSystemPickerField(
       fieldKey: const ValueKey('person-form-birthday'),
-      filled: false,
       label: messages.relationshipBirthdayLabel,
       value: birthday == null
           ? null
