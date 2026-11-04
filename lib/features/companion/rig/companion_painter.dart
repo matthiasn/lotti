@@ -10,6 +10,7 @@ import 'package:lotti/features/companion/rig/head_painter.dart';
 import 'package:lotti/features/companion/rig/rig_frame.dart';
 import 'package:lotti/features/companion/rig/stage_painter.dart';
 import 'package:lotti/features/companion/rig/tail_painter.dart';
+import 'package:lotti/features/companion/rig/uncle_outfit_painter.dart';
 
 /// How much of her the view shows.
 enum CompanionFraming {
@@ -83,6 +84,8 @@ class CompanionPainter extends CustomPainter {
         drawGrandpaOutfit(canvas, f, look);
       case CompanionSpecies.aunt:
         drawAuntOutfit(canvas, f, look);
+      case CompanionSpecies.uncle:
+        drawUncleOutfit(canvas, f, look);
       case _:
         drawDress(canvas, f, look);
     }

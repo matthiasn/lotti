@@ -3881,6 +3881,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get companionSettingsCharacterLotti => 'Lotti';
 
   @override
+  String get companionSettingsCharacterUncle => 'Oom';
+
+  @override
   String get companionSettingsHairColourAuburn => 'Koperrood';
 
   @override
@@ -3960,10 +3963,19 @@ class AppLocalizationsNl extends AppLocalizations {
   String get companionSettingsOutfitMarket => 'Marktdag';
 
   @override
+  String get companionSettingsOutfitNight => 'Avondje uit';
+
+  @override
   String get companionSettingsOutfitRock => 'Rock';
 
   @override
   String get companionSettingsOutfitSeaside => 'Aan zee';
+
+  @override
+  String get companionSettingsOutfitSkate => 'Skatepark';
+
+  @override
+  String get companionSettingsOutfitSnow => 'Sneeuwdag';
 
   @override
   String get companionSettingsOutfitStage => 'Podium';

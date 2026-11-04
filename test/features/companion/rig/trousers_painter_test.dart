@@ -183,4 +183,52 @@ void main() {
       expect(r.count(aunt.palette.trousers), greaterThan(1500));
     });
   });
+
+  group("the uncle's chinos", () {
+    const uncle = CompanionLook.uncle;
+    final p = uncle.palette;
+
+    test(
+      'are turned up above his boots; nobody else turns theirs up',
+      () async {
+        final his = await _body((c, f) => drawTrouserLegs(c, f, uncle));
+        final hers = await _body(
+          (c, f) => drawTrouserLegs(c, f, CompanionLook.aunt),
+        );
+        // The turn-up band, both legs, just above the shoes.
+        const bandY = 470 - 20 + 2 - 12;
+        expect(near(his.at(160 - 19, bandY), p.trousersLight), isTrue);
+        expect(near(his.at(160 + 19, bandY), p.trousersLight), isTrue);
+        expect(
+          near(
+            hers.at(160 - 19, bandY),
+            CompanionLook.aunt.palette.trousersLight,
+          ),
+          isFalse,
+        );
+      },
+    );
+
+    test('end in boots on a treaded sole, lower than high-tops', () async {
+      final his = await _body((c, f) => drawTrouserLegs(c, f, uncle));
+      expect(his.count(p.shoe), greaterThan(150));
+      expect(his.count(const Color(0xFF2B2622)), greaterThan(150));
+      int top(Raster r, Color colour) {
+        for (var y = 380; y < 480; y++) {
+          for (var x = 0; x < 320; x++) {
+            if (near(r.at(x, y), colour)) return y;
+          }
+        }
+        return 480;
+      }
+
+      final hers = await _body(
+        (c, f) => drawTrouserLegs(c, f, CompanionLook.aunt),
+      );
+      expect(
+        top(his, p.shoe),
+        greaterThan(top(hers, CompanionLook.aunt.palette.shoe)),
+      );
+    });
+  });
 }

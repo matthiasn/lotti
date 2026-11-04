@@ -1,7 +1,7 @@
 # In-App Agent Avatar: a Character You Talk To
 
 Date: 2026-10-12
-Status: proof of concept built (2026-10-13); delivery as a branch stack (2026-10-15), branches 1 (`feat/companion-speaks`), 2 (`feat/companion-day-briefing`) and 3 (`feat/companion-onboarding`) built — see "Delivery"; revised 2026-10-19 for her range and customization, branches A (`feat/companion-expressions`), B (`feat/companion-tone-track`), C (`feat/companion-outfits`), D (`feat/companion-customization`) and E (`feat/companion-customization-sync`) built — see "Revision: her range, and making her your own"; revised 2026-11-04 for three more people beside her, tasks 1 (`feat/companion-grandpa`) and 2 (`feat/companion-aunt`) built — see "Revision: a cast of four"
+Status: proof of concept built (2026-10-13); delivery as a branch stack (2026-10-15), branches 1 (`feat/companion-speaks`), 2 (`feat/companion-day-briefing`) and 3 (`feat/companion-onboarding`) built — see "Delivery"; revised 2026-10-19 for her range and customization, branches A (`feat/companion-expressions`), B (`feat/companion-tone-track`), C (`feat/companion-outfits`), D (`feat/companion-customization`) and E (`feat/companion-customization-sync`) built — see "Revision: her range, and making her your own"; revised 2026-11-04 for three more people beside her, tasks 1 (`feat/companion-grandpa`), 2 (`feat/companion-aunt`) and 3 (`feat/companion-uncle`) built — see "Revision: a cast of four"
 Branch: `feat/companion-widgetbook` (PR #4782), the parent of the stack
 Builds on: [2026-06-22_bones_animation_framework.md](2026-06-22_bones_animation_framework.md)
 (the rig engine and its locked runtime decisions) and
@@ -797,7 +797,14 @@ catalog. Her default hair is the bob.
 - In the character chips and the widgetbook, labelled by the name chosen
   for her.
 
-#### 3 · the younger man
+#### 3 · `feat/companion-uncle`: the younger man, named the Uncle
+
+Named "Uncle" on 2026-11-04, a role label beside "Grandpa" and "Aunt" —
+never "grandson". His default hair is the curls. **Added in the build:** a
+`lashes` trait, off for him and the grandpa: the flicked corner lashes
+every human face had read as Lotti's on both men. `CompanionPalette`
+moved to its own file, `model/companion_palette.dart`, to keep
+`companion_look.dart` under the size cap.
 
 - His painters: the bomber jacket and tee, chinos with turned-up cuffs (the
   shared trousers), boots, the headphones and the beanie. Four outfits.

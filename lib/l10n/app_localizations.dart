@@ -6522,6 +6522,12 @@ abstract class AppLocalizations {
   /// **'Lotti'**
   String get companionSettingsCharacterLotti;
 
+  /// Name of the uncle character, a man of about thirty, shown on his chip.
+  ///
+  /// In en, this message translates to:
+  /// **'Uncle'**
+  String get companionSettingsCharacterUncle;
+
   /// Name of one hair colour the companion can have.
   ///
   /// In en, this message translates to:
@@ -6678,6 +6684,12 @@ abstract class AppLocalizations {
   /// **'Market day'**
   String get companionSettingsOutfitMarket;
 
+  /// Name of one of the uncle's outfits: an evening out.
+  ///
+  /// In en, this message translates to:
+  /// **'Night out'**
+  String get companionSettingsOutfitNight;
+
   /// Name of one of the companion's outfits.
   ///
   /// In en, this message translates to:
@@ -6689,6 +6701,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Seaside'**
   String get companionSettingsOutfitSeaside;
+
+  /// Name of one of the uncle's outfits: a day at the skate park.
+  ///
+  /// In en, this message translates to:
+  /// **'Skate park'**
+  String get companionSettingsOutfitSkate;
+
+  /// Name of one of the uncle's outfits, with a beanie: a snowy day.
+  ///
+  /// In en, this message translates to:
+  /// **'Snow day'**
+  String get companionSettingsOutfitSnow;
 
   /// Name of one of the companion's outfits.
   ///

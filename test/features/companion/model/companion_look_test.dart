@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/companion/model/companion_look.dart';
 import 'package:lotti/features/companion/model/companion_parts.dart';
@@ -22,6 +20,10 @@ void main() {
       'aunt_studio',
       'aunt_festival',
       'aunt_weekend',
+      'uncle',
+      'uncle_night',
+      'uncle_skate',
+      'uncle_snow',
       'cat',
       'cat_rock',
       'red_panda',
@@ -50,17 +52,6 @@ void main() {
       CompanionSpecies.redPanda.headScale,
       greaterThan(CompanionSpecies.cat.headScale),
     );
-  });
-
-  test("the grandmother's limbs and paws fall back to her skin", () {
-    const c = CompanionPalette();
-    expect(c.limbColor, c.skin);
-    expect(c.limbDeepColor, c.skinDeep);
-    expect(c.pawColor, c.skin);
-    expect(c.muzzleColor, c.skinLight);
-    expect(c.furMarkColor, c.skinDeep);
-    expect(c.tailColor, c.skin);
-    expect(c.tailRingColor, c.skinDeep);
   });
 
   test(
@@ -194,6 +185,7 @@ void main() {
           CompanionSpecies.grandma: CompanionLegs.bare,
           CompanionSpecies.grandpa: CompanionLegs.trousers,
           CompanionSpecies.aunt: CompanionLegs.trousers,
+          CompanionSpecies.uncle: CompanionLegs.trousers,
           CompanionSpecies.cat: CompanionLegs.paws,
           CompanionSpecies.redPanda: CompanionLegs.paws,
         },
@@ -205,6 +197,7 @@ void main() {
         CompanionSpecies.grandma,
         CompanionSpecies.grandpa,
         CompanionSpecies.aunt,
+        CompanionSpecies.uncle,
       ]);
     });
 
@@ -219,6 +212,7 @@ void main() {
       expect(CompanionSpecies.grandpa.hairStyle, CompanionHairStyle.short);
       expect(CompanionSpecies.grandma.hairStyle, CompanionHairStyle.bun);
       expect(CompanionSpecies.aunt.hairStyle, CompanionHairStyle.bob);
+      expect(CompanionSpecies.uncle.hairStyle, CompanionHairStyle.curls);
     });
 
     test('only the grandparents are aged', () {
@@ -231,9 +225,30 @@ void main() {
       );
     });
 
-    test('the grandpa wears brogues and the aunt high-tops', () {
+    test('the grandpa wears brogues, the aunt high-tops, the uncle boots', () {
       expect(CompanionSpecies.grandpa.shoes, CompanionShoes.brogues);
       expect(CompanionSpecies.aunt.shoes, CompanionShoes.highTops);
+      expect(CompanionSpecies.uncle.shoes, CompanionShoes.boots);
+    });
+
+    test('only the uncle turns his trousers up', () {
+      expect(
+        [
+          for (final s in CompanionSpecies.values)
+            if (s.cuffedTrousers) s,
+        ],
+        [CompanionSpecies.uncle],
+      );
+    });
+
+    test("the corner lashes are Lotti's and the aunt's", () {
+      expect(
+        [
+          for (final s in CompanionSpecies.choosable)
+            if (s.lashes) s,
+        ],
+        [CompanionSpecies.grandma, CompanionSpecies.aunt],
+      );
     });
   });
 
@@ -316,43 +331,6 @@ void main() {
     });
   });
 
-  test('palette copyWith changes only the garment colours it is given', () {
-    const red = Color(0xFFFF0000);
-    const base = CompanionPalette();
-    final changed = base.copyWith(
-      shirt: red,
-      shirtShade: red,
-      shirtLight: red,
-      trousers: red,
-      trousersShade: red,
-      trousersLight: red,
-      braces: red,
-      bowTie: red,
-      bowTieShade: red,
-      cap: red,
-      capShade: red,
-    );
-    expect(
-      [
-        changed.shirt,
-        changed.shirtShade,
-        changed.shirtLight,
-        changed.trousers,
-        changed.trousersShade,
-        changed.trousersLight,
-        changed.braces,
-        changed.bowTie,
-        changed.bowTieShade,
-        changed.cap,
-        changed.capShade,
-      ],
-      everyElement(red),
-    );
-    expect([changed.dress, changed.skin], [base.dress, base.skin]);
-    final kept = changed.copyWith();
-    expect([kept.shirt, kept.cap], [red, red]);
-  });
-
   group("the aunt's outfits", () {
     final hers = CompanionLook.of(CompanionSpecies.aunt);
 
@@ -424,14 +402,83 @@ void main() {
       expect(dressed.headband, isTrue);
       expect(dressed.earring, EarringKind.hoop);
     });
+  });
 
-    test('the palette changes her belt and headband alone', () {
-      const red = Color(0xFFFF0000);
-      const base = CompanionPalette();
-      final changed = base.copyWith(belt: red, headband: red);
-      expect([changed.belt, changed.headband], [red, red]);
-      expect(changed.trousers, base.trousers);
-      expect(changed.copyWith().belt, red);
+  group("the uncle's outfits", () {
+    final his = CompanionLook.of(CompanionSpecies.uncle);
+
+    test('are four, his everyday one first', () {
+      expect(his, [
+        CompanionLook.uncle,
+        CompanionLook.uncleNight,
+        CompanionLook.uncleSkate,
+        CompanionLook.uncleSnow,
+      ]);
+    });
+
+    test('wear no frames, earrings or props of the others', () {
+      for (final look in his) {
+        expect(look.earring, EarringKind.none, reason: look.id);
+        expect(look.hairStyle, CompanionHairStyle.curls, reason: look.id);
+        expect(
+          [
+            look.glasses,
+            look.sunglasses,
+            look.readingGlasses,
+            look.beret,
+            look.beads,
+            look.glove,
+            look.flatCap,
+            look.headband,
+          ],
+          everyElement(isFalse),
+          reason: look.id,
+        );
+      }
+    });
+
+    test('put the beanie on for the snow only', () {
+      expect(
+        [
+          for (final look in his)
+            if (look.beanie) look,
+        ],
+        [CompanionLook.uncleSnow],
+      );
+    });
+
+    test('no two share a jacket', () {
+      expect(his.map((l) => l.palette.jacket).toSet(), hasLength(4));
+    });
+
+    test('repeat no jacket or chino colour of anyone else', () {
+      final theirs = {
+        for (final look in CompanionLook.of(CompanionSpecies.grandma)) ...[
+          look.palette.dress,
+          look.palette.cardigan,
+        ],
+        for (final look in CompanionLook.of(CompanionSpecies.grandpa)) ...[
+          look.palette.shirt,
+          look.palette.trousers,
+        ],
+        for (final look in CompanionLook.of(CompanionSpecies.aunt))
+          look.palette.trousers,
+      };
+      for (final look in his) {
+        expect(
+          [look.palette.jacket, look.palette.trousers],
+          everyElement(isNot(isIn(theirs))),
+          reason: look.id,
+        );
+      }
+    });
+
+    test('copyWith keeps the beanie', () {
+      final dressed = CompanionLook.uncleSnow.copyWith(
+        hairStyle: CompanionHairStyle.short,
+      );
+      expect(dressed.beanie, isTrue);
+      expect(dressed.species, CompanionSpecies.uncle);
     });
   });
 }

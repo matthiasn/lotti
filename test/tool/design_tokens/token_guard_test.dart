@@ -161,6 +161,8 @@ void main() {
             'void f() { Color(0xFF445566); }',
         'lib/features/companion/model/companion_parts.dart':
             'void f() { Color(0xFF8D5A3A); }',
+        'lib/features/companion/model/companion_palette.dart':
+            'void f() { Color(0xFF4A6A8C); }',
         // Spacing in an illustration file still counts.
         'lib/features/companion/rig/stage_painter.dart':
             'void f() { Color(0xFF000000); EdgeInsets.all(8); }',

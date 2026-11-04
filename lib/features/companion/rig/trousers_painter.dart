@@ -5,8 +5,9 @@ import 'package:lotti/features/companion/rig/paint_kit.dart';
 import 'package:lotti/features/companion/rig/rig_frame.dart';
 
 /// Trousers, for every character who wears them: the legs from the hips to
-/// the shoes — brogues or high-tops, as the character's
-/// [CompanionSpecies.shoes] are — the seat and waistband, and the outline of
+/// the shoes — brogues, high-tops or boots, as the character's
+/// [CompanionSpecies.shoes] are, turned up at the hem if
+/// [CompanionSpecies.cuffedTrousers] — the seat and waistband, and the outline of
 /// the top that tucks into them. The legs hang from the pelvis, which a bounce of joy never moves;
 /// the seat rides on the torso frame, a little lifted by a bounce, and
 /// overlaps the legs' tops by far more than a bounce lifts it, so no gap
@@ -34,14 +35,83 @@ void drawTrouserLegs(Canvas canvas, RigFrame f, CompanionLook look) {
       c.trousersLight.withValues(alpha: 0.6),
       1.2,
     );
+    if (look.species.cuffedTrousers) _turnUp(canvas, c, hem);
     switch (look.species.shoes) {
       case CompanionShoes.brogues:
         _brogue(canvas, c, f.ankle(s), s);
       case CompanionShoes.highTops:
         _highTop(canvas, c, f.ankle(s), s);
+      case CompanionShoes.boots:
+        _boot(canvas, c, f.ankle(s), s);
     }
   }
 }
+
+/// A turn-up at [hem]: a band of the cloth folded back, its edges seamed,
+/// standing just above the shoe.
+void _turnUp(Canvas canvas, CompanionPalette c, Offset hem) {
+  final band = tapered(
+    hem - const Offset(0, 17),
+    hem - const Offset(0, 7),
+    27.5,
+    27,
+  );
+  fillPath(canvas, band, c.trousersLight);
+  strokePath(canvas, band, c.trousersShade, 1);
+}
+
+/// A boot: chunky, laced to above the ankle, on a thick treaded sole.
+void _boot(Canvas canvas, CompanionPalette c, Offset ankle, int s) {
+  canvas
+    ..save()
+    ..translate(ankle.dx + s * 3, ankle.dy + 4)
+    ..scale(s * 1.15, 1.15);
+  final upper = Path()
+    ..moveTo(-14, 7)
+    ..lineTo(-14, -7)
+    ..cubicTo(-9, -9, 0, -9, 5, -7)
+    ..lineTo(7, -2)
+    ..cubicTo(16, -1, 24, 2, 24, 7)
+    ..close();
+  fillPath(canvas, upper, c.shoe);
+  fillPath(
+    canvas,
+    Path()
+      ..moveTo(-14, 7)
+      ..lineTo(-14, -7)
+      ..cubicTo(-12, -8, -10, -8, -9, -8)
+      ..lineTo(-9, 7)
+      ..close(),
+    c.shoeShade,
+  );
+  // The sole and its tread, then the laces and the pull loop at the back.
+  fillPath(canvas, roundedRect(-16, 6, 42, 7.5, 2.5), _tread);
+  for (var x = -12.0; x < 24; x += 5) {
+    strokePath(
+      canvas,
+      Path()
+        ..moveTo(x, 13.5)
+        ..lineTo(x + 2, 11),
+      c.shoeShade,
+      1,
+    );
+  }
+  for (final y in const [-6.0, -3.0, 0.0]) {
+    strokePath(
+      canvas,
+      Path()
+        ..moveTo(0, y)
+        ..lineTo(6, y + 1.5),
+      _tread,
+      1.1,
+    );
+  }
+  strokePath(canvas, arc(const Offset(-14, -8), 3, 3.1, 5), c.shoeShade, 1.4);
+  canvas.restore();
+}
+
+/// A boot's rubber sole, and its laces.
+const _tread = Color(0xFF2B2622);
 
 /// A brogue: a lace-up with a toe cap, its edge punched with holes.
 void _brogue(Canvas canvas, CompanionPalette c, Offset ankle, int s) {

@@ -3907,6 +3907,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get companionSettingsCharacterLotti => 'Lotti';
 
   @override
+  String get companionSettingsCharacterUncle => 'Strejda';
+
+  @override
   String get companionSettingsHairColourAuburn => 'Kaštanová';
 
   @override
@@ -3986,10 +3989,19 @@ class AppLocalizationsCs extends AppLocalizations {
   String get companionSettingsOutfitMarket => 'Trh';
 
   @override
+  String get companionSettingsOutfitNight => 'Večer venku';
+
+  @override
   String get companionSettingsOutfitRock => 'Rock';
 
   @override
   String get companionSettingsOutfitSeaside => 'U moře';
+
+  @override
+  String get companionSettingsOutfitSkate => 'Skatepark';
+
+  @override
+  String get companionSettingsOutfitSnow => 'Sněhový den';
 
   @override
   String get companionSettingsOutfitStage => 'Pódium';

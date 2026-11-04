@@ -361,4 +361,28 @@ void main() {
       expect(worn(container), CompanionLook.aunt.id);
     });
   });
+
+  group('with the uncle chosen', () {
+    const uncle = CompanionCustomization(character: CompanionSpecies.uncle);
+    final hisOwn = CompanionLook.of(CompanionSpecies.uncle);
+
+    test('surprise me draws only his outfits, and reaches every one', () {
+      final roll = CompanionLookRoll(
+        customization: uncle,
+        picked: null,
+        seed: 7,
+      );
+      expect(roll.outfits, hisOwn);
+      final drawn = {for (var i = 0; i < 400; i++) roll.outfitFor('s-$i')};
+      expect(drawn, hisOwn.toSet());
+    });
+
+    test('next steps among his outfits and wraps from the last', () {
+      final container = containerWith(customization: uncle);
+      container
+          .read(companionOutfitProvider.notifier)
+          .next(CompanionLook.uncleSnow);
+      expect(worn(container), CompanionLook.uncle.id);
+    });
+  });
 }

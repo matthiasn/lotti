@@ -118,6 +118,17 @@ void main() {
     expect(r.count(look.palette.shirt), 0);
   });
 
+  test('paints the uncle in his jacket and chinos, never the dress', () async {
+    const look = CompanionLook.uncle;
+    final r = await _paint(
+      CompanionPainter(pose: const CompanionPose(), look: look),
+      const Size(160, 240),
+    );
+    expect(r.count(look.palette.jacket, tolerance: 12), greaterThan(300));
+    expect(r.count(look.palette.trousers), greaterThan(300));
+    expect(r.count(look.palette.dress), 0);
+  });
+
   test('paints an animal with its tail, behind the dress', () async {
     const look = CompanionLook.redPanda;
     final r = await _paint(

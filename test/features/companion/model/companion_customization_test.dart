@@ -299,6 +299,19 @@ void main() {
       );
     });
 
+    test('asCharacter gives the uncle his curls, outfit cleared', () {
+      final uncle = grandpa.asCharacter(CompanionSpecies.uncle);
+      expect(uncle.character, CompanionSpecies.uncle);
+      expect(uncle.hairStyle, CompanionHairStyle.curls);
+      expect(uncle.outfitId, isNull);
+      expect(
+        CompanionCustomization.fromJson(
+          uncle.copyWith(outfitId: () => 'uncle_snow').toJson(),
+        ).outfitId,
+        'uncle_snow',
+      );
+    });
+
     test('dresses his outfit in the chosen skin and hair', () {
       final dressed = grandpa.dress(CompanionLook.grandpaJazz);
       expect(dressed.species, CompanionSpecies.grandpa);

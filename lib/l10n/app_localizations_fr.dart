@@ -3918,6 +3918,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get companionSettingsCharacterLotti => 'Lotti';
 
   @override
+  String get companionSettingsCharacterUncle => 'Tonton';
+
+  @override
   String get companionSettingsHairColourAuburn => 'Auburn';
 
   @override
@@ -3997,10 +4000,19 @@ class AppLocalizationsFr extends AppLocalizations {
   String get companionSettingsOutfitMarket => 'Jour de marché';
 
   @override
+  String get companionSettingsOutfitNight => 'Soirée';
+
+  @override
   String get companionSettingsOutfitRock => 'Rock';
 
   @override
   String get companionSettingsOutfitSeaside => 'Bord de mer';
+
+  @override
+  String get companionSettingsOutfitSkate => 'Skatepark';
+
+  @override
+  String get companionSettingsOutfitSnow => 'Jour de neige';
 
   @override
   String get companionSettingsOutfitStage => 'Scène';

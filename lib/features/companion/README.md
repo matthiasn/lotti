@@ -2,8 +2,8 @@
 
 Lotti, the grandmother who presents the app in the pitch videos, drawn live in
 Flutter: a character who can sit in the app and talk, instead of only
-appearing in a video. A person can choose a grandpa or an aunt in her
-place, and a cat and a red panda stand in for her in the widgetbook: the same rig, another
+appearing in a video. A person can choose a grandpa, an aunt or an uncle
+in her place, and a cat and a red panda stand in for her in the widgetbook: the same rig, another
 species.
 
 **Status: first appearance, behind a flag.** With **Companion**
@@ -12,8 +12,8 @@ summary playback** on, she stands beside a task's AI summary and speaks it
 when its read-aloud control is pressed, sits in the Day page header,
 briefing the day when tapped, and greets a new user in onboarding. Everywhere
 else she is in the widgetbook only. The plan she comes from, and the branches
-still ahead (a mood read from the record, the younger man of the cast,
-talking back, nudges), is
+still ahead (a mood read from the record, a face per agent soul, talking
+back, nudges), is
 [docs/implementation_plans/2026-10-12_in_app_agent_avatar.md](../../../docs/implementation_plans/2026-10-12_in_app_agent_avatar.md).
 
 ## What it does
@@ -91,9 +91,17 @@ talking back, nudges), is
   everyday (denim blue), studio (blush pink), festival (tangerine, with a
   turquoise headband) and weekend (brick red). Her suit's legs are the
   trousers the grandpa wears, in her colour, ending in her own shoes.
+- **The uncle.** About thirty, terse and dry, in clothes of his own: a
+  bomber jacket worn open over a crew-neck tee, its collar, cuffs and hem
+  ribbed and its sleeves to the wrist, chinos turned up over lace-up boots,
+  and over-ear headphones resting round his neck. His face is young like
+  the aunt's, without the corner lashes Lotti and the aunt wear. His four
+  outfits are everyday (black over white), night out (emerald over black),
+  skate park (cherry red over grey) and snow day (plum, with a rust
+  beanie).
 - **A person makes the companion their own.** In Settings › Preferences ›
   Companion (shown with the flag) they choose the character (Lotti, the
-  grandpa or the aunt), the skin tone (six, numbered, never named after a people), the
+  grandpa, the aunt or the uncle), the skin tone (six, numbered, never named after a people), the
   hairstyle (bun, curls, afro, locs, bob, short, balding), the hair
   colour (silver, white, grey, black, brown, auburn, pink, lavender, blue),
   an outfit of the character's always worn, or "Surprise me", and the
@@ -106,7 +114,7 @@ talking back, nudges), is
   hair back to that character's own; the rest carries over. The choice is stored and synced to the person's other devices
   (`companionCustomizationProvider`), the most recent change winning.
 - **She can be an animal.** A look names its species (`CompanionSpecies`):
-  the grandmother, the grandpa, the aunt, a silver tabby cat (`cat`, `cat_rock`) or a red panda
+  the grandmother, the grandpa, the aunt, the uncle, a silver tabby cat (`cat`, `cat_rock`) or a red panda
   (`red_panda`, `red_panda_bookish`). An animal keeps her skeleton, gestures,
   moods and mouth, and swaps the hair for ears, the face for a furred head
   with a muzzle and whiskers, the shoes for paws, and gains a tail that
@@ -117,8 +125,8 @@ talking back, nudges), is
 
 | Directory | What |
 |---|---|
-| `model/` | The data: looks and their palettes, poses, gestures, hand and mouth shapes, moods, the reaction scale with its beats and last word, the faces she pulls for a moment (`companion_flourish.dart`), and the parts a person dresses her in (`companion_parts.dart`, `companion_customization.dart`) |
-| `rig/` | Drawing: the arm solver, the limb ribbon, the frames a pose resolves into, and one painter per body part, composed by `CompanionPainter`; the animals' head and tail in `animal_head_painter.dart` and `tail_painter.dart`; the hairstyles in `hair_styles_painter.dart`, the bun in `hair_painter.dart`, short and balding in `short_hair_painter.dart`; the grandpa's shirt, braces and bow tie in `grandpa_outfit_painter.dart`, his beard, moustache and cap in `grandpa_head_painter.dart`; the aunt's boiler suit and short sleeves in `aunt_outfit_painter.dart`; and trousers, brogues, high-tops and the outline of a top tucked into them in `trousers_painter.dart` |
+| `model/` | The data: looks and their palettes (`companion_palette.dart`), poses, gestures, hand and mouth shapes, moods, the reaction scale with its beats and last word, the faces she pulls for a moment (`companion_flourish.dart`), and the parts a person dresses her in (`companion_parts.dart`, `companion_customization.dart`) |
+| `rig/` | Drawing: the arm solver, the limb ribbon, the frames a pose resolves into, and one painter per body part, composed by `CompanionPainter`; the animals' head and tail in `animal_head_painter.dart` and `tail_painter.dart`; the hairstyles in `hair_styles_painter.dart`, the bun in `hair_painter.dart`, short and balding in `short_hair_painter.dart`; the grandpa's shirt, braces and bow tie in `grandpa_outfit_painter.dart`, his beard, moustache and cap in `grandpa_head_painter.dart`; the aunt's boiler suit and short sleeves in `aunt_outfit_painter.dart`; the uncle's jacket, tee, headphones and jacket sleeves in `uncle_outfit_painter.dart`; and trousers, their turn-ups, brogues, high-tops, boots and the outline of a top tucked into them in `trousers_painter.dart` |
 | `animation/` | Motion: `CompanionAnimator` turns time, a mood, gestures and speech into a pose per frame; the mouth tracks; `PlayheadClock`, the playhead between a player's reports |
 | `state/` | `loadSpokenTrack`: the mouth for a clip the voice plays, read once off the UI isolate; the outfit pick, her stored customization, and `companionLookRollProvider`, which dresses her |
 | `ui/` | `CompanionView`, the live widget, and its `CompanionController`; `CompanionSpeaker`, the view bound to the on-device voice; `settings/`, the page that customizes her |
@@ -150,7 +158,7 @@ come from the design system's tokens.
 ## Trying her out
 
 Run the widgetbook (`fvm flutter run -d <device> -t lib/widgetbook.dart`) and
-open **Companion → Lotti (grandma)**, **Grandpa**, **Aunt**, **Cat** or **Red panda**; each has the
+open **Companion → Lotti (grandma)**, **Grandpa**, **Aunt**, **Uncle**, **Cat** or **Red panda**; each has the
 same use cases, its look knob limited to its own looks:
 
 - **Playground**: the look, mood, framing, stage, smoothing and sass as

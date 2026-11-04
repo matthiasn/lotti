@@ -11,9 +11,10 @@ import 'package:lotti/features/companion/rig/paint_kit.dart';
 import 'package:lotti/features/companion/rig/ribbon.dart';
 import 'package:lotti/features/companion/rig/rig_frame.dart';
 import 'package:lotti/features/companion/rig/trousers_painter.dart';
+import 'package:lotti/features/companion/rig/uncle_outfit_painter.dart';
 
 /// The body below the head: legs and shoes (an animal's paws, the trousers
-/// of the grandpa and the aunt), the neck, Lotti's dress with its cardigan and scarf, and the
+/// of the grandpa, the aunt and the uncle), the neck, Lotti's dress with its cardigan and scarf, and the
 /// arms with their sleeves and hands.
 
 const handScale = 1.45;
@@ -343,7 +344,8 @@ void _beads(Canvas canvas, RigFrame f, CompanionPalette c) {
 
 /// One arm: the bare arm as one ribbon, the hand at the wrist, and the
 /// sleeve: the cardigan's pushed up short of the elbow, the grandpa's shirt
-/// rolled to the forearm, or the aunt's short sleeve.
+/// rolled to the forearm, the aunt's short sleeve, or the uncle's jacket
+/// sleeve to the wrist.
 void drawArm(
   Canvas canvas,
   RigFrame f,
@@ -390,6 +392,8 @@ void drawArm(
       drawShirtSleeve(canvas, spine, side, c, tension: armTension);
     case CompanionSpecies.aunt:
       drawShortSleeve(canvas, spine, side, c, tension: armTension);
+    case CompanionSpecies.uncle:
+      drawJacketSleeve(canvas, spine, side, c, tension: armTension);
     case _:
       _sleeve(canvas, spine, side, c);
   }

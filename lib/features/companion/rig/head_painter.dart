@@ -77,6 +77,7 @@ void drawHead(Canvas canvas, RigFrame f, CompanionLook look) {
   if (look.beret) _beret(canvas, c, yaw);
   if (look.flatCap) drawFlatCap(canvas, c, yaw);
   if (look.headband) _headband(canvas, c, yaw);
+  if (look.beanie) _beanie(canvas, c, yaw);
   canvas.restore();
 }
 
@@ -131,6 +132,7 @@ void _humanFace(Canvas canvas, CompanionLook look, CompanionPose p) {
       p.blinkOf(s),
       p.squint,
       p.gaze,
+      lashes: look.species.lashes,
     );
     drawBrow(
       canvas,
@@ -402,6 +404,40 @@ void _headband(Canvas canvas, CompanionPalette c, double yaw) {
     const Color(0x55FFFFFF),
     1.4,
   );
+}
+
+/// A knitted beanie over the crown: a soft dome with ribs running up it,
+/// its brim folded up over the brow, in the cap's colours.
+void _beanie(Canvas canvas, CompanionPalette c, double yaw) {
+  final x = yaw * 3;
+  final dome = Path()
+    ..moveTo(x - 52, -38)
+    ..cubicTo(x - 56, -80, x - 24, -100, x, -100)
+    ..cubicTo(x + 24, -100, x + 56, -80, x + 52, -38)
+    ..close();
+  fillPath(canvas, dome, c.cap);
+  canvas
+    ..save()
+    ..clipPath(dome);
+  for (var k = -4; k <= 4; k++) {
+    strokePath(
+      canvas,
+      Path()
+        ..moveTo(x + k * 11, -38)
+        ..quadraticBezierTo(x + k * 9, -80, x + k * 3, -100),
+      c.capShade.withValues(alpha: 0.6),
+      1.2,
+    );
+  }
+  canvas.restore();
+  final brim = Path()
+    ..moveTo(x - 53, -50)
+    ..cubicTo(x - 20, -56, x + 20, -56, x + 53, -50)
+    ..lineTo(x + 52, -34)
+    ..cubicTo(x + 20, -40, x - 20, -40, x - 52, -34)
+    ..close();
+  fillPath(canvas, brim, c.capShade);
+  strokePath(canvas, brim, Color.lerp(c.capShade, c.cap, 0.5)!, 1);
 }
 
 /// A red beret pulled down to the left, its stalk on top.

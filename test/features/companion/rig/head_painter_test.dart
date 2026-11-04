@@ -293,4 +293,36 @@ void main() {
       expect((await _head(aunt)).count(band), 0);
     });
   });
+
+  group('the uncle', () {
+    const uncle = CompanionLook.uncle;
+
+    test('wears the beanie on a snow day only', () async {
+      const snow = CompanionLook.uncleSnow;
+      final beanie = snow.palette.cap;
+      expect(
+        (await _head(snow)).count(beanie),
+        greaterThan((await _head(uncle)).count(beanie) + 2000),
+      );
+    });
+
+    test('has no corner lashes; the aunt, with the same eyes, has', () async {
+      final ink = uncle.palette.ink;
+      final his = (await _head(uncle)).count(ink, tolerance: 12);
+      final hers = (await _head(CompanionLook.aunt)).count(ink, tolerance: 12);
+      expect(hers, greaterThan(his + 10));
+    });
+
+    test('has the younger face: no glasses, no beard', () async {
+      final r = await _head(uncle);
+      expect(
+        near(r.at(240, 260 - 18), uncle.palette.skin, tolerance: 8),
+        isTrue,
+      );
+      expect(
+        near(r.at(240, 260 + 30), uncle.palette.hair, tolerance: 8),
+        isFalse,
+      );
+    });
+  });
 }

@@ -38,7 +38,7 @@ class CompanionSettingsPage extends StatelessWidget {
 }
 
 /// Where a person makes the companion their own: who it is (Lotti, the
-/// grandpa or the aunt), the outfit worn or none, so a fresh one is picked every time it
+/// grandpa, the aunt or the uncle), the outfit worn or none, so a fresh one is picked every time it
 /// is shown, the skin tone, the hairstyle and its colour, and how much sass
 /// it reads with.
 ///
@@ -279,6 +279,7 @@ String characterName(AppLocalizations m, CompanionSpecies species) =>
     switch (species) {
       CompanionSpecies.grandpa => m.companionSettingsCharacterGrandpa,
       CompanionSpecies.aunt => m.companionSettingsCharacterAunt,
+      CompanionSpecies.uncle => m.companionSettingsCharacterUncle,
       _ => m.companionSettingsCharacterLotti,
     };
 
@@ -323,6 +324,9 @@ String outfitName(AppLocalizations m, CompanionLook outfit) =>
       'aunt_studio' => m.companionSettingsOutfitStudio,
       'aunt_festival' => m.companionSettingsOutfitFestival,
       'aunt_weekend' => m.companionSettingsOutfitWeekend,
+      'uncle_night' => m.companionSettingsOutfitNight,
+      'uncle_skate' => m.companionSettingsOutfitSkate,
+      'uncle_snow' => m.companionSettingsOutfitSnow,
       _ => m.companionSettingsOutfitEveryday,
     };
 

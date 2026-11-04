@@ -59,6 +59,7 @@ void main() {
       'Lotti (grandma)',
       'Grandpa',
       'Aunt',
+      'Uncle',
       'Cat',
       'Red panda',
     ]);

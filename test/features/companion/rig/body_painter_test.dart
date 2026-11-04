@@ -189,4 +189,29 @@ void main() {
       },
     );
   });
+
+  group('the uncle', () {
+    const look = CompanionLook.uncle;
+    final p = look.palette;
+
+    test('stands in chinos and boots, no bare leg', () async {
+      final r = await _body((c, f) => drawLegs(c, f, look));
+      expect(r.count(p.trousers), greaterThan(1500));
+      expect(r.count(p.shoe), greaterThan(150));
+      expect(r.count(p.skin), 0);
+    });
+
+    test('his jacket sleeve covers his arm to the wrist: less bare arm than '
+        'the aunt', () async {
+      Future<int> skin(CompanionLook l) async => (await _body(
+        (c, f) => drawArm(c, f, l, const CompanionPose().right, 1),
+      )).count(l.palette.skin);
+      expect(await skin(look), lessThan(await skin(CompanionLook.aunt)));
+      final r = await _body(
+        (c, f) => drawArm(c, f, look, const CompanionPose().right, 1),
+      );
+      expect(r.count(p.jacket, tolerance: 20), greaterThan(300));
+      expect(r.count(p.rib), greaterThan(20));
+    });
+  });
 }

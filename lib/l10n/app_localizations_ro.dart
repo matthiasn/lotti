@@ -3926,6 +3926,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get companionSettingsCharacterLotti => 'Lotti';
 
   @override
+  String get companionSettingsCharacterUncle => 'Unchiul';
+
+  @override
   String get companionSettingsHairColourAuburn => 'Arămiu';
 
   @override
@@ -4005,10 +4008,19 @@ class AppLocalizationsRo extends AppLocalizations {
   String get companionSettingsOutfitMarket => 'Zi de piață';
 
   @override
+  String get companionSettingsOutfitNight => 'Ieșire în oraș';
+
+  @override
   String get companionSettingsOutfitRock => 'Rock';
 
   @override
   String get companionSettingsOutfitSeaside => 'La mare';
+
+  @override
+  String get companionSettingsOutfitSkate => 'Skatepark';
+
+  @override
+  String get companionSettingsOutfitSnow => 'Zi cu zăpadă';
 
   @override
   String get companionSettingsOutfitStage => 'Scenă';

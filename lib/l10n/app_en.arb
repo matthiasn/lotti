@@ -2546,6 +2546,10 @@
   "@companionSettingsCharacterLotti": {
     "description": "Name of the grandmother character, Lotti; a proper name, kept as is."
   },
+  "companionSettingsCharacterUncle": "Uncle",
+  "@companionSettingsCharacterUncle": {
+    "description": "Name of the uncle character, a man of about thirty, shown on his chip."
+  },
   "companionSettingsHairColourAuburn": "Auburn",
   "@companionSettingsHairColourAuburn": {
     "description": "Name of one hair colour the companion can have."
@@ -2650,6 +2654,10 @@
   "@companionSettingsOutfitMarket": {
     "description": "Name of one of the grandfather's outfits, with a flat cap: a market day."
   },
+  "companionSettingsOutfitNight": "Night out",
+  "@companionSettingsOutfitNight": {
+    "description": "Name of one of the uncle's outfits: an evening out."
+  },
   "companionSettingsOutfitRock": "Rock",
   "@companionSettingsOutfitRock": {
     "description": "Name of one of the companion's outfits."
@@ -2657,6 +2665,14 @@
   "companionSettingsOutfitSeaside": "Seaside",
   "@companionSettingsOutfitSeaside": {
     "description": "Name of one of the grandfather's outfits: a day by the sea."
+  },
+  "companionSettingsOutfitSkate": "Skate park",
+  "@companionSettingsOutfitSkate": {
+    "description": "Name of one of the uncle's outfits: a day at the skate park."
+  },
+  "companionSettingsOutfitSnow": "Snow day",
+  "@companionSettingsOutfitSnow": {
+    "description": "Name of one of the uncle's outfits, with a beanie: a snowy day."
   },
   "companionSettingsOutfitStage": "Keynote",
   "@companionSettingsOutfitStage": {
