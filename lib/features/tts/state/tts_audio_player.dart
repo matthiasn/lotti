@@ -65,11 +65,11 @@ class MediaKitTtsAudioPlayer implements TtsAudioPlayer {
     if (generation != _generation) return;
     await _player.setRate(speed);
     if (generation != _generation) return;
+    // A stop while the focus is being taken releases it after this claim —
+    // the focus runs claims and releases in turn — so a cancelled play never
+    // releases on its own: by then a newer play may hold the focus.
     await _focus.acquire();
-    if (generation != _generation) {
-      await _focus.release();
-      return;
-    }
+    if (generation != _generation) return;
     await _player.play();
   }
 

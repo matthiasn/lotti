@@ -112,7 +112,10 @@ paused podcast resumes.
 and releases in turn on one queue: a clip's end releases the session without
 anyone awaiting it, and a claim for the next clip made meanwhile would
 otherwise reach the platform first and be undone by the stale deactivation.
-`settled` completes once every step so far has run, and the player exposes
+Because a stop's release always queues after any claim it must undo, a
+play cancelled while its claim is pending never releases on its own: by the
+time its claim returns, a newer play may hold the session, and that release
+would deactivate it. `settled` completes once every step so far has run, and the player exposes
 it (`TtsAudioPlayer.settled`). `stopReadAloudForRecording` awaits it before
 a microphone opens — also after a clip that already ended, when there is no
 voice to stop — so a late deactivation never lands under the recording. It

@@ -166,19 +166,38 @@ void main() {
       expect(focus.calls, ['release']);
     });
 
+    test('a stop while the focus is being taken never plays, and its own '
+        'release gives the claim back', () async {
+      final taking = Completer<void>();
+      focus.acquiring = taking.future;
+      final audio = withFocus();
+      final play = audio.play(File('/tmp/tts.wav'), speed: 1);
+      await pumpEventQueue();
+      await audio.stop();
+      taking.complete();
+      await play;
+      verifyNever(() => player.play());
+      expect(focus.calls, ['acquire', 'release']);
+    });
+
+    // The regression: a play cancelled while taking the focus released it
+    // once more when the claim came back — after a newer play had claimed
+    // it, deactivating the newer play's session.
     test(
-      'a stop while the focus is being taken gives it back, never plays',
+      'a cancelled play never releases the focus a newer play holds',
       () async {
         final taking = Completer<void>();
         focus.acquiring = taking.future;
         final audio = withFocus();
-        final play = audio.play(File('/tmp/tts.wav'), speed: 1);
+        final first = audio.play(File('/tmp/a.wav'), speed: 1);
         await pumpEventQueue();
         await audio.stop();
+        focus.acquiring = null;
+        await audio.play(File('/tmp/b.wav'), speed: 1);
         taking.complete();
-        await play;
-        verifyNever(() => player.play());
-        expect(focus.calls, ['acquire', 'release', 'release']);
+        await first;
+        expect(focus.calls, ['acquire', 'release', 'acquire']);
+        verify(() => player.play()).called(1);
       },
     );
 
