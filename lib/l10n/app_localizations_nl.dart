@@ -3912,7 +3912,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get companionSettingsEyeColourLabel => 'Oogkleur';
 
   @override
-  String get companionSettingsEyeColourMatch => 'Passend bij huid';
+  String get companionSettingsEyeColourMatch => 'Passend bij huidtint';
 
   @override
   String get companionSettingsHairColourAuburn => 'Koperrood';
@@ -4108,7 +4108,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get configFlagEnableCompanionDescription =>
-      'Toon naast de AI-samenvatting een personage dat hem voorleest, met haar mond op de stem. Vereist AI samenvatting afspelen.';
+      'Toon naast de AI-samenvatting een personage dat hem voorleest, met de mond op de stem. Vereist AI samenvatting afspelen.';
 
   @override
   String get configFlagEnableDailyOs => 'DailyOS inschakelen';

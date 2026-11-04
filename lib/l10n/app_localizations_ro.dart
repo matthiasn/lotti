@@ -3951,13 +3951,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get companionSettingsEyeColourGrey => 'Gri';
 
   @override
-  String get companionSettingsEyeColourHazel => 'Alune';
+  String get companionSettingsEyeColourHazel => 'Aluniu';
 
   @override
   String get companionSettingsEyeColourLabel => 'Culoarea ochilor';
 
   @override
-  String get companionSettingsEyeColourMatch => 'Ca pielea';
+  String get companionSettingsEyeColourMatch => 'Ca nuanța pielii';
 
   @override
   String get companionSettingsHairColourAuburn => 'Arămiu';
@@ -4082,7 +4082,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get companionSettingsSassDescription =>
-      'Cum reacționează însoțitorul la ceea ce vă citește: o încurajare caldă, o tachinare poznașă sau îndrăzneală din plin, cu ochii dați peste cap și privirea pe deasupra ochelarilor.';
+      'Cum reacționează personajul la ceea ce vă citește: o încurajare caldă, o tachinare poznașă sau îndrăzneală din plin, cu ochii dați peste cap și privirea pe deasupra ochelarilor.';
 
   @override
   String get companionSettingsSassLabel => 'Îndrăzneală';
@@ -4107,7 +4107,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get companionSettingsVoiceDescription =>
-      'Întrebați ceva cu vocea și însoțitorul vă răspunde cu voce tare. O întrebare scrisă primește întotdeauna un răspuns scris.';
+      'Întrebați ceva cu vocea și personajul vă răspunde cu voce tare. O întrebare scrisă primește întotdeauna un răspuns scris.';
 
   @override
   String get companionSettingsVoiceLabel => 'Voce';

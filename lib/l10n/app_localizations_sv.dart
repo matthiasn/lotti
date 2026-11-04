@@ -3854,7 +3854,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get companionSettingsCharacterDescription =>
-      'Vem som håller dig sällskap. Var och en har egna kläder; hud, hårfärg och kaxighet blir som du har valt dem.';
+      'Vem som håller dig sällskap. Var och en har egna kläder; hud, hårfärg och kaxighet förblir som du har valt dem.';
 
   @override
   String get companionSettingsCharacterGrandpa => 'Morfar';
@@ -3866,7 +3866,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get companionSettingsCharacterLotti => 'Lotti';
 
   @override
-  String get companionSettingsCharacterUncle => 'Morbror';
+  String get companionSettingsCharacterUncle => 'Onkel';
 
   @override
   String get companionSettingsEyeColourAmber => 'Bärnsten';
@@ -3875,23 +3875,23 @@ class AppLocalizationsSv extends AppLocalizations {
   String get companionSettingsEyeColourBlue => 'Blå';
 
   @override
-  String get companionSettingsEyeColourBrown => 'Bruna';
+  String get companionSettingsEyeColourBrown => 'Brun';
 
   @override
-  String get companionSettingsEyeColourDarkBrown => 'Mörkbruna';
+  String get companionSettingsEyeColourDarkBrown => 'Mörkbrun';
 
   @override
   String get companionSettingsEyeColourDescription =>
       'Matchar hudtonen tills du väljer en färg.';
 
   @override
-  String get companionSettingsEyeColourGreen => 'Gröna';
+  String get companionSettingsEyeColourGreen => 'Grön';
 
   @override
   String get companionSettingsEyeColourGrey => 'Grå';
 
   @override
-  String get companionSettingsEyeColourHazel => 'Nötbruna';
+  String get companionSettingsEyeColourHazel => 'Nötbrun';
 
   @override
   String get companionSettingsEyeColourLabel => 'Ögonfärg';
@@ -4022,7 +4022,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get companionSettingsSassDescription =>
-      'Hur din följeslagare tar det den läser för dig: en varm peppning, en busig retning eller kaxighet på full styrka, med himlande ögon och blicken över glasögonen.';
+      'Hur din följeslagare reagerar på det som läses upp för dig: en varm peppning, en busig retning eller kaxighet på full styrka, med himlande ögon och blicken över glasögonen.';
 
   @override
   String get companionSettingsSassLabel => 'Kaxighet';

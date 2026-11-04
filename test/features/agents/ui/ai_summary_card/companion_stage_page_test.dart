@@ -243,7 +243,7 @@ void main() {
     expect(worn(), companionOutfits.first.id);
 
     final outfit = find.byKey(const ValueKey('companionStageOutfit'));
-    expect(find.bySemanticsLabel('Change her outfit'), findsOneWidget);
+    expect(find.bySemanticsLabel('Change outfit'), findsOneWidget);
     await tester.tap(outfit);
     await tester.pump();
     expect(worn(), companionOutfits[1].id);

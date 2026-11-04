@@ -3867,23 +3867,23 @@ class AppLocalizationsDa extends AppLocalizations {
   String get companionSettingsEyeColourBlue => 'Blå';
 
   @override
-  String get companionSettingsEyeColourBrown => 'Brune';
+  String get companionSettingsEyeColourBrown => 'Brun';
 
   @override
-  String get companionSettingsEyeColourDarkBrown => 'Mørkebrune';
+  String get companionSettingsEyeColourDarkBrown => 'Mørkebrun';
 
   @override
   String get companionSettingsEyeColourDescription =>
       'Passer til hudtonen, indtil du vælger en farve.';
 
   @override
-  String get companionSettingsEyeColourGreen => 'Grønne';
+  String get companionSettingsEyeColourGreen => 'Grøn';
 
   @override
   String get companionSettingsEyeColourGrey => 'Grå';
 
   @override
-  String get companionSettingsEyeColourHazel => 'Nøddebrune';
+  String get companionSettingsEyeColourHazel => 'Nøddebrun';
 
   @override
   String get companionSettingsEyeColourLabel => 'Øjenfarve';
@@ -3980,7 +3980,7 @@ class AppLocalizationsDa extends AppLocalizations {
   String get companionSettingsOutfitMarket => 'Markedsdag';
 
   @override
-  String get companionSettingsOutfitNight => 'Byen';
+  String get companionSettingsOutfitNight => 'Aften i byen';
 
   @override
   String get companionSettingsOutfitRock => 'Rock';

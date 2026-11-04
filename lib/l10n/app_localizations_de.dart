@@ -15074,7 +15074,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsCompanionSubtitle => 'Figur, Haut, Haare und Kleidung';
 
   @override
-  String get settingsCompanionTitle => 'Begleiterin';
+  String get settingsCompanionTitle => 'Begleitung';
 
   @override
   String get settingsConflictsTitle => 'Synchronisierungskonflikte';

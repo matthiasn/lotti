@@ -4006,7 +4006,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get companionSettingsOutfitDescription =>
-      'Elige una ropa para siempre, o recibe una nueva cada vez que abras la app.';
+      'Elige el conjunto que llevará tu personaje, o recibe uno nuevo cada vez que abras la app.';
 
   @override
   String get companionSettingsOutfitEveryday => 'Diario';
@@ -4064,7 +4064,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get companionSettingsSassDescription =>
-      'Cómo se toma tu compañía lo que te lee: un ánimo cálido, una broma pícara o descaro total, con los ojos en blanco y la mirada por encima de las gafas.';
+      'Cómo reacciona tu personaje a lo que te lee: con ánimo cálido, bromas pícaras o descaro total, con los ojos en blanco y la mirada por encima de las gafas.';
 
   @override
   String get companionSettingsSassLabel => 'Descaro';
@@ -4089,7 +4089,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get companionSettingsVoiceDescription =>
-      'Pregunta algo por voz y tu compañía te responderá en voz alta. Una pregunta escrita siempre recibe una respuesta escrita.';
+      'Pregunta algo por voz y tu personaje te responderá en voz alta. Una pregunta escrita siempre recibe una respuesta escrita.';
 
   @override
   String get companionSettingsVoiceLabel => 'Voz';
@@ -15153,7 +15153,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get settingsCompanionSubtitle => 'Personaje, piel, pelo y ropa';
 
   @override
-  String get settingsCompanionTitle => 'Compañera';
+  String get settingsCompanionTitle => 'Acompañante';
 
   @override
   String get settingsConflictsTitle => 'Conflictos de Sincronización';

@@ -1631,7 +1631,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aiCardCompanionOpenFullScreen => 'View companion full screen';
 
   @override
-  String get aiCardCompanionStageNextOutfit => 'Change her outfit';
+  String get aiCardCompanionStageNextOutfit => 'Change outfit';
 
   @override
   String get aiCardCompanionStageTitle => 'Companion, full screen';
@@ -3999,7 +3999,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get companionSettingsSassDescription =>
-      'How your companion takes what it reads to you: a warm cheer, a cheeky tease, or full sass, with eye rolls and a look over the glasses.';
+      'How your companion reacts to what it reads aloud: warm encouragement, cheeky teasing, or full sass, with eye rolls and a look over the glasses.';
 
   @override
   String get companionSettingsSassLabel => 'Sass';
@@ -4069,7 +4069,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get configFlagEnableCompanionDescription =>
-      'Show a character beside the AI summary who reads it aloud, her lips moving with the voice. Needs AI summary playback.';
+      'Show a character beside the AI summary who reads it aloud, lips moving with the voice. Needs AI summary playback.';
 
   @override
   String get configFlagEnableDailyOs => 'Enable DailyOS';

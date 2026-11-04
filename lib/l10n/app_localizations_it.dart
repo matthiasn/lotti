@@ -3977,7 +3977,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get companionSettingsHairStyleAfro => 'Afro';
 
   @override
-  String get companionSettingsHairStyleBalding => 'Calvizie';
+  String get companionSettingsHairStyleBalding => 'Calvo in cima';
 
   @override
   String get companionSettingsHairStyleBob => 'Caschetto';
@@ -4066,7 +4066,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get companionSettingsSassDescription =>
-      'Come il tuo compagno prende quello che ti legge: un incoraggiamento caloroso, una presa in giro birichina o pepe al completo, occhi al cielo e sguardo da sopra gli occhiali.';
+      'Come il tuo personaggio reagisce a quello che ti legge: un incoraggiamento caloroso, una presa in giro birichina o pepe al completo, occhi al cielo e sguardo da sopra gli occhiali.';
 
   @override
   String get companionSettingsSassLabel => 'Pepe';
@@ -4091,7 +4091,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get companionSettingsVoiceDescription =>
-      'Chiedi qualcosa a voce e il tuo compagno risponde ad alta voce. Una domanda scritta riceve sempre una risposta scritta.';
+      'Chiedi qualcosa a voce e il tuo personaggio risponde ad alta voce. Una domanda scritta riceve sempre una risposta scritta.';
 
   @override
   String get companionSettingsVoiceLabel => 'Voce';

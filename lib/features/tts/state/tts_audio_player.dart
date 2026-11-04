@@ -70,14 +70,24 @@ class MediaKitTtsAudioPlayer implements TtsAudioPlayer {
     // releases on its own: by then a newer play may hold the focus.
     await _focus.acquire();
     if (generation != _generation) return;
-    await _player.play();
+    try {
+      await _player.play();
+    } on Object {
+      // A clip that cannot start gives the session straight back, so other
+      // apps are not left ducked under a voice that never spoke.
+      await _focus.release();
+      rethrow;
+    }
   }
 
   @override
   Future<void> stop() async {
     _generation++;
-    await _player.stop();
-    await _focus.release();
+    try {
+      await _player.stop();
+    } finally {
+      await _focus.release();
+    }
   }
 
   @override
@@ -96,9 +106,12 @@ class MediaKitTtsAudioPlayer implements TtsAudioPlayer {
   @override
   Future<void> dispose() async {
     _generation++;
-    await _finished.cancel();
-    await _player.dispose();
-    await _focus.release();
+    try {
+      await _finished.cancel();
+      await _player.dispose();
+    } finally {
+      await _focus.release();
+    }
   }
 }
 

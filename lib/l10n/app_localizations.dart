@@ -2865,7 +2865,7 @@ abstract class AppLocalizations {
   /// Label of the button on the companion's full-screen stage that changes her into her next outfit.
   ///
   /// In en, this message translates to:
-  /// **'Change her outfit'**
+  /// **'Change outfit'**
   String get aiCardCompanionStageNextOutfit;
 
   /// Screen-reader name of the companion's full-screen view, announced when it opens.
@@ -6831,7 +6831,7 @@ abstract class AppLocalizations {
   /// Explains the companion's sass setting: warm, cheeky, or fully sassy reactions to what she reads.
   ///
   /// In en, this message translates to:
-  /// **'How your companion takes what it reads to you: a warm cheer, a cheeky tease, or full sass, with eye rolls and a look over the glasses.'**
+  /// **'How your companion reacts to what it reads aloud: warm encouragement, cheeky teasing, or full sass, with eye rolls and a look over the glasses.'**
   String get companionSettingsSassDescription;
 
   /// Heading of the companion setting for how much sass she reacts with while reading aloud.
@@ -6951,7 +6951,7 @@ abstract class AppLocalizations {
   /// No description provided for @configFlagEnableCompanionDescription.
   ///
   /// In en, this message translates to:
-  /// **'Show a character beside the AI summary who reads it aloud, her lips moving with the voice. Needs AI summary playback.'**
+  /// **'Show a character beside the AI summary who reads it aloud, lips moving with the voice. Needs AI summary playback.'**
   String get configFlagEnableCompanionDescription;
 
   /// No description provided for @configFlagEnableDailyOs.

@@ -3888,7 +3888,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get companionSettingsCharacterDescription =>
-      'Quem te faz companhia. Cada personagem tem a sua roupa; a pele, a cor do cabelo e o atrevimento ficam como os escolheste.';
+      'Quem te faz companhia. Cada personagem tem as suas roupas; a pele, a cor do cabelo e o atrevimento ficam como os escolheste.';
 
   @override
   String get companionSettingsCharacterGrandpa => 'Avô';
@@ -3931,7 +3931,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get companionSettingsEyeColourLabel => 'Cor dos olhos';
 
   @override
-  String get companionSettingsEyeColourMatch => 'Como a pele';
+  String get companionSettingsEyeColourMatch => 'Como o tom de pele';
 
   @override
   String get companionSettingsHairColourAuburn => 'Ruivo';
@@ -15104,7 +15104,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get settingsCompanionSubtitle => 'Personagem, pele, cabelo e roupa';
 
   @override
-  String get settingsCompanionTitle => 'Companheira';
+  String get settingsCompanionTitle => 'Acompanhante';
 
   @override
   String get settingsConflictsTitle => 'Conflitos de sincronização';

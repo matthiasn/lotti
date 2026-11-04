@@ -201,6 +201,28 @@ void main() {
       },
     );
 
+    test('is given back, and the error passed on, when the clip cannot '
+        'start', () async {
+      when(() => player.play()).thenThrow(StateError('no output'));
+      await expectLater(
+        withFocus().play(File('/tmp/tts.wav'), speed: 1),
+        throwsStateError,
+      );
+      expect(focus.calls, ['acquire', 'release']);
+    });
+
+    test(
+      'is given back even when the player fails to stop or dispose',
+      () async {
+        when(() => player.stop()).thenThrow(StateError('stuck'));
+        when(() => player.dispose()).thenThrow(StateError('gone'));
+        final audio = withFocus();
+        await expectLater(audio.stop(), throwsStateError);
+        await expectLater(audio.dispose(), throwsStateError);
+        expect(focus.calls, ['release', 'release']);
+      },
+    );
+
     test('is given back on dispose, and the end of a clip after it is not '
         'heard', () async {
       final audio = withFocus();

@@ -1209,7 +1209,7 @@
   "@aiCardCompanionOpenFullScreen": {
     "description": "Tooltip and screen-reader label on the companion's bust in the AI summary card header: opens her full-screen view."
   },
-  "aiCardCompanionStageNextOutfit": "Change her outfit",
+  "aiCardCompanionStageNextOutfit": "Change outfit",
   "@aiCardCompanionStageNextOutfit": {
     "description": "Label of the button on the companion's full-screen stage that changes her into her next outfit."
   },
@@ -2750,7 +2750,7 @@
   "@companionSettingsSassCheeky": {
     "description": "Sass level: teasing, with a smirk, a raised brow or a side-eye."
   },
-  "companionSettingsSassDescription": "How your companion takes what it reads to you: a warm cheer, a cheeky tease, or full sass, with eye rolls and a look over the glasses.",
+  "companionSettingsSassDescription": "How your companion reacts to what it reads aloud: warm encouragement, cheeky teasing, or full sass, with eye rolls and a look over the glasses.",
   "@companionSettingsSassDescription": {
     "description": "Explains the companion's sass setting: warm, cheeky, or fully sassy reactions to what she reads."
   },
@@ -2793,7 +2793,7 @@
   "configFlagEnableAiSummaryTts": "AI summary playback",
   "configFlagEnableAiSummaryTtsDescription": "Show the local text-to-speech button on task AI summaries. Requires an installed Supertonic TTS model.",
   "configFlagEnableCompanion": "Companion",
-  "configFlagEnableCompanionDescription": "Show a character beside the AI summary who reads it aloud, her lips moving with the voice. Needs AI summary playback.",
+  "configFlagEnableCompanionDescription": "Show a character beside the AI summary who reads it aloud, lips moving with the voice. Needs AI summary playback.",
   "configFlagEnableDailyOs": "Enable DailyOS",
   "configFlagEnableDailyOsDescription": "Show the DailyOS page in the main navigation.",
   "configFlagEnableDashboardsPage": "Enable Dashboards page",

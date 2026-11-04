@@ -85,8 +85,8 @@ back, nudges), is
   shape she has: the beard is drawn under the mouth and the moustache over
   it, so every shape still reads, and his trousers hang from the pelvis,
   as her legs do, so a bounce of joy lifts his shirt and never parts it
-  from them. He and the two younger people still to come are planned in
-  "Revision: a cast of four" of the plan above.
+  from them. He, the aunt and the uncle are planned in "Revision: a cast
+  of four" of the plan above.
 - **The aunt.** About forty, energetic, and dressed in none of the
   others' clothes: a boiler suit in one colour from collar to ankle, zipped
   to a belted waist with a flapped chest pocket, short sleeves turned up

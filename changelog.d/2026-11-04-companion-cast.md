@@ -17,7 +17,7 @@
   are everyday, night out, skate park, and snow day with a beanie.
 - **Two more hairstyles for the companion: short and balding.** Every
   character can wear them, and the hairstyle picker now shows its choices as
-  buttons that wrap, so all seven fit on a phone.
+  buttons that wrap, so every style fits on a phone.
 - **The companion's eyes have a colour of their own.** They match the skin
   tone by default — no more blue eyes on every tone — and Settings ›
   Companion lets you pick dark brown, brown, hazel, amber, green, grey or

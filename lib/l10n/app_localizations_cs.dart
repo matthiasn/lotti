@@ -15162,7 +15162,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settingsCompanionSubtitle => 'Postava, pleť, vlasy a oblečení';
 
   @override
-  String get settingsCompanionTitle => 'Společnice';
+  String get settingsCompanionTitle => 'Společník';
 
   @override
   String get settingsConflictsTitle => 'Konflikty synchronizace';
