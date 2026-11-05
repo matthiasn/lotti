@@ -3941,7 +3941,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get companionSettingsEyeColourDarkBrown => 'Căprui închis';
 
   @override
-  String get companionSettingsEyeColourGreen => 'Verde';
+  String get companionSettingsEyeColourGreen => 'Verzi';
 
   @override
   String get companionSettingsEyeColourGrey => 'Gri';
