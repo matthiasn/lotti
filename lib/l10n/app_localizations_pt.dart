@@ -1649,13 +1649,14 @@ class AppLocalizationsPt extends AppLocalizations {
   String get aiCapabilityChipTranscription => 'Transcrição';
 
   @override
-  String get aiCardCompanionOpenFullScreen => 'Ver companheira em tela cheia';
+  String get aiCardCompanionOpenFullScreen =>
+      'Ver o teu acompanhante em tela cheia';
 
   @override
   String get aiCardCompanionStageNextOutfit => 'Trocar de roupa';
 
   @override
-  String get aiCardCompanionStageTitle => 'Companheira em tela cheia';
+  String get aiCardCompanionStageTitle => 'Acompanhante em tela cheia';
 
   @override
   String aiCardHistoryToggle(int count) {
@@ -4036,7 +4037,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get companionSettingsOutfitStudio => 'Estúdio';
 
   @override
-  String get companionSettingsOutfitSurprise => 'Me surpreenda';
+  String get companionSettingsOutfitSurprise => 'Surpreende-me';
 
   @override
   String get companionSettingsOutfitWeekend => 'Fim de semana';
@@ -4045,7 +4046,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get companionSettingsOutfitWinter => 'Inverno';
 
   @override
-  String get companionSettingsSassCheeky => 'Marota';
+  String get companionSettingsSassCheeky => 'Marotice';
 
   @override
   String get companionSettingsSassDescription =>
@@ -4055,10 +4056,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get companionSettingsSassLabel => 'Atrevimento';
 
   @override
-  String get companionSettingsSassSassy => 'Atrevida';
+  String get companionSettingsSassSassy => 'Atrevimento';
 
   @override
-  String get companionSettingsSassWarm => 'Calorosa';
+  String get companionSettingsSassWarm => 'Calor';
 
   @override
   String companionSettingsSkinTone(int number) {
@@ -4116,7 +4117,7 @@ class AppLocalizationsPt extends AppLocalizations {
       'Mostre o botão de conversão de texto em fala local nos resumos de IA de tarefas. Requer um modelo Supertonic TTS instalado.';
 
   @override
-  String get configFlagEnableCompanion => 'Companheira';
+  String get configFlagEnableCompanion => 'Acompanhante';
 
   @override
   String get configFlagEnableCompanionDescription =>
@@ -4154,11 +4155,11 @@ class AppLocalizationsPt extends AppLocalizations {
       'Cure históricos de agentes divergentes do uso de vários dispositivos, mesclando-os no próximo despertar.';
 
   @override
-  String get configFlagEnableFrontAgent => 'Chat com a companheira';
+  String get configFlagEnableFrontAgent => 'Chat com o teu acompanhante';
 
   @override
   String get configFlagEnableFrontAgentDescription =>
-      'Um só lugar para perguntar o que for: a companheira encontra o agente de tarefa, objetivo, projeto ou pessoa que sabe e traz a sua resposta. Experimental.';
+      'Um só lugar para perguntar o que for: o teu acompanhante encontra o agente de tarefa, objetivo, projeto ou pessoa que sabe e traz a sua resposta. Experimental.';
 
   @override
   String get configFlagEnableHabitsPage => 'Habilitar página de hábitos';
@@ -7237,7 +7238,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get frontChatOlder => 'Mais antigos';
 
   @override
-  String get frontChatOpen => 'Perguntar à companheira';
+  String get frontChatOpen => 'Perguntar ao teu acompanhante';
 
   @override
   String get frontChatPlaceholder => 'Pergunta o que quiseres…';
@@ -7247,12 +7248,12 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String frontChatProfileChanged(String profile) {
-    return 'A companheira agora usa $profile';
+    return 'O teu acompanhante agora usa $profile';
   }
 
   @override
   String get frontChatProfileFollowsDefault =>
-      'A companheira agora segue o perfil predefinido das Configurações';
+      'O teu acompanhante agora segue o perfil predefinido das Configurações';
 
   @override
   String get frontChatProfileMenuItem => 'Perfil de IA';
@@ -7279,7 +7280,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get frontChatSearchChats => 'Procurar nos chats';
 
   @override
-  String get frontChatTitle => 'Companheira';
+  String get frontChatTitle => 'Acompanhante';
 
   @override
   String get frontChatYesterday => 'Ontem';
@@ -16931,7 +16932,8 @@ class AppLocalizationsPt extends AppLocalizations {
   String get syncPayloadBackfillResponse => 'Resposta de preenchimento';
 
   @override
-  String get syncPayloadCompanionCustomization => 'Aparência da companheira';
+  String get syncPayloadCompanionCustomization =>
+      'Aparência do teu acompanhante';
 
   @override
   String get syncPayloadConfigFlag => 'Sinalizador de configuração';

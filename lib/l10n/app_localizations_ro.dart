@@ -1655,13 +1655,13 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get aiCardCompanionOpenFullScreen =>
-      'Vizualizați însoțitoarea pe tot ecranul';
+      'Vizualizați însoțitorul pe tot ecranul';
 
   @override
   String get aiCardCompanionStageNextOutfit => 'Schimbați ținuta';
 
   @override
-  String get aiCardCompanionStageTitle => 'Însoțitoare pe tot ecranul';
+  String get aiCardCompanionStageTitle => 'Însoțitor pe tot ecranul';
 
   @override
   String aiCardHistoryToggle(int count) {
@@ -4071,7 +4071,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get companionSettingsOutfitWinter => 'Iarnă';
 
   @override
-  String get companionSettingsSassCheeky => 'Poznașă';
+  String get companionSettingsSassCheeky => 'Ștrengărie';
 
   @override
   String get companionSettingsSassDescription =>
@@ -4081,10 +4081,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get companionSettingsSassLabel => 'Îndrăzneală';
 
   @override
-  String get companionSettingsSassSassy => 'Obraznică';
+  String get companionSettingsSassSassy => 'Obrăznicie';
 
   @override
-  String get companionSettingsSassWarm => 'Caldă';
+  String get companionSettingsSassWarm => 'Căldură';
 
   @override
   String companionSettingsSkinTone(int number) {
@@ -4141,7 +4141,7 @@ class AppLocalizationsRo extends AppLocalizations {
       'Afișează butonul local text-to-speech pentru rezumatele AI ale sarcinilor. Necesită un model TTS Supertonic instalat.';
 
   @override
-  String get configFlagEnableCompanion => 'Însoțitoare';
+  String get configFlagEnableCompanion => 'Însoțitor';
 
   @override
   String get configFlagEnableCompanionDescription =>
@@ -4180,11 +4180,11 @@ class AppLocalizationsRo extends AppLocalizations {
       'Îmbină istoricurile divergente ale agentului rezultate din utilizarea pe mai multe dispozitive la următoarea activare.';
 
   @override
-  String get configFlagEnableFrontAgent => 'Chat cu însoțitoarea';
+  String get configFlagEnableFrontAgent => 'Chat cu însoțitorul';
 
   @override
   String get configFlagEnableFrontAgentDescription =>
-      'Un singur loc pentru orice întrebare: însoțitoarea găsește agentul de sarcină, obiectiv, proiect sau persoană care știe și aduce răspunsul acestuia. Experimental.';
+      'Un singur loc pentru orice întrebare: însoțitorul găsește agentul de sarcină, obiectiv, proiect sau persoană care știe și aduce răspunsul acestuia. Experimental.';
 
   @override
   String get configFlagEnableHabitsPage => 'Activați pagina Obiceiuri';
@@ -7283,7 +7283,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get frontChatOlder => 'Mai vechi';
 
   @override
-  String get frontChatOpen => 'Întrebați însoțitoarea';
+  String get frontChatOpen => 'Întrebați însoțitorul';
 
   @override
   String get frontChatPlaceholder => 'Întrebați orice…';
@@ -7293,12 +7293,12 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String frontChatProfileChanged(String profile) {
-    return 'Însoțitoarea folosește acum $profile';
+    return 'Însoțitorul folosește acum $profile';
   }
 
   @override
   String get frontChatProfileFollowsDefault =>
-      'Însoțitoarea urmează acum profilul implicit din Setări';
+      'Însoțitorul urmează acum profilul implicit din Setări';
 
   @override
   String get frontChatProfileMenuItem => 'Profil AI';
@@ -7325,7 +7325,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get frontChatSearchChats => 'Căutați în conversații';
 
   @override
-  String get frontChatTitle => 'Însoțitoare';
+  String get frontChatTitle => 'Însoțitor';
 
   @override
   String get frontChatYesterday => 'Ieri';
@@ -15243,7 +15243,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsCompanionSubtitle => 'Personaj, piele, păr și ținută';
 
   @override
-  String get settingsCompanionTitle => 'Însoțitoare';
+  String get settingsCompanionTitle => 'Însoțitor';
 
   @override
   String get settingsConflictsTitle => 'Sync cu conflicte';
@@ -17093,7 +17093,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get syncPayloadBackfillResponse => 'Răspuns de completare';
 
   @override
-  String get syncPayloadCompanionCustomization => 'Aspectul însoțitoarei';
+  String get syncPayloadCompanionCustomization => 'Aspectul însoțitorului';
 
   @override
   String get syncPayloadConfigFlag => 'Indicator de configurare';

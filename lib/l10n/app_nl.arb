@@ -1920,7 +1920,7 @@
   "configFlagEnableAiSummaryTts": "AI samenvatting afspelen",
   "configFlagEnableAiSummaryTtsDescription": "Toon de lokale tekst-naar-spraak-knop op taak AI samenvattingen. Vereist een geïnstalleerd Supertonic TTS model.",
   "configFlagEnableCompanion": "Metgezel",
-  "configFlagEnableCompanionDescription": "Toon naast de AI-samenvatting een personage dat hem voorleest, met de mond op de stem. Vereist AI samenvatting afspelen.",
+  "configFlagEnableCompanionDescription": "Toon naast de AI-samenvatting een personage dat de samenvatting voorleest, met lippen die synchroon met de stem bewegen. Vereist AI samenvatting afspelen.",
   "configFlagEnableDailyOs": "DailyOS inschakelen",
   "configFlagEnableDailyOsDescription": "Toon DailyOS in de hoofdnavigatie.",
   "configFlagEnableDashboardsPage": "Dashboards-pagina inschakelen",

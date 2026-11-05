@@ -1655,13 +1655,13 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get aiCardCompanionOpenFullScreen =>
-      'Mostra la compagna a schermo intero';
+      'Mostra il compagno a schermo intero';
 
   @override
   String get aiCardCompanionStageNextOutfit => 'Cambia vestito';
 
   @override
-  String get aiCardCompanionStageTitle => 'Compagna a schermo intero';
+  String get aiCardCompanionStageTitle => 'Compagno a schermo intero';
 
   @override
   String aiCardHistoryToggle(int count) {
@@ -4055,7 +4055,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get companionSettingsOutfitWinter => 'Inverno';
 
   @override
-  String get companionSettingsSassCheeky => 'Birichina';
+  String get companionSettingsSassCheeky => 'Malizia';
 
   @override
   String get companionSettingsSassDescription =>
@@ -4065,10 +4065,10 @@ class AppLocalizationsIt extends AppLocalizations {
   String get companionSettingsSassLabel => 'Pepe';
 
   @override
-  String get companionSettingsSassSassy => 'Sfacciata';
+  String get companionSettingsSassSassy => 'Sfacciataggine';
 
   @override
-  String get companionSettingsSassWarm => 'Calorosa';
+  String get companionSettingsSassWarm => 'Calore';
 
   @override
   String companionSettingsSkinTone(int number) {
@@ -4126,7 +4126,7 @@ class AppLocalizationsIt extends AppLocalizations {
       'Mostra il pulsante di testo-to-speech locale sui riassunti dell\'intelligenza artificiale del compito. Richiede un modello Supertonic TTS installato.';
 
   @override
-  String get configFlagEnableCompanion => 'Compagna';
+  String get configFlagEnableCompanion => 'Compagno';
 
   @override
   String get configFlagEnableCompanionDescription =>
@@ -4164,11 +4164,11 @@ class AppLocalizationsIt extends AppLocalizations {
       'Storie di agenti divergenti Heal da uso multi-dispositivo fondendoli alla prossima veglia.';
 
   @override
-  String get configFlagEnableFrontAgent => 'Chat con la compagna';
+  String get configFlagEnableFrontAgent => 'Chat con il compagno';
 
   @override
   String get configFlagEnableFrontAgentDescription =>
-      'Un unico posto per chiedere qualsiasi cosa: la compagna trova l’agente di attività, obiettivo, progetto o persona che lo sa e riporta la sua risposta. Sperimentale.';
+      'Un unico posto per chiedere qualsiasi cosa: il compagno trova l’agente di attività, obiettivo, progetto o persona che lo sa e riporta la sua risposta. Sperimentale.';
 
   @override
   String get configFlagEnableHabitsPage => 'Attivare la pagina Habits';
@@ -7248,7 +7248,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get frontChatOlder => 'Meno recenti';
 
   @override
-  String get frontChatOpen => 'Chiedi alla compagna';
+  String get frontChatOpen => 'Chiedi al compagno';
 
   @override
   String get frontChatPlaceholder => 'Chiedi qualsiasi cosa…';
@@ -7258,12 +7258,12 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String frontChatProfileChanged(String profile) {
-    return 'La compagna ora utilizza $profile';
+    return 'Il compagno ora utilizza $profile';
   }
 
   @override
   String get frontChatProfileFollowsDefault =>
-      'La compagna ora segue il profilo predefinito delle Impostazioni';
+      'Il compagno ora segue il profilo predefinito delle Impostazioni';
 
   @override
   String get frontChatProfileMenuItem => 'Profilo IA';
@@ -7290,7 +7290,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get frontChatSearchChats => 'Cerca nelle chat';
 
   @override
-  String get frontChatTitle => 'Compagna';
+  String get frontChatTitle => 'Compagno';
 
   @override
   String get frontChatYesterday => 'Ieri';
@@ -15144,7 +15144,7 @@ class AppLocalizationsIt extends AppLocalizations {
       'Personaggio, pelle, capelli e vestiti';
 
   @override
-  String get settingsCompanionTitle => 'Compagna';
+  String get settingsCompanionTitle => 'Compagno';
 
   @override
   String get settingsConflictsTitle => 'Conflitti di sincronizzazione';
@@ -16980,7 +16980,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get syncPayloadBackfillResponse => 'Risposta di backup';
 
   @override
-  String get syncPayloadCompanionCustomization => 'Aspetto della compagna';
+  String get syncPayloadCompanionCustomization => 'Aspetto del compagno';
 
   @override
   String get syncPayloadConfigFlag => 'Bandiera di conflitto';

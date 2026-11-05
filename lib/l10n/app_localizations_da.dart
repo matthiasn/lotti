@@ -4007,7 +4007,7 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get companionSettingsSassDescription =>
-      'Hvordan din ledsager tager det, den læser op for dig: en varm opmuntring, en drilsk bemærkning eller fuld frækhed, med himmelvendte øjne og blikket over brillerne.';
+      'Hvordan din ledsager reagerer på det, der læses op for dig: en varm opmuntring, en drilsk bemærkning eller fuld frækhed, med himmelvendte øjne og blikket over brillerne.';
 
   @override
   String get companionSettingsSassLabel => 'Frækhed';

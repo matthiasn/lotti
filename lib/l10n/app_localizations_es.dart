@@ -1650,13 +1650,13 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get aiCardCompanionOpenFullScreen =>
-      'Ver a la compañera en pantalla completa';
+      'Ver tu acompañante en pantalla completa';
 
   @override
   String get aiCardCompanionStageNextOutfit => 'Cambiar de ropa';
 
   @override
-  String get aiCardCompanionStageTitle => 'Compañera en pantalla completa';
+  String get aiCardCompanionStageTitle => 'Acompañante en pantalla completa';
 
   @override
   String aiCardHistoryToggle(int count) {
@@ -4053,7 +4053,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get companionSettingsOutfitWinter => 'Invierno';
 
   @override
-  String get companionSettingsSassCheeky => 'Pícara';
+  String get companionSettingsSassCheeky => 'Picardía';
 
   @override
   String get companionSettingsSassDescription =>
@@ -4063,10 +4063,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get companionSettingsSassLabel => 'Descaro';
 
   @override
-  String get companionSettingsSassSassy => 'Descarada';
+  String get companionSettingsSassSassy => 'Descaro';
 
   @override
-  String get companionSettingsSassWarm => 'Cálida';
+  String get companionSettingsSassWarm => 'Calidez';
 
   @override
   String companionSettingsSkinTone(int number) {
@@ -4123,7 +4123,7 @@ class AppLocalizationsEs extends AppLocalizations {
       'Muestra el botón local de texto a voz en los resúmenes de IA de tareas. Requiere un modelo TTS de Supertonic instalado.';
 
   @override
-  String get configFlagEnableCompanion => 'Compañera';
+  String get configFlagEnableCompanion => 'Acompañante';
 
   @override
   String get configFlagEnableCompanionDescription =>
@@ -4162,11 +4162,11 @@ class AppLocalizationsEs extends AppLocalizations {
       'Fusiona historiales de agente divergentes por el uso en varios dispositivos en la próxima activación.';
 
   @override
-  String get configFlagEnableFrontAgent => 'Chat con la compañera';
+  String get configFlagEnableFrontAgent => 'Chat con tu acompañante';
 
   @override
   String get configFlagEnableFrontAgentDescription =>
-      'Un solo lugar para preguntar lo que sea: la compañera encuentra al agente de tarea, objetivo, proyecto o persona que lo sabe y trae su respuesta. Experimental.';
+      'Un solo lugar para preguntar lo que sea: tu acompañante encuentra al agente de tarea, objetivo, proyecto o persona que lo sabe y trae su respuesta. Experimental.';
 
   @override
   String get configFlagEnableHabitsPage => 'Habilitar página Hábitos';
@@ -7251,7 +7251,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get frontChatOlder => 'Anteriores';
 
   @override
-  String get frontChatOpen => 'Preguntar a la compañera';
+  String get frontChatOpen => 'Preguntar a tu acompañante';
 
   @override
   String get frontChatPlaceholder => 'Pregunta lo que sea…';
@@ -7261,12 +7261,12 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String frontChatProfileChanged(String profile) {
-    return 'La compañera ahora usa $profile';
+    return 'Tu acompañante ahora usa $profile';
   }
 
   @override
   String get frontChatProfileFollowsDefault =>
-      'La compañera ahora sigue el perfil predeterminado de Ajustes';
+      'Tu acompañante ahora sigue el perfil predeterminado de Ajustes';
 
   @override
   String get frontChatProfileMenuItem => 'Perfil de IA';
@@ -7293,7 +7293,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get frontChatSearchChats => 'Buscar chats';
 
   @override
-  String get frontChatTitle => 'Compañera';
+  String get frontChatTitle => 'Acompañante';
 
   @override
   String get frontChatYesterday => 'Ayer';
@@ -16980,7 +16980,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get syncPayloadBackfillResponse => 'Respuesta de relleno';
 
   @override
-  String get syncPayloadCompanionCustomization => 'Aspecto de la compañera';
+  String get syncPayloadCompanionCustomization => 'Aspecto de tu acompañante';
 
   @override
   String get syncPayloadConfigFlag => 'Indicador de configuración';

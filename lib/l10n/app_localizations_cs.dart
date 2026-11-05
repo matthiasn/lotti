@@ -1645,13 +1645,13 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get aiCardCompanionOpenFullScreen =>
-      'Zobrazit společnici na celé obrazovce';
+      'Zobrazit společníka na celé obrazovce';
 
   @override
   String get aiCardCompanionStageNextOutfit => 'Změnit oblečení';
 
   @override
-  String get aiCardCompanionStageTitle => 'Společnice na celé obrazovce';
+  String get aiCardCompanionStageTitle => 'Společník na celé obrazovce';
 
   @override
   String aiCardHistoryToggle(int count) {
@@ -4052,7 +4052,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get companionSettingsOutfitWinter => 'Zima';
 
   @override
-  String get companionSettingsSassCheeky => 'Šibalská';
+  String get companionSettingsSassCheeky => 'Šibalství';
 
   @override
   String get companionSettingsSassDescription =>
@@ -4062,10 +4062,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get companionSettingsSassLabel => 'Drzost';
 
   @override
-  String get companionSettingsSassSassy => 'Drzá';
+  String get companionSettingsSassSassy => 'Drzost';
 
   @override
-  String get companionSettingsSassWarm => 'Vřelá';
+  String get companionSettingsSassWarm => 'Vřelost';
 
   @override
   String companionSettingsSkinTone(int number) {
@@ -4122,7 +4122,7 @@ class AppLocalizationsCs extends AppLocalizations {
       'Zobrazí tlačítko místního převodu textu na řeč u AI souhrnů úkolů. Vyžaduje nainstalovaný model Supertonic TTS.';
 
   @override
-  String get configFlagEnableCompanion => 'Společnice';
+  String get configFlagEnableCompanion => 'Společník';
 
   @override
   String get configFlagEnableCompanionDescription =>
@@ -4160,11 +4160,11 @@ class AppLocalizationsCs extends AppLocalizations {
       'Sloučí rozvětvené historie agenta z více zařízení při příštím probuzení.';
 
   @override
-  String get configFlagEnableFrontAgent => 'Chat se společnicí';
+  String get configFlagEnableFrontAgent => 'Chat se společníkem';
 
   @override
   String get configFlagEnableFrontAgentDescription =>
-      'Jedno místo pro jakoukoli otázku: společnice najde agenta úkolu, cíle, projektu nebo člověka, který to ví, a přinese jeho odpověď. Experimentální.';
+      'Jedno místo pro jakoukoli otázku: společník najde agenta úkolu, cíle, projektu nebo člověka, který to ví, a přinese jeho odpověď. Experimentální.';
 
   @override
   String get configFlagEnableHabitsPage => 'Povolit stránku Návyků';
@@ -7239,7 +7239,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get frontChatOlder => 'Starší';
 
   @override
-  String get frontChatOpen => 'Zeptat se společnice';
+  String get frontChatOpen => 'Zeptat se společníka';
 
   @override
   String get frontChatPlaceholder => 'Zeptej se na cokoli…';
@@ -7249,12 +7249,12 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String frontChatProfileChanged(String profile) {
-    return 'Společnice nyní používá $profile';
+    return 'Společník nyní používá $profile';
   }
 
   @override
   String get frontChatProfileFollowsDefault =>
-      'Společnice nyní sleduje výchozí profil z Nastavení';
+      'Společník nyní sleduje výchozí profil z Nastavení';
 
   @override
   String get frontChatProfileMenuItem => 'AI profil';
@@ -7281,7 +7281,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get frontChatSearchChats => 'Hledat v chatech';
 
   @override
-  String get frontChatTitle => 'Společnice';
+  String get frontChatTitle => 'Společník';
 
   @override
   String get frontChatYesterday => 'Včera';
@@ -16980,7 +16980,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get syncPayloadBackfillResponse => 'Odpověď na doplnění';
 
   @override
-  String get syncPayloadCompanionCustomization => 'Vzhled společnice';
+  String get syncPayloadCompanionCustomization => 'Vzhled společníka';
 
   @override
   String get syncPayloadConfigFlag => 'Konfigurační příznak';

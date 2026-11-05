@@ -1650,13 +1650,13 @@ class AppLocalizationsDe extends AppLocalizations {
   String get aiCapabilityChipTranscription => 'Transkription';
 
   @override
-  String get aiCardCompanionOpenFullScreen => 'Begleiterin im Vollbild ansehen';
+  String get aiCardCompanionOpenFullScreen => 'Begleitung im Vollbild ansehen';
 
   @override
   String get aiCardCompanionStageNextOutfit => 'Outfit wechseln';
 
   @override
-  String get aiCardCompanionStageTitle => 'Begleiterin im Vollbild';
+  String get aiCardCompanionStageTitle => 'Begleitung im Vollbild';
 
   @override
   String aiCardHistoryToggle(int count) {
@@ -4107,7 +4107,7 @@ class AppLocalizationsDe extends AppLocalizations {
       'Zeigt die lokale Text-to-Speech-Schaltfläche in AI-Zusammenfassungen von Aufgaben. Erfordert ein installiertes Supertonic-TTS-Modell.';
 
   @override
-  String get configFlagEnableCompanion => 'Begleiterin';
+  String get configFlagEnableCompanion => 'Begleitung';
 
   @override
   String get configFlagEnableCompanionDescription =>
@@ -4145,11 +4145,11 @@ class AppLocalizationsDe extends AppLocalizations {
       'Auseinandergelaufene Agenten-Verläufe aus der Nutzung mehrerer Geräte beim nächsten Aufwachen zusammenführen.';
 
   @override
-  String get configFlagEnableFrontAgent => 'Begleiterin-Chat';
+  String get configFlagEnableFrontAgent => 'Chat mit der Begleitung';
 
   @override
   String get configFlagEnableFrontAgentDescription =>
-      'Ein Ort für alle Fragen: Die Begleiterin findet den Aufgaben-, Ziel-, Projekt- oder Personen-Agenten, der es weiß, und bringt seine Antwort mit. Experimentell.';
+      'Ein Ort für alle Fragen: Die Begleitung findet den Aufgaben-, Ziel-, Projekt- oder Personen-Agenten, der es weiß, und bringt seine Antwort mit. Experimentell.';
 
   @override
   String get configFlagEnableHabitsPage => 'Seite Gewohnheiten aktivieren';
@@ -7214,7 +7214,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get frontChatOlder => 'Älter';
 
   @override
-  String get frontChatOpen => 'Begleiterin fragen';
+  String get frontChatOpen => 'Begleitung fragen';
 
   @override
   String get frontChatPlaceholder => 'Frag irgendwas…';
@@ -7224,12 +7224,12 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String frontChatProfileChanged(String profile) {
-    return 'Die Begleiterin verwendet jetzt $profile';
+    return 'Die Begleitung verwendet jetzt $profile';
   }
 
   @override
   String get frontChatProfileFollowsDefault =>
-      'Die Begleiterin folgt jetzt dem Standardprofil aus den Einstellungen';
+      'Die Begleitung folgt jetzt dem Standardprofil aus den Einstellungen';
 
   @override
   String get frontChatProfileMenuItem => 'KI-Profil';
@@ -7256,7 +7256,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get frontChatSearchChats => 'Chats durchsuchen';
 
   @override
-  String get frontChatTitle => 'Begleiterin';
+  String get frontChatTitle => 'Begleitung';
 
   @override
   String get frontChatYesterday => 'Gestern';
@@ -16898,7 +16898,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get syncPayloadBackfillResponse => 'Nachfüllantwort';
 
   @override
-  String get syncPayloadCompanionCustomization => 'Aussehen der Begleiterin';
+  String get syncPayloadCompanionCustomization => 'Aussehen der Begleitung';
 
   @override
   String get syncPayloadConfigFlag => 'Konfigurationsflag';

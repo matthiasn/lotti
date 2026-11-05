@@ -4101,7 +4101,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get configFlagEnableCompanionDescription =>
-      'Toon naast de AI-samenvatting een personage dat hem voorleest, met de mond op de stem. Vereist AI samenvatting afspelen.';
+      'Toon naast de AI-samenvatting een personage dat de samenvatting voorleest, met lippen die synchroon met de stem bewegen. Vereist AI samenvatting afspelen.';
 
   @override
   String get configFlagEnableDailyOs => 'DailyOS inschakelen';
