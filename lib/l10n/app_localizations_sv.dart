@@ -11734,7 +11734,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String onboardingVoicePlay(String voice) {
-    return 'Spela $voice';
+    return 'Spela ”$voice”';
   }
 
   @override
@@ -11753,7 +11753,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String onboardingVoiceStop(String voice) {
-    return 'Stoppa $voice';
+    return 'Stoppa ”$voice”';
   }
 
   @override

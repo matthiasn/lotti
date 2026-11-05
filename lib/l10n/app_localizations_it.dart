@@ -11717,7 +11717,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get onboardingConnectGuide =>
-      'Io sceglierei Mistral: con la sua unica chiave posso ragionare, trascrivere quello che dici e leggerti ad alta voce.';
+      'Io sceglierei Mistral: con una sola chiave posso ragionare, trascrivere quello che dici e leggerti ad alta voce.';
 
   @override
   String get onboardingConnectHideOtherProviders =>
@@ -11728,7 +11728,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get onboardingConnectMistralPitch =>
-      'Una chiave per ragionamento, trascrizione e voce · ospitato nell\'UE';
+      'Una chiave per ragionare, trascrivere e leggere ad alta voce · servizio ospitato nell\'UE';
 
   @override
   String get onboardingConnectMistralTagline => 'Unione europea';
@@ -11850,7 +11850,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get onboardingVoiceElevenLabsDescription =>
-      'Facoltativa, con una sua chiave ElevenLabs.';
+      'Facoltativa, con una tua chiave ElevenLabs.';
 
   @override
   String get onboardingVoiceElevenLabsName => 'ElevenLabs';
@@ -11864,7 +11864,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String onboardingVoicePlay(String voice) {
-    return 'Riproduci $voice';
+    return 'Riproduci «$voice»';
   }
 
   @override
@@ -11883,7 +11883,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String onboardingVoiceStop(String voice) {
-    return 'Ferma $voice';
+    return 'Ferma «$voice»';
   }
 
   @override

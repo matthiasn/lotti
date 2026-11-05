@@ -11693,7 +11693,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get onboardingConnectMistralPitch =>
-      'Uma chave para raciocínio, transcrição e voz · alojado na UE';
+      'Uma chave para raciocínio, transcrição e voz · servidores na UE';
 
   @override
   String get onboardingConnectMistralTagline => 'União Europeia';
@@ -11832,7 +11832,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String onboardingVoicePlay(String voice) {
-    return 'Reproduzir $voice';
+    return 'Reproduzir «$voice»';
   }
 
   @override
@@ -11851,7 +11851,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String onboardingVoiceStop(String voice) {
-    return 'Parar $voice';
+    return 'Parar «$voice»';
   }
 
   @override

@@ -11851,7 +11851,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String onboardingVoicePlay(String voice) {
-    return 'Přehrát $voice';
+    return 'Přehrát „$voice“';
   }
 
   @override
@@ -11870,7 +11870,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String onboardingVoiceStop(String voice) {
-    return 'Zastavit $voice';
+    return 'Zastavit „$voice“';
   }
 
   @override

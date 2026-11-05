@@ -19750,7 +19750,7 @@ abstract class AppLocalizations {
   /// Screen-reader label of a voice sample's play control in onboarding.
   ///
   /// In en, this message translates to:
-  /// **'Play {voice}'**
+  /// **'Play “{voice}”'**
   String onboardingVoicePlay(String voice);
 
   /// No description provided for @onboardingVoicesContinue.
@@ -19780,7 +19780,7 @@ abstract class AppLocalizations {
   /// Screen-reader label of a voice sample's play control in onboarding.
   ///
   /// In en, this message translates to:
-  /// **'Stop {voice}'**
+  /// **'Stop “{voice}”'**
   String onboardingVoiceStop(String voice);
 
   /// No description provided for @onboardingVoiceVoxtralDescription.

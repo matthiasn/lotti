@@ -11876,7 +11876,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String onboardingVoicePlay(String voice) {
-    return 'Reproducir $voice';
+    return 'Reproducir «$voice»';
   }
 
   @override
@@ -11895,7 +11895,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String onboardingVoiceStop(String voice) {
-    return 'Detener $voice';
+    return 'Detener «$voice»';
   }
 
   @override

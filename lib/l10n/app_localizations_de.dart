@@ -11803,7 +11803,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String onboardingVoicePlay(String voice) {
-    return '$voice abspielen';
+    return '„$voice“ abspielen';
   }
 
   @override
@@ -11822,7 +11822,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String onboardingVoiceStop(String voice) {
-    return '$voice stoppen';
+    return '„$voice“ stoppen';
   }
 
   @override
