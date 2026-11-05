@@ -11703,22 +11703,35 @@ class AppLocalizationsIt extends AppLocalizations {
   String get onboardingCategoryWork => 'Lavoro';
 
   @override
+  String get onboardingCompanionGreeting => 'Ciao, sono Lotti.';
+
+  @override
+  String get onboardingCompanionOneKey =>
+      'Dimmi cosa hai in mente e lo trasformo in un piano. Per iniziare mi serve solo una chiave API, e ti aiuto a configurarla.';
+
+  @override
   String get onboardingConnectGeminiName => 'Gemini';
 
   @override
   String get onboardingConnectGeminiTagline => 'Stati Uniti';
 
   @override
-  String get onboardingConnectLessOptions => 'Opzioni minori';
+  String get onboardingConnectGuide =>
+      'Io sceglierei Mistral: con la sua unica chiave posso ragionare, trascrivere quello che dici e leggerti ad alta voce.';
+
+  @override
+  String get onboardingConnectHideOtherProviders =>
+      'Nascondi gli altri fornitori';
 
   @override
   String get onboardingConnectMistralName => 'Mistral';
 
   @override
-  String get onboardingConnectMistralTagline => 'Unione europea';
+  String get onboardingConnectMistralPitch =>
+      'Una chiave per ragionamento, trascrizione e voce · ospitato nell\'UE';
 
   @override
-  String get onboardingConnectMoreOptions => 'Altre opzioni';
+  String get onboardingConnectMistralTagline => 'Unione europea';
 
   @override
   String get onboardingConnectNotSure => 'Mistral è il default raccomandato.';
@@ -11727,7 +11740,13 @@ class AppLocalizationsIt extends AppLocalizations {
   String get onboardingConnectOllamaName => 'Ollama';
 
   @override
+  String get onboardingConnectOneKeyTitle => 'Basta una chiave';
+
+  @override
   String get onboardingConnectOpenAiName => 'OpenAI';
+
+  @override
+  String get onboardingConnectOtherProviders => 'Altri fornitori';
 
   @override
   String get onboardingConnectQwenName => 'Qwen';
@@ -11736,8 +11755,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get onboardingConnectQwenTagline => 'Cina';
 
   @override
-  String get onboardingConnectTitle =>
-      'Scegli il cervello AI per i tuoi compiti';
+  String get onboardingConnectRecommended => 'Consigliato';
 
   @override
   String get onboardingFirstTaskCreatedHint =>
@@ -11817,6 +11835,9 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get onboardingWelcomeMessage =>
       'Collegare il vostro cervello AI, poi parlare un pensiero e guardarlo diventare un compito strutturato.';
+
+  @override
+  String get onboardingWelcomeOneKeyButton => 'Inizia con una sola chiave';
 
   @override
   String get onboardingWelcomeSkipButton => 'Guarda prima.';

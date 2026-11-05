@@ -6,6 +6,7 @@ import 'package:lotti/classes/onboarding_event.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/ai/util/profile_seeding_service.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
+import 'package:lotti/features/companion/rig/companion_painter.dart';
 import 'package:lotti/features/demo/state/demo_mode_gateway.dart';
 import 'package:lotti/features/demo/ui/demo_entry_launcher.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
@@ -386,38 +387,36 @@ class _OnboardingFlowState extends State<_OnboardingFlow> {
   Widget _buildStep() {
     switch (_step) {
       case _FlowStep.welcome:
-        return Consumer(
+        return OnboardingHeroPanel(
           key: const ValueKey('onboarding-welcome'),
-          builder: (context, ref, _) {
-            final messages = context.messages;
-            return OnboardingHeroPanel(
-              heroStyle: widget.heroStyle,
-              // With her flag on she is the welcome's hero, and its promise
-              // is her first line — said once per modal.
-              companion: watchOnboardingCompanionEnabled(ref)
-                  ? OnboardingCompanion(
-                      beat: OnboardingCompanionBeat.welcome,
-                      line: _greeted
-                          ? null
-                          : '${messages.onboardingWelcomeTitle} '
-                                '${messages.onboardingWelcomeMessage}',
-                    )
-                  : null,
-              onConnect: () {
-                setState(() {
-                  _greeted = true;
-                  _step = _FlowStep.connect;
-                });
-                widget.onProviderModalShown();
-              },
-              onSkip: widget.onSkip,
-              onExploreDemo: widget.onExploreDemo,
-            );
+          heroStyle: widget.heroStyle,
+          // She is the welcome's hero, and its promise is her first line —
+          // said once per modal.
+          companion: OnboardingCompanion(
+            beat: OnboardingCompanionBeat.welcome,
+            line: _greeted
+                ? null
+                : onboardingCompanionWelcomeLine(context.messages),
+          ),
+          onConnect: () {
+            setState(() {
+              _greeted = true;
+              _step = _FlowStep.connect;
+            });
+            widget.onProviderModalShown();
           },
+          onSkip: widget.onSkip,
+          onExploreDemo: widget.onExploreDemo,
         );
       case _FlowStep.connect:
         return OnboardingConnectPanel(
           key: const ValueKey('onboarding-connect'),
+          // She recommends the one key to start with, in her bubble.
+          companion: OnboardingCompanion(
+            beat: OnboardingCompanionBeat.recommend,
+            line: context.messages.onboardingConnectGuide,
+            framing: CompanionFraming.bust,
+          ),
           onBack: () => setState(() => _step = _FlowStep.welcome),
           onSelect: (type) => setState(() {
             _type = type;

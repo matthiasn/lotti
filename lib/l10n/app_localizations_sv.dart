@@ -11573,22 +11573,34 @@ class AppLocalizationsSv extends AppLocalizations {
   String get onboardingCategoryWork => 'Verk';
 
   @override
+  String get onboardingCompanionGreeting => 'Hej, jag är Lotti.';
+
+  @override
+  String get onboardingCompanionOneKey =>
+      'Berätta vad du har i tankarna så gör jag en plan av det. För att komma igång behöver jag bara en API-nyckel, och jag hjälper dig att ställa in den.';
+
+  @override
   String get onboardingConnectGeminiName => 'Tvillingarna';
 
   @override
   String get onboardingConnectGeminiTagline => 'USA';
 
   @override
-  String get onboardingConnectLessOptions => 'Färre alternativ';
+  String get onboardingConnectGuide =>
+      'Jag skulle välja Mistral: med den enda nyckeln kan jag tänka, skriva ner det du säger och läsa högt för dig.';
+
+  @override
+  String get onboardingConnectHideOtherProviders => 'Dölj andra leverantörer';
 
   @override
   String get onboardingConnectMistralName => 'Mistral';
 
   @override
-  String get onboardingConnectMistralTagline => 'Europeiska unionen';
+  String get onboardingConnectMistralPitch =>
+      'En nyckel för tänkande, transkribering och röst · hostad i EU';
 
   @override
-  String get onboardingConnectMoreOptions => 'Fler alternativ';
+  String get onboardingConnectMistralTagline => 'Europeiska unionen';
 
   @override
   String get onboardingConnectNotSure =>
@@ -11598,7 +11610,13 @@ class AppLocalizationsSv extends AppLocalizations {
   String get onboardingConnectOllamaName => 'Ollama';
 
   @override
+  String get onboardingConnectOneKeyTitle => 'En nyckel räcker';
+
+  @override
   String get onboardingConnectOpenAiName => 'OpenAI';
+
+  @override
+  String get onboardingConnectOtherProviders => 'Andra leverantörer';
 
   @override
   String get onboardingConnectQwenName => 'Qwen';
@@ -11607,7 +11625,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get onboardingConnectQwenTagline => 'Kina';
 
   @override
-  String get onboardingConnectTitle => 'Välj AI-hjärnan för dina uppgifter';
+  String get onboardingConnectRecommended => 'Rekommenderas';
 
   @override
   String get onboardingFirstTaskCreatedHint =>
@@ -11686,6 +11704,9 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get onboardingWelcomeMessage =>
       'Koppla in din AI-hjärna, säg sedan en tanke och se hur den blir en strukturerad uppgift.';
+
+  @override
+  String get onboardingWelcomeOneKeyButton => 'Kom igång med en nyckel';
 
   @override
   String get onboardingWelcomeSkipButton => 'Titta runt först';

@@ -248,7 +248,7 @@ class _DemoAiSetupFlowState extends State<DemoAiSetupFlow> {
   /// first tile the connect panel lists rather than left `late`, because
   /// [DemoAiSetupFlow.initialStep] lets a caller open straight on `apiKey`
   /// or `success` — steps that read this before the connect step could run.
-  InferenceProviderType _type = onboardingPrimaryProviders.first;
+  InferenceProviderType _type = onboardingRecommendedProvider;
 
   /// Runs concurrently with the success beat (which must not wait on the
   /// stamping writes) but is handed to [DemoAiSetupFlow.onConnected] so the

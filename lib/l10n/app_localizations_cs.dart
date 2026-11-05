@@ -11692,22 +11692,34 @@ class AppLocalizationsCs extends AppLocalizations {
   String get onboardingCategoryWork => 'Práce';
 
   @override
+  String get onboardingCompanionGreeting => 'Ahoj, já jsem Lotti.';
+
+  @override
+  String get onboardingCompanionOneKey =>
+      'Řekni mi, co máš na mysli, a udělám z toho plán. Na začátek stačí jeden klíč API – a s nastavením ti pomůžu.';
+
+  @override
   String get onboardingConnectGeminiName => 'Gemini';
 
   @override
   String get onboardingConnectGeminiTagline => 'Spojené státy';
 
   @override
-  String get onboardingConnectLessOptions => 'Méně možností';
+  String get onboardingConnectGuide =>
+      'Doporučuji Mistral: s jeho jediným klíčem umím přemýšlet, přepisovat, co říkáš, a předčítat ti.';
+
+  @override
+  String get onboardingConnectHideOtherProviders => 'Skrýt další poskytovatele';
 
   @override
   String get onboardingConnectMistralName => 'Mistral';
 
   @override
-  String get onboardingConnectMistralTagline => 'Evropská unie';
+  String get onboardingConnectMistralPitch =>
+      'Jeden klíč pro přemýšlení, přepis i hlas · hostováno v EU';
 
   @override
-  String get onboardingConnectMoreOptions => 'Další možnosti';
+  String get onboardingConnectMistralTagline => 'Evropská unie';
 
   @override
   String get onboardingConnectNotSure => 'Mistral je doporučená výchozí volba.';
@@ -11716,7 +11728,13 @@ class AppLocalizationsCs extends AppLocalizations {
   String get onboardingConnectOllamaName => 'Ollama';
 
   @override
+  String get onboardingConnectOneKeyTitle => 'Stačí jeden klíč';
+
+  @override
   String get onboardingConnectOpenAiName => 'OpenAI';
+
+  @override
+  String get onboardingConnectOtherProviders => 'Další poskytovatelé';
 
   @override
   String get onboardingConnectQwenName => 'Qwen';
@@ -11725,7 +11743,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get onboardingConnectQwenTagline => 'Čína';
 
   @override
-  String get onboardingConnectTitle => 'Vyber AI mozek pro své úkoly';
+  String get onboardingConnectRecommended => 'Doporučeno';
 
   @override
   String get onboardingFirstTaskCreatedHint =>
@@ -11804,6 +11822,9 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get onboardingWelcomeMessage =>
       'Připoj svůj AI mozek, vyslov myšlenku a sleduj, jak se mění ve strukturovaný úkol.';
+
+  @override
+  String get onboardingWelcomeOneKeyButton => 'Začít s jedním klíčem';
 
   @override
   String get onboardingWelcomeSkipButton => 'Nejdřív se rozhlédnout';

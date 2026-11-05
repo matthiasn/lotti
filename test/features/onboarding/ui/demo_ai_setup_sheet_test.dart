@@ -59,6 +59,20 @@ Future<void> pumpFlow(
   await settleStep(tester);
 }
 
+/// Opens the connect panel's "Other providers" disclosure, where every
+/// provider but the recommended one sits.
+Future<void> openOtherProviders(WidgetTester tester) async {
+  await tester.ensureVisible(find.text('Other providers'));
+  await tester.tap(find.text('Other providers'));
+  await tester.pump(); // starts the reveal
+  await tester.pump(const Duration(milliseconds: 600));
+  // The flow's own AnimatedSize then grows to the taller panel, clipping the
+  // revealed tiles until it has.
+  await tester.pump(const Duration(milliseconds: 600));
+  await tester.ensureVisible(find.text('Gemini'));
+  await tester.pump();
+}
+
 void main() {
   setUpAll(registerAllFallbackValues);
 
@@ -119,6 +133,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
 
     expect(find.byType(OnboardingConnectPanel), findsOneWidget);
+    await openOtherProviders(tester);
     await tester.tap(find.text('Gemini'), warnIfMissed: false);
     await settleStep(tester);
     await tester.pump(const Duration(milliseconds: 400));
@@ -142,6 +157,7 @@ void main() {
     await tester.tap(find.text('Set up real AI'));
     await settleStep(tester);
     await tester.pump(const Duration(milliseconds: 400));
+    await openOtherProviders(tester);
     await tester.tap(find.text('Gemini'), warnIfMissed: false);
     await settleStep(tester);
     await tester.pump(const Duration(milliseconds: 400));
@@ -178,6 +194,7 @@ void main() {
     await tester.tap(find.text('Set up real AI'));
     await settleStep(tester);
     await tester.pump(const Duration(milliseconds: 400));
+    await openOtherProviders(tester);
     await tester.tap(find.text('Gemini'), warnIfMissed: false);
     await settleStep(tester);
     await tester.pump(const Duration(milliseconds: 400));
@@ -276,6 +293,7 @@ void main() {
     await tester.tap(find.text('Set up real AI'));
     await settleStep(tester);
     await tester.pump(const Duration(milliseconds: 400));
+    await openOtherProviders(tester);
     await tester.tap(find.text('Gemini'), warnIfMissed: false);
     await settleStep(tester);
     await tester.pump(const Duration(milliseconds: 400));
@@ -306,6 +324,7 @@ void main() {
     await tester.tap(find.text('Set up real AI'));
     await settleStep(tester);
     await tester.pump(const Duration(milliseconds: 400));
+    await openOtherProviders(tester);
     await tester.tap(find.text('Gemini'), warnIfMissed: false);
     await settleStep(tester);
     await tester.pump(const Duration(milliseconds: 400));
@@ -375,6 +394,7 @@ void main() {
     await tester.tap(find.text('Set up real AI'));
     await settleStep(tester);
     await tester.pump(const Duration(milliseconds: 400));
+    await openOtherProviders(tester);
     await tester.tap(find.text('Gemini'), warnIfMissed: false);
     await settleStep(tester);
     await tester.pump(const Duration(milliseconds: 400));
@@ -431,6 +451,7 @@ void main() {
       await tester.tap(find.text('Set up real AI'));
       await settleStep(tester);
       await tester.pump(const Duration(milliseconds: 400));
+      await openOtherProviders(tester);
       await tester.tap(find.text('Gemini'), warnIfMissed: false);
       await settleStep(tester);
       await tester.pump(const Duration(milliseconds: 400));
@@ -482,6 +503,7 @@ void main() {
       await tester.tap(find.text('Set up real AI'));
       await settleStep(tester);
       await tester.pump(const Duration(milliseconds: 400));
+      await openOtherProviders(tester);
       await tester.tap(find.text('Gemini'), warnIfMissed: false);
       await settleStep(tester);
       await tester.pump(const Duration(milliseconds: 400));

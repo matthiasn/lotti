@@ -39,8 +39,9 @@ dark launch behind its own flag.
 flowchart TD
     L[First launch · no provider configured] -->|eligible| W[OnboardingWelcomeModal]
     L -->|budget spent / already completed| NONE[no auto-show · replay via Settings › Onboarding]
-    W --> WL[welcome · hero + promise + CTA]
-    WL -->|Choose your AI brain| CN[connect · provider tiles]
+    W --> WL[welcome · the companion + her one-key promise + CTA]
+    WL -->|Get started with one key| CN[connect · one recommended card]
+    CN -->|Other providers| CNO[the remaining provider tiles]
     WL -->|Look around first| SK[skip → onDismiss · no persistence, grace period preserved]
 ```
 
@@ -52,14 +53,33 @@ and the auto-show path has already written the shown count and first-shown
 timestamp *before* opening. What "look around first" costs you is a slot in the
 cadence budget, not the offer itself.
 
+# The one key
+
+The connect step (`OnboardingConnectPanel`) is built around one message: a
+single API key is all it takes. It leads with one card,
+`onboardingRecommendedProvider` (Mistral), badged *Recommended*, with what its
+key covers in place of a tagline — the seeded Mistral profile names a thinking,
+a transcription and a read-aloud model. Every other provider
+(`onboardingOtherProviders`) waits behind the *Other providers* disclosure. The
+demo AI sheet reuses the panel without her, and states the recommendation as a
+plain subtitle instead.
+
 # The companion
 
-With `enable_companion` on, the [companion](companion.md) takes part
-(`ui/widgets/onboarding_companion.dart`). Off, every surface is as it was.
+The [companion](companion.md) leads onboarding
+(`ui/widgets/onboarding_companion.dart`) **whatever her own flag,
+`enable_companion`, says**; the flag keeps gating her everywhere else in the
+app. Her lines sit in speech bubbles (`OnboardingSpeechBubble`) whose tail
+points at her.
 
 - **The welcome hero.** She stands, full length, in the welcome's hero frame in
   place of the `heroStyle` artwork (`OnboardingHeroPanel.companion`), at the
-  frame's own height.
+  frame's own height. The promise below her is her bubble: her greeting, then
+  the one key she needs (`onboardingCompanionWelcomeLine`). The panel keeps its
+  artwork and its own promise only where a host passes no companion — the
+  animation gallery.
+- **The connect step.** A bust, `ControlSizes.avatarHero` square, beside a
+  bubble in which she recommends the one key.
 - **The first-task step.** A bust, `ControlSizes.avatarHero` square, above the
   headline (`OnboardingFirstTaskView.companion`); the view stays free of
   providers and the step builds her for the frame.
@@ -69,6 +89,7 @@ Each moment is an `OnboardingCompanionBeat`:
 | Beat | When | She |
 |---|---|---|
 | `welcome` | the welcome panel | waves once |
+| `recommend` | the connect step | presents the recommended card once |
 | `prompt` | the first-task prompt | waves once |
 | `listening` | the mic is open | holds `listen` |
 | `thinking` | the words are structured | holds `think` |
@@ -86,6 +107,14 @@ open, which stops her, so she never talks into the recording. Turning
 read-aloud off, here or by sync from another device, silences her at once. The welcome's
 promise is said once per modal: back on the welcome from the connect step, she
 waves but stays quiet.
+
+**Each step speaks under its own source id**
+(`OnboardingCompanionBeat.sourceId`: `onboarding-companion-` plus the step).
+The steps crossfade, so the outgoing step is disposed after the incoming one
+has started speaking; with one shared id, its `dispose` would stop the new
+line. A new line instead stops whichever onboarding line is still playing, and
+leaving a step ends only its own. She is dressed for one subject on every step
+(`OnboardingCompanion.dressedFor`), so her outfit does not change between them.
 
 **Her writes to the voice run after the frame.** A line changes in
 `didUpdateWidget`, and leaving ends it in `dispose`; both run while the tree

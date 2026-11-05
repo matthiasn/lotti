@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_connect_panel.dart';
+import 'package:lotti/features/onboarding/ui/widgets/onboarding_speech_bubble.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -20,6 +21,7 @@ void main() {
     WidgetTester tester, {
     void Function(InferenceProviderType)? onSelect,
     VoidCallback? onBack,
+    Widget? companion,
   }) async {
     await tester.binding.setSurfaceSize(const Size(480, 900));
     addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -32,6 +34,7 @@ void main() {
             child: OnboardingConnectPanel(
               onSelect: onSelect ?? (_) {},
               onBack: onBack ?? () {},
+              companion: companion,
             ),
           ),
         ),
@@ -49,54 +52,92 @@ void main() {
   });
 
   group('OnboardingConnectPanel widget', () {
-    testWidgets('renders the title and the primary provider tiles', (
+    testWidgets('leads with one card: the recommended provider, badged, '
+        'with what its one key covers', (tester) async {
+      await pumpPanel(tester);
+
+      expect(find.text(m.onboardingConnectOneKeyTitle), findsOneWidget);
+      expect(onboardingRecommendedProvider, InferenceProviderType.mistral);
+      expect(find.text('Mistral'), findsOneWidget);
+      expect(find.text(m.onboardingConnectRecommended), findsOneWidget);
+      // The pitch takes the tagline's place on the recommended card.
+      expect(find.text(m.onboardingConnectMistralPitch), findsOneWidget);
+      expect(find.text(m.onboardingConnectMistralTagline), findsNothing);
+      // The badge sits on the Mistral card, beside its name.
+      expect(
+        (tester.getCenter(find.text(m.onboardingConnectRecommended)).dy -
+                tester.getCenter(find.text('Mistral')).dy)
+            .abs(),
+        lessThan(24),
+      );
+    });
+
+    testWidgets('every other provider waits behind the closed disclosure', (
       tester,
     ) async {
       await pumpPanel(tester);
 
-      expect(find.text(m.onboardingConnectTitle), findsOneWidget);
-
-      // Each primary provider's curated name is shown.
-      for (final type in onboardingPrimaryProviders) {
+      expect(find.text(m.onboardingConnectOtherProviders), findsOneWidget);
+      expect(find.text(m.onboardingConnectHideOtherProviders), findsNothing);
+      for (final type in onboardingOtherProviders) {
         expect(
           find.text(onboardingProviderName(m, type)),
-          findsOneWidget,
-          reason: 'expected primary tile for $type',
+          findsNothing,
+          reason: '$type should wait behind the disclosure',
         );
       }
-      // Concretely, Mistral first as the recommended default, then
-      // Melious.ai, Gemini, and Qwen.
-      expect(onboardingPrimaryProviders, [
-        InferenceProviderType.mistral,
-        InferenceProviderType.melious,
-        InferenceProviderType.gemini,
-        InferenceProviderType.alibaba,
-      ]);
       expect(
-        find.text('Mistral is the recommended default.'),
+        onboardingOtherProviders,
+        isNot(contains(onboardingRecommendedProvider)),
+      );
+    });
+
+    testWidgets('without the companion the recommendation is a plain '
+        'subtitle', (tester) async {
+      await pumpPanel(tester);
+
+      expect(find.text(m.onboardingConnectNotSure), findsOneWidget);
+      expect(find.text(m.onboardingConnectGuide), findsNothing);
+      expect(find.byType(OnboardingSpeechBubble), findsNothing);
+    });
+
+    testWidgets('with the companion she recommends it in her bubble, '
+        'pointing at her', (tester) async {
+      await pumpPanel(
+        tester,
+        companion: const ColoredBox(
+          key: ValueKey('companion'),
+          color: Color(0xFF000000),
+        ),
+      );
+
+      final companion = find.byKey(const ValueKey('companion'));
+      expect(tester.getSize(companion), const Size.square(80));
+      final bubble = tester.widget<OnboardingSpeechBubble>(
+        find.byType(OnboardingSpeechBubble),
+      );
+      expect(bubble.text, m.onboardingConnectGuide);
+      expect(bubble.tail, OnboardingBubbleTail.left);
+      expect(find.text(m.onboardingConnectNotSure), findsNothing);
+      // She stands left of her bubble, and both sit above the card.
+      expect(
+        tester.getCenter(companion).dx,
+        lessThan(tester.getCenter(find.text(m.onboardingConnectGuide)).dx),
+      );
+      expect(
+        tester.getBottomLeft(companion).dy,
+        lessThan(tester.getTopLeft(find.text('Mistral')).dy),
+      );
+    });
+
+    testWidgets('the recommended card announces itself as recommended', (
+      tester,
+    ) async {
+      await pumpPanel(tester);
+
+      expect(
+        find.bySemanticsLabel('Mistral, ${m.onboardingConnectRecommended}'),
         findsOneWidget,
-      );
-      expect(
-        tester.getTopLeft(find.text('Mistral')).dy,
-        lessThan(tester.getTopLeft(find.text('Melious.ai')).dy),
-      );
-      expect(find.text('Melious.ai'), findsOneWidget);
-      expect(find.text('Gemini'), findsOneWidget);
-      expect(find.text('Mistral'), findsOneWidget);
-      expect(find.text('Qwen'), findsOneWidget);
-
-      // Primary taglines render under the names.
-      expect(find.text(m.aiProviderTaglineMelious), findsOneWidget);
-      expect(find.text(m.onboardingConnectGeminiTagline), findsOneWidget);
-      expect(find.text(m.onboardingConnectMistralTagline), findsOneWidget);
-      expect(find.text(m.onboardingConnectQwenTagline), findsOneWidget);
-
-      // The "more options" disclosure starts collapsed: extra providers hidden.
-      expect(find.text(m.onboardingConnectMoreOptions), findsOneWidget);
-      expect(find.text(m.onboardingConnectLessOptions), findsNothing);
-      expect(
-        find.text(onboardingProviderName(m, InferenceProviderType.openAi)),
-        findsNothing,
       );
     });
 
@@ -135,41 +176,34 @@ void main() {
       expect(backed, isTrue);
     });
 
-    testWidgets('More options reveals the extra providers and toggles back', (
+    testWidgets('Other providers reveals the rest and hides them again', (
       tester,
     ) async {
       await pumpPanel(tester);
 
-      // Hidden initially.
-      for (final type in onboardingMoreProviders) {
-        expect(find.text(onboardingProviderName(m, type)), findsNothing);
-      }
-
-      // Expand.
-      await tester.tap(find.text(m.onboardingConnectMoreOptions));
+      await tester.tap(find.text(m.onboardingConnectOtherProviders));
       await tester.pump(); // start the AnimatedSize/Switcher
-      await tester.pump(const Duration(milliseconds: 400)); // reveal settles
+      await tester.pump(const Duration(milliseconds: 600)); // reveal settles
 
-      // Label flips and the extra providers (OpenAI, Ollama) appear.
-      expect(find.text(m.onboardingConnectLessOptions), findsOneWidget);
-      expect(find.text(m.onboardingConnectMoreOptions), findsNothing);
-      for (final type in onboardingMoreProviders) {
+      expect(find.text(m.onboardingConnectHideOtherProviders), findsOneWidget);
+      expect(find.text(m.onboardingConnectOtherProviders), findsNothing);
+      for (final type in onboardingOtherProviders) {
         expect(
           find.text(onboardingProviderName(m, type)),
           findsOneWidget,
           reason: 'expected revealed tile for $type',
         );
       }
-      expect(find.text('OpenAI'), findsOneWidget);
-      expect(find.text('Ollama'), findsOneWidget);
+      // The others keep their own taglines; only the recommended card pitches.
+      expect(find.text(m.onboardingConnectGeminiTagline), findsOneWidget);
+      expect(find.text(m.onboardingConnectRecommended), findsOneWidget);
 
-      // Collapse again.
-      await tester.tap(find.text(m.onboardingConnectLessOptions));
+      await tester.tap(find.text(m.onboardingConnectHideOtherProviders));
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pump(const Duration(milliseconds: 600));
 
-      expect(find.text(m.onboardingConnectMoreOptions), findsOneWidget);
-      for (final type in onboardingMoreProviders) {
+      expect(find.text(m.onboardingConnectOtherProviders), findsOneWidget);
+      for (final type in onboardingOtherProviders) {
         expect(find.text(onboardingProviderName(m, type)), findsNothing);
       }
     });
@@ -205,7 +239,8 @@ void main() {
 
       expect(selected, [InferenceProviderType.mistral]);
       final provider = find.bySemanticsLabel(
-        onboardingProviderName(m, InferenceProviderType.mistral),
+        '${onboardingProviderName(m, InferenceProviderType.mistral)}, '
+        '${m.onboardingConnectRecommended}',
       );
       expect(provider, findsOneWidget);
       final semantics = tester.getSemantics(provider);
@@ -222,9 +257,9 @@ void main() {
       final selected = <InferenceProviderType>[];
       await pumpPanel(tester, onSelect: selected.add);
 
-      await tester.tap(find.text(m.onboardingConnectMoreOptions));
+      await tester.tap(find.text(m.onboardingConnectOtherProviders));
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pump(const Duration(milliseconds: 600));
 
       await tester.tap(
         find.text(onboardingProviderName(m, InferenceProviderType.ollama)),
@@ -239,8 +274,8 @@ void main() {
     test('returns a distinct brand color for every surfaced provider', () {
       final byType = <InferenceProviderType, Color>{
         for (final type in [
-          ...onboardingPrimaryProviders,
-          ...onboardingMoreProviders,
+          onboardingRecommendedProvider,
+          ...onboardingOtherProviders,
         ])
           type: onboardingProviderBrandColor(type),
       };

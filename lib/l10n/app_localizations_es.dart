@@ -11714,22 +11714,34 @@ class AppLocalizationsEs extends AppLocalizations {
   String get onboardingCategoryWork => 'Trabajo';
 
   @override
+  String get onboardingCompanionGreeting => 'Hola, soy Lotti.';
+
+  @override
+  String get onboardingCompanionOneKey =>
+      'Cuéntame lo que tienes en mente y lo convierto en un plan. Para empezar solo necesito una clave de API, y te ayudo a configurarla.';
+
+  @override
   String get onboardingConnectGeminiName => 'Gemini';
 
   @override
   String get onboardingConnectGeminiTagline => 'Estados Unidos';
 
   @override
-  String get onboardingConnectLessOptions => 'Menos opciones';
+  String get onboardingConnectGuide =>
+      'Yo elegiría Mistral: con su única clave puedo pensar, transcribir lo que dices y leerte en voz alta.';
+
+  @override
+  String get onboardingConnectHideOtherProviders => 'Ocultar otros proveedores';
 
   @override
   String get onboardingConnectMistralName => 'Mistral';
 
   @override
-  String get onboardingConnectMistralTagline => 'Unión Europea';
+  String get onboardingConnectMistralPitch =>
+      'Una clave para pensar, transcribir y hablar · alojado en la UE';
 
   @override
-  String get onboardingConnectMoreOptions => 'Más opciones';
+  String get onboardingConnectMistralTagline => 'Unión Europea';
 
   @override
   String get onboardingConnectNotSure =>
@@ -11739,7 +11751,13 @@ class AppLocalizationsEs extends AppLocalizations {
   String get onboardingConnectOllamaName => 'Ollama';
 
   @override
+  String get onboardingConnectOneKeyTitle => 'Una sola clave basta';
+
+  @override
   String get onboardingConnectOpenAiName => 'OpenAI';
+
+  @override
+  String get onboardingConnectOtherProviders => 'Otros proveedores';
 
   @override
   String get onboardingConnectQwenName => 'Qwen';
@@ -11748,7 +11766,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get onboardingConnectQwenTagline => 'China';
 
   @override
-  String get onboardingConnectTitle => 'Elige el cerebro de IA para tus tareas';
+  String get onboardingConnectRecommended => 'Recomendado';
 
   @override
   String get onboardingFirstTaskCreatedHint => 'Toca tu tarea para abrirla';
@@ -11827,6 +11845,9 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get onboardingWelcomeMessage =>
       'Conecta tu cerebro de IA, di una idea y mírala convertirse en una tarea estructurada.';
+
+  @override
+  String get onboardingWelcomeOneKeyButton => 'Empezar con una sola clave';
 
   @override
   String get onboardingWelcomeSkipButton => 'Explorar primero';

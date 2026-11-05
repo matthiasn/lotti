@@ -7,6 +7,7 @@ import 'package:lotti/features/onboarding/ui/widgets/aurora_hero.dart';
 import 'package:lotti/features/onboarding/ui/widgets/crystallize_hero.dart';
 import 'package:lotti/features/onboarding/ui/widgets/neural_constellation.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_hero.dart';
+import 'package:lotti/features/onboarding/ui/widgets/onboarding_speech_bubble.dart';
 import 'package:lotti/features/onboarding/ui/widgets/waveform_text_hero.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:material_ui/material_ui.dart';
@@ -787,6 +788,44 @@ void main() {
 
     expect(find.byKey(const ValueKey('her')), findsOneWidget);
     expect(find.byType(NeuralConstellation), findsNothing);
+    // The promise is hers: a bubble pointing up at her, greeting first.
+    final bubble = tester.widget<OnboardingSpeechBubble>(
+      find.byType(OnboardingSpeechBubble),
+    );
+    expect(bubble.title, "Hi, I'm Lotti.");
+    expect(bubble.text, contains('one API key'));
+    expect(bubble.tail, OnboardingBubbleTail.up);
+    expect(find.text('Talk. Lotti turns it into a plan.'), findsNothing);
+    expect(find.text('Get started with one key'), findsOneWidget);
+    expect(find.text('Choose your AI brain'), findsNothing);
+    // The bubble sits below her.
+    expect(
+      tester.getCenter(find.byKey(const ValueKey('her'))).dy,
+      lessThan(tester.getTopLeft(find.text("Hi, I'm Lotti.")).dy),
+    );
+  });
+
+  test('her welcome line is the words of her bubble', () async {
+    final m = await AppLocalizations.delegate.load(const Locale('en'));
+    expect(
+      onboardingCompanionWelcomeLine(m),
+      '${m.onboardingCompanionGreeting} ${m.onboardingCompanionOneKey}',
+    );
+  });
+
+  testWidgets('without her the panel keeps its own promise and button', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        boundedPanel(OnboardingHeroPanel(onConnect: () {}, onSkip: () {})),
+        mediaQueryData: reducedMotionMq,
+      ),
+    );
+    await tester.pump();
+
+    expect(find.byType(OnboardingSpeechBubble), findsNothing);
     expect(find.text('Talk. Lotti turns it into a plan.'), findsOneWidget);
+    expect(find.text('Choose your AI brain'), findsOneWidget);
   });
 }

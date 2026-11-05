@@ -11592,22 +11592,35 @@ class AppLocalizationsNl extends AppLocalizations {
   String get onboardingCategoryWork => 'Werk';
 
   @override
+  String get onboardingCompanionGreeting => 'Hoi, ik ben Lotti.';
+
+  @override
+  String get onboardingCompanionOneKey =>
+      'Vertel me wat je bezighoudt en ik maak er een plan van. Om te beginnen heb ik maar één API-sleutel nodig, en ik help je die in te stellen.';
+
+  @override
   String get onboardingConnectGeminiName => 'Gemini';
 
   @override
   String get onboardingConnectGeminiTagline => 'Verenigde Staten';
 
   @override
-  String get onboardingConnectLessOptions => 'Minder opties';
+  String get onboardingConnectGuide =>
+      'Ik zou Mistral kiezen: met die ene sleutel kan ik nadenken, uitschrijven wat je zegt en je voorlezen.';
+
+  @override
+  String get onboardingConnectHideOtherProviders =>
+      'Andere aanbieders verbergen';
 
   @override
   String get onboardingConnectMistralName => 'Mistral';
 
   @override
-  String get onboardingConnectMistralTagline => 'Europese Unie';
+  String get onboardingConnectMistralPitch =>
+      'Eén sleutel voor denken, transcriptie en stem · gehost in de EU';
 
   @override
-  String get onboardingConnectMoreOptions => 'Meer opties';
+  String get onboardingConnectMistralTagline => 'Europese Unie';
 
   @override
   String get onboardingConnectNotSure => 'Mistral is de aanbevolen standaard.';
@@ -11616,7 +11629,13 @@ class AppLocalizationsNl extends AppLocalizations {
   String get onboardingConnectOllamaName => 'Ollama';
 
   @override
+  String get onboardingConnectOneKeyTitle => 'Eén sleutel is genoeg';
+
+  @override
   String get onboardingConnectOpenAiName => 'OpenAI';
+
+  @override
+  String get onboardingConnectOtherProviders => 'Andere aanbieders';
 
   @override
   String get onboardingConnectQwenName => 'Qwen';
@@ -11625,7 +11644,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get onboardingConnectQwenTagline => 'China';
 
   @override
-  String get onboardingConnectTitle => 'Kies de AI-hersenen voor uw taken';
+  String get onboardingConnectRecommended => 'Aanbevolen';
 
   @override
   String get onboardingFirstTaskCreatedHint =>
@@ -11703,6 +11722,9 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get onboardingWelcomeMessage =>
       'Sluit je AI-hersenen aan, spreek dan een gedachte en kijk hoe het een gestructureerde taak wordt.';
+
+  @override
+  String get onboardingWelcomeOneKeyButton => 'Begin met één sleutel';
 
   @override
   String get onboardingWelcomeSkipButton => 'Kijk eerst om je heen.';

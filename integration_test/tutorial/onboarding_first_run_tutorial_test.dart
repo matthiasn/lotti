@@ -135,13 +135,21 @@ void main() {
       });
 
       await driver.step('choose_brain', () async {
-        await tapLabel(l10n.onboardingWelcomeConnectButton);
+        await tapLabel(l10n.onboardingWelcomeOneKeyButton);
         await driver.pumpUntilFound(panel('connect'));
       });
 
       await driver.step('pick_melious', () async {
         await driver.holdUntil(
           driver.timeline.elapsed + const Duration(milliseconds: 1500),
+        );
+        // Melious waits behind the disclosure; Mistral leads the step.
+        await tapLabel(
+          l10n.onboardingConnectOtherProviders,
+          within: panel('connect'),
+        );
+        await driver.holdUntil(
+          driver.timeline.elapsed + const Duration(milliseconds: 800),
         );
         await tapLabel(l10n.aiProviderMeliousName, within: panel('connect'));
         await driver.pumpUntilFound(panel('apikey-melious'));

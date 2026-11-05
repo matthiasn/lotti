@@ -19459,6 +19459,18 @@ abstract class AppLocalizations {
   /// **'Work'**
   String get onboardingCategoryWork;
 
+  /// No description provided for @onboardingCompanionGreeting.
+  ///
+  /// In en, this message translates to:
+  /// **'Hi, I\'m Lotti.'**
+  String get onboardingCompanionGreeting;
+
+  /// No description provided for @onboardingCompanionOneKey.
+  ///
+  /// In en, this message translates to:
+  /// **'Tell me what\'s on your mind and I\'ll turn it into a plan. All I need to get going is one API key, and I\'ll help you set it up.'**
+  String get onboardingCompanionOneKey;
+
   /// No description provided for @onboardingConnectGeminiName.
   ///
   /// In en, this message translates to:
@@ -19471,11 +19483,17 @@ abstract class AppLocalizations {
   /// **'United States'**
   String get onboardingConnectGeminiTagline;
 
-  /// No description provided for @onboardingConnectLessOptions.
+  /// No description provided for @onboardingConnectGuide.
   ///
   /// In en, this message translates to:
-  /// **'Fewer options'**
-  String get onboardingConnectLessOptions;
+  /// **'I\'d go with Mistral: with its one key I can think, transcribe what you say and read aloud to you.'**
+  String get onboardingConnectGuide;
+
+  /// No description provided for @onboardingConnectHideOtherProviders.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide other providers'**
+  String get onboardingConnectHideOtherProviders;
 
   /// No description provided for @onboardingConnectMistralName.
   ///
@@ -19483,17 +19501,17 @@ abstract class AppLocalizations {
   /// **'Mistral'**
   String get onboardingConnectMistralName;
 
+  /// No description provided for @onboardingConnectMistralPitch.
+  ///
+  /// In en, this message translates to:
+  /// **'One key for thinking, transcription and voice · hosted in the EU'**
+  String get onboardingConnectMistralPitch;
+
   /// No description provided for @onboardingConnectMistralTagline.
   ///
   /// In en, this message translates to:
   /// **'European Union'**
   String get onboardingConnectMistralTagline;
-
-  /// No description provided for @onboardingConnectMoreOptions.
-  ///
-  /// In en, this message translates to:
-  /// **'More options'**
-  String get onboardingConnectMoreOptions;
 
   /// No description provided for @onboardingConnectNotSure.
   ///
@@ -19507,11 +19525,23 @@ abstract class AppLocalizations {
   /// **'Ollama'**
   String get onboardingConnectOllamaName;
 
+  /// No description provided for @onboardingConnectOneKeyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'One key is all it takes'**
+  String get onboardingConnectOneKeyTitle;
+
   /// No description provided for @onboardingConnectOpenAiName.
   ///
   /// In en, this message translates to:
   /// **'OpenAI'**
   String get onboardingConnectOpenAiName;
+
+  /// No description provided for @onboardingConnectOtherProviders.
+  ///
+  /// In en, this message translates to:
+  /// **'Other providers'**
+  String get onboardingConnectOtherProviders;
 
   /// No description provided for @onboardingConnectQwenName.
   ///
@@ -19525,11 +19555,11 @@ abstract class AppLocalizations {
   /// **'China'**
   String get onboardingConnectQwenTagline;
 
-  /// No description provided for @onboardingConnectTitle.
+  /// No description provided for @onboardingConnectRecommended.
   ///
   /// In en, this message translates to:
-  /// **'Choose the AI brain for your tasks'**
-  String get onboardingConnectTitle;
+  /// **'Recommended'**
+  String get onboardingConnectRecommended;
 
   /// No description provided for @onboardingFirstTaskCreatedHint.
   ///
@@ -19668,6 +19698,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Connect your AI brain, then speak a thought and watch it become a structured task.'**
   String get onboardingWelcomeMessage;
+
+  /// No description provided for @onboardingWelcomeOneKeyButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Get started with one key'**
+  String get onboardingWelcomeOneKeyButton;
 
   /// No description provided for @onboardingWelcomeSkipButton.
   ///

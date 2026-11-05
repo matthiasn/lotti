@@ -11556,22 +11556,34 @@ class AppLocalizationsDa extends AppLocalizations {
   String get onboardingCategoryWork => 'Værk';
 
   @override
+  String get onboardingCompanionGreeting => 'Hej, jeg er Lotti.';
+
+  @override
+  String get onboardingCompanionOneKey =>
+      'Fortæl mig, hvad du har på hjerte, så laver jeg det om til en plan. For at komme i gang skal jeg bare bruge én API-nøgle, og jeg hjælper dig med at sætte den op.';
+
+  @override
   String get onboardingConnectGeminiName => 'Tvillingerne';
 
   @override
   String get onboardingConnectGeminiTagline => 'USA';
 
   @override
-  String get onboardingConnectLessOptions => 'Færre muligheder';
+  String get onboardingConnectGuide =>
+      'Jeg ville vælge Mistral: med den ene nøgle kan jeg tænke, skrive det ned, du siger, og læse højt for dig.';
+
+  @override
+  String get onboardingConnectHideOtherProviders => 'Skjul andre udbydere';
 
   @override
   String get onboardingConnectMistralName => 'Mistral';
 
   @override
-  String get onboardingConnectMistralTagline => 'Den Europæiske Union';
+  String get onboardingConnectMistralPitch =>
+      'Én nøgle til tænkning, transskription og stemme · hostet i EU';
 
   @override
-  String get onboardingConnectMoreOptions => 'Flere muligheder';
+  String get onboardingConnectMistralTagline => 'Den Europæiske Union';
 
   @override
   String get onboardingConnectNotSure => 'Mistral er den anbefalede standard.';
@@ -11580,7 +11592,13 @@ class AppLocalizationsDa extends AppLocalizations {
   String get onboardingConnectOllamaName => 'Ollama';
 
   @override
+  String get onboardingConnectOneKeyTitle => 'Én nøgle er alt, der skal til';
+
+  @override
   String get onboardingConnectOpenAiName => 'OpenAI';
+
+  @override
+  String get onboardingConnectOtherProviders => 'Andre udbydere';
 
   @override
   String get onboardingConnectQwenName => 'Qwen';
@@ -11589,7 +11607,7 @@ class AppLocalizationsDa extends AppLocalizations {
   String get onboardingConnectQwenTagline => 'Kina';
 
   @override
-  String get onboardingConnectTitle => 'Vælg AI-hjernen til dine opgaver';
+  String get onboardingConnectRecommended => 'Anbefalet';
 
   @override
   String get onboardingFirstTaskCreatedHint =>
@@ -11668,6 +11686,9 @@ class AppLocalizationsDa extends AppLocalizations {
   @override
   String get onboardingWelcomeMessage =>
       'Forbind din AI-hjerne, sig derefter en tanke og se den blive en struktureret opgave.';
+
+  @override
+  String get onboardingWelcomeOneKeyButton => 'Kom i gang med én nøgle';
 
   @override
   String get onboardingWelcomeSkipButton => 'Se dig omkring først';

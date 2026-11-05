@@ -7,13 +7,17 @@ them to one moment: speak a thought, and watch it become a structured task.
 
 - **Explains the promise, then delivers it.** A short welcome, then connecting an
   AI provider, then the live voice-to-task moment — not a tour of menus.
+- **Says what it takes: one API key.** The connect step leads with one
+  recommended provider, Mistral, whose single key covers thinking,
+  transcription and the voice; the others sit behind a disclosure.
 - **Never traps anyone.** "Look around first" persists nothing and keeps the
   offer available later.
 - **Does not nag.** The welcome auto-shows a small number of times within a fixed
   window and then stops. Completing it retires the offer entirely.
-- **Has a face, with the companion on.** She is the welcome's hero, then waves
-  the user on, listens while they record, thinks while the task is structured
-  and celebrates when it lands. Where the on-device voice is already installed
+- **Has a face.** The companion leads it, whether or not she is switched on
+  elsewhere: she introduces herself on the welcome, recommends the one key,
+  then waves the user on, listens while they record, thinks while the task is
+  structured and celebrates when it lands. Her lines are speech bubbles. Where the on-device voice is already installed
   she says the headlines aloud; on a first run, she is silent.
 - **Can be replayed on purpose.** Settings › Onboarding reopens it any time.
 - **Sets up areas with real consent.** Creating the first areas is also where

@@ -161,10 +161,11 @@ void main() {
     await settlePanelSwap(tester);
 
     expect(chipWithLabel(tester, 'Connect').selected, isTrue);
-    // The connect panel lists providers — Gemini's curated name is shown.
-    expect(find.text('Gemini'), findsOneWidget);
+    // The connect panel leads with the recommended provider's card.
+    expect(find.text('Mistral'), findsOneWidget);
+    expect(find.text('Recommended'), findsOneWidget);
     expect(
-      find.text('Choose the AI brain for your tasks'),
+      find.text('One key is all it takes'),
       findsOneWidget,
     );
     expect(tester.takeException(), isNull);
@@ -192,7 +193,7 @@ void main() {
 
       expect(find.byType(OnboardingHeroPanel), findsNothing);
       expect(
-        find.text('Choose the AI brain for your tasks'),
+        find.text('One key is all it takes'),
         findsOneWidget,
       );
       expect(chipWithLabel(tester, 'Connect').selected, isTrue);
@@ -211,7 +212,7 @@ void main() {
 
       // Tapping a provider tile invokes onSelect → switches to the API-key view
       // for that provider, covering the connect panel's onSelect closure.
-      await tester.tap(find.text('Gemini'));
+      await tester.tap(find.text('Mistral'));
       await settlePanelSwap(tester);
 
       expect(find.text('Paste your API key'), findsOneWidget);
@@ -268,7 +269,7 @@ void main() {
     await settlePanelSwap(tester);
 
     expect(
-      find.text('Choose the AI brain for your tasks'),
+      find.text('One key is all it takes'),
       findsOneWidget,
     );
     expect(chipWithLabel(tester, 'Connect').selected, isTrue);
@@ -319,7 +320,7 @@ void main() {
 
     await tester.tap(find.text('Connect'));
     await settlePanelSwap(tester);
-    await tester.tap(find.text('More options'));
+    await tester.tap(find.text('Other providers'));
     await settlePanelSwap(tester);
     await tester.tap(find.text('Ollama'));
     await settlePanelSwap(tester);

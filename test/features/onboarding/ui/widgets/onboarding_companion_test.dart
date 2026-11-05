@@ -1,12 +1,14 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/companion/animation/mouth_track.dart';
 import 'package:lotti/features/companion/model/companion_gesture.dart';
 import 'package:lotti/features/companion/rig/companion_painter.dart';
 import 'package:lotti/features/companion/state/spoken_track.dart';
+import 'package:lotti/features/companion/ui/companion_speaker.dart';
 import 'package:lotti/features/companion/ui/companion_view.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_companion.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_first_task_view.dart';
@@ -52,6 +54,30 @@ void main() {
     expect(OnboardingCompanionBeat.listening.holding, GestureName.listen);
     expect(OnboardingCompanionBeat.thinking.holding, GestureName.think);
     expect(OnboardingCompanionBeat.created.cue, GestureName.celebrate);
+  });
+
+  test('she presents the one key she recommends', () {
+    expect(OnboardingCompanionBeat.recommend.cue, GestureName.presentRight);
+    expect(OnboardingCompanionBeat.recommend.holding, isNull);
+  });
+
+  test('each step speaks under its own source; one step shares one', () {
+    expect(
+      OnboardingCompanionBeat.welcome.sourceId,
+      'onboarding-companion-welcome',
+    );
+    expect(
+      OnboardingCompanionBeat.recommend.sourceId,
+      'onboarding-companion-connect',
+    );
+    final firstTask = {
+      for (final phase in OnboardingFirstTaskPhase.values)
+        OnboardingCompanionBeat.of(phase).sourceId,
+    };
+    expect(firstTask, {'onboarding-companion-first-task'});
+    for (final beat in OnboardingCompanionBeat.values) {
+      expect(beat.sourceId, startsWith(OnboardingCompanion.sourcePrefix));
+    }
   });
 
   group('OnboardingCompanion', () {
@@ -267,6 +293,69 @@ void main() {
 
       expect(player.stopCount, 1);
       expect(engine.calls, hasLength(1));
+    });
+
+    testWidgets("her view lip-syncs to her step's own source", (tester) async {
+      await show(
+        tester,
+        const OnboardingCompanion(beat: OnboardingCompanionBeat.recommend),
+      );
+
+      final speaker = tester.widget<CompanionSpeaker>(
+        find.byType(CompanionSpeaker),
+      );
+      expect(speaker.sourceId, OnboardingCompanionBeat.recommend.sourceId);
+      // Dressed for onboarding as a whole, so every step shows one outfit.
+      expect(speaker.dressedFor, OnboardingCompanion.dressedFor);
+    });
+
+    testWidgets('across a crossfade the new step takes over her voice, and '
+        'the outgoing step leaving does not silence it', (tester) async {
+      // Keyed where the column matches its children, so each step keeps
+      // its state as the other comes and goes.
+      const welcome = Expanded(
+        key: ValueKey('welcome'),
+        child: OnboardingCompanion(
+          beat: OnboardingCompanionBeat.welcome,
+          line: 'Hello',
+        ),
+      );
+      const connect = Expanded(
+        key: ValueKey('connect'),
+        child: OnboardingCompanion(
+          beat: OnboardingCompanionBeat.recommend,
+          line: 'Mistral',
+        ),
+      );
+      await show(tester, const Column(children: [welcome]));
+      expect(engine.calls.single.text, 'Hello');
+
+      // Both on screen, as while the steps crossfade: the welcome's line
+      // gives way to the new one.
+      await swap(
+        tester,
+        const Column(
+          children: [
+            welcome,
+            connect,
+          ],
+        ),
+      );
+      expect(engine.calls.map((c) => c.text), ['Hello', 'Mistral']);
+      expect(player.stopCount, 1);
+
+      // The crossfade ends and the welcome leaves; its dispose ends only
+      // its own utterance, which is no longer the one playing.
+      await swap(tester, const Column(children: [connect]));
+
+      expect(player.stopCount, 1);
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(CompanionSpeaker)),
+      );
+      expect(
+        container.read(ttsPlaybackControllerProvider).sourceId,
+        OnboardingCompanionBeat.recommend.sourceId,
+      );
     });
 
     testWidgets('leaving the surface stops her', (tester) async {
