@@ -514,7 +514,7 @@ void main() {
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 400));
           await tester.pump(const Duration(milliseconds: 400));
-          await tester.tap(find.text('Gemini'), warnIfMissed: false);
+          await tester.tap(find.text('Mistral'), warnIfMissed: false);
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 400));
           await tester.pump(const Duration(milliseconds: 400));
