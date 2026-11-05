@@ -11919,6 +11919,50 @@ class AppLocalizationsRo extends AppLocalizations {
   String get onboardingSuccessTitle => 'Gata de start';
 
   @override
+  String get onboardingVoiceElevenLabsDescription =>
+      'Opțional, cu o cheie ElevenLabs proprie.';
+
+  @override
+  String get onboardingVoiceElevenLabsName => 'ElevenLabs';
+
+  @override
+  String get onboardingVoiceOnDeviceDescription =>
+      'Gratuită și privată. Funcționează offline după o singură descărcare.';
+
+  @override
+  String get onboardingVoiceOnDeviceName => 'Pe dispozitivul dvs.';
+
+  @override
+  String onboardingVoicePlay(String voice) {
+    return 'Redați $voice';
+  }
+
+  @override
+  String get onboardingVoicesContinue => 'Mai departe: cheia dvs.';
+
+  @override
+  String get onboardingVoicesEnglishNote =>
+      'Mostrele sunt în engleză. Fiecare voce vorbește și multe alte limbi.';
+
+  @override
+  String get onboardingVoicesLine =>
+      'Pot vorbi cu voci diferite. Atingeți una ca s-o ascultați. O puteți schimba oricând în Setări › Vorbire.';
+
+  @override
+  String get onboardingVoicesTitle => 'Ascultați cum pot suna';
+
+  @override
+  String onboardingVoiceStop(String voice) {
+    return 'Opriți $voice';
+  }
+
+  @override
+  String get onboardingVoiceVoxtralDescription => 'Vine cu cheia dvs. Mistral.';
+
+  @override
+  String get onboardingVoiceVoxtralName => 'Mistral Voxtral';
+
+  @override
   String get onboardingWelcomeConnectButton => 'Alegeți creierul AI';
 
   @override

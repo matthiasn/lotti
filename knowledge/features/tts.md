@@ -405,3 +405,20 @@ A failure never reaches the caller of `speak` as an exception: it is the
 `listenForPlaybackFailure` (`ui/playback_failure_toast.dart`) from its build,
 which shows one error toast per failure of *its* `sourceId` — the AI summary
 card and the Daily OS day briefing both do.
+
+# Bundled clips
+
+`playClip` plays a clip shipped with the app instead of speech made for the
+moment: onboarding uses it to let a new user hear the on-device, Voxtral and
+ElevenLabs voices before any of them is set up. It needs neither the model nor
+the network. The asset is copied to a temporary file of its own
+(`state/tts_bundled_clip.dart`), then played through the same player and
+`TtsPlaybackState` as a synthesized utterance: the companion lip-syncs to it,
+and stop, completion and error clean the file up as they clean up any clip.
+
+A clip plays at its natural speed, since it is a sample of how a voice sounds,
+and is a no-op while another utterance is busy, like `speak`. Its key carries
+its own model slot, so a finished sample is never replayed in place of real
+speech. The clips themselves are 16-bit PCM WAV, which is what the companion's
+lip-sync reads exactly; `tool/onboarding_voice_samples.py` renders them.
+

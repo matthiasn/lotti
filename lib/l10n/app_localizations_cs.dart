@@ -11830,6 +11830,51 @@ class AppLocalizationsCs extends AppLocalizations {
   String get onboardingSuccessTitle => 'Vše připraveno';
 
   @override
+  String get onboardingVoiceElevenLabsDescription =>
+      'Volitelné, s vlastním klíčem ElevenLabs.';
+
+  @override
+  String get onboardingVoiceElevenLabsName => 'ElevenLabs';
+
+  @override
+  String get onboardingVoiceOnDeviceDescription =>
+      'Zdarma a soukromě. Po jednorázovém stažení funguje offline.';
+
+  @override
+  String get onboardingVoiceOnDeviceName => 'Ve tvém zařízení';
+
+  @override
+  String onboardingVoicePlay(String voice) {
+    return 'Přehrát $voice';
+  }
+
+  @override
+  String get onboardingVoicesContinue => 'Dál: tvůj klíč';
+
+  @override
+  String get onboardingVoicesEnglishNote =>
+      'Ukázky jsou v angličtině. Každý hlas mluví i mnoha dalšími jazyky.';
+
+  @override
+  String get onboardingVoicesLine =>
+      'Umím mluvit různými hlasy. Klepni na jeden a poslechni si ho. Kdykoli ho můžeš změnit v Nastavení › Řeč.';
+
+  @override
+  String get onboardingVoicesTitle => 'Poslechni si, jak můžu znít';
+
+  @override
+  String onboardingVoiceStop(String voice) {
+    return 'Zastavit $voice';
+  }
+
+  @override
+  String get onboardingVoiceVoxtralDescription =>
+      'Je součástí tvého klíče Mistral.';
+
+  @override
+  String get onboardingVoiceVoxtralName => 'Mistral Voxtral';
+
+  @override
   String get onboardingWelcomeConnectButton => 'Vybrat AI mozek';
 
   @override

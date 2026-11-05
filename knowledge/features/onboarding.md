@@ -41,7 +41,8 @@ flowchart TD
     L -->|budget spent / already completed| NONE[no auto-show · replay via Settings › Onboarding]
     W --> WL[welcome · the companion + her one-key promise + CTA]
     WL -->|Get started with one key| MY[make me yours · her look, optional]
-    MY -->|Looks good / Skip for now| CN[connect · one recommended card]
+    MY -->|Looks good / Skip for now| VO[the voices · a sample each, optional]
+    VO -->|Next: your key| CN[connect · one recommended card]
     CN -->|Other providers| CNO[the remaining provider tiles]
     WL -->|Look around first| SK[skip → onDismiss · no persistence, grace period preserved]
 ```
@@ -86,8 +87,18 @@ points at her.
   `companionCustomizationProvider` — the store Settings › Companion edits — so
   she wears it as it is made, and "Skip for now" only moves on. The step
   records `companionCustomizeShown`, `companionCustomized` (the first pick of
-  a visit) and `companionCustomizeSkipped`; `providerModalShown` is recorded
-  when the user leaves it for the key.
+  a visit) and `companionCustomizeSkipped`.
+- **The voices.** After it, an optional step (`OnboardingVoicesStep`): her
+  bust beside her bubble, then a card for each voice she can have — on the
+  device (free, private), Mistral's Voxtral (comes with the recommended key)
+  and ElevenLabs (with a key of its own). Each card plays its bundled sample
+  through her (`TtsPlaybackController.playClip`) under her step's source, so
+  she says it with her mouth in time; starting one stops whatever was
+  speaking, and tapping the one playing stops it. The samples are one English
+  sentence (`onboardingVoiceSampleText`), as a note under the cards says. The
+  step records `voiceSamplesShown`, and `voiceSamplePlayed` with the voice as
+  its provider dimension; `providerModalShown` is recorded when the user
+  leaves it for the key.
 - **The connect step.** A bust, `ControlSizes.avatarHero` square, beside a
   bubble in which she recommends the one key.
 - **The first-task step.** A bust, `ControlSizes.avatarHero` square, above the
@@ -100,6 +111,7 @@ Each moment is an `OnboardingCompanionBeat`:
 |---|---|---|
 | `welcome` | the welcome panel | waves once |
 | `dressUp` | the "make me yours" step | opens her arms once |
+| `voices` | the voices step | opens her hands once |
 | `recommend` | the connect step | presents the recommended card once |
 | `prompt` | the first-task prompt | waves once |
 | `listening` | the mic is open | holds `listen` |

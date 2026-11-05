@@ -6351,6 +6351,10 @@ void main() {
         await step();
         await tester.tap(find.text('Skip for now'));
         await step();
+        await tester.ensureVisible(find.text('Next: your key'));
+        await step();
+        await tester.tap(find.text('Next: your key'));
+        await step();
         await tester.tap(find.text('Other providers'));
         await step();
         await tester.ensureVisible(find.text('Ollama'));

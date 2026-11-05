@@ -272,6 +272,10 @@ void main() {
         await tester.pumpAndSettle();
         await tester.tap(find.text('Skip for now'));
         await tester.pumpAndSettle();
+        await tester.ensureVisible(find.text('Next: your key'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Next: your key'));
+        await tester.pumpAndSettle();
         await tester.tap(find.text('Other providers'));
         await tester.pumpAndSettle();
         await tester.ensureVisible(find.text('Ollama'));

@@ -10,6 +10,7 @@ import 'package:lotti/features/tts/cloud/tts_cloud_route.dart';
 import 'package:lotti/features/tts/model/tts_model_option.dart';
 import 'package:lotti/features/tts/model/tts_playback_state.dart';
 import 'package:lotti/features/tts/state/tts_audio_player.dart';
+import 'package:lotti/features/tts/state/tts_bundled_clip.dart';
 import 'package:lotti/features/tts/state/tts_engine_provider.dart';
 import 'package:lotti/features/tts/state/tts_model_repository.dart';
 import 'package:lotti/features/tts/state/tts_playback_controller.dart';
@@ -41,9 +42,12 @@ void main() {
     FakeTtsAudioPlayer? player,
     FakeTtsModelRepository? repo,
     FakeCloudSpeechSynthesizer? cloud,
+    TtsBundledClipCopier? copier,
   }) {
     final container = ProviderContainer(
       overrides: withServiceOverrides([
+        if (copier != null)
+          ttsBundledClipCopierProvider.overrideWithValue(copier),
         cloudSpeechSynthesizerProvider.overrideWithValue(
           cloud ?? FakeCloudSpeechSynthesizer(),
         ),
@@ -1344,6 +1348,200 @@ void main() {
           subDomain: 'stopReadAloudForRecording',
         ),
       ).called(1);
+    });
+  });
+
+  group('playClip', () {
+    late Directory dir;
+
+    setUp(() async {
+      dir = await Directory.systemTemp.createTemp('tts_clip_test');
+    });
+    tearDown(() async {
+      if (dir.existsSync()) await dir.delete(recursive: true);
+    });
+
+    /// Copies [asset] into a fresh file under [dir], as the app copies a
+    /// bundled one; [copied] collects every file written.
+    TtsBundledClipCopier copierInto(List<File> copied) => (asset) async {
+      final file = File('${dir.path}/${copied.length}.wav');
+      await file.writeAsBytes(const [1, 2, 3]);
+      copied.add(file);
+      return file;
+    };
+
+    test('plays the bundled clip through the player at natural speed, '
+        'with its words as the clip her lip-sync reads', () async {
+      final copied = <File>[];
+      final player = FakeTtsAudioPlayer();
+      addTearDown(player.dispose);
+      final engine = FakeTtsEngine(supported: false);
+      final repo = FakeTtsModelRepository(installed: false);
+      final h = harness(
+        engine: engine,
+        repo: repo,
+        player: player,
+        copier: copierInto(copied),
+      );
+      h.container.read(ttsSettingsControllerProvider.notifier).setSpeed(1.5);
+
+      await controllerOf(h.container).playClip(
+        sourceId: 'onboarding-companion-voices',
+        asset: 'assets/onboarding/voice_samples/voxtral.wav',
+        text: 'Hi there.',
+      );
+
+      expect(player.playCount, 1);
+      expect(player.lastSpeed, 1);
+      final state = h.container.read(ttsPlaybackControllerProvider);
+      expect(state.status, TtsPlaybackStatus.playing);
+      expect(state.sourceId, 'onboarding-companion-voices');
+      expect(state.clip, (path: copied.single.path, text: 'Hi there.'));
+      // Neither the on-device model nor the engine is touched.
+      expect(engine.calls, isEmpty);
+      expect(repo.ensureCount, 0);
+      expect(h.states.first.status, TtsPlaybackStatus.synthesizing);
+    });
+
+    test('is a no-op while something else is speaking', () async {
+      final copied = <File>[];
+      final player = FakeTtsAudioPlayer();
+      addTearDown(player.dispose);
+      final h = harness(player: player, copier: copierInto(copied));
+      final controller = controllerOf(h.container);
+      await controller.speak(sourceId: 'task', text: 'Busy.');
+
+      await controller.playClip(sourceId: 'clip', asset: 'a.wav', text: 'x');
+
+      expect(copied, isEmpty);
+      expect(h.container.read(ttsPlaybackControllerProvider).sourceId, 'task');
+    });
+
+    test('a stop while the clip is being copied deletes it unplayed', () async {
+      final copied = <File>[];
+      final gate = Completer<void>();
+      final player = FakeTtsAudioPlayer();
+      addTearDown(player.dispose);
+      final copy = copierInto(copied);
+      final h = harness(
+        player: player,
+        copier: (asset) async {
+          await gate.future;
+          return copy(asset);
+        },
+      );
+      final controller = controllerOf(h.container);
+
+      final playing = controller.playClip(
+        sourceId: 'clip',
+        asset: 'a.wav',
+        text: 'x',
+      );
+      await controller.stop();
+      gate.complete();
+      await playing;
+
+      expect(player.playCount, 0);
+      expect(copied.single.existsSync(), isFalse);
+      expect(
+        h.container.read(ttsPlaybackControllerProvider).status,
+        TtsPlaybackStatus.stopped,
+      );
+    });
+
+    test('a clip that cannot be copied ends in an error for its source, '
+        'logged with the asset', () async {
+      final logger = await mockLogger();
+      final player = FakeTtsAudioPlayer();
+      addTearDown(player.dispose);
+      final h = harness(
+        player: player,
+        copier: (asset) async => throw StateError('no such asset'),
+      );
+
+      await controllerOf(
+        h.container,
+      ).playClip(sourceId: 'clip', asset: 'missing.wav', text: 'x');
+
+      final state = h.container.read(ttsPlaybackControllerProvider);
+      expect(state.status, TtsPlaybackStatus.error);
+      expect(state.sourceId, 'clip');
+      expect(state.clip, isNull);
+      expect(player.playCount, 0);
+      verify(
+        () => logger.error(
+          LogDomain.speech,
+          any(),
+          subDomain: 'ttsPlayback.playClip',
+          stackTrace: any(named: 'stackTrace'),
+          message: 'Bundled clip failed (missing.wav)',
+        ),
+      ).called(1);
+    });
+
+    test('a player that cannot play the clip ends in an error and deletes '
+        'the copy', () async {
+      await mockLogger();
+      final copied = <File>[];
+      final player = FakeTtsAudioPlayer(playError: StateError('codec'));
+      addTearDown(player.dispose);
+      final h = harness(player: player, copier: copierInto(copied));
+
+      await controllerOf(
+        h.container,
+      ).playClip(sourceId: 'clip', asset: 'a.wav', text: 'x');
+
+      expect(
+        h.container.read(ttsPlaybackControllerProvider).status,
+        TtsPlaybackStatus.error,
+      );
+      expect(copied.single.existsSync(), isFalse);
+    });
+
+    test('a failure after a newer utterance took over leaves its state '
+        'alone', () async {
+      final gate = Completer<void>();
+      final player = FakeTtsAudioPlayer();
+      addTearDown(player.dispose);
+      final h = harness(
+        player: player,
+        copier: (asset) async {
+          await gate.future;
+          throw StateError('late failure');
+        },
+      );
+      final controller = controllerOf(h.container);
+
+      final playing = controller.playClip(
+        sourceId: 'clip',
+        asset: 'a.wav',
+        text: 'x',
+      );
+      await controller.stop();
+      gate.complete();
+      await playing;
+
+      expect(
+        h.container.read(ttsPlaybackControllerProvider).status,
+        TtsPlaybackStatus.stopped,
+      );
+    });
+
+    test('playing to the end leaves the voice stopped and free', () async {
+      final copied = <File>[];
+      final player = FakeTtsAudioPlayer();
+      addTearDown(player.dispose);
+      final h = harness(player: player, copier: copierInto(copied));
+      final controller = controllerOf(h.container);
+      await controller.playClip(sourceId: 'clip', asset: 'a.wav', text: 'x');
+
+      player.complete();
+      await pumpEventQueue();
+
+      final state = h.container.read(ttsPlaybackControllerProvider);
+      expect(state.status, TtsPlaybackStatus.stopped);
+      expect(state.sourceId, isNull);
+      expect(state.isBusy, isFalse);
     });
   });
 }

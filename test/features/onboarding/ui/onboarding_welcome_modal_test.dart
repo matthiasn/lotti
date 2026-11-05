@@ -153,15 +153,20 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  /// From the welcome to the one-key step, past "make me yours" — skipped,
-  /// as it is optional.
+  Future<void> tapVisible(WidgetTester tester, Finder finder) async {
+    await tester.ensureVisible(finder);
+    await tester.pumpAndSettle();
+    await tester.tap(finder);
+    await tester.pumpAndSettle();
+  }
+
+  /// From the welcome to the one-key step, past the two optional steps:
+  /// "make me yours", skipped, and the voices, left unplayed.
   Future<void> toConnect(WidgetTester tester) async {
     await tester.tap(find.text('Get started with one key'));
     await tester.pumpAndSettle();
-    await tester.ensureVisible(find.text('Skip for now'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Skip for now'));
-    await tester.pumpAndSettle();
+    await tapVisible(tester, find.text('Skip for now'));
+    await tapVisible(tester, find.text('Next: your key'));
   }
 
   testWidgets('shows the welcome promise and records welcomeShown', (
@@ -332,12 +337,17 @@ void main() {
     },
   );
 
-  testWidgets('back from connect returns to "make me yours", and back from '
-      'there to the welcome', (tester) async {
+  testWidgets('back from connect returns to the voices, then "make me '
+      'yours", then the welcome', (tester) async {
     await openWelcome(tester);
     await toConnect(tester);
     expect(find.text('Mistral'), findsOneWidget);
 
+    await tester.tap(find.byIcon(LottiIcons.back));
+    await tester.pumpAndSettle();
+    expect(find.text('Hear how I can sound'), findsOneWidget);
+
+    await tester.ensureVisible(find.byIcon(LottiIcons.back));
     await tester.tap(find.byIcon(LottiIcons.back));
     await tester.pumpAndSettle();
     expect(find.text('Make me yours'), findsOneWidget);
@@ -349,7 +359,7 @@ void main() {
   });
 
   testWidgets('the welcome leads to "make me yours" and records it shown; '
-      'skipping it records the skip and reaches the one key', (tester) async {
+      'skipping it records the skip and reaches the voices', (tester) async {
     await openWelcome(tester);
     await tester.tap(find.text('Get started with one key'));
     await tester.pumpAndSettle();
@@ -364,12 +374,19 @@ void main() {
     await tester.tap(find.text('Skip for now'));
     await tester.pumpAndSettle();
 
-    expect(find.text('One key is all it takes'), findsOneWidget);
+    expect(find.text('Hear how I can sound'), findsOneWidget);
     state = await repo.funnelState();
     expect(
       state.reached(OnboardingEventName.companionCustomizeSkipped),
       isTrue,
     );
+    expect(state.reached(OnboardingEventName.voiceSamplesShown), isTrue);
+    expect(state.reached(OnboardingEventName.providerModalShown), isFalse);
+
+    // The voices lead on to the one key.
+    await tapVisible(tester, find.text('Next: your key'));
+    expect(find.text('One key is all it takes'), findsOneWidget);
+    state = await repo.funnelState();
     expect(state.reached(OnboardingEventName.providerModalShown), isTrue);
   });
 
@@ -399,7 +416,7 @@ void main() {
     );
   });
 
-  testWidgets('"Looks good" reaches the one key without recording a skip', (
+  testWidgets('"Looks good" reaches the voices without recording a skip', (
     tester,
   ) async {
     await openWelcome(tester);
@@ -410,13 +427,36 @@ void main() {
     await tester.tap(find.text('Looks good'));
     await tester.pumpAndSettle();
 
-    expect(find.text('One key is all it takes'), findsOneWidget);
+    expect(find.text('Hear how I can sound'), findsOneWidget);
     final state = await repo.funnelState();
     expect(
       state.reached(OnboardingEventName.companionCustomizeSkipped),
       isFalse,
     );
-    expect(state.reached(OnboardingEventName.providerModalShown), isTrue);
+    expect(state.reached(OnboardingEventName.voiceSamplesShown), isTrue);
+  });
+
+  testWidgets('playing a voice records which one', (tester) async {
+    await openWelcome(tester);
+    await tester.tap(find.text('Get started with one key'));
+    await tester.pumpAndSettle();
+    await tapVisible(tester, find.text('Skip for now'));
+
+    await tester.tap(find.byKey(const ValueKey('onboarding-voice-voxtral')));
+    await tester.pump();
+
+    final state = await repo.funnelState();
+    expect(state.reached(OnboardingEventName.voiceSamplePlayed), isTrue);
+    final events = await db.allOnboardingEvents().get();
+    expect(
+      events
+          .where(
+            (e) => e.eventName == OnboardingEventName.voiceSamplePlayed.name,
+          )
+          .map((e) => e.provider),
+      ['voxtral'],
+    );
+    await tester.pumpAndSettle();
   });
 
   testWidgets('Other providers reveals OpenAI and Ollama', (tester) async {
@@ -1205,6 +1245,19 @@ void main() {
     await frames();
     await tester.tap(find.text('Skip for now'));
     await frames();
+    // On the voices she is a bust beside the cards.
+    expect(her().beat, OnboardingCompanionBeat.voices);
+    expect(
+      her().line,
+      'I can speak in different voices. Tap one to hear it. You can switch '
+      'any time in Settings › Speech.',
+    );
+    expect(her().framing, CompanionFraming.bust);
+
+    await tester.ensureVisible(find.text('Next: your key'));
+    await frames();
+    await tester.tap(find.text('Next: your key'));
+    await frames();
     // On the one-key step she recommends Mistral, as a bust by her bubble.
     expect(her().beat, OnboardingCompanionBeat.recommend);
     expect(
@@ -1215,6 +1268,10 @@ void main() {
     expect(her().framing, CompanionFraming.bust);
 
     // Back on the welcome she waves again, but says the promise only once.
+    await tester.tap(find.byIcon(LottiIcons.back));
+    await frames();
+    await tester.ensureVisible(find.byIcon(LottiIcons.back));
+    await frames();
     await tester.tap(find.byIcon(LottiIcons.back));
     await frames();
     await tester.ensureVisible(find.byIcon(LottiIcons.back));

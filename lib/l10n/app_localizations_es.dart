@@ -11853,6 +11853,51 @@ class AppLocalizationsEs extends AppLocalizations {
   String get onboardingSuccessTitle => '¡Todo listo!';
 
   @override
+  String get onboardingVoiceElevenLabsDescription =>
+      'Opcional, con su propia clave de ElevenLabs.';
+
+  @override
+  String get onboardingVoiceElevenLabsName => 'ElevenLabs';
+
+  @override
+  String get onboardingVoiceOnDeviceDescription =>
+      'Gratis y privado. Funciona sin conexión tras una descarga única.';
+
+  @override
+  String get onboardingVoiceOnDeviceName => 'En tu dispositivo';
+
+  @override
+  String onboardingVoicePlay(String voice) {
+    return 'Reproducir $voice';
+  }
+
+  @override
+  String get onboardingVoicesContinue => 'Siguiente: tu clave';
+
+  @override
+  String get onboardingVoicesEnglishNote =>
+      'Los ejemplos están en inglés. Cada voz habla también muchos otros idiomas.';
+
+  @override
+  String get onboardingVoicesLine =>
+      'Puedo hablar con distintas voces. Toca una para escucharla. Puedes cambiarla cuando quieras en Ajustes › Habla.';
+
+  @override
+  String get onboardingVoicesTitle => 'Escucha cómo puedo sonar';
+
+  @override
+  String onboardingVoiceStop(String voice) {
+    return 'Detener $voice';
+  }
+
+  @override
+  String get onboardingVoiceVoxtralDescription =>
+      'Viene con tu clave de Mistral.';
+
+  @override
+  String get onboardingVoiceVoxtralName => 'Mistral Voxtral';
+
+  @override
   String get onboardingWelcomeConnectButton => 'Elige tu cerebro de IA';
 
   @override

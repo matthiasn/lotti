@@ -11694,6 +11694,51 @@ class AppLocalizationsDa extends AppLocalizations {
   String get onboardingSuccessTitle => 'Du er klar';
 
   @override
+  String get onboardingVoiceElevenLabsDescription =>
+      'Valgfri, med sin egen ElevenLabs-nøgle.';
+
+  @override
+  String get onboardingVoiceElevenLabsName => 'ElevenLabs';
+
+  @override
+  String get onboardingVoiceOnDeviceDescription =>
+      'Gratis og privat. Virker offline efter én download.';
+
+  @override
+  String get onboardingVoiceOnDeviceName => 'På din enhed';
+
+  @override
+  String onboardingVoicePlay(String voice) {
+    return 'Afspil $voice';
+  }
+
+  @override
+  String get onboardingVoicesContinue => 'Næste: din nøgle';
+
+  @override
+  String get onboardingVoicesEnglishNote =>
+      'Eksemplerne er på engelsk. Hver stemme taler også mange andre sprog.';
+
+  @override
+  String get onboardingVoicesLine =>
+      'Jeg kan tale med forskellige stemmer. Tryk på en for at høre den. Du kan altid skifte under Indstillinger › Tale.';
+
+  @override
+  String get onboardingVoicesTitle => 'Hør, hvordan jeg kan lyde';
+
+  @override
+  String onboardingVoiceStop(String voice) {
+    return 'Stop $voice';
+  }
+
+  @override
+  String get onboardingVoiceVoxtralDescription =>
+      'Følger med din Mistral-nøgle.';
+
+  @override
+  String get onboardingVoiceVoxtralName => 'Mistral Voxtral';
+
+  @override
   String get onboardingWelcomeConnectButton => 'Vælg din AI-hjerne';
 
   @override

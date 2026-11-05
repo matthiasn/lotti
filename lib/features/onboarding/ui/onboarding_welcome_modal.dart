@@ -21,6 +21,7 @@ import 'package:lotti/features/onboarding/ui/widgets/onboarding_first_task_step.
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_hero.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_make_her_yours_step.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_success_view.dart';
+import 'package:lotti/features/onboarding/ui/widgets/onboarding_voices_step.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -122,7 +123,9 @@ class OnboardingWelcomeModal {
               child: ModalEscapeScope(
                 child: _OnboardingScaffold(
                   heroStyle: heroStyle,
-                  recordEvent: (name) => unawaited(repo?.recordEvent(name)),
+                  recordEvent: (name, {provider}) => unawaited(
+                    repo?.recordEvent(name, provider: provider),
+                  ),
                   // The connection succeeded (provider + models created) — record
                   // it now so it counts even if the user dismisses on the success
                   // beat; the route stays open to show that beat.
@@ -215,7 +218,7 @@ class _OnboardingScaffold extends StatelessWidget {
   final OnboardingHeroStyle heroStyle;
 
   /// Records a funnel event from inside the flow.
-  final void Function(OnboardingEventName) recordEvent;
+  final void Function(OnboardingEventName name, {String? provider}) recordEvent;
   final void Function(InferenceProviderType) onConnected;
   final void Function(String taskId) onTaskCreated;
   final VoidCallback onComplete;
@@ -294,6 +297,7 @@ class _OnboardingScaffold extends StatelessWidget {
 enum _FlowStep {
   welcome,
   makeHerYours,
+  voices,
   connect,
   apiKey,
   success,
@@ -317,7 +321,7 @@ class _OnboardingFlow extends StatefulWidget {
   final OnboardingHeroStyle heroStyle;
 
   /// Records a funnel event from inside the flow.
-  final void Function(OnboardingEventName) recordEvent;
+  final void Function(OnboardingEventName name, {String? provider}) recordEvent;
   final void Function(InferenceProviderType) onConnected;
   final void Function(String taskId) onTaskCreated;
   final VoidCallback onComplete;
@@ -388,7 +392,13 @@ class _OnboardingFlowState extends State<_OnboardingFlow> {
     );
   }
 
-  /// On to the one key, from the "make me yours" step.
+  /// On to the voices, from the "make me yours" step.
+  void _toVoices() {
+    setState(() => _step = _FlowStep.voices);
+    widget.recordEvent(OnboardingEventName.voiceSamplesShown);
+  }
+
+  /// On to the one key, from the voices.
   void _toConnect() {
     setState(() => _step = _FlowStep.connect);
     widget.recordEvent(OnboardingEventName.providerModalShown);
@@ -424,11 +434,21 @@ class _OnboardingFlowState extends State<_OnboardingFlow> {
           onBack: () => setState(() => _step = _FlowStep.welcome),
           onCustomized: () =>
               widget.recordEvent(OnboardingEventName.companionCustomized),
-          onContinue: _toConnect,
+          onContinue: _toVoices,
           onSkip: () {
             widget.recordEvent(OnboardingEventName.companionCustomizeSkipped);
-            _toConnect();
+            _toVoices();
           },
+        );
+      case _FlowStep.voices:
+        return OnboardingVoicesStep(
+          key: const ValueKey('onboarding-voices'),
+          onBack: () => setState(() => _step = _FlowStep.makeHerYours),
+          onPlayed: (sample) => widget.recordEvent(
+            OnboardingEventName.voiceSamplePlayed,
+            provider: sample.name,
+          ),
+          onContinue: _toConnect,
         );
       case _FlowStep.connect:
         return OnboardingConnectPanel(
@@ -439,7 +459,7 @@ class _OnboardingFlowState extends State<_OnboardingFlow> {
             line: context.messages.onboardingConnectGuide,
             framing: CompanionFraming.bust,
           ),
-          onBack: () => setState(() => _step = _FlowStep.makeHerYours),
+          onBack: () => setState(() => _step = _FlowStep.voices),
           onSelect: (type) => setState(() {
             _type = type;
             _step = _FlowStep.apiKey;

@@ -7406,6 +7406,34 @@
   "onboardingSuccessContinue": "Get started",
   "onboardingSuccessSubtitle": "Your AI brain is connected and ready to turn your words into tasks.",
   "onboardingSuccessTitle": "You're all set",
+  "onboardingVoiceElevenLabsDescription": "Optional, with an ElevenLabs key of its own.",
+  "onboardingVoiceElevenLabsName": "ElevenLabs",
+  "onboardingVoiceOnDeviceDescription": "Free and private. Works offline after a one-time download.",
+  "onboardingVoiceOnDeviceName": "On your device",
+  "onboardingVoicePlay": "Play {voice}",
+  "@onboardingVoicePlay": {
+    "description": "Screen-reader label of a voice sample's play control in onboarding.",
+    "placeholders": {
+      "voice": {
+        "type": "String"
+      }
+    }
+  },
+  "onboardingVoicesContinue": "Next: your key",
+  "onboardingVoicesEnglishNote": "The samples are in English. Each voice speaks many other languages too.",
+  "onboardingVoicesLine": "I can speak in different voices. Tap one to hear it. You can switch any time in Settings › Speech.",
+  "onboardingVoicesTitle": "Hear how I can sound",
+  "onboardingVoiceStop": "Stop {voice}",
+  "@onboardingVoiceStop": {
+    "description": "Screen-reader label of a voice sample's play control in onboarding.",
+    "placeholders": {
+      "voice": {
+        "type": "String"
+      }
+    }
+  },
+  "onboardingVoiceVoxtralDescription": "Comes with your Mistral key.",
+  "onboardingVoiceVoxtralName": "Mistral Voxtral",
   "onboardingWelcomeConnectButton": "Choose your AI brain",
   "onboardingWelcomeMessage": "Connect your AI brain, then speak a thought and watch it become a structured task.",
   "onboardingWelcomeOneKeyButton": "Get started with one key",

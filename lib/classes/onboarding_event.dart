@@ -48,6 +48,12 @@ enum OnboardingEventName {
   /// The user skipped that step.
   companionCustomizeSkipped,
 
+  /// The "hear the voices" step was shown.
+  voiceSamplesShown,
+
+  /// A voice sample was played there (provider dimension carries which).
+  voiceSamplePlayed,
+
   /// The provider-connect modal was shown.
   providerModalShown,
 

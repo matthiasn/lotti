@@ -10,6 +10,8 @@ them to one moment: speak a thought, and watch it become a structured task.
 - **Lets the user make her theirs.** An optional step before the key: her
   outfit, skin tone, hair and hair colour, saved as they are picked and
   editable later in Settings › Companion.
+- **Lets the user hear the voices.** An optional step plays a sample of each
+  voice she can have: on the device, Mistral's Voxtral, and ElevenLabs.
 - **Says what it takes: one API key.** The connect step leads with one
   recommended provider, Mistral, whose single key covers thinking,
   transcription and the voice; the others sit behind a disclosure.

@@ -147,6 +147,7 @@ enum _OnboardingCase {
   settings,
   welcome,
   makeHerYours,
+  voices,
   providers,
   otherProviders,
   apiKey,
@@ -161,6 +162,7 @@ extension on _OnboardingCase {
     _OnboardingCase.settings => 'settings',
     _OnboardingCase.welcome => 'welcome',
     _OnboardingCase.makeHerYours => 'make_her_yours',
+    _OnboardingCase.voices => 'voices',
     _OnboardingCase.providers => 'providers',
     _OnboardingCase.otherProviders => 'other_providers',
     _OnboardingCase.apiKey => 'api_key',
@@ -382,9 +384,18 @@ void main() {
     );
   }
 
-  Future<void> driveToProviders(WidgetTester tester) async {
+  Future<void> driveToVoices(WidgetTester tester) async {
     await driveToMakeHerYours(tester);
     await tapText(tester, _messages(tester).onboardingMakeHerYoursContinue);
+    expect(
+      find.text(_messages(tester).onboardingVoicesTitle),
+      findsOneWidget,
+    );
+  }
+
+  Future<void> driveToProviders(WidgetTester tester) async {
+    await driveToVoices(tester);
+    await tapText(tester, _messages(tester).onboardingVoicesContinue);
     expect(
       find.text(_messages(tester).onboardingConnectRecommended),
       findsOneWidget,
@@ -546,6 +557,8 @@ void main() {
           );
         case _OnboardingCase.makeHerYours:
           await driveToMakeHerYours(tester);
+        case _OnboardingCase.voices:
+          await driveToVoices(tester);
         case _OnboardingCase.providers:
           await driveToProviders(tester);
         case _OnboardingCase.otherProviders:
@@ -585,6 +598,7 @@ void main() {
             if (const {
               _OnboardingCase.welcome,
               _OnboardingCase.makeHerYours,
+              _OnboardingCase.voices,
               _OnboardingCase.providers,
               _OnboardingCase.otherProviders,
               _OnboardingCase.firstTask,

@@ -65,6 +65,15 @@ void main() {
     );
   });
 
+  test('she offers the voices she can have', () {
+    expect(OnboardingCompanionBeat.voices.cue, GestureName.openSmall);
+    expect(OnboardingCompanionBeat.voices.holding, isNull);
+    expect(
+      OnboardingCompanionBeat.voices.sourceId,
+      'onboarding-companion-voices',
+    );
+  });
+
   test('she presents the one key she recommends', () {
     expect(OnboardingCompanionBeat.recommend.cue, GestureName.presentRight);
     expect(OnboardingCompanionBeat.recommend.holding, isNull);
