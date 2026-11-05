@@ -342,49 +342,44 @@ void main() {
     });
   });
 
-  group('a hat on big hair', () {
-    /// The topmost canvas row [colour] reaches.
-    int top(Raster r, Color colour, {int tolerance = 12}) {
-      for (var y = 0; y < 480; y++) {
-        for (var x = 0; x < 480; x++) {
-          if (near(r.at(x, y), colour, tolerance: tolerance)) return y;
-        }
-      }
-      return 480;
-    }
-
-    // The regression: the rock beret sat inside an afro, the hair rising
-    // round and above it, so her head seemed to float in her hair.
-    test('the rock beret sits on top of an afro, no hair above it', () async {
-      final look = CompanionLook.grandmaRock.copyWith(
-        hairStyle: CompanionHairStyle.afro,
-      );
-      final r = await _head(look);
-      final hat = top(r, look.palette.hat);
-      final hair = top(r, look.palette.hair, tolerance: 20);
-      expect(hat, lessThanOrEqualTo(hair));
-    });
-
-    test('and is widened to cover the afro, as it is not on a bun', () async {
-      Future<int> width(CompanionHairStyle style) async {
-        final look = CompanionLook.grandmaRock.copyWith(hairStyle: style);
+  group('hats and big hair', () {
+    // The ask: the rock beret seemed to float in an afro, and a beanie left
+    // hair poking out round it; for now an afro wears no hat at all.
+    test('an afro wears none of the hats, its hair whole', () async {
+      /// The hat's colour above the hairline (head-local y -45), where a hat
+      /// sits: the rock look's red earrings and lips share the beret's red
+      /// lower down.
+      Future<int> hatAbove(CompanionLook look) async {
         final r = await _head(look);
-        var left = 480;
-        var right = 0;
-        for (var y = 0; y < 480; y++) {
+        final hat = look.beret ? look.palette.hat : look.palette.cap;
+        var n = 0;
+        for (var y = 0; y < 260 - 90; y++) {
           for (var x = 0; x < 480; x++) {
-            if (!near(r.at(x, y), look.palette.hat, tolerance: 12)) continue;
-            if (x < left) left = x;
-            if (x > right) right = x;
+            if (near(r.at(x, y), hat)) n++;
           }
         }
-        return right - left;
+        return n;
       }
 
-      expect(
-        await width(CompanionHairStyle.afro),
-        greaterThan(await width(CompanionHairStyle.bun) * 1.15),
-      );
+      for (final look in [
+        CompanionLook.grandmaRock,
+        CompanionLook.grandpaMarket,
+        CompanionLook.uncleSnow,
+      ]) {
+        final worn = await hatAbove(look);
+        final onAfro = await hatAbove(
+          look.copyWith(hairStyle: CompanionHairStyle.afro),
+        );
+        // A worn hat fills thousands of pixels there; on the afro only a
+        // stray coil's shade can come near its colour.
+        expect(worn, greaterThan(1000), reason: look.id);
+        expect(onAfro, lessThan(worn / 40), reason: look.id);
+      }
+    });
+
+    test('the same hats are worn on a close style', () async {
+      final r = await _head(CompanionLook.grandmaRock);
+      expect(r.count(CompanionLook.grandmaRock.palette.hat), greaterThan(500));
     });
 
     test('an animal wears its hat as the plain head does', () async {
@@ -417,6 +412,57 @@ void main() {
         isFalse,
       );
       expect(his, isNot(const Color(0xFF000000)));
+    });
+  });
+
+  // The ask: the men still read as women.
+  group("a man's face against a woman's", () {
+    const aunt = CompanionLook.aunt;
+    const uncle = CompanionLook.uncle;
+
+    test('narrower eyes', () async {
+      /// How many rows the eye whites span.
+      Future<int> height(CompanionLook look) async {
+        final r = await _head(look);
+        var rows = 0;
+        for (var y = 0; y < 480; y++) {
+          for (var x = 0; x < 480; x++) {
+            if (near(r.at(x, y), look.palette.eyeWhite)) {
+              rows++;
+              break;
+            }
+          }
+        }
+        return rows;
+      }
+
+      expect(await height(uncle), lessThan(await height(aunt) * 0.8));
+    });
+
+    test('brows set lower, nearer the eyes', () async {
+      final hers = (await _head(aunt)).centroid(aunt.palette.brow)!;
+      final his = (await _head(uncle)).centroid(uncle.palette.brow)!;
+      expect(his.dy, greaterThan(hers.dy + 6));
+    });
+
+    test('no blush on the cheeks', () async {
+      // Head-local (25, 11), the cheek's middle, at twice the size.
+      final hers = (await _head(aunt)).at(240 + 50, 260 + 22);
+      final his = (await _head(uncle)).at(240 + 50, 260 + 22);
+      double flush(Color c) => c.r - c.g;
+      expect(
+        flush(his) - flush(uncle.palette.skin),
+        lessThan(flush(hers) - flush(aunt.palette.skin)),
+      );
+    });
+
+    test('the jaw shaded along its lower edge', () async {
+      // Head-local (0, 42), above the chin's edge, at twice the size.
+      final his = (await _head(uncle)).at(240, 260 + 84);
+      expect(
+        his.computeLuminance(),
+        lessThan(uncle.palette.skin.computeLuminance()),
+      );
     });
   });
 }

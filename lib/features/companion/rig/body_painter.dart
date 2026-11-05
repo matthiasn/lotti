@@ -143,17 +143,33 @@ void drawNeck(Canvas canvas, RigFrame f, CompanionLook look) {
   // An animal's neck is fur, and its chin sits a little lower on a bigger
   // head.
   final chin = 36 * look.species.headScale;
+  // A man's neck is thicker, down to a wider base.
+  final thick = look.species.masculine ? 1.3 : 1.0;
   fillPath(
     canvas,
     tapered(
       f.headPivot + const Offset(0, -14),
       f.neckBase + const Offset(0, 4),
-      21,
-      24,
+      21 * thick,
+      24 * thick,
     ),
     c.skin,
   );
-  fillPath(canvas, ellipse(f.neckBase + const Offset(0, 6), 19, 10), c.skin);
+  fillPath(
+    canvas,
+    ellipse(f.neckBase + const Offset(0, 6), 19 * thick, 10),
+    c.skin,
+  );
+  if (look.species.masculine) {
+    // The Adam's apple: a small rise half way down the throat, lit on top.
+    final throat = Offset.lerp(f.headPivot, f.neckBase, 0.55)!;
+    strokePath(
+      canvas,
+      arc(throat + const Offset(0, 2), 3.2, 3.6, 5.8),
+      c.skinShade.withValues(alpha: 0.8),
+      1.4,
+    );
+  }
   // The chin's shadow.
   fillPath(
     canvas,

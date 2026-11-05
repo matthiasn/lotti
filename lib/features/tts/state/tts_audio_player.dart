@@ -83,10 +83,14 @@ class MediaKitTtsAudioPlayer implements TtsAudioPlayer {
   @override
   Future<void> stop() async {
     _generation++;
+    // The release is queued at once, before the native stop is awaited: a
+    // play started meanwhile then claims after it, and this stale release
+    // never deactivates the new clip's session.
+    final released = _focus.release();
     try {
       await _player.stop();
     } finally {
-      await _focus.release();
+      await released;
     }
   }
 

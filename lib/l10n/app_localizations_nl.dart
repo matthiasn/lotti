@@ -3896,10 +3896,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get companionSettingsEyeColourDarkBrown => 'Donkerbruin';
 
   @override
-  String get companionSettingsEyeColourDescription =>
-      'Past bij de huidtint tot je een kleur kiest.';
-
-  @override
   String get companionSettingsEyeColourGreen => 'Groen';
 
   @override
@@ -3910,9 +3906,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get companionSettingsEyeColourLabel => 'Oogkleur';
-
-  @override
-  String get companionSettingsEyeColourMatch => 'Passend bij huidtint';
 
   @override
   String get companionSettingsHairColourAuburn => 'Koperrood';

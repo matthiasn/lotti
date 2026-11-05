@@ -74,7 +74,11 @@ void drawStubble(
   double fy,
   double yaw,
 ) {
-  final shadow = Color.lerp(c.hair, c.skinDeep, 0.35)!.withValues(alpha: 0.2);
+  final shadow = Color.lerp(
+    c.hair,
+    c.skinDeep,
+    0.35,
+  )!.withValues(alpha: 0.28);
   fillPath(canvas, smoothClosed(beardOutline(yaw), 0.2), shadow);
   fillPath(canvas, moustachePath(fx, fy), shadow);
 }

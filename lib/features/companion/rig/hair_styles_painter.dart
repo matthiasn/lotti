@@ -631,15 +631,17 @@ List<Offset> fringeFor(CompanionHairStyle style, Offset lag, double yaw) =>
     };
 
 /// How a hat sits on [style]: lifted by `lift` and widened by `widen` about
-/// the hairline, so it rests on the hair's crown instead of sinking into it.
-/// Close styles take a hat as it is; an afro, round and wider than the head,
-/// takes it higher and much wider, so no hair rises above the hat.
-({double lift, double widen}) hatSeat(CompanionHairStyle style) =>
+/// the hairline, so it rests on the hair's crown instead of sinking into it;
+/// null where no hat is worn. Close styles take a hat as it is, fuller ones a
+/// little higher and wider. An afro wears none: a hat drawn for a head reads
+/// as floating in it, or as hair poking out round a woollen cap, and a hat
+/// made for an afro is another drawing, for later.
+({double lift, double widen})? hatSeat(CompanionHairStyle style) =>
     switch (style) {
-      CompanionHairStyle.afro => (lift: 5, widen: 1.36),
-      CompanionHairStyle.curls => (lift: 3, widen: 1.1),
-      CompanionHairStyle.bob => (lift: 2, widen: 1.08),
+      CompanionHairStyle.afro => null,
+      CompanionHairStyle.curls ||
       CompanionHairStyle.waves => (lift: 3, widen: 1.1),
+      CompanionHairStyle.bob ||
       CompanionHairStyle.locs ||
       CompanionHairStyle.long => (lift: 2, widen: 1.08),
       CompanionHairStyle.bun ||
@@ -653,20 +655,20 @@ const _hatPivotY = -45.0;
 
 /// Runs [draw], a hat drawn for the plain head, seated on [style]
 /// ([hatSeat]): widened about the pivot and lifted, its height grown by a
-/// little of its width — little enough that a hat on the afro still fits
-/// under the top of the bust framing.
+/// little of its width. Where [style] wears no hat, nothing is drawn.
 void seatHat(
   Canvas canvas,
   CompanionHairStyle style,
   double yaw,
   void Function() draw,
 ) {
-  final (:lift, :widen) = hatSeat(style);
+  final seat = hatSeat(style);
+  if (seat == null) return;
   final x = yaw * 3;
   canvas
     ..save()
-    ..translate(x, _hatPivotY - lift)
-    ..scale(widen, 1 + (widen - 1) * 0.15)
+    ..translate(x, _hatPivotY - seat.lift)
+    ..scale(seat.widen, 1 + (seat.widen - 1) * 0.15)
     ..translate(-x, -_hatPivotY);
   draw();
   canvas.restore();

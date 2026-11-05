@@ -313,8 +313,18 @@ void main() {
   });
 
   group('a hat on the hair', () {
-    test('sits on an afro higher and much wider than on close styles', () {
-      final afro = hatSeat(CompanionHairStyle.afro);
+    // The ask: hats on the big hairstyles looked wrong, so for now an afro
+    // wears none.
+    test('an afro has no seat for a hat; every other style has one', () {
+      expect(hatSeat(CompanionHairStyle.afro), isNull);
+      for (final style in CompanionHairStyle.values) {
+        if (style == CompanionHairStyle.afro) continue;
+        expect(hatSeat(style), isNotNull, reason: style.name);
+      }
+    });
+
+    test('close styles take a hat as it is, fuller ones a little higher and '
+        'wider', () {
       for (final style in [
         CompanionHairStyle.bun,
         CompanionHairStyle.short,
@@ -323,37 +333,54 @@ void main() {
       ]) {
         expect(hatSeat(style), (lift: 0.0, widen: 1.0), reason: style.name);
       }
-      for (final style in CompanionHairStyle.values) {
-        final seat = hatSeat(style);
-        expect(seat.widen, lessThanOrEqualTo(afro.widen), reason: style.name);
-        expect(seat.lift, lessThanOrEqualTo(afro.lift), reason: style.name);
+      for (final style in [
+        CompanionHairStyle.curls,
+        CompanionHairStyle.bob,
+        CompanionHairStyle.locs,
+        CompanionHairStyle.long,
+        CompanionHairStyle.waves,
+      ]) {
+        final seat = hatSeat(style)!;
+        expect(seat.lift, inInclusiveRange(1, 4), reason: style.name);
+        expect(seat.widen, inInclusiveRange(1.05, 1.12), reason: style.name);
       }
-      expect(afro.widen, greaterThan(1.3));
     });
+
+    Future<Rect> drawn(CompanionHairStyle style) async {
+      final r = await _draw(
+        (c) => seatHat(c, style, 0, () {
+          c.drawRect(
+            const Rect.fromLTRB(-40, -90, 40, -45),
+            Paint()..color = const Color(0xFFFF0000),
+          );
+        }),
+      );
+      return _extent(r, const Color(0xFFFF0000));
+    }
 
     test(
       'seatHat widens what it draws about the hairline and lifts it',
       () async {
-        Future<Rect> drawn(CompanionHairStyle style) async {
-          final r = await _draw(
-            (c) => seatHat(c, style, 0, () {
-              c.drawRect(
-                const Rect.fromLTRB(-40, -90, 40, -45),
-                Paint()..color = const Color(0xFFFF0000),
-              );
-            }),
-          );
-          return _extent(r, const Color(0xFFFF0000));
-        }
-
         final plain = await drawn(CompanionHairStyle.bun);
-        final afro = await drawn(CompanionHairStyle.afro);
+        final curls = await drawn(CompanionHairStyle.curls);
         expect(plain.width, closeTo(80, 2));
-        expect(afro.width, closeTo(80 * 1.36, 3));
-        expect(afro.bottom, lessThan(plain.bottom - 3));
-        expect(afro.center.dx, closeTo(plain.center.dx, 1));
+        expect(curls.width, closeTo(80 * 1.1, 2));
+        expect(curls.bottom, lessThan(plain.bottom - 2));
+        expect(curls.center.dx, closeTo(plain.center.dx, 1));
       },
     );
+
+    test('seatHat draws nothing on an afro', () async {
+      final r = await _draw(
+        (c) => seatHat(c, CompanionHairStyle.afro, 0, () {
+          c.drawRect(
+            const Rect.fromLTRB(-40, -90, 40, -45),
+            Paint()..color = const Color(0xFFFF0000),
+          );
+        }),
+      );
+      expect(r.count(const Color(0xFFFF0000)), 0);
+    });
   });
 
   test(

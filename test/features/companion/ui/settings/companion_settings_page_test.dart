@@ -426,44 +426,39 @@ void main() {
   });
 
   group('the eyes', () {
-    bool matching(WidgetTester tester) => tester
-        .widget<DesignSystemChip>(
-          find.widgetWithText(DesignSystemChip, 'Match skin tone'),
-        )
-        .selected;
-
-    testWidgets('match the skin tone until a colour is picked', (tester) async {
+    testWidgets('are brown on any skin tone until a colour is picked, with no '
+        'chip to match the skin', (tester) async {
       await pumpBody(
         tester,
         customization: const CompanionCustomization(
           skinTone: CompanionSkinTone.tone6,
         ),
       );
-      expect(matching(tester), isTrue);
       expect(
         previews(tester).first.look.palette.iris,
-        CompanionSkinTone.tone6.eyes.iris,
+        CompanionEyeColour.brown.iris,
       );
+      expect(find.text('Match skin tone'), findsNothing);
     });
 
-    testWidgets('a swatch picks the colour, and the chip lets them match '
-        'again', (tester) async {
+    testWidgets('a swatch picks the colour, which stays through a change of '
+        'skin tone', (tester) async {
       await pumpBody(tester);
       await tester.tap(
         find.byKey(const ValueKey('companionSwatch-CompanionEyeColour.green')),
       );
       await _frames(tester);
       expect(chosen(tester).eyeColour, CompanionEyeColour.green);
-      expect(matching(tester), isFalse);
       expect(
         previews(tester).first.look.palette.iris,
         CompanionEyeColour.green.iris,
       );
 
-      await tester.tap(find.text('Match skin tone'));
+      await tester.tap(
+        find.byKey(const ValueKey('companionSwatch-CompanionSkinTone.tone7')),
+      );
       await _frames(tester);
-      expect(chosen(tester).eyeColour, isNull);
-      expect(matching(tester), isTrue);
+      expect(chosen(tester).eyeColour, CompanionEyeColour.green);
     });
 
     testWidgets('every colour says its name to a screen reader', (

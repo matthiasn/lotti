@@ -3858,10 +3858,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get companionSettingsEyeColourDarkBrown => 'Dark brown';
 
   @override
-  String get companionSettingsEyeColourDescription =>
-      'Matched to the skin tone until you pick a color.';
-
-  @override
   String get companionSettingsEyeColourGreen => 'Green';
 
   @override
@@ -3872,9 +3868,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get companionSettingsEyeColourLabel => 'Eye color';
-
-  @override
-  String get companionSettingsEyeColourMatch => 'Match skin tone';
 
   @override
   String get companionSettingsHairColourAuburn => 'Auburn';
@@ -18234,10 +18227,6 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
   @override
   String get companionSettingsCharacterDescription =>
       'Who keeps you company. Each has their own outfits; skin, hair colour and sass stay as you set them.';
-
-  @override
-  String get companionSettingsEyeColourDescription =>
-      'Matched to the skin tone until you pick a colour.';
 
   @override
   String get companionSettingsEyeColourGrey => 'Grey';

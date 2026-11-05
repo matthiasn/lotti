@@ -3915,10 +3915,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get companionSettingsEyeColourDarkBrown => 'Castanho-escuro';
 
   @override
-  String get companionSettingsEyeColourDescription =>
-      'Combina com o tom de pele até escolheres uma cor.';
-
-  @override
   String get companionSettingsEyeColourGreen => 'Verde';
 
   @override
@@ -3929,9 +3925,6 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get companionSettingsEyeColourLabel => 'Cor dos olhos';
-
-  @override
-  String get companionSettingsEyeColourMatch => 'Como o tom de pele';
 
   @override
   String get companionSettingsHairColourAuburn => 'Ruivo';

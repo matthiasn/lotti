@@ -18,7 +18,7 @@ class CompanionCustomization {
     this.skinTone = CompanionSkinTone.tone1,
     this.hairStyle = CompanionHairStyle.bun,
     this.hairColour = CompanionHairColour.silver,
-    this.eyeColour,
+    this.eyeColour = CompanionEyeColour.brown,
     this.outfitId,
     this.sass = CompanionSass.cheeky,
     this.speaksReplies = true,
@@ -55,7 +55,11 @@ class CompanionCustomization {
         json['hairColour'],
         CompanionHairColour.silver,
       ),
-      eyeColour: CompanionEyeColour.values.asNameMap()[json['eyeColour']],
+      eyeColour: part(
+        CompanionEyeColour.values,
+        json['eyeColour'],
+        CompanionEyeColour.brown,
+      ),
       outfitId: CompanionLook.of(character).any((l) => l.id == outfit)
           ? outfit as String
           : null,
@@ -72,12 +76,9 @@ class CompanionCustomization {
   final CompanionHairStyle hairStyle;
   final CompanionHairColour hairColour;
 
-  /// The eyes picked, or null for the ones the skin tone matches
-  /// ([CompanionSkinTone.eyes]): they then follow a change of tone.
-  final CompanionEyeColour? eyeColour;
-
-  /// The eyes she is drawn with: the ones picked, else the skin tone's.
-  CompanionEyeColour get eyes => eyeColour ?? skinTone.eyes;
+  /// The eyes' colour, picked freely: brown until a person picks another,
+  /// whatever the skin tone, and kept through a change of tone.
+  final CompanionEyeColour eyeColour;
 
   /// The `CompanionLook.id` of the [character]'s outfit always worn, or null
   /// for one drawn at random each session.
@@ -112,8 +113,8 @@ class CompanionCustomization {
         hairShade: hairColour.shade,
         hairLight: hairColour.light,
         brow: hairColour.brow,
-        iris: eyes.iris,
-        irisLight: eyes.light,
+        iris: eyeColour.iris,
+        irisLight: eyeColour.light,
       ),
     );
   }
@@ -136,7 +137,7 @@ class CompanionCustomization {
     CompanionSkinTone? skinTone,
     CompanionHairStyle? hairStyle,
     CompanionHairColour? hairColour,
-    ValueGetter<CompanionEyeColour?>? eyeColour,
+    CompanionEyeColour? eyeColour,
     ValueGetter<String?>? outfitId,
     CompanionSass? sass,
     bool? speaksReplies,
@@ -145,7 +146,7 @@ class CompanionCustomization {
     skinTone: skinTone ?? this.skinTone,
     hairStyle: hairStyle ?? this.hairStyle,
     hairColour: hairColour ?? this.hairColour,
-    eyeColour: eyeColour == null ? this.eyeColour : eyeColour(),
+    eyeColour: eyeColour ?? this.eyeColour,
     outfitId: outfitId == null ? this.outfitId : outfitId(),
     sass: sass ?? this.sass,
     speaksReplies: speaksReplies ?? this.speaksReplies,
@@ -168,28 +169,35 @@ class CompanionCustomization {
 
   /// This, with [parts] taken from [other]: edits laid over another value
   /// without undoing what that value holds in the parts left alone.
+  ///
+  /// The character and its outfit go together: an outfit belongs to one
+  /// character, so taking either takes both — an outfit picked for Lotti is
+  /// never laid over a stored grandpa, nor his outfit kept for her.
   CompanionCustomization adopting(
     CompanionCustomization other,
     Set<String> parts,
-  ) => CompanionCustomization(
-    character: parts.contains('character') ? other.character : character,
-    skinTone: parts.contains('skinTone') ? other.skinTone : skinTone,
-    hairStyle: parts.contains('hairStyle') ? other.hairStyle : hairStyle,
-    hairColour: parts.contains('hairColour') ? other.hairColour : hairColour,
-    eyeColour: parts.contains('eyeColour') ? other.eyeColour : eyeColour,
-    outfitId: parts.contains('outfit') ? other.outfitId : outfitId,
-    sass: parts.contains('sass') ? other.sass : sass,
-    speaksReplies: parts.contains('speaksReplies')
-        ? other.speaksReplies
-        : speaksReplies,
-  );
+  ) {
+    final dressing = parts.contains('character') || parts.contains('outfit');
+    return CompanionCustomization(
+      character: dressing ? other.character : character,
+      skinTone: parts.contains('skinTone') ? other.skinTone : skinTone,
+      hairStyle: parts.contains('hairStyle') ? other.hairStyle : hairStyle,
+      hairColour: parts.contains('hairColour') ? other.hairColour : hairColour,
+      eyeColour: parts.contains('eyeColour') ? other.eyeColour : eyeColour,
+      outfitId: dressing ? other.outfitId : outfitId,
+      sass: parts.contains('sass') ? other.sass : sass,
+      speaksReplies: parts.contains('speaksReplies')
+          ? other.speaksReplies
+          : speaksReplies,
+    );
+  }
 
   Map<String, dynamic> toJson() => {
     'character': character.name,
     'skinTone': skinTone.name,
     'hairStyle': hairStyle.name,
     'hairColour': hairColour.name,
-    'eyeColour': ?eyeColour?.name,
+    'eyeColour': eyeColour.name,
     'outfit': ?outfitId,
     'sass': sass.name,
     'speaksReplies': speaksReplies,

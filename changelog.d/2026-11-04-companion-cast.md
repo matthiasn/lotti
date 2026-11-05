@@ -18,10 +18,10 @@
 - **Two more hairstyles for the companion: short and balding.** Every
   character can wear them, and the hairstyle picker now shows its choices as
   buttons that wrap, so every style fits on a phone.
-- **The companion's eyes have a colour of their own.** They match the skin
-  tone by default — no more blue eyes on every tone — and Settings ›
+- **The companion's eyes have a colour of their own.** Settings ›
   Companion lets you pick dark brown, brown, hazel, amber, green, grey or
-  blue.
+  blue, with any skin tone. They are brown until you pick, no longer blue on
+  every tone.
 - **A seventh, deeper skin tone for the companion,** after the six, and
   three more hairstyles for every character: long and straight, soft waves,
   and a ponytail.
@@ -32,7 +32,8 @@
   ducks under it, and it comes back when the voice ends. Like any app that
   speaks, it now plays with the iPhone's silent switch on.
 - **The companion's hats sat inside an afro.** The rock beret, the flat cap
-  and the beanie now sit on top of the hair, as wide as the hairstyle needs.
+  and the beanie now sit on top of the hair, and an afro wears no hat at
+  all.
 - **One raised brow could hook up off the companion's eye.** A brow now
   rises only as far as a brow can.
 - **The bun looked like a grey loaf in dark hair colours.** Its knot now

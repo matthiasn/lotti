@@ -3922,10 +3922,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get companionSettingsEyeColourDarkBrown => 'Tmavě hnědé';
 
   @override
-  String get companionSettingsEyeColourDescription =>
-      'Ladí s odstínem pleti, dokud si barvu nevybereš.';
-
-  @override
   String get companionSettingsEyeColourGreen => 'Zelené';
 
   @override
@@ -3936,9 +3932,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get companionSettingsEyeColourLabel => 'Barva očí';
-
-  @override
-  String get companionSettingsEyeColourMatch => 'Podle pleti';
 
   @override
   String get companionSettingsHairColourAuburn => 'Kaštanová';

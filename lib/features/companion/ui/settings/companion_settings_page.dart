@@ -209,23 +209,11 @@ class _CompanionSettingsBodyState extends ConsumerState<CompanionSettingsBody> {
             ),
             SettingsFormSection(
               title: messages.companionSettingsEyeColourLabel,
-              description: messages.companionSettingsEyeColourDescription,
               children: [
-                Align(
-                  alignment: AlignmentDirectional.centerStart,
-                  child: DesignSystemChip(
-                    label: messages.companionSettingsEyeColourMatch,
-                    outlined: true,
-                    size: DesignSystemChipSize.touch,
-                    selected: custom.eyeColour == null,
-                    onPressed: () =>
-                        controller.set(custom.copyWith(eyeColour: () => null)),
-                  ),
-                ),
-                CompanionSwatchRow<CompanionEyeColour?>(
+                CompanionSwatchRow<CompanionEyeColour>(
                   selected: custom.eyeColour,
                   onSelected: (eyes) =>
-                      controller.set(custom.copyWith(eyeColour: () => eyes)),
+                      controller.set(custom.copyWith(eyeColour: eyes)),
                   swatches: [
                     for (final eyes in CompanionEyeColour.values)
                       (

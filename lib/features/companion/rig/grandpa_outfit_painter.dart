@@ -16,7 +16,7 @@ import 'package:lotti/features/companion/rig/trousers_painter.dart';
 void drawGrandpaOutfit(Canvas canvas, RigFrame f, CompanionLook look) {
   final c = look.palette;
   final t = f.torso;
-  final shirt = tuckedTopPath(f);
+  final shirt = tuckedTopPath(f, broad: true);
   fillPath(canvas, shirt, c.shirt);
   canvas
     ..save()

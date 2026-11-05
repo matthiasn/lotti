@@ -3873,10 +3873,6 @@ class AppLocalizationsDa extends AppLocalizations {
   String get companionSettingsEyeColourDarkBrown => 'Mørkebrun';
 
   @override
-  String get companionSettingsEyeColourDescription =>
-      'Passer til hudtonen, indtil du vælger en farve.';
-
-  @override
   String get companionSettingsEyeColourGreen => 'Grøn';
 
   @override
@@ -3887,9 +3883,6 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get companionSettingsEyeColourLabel => 'Øjenfarve';
-
-  @override
-  String get companionSettingsEyeColourMatch => 'Som hudtonen';
 
   @override
   String get companionSettingsHairColourAuburn => 'Kobberrød';

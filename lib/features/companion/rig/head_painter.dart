@@ -48,17 +48,17 @@ Path facePath(double yaw, {double jaw = 0}) {
     ..cubicTo(26, -58, 45 - yaw * 2, -40, 45 - yaw * 2, -8)
     ..cubicTo(
       45 - yaw * 2,
-      l(16, 26),
-      l(26, 36) + yaw,
-      l(38, 41),
+      l(16, 28),
+      l(26, 39) + yaw,
+      l(38, 44),
       yaw * 3,
-      l(40, 42),
+      l(40, 45),
     )
     ..cubicTo(
-      l(-26, -36) + yaw,
-      l(38, 41),
+      l(-26, -39) + yaw,
+      l(38, 44),
       -45 - yaw * 2,
-      l(16, 26),
+      l(16, 28),
       -45 - yaw * 2,
       -8,
     )
@@ -127,14 +127,34 @@ void _humanFace(Canvas canvas, CompanionLook look, CompanionPose p) {
   canvas
     ..save()
     ..clipPath(face);
-  // Form shade on the far side of the face and under the jaw.
+  // Form shade on the far side of the face and under the jaw; a man's
+  // cheeks carry no blush.
   fillPath(
     canvas,
     ellipse(Offset(38 - yaw * 6, 6), 22, 60),
     c.skinShade.withValues(alpha: 0.38),
   );
   drawForeheadShadow(canvas, c, p.hairLag, yaw, look.hairStyle);
-  for (final s in [-1, 1]) {
+  if (masculine) {
+    // The jaw as bone: a band of shade along its lower edge and under the
+    // chin, and the hollow under each cheekbone.
+    fillPath(
+      canvas,
+      ellipse(Offset(yaw * 3, 47), 44, 9),
+      c.skinDeep.withValues(alpha: 0.35),
+    );
+    for (final s in [-1, 1]) {
+      strokePath(
+        canvas,
+        Path()
+          ..moveTo(s * 36 + yaw * 4, 6)
+          ..quadraticBezierTo(s * 31 + yaw * 4, 16, s * 33 + yaw * 4, 24),
+        c.skinShade.withValues(alpha: 0.55),
+        2.4,
+      );
+    }
+  }
+  for (final s in masculine ? const <int>[] : const [-1, 1]) {
     final at = Offset(s * 25 + yaw * 5, 11 + pitch * 2);
     canvas.drawCircle(
       at,
@@ -160,19 +180,24 @@ void _humanFace(Canvas canvas, CompanionLook look, CompanionPose p) {
       p.squint,
       p.gaze,
       lashes: look.species.lashes,
+      // A man's eye is narrower, its iris smaller, its lash line lighter.
+      open: masculine ? 0.68 : 1,
+      irisRadius: masculine ? 6.4 : 7.6,
+      lashLine: masculine ? 1.3 : 2.1,
     );
+    // A man's brow sits lower, nearer the eye, heavy and nearly straight.
     drawBrow(
       canvas,
       c,
-      Offset(s * 20 + fx, -27 + fy * 1.2),
+      Offset(s * 20 + fx, (masculine ? -22 : -27) + fy * 1.2),
       s,
       p.browRaise + s * p.browSkew,
       p.browTilt,
-      fullness: (look.species.aged ? 1 : 1.5) + (masculine ? 0.4 : 0),
-      arch: masculine ? 0.4 : 1,
+      fullness: (look.species.aged ? 1 : 1.5) + (masculine ? 0.7 : 0),
+      arch: masculine ? 0.25 : 1,
     );
   }
-  drawNose(canvas, c, fx * 1.25, 8 + fy * 1.1);
+  drawNose(canvas, c, fx * 1.25, 8 + fy * 1.1, broad: masculine);
   if (look.species.aged) _laughLines(canvas, c, fx, fy, p.smile);
   if (look.species.bearded) drawBeard(canvas, c, yaw);
   if (look.species.stubble) drawStubble(canvas, c, fx, fy, yaw);
@@ -180,7 +205,17 @@ void _humanFace(Canvas canvas, CompanionLook look, CompanionPose p) {
     ..save()
     ..translate(fx * 1.1, 22 + fy)
     ..scale(1.25);
-  drawMouth(canvas, c, 0, 0, p.mouth, p.smile, skew: p.smileSkew);
+  // A man's lips are thin: the mouth's line, not a woman's full lips.
+  drawMouth(
+    canvas,
+    c,
+    0,
+    0,
+    p.mouth,
+    p.smile,
+    skew: p.smileSkew,
+    lipWeight: masculine ? 0.4 : 1,
+  );
   canvas.restore();
   if (look.species.bearded) drawMoustache(canvas, c, fx, fy);
 }

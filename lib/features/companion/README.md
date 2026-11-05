@@ -95,10 +95,12 @@ back, nudges), is
   everyday (denim blue), studio (blush pink), festival (tangerine, with a
   turquoise headband) and weekend (brick red). Her suit's legs are the
   trousers the grandpa wears, in her colour, ending in her own shoes.
-- **A man's face.** The grandpa and the uncle have a squarer jaw,
-  straighter and heavier brows, lips in their skin's own colour rather than
-  a woman's rose, hardly any blush and no flicked lashes; the uncle a
-  shadow of stubble.
+- **A man's face.** The grandpa and the uncle are drawn as men: narrower
+  eyes with a smaller iris and a light lash line, heavy straight brows set
+  low, a broader nose with a shaded bridge, thin lips in their skin's own
+  colour, a wider, squarer jaw shaded along its edge, no blush and no
+  flicked lashes, a thicker neck with an Adam's apple, and a broad,
+  straight torso; the uncle a shadow of stubble.
 - **The uncle.** About thirty, terse and dry, in clothes of his own: a
   bomber jacket worn open over a crew-neck tee, its collar, cuffs and hem
   ribbed and its sleeves to the wrist, chinos turned up over lace-up boots,
@@ -113,9 +115,8 @@ back, nudges), is
   deep, never named after a people), the hairstyle (bun, curls, afro, locs,
   bob, short, balding, long, waves, ponytail), the hair
   colour (silver, white, grey, black, brown, auburn, pink, lavender, blue),
-  the eyes (matched to the skin tone by default — blue on the first, Lotti's
-  own, hazel, brown and dark brown down the deeper tones — or picked: dark
-  brown, brown, hazel, amber, green, grey, blue),
+  the eye colour (dark brown, brown — the default — hazel, amber, green,
+  grey or blue, chosen freely and never tied to the skin tone),
   an outfit of the character's always worn, or "Surprise me", and the
   sass — warm,
   cheeky (the default) or sassy — which her preview acts out when it is
@@ -125,8 +126,8 @@ back, nudges), is
   shoulders from a side parting, and a ponytail swings behind. The bun's
   knot shows beside her jaw, its waves and strands kept inside the hair, so
   a dark colour reads as hair, not a grey loaf. A hat sits on the hair's
-  crown, as high and as wide as the style needs: the rock beret covers an
-  afro instead of sinking into it. Every part
+  crown, as high and as wide as the style needs; an afro wears no hat for
+  now, since a hat drawn for a head reads as floating in it. Every part
   combines with every other, and with every character. Choosing another
   character clears the outfit, since outfits belong to one, and puts the
   hair back to that character's own; the rest carries over. The choice is stored and synced to the person's other devices

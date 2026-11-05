@@ -3941,10 +3941,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get companionSettingsEyeColourDarkBrown => 'Căprui închis';
 
   @override
-  String get companionSettingsEyeColourDescription =>
-      'Se potrivește cu nuanța pielii până alegeți o culoare.';
-
-  @override
   String get companionSettingsEyeColourGreen => 'Verde';
 
   @override
@@ -3955,9 +3951,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get companionSettingsEyeColourLabel => 'Culoarea ochilor';
-
-  @override
-  String get companionSettingsEyeColourMatch => 'Ca nuanța pielii';
 
   @override
   String get companionSettingsHairColourAuburn => 'Arămiu';

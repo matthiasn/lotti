@@ -214,4 +214,18 @@ void main() {
       expect(r.count(p.rib), greaterThan(20));
     });
   });
+
+  group("a man's build", () {
+    test("a thicker neck, with an Adam's apple", () async {
+      const his = CompanionLook.uncle;
+      const hers = CompanionLook.aunt;
+      final him = await _body((c, f) => drawNeck(c, f, his));
+      final her = await _body((c, f) => drawNeck(c, f, hers));
+      expect(
+        him.count(his.palette.skin),
+        greaterThan(her.count(hers.palette.skin) * 1.2),
+      );
+      expect(him.count(his.palette.skinShade, tolerance: 30), greaterThan(4));
+    });
+  });
 }

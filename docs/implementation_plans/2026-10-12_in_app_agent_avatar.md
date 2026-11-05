@@ -839,13 +839,20 @@ Asked for after the cast was built, from screenshots of the app:
 - **The voice stopped in the background**: it now holds the phone's audio
   session while it speaks (TTS, not the companion, but heard through her).
 - **Eye colour** (`feat/companion-eye-colour`): blue eyes on every skin tone
-  did not fit. Each tone now matches eyes of its own by default, and a
-  person may pick from seven — the parts' rule holds: any colour with any
-  tone.
-- **The uncle read as a lady**, with rosy cheeks and lipstick: the grandpa
-  and the uncle now have a man's face — a squarer jaw, straighter heavier
-  brows, lips in the skin's own colour, little blush — and the uncle
-  stubble.
+  did not fit. **Changed after review:** the first cut matched eyes to the
+  tone by default; the eyes are now a part of their own, brown until
+  picked, any of seven with any tone — skin colour decides nothing about
+  them.
+- **The uncle read as a lady**, with rosy cheeks and lipstick. A first pass
+  (squarer jaw, straighter brows, natural lips, little blush) still read as
+  a woman's face, so the men now take every cue together: narrower eyes, a
+  smaller iris, a light lash line, heavy low brows, a broad nose, thin
+  lips, a shaded jaw, no blush, a thicker neck with an Adam's apple and a
+  broad straight torso; the uncle stubble.
+- **Hats on an afro** looked wrong even seated on top, so an afro wears
+  none for now; a hat made for one is a later drawing.
+- **More straight-hair styles** (beyond long, waves and ponytail) are a
+  follow-up of their own.
 
 ### Later
 

@@ -226,23 +226,27 @@ const _rubber = Color(0xFFF7F5F0);
 
 /// The outline of a top tucked into trousers — the grandpa's shirt, the
 /// aunt's boiler suit — from the shoulders, which rise with the arms, down
-/// to a hem tucked well inside the waistband.
-Path tuckedTopPath(RigFrame f) {
+/// to a hem tucked well inside the waistband. A [broad] top is a man's:
+/// squarer shoulders and straight sides, with no waist drawn in under them.
+Path tuckedTopPath(RigFrame f, {bool broad = false}) {
   final t = f.torso;
   final ll = f.pose.left.lift;
   final lr = f.pose.right.lift;
+  // How much further out a man's shoulders sit, and his sides below them.
+  final sh = broad ? 3.0 : 0.0;
+  final waist = broad ? 4.0 : 0.0;
   return Path()
     ..moveToPoint(t(-15, -112))
     ..curve(t(-8, -108), t(8, -108), t(15, -112))
-    ..curve(t(28, -114 - lr), t(40, -113 - lr), t(46, -108 - lr))
-    ..curve(t(51, -100), t(46, -86), t(43, -76))
-    ..curve(t(40, -60), t(38, -44), t(39, -30))
-    ..lineToPoint(t(39, -20))
-    ..lineToPoint(t(-39, -20))
-    ..lineToPoint(t(-39, -30))
-    ..curve(t(-38, -44), t(-40, -60), t(-43, -76))
-    ..curve(t(-46, -86), t(-51, -100), t(-46, -108 - ll))
-    ..curve(t(-40, -113 - ll), t(-28, -114 - ll), t(-15, -112))
+    ..curve(t(28, -114 - lr), t(40 + sh, -113 - lr), t(46 + sh, -108 - lr))
+    ..curve(t(51 + sh, -100), t(46 + sh, -86), t(43 + sh, -76))
+    ..curve(t(40 + waist, -60), t(38 + waist, -44), t(39 + waist, -30))
+    ..lineToPoint(t(39 + waist, -20))
+    ..lineToPoint(t(-39 - waist, -20))
+    ..lineToPoint(t(-39 - waist, -30))
+    ..curve(t(-38 - waist, -44), t(-40 - waist, -60), t(-43 - sh, -76))
+    ..curve(t(-46 - sh, -86), t(-51 - sh, -100), t(-46 - sh, -108 - ll))
+    ..curve(t(-40 - sh, -113 - ll), t(-28, -114 - ll), t(-15, -112))
     ..close();
 }
 

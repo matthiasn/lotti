@@ -44,28 +44,24 @@ enum CompanionHairStyle {
 /// swatch, and a screen reader says "Skin tone 3".
 enum CompanionSkinTone {
   tone1(
-    eyes: CompanionEyeColour.blue,
     skin: Color(0xFFF1D2BD),
     shade: Color(0xFFD9B39B),
     deep: Color(0xFFC0957C),
     light: Color(0xFFF9E3D2),
   ),
   tone2(
-    eyes: CompanionEyeColour.hazel,
     skin: Color(0xFFE6BC98),
     shade: Color(0xFFCF9F7C),
     deep: Color(0xFFB38262),
     light: Color(0xFFF2D3B6),
   ),
   tone3(
-    eyes: CompanionEyeColour.brown,
     skin: Color(0xFFD19C72),
     shade: Color(0xFFB88159),
     deep: Color(0xFF9B6644),
     light: Color(0xFFE3B994),
   ),
   tone4(
-    eyes: CompanionEyeColour.brown,
     skin: Color(0xFFB47A50),
     shade: Color(0xFF9A623C),
     deep: Color(0xFF7E4C2C),
@@ -75,7 +71,6 @@ enum CompanionSkinTone {
     lipsLight: Color(0xFFCF8085),
   ),
   tone5(
-    eyes: CompanionEyeColour.darkBrown,
     skin: Color(0xFF8D5A3A),
     shade: Color(0xFF754829),
     deep: Color(0xFF5C3520),
@@ -85,7 +80,6 @@ enum CompanionSkinTone {
     lipsLight: Color(0xFFBA6E70),
   ),
   tone6(
-    eyes: CompanionEyeColour.darkBrown,
     skin: Color(0xFF5E3B26),
     shade: Color(0xFF4C2E1C),
     deep: Color(0xFF3A2114),
@@ -97,7 +91,6 @@ enum CompanionSkinTone {
 
   /// The deepest: added after the six, so a stored tone keeps its number.
   tone7(
-    eyes: CompanionEyeColour.darkBrown,
     skin: Color(0xFF452A19),
     shade: Color(0xFF382114),
     deep: Color(0xFF29170C),
@@ -108,7 +101,6 @@ enum CompanionSkinTone {
   );
 
   const CompanionSkinTone({
-    required this.eyes,
     required this.skin,
     required this.shade,
     required this.deep,
@@ -117,11 +109,6 @@ enum CompanionSkinTone {
     this.lipsUpper,
     this.lipsLight,
   });
-
-  /// The eyes this skin has until a person picks others: the colours eyes
-  /// most often are beside it, so a deep tone is not left with blue ones.
-  /// Lotti's own, the first tone's, stay the blue of the pitch videos.
-  final CompanionEyeColour eyes;
 
   final Color skin;
   final Color shade;
@@ -232,9 +219,8 @@ enum CompanionHairColour {
 }
 
 /// The eyes' colour: the browns most eyes are, hazel and amber between them
-/// and the lighter ones, and green, grey and blue. Every colour goes with
-/// every skin tone; each tone also has one it matches by default
-/// ([CompanionSkinTone.eyes]).
+/// and the lighter ones, and green, grey and blue. A part of its own, chosen
+/// freely: no colour belongs to a skin tone, and a tone suggests none.
 enum CompanionEyeColour {
   darkBrown(iris: Color(0xFF3B2416), light: Color(0xFF6A4630)),
   brown(iris: Color(0xFF5C3A21), light: Color(0xFF8E6440)),
@@ -243,7 +229,7 @@ enum CompanionEyeColour {
   green(iris: Color(0xFF4E7A45), light: Color(0xFF86AE6C)),
   grey(iris: Color(0xFF6F7E88), light: Color(0xFFA5B3BC)),
 
-  /// The pitch videos' blue, Lotti's own.
+  /// The pitch videos' blue.
   blue(iris: Color(0xFF4A6F8F), light: Color(0xFF7EA2C0));
 
   const CompanionEyeColour({required this.iris, required this.light});

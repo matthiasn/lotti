@@ -231,4 +231,25 @@ void main() {
       );
     });
   });
+
+  test("a broad top is a man's: squarer shoulders, straight sides", () {
+    final f = RigFrame(const CompanionPose());
+    final hers = tuckedTopPath(f).getBounds();
+    final his = tuckedTopPath(f, broad: true).getBounds();
+    expect(his.width, greaterThan(hers.width + 5));
+    // Straight sides: at the waist the broad top keeps more of its width.
+    /// How far right the top reaches at torso height -44, the waist.
+    double waist(Path p) {
+      var right = 0.0;
+      for (var x = 0.0; x < 80; x += 0.5) {
+        if (p.contains(Offset(x, pelvisY - 44))) right = x;
+      }
+      return right;
+    }
+
+    expect(
+      waist(tuckedTopPath(f, broad: true)),
+      greaterThan(waist(tuckedTopPath(f)) + 3),
+    );
+  });
 }

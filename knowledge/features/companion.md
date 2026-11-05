@@ -511,8 +511,8 @@ flowchart LR
 - **The customization** (`companionCustomizationProvider`): the character
   (`CompanionSpecies.choosable`, the humans: Lotti by default, the
   grandpa, the aunt or the uncle), the skin tone, hairstyle, hair colour,
-  eye colour (`eyeColour`; null, the default, matches the skin tone's
-  `CompanionSkinTone.eyes` and follows a change of tone), outfit, sass (default `cheeky`) and whether she
+  eye colour (`eyeColour`, brown by default, chosen freely and never tied to
+  the skin tone), outfit, sass (default `cheeky`) and whether she
   answers a spoken question aloud (`speaksReplies`, default on; only an
   explicit false mutes her). `loaded` says whether that is known yet — the
   stored value read (nothing stored counts) or set. It stays false while the
@@ -521,7 +521,10 @@ flowchart LR
   out shows at once and is kept apart, with every part any change touched; once
   the read lands only those parts are laid over what it found
   (`CompanionCustomization.adopting`), so a stored part never touched — a
-  mute — survives, and a part switched and switched back still counts. A
+  mute — survives, and a part switched and switched back still counts. The
+  character and its outfit are adopted together — an outfit belongs to one
+  character — so an outfit picked for Lotti during the load is never laid
+  over a stored grandpa. A
   reload sync asks for meanwhile waits until then. Stored as JSON
   under
   `COMPANION_CUSTOMIZATION` in `SettingsDb` (the keys are in
@@ -557,7 +560,7 @@ flowchart LR
   page never shows the value the save is replacing. "Send settings" re-sends
   it with the other preferences.
 - **Dressing** (`CompanionCustomization.dress`) lays the skin tone, the hair
-  colour and the eyes (`eyes`: the picked colour, else the tone's) over the
+  colour and the eye colour over the
   outfit's palette and sets its hairstyle; the outfit keeps
   its clothes and props. A deeper tone deepens plain lips, never lipstick an
   outfit paints (the rock look's red). `asCharacter` is how settings
@@ -586,9 +589,10 @@ clipped to the hair and its sheen kept soft, so a dark colour reads as hair.
 **A hat sits on the hair, not in it.** `hatSeat` gives each style a lift and
 a widening about the hairline, and `seatHat` draws the beret, flat cap or
 beanie through it: none for close styles, a little for the bob, locs, long
-hair, waves and curls, and for the afro lifted and widened by 1.36 so the
-hat covers its crown — and only a little taller, so it stays inside the
-bust framing. An animal wears a hat as the plain head does.
+hair, waves and curls. An afro has no seat — `hatSeat` is null and
+`seatHat` draws nothing — because a hat drawn for a head reads as floating
+in it; a hat made for an afro would be a drawing of its own. An animal
+wears a hat as the plain head does.
 
 **A brow travels only as far as a brow can.** `browShape` turns a raise and
 a tilt into the brow's inner end, peak and outer end: `browLift` saturates
@@ -618,12 +622,18 @@ dress, trousers, or an animal's paws) picks the leg painter, `shoes` the
 trousers' footwear (brogues, high-tops or boots), `cuffedTrousers` the
 turn-ups, `bearded` the beard, `lashes` the flicked lashes at the eyes'
 outer corners, `aged` the laugh lines — an unaged face draws none, and
-its brows fuller (`drawBrow`'s `fullness`) — `masculine` a man's face (the
-squarer jaw of `facePath`'s `jaw`, straighter and heavier brows through
-`browShape`'s `arch`, and in `dress` the lips of
-`CompanionSkinTone.naturalLips` instead of a woman's rose), and `stubble` a
-shadow along the beard's outline (`drawStubble`). The men's looks carry
-hardly any blush. Their garments' colours sit in
+its brows fuller (`drawBrow`'s `fullness`) — `masculine` a man's face and
+build, and `stubble` a shadow along the beard's outline (`drawStubble`). A
+man's face takes every cue at once, since any one alone still read as a
+woman's: narrower eyes with a smaller iris and a lighter lash line
+(`drawEye`'s `open`, `irisRadius`, `lashLine`), heavy straight brows set
+lower (`browShape`'s `arch`, `fullness`), a broad nose with a shaded bridge
+(`drawNose`'s `broad`), thin lips (`drawMouth`'s `lipWeight`) in the skin's
+own colour (`CompanionSkinTone.naturalLips`, laid on in `dress`), the
+squarer jaw of `facePath`'s `jaw` with shade along its edge and under the
+cheekbones, and no blush. Below the head: a thicker neck with an Adam's
+apple (`drawNeck`), and a broad, straight shirt
+(`tuckedTopPath`'s `broad`). Their garments' colours sit in
 `CompanionPalette` (`model/companion_palette.dart`) beside hers, each
 defaulting to its everyday outfit; the uncle's tee takes the shirt's
 colours, his chinos the trousers', his beanie the cap's. Only the upper

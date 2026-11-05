@@ -180,6 +180,22 @@ void main() {
       expect(focus.calls, ['acquire', 'release']);
     });
 
+    // The regression: the stop queued its release only after the native stop
+    // returned, so a play started meanwhile claimed first, and the stale
+    // release then deactivated the new clip's session.
+    test("a stop's release is queued before a play started during the native "
+        'stop claims', () async {
+      final stopping = Completer<void>();
+      when(() => player.stop()).thenAnswer((_) => stopping.future);
+      final audio = withFocus();
+      final stop = audio.stop();
+      final play = audio.play(File('/tmp/b.wav'), speed: 1);
+      await pumpEventQueue();
+      stopping.complete();
+      await Future.wait([stop, play]);
+      expect(focus.calls, ['release', 'acquire']);
+    });
+
     // The regression: a play cancelled while taking the focus released it
     // once more when the claim came back — after a newer play had claimed
     // it, deactivating the newer play's session.

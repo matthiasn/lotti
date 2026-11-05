@@ -110,27 +110,10 @@ void main() {
       }
     });
 
-    test("blue is the pitch videos' blue, Lotti's own on the first tone", () {
+    test("blue is the pitch videos' blue", () {
       const c = CompanionPalette();
       expect(CompanionEyeColour.blue.iris, c.iris);
       expect(CompanionEyeColour.blue.light, c.irisLight);
-      expect(CompanionSkinTone.tone1.eyes, CompanionEyeColour.blue);
-    });
-
-    // The ask: blue eyes on every skin tone did not fit.
-    test('every tone past the first matches eyes darker than blue, and the '
-        'deeper the tone the darker its eyes', () {
-      for (final t in CompanionSkinTone.values.skip(1)) {
-        expect(t.eyes, isNot(CompanionEyeColour.blue), reason: t.name);
-      }
-      const tones = CompanionSkinTone.values;
-      for (var i = 2; i < tones.length; i++) {
-        expect(
-          tones[i].eyes.iris.computeLuminance(),
-          lessThanOrEqualTo(tones[i - 1].eyes.iris.computeLuminance()),
-          reason: tones[i].name,
-        );
-      }
     });
   });
 

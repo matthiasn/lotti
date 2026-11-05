@@ -3881,10 +3881,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get companionSettingsEyeColourDarkBrown => 'Mörkbrun';
 
   @override
-  String get companionSettingsEyeColourDescription =>
-      'Matchar hudtonen tills du väljer en färg.';
-
-  @override
   String get companionSettingsEyeColourGreen => 'Grön';
 
   @override
@@ -3895,9 +3891,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get companionSettingsEyeColourLabel => 'Ögonfärg';
-
-  @override
-  String get companionSettingsEyeColourMatch => 'Som hudtonen';
 
   @override
   String get companionSettingsHairColourAuburn => 'Kopparröd';

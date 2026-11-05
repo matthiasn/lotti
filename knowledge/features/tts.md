@@ -112,7 +112,9 @@ paused podcast resumes.
 and releases in turn on one queue: a clip's end releases the session without
 anyone awaiting it, and a claim for the next clip made meanwhile would
 otherwise reach the platform first and be undone by the stale deactivation.
-Because a stop's release always queues after any claim it must undo, a
+A stop queues its release the moment it is called, before awaiting the
+native stop, so a play started during that stop claims after it. Because a
+stop's release always queues after any claim it must undo, a
 play cancelled while its claim is pending never releases on its own: by the
 time its claim returns, a newer play may hold the session, and that release
 would deactivate it. `settled` completes once every step so far has run, and the player exposes
