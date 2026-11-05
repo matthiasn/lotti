@@ -19,6 +19,7 @@ import 'package:lotti/features/onboarding/ui/widgets/onboarding_companion.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_connect_panel.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_first_task_step.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_hero.dart';
+import 'package:lotti/features/onboarding/ui/widgets/onboarding_make_her_yours_step.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_success_view.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
@@ -121,9 +122,7 @@ class OnboardingWelcomeModal {
               child: ModalEscapeScope(
                 child: _OnboardingScaffold(
                   heroStyle: heroStyle,
-                  onProviderModalShown: () => unawaited(
-                    repo?.recordEvent(OnboardingEventName.providerModalShown),
-                  ),
+                  recordEvent: (name) => unawaited(repo?.recordEvent(name)),
                   // The connection succeeded (provider + models created) — record
                   // it now so it counts even if the user dismisses on the success
                   // beat; the route stays open to show that beat.
@@ -205,7 +204,7 @@ void openOnboardingCreatedTask(String taskId) {
 class _OnboardingScaffold extends StatelessWidget {
   const _OnboardingScaffold({
     required this.heroStyle,
-    required this.onProviderModalShown,
+    required this.recordEvent,
     required this.onConnected,
     required this.onTaskCreated,
     required this.onComplete,
@@ -214,7 +213,9 @@ class _OnboardingScaffold extends StatelessWidget {
   });
 
   final OnboardingHeroStyle heroStyle;
-  final VoidCallback onProviderModalShown;
+
+  /// Records a funnel event from inside the flow.
+  final void Function(OnboardingEventName) recordEvent;
   final void Function(InferenceProviderType) onConnected;
   final void Function(String taskId) onTaskCreated;
   final VoidCallback onComplete;
@@ -238,7 +239,7 @@ class _OnboardingScaffold extends StatelessWidget {
       onTap: () {},
       child: _OnboardingFlow(
         heroStyle: heroStyle,
-        onProviderModalShown: onProviderModalShown,
+        recordEvent: recordEvent,
         onConnected: onConnected,
         onTaskCreated: onTaskCreated,
         onComplete: onComplete,
@@ -292,6 +293,7 @@ class _OnboardingScaffold extends StatelessWidget {
 
 enum _FlowStep {
   welcome,
+  makeHerYours,
   connect,
   apiKey,
   success,
@@ -304,7 +306,7 @@ enum _FlowStep {
 class _OnboardingFlow extends StatefulWidget {
   const _OnboardingFlow({
     required this.heroStyle,
-    required this.onProviderModalShown,
+    required this.recordEvent,
     required this.onConnected,
     required this.onTaskCreated,
     required this.onComplete,
@@ -313,7 +315,9 @@ class _OnboardingFlow extends StatefulWidget {
   });
 
   final OnboardingHeroStyle heroStyle;
-  final VoidCallback onProviderModalShown;
+
+  /// Records a funnel event from inside the flow.
+  final void Function(OnboardingEventName) recordEvent;
   final void Function(InferenceProviderType) onConnected;
   final void Function(String taskId) onTaskCreated;
   final VoidCallback onComplete;
@@ -384,6 +388,12 @@ class _OnboardingFlowState extends State<_OnboardingFlow> {
     );
   }
 
+  /// On to the one key, from the "make me yours" step.
+  void _toConnect() {
+    setState(() => _step = _FlowStep.connect);
+    widget.recordEvent(OnboardingEventName.providerModalShown);
+  }
+
   Widget _buildStep() {
     switch (_step) {
       case _FlowStep.welcome:
@@ -401,12 +411,24 @@ class _OnboardingFlowState extends State<_OnboardingFlow> {
           onConnect: () {
             setState(() {
               _greeted = true;
-              _step = _FlowStep.connect;
+              _step = _FlowStep.makeHerYours;
             });
-            widget.onProviderModalShown();
+            widget.recordEvent(OnboardingEventName.companionCustomizeShown);
           },
           onSkip: widget.onSkip,
           onExploreDemo: widget.onExploreDemo,
+        );
+      case _FlowStep.makeHerYours:
+        return OnboardingMakeHerYoursStep(
+          key: const ValueKey('onboarding-make-her-yours'),
+          onBack: () => setState(() => _step = _FlowStep.welcome),
+          onCustomized: () =>
+              widget.recordEvent(OnboardingEventName.companionCustomized),
+          onContinue: _toConnect,
+          onSkip: () {
+            widget.recordEvent(OnboardingEventName.companionCustomizeSkipped);
+            _toConnect();
+          },
         );
       case _FlowStep.connect:
         return OnboardingConnectPanel(
@@ -417,7 +439,7 @@ class _OnboardingFlowState extends State<_OnboardingFlow> {
             line: context.messages.onboardingConnectGuide,
             framing: CompanionFraming.bust,
           ),
-          onBack: () => setState(() => _step = _FlowStep.welcome),
+          onBack: () => setState(() => _step = _FlowStep.makeHerYours),
           onSelect: (type) => setState(() {
             _type = type;
             _step = _FlowStep.apiKey;

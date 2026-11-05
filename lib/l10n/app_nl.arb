@@ -4924,6 +4924,10 @@
   "onboardingFirstTaskSuggestionPlanWeek": "Plan mijn week",
   "onboardingFirstTaskSuggestionsLabel": "Begin met één van deze:",
   "onboardingFirstTaskTitle": "Maak je eerste taak aan",
+  "onboardingMakeHerYoursContinue": "Ziet er goed uit",
+  "onboardingMakeHerYoursLine": "Kies hoe ik eruitzie. Je kunt dit altijd aanpassen in Instellingen › Metgezel.",
+  "onboardingMakeHerYoursSkip": "Nu overslaan",
+  "onboardingMakeHerYoursTitle": "Kies mijn uiterlijk",
   "onboardingMetricsActiveDays": "Actieve dagen",
   "@onboardingMetricsActiveDays": {
     "description": "Label for the active-day count in the onboarding metrics debug view."

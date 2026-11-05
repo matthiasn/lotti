@@ -4925,6 +4925,10 @@
   "onboardingFirstTaskSuggestionPlanWeek": "Organizza la mia settimana",
   "onboardingFirstTaskSuggestionsLabel": "Non sei pronto a parlare? Inizia con uno di questi:",
   "onboardingFirstTaskTitle": "Crea il tuo primo compito",
+  "onboardingMakeHerYoursContinue": "Va bene così",
+  "onboardingMakeHerYoursLine": "Scegli come appaio. Puoi cambiare tutto quando vuoi in Impostazioni › Compagna.",
+  "onboardingMakeHerYoursSkip": "Salta per ora",
+  "onboardingMakeHerYoursTitle": "Scegli il mio aspetto",
   "onboardingMetricsActiveDays": "Giorni attivi",
   "@onboardingMetricsActiveDays": {
     "description": "Label for the active-day count in the onboarding metrics debug view."

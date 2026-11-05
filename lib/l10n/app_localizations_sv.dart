@@ -11657,6 +11657,19 @@ class AppLocalizationsSv extends AppLocalizations {
   String get onboardingFirstTaskTitle => 'Skapa din första uppgift';
 
   @override
+  String get onboardingMakeHerYoursContinue => 'Ser bra ut';
+
+  @override
+  String get onboardingMakeHerYoursLine =>
+      'Välj hur jag ser ut. Du kan ändra allt när som helst under Inställningar › Följeslagare.';
+
+  @override
+  String get onboardingMakeHerYoursSkip => 'Hoppa över tills vidare';
+
+  @override
+  String get onboardingMakeHerYoursTitle => 'Välj min stil';
+
+  @override
   String get onboardingMetricsActiveDays => 'Aktiva dagar';
 
   @override

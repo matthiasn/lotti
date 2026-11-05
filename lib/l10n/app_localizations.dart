@@ -19609,6 +19609,30 @@ abstract class AppLocalizations {
   /// **'Create your first task'**
   String get onboardingFirstTaskTitle;
 
+  /// No description provided for @onboardingMakeHerYoursContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Looks good'**
+  String get onboardingMakeHerYoursContinue;
+
+  /// No description provided for @onboardingMakeHerYoursLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick how I look. You can change all of this any time in Settings › Companion.'**
+  String get onboardingMakeHerYoursLine;
+
+  /// No description provided for @onboardingMakeHerYoursSkip.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip for now'**
+  String get onboardingMakeHerYoursSkip;
+
+  /// No description provided for @onboardingMakeHerYoursTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Make me yours'**
+  String get onboardingMakeHerYoursTitle;
+
   /// Label for the active-day count in the onboarding metrics debug view.
   ///
   /// In en, this message translates to:

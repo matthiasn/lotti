@@ -40,7 +40,8 @@ flowchart TD
     L[First launch · no provider configured] -->|eligible| W[OnboardingWelcomeModal]
     L -->|budget spent / already completed| NONE[no auto-show · replay via Settings › Onboarding]
     W --> WL[welcome · the companion + her one-key promise + CTA]
-    WL -->|Get started with one key| CN[connect · one recommended card]
+    WL -->|Get started with one key| MY[make me yours · her look, optional]
+    MY -->|Looks good / Skip for now| CN[connect · one recommended card]
     CN -->|Other providers| CNO[the remaining provider tiles]
     WL -->|Look around first| SK[skip → onDismiss · no persistence, grace period preserved]
 ```
@@ -78,6 +79,15 @@ points at her.
   the one key she needs (`onboardingCompanionWelcomeLine`). The panel keeps its
   artwork and its own promise only where a host passes no companion — the
   animation gallery.
+- **"Make me yours".** Between the welcome and the key, an optional step
+  (`OnboardingMakeHerYoursStep`): she stands full length beside her bubble,
+  over a row of choices each for her outfit ("Surprise me" or one of hers),
+  skin tone, hair style and hair colour. Each pick is written at once to
+  `companionCustomizationProvider` — the store Settings › Companion edits — so
+  she wears it as it is made, and "Skip for now" only moves on. The step
+  records `companionCustomizeShown`, `companionCustomized` (the first pick of
+  a visit) and `companionCustomizeSkipped`; `providerModalShown` is recorded
+  when the user leaves it for the key.
 - **The connect step.** A bust, `ControlSizes.avatarHero` square, beside a
   bubble in which she recommends the one key.
 - **The first-task step.** A bust, `ControlSizes.avatarHero` square, above the
@@ -89,6 +99,7 @@ Each moment is an `OnboardingCompanionBeat`:
 | Beat | When | She |
 |---|---|---|
 | `welcome` | the welcome panel | waves once |
+| `dressUp` | the "make me yours" step | opens her arms once |
 | `recommend` | the connect step | presents the recommended card once |
 | `prompt` | the first-task prompt | waves once |
 | `listening` | the mic is open | holds `listen` |

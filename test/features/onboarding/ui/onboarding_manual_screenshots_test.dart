@@ -146,6 +146,7 @@ Widget _app({
 enum _OnboardingCase {
   settings,
   welcome,
+  makeHerYours,
   providers,
   otherProviders,
   apiKey,
@@ -159,6 +160,7 @@ extension on _OnboardingCase {
   String get fileName => switch (this) {
     _OnboardingCase.settings => 'settings',
     _OnboardingCase.welcome => 'welcome',
+    _OnboardingCase.makeHerYours => 'make_her_yours',
     _OnboardingCase.providers => 'providers',
     _OnboardingCase.otherProviders => 'other_providers',
     _OnboardingCase.apiKey => 'api_key',
@@ -372,8 +374,17 @@ void main() {
     await settleFrames(tester, frames);
   }
 
-  Future<void> driveToProviders(WidgetTester tester) async {
+  Future<void> driveToMakeHerYours(WidgetTester tester) async {
     await tapText(tester, _messages(tester).onboardingWelcomeOneKeyButton);
+    expect(
+      find.text(_messages(tester).onboardingMakeHerYoursTitle),
+      findsOneWidget,
+    );
+  }
+
+  Future<void> driveToProviders(WidgetTester tester) async {
+    await driveToMakeHerYours(tester);
+    await tapText(tester, _messages(tester).onboardingMakeHerYoursContinue);
     expect(
       find.text(_messages(tester).onboardingConnectRecommended),
       findsOneWidget,
@@ -533,6 +544,8 @@ void main() {
             find.text(_messages(tester).onboardingCompanionGreeting),
             findsOneWidget,
           );
+        case _OnboardingCase.makeHerYours:
+          await driveToMakeHerYours(tester);
         case _OnboardingCase.providers:
           await driveToProviders(tester);
         case _OnboardingCase.otherProviders:
@@ -571,6 +584,7 @@ void main() {
             // She leads the welcome, the one-key step and the first task.
             if (const {
               _OnboardingCase.welcome,
+              _OnboardingCase.makeHerYours,
               _OnboardingCase.providers,
               _OnboardingCase.otherProviders,
               _OnboardingCase.firstTask,

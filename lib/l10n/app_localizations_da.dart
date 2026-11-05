@@ -11639,6 +11639,19 @@ class AppLocalizationsDa extends AppLocalizations {
   String get onboardingFirstTaskTitle => 'Lav din første opgave';
 
   @override
+  String get onboardingMakeHerYoursContinue => 'Det ser godt ud';
+
+  @override
+  String get onboardingMakeHerYoursLine =>
+      'Vælg, hvordan jeg ser ud. Du kan altid ændre det hele under Indstillinger › Følgesvend.';
+
+  @override
+  String get onboardingMakeHerYoursSkip => 'Spring over for nu';
+
+  @override
+  String get onboardingMakeHerYoursTitle => 'Vælg mit udseende';
+
+  @override
   String get onboardingMetricsActiveDays => 'Aktive dage';
 
   @override

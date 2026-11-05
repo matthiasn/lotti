@@ -136,6 +136,23 @@ void main() {
 
       await driver.step('choose_brain', () async {
         await tapLabel(l10n.onboardingWelcomeOneKeyButton);
+        await driver.pumpUntilFound(panel('make-her-yours'));
+      });
+
+      await driver.step('make_her_yours', () async {
+        await driver.holdUntil(
+          driver.timeline.elapsed + const Duration(milliseconds: 1500),
+        );
+        final keep = find.descendant(
+          of: panel('make-her-yours'),
+          matching: find.text(l10n.onboardingMakeHerYoursContinue),
+        );
+        await tester.ensureVisible(keep);
+        await tester.pump();
+        await tapLabel(
+          l10n.onboardingMakeHerYoursContinue,
+          within: panel('make-her-yours'),
+        );
         await driver.pumpUntilFound(panel('connect'));
       });
 

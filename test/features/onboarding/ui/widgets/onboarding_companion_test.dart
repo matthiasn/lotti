@@ -56,6 +56,15 @@ void main() {
     expect(OnboardingCompanionBeat.created.cue, GestureName.celebrate);
   });
 
+  test('she opens her arms to be dressed on "make me yours"', () {
+    expect(OnboardingCompanionBeat.dressUp.cue, GestureName.openBoth);
+    expect(OnboardingCompanionBeat.dressUp.holding, isNull);
+    expect(
+      OnboardingCompanionBeat.dressUp.sourceId,
+      'onboarding-companion-make-her-yours',
+    );
+  });
+
   test('she presents the one key she recommends', () {
     expect(OnboardingCompanionBeat.recommend.cue, GestureName.presentRight);
     expect(OnboardingCompanionBeat.recommend.holding, isNull);

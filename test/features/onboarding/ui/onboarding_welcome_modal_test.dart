@@ -153,6 +153,17 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  /// From the welcome to the one-key step, past "make me yours" — skipped,
+  /// as it is optional.
+  Future<void> toConnect(WidgetTester tester) async {
+    await tester.tap(find.text('Get started with one key'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Skip for now'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Skip for now'));
+    await tester.pumpAndSettle();
+  }
+
   testWidgets('shows the welcome promise and records welcomeShown', (
     tester,
   ) async {
@@ -208,8 +219,7 @@ void main() {
       expect(find.byType(OnboardingCompanion), findsOneWidget);
       expect(find.byType(OnboardingThinkingBarsHero), findsNothing);
 
-      await tester.tap(find.text('Get started with one key'));
-      await tester.pumpAndSettle();
+      await toConnect(tester);
 
       final providerTitle = tester.widget<Text>(
         find.text('One key is all it takes'),
@@ -235,8 +245,7 @@ void main() {
   testWidgets('advancing to connect reveals the primary providers and records '
       'providerModalShown', (tester) async {
     await openWelcome(tester);
-    await tester.tap(find.text('Get started with one key'));
-    await tester.pumpAndSettle();
+    await toConnect(tester);
 
     // One recommended card; the rest wait behind the disclosure.
     expect(find.text('Mistral'), findsOneWidget);
@@ -299,8 +308,8 @@ void main() {
         findsOneWidget,
       );
 
-      // The incoming connect step is NOT frozen — its backdrop animates.
-      final incomingConnect = find.text('Mistral');
+      // The incoming step is NOT frozen — its animations run.
+      final incomingConnect = find.text('Make me yours');
       expect(incomingConnect, findsOneWidget);
       expect(
         find.ancestor(
@@ -323,21 +332,96 @@ void main() {
     },
   );
 
-  testWidgets('back from connect returns to the welcome', (tester) async {
+  testWidgets('back from connect returns to "make me yours", and back from '
+      'there to the welcome', (tester) async {
     await openWelcome(tester);
-    await tester.tap(find.text('Get started with one key'));
-    await tester.pumpAndSettle();
+    await toConnect(tester);
     expect(find.text('Mistral'), findsOneWidget);
 
+    await tester.tap(find.byIcon(LottiIcons.back));
+    await tester.pumpAndSettle();
+    expect(find.text('Make me yours'), findsOneWidget);
+
+    await tester.ensureVisible(find.byIcon(LottiIcons.back));
     await tester.tap(find.byIcon(LottiIcons.back));
     await tester.pumpAndSettle();
     expect(find.text("Hi, I'm Lotti."), findsOneWidget);
   });
 
-  testWidgets('Other providers reveals OpenAI and Ollama', (tester) async {
+  testWidgets('the welcome leads to "make me yours" and records it shown; '
+      'skipping it records the skip and reaches the one key', (tester) async {
     await openWelcome(tester);
     await tester.tap(find.text('Get started with one key'));
     await tester.pumpAndSettle();
+
+    expect(find.text('Make me yours'), findsOneWidget);
+    var state = await repo.funnelState();
+    expect(state.reached(OnboardingEventName.companionCustomizeShown), isTrue);
+    expect(state.reached(OnboardingEventName.providerModalShown), isFalse);
+
+    await tester.ensureVisible(find.text('Skip for now'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Skip for now'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('One key is all it takes'), findsOneWidget);
+    state = await repo.funnelState();
+    expect(
+      state.reached(OnboardingEventName.companionCustomizeSkipped),
+      isTrue,
+    );
+    expect(state.reached(OnboardingEventName.providerModalShown), isTrue);
+  });
+
+  testWidgets('a pick on "make me yours" records the customisation', (
+    tester,
+  ) async {
+    await openWelcome(tester);
+    await tester.tap(find.text('Get started with one key'));
+    await tester.pumpAndSettle();
+    expect(
+      (await repo.funnelState()).reached(
+        OnboardingEventName.companionCustomized,
+      ),
+      isFalse,
+    );
+
+    await tester.ensureVisible(find.text('Bob'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Bob'));
+    await tester.pumpAndSettle();
+
+    expect(
+      (await repo.funnelState()).reached(
+        OnboardingEventName.companionCustomized,
+      ),
+      isTrue,
+    );
+  });
+
+  testWidgets('"Looks good" reaches the one key without recording a skip', (
+    tester,
+  ) async {
+    await openWelcome(tester);
+    await tester.tap(find.text('Get started with one key'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Looks good'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Looks good'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('One key is all it takes'), findsOneWidget);
+    final state = await repo.funnelState();
+    expect(
+      state.reached(OnboardingEventName.companionCustomizeSkipped),
+      isFalse,
+    );
+    expect(state.reached(OnboardingEventName.providerModalShown), isTrue);
+  });
+
+  testWidgets('Other providers reveals OpenAI and Ollama', (tester) async {
+    await openWelcome(tester);
+    await toConnect(tester);
 
     expect(find.text('OpenAI'), findsNothing);
     await tester.tap(find.text('Other providers'));
@@ -349,8 +433,7 @@ void main() {
 
   testWidgets('selecting a provider opens the API-key step', (tester) async {
     await openWelcome(tester);
-    await tester.tap(find.text('Get started with one key'));
-    await tester.pumpAndSettle();
+    await toConnect(tester);
     await tester.tap(find.text('Mistral'));
     await tester.pumpAndSettle();
 
@@ -361,8 +444,7 @@ void main() {
     tester,
   ) async {
     await openWelcome(tester);
-    await tester.tap(find.text('Get started with one key'));
-    await tester.pumpAndSettle();
+    await toConnect(tester);
     await tester.tap(find.text('Mistral'));
     await tester.pumpAndSettle();
     expect(find.text('Paste your API key'), findsOneWidget);
@@ -629,8 +711,7 @@ void main() {
     );
     await tester.tap(find.text('open'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Get started with one key'));
-    await tester.pumpAndSettle();
+    await toConnect(tester);
     await tester.tap(find.text('Other providers'));
     await tester.pumpAndSettle();
     await tester.ensureVisible(find.text('Ollama'));
@@ -1103,10 +1184,27 @@ void main() {
       "I'll help you set it up.",
     );
 
-    await tester.tap(find.text('Get started with one key'));
-    for (var i = 0; i < 40; i++) {
-      await tester.pump(const Duration(milliseconds: 16));
+    Future<void> frames() async {
+      for (var i = 0; i < 40; i++) {
+        await tester.pump(const Duration(milliseconds: 16));
+      }
     }
+
+    await tester.tap(find.text('Get started with one key'));
+    await frames();
+    // On "make me yours" she opens her arms to be dressed, full length.
+    expect(her().beat, OnboardingCompanionBeat.dressUp);
+    expect(
+      her().line,
+      'Pick how I look. You can change all of this any time in '
+      'Settings › Companion.',
+    );
+    expect(her().framing, CompanionFraming.full);
+
+    await tester.ensureVisible(find.text('Skip for now'));
+    await frames();
+    await tester.tap(find.text('Skip for now'));
+    await frames();
     // On the one-key step she recommends Mistral, as a bust by her bubble.
     expect(her().beat, OnboardingCompanionBeat.recommend);
     expect(
@@ -1118,9 +1216,11 @@ void main() {
 
     // Back on the welcome she waves again, but says the promise only once.
     await tester.tap(find.byIcon(LottiIcons.back));
-    for (var i = 0; i < 40; i++) {
-      await tester.pump(const Duration(milliseconds: 16));
-    }
+    await frames();
+    await tester.ensureVisible(find.byIcon(LottiIcons.back));
+    await frames();
+    await tester.tap(find.byIcon(LottiIcons.back));
+    await frames();
     expect(her().beat, OnboardingCompanionBeat.welcome);
     expect(her().line, isNull);
   });

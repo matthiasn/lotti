@@ -11595,6 +11595,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get onboardingFirstTaskTitle => 'Create your first task';
 
   @override
+  String get onboardingMakeHerYoursContinue => 'Looks good';
+
+  @override
+  String get onboardingMakeHerYoursLine =>
+      'Pick how I look. You can change all of this any time in Settings › Companion.';
+
+  @override
+  String get onboardingMakeHerYoursSkip => 'Skip for now';
+
+  @override
+  String get onboardingMakeHerYoursTitle => 'Make me yours';
+
+  @override
   String get onboardingMetricsActiveDays => 'Active days';
 
   @override

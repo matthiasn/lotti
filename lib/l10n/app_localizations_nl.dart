@@ -11675,6 +11675,19 @@ class AppLocalizationsNl extends AppLocalizations {
   String get onboardingFirstTaskTitle => 'Maak je eerste taak aan';
 
   @override
+  String get onboardingMakeHerYoursContinue => 'Ziet er goed uit';
+
+  @override
+  String get onboardingMakeHerYoursLine =>
+      'Kies hoe ik eruitzie. Je kunt dit altijd aanpassen in Instellingen › Metgezel.';
+
+  @override
+  String get onboardingMakeHerYoursSkip => 'Nu overslaan';
+
+  @override
+  String get onboardingMakeHerYoursTitle => 'Kies mijn uiterlijk';
+
+  @override
   String get onboardingMetricsActiveDays => 'Actieve dagen';
 
   @override

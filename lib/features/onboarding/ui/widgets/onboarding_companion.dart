@@ -17,6 +17,9 @@ enum OnboardingCompanionBeat {
   /// The welcome: she waves.
   welcome(surface: 'welcome', cue: GestureName.wave),
 
+  /// The "make me yours" step: she opens her arms to be dressed.
+  dressUp(surface: 'make-her-yours', cue: GestureName.openBoth),
+
   /// The one-key step: she presents the recommended provider.
   recommend(surface: 'connect', cue: GestureName.presentRight),
 

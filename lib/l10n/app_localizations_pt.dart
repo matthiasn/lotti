@@ -11753,6 +11753,19 @@ class AppLocalizationsPt extends AppLocalizations {
   String get onboardingFirstTaskTitle => 'Crie sua primeira tarefa';
 
   @override
+  String get onboardingMakeHerYoursContinue => 'Está ótimo';
+
+  @override
+  String get onboardingMakeHerYoursLine =>
+      'Escolhe como fico. Podes mudar tudo isto quando quiseres em Configurações › Companheira.';
+
+  @override
+  String get onboardingMakeHerYoursSkip => 'Saltar por agora';
+
+  @override
+  String get onboardingMakeHerYoursTitle => 'Escolhe o meu visual';
+
+  @override
   String get onboardingMetricsActiveDays => 'Dias ativos';
 
   @override

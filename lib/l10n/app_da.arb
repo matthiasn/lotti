@@ -4925,6 +4925,10 @@
   "onboardingFirstTaskSuggestionPlanWeek": "Planlæg min uge",
   "onboardingFirstTaskSuggestionsLabel": "Ikke klar til at tale? Start med en af disse:",
   "onboardingFirstTaskTitle": "Lav din første opgave",
+  "onboardingMakeHerYoursContinue": "Det ser godt ud",
+  "onboardingMakeHerYoursLine": "Vælg, hvordan jeg ser ud. Du kan altid ændre det hele under Indstillinger › Følgesvend.",
+  "onboardingMakeHerYoursSkip": "Spring over for nu",
+  "onboardingMakeHerYoursTitle": "Vælg mit udseende",
   "onboardingMetricsActiveDays": "Aktive dage",
   "@onboardingMetricsActiveDays": {
     "description": "Label for the active-day count in the onboarding metrics debug view."

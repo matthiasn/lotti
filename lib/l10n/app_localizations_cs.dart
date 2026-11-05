@@ -11774,6 +11774,19 @@ class AppLocalizationsCs extends AppLocalizations {
   String get onboardingFirstTaskTitle => 'Vytvoř svůj první úkol';
 
   @override
+  String get onboardingMakeHerYoursContinue => 'Vypadá to dobře';
+
+  @override
+  String get onboardingMakeHerYoursLine =>
+      'Vyber, jak budu vypadat. Všechno to můžeš kdykoli změnit v Nastavení › Společnice.';
+
+  @override
+  String get onboardingMakeHerYoursSkip => 'Zatím přeskočit';
+
+  @override
+  String get onboardingMakeHerYoursTitle => 'Vyber můj vzhled';
+
+  @override
   String get onboardingMetricsActiveDays => 'Aktivní dny';
 
   @override

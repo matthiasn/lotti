@@ -268,6 +268,10 @@ void main() {
         await tester.pumpAndSettle();
         await tester.tap(find.text('Get started with one key'));
         await tester.pumpAndSettle();
+        await tester.ensureVisible(find.text('Skip for now'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Skip for now'));
+        await tester.pumpAndSettle();
         await tester.tap(find.text('Other providers'));
         await tester.pumpAndSettle();
         await tester.ensureVisible(find.text('Ollama'));

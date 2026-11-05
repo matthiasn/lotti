@@ -11862,6 +11862,19 @@ class AppLocalizationsRo extends AppLocalizations {
   String get onboardingFirstTaskTitle => 'Creați-vă prima sarcină';
 
   @override
+  String get onboardingMakeHerYoursContinue => 'Arată bine';
+
+  @override
+  String get onboardingMakeHerYoursLine =>
+      'Alegeți cum arăt. Puteți schimba oricând totul în Setări › Însoțitoare.';
+
+  @override
+  String get onboardingMakeHerYoursSkip => 'Omiteți deocamdată';
+
+  @override
+  String get onboardingMakeHerYoursTitle => 'Alegeți-mi stilul';
+
+  @override
   String get onboardingMetricsActiveDays => 'Zile active';
 
   @override

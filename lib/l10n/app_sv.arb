@@ -4925,6 +4925,10 @@
   "onboardingFirstTaskSuggestionPlanWeek": "Planera min vecka",
   "onboardingFirstTaskSuggestionsLabel": "Inte redo att prata? Börja med en av dessa:",
   "onboardingFirstTaskTitle": "Skapa din första uppgift",
+  "onboardingMakeHerYoursContinue": "Ser bra ut",
+  "onboardingMakeHerYoursLine": "Välj hur jag ser ut. Du kan ändra allt när som helst under Inställningar › Följeslagare.",
+  "onboardingMakeHerYoursSkip": "Hoppa över tills vidare",
+  "onboardingMakeHerYoursTitle": "Välj min stil",
   "onboardingMetricsActiveDays": "Aktiva dagar",
   "@onboardingMetricsActiveDays": {
     "description": "Label for the active-day count in the onboarding metrics debug view."
