@@ -4028,7 +4028,8 @@ void main() {
       );
 
       test(
-        'handles malformed create_time_entry args without crashing',
+        'rejects a create_time_entry without a string startTime, telling the '
+        'model why',
         () async {
           final toolCalls = [
             ChatCompletionMessageToolCall(
@@ -4050,10 +4051,184 @@ void main() {
             manager: mockManager,
           );
 
-          expect(csBuilder.items, hasLength(1));
-          expect(csBuilder.items.first.humanSummary, 'Time entry ?–?: ""');
+          expect(csBuilder.items, isEmpty);
+          final response =
+              verify(
+                    () => mockManager.addToolResponse(
+                      toolCallId: 'call-malformed-time-entry',
+                      response: captureAny(named: 'response'),
+                    ),
+                  ).captured.single
+                  as String;
+          expect(response, contains('missing a string "startTime"'));
         },
       );
+
+      test(
+        'keeps a non-string endTime visible as "?" in the summary',
+        () async {
+          await deferredStrategy.processToolCalls(
+            toolCalls: [
+              ChatCompletionMessageToolCall(
+                id: 'call-bad-end',
+                type: ChatCompletionMessageToolCallType.function,
+                function: ChatCompletionMessageFunctionCall(
+                  name: 'create_time_entry',
+                  arguments: jsonEncode({
+                    'entries': [
+                      {'startTime': '2026-03-17T14:00:00', 'endTime': true},
+                    ],
+                  }),
+                ),
+              ),
+            ],
+            manager: mockManager,
+          );
+
+          expect(
+            csBuilder.items.single.humanSummary,
+            'Time entry 14:00–?: ""',
+          );
+        },
+      );
+
+      group('dictation with several work blocks', () {
+        ChatCompletionMessageToolCall createCall(
+          String id,
+          List<Map<String, dynamic>> entries,
+        ) => ChatCompletionMessageToolCall(
+          id: id,
+          type: ChatCompletionMessageToolCallType.function,
+          function: ChatCompletionMessageFunctionCall(
+            name: 'create_time_entry',
+            arguments: jsonEncode({'entries': entries}),
+          ),
+        );
+
+        String responseTo(String callId) =>
+            verify(
+                  () => mockManager.addToolResponse(
+                    toolCallId: callId,
+                    response: captureAny(named: 'response'),
+                  ),
+                ).captured.single
+                as String;
+
+        // "I worked on it 11:30–13:00, 14:00–15:30, 16:00–17:00 and
+        // 18:00–19:30 today."
+        const blocks = [
+          {
+            'startTime': '2026-03-17T11:30:00',
+            'endTime': '2026-03-17T13:00:00',
+            'summary': 'Drafted the API schema',
+          },
+          {
+            'startTime': '2026-03-17T14:00:00',
+            'endTime': '2026-03-17T15:30:00',
+            'summary': 'Wrote the client',
+          },
+          {
+            'startTime': '2026-03-17T16:00:00',
+            'endTime': '2026-03-17T17:00:00',
+            'summary': 'Reviewed the tests',
+          },
+          {
+            'startTime': '2026-03-17T18:00:00',
+            'endTime': '2026-03-17T19:30:00',
+            'summary': 'Fixed the review findings',
+          },
+        ];
+
+        test(
+          'proposes every block in one wake, each as its own single-session '
+          'suggestion',
+          () async {
+            await deferredStrategy.processToolCalls(
+              toolCalls: [createCall('call-blocks', blocks)],
+              manager: mockManager,
+            );
+
+            // One confirmable item per block, each in the flat form the
+            // dispatcher applies — never a merged batch.
+            expect(
+              csBuilder.items.map((item) => item.toolName),
+              List.filled(4, 'create_time_entry'),
+            );
+            expect(csBuilder.items.map((item) => item.args), blocks);
+            expect(csBuilder.items.map((item) => item.humanSummary), [
+              'Time entry 11:30–13:00: "Drafted the API schema"',
+              'Time entry 14:00–15:30: "Wrote the client"',
+              'Time entry 16:00–17:00: "Reviewed the tests"',
+              'Time entry 18:00–19:30: "Fixed the review findings"',
+            ]);
+            expect(responseTo('call-blocks'), contains('4 item(s) queued'));
+          },
+        );
+
+        test(
+          'queues a second create_time_entry call in the same wake instead '
+          'of rejecting it as single-use',
+          () async {
+            await deferredStrategy.processToolCalls(
+              toolCalls: [
+                createCall('call-first', blocks.sublist(0, 2)),
+                createCall('call-second', blocks.sublist(2)),
+              ],
+              manager: mockManager,
+            );
+
+            expect(csBuilder.items.map((item) => item.args), blocks);
+            expect(responseTo('call-second'), contains('2 item(s) queued'));
+          },
+        );
+
+        test(
+          'drops a block repeated in the same wake as redundant',
+          () async {
+            await deferredStrategy.processToolCalls(
+              toolCalls: [
+                createCall('call-first', blocks),
+                createCall('call-repeat', [blocks.first]),
+              ],
+              manager: mockManager,
+            );
+
+            expect(csBuilder.items, hasLength(4));
+            expect(
+              responseTo('call-repeat'),
+              contains('Skipped 1 redundant update(s)'),
+            );
+          },
+        );
+
+        test(
+          'queues one running timer and rejects a second, keeping the '
+          'completed blocks',
+          () async {
+            await deferredStrategy.processToolCalls(
+              toolCalls: [
+                createCall('call-timers', [
+                  blocks.first,
+                  {'startTime': '2026-03-17T20:00:00', 'summary': 'Timer one'},
+                  {'startTime': '2026-03-17T20:05:00', 'summary': 'Timer two'},
+                ]),
+              ],
+              manager: mockManager,
+            );
+
+            expect(csBuilder.items.map((item) => item.humanSummary), [
+              'Time entry 11:30–13:00: "Drafted the API schema"',
+              'Time entry from 20:00: "Timer one"',
+            ]);
+            final response = responseTo('call-timers');
+            expect(response, contains('2 item(s) queued'));
+            expect(
+              response,
+              contains('at most one entry may omit endTime'),
+            );
+          },
+        );
+      });
 
       test(
         'summarizes an echoed update_running_timer as the text revision it '

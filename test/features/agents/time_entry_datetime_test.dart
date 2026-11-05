@@ -338,6 +338,53 @@ void main() {
     }, tags: 'glados');
   });
 
+  group('canonicalTimeEntryLocalDateTime', () {
+    test('spells every accepted form of one instant the same', () {
+      for (final raw in [
+        '2026-03-17T09:00',
+        '2026-03-17T09:00:00',
+        '2026-03-17T09:00:00.0',
+        '2026-03-17T09:00:00.000000',
+      ]) {
+        expect(
+          canonicalTimeEntryLocalDateTime(raw),
+          '2026-03-17T09:00:00',
+          reason: raw,
+        );
+      }
+    });
+
+    test('keeps a non-zero fraction', () {
+      expect(
+        canonicalTimeEntryLocalDateTime('2026-03-17T09:00:00.25'),
+        '2026-03-17T09:00:00.250000',
+      );
+    });
+
+    test('returns an unaccepted value unchanged', () {
+      for (final raw in [
+        'nine-ish',
+        '2026-03-17T09:00:00Z',
+        '2026-02-30T09:00',
+      ]) {
+        expect(canonicalTimeEntryLocalDateTime(raw), raw);
+      }
+    });
+
+    glados.Glados(
+      glados.any.localTimestamp,
+      glados.ExploreConfig(numRuns: 120),
+    ).test('round-trips generated timestamps to the same instant', (scenario) {
+      final canonical = canonicalTimeEntryLocalDateTime(scenario.text);
+      expect(
+        parseTimeEntryLocalDateTime(canonical),
+        scenario.expected,
+        reason: '$scenario',
+      );
+      expect(canonical, hasLength(19), reason: '$scenario');
+    }, tags: 'glados');
+  });
+
   group('formatTimeEntryHhMm', () {
     test('formats midnight as 00:00', () {
       expect(formatTimeEntryHhMm(DateTime(2026, 3, 17)), equals('00:00'));

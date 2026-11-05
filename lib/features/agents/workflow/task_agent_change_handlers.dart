@@ -655,28 +655,6 @@ extension TaskAgentChangeHandlers on TaskAgentStrategy {
             ? base
             : '$base — this task ${relation.englishPhrase} it';
       }(),
-      TaskAgentToolNames.createTimeEntry => () {
-        final startRaw = args['startTime'] is String
-            ? args['startTime'] as String
-            : null;
-        final hasEndTime = args.containsKey('endTime');
-        final endRaw = args['endTime'] is String
-            ? args['endTime'] as String
-            : null;
-        final summary = args['summary'] is String
-            ? (args['summary'] as String).trim()
-            : '';
-        final start = startRaw != null
-            ? parseTimeEntryLocalDateTime(startRaw)
-            : null;
-        final end = endRaw != null ? parseTimeEntryLocalDateTime(endRaw) : null;
-        final startStr = start != null
-            ? formatTimeEntryHhMm(start)
-            : (startRaw ?? '?');
-        final endStr = end != null ? formatTimeEntryHhMm(end) : (endRaw ?? '?');
-        final timeRange = hasEndTime ? '$startStr–$endStr' : 'from $startStr';
-        return 'Time entry $timeRange: "$summary"';
-      }(),
       TaskAgentToolNames.updateTimeEntry => () {
         final startRaw = args['startTime'] is String
             ? args['startTime'] as String
@@ -720,6 +698,7 @@ extension TaskAgentChangeHandlers on TaskAgentStrategy {
       TaskAgentToolNames.updateChecklistItems => 'Checklist update',
       TaskAgentToolNames.assignTaskLabels => 'Label',
       TaskAgentToolNames.migrateChecklistItems => 'Migrate to follow-up',
+      TaskAgentToolNames.createTimeEntry => 'Time entry',
       _ => toolName,
     };
   }
@@ -834,16 +813,9 @@ extension TaskAgentChangeHandlers on TaskAgentStrategy {
   /// Builds a hint string listing remaining non-batch deferred tools that
   /// haven't been used yet, guiding the model to call different tools.
   String _remainingDeferredToolHint(String justUsed) {
-    // Derive single-use tools dynamically: all deferred tools minus batch
-    // ones and minus tools that legitimately support multiple calls.
-    final singleUseTools = AgentToolRegistry.deferredTools
-        .where(
-          (tool) =>
-              !AgentToolRegistry.explodedBatchTools.containsKey(tool) &&
-              tool != TaskAgentToolNames.createFollowUpTask &&
-              tool != TaskAgentToolNames.linkTask,
-        )
-        .toSet();
+    final singleUseTools = AgentToolRegistry.deferredTools.difference(
+      AgentToolRegistry.repeatableDeferredTools,
+    );
 
     final remaining = singleUseTools.difference(_usedDeferredTools).difference({
       justUsed,

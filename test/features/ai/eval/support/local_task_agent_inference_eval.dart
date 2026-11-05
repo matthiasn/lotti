@@ -319,8 +319,54 @@ List<LocalTaskAgentEvalScenario> defaultMeliousTaskAgentEvalScenarios({
       _derivedEstimateScenario(variant),
       _contradictedInstructionScenario(variant),
       _undecidedEvidenceScenario(variant),
+      _dictatedTimeBlocksScenario(variant),
     ],
   ];
+}
+
+/// Four completed work blocks dictated in one recording.
+///
+/// All four must arrive as one `create_time_entry` call — the expected list
+/// matches only at its exact length, so one block per call fails — and no
+/// call may reach for `update_time_entry`, which needs an entry id that a
+/// creation has none of.
+LocalTaskAgentEvalScenario _dictatedTimeBlocksScenario(
+  LocalTaskAgentEvalPromptVariant variant,
+) {
+  return LocalTaskAgentEvalScenario(
+    id: 'dictated_time_blocks_${variant.name}',
+    systemPrompt: _buildEvalSystemPrompt(variant),
+    userMessage: _dictatedTimeBlocksUserMessage,
+    expectedToolCalls: const [
+      LocalTaskAgentExpectedToolCall(
+        name: TaskAgentToolNames.createTimeEntry,
+        expectedArgumentsSubset: {
+          'entries': [
+            {
+              'startTime': '2026-07-10T11:30:00',
+              'endTime': '2026-07-10T13:00:00',
+            },
+            {
+              'startTime': '2026-07-10T14:00:00',
+              'endTime': '2026-07-10T15:30:00',
+            },
+            {
+              'startTime': '2026-07-10T16:00:00',
+              'endTime': '2026-07-10T17:00:00',
+            },
+            {
+              'startTime': '2026-07-10T18:00:00',
+              'endTime': '2026-07-10T19:30:00',
+            },
+          ],
+        },
+      ),
+    ],
+    promptVariant: variant,
+    currentPriority: 'P2',
+    forbiddenToolNames: const {TaskAgentToolNames.updateTimeEntry},
+    forbiddenReportTerms: const ['task-feeder-rollout'],
+  );
 }
 
 const _inferenceProfileCleanupTerms = [
@@ -1518,6 +1564,36 @@ The following entity IDs changed: task-client-portal
 
 Analyze the current state and execute the explicitly requested checklist
 changes. Finish with the full user-facing report.
+''';
+
+const _dictatedTimeBlocksUserMessage = '''
+## Current Task Context
+```json
+{
+  "id": "task-feeder-rollout",
+  "title": "Roll out the automatic fish feeders",
+  "status": "IN PROGRESS",
+  "priority": "P2",
+  "languageCode": "en",
+  "description": "Install and calibrate automatic fish feeders in the colony enclosures.",
+  "checklist": [
+    {"id": "item-calibrate", "title": "Calibrate the feeder portions", "isChecked": false, "lastModifiedBy": "agent"}
+  ],
+  "log": [
+    {
+      "timestamp": "2026-07-10T19:40:00",
+      "text": "Quick time log for today, July 10th. I worked on the feeder rollout from 11:30 to 13:00 mounting the first feeders, then from 14:00 to 15:30 wiring them up, from 16:00 to 17:00 testing the portion sizes, and from 18:00 to 19:30 cleaning up and writing notes."
+    }
+  ]
+}
+```
+
+## First Wake - No prior report exists. Produce an initial report.
+
+## Changed Since Last Wake
+The following entity IDs changed: task-feeder-rollout
+
+Analyze the current state and follow the wake protocol.
 ''';
 
 const _progressUpdateUserMessage = '''

@@ -61,6 +61,8 @@ extension ChangeSetBatchExplosion on ChangeSetBuilder {
         ? args['targetTaskId']
         : null;
 
+    final isTimeEntryBatch = toolName == TaskAgentToolNames.createTimeEntry;
+
     // Seed a within-wake fingerprint set from items already queued in this
     // builder — the batch path must dedupe identical `(toolName, args)`
     // elements that slip past title/state/label redundancy checks (e.g.
@@ -95,6 +97,23 @@ extension ChangeSetBatchExplosion on ChangeSetBuilder {
         if (rawElementId is String && rawElementId.trim() != rawElementId) {
           element = {...element, 'id': rawElementId.trim()};
         }
+        if (isTimeEntryBatch) {
+          // One spelling per instant, so `T09:00` and `T09:00:00` are one
+          // session to the fingerprint and the duplicate key alike.
+          element = {
+            ...element,
+            for (final key in const ['startTime', 'endTime'])
+              if (element[key] case final String raw)
+                key: canonicalTimeEntryLocalDateTime(raw),
+          };
+          final timeEntryRejection = _checkTimeEntryElement(element);
+          if (timeEntryRejection != null) {
+            rejected++;
+            rejectedDetails.add(timeEntryRejection);
+            continue;
+          }
+        }
+
         // Check for redundant add_checklist_item proposals (title already
         // exists on the task or was already proposed in this wake).
         if (existingTitles != null) {
@@ -236,6 +255,8 @@ extension ChangeSetBatchExplosion on ChangeSetBuilder {
 
         final summary = isLabelBatch
             ? _generateLabelSummary(element, resolvedName: resolvedLabelName)
+            : isTimeEntryBatch
+            ? _timeEntrySummary(element)
             : _generateItemSummary(
                 singularToolName,
                 element,
@@ -331,6 +352,50 @@ extension ChangeSetBatchExplosion on ChangeSetBuilder {
     }
   }
 
+  /// Why a `create_time_entry` [element] cannot be queued, or `null`.
+  ///
+  /// Fail-closed only on what no apply could survive: a missing start, and a
+  /// second running timer this wake — the dispatcher refuses to start a timer
+  /// while one runs, so confirming both would fail the later one. Every other
+  /// time rule (formats, end after start, a timer today and not in the
+  /// future) is the apply-time handler's, which reports it on confirmation.
+  String? _checkTimeEntryElement(Map<String, dynamic> element) {
+    if (element['startTime'] is! String) {
+      return 'time entry is missing a string "startTime"';
+    }
+    final startsTimer = !element.containsKey('endTime');
+    if (startsTimer &&
+        _items.any(
+          (item) =>
+              item.toolName == TaskAgentToolNames.createTimeEntry &&
+              !item.args.containsKey('endTime'),
+        )) {
+      return 'time entry from ${element['startTime']} has no endTime, but a '
+          'running timer is already proposed — at most one entry may omit '
+          'endTime';
+    }
+    return null;
+  }
+
+  /// The human summary of one `create_time_entry` session: its range in
+  /// local `HH:mm` (or `from HH:mm` for a running timer) and its text.
+  static String _timeEntrySummary(Map<String, dynamic> args) {
+    String endpoint(String key) {
+      final raw = args[key];
+      if (raw is! String) return '?';
+      final parsed = parseTimeEntryLocalDateTime(raw);
+      return parsed != null ? formatTimeEntryHhMm(parsed) : raw;
+    }
+
+    final summary = args['summary'] is String
+        ? (args['summary'] as String).trim()
+        : '';
+    final range = args.containsKey('endTime')
+        ? '${endpoint('startTime')}–${endpoint('endTime')}'
+        : 'from ${endpoint('startTime')}';
+    return 'Time entry $range: "$summary"';
+  }
+
   /// Convert batch tool name to a singular form for individual items.
   static String _singularize(String toolName) => switch (toolName) {
     TaskAgentToolNames.addMultipleChecklistItems =>
@@ -340,6 +405,8 @@ extension ChangeSetBatchExplosion on ChangeSetBuilder {
     TaskAgentToolNames.assignTaskLabels => TaskAgentToolNames.assignTaskLabel,
     TaskAgentToolNames.migrateChecklistItems =>
       TaskAgentToolNames.migrateChecklistItem,
+    // The batch and its items share the name: an item is one session.
+    TaskAgentToolNames.createTimeEntry => TaskAgentToolNames.createTimeEntry,
     _ => throw ArgumentError(
       'Unsupported batch tool for singularization: $toolName. '
       'Add an explicit mapping.',
