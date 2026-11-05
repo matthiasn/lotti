@@ -189,11 +189,13 @@ void main() {
     late FakeTtsAudioPlayer player;
     late List<String> copiedAssets;
     late List<OnboardingVoiceSample> played;
+    var copierFails = false;
 
     setUp(() async {
       player = FakeTtsAudioPlayer();
       copiedAssets = [];
       played = [];
+      copierFails = false;
     });
     tearDown(() async {
       await player.dispose();
@@ -217,6 +219,7 @@ void main() {
             ttsAudioPlayerProvider.overrideWithValue(player),
             ttsBundledClipCopierProvider.overrideWithValue((asset) async {
               copiedAssets.add(asset);
+              if (copierFails) throw StateError('no such asset');
               final file = MockIoFile();
               when(
                 () => file.path,
@@ -316,6 +319,32 @@ void main() {
       expect(
         container.read(ttsPlaybackControllerProvider).status,
         TtsPlaybackStatus.playing,
+      );
+    });
+
+    testWidgets('a sample that cannot be loaded is not reported as played', (
+      tester,
+    ) async {
+      final container = await pumpStep(tester);
+      copierFails = true;
+
+      await tap(tester, OnboardingVoiceSample.elevenLabs);
+
+      expect(copiedAssets, [OnboardingVoiceSample.elevenLabs.asset]);
+      expect(
+        container.read(ttsPlaybackControllerProvider).status,
+        TtsPlaybackStatus.error,
+      );
+      expect(played, isEmpty);
+      expect(
+        (tester
+                    .widget<IconButton>(
+                      _control(OnboardingVoiceSample.elevenLabs),
+                    )
+                    .icon
+                as Icon)
+            .icon,
+        LottiIcons.play,
       );
     });
 

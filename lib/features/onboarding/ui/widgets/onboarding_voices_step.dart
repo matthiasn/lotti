@@ -52,7 +52,7 @@ enum OnboardingVoiceSample {
 /// Samples play under her step's own source ([OnboardingCompanionBeat.voices])
 /// at their natural speed; starting one stops whatever was speaking, tapping
 /// the playing one stops it, and leaving the step ends it with her.
-/// [onPlayed] reports each sample started.
+/// [onPlayed] reports each sample that started playing.
 class OnboardingVoicesStep extends ConsumerStatefulWidget {
   const OnboardingVoicesStep({
     required this.onContinue,
@@ -87,7 +87,6 @@ class _OnboardingVoicesStepState extends ConsumerState<OnboardingVoicesStep> {
       return;
     }
     setState(() => _started = sample);
-    widget.onPlayed(sample);
     // Whatever is speaking — her line, another sample — gives way.
     await voice.stop();
     if (!mounted || _started != sample) return;
@@ -96,6 +95,14 @@ class _OnboardingVoicesStepState extends ConsumerState<OnboardingVoicesStep> {
       asset: sample.asset,
       text: onboardingVoiceSampleText,
     );
+    // Reported only once it actually plays: a clip that cannot be loaded
+    // ends in an error, and that is no sample heard.
+    if (!mounted || _started != sample) return;
+    final result = ref.read(ttsPlaybackControllerProvider);
+    if (result.sourceId == _sourceId &&
+        result.status == TtsPlaybackStatus.playing) {
+      widget.onPlayed(sample);
+    }
   }
 
   @override

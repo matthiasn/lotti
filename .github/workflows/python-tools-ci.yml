@@ -26,8 +26,11 @@ on:
       - "tool/play_promote_test.py"
       - "tool/onboarding_voice_samples.py"
       - "tool/onboarding_voice_samples_test.py"
-      # The generator checks its sentence against the Dart one.
+      # The generator checks its sentence against the Dart one, and its
+      # on-device revision and voice against the app's.
       - "lib/features/onboarding/ui/widgets/onboarding_voices_step.dart"
+      - "lib/features/tts/model/tts_model_option.dart"
+      - "lib/features/tts/model/tts_voice.dart"
       - ".github/workflows/python-tools-ci.yml"
   pull_request:
     branches: [main]
@@ -51,8 +54,11 @@ on:
       - "tool/play_promote_test.py"
       - "tool/onboarding_voice_samples.py"
       - "tool/onboarding_voice_samples_test.py"
-      # The generator checks its sentence against the Dart one.
+      # The generator checks its sentence against the Dart one, and its
+      # on-device revision and voice against the app's.
       - "lib/features/onboarding/ui/widgets/onboarding_voices_step.dart"
+      - "lib/features/tts/model/tts_model_option.dart"
+      - "lib/features/tts/model/tts_voice.dart"
       - ".github/workflows/python-tools-ci.yml"
 
 concurrency:

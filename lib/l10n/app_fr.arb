@@ -4432,7 +4432,7 @@
   "onboardingVoicesContinue": "Suivant : ta clé",
   "onboardingVoicesEnglishNote": "Les exemples sont en anglais. Chaque voix parle aussi beaucoup d'autres langues.",
   "onboardingVoicesLine": "Je peux parler avec différentes voix. Touche-en une pour l'écouter. Tu peux en changer quand tu veux dans Paramètres › Parole.",
-  "onboardingVoicesTitle": "Écoute comment je peux sonner",
+  "onboardingVoicesTitle": "Écoute les voix que je peux avoir",
   "onboardingVoiceStop": "Arrêter {voice}",
   "onboardingVoiceVoxtralDescription": "Incluse avec ta clé Mistral.",
   "onboardingVoiceVoxtralName": "Mistral Voxtral",

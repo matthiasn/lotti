@@ -11929,7 +11929,7 @@ class AppLocalizationsFr extends AppLocalizations {
       'Je peux parler avec différentes voix. Touche-en une pour l\'écouter. Tu peux en changer quand tu veux dans Paramètres › Parole.';
 
   @override
-  String get onboardingVoicesTitle => 'Écoute comment je peux sonner';
+  String get onboardingVoicesTitle => 'Écoute les voix que je peux avoir';
 
   @override
   String onboardingVoiceStop(String voice) {

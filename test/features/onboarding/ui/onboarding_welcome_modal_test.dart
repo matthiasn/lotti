@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
@@ -8,6 +9,7 @@ import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/onboarding_event.dart';
 import 'package:lotti/database/onboarding_metrics_db.dart';
+import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
@@ -19,6 +21,7 @@ import 'package:lotti/features/companion/rig/companion_painter.dart';
 import 'package:lotti/features/companion/state/spoken_track.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/demo/state/demo_mode_gateway.dart';
+import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -28,9 +31,12 @@ import 'package:lotti/features/onboarding/ui/widgets/onboarding_companion.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_first_words.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_hero.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_speech_bubble.dart';
+import 'package:lotti/features/tts/state/tts_audio_player.dart';
+import 'package:lotti/features/tts/state/tts_bundled_clip.dart';
 import 'package:lotti/features/tts/state/tts_playback_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/repositories/onboarding_metrics_repository.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:material_ui/material_ui.dart';
@@ -40,6 +46,7 @@ import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 import '../../categories/test_utils.dart';
+import '../../tts/test_utils.dart';
 
 /// Canned probe so the API-key step's live verification resolves without a
 /// network call.
@@ -132,6 +139,7 @@ void main() {
     WidgetTester tester, {
     Widget? child,
     ThemeData? theme,
+    List<Override> overrides = const [],
   }) async {
     // The fixed-height modal panel (~680) is taller than the default 800x600
     // render surface; size the surface to the 844-tall MediaQuery so the lower
@@ -144,7 +152,11 @@ void main() {
     final launchHost = child ?? host();
     await tester.pumpWidget(
       theme == null
-          ? makeTestableWidget(launchHost, mediaQueryData: mq)
+          ? makeTestableWidget(
+              launchHost,
+              mediaQueryData: mq,
+              overrides: overrides,
+            )
           : makeTestableWidgetNoScroll(
               launchHost,
               mediaQueryData: mq,
@@ -392,12 +404,35 @@ void main() {
     expect(state.reached(OnboardingEventName.providerModalShown), isTrue);
   });
 
-  testWidgets('a pick on "make me yours" records the customisation', (
-    tester,
-  ) async {
-    await openWelcome(tester);
-    await tester.tap(find.text('Get started with one key'));
-    await tester.pumpAndSettle();
+  testWidgets('a pick on "make me yours" is saved, survives a remount, and '
+      'records the customisation', (tester) async {
+    final settings = SettingsDb(inMemoryDatabase: true);
+    addTearDown(settings.close);
+    final outbox = MockOutboxService();
+    when(() => outbox.enqueueMessage(any())).thenAnswer((_) async {});
+    final stores = [
+      settingsDbProvider.overrideWithValue(settings),
+      outboxServiceProvider.overrideWithValue(outbox),
+    ];
+    Future<void> toMakeHerYours() async {
+      await openWelcome(tester, overrides: stores);
+      await tester.tap(find.text('Get started with one key'));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Bob'));
+      await tester.pumpAndSettle();
+    }
+
+    bool bobPicked() => tester
+        .widget<DesignSystemChip>(
+          find.ancestor(
+            of: find.text('Bob'),
+            matching: find.byType(DesignSystemChip),
+          ),
+        )
+        .selected;
+
+    await toMakeHerYours();
+    expect(bobPicked(), isFalse);
     expect(
       (await repo.funnelState()).reached(
         OnboardingEventName.companionCustomized,
@@ -405,17 +440,21 @@ void main() {
       isFalse,
     );
 
-    await tester.ensureVisible(find.text('Bob'));
-    await tester.pumpAndSettle();
     await tester.tap(find.text('Bob'));
     await tester.pumpAndSettle();
-
+    expect(bobPicked(), isTrue);
     expect(
       (await repo.funnelState()).reached(
         OnboardingEventName.companionCustomized,
       ),
       isTrue,
     );
+
+    // A fresh app over the same store: the pick was written, not just shown.
+    await tester.pumpWidget(const SizedBox());
+    await tester.pumpAndSettle();
+    await toMakeHerYours();
+    expect(bobPicked(), isTrue);
   });
 
   testWidgets('"Looks good" reaches the voices without recording a skip', (
@@ -438,15 +477,33 @@ void main() {
     expect(state.reached(OnboardingEventName.voiceSamplesShown), isTrue);
   });
 
-  testWidgets('playing a voice records which one', (tester) async {
-    await openWelcome(tester);
+  testWidgets('a voice that plays records which one', (tester) async {
+    final player = FakeTtsAudioPlayer();
+    addTearDown(player.dispose);
+    await openWelcome(
+      tester,
+      overrides: [
+        ttsAudioPlayerProvider.overrideWithValue(player),
+        ttsBundledClipCopierProvider.overrideWithValue((asset) async {
+          final file = MockIoFile();
+          when(() => file.path).thenReturn('/tmp/sample.wav');
+          when(file.existsSync).thenReturn(false);
+          return file;
+        }),
+        spokenTrackLoaderProvider.overrideWithValue(
+          (clip, text) => Completer<MouthTrack>().future,
+        ),
+      ],
+    );
     await tester.tap(find.text('Get started with one key'));
     await tester.pumpAndSettle();
     await tapVisible(tester, find.text('Skip for now'));
 
     await tester.tap(find.byKey(const ValueKey('onboarding-voice-voxtral')));
     await tester.pump();
+    await tester.pump();
 
+    expect(player.playCount, 1);
     final state = await repo.funnelState();
     expect(state.reached(OnboardingEventName.voiceSamplePlayed), isTrue);
     final events = await db.allOnboardingEvents().get();
@@ -458,6 +515,7 @@ void main() {
           .map((e) => e.provider),
       ['voxtral'],
     );
+    player.complete();
     await tester.pumpAndSettle();
   });
 
