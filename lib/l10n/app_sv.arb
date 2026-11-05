@@ -4925,6 +4925,8 @@
   "onboardingFirstTaskSuggestionPlanWeek": "Planera min vecka",
   "onboardingFirstTaskSuggestionsLabel": "Inte redo att prata? Börja med en av dessa:",
   "onboardingFirstTaskTitle": "Skapa din första uppgift",
+  "onboardingFirstWordsQuiet": "Vi är anslutna, och jag kan hjälpa dig.",
+  "onboardingFirstWordsVoiced": "Så, nu kan du höra mig också!",
   "onboardingMakeHerYoursContinue": "Ser bra ut",
   "onboardingMakeHerYoursLine": "Välj hur jag ser ut. Du kan ändra allt när som helst under Inställningar › Följeslagare.",
   "onboardingMakeHerYoursSkip": "Hoppa över tills vidare",

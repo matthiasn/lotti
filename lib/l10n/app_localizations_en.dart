@@ -11595,6 +11595,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get onboardingFirstTaskTitle => 'Create your first task';
 
   @override
+  String get onboardingFirstWordsQuiet =>
+      'We\'re connected, and I\'m ready to help.';
+
+  @override
+  String get onboardingFirstWordsVoiced => 'There, now you can hear me too!';
+
+  @override
   String get onboardingMakeHerYoursContinue => 'Looks good';
 
   @override

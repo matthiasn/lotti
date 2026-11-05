@@ -4405,6 +4405,8 @@
   "onboardingFirstTaskSuggestionPlanWeek": "Planificar mi semana",
   "onboardingFirstTaskSuggestionsLabel": "¿Aún no quieres hablar? Empieza con una de estas:",
   "onboardingFirstTaskTitle": "Crea tu primera tarea",
+  "onboardingFirstWordsQuiet": "Ya estamos conectados y puedo ayudarte.",
+  "onboardingFirstWordsVoiced": "¡Listo, ahora también puedes oírme!",
   "onboardingMakeHerYoursContinue": "Me gusta así",
   "onboardingMakeHerYoursLine": "Elige cómo me veo. Puedes cambiarlo todo cuando quieras en Ajustes › Compañera.",
   "onboardingMakeHerYoursSkip": "Omitir por ahora",

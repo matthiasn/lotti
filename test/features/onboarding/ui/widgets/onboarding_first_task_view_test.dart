@@ -7,6 +7,7 @@ import 'package:lotti/features/daily_os_next/ui/widgets/voice_orb_zone.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/onboarding/model/onboarding_capture_category.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_first_task_view.dart';
+import 'package:lotti/features/onboarding/ui/widgets/onboarding_speech_bubble.dart';
 import 'package:lotti/features/speech/state/recording_style.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/analog_vu_meter.dart';
 import 'package:material_ui/material_ui.dart';
@@ -473,5 +474,42 @@ void main() {
     await pumpView(tester, OnboardingFirstTaskPhase.prompt);
 
     expect(find.byKey(const ValueKey('her')), findsNothing);
+    expect(find.byType(OnboardingSpeechBubble), findsNothing);
+    expect(find.text('Tap to talk and say what needs doing.'), findsOneWidget);
+  });
+
+  testWidgets('with her, the headline and the guidance are her bubble', (
+    tester,
+  ) async {
+    await pumpView(
+      tester,
+      OnboardingFirstTaskPhase.prompt,
+      companion: const ColoredBox(key: ValueKey('her'), color: Colors.red),
+    );
+
+    final bubble = tester.widget<OnboardingSpeechBubble>(
+      find.byType(OnboardingSpeechBubble),
+    );
+    expect(bubble.title, 'Create your first task');
+    expect(bubble.text, 'Tap to talk and say what needs doing.');
+    expect(bubble.tail, OnboardingBubbleTail.up);
+    // Said once, in the bubble.
+    expect(find.text('Tap to talk and say what needs doing.'), findsOneWidget);
+  });
+
+  testWidgets('past the prompt her bubble holds the headline alone', (
+    tester,
+  ) async {
+    await pumpView(
+      tester,
+      OnboardingFirstTaskPhase.thinking,
+      companion: const ColoredBox(key: ValueKey('her'), color: Colors.red),
+    );
+
+    final bubble = tester.widget<OnboardingSpeechBubble>(
+      find.byType(OnboardingSpeechBubble),
+    );
+    expect(bubble.title, 'Building your task');
+    expect(bubble.text, isNull);
   });
 }

@@ -11753,6 +11753,14 @@ class AppLocalizationsPt extends AppLocalizations {
   String get onboardingFirstTaskTitle => 'Crie sua primeira tarefa';
 
   @override
+  String get onboardingFirstWordsQuiet =>
+      'Estamos ligados, e já posso ajudar-te.';
+
+  @override
+  String get onboardingFirstWordsVoiced =>
+      'Pronto, agora também me consegues ouvir!';
+
+  @override
   String get onboardingMakeHerYoursContinue => 'Está ótimo';
 
   @override

@@ -11639,6 +11639,13 @@ class AppLocalizationsDa extends AppLocalizations {
   String get onboardingFirstTaskTitle => 'Lav din første opgave';
 
   @override
+  String get onboardingFirstWordsQuiet =>
+      'Vi er forbundet, og jeg kan hjælpe dig.';
+
+  @override
+  String get onboardingFirstWordsVoiced => 'Sådan, nu kan du også høre mig!';
+
+  @override
   String get onboardingMakeHerYoursContinue => 'Det ser godt ud';
 
   @override

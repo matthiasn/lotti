@@ -3,6 +3,7 @@ import 'dart:ui' as ui;
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_hero.dart';
+import 'package:lotti/features/onboarding/ui/widgets/onboarding_speech_bubble.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Backdrop blur strength for the frosted-glass category chips. Sits within
@@ -79,10 +80,15 @@ class OnboardingCategoryView extends StatelessWidget {
     required this.onWhy,
     required this.onAddOwn,
     required this.onContinue,
+    this.companion,
     super.key,
   });
 
   final Color accent;
+
+  /// The companion, as a bust beside a speech bubble that says [explanation];
+  /// null shows the explanation as plain text under the title.
+  final Widget? companion;
 
   /// "Where should your AI work?"
   final String title;
@@ -161,12 +167,31 @@ class OnboardingCategoryView extends StatelessWidget {
                   ),
                 ),
                 SizedBox(height: tokens.spacing.step2),
-                Text(
-                  explanation,
-                  style: tokens.typography.styles.body.bodySmall.copyWith(
-                    color: textMedium,
+                if (companion case final companion?)
+                  Row(
+                    children: [
+                      ExcludeSemantics(
+                        child: SizedBox.square(
+                          dimension: ControlSizes.avatarHero,
+                          child: companion,
+                        ),
+                      ),
+                      SizedBox(width: tokens.spacing.step2),
+                      Expanded(
+                        child: OnboardingSpeechBubble(
+                          text: explanation,
+                          tail: OnboardingBubbleTail.left,
+                        ),
+                      ),
+                    ],
+                  )
+                else
+                  Text(
+                    explanation,
+                    style: tokens.typography.styles.body.bodySmall.copyWith(
+                      color: textMedium,
+                    ),
                   ),
-                ),
                 Align(
                   alignment: Alignment.centerLeft,
                   child: Material(

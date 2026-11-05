@@ -101,9 +101,29 @@ points at her.
   leaves it for the key.
 - **The connect step.** A bust, `ControlSizes.avatarHero` square, beside a
   bubble in which she recommends the one key.
+- **The key step.** A bust at the end of the title row
+  (`OnboardingApiKeyPanel.companion`), built for the key check as the user
+  sees it (`OnboardingCompanionBeat.ofKeyCheck`): waiting while the field is
+  empty, thinking while the key is checked and while the provider is set up
+  after Connect, a thumbs-up when it is verified, a shrug when it is turned
+  down. She says nothing there; the status line carries the words.
+- **Her first words.** On the success beat she takes the checkmark's place
+  (`OnboardingSuccessView.lead`, `OnboardingFirstWords`): a bust celebrating
+  beside her bubble. The provider's seeded profile is resolved
+  (`resolveByProfileId`) and, where its read-aloud slot names a cloud voice —
+  Mistral's does, Voxtral — she says "There, now you can hear me too!" in it,
+  in the app's language (`OnboardingCompanion.cloudVoice`). That one line is
+  spoken **whatever the read-aloud flag says**: it is fixed text, sent to the
+  provider the user has just connected, and the flag is off by default, so
+  otherwise no new user would ever hear her. Without such a voice, or when
+  the profile does not resolve, she is silent and her bubble says she is
+  ready.
+- **The areas.** A bust beside a bubble holding the step's explanation
+  (`OnboardingCategoryView.companion`).
 - **The first-task step.** A bust, `ControlSizes.avatarHero` square, above the
-  headline (`OnboardingFirstTaskView.companion`); the view stays free of
-  providers and the step builds her for the frame.
+  headline (`OnboardingFirstTaskView.companion`), whose headline — and, at
+  the prompt, its guidance — is her bubble; the view stays free of providers
+  and the step builds her for the frame.
 
 Each moment is an `OnboardingCompanionBeat`:
 
@@ -112,6 +132,9 @@ Each moment is an `OnboardingCompanionBeat`:
 | `welcome` | the welcome panel | waves once |
 | `dressUp` | the "make me yours" step | opens her arms once |
 | `voices` | the voices step | opens her hands once |
+| `key` · `keyChecking` · `keyVerified` · `keyRejected` | the key step, by its check | waits · holds `think` · thumbs up · shrugs |
+| `firstWords` | the success beat | celebrates once, saying her first words |
+| `areas` | the area step | opens her arms once |
 | `recommend` | the connect step | presents the recommended card once |
 | `prompt` | the first-task prompt | waves once |
 | `listening` | the mic is open | holds `listen` |

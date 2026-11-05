@@ -19609,6 +19609,18 @@ abstract class AppLocalizations {
   /// **'Create your first task'**
   String get onboardingFirstTaskTitle;
 
+  /// No description provided for @onboardingFirstWordsQuiet.
+  ///
+  /// In en, this message translates to:
+  /// **'We\'re connected, and I\'m ready to help.'**
+  String get onboardingFirstWordsQuiet;
+
+  /// No description provided for @onboardingFirstWordsVoiced.
+  ///
+  /// In en, this message translates to:
+  /// **'There, now you can hear me too!'**
+  String get onboardingFirstWordsVoiced;
+
   /// No description provided for @onboardingMakeHerYoursContinue.
   ///
   /// In en, this message translates to:

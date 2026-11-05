@@ -11,20 +11,21 @@ enum OnboardingBubbleTail {
 }
 
 /// What the companion says in onboarding, in a speech bubble whose tail points
-/// at her: an optional [title] in a heading, then [text].
+/// at her: a [title] in a heading, then [text] — either may be left out, not
+/// both.
 ///
 /// The bubble is the caption of her line: the same words she speaks where a
 /// voice is on hand, and the only place they appear where none is.
 class OnboardingSpeechBubble extends StatelessWidget {
   const OnboardingSpeechBubble({
-    required this.text,
+    this.text,
     this.title,
     this.tail = OnboardingBubbleTail.up,
     super.key,
-  });
+  }) : assert(title != null || text != null, 'A bubble says something');
 
   final String? title;
-  final String text;
+  final String? text;
   final OnboardingBubbleTail tail;
 
   @override
@@ -49,25 +50,25 @@ class OnboardingSpeechBubble extends StatelessWidget {
               : CrossAxisAlignment.start,
           children: [
             if (title case final title?)
-              Padding(
-                padding: EdgeInsets.only(bottom: tokens.spacing.step2),
-                child: Text(
-                  title,
-                  textAlign: centred ? TextAlign.center : TextAlign.start,
-                  style: tokens.typography.styles.heading.heading3.copyWith(
-                    color: tokens.colors.text.highEmphasis,
-                  ),
+              Text(
+                title,
+                textAlign: centred ? TextAlign.center : TextAlign.start,
+                style: tokens.typography.styles.heading.heading3.copyWith(
+                  color: tokens.colors.text.highEmphasis,
                 ),
               ),
-            Text(
-              text,
-              textAlign: centred ? TextAlign.center : TextAlign.start,
-              style:
-                  (centred
-                          ? tokens.typography.styles.body.bodyLarge
-                          : tokens.typography.styles.body.bodyMedium)
-                      .copyWith(color: tokens.colors.text.mediumEmphasis),
-            ),
+            if (title != null && text != null)
+              SizedBox(height: tokens.spacing.step2),
+            if (text case final text?)
+              Text(
+                text,
+                textAlign: centred ? TextAlign.center : TextAlign.start,
+                style:
+                    (centred
+                            ? tokens.typography.styles.body.bodyLarge
+                            : tokens.typography.styles.body.bodyMedium)
+                        .copyWith(color: tokens.colors.text.mediumEmphasis),
+              ),
           ],
         ),
       ),

@@ -79,6 +79,23 @@ void main() {
       );
     });
 
+    testWidgets('without text only the title shows', (tester) async {
+      await pumpBubble(tester, const OnboardingSpeechBubble(title: 'Only'));
+
+      expect(
+        find.descendant(
+          of: find.byType(OnboardingSpeechBubble),
+          matching: find.byType(Text),
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Only'), findsOneWidget);
+    });
+
+    test('a bubble with neither title nor text is refused', () {
+      expect(OnboardingSpeechBubble.new, throwsAssertionError);
+    });
+
     testWidgets('without a title only the text shows', (tester) async {
       await pumpBubble(tester, const OnboardingSpeechBubble(text: 'Just this'));
 

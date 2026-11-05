@@ -4405,6 +4405,8 @@
   "onboardingFirstTaskSuggestionPlanWeek": "Meine Woche planen",
   "onboardingFirstTaskSuggestionsLabel": "Noch nicht bereit zu sprechen? Starte mit einem Vorschlag:",
   "onboardingFirstTaskTitle": "Erstelle deine erste Aufgabe",
+  "onboardingFirstWordsQuiet": "Wir sind verbunden, und ich bin bereit zu helfen.",
+  "onboardingFirstWordsVoiced": "So, jetzt kannst du mich auch hören!",
   "onboardingMakeHerYoursContinue": "Passt so",
   "onboardingMakeHerYoursLine": "Such aus, wie ich aussehe. Du kannst das alles jederzeit unter Einstellungen › Begleiterin ändern.",
   "onboardingMakeHerYoursSkip": "Erst mal überspringen",

@@ -4924,6 +4924,8 @@
   "onboardingFirstTaskSuggestionPlanWeek": "Planeje minha semana",
   "onboardingFirstTaskSuggestionsLabel": "Não está pronto para conversar? Comece com um destes:",
   "onboardingFirstTaskTitle": "Crie sua primeira tarefa",
+  "onboardingFirstWordsQuiet": "Estamos ligados, e já posso ajudar-te.",
+  "onboardingFirstWordsVoiced": "Pronto, agora também me consegues ouvir!",
   "onboardingMakeHerYoursContinue": "Está ótimo",
   "onboardingMakeHerYoursLine": "Escolhe como fico. Podes mudar tudo isto quando quiseres em Configurações › Companheira.",
   "onboardingMakeHerYoursSkip": "Saltar por agora",

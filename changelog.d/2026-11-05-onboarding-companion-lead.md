@@ -7,6 +7,7 @@
   can have — on your device, Mistral's Voxtral and ElevenLabs — each a short
   sample she speaks herself. The key step leads with a single recommended
   card, Mistral, whose one key covers thinking, transcription and her voice;
-  the other providers are one tap away under "Other providers". She stays on
-  hand for your first task, whether or not you have turned the companion on
-  elsewhere in the app.
+  the other providers are one tap away under "Other providers". While your
+  key is checked she thinks it over, and once it works she says her first
+  words to you in Mistral's voice. She stays on hand for your first task,
+  whether or not you have turned the companion on elsewhere in the app.

@@ -11657,6 +11657,13 @@ class AppLocalizationsSv extends AppLocalizations {
   String get onboardingFirstTaskTitle => 'Skapa din första uppgift';
 
   @override
+  String get onboardingFirstWordsQuiet =>
+      'Vi är anslutna, och jag kan hjälpa dig.';
+
+  @override
+  String get onboardingFirstWordsVoiced => 'Så, nu kan du höra mig också!';
+
+  @override
   String get onboardingMakeHerYoursContinue => 'Ser bra ut';
 
   @override

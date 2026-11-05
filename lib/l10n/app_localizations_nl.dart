@@ -11675,6 +11675,13 @@ class AppLocalizationsNl extends AppLocalizations {
   String get onboardingFirstTaskTitle => 'Maak je eerste taak aan';
 
   @override
+  String get onboardingFirstWordsQuiet =>
+      'We zijn verbonden, en ik kan je helpen.';
+
+  @override
+  String get onboardingFirstWordsVoiced => 'Zo, nu kun je me ook horen!';
+
+  @override
   String get onboardingMakeHerYoursContinue => 'Ziet er goed uit';
 
   @override

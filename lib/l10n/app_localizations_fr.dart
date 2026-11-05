@@ -11835,6 +11835,14 @@ class AppLocalizationsFr extends AppLocalizations {
   String get onboardingFirstTaskTitle => 'Crée ta première tâche';
 
   @override
+  String get onboardingFirstWordsQuiet =>
+      'On est connectés, et je peux t\'aider.';
+
+  @override
+  String get onboardingFirstWordsVoiced =>
+      'Voilà, maintenant tu peux aussi m\'entendre !';
+
+  @override
   String get onboardingMakeHerYoursContinue => 'C\'est parfait';
 
   @override

@@ -5,6 +5,7 @@ import 'package:lotti/features/daily_os_next/ui/widgets/voice_orb_zone.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/onboarding/model/onboarding_capture_category.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_hero.dart';
+import 'package:lotti/features/onboarding/ui/widgets/onboarding_speech_bubble.dart';
 import 'package:lotti/features/speech/state/recording_style.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/analog_vu_meter.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/live_waveform.dart';
@@ -219,16 +220,25 @@ class OnboardingFirstTaskView extends StatelessWidget {
                       child: companion,
                     ),
                   ),
-                  SizedBox(height: tokens.spacing.step2),
-                ],
-                Text(
-                  _headline,
-                  textAlign: TextAlign.center,
-                  style: tokens.typography.styles.heading.heading2.copyWith(
-                    color: textHigh,
+                  // Her line is the headline, in her bubble; at the prompt
+                  // the guidance follows it there.
+                  OnboardingSpeechBubble(
+                    title: _headline,
+                    text: phase == OnboardingFirstTaskPhase.prompt
+                        ? guidance
+                        : null,
                   ),
-                ),
-                if (phase == OnboardingFirstTaskPhase.prompt) ...[
+                ] else ...[
+                  Text(
+                    _headline,
+                    textAlign: TextAlign.center,
+                    style: tokens.typography.styles.heading.heading2.copyWith(
+                      color: textHigh,
+                    ),
+                  ),
+                ],
+                if (companion == null &&
+                    phase == OnboardingFirstTaskPhase.prompt) ...[
                   SizedBox(height: tokens.spacing.step2),
                   Text(
                     guidance,

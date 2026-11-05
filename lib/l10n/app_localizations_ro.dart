@@ -11862,6 +11862,12 @@ class AppLocalizationsRo extends AppLocalizations {
   String get onboardingFirstTaskTitle => 'Creați-vă prima sarcină';
 
   @override
+  String get onboardingFirstWordsQuiet => 'Suntem conectați și vă pot ajuta.';
+
+  @override
+  String get onboardingFirstWordsVoiced => 'Gata, acum mă puteți și auzi!';
+
+  @override
   String get onboardingMakeHerYoursContinue => 'Arată bine';
 
   @override

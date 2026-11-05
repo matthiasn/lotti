@@ -4925,6 +4925,8 @@
   "onboardingFirstTaskSuggestionPlanWeek": "Planlæg min uge",
   "onboardingFirstTaskSuggestionsLabel": "Ikke klar til at tale? Start med en af disse:",
   "onboardingFirstTaskTitle": "Lav din første opgave",
+  "onboardingFirstWordsQuiet": "Vi er forbundet, og jeg kan hjælpe dig.",
+  "onboardingFirstWordsVoiced": "Sådan, nu kan du også høre mig!",
   "onboardingMakeHerYoursContinue": "Det ser godt ud",
   "onboardingMakeHerYoursLine": "Vælg, hvordan jeg ser ud. Du kan altid ændre det hele under Indstillinger › Følgesvend.",
   "onboardingMakeHerYoursSkip": "Spring over for nu",

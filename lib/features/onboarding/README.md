@@ -12,6 +12,9 @@ them to one moment: speak a thought, and watch it become a structured task.
   editable later in Settings › Companion.
 - **Lets the user hear the voices.** An optional step plays a sample of each
   voice she can have: on the device, Mistral's Voxtral, and ElevenLabs.
+- **Hears her for the first time when the key works.** She thinks while the
+  key is checked and, once it is connected, says her first words in the
+  provider's own voice where it has one (Mistral's Voxtral).
 - **Says what it takes: one API key.** The connect step leads with one
   recommended provider, Mistral, whose single key covers thinking,
   transcription and the voice; the others sit behind a disclosure.

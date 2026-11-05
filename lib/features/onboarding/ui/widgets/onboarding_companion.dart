@@ -1,10 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
+import 'package:lotti/features/ai/ui/settings/services/connection_verifier_service.dart';
 import 'package:lotti/features/companion/model/companion_gesture.dart';
 import 'package:lotti/features/companion/rig/companion_painter.dart';
 import 'package:lotti/features/companion/ui/companion_speaker.dart';
 import 'package:lotti/features/companion/ui/companion_view.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_first_task_view.dart';
+import 'package:lotti/features/tts/cloud/tts_cloud_route.dart';
 import 'package:lotti/features/tts/state/tts_engine_provider.dart';
 import 'package:lotti/features/tts/state/tts_model_repository.dart';
 import 'package:lotti/features/tts/state/tts_playback_controller.dart';
@@ -26,6 +28,24 @@ enum OnboardingCompanionBeat {
   /// The one-key step: she presents the recommended provider.
   recommend(surface: 'connect', cue: GestureName.presentRight),
 
+  /// The key step, while the user pastes a key: she waits.
+  key(surface: _key),
+
+  /// The key is being checked: she thinks until it is.
+  keyChecking(surface: _key, holding: GestureName.think),
+
+  /// The key is good: she gives it a thumbs up.
+  keyVerified(surface: _key, cue: GestureName.thumbs),
+
+  /// The key was turned down: she shrugs, and the user tries again.
+  keyRejected(surface: _key, cue: GestureName.shrug),
+
+  /// Connected: she celebrates, saying her first words in the cloud voice.
+  firstWords(surface: 'first-words', cue: GestureName.celebrate),
+
+  /// The areas: she presents the choice.
+  areas(surface: 'areas', cue: GestureName.openBoth),
+
   /// The first-task prompt: she waves the user on.
   prompt(surface: _firstTask, cue: GestureName.wave),
 
@@ -45,6 +65,7 @@ enum OnboardingCompanionBeat {
   });
 
   static const _firstTask = 'first-task';
+  static const _key = 'key';
 
   /// The onboarding step the beat belongs to; the beats of one step share it.
   final String surface;
@@ -61,6 +82,16 @@ enum OnboardingCompanionBeat {
   /// after the incoming one has started speaking, and ending its own
   /// utterance must leave the new step's alone.
   String get sourceId => '${OnboardingCompanion.sourcePrefix}$surface';
+
+  /// The beat of the key step while its key check is in [state].
+  static OnboardingCompanionBeat ofKeyCheck(ConnectionCheckState state) =>
+      switch (state) {
+        ConnectionCheckIdle() => key,
+        ConnectionCheckChecking() => keyChecking,
+        ConnectionCheckVerified() => keyVerified,
+        ConnectionCheckFailedHttp() ||
+        ConnectionCheckFailedNetwork() => keyRejected,
+      };
 
   /// The beat of a first-task frame.
   static OnboardingCompanionBeat of(OnboardingFirstTaskPhase phase) =>
@@ -83,17 +114,26 @@ enum OnboardingCompanionBeat {
 /// and the download is not worth a first impression, so there she is silent
 /// and the caption carries the words. A null [line] silences her, so she
 /// never talks over a recording.
+///
+/// With a [cloudVoice] she speaks [line] in that voice instead, whether or
+/// not read-aloud is on: onboarding passes the read-aloud voice of the
+/// provider the user has just connected, for one fixed line, so a new user
+/// hears her for the first time the moment the key works.
 class OnboardingCompanion extends ConsumerStatefulWidget {
   const OnboardingCompanion({
     required this.beat,
     this.line,
     this.framing = CompanionFraming.full,
+    this.cloudVoice,
     super.key,
   });
 
   final OnboardingCompanionBeat beat;
   final String? line;
   final CompanionFraming framing;
+
+  /// The cloud voice she speaks [line] in, if any.
+  final TtsCloudRoute? cloudVoice;
 
   /// What every onboarding utterance's source id starts with
   /// ([OnboardingCompanionBeat.sourceId]).
@@ -168,6 +208,18 @@ class _OnboardingCompanionState extends ConsumerState<OnboardingCompanion> {
     // Deferred from a frame in which she may also have left: `ref` is gone
     // then, and `dispose` has already ended her utterance.
     if (!mounted) return;
+    final cloudVoice = widget.cloudVoice;
+    if (cloudVoice != null) {
+      await _giveWay();
+      if (!mounted || generation != _lineGeneration) return;
+      await _voice.speak(
+        sourceId: sourceId,
+        text: line,
+        language: cloudVoice.languageCode,
+        cloudRoute: cloudVoice,
+      );
+      return;
+    }
     // Still loading on the first frame: the listener in build says the line
     // once the flag arrives.
     final readAloud =
@@ -178,16 +230,20 @@ class _OnboardingCompanionState extends ConsumerState<OnboardingCompanion> {
         .read(ttsModelRepositoryProvider)
         .isInstalled(modelId);
     if (!installed || !mounted || generation != _lineGeneration) return;
-    // Her previous line, on this step or the one she just left, gives way to
-    // this one; anything else speaking is left alone, and then the voice
-    // skips her.
+    await _giveWay();
+    if (!mounted || generation != _lineGeneration) return;
+    await _voice.speak(sourceId: sourceId, text: line);
+  }
+
+  /// Her previous line, on this step or the one she just left, gives way to
+  /// the next; anything else speaking is left alone, and then the voice skips
+  /// her.
+  Future<void> _giveWay() async {
     final playing = ref.read(ttsPlaybackControllerProvider).sourceId;
     if (playing != null &&
         playing.startsWith(OnboardingCompanion.sourcePrefix)) {
       await _voice.stop(sourceId: playing);
     }
-    if (!mounted || generation != _lineGeneration) return;
-    await _voice.speak(sourceId: sourceId, text: line);
   }
 
   @override
@@ -196,6 +252,8 @@ class _OnboardingCompanionState extends ConsumerState<OnboardingCompanion> {
     // spoken once it loads (or turns) on — the first `_say` may have run
     // before it had — and silenced when it turns off, from here or by sync.
     ref.listen(configFlagProvider(enableAiSummaryTtsFlag), (previous, next) {
+      // A cloud voice speaks whatever the flag says.
+      if (widget.cloudVoice != null) return;
       if (next.value == true && previous?.value != true) {
         _sayLater(widget.line);
       } else if (next.value == false && previous?.value == true) {

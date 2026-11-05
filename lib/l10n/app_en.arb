@@ -7368,6 +7368,8 @@
   "onboardingFirstTaskSuggestionPlanWeek": "Plan my week",
   "onboardingFirstTaskSuggestionsLabel": "Not ready to talk? Start with one of these:",
   "onboardingFirstTaskTitle": "Create your first task",
+  "onboardingFirstWordsQuiet": "We're connected, and I'm ready to help.",
+  "onboardingFirstWordsVoiced": "There, now you can hear me too!",
   "onboardingMakeHerYoursContinue": "Looks good",
   "onboardingMakeHerYoursLine": "Pick how I look. You can change all of this any time in Settings › Companion.",
   "onboardingMakeHerYoursSkip": "Skip for now",

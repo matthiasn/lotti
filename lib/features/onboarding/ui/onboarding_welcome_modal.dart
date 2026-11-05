@@ -18,6 +18,7 @@ import 'package:lotti/features/onboarding/ui/widgets/onboarding_category_view.da
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_companion.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_connect_panel.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_first_task_step.dart';
+import 'package:lotti/features/onboarding/ui/widgets/onboarding_first_words.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_hero.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_make_her_yours_step.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_success_view.dart';
@@ -469,6 +470,12 @@ class _OnboardingFlowState extends State<_OnboardingFlow> {
         return OnboardingApiKeyPanel(
           key: ValueKey('onboarding-apikey-${_type.name}'),
           type: _type,
+          // She thinks while the key is checked, and takes the answer well
+          // or badly.
+          companion: (status) => OnboardingCompanion(
+            beat: OnboardingCompanionBeat.ofKeyCheck(status),
+            framing: CompanionFraming.bust,
+          ),
           onBack: () => setState(() => _step = _FlowStep.connect),
           onConnected: () {
             // Provider + models are created — record the win and reveal the
@@ -484,6 +491,11 @@ class _OnboardingFlowState extends State<_OnboardingFlow> {
           title: context.messages.onboardingSuccessTitle,
           subtitle: context.messages.onboardingSuccessSubtitle,
           continueLabel: context.messages.onboardingSuccessContinue,
+          // Her first words, in the connected provider's voice where it has
+          // one.
+          lead: OnboardingFirstWords(
+            profileId: onboardingSeededProfileId(_type),
+          ),
           onContinue: () => setState(() => _step = _FlowStep.category),
         );
       case _FlowStep.category:
@@ -736,6 +748,11 @@ class _OnboardingCategoryStepState
     final options = _options(messages);
     return OnboardingCategoryView(
       accent: context.designTokens.colors.interactive.enabled,
+      companion: OnboardingCompanion(
+        beat: OnboardingCompanionBeat.areas,
+        line: messages.onboardingCategoryExplanation,
+        framing: CompanionFraming.bust,
+      ),
       title: messages.onboardingCategoryTitle,
       explanation: messages.onboardingCategoryExplanation,
       whyLabel: messages.onboardingCategoryWhy,

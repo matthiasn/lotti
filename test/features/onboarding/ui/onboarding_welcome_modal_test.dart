@@ -25,7 +25,9 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/onboarding/services/onboarding_capture_to_task_service.dart';
 import 'package:lotti/features/onboarding/ui/onboarding_welcome_modal.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_companion.dart';
+import 'package:lotti/features/onboarding/ui/widgets/onboarding_first_words.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_hero.dart';
+import 'package:lotti/features/onboarding/ui/widgets/onboarding_speech_bubble.dart';
 import 'package:lotti/features/tts/state/tts_playback_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/repositories/onboarding_metrics_repository.dart';
@@ -810,6 +812,73 @@ void main() {
 
     return (aiRepo: aiRepo, catRepo: catRepo, captureService: captureService);
   }
+
+  testWidgets('she reacts to the key check, speaks her first words for the '
+      "connected provider's profile, and introduces the areas", (
+    tester,
+  ) async {
+    final aiRepo = MockAiConfigRepository();
+    when(() => aiRepo.saveConfig(any())).thenAnswer((_) async {});
+    when(() => aiRepo.restoreConfig(any())).thenAnswer((_) async {});
+    final catRepo = MockCategoryRepository();
+    when(catRepo.getAllCategories).thenAnswer((_) async => []);
+    tester.view
+      ..physicalSize = const Size(390, 1000)
+      ..devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(
+      makeTestableWidget(
+        host(),
+        mediaQueryData: mq,
+        overrides: [
+          aiConfigRepositoryProvider.overrideWithValue(aiRepo),
+          categoryRepositoryProvider.overrideWithValue(catRepo),
+          connectionVerifierClientProvider.overrideWith(
+            (ref) =>
+                () => MockClient((_) async => http.Response('', 200)),
+          ),
+          connectionProbeRegistryProvider.overrideWith(
+            (ref) => {
+              InferenceProviderType.ollama: _FakeProbe(
+                const ConnectionCheckVerified(
+                  modelCount: 2,
+                  latency: Duration(milliseconds: 5),
+                ),
+              ),
+            },
+          ),
+        ],
+      ),
+    );
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+    await toConnect(tester);
+    await tapVisible(tester, find.text('Other providers'));
+    await tapVisible(tester, find.text('Ollama'));
+    await tester.pump(const Duration(milliseconds: 1100));
+    await tester.pumpAndSettle();
+
+    OnboardingCompanion her() =>
+        tester.widget<OnboardingCompanion>(find.byType(OnboardingCompanion));
+    expect(her().beat, OnboardingCompanionBeat.keyVerified);
+    expect(her().framing, CompanionFraming.bust);
+
+    await tapVisible(tester, find.text('Connect'));
+    final words = tester.widget<OnboardingFirstWords>(
+      find.byType(OnboardingFirstWords),
+    );
+    expect(words.profileId, profileLocalId);
+
+    await tapVisible(tester, find.text('Get started'));
+    expect(her().beat, OnboardingCompanionBeat.areas);
+    expect(
+      her().line,
+      tester
+          .widget<OnboardingSpeechBubble>(find.byType(OnboardingSpeechBubble))
+          .text,
+    );
+  });
 
   testWidgets('the category step advances to the in-panel first-task step and '
       'a landed task pops the modal onto the task page', (tester) async {

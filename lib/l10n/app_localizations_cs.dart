@@ -11774,6 +11774,12 @@ class AppLocalizationsCs extends AppLocalizations {
   String get onboardingFirstTaskTitle => 'Vytvoř svůj první úkol';
 
   @override
+  String get onboardingFirstWordsQuiet => 'Jsme propojení a můžu ti pomáhat.';
+
+  @override
+  String get onboardingFirstWordsVoiced => 'A teď mě i uslyšíš!';
+
+  @override
   String get onboardingMakeHerYoursContinue => 'Vypadá to dobře';
 
   @override
