@@ -23,6 +23,7 @@ import 'package:lotti/features/daily_os_next/state/selected_date_provider.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/utils/network_reachability.dart';
 
 final Provider<DayProcessingOutboxRepository>
 dayProcessingOutboxRepositoryProvider = Provider((ref) {
@@ -101,18 +102,32 @@ dayProcessingOutboxProcessorProvider = Provider((ref) {
     attachTranscript: (job, transcript) =>
         writer.attach(job: job, transcript: transcript),
     agentJobExecutor: executor.execute,
-    isOnline: () async {
-      final results = await Connectivity().checkConnectivity();
-      return results.any(
-        (result) =>
-            result == ConnectivityResult.wifi ||
-            result == ConnectivityResult.mobile ||
-            result == ConnectivityResult.ethernet ||
-            result == ConnectivityResult.vpn,
-      );
-    },
+    isOnline: () => dayProcessingIsOnline(Connectivity().checkConnectivity),
   );
 });
+
+/// How long the connectivity preflight may take before processing stops
+/// waiting for it.
+const dayProcessingConnectivityTimeout = Duration(seconds: 5);
+
+/// Whether a Daily OS job should attempt its network work now.
+///
+/// The preflight only saves a doomed attempt, so it fails **open**: when the
+/// platform cannot answer — on Linux without NetworkManager the check throws
+/// `DBusServiceUnknownException`, and a stalled D-Bus call never returns — the
+/// job proceeds, and a real outage still surfaces from the request itself as
+/// a classified network failure. Failing closed instead parked every parse and
+/// draft on such a device behind a network it already had.
+Future<bool> dayProcessingIsOnline(
+  Future<List<ConnectivityResult>> Function() check, {
+  Duration timeout = dayProcessingConnectivityTimeout,
+}) async {
+  try {
+    return reachesNetwork(await check().timeout(timeout));
+  } on Object {
+    return true;
+  }
+}
 
 final Provider<DayAudioTranscriptWriter> dayAudioTranscriptWriterProvider =
     Provider((ref) {

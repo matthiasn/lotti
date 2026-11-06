@@ -334,6 +334,36 @@ void main() {
     );
 
     test(
+      'a connectivity preflight that throws settles the claimed job instead '
+      'of escaping and stranding it as running',
+      () async {
+        // On Linux without NetworkManager the platform check throws
+        // DBusServiceUnknownException. Escaping processNext left the row
+        // `running` under its lease, re-claimed every three minutes, forever:
+        // no wake, no outcome, no error anywhere.
+        final processor = DayProcessingOutboxProcessor(
+          repository: repository,
+          transcribe: (_) async => 'unused',
+          attachTranscript: (_, _) async => true,
+          isOnline: () async =>
+              throw StateError('NetworkManager was not provided'),
+          agentJobExecutor: (job) async => const DayAgentJobSucceeded(),
+        );
+        await enqueueParse();
+
+        final result = await processor.processNext(
+          kinds: const {DayProcessingJobKind.parseCapture},
+        );
+        final saved = await repository.getById('parse_cap-1');
+
+        expect(result, DayProcessingRunResult.deferred);
+        expect(saved!.status, isNot(DayProcessingJobStatus.running));
+        expect(saved.claimToken, isNull);
+        expect(saved.lastError, contains('NetworkManager was not provided'));
+      },
+    );
+
+    test(
       'a deterministic agent-job failure surfaces as failed, not deferred',
       () async {
         final processor = DayProcessingOutboxProcessor(

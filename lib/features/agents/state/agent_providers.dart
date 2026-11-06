@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:clock/clock.dart';
-import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/agent_wake_cadence.dart';
 import 'package:lotti/classes/agents/agent_constants.dart';
@@ -369,14 +368,6 @@ void _announceProjectSlot(Ref ref, String agentId) {
   // The countdown reads the slot; an agent-store write announces nothing.
   persistedStateChangedNotifier(ref.read(updateNotificationsProvider))(agentId);
 }
-
-/// Whether a connectivity report can reach the sync server: any link other
-/// than none or Bluetooth.
-bool reachesSyncServer(List<ConnectivityResult> results) => results.any(
-  (result) =>
-      result != ConnectivityResult.none &&
-      result != ConnectivityResult.bluetooth,
-);
 
 /// Whether this device may claim or fire a leased project update slot now:
 /// connected, with its sync inbox drained. Null where sync is not wired (a

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_job.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_outbox_repository.dart';
+import 'package:lotti/utils/network_reachability.dart';
 
 typedef DayProcessingDrain = Future<int> Function();
 typedef DayProcessingSchedule =
@@ -47,10 +48,17 @@ class DayProcessingRuntime {
     _subscribeToOutboxChanges();
     final connectivity =
         connectivityChanges ?? Connectivity().onConnectivityChanged;
-    _connectivitySubscription = connectivity.listen((results) {
-      final connected = results.any(_isConnected);
-      if (connected) unawaited(handleConnectivityRestored());
-    });
+    _connectivitySubscription = connectivity.listen(
+      (results) {
+        if (reachesNetwork(results)) {
+          unawaited(handleConnectivityRestored());
+        }
+      },
+      // On Linux without NetworkManager the platform stream errors as soon as
+      // it is listened to. The periodic network probe still re-checks waiting
+      // jobs, so the error only means this trigger is unavailable.
+      onError: (Object _) {},
+    );
     unawaited(nudge());
   }
 
@@ -168,14 +176,6 @@ class DayProcessingRuntime {
     await _outboxSubscription?.cancel();
     await _connectivitySubscription?.cancel();
   }
-
-  static bool _isConnected(ConnectivityResult result) => switch (result) {
-    ConnectivityResult.wifi ||
-    ConnectivityResult.mobile ||
-    ConnectivityResult.ethernet ||
-    ConnectivityResult.vpn => true,
-    _ => false,
-  };
 
   // Unit tests inject a deterministic scheduler; this is the platform timer
   // adapter used only by the long-lived application runtime.

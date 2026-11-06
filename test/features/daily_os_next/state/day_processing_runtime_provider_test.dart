@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:clock/clock.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
@@ -729,4 +730,47 @@ void main() {
     await expectLater(drainDayProcessingLanes(processor), throwsStateError);
     // A hang here is the regression: the test times out instead of failing.
   }, timeout: const Timeout(Duration(seconds: 10)));
+
+  group('dayProcessingIsOnline', () {
+    test('an unnamed link counts as online; none does not', () async {
+      expect(
+        await dayProcessingIsOnline(() async => [ConnectivityResult.other]),
+        isTrue,
+        reason: 'WireGuard and Tailscale report `other`',
+      );
+      expect(
+        await dayProcessingIsOnline(() async => [ConnectivityResult.none]),
+        isFalse,
+      );
+    });
+
+    test('fails open when the platform check throws', () async {
+      // What Linux without NetworkManager does on every call.
+      expect(
+        await dayProcessingIsOnline(
+          () async => throw StateError('NetworkManager was not provided'),
+        ),
+        isTrue,
+      );
+    });
+
+    test('fails open when the platform check never answers', () {
+      fakeAsync((async) {
+        bool? online;
+        unawaited(
+          dayProcessingIsOnline(
+            () => Completer<List<ConnectivityResult>>().future,
+          ).then((value) => online = value),
+        );
+
+        async.elapse(
+          dayProcessingConnectivityTimeout - const Duration(milliseconds: 1),
+        );
+        expect(online, isNull, reason: 'still within the bound');
+
+        async.elapse(const Duration(milliseconds: 1));
+        expect(online, isTrue);
+      });
+    });
+  });
 }

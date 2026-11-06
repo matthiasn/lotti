@@ -348,6 +348,28 @@ Every outcome the processor reports also reaches the drafting screen:
 bus. A `local` deferral — the executor coming back while its wake still runs —
 is not an attempt and is not published.
 
+## Connectivity preflight
+
+Before each attempt the processor asks whether the device is online, so an
+offline device parks a job as `waitingForNetwork` instead of paying for a full
+wake that can only fail. The check is advisory, and three rules keep it from
+becoming the reason nothing runs:
+
+- **It fails open.** `dayProcessingIsOnline` bounds the platform call at five
+  seconds and answers *online* when it throws or does not answer. On Linux
+  without NetworkManager, connectivity_plus throws
+  `DBusServiceUnknownException` on every call; a real outage still surfaces
+  from the request itself as a classified network failure.
+- **It runs inside the attempt's error boundary.** A preflight that escaped
+  `processNext` left the claimed row `running` under its lease, re-claimed every
+  lease period, forever — no wake, no outcome, no error.
+- **Any named or unnamed link counts** (`reachesNetwork` in
+  `lib/utils/network_reachability.dart`, shared with sync): only `none` and
+  Bluetooth are offline. WireGuard and Tailscale interfaces report `other`.
+
+The runtime's connectivity stream follows the same rule and absorbs its
+errors; the periodic network probe re-checks waiting jobs either way.
+
 ## Coalescing differs per kind
 
 | Kind | Job id | Behaviour |

@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agent_wake_cadence.dart';
@@ -3534,22 +3533,6 @@ void main() {
       verify(
         () => notifications.notifyUiOnly({'project-agent', agentNotification}),
       ).called(1);
-    });
-  });
-
-  group('reachesSyncServer', () {
-    test('any link but none or Bluetooth reaches the server', () {
-      expect(reachesSyncServer(const [ConnectivityResult.wifi]), isTrue);
-      expect(
-        reachesSyncServer(const [
-          ConnectivityResult.bluetooth,
-          ConnectivityResult.mobile,
-        ]),
-        isTrue,
-      );
-      expect(reachesSyncServer(const [ConnectivityResult.none]), isFalse);
-      expect(reachesSyncServer(const [ConnectivityResult.bluetooth]), isFalse);
-      expect(reachesSyncServer(const []), isFalse);
     });
   });
 

@@ -429,6 +429,43 @@ void main() {
     );
   });
 
+  test('a connectivity stream error is absorbed, and an unnamed link '
+      '(WireGuard, tun) counts as restored', () async {
+    final claim = await repository.claimNext();
+    await repository.markFailure(
+      jobId: claim!.job.id,
+      claimToken: claim.token,
+      failureClass: DayProcessingFailureClass.network,
+      error: 'offline',
+    );
+    final connectivity = StreamController<List<ConnectivityResult>>();
+    final runtime = DayProcessingRuntime(
+      repository: repository,
+      connectivityChanges: connectivity.stream,
+      drain: () async => 0,
+      schedule: (_, _) {},
+    );
+    addTearDown(() async {
+      await runtime.dispose();
+      await connectivity.close();
+    });
+    runtime.start();
+    await runtime.nudge();
+
+    // An unhandled stream error would fail this test through the zone.
+    connectivity.addError(StateError('NetworkManager was not provided'));
+    await Future<void>.value();
+
+    final changed = repository.changes.first;
+    connectivity.add(const [ConnectivityResult.other]);
+    await changed;
+
+    expect(
+      (await repository.getById('transcribe_session-1'))!.status,
+      DayProcessingJobStatus.queued,
+    );
+  });
+
   test('running work is scheduled at its lease boundary', () async {
     final claim = await repository.claimNext();
     Duration? scheduledDelay;
