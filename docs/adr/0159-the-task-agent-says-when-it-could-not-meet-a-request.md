@@ -44,9 +44,10 @@ with a 500.
    after the call raises nothing.
 5. **Only the user clears it.** A later wake that completes does not — wakes
    completing is exactly what hid the problem. The card's *Clear* stamps
-   `unmetRequestClearedAt`, never earlier than the flag it acknowledges — a
-   flag from a device whose clock runs ahead must still clear on the first
-   tap; it never erases the flag.
+   `unmetRequestClearedAt` past the flag it acknowledges, and a new flag is
+   stamped past both watermarks (`decisionStampAfter`, ADR 0111), so a device
+   whose clock runs ahead can neither keep a cleared flag up nor hide a new
+   one. The clear never erases the flag.
 6. **The agent sees its own flag.** Once it has ever flagged, the wake payload
    carries a `## Unmet Request` section: standing (do not raise it again for
    the same request) or cleared and when (flag again only for a new ask).

@@ -8,6 +8,7 @@ import 'package:lotti/classes/ai_attribution.dart';
 import 'package:lotti/database/agents/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_report_provenance.dart';
 import 'package:lotti/features/agents/service/suggestion_retraction_service.dart';
+import 'package:lotti/features/agents/sync/agent_concurrent_resolver.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/util/text_utils.dart';
 import 'package:lotti/features/agents/workflow/agent_observations.dart';
@@ -254,9 +255,10 @@ class WakeOutputWriter {
       // sync all write the row while the wake runs, and a copy would put
       // their older values back (ADR 0068).
       //
-      // An unmet-request flag is stamped at commit, not at wake start: a
-      // user who cleared the previous flag while this wake ran must still
-      // see the one it raises, and the flag is compared against that clear.
+      // An unmet-request flag is stamped at commit, not at wake start, and
+      // past the row's watermarks: a user who cleared the previous flag while
+      // this wake ran — on this device or on one whose clock runs ahead —
+      // must still see the one it raises.
       final hostId = await _sync.localHost();
       final unmetRequestReason = strategy.extractUnmetRequestReason();
       await _sync.updateAgentState(
@@ -269,7 +271,12 @@ class WakeOutputWriter {
           slots: unmetRequestReason == null
               ? current.slots
               : current.slots.copyWith(
-                  unmetRequestAt: clock.now(),
+                  // Past both watermarks (ADR 0111): a clear stamped by a
+                  // device whose clock runs ahead must not hide this flag.
+                  unmetRequestAt: decisionStampAfter(clock.now(), [
+                    current.slots.unmetRequestAt,
+                    current.slots.unmetRequestClearedAt,
+                  ]),
                   unmetRequestReason: unmetRequestReason,
                 ),
         ),

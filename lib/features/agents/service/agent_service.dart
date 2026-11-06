@@ -203,10 +203,11 @@ class AgentService {
   /// and a flag the agent raises afterwards stands again. A transform of the
   /// row as it is now (ADR 0068), and a no-op when no flag stands.
   ///
-  /// The clear is stamped no earlier than the flag it acknowledges: a flag
-  /// from a device whose clock runs ahead, or a local clock set back, would
-  /// otherwise outrank a clear stamped with this device's wall clock, and the
-  /// warning would survive every tap. A clear equal to the flag clears it.
+  /// The clear is stamped past the flag it acknowledges
+  /// ([decisionStampAfter], ADR 0111): a flag from a device whose clock runs
+  /// ahead, or a local clock set back, would otherwise outrank a clear
+  /// stamped with this device's wall clock, and the warning would survive
+  /// every tap.
   Future<void> clearUnmetRequest(String agentId) async {
     final now = clock.now();
     final changed = await syncService.updateAgentState(agentId, (current) {
@@ -214,7 +215,7 @@ class AgentService {
       if (raisedAt == null || !current.hasOpenUnmetRequest) return null;
       return current.copyWith(
         slots: current.slots.copyWith(
-          unmetRequestClearedAt: now.isAfter(raisedAt) ? now : raisedAt,
+          unmetRequestClearedAt: decisionStampAfter(now, [raisedAt]),
         ),
         updatedAt: now,
       );

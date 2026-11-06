@@ -297,9 +297,10 @@ failed write shows an error toast rather than looking ignored.
 
 It is read from `AgentStateEntity.hasOpenUnmetRequest`, which the card already
 watches for freshness, so it costs no extra subscription. A later wake that
-completes does **not** clear it — only the user does. The clear is stamped no
-earlier than the flag, so a flag stamped by a device whose clock runs ahead
-still clears on the first tap.
+completes does **not** clear it — only the user does. The clear is stamped
+past the flag, and a new flag past both watermarks (`decisionStampAfter`), so a
+device whose clock runs ahead can neither keep a cleared flag up nor hide a
+new one.
 
 The body keeps one shape whether or not the callout shows — a `Column` with the
 report under a stable key — so a flag raised or cleared by a background wake or

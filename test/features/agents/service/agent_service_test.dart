@@ -788,7 +788,10 @@ void main() {
                     () => mockSyncService.upsertEntity(captureAny()),
                   ).captured.single
                   as AgentStateEntity;
-          expect(captured.slots.unmetRequestClearedAt, aheadAt);
+          expect(
+            captured.slots.unmetRequestClearedAt,
+            aheadAt.add(const Duration(microseconds: 1)),
+          );
           expect(captured.hasOpenUnmetRequest, isFalse);
         },
       );
