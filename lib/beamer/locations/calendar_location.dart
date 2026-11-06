@@ -5,7 +5,6 @@ import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/ui/daily_os_next_routes.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/capture_page.dart';
-import 'package:lotti/features/daily_os_next/ui/pages/commit_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/daily_os_next_root.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/refine_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/shutdown_page.dart';
@@ -24,7 +23,6 @@ class CalendarLocation extends BeamLocation<BeamState> {
     '/calendar',
     '/calendar/time',
     '/calendar/refine/:date',
-    '/calendar/commit/:date',
     '/calendar/shutdown/:date',
   ];
 
@@ -127,7 +125,6 @@ class _DailyOsNextRoutePage extends ConsumerWidget {
     }
     return switch (target) {
       DailyOsNextRouteTarget.refine => RefinePage(draft: plan),
-      DailyOsNextRouteTarget.commit => CommitPage(draft: plan),
       DailyOsNextRouteTarget.shutdown => ShutdownPage(forDate: date),
     };
   }

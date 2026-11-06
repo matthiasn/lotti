@@ -8519,89 +8519,17 @@ abstract class AppLocalizations {
   /// **'Choose Daily OS processing categories'**
   String get dailyOsNextCategoryFilterTooltip;
 
-  /// No description provided for @dailyOsNextCommitCapacityNote.
+  /// No description provided for @dailyOsNextCommitDone.
   ///
   /// In en, this message translates to:
-  /// **'{scheduled} of {capacity} committed. Comfortable margin — you can absorb one surprise.'**
-  String dailyOsNextCommitCapacityNote(String scheduled, String capacity);
+  /// **'Plan committed'**
+  String get dailyOsNextCommitDone;
 
-  /// No description provided for @dailyOsNextCommitDraftOverline.
+  /// No description provided for @dailyOsNextCommitFailed.
   ///
   /// In en, this message translates to:
-  /// **'YOUR DAY, DRAFTED'**
-  String get dailyOsNextCommitDraftOverline;
-
-  /// No description provided for @dailyOsNextCommitExplainer.
-  ///
-  /// In en, this message translates to:
-  /// **'Sign off to move today from draft to committed.'**
-  String get dailyOsNextCommitExplainer;
-
-  /// No description provided for @dailyOsNextCommitFinalStepEyebrow.
-  ///
-  /// In en, this message translates to:
-  /// **'FINAL STEP'**
-  String get dailyOsNextCommitFinalStepEyebrow;
-
-  /// No description provided for @dailyOsNextCommitHeadline.
-  ///
-  /// In en, this message translates to:
-  /// **'Make it yours.'**
-  String get dailyOsNextCommitHeadline;
-
-  /// No description provided for @dailyOsNextCommitHoldHelper.
-  ///
-  /// In en, this message translates to:
-  /// **'Hold for a second to sign off'**
-  String get dailyOsNextCommitHoldHelper;
-
-  /// No description provided for @dailyOsNextCommitHoldWordDone.
-  ///
-  /// In en, this message translates to:
-  /// **'Committed'**
-  String get dailyOsNextCommitHoldWordDone;
-
-  /// No description provided for @dailyOsNextCommitHoldWordHolding.
-  ///
-  /// In en, this message translates to:
-  /// **'Keep holding'**
-  String get dailyOsNextCommitHoldWordHolding;
-
-  /// No description provided for @dailyOsNextCommitHoldWordIdle.
-  ///
-  /// In en, this message translates to:
-  /// **'Hold'**
-  String get dailyOsNextCommitHoldWordIdle;
-
-  /// No description provided for @dailyOsNextCommitLockingIn.
-  ///
-  /// In en, this message translates to:
-  /// **'Locking in…'**
-  String get dailyOsNextCommitLockingIn;
-
-  /// No description provided for @dailyOsNextCommitShepherdSubline.
-  ///
-  /// In en, this message translates to:
-  /// **'I\'ll shepherd it — you do the work.'**
-  String get dailyOsNextCommitShepherdSubline;
-
-  /// No description provided for @dailyOsNextCommitSubCaption.
-  ///
-  /// In en, this message translates to:
-  /// **'You can still talk to me afterward — but the bones stay put.'**
-  String get dailyOsNextCommitSubCaption;
-
-  /// No description provided for @dailyOsNextCommitTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Lock it in'**
-  String get dailyOsNextCommitTitle;
-
-  /// No description provided for @dailyOsNextCommitTodayIsYours.
-  ///
-  /// In en, this message translates to:
-  /// **'Today is yours.'**
-  String get dailyOsNextCommitTodayIsYours;
+  /// **'The plan couldn\'t be committed.'**
+  String get dailyOsNextCommitFailed;
 
   /// Day-header chip when the day agent raised attentionNeeded.
   ///
@@ -8714,7 +8642,7 @@ abstract class AppLocalizations {
   /// No description provided for @dailyOsNextDayWhyChipLabel.
   ///
   /// In en, this message translates to:
-  /// **'WHY'**
+  /// **'Why'**
   String get dailyOsNextDayWhyChipLabel;
 
   /// No description provided for @dailyOsNextDayWrapUpCta.
@@ -8816,7 +8744,7 @@ abstract class AppLocalizations {
   /// No description provided for @dailyOsNextDraftingReasoningOverline.
   ///
   /// In en, this message translates to:
-  /// **'✦ REASONING'**
+  /// **'✦ Reasoning'**
   String get dailyOsNextDraftingReasoningOverline;
 
   /// No description provided for @dailyOsNextDraftingRecoveryBody.
@@ -9056,19 +8984,19 @@ abstract class AppLocalizations {
   /// No description provided for @dailyOsNextReconcileBadgeMatched.
   ///
   /// In en, this message translates to:
-  /// **'MATCHED'**
+  /// **'Matched'**
   String get dailyOsNextReconcileBadgeMatched;
 
   /// No description provided for @dailyOsNextReconcileBadgeNew.
   ///
   /// In en, this message translates to:
-  /// **'NEW'**
+  /// **'New'**
   String get dailyOsNextReconcileBadgeNew;
 
   /// No description provided for @dailyOsNextReconcileBadgeUpdate.
   ///
   /// In en, this message translates to:
-  /// **'UPDATE'**
+  /// **'Update'**
   String get dailyOsNextReconcileBadgeUpdate;
 
   /// No description provided for @dailyOsNextReconcileBuildDayCta.
@@ -9080,7 +9008,7 @@ abstract class AppLocalizations {
   /// No description provided for @dailyOsNextReconcileDecideOverline.
   ///
   /// In en, this message translates to:
-  /// **'WORTH DECIDING ON'**
+  /// **'Worth deciding on'**
   String get dailyOsNextReconcileDecideOverline;
 
   /// No description provided for @dailyOsNextReconcileDecisionProgress.
@@ -9116,7 +9044,7 @@ abstract class AppLocalizations {
   /// No description provided for @dailyOsNextReconcileHeardOverline.
   ///
   /// In en, this message translates to:
-  /// **'HEARD'**
+  /// **'Heard'**
   String get dailyOsNextReconcileHeardOverline;
 
   /// No description provided for @dailyOsNextReconcileLowConfidence.
@@ -9152,25 +9080,25 @@ abstract class AppLocalizations {
   /// No description provided for @dailyOsNextRefineCurrentPlan.
   ///
   /// In en, this message translates to:
-  /// **'CURRENT PLAN'**
+  /// **'Current plan'**
   String get dailyOsNextRefineCurrentPlan;
 
   /// No description provided for @dailyOsNextRefineDiffAdded.
   ///
   /// In en, this message translates to:
-  /// **'ADDED'**
+  /// **'Added'**
   String get dailyOsNextRefineDiffAdded;
 
   /// No description provided for @dailyOsNextRefineDiffDropped.
   ///
   /// In en, this message translates to:
-  /// **'DROPPED'**
+  /// **'Dropped'**
   String get dailyOsNextRefineDiffDropped;
 
   /// No description provided for @dailyOsNextRefineDiffMoved.
   ///
   /// In en, this message translates to:
-  /// **'MOVED'**
+  /// **'Moved'**
   String get dailyOsNextRefineDiffMoved;
 
   /// No description provided for @dailyOsNextRefineHeadlineDiffReady.
@@ -9212,7 +9140,7 @@ abstract class AppLocalizations {
   /// No description provided for @dailyOsNextRefineOverline.
   ///
   /// In en, this message translates to:
-  /// **'🎤 REFINEMENT'**
+  /// **'🎤 Refinement'**
   String get dailyOsNextRefineOverline;
 
   /// No description provided for @dailyOsNextRefineRevert.
@@ -9344,7 +9272,7 @@ abstract class AppLocalizations {
   /// No description provided for @dailyOsNextShutdownCarryoverOverline.
   ///
   /// In en, this message translates to:
-  /// **'CARRIES FORWARD'**
+  /// **'Carries forward'**
   String get dailyOsNextShutdownCarryoverOverline;
 
   /// No description provided for @dailyOsNextShutdownCarryoverPickDate.
@@ -9386,7 +9314,7 @@ abstract class AppLocalizations {
   /// No description provided for @dailyOsNextShutdownCompletedOverline.
   ///
   /// In en, this message translates to:
-  /// **'WHAT YOU DID'**
+  /// **'What you did'**
   String get dailyOsNextShutdownCompletedOverline;
 
   /// No description provided for @dailyOsNextShutdownCompletedSessions.
@@ -9398,7 +9326,7 @@ abstract class AppLocalizations {
   /// No description provided for @dailyOsNextShutdownMetricEnergy.
   ///
   /// In en, this message translates to:
-  /// **'ENERGY'**
+  /// **'Energy'**
   String get dailyOsNextShutdownMetricEnergy;
 
   /// No description provided for @dailyOsNextShutdownMetricEnergyDelta.
@@ -9416,19 +9344,19 @@ abstract class AppLocalizations {
   /// No description provided for @dailyOsNextShutdownMetricFlow.
   ///
   /// In en, this message translates to:
-  /// **'FLOW SESSIONS'**
+  /// **'Flow sessions'**
   String get dailyOsNextShutdownMetricFlow;
 
   /// No description provided for @dailyOsNextShutdownMetricFocus.
   ///
   /// In en, this message translates to:
-  /// **'FOCUS TIME'**
+  /// **'Focus time'**
   String get dailyOsNextShutdownMetricFocus;
 
   /// No description provided for @dailyOsNextShutdownMetricSwitches.
   ///
   /// In en, this message translates to:
-  /// **'CONTEXT SWITCHES'**
+  /// **'Context switches'**
   String get dailyOsNextShutdownMetricSwitches;
 
   /// No description provided for @dailyOsNextShutdownMetricSwitchesAvg.
@@ -9440,7 +9368,7 @@ abstract class AppLocalizations {
   /// No description provided for @dailyOsNextShutdownReflectionOverline.
   ///
   /// In en, this message translates to:
-  /// **'💬 ONE-LINE REFLECTION'**
+  /// **'💬 One-line reflection'**
   String get dailyOsNextShutdownReflectionOverline;
 
   /// No description provided for @dailyOsNextShutdownReflectionPlaceholder.
@@ -9500,7 +9428,7 @@ abstract class AppLocalizations {
   /// No description provided for @dailyOsNextShutdownTomorrowOverline.
   ///
   /// In en, this message translates to:
-  /// **'✦ FOR TOMORROW'**
+  /// **'✦ For tomorrow'**
   String get dailyOsNextShutdownTomorrowOverline;
 
   /// No description provided for @dailyOsNextStateDueOnDate.
@@ -9620,13 +9548,13 @@ abstract class AppLocalizations {
   /// No description provided for @dailyOsNextTimeSpentTitle.
   ///
   /// In en, this message translates to:
-  /// **'TODAY SO FAR'**
+  /// **'Today so far'**
   String get dailyOsNextTimeSpentTitle;
 
   /// No description provided for @dailyOsNextTimeSpentTitlePast.
   ///
   /// In en, this message translates to:
-  /// **'TIME SPENT'**
+  /// **'Time spent'**
   String get dailyOsNextTimeSpentTitlePast;
 
   /// No description provided for @dailyOsNextTriageConfirmDefer.
@@ -9688,6 +9616,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Today'**
   String get dailyOsNextTriageToday;
+
+  /// No description provided for @dailyOsNextUncommitFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t undo — the plan stays committed.'**
+  String get dailyOsNextUncommitFailed;
 
   /// No description provided for @dailyOsOnboardingCoachCapture.
   ///

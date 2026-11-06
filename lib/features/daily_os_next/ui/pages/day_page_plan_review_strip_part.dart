@@ -59,7 +59,7 @@ class _DayFooter extends StatelessWidget {
   final DraftPlan draft;
 
   /// One-shot coaching line — retired permanently after the first
-  /// lock-in (the promise has been experienced; chrome stops narrating).
+  /// commit (the promise has been experienced; chrome stops narrating).
   final bool showCoachHint;
 
   final VoidCallback onRefine;
@@ -74,7 +74,7 @@ class _DayFooter extends StatelessWidget {
     final isDesktop = isDesktopLayout(context);
     // Coaching copy yields the fold to actionable rows at large
     // accessibility text sizes, and retires for good after the first
-    // lock-in.
+    // commit.
     final showHint =
         showCoachHint &&
         draft.state != DayState.drafted &&

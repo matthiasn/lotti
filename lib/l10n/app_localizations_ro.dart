@@ -5151,52 +5151,10 @@ class AppLocalizationsRo extends AppLocalizations {
       'Alegeți categoriile de procesare Daily OS';
 
   @override
-  String dailyOsNextCommitCapacityNote(String scheduled, String capacity) {
-    return '$scheduled din $capacity angajate. Marjă confortabilă — puteți absorbi o surpriză.';
-  }
+  String get dailyOsNextCommitDone => 'Plan confirmat';
 
   @override
-  String get dailyOsNextCommitDraftOverline => 'ZIUA DVS., SCHIȚATĂ';
-
-  @override
-  String get dailyOsNextCommitExplainer =>
-      'Confirmați pentru a trece ziua din schiță în angajament.';
-
-  @override
-  String get dailyOsNextCommitFinalStepEyebrow => 'ULTIMUL PAS';
-
-  @override
-  String get dailyOsNextCommitHeadline => 'Faceți-o a dvs.';
-
-  @override
-  String get dailyOsNextCommitHoldHelper =>
-      'Țineți apăsat o secundă pentru a confirma';
-
-  @override
-  String get dailyOsNextCommitHoldWordDone => 'Angajat';
-
-  @override
-  String get dailyOsNextCommitHoldWordHolding => 'Mențineți';
-
-  @override
-  String get dailyOsNextCommitHoldWordIdle => 'Țineți';
-
-  @override
-  String get dailyOsNextCommitLockingIn => 'Se fixează…';
-
-  @override
-  String get dailyOsNextCommitShepherdSubline =>
-      'Vă însoțesc — munca o faceți dvs.';
-
-  @override
-  String get dailyOsNextCommitSubCaption =>
-      'Puteți vorbi cu mine și după aceea — dar structura rămâne.';
-
-  @override
-  String get dailyOsNextCommitTitle => 'Fixați-o';
-
-  @override
-  String get dailyOsNextCommitTodayIsYours => 'Ziua este a dvs.';
+  String get dailyOsNextCommitFailed => 'Planul nu a putut fi confirmat.';
 
   @override
   String get dailyOsNextDayAgentStatusAttention => 'Necesită atenție';
@@ -5257,7 +5215,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsNextDayTitle => 'Ziua dvs.';
 
   @override
-  String get dailyOsNextDayWhyChipLabel => 'DE CE';
+  String get dailyOsNextDayWhyChipLabel => 'De ce';
 
   @override
   String get dailyOsNextDayWrapUpCta => 'Încheie';
@@ -5314,7 +5272,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsNextDraftingProgressSaving => 'Se salvează planul';
 
   @override
-  String get dailyOsNextDraftingReasoningOverline => '✦ RAȚIONAMENT';
+  String get dailyOsNextDraftingReasoningOverline => '✦ Raționament';
 
   @override
   String get dailyOsNextDraftingRecoveryBody =>
@@ -5467,19 +5425,19 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsNextPlanViewDay => 'Ziua';
 
   @override
-  String get dailyOsNextReconcileBadgeMatched => 'LEGAT';
+  String get dailyOsNextReconcileBadgeMatched => 'Legat';
 
   @override
-  String get dailyOsNextReconcileBadgeNew => 'NOU';
+  String get dailyOsNextReconcileBadgeNew => 'Nou';
 
   @override
-  String get dailyOsNextReconcileBadgeUpdate => 'ACTUALIZARE';
+  String get dailyOsNextReconcileBadgeUpdate => 'Actualizare';
 
   @override
   String get dailyOsNextReconcileBuildDayCta => 'Construiți ziua mea';
 
   @override
-  String get dailyOsNextReconcileDecideOverline => 'MERITĂ DECIS';
+  String get dailyOsNextReconcileDecideOverline => 'De decis';
 
   @override
   String dailyOsNextReconcileDecisionProgress(int decided, int total) {
@@ -5503,7 +5461,7 @@ class AppLocalizationsRo extends AppLocalizations {
       'Cardurile capturii vor apărea aici după finalizarea parsării.';
 
   @override
-  String get dailyOsNextReconcileHeardOverline => 'AUZIT';
+  String get dailyOsNextReconcileHeardOverline => 'Auzit';
 
   @override
   String get dailyOsNextReconcileLowConfidence => 'încredere scăzută';
@@ -5523,16 +5481,16 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsNextRefineAccept => 'Acceptă';
 
   @override
-  String get dailyOsNextRefineCurrentPlan => 'PLANUL CURENT';
+  String get dailyOsNextRefineCurrentPlan => 'Planul curent';
 
   @override
-  String get dailyOsNextRefineDiffAdded => 'ADĂUGAT';
+  String get dailyOsNextRefineDiffAdded => 'Adăugat';
 
   @override
-  String get dailyOsNextRefineDiffDropped => 'RENUNȚAT';
+  String get dailyOsNextRefineDiffDropped => 'Eliminat';
 
   @override
-  String get dailyOsNextRefineDiffMoved => 'MUTAT';
+  String get dailyOsNextRefineDiffMoved => 'Mutat';
 
   @override
   String get dailyOsNextRefineHeadlineDiffReady => 'Iată ce aș schimba.';
@@ -5554,7 +5512,7 @@ class AppLocalizationsRo extends AppLocalizations {
       'Nu au venit modificări ale planului. Reformulați și încercați din nou.';
 
   @override
-  String get dailyOsNextRefineOverline => '🎤 REGLARE';
+  String get dailyOsNextRefineOverline => '🎤 Ajustare';
 
   @override
   String get dailyOsNextRefineRevert => 'Anulați';
@@ -5624,7 +5582,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsNextShutdownCarryoverNotStarted => 'Neînceput';
 
   @override
-  String get dailyOsNextShutdownCarryoverOverline => 'SE REPORTEAZĂ';
+  String get dailyOsNextShutdownCarryoverOverline => 'Se reportează';
 
   @override
   String get dailyOsNextShutdownCarryoverPickDate => 'Alegeți data';
@@ -5648,7 +5606,7 @@ class AppLocalizationsRo extends AppLocalizations {
       'Nimic înregistrat pentru această zi deocamdată.';
 
   @override
-  String get dailyOsNextShutdownCompletedOverline => 'CE AȚI FĂCUT';
+  String get dailyOsNextShutdownCompletedOverline => 'Ce ați făcut';
 
   @override
   String dailyOsNextShutdownCompletedSessions(int count) {
@@ -5663,7 +5621,7 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get dailyOsNextShutdownMetricEnergy => 'ENERGIE';
+  String get dailyOsNextShutdownMetricEnergy => 'Energie';
 
   @override
   String dailyOsNextShutdownMetricEnergyDelta(String delta) {
@@ -5675,13 +5633,13 @@ class AppLocalizationsRo extends AppLocalizations {
       'Evaluați sesiunile pentru a o vedea';
 
   @override
-  String get dailyOsNextShutdownMetricFlow => 'SESIUNI DE FLOW';
+  String get dailyOsNextShutdownMetricFlow => 'Sesiuni de flow';
 
   @override
-  String get dailyOsNextShutdownMetricFocus => 'TIMP DE FOCUS';
+  String get dailyOsNextShutdownMetricFocus => 'Timp de focus';
 
   @override
-  String get dailyOsNextShutdownMetricSwitches => 'SCHIMBĂRI DE CONTEXT';
+  String get dailyOsNextShutdownMetricSwitches => 'Schimbări de context';
 
   @override
   String dailyOsNextShutdownMetricSwitchesAvg(String avg) {
@@ -5689,7 +5647,8 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get dailyOsNextShutdownReflectionOverline => '💬 REFLECȚIE DE O LINIE';
+  String get dailyOsNextShutdownReflectionOverline =>
+      '💬 Reflecție într-un rând';
 
   @override
   String get dailyOsNextShutdownReflectionPlaceholder =>
@@ -5724,7 +5683,7 @@ class AppLocalizationsRo extends AppLocalizations {
       'Configurați un furnizor de AI pentru a primi o notă pentru mâine.';
 
   @override
-  String get dailyOsNextShutdownTomorrowOverline => '✦ PENTRU MÂINE';
+  String get dailyOsNextShutdownTomorrowOverline => '✦ Pentru mâine';
 
   @override
   String dailyOsNextStateDueOnDate(String date) {
@@ -5836,10 +5795,10 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get dailyOsNextTimeSpentTitle => 'AZI PÂNĂ ACUM';
+  String get dailyOsNextTimeSpentTitle => 'Azi până acum';
 
   @override
-  String get dailyOsNextTimeSpentTitlePast => 'TIMP ÎNREGISTRAT';
+  String get dailyOsNextTimeSpentTitlePast => 'Timp înregistrat';
 
   @override
   String get dailyOsNextTriageConfirmDefer => 'Amânat';
@@ -5870,6 +5829,10 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get dailyOsNextTriageToday => 'Astăzi';
+
+  @override
+  String get dailyOsNextUncommitFailed =>
+      'Anularea nu a reușit — planul rămâne confirmat.';
 
   @override
   String get dailyOsOnboardingCoachCapture => 'Spuneți ce vă preocupă.';

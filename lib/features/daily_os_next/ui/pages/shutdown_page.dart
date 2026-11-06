@@ -7,6 +7,7 @@ import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/state/shutdown_controller.dart';
 import 'package:lotti/features/daily_os_next/ui/category_color.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/shutdown_cards.dart';
+import 'package:lotti/features/daily_os_next/ui/time_format.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/category_chip.dart';
 import 'package:lotti/features/design_system/components/calendar_pickers/design_system_date_picker_modal.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -259,7 +260,7 @@ class _CompletedRow extends StatelessWidget {
           if (item.durationMinutes > 0) ...[
             SizedBox(width: tokens.spacing.step3),
             Text(
-              '${item.durationMinutes}m',
+              formatMinutesCompact(item.durationMinutes),
               style: monoMetaStyle(tokens, tokens.colors),
             ),
           ],

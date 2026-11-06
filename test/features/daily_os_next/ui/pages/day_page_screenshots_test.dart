@@ -34,7 +34,6 @@ import 'package:lotti/features/daily_os_next/state/daily_os_preferences_controll
 import 'package:lotti/features/daily_os_next/state/day_activity_provider.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/state/refine_controller.dart';
-import 'package:lotti/features/daily_os_next/ui/pages/commit_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/day_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/refine_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/shutdown_page.dart';
@@ -788,7 +787,7 @@ class _ManualDailyOsAgent extends MockDayAgent {
   );
 }
 
-enum _ManualDailyOsSurface { refine, commit, shutdown }
+enum _ManualDailyOsSurface { refine, shutdown }
 
 Widget _app({
   required Widget home,
@@ -995,7 +994,6 @@ Future<void> _pumpManualDailyOsSurface(
   final agent = _ManualDailyOsAgent();
   final home = switch (surface) {
     _ManualDailyOsSurface.refine => RefinePage(draft: draft),
-    _ManualDailyOsSurface.commit => CommitPage(draft: draft),
     _ManualDailyOsSurface.shutdown => ShutdownPage(forDate: _day),
   };
 
@@ -1074,13 +1072,13 @@ Future<void> _switchToAgendaView(WidgetTester tester) => _tapPlanViewSegment(
 Future<void> _switchToDayView(WidgetTester tester) => _tapPlanViewSegment(
   tester,
   label: _messages(tester).dailyOsNextPlanViewDay,
-  icon: LottiIcons.viewRows,
+  icon: LottiIcons.timeline,
 );
 
 Future<void> _switchToActivityView(WidgetTester tester) => _tapPlanViewSegment(
   tester,
   label: _messages(tester).dailyOsNextPlanViewActivity,
-  icon: LottiIcons.timeline,
+  icon: LottiIcons.viewRows,
 );
 
 Future<void> _enableArrangeMode(WidgetTester tester) async {
@@ -1477,27 +1475,6 @@ void main() {
                       'Sardinenverhandlung um 30 Minuten verschieben',
                     ),
                   ),
-                  findsOneWidget,
-                );
-              case _ManualDailyOsSurface.commit:
-                expect(find.byType(CommitPage), findsOneWidget);
-                expect(
-                  find.text(
-                    _t(
-                      'Inspect orbital penguin habitat',
-                      'Pinguin-Habitat im Orbit inspizieren',
-                    ),
-                  ),
-                  findsOneWidget,
-                );
-                if (deviceCase.device.isPhone) {
-                  await tester.ensureVisible(
-                    find.byKey(const Key('hold-to-confirm-focus')),
-                  );
-                  await settleFrames(tester);
-                }
-                expect(
-                  find.byKey(const Key('hold-to-confirm-focus')),
                   findsOneWidget,
                 );
               case _ManualDailyOsSurface.shutdown:

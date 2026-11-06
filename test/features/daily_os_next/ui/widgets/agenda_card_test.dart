@@ -119,7 +119,7 @@ void main() {
       // Bare sparkle icon with the reason in the tooltip — no labelled
       // pill out-shouting the title.
       expect(find.byIcon(LottiIcons.aiSpark), findsOneWidget);
-      expect(find.text('WHY'), findsNothing);
+      expect(find.text('Why'), findsNothing);
       expect(
         findMaterialTooltip('High-energy window 8–10:30.'),
         findsOneWidget,
@@ -147,7 +147,7 @@ void main() {
       await tester.pump();
 
       expect(find.byIcon(LottiIcons.aiSpark), findsNothing);
-      expect(find.text('WHY'), findsNothing);
+      expect(find.text('Why'), findsNothing);
     });
 
     testWidgets('invokes onTap when the card is tapped', (tester) async {

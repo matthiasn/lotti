@@ -187,7 +187,7 @@ class DailyOsPreferencesController extends Notifier<DailyOsPreferences> {
   }
 
   /// Permanently retires the day footer's coaching line — called on the
-  /// first successful lock-in.
+  /// first successful commit.
   void markDayFooterHintRetired() {
     if (state.dayFooterHintRetired) return;
     state = state.copyWith(dayFooterHintRetired: true);

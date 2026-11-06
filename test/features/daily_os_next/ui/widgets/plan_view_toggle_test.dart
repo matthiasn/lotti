@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/plan_view_toggle.dart';
+import 'package:lotti/features/design_system/components/buttons/ds_segmented_toggle.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
@@ -36,6 +37,36 @@ void main() {
         _visibleLabel(messages.dailyOsNextPlanViewActivity),
         findsOneWidget,
       );
+    });
+
+    testWidgets('a narrow pane shows glyphs that name their view: the '
+        'timeline glyph is the Day timeline, not Activity', (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          SizedBox(
+            width: 320,
+            child: PlanViewToggle(
+              selected: PlanView.agenda,
+              onChanged: (_) {},
+            ),
+          ),
+        ),
+      );
+
+      final toggle = tester.widget<DsSegmentedToggle<PlanView>>(
+        find.byType(DsSegmentedToggle<PlanView>),
+      );
+      final icons = {
+        for (final segment in toggle.segments) segment.value: segment.icon,
+      };
+      expect(icons, {
+        PlanView.agenda: LottiIcons.list,
+        PlanView.day: LottiIcons.timeline,
+        PlanView.activity: LottiIcons.viewRows,
+      });
+      for (final segment in toggle.segments) {
+        expect(segment.activeIcon, segment.icon, reason: '${segment.value}');
+      }
     });
 
     testWidgets('width is selection-invariant (header placement relies '

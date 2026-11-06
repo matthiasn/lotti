@@ -138,6 +138,9 @@ class MockDayAgent implements DayAgentInterface {
   Future<DraftPlan> commitDay(DraftPlan plan) => _planning.commitDay(plan);
 
   @override
+  Future<DraftPlan> uncommitDay(DraftPlan plan) => _planning.uncommitDay(plan);
+
+  @override
   Future<DraftPlan> renameBlock({
     required DraftPlan plan,
     required String blockId,

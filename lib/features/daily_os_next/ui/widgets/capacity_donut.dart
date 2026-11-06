@@ -30,9 +30,9 @@ class CapacityDonutSegment {
 /// 5 px stroke over a faint background track. When [segments] are given
 /// the ring is the stacked category mix matching the legend dots beside it
 /// (the gray remainder = free capacity); otherwise a single teal arc. The
-/// center shows the *remaining* capacity ("45m" over a LEFT eyebrow) —
+/// center shows the *remaining* capacity ("45m" over a "left" eyebrow) —
 /// pressure wording lives in the stat card's overline, so the ring stays
-/// calm until the day is genuinely over capacity (error color + OVER
+/// calm until the day is genuinely over capacity (error color + "over"
 /// eyebrow, with the over-amount drawn as a half-alpha arc continuing
 /// past the clamped end).
 ///
@@ -143,7 +143,7 @@ class CapacityDonut extends StatelessWidget {
                 ),
                 if (eyebrow.isNotEmpty)
                   Text(
-                    eyebrow.toUpperCase(),
+                    eyebrow,
                     style: calmEyebrowStyle(
                       tokens,
                       color: over ? overColor : tokens.colors.text.lowEmphasis,

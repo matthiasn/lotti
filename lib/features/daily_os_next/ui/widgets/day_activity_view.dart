@@ -153,8 +153,9 @@ class _ActivityEmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // Activity's own glyph on the view toggle.
             Icon(
-              LottiIcons.timeline,
+              LottiIcons.viewRows,
               color: tokens.colors.text.lowEmphasis,
             ),
             SizedBox(height: tokens.spacing.step3),

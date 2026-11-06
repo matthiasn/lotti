@@ -93,17 +93,6 @@
       }
     },
     {
-      "id": "daily-os/commit",
-      "title": "Daily OS plan commitment",
-      "sourceTest": "test/features/daily_os_next/ui/pages/day_page_screenshots_test.dart",
-      "variants": {
-        "mobile-light": "daily_os_commit_mobile_light.png",
-        "mobile-dark": "daily_os_commit_mobile_dark.png",
-        "desktop-light": "daily_os_commit_desktop_light.png",
-        "desktop-dark": "daily_os_commit_desktop_dark.png"
-      }
-    },
-    {
       "id": "daily-os/block-editor",
       "title": "Daily OS block editor",
       "sourceTest": "test/features/daily_os_next/ui/pages/day_page_screenshots_test.dart",

@@ -3376,32 +3376,8 @@
   "dailyOsNextCategoryFilterIncludeAll": "Include all",
   "dailyOsNextCategoryFilterTitle": "Processing categories",
   "dailyOsNextCategoryFilterTooltip": "Choose Daily OS processing categories",
-  "dailyOsNextCommitCapacityNote": "{scheduled} of {capacity} committed. Comfortable margin — you can absorb one surprise.",
-  "@dailyOsNextCommitCapacityNote": {
-    "placeholders": {
-      "scheduled": {
-        "type": "String",
-        "example": "5h 15m"
-      },
-      "capacity": {
-        "type": "String",
-        "example": "8h"
-      }
-    }
-  },
-  "dailyOsNextCommitDraftOverline": "YOUR DAY, DRAFTED",
-  "dailyOsNextCommitExplainer": "Sign off to move today from draft to committed.",
-  "dailyOsNextCommitFinalStepEyebrow": "FINAL STEP",
-  "dailyOsNextCommitHeadline": "Make it yours.",
-  "dailyOsNextCommitHoldHelper": "Hold for a second to sign off",
-  "dailyOsNextCommitHoldWordDone": "Committed",
-  "dailyOsNextCommitHoldWordHolding": "Keep holding",
-  "dailyOsNextCommitHoldWordIdle": "Hold",
-  "dailyOsNextCommitLockingIn": "Locking in…",
-  "dailyOsNextCommitShepherdSubline": "I'll shepherd it — you do the work.",
-  "dailyOsNextCommitSubCaption": "You can still talk to me afterward — but the bones stay put.",
-  "dailyOsNextCommitTitle": "Lock it in",
-  "dailyOsNextCommitTodayIsYours": "Today is yours.",
+  "dailyOsNextCommitDone": "Plan committed",
+  "dailyOsNextCommitFailed": "The plan couldn't be committed.",
   "dailyOsNextDayAgentStatusAttention": "Needs attention",
   "@dailyOsNextDayAgentStatusAttention": {
     "description": "Day-header chip when the day agent raised attentionNeeded."
@@ -3437,7 +3413,7 @@
   "dailyOsNextDayRefineCta": "Refine",
   "dailyOsNextDayRefineFooterHint": "Talk to reshape the plan — you'll see every change before anything is saved.",
   "dailyOsNextDayTitle": "Your day",
-  "dailyOsNextDayWhyChipLabel": "WHY",
+  "dailyOsNextDayWhyChipLabel": "Why",
   "dailyOsNextDayWrapUpCta": "Wrap up",
   "dailyOsNextDraftingBackToDecisions": "Back to decisions",
   "dailyOsNextDraftingHeader": "Drafting your day…",
@@ -3481,7 +3457,7 @@
   "dailyOsNextDraftingProgressQueued": "Queued",
   "dailyOsNextDraftingProgressReading": "Reading check-in",
   "dailyOsNextDraftingProgressSaving": "Saving plan",
-  "dailyOsNextDraftingReasoningOverline": "✦ REASONING",
+  "dailyOsNextDraftingReasoningOverline": "✦ Reasoning",
   "dailyOsNextDraftingRecoveryBody": "The wake did not produce a plan. Try again, or go back and adjust the decisions before drafting.",
   "dailyOsNextDraftingRecoveryTitle": "Drafting stalled",
   "dailyOsNextDraftingRetry": "Try again",
@@ -3563,11 +3539,11 @@
   "dailyOsNextPlanViewActivity": "Activity",
   "dailyOsNextPlanViewAgenda": "Agenda",
   "dailyOsNextPlanViewDay": "Day",
-  "dailyOsNextReconcileBadgeMatched": "MATCHED",
-  "dailyOsNextReconcileBadgeNew": "NEW",
-  "dailyOsNextReconcileBadgeUpdate": "UPDATE",
+  "dailyOsNextReconcileBadgeMatched": "Matched",
+  "dailyOsNextReconcileBadgeNew": "New",
+  "dailyOsNextReconcileBadgeUpdate": "Update",
   "dailyOsNextReconcileBuildDayCta": "Build my day",
-  "dailyOsNextReconcileDecideOverline": "WORTH DECIDING ON",
+  "dailyOsNextReconcileDecideOverline": "Worth deciding on",
   "dailyOsNextReconcileDecisionProgress": "{decided} of {total} reviewed",
   "@dailyOsNextReconcileDecisionProgress": {
     "placeholders": {
@@ -3591,23 +3567,23 @@
   },
   "dailyOsNextReconcileHeadline": "Here’s what I heard.",
   "dailyOsNextReconcileHeardEmpty": "Capture cards will appear here once parsing finishes.",
-  "dailyOsNextReconcileHeardOverline": "HEARD",
+  "dailyOsNextReconcileHeardOverline": "Heard",
   "dailyOsNextReconcileLowConfidence": "low confidence",
   "dailyOsNextReconcileProcessing": "Listening back and matching your day…",
   "dailyOsNextReconcileReRecord": "Re-record",
   "dailyOsNextReconcileVoiceHint": "Review decisions before building your day",
   "dailyOsNextRefineAccept": "Accept",
-  "dailyOsNextRefineCurrentPlan": "CURRENT PLAN",
-  "dailyOsNextRefineDiffAdded": "ADDED",
-  "dailyOsNextRefineDiffDropped": "DROPPED",
-  "dailyOsNextRefineDiffMoved": "MOVED",
+  "dailyOsNextRefineCurrentPlan": "Current plan",
+  "dailyOsNextRefineDiffAdded": "Added",
+  "dailyOsNextRefineDiffDropped": "Dropped",
+  "dailyOsNextRefineDiffMoved": "Moved",
   "dailyOsNextRefineHeadlineDiffReady": "Here’s what I’d change.",
   "dailyOsNextRefineHeadlineIdle": "What should change?",
   "dailyOsNextRefineHeadlineThinking": "Reworking your plan…",
   "dailyOsNextRefineKeepTalking": "Keep talking",
   "dailyOsNextRefineLooksGood": "Looks good",
   "dailyOsNextRefineNoChanges": "No plan changes came back. Reword it and try again.",
-  "dailyOsNextRefineOverline": "🎤 REFINEMENT",
+  "dailyOsNextRefineOverline": "🎤 Refinement",
   "dailyOsNextRefineRevert": "Revert",
   "dailyOsNextRefineStatusAccepted": "Locked in.",
   "dailyOsNextRefineStatusDiffReady": "Here's what changed.",
@@ -3629,7 +3605,7 @@
   "dailyOsNextShutdownCarryoverDropped": "Dropped",
   "dailyOsNextShutdownCarryoverEmpty": "Nothing carries forward.",
   "dailyOsNextShutdownCarryoverNotStarted": "Not started",
-  "dailyOsNextShutdownCarryoverOverline": "CARRIES FORWARD",
+  "dailyOsNextShutdownCarryoverOverline": "Carries forward",
   "dailyOsNextShutdownCarryoverPickDate": "Pick a date",
   "dailyOsNextShutdownCarryoverStarted": "Started — {minutes} min logged",
   "@dailyOsNextShutdownCarryoverStarted": {
@@ -3644,7 +3620,7 @@
   "dailyOsNextShutdownCloseDay": "Close the day",
   "dailyOsNextShutdownCompletedDoneToday": "Done today",
   "dailyOsNextShutdownCompletedEmpty": "Nothing recorded for this day yet.",
-  "dailyOsNextShutdownCompletedOverline": "WHAT YOU DID",
+  "dailyOsNextShutdownCompletedOverline": "What you did",
   "dailyOsNextShutdownCompletedSessions": "{count, plural, =1{1 session} other{{count} sessions}}",
   "@dailyOsNextShutdownCompletedSessions": {
     "placeholders": {
@@ -3654,7 +3630,7 @@
       }
     }
   },
-  "dailyOsNextShutdownMetricEnergy": "ENERGY",
+  "dailyOsNextShutdownMetricEnergy": "Energy",
   "dailyOsNextShutdownMetricEnergyDelta": "{delta} vs. week",
   "@dailyOsNextShutdownMetricEnergyDelta": {
     "placeholders": {
@@ -3665,9 +3641,9 @@
     }
   },
   "dailyOsNextShutdownMetricEnergyNoRatings": "Rate sessions to see it",
-  "dailyOsNextShutdownMetricFlow": "FLOW SESSIONS",
-  "dailyOsNextShutdownMetricFocus": "FOCUS TIME",
-  "dailyOsNextShutdownMetricSwitches": "CONTEXT SWITCHES",
+  "dailyOsNextShutdownMetricFlow": "Flow sessions",
+  "dailyOsNextShutdownMetricFocus": "Focus time",
+  "dailyOsNextShutdownMetricSwitches": "Context switches",
   "dailyOsNextShutdownMetricSwitchesAvg": "avg {avg} this week",
   "@dailyOsNextShutdownMetricSwitchesAvg": {
     "placeholders": {
@@ -3677,7 +3653,7 @@
       }
     }
   },
-  "dailyOsNextShutdownReflectionOverline": "💬 ONE-LINE REFLECTION",
+  "dailyOsNextShutdownReflectionOverline": "💬 One-line reflection",
   "dailyOsNextShutdownReflectionPlaceholder": "e.g., morning was sharp, afternoon dragged after coffee with Sarah ran long.",
   "dailyOsNextShutdownReflectionPrompt": "How did today land? (This feeds tomorrow's draft.)",
   "dailyOsNextShutdownReflectionSave": "Save",
@@ -3687,7 +3663,7 @@
   "dailyOsNextShutdownTitle": "Close out the day",
   "dailyOsNextShutdownTomorrowError": "The note for tomorrow couldn't be written.",
   "dailyOsNextShutdownTomorrowNoProvider": "Set up an AI provider to get a note for tomorrow.",
-  "dailyOsNextShutdownTomorrowOverline": "✦ FOR TOMORROW",
+  "dailyOsNextShutdownTomorrowOverline": "✦ For tomorrow",
   "dailyOsNextStateDueOnDate": "Due {date}",
   "@dailyOsNextStateDueOnDate": {
     "placeholders": {
@@ -3769,8 +3745,8 @@
       }
     }
   },
-  "dailyOsNextTimeSpentTitle": "TODAY SO FAR",
-  "dailyOsNextTimeSpentTitlePast": "TIME SPENT",
+  "dailyOsNextTimeSpentTitle": "Today so far",
+  "dailyOsNextTimeSpentTitlePast": "Time spent",
   "dailyOsNextTriageConfirmDefer": "Deferred",
   "dailyOsNextTriageConfirmDone": "Marked done",
   "dailyOsNextTriageConfirmDoNow": "Done now",
@@ -3781,6 +3757,7 @@
   "dailyOsNextTriageDoNow": "Do now",
   "dailyOsNextTriageDrop": "Drop",
   "dailyOsNextTriageToday": "Today",
+  "dailyOsNextUncommitFailed": "Couldn't undo — the plan stays committed.",
   "dailyOsOnboardingCoachCapture": "Say what's pulling at your attention.",
   "dailyOsOnboardingCoachDrafting": "The planner is creating any new tasks and fitting the work into your day.",
   "dailyOsOnboardingCoachReconcile": "Choose what belongs in today. New items become tasks when you build the day.",

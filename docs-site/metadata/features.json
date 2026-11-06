@@ -12,7 +12,6 @@
         "daily-os/reconcile",
         "daily-os/agenda",
         "daily-os/refine",
-        "daily-os/commit",
         "daily-os/timeline",
         "daily-os/arrange",
         "daily-os/block-editor",

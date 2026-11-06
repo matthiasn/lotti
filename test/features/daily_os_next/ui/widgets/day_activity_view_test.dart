@@ -471,6 +471,9 @@ void main() {
 
     expect(loads, 2);
     expect(find.text(messages.dailyOsNextActivityEmpty), findsOneWidget);
+    // The empty state wears Activity's toggle glyph, not the Day timeline's.
+    expect(find.byIcon(LottiIcons.viewRows), findsOneWidget);
+    expect(find.byIcon(LottiIcons.timeline), findsNothing);
     expect(find.text(messages.dailyOsNextActivityLoadFailed), findsNothing);
   });
 

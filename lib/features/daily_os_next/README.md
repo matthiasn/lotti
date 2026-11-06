@@ -23,6 +23,8 @@ via the rail's calendar button and resized by its edge; both survive restarts.
 - **Refines by conversation.** "Too much", "Move lighter", "Add buffer" — or
   anything spoken — produces a proposed diff on the existing plan, accepted or
   rejected per change.
+- **Commits with one tap.** "Looks good" commits the drafted day in place; the
+  confirmation offers Undo for a few seconds.
 - **Respects what's real.** The plan knows about tasks already tracked today, due
   dates, estimates, and which tasks are blocked by others.
 - **Opens on the calendar.** The Day timeline is the default view, plan or no

@@ -41,14 +41,16 @@ class PlanViewToggle extends StatelessWidget {
             DsSegment(
               PlanView.day,
               context.messages.dailyOsNextPlanViewDay,
-              icon: useIcons ? LottiIcons.viewRows : null,
-              activeIcon: useIcons ? LottiIcons.viewRows : null,
+              // The Day view is the block timeline, so it takes the timeline
+              // glyph; Activity's stacked cards take the rows glyph.
+              icon: useIcons ? LottiIcons.timeline : null,
+              activeIcon: useIcons ? LottiIcons.timeline : null,
             ),
             DsSegment(
               PlanView.activity,
               context.messages.dailyOsNextPlanViewActivity,
-              icon: useIcons ? LottiIcons.timeline : null,
-              activeIcon: useIcons ? LottiIcons.timeline : null,
+              icon: useIcons ? LottiIcons.viewRows : null,
+              activeIcon: useIcons ? LottiIcons.viewRows : null,
             ),
           ],
         );

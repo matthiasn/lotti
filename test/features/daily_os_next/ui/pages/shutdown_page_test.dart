@@ -632,7 +632,9 @@ void main() {
         find.text(messages.dailyOsNextShutdownCompletedSessions(1)),
         findsOneWidget,
       );
-      expect(find.text('95m'), findsOneWidget);
+      // The app's own compact format, not raw minutes ("95m").
+      expect(find.text('1h 35m'), findsOneWidget);
+      expect(find.text('95m'), findsNothing);
       expect(
         find.text(messages.dailyOsNextShutdownCarryoverStarted(40)),
         findsOneWidget,

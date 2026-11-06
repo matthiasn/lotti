@@ -1567,7 +1567,7 @@ void main() {
     );
 
     testWidgets(
-      'tapping Looks good beams to the DailyOS commit route',
+      'Looks good commits the day in place, and Undo takes it back',
       (tester) async {
         final agent = RecordingDayAgent();
         String? route;
@@ -1578,13 +1578,61 @@ void main() {
         final messages = tester.element(find.byType(DayPage)).messages;
         await tester.tap(find.text(messages.dailyOsNextReviewLooksGood));
         await tester.pump();
+        await tester.pump();
 
-        expect(
-          route,
-          dailyOsNextRoutePath(DailyOsNextRouteTarget.commit, draft.dayDate),
+        // No sign-off page in between: the tap is the commit.
+        expect(route, isNull);
+        expect(agent.commitCount, 1);
+        expect(agent.capturedPlan, draft);
+        expect(find.text(messages.dailyOsNextCommitDone), findsOneWidget);
+
+        final toast = tester.widget<DesignSystemToast>(
+          find.byType(DesignSystemToast),
         );
+        expect(toast.action?.label, messages.designSystemUndoLabel);
+        toast.action!.onPressed();
+        await tester.pump();
+        await tester.pump();
+
+        expect(agent.uncommitCount, 1);
+        expect(find.text(messages.dailyOsNextUncommitFailed), findsNothing);
       },
     );
+
+    testWidgets('a failed commit says so and offers no undo', (tester) async {
+      final agent = RecordingDayAgent(commitError: StateError('offline'));
+      await _pumpDayPage(tester, draft: _drafted(), agent: agent);
+
+      final messages = tester.element(find.byType(DayPage)).messages;
+      await tester.tap(find.text(messages.dailyOsNextReviewLooksGood));
+      await tester.pump();
+      await tester.pump();
+
+      expect(agent.commitCount, 1);
+      expect(find.text(messages.dailyOsNextCommitFailed), findsOneWidget);
+      expect(find.text(messages.dailyOsNextCommitDone), findsNothing);
+      expect(find.text(messages.designSystemUndoLabel), findsNothing);
+      expect(agent.uncommitCount, 0);
+    });
+
+    testWidgets('a failed undo says the plan stays committed', (tester) async {
+      final agent = RecordingDayAgent(uncommitError: StateError('offline'));
+      await _pumpDayPage(tester, draft: _drafted(), agent: agent);
+
+      final messages = tester.element(find.byType(DayPage)).messages;
+      await tester.tap(find.text(messages.dailyOsNextReviewLooksGood));
+      await tester.pump();
+      await tester.pump();
+      tester
+          .widget<DesignSystemToast>(find.byType(DesignSystemToast))
+          .action!
+          .onPressed();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+
+      expect(agent.uncommitCount, 1);
+      expect(find.text(messages.dailyOsNextUncommitFailed), findsOneWidget);
+    });
 
     testWidgets(
       'tapping Wrap up beams to the DailyOS shutdown route',

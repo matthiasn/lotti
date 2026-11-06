@@ -390,7 +390,7 @@ Each delegate routes into one `BeamLocation` under
 |----------|----------|
 | `JournalLocation` | `/journal`, `/journal/:entryId`, `/journal/fill_survey/:surveyType` |
 | `TasksLocation` | `/tasks`, `/tasks/:taskId` and task sub-surfaces |
-| `CalendarLocation` | `/calendar`, `/calendar/time`, `/calendar/refine/:date`, `/calendar/commit/:date`, `/calendar/shutdown/:date` |
+| `CalendarLocation` | `/calendar`, `/calendar/time`, `/calendar/refine/:date`, `/calendar/shutdown/:date` |
 | `ProjectsLocation` | `/projects`, `/projects/:projectId` |
 | `DashboardsLocation` | `/dashboards`, `/dashboards/impact`, `/dashboards/:dashboardId` |
 | `EventsLocation` | `/events`, `/events/:eventId` |
