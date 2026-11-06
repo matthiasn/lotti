@@ -347,7 +347,7 @@ backticks or not, becomes the link, and `Title (task:<id>)` folds into one
 link over the title. Only rows the turn could see — the index and its
 lookups — are linked; goals and people have no link. A row a lookup returned
 (`list_due_tasks`, `match_to_corpus`) is linked by its title too, its whole
-title ignoring case, outside any link already there: a list of overdue tasks
+title ignoring case, between non-letters of any script, outside any link already there: a list of overdue tasks
 names them by title alone, and each must still open. A title two rows share
 stays text, and the index's rows are linked by id only, so a short task
 title in ordinary prose is never taken for a reference. The shared
@@ -358,7 +358,7 @@ title in ordinary prose is never taken for a reference. The shared
 never "17 Mar": the pane shows each in her reply with `deviceDateLabel`, the
 device's own date format a due date has everywhere else, and her voice says
 it as `DateFormat.yMMMMd` in the app's language ("March 17, 2026") — both
-through `replaceIsoDays`, which leaves a link's target and a day that does
+through `replaceIsoDays`, which leaves any URL (a link's target, an autolink, a bare one) and a day that does
 not exist alone. The user's own words are shown as typed. The prompt also
 tells her that dictation can mishear a name: a word that sounds like a
 listed category, task, project, goal or person is that one, written as

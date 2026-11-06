@@ -61,14 +61,19 @@ String deviceTimestampLabel(BuildContext context, DateTime date) =>
     '${deviceDateLabel(context, date)} ${deviceClockLabel(context, date)}';
 
 final _isoDayOrLinkTarget = RegExp(
-  // A markdown link's target, kept whole: a date in a URL is the URL's.
-  r'\]\([^)\n]*\)'
+  // A URL is kept whole — a date in it is the URL's: a markdown link's
+  // target (one level of parentheses inside it), an autolink, a bare URL.
+  r'\]\((?:[^()\n]|\([^()\n]*\))*\)'
+  '|'
+  r'<[a-zA-Z][a-zA-Z0-9+.-]*:[^>\s]*>'
+  '|'
+  r'\b[a-zA-Z][a-zA-Z0-9+.-]*://[^\s<>()\[\]]+'
   '|'
   r'(?<![\d-])(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})(?![\d-])',
 );
 
 /// [text] with every calendar day written as `YYYY-MM-DD` in it put as
-/// [format] puts it — outside link targets, and only a day that exists.
+/// [format] puts it — outside URLs, and only a day that exists.
 ///
 /// An agent copies dates as its tools give them, ISO; the screen and the
 /// voice each write them for the person: [deviceDateLabel] on screen, a

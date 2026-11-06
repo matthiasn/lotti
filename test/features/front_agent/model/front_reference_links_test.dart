@@ -161,6 +161,34 @@ void main() {
         );
       });
 
+      test('a task and a project sharing an id and a title name neither', () {
+        const asProject = FrontIndexRow(
+          kind: FrontDestinationKind.project,
+          id: 'fence-1',
+          title: 'Fix the fence',
+        );
+        expect(
+          linkFrontReferences(
+            'Fix the fence',
+            rows,
+            titled: [fence, asProject],
+          ),
+          'Fix the fence',
+        );
+      });
+
+      test('a title is whole between letters of any script', () {
+        const plan = FrontIndexRow(
+          kind: FrontDestinationKind.task,
+          id: 'plan-1',
+          title: 'Plan',
+        );
+        expect(
+          linkFrontReferences('Planète, éPlan, Plan.', rows, titled: [plan]),
+          'Planète, éPlan, [Plan](lotti://task/plan-1).',
+        );
+      });
+
       test('an id still wins over the title beside it', () {
         expect(
           linkFrontReferences(
