@@ -1209,7 +1209,7 @@
   "@aiCardCompanionOpenFullScreen": {
     "description": "Tooltip and screen-reader label on the companion's bust in the AI summary card header: opens her full-screen view."
   },
-  "aiCardCompanionStageNextOutfit": "Change her outfit",
+  "aiCardCompanionStageNextOutfit": "Change outfit",
   "@aiCardCompanionStageNextOutfit": {
     "description": "Label of the button on the companion's full-screen stage that changes her into her next outfit."
   },
@@ -2526,6 +2526,62 @@
   "commonError": "Error",
   "commonLoading": "Loading...",
   "commonUnknown": "Unknown",
+  "companionSettingsCharacterAunt": "Aunt",
+  "@companionSettingsCharacterAunt": {
+    "description": "Name of the aunt character, a woman of about forty, shown on her chip."
+  },
+  "companionSettingsCharacterDescription": "Who keeps you company. Each has their own outfits; skin, hair color and sass stay as you set them.",
+  "@companionSettingsCharacterDescription": {
+    "description": "Explains the character choice: outfits belong to each character, the other choices carry over."
+  },
+  "companionSettingsCharacterGrandpa": "Grandpa",
+  "@companionSettingsCharacterGrandpa": {
+    "description": "Name of the grandfather character, shown on his chip."
+  },
+  "companionSettingsCharacterLabel": "Character",
+  "@companionSettingsCharacterLabel": {
+    "description": "Section title in the companion settings: which character keeps the user company."
+  },
+  "companionSettingsCharacterLotti": "Lotti",
+  "@companionSettingsCharacterLotti": {
+    "description": "Name of the grandmother character, Lotti; a proper name, kept as is."
+  },
+  "companionSettingsCharacterUncle": "Uncle",
+  "@companionSettingsCharacterUncle": {
+    "description": "Name of the uncle character, a man of about thirty, shown on his chip."
+  },
+  "companionSettingsEyeColourAmber": "Amber",
+  "@companionSettingsEyeColourAmber": {
+    "description": "Name of one eye colour the companion can have, as a screen reader says it."
+  },
+  "companionSettingsEyeColourBlue": "Blue",
+  "@companionSettingsEyeColourBlue": {
+    "description": "Name of one eye colour the companion can have, as a screen reader says it."
+  },
+  "companionSettingsEyeColourBrown": "Brown",
+  "@companionSettingsEyeColourBrown": {
+    "description": "Name of one eye colour the companion can have, as a screen reader says it."
+  },
+  "companionSettingsEyeColourDarkBrown": "Dark brown",
+  "@companionSettingsEyeColourDarkBrown": {
+    "description": "Name of one eye colour the companion can have, as a screen reader says it."
+  },
+  "companionSettingsEyeColourGreen": "Green",
+  "@companionSettingsEyeColourGreen": {
+    "description": "Name of one eye colour the companion can have, as a screen reader says it."
+  },
+  "companionSettingsEyeColourGrey": "Gray",
+  "@companionSettingsEyeColourGrey": {
+    "description": "Name of one eye colour the companion can have, as a screen reader says it."
+  },
+  "companionSettingsEyeColourHazel": "Hazel",
+  "@companionSettingsEyeColourHazel": {
+    "description": "Name of one eye colour the companion can have, as a screen reader says it."
+  },
+  "companionSettingsEyeColourLabel": "Eye color",
+  "@companionSettingsEyeColourLabel": {
+    "description": "Section title in the companion settings: the colour of the character's eyes."
+  },
   "companionSettingsHairColourAuburn": "Auburn",
   "@companionSettingsHairColourAuburn": {
     "description": "Name of one hair colour the companion can have."
@@ -2570,6 +2626,10 @@
   "@companionSettingsHairStyleAfro": {
     "description": "Name of one hairstyle the companion can wear."
   },
+  "companionSettingsHairStyleBalding": "Balding",
+  "@companionSettingsHairStyleBalding": {
+    "description": "Name of one hairstyle the companion can wear: a bald crown with hair round the sides."
+  },
   "companionSettingsHairStyleBob": "Bob",
   "@companionSettingsHairStyleBob": {
     "description": "Name of one hairstyle the companion can wear."
@@ -2590,7 +2650,23 @@
   "@companionSettingsHairStyleLocs": {
     "description": "Name of one hairstyle the companion can wear."
   },
-  "companionSettingsOutfitDescription": "Choose one she always wears, or let her pick one each time you open the app.",
+  "companionSettingsHairStyleLong": "Long",
+  "@companionSettingsHairStyleLong": {
+    "description": "Name of one hairstyle the companion can wear."
+  },
+  "companionSettingsHairStylePonytail": "Ponytail",
+  "@companionSettingsHairStylePonytail": {
+    "description": "Name of one hairstyle the companion can wear."
+  },
+  "companionSettingsHairStyleShort": "Short",
+  "@companionSettingsHairStyleShort": {
+    "description": "Name of one hairstyle the companion can wear."
+  },
+  "companionSettingsHairStyleWaves": "Waves",
+  "@companionSettingsHairStyleWaves": {
+    "description": "Name of one hairstyle the companion can wear."
+  },
+  "companionSettingsOutfitDescription": "Choose an outfit to keep, or get a fresh one each time you open the app.",
   "@companionSettingsOutfitDescription": {
     "description": "Explains the outfit choice on the companion settings page: a fixed outfit, or a random one per app launch."
   },
@@ -2598,9 +2674,17 @@
   "@companionSettingsOutfitEveryday": {
     "description": "Name of one of the companion's outfits."
   },
+  "companionSettingsOutfitFestival": "Festival",
+  "@companionSettingsOutfitFestival": {
+    "description": "Name of one of the aunt's outfits, with a headband: a music festival."
+  },
   "companionSettingsOutfitGarden": "Garden",
   "@companionSettingsOutfitGarden": {
     "description": "Name of one of the companion's outfits."
+  },
+  "companionSettingsOutfitJazz": "Jazz",
+  "@companionSettingsOutfitJazz": {
+    "description": "Name of one of the grandfather's outfits: an evening at a jazz club."
   },
   "companionSettingsOutfitLabel": "Outfit",
   "@companionSettingsOutfitLabel": {
@@ -2610,17 +2694,45 @@
   "@companionSettingsOutfitLavender": {
     "description": "Name of one of the companion's outfits."
   },
+  "companionSettingsOutfitMarket": "Market day",
+  "@companionSettingsOutfitMarket": {
+    "description": "Name of one of the grandfather's outfits, with a flat cap: a market day."
+  },
+  "companionSettingsOutfitNight": "Night out",
+  "@companionSettingsOutfitNight": {
+    "description": "Name of one of the uncle's outfits: an evening out."
+  },
   "companionSettingsOutfitRock": "Rock",
   "@companionSettingsOutfitRock": {
     "description": "Name of one of the companion's outfits."
+  },
+  "companionSettingsOutfitSeaside": "Seaside",
+  "@companionSettingsOutfitSeaside": {
+    "description": "Name of one of the grandfather's outfits: a day by the sea."
+  },
+  "companionSettingsOutfitSkate": "Skate park",
+  "@companionSettingsOutfitSkate": {
+    "description": "Name of one of the uncle's outfits: a day at the skate park."
+  },
+  "companionSettingsOutfitSnow": "Snow day",
+  "@companionSettingsOutfitSnow": {
+    "description": "Name of one of the uncle's outfits, with a beanie: a snowy day."
   },
   "companionSettingsOutfitStage": "Keynote",
   "@companionSettingsOutfitStage": {
     "description": "Name of one of the companion's outfits."
   },
+  "companionSettingsOutfitStudio": "Studio",
+  "@companionSettingsOutfitStudio": {
+    "description": "Name of one of the aunt's outfits: a day in an artist's studio."
+  },
   "companionSettingsOutfitSurprise": "Surprise me",
   "@companionSettingsOutfitSurprise": {
     "description": "Outfit option that lets the companion pick a random outfit each time the app opens."
+  },
+  "companionSettingsOutfitWeekend": "Weekend",
+  "@companionSettingsOutfitWeekend": {
+    "description": "Name of one of the aunt's outfits: a weekend."
   },
   "companionSettingsOutfitWinter": "Winter",
   "@companionSettingsOutfitWinter": {
@@ -2630,7 +2742,7 @@
   "@companionSettingsSassCheeky": {
     "description": "Sass level: teasing, with a smirk, a raised brow or a side-eye."
   },
-  "companionSettingsSassDescription": "How she takes what she reads to you: a warm cheer, a cheeky tease, or full grandma, with eye rolls and the look over her glasses.",
+  "companionSettingsSassDescription": "How your companion reacts to what it reads aloud: warm encouragement, cheeky teasing, or full sass, with eye rolls and a look over the glasses.",
   "@companionSettingsSassDescription": {
     "description": "Explains the companion's sass setting: warm, cheeky, or fully sassy reactions to what she reads."
   },
@@ -2660,8 +2772,8 @@
     "description": "Section title on the companion settings page for choosing her skin tone."
   },
   "companionSettingsSpeakRepliesTitle": "Answer spoken questions aloud",
-  "companionSettingsVoiceDescription": "Ask her something by voice and she answers out loud. A typed question always gets a written answer.",
-  "companionSettingsVoiceLabel": "Her voice",
+  "companionSettingsVoiceDescription": "Ask something by voice and your companion answers out loud. A typed question always gets a written answer.",
+  "companionSettingsVoiceLabel": "Voice",
   "completeHabitFailButton": "Missed",
   "completeHabitSkipButton": "Skip",
   "completeHabitSuccessButton": "Success",
@@ -2673,7 +2785,7 @@
   "configFlagEnableAiSummaryTts": "AI summary playback",
   "configFlagEnableAiSummaryTtsDescription": "Show the local text-to-speech button on task AI summaries. Requires an installed Supertonic TTS model.",
   "configFlagEnableCompanion": "Companion",
-  "configFlagEnableCompanionDescription": "Show a character beside the AI summary who reads it aloud, her lips moving with the voice. Needs AI summary playback.",
+  "configFlagEnableCompanionDescription": "Show a character beside the AI summary who reads it aloud, lips moving with the voice. Needs AI summary playback.",
   "configFlagEnableDailyOs": "Enable DailyOS",
   "configFlagEnableDailyOsDescription": "Show the DailyOS page in the main navigation.",
   "configFlagEnableDashboardsPage": "Enable Dashboards page",
@@ -9570,7 +9682,7 @@
   "settingsCelebrationsVariantRandom": "Random",
   "settingsCelebrationsVariantRandomDescription": "A fresh style on every completion",
   "settingsCelebrationsVariantSparks": "Sparks",
-  "settingsCompanionSubtitle": "Her skin, hair and outfit",
+  "settingsCompanionSubtitle": "Character, skin, hair and outfit",
   "@settingsCompanionSubtitle": {
     "description": "Subtitle of the companion settings entry in the settings tree."
   },

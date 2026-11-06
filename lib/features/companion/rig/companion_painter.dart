@@ -3,11 +3,14 @@ import 'dart:math' as math;
 import 'package:flutter/widgets.dart';
 import 'package:lotti/features/companion/model/companion_look.dart';
 import 'package:lotti/features/companion/model/companion_pose.dart';
+import 'package:lotti/features/companion/rig/aunt_outfit_painter.dart';
 import 'package:lotti/features/companion/rig/body_painter.dart';
+import 'package:lotti/features/companion/rig/grandpa_outfit_painter.dart';
 import 'package:lotti/features/companion/rig/head_painter.dart';
 import 'package:lotti/features/companion/rig/rig_frame.dart';
 import 'package:lotti/features/companion/rig/stage_painter.dart';
 import 'package:lotti/features/companion/rig/tail_painter.dart';
+import 'package:lotti/features/companion/rig/uncle_outfit_painter.dart';
 
 /// How much of her the view shows.
 enum CompanionFraming {
@@ -76,7 +79,16 @@ class CompanionPainter extends CustomPainter {
     drawTail(canvas, f, look);
     drawLegs(canvas, f, look);
     drawNeck(canvas, f, look);
-    drawDress(canvas, f, look);
+    switch (look.species) {
+      case CompanionSpecies.grandpa:
+        drawGrandpaOutfit(canvas, f, look);
+      case CompanionSpecies.aunt:
+        drawAuntOutfit(canvas, f, look);
+      case CompanionSpecies.uncle:
+        drawUncleOutfit(canvas, f, look);
+      case _:
+        drawDress(canvas, f, look);
+    }
     if (!pose.handInFrontOfFace) drawHead(canvas, f, look);
     drawArm(canvas, f, look, pose.left, -1);
     drawArm(canvas, f, look, pose.right, 1);

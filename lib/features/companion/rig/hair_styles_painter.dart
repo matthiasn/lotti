@@ -5,10 +5,14 @@ import 'dart:ui';
 import 'package:lotti/features/companion/model/companion_look.dart';
 import 'package:lotti/features/companion/model/companion_parts.dart';
 import 'package:lotti/features/companion/rig/hair_painter.dart';
+import 'package:lotti/features/companion/rig/long_hair_painter.dart';
 import 'package:lotti/features/companion/rig/paint_kit.dart';
+import 'package:lotti/features/companion/rig/short_hair_painter.dart';
 
-/// Her hair in every style: the bun of the pitch videos (`hair_painter.dart`)
-/// and the styles a person may give her instead, in head-local units (origin at the face's centre,
+/// The hair in every style: the bun of the pitch videos (`hair_painter.dart`),
+/// the short and balding cuts (`short_hair_painter.dart`), the long, wavy
+/// and ponytail styles (`long_hair_painter.dart`) and the styles a person
+/// may give instead, in head-local units (origin at the face's centre,
 /// y down; the face spans x ±45 and y -58..40).
 ///
 /// Each style has a back layer, drawn behind the head and the body, and a
@@ -583,6 +587,11 @@ void drawBackHair(
     smoothClosed(_bobBack(lag), 0.2),
     c.hairBack,
   ),
+  CompanionHairStyle.short => drawShortBack(canvas, c),
+  CompanionHairStyle.balding => drawBaldingBack(canvas, c),
+  CompanionHairStyle.long => drawLongBack(canvas, c, lag),
+  CompanionHairStyle.waves => drawWavesBack(canvas, c, lag),
+  CompanionHairStyle.ponytail => drawPonytailBack(canvas, c, lag),
 };
 
 /// The hair over the forehead, in [style].
@@ -598,10 +607,15 @@ void drawFrontHair(
   CompanionHairStyle.afro => _drawAfroFront(canvas, c, lag, yaw),
   CompanionHairStyle.locs => _drawLocsFront(canvas, c, lag, yaw),
   CompanionHairStyle.bob => _drawBobFront(canvas, c, lag, yaw),
+  CompanionHairStyle.short => drawShortFront(canvas, c, yaw),
+  CompanionHairStyle.balding => drawBaldingFront(canvas, c, yaw),
+  CompanionHairStyle.long => drawLongFront(canvas, c, lag, yaw),
+  CompanionHairStyle.waves => drawWavesFront(canvas, c, lag, yaw),
+  CompanionHairStyle.ponytail => drawPonytailFront(canvas, c, yaw),
 };
 
 /// The outline of the front hair in [style]: what shades the forehead below
-/// it.
+/// it. Empty for a bare crown, which shades nothing.
 List<Offset> fringeFor(CompanionHairStyle style, Offset lag, double yaw) =>
     switch (style) {
       CompanionHairStyle.bun => bunFringe(lag, yaw),
@@ -609,19 +623,71 @@ List<Offset> fringeFor(CompanionHairStyle style, Offset lag, double yaw) =>
       CompanionHairStyle.afro => _afroFront(lag, yaw),
       CompanionHairStyle.locs => _locsFront(yaw),
       CompanionHairStyle.bob => _bobFront(lag, yaw),
+      CompanionHairStyle.short => shortFringe(yaw),
+      CompanionHairStyle.balding => const [],
+      CompanionHairStyle.long => longFringe(lag, yaw),
+      CompanionHairStyle.waves => wavesFringe(lag, yaw),
+      CompanionHairStyle.ponytail => ponytailFringe(yaw),
     };
 
-/// The front hair's shadow on the forehead, in [style].
+/// How a hat sits on [style]: lifted by `lift` and widened by `widen` about
+/// the hairline, so it rests on the hair's crown instead of sinking into it;
+/// null where no hat is worn. Close styles take a hat as it is, fuller ones a
+/// little higher and wider. An afro wears none: a hat drawn for a head reads
+/// as floating in it, or as hair poking out round a woollen cap, and a hat
+/// made for an afro is another drawing, for later.
+({double lift, double widen})? hatSeat(CompanionHairStyle style) =>
+    switch (style) {
+      CompanionHairStyle.afro => null,
+      CompanionHairStyle.curls ||
+      CompanionHairStyle.waves => (lift: 3, widen: 1.1),
+      CompanionHairStyle.bob ||
+      CompanionHairStyle.locs ||
+      CompanionHairStyle.long => (lift: 2, widen: 1.08),
+      CompanionHairStyle.bun ||
+      CompanionHairStyle.short ||
+      CompanionHairStyle.balding ||
+      CompanionHairStyle.ponytail => (lift: 0, widen: 1),
+    };
+
+/// Where a hat's seat pivots: the hairline at the middle of the brow.
+const _hatPivotY = -45.0;
+
+/// Runs [draw], a hat drawn for the plain head, seated on [style]
+/// ([hatSeat]): widened about the pivot and lifted, its height grown by a
+/// little of its width. Where [style] wears no hat, nothing is drawn.
+void seatHat(
+  Canvas canvas,
+  CompanionHairStyle style,
+  double yaw,
+  void Function() draw,
+) {
+  final seat = hatSeat(style);
+  if (seat == null) return;
+  final x = yaw * 3;
+  canvas
+    ..save()
+    ..translate(x, _hatPivotY - seat.lift)
+    ..scale(seat.widen, 1 + (seat.widen - 1) * 0.15)
+    ..translate(-x, -_hatPivotY);
+  draw();
+  canvas.restore();
+}
+
+/// The front hair's shadow on the forehead, in [style]; none where no hair
+/// falls over it.
 void drawForeheadShadow(
   Canvas canvas,
   CompanionPalette c,
   Offset lag,
   double yaw,
   CompanionHairStyle style,
-) => fillPath(
-  canvas,
-  smoothClosed([
-    for (final p in fringeFor(style, lag, yaw)) p + const Offset(0, 3.5),
-  ], 0.24),
-  c.skinDeep.withValues(alpha: 0.3),
-);
+) {
+  final fringe = fringeFor(style, lag, yaw);
+  if (fringe.isEmpty) return;
+  fillPath(
+    canvas,
+    smoothClosed([for (final p in fringe) p + const Offset(0, 3.5)], 0.24),
+    c.skinDeep.withValues(alpha: 0.3),
+  );
+}

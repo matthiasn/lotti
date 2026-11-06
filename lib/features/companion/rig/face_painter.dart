@@ -20,6 +20,7 @@ void drawMouth(
   MouthShape m,
   double smile, {
   double skew = 0,
+  double lipWeight = 1,
 }) {
   final hw = m.halfWidth * (1 + 0.08 * smile);
   final lift = 2.4 * smile;
@@ -31,8 +32,8 @@ void drawMouth(
   final topIn = cy - m.open * 0.32;
   final botIn = cy + m.open * 0.85;
   final rnd = m.round;
-  final topOut = topIn - m.open * 0.15 - m.upperLip;
-  final botOut = botIn + m.open * 0.2 + m.lowerLip;
+  final topOut = topIn - m.open * 0.15 - m.upperLip * lipWeight;
+  final botOut = botIn + m.open * 0.2 + m.lowerLip * lipWeight;
 
   void upperEdge(Path p) => p
     ..moveTo(lx - 1.2, cy - liftL)
@@ -183,7 +184,11 @@ void drawMouth(
   // The lower lip's highlight.
   fillPath(
     canvas,
-    ellipse(Offset(x - hw * 0.15, botOut - m.lowerLip * 0.45), hw * 0.32, 0.9),
+    ellipse(
+      Offset(x - hw * 0.15, botOut - m.lowerLip * lipWeight * 0.45),
+      hw * 0.32,
+      0.9 * lipWeight,
+    ),
     c.lipsLight.withValues(alpha: 0.55),
   );
 }
@@ -191,7 +196,8 @@ void drawMouth(
 /// Draws one eye centred on [centre]; [side] is -1 for the left, +1 for the
 /// right. [blink] 1 shuts it, [squint] lifts the lower lid, [gaze] moves the
 /// iris. An animal's eye takes a bigger [irisRadius], a cat's a [slit] pupil,
-/// and neither has the [lashes] at the outer corner.
+/// and neither has the [lashes] at the outer corner. A man's eye is narrower
+/// — less [open] — with a lighter [lashLine].
 void drawEye(
   Canvas canvas,
   CompanionPalette c,
@@ -203,6 +209,8 @@ void drawEye(
   double irisRadius = 7.6,
   bool slit = false,
   bool lashes = true,
+  double open = 1,
+  double lashLine = 2.1,
 }) {
   final cx = centre.dx;
   final cy = centre.dy;
@@ -210,24 +218,27 @@ void drawEye(
   final inner = Offset(cx - s * 10.5, cy + 1);
   final outer = Offset(cx + s * 11.5, cy - 0.8);
   final closedY = cy + 2.5 + 2;
-  final lid1 = Offset(cx - s * 7, lerpDouble(cy - 11.5, closedY, blink));
-  final lid2 = Offset(cx + s * 7.5, lerpDouble(cy - 11.5, closedY, blink));
+  final top = cy - 11.5 * open;
+  final lid1 = Offset(cx - s * 7, lerpDouble(top, closedY, blink));
+  final lid2 = Offset(cx + s * 7.5, lerpDouble(top, closedY, blink));
   final sq = squint * 0.55;
-  final low1 = Offset(cx + s * 7, lerpDouble(cy + 8.5, cy - 1, sq));
-  final low2 = Offset(cx - s * 6.5, lerpDouble(cy + 8.5, cy - 1, sq));
+  final bottom = cy + 8.5 * open;
+  final low1 = Offset(cx + s * 7, lerpDouble(bottom, cy - 1, sq));
+  final low2 = Offset(cx - s * 6.5, lerpDouble(bottom, cy - 1, sq));
 
   // The lid's crease above.
+  final crease = cy - 12.5 * open + blink * 3;
   strokePath(
     canvas,
     Path()
-      ..moveTo(cx - s * 8, cy - 12.5 + blink * 3)
+      ..moveTo(cx - s * 8, crease)
       ..cubicTo(
         cx - s * 3,
-        cy - 16 + blink * 3,
+        crease - 3.5,
         cx + s * 5,
-        cy - 16 + blink * 3,
+        crease - 3.5,
         cx + s * 10,
-        cy - 12 + blink * 3,
+        crease + 0.5,
       ),
     c.skinShade.withValues(alpha: 0.6),
     1,
@@ -310,7 +321,7 @@ void drawEye(
       ..moveToPoint(inner)
       ..curve(lid1, lid2, outer),
     c.ink,
-    2.1,
+    lashLine,
   );
   if (!lashes) return;
   for (final (k, d) in [
@@ -332,26 +343,76 @@ void drawEye(
   }
 }
 
+/// How far a brow may rise (positive) or fall (negative), in units of its
+/// raise. A brow sits on a bone under skin: it travels a little and then
+/// stops, so the lift saturates instead of growing with every mood, gesture,
+/// flourish and spring overshoot added up — one brow up at its height
+/// (`CompanionFlourish.oneBrow`) on a skeptical face once carried it far off
+/// the eye into a hook.
+const browMaxRise = 1.3;
+const browMaxFall = 1.0;
+
+/// [raise] as the brow can travel it: smoothly saturating at
+/// [browMaxRise] going up, stopping at [browMaxFall] going down.
+double browLift(double raise) {
+  if (raise <= 0) return math.max(raise, -browMaxFall);
+  final e = math.exp(2 * raise / browMaxRise);
+  return browMaxRise * (e - 1) / (e + 1);
+}
+
+/// The brow's three anchor points for [centre], [side], [raise] and [tilt]:
+/// its inner end, its peak and its outer end. The [tilt] — the inner end
+/// drawn down in a frown, or up in worry — is limited, and gives way as the
+/// brow rises: a brow lifted high cannot also knot at the nose. [arch] is how
+/// high its peak stands over its ends: 1 for a woman's arched brow, less for
+/// a man's straighter one.
+({Offset inner, Offset peak, Offset outer}) browShape(
+  Offset centre,
+  int side,
+  double raise,
+  double tilt, {
+  double arch = 1,
+}) {
+  final s = side.toDouble();
+  final cx = centre.dx;
+  final lift = browLift(raise);
+  final give = 1 - 0.6 * math.max(0, lift) / browMaxRise;
+  final t = tilt.clamp(-1.2, 1.2) * give;
+  final y = centre.dy - lift * 3.5;
+  return (
+    inner: Offset(cx - s * 10, y + 2 - t * 2.5),
+    peak: Offset(cx + s * 2, y - 3.2 * arch - lift * 0.6),
+    outer: Offset(cx + s * 12.5, y + 1 + t * 0.8),
+  );
+}
+
 /// Draws one brow centred on [centre]; [raise] lifts it, [tilt] lifts its
-/// inner end.
+/// inner end, both within what a brow can do ([browShape]). [fullness]
+/// thickens it downwards: above 1 for a younger face or a man's; [arch] is
+/// [browShape]'s.
 void drawBrow(
   Canvas canvas,
   CompanionPalette c,
   Offset centre,
   int side,
   double raise,
-  double tilt,
-) {
+  double tilt, {
+  double fullness = 1,
+  double arch = 1,
+}) {
+  final f = fullness;
   final s = side.toDouble();
-  final cx = centre.dx;
-  final y = centre.dy - raise * 3.5;
-  final inner = Offset(cx - s * 10, y + 2 - tilt * 2.5);
-  final peak = Offset(cx + s * 2, y - 3.2 - raise * 0.6);
-  final outer = Offset(cx + s * 12.5, y + 1 + tilt * 0.8);
+  final (:inner, :peak, :outer) = browShape(
+    centre,
+    side,
+    raise,
+    tilt,
+    arch: arch,
+  );
   fillPath(
     canvas,
     Path()
-      ..moveTo(inner.dx, inner.dy + 2.6)
+      ..moveTo(inner.dx, inner.dy + 2.6 * f)
       ..cubicTo(
         inner.dx + s,
         inner.dy - 2.2,
@@ -372,17 +433,17 @@ void drawBrow(
         outer.dx - s * 3,
         outer.dy + 0.6,
         peak.dx + s * 4,
-        peak.dy + 1.6,
+        peak.dy + 1.6 * f,
         peak.dx,
-        peak.dy + 1.6,
+        peak.dy + 1.6 * f,
       )
       ..cubicTo(
         peak.dx - s * 5,
-        peak.dy + 1.8,
+        peak.dy + 1.8 * f,
         inner.dx + s,
-        inner.dy + 2.4,
+        inner.dy + 2.4 * f,
         inner.dx,
-        inner.dy + 2.6,
+        inner.dy + 2.6 * f,
       )
       ..close(),
     c.brow,
@@ -390,7 +451,17 @@ void drawBrow(
 }
 
 /// Draws the nose with its tip at (x, y).
-void drawNose(Canvas canvas, CompanionPalette c, double x, double y) {
+void drawNose(
+  Canvas canvas,
+  CompanionPalette c,
+  double x,
+  double y, {
+  bool broad = false,
+}) {
+  if (broad) {
+    _broadNose(canvas, c, x, y);
+    return;
+  }
   fillPath(
     canvas,
     Path()
@@ -407,5 +478,48 @@ void drawNose(Canvas canvas, CompanionPalette c, double x, double y) {
       ..cubicTo(x - 2.6, y - 2, x - 2, y - 0.5, x - 1, y + 0.2),
     c.skinLight.withValues(alpha: 0.7),
     1,
+  );
+}
+
+/// A man's nose: a longer bridge in shadow down one side, a wider tip, and
+/// the wings of the nostrils either side of it.
+void _broadNose(Canvas canvas, CompanionPalette c, double x, double y) {
+  strokePath(
+    canvas,
+    Path()
+      ..moveTo(x + 2.4, y - 14)
+      ..cubicTo(x + 3.6, y - 7, x + 4.4, y - 2, x + 4.6, y + 1),
+    c.skinShade.withValues(alpha: 0.85),
+    1.6,
+  );
+  fillPath(
+    canvas,
+    Path()
+      ..moveTo(x - 5.4, y + 1.6)
+      ..cubicTo(x - 3.6, y + 4.8, x + 3.6, y + 4.8, x + 5.4, y + 1.6)
+      ..cubicTo(x + 3, y + 3, x - 3, y + 3, x - 5.4, y + 1.6)
+      ..close(),
+    c.skinDeep,
+  );
+  for (final s in [-1.0, 1.0]) {
+    strokePath(
+      canvas,
+      arc(
+        Offset(x + s * 5.2, y + 0.6),
+        3,
+        s < 0 ? 1.4 : -0.3,
+        s < 0 ? 3.4 : 1.7,
+      ),
+      c.skinDeep.withValues(alpha: 0.8),
+      1.3,
+    );
+  }
+  strokePath(
+    canvas,
+    Path()
+      ..moveTo(x - 1.8, y - 9)
+      ..cubicTo(x - 2.8, y - 4, x - 2.2, y - 1, x - 1.2, y),
+    c.skinLight.withValues(alpha: 0.7),
+    1.2,
   );
 }

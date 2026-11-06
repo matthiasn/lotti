@@ -3,9 +3,10 @@ import 'package:lotti/features/companion/model/companion_look.dart';
 import 'package:lotti/features/companion/model/companion_parts.dart';
 import 'package:lotti/features/companion/model/companion_reaction.dart';
 
-/// How a person has made her their own: her skin, her hair, its colour, the
-/// outfit she wears, or none to let her pick one each session, and how much
-/// sass she reads with.
+/// How a person has made the companion their own: who it is (Lotti, the
+/// grandpa, the aunt or the uncle), the skin, the hair and its colour, the
+/// eyes, the outfit worn, or none to
+/// pick one each session, and how much sass it reads with.
 ///
 /// The default is Lotti as the pitch videos draw her: [CompanionSkinTone.tone1],
 /// a silver [CompanionHairStyle.bun], a random outfit, and
@@ -13,9 +14,11 @@ import 'package:lotti/features/companion/model/companion_reaction.dart';
 @immutable
 class CompanionCustomization {
   const CompanionCustomization({
+    this.character = CompanionSpecies.grandma,
     this.skinTone = CompanionSkinTone.tone1,
     this.hairStyle = CompanionHairStyle.bun,
     this.hairColour = CompanionHairColour.silver,
+    this.eyeColour = CompanionEyeColour.brown,
     this.outfitId,
     this.sass = CompanionSass.cheeky,
     this.speaksReplies = true,
@@ -23,12 +26,20 @@ class CompanionCustomization {
 
   /// Reads what [toJson] wrote. A part this version does not know — written
   /// by a newer one — falls back to its default rather than failing, and so
-  /// does an outfit that no longer exists.
+  /// does an outfit that no longer exists or belongs to another character.
+  /// An animal stored as the character reads as Lotti: only a human is
+  /// chosen here.
   factory CompanionCustomization.fromJson(Map<String, dynamic> json) {
     T part<T extends Enum>(List<T> values, Object? name, T fallback) =>
         values.asNameMap()[name] ?? fallback;
+    final character = part(
+      CompanionSpecies.choosable,
+      json['character'],
+      CompanionSpecies.grandma,
+    );
     final outfit = json['outfit'];
     return CompanionCustomization(
+      character: character,
       skinTone: part(
         CompanionSkinTone.values,
         json['skinTone'],
@@ -44,7 +55,12 @@ class CompanionCustomization {
         json['hairColour'],
         CompanionHairColour.silver,
       ),
-      outfitId: CompanionLook.all.any((l) => l.id == outfit)
+      eyeColour: part(
+        CompanionEyeColour.values,
+        json['eyeColour'],
+        CompanionEyeColour.brown,
+      ),
+      outfitId: CompanionLook.of(character).any((l) => l.id == outfit)
           ? outfit as String
           : null,
       sass: part(CompanionSass.values, json['sass'], CompanionSass.cheeky),
@@ -54,12 +70,18 @@ class CompanionCustomization {
     );
   }
 
+  /// Who the companion is: one of [CompanionSpecies.choosable].
+  final CompanionSpecies character;
   final CompanionSkinTone skinTone;
   final CompanionHairStyle hairStyle;
   final CompanionHairColour hairColour;
 
-  /// The `CompanionLook.id` of the outfit she always wears, or null for one
-  /// drawn at random each session.
+  /// The eyes' colour, picked freely: brown until a person picks another,
+  /// whatever the skin tone, and kept through a change of tone.
+  final CompanionEyeColour eyeColour;
+
+  /// The `CompanionLook.id` of the [character]'s outfit always worn, or null
+  /// for one drawn at random each session.
   final String? outfitId;
 
   /// How much sass she puts into what she reads.
@@ -71,9 +93,11 @@ class CompanionCustomization {
 
   /// [outfit] in this skin and hair: the outfit keeps its clothes and props,
   /// and takes the face and hair from here. Lips an outfit paints — the rock
-  /// look's red — stay; plain lips follow the skin tone.
+  /// look's red — stay; plain lips follow the skin tone, and a man's are the
+  /// skin's own ([CompanionSkinTone.naturalLips]).
   CompanionLook dress(CompanionLook outfit) {
     final painted = outfit.palette.lips != const CompanionPalette().lips;
+    final natural = outfit.species.masculine ? skinTone.naturalLips : null;
     return outfit.copyWith(
       hairStyle: hairStyle,
       palette: outfit.palette.copyWith(
@@ -81,29 +105,48 @@ class CompanionCustomization {
         skinShade: skinTone.shade,
         skinDeep: skinTone.deep,
         skinLight: skinTone.light,
-        lips: painted ? null : skinTone.lips,
-        lipsUpper: painted ? null : skinTone.lipsUpper,
-        lipsLight: painted ? null : skinTone.lipsLight,
+        lips: natural?.lips ?? (painted ? null : skinTone.lips),
+        lipsUpper: natural?.upper ?? (painted ? null : skinTone.lipsUpper),
+        lipsLight: natural?.light ?? (painted ? null : skinTone.lipsLight),
         hair: hairColour.hair,
         hairBack: hairColour.back,
         hairShade: hairColour.shade,
         hairLight: hairColour.light,
         brow: hairColour.brow,
+        iris: eyeColour.iris,
+        irisLight: eyeColour.light,
       ),
     );
   }
 
+  /// This, as [species]: the outfit cleared, since outfits belong to one
+  /// character, and the hair back to [species]' own style. Skin, hair
+  /// colour, sass and the voice switch stay. As the character it already is,
+  /// nothing changes: re-choosing it never discards its outfit or hair.
+  CompanionCustomization asCharacter(CompanionSpecies species) =>
+      species == character
+      ? this
+      : copyWith(
+          character: species,
+          hairStyle: species.hairStyle,
+          outfitId: () => null,
+        );
+
   CompanionCustomization copyWith({
+    CompanionSpecies? character,
     CompanionSkinTone? skinTone,
     CompanionHairStyle? hairStyle,
     CompanionHairColour? hairColour,
+    CompanionEyeColour? eyeColour,
     ValueGetter<String?>? outfitId,
     CompanionSass? sass,
     bool? speaksReplies,
   }) => CompanionCustomization(
+    character: character ?? this.character,
     skinTone: skinTone ?? this.skinTone,
     hairStyle: hairStyle ?? this.hairStyle,
     hairColour: hairColour ?? this.hairColour,
+    eyeColour: eyeColour ?? this.eyeColour,
     outfitId: outfitId == null ? this.outfitId : outfitId(),
     sass: sass ?? this.sass,
     speaksReplies: speaksReplies ?? this.speaksReplies,
@@ -114,9 +157,11 @@ class CompanionCustomization {
     CompanionCustomization a,
     CompanionCustomization b,
   ) => {
+    if (a.character != b.character) 'character',
     if (a.skinTone != b.skinTone) 'skinTone',
     if (a.hairStyle != b.hairStyle) 'hairStyle',
     if (a.hairColour != b.hairColour) 'hairColour',
+    if (a.eyeColour != b.eyeColour) 'eyeColour',
     if (a.outfitId != b.outfitId) 'outfit',
     if (a.sass != b.sass) 'sass',
     if (a.speaksReplies != b.speaksReplies) 'speaksReplies',
@@ -124,24 +169,35 @@ class CompanionCustomization {
 
   /// This, with [parts] taken from [other]: edits laid over another value
   /// without undoing what that value holds in the parts left alone.
+  ///
+  /// The character and its outfit go together: an outfit belongs to one
+  /// character, so taking either takes both — an outfit picked for Lotti is
+  /// never laid over a stored grandpa, nor his outfit kept for her.
   CompanionCustomization adopting(
     CompanionCustomization other,
     Set<String> parts,
-  ) => CompanionCustomization(
-    skinTone: parts.contains('skinTone') ? other.skinTone : skinTone,
-    hairStyle: parts.contains('hairStyle') ? other.hairStyle : hairStyle,
-    hairColour: parts.contains('hairColour') ? other.hairColour : hairColour,
-    outfitId: parts.contains('outfit') ? other.outfitId : outfitId,
-    sass: parts.contains('sass') ? other.sass : sass,
-    speaksReplies: parts.contains('speaksReplies')
-        ? other.speaksReplies
-        : speaksReplies,
-  );
+  ) {
+    final dressing = parts.contains('character') || parts.contains('outfit');
+    return CompanionCustomization(
+      character: dressing ? other.character : character,
+      skinTone: parts.contains('skinTone') ? other.skinTone : skinTone,
+      hairStyle: parts.contains('hairStyle') ? other.hairStyle : hairStyle,
+      hairColour: parts.contains('hairColour') ? other.hairColour : hairColour,
+      eyeColour: parts.contains('eyeColour') ? other.eyeColour : eyeColour,
+      outfitId: dressing ? other.outfitId : outfitId,
+      sass: parts.contains('sass') ? other.sass : sass,
+      speaksReplies: parts.contains('speaksReplies')
+          ? other.speaksReplies
+          : speaksReplies,
+    );
+  }
 
   Map<String, dynamic> toJson() => {
+    'character': character.name,
     'skinTone': skinTone.name,
     'hairStyle': hairStyle.name,
     'hairColour': hairColour.name,
+    'eyeColour': eyeColour.name,
     'outfit': ?outfitId,
     'sass': sass.name,
     'speaksReplies': speaksReplies,
@@ -170,18 +226,22 @@ class CompanionCustomization {
   @override
   bool operator ==(Object other) =>
       other is CompanionCustomization &&
+      other.character == character &&
       other.skinTone == skinTone &&
       other.hairStyle == hairStyle &&
       other.hairColour == hairColour &&
+      other.eyeColour == eyeColour &&
       other.outfitId == outfitId &&
       other.sass == sass &&
       other.speaksReplies == speaksReplies;
 
   @override
   int get hashCode => Object.hash(
+    character,
     skinTone,
     hairStyle,
     hairColour,
+    eyeColour,
     outfitId,
     sass,
     speaksReplies,

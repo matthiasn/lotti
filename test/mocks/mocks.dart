@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io' as io;
 
+import 'package:audio_session/audio_session.dart';
 import 'package:beamer/beamer.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:drift/drift.dart' as drift;
@@ -1988,6 +1989,9 @@ class MockPlayerState extends Mock implements PlayerState {}
 /// Mock for the MediaKit [PlayerStream] exposing event streams such as
 /// `duration`.
 class MockPlayerStream extends Mock implements PlayerStream {}
+
+/// Mock for the phone's [AudioSession], claimed while the voice speaks.
+class MockAudioSession extends Mock implements AudioSession {}
 
 class MockQueryExecutor extends Mock implements drift.QueryExecutor {}
 

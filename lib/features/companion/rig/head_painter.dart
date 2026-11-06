@@ -1,10 +1,13 @@
+import 'dart:math' as math;
 import 'dart:ui' as ui;
 import 'dart:ui';
 
 import 'package:lotti/features/companion/model/companion_look.dart';
+import 'package:lotti/features/companion/model/companion_parts.dart';
 import 'package:lotti/features/companion/model/companion_pose.dart';
 import 'package:lotti/features/companion/rig/animal_head_painter.dart';
 import 'package:lotti/features/companion/rig/face_painter.dart';
+import 'package:lotti/features/companion/rig/grandpa_head_painter.dart';
 import 'package:lotti/features/companion/rig/hair_styles_painter.dart';
 import 'package:lotti/features/companion/rig/paint_kit.dart';
 import 'package:lotti/features/companion/rig/rig_frame.dart';
@@ -35,13 +38,33 @@ void drawBackOfHead(Canvas canvas, RigFrame f, CompanionLook look) {
   canvas.restore();
 }
 
-Path facePath(double yaw) => Path()
-  ..moveTo(0, -58)
-  ..cubicTo(26, -58, 45 - yaw * 2, -40, 45 - yaw * 2, -8)
-  ..cubicTo(45 - yaw * 2, 16, 26 + yaw, 38, yaw * 3, 40)
-  ..cubicTo(-26 + yaw, 38, -45 - yaw * 2, 16, -45 - yaw * 2, -8)
-  ..cubicTo(-45 - yaw * 2, -40, -26, -58, 0, -58)
-  ..close();
+/// The face's outline, turned by [yaw]. [jaw] squares it: 0 is the soft,
+/// rounded chin Lotti has, 1 a man's squarer jaw, wider at its corners and
+/// a little lower at the chin.
+Path facePath(double yaw, {double jaw = 0}) {
+  double l(double soft, double square) => soft + (square - soft) * jaw;
+  return Path()
+    ..moveTo(0, -58)
+    ..cubicTo(26, -58, 45 - yaw * 2, -40, 45 - yaw * 2, -8)
+    ..cubicTo(
+      45 - yaw * 2,
+      l(16, 28),
+      l(26, 39) + yaw,
+      l(38, 44),
+      yaw * 3,
+      l(40, 45),
+    )
+    ..cubicTo(
+      l(-26, -39) + yaw,
+      l(38, 44),
+      -45 - yaw * 2,
+      l(16, 28),
+      -45 - yaw * 2,
+      -8,
+    )
+    ..cubicTo(-45 - yaw * 2, -40, -26, -58, 0, -58)
+    ..close();
+}
 
 /// The face, the features and everything worn on the head.
 void drawHead(Canvas canvas, RigFrame f, CompanionLook look) {
@@ -59,6 +82,8 @@ void drawHead(Canvas canvas, RigFrame f, CompanionLook look) {
   }
   if (look.sunglasses) {
     _sunglasses(canvas, c, fx, fy, yaw);
+  } else if (look.readingGlasses) {
+    _readingGlasses(canvas, c, fx, fy, yaw);
   } else if (look.glasses) {
     _glasses(canvas, c, fx, fy, yaw);
   }
@@ -70,11 +95,21 @@ void drawHead(Canvas canvas, RigFrame f, CompanionLook look) {
   if (!look.species.isAnimal) {
     drawFrontHair(canvas, c, p.hairLag, yaw, look.hairStyle);
   }
-  if (look.beret) _beret(canvas, c, yaw);
+  if (look.headband) _headband(canvas, c, yaw);
+  // A hat sits on the hair, as high and as wide as the hair needs; an
+  // animal's head wears it as the plain head does.
+  final hair = look.species.isAnimal ? CompanionHairStyle.bun : look.hairStyle;
+  if (look.beret) seatHat(canvas, hair, yaw, () => _beret(canvas, c, yaw));
+  if (look.flatCap) {
+    seatHat(canvas, hair, yaw, () => drawFlatCap(canvas, c, yaw));
+  }
+  if (look.beanie) seatHat(canvas, hair, yaw, () => _beanie(canvas, c, yaw));
   canvas.restore();
 }
 
-/// The grandmother's face: its shading, the features and her laugh lines.
+/// A human face: its shading, the features, and for an older face the laugh
+/// lines; for a younger one fuller brows; for a bearded character, the beard
+/// under the mouth and the moustache over it.
 void _humanFace(Canvas canvas, CompanionLook look, CompanionPose p) {
   final c = look.palette;
   final yaw = p.headYaw;
@@ -86,19 +121,40 @@ void _humanFace(Canvas canvas, CompanionLook look, CompanionPose p) {
       c.skinShade,
     );
   }
-  final face = facePath(yaw);
+  final masculine = look.species.masculine;
+  final face = facePath(yaw, jaw: masculine ? 1 : 0);
   fillPath(canvas, face, c.skin);
   canvas
     ..save()
     ..clipPath(face);
-  // Form shade on the far side of the face and under the jaw.
+  // Form shade on the far side of the face and under the jaw; a man's
+  // cheeks carry no blush.
   fillPath(
     canvas,
     ellipse(Offset(38 - yaw * 6, 6), 22, 60),
     c.skinShade.withValues(alpha: 0.38),
   );
   drawForeheadShadow(canvas, c, p.hairLag, yaw, look.hairStyle);
-  for (final s in [-1, 1]) {
+  if (masculine) {
+    // The jaw as bone: a band of shade along its lower edge and under the
+    // chin, and the hollow under each cheekbone.
+    fillPath(
+      canvas,
+      ellipse(Offset(yaw * 3, 47), 44, 9),
+      c.skinDeep.withValues(alpha: 0.35),
+    );
+    for (final s in [-1, 1]) {
+      strokePath(
+        canvas,
+        Path()
+          ..moveTo(s * 36 + yaw * 4, 6)
+          ..quadraticBezierTo(s * 31 + yaw * 4, 16, s * 33 + yaw * 4, 24),
+        c.skinShade.withValues(alpha: 0.55),
+        2.4,
+      );
+    }
+  }
+  for (final s in masculine ? const <int>[] : const [-1, 1]) {
     final at = Offset(s * 25 + yaw * 5, 11 + pitch * 2);
     canvas.drawCircle(
       at,
@@ -123,24 +179,45 @@ void _humanFace(Canvas canvas, CompanionLook look, CompanionPose p) {
       p.blinkOf(s),
       p.squint,
       p.gaze,
+      lashes: look.species.lashes,
+      // A man's eye is narrower, its iris smaller, its lash line lighter.
+      open: masculine ? 0.68 : 1,
+      irisRadius: masculine ? 6.4 : 7.6,
+      lashLine: masculine ? 1.3 : 2.1,
     );
+    // A man's brow sits lower, nearer the eye, heavy and nearly straight.
     drawBrow(
       canvas,
       c,
-      Offset(s * 20 + fx, -27 + fy * 1.2),
+      Offset(s * 20 + fx, (masculine ? -22 : -27) + fy * 1.2),
       s,
       p.browRaise + s * p.browSkew,
       p.browTilt,
+      fullness: (look.species.aged ? 1 : 1.5) + (masculine ? 0.7 : 0),
+      arch: masculine ? 0.25 : 1,
     );
   }
-  drawNose(canvas, c, fx * 1.25, 8 + fy * 1.1);
-  _laughLines(canvas, c, fx, fy, p.smile);
+  drawNose(canvas, c, fx * 1.25, 8 + fy * 1.1, broad: masculine);
+  if (look.species.aged) _laughLines(canvas, c, fx, fy, p.smile);
+  if (look.species.bearded) drawBeard(canvas, c, yaw);
+  if (look.species.stubble) drawStubble(canvas, c, fx, fy, yaw);
   canvas
     ..save()
     ..translate(fx * 1.1, 22 + fy)
     ..scale(1.25);
-  drawMouth(canvas, c, 0, 0, p.mouth, p.smile, skew: p.smileSkew);
+  // A man's lips are thin: the mouth's line, not a woman's full lips.
+  drawMouth(
+    canvas,
+    c,
+    0,
+    0,
+    p.mouth,
+    p.smile,
+    skew: p.smileSkew,
+    lipWeight: masculine ? 0.4 : 1,
+  );
   canvas.restore();
+  if (look.species.bearded) drawMoustache(canvas, c, fx, fy);
 }
 
 /// Soft creases beside the mouth and under the eyes: a face that has smiled
@@ -261,6 +338,53 @@ void _glasses(
   );
 }
 
+/// Half-moon reading frames, low on the nose: a straight top edge under the
+/// eyes' centres and a round rim below, their arms back to the ears.
+void _readingGlasses(
+  Canvas canvas,
+  CompanionPalette c,
+  double fx,
+  double fy,
+  double yaw,
+) {
+  const r = 13.0;
+  for (final s in [-1, 1]) {
+    final centre = Offset(s * 19 + fx, 1 + fy);
+    final lens = Path()
+      ..moveTo(centre.dx - r, centre.dy)
+      ..lineTo(centre.dx + r, centre.dy)
+      ..arcTo(Rect.fromCircle(center: centre, radius: r), 0, math.pi, false)
+      ..close();
+    fillPath(canvas, lens, const Color(0x1AFFFFFF));
+    strokePath(canvas, lens, c.glasses, 2.2);
+    strokePath(
+      canvas,
+      arc(centre, r - 1.4, 0.4, 1.6),
+      c.glassesLight.withValues(alpha: 0.7),
+      0.9,
+    );
+    _templeArm(
+      canvas,
+      c.glasses,
+      centre.dx + s * r,
+      centre.dy,
+      s,
+      fx,
+      yaw,
+      1.8,
+      -2,
+    );
+  }
+  strokePath(
+    canvas,
+    Path()
+      ..moveTo(-19 + fx + r, 1 + fy)
+      ..cubicTo(-6 + fx, -3 + fy, 6 + fx, -3 + fy, 19 + fx - r, 1 + fy),
+    c.glasses,
+    2,
+  );
+}
+
 /// Square frames with dark lenses, worn in place of the glasses.
 void _sunglasses(
   Canvas canvas,
@@ -299,7 +423,7 @@ void _sunglasses(
   );
 }
 
-/// A pearl on a short hook, or a flat coloured disc.
+/// A pearl on a short hook, a flat coloured disc, or a hoop.
 void _earring(
   Canvas canvas,
   CompanionPalette c,
@@ -314,6 +438,10 @@ void _earring(
     const Color(0xFFD9B859),
     1,
   );
+  if (kind == EarringKind.hoop) {
+    strokePath(canvas, circle(at + const Offset(0, 6), 6), c.earring, 1.8);
+    return;
+  }
   if (kind == EarringKind.disc) {
     fillCircle(canvas, at + const Offset(0, 4), 5.2, c.earring);
     fillCircle(
@@ -327,6 +455,53 @@ void _earring(
   fillCircle(canvas, at + const Offset(0, 3), 3.6, c.pearlShade);
   fillCircle(canvas, at + const Offset(-0.6, 2.4), 2.8, c.pearl);
   fillCircle(canvas, at + const Offset(-1.4, 1.4), 1, const Color(0xFFFFFFFF));
+}
+
+/// A wide band over the crown, behind the hairline, with a thin light
+/// stripe along it.
+void _headband(Canvas canvas, CompanionPalette c, double yaw) {
+  final centre = Offset(yaw * 4, -16);
+  strokePath(canvas, arc(centre, 50, 3.6, 5.82), c.headband, 9);
+  strokePath(
+    canvas,
+    arc(centre, 52, 3.75, 5.67),
+    const Color(0x55FFFFFF),
+    1.4,
+  );
+}
+
+/// A knitted beanie over the crown: a soft dome with ribs running up it,
+/// its brim folded up over the brow, in the cap's colours.
+void _beanie(Canvas canvas, CompanionPalette c, double yaw) {
+  final x = yaw * 3;
+  final dome = Path()
+    ..moveTo(x - 52, -38)
+    ..cubicTo(x - 56, -80, x - 24, -100, x, -100)
+    ..cubicTo(x + 24, -100, x + 56, -80, x + 52, -38)
+    ..close();
+  fillPath(canvas, dome, c.cap);
+  canvas
+    ..save()
+    ..clipPath(dome);
+  for (var k = -4; k <= 4; k++) {
+    strokePath(
+      canvas,
+      Path()
+        ..moveTo(x + k * 11, -38)
+        ..quadraticBezierTo(x + k * 9, -80, x + k * 3, -100),
+      c.capShade.withValues(alpha: 0.6),
+      1.2,
+    );
+  }
+  canvas.restore();
+  final brim = Path()
+    ..moveTo(x - 53, -50)
+    ..cubicTo(x - 20, -56, x + 20, -56, x + 53, -50)
+    ..lineTo(x + 52, -34)
+    ..cubicTo(x + 20, -40, x - 20, -40, x - 52, -34)
+    ..close();
+  fillPath(canvas, brim, c.capShade);
+  strokePath(canvas, brim, Color.lerp(c.capShade, c.cap, 0.5)!, 1);
 }
 
 /// A red beret pulled down to the left, its stalk on top.

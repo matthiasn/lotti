@@ -1,7 +1,10 @@
+import 'dart:ui';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/companion/model/companion_look.dart';
 import 'package:lotti/features/companion/model/companion_parts.dart';
 import 'package:lotti/features/companion/model/companion_pose.dart';
+import 'package:lotti/features/companion/model/mouth_shape.dart';
 import 'package:lotti/features/companion/rig/head_painter.dart';
 import 'package:lotti/features/companion/rig/rig_frame.dart';
 
@@ -155,5 +158,311 @@ void main() {
             cat.count(CompanionLook.cat.palette.muzzleColor),
       ),
     );
+  });
+
+  group('the grandpa', () {
+    /// How many pixels of [colour] lie below head-local [y].
+    int below(Raster r, Color colour, double y, {int tolerance = 20}) {
+      var n = 0;
+      for (var py = (260 + y * 2).round(); py < 480; py++) {
+        for (var x = 0; x < 480; x++) {
+          if (near(r.at(x, py), colour, tolerance: tolerance)) n++;
+        }
+      }
+      return n;
+    }
+
+    test(
+      'wears his readers low on the nose, Lotti hers round her eyes',
+      () async {
+        Future<double> drop(CompanionLook look) async {
+          final r = await _head(look);
+          return r.centroid(look.palette.glasses)!.dy -
+              r.centroid(look.palette.eyeWhite)!.dy;
+        }
+
+        expect(
+          await drop(CompanionLook.grandpa),
+          greaterThan(await drop(CompanionLook.grandma) + 4),
+        );
+      },
+    );
+
+    test(
+      'has a beard below the nose; Lotti, in the same short hair, none',
+      () async {
+        const his = CompanionLook.grandpa;
+        final lotti = CompanionLook.grandma.copyWith(
+          hairStyle: CompanionHairStyle.short,
+        );
+        // Her pearls are near the silver of the hair: a few pixels, not a
+        // beard's thousands.
+        expect(
+          below(await _head(his), his.palette.hair, 12),
+          greaterThan(below(await _head(lotti), lotti.palette.hair, 12) + 1500),
+        );
+      },
+    );
+
+    test('still shows his mouth through the beard', () async {
+      const look = CompanionLook.grandpa;
+      final r = await _head(
+        look,
+        pose: CompanionPose(mouth: Viseme.d.shape),
+      );
+      expect(r.count(look.palette.mouthIn, tolerance: 10), greaterThan(40));
+    });
+
+    test('wears the moustache over his lip', () async {
+      final r = await _head(CompanionLook.grandpa);
+      // Head-local (0, 15): between the nose and the mouth.
+      expect(
+        near(
+          r.at(240, 260 + 30),
+          CompanionLook.grandpa.palette.hair,
+          tolerance: 30,
+        ),
+        isTrue,
+      );
+    });
+
+    test('wears the flat cap to market only', () async {
+      const market = CompanionLook.grandpaMarket;
+      // A grey near the cap's blends at a few hair edges without one.
+      final cap = market.palette.cap;
+      expect(
+        (await _head(market)).count(cap),
+        greaterThan((await _head(CompanionLook.grandpa)).count(cap) + 1500),
+      );
+    });
+  });
+
+  group('the aunt', () {
+    const aunt = CompanionLook.aunt;
+
+    test('wears gold hoops and no glasses', () async {
+      final r = await _head(aunt);
+      expect(r.count(aunt.palette.earring, tolerance: 12), greaterThan(40));
+      // Bare skin where Lotti's frames cross the bridge of the nose.
+      expect(
+        near(r.at(240, 260 - 18), aunt.palette.skin, tolerance: 8),
+        isTrue,
+      );
+      final lotti = await _head(CompanionLook.grandma);
+      expect(
+        near(lotti.at(240, 260 - 18), aunt.palette.skin, tolerance: 8),
+        isFalse,
+      );
+    });
+
+    test('has no laugh lines beside her mouth; Lotti does', () async {
+      /// Pixels off the bare skin beside the mouth, head-local x 16..23,
+      /// y 14..32 on both sides.
+      Future<int> creases(CompanionLook look) async {
+        final r = await _head(look);
+        var n = 0;
+        for (final side in [-1, 1]) {
+          for (var x = 16; x <= 23; x++) {
+            for (var y = 14; y <= 32; y++) {
+              final px = r.at(240 + side * x * 2, 260 + y * 2);
+              if (!near(px, look.palette.skin, tolerance: 4)) n++;
+            }
+          }
+        }
+        return n;
+      }
+
+      expect(
+        await creases(aunt),
+        lessThan(await creases(CompanionLook.grandma) - 10),
+      );
+    });
+
+    test('has fuller brows than Lotti', () async {
+      final hers = (await _head(aunt)).count(aunt.palette.brow);
+      final lottis = (await _head(CompanionLook.grandma)).count(
+        CompanionLook.grandma.palette.brow,
+      );
+      expect(hers, greaterThan(lottis * 1.2));
+    });
+
+    test('wears the headband to the festival only', () async {
+      const festival = CompanionLook.auntFestival;
+      final band = festival.palette.headband;
+      expect((await _head(festival)).count(band), greaterThan(500));
+      expect((await _head(aunt)).count(band), 0);
+    });
+  });
+
+  group('the uncle', () {
+    const uncle = CompanionLook.uncle;
+
+    test('wears the beanie on a snow day only', () async {
+      const snow = CompanionLook.uncleSnow;
+      final beanie = snow.palette.cap;
+      expect(
+        (await _head(snow)).count(beanie),
+        greaterThan((await _head(uncle)).count(beanie) + 2000),
+      );
+    });
+
+    test('has no corner lashes; the aunt, with the same eyes, has', () async {
+      /// Ink at both eyes' outer corners, where the two lashes flick out:
+      /// head-local x 26..34 beside each eye, y -14..-4, at twice the size.
+      Future<int> corners(CompanionLook look) async {
+        final r = await _head(look);
+        var n = 0;
+        for (final s in [-1, 1]) {
+          for (var x = 26; x <= 34; x++) {
+            for (var y = -14; y <= -4; y++) {
+              final px = r.at(240 + s * x * 2, 260 + y * 2);
+              if (near(px, look.palette.ink, tolerance: 12)) n++;
+            }
+          }
+        }
+        return n;
+      }
+
+      expect(
+        await corners(CompanionLook.aunt),
+        greaterThan(await corners(uncle) + 4),
+      );
+    });
+
+    test('has the younger face: no glasses, no beard', () async {
+      final r = await _head(uncle);
+      expect(
+        near(r.at(240, 260 - 18), uncle.palette.skin, tolerance: 8),
+        isTrue,
+      );
+      expect(
+        near(r.at(240, 260 + 30), uncle.palette.hair, tolerance: 8),
+        isFalse,
+      );
+    });
+  });
+
+  group('hats and big hair', () {
+    // The ask: the rock beret seemed to float in an afro, and a beanie left
+    // hair poking out round it; for now an afro wears no hat at all.
+    test('an afro wears none of the hats, its hair whole', () async {
+      /// The hat's colour above the hairline (head-local y -45), where a hat
+      /// sits: the rock look's red earrings and lips share the beret's red
+      /// lower down.
+      Future<int> hatAbove(CompanionLook look) async {
+        final r = await _head(look);
+        final hat = look.beret ? look.palette.hat : look.palette.cap;
+        var n = 0;
+        for (var y = 0; y < 260 - 90; y++) {
+          for (var x = 0; x < 480; x++) {
+            if (near(r.at(x, y), hat)) n++;
+          }
+        }
+        return n;
+      }
+
+      for (final look in [
+        CompanionLook.grandmaRock,
+        CompanionLook.grandpaMarket,
+        CompanionLook.uncleSnow,
+      ]) {
+        final worn = await hatAbove(look);
+        final onAfro = await hatAbove(
+          look.copyWith(hairStyle: CompanionHairStyle.afro),
+        );
+        // A worn hat fills thousands of pixels there; on the afro only a
+        // stray coil's shade can come near its colour.
+        expect(worn, greaterThan(1000), reason: look.id);
+        expect(onAfro, lessThan(worn / 40), reason: look.id);
+      }
+    });
+
+    test('the same hats are worn on a close style', () async {
+      final r = await _head(CompanionLook.grandmaRock);
+      expect(r.count(CompanionLook.grandmaRock.palette.hat), greaterThan(500));
+    });
+
+    test('an animal wears its hat as the plain head does', () async {
+      final r = await _head(CompanionLook.catRock);
+      expect(r.count(CompanionLook.catRock.palette.hat), greaterThan(500));
+    });
+  });
+
+  group("a man's face", () {
+    test('the squarer jaw is wider at its corners than the soft one', () {
+      final soft = facePath(0);
+      final square = facePath(0, jaw: 1);
+      // Near the jaw's corner, below and beside the mouth.
+      expect(square.contains(const Offset(33, 32)), isTrue);
+      expect(soft.contains(const Offset(33, 32)), isFalse);
+      expect(square.getBounds().bottom, greaterThan(soft.getBounds().bottom));
+    });
+
+    test('the uncle is drawn with it; the aunt keeps the soft one', () async {
+      // Head-local (35, 32), at twice the size: inside the square jaw only.
+      // Beside her soft jaw the bob's hair shows there; on him, his face.
+      final his = (await _head(CompanionLook.uncle)).at(240 + 70, 260 + 64);
+      final hers = (await _head(CompanionLook.aunt)).at(240 + 70, 260 + 64);
+      expect(
+        near(hers, CompanionLook.aunt.palette.hairBack, tolerance: 10),
+        isTrue,
+      );
+      expect(
+        near(his, CompanionLook.uncle.palette.hairBack, tolerance: 10),
+        isFalse,
+      );
+      expect(his, isNot(const Color(0xFF000000)));
+    });
+  });
+
+  // The ask: the men still read as women.
+  group("a man's face against a woman's", () {
+    const aunt = CompanionLook.aunt;
+    const uncle = CompanionLook.uncle;
+
+    test('narrower eyes', () async {
+      /// How many rows the eye whites span.
+      Future<int> height(CompanionLook look) async {
+        final r = await _head(look);
+        var rows = 0;
+        for (var y = 0; y < 480; y++) {
+          for (var x = 0; x < 480; x++) {
+            if (near(r.at(x, y), look.palette.eyeWhite)) {
+              rows++;
+              break;
+            }
+          }
+        }
+        return rows;
+      }
+
+      expect(await height(uncle), lessThan(await height(aunt) * 0.8));
+    });
+
+    test('brows set lower, nearer the eyes', () async {
+      final hers = (await _head(aunt)).centroid(aunt.palette.brow)!;
+      final his = (await _head(uncle)).centroid(uncle.palette.brow)!;
+      expect(his.dy, greaterThan(hers.dy + 6));
+    });
+
+    test('no blush on the cheeks', () async {
+      // Head-local (25, 11), the cheek's middle, at twice the size.
+      final hers = (await _head(aunt)).at(240 + 50, 260 + 22);
+      final his = (await _head(uncle)).at(240 + 50, 260 + 22);
+      double flush(Color c) => c.r - c.g;
+      expect(
+        flush(his) - flush(uncle.palette.skin),
+        lessThan(flush(hers) - flush(aunt.palette.skin)),
+      );
+    });
+
+    test('the jaw shaded along its lower edge', () async {
+      // Head-local (0, 42), above the chin's edge, at twice the size.
+      final his = (await _head(uncle)).at(240, 260 + 84);
+      expect(
+        his.computeLuminance(),
+        lessThan(uncle.palette.skin.computeLuminance()),
+      );
+    });
   });
 }

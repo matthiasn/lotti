@@ -37,13 +37,14 @@ class CompanionSettingsPage extends StatelessWidget {
   }
 }
 
-/// Where a person makes her their own: the outfit she wears or none, so she
-/// picks a fresh one every time she is shown, her skin tone, her hairstyle
-/// and its colour, and how much sass she reads with.
+/// Where a person makes the companion their own: who it is (Lotti, the
+/// grandpa, the aunt or the uncle), the outfit worn or none, so a fresh one is picked every time it
+/// is shown, the skin tone, the hairstyle and its colour, the eyes, and how much sass
+/// it reads with.
 ///
-/// She stands above the choices, head to toe and as a portrait, in what is
-/// chosen, with the outfit picker right under her; every change shows at
-/// once and is stored
+/// The companion stands above the choices, head to toe and as a portrait,
+/// in what is chosen, with the character and outfit pickers right under it;
+/// every change shows at once and is stored
 /// ([companionCustomizationProvider]). A sass picked shows too: she takes
 /// a slip that way ([companionReaction], [companionSignOff]). Shared by the
 /// mobile page and the desktop settings panel.
@@ -73,9 +74,8 @@ class _CompanionSettingsBodyState extends ConsumerState<CompanionSettingsBody> {
   Widget build(BuildContext context) {
     final custom = ref.watch(companionCustomizationProvider);
     final controller = ref.read(companionCustomizationProvider.notifier);
-    final look = ref
-        .watch(companionLookRollProvider)
-        .draw(companionSettingsDressedFor);
+    final roll = ref.watch(companionLookRollProvider);
+    final look = roll.draw(companionSettingsDressedFor);
     final messages = context.messages;
     final spacing = context.designTokens.spacing;
 
@@ -119,33 +119,36 @@ class _CompanionSettingsBodyState extends ConsumerState<CompanionSettingsBody> {
               ),
             ),
             SizedBox(height: spacing.step5),
-            // The outfit is picked right under the preview it changes.
+            // Who it is and what it wears are picked right under the
+            // preview they change.
+            SettingsFormSection(
+              title: messages.companionSettingsCharacterLabel,
+              description: messages.companionSettingsCharacterDescription,
+              children: [
+                _ChipChoice<CompanionSpecies>(
+                  selected: custom.character,
+                  onSelected: (species) =>
+                      controller.set(custom.asCharacter(species)),
+                  choices: [
+                    for (final species in CompanionSpecies.choosable)
+                      (species, characterName(messages, species)),
+                  ],
+                ),
+              ],
+            ),
             SettingsFormSection(
               title: messages.companionSettingsOutfitLabel,
               description: messages.companionSettingsOutfitDescription,
               children: [
-                Wrap(
-                  spacing: spacing.step2,
-                  runSpacing: spacing.step2,
-                  children: [
-                    DesignSystemChip(
-                      label: messages.companionSettingsOutfitSurprise,
-                      outlined: true,
-                      size: DesignSystemChipSize.touch,
-                      selected: custom.outfitId == null,
-                      onPressed: () =>
-                          controller.set(custom.copyWith(outfitId: () => null)),
-                    ),
-                    for (final outfit in companionOutfits)
-                      DesignSystemChip(
-                        label: outfitName(messages, outfit),
-                        outlined: true,
-                        size: DesignSystemChipSize.touch,
-                        selected: custom.outfitId == outfit.id,
-                        onPressed: () => controller.set(
-                          custom.copyWith(outfitId: () => outfit.id),
-                        ),
-                      ),
+                // No outfit is "Surprise me".
+                _ChipChoice<String?>(
+                  selected: custom.outfitId,
+                  onSelected: (id) =>
+                      controller.set(custom.copyWith(outfitId: () => id)),
+                  choices: [
+                    (null, messages.companionSettingsOutfitSurprise),
+                    for (final outfit in roll.outfits)
+                      (outfit.id, outfitName(messages, outfit)),
                   ],
                 ),
               ],
@@ -173,14 +176,15 @@ class _CompanionSettingsBodyState extends ConsumerState<CompanionSettingsBody> {
             SettingsFormSection(
               title: messages.companionSettingsHairStyleLabel,
               children: [
-                DsSegmentedToggle<CompanionHairStyle>(
-                  expand: true,
+                // Chips, not a segmented toggle: ten styles do not fit a
+                // phone's width in one row.
+                _ChipChoice<CompanionHairStyle>(
                   selected: custom.hairStyle,
-                  onChanged: (style) =>
+                  onSelected: (style) =>
                       controller.set(custom.copyWith(hairStyle: style)),
-                  segments: [
+                  choices: [
                     for (final style in CompanionHairStyle.values)
-                      DsSegment(style, hairStyleName(messages, style)),
+                      (style, hairStyleName(messages, style)),
                   ],
                 ),
               ],
@@ -198,6 +202,24 @@ class _CompanionSettingsBodyState extends ConsumerState<CompanionSettingsBody> {
                         value: colour,
                         colour: colour.hair,
                         label: hairColourName(messages, colour),
+                      ),
+                  ],
+                ),
+              ],
+            ),
+            SettingsFormSection(
+              title: messages.companionSettingsEyeColourLabel,
+              children: [
+                CompanionSwatchRow<CompanionEyeColour>(
+                  selected: custom.eyeColour,
+                  onSelected: (eyes) =>
+                      controller.set(custom.copyWith(eyeColour: eyes)),
+                  swatches: [
+                    for (final eyes in CompanionEyeColour.values)
+                      (
+                        value: eyes,
+                        colour: eyes.iris,
+                        label: eyeColourName(messages, eyes),
                       ),
                   ],
                 ),
@@ -238,6 +260,47 @@ class _CompanionSettingsBodyState extends ConsumerState<CompanionSettingsBody> {
   }
 }
 
+/// One of [choices] picked from a wrap of chips, [selected] marked.
+class _ChipChoice<T> extends StatelessWidget {
+  const _ChipChoice({
+    required this.selected,
+    required this.onSelected,
+    required this.choices,
+  });
+
+  final T selected;
+  final ValueChanged<T> onSelected;
+  final List<(T, String)> choices;
+
+  @override
+  Widget build(BuildContext context) {
+    final spacing = context.designTokens.spacing;
+    return Wrap(
+      spacing: spacing.step2,
+      runSpacing: spacing.step2,
+      children: [
+        for (final (value, label) in choices)
+          DesignSystemChip(
+            label: label,
+            outlined: true,
+            size: DesignSystemChipSize.touch,
+            selected: value == selected,
+            onPressed: () => onSelected(value),
+          ),
+      ],
+    );
+  }
+}
+
+/// [species]' name in the picker; one of [CompanionSpecies.choosable].
+String characterName(AppLocalizations m, CompanionSpecies species) =>
+    switch (species) {
+      CompanionSpecies.grandpa => m.companionSettingsCharacterGrandpa,
+      CompanionSpecies.aunt => m.companionSettingsCharacterAunt,
+      CompanionSpecies.uncle => m.companionSettingsCharacterUncle,
+      _ => m.companionSettingsCharacterLotti,
+    };
+
 /// [style]'s name in the picker.
 String hairStyleName(AppLocalizations m, CompanionHairStyle style) =>
     switch (style) {
@@ -246,6 +309,11 @@ String hairStyleName(AppLocalizations m, CompanionHairStyle style) =>
       CompanionHairStyle.afro => m.companionSettingsHairStyleAfro,
       CompanionHairStyle.locs => m.companionSettingsHairStyleLocs,
       CompanionHairStyle.bob => m.companionSettingsHairStyleBob,
+      CompanionHairStyle.short => m.companionSettingsHairStyleShort,
+      CompanionHairStyle.balding => m.companionSettingsHairStyleBalding,
+      CompanionHairStyle.long => m.companionSettingsHairStyleLong,
+      CompanionHairStyle.waves => m.companionSettingsHairStyleWaves,
+      CompanionHairStyle.ponytail => m.companionSettingsHairStylePonytail,
     };
 
 /// [colour]'s name in the picker, as a screen reader says it.
@@ -262,7 +330,8 @@ String hairColourName(AppLocalizations m, CompanionHairColour colour) =>
       CompanionHairColour.blue => m.companionSettingsHairColourBlue,
     };
 
-/// [outfit]'s name in the picker; one of [companionOutfits].
+/// [outfit]'s name in the picker; one of a character's outfits. Each
+/// character's first outfit is its everyday one.
 String outfitName(AppLocalizations m, CompanionLook outfit) =>
     switch (outfit.id) {
       'grandma_stage' => m.companionSettingsOutfitStage,
@@ -270,7 +339,28 @@ String outfitName(AppLocalizations m, CompanionLook outfit) =>
       'grandma_garden' => m.companionSettingsOutfitGarden,
       'grandma_lavender' => m.companionSettingsOutfitLavender,
       'grandma_winter' => m.companionSettingsOutfitWinter,
+      'grandpa_jazz' => m.companionSettingsOutfitJazz,
+      'grandpa_seaside' => m.companionSettingsOutfitSeaside,
+      'grandpa_market' => m.companionSettingsOutfitMarket,
+      'aunt_studio' => m.companionSettingsOutfitStudio,
+      'aunt_festival' => m.companionSettingsOutfitFestival,
+      'aunt_weekend' => m.companionSettingsOutfitWeekend,
+      'uncle_night' => m.companionSettingsOutfitNight,
+      'uncle_skate' => m.companionSettingsOutfitSkate,
+      'uncle_snow' => m.companionSettingsOutfitSnow,
       _ => m.companionSettingsOutfitEveryday,
+    };
+
+/// [eyes]' name in the picker, as a screen reader says it.
+String eyeColourName(AppLocalizations m, CompanionEyeColour eyes) =>
+    switch (eyes) {
+      CompanionEyeColour.darkBrown => m.companionSettingsEyeColourDarkBrown,
+      CompanionEyeColour.brown => m.companionSettingsEyeColourBrown,
+      CompanionEyeColour.hazel => m.companionSettingsEyeColourHazel,
+      CompanionEyeColour.amber => m.companionSettingsEyeColourAmber,
+      CompanionEyeColour.green => m.companionSettingsEyeColourGreen,
+      CompanionEyeColour.grey => m.companionSettingsEyeColourGrey,
+      CompanionEyeColour.blue => m.companionSettingsEyeColourBlue,
     };
 
 /// [sass]'s name in the picker.

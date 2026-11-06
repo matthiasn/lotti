@@ -4,21 +4,30 @@ import 'dart:ui';
 import 'package:lotti/features/companion/model/companion_look.dart';
 import 'package:lotti/features/companion/model/companion_pose.dart';
 import 'package:lotti/features/companion/rig/arm_solver.dart';
+import 'package:lotti/features/companion/rig/aunt_outfit_painter.dart';
+import 'package:lotti/features/companion/rig/grandpa_outfit_painter.dart';
 import 'package:lotti/features/companion/rig/hand_painter.dart';
 import 'package:lotti/features/companion/rig/paint_kit.dart';
 import 'package:lotti/features/companion/rig/ribbon.dart';
 import 'package:lotti/features/companion/rig/rig_frame.dart';
+import 'package:lotti/features/companion/rig/trousers_painter.dart';
+import 'package:lotti/features/companion/rig/uncle_outfit_painter.dart';
 
-/// The body below the head: legs and shoes (an animal's paws), the neck, the
-/// dress with its cardigan and scarf, and the arms with their sleeves and
-/// hands.
+/// The body below the head: legs and shoes (an animal's paws, the trousers
+/// of the grandpa, the aunt and the uncle), the neck, Lotti's dress with its cardigan and scarf, and the
+/// arms with their sleeves and hands.
 
 const handScale = 1.45;
 
 /// Soft through the shoulder, firmer at the elbow so a bend still reads.
 const armTension = [0.5, 0.45, 0.28, 0.5];
 
+/// The legs below the hips, as the character's [CompanionSpecies.legs] are.
 void drawLegs(Canvas canvas, RigFrame f, CompanionLook look) {
+  if (look.species.legs == CompanionLegs.trousers) {
+    drawTrouserLegs(canvas, f, look);
+    return;
+  }
   final c = look.palette;
   for (final s in [-1, 1]) {
     final hip = f.hip(s);
@@ -134,17 +143,33 @@ void drawNeck(Canvas canvas, RigFrame f, CompanionLook look) {
   // An animal's neck is fur, and its chin sits a little lower on a bigger
   // head.
   final chin = 36 * look.species.headScale;
+  // A man's neck is thicker, down to a wider base.
+  final thick = look.species.masculine ? 1.3 : 1.0;
   fillPath(
     canvas,
     tapered(
       f.headPivot + const Offset(0, -14),
       f.neckBase + const Offset(0, 4),
-      21,
-      24,
+      21 * thick,
+      24 * thick,
     ),
     c.skin,
   );
-  fillPath(canvas, ellipse(f.neckBase + const Offset(0, 6), 19, 10), c.skin);
+  fillPath(
+    canvas,
+    ellipse(f.neckBase + const Offset(0, 6), 19 * thick, 10),
+    c.skin,
+  );
+  if (look.species.masculine) {
+    // The Adam's apple: a small rise half way down the throat, lit on top.
+    final throat = Offset.lerp(f.headPivot, f.neckBase, 0.55)!;
+    strokePath(
+      canvas,
+      arc(throat + const Offset(0, 2), 3.2, 3.6, 5.8),
+      c.skinShade.withValues(alpha: 0.8),
+      1.4,
+    );
+  }
   // The chin's shadow.
   fillPath(
     canvas,
@@ -334,7 +359,9 @@ void _beads(Canvas canvas, RigFrame f, CompanionPalette c) {
 }
 
 /// One arm: the bare arm as one ribbon, the hand at the wrist, and the
-/// cardigan's sleeve pushed up short of the elbow.
+/// sleeve: the cardigan's pushed up short of the elbow, the grandpa's shirt
+/// rolled to the forearm, the aunt's short sleeve, or the uncle's jacket
+/// sleeve to the wrist.
 void drawArm(
   Canvas canvas,
   RigFrame f,
@@ -376,7 +403,16 @@ void drawArm(
     deep: gloved ? c.gloveDeep : deep,
   );
   canvas.restore();
-  _sleeve(canvas, spine, side, c);
+  switch (look.species) {
+    case CompanionSpecies.grandpa:
+      drawShirtSleeve(canvas, spine, side, c, tension: armTension);
+    case CompanionSpecies.aunt:
+      drawShortSleeve(canvas, spine, side, c, tension: armTension);
+    case CompanionSpecies.uncle:
+      drawJacketSleeve(canvas, spine, side, c, tension: armTension);
+    case _:
+      _sleeve(canvas, spine, side, c);
+  }
 }
 
 void _sleeve(Canvas canvas, List<Offset> spine, int side, CompanionPalette c) {

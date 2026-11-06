@@ -8,6 +8,15 @@ import 'package:lotti/features/companion/state/companion_customization_controlle
 import 'package:lotti/features/companion/state/companion_look_controller.dart';
 
 void main() {
+  /// Lotti's outfits, in order: what she changes between.
+  final companionOutfits = CompanionLook.of(CompanionSpecies.grandma);
+
+  /// The grandpa's outfits, in order.
+  final hisOutfits = CompanionLook.of(CompanionSpecies.grandpa);
+
+  /// A customization that has chosen the grandpa, his outfit a surprise.
+  const grandpa = CompanionCustomization(character: CompanionSpecies.grandpa);
+
   /// A container whose session seed is [seed] and whose customization is
   /// [customization], not read from storage.
   ProviderContainer containerWith({
@@ -37,9 +46,20 @@ void main() {
   String worn(ProviderContainer container, [String subject = 'task-1']) =>
       container.read(companionLookRollProvider).draw(subject).id;
 
-  test('her outfits are the grandmother looks, in order', () {
-    expect(companionOutfits, CompanionLook.of(CompanionSpecies.grandma));
-    expect(companionOutfits.length, greaterThanOrEqualTo(4));
+  group('the outfits of the roll', () {
+    test("are Lotti's looks, in order, by default", () {
+      expect(surpriseRoll(7).outfits, companionOutfits);
+      expect(companionOutfits.length, greaterThanOrEqualTo(4));
+    });
+
+    test("are the grandpa's once he is chosen", () {
+      final roll = CompanionLookRoll(
+        customization: grandpa,
+        picked: null,
+        seed: 7,
+      );
+      expect(roll.outfits, hisOutfits);
+    });
   });
 
   group('companionOutfitSeedProvider', () {
@@ -255,6 +275,114 @@ void main() {
           .set(const CompanionCustomization(outfitId: 'grandma_rock'));
       expect(container.read(companionOutfitProvider), isNull);
       expect(worn(container), CompanionLook.grandmaRock.id);
+    });
+  });
+
+  group('with the grandpa chosen', () {
+    test('surprise me draws only his outfits, and reaches every one', () {
+      final roll = CompanionLookRoll(
+        customization: grandpa,
+        picked: null,
+        seed: 7,
+      );
+      final drawn = {for (var i = 0; i < 400; i++) roll.outfitFor('s-$i')};
+      expect(drawn, hisOutfits.toSet());
+    });
+
+    test('his chosen outfit is worn, dressed as him', () {
+      final container = containerWith(
+        customization: grandpa.copyWith(outfitId: () => 'grandpa_market'),
+      );
+      final look = container.read(companionLookRollProvider).draw('task-1');
+      expect(look.id, 'grandpa_market');
+      expect(look.species, CompanionSpecies.grandpa);
+      expect(look.flatCap, isTrue);
+    });
+
+    test("an outfit of Lotti's is not worn by him", () {
+      final roll = CompanionLookRoll(
+        customization: grandpa.copyWith(outfitId: () => 'grandma_rock'),
+        picked: null,
+        seed: 7,
+      );
+      expect(hisOutfits, contains(roll.outfitFor('task-1')));
+    });
+
+    test('next steps among his outfits and wraps from the last', () {
+      final container = containerWith(customization: grandpa);
+      final notifier = container.read(companionOutfitProvider.notifier)
+        ..next(CompanionLook.grandpaJazz);
+      expect(worn(container), CompanionLook.grandpaSeaside.id);
+      notifier.next(CompanionLook.grandpaMarket);
+      expect(worn(container), CompanionLook.grandpa.id);
+    });
+
+    // The regression: with "Surprise me" kept, the outfit id does not
+    // change when the character does, and a pick of Lotti's outfit stayed on
+    // the stage after the grandpa was chosen.
+    test('choosing him clears a stage pick of her outfit', () {
+      final container = containerWith();
+      final sub = container.listen(companionOutfitProvider, (_, _) {});
+      addTearDown(sub.close);
+      container
+          .read(companionOutfitProvider.notifier)
+          .next(companionOutfits.first);
+      expect(container.read(companionOutfitProvider), isNotNull);
+
+      container.read(companionCustomizationProvider.notifier).set(grandpa);
+      expect(container.read(companionOutfitProvider), isNull);
+      expect(
+        container.read(companionLookRollProvider).draw('task-1').species,
+        CompanionSpecies.grandpa,
+      );
+    });
+  });
+
+  group('with the aunt chosen', () {
+    const aunt = CompanionCustomization(character: CompanionSpecies.aunt);
+    final herOutfits = CompanionLook.of(CompanionSpecies.aunt);
+
+    test('surprise me draws only her outfits, and reaches every one', () {
+      final roll = CompanionLookRoll(
+        customization: aunt,
+        picked: null,
+        seed: 7,
+      );
+      expect(roll.outfits, herOutfits);
+      final drawn = {for (var i = 0; i < 400; i++) roll.outfitFor('s-$i')};
+      expect(drawn, herOutfits.toSet());
+    });
+
+    test('next steps among her outfits and wraps from the last', () {
+      final container = containerWith(customization: aunt);
+      container
+          .read(companionOutfitProvider.notifier)
+          .next(CompanionLook.auntWeekend);
+      expect(worn(container), CompanionLook.aunt.id);
+    });
+  });
+
+  group('with the uncle chosen', () {
+    const uncle = CompanionCustomization(character: CompanionSpecies.uncle);
+    final hisOwn = CompanionLook.of(CompanionSpecies.uncle);
+
+    test('surprise me draws only his outfits, and reaches every one', () {
+      final roll = CompanionLookRoll(
+        customization: uncle,
+        picked: null,
+        seed: 7,
+      );
+      expect(roll.outfits, hisOwn);
+      final drawn = {for (var i = 0; i < 400; i++) roll.outfitFor('s-$i')};
+      expect(drawn, hisOwn.toSet());
+    });
+
+    test('next steps among his outfits and wraps from the last', () {
+      final container = containerWith(customization: uncle);
+      container
+          .read(companionOutfitProvider.notifier)
+          .next(CompanionLook.uncleSnow);
+      expect(worn(container), CompanionLook.uncle.id);
     });
   });
 }

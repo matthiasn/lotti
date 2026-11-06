@@ -5,11 +5,6 @@ import 'package:lotti/features/companion/model/companion_customization.dart';
 import 'package:lotti/features/companion/model/companion_look.dart';
 import 'package:lotti/features/companion/state/companion_customization_controller.dart';
 
-/// The outfits she changes between: the grandmother's looks, in order.
-final List<CompanionLook> companionOutfits = CompanionLook.of(
-  CompanionSpecies.grandma,
-);
-
 /// The seed of this session's surprise outfits, drawn once when first read:
 /// the same for every host while the app runs, a new one the next time it
 /// starts. A test pins it.
@@ -21,8 +16,9 @@ final companionOutfitSeedProvider = Provider<int>(
 /// The outfit picked on her full-screen stage this session, or null while
 /// she follows her customization.
 ///
-/// [CompanionOutfitController.next] sets it; a new outfit chosen in settings
-/// clears it, so the settings choice starts over.
+/// [CompanionOutfitController.next] sets it; a new outfit or another
+/// character chosen in settings clears it, so the settings choice starts
+/// over.
 final companionOutfitProvider =
     NotifierProvider<CompanionOutfitController, CompanionLook?>(
       CompanionOutfitController.new,
@@ -32,15 +28,18 @@ final companionOutfitProvider =
 class CompanionOutfitController extends Notifier<CompanionLook?> {
   @override
   CompanionLook? build() {
-    ref.watch(companionCustomizationProvider.select((c) => c.outfitId));
+    ref.watch(
+      companionCustomizationProvider.select((c) => (c.outfitId, c.character)),
+    );
     return null;
   }
 
   /// Changes into the outfit after [from] — the one the stage shows now
-  /// ([CompanionLookRoll.outfitFor]) — back to the first after the last.
+  /// ([CompanionLookRoll.outfitFor]) — among its character's outfits, back
+  /// to the first after the last.
   void next(CompanionLook from) {
-    final at = companionOutfits.indexOf(from);
-    state = companionOutfits[(at + 1) % companionOutfits.length];
+    final outfits = CompanionLook.of(from.species);
+    state = outfits[(outfits.indexOf(from) + 1) % outfits.length];
   }
 }
 
@@ -68,9 +67,13 @@ class CompanionLookRoll {
   /// This session's seed for the surprise outfits.
   final int seed;
 
-  /// What she wears for [subject]: the stage's pick, else the outfit chosen
-  /// in her customization, else this session's surprise outfit for
-  /// [subject] — in the skin and hair of her customization
+  /// The chosen character's outfits, in order: what "Surprise me" draws
+  /// from and what settings lists.
+  List<CompanionLook> get outfits => CompanionLook.of(customization.character);
+
+  /// What the companion wears for [subject]: the stage's pick, else the
+  /// outfit chosen in the customization, else this session's surprise
+  /// outfit for [subject] — in the customization's skin and hair
   /// ([CompanionCustomization.dress]).
   CompanionLook draw(String subject) => customization.dress(outfitFor(subject));
 
@@ -81,20 +84,21 @@ class CompanionLookRoll {
 
   CompanionLook? _chosenOutfit() {
     final chosen = customization.outfitId;
-    for (final outfit in companionOutfits) {
+    for (final outfit in outfits) {
       if (outfit.id == chosen) return outfit;
     }
     return null;
   }
 
-  /// One of her outfits for [subject], by an FNV-1a hash of its characters
+  /// One of the character's [outfits] for [subject], by an FNV-1a hash of its characters
   /// mixed with [seed]: the same for the same subject all session.
   CompanionLook _surprise(String subject) {
     var hash = 0x811C9DC5 ^ seed;
     for (final unit in subject.codeUnits) {
       hash = ((hash ^ unit) * 0x01000193) & 0x7FFFFFFF;
     }
-    return companionOutfits[hash % companionOutfits.length];
+    final all = outfits;
+    return all[hash % all.length];
   }
 }
 

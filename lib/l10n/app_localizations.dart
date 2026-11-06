@@ -2865,7 +2865,7 @@ abstract class AppLocalizations {
   /// Label of the button on the companion's full-screen stage that changes her into her next outfit.
   ///
   /// In en, this message translates to:
-  /// **'Change her outfit'**
+  /// **'Change outfit'**
   String get aiCardCompanionStageNextOutfit;
 
   /// Screen-reader name of the companion's full-screen view, announced when it opens.
@@ -6492,6 +6492,90 @@ abstract class AppLocalizations {
   /// **'Unknown'**
   String get commonUnknown;
 
+  /// Name of the aunt character, a woman of about forty, shown on her chip.
+  ///
+  /// In en, this message translates to:
+  /// **'Aunt'**
+  String get companionSettingsCharacterAunt;
+
+  /// Explains the character choice: outfits belong to each character, the other choices carry over.
+  ///
+  /// In en, this message translates to:
+  /// **'Who keeps you company. Each has their own outfits; skin, hair color and sass stay as you set them.'**
+  String get companionSettingsCharacterDescription;
+
+  /// Name of the grandfather character, shown on his chip.
+  ///
+  /// In en, this message translates to:
+  /// **'Grandpa'**
+  String get companionSettingsCharacterGrandpa;
+
+  /// Section title in the companion settings: which character keeps the user company.
+  ///
+  /// In en, this message translates to:
+  /// **'Character'**
+  String get companionSettingsCharacterLabel;
+
+  /// Name of the grandmother character, Lotti; a proper name, kept as is.
+  ///
+  /// In en, this message translates to:
+  /// **'Lotti'**
+  String get companionSettingsCharacterLotti;
+
+  /// Name of the uncle character, a man of about thirty, shown on his chip.
+  ///
+  /// In en, this message translates to:
+  /// **'Uncle'**
+  String get companionSettingsCharacterUncle;
+
+  /// Name of one eye colour the companion can have, as a screen reader says it.
+  ///
+  /// In en, this message translates to:
+  /// **'Amber'**
+  String get companionSettingsEyeColourAmber;
+
+  /// Name of one eye colour the companion can have, as a screen reader says it.
+  ///
+  /// In en, this message translates to:
+  /// **'Blue'**
+  String get companionSettingsEyeColourBlue;
+
+  /// Name of one eye colour the companion can have, as a screen reader says it.
+  ///
+  /// In en, this message translates to:
+  /// **'Brown'**
+  String get companionSettingsEyeColourBrown;
+
+  /// Name of one eye colour the companion can have, as a screen reader says it.
+  ///
+  /// In en, this message translates to:
+  /// **'Dark brown'**
+  String get companionSettingsEyeColourDarkBrown;
+
+  /// Name of one eye colour the companion can have, as a screen reader says it.
+  ///
+  /// In en, this message translates to:
+  /// **'Green'**
+  String get companionSettingsEyeColourGreen;
+
+  /// Name of one eye colour the companion can have, as a screen reader says it.
+  ///
+  /// In en, this message translates to:
+  /// **'Gray'**
+  String get companionSettingsEyeColourGrey;
+
+  /// Name of one eye colour the companion can have, as a screen reader says it.
+  ///
+  /// In en, this message translates to:
+  /// **'Hazel'**
+  String get companionSettingsEyeColourHazel;
+
+  /// Section title in the companion settings: the colour of the character's eyes.
+  ///
+  /// In en, this message translates to:
+  /// **'Eye color'**
+  String get companionSettingsEyeColourLabel;
+
   /// Name of one hair colour the companion can have.
   ///
   /// In en, this message translates to:
@@ -6558,6 +6642,12 @@ abstract class AppLocalizations {
   /// **'Afro'**
   String get companionSettingsHairStyleAfro;
 
+  /// Name of one hairstyle the companion can wear: a bald crown with hair round the sides.
+  ///
+  /// In en, this message translates to:
+  /// **'Balding'**
+  String get companionSettingsHairStyleBalding;
+
   /// Name of one hairstyle the companion can wear.
   ///
   /// In en, this message translates to:
@@ -6588,10 +6678,34 @@ abstract class AppLocalizations {
   /// **'Locs'**
   String get companionSettingsHairStyleLocs;
 
+  /// Name of one hairstyle the companion can wear.
+  ///
+  /// In en, this message translates to:
+  /// **'Long'**
+  String get companionSettingsHairStyleLong;
+
+  /// Name of one hairstyle the companion can wear.
+  ///
+  /// In en, this message translates to:
+  /// **'Ponytail'**
+  String get companionSettingsHairStylePonytail;
+
+  /// Name of one hairstyle the companion can wear.
+  ///
+  /// In en, this message translates to:
+  /// **'Short'**
+  String get companionSettingsHairStyleShort;
+
+  /// Name of one hairstyle the companion can wear.
+  ///
+  /// In en, this message translates to:
+  /// **'Waves'**
+  String get companionSettingsHairStyleWaves;
+
   /// Explains the outfit choice on the companion settings page: a fixed outfit, or a random one per app launch.
   ///
   /// In en, this message translates to:
-  /// **'Choose one she always wears, or let her pick one each time you open the app.'**
+  /// **'Choose an outfit to keep, or get a fresh one each time you open the app.'**
   String get companionSettingsOutfitDescription;
 
   /// Name of one of the companion's outfits.
@@ -6600,11 +6714,23 @@ abstract class AppLocalizations {
   /// **'Everyday'**
   String get companionSettingsOutfitEveryday;
 
+  /// Name of one of the aunt's outfits, with a headband: a music festival.
+  ///
+  /// In en, this message translates to:
+  /// **'Festival'**
+  String get companionSettingsOutfitFestival;
+
   /// Name of one of the companion's outfits.
   ///
   /// In en, this message translates to:
   /// **'Garden'**
   String get companionSettingsOutfitGarden;
+
+  /// Name of one of the grandfather's outfits: an evening at a jazz club.
+  ///
+  /// In en, this message translates to:
+  /// **'Jazz'**
+  String get companionSettingsOutfitJazz;
 
   /// Section title on the companion settings page for choosing her outfit.
   ///
@@ -6618,11 +6744,41 @@ abstract class AppLocalizations {
   /// **'Lavender'**
   String get companionSettingsOutfitLavender;
 
+  /// Name of one of the grandfather's outfits, with a flat cap: a market day.
+  ///
+  /// In en, this message translates to:
+  /// **'Market day'**
+  String get companionSettingsOutfitMarket;
+
+  /// Name of one of the uncle's outfits: an evening out.
+  ///
+  /// In en, this message translates to:
+  /// **'Night out'**
+  String get companionSettingsOutfitNight;
+
   /// Name of one of the companion's outfits.
   ///
   /// In en, this message translates to:
   /// **'Rock'**
   String get companionSettingsOutfitRock;
+
+  /// Name of one of the grandfather's outfits: a day by the sea.
+  ///
+  /// In en, this message translates to:
+  /// **'Seaside'**
+  String get companionSettingsOutfitSeaside;
+
+  /// Name of one of the uncle's outfits: a day at the skate park.
+  ///
+  /// In en, this message translates to:
+  /// **'Skate park'**
+  String get companionSettingsOutfitSkate;
+
+  /// Name of one of the uncle's outfits, with a beanie: a snowy day.
+  ///
+  /// In en, this message translates to:
+  /// **'Snow day'**
+  String get companionSettingsOutfitSnow;
 
   /// Name of one of the companion's outfits.
   ///
@@ -6630,11 +6786,23 @@ abstract class AppLocalizations {
   /// **'Keynote'**
   String get companionSettingsOutfitStage;
 
+  /// Name of one of the aunt's outfits: a day in an artist's studio.
+  ///
+  /// In en, this message translates to:
+  /// **'Studio'**
+  String get companionSettingsOutfitStudio;
+
   /// Outfit option that lets the companion pick a random outfit each time the app opens.
   ///
   /// In en, this message translates to:
   /// **'Surprise me'**
   String get companionSettingsOutfitSurprise;
+
+  /// Name of one of the aunt's outfits: a weekend.
+  ///
+  /// In en, this message translates to:
+  /// **'Weekend'**
+  String get companionSettingsOutfitWeekend;
 
   /// Name of one of the companion's outfits.
   ///
@@ -6651,7 +6819,7 @@ abstract class AppLocalizations {
   /// Explains the companion's sass setting: warm, cheeky, or fully sassy reactions to what she reads.
   ///
   /// In en, this message translates to:
-  /// **'How she takes what she reads to you: a warm cheer, a cheeky tease, or full grandma, with eye rolls and the look over her glasses.'**
+  /// **'How your companion reacts to what it reads aloud: warm encouragement, cheeky teasing, or full sass, with eye rolls and a look over the glasses.'**
   String get companionSettingsSassDescription;
 
   /// Heading of the companion setting for how much sass she reacts with while reading aloud.
@@ -6693,13 +6861,13 @@ abstract class AppLocalizations {
   /// No description provided for @companionSettingsVoiceDescription.
   ///
   /// In en, this message translates to:
-  /// **'Ask her something by voice and she answers out loud. A typed question always gets a written answer.'**
+  /// **'Ask something by voice and your companion answers out loud. A typed question always gets a written answer.'**
   String get companionSettingsVoiceDescription;
 
   /// No description provided for @companionSettingsVoiceLabel.
   ///
   /// In en, this message translates to:
-  /// **'Her voice'**
+  /// **'Voice'**
   String get companionSettingsVoiceLabel;
 
   /// No description provided for @completeHabitFailButton.
@@ -6771,7 +6939,7 @@ abstract class AppLocalizations {
   /// No description provided for @configFlagEnableCompanionDescription.
   ///
   /// In en, this message translates to:
-  /// **'Show a character beside the AI summary who reads it aloud, her lips moving with the voice. Needs AI summary playback.'**
+  /// **'Show a character beside the AI summary who reads it aloud, lips moving with the voice. Needs AI summary playback.'**
   String get configFlagEnableCompanionDescription;
 
   /// No description provided for @configFlagEnableDailyOs.
@@ -24674,7 +24842,7 @@ abstract class AppLocalizations {
   /// Subtitle of the companion settings entry in the settings tree.
   ///
   /// In en, this message translates to:
-  /// **'Her skin, hair and outfit'**
+  /// **'Character, skin, hair and outfit'**
   String get settingsCompanionSubtitle;
 
   /// Title of the settings page where the companion character is customized.

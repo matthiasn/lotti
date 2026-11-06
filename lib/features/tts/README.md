@@ -26,6 +26,9 @@ read-aloud model, and only when the user presses play.
   network.
 - **Uses the app's own audio stack**, so playback behaves like every other sound
   in Lotti.
+- **Keeps speaking in the background.** On a phone, a summary being read keeps
+  playing when the listener switches to another app; other apps' sound ducks
+  under the voice and comes back when it ends.
 
 The control is currently hidden unless the feature flag is on — local voice
 quality is still being evaluated.

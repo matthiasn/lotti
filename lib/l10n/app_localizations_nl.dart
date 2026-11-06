@@ -3865,6 +3865,49 @@ class AppLocalizationsNl extends AppLocalizations {
   String get commonUnknown => 'Onbekend';
 
   @override
+  String get companionSettingsCharacterAunt => 'Tante';
+
+  @override
+  String get companionSettingsCharacterDescription =>
+      'Wie je gezelschap houdt. Elk personage heeft eigen outfits; huid, haarkleur en pit blijven zoals je ze hebt ingesteld.';
+
+  @override
+  String get companionSettingsCharacterGrandpa => 'Opa';
+
+  @override
+  String get companionSettingsCharacterLabel => 'Personage';
+
+  @override
+  String get companionSettingsCharacterLotti => 'Lotti';
+
+  @override
+  String get companionSettingsCharacterUncle => 'Oom';
+
+  @override
+  String get companionSettingsEyeColourAmber => 'Amber';
+
+  @override
+  String get companionSettingsEyeColourBlue => 'Blauw';
+
+  @override
+  String get companionSettingsEyeColourBrown => 'Bruin';
+
+  @override
+  String get companionSettingsEyeColourDarkBrown => 'Donkerbruin';
+
+  @override
+  String get companionSettingsEyeColourGreen => 'Groen';
+
+  @override
+  String get companionSettingsEyeColourGrey => 'Grijs';
+
+  @override
+  String get companionSettingsEyeColourHazel => 'Hazelnoot';
+
+  @override
+  String get companionSettingsEyeColourLabel => 'Oogkleur';
+
+  @override
   String get companionSettingsHairColourAuburn => 'Koperrood';
 
   @override
@@ -3898,6 +3941,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get companionSettingsHairStyleAfro => 'Afro';
 
   @override
+  String get companionSettingsHairStyleBalding => 'Kalend';
+
+  @override
   String get companionSettingsHairStyleBob => 'Bob';
 
   @override
@@ -3913,14 +3959,32 @@ class AppLocalizationsNl extends AppLocalizations {
   String get companionSettingsHairStyleLocs => 'Locs';
 
   @override
+  String get companionSettingsHairStyleLong => 'Lang';
+
+  @override
+  String get companionSettingsHairStylePonytail => 'Paardenstaart';
+
+  @override
+  String get companionSettingsHairStyleShort => 'Kort';
+
+  @override
+  String get companionSettingsHairStyleWaves => 'Golven';
+
+  @override
   String get companionSettingsOutfitDescription =>
-      'Kies een outfit die ze altijd draagt, of laat haar er elke keer dat je de app opent zelf een kiezen.';
+      'Kies een outfit om te houden, of krijg er elke keer dat je de app opent een nieuwe.';
 
   @override
   String get companionSettingsOutfitEveryday => 'Dagelijks';
 
   @override
+  String get companionSettingsOutfitFestival => 'Festival';
+
+  @override
   String get companionSettingsOutfitGarden => 'Tuin';
+
+  @override
+  String get companionSettingsOutfitJazz => 'Jazz';
 
   @override
   String get companionSettingsOutfitLabel => 'Outfit';
@@ -3929,13 +3993,34 @@ class AppLocalizationsNl extends AppLocalizations {
   String get companionSettingsOutfitLavender => 'Lavendel';
 
   @override
+  String get companionSettingsOutfitMarket => 'Marktdag';
+
+  @override
+  String get companionSettingsOutfitNight => 'Avondje uit';
+
+  @override
   String get companionSettingsOutfitRock => 'Rock';
+
+  @override
+  String get companionSettingsOutfitSeaside => 'Aan zee';
+
+  @override
+  String get companionSettingsOutfitSkate => 'Skatepark';
+
+  @override
+  String get companionSettingsOutfitSnow => 'Sneeuwdag';
 
   @override
   String get companionSettingsOutfitStage => 'Podium';
 
   @override
+  String get companionSettingsOutfitStudio => 'Atelier';
+
+  @override
   String get companionSettingsOutfitSurprise => 'Verras me';
+
+  @override
+  String get companionSettingsOutfitWeekend => 'Weekend';
 
   @override
   String get companionSettingsOutfitWinter => 'Winter';
@@ -3945,7 +4030,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get companionSettingsSassDescription =>
-      'Hoe ze opvat wat ze je voorleest: warm aanmoedigend, ondeugend plagend of volle oma, met rollende ogen en de blik over haar bril.';
+      'Hoe je maatje opvat wat het je voorleest: warm aanmoedigend, ondeugend plagend of volle pit, met rollende ogen en de blik over de bril.';
 
   @override
   String get companionSettingsSassLabel => 'Pit';
@@ -3970,10 +4055,10 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get companionSettingsVoiceDescription =>
-      'Vraag haar iets met je stem en ze antwoordt hardop. Een getypte vraag krijgt altijd een geschreven antwoord.';
+      'Vraag iets met je stem en je maatje antwoordt hardop. Een getypte vraag krijgt altijd een geschreven antwoord.';
 
   @override
-  String get companionSettingsVoiceLabel => 'Haar stem';
+  String get companionSettingsVoiceLabel => 'Stem';
 
   @override
   String get completeHabitFailButton => 'Gemiste';
@@ -4016,7 +4101,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get configFlagEnableCompanionDescription =>
-      'Toon naast de AI-samenvatting een personage dat hem voorleest, met haar mond op de stem. Vereist AI samenvatting afspelen.';
+      'Toon naast de AI-samenvatting een personage dat de samenvatting voorleest, met lippen die synchroon met de stem bewegen. Vereist AI samenvatting afspelen.';
 
   @override
   String get configFlagEnableDailyOs => 'DailyOS inschakelen';
@@ -14922,7 +15007,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get settingsCelebrationsVariantSparks => 'Vonken';
 
   @override
-  String get settingsCompanionSubtitle => 'Haar huid, haar en outfit';
+  String get settingsCompanionSubtitle => 'Personage, huid, haar en outfit';
 
   @override
   String get settingsCompanionTitle => 'Metgezel';

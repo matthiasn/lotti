@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/tts/state/tts_audio_focus.dart';
 import 'package:lotti/features/tts/state/tts_audio_player.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -120,4 +121,151 @@ void main() {
     await build().dispose();
     verify(() => player.dispose()).called(1);
   });
+
+  group('the audio focus', () {
+    late _RecordingFocus focus;
+
+    setUp(() => focus = _RecordingFocus());
+
+    MediaKitTtsAudioPlayer withFocus() => MediaKitTtsAudioPlayer(player, focus);
+
+    test('settled is the focus letting go', () async {
+      final letting = Completer<void>();
+      focus.settling = letting.future;
+      var settled = false;
+      unawaited(withFocus().settled.then((_) => settled = true));
+      await pumpEventQueue();
+      expect(settled, isFalse);
+      letting.complete();
+      await pumpEventQueue();
+      expect(settled, isTrue);
+    });
+
+    test('is taken after the clip is ready and before it plays', () async {
+      when(() => player.play()).thenAnswer((_) async {
+        focus.calls.add('play');
+      });
+      await withFocus().play(File('/tmp/tts.wav'), speed: 1);
+      expect(focus.calls, ['acquire', 'play']);
+    });
+
+    test('is given back when the voice is stopped', () async {
+      final audio = withFocus();
+      await audio.play(File('/tmp/tts.wav'), speed: 1);
+      await audio.stop();
+      expect(focus.calls, ['acquire', 'release']);
+    });
+
+    test('is given back when the clip plays to its end, not before', () async {
+      withFocus();
+      completedController.add(false);
+      await pumpEventQueue();
+      expect(focus.calls, isEmpty);
+      completedController.add(true);
+      await pumpEventQueue();
+      expect(focus.calls, ['release']);
+    });
+
+    test('a stop while the focus is being taken never plays, and its own '
+        'release gives the claim back', () async {
+      final taking = Completer<void>();
+      focus.acquiring = taking.future;
+      final audio = withFocus();
+      final play = audio.play(File('/tmp/tts.wav'), speed: 1);
+      await pumpEventQueue();
+      await audio.stop();
+      taking.complete();
+      await play;
+      verifyNever(() => player.play());
+      expect(focus.calls, ['acquire', 'release']);
+    });
+
+    // The regression: the stop queued its release only after the native stop
+    // returned, so a play started meanwhile claimed first, and the stale
+    // release then deactivated the new clip's session.
+    test("a stop's release is queued before a play started during the native "
+        'stop claims', () async {
+      final stopping = Completer<void>();
+      when(() => player.stop()).thenAnswer((_) => stopping.future);
+      final audio = withFocus();
+      final stop = audio.stop();
+      final play = audio.play(File('/tmp/b.wav'), speed: 1);
+      await pumpEventQueue();
+      stopping.complete();
+      await Future.wait([stop, play]);
+      expect(focus.calls, ['release', 'acquire']);
+    });
+
+    // The regression: a play cancelled while taking the focus released it
+    // once more when the claim came back — after a newer play had claimed
+    // it, deactivating the newer play's session.
+    test(
+      'a cancelled play never releases the focus a newer play holds',
+      () async {
+        final taking = Completer<void>();
+        focus.acquiring = taking.future;
+        final audio = withFocus();
+        final first = audio.play(File('/tmp/a.wav'), speed: 1);
+        await pumpEventQueue();
+        await audio.stop();
+        focus.acquiring = null;
+        await audio.play(File('/tmp/b.wav'), speed: 1);
+        taking.complete();
+        await first;
+        expect(focus.calls, ['acquire', 'release', 'acquire']);
+        verify(() => player.play()).called(1);
+      },
+    );
+
+    test('is given back, and the error passed on, when the clip cannot '
+        'start', () async {
+      when(() => player.play()).thenThrow(StateError('no output'));
+      await expectLater(
+        withFocus().play(File('/tmp/tts.wav'), speed: 1),
+        throwsStateError,
+      );
+      expect(focus.calls, ['acquire', 'release']);
+    });
+
+    test(
+      'is given back even when the player fails to stop or dispose',
+      () async {
+        when(() => player.stop()).thenThrow(StateError('stuck'));
+        when(() => player.dispose()).thenThrow(StateError('gone'));
+        final audio = withFocus();
+        await expectLater(audio.stop(), throwsStateError);
+        await expectLater(audio.dispose(), throwsStateError);
+        expect(focus.calls, ['release', 'release']);
+      },
+    );
+
+    test('is given back on dispose, and the end of a clip after it is not '
+        'heard', () async {
+      final audio = withFocus();
+      await audio.dispose();
+      completedController.add(true);
+      await pumpEventQueue();
+      expect(focus.calls, ['release']);
+    });
+  });
+}
+
+/// Records when the player takes and gives back the focus; [acquiring]
+/// holds the taking open when a test needs it to.
+class _RecordingFocus implements TtsAudioFocus {
+  final calls = <String>[];
+  Future<void>? acquiring;
+  Future<void>? settling;
+
+  @override
+  Future<void> get settled => settling ?? Future<void>.value();
+
+  @override
+  Future<void> acquire() async {
+    calls.add('acquire');
+    await acquiring;
+  }
+
+  @override
+  Future<void> release() async => calls.add('release');
 }

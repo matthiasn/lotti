@@ -8,6 +8,7 @@ import 'package:lotti/features/agents/ui/ai_summary_card/summary_read_aloud_butt
 import 'package:lotti/features/companion/animation/mouth_track.dart';
 import 'package:lotti/features/companion/model/companion_customization.dart';
 import 'package:lotti/features/companion/model/companion_gesture.dart';
+import 'package:lotti/features/companion/model/companion_look.dart';
 import 'package:lotti/features/companion/model/companion_mood.dart';
 import 'package:lotti/features/companion/rig/companion_painter.dart';
 import 'package:lotti/features/companion/state/companion_customization_controller.dart';
@@ -31,6 +32,9 @@ Future<void> _pumpFrames(WidgetTester tester) async {
 }
 
 void main() {
+  /// Lotti's outfits, in order: what the stage's palette steps through.
+  final companionOutfits = CompanionLook.of(CompanionSpecies.grandma);
+
   Future<void> openStage(
     WidgetTester tester, {
     CompanionMood? mood,
@@ -239,7 +243,7 @@ void main() {
     expect(worn(), companionOutfits.first.id);
 
     final outfit = find.byKey(const ValueKey('companionStageOutfit'));
-    expect(find.bySemanticsLabel('Change her outfit'), findsOneWidget);
+    expect(find.bySemanticsLabel('Change outfit'), findsOneWidget);
     await tester.tap(outfit);
     await tester.pump();
     expect(worn(), companionOutfits[1].id);

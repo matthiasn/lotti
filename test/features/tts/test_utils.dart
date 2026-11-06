@@ -85,6 +85,12 @@ class FakeTtsAudioPlayer implements TtsAudioPlayer {
   int stopCount = 0;
   double? lastSpeed;
 
+  /// Held open, the player is still letting go of the audio session.
+  Completer<void>? settling;
+
+  @override
+  Future<void> get settled => settling?.future ?? Future<void>.value();
+
   @override
   Future<void> play(File file, {required double speed}) async {
     playCount++;

@@ -112,6 +112,42 @@ sources:
     resource: ../../lib/features/companion/ui/settings/companion_settings_page.dart
     title: The page that customizes her
     last_modified: 2026-10-19
+  - id: trousers
+    resource: ../../lib/features/companion/rig/trousers_painter.dart
+    title: Trouser legs, brogues, the seat and waistband
+    last_modified: 2026-11-04
+  - id: grandpa-outfit
+    resource: ../../lib/features/companion/rig/grandpa_outfit_painter.dart
+    title: The grandpa's shirt, braces, collar, bow tie and rolled sleeves
+    last_modified: 2026-11-04
+  - id: grandpa-head
+    resource: ../../lib/features/companion/rig/grandpa_head_painter.dart
+    title: The grandpa's beard, moustache and flat cap
+    last_modified: 2026-11-04
+  - id: aunt-outfit
+    resource: ../../lib/features/companion/rig/aunt_outfit_painter.dart
+    title: The aunt's boiler suit, belt and short sleeves
+    last_modified: 2026-11-04
+  - id: uncle-outfit
+    resource: ../../lib/features/companion/rig/uncle_outfit_painter.dart
+    title: The uncle's bomber jacket, tee, headphones and jacket sleeves
+    last_modified: 2026-11-04
+  - id: palette
+    resource: ../../lib/features/companion/model/companion_palette.dart
+    title: CompanionPalette, every character's colours
+    last_modified: 2026-11-04
+  - id: long-hair
+    resource: ../../lib/features/companion/rig/long_hair_painter.dart
+    title: The long, wavy and ponytail styles
+    last_modified: 2026-11-04
+  - id: face
+    resource: ../../lib/features/companion/rig/face_painter.dart
+    title: Eyes, brows (browShape, browLift), nose and mouth
+    last_modified: 2026-11-04
+  - id: short-hair
+    resource: ../../lib/features/companion/rig/short_hair_painter.dart
+    title: The short and balding cuts
+    last_modified: 2026-11-04
   - id: playhead-clock
     resource: ../../lib/features/companion/animation/playhead_clock.dart
     title: PlayheadClock
@@ -448,10 +484,10 @@ and she must stay as she was. It is three things together:
 
 ```mermaid
 flowchart LR
-  DB[(SettingsDb<br/>COMPANION_CUSTOMIZATION)] -->|loaded once| C[companionCustomizationProvider<br/>skin tone · hairstyle · hair colour · outfit? · sass]
+  DB[(SettingsDb<br/>COMPANION_CUSTOMIZATION)] -->|loaded once| C[companionCustomizationProvider<br/>character · skin tone · hairstyle · hair colour · outfit? · sass]
   Settings[Settings › Preferences › Companion] -->|set| C
   Stage[stage palette button] -->|next| P[companionOutfitProvider<br/>the stage's pick, or none]
-  C -->|a new outfit clears| P
+  C -->|a new outfit or character clears| P
   R[companionOutfitSeedProvider<br/>once per session] --> Roll
   C --> Roll[companionLookRollProvider<br/>customization · pick · seed]
   P --> Roll
@@ -462,15 +498,21 @@ flowchart LR
 
 - **The outfit** (`companionOutfitProvider`): the stage's pick for the
   session wins; with none, the outfit chosen in her customization; with
-  "Surprise me", one of `companionOutfits` (the grandmother's looks) picked
-  by an FNV-1a hash of the subject mixed with `companionOutfitSeedProvider`,
+  "Surprise me", one of the roll's `outfits` — the chosen character's looks,
+  `CompanionLook.of(character)` — picked by an FNV-1a hash of the subject mixed with `companionOutfitSeedProvider`,
   a seed drawn once per session, which a test pins. So the same task shows
   her in the same outfit all session, another task may show another, and
   the next session draws afresh. The palette control on the stage calls
   `next` with `outfitFor(subject)`, the outfit she is shown in, stepping on
-  and wrapping. A new choice in settings clears the pick.
-- **The customization** (`companionCustomizationProvider`): her skin tone,
-  hairstyle, hair colour, outfit, sass (default `cheeky`) and whether she
+  among that outfit's character's looks and wrapping. A new outfit or
+  another character chosen in settings clears the pick: with "Surprise me"
+  kept, the outfit id does not change when the character does, so the pick
+  watches both.
+- **The customization** (`companionCustomizationProvider`): the character
+  (`CompanionSpecies.choosable`, the humans: Lotti by default, the
+  grandpa, the aunt or the uncle), the skin tone, hairstyle, hair colour,
+  eye colour (`eyeColour`, brown by default, chosen freely and never tied to
+  the skin tone), outfit, sass (default `cheeky`) and whether she
   answers a spoken question aloud (`speaksReplies`, default on; only an
   explicit false mutes her). `loaded` says whether that is known yet — the
   stored value read (nothing stored counts) or set. It stays false while the
@@ -479,14 +521,18 @@ flowchart LR
   out shows at once and is kept apart, with every part any change touched; once
   the read lands only those parts are laid over what it found
   (`CompanionCustomization.adopting`), so a stored part never touched — a
-  mute — survives, and a part switched and switched back still counts. A
+  mute — survives, and a part switched and switched back still counts. The
+  character and its outfit are adopted together — an outfit belongs to one
+  character — so an outfit picked for Lotti during the load is never laid
+  over a stored grandpa. A
   reload sync asks for meanwhile waits until then. Stored as JSON
   under
   `COMPANION_CUSTOMIZATION` in `SettingsDb` (the keys are in
   `lib/utils/companion_settings_keys.dart`, which sync reads too). It starts at
   the default — Lotti as the videos draw her — and refines when the load
-  lands; a change made before that wins. A part a newer version wrote, or an
-  outfit that no longer exists, reads as the default — but a change is laid
+  lands; a change made before that wins. A part a newer version wrote, an
+  outfit that no longer exists or is another character's, or an animal
+  stored as the character, reads as the default — but a change is laid
   over the stored JSON (`CompanionCustomization.toJsonOver`), so a part it
   leaves alone keeps what the newer version wrote, and sync never carries an
   older build's defaults over a newer device's choice.
@@ -513,18 +559,50 @@ flowchart LR
   triggers while a local save is still committing waits for the save, so the
   page never shows the value the save is replacing. "Send settings" re-sends
   it with the other preferences.
-- **Dressing** (`CompanionCustomization.dress`) lays the skin tone and hair
-  colour over the outfit's palette and sets its hairstyle; the outfit keeps
+- **Dressing** (`CompanionCustomization.dress`) lays the skin tone, the hair
+  colour and the eye colour over the
+  outfit's palette and sets its hairstyle; the outfit keeps
   its clothes and props. A deeper tone deepens plain lips, never lipstick an
-  outfit paints (the rock look's red).
+  outfit paints (the rock look's red). `asCharacter` is how settings
+  switches character: it clears the outfit, since outfits belong to one,
+  and sets the hairstyle to that character's own
+  (`CompanionSpecies.hairStyle`: the bun, the grandpa's short cut, the
+  aunt's bob, the uncle's curls). As the character it already is it changes
+  nothing, so tapping the chosen character's chip again never discards its
+  outfit or hair.
 
 Every part combines with every other, and none is named after a people:
 skin tones are numbered, light to deep, and a screen reader says "Skin tone
-3". Five hairstyles share one dispatch, `hair_styles_painter.dart`: each has
+3" (seven tones; the seventh, the deepest, was added last so a stored tone
+keeps its number). Ten hairstyles share one dispatch,
+`hair_styles_painter.dart`: each has
 a back layer (behind the head and body), a front layer over the forehead
 whose outline also shades it, and hanging parts that trail the head's motion
 by the hair lag — the locs and the bob's ends; the bun keeps its painter,
-`hair_painter.dart`. The curls and the afro are built of coils: a jittered,
+`hair_painter.dart`, and the short and balding cuts theirs,
+`short_hair_painter.dart`, and long, waves and ponytail theirs,
+`long_hair_painter.dart` (the long sheets, the waves' ends and the tail
+trail the lag). Neither close crop takes the lag. The bun's knot sits at
+`bunCentre`, out beside the jaw where it shows; its waves and strands are
+clipped to the hair and its sheen kept soft, so a dark colour reads as hair.
+
+**A hat sits on the hair, not in it.** `hatSeat` gives each style a lift and
+a widening about the hairline, and `seatHat` draws the beret, flat cap or
+beanie through it: none for close styles, a little for the bob, locs, long
+hair, waves and curls. An afro has no seat — `hatSeat` is null and
+`seatHat` draws nothing — because a hat drawn for a head reads as floating
+in it; a hat made for an afro would be a drawing of its own. An animal
+wears a hat as the plain head does.
+
+**A brow travels only as far as a brow can.** `browShape` turns a raise and
+a tilt into the brow's inner end, peak and outer end: `browLift` saturates
+the raise smoothly at `browMaxRise` and stops a fall at `browMaxFall`, and
+the tilt is limited and gives way as the brow rises. The sum of mood,
+gesture, flourish and spring overshoot reaches the painter unchanged; only
+the geometry is bounded, so one brow up on a skeptical face no longer hooks
+off the eye. Balding's
+front is only a tuft over each ear and the light on the bare crown, so its
+hairline is empty and `drawForeheadShadow` casts nothing. The curls and the afro are built of coils: a jittered,
 staggered grid of puffs inside the hair and one on each point of its outline,
 painted bottom-up so each overlaps and shades the one below, each lit as the
 sheen lights the hair at its place, so the silhouette is scalloped and the
@@ -533,6 +611,60 @@ ears, leaving only its underside to the back layer. The locs sweep back from
 the hairline to points spread over the crown, and each loc is a rope with a
 shaded side, a lit one and slanted twists. The jitter is a fixed hash, never
 `Random`, so a frame never shimmers.
+
+# The grandpa, the aunt and the uncle
+
+They are species of the same rig (`CompanionSpecies.grandpa`,
+`CompanionSpecies.aunt`, `CompanionSpecies.uncle`) with clothes of their
+own, none of them Lotti's or each other's. The painters ask the species'
+traits rather than its name where a trait will do: `legs` (bare under a
+dress, trousers, or an animal's paws) picks the leg painter, `shoes` the
+trousers' footwear (brogues, high-tops or boots), `cuffedTrousers` the
+turn-ups, `bearded` the beard, `lashes` the flicked lashes at the eyes'
+outer corners, `aged` the laugh lines — an unaged face draws none, and
+its brows fuller (`drawBrow`'s `fullness`) — `masculine` a man's face and
+build, and `stubble` a shadow along the beard's outline (`drawStubble`). A
+man's face takes every cue at once, since any one alone still read as a
+woman's: narrower eyes with a smaller iris and a lighter lash line
+(`drawEye`'s `open`, `irisRadius`, `lashLine`), heavy straight brows set
+lower (`browShape`'s `arch`, `fullness`), a broad nose with a shaded bridge
+(`drawNose`'s `broad`), thin lips (`drawMouth`'s `lipWeight`) in the skin's
+own colour (`CompanionSkinTone.naturalLips`, laid on in `dress`), the
+squarer jaw of `facePath`'s `jaw` with shade along its edge and under the
+cheekbones, and no blush. Below the head: a thicker neck with an Adam's
+apple (`drawNeck`), and a broad, straight shirt
+(`tuckedTopPath`'s `broad`). Their garments' colours sit in
+`CompanionPalette` (`model/companion_palette.dart`) beside hers, each
+defaulting to its everyday outfit; the uncle's tee takes the shirt's
+colours, his chinos the trousers', his beanie the cap's. Only the upper
+garments and the sleeve are dispatched on the character itself, since each
+character's are its own:
+
+| Painter | Draws |
+|---|---|
+| `rig/trousers_painter.dart` | the trouser legs, straight from hip to hem, their turn-ups, and the character's shoes; the seat and waistband, in the torso frame; `tuckedTopPath`, the outline of any top tucked into them |
+| `rig/grandpa_outfit_painter.dart` | the shirt, then the trousers' top over its tucked hem, the braces, the collar and the bow tie; the shirt sleeve rolled to the forearm |
+| `rig/grandpa_head_painter.dart` | the beard, the moustache and the flat cap |
+| `rig/aunt_outfit_painter.dart` | the boiler suit in the trousers' colours, its zip, chest pocket and open collar, then the seat and the belt over the band; the short sleeve turned up above the elbow |
+| `rig/uncle_outfit_painter.dart` | the seat, the untucked tee, the bomber's two open fronts with their ribbed hem and collar, and the headphones on the collarbones; the jacket sleeve to a ribbed cuff at the wrist |
+
+Her hoops (`EarringKind.hoop`), her headband (`CompanionLook.headband`) and
+his beanie (`CompanionLook.beanie`) sit with the other things worn on the
+head, in `head_painter.dart`.
+
+His half-moon readers sit with the other frames in `head_painter.dart`
+(`CompanionLook.readingGlasses`).
+
+**The beard goes under the mouth, the moustache over it.** Inside the human
+face the order is laugh lines, beard, mouth, moustache, so every mouth shape
+opens over the beard and the moustache tops the upper lip.
+
+**A bounce of joy never parts a tucked top from the trousers.** Like
+Lotti's legs, trouser legs hang from the pelvis, which a bounce never moves; the seat
+rides on the lifted torso frame. The seat reaches 30 below the waist, past
+the legs' tops at the hips, and a bounce lifts it by at most a few units, so
+a test walks each leg from the waistband to the ankle at the biggest bounce
+and finds no gap.
 
 `full` is head to toe, wide enough that both wrists stay inside it with room
 for the hand in every gesture (a test walks each gesture through its phases).

@@ -52,10 +52,17 @@ void main() {
   Future<Raster> front(CompanionHairStyle style, [Offset lag = Offset.zero]) =>
       _draw((c) => drawFrontHair(c, _c, lag, 0, style));
 
+  /// The styles with hair over the forehead: all but the bare crown.
+  final fringed = [
+    for (final style in CompanionHairStyle.values)
+      if (style != CompanionHairStyle.balding) style,
+  ];
+
   test(
-    'every style draws hair behind the head and over the forehead',
+    'every style but the bare crown draws hair behind the head and over the '
+    'forehead',
     () async {
-      for (final style in CompanionHairStyle.values) {
+      for (final style in fringed) {
         final behind = await _draw(
           (c) => drawBackHair(c, _c, Offset.zero, style),
         );
@@ -154,7 +161,7 @@ void main() {
   });
 
   test('the hairline, and the shadow under it, turns with the head', () {
-    for (final style in CompanionHairStyle.values) {
+    for (final style in fringed) {
       final ahead = fringeFor(style, Offset.zero, 0);
       final turned = fringeFor(style, Offset.zero, 1);
       double meanX(List<Offset> pts) =>
@@ -181,8 +188,30 @@ void main() {
             if (r.at(x, y) != const Color(0xFF000000)) n++;
           }
         }
-        expect(n, greaterThan(1000), reason: style.name);
+        // A bare crown has no fringe to cast one.
+        expect(
+          n,
+          style == CompanionHairStyle.balding ? 0 : greaterThan(1000),
+          reason: style.name,
+        );
       }
+    },
+  );
+
+  test(
+    'the bare crown has no hairline, but hair behind and over the ears',
+    () async {
+      expect(fringeFor(CompanionHairStyle.balding, Offset.zero, 0), isEmpty);
+      expect(
+        (await _draw(
+          (c) => drawBackHair(c, _c, Offset.zero, CompanionHairStyle.balding),
+        )).count(_c.hairBack),
+        greaterThan(2000),
+      );
+      expect(
+        (await front(CompanionHairStyle.balding)).count(_c.hair, tolerance: 30),
+        greaterThan(200),
+      );
     },
   );
 
@@ -282,4 +311,107 @@ void main() {
       expect(grooves.last - grooves.first, greaterThan(40));
     });
   });
+
+  group('a hat on the hair', () {
+    // The ask: hats on the big hairstyles looked wrong, so for now an afro
+    // wears none.
+    test('an afro has no seat for a hat; every other style has one', () {
+      expect(hatSeat(CompanionHairStyle.afro), isNull);
+      for (final style in CompanionHairStyle.values) {
+        if (style == CompanionHairStyle.afro) continue;
+        expect(hatSeat(style), isNotNull, reason: style.name);
+      }
+    });
+
+    test('close styles take a hat as it is, fuller ones a little higher and '
+        'wider', () {
+      for (final style in [
+        CompanionHairStyle.bun,
+        CompanionHairStyle.short,
+        CompanionHairStyle.balding,
+        CompanionHairStyle.ponytail,
+      ]) {
+        expect(hatSeat(style), (lift: 0.0, widen: 1.0), reason: style.name);
+      }
+      for (final style in [
+        CompanionHairStyle.curls,
+        CompanionHairStyle.bob,
+        CompanionHairStyle.locs,
+        CompanionHairStyle.long,
+        CompanionHairStyle.waves,
+      ]) {
+        final seat = hatSeat(style)!;
+        expect(seat.lift, inInclusiveRange(1, 4), reason: style.name);
+        expect(seat.widen, inInclusiveRange(1.05, 1.12), reason: style.name);
+      }
+    });
+
+    Future<Rect> drawn(CompanionHairStyle style) async {
+      final r = await _draw(
+        (c) => seatHat(c, style, 0, () {
+          c.drawRect(
+            const Rect.fromLTRB(-40, -90, 40, -45),
+            Paint()..color = const Color(0xFFFF0000),
+          );
+        }),
+      );
+      return _extent(r, const Color(0xFFFF0000));
+    }
+
+    test(
+      'seatHat widens what it draws about the hairline and lifts it',
+      () async {
+        final plain = await drawn(CompanionHairStyle.bun);
+        final curls = await drawn(CompanionHairStyle.curls);
+        expect(plain.width, closeTo(80, 2));
+        expect(curls.width, closeTo(80 * 1.1, 2));
+        expect(curls.bottom, lessThan(plain.bottom - 2));
+        expect(curls.center.dx, closeTo(plain.center.dx, 1));
+      },
+    );
+
+    test('seatHat draws nothing on an afro', () async {
+      final r = await _draw(
+        (c) => seatHat(c, CompanionHairStyle.afro, 0, () {
+          c.drawRect(
+            const Rect.fromLTRB(-40, -90, 40, -45),
+            Paint()..color = const Color(0xFFFF0000),
+          );
+        }),
+      );
+      expect(r.count(const Color(0xFFFF0000)), 0);
+    });
+  });
+
+  test(
+    'the long, wavy and ponytail styles swing with the lag at their ends',
+    () async {
+      Future<double> meanX(CompanionHairStyle style, Offset lag) async {
+        final r = await _draw((c) => drawBackHair(c, _c, lag, style));
+        var sum = 0.0;
+        var n = 0;
+        for (var y = 170 + 40; y < 300; y++) {
+          for (var x = 0; x < 300; x++) {
+            if (near(r.at(x, y), _c.hairBack)) {
+              sum += x;
+              n++;
+            }
+          }
+        }
+        return sum / n;
+      }
+
+      for (final style in [
+        CompanionHairStyle.long,
+        CompanionHairStyle.waves,
+        CompanionHairStyle.ponytail,
+      ]) {
+        expect(
+          await meanX(style, const Offset(8, 0)),
+          greaterThan(await meanX(style, Offset.zero) + 2),
+          reason: style.name,
+        );
+      }
+    },
+  );
 }

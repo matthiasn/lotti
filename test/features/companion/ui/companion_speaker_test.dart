@@ -89,6 +89,9 @@ TtsPlaybackState _playing(
 );
 
 void main() {
+  /// Lotti's outfits, in order: what the stage's palette steps through.
+  final companionOutfits = CompanionLook.of(CompanionSpecies.grandma);
+
   late _Playback playback;
   late _Loader loader;
   late MockDomainLogger logger;

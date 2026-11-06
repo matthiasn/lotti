@@ -119,6 +119,14 @@ void main() {
     expect(stored.adopting(shown, {'speaksReplies'}).speaksReplies, isTrue);
   });
 
+  test('the deepest tone and the new styles round-trip', () {
+    const custom = CompanionCustomization(
+      skinTone: CompanionSkinTone.tone7,
+      hairStyle: CompanionHairStyle.ponytail,
+    );
+    expect(CompanionCustomization.fromJson(custom.toJson()), custom);
+  });
+
   test('a part a newer version wrote falls back to its default', () {
     final read = CompanionCustomization.fromJson(const {
       'skinTone': 'tone9',
@@ -212,5 +220,267 @@ void main() {
     expect(custom.copyWith(sass: CompanionSass.sassy), isNot(custom));
     expect(custom.copyWith(), custom);
     expect(custom.copyWith().hashCode, custom.hashCode);
+  });
+
+  group('the character', () {
+    const grandpa = CompanionCustomization(
+      character: CompanionSpecies.grandpa,
+      hairStyle: CompanionHairStyle.balding,
+      outfitId: 'grandpa_jazz',
+    );
+
+    test('is Lotti by default, and written by its name', () {
+      expect(
+        const CompanionCustomization().character,
+        CompanionSpecies.grandma,
+      );
+      expect(const CompanionCustomization().toJson()['character'], 'grandma');
+      expect(grandpa.toJson()['character'], 'grandpa');
+    });
+
+    test('round-trips through JSON with his own outfit', () {
+      expect(CompanionCustomization.fromJson(grandpa.toJson()), grandpa);
+    });
+
+    test('reads as Lotti when unknown, or when an animal was stored', () {
+      for (final name in ['wizard', 'cat', 'redPanda', 42]) {
+        expect(
+          CompanionCustomization.fromJson({'character': name}).character,
+          CompanionSpecies.grandma,
+          reason: '$name',
+        );
+      }
+    });
+
+    test("drops an outfit that is another character's", () {
+      expect(
+        CompanionCustomization.fromJson(const {
+          'character': 'grandpa',
+          'outfit': 'grandma_rock',
+        }).outfitId,
+        isNull,
+      );
+      expect(
+        CompanionCustomization.fromJson(const {
+          'outfit': 'grandpa_jazz',
+        }).outfitId,
+        isNull,
+      );
+    });
+
+    test('asCharacter clears the outfit and takes his own hair', () {
+      const lotti = CompanionCustomization(
+        skinTone: CompanionSkinTone.tone4,
+        hairStyle: CompanionHairStyle.locs,
+        hairColour: CompanionHairColour.blue,
+        outfitId: 'grandma_rock',
+        sass: CompanionSass.sassy,
+        speaksReplies: false,
+      );
+      expect(
+        lotti.asCharacter(CompanionSpecies.grandpa),
+        const CompanionCustomization(
+          character: CompanionSpecies.grandpa,
+          skinTone: CompanionSkinTone.tone4,
+          hairStyle: CompanionHairStyle.short,
+          hairColour: CompanionHairColour.blue,
+          sass: CompanionSass.sassy,
+          speaksReplies: false,
+        ),
+      );
+      expect(
+        grandpa.asCharacter(CompanionSpecies.grandma).hairStyle,
+        CompanionHairStyle.bun,
+      );
+    });
+
+    test('asCharacter gives the aunt her bob, outfit cleared', () {
+      final aunt = grandpa.asCharacter(CompanionSpecies.aunt);
+      expect(aunt.character, CompanionSpecies.aunt);
+      expect(aunt.hairStyle, CompanionHairStyle.bob);
+      expect(aunt.outfitId, isNull);
+      expect(
+        CompanionCustomization.fromJson(
+          aunt.copyWith(outfitId: () => 'aunt_studio').toJson(),
+        ).outfitId,
+        'aunt_studio',
+      );
+    });
+
+    test('asCharacter gives the uncle his curls, outfit cleared', () {
+      final uncle = grandpa.asCharacter(CompanionSpecies.uncle);
+      expect(uncle.character, CompanionSpecies.uncle);
+      expect(uncle.hairStyle, CompanionHairStyle.curls);
+      expect(uncle.outfitId, isNull);
+      expect(
+        CompanionCustomization.fromJson(
+          uncle.copyWith(outfitId: () => 'uncle_snow').toJson(),
+        ).outfitId,
+        'uncle_snow',
+      );
+    });
+
+    test('dresses his outfit in the chosen skin and hair', () {
+      final dressed = grandpa.dress(CompanionLook.grandpaJazz);
+      expect(dressed.species, CompanionSpecies.grandpa);
+      expect(dressed.hairStyle, CompanionHairStyle.balding);
+      expect(dressed.palette.shirt, CompanionLook.grandpaJazz.palette.shirt);
+    });
+
+    test('is a part changedParts names and adopting takes', () {
+      const shown = CompanionCustomization();
+      final changed = shown.copyWith(character: CompanionSpecies.grandpa);
+      expect(CompanionCustomization.changedParts(shown, changed), {
+        'character',
+      });
+      expect(
+        shown.adopting(changed, {'character'}).character,
+        CompanionSpecies.grandpa,
+      );
+      expect(
+        shown.adopting(changed, {'sass'}).character,
+        CompanionSpecies.grandma,
+      );
+    });
+
+    test('tells two customizations apart', () {
+      final other = grandpa.copyWith(character: CompanionSpecies.grandma);
+      expect(other, isNot(grandpa));
+      expect(other.hashCode, isNot(grandpa.hashCode));
+    });
+  });
+
+  group('the eyes', () {
+    // The ask: the eyes are a part of their own, never tied to the skin.
+    test('are brown by default, whatever the skin tone', () {
+      for (final tone in CompanionSkinTone.values) {
+        expect(
+          CompanionCustomization(skinTone: tone).eyeColour,
+          CompanionEyeColour.brown,
+          reason: tone.name,
+        );
+      }
+    });
+
+    test('a picked colour holds through a change of skin tone', () {
+      const custom = CompanionCustomization(
+        eyeColour: CompanionEyeColour.green,
+      );
+      expect(
+        custom.copyWith(skinTone: CompanionSkinTone.tone7).eyeColour,
+        CompanionEyeColour.green,
+      );
+    });
+
+    test('dress draws the eyes, on every character', () {
+      for (final outfit in [
+        CompanionLook.grandma,
+        CompanionLook.grandpa,
+        CompanionLook.aunt,
+        CompanionLook.uncle,
+      ]) {
+        final dressed = const CompanionCustomization(
+          eyeColour: CompanionEyeColour.hazel,
+        ).dress(outfit);
+        expect(
+          dressed.palette.iris,
+          CompanionEyeColour.hazel.iris,
+          reason: outfit.id,
+        );
+        expect(dressed.palette.irisLight, CompanionEyeColour.hazel.light);
+      }
+    });
+
+    test('round-trip through JSON, always written', () {
+      const picked = CompanionCustomization(eyeColour: CompanionEyeColour.grey);
+      expect(picked.toJson()['eyeColour'], 'grey');
+      expect(CompanionCustomization.fromJson(picked.toJson()), picked);
+      expect(const CompanionCustomization().toJson()['eyeColour'], 'brown');
+    });
+
+    test('a missing or unknown colour reads as brown', () {
+      for (final json in const [
+        <String, dynamic>{},
+        {'eyeColour': 'violet'},
+      ]) {
+        expect(
+          CompanionCustomization.fromJson(json).eyeColour,
+          CompanionEyeColour.brown,
+          reason: '$json',
+        );
+      }
+    });
+
+    test('copyWith changes it; changedParts names it; adopting takes it', () {
+      const base = CompanionCustomization();
+      final picked = base.copyWith(eyeColour: CompanionEyeColour.blue);
+      expect(picked.eyeColour, CompanionEyeColour.blue);
+      expect(picked.copyWith().eyeColour, CompanionEyeColour.blue);
+      expect(CompanionCustomization.changedParts(base, picked), {'eyeColour'});
+      expect(base.adopting(picked, {'eyeColour'}), picked);
+      expect(
+        base.adopting(picked, {'sass'}).eyeColour,
+        CompanionEyeColour.brown,
+      );
+      expect(picked, isNot(base));
+      expect(picked.hashCode, isNot(base.hashCode));
+    });
+  });
+
+  test("dress gives a man the skin's own lips, a woman her rose ones", () {
+    const custom = CompanionCustomization(skinTone: CompanionSkinTone.tone4);
+    final uncle = custom.dress(CompanionLook.uncle).palette;
+    final aunt = custom.dress(CompanionLook.aunt).palette;
+    expect(uncle.lips, CompanionSkinTone.tone4.naturalLips.lips);
+    expect(uncle.lipsUpper, CompanionSkinTone.tone4.naturalLips.upper);
+    expect(uncle.lipsLight, CompanionSkinTone.tone4.naturalLips.light);
+    expect(aunt.lips, CompanionSkinTone.tone4.lips);
+    expect(
+      custom.dress(CompanionLook.grandpa).palette.lips,
+      CompanionSkinTone.tone4.naturalLips.lips,
+    );
+  });
+
+  // The regression: tapping the already chosen character's chip reset its
+  // hair and cleared its outfit.
+  test('asCharacter as the same character changes nothing', () {
+    const custom = CompanionCustomization(
+      character: CompanionSpecies.aunt,
+      hairStyle: CompanionHairStyle.locs,
+      outfitId: 'aunt_studio',
+    );
+    expect(
+      identical(custom.asCharacter(CompanionSpecies.aunt), custom),
+      isTrue,
+    );
+  });
+
+  // The regression: an outfit picked for Lotti while the stored grandpa was
+  // still loading was laid over him, an outfit of no character he has.
+  group('adopting the character and its outfit together', () {
+    const stored = CompanionCustomization(
+      character: CompanionSpecies.grandpa,
+      hairStyle: CompanionHairStyle.short,
+      outfitId: 'grandpa_jazz',
+    );
+
+    test('an outfit edit brings its character along', () {
+      const edited = CompanionCustomization(outfitId: 'grandma_rock');
+      final merged = stored.adopting(edited, {'outfit'});
+      expect(merged.character, CompanionSpecies.grandma);
+      expect(merged.outfitId, 'grandma_rock');
+      // A part left alone keeps the stored value.
+      expect(merged.hairStyle, CompanionHairStyle.short);
+    });
+
+    test(
+      'a character edit brings its outfit along, even an unchanged none',
+      () {
+        const edited = CompanionCustomization(character: CompanionSpecies.aunt);
+        final merged = stored.adopting(edited, {'character'});
+        expect(merged.character, CompanionSpecies.aunt);
+        expect(merged.outfitId, isNull);
+      },
+    );
   });
 }

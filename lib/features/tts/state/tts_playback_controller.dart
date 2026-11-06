@@ -66,13 +66,19 @@ final ttsPlaybackControllerProvider =
 /// voice has no pause — its control only plays and stops — so it stops.
 ///
 /// Leaves the voice alone when it is not downloading, synthesizing or playing,
-/// and never builds it just to silence it. A failure to stop is logged and
-/// swallowed: the recording must start regardless.
+/// and never builds it just to silence it. Either way it waits for the
+/// player to let go of the phone's audio session — a clip that just ended may
+/// still be releasing it — so the recorder's session is never deactivated
+/// under it. A failure to stop is logged and swallowed: the recording must
+/// start regardless.
 Future<void> stopReadAloudForRecording(Ref ref) async {
   if (!ref.exists(ttsPlaybackControllerProvider)) return;
   try {
     if (ref.read(ttsPlaybackControllerProvider).isBusy) {
       await ref.read(ttsPlaybackControllerProvider.notifier).stop();
+    }
+    if (ref.exists(ttsAudioPlayerProvider)) {
+      await ref.read(ttsAudioPlayerProvider).settled;
     }
   } catch (error) {
     ref

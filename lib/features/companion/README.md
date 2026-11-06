@@ -2,8 +2,9 @@
 
 Lotti, the grandmother who presents the app in the pitch videos, drawn live in
 Flutter: a character who can sit in the app and talk, instead of only
-appearing in a video. A cat and a red panda can stand in for her: the same
-rig, another species.
+appearing in a video. A person can choose a grandpa, an aunt or an uncle
+in her place, and a cat and a red panda stand in for her in the widgetbook: the same rig, another
+species.
 
 **Status: first appearance, behind a flag.** With **Companion**
 (`enable_companion`, Settings › Advanced Settings › Config Flags) and **AI
@@ -11,8 +12,8 @@ summary playback** on, she stands beside a task's AI summary and speaks it
 when its read-aloud control is pressed, sits in the Day page header,
 briefing the day when tapped, and greets a new user in onboarding. Everywhere
 else she is in the widgetbook only. The plan she comes from, and the branches
-still ahead (a mood read from the record, character choice, talking back,
-nudges), is
+still ahead (a mood read from the record, a face per agent soul, talking
+back, nudges), is
 [docs/implementation_plans/2026-10-12_in_app_agent_avatar.md](../../../docs/implementation_plans/2026-10-12_in_app_agent_avatar.md).
 
 ## What it does
@@ -44,6 +45,10 @@ nudges), is
   praise, neither, or something that needs work, read on the device from its
   words, its emoji and its section's heading (`ToneTrack`) — gives her the
   matching reaction, timed by the same playhead as her mouth.
+- **Her brows stay on her face.** However a mood, a gesture, a flourish and
+  a spring's overshoot add up, a brow rises only as far as a brow can and
+  gives way on its tilt as it rises, so one brow up never hooks off the
+  eye.
 - **She pulls faces on the beats.** A question, a "but", an "again", a
   "finally" each get a face of their own for a moment (`CompanionFlourish`):
   one brow up, the side-eye, narrowed eyes, the look over her glasses, a
@@ -70,18 +75,65 @@ nudges), is
   for as long as the app runs, through every reload of the screen and on her
   full-screen stage; another task may show another, and the next start of
   the app picks afresh.
-- **A person makes her their own.** In Settings › Preferences › Companion
-  (shown with the flag) they pick her skin tone (six, numbered, never named
-  after a people), her hairstyle (bun, curls, afro, locs, bob), her hair
+- **The grandpa.** Calm and dry, in clothes that are none of hers: a
+  collared shirt with its sleeves rolled to the forearm, braces, a bow tie,
+  pleated trousers and brogues, half-moon reading glasses low on his nose,
+  a trimmed beard and moustache in his hair's colour, short hair. His four
+  outfits are everyday (pale blue shirt, rust braces, plum bow tie), jazz
+  (black shirt, ivory trousers), seaside (peach and white) and market (olive
+  and chestnut, with a flat cap). He has every gesture, mood and mouth
+  shape she has: the beard is drawn under the mouth and the moustache over
+  it, so every shape still reads, and his trousers hang from the pelvis,
+  as her legs do, so a bounce of joy lifts his shirt and never parts it
+  from them. He, the aunt and the uncle are planned in "Revision: a cast
+  of four" of the plan above.
+- **The aunt.** About forty, energetic, and dressed in none of the
+  others' clothes: a boiler suit in one colour from collar to ankle, zipped
+  to a belted waist with a flapped chest pocket, short sleeves turned up
+  above the elbow, high-top trainers and gold hoops. Hers is the younger
+  face: no laugh lines, fuller brows, no glasses. Her four outfits are
+  everyday (denim blue), studio (blush pink), festival (tangerine, with a
+  turquoise headband) and weekend (brick red). Her suit's legs are the
+  trousers the grandpa wears, in her colour, ending in her own shoes.
+- **A man's face.** The grandpa and the uncle are drawn as men: narrower
+  eyes with a smaller iris and a light lash line, heavy straight brows set
+  low, a broader nose with a shaded bridge, thin lips in their skin's own
+  colour, a wider, squarer jaw shaded along its edge, no blush and no
+  flicked lashes, a thicker neck with an Adam's apple, and a broad,
+  straight torso; the uncle a shadow of stubble.
+- **The uncle.** About thirty, terse and dry, in clothes of his own: a
+  bomber jacket worn open over a crew-neck tee, its collar, cuffs and hem
+  ribbed and its sleeves to the wrist, chinos turned up over lace-up boots,
+  and over-ear headphones resting round his neck. His face is young like
+  the aunt's, without the corner lashes Lotti and the aunt wear. His four
+  outfits are everyday (black over white), night out (emerald over black),
+  skate park (cherry red over grey) and snow day (plum, with a rust
+  beanie).
+- **A person makes the companion their own.** In Settings › Preferences ›
+  Companion (shown with the flag) they choose the character (Lotti, the
+  grandpa, the aunt or the uncle), the skin tone (seven, numbered light to
+  deep, never named after a people), the hairstyle (bun, curls, afro, locs,
+  bob, short, balding, long, waves, ponytail), the hair
   colour (silver, white, grey, black, brown, auburn, pink, lavender, blue),
-  an outfit she always wears, or "Surprise me", and her sass — warm,
+  the eye colour (dark brown, brown — the default — hazel, amber, green,
+  grey or blue, chosen freely and never tied to the skin tone),
+  an outfit of the character's always worn, or "Surprise me", and the
+  sass — warm,
   cheeky (the default) or sassy — which her preview acts out when it is
   picked. The curls and the afro are drawn as coils, shaded one over the
-  next; the locs as twisted ropes swept back from the hairline. Every part
-  combines with every other. The choice is stored and synced to the person's other devices
+  next; the locs as twisted ropes swept back from the hairline; long hair
+  falls straight from a middle parting past the shoulders, waves reach the
+  shoulders from a side parting, and a ponytail swings behind. The bun's
+  knot shows beside her jaw, its waves and strands kept inside the hair, so
+  a dark colour reads as hair, not a grey loaf. A hat sits on the hair's
+  crown, as high and as wide as the style needs; an afro wears no hat for
+  now, since a hat drawn for a head reads as floating in it. Every part
+  combines with every other, and with every character. Choosing another
+  character clears the outfit, since outfits belong to one, and puts the
+  hair back to that character's own; the rest carries over. The choice is stored and synced to the person's other devices
   (`companionCustomizationProvider`), the most recent change winning.
 - **She can be an animal.** A look names its species (`CompanionSpecies`):
-  the grandmother, a silver tabby cat (`cat`, `cat_rock`) or a red panda
+  the grandmother, the grandpa, the aunt, the uncle, a silver tabby cat (`cat`, `cat_rock`) or a red panda
   (`red_panda`, `red_panda_bookish`). An animal keeps her skeleton, gestures,
   moods and mouth, and swaps the hair for ears, the face for a furred head
   with a muzzle and whiskers, the shoes for paws, and gains a tail that
@@ -92,8 +144,8 @@ nudges), is
 
 | Directory | What |
 |---|---|
-| `model/` | The data: looks and their palettes, poses, gestures, hand and mouth shapes, moods, the reaction scale with its beats and last word, the faces she pulls for a moment (`companion_flourish.dart`), and the parts a person dresses her in (`companion_parts.dart`, `companion_customization.dart`) |
-| `rig/` | Drawing: the arm solver, the limb ribbon, the frames a pose resolves into, and one painter per body part, composed by `CompanionPainter`; the animals' head and tail in `animal_head_painter.dart` and `tail_painter.dart`; her hairstyles in `hair_styles_painter.dart`, the bun in `hair_painter.dart` |
+| `model/` | The data: looks and their palettes (`companion_palette.dart`), poses, gestures, hand and mouth shapes, moods, the reaction scale with its beats and last word, the faces she pulls for a moment (`companion_flourish.dart`), and the parts a person dresses her in (`companion_parts.dart`, `companion_customization.dart`) |
+| `rig/` | Drawing: the arm solver, the limb ribbon, the frames a pose resolves into, and one painter per body part, composed by `CompanionPainter`; the animals' head and tail in `animal_head_painter.dart` and `tail_painter.dart`; the hairstyles in `hair_styles_painter.dart`, the bun in `hair_painter.dart`, short and balding in `short_hair_painter.dart`, long, waves and ponytail in `long_hair_painter.dart`; the grandpa's shirt, braces and bow tie in `grandpa_outfit_painter.dart`, his beard, moustache and cap in `grandpa_head_painter.dart`; the aunt's boiler suit and short sleeves in `aunt_outfit_painter.dart`; the uncle's jacket, tee, headphones and jacket sleeves in `uncle_outfit_painter.dart`; and trousers, their turn-ups, brogues, high-tops, boots and the outline of a top tucked into them in `trousers_painter.dart` |
 | `animation/` | Motion: `CompanionAnimator` turns time, a mood, gestures and speech into a pose per frame; the mouth tracks; `PlayheadClock`, the playhead between a player's reports |
 | `state/` | `loadSpokenTrack`: the mouth for a clip the voice plays, read once off the UI isolate; the outfit pick, her stored customization, and `companionLookRollProvider`, which dresses her |
 | `ui/` | `CompanionView`, the live widget, and its `CompanionController`; `CompanionSpeaker`, the view bound to the on-device voice; `settings/`, the page that customizes her |
@@ -125,7 +177,7 @@ come from the design system's tokens.
 ## Trying her out
 
 Run the widgetbook (`fvm flutter run -d <device> -t lib/widgetbook.dart`) and
-open **Companion → Lotti (grandma)**, **Cat** or **Red panda**; each has the
+open **Companion → Lotti (grandma)**, **Grandpa**, **Aunt**, **Uncle**, **Cat** or **Red panda**; each has the
 same use cases, its look knob limited to its own looks:
 
 - **Playground**: the look, mood, framing, stage, smoothing and sass as

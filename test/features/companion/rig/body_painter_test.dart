@@ -60,6 +60,8 @@ void main() {
     'the dress wears a cardigan and a scarf; beads only on stage rock',
     () async {
       for (final look in CompanionLook.all) {
+        // The grandpa wears no dress; his clothes are their own painter's.
+        if (look.species == CompanionSpecies.grandpa) continue;
         final r = await _body((c, f) => drawDress(c, f, look));
         final p = look.palette;
         expect(r.count(p.dress), greaterThan(2000), reason: look.id);
@@ -122,6 +124,108 @@ void main() {
       );
       expect(right.count(look.palette.glove, tolerance: 2), greaterThan(100));
       expect(left.count(look.palette.glove, tolerance: 2), 0);
+    });
+  });
+
+  group('the grandpa', () {
+    const look = CompanionLook.grandpa;
+    final p = look.palette;
+
+    test('stands in trousers and brogues, with no bare leg', () async {
+      final r = await _body((c, f) => drawLegs(c, f, look));
+      expect(r.count(p.trousers), greaterThan(1500));
+      expect(r.count(p.shoe), greaterThan(100));
+      expect(r.centroid(p.shoe)!.dy, greaterThan(440));
+      expect(r.count(p.skin), 0);
+    });
+
+    test('wears his shirt sleeve rolled past the elbow, his forearm bare, no '
+        'cardigan', () async {
+      final r = await _body(
+        (c, f) => drawArm(c, f, look, const CompanionPose().right, 1),
+      );
+      expect(r.count(p.shirt), greaterThan(200));
+      expect(r.count(p.shirtLight), greaterThan(30));
+      expect(r.count(p.cardigan), 0);
+      expect(r.count(p.skin), greaterThan(100));
+    });
+  });
+
+  test("Lotti's sleeve is her cardigan's, never a shirt's", () async {
+    const look = CompanionLook.grandma;
+    final r = await _body(
+      (c, f) => drawArm(c, f, look, const CompanionPose().right, 1),
+    );
+    expect(r.count(look.palette.cardigan), greaterThan(200));
+    expect(r.count(look.palette.shirt), 0);
+  });
+
+  group('the aunt', () {
+    const look = CompanionLook.aunt;
+    final p = look.palette;
+
+    test('stands in her suit legs and high-tops, no bare leg', () async {
+      final r = await _body((c, f) => drawLegs(c, f, look));
+      expect(r.count(p.trousers), greaterThan(1500));
+      expect(r.count(p.shoe), greaterThan(150));
+      expect(r.count(p.skin), 0);
+    });
+
+    test(
+      'bares more arm than the grandpa: her sleeve stops above the elbow',
+      () async {
+        Future<int> skin(CompanionLook l) async => (await _body(
+          (c, f) => drawArm(c, f, l, const CompanionPose().right, 1),
+        )).count(l.palette.skin);
+        expect(
+          await skin(look),
+          greaterThan(await skin(CompanionLook.grandpa)),
+        );
+        final r = await _body(
+          (c, f) => drawArm(c, f, look, const CompanionPose().right, 1),
+        );
+        expect(r.count(p.trousersLight), greaterThan(30));
+        expect(r.count(p.shirt), 0);
+      },
+    );
+  });
+
+  group('the uncle', () {
+    const look = CompanionLook.uncle;
+    final p = look.palette;
+
+    test('stands in chinos and boots, no bare leg', () async {
+      final r = await _body((c, f) => drawLegs(c, f, look));
+      expect(r.count(p.trousers), greaterThan(1500));
+      expect(r.count(p.shoe), greaterThan(150));
+      expect(r.count(p.skin), 0);
+    });
+
+    test('his jacket sleeve covers his arm to the wrist: less bare arm than '
+        'the aunt', () async {
+      Future<int> skin(CompanionLook l) async => (await _body(
+        (c, f) => drawArm(c, f, l, const CompanionPose().right, 1),
+      )).count(l.palette.skin);
+      expect(await skin(look), lessThan(await skin(CompanionLook.aunt)));
+      final r = await _body(
+        (c, f) => drawArm(c, f, look, const CompanionPose().right, 1),
+      );
+      expect(r.count(p.jacket, tolerance: 20), greaterThan(300));
+      expect(r.count(p.rib), greaterThan(20));
+    });
+  });
+
+  group("a man's build", () {
+    test("a thicker neck, with an Adam's apple", () async {
+      const his = CompanionLook.uncle;
+      const hers = CompanionLook.aunt;
+      final him = await _body((c, f) => drawNeck(c, f, his));
+      final her = await _body((c, f) => drawNeck(c, f, hers));
+      expect(
+        him.count(his.palette.skin),
+        greaterThan(her.count(hers.palette.skin) * 1.2),
+      );
+      expect(him.count(his.palette.skinShade, tolerance: 30), greaterThan(4));
     });
   });
 }

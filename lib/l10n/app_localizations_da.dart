@@ -3842,6 +3842,49 @@ class AppLocalizationsDa extends AppLocalizations {
   String get commonUnknown => 'Ukendt';
 
   @override
+  String get companionSettingsCharacterAunt => 'Tante';
+
+  @override
+  String get companionSettingsCharacterDescription =>
+      'Hvem der holder dig med selskab. Hver har sit eget tøj; hud, hårfarve og frækhed bliver, som du har valgt dem.';
+
+  @override
+  String get companionSettingsCharacterGrandpa => 'Bedstefar';
+
+  @override
+  String get companionSettingsCharacterLabel => 'Karakter';
+
+  @override
+  String get companionSettingsCharacterLotti => 'Lotti';
+
+  @override
+  String get companionSettingsCharacterUncle => 'Onkel';
+
+  @override
+  String get companionSettingsEyeColourAmber => 'Rav';
+
+  @override
+  String get companionSettingsEyeColourBlue => 'Blå';
+
+  @override
+  String get companionSettingsEyeColourBrown => 'Brun';
+
+  @override
+  String get companionSettingsEyeColourDarkBrown => 'Mørkebrun';
+
+  @override
+  String get companionSettingsEyeColourGreen => 'Grøn';
+
+  @override
+  String get companionSettingsEyeColourGrey => 'Grå';
+
+  @override
+  String get companionSettingsEyeColourHazel => 'Nøddebrun';
+
+  @override
+  String get companionSettingsEyeColourLabel => 'Øjenfarve';
+
+  @override
   String get companionSettingsHairColourAuburn => 'Kobberrød';
 
   @override
@@ -3875,6 +3918,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get companionSettingsHairStyleAfro => 'Afro';
 
   @override
+  String get companionSettingsHairStyleBalding => 'Måne';
+
+  @override
   String get companionSettingsHairStyleBob => 'Bob';
 
   @override
@@ -3890,14 +3936,32 @@ class AppLocalizationsDa extends AppLocalizations {
   String get companionSettingsHairStyleLocs => 'Locs';
 
   @override
+  String get companionSettingsHairStyleLong => 'Langt';
+
+  @override
+  String get companionSettingsHairStylePonytail => 'Hestehale';
+
+  @override
+  String get companionSettingsHairStyleShort => 'Kort';
+
+  @override
+  String get companionSettingsHairStyleWaves => 'Bølger';
+
+  @override
   String get companionSettingsOutfitDescription =>
-      'Vælg et sæt, hun altid har på, eller lad hende selv vælge, hver gang du åbner appen.';
+      'Vælg et sæt, der bliver, eller få et nyt, hver gang du åbner appen.';
 
   @override
   String get companionSettingsOutfitEveryday => 'Hverdag';
 
   @override
+  String get companionSettingsOutfitFestival => 'Festival';
+
+  @override
   String get companionSettingsOutfitGarden => 'Have';
+
+  @override
+  String get companionSettingsOutfitJazz => 'Jazz';
 
   @override
   String get companionSettingsOutfitLabel => 'Tøj';
@@ -3906,13 +3970,34 @@ class AppLocalizationsDa extends AppLocalizations {
   String get companionSettingsOutfitLavender => 'Lavendel';
 
   @override
+  String get companionSettingsOutfitMarket => 'Markedsdag';
+
+  @override
+  String get companionSettingsOutfitNight => 'Aften i byen';
+
+  @override
   String get companionSettingsOutfitRock => 'Rock';
+
+  @override
+  String get companionSettingsOutfitSeaside => 'Ved havet';
+
+  @override
+  String get companionSettingsOutfitSkate => 'Skatepark';
+
+  @override
+  String get companionSettingsOutfitSnow => 'Snedag';
 
   @override
   String get companionSettingsOutfitStage => 'Scene';
 
   @override
+  String get companionSettingsOutfitStudio => 'Atelier';
+
+  @override
   String get companionSettingsOutfitSurprise => 'Overrask mig';
+
+  @override
+  String get companionSettingsOutfitWeekend => 'Weekend';
 
   @override
   String get companionSettingsOutfitWinter => 'Vinter';
@@ -3922,7 +4007,7 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get companionSettingsSassDescription =>
-      'Hvordan hun tager det, hun læser op for dig: en varm opmuntring, en drilsk bemærkning eller fuld bedstemor, med himmelvendte øjne og blikket over brillerne.';
+      'Hvordan din ledsager reagerer på det, der læses op for dig: en varm opmuntring, en drilsk bemærkning eller fuld frækhed, med himmelvendte øjne og blikket over brillerne.';
 
   @override
   String get companionSettingsSassLabel => 'Frækhed';
@@ -3947,10 +4032,10 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get companionSettingsVoiceDescription =>
-      'Spørg hende om noget med stemmen, så svarer hun højt. Et skrevet spørgsmål får altid et skrevet svar.';
+      'Spørg om noget med stemmen, så svarer din ledsager højt. Et skrevet spørgsmål får altid et skrevet svar.';
 
   @override
-  String get companionSettingsVoiceLabel => 'Hendes stemme';
+  String get companionSettingsVoiceLabel => 'Stemme';
 
   @override
   String get completeHabitFailButton => 'Missede';
@@ -14876,7 +14961,7 @@ class AppLocalizationsDa extends AppLocalizations {
   String get settingsCelebrationsVariantSparks => 'Sparks';
 
   @override
-  String get settingsCompanionSubtitle => 'Hendes hud, hår og tøj';
+  String get settingsCompanionSubtitle => 'Karakter, hud, hår og tøj';
 
   @override
   String get settingsCompanionTitle => 'Følgesvend';

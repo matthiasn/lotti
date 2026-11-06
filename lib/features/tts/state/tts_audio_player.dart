@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/tts/state/tts_audio_focus.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:media_kit/media_kit.dart';
 
 /// Plays a synthesized WAV file and exposes position / duration / completion
@@ -26,15 +28,34 @@ abstract interface class TtsAudioPlayer {
   /// Emits once each time playback reaches the end.
   Stream<void> get completedStream;
 
+  /// Completes once the player has let go of the phone's audio session — a
+  /// release at the end of a clip may still be under way — so the recorder
+  /// can take the session after it.
+  Future<void> get settled;
+
   Future<void> dispose();
 }
 
 /// `media_kit`-backed [TtsAudioPlayer], mirroring the recordings player's use
 /// of the same `Player` API.
+///
+/// It holds the phone's audio focus ([TtsAudioFocus]) from the moment it
+/// starts playing until it stops, finishes or is disposed, so the voice
+/// keeps speaking while its listener is in another app.
 class MediaKitTtsAudioPlayer implements TtsAudioPlayer {
-  MediaKitTtsAudioPlayer([Player? player]) : _player = player ?? Player();
+  MediaKitTtsAudioPlayer([Player? player, TtsAudioFocus? focus])
+    // The native player needs media_kit's bindings, which a unit test has
+    // not; tests hand in a mock.
+    : _player = player ?? Player(), // coverage:ignore-line
+      _focus = focus ?? platformTtsAudioFocus() {
+    _finished = _player.stream.completed
+        .where((done) => done)
+        .listen((_) => _focus.release());
+  }
 
   final Player _player;
+  final TtsAudioFocus _focus;
+  late final StreamSubscription<bool> _finished;
   int _generation = 0;
 
   @override
@@ -44,13 +65,33 @@ class MediaKitTtsAudioPlayer implements TtsAudioPlayer {
     if (generation != _generation) return;
     await _player.setRate(speed);
     if (generation != _generation) return;
-    await _player.play();
+    // A stop while the focus is being taken releases it after this claim —
+    // the focus runs claims and releases in turn — so a cancelled play never
+    // releases on its own: by then a newer play may hold the focus.
+    await _focus.acquire();
+    if (generation != _generation) return;
+    try {
+      await _player.play();
+    } on Object {
+      // A clip that cannot start gives the session straight back, so other
+      // apps are not left ducked under a voice that never spoke.
+      await _focus.release();
+      rethrow;
+    }
   }
 
   @override
-  Future<void> stop() {
+  Future<void> stop() async {
     _generation++;
-    return _player.stop();
+    // The release is queued at once, before the native stop is awaited: a
+    // play started meanwhile then claims after it, and this stale release
+    // never deactivates the new clip's session.
+    final released = _focus.release();
+    try {
+      await _player.stop();
+    } finally {
+      await released;
+    }
   }
 
   @override
@@ -60,13 +101,21 @@ class MediaKitTtsAudioPlayer implements TtsAudioPlayer {
   Stream<Duration> get durationStream => _player.stream.duration;
 
   @override
+  Future<void> get settled => _focus.settled;
+
+  @override
   Stream<void> get completedStream =>
       _player.stream.completed.where((done) => done).map((_) {});
 
   @override
-  Future<void> dispose() {
+  Future<void> dispose() async {
     _generation++;
-    return _player.dispose();
+    try {
+      await _finished.cancel();
+      await _player.dispose();
+    } finally {
+      await _focus.release();
+    }
   }
 }
 
@@ -84,7 +133,10 @@ final ttsAudioPlayerProvider = Provider<TtsAudioPlayer>(
   name: 'ttsAudioPlayerProvider',
 );
 TtsAudioPlayer ttsAudioPlayer(Ref ref) {
-  final player = MediaKitTtsAudioPlayer();
+  final player = MediaKitTtsAudioPlayer(
+    null,
+    platformTtsAudioFocus(logger: ref.read(domainLoggerProvider)),
+  );
   ref.onDispose(() => unawaited(player.dispose()));
   return player;
 }

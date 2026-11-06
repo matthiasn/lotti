@@ -57,6 +57,9 @@ void main() {
     expect(folder.name, 'Companion');
     expect(components().map((c) => c.name), [
       'Lotti (grandma)',
+      'Grandpa',
+      'Aunt',
+      'Uncle',
       'Cat',
       'Red panda',
     ]);

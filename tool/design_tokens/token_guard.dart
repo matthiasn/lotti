@@ -27,6 +27,7 @@ const tokenSource = 'lib/features/design_system/theme/';
 /// spacing and typography stay guarded, as does the rest of the feature.
 const illustrationSources = [
   'lib/features/companion/model/companion_look.dart',
+  'lib/features/companion/model/companion_palette.dart',
   'lib/features/companion/model/companion_parts.dart',
   'lib/features/companion/rig/',
 ];

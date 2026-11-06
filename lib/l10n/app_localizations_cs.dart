@@ -1645,13 +1645,13 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get aiCardCompanionOpenFullScreen =>
-      'Zobrazit společnici na celé obrazovce';
+      'Zobrazit společníka na celé obrazovce';
 
   @override
   String get aiCardCompanionStageNextOutfit => 'Změnit oblečení';
 
   @override
-  String get aiCardCompanionStageTitle => 'Společnice na celé obrazovce';
+  String get aiCardCompanionStageTitle => 'Společník na celé obrazovce';
 
   @override
   String aiCardHistoryToggle(int count) {
@@ -3891,6 +3891,49 @@ class AppLocalizationsCs extends AppLocalizations {
   String get commonUnknown => 'Neznámé';
 
   @override
+  String get companionSettingsCharacterAunt => 'Teta';
+
+  @override
+  String get companionSettingsCharacterDescription =>
+      'Kdo ti dělá společnost. Každá postava má vlastní oblečení; pleť, barva vlasů a drzost zůstanou, jak je nastavíš.';
+
+  @override
+  String get companionSettingsCharacterGrandpa => 'Děda';
+
+  @override
+  String get companionSettingsCharacterLabel => 'Postava';
+
+  @override
+  String get companionSettingsCharacterLotti => 'Lotti';
+
+  @override
+  String get companionSettingsCharacterUncle => 'Strejda';
+
+  @override
+  String get companionSettingsEyeColourAmber => 'Jantarové';
+
+  @override
+  String get companionSettingsEyeColourBlue => 'Modré';
+
+  @override
+  String get companionSettingsEyeColourBrown => 'Hnědé';
+
+  @override
+  String get companionSettingsEyeColourDarkBrown => 'Tmavě hnědé';
+
+  @override
+  String get companionSettingsEyeColourGreen => 'Zelené';
+
+  @override
+  String get companionSettingsEyeColourGrey => 'Šedé';
+
+  @override
+  String get companionSettingsEyeColourHazel => 'Oříškové';
+
+  @override
+  String get companionSettingsEyeColourLabel => 'Barva očí';
+
+  @override
   String get companionSettingsHairColourAuburn => 'Kaštanová';
 
   @override
@@ -3924,6 +3967,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get companionSettingsHairStyleAfro => 'Afro';
 
   @override
+  String get companionSettingsHairStyleBalding => 'Pleš';
+
+  @override
   String get companionSettingsHairStyleBob => 'Mikádo';
 
   @override
@@ -3939,14 +3985,32 @@ class AppLocalizationsCs extends AppLocalizations {
   String get companionSettingsHairStyleLocs => 'Dredy';
 
   @override
+  String get companionSettingsHairStyleLong => 'Dlouhé';
+
+  @override
+  String get companionSettingsHairStylePonytail => 'Culík';
+
+  @override
+  String get companionSettingsHairStyleShort => 'Krátké';
+
+  @override
+  String get companionSettingsHairStyleWaves => 'Vlny';
+
+  @override
   String get companionSettingsOutfitDescription =>
-      'Vyber oblečení, které bude nosit vždy, nebo ji nech, ať si při každém otevření aplikace vybere sama.';
+      'Vyber oblečení natrvalo, nebo dostaň při každém otevření aplikace nové.';
 
   @override
   String get companionSettingsOutfitEveryday => 'Všední';
 
   @override
+  String get companionSettingsOutfitFestival => 'Festival';
+
+  @override
   String get companionSettingsOutfitGarden => 'Zahrada';
+
+  @override
+  String get companionSettingsOutfitJazz => 'Jazz';
 
   @override
   String get companionSettingsOutfitLabel => 'Oblečení';
@@ -3955,32 +4019,53 @@ class AppLocalizationsCs extends AppLocalizations {
   String get companionSettingsOutfitLavender => 'Levandule';
 
   @override
+  String get companionSettingsOutfitMarket => 'Trh';
+
+  @override
+  String get companionSettingsOutfitNight => 'Večer venku';
+
+  @override
   String get companionSettingsOutfitRock => 'Rock';
+
+  @override
+  String get companionSettingsOutfitSeaside => 'U moře';
+
+  @override
+  String get companionSettingsOutfitSkate => 'Skatepark';
+
+  @override
+  String get companionSettingsOutfitSnow => 'Sněhový den';
 
   @override
   String get companionSettingsOutfitStage => 'Pódium';
 
   @override
+  String get companionSettingsOutfitStudio => 'Ateliér';
+
+  @override
   String get companionSettingsOutfitSurprise => 'Překvap mě';
+
+  @override
+  String get companionSettingsOutfitWeekend => 'Víkend';
 
   @override
   String get companionSettingsOutfitWinter => 'Zima';
 
   @override
-  String get companionSettingsSassCheeky => 'Šibalská';
+  String get companionSettingsSassCheeky => 'Šibalství';
 
   @override
   String get companionSettingsSassDescription =>
-      'Jak bere to, co ti čte: vřelé povzbuzení, šibalské popíchnutí, nebo babička naplno, s obracením očí v sloup a pohledem přes brýle.';
+      'Jak tvůj společník bere to, co ti čte: vřelé povzbuzení, šibalské popíchnutí, nebo drzost naplno, s obracením očí v sloup a pohledem přes brýle.';
 
   @override
   String get companionSettingsSassLabel => 'Drzost';
 
   @override
-  String get companionSettingsSassSassy => 'Drzá';
+  String get companionSettingsSassSassy => 'Drzost';
 
   @override
-  String get companionSettingsSassWarm => 'Vřelá';
+  String get companionSettingsSassWarm => 'Vřelost';
 
   @override
   String companionSettingsSkinTone(int number) {
@@ -3996,10 +4081,10 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get companionSettingsVoiceDescription =>
-      'Zeptej se jí hlasem a odpoví nahlas. Na napsanou otázku vždy odpoví písemně.';
+      'Zeptej se hlasem a tvůj společník odpoví nahlas. Na napsanou otázku vždy odpoví písemně.';
 
   @override
-  String get companionSettingsVoiceLabel => 'Její hlas';
+  String get companionSettingsVoiceLabel => 'Hlas';
 
   @override
   String get completeHabitFailButton => 'Zmeškáno';
@@ -4037,7 +4122,7 @@ class AppLocalizationsCs extends AppLocalizations {
       'Zobrazí tlačítko místního převodu textu na řeč u AI souhrnů úkolů. Vyžaduje nainstalovaný model Supertonic TTS.';
 
   @override
-  String get configFlagEnableCompanion => 'Společnice';
+  String get configFlagEnableCompanion => 'Společník';
 
   @override
   String get configFlagEnableCompanionDescription =>
@@ -4075,11 +4160,11 @@ class AppLocalizationsCs extends AppLocalizations {
       'Sloučí rozvětvené historie agenta z více zařízení při příštím probuzení.';
 
   @override
-  String get configFlagEnableFrontAgent => 'Chat se společnicí';
+  String get configFlagEnableFrontAgent => 'Chat se společníkem';
 
   @override
   String get configFlagEnableFrontAgentDescription =>
-      'Jedno místo pro jakoukoli otázku: společnice najde agenta úkolu, cíle, projektu nebo člověka, který to ví, a přinese jeho odpověď. Experimentální.';
+      'Jedno místo pro jakoukoli otázku: společník najde agenta úkolu, cíle, projektu nebo člověka, který to ví, a přinese jeho odpověď. Experimentální.';
 
   @override
   String get configFlagEnableHabitsPage => 'Povolit stránku Návyků';
@@ -7154,7 +7239,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get frontChatOlder => 'Starší';
 
   @override
-  String get frontChatOpen => 'Zeptat se společnice';
+  String get frontChatOpen => 'Zeptat se společníka';
 
   @override
   String get frontChatPlaceholder => 'Zeptej se na cokoli…';
@@ -7164,12 +7249,12 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String frontChatProfileChanged(String profile) {
-    return 'Společnice nyní používá $profile';
+    return 'Společník nyní používá $profile';
   }
 
   @override
   String get frontChatProfileFollowsDefault =>
-      'Společnice nyní sleduje výchozí profil z Nastavení';
+      'Společník nyní sleduje výchozí profil z Nastavení';
 
   @override
   String get frontChatProfileMenuItem => 'AI profil';
@@ -7196,7 +7281,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get frontChatSearchChats => 'Hledat v chatech';
 
   @override
-  String get frontChatTitle => 'Společnice';
+  String get frontChatTitle => 'Společník';
 
   @override
   String get frontChatYesterday => 'Včera';
@@ -15067,10 +15152,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settingsCelebrationsVariantSparks => 'Jiskry';
 
   @override
-  String get settingsCompanionSubtitle => 'Její pleť, vlasy a oblečení';
+  String get settingsCompanionSubtitle => 'Postava, pleť, vlasy a oblečení';
 
   @override
-  String get settingsCompanionTitle => 'Společnice';
+  String get settingsCompanionTitle => 'Společník';
 
   @override
   String get settingsConflictsTitle => 'Konflikty synchronizace';
@@ -16895,7 +16980,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get syncPayloadBackfillResponse => 'Odpověď na doplnění';
 
   @override
-  String get syncPayloadCompanionCustomization => 'Vzhled společnice';
+  String get syncPayloadCompanionCustomization => 'Vzhled společníka';
 
   @override
   String get syncPayloadConfigFlag => 'Konfigurační příznak';

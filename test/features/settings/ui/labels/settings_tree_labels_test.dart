@@ -154,7 +154,7 @@ void main() {
       expect(resolve('preferences/companion').title, 'Companion');
       expect(
         resolve('preferences/companion').desc,
-        'Her skin, hair and outfit',
+        'Character, skin, hair and outfit',
       );
     });
 

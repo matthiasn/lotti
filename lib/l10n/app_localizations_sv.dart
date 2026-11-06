@@ -3850,6 +3850,49 @@ class AppLocalizationsSv extends AppLocalizations {
   String get commonUnknown => 'Okänt';
 
   @override
+  String get companionSettingsCharacterAunt => 'Moster';
+
+  @override
+  String get companionSettingsCharacterDescription =>
+      'Vem som håller dig sällskap. Var och en har egna kläder; hud, hårfärg och kaxighet förblir som du har valt dem.';
+
+  @override
+  String get companionSettingsCharacterGrandpa => 'Morfar';
+
+  @override
+  String get companionSettingsCharacterLabel => 'Karaktär';
+
+  @override
+  String get companionSettingsCharacterLotti => 'Lotti';
+
+  @override
+  String get companionSettingsCharacterUncle => 'Onkel';
+
+  @override
+  String get companionSettingsEyeColourAmber => 'Bärnsten';
+
+  @override
+  String get companionSettingsEyeColourBlue => 'Blå';
+
+  @override
+  String get companionSettingsEyeColourBrown => 'Brun';
+
+  @override
+  String get companionSettingsEyeColourDarkBrown => 'Mörkbrun';
+
+  @override
+  String get companionSettingsEyeColourGreen => 'Grön';
+
+  @override
+  String get companionSettingsEyeColourGrey => 'Grå';
+
+  @override
+  String get companionSettingsEyeColourHazel => 'Nötbrun';
+
+  @override
+  String get companionSettingsEyeColourLabel => 'Ögonfärg';
+
+  @override
   String get companionSettingsHairColourAuburn => 'Kopparröd';
 
   @override
@@ -3883,6 +3926,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get companionSettingsHairStyleAfro => 'Afro';
 
   @override
+  String get companionSettingsHairStyleBalding => 'Flint';
+
+  @override
   String get companionSettingsHairStyleBob => 'Page';
 
   @override
@@ -3898,14 +3944,32 @@ class AppLocalizationsSv extends AppLocalizations {
   String get companionSettingsHairStyleLocs => 'Locs';
 
   @override
+  String get companionSettingsHairStyleLong => 'Långt';
+
+  @override
+  String get companionSettingsHairStylePonytail => 'Hästsvans';
+
+  @override
+  String get companionSettingsHairStyleShort => 'Kort';
+
+  @override
+  String get companionSettingsHairStyleWaves => 'Vågor';
+
+  @override
   String get companionSettingsOutfitDescription =>
-      'Välj kläder hon alltid har på sig, eller låt henne välja själv varje gång du öppnar appen.';
+      'Välj kläder som får vara kvar, eller få nya varje gång du öppnar appen.';
 
   @override
   String get companionSettingsOutfitEveryday => 'Vardag';
 
   @override
+  String get companionSettingsOutfitFestival => 'Festival';
+
+  @override
   String get companionSettingsOutfitGarden => 'Trädgård';
+
+  @override
+  String get companionSettingsOutfitJazz => 'Jazz';
 
   @override
   String get companionSettingsOutfitLabel => 'Kläder';
@@ -3914,13 +3978,34 @@ class AppLocalizationsSv extends AppLocalizations {
   String get companionSettingsOutfitLavender => 'Lavendel';
 
   @override
+  String get companionSettingsOutfitMarket => 'Marknadsdag';
+
+  @override
+  String get companionSettingsOutfitNight => 'Utekväll';
+
+  @override
   String get companionSettingsOutfitRock => 'Rock';
+
+  @override
+  String get companionSettingsOutfitSeaside => 'Vid havet';
+
+  @override
+  String get companionSettingsOutfitSkate => 'Skatepark';
+
+  @override
+  String get companionSettingsOutfitSnow => 'Snödag';
 
   @override
   String get companionSettingsOutfitStage => 'Scen';
 
   @override
+  String get companionSettingsOutfitStudio => 'Ateljé';
+
+  @override
   String get companionSettingsOutfitSurprise => 'Överraska mig';
+
+  @override
+  String get companionSettingsOutfitWeekend => 'Helg';
 
   @override
   String get companionSettingsOutfitWinter => 'Vinter';
@@ -3930,7 +4015,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get companionSettingsSassDescription =>
-      'Hur hon tar det hon läser för dig: en varm peppning, en busig retning eller mormor på full styrka, med himlande ögon och blicken över glasögonen.';
+      'Hur din följeslagare reagerar på det som läses upp för dig: en varm peppning, en busig retning eller kaxighet på full styrka, med himlande ögon och blicken över glasögonen.';
 
   @override
   String get companionSettingsSassLabel => 'Kaxighet';
@@ -3955,10 +4040,10 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get companionSettingsVoiceDescription =>
-      'Fråga henne något med rösten så svarar hon högt. En skriven fråga får alltid ett skrivet svar.';
+      'Fråga något med rösten så svarar din följeslagare högt. En skriven fråga får alltid ett skrivet svar.';
 
   @override
-  String get companionSettingsVoiceLabel => 'Hennes röst';
+  String get companionSettingsVoiceLabel => 'Röst';
 
   @override
   String get completeHabitFailButton => 'Missade';
@@ -14896,7 +14981,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get settingsCelebrationsVariantSparks => 'Gnistor';
 
   @override
-  String get settingsCompanionSubtitle => 'Hennes hud, hår och kläder';
+  String get settingsCompanionSubtitle => 'Karaktär, hud, hår och kläder';
 
   @override
   String get settingsCompanionTitle => 'Följeslagare';

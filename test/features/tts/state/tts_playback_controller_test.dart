@@ -1328,6 +1328,47 @@ void main() {
       expect(container.exists(ttsPlaybackControllerProvider), isFalse);
     });
 
+    // The regression: a clip that just ended could still be releasing the
+    // audio session when the recorder took it, and deactivate it under the
+    // recording.
+    test('waits for the player to let go of the audio session, even after a '
+        'clip that already ended', () async {
+      final letting = Completer<void>();
+      final player = FakeTtsAudioPlayer()..settling = letting;
+      final silence = FutureProvider<void>(stopReadAloudForRecording);
+      final container = ProviderContainer(
+        overrides: withServiceOverrides([
+          domainLoggerProvider.overrideWithValue(logger),
+          ttsPlaybackControllerProvider.overrideWith(
+            () => FixedTtsPlayback(
+              const TtsPlaybackState(status: TtsPlaybackStatus.stopped),
+            ),
+          ),
+          ttsAudioPlayerProvider.overrideWithValue(player),
+        ]),
+      );
+      addTearDown(container.dispose);
+      container
+        ..read(ttsPlaybackControllerProvider)
+        ..read(ttsAudioPlayerProvider);
+      var done = false;
+      unawaited(container.read(silence.future).then((_) => done = true));
+      await pumpEventQueue();
+      expect(done, isFalse);
+      letting.complete();
+      await pumpEventQueue();
+      expect(done, isTrue);
+    });
+
+    test('does not build a player just to wait for it', () async {
+      final container = await run(
+        FixedTtsPlayback(
+          const TtsPlaybackState(status: TtsPlaybackStatus.stopped),
+        ),
+      );
+      expect(container.exists(ttsAudioPlayerProvider), isFalse);
+    });
+
     test('logs and swallows a failure to stop', () async {
       final voice = FixedTtsPlayback(
         const TtsPlaybackState(status: TtsPlaybackStatus.playing),

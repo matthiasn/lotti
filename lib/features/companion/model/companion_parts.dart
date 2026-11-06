@@ -1,12 +1,13 @@
 import 'dart:ui';
 
-/// The parts a person puts her together from. Every part combines with every
-/// other: no hairstyle or colour belongs to a skin tone, and no part is named
-/// after a people (plan 2026-10-12, "Revision"). They are illustration
-/// colours, like the rest of her, not interface colours.
+/// The parts a person puts a character together from. Every part combines
+/// with every other, and with every human character: no hairstyle or colour
+/// belongs to a skin tone or to one character, and no part is named after a
+/// people (plan 2026-10-12, "Revision"). They are illustration colours, like
+/// the rest of the character, not interface colours.
 
-/// Her hair's shape: the bun of the pitch videos, and the styles a person may
-/// give her instead.
+/// The hair's shape: Lotti's bun of the pitch videos, the grandpa's short
+/// cut, and the styles a person may give either instead.
 enum CompanionHairStyle {
   /// A soft low bun behind the left of her neck, waves swept back.
   bun,
@@ -22,6 +23,21 @@ enum CompanionHairStyle {
 
   /// A chin-length bob with a straight fringe.
   bob,
+
+  /// Short and neat, parted at the side, clear of the ears.
+  short,
+
+  /// A bare crown with a fringe of hair round the back and over the ears.
+  balding,
+
+  /// Straight, parted in the middle, falling past the shoulders.
+  long,
+
+  /// Soft waves to the shoulders, parted on the left, a fringe swept across.
+  waves,
+
+  /// Pulled back smooth into a tail that swings behind.
+  ponytail,
 }
 
 /// Her skin, light to deep. Numbered rather than named: the picker shows a
@@ -71,6 +87,17 @@ enum CompanionSkinTone {
     lips: Color(0xFF7E3C3E),
     lipsUpper: Color(0xFF6A3133),
     lipsLight: Color(0xFF9C5A5C),
+  ),
+
+  /// The deepest: added after the six, so a stored tone keeps its number.
+  tone7(
+    skin: Color(0xFF452A19),
+    shade: Color(0xFF382114),
+    deep: Color(0xFF29170C),
+    light: Color(0xFF5E3D29),
+    lips: Color(0xFF6E3638),
+    lipsUpper: Color(0xFF5C2C2E),
+    lipsLight: Color(0xFF8A4E50),
   );
 
   const CompanionSkinTone({
@@ -88,12 +115,24 @@ enum CompanionSkinTone {
   final Color deep;
   final Color light;
 
+  /// A man's lips on this skin: its own colour, a little deeper and warmer,
+  /// never a woman's rose — the upper lip in shade, the lit lower lip close
+  /// to the skin.
+  ({Color lips, Color upper, Color light}) get naturalLips => (
+    lips: Color.lerp(Color.lerp(shade, deep, 0.35), _lipWarmth, 0.18)!,
+    upper: Color.lerp(Color.lerp(shade, deep, 0.7), _lipWarmth, 0.12)!,
+    light: Color.lerp(skin, _lipWarmth, 0.15)!,
+  );
+
   /// Lips a touch deeper on the deeper tones, so they still read as lips;
   /// null keeps the outfit's.
   final Color? lips;
   final Color? lipsUpper;
   final Color? lipsLight;
 }
+
+/// The warm red a man's lips take a little of.
+const _lipWarmth = Color(0xFFA0524C);
 
 /// Her hair's colour, the greys a grandmother grows into and the colours
 /// she might dye it.
@@ -177,4 +216,25 @@ enum CompanionHairColour {
   final Color shade;
   final Color light;
   final Color brow;
+}
+
+/// The eyes' colour: the browns most eyes are, hazel and amber between them
+/// and the lighter ones, and green, grey and blue. A part of its own, chosen
+/// freely: no colour belongs to a skin tone, and a tone suggests none.
+enum CompanionEyeColour {
+  darkBrown(iris: Color(0xFF3B2416), light: Color(0xFF6A4630)),
+  brown(iris: Color(0xFF5C3A21), light: Color(0xFF8E6440)),
+  hazel(iris: Color(0xFF7A6A35), light: Color(0xFFA89A5A)),
+  amber(iris: Color(0xFF9C6A1E), light: Color(0xFFC99A45)),
+  green(iris: Color(0xFF4E7A45), light: Color(0xFF86AE6C)),
+  grey(iris: Color(0xFF6F7E88), light: Color(0xFFA5B3BC)),
+
+  /// The pitch videos' blue.
+  blue(iris: Color(0xFF4A6F8F), light: Color(0xFF7EA2C0));
+
+  const CompanionEyeColour({required this.iris, required this.light});
+
+  /// The iris, and the lit side of it.
+  final Color iris;
+  final Color light;
 }
