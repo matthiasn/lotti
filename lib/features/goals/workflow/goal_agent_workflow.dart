@@ -38,6 +38,7 @@ import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai/util/profile_resolver.dart';
 import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
 import 'package:lotti/features/goals/evaluation/goal_evaluation.dart';
+import 'package:lotti/features/goals/evaluation/goal_today_portion.dart';
 import 'package:lotti/features/goals/logic/goal_aggregate_rounding.dart';
 import 'package:lotti/features/goals/logic/goal_charter.dart';
 import 'package:lotti/features/goals/logic/goal_checkin_compaction_strategy.dart';

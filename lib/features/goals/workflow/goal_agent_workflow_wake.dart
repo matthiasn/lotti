@@ -169,6 +169,9 @@ extension _GoalWakePhases on GoalAgentWorkflow {
         // Whether today already has its report decides the daily briefing;
         // dropping it here made every wake look like the morning's first.
         periodReported: derivation.facts.periodReported,
+        // Today's part decides whether a banner may speak at all; dropping
+        // it would let Phase B re-mint the banner Phase A just retired.
+        todayPortionMet: derivation.facts.todayPortionMet,
       ),
     );
   }

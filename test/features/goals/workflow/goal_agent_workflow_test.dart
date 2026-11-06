@@ -23,6 +23,7 @@ import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dar
 import 'package:lotti/features/ai_consumption/service/ai_interaction_capture.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_reader.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_window.dart';
+import 'package:lotti/features/goals/evaluation/goal_today_portion.dart';
 import 'package:lotti/features/goals/logic/goal_charter.dart';
 import 'package:lotti/features/goals/logic/goal_checkin_compaction_strategy.dart';
 import 'package:lotti/features/goals/model/goal_checkin_source.dart';
@@ -5725,6 +5726,103 @@ void main() {
     expect(
       retired.provenance['retireReason'],
       'status no longer permits ads',
+    );
+  });
+
+  test("persistOutputs: on a day whose part is done a slipping goal's "
+      'banner retires and no new one is raised — it stays down for the '
+      'day', () async {
+    stubSpec();
+    final version =
+        await repository.getEntity('$agentId:spec-v1')
+            as GoalSpecVersionEntity?;
+    // A weak week, but today's 10,500 steps clear today's 10,000.
+    final derivation = await GoalAgentPhaseA(
+      repository: repository,
+      syncService: MockAgentSyncService(),
+      signalReader: _FakeReader(
+        GoalSignalWindow(
+          quantitativeDailySums: {
+            'cumulative_step_count': {
+              for (var day = 3; day <= 8; day++)
+                DateTime.utc(2026, 8, day): 2000,
+              DateTime.utc(2026, 8, 9): 10500,
+            },
+          },
+        ),
+      ),
+    ).deriveWakeFacts(agentId: agentId, version: version!, now: now);
+    // At risk on a first evaluation: the status alone permits a banner.
+    expect(derivation.facts.trackStatus, GoalTrackStatus.atRisk);
+    expect(
+      goalStatusPermitsAutomaticAd(derivation.facts, derivation.priors),
+      isTrue,
+    );
+    expect(derivation.facts.todayPortionMet, isTrue);
+    when(
+      () => repository.getEntitiesByAgentId(
+        agentId,
+        type: AgentEntityTypes.goalNudge,
+      ),
+    ).thenAnswer(
+      (_) async => [
+        AgentDomainEntity.goalNudge(
+          id: 'ad-this-morning',
+          agentId: agentId,
+          status: NudgeStatus.active,
+          brief: const NudgeBrief(
+            headline: 'Your pedometer misses you.',
+            tone: NudgeTone.nudge,
+            animation: NudgeBannerAnimation.steady,
+          ),
+          briefDigest: 'd-morning',
+          createdAt: DateTime(2026, 8, 9, 7),
+          updatedAt: DateTime(2026, 8, 9, 7),
+          activatedAt: DateTime(2026, 8, 9, 7),
+          vectorClock: null,
+        ),
+      ],
+    );
+    final strategy = GoalAgentStrategy(
+      domainLogger: MockDomainLogger(),
+      syncService: syncService,
+      agentId: agentId,
+      threadId: 'thread-1',
+      runKey: 'run-1',
+      knownAdIds: const {'ad-this-morning'},
+    );
+    // The model still reads "off track" and asks for a fresh banner.
+    await strategy.processToolCalls(
+      toolCalls: [
+        toolCall(GoalAgentToolNames.createGoalAd, {
+          'headline': 'One more push before bed?',
+          'tone': 'nudge',
+          'animation': 'steady',
+          'accent': 'tide',
+        }, id: 'c1'),
+      ],
+      manager: conversationManager,
+    );
+
+    await withClock(
+      fixedClock,
+      () => workflow.persistOutputs(
+        agentId: agentId,
+        runKey: 'run-1',
+        threadId: 'thread-1',
+        strategy: strategy,
+        derivation: derivation,
+        now: now,
+      ),
+    );
+
+    final written = upserts.whereType<GoalNudgeEntity>().single;
+    expect(written.id, 'ad-this-morning');
+    expect(written.status, NudgeStatus.retired);
+    expect(
+      written.provenance['retireReason'],
+      goalTodayPortionMetRetireReason,
+      reason: 'the status alone would still permit it; today is the reason',
     );
   });
 

@@ -19,11 +19,24 @@ bool goalTrendWorsening(double current, List<double> priorAttainments) {
 
 /// Whether deterministic health facts permit an automatic banner.
 ///
-/// Off-track goals always qualify. At-risk goals qualify on their first
-/// evaluation or after three strictly worsening attainment points. Keeping
-/// this policy beside the wake facts lets Phase A schedule a replacement when
-/// an activation expires without drifting from Phase B's persistence gate.
+/// Never once today's part of the goal is done
+/// ([GoalWakeFacts.todayPortionMet]): a banner has nothing left to ask that
+/// day, so the one already up retires and no other is raised until the next
+/// day starts a fresh part. Otherwise the status decides
+/// ([goalStatusPermitsAutomaticAd]). Keeping this policy beside the wake
+/// facts lets Phase A schedule a replacement when an activation expires
+/// without drifting from Phase B's persistence gate — and the OS off-track
+/// alert reads it too, so no channel nags about a day the user already did.
 bool automaticGoalAdEligible(
+  GoalWakeFacts facts,
+  List<GoalProgressEntity> priors,
+) => !facts.todayPortionMet && goalStatusPermitsAutomaticAd(facts, priors);
+
+/// The status half of [automaticGoalAdEligible]: off-track goals always
+/// qualify, and at-risk goals qualify on their first evaluation or after
+/// three strictly worsening attainment points. Read alone only to say WHY a
+/// banner stood down — the status, or today's part.
+bool goalStatusPermitsAutomaticAd(
   GoalWakeFacts facts,
   List<GoalProgressEntity> priors,
 ) =>
@@ -262,6 +275,7 @@ class GoalWakeFacts {
     this.hasActiveLabelTimer = false,
     this.reportedStatus,
     this.periodReported = false,
+    this.todayPortionMet = false,
   });
 
   /// Policy-derived status for the evaluation day.
@@ -306,6 +320,12 @@ class GoalWakeFacts {
   /// the active spec — whatever status it states. The daily briefing is due
   /// when none does.
   final bool periodReported;
+
+  /// Whether today's part of the goal is done, while its window may still be
+  /// behind (`goalTodayPortionMet`). The status ignores it — day-state and
+  /// goal-state are different layers — but banners and the off-track alert
+  /// stand down for the rest of the day.
+  final bool todayPortionMet;
 
   /// Whether today's standing report states a status the day no longer has.
   ///
