@@ -118,7 +118,7 @@ class TaskAgentWakeFacts {
 /// `update_task_due_date`, `update_task_priority`, `set_task_status`,
 /// `set_task_language`, `add_multiple_checklist_items`, `create_follow_up_task`,
 /// `link_task`, `create_task_project`, `record_observations`,
-/// `request_attention` — are always offered.
+/// `request_attention`, `flag_unmet_request` — are always offered.
 /// `migrate_checklist_items` is deliberately among them: it is only meaningful
 /// after `create_follow_up_task`, but that happens mid-wake and the tool list is
 /// fixed for the turn.

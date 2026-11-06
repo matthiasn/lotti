@@ -67,6 +67,9 @@ typedef ExecuteToolHandler =
 ///   The compact subtitle/tagline is retrieved via [extractReportOneLiner].
 /// - `record_observations` — private notes for future wakes; accumulated
 ///   and retrieved via [extractObservations].
+/// - `flag_unmet_request` — the agent's "I could not do what you asked",
+///   retrieved via [extractUnmetRequestReason]; its details join the
+///   observations as a critical grievance.
 ///
 /// Each message (assistant response, tool call, tool result) is persisted to
 /// `agent.sqlite` as an [AgentMessageEntity].
@@ -228,6 +231,7 @@ class TaskAgentStrategy extends ConversationStrategy {
   String? _reportOneLiner;
   String? _finalResponse;
   final _observations = <ObservationRecord>[];
+  String? _unmetRequestReason;
   final _successfulMutations = <TaskAgentMutationRecord>[];
   TaskMetadataSnapshot? _cachedTaskMetadata;
   bool _taskMetadataResolved = false;
@@ -271,6 +275,10 @@ class TaskAgentStrategy extends ConversationStrategy {
   /// Tool name for the observation recording tool.
   static const String observationToolName =
       TaskAgentToolNames.recordObservations;
+
+  /// Tool name for the agent's "I could not do what you asked" flag.
+  static const String unmetRequestToolName =
+      TaskAgentToolNames.flagUnmetRequest;
 
   /// Tool name for the read-only related-task search.
   static const String findRelatedTasksToolName =
@@ -379,6 +387,11 @@ class TaskAgentStrategy extends ConversationStrategy {
       if (toolName == observationToolName) {
         await _recordActionMessage(toolName: toolName, args: args);
         await _handleRecordObservations(args, call.id, manager);
+        continue;
+      }
+      if (toolName == unmetRequestToolName) {
+        await _recordActionMessage(toolName: toolName, args: args);
+        await _handleFlagUnmetRequest(args, call.id, manager);
         continue;
       }
       if (toolName == findRelatedTasksToolName) {
@@ -633,6 +646,10 @@ class TaskAgentStrategy extends ConversationStrategy {
   /// are accumulated here as [ObservationRecord] instances.
   List<ObservationRecord> extractObservations() =>
       List.unmodifiable(_observations);
+
+  /// The reason the agent gave via `flag_unmet_request` in this wake, or
+  /// `null` when it raised no flag. The last call of a wake wins.
+  String? extractUnmetRequestReason() => _unmetRequestReason;
 
   /// Returns task mutations that applied or were successfully queued.
   ///

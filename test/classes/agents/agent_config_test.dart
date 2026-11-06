@@ -403,6 +403,9 @@ void main() {
       lastWeeklyReviewAt: DateTime(2026, 3, 4),
       weeklyReviewCount: const GCounter({'h1': 1}),
       pendingProjectActivityAt: DateTime(2026, 3, 5),
+      unmetRequestAt: DateTime(2026, 3, 6),
+      unmetRequestReason: 'I could log only one time block.',
+      unmetRequestClearedAt: DateTime(2026, 3, 7),
     );
 
     test('structurally identical slots are equal with matching hashCodes', () {
@@ -436,6 +439,11 @@ void main() {
         'pendingProjectActivityAt': base.copyWith(
           pendingProjectActivityAt: DateTime(2026, 4, 5),
         ),
+        'unmetRequestAt': base.copyWith(unmetRequestAt: DateTime(2026, 4, 6)),
+        'unmetRequestReason': base.copyWith(unmetRequestReason: 'Other.'),
+        'unmetRequestClearedAt': base.copyWith(
+          unmetRequestClearedAt: DateTime(2026, 4, 7),
+        ),
       };
       for (final MapEntry(key: field, value: mutated) in mutations.entries) {
         expect(mutated, isNot(equals(base)), reason: 'field=$field');
@@ -459,6 +467,19 @@ void main() {
       // Untouched fields persist.
       expect(cleared.activeProjectId, base.activeProjectId);
       expect(cleared.weeklyReviewCount, base.weeklyReviewCount);
+    });
+
+    test('the unmet-request watermarks and reason survive a JSON round '
+        'trip', () {
+      final json =
+          jsonDecode(jsonEncode(base.toJson())) as Map<String, dynamic>;
+      final restored = AgentSlots.fromJson(json);
+
+      expect(restored.unmetRequestAt, DateTime(2026, 3, 6));
+      expect(restored.unmetRequestReason, 'I could log only one time block.');
+      expect(restored.unmetRequestClearedAt, DateTime(2026, 3, 7));
+      // A row written before the fields existed reads as never flagged.
+      expect(AgentSlots.fromJson(const {}).unmetRequestAt, isNull);
     });
 
     test('defaults: counters start as empty G-counters', () {

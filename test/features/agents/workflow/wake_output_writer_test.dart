@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_config.dart';
 import 'package:lotti/classes/agents/agent_constants.dart';
@@ -155,6 +156,7 @@ void main() {
     // Sensible strategy defaults; individual tests override what they assert.
     when(() => strategy.finalResponse).thenReturn(null);
     when(() => strategy.extractStagedRetractions()).thenReturn(const []);
+    when(() => strategy.extractUnmetRequestReason()).thenReturn(null);
   });
   tearDown(tearDownTestGetIt);
 
@@ -717,6 +719,59 @@ void main() {
         expect(state.wakeCounter.value, 7);
         expect(state.consecutiveFailureCount, 0);
         expect(state.lastWakeAt, _now);
+      },
+    );
+
+    test('stamps an unmet request at commit, so a clear made while the '
+        'wake ran does not hide the flag it raises', () async {
+      // The user cleared the previous flag after this wake started (`_now`)
+      // and before it committed. Stamped at wake start, the new flag would
+      // sort before that clear and never reach the card.
+      final clearedDuringWake = _now.add(const Duration(minutes: 1));
+      final commit = _now.add(const Duration(minutes: 2));
+      final current = _state().copyWith(
+        slots: AgentSlots(
+          unmetRequestAt: _now.subtract(const Duration(hours: 1)),
+          unmetRequestReason: 'An earlier request.',
+          unmetRequestClearedAt: clearedDuringWake,
+        ),
+      );
+      when(
+        () => strategy.extractUnmetRequestReason(),
+      ).thenReturn('I could log only one of the five time blocks.');
+
+      await withClock(
+        Clock.fixed(commit),
+        () => run(persistedState: current),
+      );
+
+      final state = capturedUpserts().whereType<AgentStateEntity>().single;
+      expect(state.slots.unmetRequestAt, commit);
+      expect(
+        state.slots.unmetRequestReason,
+        'I could log only one of the five time blocks.',
+      );
+      expect(state.slots.unmetRequestClearedAt, clearedDuringWake);
+      expect(state.hasOpenUnmetRequest, isTrue);
+    });
+
+    test(
+      'a wake that raises no flag keeps the standing one untouched',
+      () async {
+        final raisedAt = _now.subtract(const Duration(hours: 1));
+        final current = _state().copyWith(
+          slots: AgentSlots(
+            unmetRequestAt: raisedAt,
+            unmetRequestReason: 'An earlier request.',
+          ),
+        );
+
+        await run(persistedState: current);
+
+        final state = capturedUpserts().whereType<AgentStateEntity>().single;
+        expect(state.slots.unmetRequestAt, raisedAt);
+        expect(state.slots.unmetRequestReason, 'An earlier request.');
+        expect(state.hasOpenUnmetRequest, isTrue);
       },
     );
 

@@ -498,6 +498,18 @@ Use the task language and omit empty sections.
       },
     );
 
+    test('both scaffolds tell the agent that a completed wake is not a met '
+        'request, and to flag one it could not meet', () {
+      const core = TaskAgentPromptBuilder.taskAgentScaffoldCore;
+      expect(core, contains('call `flag_unmet_request`'));
+      expect(core, contains('Your\n   wake completing does not mean'));
+      expect(core, contains('5. FINAL STEP'));
+
+      const compact = TaskAgentPromptBuilder.taskAgentCompactScaffold;
+      expect(compact, contains('call `flag_unmet_request`'));
+      expect(compact, contains('A wake that completes is not a request'));
+    });
+
     test('keeps one open text proposal per time entry', () {
       // The running timer's text is revised through update_time_entry like
       // any other entry's; the retired timer tool is never named.

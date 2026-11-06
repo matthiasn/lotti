@@ -32,6 +32,7 @@ void main() {
     // A running agent's spinner turns forever; reduced motion stills it so
     // the panel can settle.
     bool reduceMotion = false,
+    AgentInternalsTab initialTab = AgentInternalsTab.stats,
   }) async {
     final identity = makeTestIdentity();
     tester.view
@@ -57,6 +58,7 @@ void main() {
                 context: context,
                 agentId: identity.agentId,
                 agentName: passAgentName ? identity.displayName : null,
+                initialTab: initialTab,
               ),
               child: const Text('open'),
             ),
@@ -198,6 +200,23 @@ void main() {
       expect(find.text('Conversations'), findsOneWidget);
       expect(find.text('Observations'), findsOneWidget);
       expect(find.text('Activity'), findsOneWidget);
+    });
+
+    testWidgets('hands the tab it was opened on to the body', (tester) async {
+      await pumpPanel(
+        tester,
+        overrides: [
+          agentStateProvider.overrideWith((ref, agentId) async => null),
+        ],
+        initialTab: AgentInternalsTab.observations,
+      );
+
+      expect(
+        tester
+            .widget<AgentInternalsBody>(find.byType(AgentInternalsBody))
+            .initialTab,
+        AgentInternalsTab.observations,
+      );
     });
 
     testWidgets('close icon button pops the route', (tester) async {

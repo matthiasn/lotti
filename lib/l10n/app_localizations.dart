@@ -2994,6 +2994,24 @@ abstract class AppLocalizations {
   /// **'AI summary'**
   String get aiCardTitle;
 
+  /// Body of the unmet-request callout when the agent gave no reason; points at the observations it filed.
+  ///
+  /// In en, this message translates to:
+  /// **'My observations say what went wrong.'**
+  String get aiCardUnmetRequestNoReason;
+
+  /// Button on the unmet-request callout that opens the agent internals on the observations tab.
+  ///
+  /// In en, this message translates to:
+  /// **'See observations'**
+  String get aiCardUnmetRequestShowObservations;
+
+  /// Title of the task card's callout when the task agent flagged that it could not meet the user's request; in the agent's first person.
+  ///
+  /// In en, this message translates to:
+  /// **'I couldn\'t do what you asked'**
+  String get aiCardUnmetRequestTitle;
+
   /// No description provided for @aiConfigFailedToLoadModelsGeneric.
   ///
   /// In en, this message translates to:

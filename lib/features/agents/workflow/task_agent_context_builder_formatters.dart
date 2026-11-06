@@ -50,6 +50,38 @@ extension _TaskAgentContextFormatters on TaskAgentContextBuilder {
         .toString();
   }
 
+  /// The `## Unmet Request` section: the agent's last `flag_unmet_request`
+  /// and whether the user has cleared it, so a wake neither raises the same
+  /// flag again while it stands nor re-raises one the user already cleared
+  /// for an unchanged situation. Empty when the agent has never flagged.
+  String _formatUnmetRequest(AgentStateEntity? state) {
+    final raisedAt = state?.slots.unmetRequestAt;
+    if (state == null || raisedAt == null) return '';
+    final reason = state.slots.unmetRequestReason ?? '';
+    final buffer = StringBuffer()
+      ..writeln('## Unmet Request')
+      ..writeln()
+      ..writeln(
+        'You flagged at ${raisedAt.toIso8601String()} that you could not '
+        'meet the user\'s request: "$reason"',
+      );
+    if (state.hasOpenUnmetRequest) {
+      buffer.writeln(
+        'The task card still shows it; the user has not cleared it. Do not '
+        'call `flag_unmet_request` again for the same request. Call it only '
+        'for a different request you cannot meet.',
+      );
+    } else {
+      buffer.writeln(
+        'The user cleared it at '
+        '${state.slots.unmetRequestClearedAt!.toIso8601String()}. Flag again '
+        'only if the user asks again, or for a different request you cannot '
+        'meet.',
+      );
+    }
+    return (buffer..writeln()).toString();
+  }
+
   /// Formats the [ProposalLedger] into a single markdown section the agent
   /// consumes during a wake.
   ///

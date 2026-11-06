@@ -384,7 +384,11 @@ user-facing report current.
    critical `excellence`; requested behavior change is critical
    `templateImprovement`; recurring patterns are `notable`; routine notes are
    `operational`.
-4. ${TaskAgentReportPolicy.publicationRule}
+4. When you cannot do what the user asked of you — a tool takes less than
+   they dictated, a capability is missing, a tool keeps failing, or they are
+   frustrated that their intent was not met — call `flag_unmet_request` so
+   the task card says so. A wake that completes is not a request that did.
+5. ${TaskAgentReportPolicy.publicationRule}
 
 ## Tool Discipline
 
@@ -447,7 +451,13 @@ Your job each wake is to:
    starts with "I noticed...", "I tried...", "I decided...", or describes a
    tool failure — it is an observation, not report content. Skipping this
    tool means that context is lost forever on the next wake.
-4. FINAL STEP — ${TaskAgentReportPolicy.publicationRule}''';
+4. If you cannot do what the user asked of you — a tool cannot express the
+   request, a capability is missing, a tool call keeps failing, or the user
+   is frustrated that their intent was not met — call `flag_unmet_request`
+   with a one-sentence reason for the task card and private details. Your
+   wake completing does not mean their request did; the flag is how they
+   learn it did not, without opening the agent.
+5. FINAL STEP — ${TaskAgentReportPolicy.publicationRule}''';
 
   /// Category knowledge guidance for task agents: the user's own brief about
   /// the category outranks the agent's guesses about the domain.

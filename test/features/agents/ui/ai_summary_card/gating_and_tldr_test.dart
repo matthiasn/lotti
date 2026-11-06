@@ -1,8 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/query_chat_models.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/features/agents/query/query_chat_providers.dart';
+import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/agents/ui/agent_internals_body.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/tldr_section_part.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
@@ -11,7 +14,10 @@ import 'package:lotti/features/design_system/components/buttons/ds_ai_disc_butto
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tts/cloud/cloud_speech_synthesizer.dart';
 import 'package:lotti/features/tts/ui/widgets/tts_play_button.dart';
+import 'package:material_ui/material_ui.dart';
+import 'package:mocktail/mocktail.dart';
 
+import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
 import '../../../../test_helper.dart';
 import '../../../tts/test_utils.dart';
@@ -309,6 +315,169 @@ void main() {
 
       expect(find.text('Agent internals'), findsOneWidget);
       expect(find.text('Automatic updates'), findsOneWidget);
+    });
+  });
+
+  group('AiSummaryCard – unmet request', () {
+    final raisedAt = DateTime(2024, 3, 15, 9);
+    const reason = 'I could log only one of the five time blocks.';
+    const calloutKey = ValueKey('taskAgentUnmetRequest');
+
+    AgentStateEntity flagged({DateTime? clearedAt}) => makeTestState(
+      unmetRequestAt: raisedAt,
+      unmetRequestReason: reason,
+      unmetRequestClearedAt: clearedAt,
+    );
+
+    testWidgets('a standing flag leads the body, above the summary', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        AgentTestBench(
+          report: makeTestReport(tldr: 'Tldr line.'),
+          state: flagged(),
+        ).build(),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(calloutKey), findsOneWidget);
+      expect(find.text(reason), findsOneWidget);
+      expect(
+        tester.getTopLeft(find.byKey(calloutKey)).dy,
+        lessThan(tester.getTopLeft(find.text('Tldr line.')).dy),
+      );
+    });
+
+    testWidgets('shows before the agent has written any report', (
+      tester,
+    ) async {
+      await tester.pumpWidget(AgentTestBench(state: flagged()).build());
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(calloutKey), findsOneWidget);
+      expect(find.text(reason), findsOneWidget);
+    });
+
+    for (final (label, state) in [
+      ('no flag', makeTestState()),
+      (
+        'a flag the user cleared',
+        flagged(clearedAt: raisedAt.add(const Duration(minutes: 5))),
+      ),
+    ]) {
+      testWidgets('stays away with $label', (tester) async {
+        await tester.pumpWidget(
+          AgentTestBench(
+            report: makeTestReport(tldr: 'Tldr line.'),
+            state: state,
+          ).build(),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(calloutKey), findsNothing);
+        expect(find.text("I couldn't do what you asked"), findsNothing);
+        expect(find.text('Tldr line.'), findsOneWidget);
+      });
+    }
+
+    testWidgets('a flag raised or cleared under a shown report keeps the '
+        'report in place', (tester) async {
+      var current = makeTestState();
+      await tester.pumpWidget(
+        AgentTestBench(
+          report: makeTestReport(tldr: 'Tldr line.'),
+          stateOverride: (ref, agentId) async => current,
+        ).build(),
+      );
+      await tester.pumpAndSettle();
+      final reportBefore = tester.element(find.byType(TldrBody));
+
+      Future<void> deliver(AgentStateEntity next) async {
+        current = next;
+        ProviderScope.containerOf(
+          tester.element(find.byType(AiSummaryCard)),
+        ).invalidate(agentStateProvider);
+        await tester.pumpAndSettle();
+      }
+
+      // A background wake raises the flag: the callout arrives above the
+      // report without rebuilding it, so a selection inside it survives.
+      await deliver(flagged());
+      expect(find.byKey(calloutKey), findsOneWidget);
+      expect(tester.element(find.byType(TldrBody)), same(reportBefore));
+
+      // Cleared on another device: the callout leaves, the report stays put.
+      await deliver(flagged(clearedAt: raisedAt.add(const Duration(hours: 1))));
+      expect(find.byKey(calloutKey), findsNothing);
+      expect(tester.element(find.byType(TldrBody)), same(reportBefore));
+    });
+
+    testWidgets("Clear clears this agent's flag", (tester) async {
+      final agentService = MockAgentService();
+      when(
+        () => agentService.clearUnmetRequest(any()),
+      ).thenAnswer((_) async {});
+      await tester.pumpWidget(
+        AgentTestBench(
+          state: flagged(),
+          extraOverrides: [
+            agentServiceProvider.overrideWithValue(agentService),
+          ],
+        ).build(),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const ValueKey('unmet-request-clear')));
+      await tester.pump();
+
+      verify(
+        () => agentService.clearUnmetRequest(makeTestIdentity().agentId),
+      ).called(1);
+    });
+
+    testWidgets('a failed clear says so instead of looking ignored', (
+      tester,
+    ) async {
+      final agentService = MockAgentService();
+      when(
+        () => agentService.clearUnmetRequest(any()),
+      ).thenThrow(StateError('write failed'));
+      await tester.pumpWidget(
+        AgentTestBench(
+          state: flagged(),
+          extraOverrides: [
+            agentServiceProvider.overrideWithValue(agentService),
+          ],
+        ).build(),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const ValueKey('unmet-request-clear')));
+      await tester.pump();
+
+      expect(find.text('Error'), findsOneWidget);
+    });
+
+    testWidgets('See observations opens the internals on the observations', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        AgentTestBench(state: flagged(), provideAgentIdentity: true).build(),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(
+        find.byKey(const ValueKey('unmet-request-observations')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Agent internals'), findsOneWidget);
+      expect(
+        tester
+            .widget<AgentInternalsBody>(find.byType(AgentInternalsBody))
+            .initialTab,
+        AgentInternalsTab.observations,
+      );
     });
   });
 }

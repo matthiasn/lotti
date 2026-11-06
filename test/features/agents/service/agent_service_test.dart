@@ -729,6 +729,86 @@ void main() {
       });
     });
 
+    group('clearUnmetRequest', () {
+      final raisedAt = kAgentTestDate.add(const Duration(hours: 1));
+      final clearAt = kAgentTestDate.add(const Duration(hours: 2));
+
+      setUp(() => stubUpdateAgentState(mockSyncService, mockRepository));
+
+      test('stamps the clear on a standing flag, keeping the flag and its '
+          'reason, and tells the UI', () async {
+        when(() => mockRepository.getAgentState('agent-1')).thenAnswer(
+          (_) async => makeTestState(
+            agentId: 'agent-1',
+            unmetRequestAt: raisedAt,
+            unmetRequestReason: 'I could log only one time block.',
+          ),
+        );
+
+        await withClock(
+          Clock.fixed(clearAt),
+          () => service.clearUnmetRequest('agent-1'),
+        );
+
+        final captured =
+            verify(
+                  () => mockSyncService.upsertEntity(captureAny()),
+                ).captured.single
+                as AgentStateEntity;
+        expect(captured.slots.unmetRequestClearedAt, clearAt);
+        expect(captured.updatedAt, clearAt);
+        expect(captured.slots.unmetRequestAt, raisedAt);
+        expect(
+          captured.slots.unmetRequestReason,
+          'I could log only one time block.',
+        );
+        expect(captured.hasOpenUnmetRequest, isFalse);
+        expect(notifiedAgentIds, ['agent-1']);
+      });
+
+      test(
+        'clears a flag stamped by a device whose clock runs ahead',
+        () async {
+          // The flag carries a stamp later than this device's wall clock; a
+          // clear stamped with the wall clock would sort before it and leave
+          // the warning standing through every tap.
+          final aheadAt = clearAt.add(const Duration(minutes: 30));
+          when(() => mockRepository.getAgentState('agent-1')).thenAnswer(
+            (_) async =>
+                makeTestState(agentId: 'agent-1', unmetRequestAt: aheadAt),
+          );
+
+          await withClock(
+            Clock.fixed(clearAt),
+            () => service.clearUnmetRequest('agent-1'),
+          );
+
+          final captured =
+              verify(
+                    () => mockSyncService.upsertEntity(captureAny()),
+                  ).captured.single
+                  as AgentStateEntity;
+          expect(captured.slots.unmetRequestClearedAt, aheadAt);
+          expect(captured.hasOpenUnmetRequest, isFalse);
+        },
+      );
+
+      test('writes nothing when no flag stands', () async {
+        when(() => mockRepository.getAgentState('agent-1')).thenAnswer(
+          (_) async => makeTestState(
+            agentId: 'agent-1',
+            unmetRequestAt: raisedAt,
+            unmetRequestClearedAt: clearAt,
+          ),
+        );
+
+        await service.clearUnmetRequest('agent-1');
+
+        verifyNever(() => mockSyncService.upsertEntity(any()));
+        expect(notifiedAgentIds, isEmpty);
+      });
+    });
+
     group('dismissScheduledWakeRecord', () {
       ScheduledWakeEntity pendingRecord({
         ScheduledWakeStatus status = ScheduledWakeStatus.pending,

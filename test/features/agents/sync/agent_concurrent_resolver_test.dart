@@ -128,6 +128,9 @@ void main() {
       DateTime? lastWakeAt,
       DateTime? lastWakeFailedAt,
       int consecutiveFailureCount = 0,
+      DateTime? unmetRequestAt,
+      String? unmetRequestReason,
+      DateTime? unmetRequestClearedAt,
     }) {
       return AgentDomainEntity.agentState(
             id: 'state-1',
@@ -136,6 +139,9 @@ void main() {
             slots: AgentSlots(
               activeTaskId: activeTaskId,
               totalSessionsCompleted: totalSessions,
+              unmetRequestAt: unmetRequestAt,
+              unmetRequestReason: unmetRequestReason,
+              unmetRequestClearedAt: unmetRequestClearedAt,
             ),
             updatedAt: DateTime(2024, 3, 15),
             vectorClock: null,
@@ -149,6 +155,99 @@ void main() {
           )
           as AgentStateEntity;
     }
+
+    test('a clear on the losing row still clears the flag the winner '
+        'carries, whichever side arrives first', () {
+      final raised = DateTime.utc(2026, 11, 6, 9);
+      final cleared = DateTime.utc(2026, 11, 6, 10);
+      final winner = stateWith(
+        unmetRequestAt: raised,
+        unmetRequestReason: 'I could log only one time block.',
+        activeTaskId: 'w',
+      );
+      final loser = stateWith(
+        unmetRequestAt: raised,
+        unmetRequestReason: 'I could log only one time block.',
+        unmetRequestClearedAt: cleared,
+        activeTaskId: 'l',
+      );
+
+      for (final (local, incoming) in [(winner, loser), (loser, winner)]) {
+        final merged = mergeAgentStateCounters(
+          winner: winner,
+          local: local,
+          incoming: incoming,
+        );
+        expect(merged.slots.unmetRequestClearedAt, cleared);
+        expect(merged.hasOpenUnmetRequest, isFalse);
+        expect(merged.slots.activeTaskId, 'w');
+      }
+    });
+
+    test('the reason travels with the newer flag, never with the row '
+        'winner', () {
+      final older = DateTime.utc(2026, 11, 6, 9);
+      final newer = DateTime.utc(2026, 11, 6, 11);
+      final winner = stateWith(
+        unmetRequestAt: older,
+        unmetRequestReason: 'older reason',
+        unmetRequestClearedAt: DateTime.utc(2026, 11, 6, 10),
+        activeTaskId: 'w',
+      );
+      final loser = stateWith(
+        unmetRequestAt: newer,
+        unmetRequestReason: 'newer reason',
+        activeTaskId: 'l',
+      );
+      final neverFlagged = stateWith(activeTaskId: 'n');
+
+      for (final (local, incoming) in [(winner, loser), (loser, winner)]) {
+        final merged = mergeAgentStateCounters(
+          winner: winner,
+          local: local,
+          incoming: incoming,
+        );
+        expect(merged.slots.unmetRequestAt, newer);
+        expect(merged.slots.unmetRequestReason, 'newer reason');
+        // Raised after the other device's clear: it stands again.
+        expect(merged.hasOpenUnmetRequest, isTrue);
+      }
+      for (final (local, incoming) in [
+        (neverFlagged, loser),
+        (loser, neverFlagged),
+      ]) {
+        final merged = mergeAgentStateCounters(
+          winner: neverFlagged,
+          local: local,
+          incoming: incoming,
+        );
+        expect(merged.slots.unmetRequestReason, 'newer reason');
+      }
+    });
+
+    test("flags raised in the same instant keep the winner's reason on "
+        'every device', () {
+      final at = DateTime.utc(2026, 11, 6, 9);
+      final winner = stateWith(
+        unmetRequestAt: at,
+        unmetRequestReason: 'winner reason',
+      );
+      final loser = stateWith(
+        unmetRequestAt: at,
+        unmetRequestReason: 'loser reason',
+      );
+
+      for (final (local, incoming) in [(winner, loser), (loser, winner)]) {
+        expect(
+          mergeAgentStateCounters(
+            winner: winner,
+            local: local,
+            incoming: incoming,
+          ).slots.unmetRequestReason,
+          'winner reason',
+        );
+      }
+    });
 
     test('joins the wake outcome watermarks by latest instant, whichever '
         "side wins the row — the failure count stays the winner's", () {

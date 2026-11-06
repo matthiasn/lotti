@@ -1716,6 +1716,17 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiCardTitle => 'Souhrn AI';
 
   @override
+  String get aiCardUnmetRequestNoReason =>
+      'Co se pokazilo, najdeš v mých pozorováních.';
+
+  @override
+  String get aiCardUnmetRequestShowObservations => 'Zobrazit pozorování';
+
+  @override
+  String get aiCardUnmetRequestTitle =>
+      'Tvůj požadavek se mi nepodařilo splnit';
+
+  @override
   String get aiConfigFailedToLoadModelsGeneric =>
       'Nepodařilo se načíst modely. Prosím, zkuste to znovu.';
 

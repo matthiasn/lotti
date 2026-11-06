@@ -185,6 +185,23 @@ abstract class AgentSlots with _$AgentSlots {
     /// Most recent project-linked activity that is not reflected in the
     /// current project report yet. `null` means the summary is up to date.
     DateTime? pendingProjectActivityAt,
+
+    /// When the task agent last said it could not meet what the user asked
+    /// (`flag_unmet_request`): its wake completed, the user's request did
+    /// not. A watermark merged by latest instant, so every device converges
+    /// on the newest flag; it stands while newer than
+    /// [unmetRequestClearedAt] (`AgentStateEntity.hasOpenUnmetRequest`).
+    DateTime? unmetRequestAt,
+
+    /// The agent's one-sentence account of what it could not do, written with
+    /// [unmetRequestAt] and carried with it through a merge: the reason of
+    /// the newer flag wins.
+    String? unmetRequestReason,
+
+    /// When the user last cleared the flag on the task card. Merged by latest
+    /// instant, so a clear on one device clears it on every device, and a flag
+    /// raised after the clear stands again.
+    DateTime? unmetRequestClearedAt,
   }) = _AgentSlots;
 
   factory AgentSlots.fromJson(Map<String, dynamic> json) =>

@@ -56,8 +56,8 @@ void main() {
   });
 
   group('AgentToolRegistry.taskAgentTools', () {
-    test('contains exactly 28 tool definitions', () {
-      expect(AgentToolRegistry.taskAgentTools, hasLength(28));
+    test('contains exactly 29 tool definitions', () {
+      expect(AgentToolRegistry.taskAgentTools, hasLength(29));
     });
 
     test('offers the three pull request tools, only the link deferred', () {

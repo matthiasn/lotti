@@ -36,6 +36,7 @@ void main() {
     AgentLifecycle lifecycle = AgentLifecycle.active,
     AsyncValue<AgentDomainEntity?> stateAsync = const AsyncValue.data(null),
     List<Override> extraOverrides = const [],
+    AgentInternalsTab initialTab = AgentInternalsTab.stats,
   }) {
     return RiverpodWidgetTestBench(
       mediaQueryData: const MediaQueryData(size: Size(900, 800)),
@@ -53,6 +54,7 @@ void main() {
           agentId: 'agent-001',
           lifecycle: lifecycle,
           stateAsync: stateAsync,
+          initialTab: initialTab,
         ),
       ),
     );
@@ -84,6 +86,19 @@ void main() {
       // Stats content includes the agent state heading and the wake count.
       expect(find.text('State Info'), findsOneWidget);
       expect(find.text('4'), findsOneWidget);
+    });
+
+    testWidgets('opens on the tab it is asked for', (tester) async {
+      await tester.pumpWidget(
+        buildSubject(
+          stateAsync: AsyncValue.data(makeTestState(wakeCounter: 4)),
+          initialTab: AgentInternalsTab.observations,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AgentObservationLog), findsOneWidget);
+      expect(find.text('State Info'), findsNothing);
     });
 
     testWidgets('each tab displays its matching content', (tester) async {

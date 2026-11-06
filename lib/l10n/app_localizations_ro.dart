@@ -1727,6 +1727,16 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiCardTitle => 'Rezumat AI';
 
   @override
+  String get aiCardUnmetRequestNoReason =>
+      'Observațiile mele explică ce nu a mers.';
+
+  @override
+  String get aiCardUnmetRequestShowObservations => 'Vedeți observațiile';
+
+  @override
+  String get aiCardUnmetRequestTitle => 'Nu am putut face ce mi-ați cerut';
+
+  @override
   String get aiConfigFailedToLoadModelsGeneric =>
       'Eșec la încărcarea modelelor. Vă rugăm să încercați din nou.';
 

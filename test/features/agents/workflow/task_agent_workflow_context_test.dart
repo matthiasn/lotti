@@ -468,6 +468,35 @@ void main() {
         expect(message, contains('No prior report exists'));
       });
 
+      test(
+        "tells the wake about the agent's standing unmet-request flag",
+        () async {
+          when(() => mockAgentRepository.getAgentState(agentId)).thenAnswer(
+            (_) async => testAgentState.copyWith(
+              slots: testAgentState.slots.copyWith(
+                unmetRequestAt: DateTime.utc(2024, 6, 15, 8),
+                unmetRequestReason: 'I could log only one time block.',
+              ),
+            ),
+          );
+
+          final message = await executeAndCaptureMessage();
+
+          expect(message, contains('## Unmet Request'));
+          expect(message, contains('"I could log only one time block."'));
+          expect(message, contains('the user has not cleared it'));
+        },
+      );
+
+      test(
+        'says nothing of an unmet request the agent never flagged',
+        () async {
+          final message = await executeAndCaptureMessage();
+
+          expect(message, isNot(contains('## Unmet Request')));
+        },
+      );
+
       test('includes observation text in user message', () async {
         final obs =
             AgentDomainEntity.agentMessage(

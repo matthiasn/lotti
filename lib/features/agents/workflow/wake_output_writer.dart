@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:lotti/classes/agents/agent_config.dart';
 import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
@@ -252,7 +253,12 @@ class WakeOutputWriter {
       // of the wake-start `state`: the report watermarks, the throttle and
       // sync all write the row while the wake runs, and a copy would put
       // their older values back (ADR 0068).
+      //
+      // An unmet-request flag is stamped at commit, not at wake start: a
+      // user who cleared the previous flag while this wake ran must still
+      // see the one it raises, and the flag is compared against that clear.
       final hostId = await _sync.localHost();
+      final unmetRequestReason = strategy.extractUnmetRequestReason();
       await _sync.updateAgentState(
         agentId,
         (current) => current.copyWith(
@@ -260,6 +266,12 @@ class WakeOutputWriter {
           updatedAt: now,
           consecutiveFailureCount: 0,
           wakeCounter: current.wakeCounter.increment(hostId),
+          slots: unmetRequestReason == null
+              ? current.slots
+              : current.slots.copyWith(
+                  unmetRequestAt: clock.now(),
+                  unmetRequestReason: unmetRequestReason,
+                ),
         ),
       );
 
