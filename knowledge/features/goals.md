@@ -430,7 +430,10 @@ handler would retract it; that wiring is a follow-up.
   nothing recorded, so the goal is eligible again. Phase B rebuilds
   `GoalWakeFacts` field by field from the derivation; the fact must be carried
   there, or `_adRequired` would force the model to write the banner Phase A
-  just retired.
+  just retired. An overdue escalation evaluates its own past day, yet the
+  banners it retires or raises are the actual day's: `_deriveForWake`
+  replaces the fact with `GoalAgentPhaseA.todayPortionMetAt` for the wake's
+  real `now`, so a finished yesterday never takes down a day still open.
 - **A reply with nobody to answer is unofferable too.** A wake with no
   pending user message is not handed `reply_to_user`. On such a wake
   `persistOutputs` reads only plain final prose and ignores the reply tool, so

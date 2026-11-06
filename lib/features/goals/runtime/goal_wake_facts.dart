@@ -351,6 +351,28 @@ class GoalWakeFacts {
   /// banner expiry so an eligible goal can replace stale copy without making
   /// ordinary unchanged ticks spend money.
   bool get needsEscalation => statusTransitioned || reportContradicted;
+
+  /// These facts with [todayPortionMet] replaced — for an overdue wake, whose
+  /// evaluation describes its own past day while the banners it acts on
+  /// belong to the actual day.
+  GoalWakeFacts withTodayPortionMet({required bool met}) => GoalWakeFacts(
+    trackStatus: trackStatus,
+    evaluation: evaluation,
+    previousStatus: previousStatus,
+    shortTermAttainment: shortTermAttainment,
+    quantitativeObservationsByType: quantitativeObservationsByType,
+    categoryTimeSessionsByCategory: categoryTimeSessionsByCategory,
+    labelTimeEntriesByCriterion: labelTimeEntriesByCriterion,
+    labelTimeEvidenceStart: labelTimeEvidenceStart,
+    labelTimeEvidenceEnd: labelTimeEvidenceEnd,
+    categoryTimeEvidenceStart: categoryTimeEvidenceStart,
+    categoryTimeEvidenceEnd: categoryTimeEvidenceEnd,
+    hasActiveCategoryTimer: hasActiveCategoryTimer,
+    hasActiveLabelTimer: hasActiveLabelTimer,
+    reportedStatus: reportedStatus,
+    periodReported: periodReported,
+    todayPortionMet: met,
+  );
 }
 
 /// Everything one deterministic derivation pass computed for a goal wake:
@@ -378,4 +400,13 @@ class GoalWakeDerivation {
 
   /// Today's already-persisted register row, if any.
   final GoalProgressEntity? existingToday;
+
+  /// This derivation carrying [facts] instead.
+  GoalWakeDerivation withFacts(GoalWakeFacts facts) => GoalWakeDerivation(
+    version: version,
+    facts: facts,
+    periodKey: periodKey,
+    priors: priors,
+    existingToday: existingToday,
+  );
 }

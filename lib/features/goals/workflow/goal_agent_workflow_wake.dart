@@ -100,7 +100,7 @@ extension _GoalWakePhases on GoalAgentWorkflow {
     // still moving after that ends the wake like a fenced write: a report
     // must describe the snapshot that was committed, and the next Phase A
     // tick re-escalates a report that no longer matches the day.
-    final (derivation, persisted) = await GoalAgentPhaseA.runExclusive(
+    var (derivation, persisted) = await GoalAgentPhaseA.runExclusive(
       agentId,
       () async {
         late GoalWakeDerivation derivation;
@@ -131,6 +131,21 @@ extension _GoalWakePhases on GoalAgentWorkflow {
       },
     );
     if (!persisted) return null;
+    // An overdue wake evaluates its own past day, but the banners it retires
+    // or raises are today's: whether today's part is done is read for the
+    // actual day, or a finished yesterday would take down — and block — the
+    // banner of a day still open.
+    if (overdueEscalation) {
+      derivation = derivation.withFacts(
+        derivation.facts.withTodayPortionMet(
+          met: await _phaseA.todayPortionMetAt(
+            agentId: agentId,
+            version: version,
+            now: now,
+          ),
+        ),
+      );
+    }
     // Phase A persisted the transition's register row BEFORE arming this
     // wake, so re-deriving sees the new status as previousStatus and the
     // transition vanishes. The wake record carries the PRE-transition

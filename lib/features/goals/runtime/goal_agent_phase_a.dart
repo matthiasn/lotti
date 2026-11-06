@@ -655,6 +655,30 @@ class GoalAgentPhaseA {
     );
   }
 
+  /// Whether today's part of [version] is done as of [now] — the banner fact
+  /// alone, for a wake whose derivation evaluates another day (an overdue
+  /// escalation): the banners it retires or raises belong to the actual day.
+  Future<bool> todayPortionMetAt({
+    required String agentId,
+    required GoalSpecVersionEntity version,
+    required DateTime now,
+  }) async {
+    final signals = await _signalReader.read(
+      criteria: version.criteria,
+      reference: now,
+      shortTermDays: _policy.shortTermDays,
+      includeTimeEntryEvidence: false,
+      goalEntryId: _goalEntryIdFor?.call(agentId),
+    );
+    return goalTodayPortionMet(
+      criterion: version.criteria,
+      signals: signals,
+      evaluation: _evaluator.evaluate(version.criteria, signals, now),
+      reference: now,
+      evaluator: _evaluator,
+    );
+  }
+
   /// Whether a standing report already covers [periodKey] under
   /// [versionId], and the status it states (null when it states none, or
   /// when no report covers the period).

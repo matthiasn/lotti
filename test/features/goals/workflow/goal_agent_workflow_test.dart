@@ -3624,6 +3624,98 @@ void main() {
     },
   );
 
+  test("an overdue wake judges today's banner by today, not by the past "
+      'day it reports on', () async {
+    stubSpec();
+    stubGlmResolution();
+    // A weak week. August 8 — the overdue period — cleared its 10,000;
+    // today, August 9, has nothing recorded yet.
+    final reader = _FakeReader(
+      GoalSignalWindow(
+        quantitativeDailySums: {
+          'cumulative_step_count': {
+            for (var day = 2; day <= 7; day++) DateTime.utc(2026, 8, day): 2000,
+            DateTime.utc(2026, 8, 8): 10500,
+          },
+        },
+      ),
+    );
+    final phaseA = GoalAgentPhaseA(
+      repository: repository,
+      syncService: syncService,
+      signalReader: reader,
+    );
+    workflow = GoalAgentWorkflow(
+      domainLogger: MockDomainLogger(),
+      repository: repository,
+      syncService: syncService,
+      phaseA: phaseA,
+      conversationRepository: conversationRepository,
+      cloudInferenceRepository: cloudInferenceRepository,
+      aiConfigRepository: aiConfigRepository,
+    );
+    final version =
+        await repository.getEntity('$agentId:spec-v1')
+            as GoalSpecVersionEntity?;
+    final past = await phaseA.deriveWakeFacts(
+      agentId: agentId,
+      version: version!,
+      now: DateTime(2026, 8, 8, 23, 59, 59),
+    );
+    expect(
+      past.facts.todayPortionMet,
+      isTrue,
+      reason: 'the precondition: the overdue day itself was done',
+    );
+    expect(
+      goalStatusPermitsAutomaticAd(past.facts, past.priors),
+      isTrue,
+      reason: 'and its status alone would still permit a banner',
+    );
+    final todaysBanner = AgentDomainEntity.goalNudge(
+      id: 'ad-today',
+      agentId: agentId,
+      status: NudgeStatus.active,
+      brief: const NudgeBrief(
+        headline: 'Your pedometer misses you.',
+        tone: NudgeTone.nudge,
+        animation: NudgeBannerAnimation.steady,
+      ),
+      briefDigest: 'd-today',
+      createdAt: DateTime(2026, 8, 9, 7),
+      updatedAt: DateTime(2026, 8, 9, 7),
+      activatedAt: DateTime(2026, 8, 9, 7),
+      vectorClock: null,
+      provenance: const {'specVersionId': '$agentId:spec-v1'},
+    );
+    when(
+      () => repository.getEntitiesByAgentId(
+        agentId,
+        type: AgentEntityTypes.goalNudge,
+      ),
+    ).thenAnswer((_) async => [todaysBanner]);
+    conversationRepository.sendMessageDelegate =
+        ({
+          required conversationId,
+          required message,
+          required model,
+          required provider,
+          required inferenceRepo,
+          tools,
+          toolChoice,
+          temperature = 0.7,
+          strategy,
+        }) async => const InferenceUsage(inputTokens: 400, outputTokens: 20);
+
+    await run(triggerTokens: const {'goal-escalation:2026-08-08'});
+
+    expect(
+      upserts.whereType<GoalNudgeEntity>().where((n) => n.id == 'ad-today'),
+      isEmpty,
+      reason: "a finished yesterday must not take down today's open banner",
+    );
+  });
+
   test('a contextual yes-now banner request overrides dismissal cooldown '
       'and cannot retire the requested banner', () async {
     stubSpec();
