@@ -43,6 +43,10 @@ DesignSystemChip _chip(WidgetTester tester, String label) =>
     );
 
 void main() {
+  // Lotti's outfits: the ones the step offers for the default character.
+  final companionOutfits = CompanionLook.of(
+    const CompanionCustomization().character,
+  );
   late AppLocalizations m;
 
   setUpAll(registerAllFallbackValues);
@@ -162,6 +166,27 @@ void main() {
         _chip(tester, hairStyleName(m, custom.hairStyle)).selected,
         isTrue,
       );
+    });
+
+    testWidgets("offers the chosen character's outfits, not Lotti's", (
+      tester,
+    ) async {
+      await pumpView(
+        tester,
+        custom: const CompanionCustomization(
+          character: CompanionSpecies.grandpa,
+        ),
+      );
+
+      final his = CompanionLook.of(CompanionSpecies.grandpa);
+      expect(his, isNotEmpty);
+      for (final outfit in his) {
+        expect(find.text(outfitName(m, outfit)), findsOneWidget);
+      }
+      // Every character's first outfit is named "Everyday".
+      for (final outfit in companionOutfits.skip(1)) {
+        expect(find.text(outfitName(m, outfit)), findsNothing);
+      }
     });
 
     testWidgets('a picked outfit is the one marked', (tester) async {
