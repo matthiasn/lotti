@@ -912,9 +912,11 @@ always offered, immediate, and short-circuited in the strategy like
 - A call missing either is answered with an error and raises nothing.
 
 `WakeOutputWriter` writes the flag in the same state transform as `lastWakeAt`,
-stamping `unmetRequestAt` with the **commit** time, not the wake's start: the
-flag is compared against `unmetRequestClearedAt`, and a clear the user made
-while the wake ran must not hide the flag that wake raises. A wake that fails
+stamping `unmetRequestAt` with the **commit** time, not the wake's start, and
+past both watermarks (`decisionStampAfter`, ADR 0111): the flag is compared
+against `unmetRequestClearedAt`, and a clear the user made while the wake ran —
+here, or on a device whose clock runs ahead — must not hide the flag that wake
+raises. *Clear* is likewise stamped past the flag it acknowledges. A wake that fails
 after the call commits nothing, so it raises nothing.
 
 ```mermaid

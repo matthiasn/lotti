@@ -775,6 +775,34 @@ void main() {
       },
     );
 
+    test('stamps the flag past a clear from a device whose clock runs '
+        'ahead', () async {
+      // The user cleared on a device whose clock is ahead of this one: the
+      // clear carries a stamp later than this commit's wall clock. Stamped
+      // with the wall clock, the new flag would sort before that clear and
+      // stay hidden.
+      final aheadClear = _now.add(const Duration(minutes: 30));
+      final current = _state().copyWith(
+        slots: AgentSlots(
+          unmetRequestAt: _now.subtract(const Duration(hours: 1)),
+          unmetRequestReason: 'An earlier request.',
+          unmetRequestClearedAt: aheadClear,
+        ),
+      );
+      when(
+        () => strategy.extractUnmetRequestReason(),
+      ).thenReturn('I could log only one of the five time blocks.');
+
+      await withClock(Clock.fixed(_now), () => run(persistedState: current));
+
+      final state = capturedUpserts().whereType<AgentStateEntity>().single;
+      expect(
+        state.slots.unmetRequestAt,
+        aheadClear.add(const Duration(microseconds: 1)),
+      );
+      expect(state.hasOpenUnmetRequest, isTrue);
+    });
+
     test('appends a wake-completed milestone', () async {
       await run();
 
