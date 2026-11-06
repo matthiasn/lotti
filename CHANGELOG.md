@@ -4,6 +4,86 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.86]
+
+### Added
+
+- **The companion can be a grandpa.** With Companion on, Settings › Companion
+  has a new Character choice: Lotti, or a grandpa in a shirt with rolled
+  sleeves, braces, a bow tie, pleated trousers and brogues, with half-moon
+  reading glasses and a trimmed beard. He has four outfits of his own
+  (everyday, jazz, seaside, and market day with a flat cap), and "Surprise me"
+  and the outfit button on the full-screen stage pick among them. Skin tone,
+  hair colour and sass carry over when you switch.
+- **The companion can be an aunt.** A third character in the same choice: a
+  woman of about forty in a boiler suit with a belt and a chest pocket, short
+  turned-up sleeves, high-top trainers and gold hoops, with fuller brows and
+  no glasses. Her four outfits are everyday, studio, festival (with a
+  headband) and weekend.
+- **The companion can be an uncle.** A fourth character: a man of about thirty
+  in a bomber jacket worn open over a tee, chinos turned up over lace-up
+  boots, and headphones resting round his neck. His four outfits are everyday,
+  night out, skate park, and snow day with a beanie.
+- **More looks for every character.** A seventh, deeper skin tone joins the
+  six, and five more hairstyles fit every character: short, balding, long and
+  straight, soft waves, and a ponytail. The hairstyle picker now shows its
+  choices as buttons that wrap, so every style fits on a phone.
+- **The companion's eyes have a colour of their own.** Settings › Companion
+  lets you pick dark brown, brown, hazel, amber, green, grey or blue, with any
+  skin tone. They are brown until you pick, no longer blue on every tone.
+
+### Changed
+
+- **Lotti now walks you through setup herself.** The welcome is her
+  introducing herself in a speech bubble, and it says plainly what you need to
+  get started: one API key. Before the key, you can make her yours — pick her
+  outfit, skin tone, hair and hair colour and watch her change — or skip it;
+  it all stays in Settings › Companion. Then you can hear the voices she can
+  have — on your device, Mistral's Voxtral and ElevenLabs — each a short
+  sample she speaks herself. The key step leads with a single recommended
+  card, Mistral, whose one key covers thinking, transcription and her voice;
+  the other providers are one tap away under "Other providers". While your key
+  is checked she thinks it over, and once it works she says her first words to
+  you in Mistral's voice. She stays on hand for your first task, whether or
+  not you have turned the companion on elsewhere in the app.
+
+### Fixed
+
+- **Daily OS could stay on "Drafting your day" forever, with nothing under
+  "Here's what I heard."** Before reading a check-in or drafting a plan, Daily
+  OS checks whether the device is online. On Linux machines without
+  NetworkManager that check fails outright, and behind WireGuard or Tailscale
+  it reports a connection type Daily OS took for "offline", so the planner
+  never started. Planning now goes ahead whenever the check can't tell, and
+  VPN connections count as online.
+- **Dictating several work sessions at once now proposes all of them.** Saying
+  "I worked on this from 11:30 to 13:00, 14:00 to 15:30 and 16:00 to 17:00"
+  used to get you one time-entry suggestion per recording, so every further
+  session needed another "next one" — and the task agent sometimes asked for
+  an entry ID it never needed to create one. The agent now proposes every
+  dictated session in the same pass, each as its own suggestion you confirm or
+  reject separately, and it no longer asks for an ID to create an entry.
+- **Recording while Lotti was reading aloud recorded her voice too.** If a
+  task's AI summary or the Day briefing was still being read aloud when you
+  started recording, the voice kept playing and the recording picked it up
+  along with what you said. Starting a recording now stops the voice first,
+  the same way it already paused an audio note that was playing.
+- **Tapping a task's AI cost tag opened the task details.** The small cost tag
+  in a task's header now opens the task agent's internals, where the token
+  breakdown shows input, output and cached tokens and the cache-hit rate. The
+  task details are still where they were, behind the Details button and the
+  status, priority and due-date tags.
+- **A summary read aloud stopped when you switched to another app.** On a
+  phone the voice now keeps speaking in the background, other apps' sound
+  ducks under it, and it comes back when the voice ends. Like any app that
+  speaks, it now plays with the iPhone's silent switch on.
+- **The companion's hats sat inside an afro.** The rock beret, the flat cap
+  and the beanie now sit on top of the hair, and an afro wears no hat at all.
+- **One raised brow could hook up off the companion's eye.** A brow now rises
+  only as far as a brow can.
+- **The bun looked like a grey loaf in dark hair colours.** Its knot now shows
+  beside her jaw, and the hair reads as hair in every colour.
+
 ## [1.1.85]
 
 ### Added
