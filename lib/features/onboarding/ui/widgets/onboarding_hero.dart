@@ -5,7 +5,9 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/onboarding/ui/widgets/aurora_hero.dart';
 import 'package:lotti/features/onboarding/ui/widgets/crystallize_hero.dart';
 import 'package:lotti/features/onboarding/ui/widgets/neural_constellation.dart';
+import 'package:lotti/features/onboarding/ui/widgets/onboarding_speech_bubble.dart';
 import 'package:lotti/features/onboarding/ui/widgets/waveform_text_hero.dart';
+import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -270,6 +272,12 @@ class _HeroArtworkFrame extends StatelessWidget {
   }
 }
 
+/// What the companion says on the welcome: her greeting, then the one key
+/// she needs — the words of her speech bubble.
+String onboardingCompanionWelcomeLine(AppLocalizations messages) =>
+    '${messages.onboardingCompanionGreeting} '
+    '${messages.onboardingCompanionOneKey}';
+
 /// The cinematic welcome content: a theme-aware rounded panel with the
 /// animated [heroStyle] hero filling the upper region and the promise, the
 /// action stack and skip below. Surface, text, controls, and hero palette all
@@ -291,7 +299,9 @@ class OnboardingHeroPanel extends StatelessWidget {
   final OnboardingHeroStyle heroStyle;
 
   /// The companion, standing in the hero frame in place of the [heroStyle]
-  /// artwork; null shows the artwork.
+  /// artwork; null shows the artwork. With her there, the promise is hers: a
+  /// speech bubble introducing her and the one key she needs
+  /// ([onboardingCompanionWelcomeLine]).
   final Widget? companion;
   final VoidCallback onConnect;
   final VoidCallback onSkip;
@@ -313,6 +323,7 @@ class OnboardingHeroPanel extends StatelessWidget {
     final textMed = tokens.colors.text.mediumEmphasis;
     final brightness = Theme.of(context).brightness;
     final leadsWithDemo = onExploreDemo != null;
+    final messages = context.messages;
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(tokens.radii.l),
@@ -362,25 +373,32 @@ class OnboardingHeroPanel extends StatelessWidget {
                 interval: const Duration(milliseconds: 34),
                 rise: tokens.spacing.step2,
                 children: [
-                  Text(
-                    context.messages.onboardingWelcomeTitle,
-                    textAlign: TextAlign.center,
-                    // Heading 2 keeps the promise dominant without letting it
-                    // overpower the visual or CTA on a phone-sized panel.
-                    style: tokens.typography.styles.heading.heading2.copyWith(
-                      color: textHigh,
-                    ),
-                  ),
-                  Padding(
-                    padding: EdgeInsets.only(top: tokens.spacing.step3),
-                    child: Text(
-                      context.messages.onboardingWelcomeMessage,
+                  if (companion != null)
+                    OnboardingSpeechBubble(
+                      title: messages.onboardingCompanionGreeting,
+                      text: messages.onboardingCompanionOneKey,
+                    )
+                  else ...[
+                    Text(
+                      messages.onboardingWelcomeTitle,
                       textAlign: TextAlign.center,
-                      style: tokens.typography.styles.body.bodyLarge.copyWith(
-                        color: textMed,
+                      // Heading 2 keeps the promise dominant without letting it
+                      // overpower the visual or CTA on a phone-sized panel.
+                      style: tokens.typography.styles.heading.heading2.copyWith(
+                        color: textHigh,
                       ),
                     ),
-                  ),
+                    Padding(
+                      padding: EdgeInsets.only(top: tokens.spacing.step3),
+                      child: Text(
+                        messages.onboardingWelcomeMessage,
+                        textAlign: TextAlign.center,
+                        style: tokens.typography.styles.body.bodyLarge.copyWith(
+                          color: textMed,
+                        ),
+                      ),
+                    ),
+                  ],
                   // The demo leads: showing a furnished world costs the user
                   // nothing, where the connect path opens with "paste an API
                   // key". Where the demo is unavailable, connect keeps the
@@ -390,7 +408,7 @@ class OnboardingHeroPanel extends StatelessWidget {
                       padding: EdgeInsets.only(top: tokens.spacing.step6),
                       child: DesignSystemButton(
                         onPressed: onExploreDemo,
-                        label: context.messages.demoOnboardingExplore,
+                        label: messages.demoOnboardingExplore,
                         leadingIcon: LottiIcons.science,
                         size: DesignSystemButtonSize.large,
                         fullWidth: true,
@@ -404,7 +422,9 @@ class OnboardingHeroPanel extends StatelessWidget {
                     ),
                     child: DesignSystemButton(
                       onPressed: onConnect,
-                      label: context.messages.onboardingWelcomeConnectButton,
+                      label: companion != null
+                          ? messages.onboardingWelcomeOneKeyButton
+                          : messages.onboardingWelcomeConnectButton,
                       leadingIcon: LottiIcons.forward,
                       variant: leadsWithDemo
                           ? DesignSystemButtonVariant.secondary
@@ -417,7 +437,7 @@ class OnboardingHeroPanel extends StatelessWidget {
                     padding: EdgeInsets.only(top: tokens.spacing.step2),
                     child: DesignSystemButton(
                       onPressed: onSkip,
-                      label: context.messages.onboardingWelcomeSkipButton,
+                      label: messages.onboardingWelcomeSkipButton,
                       variant: DesignSystemButtonVariant.tertiary,
                       size: DesignSystemButtonSize.large,
                     ),

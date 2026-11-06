@@ -11777,22 +11777,34 @@ class AppLocalizationsCs extends AppLocalizations {
   String get onboardingCategoryWork => 'Práce';
 
   @override
+  String get onboardingCompanionGreeting => 'Ahoj, já jsem Lotti.';
+
+  @override
+  String get onboardingCompanionOneKey =>
+      'Řekni mi, co máš na mysli, a udělám z toho plán. Na začátek stačí jeden klíč API – a s nastavením ti pomůžu.';
+
+  @override
   String get onboardingConnectGeminiName => 'Gemini';
 
   @override
   String get onboardingConnectGeminiTagline => 'Spojené státy';
 
   @override
-  String get onboardingConnectLessOptions => 'Méně možností';
+  String get onboardingConnectGuide =>
+      'Doporučuji Mistral: s jeho jediným klíčem umím přemýšlet, přepisovat, co říkáš, a předčítat ti.';
+
+  @override
+  String get onboardingConnectHideOtherProviders => 'Skrýt další poskytovatele';
 
   @override
   String get onboardingConnectMistralName => 'Mistral';
 
   @override
-  String get onboardingConnectMistralTagline => 'Evropská unie';
+  String get onboardingConnectMistralPitch =>
+      'Jeden klíč pro přemýšlení, přepis i hlas · hostováno v EU';
 
   @override
-  String get onboardingConnectMoreOptions => 'Další možnosti';
+  String get onboardingConnectMistralTagline => 'Evropská unie';
 
   @override
   String get onboardingConnectNotSure => 'Mistral je doporučená výchozí volba.';
@@ -11801,7 +11813,13 @@ class AppLocalizationsCs extends AppLocalizations {
   String get onboardingConnectOllamaName => 'Ollama';
 
   @override
+  String get onboardingConnectOneKeyTitle => 'Stačí jeden klíč';
+
+  @override
   String get onboardingConnectOpenAiName => 'OpenAI';
+
+  @override
+  String get onboardingConnectOtherProviders => 'Další poskytovatelé';
 
   @override
   String get onboardingConnectQwenName => 'Qwen';
@@ -11810,7 +11828,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get onboardingConnectQwenTagline => 'Čína';
 
   @override
-  String get onboardingConnectTitle => 'Vyber AI mozek pro své úkoly';
+  String get onboardingConnectRecommended => 'Doporučeno';
 
   @override
   String get onboardingFirstTaskCreatedHint =>
@@ -11839,6 +11857,25 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get onboardingFirstTaskTitle => 'Vytvoř svůj první úkol';
+
+  @override
+  String get onboardingFirstWordsQuiet => 'Jsme propojení a můžu ti pomáhat.';
+
+  @override
+  String get onboardingFirstWordsVoiced => 'A teď mě i uslyšíš!';
+
+  @override
+  String get onboardingMakeHerYoursContinue => 'Vypadá to dobře';
+
+  @override
+  String get onboardingMakeHerYoursLine =>
+      'Vyber, jak budu vypadat. Všechno to můžeš kdykoli změnit v Nastavení › Společnice.';
+
+  @override
+  String get onboardingMakeHerYoursSkip => 'Zatím přeskočit';
+
+  @override
+  String get onboardingMakeHerYoursTitle => 'Vyber můj vzhled';
 
   @override
   String get onboardingMetricsActiveDays => 'Aktivní dny';
@@ -11884,11 +11921,59 @@ class AppLocalizationsCs extends AppLocalizations {
   String get onboardingSuccessTitle => 'Vše připraveno';
 
   @override
+  String get onboardingVoiceElevenLabsDescription =>
+      'Volitelné, s vlastním klíčem ElevenLabs.';
+
+  @override
+  String get onboardingVoiceElevenLabsName => 'ElevenLabs';
+
+  @override
+  String get onboardingVoiceOnDeviceDescription =>
+      'Zdarma a soukromě. Po jednorázovém stažení funguje offline.';
+
+  @override
+  String get onboardingVoiceOnDeviceName => 'Ve tvém zařízení';
+
+  @override
+  String onboardingVoicePlay(String voice) {
+    return 'Přehrát „$voice“';
+  }
+
+  @override
+  String get onboardingVoicesContinue => 'Dál: tvůj klíč';
+
+  @override
+  String get onboardingVoicesEnglishNote =>
+      'Ukázky jsou v angličtině. Každý hlas mluví i mnoha dalšími jazyky.';
+
+  @override
+  String get onboardingVoicesLine =>
+      'Umím mluvit různými hlasy. Klepni na jeden a poslechni si ho. Kdykoli ho můžeš změnit v Nastavení › Řeč.';
+
+  @override
+  String get onboardingVoicesTitle => 'Poslechni si, jak můžu znít';
+
+  @override
+  String onboardingVoiceStop(String voice) {
+    return 'Zastavit „$voice“';
+  }
+
+  @override
+  String get onboardingVoiceVoxtralDescription =>
+      'Je součástí tvého klíče Mistral.';
+
+  @override
+  String get onboardingVoiceVoxtralName => 'Mistral Voxtral';
+
+  @override
   String get onboardingWelcomeConnectButton => 'Vybrat AI mozek';
 
   @override
   String get onboardingWelcomeMessage =>
       'Připoj svůj AI mozek, vyslov myšlenku a sleduj, jak se mění ve strukturovaný úkol.';
+
+  @override
+  String get onboardingWelcomeOneKeyButton => 'Začít s jedním klíčem';
 
   @override
   String get onboardingWelcomeSkipButton => 'Nejdřív se rozhlédnout';

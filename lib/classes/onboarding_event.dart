@@ -39,6 +39,21 @@ enum OnboardingEventName {
   /// The user dismissed/skipped the welcome.
   welcomeSkipped,
 
+  /// The "make me yours" step (dressing the companion) was shown.
+  companionCustomizeShown,
+
+  /// The user changed the companion's look on that step (once per visit).
+  companionCustomized,
+
+  /// The user skipped that step.
+  companionCustomizeSkipped,
+
+  /// The "hear the voices" step was shown.
+  voiceSamplesShown,
+
+  /// A voice sample was played there (provider dimension carries which).
+  voiceSamplePlayed,
+
   /// The provider-connect modal was shown.
   providerModalShown,
 

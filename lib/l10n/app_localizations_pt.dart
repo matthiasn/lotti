@@ -11754,22 +11754,35 @@ class AppLocalizationsPt extends AppLocalizations {
   String get onboardingCategoryWork => 'Trabalho';
 
   @override
+  String get onboardingCompanionGreeting => 'Olá! Chamo-me Lotti.';
+
+  @override
+  String get onboardingCompanionOneKey =>
+      'Diz-me o que tens em mente e eu transformo isso num plano. Para começar, só preciso de uma chave de API, e eu ajudo-te a configurá-la.';
+
+  @override
   String get onboardingConnectGeminiName => 'Gêmeos';
 
   @override
   String get onboardingConnectGeminiTagline => 'Estados Unidos';
 
   @override
-  String get onboardingConnectLessOptions => 'Menos opções';
+  String get onboardingConnectGuide =>
+      'Eu escolheria a Mistral: com essa única chave consigo pensar, transcrever o que dizes e ler-te em voz alta.';
+
+  @override
+  String get onboardingConnectHideOtherProviders =>
+      'Ocultar outros fornecedores';
 
   @override
   String get onboardingConnectMistralName => 'Mistral';
 
   @override
-  String get onboardingConnectMistralTagline => 'União Europeia';
+  String get onboardingConnectMistralPitch =>
+      'Uma chave para raciocínio, transcrição e voz · servidores na UE';
 
   @override
-  String get onboardingConnectMoreOptions => 'Mais opções';
+  String get onboardingConnectMistralTagline => 'União Europeia';
 
   @override
   String get onboardingConnectNotSure => 'Mistral é o padrão recomendado.';
@@ -11778,7 +11791,13 @@ class AppLocalizationsPt extends AppLocalizations {
   String get onboardingConnectOllamaName => 'Ollama';
 
   @override
+  String get onboardingConnectOneKeyTitle => 'Basta uma chave';
+
+  @override
   String get onboardingConnectOpenAiName => 'OpenAI';
+
+  @override
+  String get onboardingConnectOtherProviders => 'Outros fornecedores';
 
   @override
   String get onboardingConnectQwenName => 'Qwen';
@@ -11787,8 +11806,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get onboardingConnectQwenTagline => 'China';
 
   @override
-  String get onboardingConnectTitle =>
-      'Escolha o cérebro de IA para suas tarefas';
+  String get onboardingConnectRecommended => 'Recomendado';
 
   @override
   String get onboardingFirstTaskCreatedHint =>
@@ -11819,6 +11837,27 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get onboardingFirstTaskTitle => 'Crie sua primeira tarefa';
+
+  @override
+  String get onboardingFirstWordsQuiet =>
+      'Estamos ligados, e já posso ajudar-te.';
+
+  @override
+  String get onboardingFirstWordsVoiced =>
+      'Pronto, agora também me consegues ouvir!';
+
+  @override
+  String get onboardingMakeHerYoursContinue => 'Está ótimo';
+
+  @override
+  String get onboardingMakeHerYoursLine =>
+      'Escolhe como fico. Podes mudar tudo isto quando quiseres em Configurações › Companheira.';
+
+  @override
+  String get onboardingMakeHerYoursSkip => 'Saltar por agora';
+
+  @override
+  String get onboardingMakeHerYoursTitle => 'Escolhe o meu visual';
 
   @override
   String get onboardingMetricsActiveDays => 'Dias ativos';
@@ -11864,11 +11903,59 @@ class AppLocalizationsPt extends AppLocalizations {
   String get onboardingSuccessTitle => 'Você está pronto';
 
   @override
+  String get onboardingVoiceElevenLabsDescription =>
+      'Opcional, com uma chave ElevenLabs própria.';
+
+  @override
+  String get onboardingVoiceElevenLabsName => 'ElevenLabs';
+
+  @override
+  String get onboardingVoiceOnDeviceDescription =>
+      'Grátis e privada. Funciona offline depois de uma única transferência.';
+
+  @override
+  String get onboardingVoiceOnDeviceName => 'No teu dispositivo';
+
+  @override
+  String onboardingVoicePlay(String voice) {
+    return 'Reproduzir «$voice»';
+  }
+
+  @override
+  String get onboardingVoicesContinue => 'Seguinte: a tua chave';
+
+  @override
+  String get onboardingVoicesEnglishNote =>
+      'As amostras estão em inglês. Cada voz fala também muitas outras línguas.';
+
+  @override
+  String get onboardingVoicesLine =>
+      'Consigo falar com vozes diferentes. Toca numa para a ouvires. Podes mudar quando quiseres em Configurações › Discurso.';
+
+  @override
+  String get onboardingVoicesTitle => 'Ouve como posso soar';
+
+  @override
+  String onboardingVoiceStop(String voice) {
+    return 'Parar «$voice»';
+  }
+
+  @override
+  String get onboardingVoiceVoxtralDescription =>
+      'Vem com a tua chave da Mistral.';
+
+  @override
+  String get onboardingVoiceVoxtralName => 'Mistral Voxtral';
+
+  @override
   String get onboardingWelcomeConnectButton => 'Escolha seu cérebro de IA';
 
   @override
   String get onboardingWelcomeMessage =>
       'Conecte seu cérebro de IA, diga um pensamento e observe-o se tornar uma tarefa estruturada.';
+
+  @override
+  String get onboardingWelcomeOneKeyButton => 'Começar com uma só chave';
 
   @override
   String get onboardingWelcomeSkipButton => 'Olhe ao redor primeiro';

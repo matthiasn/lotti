@@ -28,6 +28,7 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/ui/animation/ai_voice_input_shader.dart';
 import 'package:lotti/features/ai/ui/settings/services/connection_verifier_service.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
+import 'package:lotti/features/companion/state/companion_look_controller.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/onboarding/services/onboarding_capture_to_task_service.dart';
@@ -145,7 +146,10 @@ Widget _app({
 enum _OnboardingCase {
   settings,
   welcome,
+  makeHerYours,
+  voices,
   providers,
+  otherProviders,
   apiKey,
   success,
   categories,
@@ -157,7 +161,10 @@ extension on _OnboardingCase {
   String get fileName => switch (this) {
     _OnboardingCase.settings => 'settings',
     _OnboardingCase.welcome => 'welcome',
+    _OnboardingCase.makeHerYours => 'make_her_yours',
+    _OnboardingCase.voices => 'voices',
     _OnboardingCase.providers => 'providers',
+    _OnboardingCase.otherProviders => 'other_providers',
     _OnboardingCase.apiKey => 'api_key',
     _OnboardingCase.success => 'success',
     _OnboardingCase.categories => 'categories',
@@ -309,6 +316,9 @@ void main() {
   });
 
   List<Override> overrides() => withServiceOverrides([
+    // One outfit across every capture: each case is its own app, which
+    // would otherwise roll its own.
+    companionOutfitSeedProvider.overrideWithValue(7),
     aiConfigRepositoryProvider.overrideWithValue(aiRepository),
     categoryRepositoryProvider.overrideWithValue(categoryRepository),
     captureControllerProvider.overrideWith(() => captureController),
@@ -366,15 +376,40 @@ void main() {
     await settleFrames(tester, frames);
   }
 
+  Future<void> driveToMakeHerYours(WidgetTester tester) async {
+    await tapText(tester, _messages(tester).onboardingWelcomeOneKeyButton);
+    expect(
+      find.text(_messages(tester).onboardingMakeHerYoursTitle),
+      findsOneWidget,
+    );
+  }
+
+  Future<void> driveToVoices(WidgetTester tester) async {
+    await driveToMakeHerYours(tester);
+    await tapText(tester, _messages(tester).onboardingMakeHerYoursContinue);
+    expect(
+      find.text(_messages(tester).onboardingVoicesTitle),
+      findsOneWidget,
+    );
+  }
+
   Future<void> driveToProviders(WidgetTester tester) async {
-    final messages = _messages(tester);
-    await tapText(tester, messages.onboardingWelcomeConnectButton);
-    await tapText(tester, messages.onboardingConnectMoreOptions);
+    await driveToVoices(tester);
+    await tapText(tester, _messages(tester).onboardingVoicesContinue);
+    expect(
+      find.text(_messages(tester).onboardingConnectRecommended),
+      findsOneWidget,
+    );
+  }
+
+  Future<void> driveToOtherProviders(WidgetTester tester) async {
+    await driveToProviders(tester);
+    await tapText(tester, _messages(tester).onboardingConnectOtherProviders);
     expect(find.text('Ollama'), findsOneWidget);
   }
 
   Future<void> driveToApiKey(WidgetTester tester) async {
-    await driveToProviders(tester);
+    await driveToOtherProviders(tester);
     await tapText(tester, 'Ollama');
 
     await tester.pump(const Duration(milliseconds: 1100));
@@ -479,7 +514,6 @@ void main() {
     required _OnboardingCase scenario,
     required ScreenshotDevice device,
     required Brightness brightness,
-    bool companion = false,
   }) => withTargetPlatform(
     device.isPhone ? TargetPlatform.android : TargetPlatform.linux,
     () async {
@@ -505,13 +539,7 @@ void main() {
           home: home,
           brightness: brightness,
           size: device.size,
-          overrides: withServiceOverrides([
-            ...overrides(),
-            if (companion)
-              configFlagProvider(
-                enableCompanionFlag,
-              ).overrideWith((ref) => Stream.value(true)),
-          ]),
+          overrides: overrides(),
         ),
       );
       await settleFrames(tester, 18);
@@ -524,11 +552,17 @@ void main() {
           );
         case _OnboardingCase.welcome:
           expect(
-            find.text(_messages(tester).onboardingWelcomeTitle),
+            find.text(_messages(tester).onboardingCompanionGreeting),
             findsOneWidget,
           );
+        case _OnboardingCase.makeHerYours:
+          await driveToMakeHerYours(tester);
+        case _OnboardingCase.voices:
+          await driveToVoices(tester);
         case _OnboardingCase.providers:
           await driveToProviders(tester);
+        case _OnboardingCase.otherProviders:
+          await driveToOtherProviders(tester);
         case _OnboardingCase.apiKey:
           await driveToApiKey(tester);
         case _OnboardingCase.success:
@@ -560,37 +594,22 @@ void main() {
               brightness: brightness,
             );
 
+            // She leads the welcome, the one-key step and the first task.
+            if (const {
+              _OnboardingCase.welcome,
+              _OnboardingCase.makeHerYours,
+              _OnboardingCase.voices,
+              _OnboardingCase.providers,
+              _OnboardingCase.otherProviders,
+              _OnboardingCase.firstTask,
+              _OnboardingCase.taskCreated,
+            }.contains(scenario)) {
+              expect(find.byType(OnboardingCompanion), findsOneWidget);
+            }
             expect(tester.takeException(), isNull);
             await captureScreenshot(
               tester,
               'onboarding_${scenario.fileName}_${viewport}_$theme',
-              subdir: 'onboarding',
-            );
-          },
-        );
-      }
-      // The companion greets, listens and celebrates in the same flow.
-      for (final scenario in [
-        _OnboardingCase.welcome,
-        _OnboardingCase.firstTask,
-        _OnboardingCase.taskCreated,
-      ]) {
-        testWidgets(
-          '${scenario.name} $viewport with the companion — $theme',
-          (tester) async {
-            await pumpCase(
-              tester,
-              scenario: scenario,
-              device: device,
-              brightness: brightness,
-              companion: true,
-            );
-
-            expect(find.byType(OnboardingCompanion), findsOneWidget);
-            expect(tester.takeException(), isNull);
-            await captureScreenshot(
-              tester,
-              'onboarding_companion_${scenario.fileName}_${viewport}_$theme',
               subdir: 'onboarding',
             );
           },

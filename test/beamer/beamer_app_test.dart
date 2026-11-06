@@ -6056,7 +6056,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 400));
         await tester.pump(const Duration(milliseconds: 800));
 
-        expect(find.text('Choose your AI brain'), findsOneWidget);
+        expect(find.text('Get started with one key'), findsOneWidget);
         expect(
           recordShownCount,
           1,
@@ -6345,9 +6345,19 @@ void main() {
         }
 
         await step();
-        await tester.tap(find.text('Choose your AI brain'));
+        await tester.tap(find.text('Get started with one key'));
         await step();
-        await tester.tap(find.text('More options'));
+        await tester.ensureVisible(find.text('Skip for now'));
+        await step();
+        await tester.tap(find.text('Skip for now'));
+        await step();
+        await tester.ensureVisible(find.text('Next: your key'));
+        await step();
+        await tester.tap(find.text('Next: your key'));
+        await step();
+        await tester.tap(find.text('Other providers'));
+        await step();
+        await tester.ensureVisible(find.text('Ollama'));
         await step();
         await tester.tap(find.text('Ollama'));
         await step();
@@ -6402,7 +6412,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 400));
         await tester.pump(const Duration(milliseconds: 800));
-        expect(find.text('Choose your AI brain'), findsOneWidget);
+        expect(find.text('Get started with one key'), findsOneWidget);
 
         // Skip out of the welcome without connecting — the modal's own
         // "Look around first" link (the `onDismiss` path).
@@ -6413,7 +6423,7 @@ void main() {
         await tester.pump();
 
         // The welcome is gone...
-        expect(find.text('Choose your AI brain'), findsNothing);
+        expect(find.text('Get started with one key'), findsNothing);
         // ...but skipping must NOT retire it: only connecting a provider marks
         // it completed, so a plain skip keeps the grace period open.
         expect(markCompletedCount, 0);

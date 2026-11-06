@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_category_view.dart';
+import 'package:lotti/features/onboarding/ui/widgets/onboarding_speech_bubble.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../widget_test_utils.dart';
@@ -29,6 +30,7 @@ void main() {
     VoidCallback? onWhy,
     VoidCallback? onAddOwn,
     VoidCallback? onContinue,
+    Widget? companion,
   }) async {
     await tester.pumpWidget(
       makeTestableWidget(
@@ -48,6 +50,7 @@ void main() {
             onWhy: onWhy ?? () {},
             onAddOwn: onAddOwn ?? () {},
             onContinue: onContinue ?? () {},
+            companion: companion,
           ),
         ),
         mediaQueryData: const MediaQueryData(
@@ -389,5 +392,39 @@ void main() {
 
     await tester.tap(find.widgetWithText(DesignSystemButton, 'Continue'));
     expect(continues, 1);
+  });
+
+  testWidgets('without her the explanation is plain text under the title', (
+    tester,
+  ) async {
+    await pumpView(tester, selected: const {});
+
+    expect(find.byType(OnboardingSpeechBubble), findsNothing);
+    expect(
+      find.textContaining('keeps each area of your life'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('with her the explanation is her bubble, beside her bust', (
+    tester,
+  ) async {
+    await pumpView(
+      tester,
+      selected: const {},
+      companion: const ColoredBox(key: ValueKey('her'), color: Colors.red),
+    );
+
+    final her = find.byKey(const ValueKey('her'));
+    expect(tester.getSize(her), const Size.square(ControlSizes.avatarHero));
+    final bubble = tester.widget<OnboardingSpeechBubble>(
+      find.byType(OnboardingSpeechBubble),
+    );
+    expect(bubble.text, startsWith('Lotti keeps each area'));
+    expect(bubble.tail, OnboardingBubbleTail.left);
+    expect(
+      tester.getTopLeft(find.text('Where should your AI work?')).dy,
+      lessThan(tester.getTopLeft(her).dy),
+    );
   });
 }

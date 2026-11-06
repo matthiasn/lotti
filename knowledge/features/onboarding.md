@@ -39,8 +39,11 @@ dark launch behind its own flag.
 flowchart TD
     L[First launch · no provider configured] -->|eligible| W[OnboardingWelcomeModal]
     L -->|budget spent / already completed| NONE[no auto-show · replay via Settings › Onboarding]
-    W --> WL[welcome · hero + promise + CTA]
-    WL -->|Choose your AI brain| CN[connect · provider tiles]
+    W --> WL[welcome · the companion + her one-key promise + CTA]
+    WL -->|Get started with one key| MY[make me yours · her look, optional]
+    MY -->|Looks good / Skip for now| VO[the voices · a sample each, optional]
+    VO -->|Next: your key| CN[connect · one recommended card]
+    CN -->|Other providers| CNO[the remaining provider tiles]
     WL -->|Look around first| SK[skip → onDismiss · no persistence, grace period preserved]
 ```
 
@@ -52,23 +55,87 @@ and the auto-show path has already written the shown count and first-shown
 timestamp *before* opening. What "look around first" costs you is a slot in the
 cadence budget, not the offer itself.
 
+# The one key
+
+The connect step (`OnboardingConnectPanel`) is built around one message: a
+single API key is all it takes. It leads with one card,
+`onboardingRecommendedProvider` (Mistral), badged *Recommended*, with what its
+key covers in place of a tagline — the seeded Mistral profile names a thinking,
+a transcription and a read-aloud model. Every other provider
+(`onboardingOtherProviders`) waits behind the *Other providers* disclosure. The
+demo AI sheet reuses the panel without her, and states the recommendation as a
+plain subtitle instead.
+
 # The companion
 
-With `enable_companion` on, the [companion](companion.md) takes part
-(`ui/widgets/onboarding_companion.dart`). Off, every surface is as it was.
+The [companion](companion.md) leads onboarding
+(`ui/widgets/onboarding_companion.dart`) **whatever her own flag,
+`enable_companion`, says**; the flag keeps gating her everywhere else in the
+app. Her lines sit in speech bubbles (`OnboardingSpeechBubble`) whose tail
+points at her.
 
 - **The welcome hero.** She stands, full length, in the welcome's hero frame in
   place of the `heroStyle` artwork (`OnboardingHeroPanel.companion`), at the
-  frame's own height.
+  frame's own height. The promise below her is her bubble: her greeting, then
+  the one key she needs (`onboardingCompanionWelcomeLine`). The panel keeps its
+  artwork and its own promise only where a host passes no companion — the
+  animation gallery.
+- **"Make me yours".** Between the welcome and the key, an optional step
+  (`OnboardingMakeHerYoursStep`): she stands full length beside her bubble,
+  over a row of choices each for her outfit ("Surprise me" or one of hers),
+  skin tone, hair style and hair colour. Each pick is written at once to
+  `companionCustomizationProvider` — the store Settings › Companion edits — so
+  she wears it as it is made, and "Skip for now" only moves on. The step
+  records `companionCustomizeShown`, `companionCustomized` (the first pick of
+  a visit) and `companionCustomizeSkipped`.
+- **The voices.** After it, an optional step (`OnboardingVoicesStep`): her
+  bust beside her bubble, then a card for each voice she can have — on the
+  device (free, private), Mistral's Voxtral (comes with the recommended key)
+  and ElevenLabs (with a key of its own). Each card plays its bundled sample
+  through her (`TtsPlaybackController.playClip`) under her step's source, so
+  she says it with her mouth in time; starting one stops whatever was
+  speaking, and tapping the one playing stops it. The samples are one English
+  sentence (`onboardingVoiceSampleText`), as a note under the cards says. The
+  step records `voiceSamplesShown`, and `voiceSamplePlayed` with the voice as
+  its provider dimension; `providerModalShown` is recorded when the user
+  leaves it for the key.
+- **The connect step.** A bust, `ControlSizes.avatarHero` square, beside a
+  bubble in which she recommends the one key.
+- **The key step.** A bust at the end of the title row
+  (`OnboardingApiKeyPanel.companion`), built for the key check as the user
+  sees it (`OnboardingCompanionBeat.ofKeyCheck`): waiting while the field is
+  empty, thinking while the key is checked and while the provider is set up
+  after Connect, a thumbs-up when it is verified, a shrug when it is turned
+  down. She says nothing there; the status line carries the words.
+- **Her first words.** On the success beat she takes the checkmark's place
+  (`OnboardingSuccessView.lead`, `OnboardingFirstWords`): a bust celebrating
+  beside her bubble. The provider's seeded profile is resolved
+  (`resolveByProfileId`) and, where its read-aloud slot names a cloud voice —
+  Mistral's does, Voxtral — she says "There, now you can hear me too!" in it,
+  in the app's language (`OnboardingCompanion.cloudVoice`). That one line is
+  spoken **whatever the read-aloud flag says**: it is fixed text, sent to the
+  provider the user has just connected, and the flag is off by default, so
+  otherwise no new user would ever hear her. Without such a voice, or when
+  the profile does not resolve, she is silent and her bubble says she is
+  ready.
+- **The areas.** A bust beside a bubble holding the step's explanation
+  (`OnboardingCategoryView.companion`).
 - **The first-task step.** A bust, `ControlSizes.avatarHero` square, above the
-  headline (`OnboardingFirstTaskView.companion`); the view stays free of
-  providers and the step builds her for the frame.
+  headline (`OnboardingFirstTaskView.companion`), whose headline — and, at
+  the prompt, its guidance — is her bubble; the view stays free of providers
+  and the step builds her for the frame.
 
 Each moment is an `OnboardingCompanionBeat`:
 
 | Beat | When | She |
 |---|---|---|
 | `welcome` | the welcome panel | waves once |
+| `dressUp` | the "make me yours" step | opens her arms once |
+| `voices` | the voices step | opens her hands once |
+| `key` · `keyChecking` · `keyVerified` · `keyRejected` | the key step, by its check | waits · holds `think` · thumbs up · shrugs |
+| `firstWords` | the success beat | celebrates once, saying her first words |
+| `areas` | the area step | opens her arms once |
+| `recommend` | the connect step | presents the recommended card once |
 | `prompt` | the first-task prompt | waves once |
 | `listening` | the mic is open | holds `listen` |
 | `thinking` | the words are structured | holds `think` |
@@ -86,6 +153,14 @@ open, which stops her, so she never talks into the recording. Turning
 read-aloud off, here or by sync from another device, silences her at once. The welcome's
 promise is said once per modal: back on the welcome from the connect step, she
 waves but stays quiet.
+
+**Each step speaks under its own source id**
+(`OnboardingCompanionBeat.sourceId`: `onboarding-companion-` plus the step).
+The steps crossfade, so the outgoing step is disposed after the incoming one
+has started speaking; with one shared id, its `dispose` would stop the new
+line. A new line instead stops whichever onboarding line is still playing, and
+leaving a step ends only its own. She is dressed for one subject on every step
+(`OnboardingCompanion.dressedFor`), so her outfit does not change between them.
 
 **Her writes to the voice run after the frame.** A line changes in
 `didUpdateWidget`, and leaving ends it in `dispose`; both run while the tree

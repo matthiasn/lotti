@@ -201,7 +201,7 @@ void main() {
 
       // Both welcome CTAs are present — the FTUE welcome step, not some
       // other surface.
-      expect(find.text('Choose your AI brain'), findsOneWidget);
+      expect(find.text('Get started with one key'), findsOneWidget);
       expect(find.text('Look around first'), findsOneWidget);
     });
 
@@ -266,9 +266,19 @@ void main() {
         // Replay → connect an Ollama provider (needs no API key) → success.
         await tester.tap(find.text('Start onboarding'));
         await tester.pumpAndSettle();
-        await tester.tap(find.text('Choose your AI brain'));
+        await tester.tap(find.text('Get started with one key'));
         await tester.pumpAndSettle();
-        await tester.tap(find.text('More options'));
+        await tester.ensureVisible(find.text('Skip for now'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Skip for now'));
+        await tester.pumpAndSettle();
+        await tester.ensureVisible(find.text('Next: your key'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Next: your key'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Other providers'));
+        await tester.pumpAndSettle();
+        await tester.ensureVisible(find.text('Ollama'));
         await tester.pumpAndSettle();
         await tester.tap(find.text('Ollama'));
         await tester.pumpAndSettle();

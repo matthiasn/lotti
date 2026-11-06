@@ -2,24 +2,26 @@ import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/features/ai/ui/settings/util/ai_provider_visual.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_hero.dart';
+import 'package:lotti/features/onboarding/ui/widgets/onboarding_speech_bubble.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/modal/animated_modal_item.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// The primary providers surfaced in the first onboarding row. MLX is
-/// deliberately excluded from the FTUE (a multi-GB download has no place in a
-/// first session); it stays available later in Settings. Mistral, the
-/// recommended default, leads — and is the demo AI sheet's starting choice.
-const onboardingPrimaryProviders = <InferenceProviderType>[
-  InferenceProviderType.mistral,
+/// The one provider the connect step recommends, on a card of its own: its
+/// single key covers thinking, transcription and the read-aloud voice (the
+/// seeded Mistral profile names all three). It is also the demo AI sheet's
+/// starting choice.
+const InferenceProviderType onboardingRecommendedProvider =
+    InferenceProviderType.mistral;
+
+/// The rest, behind the "Other providers" disclosure. MLX is deliberately
+/// excluded from the FTUE (a multi-GB download has no place in a first
+/// session); it stays available later in Settings.
+const onboardingOtherProviders = <InferenceProviderType>[
   InferenceProviderType.melious,
   InferenceProviderType.gemini,
   InferenceProviderType.alibaba,
-];
-
-/// Surfaced behind the "More options" disclosure.
-const onboardingMoreProviders = <InferenceProviderType>[
   InferenceProviderType.openAi,
   InferenceProviderType.ollama,
 ];
@@ -70,26 +72,33 @@ Color onboardingProviderBrandColor(InferenceProviderType type) {
   };
 }
 
-/// The cinematic connect page: a theme-aware panel matching the welcome, with
-/// an ambient **aurora** backdrop (a different motion from the welcome's
-/// constellation) behind a back/title header and clean, Apple-style provider
-/// tiles — soft brand-tinted fills, no outlines.
+/// The cinematic connect page, built around one message: a single API key is
+/// all it takes. A theme-aware panel matching the welcome, with an ambient
+/// **aurora** backdrop behind a back/title header, one large card for the
+/// recommended provider, and the others behind a disclosure — clean,
+/// Apple-style tiles with soft brand-tinted fills.
 class OnboardingConnectPanel extends StatefulWidget {
   const OnboardingConnectPanel({
     required this.onSelect,
     required this.onBack,
+    this.companion,
     super.key,
   });
 
   final void Function(InferenceProviderType) onSelect;
   final VoidCallback onBack;
 
+  /// The companion, as a bust beside a speech bubble in which she recommends
+  /// the provider, her line also spoken where a voice is on hand. Null states the
+  /// recommendation as a plain subtitle.
+  final Widget? companion;
+
   @override
   State<OnboardingConnectPanel> createState() => _OnboardingConnectPanelState();
 }
 
 class _OnboardingConnectPanelState extends State<OnboardingConnectPanel> {
-  bool _showMore = false;
+  bool _showOthers = false;
 
   @override
   Widget build(BuildContext context) {
@@ -97,6 +106,7 @@ class _OnboardingConnectPanelState extends State<OnboardingConnectPanel> {
     final accent = tokens.colors.interactive.enabled;
     final panelBg = tokens.colors.background.level01;
     final textHigh = tokens.colors.text.highEmphasis;
+    final messages = context.messages;
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(tokens.radii.l),
@@ -168,33 +178,48 @@ class _OnboardingConnectPanelState extends State<OnboardingConnectPanel> {
                 ),
                 SizedBox(height: tokens.spacing.step4),
                 Text(
-                  context.messages.onboardingConnectTitle,
+                  messages.onboardingConnectOneKeyTitle,
                   style: tokens.typography.styles.heading.heading3.copyWith(
                     color: textHigh,
                   ),
                 ),
-                SizedBox(height: tokens.spacing.step2),
-                // Plain-language reassurance so a novice isn't paralysed by the
-                // unfamiliar provider names (the recurring novice-review note).
-                Text(
-                  context.messages.onboardingConnectNotSure,
-                  style: tokens.typography.styles.body.bodySmall.copyWith(
-                    color: tokens.colors.text.mediumEmphasis,
-                  ),
-                ),
-                SizedBox(height: tokens.spacing.step5),
-                for (final type in onboardingPrimaryProviders)
-                  Padding(
-                    padding: EdgeInsets.only(bottom: tokens.spacing.step3),
-                    child: _ProviderTile(
-                      type: type,
-                      onTap: () => widget.onSelect(type),
+                SizedBox(height: tokens.spacing.step3),
+                if (widget.companion case final companion?)
+                  Row(
+                    children: [
+                      SizedBox.square(
+                        dimension: ControlSizes.avatarHero,
+                        child: companion,
+                      ),
+                      SizedBox(width: tokens.spacing.step2),
+                      Expanded(
+                        child: OnboardingSpeechBubble(
+                          text: messages.onboardingConnectGuide,
+                          tail: OnboardingBubbleTail.left,
+                        ),
+                      ),
+                    ],
+                  )
+                else
+                  // Plain-language reassurance so a novice isn't paralysed by
+                  // the unfamiliar provider names.
+                  Text(
+                    messages.onboardingConnectNotSure,
+                    style: tokens.typography.styles.body.bodySmall.copyWith(
+                      color: tokens.colors.text.mediumEmphasis,
                     ),
                   ),
+                SizedBox(height: tokens.spacing.step5),
+                _ProviderTile(
+                  type: onboardingRecommendedProvider,
+                  recommended: true,
+                  onTap: () => widget.onSelect(onboardingRecommendedProvider),
+                ),
+                SizedBox(height: tokens.spacing.step3),
                 Align(
                   alignment: Alignment.centerLeft,
                   child: InkWell(
-                    onTap: () => setState(() => _showMore = !_showMore),
+                    onTap: () => setState(() => _showOthers = !_showOthers),
                     borderRadius: BorderRadius.circular(tokens.radii.s),
                     child: Padding(
                       padding: EdgeInsets.all(tokens.spacing.step2),
@@ -202,7 +227,7 @@ class _OnboardingConnectPanelState extends State<OnboardingConnectPanel> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           AnimatedRotation(
-                            turns: _showMore ? 0.5 : 0,
+                            turns: _showOthers ? 0.5 : 0,
                             duration: MotionDurations.short4,
                             child: Icon(
                               LottiIcons.expand,
@@ -214,14 +239,10 @@ class _OnboardingConnectPanelState extends State<OnboardingConnectPanel> {
                           AnimatedSwitcher(
                             duration: MotionDurations.short4,
                             child: Text(
-                              _showMore
-                                  ? context
-                                        .messages
-                                        .onboardingConnectLessOptions
-                                  : context
-                                        .messages
-                                        .onboardingConnectMoreOptions,
-                              key: ValueKey(_showMore),
+                              _showOthers
+                                  ? messages.onboardingConnectHideOtherProviders
+                                  : messages.onboardingConnectOtherProviders,
+                              key: ValueKey(_showOthers),
                               style: tokens.typography.styles.body.bodyMedium
                                   .copyWith(color: accent),
                             ),
@@ -235,11 +256,11 @@ class _OnboardingConnectPanelState extends State<OnboardingConnectPanel> {
                   duration: MotionDurations.long2,
                   curve: MotionCurves.emphasizedDecelerate,
                   alignment: Alignment.topCenter,
-                  child: _showMore
+                  child: _showOthers
                       ? Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            for (final type in onboardingMoreProviders)
+                            for (final type in onboardingOtherProviders)
                               Padding(
                                 padding: EdgeInsets.only(
                                   top: tokens.spacing.step2,
@@ -299,10 +320,18 @@ class _IconBtn extends StatelessWidget {
 /// rounded corners and NO outline/border, a brand icon in a soft chip, name +
 /// tagline, and a quiet chevron.
 class _ProviderTile extends StatefulWidget {
-  const _ProviderTile({required this.type, required this.onTap});
+  const _ProviderTile({
+    required this.type,
+    required this.onTap,
+    this.recommended = false,
+  });
 
   final InferenceProviderType type;
   final VoidCallback onTap;
+
+  /// The recommended provider's card: a "Recommended" badge by the name, and
+  /// what its one key covers in place of the tagline.
+  final bool recommended;
 
   @override
   State<_ProviderTile> createState() => _ProviderTileState();
@@ -320,11 +349,15 @@ class _ProviderTileState extends State<_ProviderTile> {
     final textMed = tokens.colors.text.mediumEmphasis;
     final tileBase = tokens.colors.background.level02;
     final name = onboardingProviderName(messages, widget.type);
-    final tagline = onboardingProviderTagline(messages, widget.type);
+    final tagline = widget.recommended
+        ? messages.onboardingConnectMistralPitch
+        : onboardingProviderTagline(messages, widget.type);
 
     return Semantics(
       button: true,
-      label: name,
+      label: widget.recommended
+          ? '$name, ${messages.onboardingConnectRecommended}'
+          : name,
       onTap: widget.onTap,
       child: FocusableActionDetector(
         mouseCursor: SystemMouseCursors.click,
@@ -388,10 +421,41 @@ class _ProviderTileState extends State<_ProviderTile> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          name,
-                          style: tokens.typography.styles.subtitle.subtitle1
-                              .copyWith(color: textHigh),
+                        Wrap(
+                          spacing: tokens.spacing.step2,
+                          runSpacing: tokens.spacing.step1,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            Text(
+                              name,
+                              style: tokens.typography.styles.subtitle.subtitle1
+                                  .copyWith(color: textHigh),
+                            ),
+                            if (widget.recommended)
+                              DecoratedBox(
+                                decoration: BoxDecoration(
+                                  color: accent.withValues(alpha: 0.24),
+                                  borderRadius: BorderRadius.circular(
+                                    tokens.radii.s,
+                                  ),
+                                ),
+                                child: Padding(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: tokens.spacing.step2,
+                                    vertical: tokens.spacing.step1,
+                                  ),
+                                  child: Text(
+                                    messages.onboardingConnectRecommended,
+                                    style: tokens
+                                        .typography
+                                        .styles
+                                        .others
+                                        .caption
+                                        .copyWith(color: textHigh),
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
                         if (tagline.isNotEmpty)
                           Padding(

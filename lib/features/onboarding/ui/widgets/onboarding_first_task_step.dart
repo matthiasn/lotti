@@ -184,13 +184,11 @@ class _OnboardingFirstTaskStepState
       transcript: _displayTranscript(captureState),
       amplitudes: captureState.amplitudes,
       dbfs: captureState.dbfs,
-      companion: watchOnboardingCompanionEnabled(ref)
-          ? OnboardingCompanion(
-              beat: OnboardingCompanionBeat.of(phase),
-              line: _companionLine(messages, phase),
-              framing: CompanionFraming.bust,
-            )
-          : null,
+      companion: OnboardingCompanion(
+        beat: OnboardingCompanionBeat.of(phase),
+        line: _companionLine(messages, phase),
+        framing: CompanionFraming.bust,
+      ),
     );
   }
 

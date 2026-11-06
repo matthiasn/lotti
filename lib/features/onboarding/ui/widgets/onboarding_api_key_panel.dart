@@ -50,12 +50,20 @@ class OnboardingApiKeyPanel extends ConsumerStatefulWidget {
     required this.type,
     required this.onBack,
     required this.onConnected,
+    this.companion,
     super.key,
   });
 
   final InferenceProviderType type;
   final VoidCallback onBack;
   final VoidCallback onConnected;
+
+  /// Builds the companion for the key check's [ConnectionCheckState] as the
+  /// user sees it — thinking while it runs, pleased or let down by the
+  /// answer — shown as a bust at the end of the title row; while the provider
+  /// is being set up after Connect, she is built as still checking. Null
+  /// leaves her out.
+  final Widget Function(ConnectionCheckState status)? companion;
 
   @override
   ConsumerState<OnboardingApiKeyPanel> createState() =>
@@ -343,6 +351,19 @@ class _OnboardingApiKeyPanelState extends ConsumerState<OnboardingApiKeyPanel> {
                             .copyWith(color: textHigh),
                       ),
                     ),
+                    if (widget.companion case final companion?)
+                      // Decorative: the status line says in words what she
+                      // shows.
+                      ExcludeSemantics(
+                        child: SizedBox.square(
+                          dimension: ControlSizes.avatarHero,
+                          child: companion(
+                            _busy
+                                ? const ConnectionCheckChecking()
+                                : verifyState,
+                          ),
+                        ),
+                      ),
                   ],
                 ),
                 SizedBox(height: tokens.spacing.step5),

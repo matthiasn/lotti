@@ -135,13 +135,52 @@ void main() {
       });
 
       await driver.step('choose_brain', () async {
-        await tapLabel(l10n.onboardingWelcomeConnectButton);
+        await tapLabel(l10n.onboardingWelcomeOneKeyButton);
+        await driver.pumpUntilFound(panel('make-her-yours'));
+      });
+
+      await driver.step('make_her_yours', () async {
+        await driver.holdUntil(
+          driver.timeline.elapsed + const Duration(milliseconds: 1500),
+        );
+        final keep = find.descendant(
+          of: panel('make-her-yours'),
+          matching: find.text(l10n.onboardingMakeHerYoursContinue),
+        );
+        await tester.ensureVisible(keep);
+        await tester.pump();
+        await tapLabel(
+          l10n.onboardingMakeHerYoursContinue,
+          within: panel('make-her-yours'),
+        );
+        await driver.pumpUntilFound(panel('voices'));
+      });
+
+      await driver.step('voices', () async {
+        await driver.holdUntil(
+          driver.timeline.elapsed + const Duration(milliseconds: 1500),
+        );
+        final next = find.descendant(
+          of: panel('voices'),
+          matching: find.text(l10n.onboardingVoicesContinue),
+        );
+        await tester.ensureVisible(next);
+        await tester.pump();
+        await tapLabel(l10n.onboardingVoicesContinue, within: panel('voices'));
         await driver.pumpUntilFound(panel('connect'));
       });
 
       await driver.step('pick_melious', () async {
         await driver.holdUntil(
           driver.timeline.elapsed + const Duration(milliseconds: 1500),
+        );
+        // Melious waits behind the disclosure; Mistral leads the step.
+        await tapLabel(
+          l10n.onboardingConnectOtherProviders,
+          within: panel('connect'),
+        );
+        await driver.holdUntil(
+          driver.timeline.elapsed + const Duration(milliseconds: 800),
         );
         await tapLabel(l10n.aiProviderMeliousName, within: panel('connect'));
         await driver.pumpUntilFound(panel('apikey-melious'));

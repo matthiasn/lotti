@@ -291,6 +291,7 @@ flutter:
     - assets/lang/
     - assets/sqlite/
     - assets/tts/voice_styles/
+    - assets/onboarding/voice_samples/
     # from https://www.iconfinder.com/paomedia
     - assets/images/map/299087_marker_map_icon.png
     # from https://www.iconfinder.com/recepkutuk

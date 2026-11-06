@@ -67,6 +67,7 @@ void main() {
     VoidCallback? onConnected,
     VoidCallback? onBack,
     List<Override> extraOverrides = const [],
+    Widget Function(ConnectionCheckState status)? companion,
   }) async {
     await tester.pumpWidget(
       makeTestableWidget(
@@ -76,6 +77,7 @@ void main() {
             type: type,
             onBack: onBack ?? () {},
             onConnected: onConnected ?? () {},
+            companion: companion,
           ),
         ),
         mediaQueryData: mq,
@@ -505,6 +507,89 @@ void main() {
     verify(
       () => launcher.launchUrl('https://aistudio.google.com', any()),
     ).called(1);
+  });
+
+  group('the companion', () {
+    /// Builds her as a marker, recording each status she is built for.
+    Widget Function(ConnectionCheckState) recorder(
+      List<ConnectionCheckState> seen,
+    ) => (status) {
+      seen.add(status);
+      return const ColoredBox(
+        key: ValueKey('her'),
+        color: Color(0xFF000000),
+      );
+    };
+
+    testWidgets('is left out without a builder', (tester) async {
+      await pumpPanel(tester, type: InferenceProviderType.gemini);
+
+      expect(find.byKey(const ValueKey('her')), findsNothing);
+    });
+
+    testWidgets('stands at the end of the title row, waiting while the key '
+        'is empty', (tester) async {
+      final seen = <ConnectionCheckState>[];
+      await pumpPanel(
+        tester,
+        type: InferenceProviderType.gemini,
+        companion: recorder(seen),
+      );
+
+      final her = find.byKey(const ValueKey('her'));
+      expect(tester.getSize(her), const Size.square(ControlSizes.avatarHero));
+      expect(
+        tester.getCenter(her).dx,
+        greaterThan(tester.getCenter(find.text('Gemini')).dx),
+      );
+      expect(seen.last, isA<ConnectionCheckIdle>());
+    });
+
+    testWidgets('follows the check as it is shown: checking, then the '
+        'verdict', (tester) async {
+      final seen = <ConnectionCheckState>[];
+      await pumpPanel(
+        tester,
+        type: InferenceProviderType.gemini,
+        probeResult: const ConnectionCheckFailedHttp(
+          status: 401,
+          message: 'no',
+        ),
+        companion: recorder(seen),
+      );
+
+      await enterKeyAndSettle(tester, 'bad-key');
+
+      expect(seen.whereType<ConnectionCheckChecking>(), isNotEmpty);
+      expect(seen.last, isA<ConnectionCheckFailedHttp>());
+    });
+
+    testWidgets('keeps thinking while the provider is set up after Connect', (
+      tester,
+    ) async {
+      final saving = Completer<void>();
+      final repo = MockAiConfigRepository();
+      when(() => repo.saveConfig(any())).thenAnswer((_) => saving.future);
+      final seen = <ConnectionCheckState>[];
+      await pumpPanel(
+        tester,
+        type: InferenceProviderType.genericOpenAi,
+        probeResult: verified,
+        extraOverrides: [
+          aiConfigRepositoryProvider.overrideWith((ref) => repo),
+        ],
+        companion: recorder(seen),
+      );
+      await enterKeyAndSettle(tester, 'good-key');
+      expect(seen.last, isA<ConnectionCheckVerified>());
+
+      await tester.tap(find.text('Connect'));
+      await tester.pump();
+
+      expect(seen.last, isA<ConnectionCheckChecking>());
+      saving.complete();
+      await tester.pumpAndSettle();
+    });
   });
 
   testWidgets('back arrow invokes onBack', (tester) async {

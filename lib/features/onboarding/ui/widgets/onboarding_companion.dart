@@ -1,10 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
+import 'package:lotti/features/ai/ui/settings/services/connection_verifier_service.dart';
 import 'package:lotti/features/companion/model/companion_gesture.dart';
 import 'package:lotti/features/companion/rig/companion_painter.dart';
 import 'package:lotti/features/companion/ui/companion_speaker.dart';
 import 'package:lotti/features/companion/ui/companion_view.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_first_task_view.dart';
+import 'package:lotti/features/tts/cloud/tts_cloud_route.dart';
 import 'package:lotti/features/tts/state/tts_engine_provider.dart';
 import 'package:lotti/features/tts/state/tts_model_repository.dart';
 import 'package:lotti/features/tts/state/tts_playback_controller.dart';
@@ -12,35 +14,84 @@ import 'package:lotti/features/tts/state/tts_settings_controller.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// Whether the companion takes part in onboarding: her own flag,
-/// `enable_companion`. Off, every onboarding surface is as it was.
-bool watchOnboardingCompanionEnabled(WidgetRef ref) =>
-    ref.watch(configFlagProvider(enableCompanionFlag)).value ?? false;
-
 /// A moment of onboarding, and what she does in it.
 enum OnboardingCompanionBeat {
   /// The welcome: she waves.
-  welcome(cue: GestureName.wave),
+  welcome(surface: 'welcome', cue: GestureName.wave),
+
+  /// The "make me yours" step: she opens her arms to be dressed.
+  dressUp(surface: 'make-her-yours', cue: GestureName.openBoth),
+
+  /// The "hear the voices" step: she speaks each sample the user plays.
+  voices(surface: 'voices', cue: GestureName.openSmall),
+
+  /// The one-key step: she presents the recommended provider.
+  recommend(surface: 'connect', cue: GestureName.presentRight),
+
+  /// The key step, while the user pastes a key: she waits.
+  key(surface: _key),
+
+  /// The key is being checked: she thinks until it is.
+  keyChecking(surface: _key, holding: GestureName.think),
+
+  /// The key is good: she gives it a thumbs up.
+  keyVerified(surface: _key, cue: GestureName.thumbs),
+
+  /// The key was turned down: she shrugs, and the user tries again.
+  keyRejected(surface: _key, cue: GestureName.shrug),
+
+  /// Connected: she celebrates, saying her first words in the cloud voice.
+  firstWords(surface: 'first-words', cue: GestureName.celebrate),
+
+  /// The areas: she presents the choice.
+  areas(surface: 'areas', cue: GestureName.openBoth),
 
   /// The first-task prompt: she waves the user on.
-  prompt(cue: GestureName.wave),
+  prompt(surface: _firstTask, cue: GestureName.wave),
 
   /// The mic is open: she listens for as long as it is.
-  listening(holding: GestureName.listen),
+  listening(surface: _firstTask, holding: GestureName.listen),
 
   /// The words are being structured: she thinks until they are.
-  thinking(holding: GestureName.think),
+  thinking(surface: _firstTask, holding: GestureName.think),
 
   /// The first task landed: she celebrates.
-  created(cue: GestureName.celebrate);
+  created(surface: _firstTask, cue: GestureName.celebrate);
 
-  const OnboardingCompanionBeat({this.cue, this.holding});
+  const OnboardingCompanionBeat({
+    required this.surface,
+    this.cue,
+    this.holding,
+  });
+
+  static const _firstTask = 'first-task';
+  static const _key = 'key';
+
+  /// The onboarding step the beat belongs to; the beats of one step share it.
+  final String surface;
 
   /// Played once as the beat begins.
   final GestureName? cue;
 
   /// Kept up for as long as the beat lasts.
   final GestureName? holding;
+
+  /// The utterance she speaks under on this beat's step.
+  ///
+  /// Each step has its own: steps crossfade, so the outgoing step is disposed
+  /// after the incoming one has started speaking, and ending its own
+  /// utterance must leave the new step's alone.
+  String get sourceId => '${OnboardingCompanion.sourcePrefix}$surface';
+
+  /// The beat of the key step while its key check is in [state].
+  static OnboardingCompanionBeat ofKeyCheck(ConnectionCheckState state) =>
+      switch (state) {
+        ConnectionCheckIdle() => key,
+        ConnectionCheckChecking() => keyChecking,
+        ConnectionCheckVerified() => keyVerified,
+        ConnectionCheckFailedHttp() ||
+        ConnectionCheckFailedNetwork() => keyRejected,
+      };
 
   /// The beat of a first-task frame.
   static OnboardingCompanionBeat of(OnboardingFirstTaskPhase phase) =>
@@ -52,8 +103,10 @@ enum OnboardingCompanionBeat {
       };
 }
 
-/// The companion in onboarding: she greets, listens while the user records,
-/// thinks while the task is structured, and celebrates when it lands.
+/// The companion in onboarding: she greets, recommends the one key to start
+/// with, listens while the user records, thinks while the task is structured,
+/// and celebrates when it lands. She leads onboarding whether or not her flag,
+/// `enable_companion`, has her anywhere else in the app.
 ///
 /// [line] is what the surface already shows as its headline — her caption.
 /// She speaks it only where the voice is on hand: read-aloud on, a device
@@ -61,11 +114,17 @@ enum OnboardingCompanionBeat {
 /// and the download is not worth a first impression, so there she is silent
 /// and the caption carries the words. A null [line] silences her, so she
 /// never talks over a recording.
+///
+/// With a [cloudVoice] she speaks [line] in that voice instead, whether or
+/// not read-aloud is on: onboarding passes the read-aloud voice of the
+/// provider the user has just connected, for one fixed line, so a new user
+/// hears her for the first time the moment the key works.
 class OnboardingCompanion extends ConsumerStatefulWidget {
   const OnboardingCompanion({
     required this.beat,
     this.line,
     this.framing = CompanionFraming.full,
+    this.cloudVoice,
     super.key,
   });
 
@@ -73,9 +132,15 @@ class OnboardingCompanion extends ConsumerStatefulWidget {
   final String? line;
   final CompanionFraming framing;
 
-  /// The utterance she speaks under: one for all of onboarding, since only
-  /// one onboarding surface is ever on screen.
-  static const sourceId = 'onboarding-companion';
+  /// The cloud voice she speaks [line] in, if any.
+  final TtsCloudRoute? cloudVoice;
+
+  /// What every onboarding utterance's source id starts with
+  /// ([OnboardingCompanionBeat.sourceId]).
+  static const sourcePrefix = 'onboarding-companion-';
+
+  /// The subject she is dressed for on every onboarding step.
+  static const dressedFor = 'onboarding-companion';
 
   @override
   ConsumerState<OnboardingCompanion> createState() =>
@@ -109,9 +174,8 @@ class _OnboardingCompanionState extends ConsumerState<OnboardingCompanion> {
   void dispose() {
     // Leaving the surface ends what she was saying on it — after the frame,
     // like every write to the voice from here.
-    Future.microtask(
-      () => _voice.stop(sourceId: OnboardingCompanion.sourceId),
-    ).ignore();
+    final sourceId = widget.beat.sourceId;
+    Future.microtask(() => _voice.stop(sourceId: sourceId)).ignore();
     super.dispose();
   }
 
@@ -136,13 +200,26 @@ class _OnboardingCompanionState extends ConsumerState<OnboardingCompanion> {
   /// playback state, so nothing here waits on more than the model check.
   Future<void> _say(String? line) async {
     final generation = ++_lineGeneration;
+    final sourceId = widget.beat.sourceId;
     if (line == null) {
-      await _voice.stop(sourceId: OnboardingCompanion.sourceId);
+      await _voice.stop(sourceId: sourceId);
       return;
     }
     // Deferred from a frame in which she may also have left: `ref` is gone
     // then, and `dispose` has already ended her utterance.
     if (!mounted) return;
+    final cloudVoice = widget.cloudVoice;
+    if (cloudVoice != null) {
+      await _giveWay();
+      if (!mounted || generation != _lineGeneration) return;
+      await _voice.speak(
+        sourceId: sourceId,
+        text: line,
+        language: cloudVoice.languageCode,
+        cloudRoute: cloudVoice,
+      );
+      return;
+    }
     // Still loading on the first frame: the listener in build says the line
     // once the flag arrives.
     final readAloud =
@@ -153,11 +230,20 @@ class _OnboardingCompanionState extends ConsumerState<OnboardingCompanion> {
         .read(ttsModelRepositoryProvider)
         .isInstalled(modelId);
     if (!installed || !mounted || generation != _lineGeneration) return;
-    // Her previous line, if it is still playing, gives way to this one;
-    // anything else speaking is left alone, and then the voice skips her.
-    await _voice.stop(sourceId: OnboardingCompanion.sourceId);
+    await _giveWay();
     if (!mounted || generation != _lineGeneration) return;
-    await _voice.speak(sourceId: OnboardingCompanion.sourceId, text: line);
+    await _voice.speak(sourceId: sourceId, text: line);
+  }
+
+  /// Her previous line, on this step or the one she just left, gives way to
+  /// the next; anything else speaking is left alone, and then the voice skips
+  /// her.
+  Future<void> _giveWay() async {
+    final playing = ref.read(ttsPlaybackControllerProvider).sourceId;
+    if (playing != null &&
+        playing.startsWith(OnboardingCompanion.sourcePrefix)) {
+      await _voice.stop(sourceId: playing);
+    }
   }
 
   @override
@@ -166,6 +252,8 @@ class _OnboardingCompanionState extends ConsumerState<OnboardingCompanion> {
     // spoken once it loads (or turns) on — the first `_say` may have run
     // before it had — and silenced when it turns off, from here or by sync.
     ref.listen(configFlagProvider(enableAiSummaryTtsFlag), (previous, next) {
+      // A cloud voice speaks whatever the flag says.
+      if (widget.cloudVoice != null) return;
       if (next.value == true && previous?.value != true) {
         _sayLater(widget.line);
       } else if (next.value == false && previous?.value == true) {
@@ -173,7 +261,10 @@ class _OnboardingCompanionState extends ConsumerState<OnboardingCompanion> {
       }
     });
     return CompanionSpeaker(
-      sourceId: OnboardingCompanion.sourceId,
+      sourceId: widget.beat.sourceId,
+      // One outfit for all of onboarding, though each step speaks under its
+      // own source: she does not change clothes between steps.
+      dressedFor: OnboardingCompanion.dressedFor,
       framing: widget.framing,
       controller: _controller,
       holding: widget.beat.holding,

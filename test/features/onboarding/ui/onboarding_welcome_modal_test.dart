@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
@@ -8,6 +9,7 @@ import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/onboarding_event.dart';
 import 'package:lotti/database/onboarding_metrics_db.dart';
+import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
@@ -15,23 +17,28 @@ import 'package:lotti/features/ai/ui/settings/services/connection_verifier_servi
 import 'package:lotti/features/ai/util/profile_seeding_service.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/companion/animation/mouth_track.dart';
+import 'package:lotti/features/companion/rig/companion_painter.dart';
 import 'package:lotti/features/companion/state/spoken_track.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/demo/state/demo_mode_gateway.dart';
+import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/onboarding/services/onboarding_capture_to_task_service.dart';
 import 'package:lotti/features/onboarding/ui/onboarding_welcome_modal.dart';
-import 'package:lotti/features/onboarding/ui/widgets/neural_constellation.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_companion.dart';
+import 'package:lotti/features/onboarding/ui/widgets/onboarding_first_words.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_hero.dart';
+import 'package:lotti/features/onboarding/ui/widgets/onboarding_speech_bubble.dart';
+import 'package:lotti/features/tts/state/tts_audio_player.dart';
+import 'package:lotti/features/tts/state/tts_bundled_clip.dart';
 import 'package:lotti/features/tts/state/tts_playback_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/repositories/onboarding_metrics_repository.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/nav_service.dart';
-import 'package:lotti/utils/consts.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -39,6 +46,7 @@ import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 import '../../categories/test_utils.dart';
+import '../../tts/test_utils.dart';
 
 /// Canned probe so the API-key step's live verification resolves without a
 /// network call.
@@ -131,6 +139,7 @@ void main() {
     WidgetTester tester, {
     Widget? child,
     ThemeData? theme,
+    List<Override> overrides = const [],
   }) async {
     // The fixed-height modal panel (~680) is taller than the default 800x600
     // render surface; size the surface to the 844-tall MediaQuery so the lower
@@ -143,7 +152,11 @@ void main() {
     final launchHost = child ?? host();
     await tester.pumpWidget(
       theme == null
-          ? makeTestableWidget(launchHost, mediaQueryData: mq)
+          ? makeTestableWidget(
+              launchHost,
+              mediaQueryData: mq,
+              overrides: overrides,
+            )
           : makeTestableWidgetNoScroll(
               launchHost,
               mediaQueryData: mq,
@@ -154,15 +167,34 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  Future<void> tapVisible(WidgetTester tester, Finder finder) async {
+    await tester.ensureVisible(finder);
+    await tester.pumpAndSettle();
+    await tester.tap(finder);
+    await tester.pumpAndSettle();
+  }
+
+  /// From the welcome to the one-key step, past the two optional steps:
+  /// "make me yours", skipped, and the voices, left unplayed.
+  Future<void> toConnect(WidgetTester tester) async {
+    await tester.tap(find.text('Get started with one key'));
+    await tester.pumpAndSettle();
+    await tapVisible(tester, find.text('Skip for now'));
+    await tapVisible(tester, find.text('Next: your key'));
+  }
+
   testWidgets('shows the welcome promise and records welcomeShown', (
     tester,
   ) async {
     await openWelcome(tester);
 
-    expect(find.text('Talk. Lotti turns it into a plan.'), findsOneWidget);
-    expect(find.text('Choose your AI brain'), findsOneWidget);
-    // Her flag is off by default: the hero art stays.
-    expect(find.byType(OnboardingCompanion), findsNothing);
+    expect(find.text("Hi, I'm Lotti."), findsOneWidget);
+    expect(find.text('Get started with one key'), findsOneWidget);
+    // She leads onboarding whatever her flag says elsewhere.
+    expect(
+      tester.widget<OnboardingCompanion>(find.byType(OnboardingCompanion)).beat,
+      OnboardingCompanionBeat.welcome,
+    );
 
     final state = await repo.funnelState();
     expect(state.reached(OnboardingEventName.welcomeShown), isTrue);
@@ -186,11 +218,11 @@ void main() {
       await openWelcome(tester, theme: theme.data);
 
       final welcomeTitle = tester.widget<Text>(
-        find.text('Talk. Lotti turns it into a plan.'),
+        find.text("Hi, I'm Lotti."),
       );
       final welcomeSurface = tester.widget<ColoredBox>(
         find.ancestor(
-          of: find.text('Talk. Lotti turns it into a plan.'),
+          of: find.text("Hi, I'm Lotti."),
           matching: find.byType(ColoredBox),
         ),
       );
@@ -202,23 +234,14 @@ void main() {
         welcomeTitle.style?.color,
         theme.tokens.colors.text.highEmphasis,
       );
-      if (theme.name == 'light') {
-        expect(find.byType(OnboardingThinkingBarsHero), findsOneWidget);
-      } else {
-        final welcomeConstellation = tester.widget<NeuralConstellation>(
-          find.byType(NeuralConstellation),
-        );
-        expect(
-          welcomeConstellation.nodeColor,
-          theme.tokens.colors.aiProvider.ollama.color,
-        );
-      }
+      // She stands in the hero frame in place of the artwork, in either theme.
+      expect(find.byType(OnboardingCompanion), findsOneWidget);
+      expect(find.byType(OnboardingThinkingBarsHero), findsNothing);
 
-      await tester.tap(find.text('Choose your AI brain'));
-      await tester.pumpAndSettle();
+      await toConnect(tester);
 
       final providerTitle = tester.widget<Text>(
-        find.text('Choose the AI brain for your tasks'),
+        find.text('One key is all it takes'),
       );
       final providerBackdrop = tester.widget<ColoredBox>(
         find.descendant(
@@ -241,13 +264,13 @@ void main() {
   testWidgets('advancing to connect reveals the primary providers and records '
       'providerModalShown', (tester) async {
     await openWelcome(tester);
-    await tester.tap(find.text('Choose your AI brain'));
-    await tester.pumpAndSettle();
+    await toConnect(tester);
 
-    expect(find.text('Melious.ai'), findsOneWidget);
-    expect(find.text('Gemini'), findsOneWidget);
+    // One recommended card; the rest wait behind the disclosure.
     expect(find.text('Mistral'), findsOneWidget);
-    expect(find.text('Qwen'), findsOneWidget);
+    expect(find.text('Recommended'), findsOneWidget);
+    expect(find.text('Gemini'), findsNothing);
+    expect(find.text('Other providers'), findsOneWidget);
 
     final state = await repo.funnelState();
     expect(state.reached(OnboardingEventName.providerModalShown), isTrue);
@@ -258,7 +281,7 @@ void main() {
     (tester) async {
       await openWelcome(tester);
 
-      await tester.tap(find.text('Choose your AI brain'));
+      await tester.tap(find.text('Get started with one key'));
       await tester.pump(); // start the crossfade (t=0)
       await tester.pump(const Duration(milliseconds: 200)); // mid-fade
 
@@ -285,14 +308,14 @@ void main() {
     (tester) async {
       await openWelcome(tester);
 
-      await tester.tap(find.text('Choose your AI brain'));
+      await tester.tap(find.text('Get started with one key'));
       await tester.pump(); // start the crossfade
       await tester.pump(const Duration(milliseconds: 200)); // mid-fade
 
       // The outgoing welcome step is still mounted (fading out) and wrapped in
       // a disabled TickerMode, halting its looping constellation controller so
       // it stops repainting while the incoming connect backdrop animates in.
-      final outgoingWelcome = find.text('Talk. Lotti turns it into a plan.');
+      final outgoingWelcome = find.text("Hi, I'm Lotti.");
       expect(outgoingWelcome, findsOneWidget);
       expect(
         find.ancestor(
@@ -304,8 +327,8 @@ void main() {
         findsOneWidget,
       );
 
-      // The incoming connect step is NOT frozen — its backdrop animates.
-      final incomingConnect = find.text('Melious.ai');
+      // The incoming step is NOT frozen — its animations run.
+      final incomingConnect = find.text('Make me yours');
       expect(incomingConnect, findsOneWidget);
       expect(
         find.ancestor(
@@ -328,24 +351,180 @@ void main() {
     },
   );
 
-  testWidgets('back from connect returns to the welcome', (tester) async {
+  testWidgets('back from connect returns to the voices, then "make me '
+      'yours", then the welcome', (tester) async {
     await openWelcome(tester);
-    await tester.tap(find.text('Choose your AI brain'));
-    await tester.pumpAndSettle();
-    expect(find.text('Gemini'), findsOneWidget);
+    await toConnect(tester);
+    expect(find.text('Mistral'), findsOneWidget);
 
     await tester.tap(find.byIcon(LottiIcons.back));
     await tester.pumpAndSettle();
-    expect(find.text('Talk. Lotti turns it into a plan.'), findsOneWidget);
+    expect(find.text('Hear how I can sound'), findsOneWidget);
+
+    await tester.ensureVisible(find.byIcon(LottiIcons.back));
+    await tester.tap(find.byIcon(LottiIcons.back));
+    await tester.pumpAndSettle();
+    expect(find.text('Make me yours'), findsOneWidget);
+
+    await tester.ensureVisible(find.byIcon(LottiIcons.back));
+    await tester.tap(find.byIcon(LottiIcons.back));
+    await tester.pumpAndSettle();
+    expect(find.text("Hi, I'm Lotti."), findsOneWidget);
   });
 
-  testWidgets('More options reveals OpenAI and Ollama', (tester) async {
+  testWidgets('the welcome leads to "make me yours" and records it shown; '
+      'skipping it records the skip and reaches the voices', (tester) async {
     await openWelcome(tester);
-    await tester.tap(find.text('Choose your AI brain'));
+    await tester.tap(find.text('Get started with one key'));
     await tester.pumpAndSettle();
 
+    expect(find.text('Make me yours'), findsOneWidget);
+    var state = await repo.funnelState();
+    expect(state.reached(OnboardingEventName.companionCustomizeShown), isTrue);
+    expect(state.reached(OnboardingEventName.providerModalShown), isFalse);
+
+    await tester.ensureVisible(find.text('Skip for now'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Skip for now'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Hear how I can sound'), findsOneWidget);
+    state = await repo.funnelState();
+    expect(
+      state.reached(OnboardingEventName.companionCustomizeSkipped),
+      isTrue,
+    );
+    expect(state.reached(OnboardingEventName.voiceSamplesShown), isTrue);
+    expect(state.reached(OnboardingEventName.providerModalShown), isFalse);
+
+    // The voices lead on to the one key.
+    await tapVisible(tester, find.text('Next: your key'));
+    expect(find.text('One key is all it takes'), findsOneWidget);
+    state = await repo.funnelState();
+    expect(state.reached(OnboardingEventName.providerModalShown), isTrue);
+  });
+
+  testWidgets('a pick on "make me yours" is saved, survives a remount, and '
+      'records the customisation', (tester) async {
+    final settings = SettingsDb(inMemoryDatabase: true);
+    addTearDown(settings.close);
+    final outbox = MockOutboxService();
+    when(() => outbox.enqueueMessage(any())).thenAnswer((_) async {});
+    final stores = [
+      settingsDbProvider.overrideWithValue(settings),
+      outboxServiceProvider.overrideWithValue(outbox),
+    ];
+    Future<void> toMakeHerYours() async {
+      await openWelcome(tester, overrides: stores);
+      await tester.tap(find.text('Get started with one key'));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Bob'));
+      await tester.pumpAndSettle();
+    }
+
+    bool bobPicked() => tester
+        .widget<DesignSystemChip>(
+          find.ancestor(
+            of: find.text('Bob'),
+            matching: find.byType(DesignSystemChip),
+          ),
+        )
+        .selected;
+
+    await toMakeHerYours();
+    expect(bobPicked(), isFalse);
+    expect(
+      (await repo.funnelState()).reached(
+        OnboardingEventName.companionCustomized,
+      ),
+      isFalse,
+    );
+
+    await tester.tap(find.text('Bob'));
+    await tester.pumpAndSettle();
+    expect(bobPicked(), isTrue);
+    expect(
+      (await repo.funnelState()).reached(
+        OnboardingEventName.companionCustomized,
+      ),
+      isTrue,
+    );
+
+    // A fresh app over the same store: the pick was written, not just shown.
+    await tester.pumpWidget(const SizedBox());
+    await tester.pumpAndSettle();
+    await toMakeHerYours();
+    expect(bobPicked(), isTrue);
+  });
+
+  testWidgets('"Looks good" reaches the voices without recording a skip', (
+    tester,
+  ) async {
+    await openWelcome(tester);
+    await tester.tap(find.text('Get started with one key'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Looks good'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Looks good'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Hear how I can sound'), findsOneWidget);
+    final state = await repo.funnelState();
+    expect(
+      state.reached(OnboardingEventName.companionCustomizeSkipped),
+      isFalse,
+    );
+    expect(state.reached(OnboardingEventName.voiceSamplesShown), isTrue);
+  });
+
+  testWidgets('a voice that plays records which one', (tester) async {
+    final player = FakeTtsAudioPlayer();
+    addTearDown(player.dispose);
+    await openWelcome(
+      tester,
+      overrides: [
+        ttsAudioPlayerProvider.overrideWithValue(player),
+        ttsBundledClipCopierProvider.overrideWithValue((asset) async {
+          final file = MockIoFile();
+          when(() => file.path).thenReturn('/tmp/sample.wav');
+          when(file.existsSync).thenReturn(false);
+          return file;
+        }),
+        spokenTrackLoaderProvider.overrideWithValue(
+          (clip, text) => Completer<MouthTrack>().future,
+        ),
+      ],
+    );
+    await tester.tap(find.text('Get started with one key'));
+    await tester.pumpAndSettle();
+    await tapVisible(tester, find.text('Skip for now'));
+
+    await tester.tap(find.byKey(const ValueKey('onboarding-voice-voxtral')));
+    await tester.pump();
+    await tester.pump();
+
+    expect(player.playCount, 1);
+    final state = await repo.funnelState();
+    expect(state.reached(OnboardingEventName.voiceSamplePlayed), isTrue);
+    final events = await db.allOnboardingEvents().get();
+    expect(
+      events
+          .where(
+            (e) => e.eventName == OnboardingEventName.voiceSamplePlayed.name,
+          )
+          .map((e) => e.provider),
+      ['voxtral'],
+    );
+    player.complete();
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('Other providers reveals OpenAI and Ollama', (tester) async {
+    await openWelcome(tester);
+    await toConnect(tester);
+
     expect(find.text('OpenAI'), findsNothing);
-    await tester.tap(find.text('More options'));
+    await tester.tap(find.text('Other providers'));
     await tester.pumpAndSettle();
 
     expect(find.text('OpenAI'), findsOneWidget);
@@ -354,8 +533,7 @@ void main() {
 
   testWidgets('selecting a provider opens the API-key step', (tester) async {
     await openWelcome(tester);
-    await tester.tap(find.text('Choose your AI brain'));
-    await tester.pumpAndSettle();
+    await toConnect(tester);
     await tester.tap(find.text('Mistral'));
     await tester.pumpAndSettle();
 
@@ -366,8 +544,7 @@ void main() {
     tester,
   ) async {
     await openWelcome(tester);
-    await tester.tap(find.text('Choose your AI brain'));
-    await tester.pumpAndSettle();
+    await toConnect(tester);
     await tester.tap(find.text('Mistral'));
     await tester.pumpAndSettle();
     expect(find.text('Paste your API key'), findsOneWidget);
@@ -377,7 +554,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Paste your API key'), findsNothing);
-    expect(find.text('Gemini'), findsOneWidget);
+    expect(find.text('Recommended'), findsOneWidget);
   });
 
   testWidgets('skipping invokes onDismiss and records welcomeSkipped', (
@@ -513,7 +690,7 @@ void main() {
     (tester) async {
       var dismissed = false;
       await openWelcome(tester, child: host(onDismiss: () => dismissed = true));
-      expect(find.text('Choose your AI brain'), findsOneWidget);
+      expect(find.text('Get started with one key'), findsOneWidget);
 
       // The sheet shrink-wraps to its content at the bottom, leaving empty
       // space above it. A tap there must close the flow — the route's modal
@@ -526,7 +703,7 @@ void main() {
       await tester.tapAt(Offset(195, panelTop - 20));
       await tester.pumpAndSettle();
 
-      expect(find.text('Choose your AI brain'), findsNothing);
+      expect(find.text('Get started with one key'), findsNothing);
       expect(dismissed, isTrue);
       final state = await repo.funnelState();
       expect(state.reached(OnboardingEventName.welcomeSkipped), isTrue);
@@ -634,9 +811,10 @@ void main() {
     );
     await tester.tap(find.text('open'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Choose your AI brain'));
+    await toConnect(tester);
+    await tester.tap(find.text('Other providers'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('More options'));
+    await tester.ensureVisible(find.text('Ollama'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Ollama'));
     await tester.pumpAndSettle();
@@ -692,6 +870,73 @@ void main() {
 
     return (aiRepo: aiRepo, catRepo: catRepo, captureService: captureService);
   }
+
+  testWidgets('she reacts to the key check, speaks her first words for the '
+      "connected provider's profile, and introduces the areas", (
+    tester,
+  ) async {
+    final aiRepo = MockAiConfigRepository();
+    when(() => aiRepo.saveConfig(any())).thenAnswer((_) async {});
+    when(() => aiRepo.restoreConfig(any())).thenAnswer((_) async {});
+    final catRepo = MockCategoryRepository();
+    when(catRepo.getAllCategories).thenAnswer((_) async => []);
+    tester.view
+      ..physicalSize = const Size(390, 1000)
+      ..devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(
+      makeTestableWidget(
+        host(),
+        mediaQueryData: mq,
+        overrides: [
+          aiConfigRepositoryProvider.overrideWithValue(aiRepo),
+          categoryRepositoryProvider.overrideWithValue(catRepo),
+          connectionVerifierClientProvider.overrideWith(
+            (ref) =>
+                () => MockClient((_) async => http.Response('', 200)),
+          ),
+          connectionProbeRegistryProvider.overrideWith(
+            (ref) => {
+              InferenceProviderType.ollama: _FakeProbe(
+                const ConnectionCheckVerified(
+                  modelCount: 2,
+                  latency: Duration(milliseconds: 5),
+                ),
+              ),
+            },
+          ),
+        ],
+      ),
+    );
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+    await toConnect(tester);
+    await tapVisible(tester, find.text('Other providers'));
+    await tapVisible(tester, find.text('Ollama'));
+    await tester.pump(const Duration(milliseconds: 1100));
+    await tester.pumpAndSettle();
+
+    OnboardingCompanion her() =>
+        tester.widget<OnboardingCompanion>(find.byType(OnboardingCompanion));
+    expect(her().beat, OnboardingCompanionBeat.keyVerified);
+    expect(her().framing, CompanionFraming.bust);
+
+    await tapVisible(tester, find.text('Connect'));
+    final words = tester.widget<OnboardingFirstWords>(
+      find.byType(OnboardingFirstWords),
+    );
+    expect(words.profileId, profileLocalId);
+
+    await tapVisible(tester, find.text('Get started'));
+    expect(her().beat, OnboardingCompanionBeat.areas);
+    expect(
+      her().line,
+      tester
+          .widget<OnboardingSpeechBubble>(find.byType(OnboardingSpeechBubble))
+          .text,
+    );
+  });
 
   testWidgets('the category step advances to the in-panel first-task step and '
       'a landed task pops the modal onto the task page', (tester) async {
@@ -1011,7 +1256,7 @@ void main() {
     await tester.tap(find.text('open'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Talk. Lotti turns it into a plan.'), findsOneWidget);
+    expect(find.text("Hi, I'm Lotti."), findsOneWidget);
     final state = await repo.funnelState();
     expect(state.reached(OnboardingEventName.welcomeShown), isTrue);
   });
@@ -1038,13 +1283,13 @@ void main() {
     await tester.pumpAndSettle();
 
     // The wide branch of the scaffold renders the centred panel.
-    expect(find.text('Talk. Lotti turns it into a plan.'), findsOneWidget);
+    expect(find.text("Hi, I'm Lotti."), findsOneWidget);
 
     // Tapping a non-interactive area of the panel is swallowed (the panel's
     // opaque no-op tap), so the flow stays open — not dismissed.
-    await tester.tap(find.text('Talk. Lotti turns it into a plan.'));
+    await tester.tap(find.text("Hi, I'm Lotti."));
     await tester.pumpAndSettle();
-    expect(find.text('Talk. Lotti turns it into a plan.'), findsOneWidget);
+    expect(find.text("Hi, I'm Lotti."), findsOneWidget);
   });
 
   test(
@@ -1063,8 +1308,10 @@ void main() {
     },
   );
 
-  testWidgets('with her flag on, the companion is the welcome hero and its '
-      'promise her line, said once', (tester) async {
+  testWidgets('she is the welcome hero with her greeting as her line, '
+      'recommends the one key on connect, and greets only once', (
+    tester,
+  ) async {
     tester.view
       ..physicalSize = const Size(390, 1000)
       ..devicePixelRatio = 1;
@@ -1075,8 +1322,9 @@ void main() {
         host(),
         mediaQueryData: mq,
         overrides: [
+          // Her own flag off: onboarding has her regardless.
           configFlagProvider.overrideWith(
-            (ref, flagName) => Stream.value(flagName == enableCompanionFlag),
+            (ref, flagName) => Stream.value(false),
           ),
           ttsPlaybackControllerProvider.overrideWith(
             () => TtsPlaybackController(logger: MockDomainLogger()),
@@ -1098,19 +1346,65 @@ void main() {
     expect(her().beat, OnboardingCompanionBeat.welcome);
     expect(
       her().line,
-      'Talk. Lotti turns it into a plan. Connect your AI brain, then speak a '
-      'thought and watch it become a structured task.',
+      "Hi, I'm Lotti. Tell me what's on your mind and I'll turn it into a "
+      'plan. All I need to get going is one API key, and '
+      "I'll help you set it up.",
     );
 
+    Future<void> frames() async {
+      for (var i = 0; i < 40; i++) {
+        await tester.pump(const Duration(milliseconds: 16));
+      }
+    }
+
+    await tester.tap(find.text('Get started with one key'));
+    await frames();
+    // On "make me yours" she opens her arms to be dressed, full length.
+    expect(her().beat, OnboardingCompanionBeat.dressUp);
+    expect(
+      her().line,
+      'Pick how I look. You can change all of this any time in '
+      'Settings › Companion.',
+    );
+    expect(her().framing, CompanionFraming.full);
+
+    await tester.ensureVisible(find.text('Skip for now'));
+    await frames();
+    await tester.tap(find.text('Skip for now'));
+    await frames();
+    // On the voices she is a bust beside the cards.
+    expect(her().beat, OnboardingCompanionBeat.voices);
+    expect(
+      her().line,
+      'I can speak in different voices. Tap one to hear it. You can switch '
+      'any time in Settings › Speech.',
+    );
+    expect(her().framing, CompanionFraming.bust);
+
+    await tester.ensureVisible(find.text('Next: your key'));
+    await frames();
+    await tester.tap(find.text('Next: your key'));
+    await frames();
+    // On the one-key step she recommends Mistral, as a bust by her bubble.
+    expect(her().beat, OnboardingCompanionBeat.recommend);
+    expect(
+      her().line,
+      "I'd go with Mistral: with its one key I can think, transcribe what you "
+      'say and read aloud to you.',
+    );
+    expect(her().framing, CompanionFraming.bust);
+
     // Back on the welcome she waves again, but says the promise only once.
-    await tester.tap(find.text('Choose your AI brain'));
-    for (var i = 0; i < 40; i++) {
-      await tester.pump(const Duration(milliseconds: 16));
-    }
     await tester.tap(find.byIcon(LottiIcons.back));
-    for (var i = 0; i < 40; i++) {
-      await tester.pump(const Duration(milliseconds: 16));
-    }
+    await frames();
+    await tester.ensureVisible(find.byIcon(LottiIcons.back));
+    await frames();
+    await tester.tap(find.byIcon(LottiIcons.back));
+    await frames();
+    await tester.ensureVisible(find.byIcon(LottiIcons.back));
+    await frames();
+    await tester.tap(find.byIcon(LottiIcons.back));
+    await frames();
     expect(her().beat, OnboardingCompanionBeat.welcome);
     expect(her().line, isNull);
   });

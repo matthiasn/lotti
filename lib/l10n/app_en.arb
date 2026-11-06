@@ -7455,18 +7455,23 @@
     }
   },
   "onboardingCategoryWork": "Work",
+  "onboardingCompanionGreeting": "Hi, I'm Lotti.",
+  "onboardingCompanionOneKey": "Tell me what's on your mind and I'll turn it into a plan. All I need to get going is one API key, and I'll help you set it up.",
   "onboardingConnectGeminiName": "Gemini",
   "onboardingConnectGeminiTagline": "United States",
-  "onboardingConnectLessOptions": "Fewer options",
+  "onboardingConnectGuide": "I'd go with Mistral: with its one key I can think, transcribe what you say and read aloud to you.",
+  "onboardingConnectHideOtherProviders": "Hide other providers",
   "onboardingConnectMistralName": "Mistral",
+  "onboardingConnectMistralPitch": "One key for thinking, transcription and voice · hosted in the EU",
   "onboardingConnectMistralTagline": "European Union",
-  "onboardingConnectMoreOptions": "More options",
   "onboardingConnectNotSure": "Mistral is the recommended default.",
   "onboardingConnectOllamaName": "Ollama",
+  "onboardingConnectOneKeyTitle": "One key is all it takes",
   "onboardingConnectOpenAiName": "OpenAI",
+  "onboardingConnectOtherProviders": "Other providers",
   "onboardingConnectQwenName": "Qwen",
   "onboardingConnectQwenTagline": "China",
-  "onboardingConnectTitle": "Choose the AI brain for your tasks",
+  "onboardingConnectRecommended": "Recommended",
   "onboardingFirstTaskCreatedHint": "Tap your task to open it",
   "onboardingFirstTaskCreatedTitle": "Your first task is ready",
   "onboardingFirstTaskGuidance": "Tap to talk and say what needs doing — Lotti turns it into a real task.",
@@ -7475,6 +7480,12 @@
   "onboardingFirstTaskSuggestionPlanWeek": "Plan my week",
   "onboardingFirstTaskSuggestionsLabel": "Not ready to talk? Start with one of these:",
   "onboardingFirstTaskTitle": "Create your first task",
+  "onboardingFirstWordsQuiet": "We're connected, and I'm ready to help.",
+  "onboardingFirstWordsVoiced": "There, now you can hear me too!",
+  "onboardingMakeHerYoursContinue": "Looks good",
+  "onboardingMakeHerYoursLine": "Pick how I look. You can change all of this any time in Settings › Companion.",
+  "onboardingMakeHerYoursSkip": "Skip for now",
+  "onboardingMakeHerYoursTitle": "Make me yours",
   "onboardingMetricsActiveDays": "Active days",
   "@onboardingMetricsActiveDays": {
     "description": "Label for the active-day count in the onboarding metrics debug view."
@@ -7509,8 +7520,37 @@
   "onboardingSuccessContinue": "Get started",
   "onboardingSuccessSubtitle": "Your AI brain is connected and ready to turn your words into tasks.",
   "onboardingSuccessTitle": "You're all set",
+  "onboardingVoiceElevenLabsDescription": "Optional, with an ElevenLabs key of its own.",
+  "onboardingVoiceElevenLabsName": "ElevenLabs",
+  "onboardingVoiceOnDeviceDescription": "Free and private. Works offline after a one-time download.",
+  "onboardingVoiceOnDeviceName": "On your device",
+  "onboardingVoicePlay": "Play “{voice}”",
+  "@onboardingVoicePlay": {
+    "description": "Screen-reader label of a voice sample's play control in onboarding.",
+    "placeholders": {
+      "voice": {
+        "type": "String"
+      }
+    }
+  },
+  "onboardingVoicesContinue": "Next: your key",
+  "onboardingVoicesEnglishNote": "The samples are in English. Each voice speaks many other languages too.",
+  "onboardingVoicesLine": "I can speak in different voices. Tap one to hear it. You can switch any time in Settings › Speech.",
+  "onboardingVoicesTitle": "Hear how I can sound",
+  "onboardingVoiceStop": "Stop “{voice}”",
+  "@onboardingVoiceStop": {
+    "description": "Screen-reader label of a voice sample's play control in onboarding.",
+    "placeholders": {
+      "voice": {
+        "type": "String"
+      }
+    }
+  },
+  "onboardingVoiceVoxtralDescription": "Comes with your Mistral key.",
+  "onboardingVoiceVoxtralName": "Mistral Voxtral",
   "onboardingWelcomeConnectButton": "Choose your AI brain",
   "onboardingWelcomeMessage": "Connect your AI brain, then speak a thought and watch it become a structured task.",
+  "onboardingWelcomeOneKeyButton": "Get started with one key",
   "onboardingWelcomeSkipButton": "Look around first",
   "onboardingWelcomeTitle": "Talk. Lotti turns it into a plan.",
   "optionalCategoryLabel": "Category (optional)",

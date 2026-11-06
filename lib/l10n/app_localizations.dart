@@ -19627,6 +19627,18 @@ abstract class AppLocalizations {
   /// **'Work'**
   String get onboardingCategoryWork;
 
+  /// No description provided for @onboardingCompanionGreeting.
+  ///
+  /// In en, this message translates to:
+  /// **'Hi, I\'m Lotti.'**
+  String get onboardingCompanionGreeting;
+
+  /// No description provided for @onboardingCompanionOneKey.
+  ///
+  /// In en, this message translates to:
+  /// **'Tell me what\'s on your mind and I\'ll turn it into a plan. All I need to get going is one API key, and I\'ll help you set it up.'**
+  String get onboardingCompanionOneKey;
+
   /// No description provided for @onboardingConnectGeminiName.
   ///
   /// In en, this message translates to:
@@ -19639,11 +19651,17 @@ abstract class AppLocalizations {
   /// **'United States'**
   String get onboardingConnectGeminiTagline;
 
-  /// No description provided for @onboardingConnectLessOptions.
+  /// No description provided for @onboardingConnectGuide.
   ///
   /// In en, this message translates to:
-  /// **'Fewer options'**
-  String get onboardingConnectLessOptions;
+  /// **'I\'d go with Mistral: with its one key I can think, transcribe what you say and read aloud to you.'**
+  String get onboardingConnectGuide;
+
+  /// No description provided for @onboardingConnectHideOtherProviders.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide other providers'**
+  String get onboardingConnectHideOtherProviders;
 
   /// No description provided for @onboardingConnectMistralName.
   ///
@@ -19651,17 +19669,17 @@ abstract class AppLocalizations {
   /// **'Mistral'**
   String get onboardingConnectMistralName;
 
+  /// No description provided for @onboardingConnectMistralPitch.
+  ///
+  /// In en, this message translates to:
+  /// **'One key for thinking, transcription and voice · hosted in the EU'**
+  String get onboardingConnectMistralPitch;
+
   /// No description provided for @onboardingConnectMistralTagline.
   ///
   /// In en, this message translates to:
   /// **'European Union'**
   String get onboardingConnectMistralTagline;
-
-  /// No description provided for @onboardingConnectMoreOptions.
-  ///
-  /// In en, this message translates to:
-  /// **'More options'**
-  String get onboardingConnectMoreOptions;
 
   /// No description provided for @onboardingConnectNotSure.
   ///
@@ -19675,11 +19693,23 @@ abstract class AppLocalizations {
   /// **'Ollama'**
   String get onboardingConnectOllamaName;
 
+  /// No description provided for @onboardingConnectOneKeyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'One key is all it takes'**
+  String get onboardingConnectOneKeyTitle;
+
   /// No description provided for @onboardingConnectOpenAiName.
   ///
   /// In en, this message translates to:
   /// **'OpenAI'**
   String get onboardingConnectOpenAiName;
+
+  /// No description provided for @onboardingConnectOtherProviders.
+  ///
+  /// In en, this message translates to:
+  /// **'Other providers'**
+  String get onboardingConnectOtherProviders;
 
   /// No description provided for @onboardingConnectQwenName.
   ///
@@ -19693,11 +19723,11 @@ abstract class AppLocalizations {
   /// **'China'**
   String get onboardingConnectQwenTagline;
 
-  /// No description provided for @onboardingConnectTitle.
+  /// No description provided for @onboardingConnectRecommended.
   ///
   /// In en, this message translates to:
-  /// **'Choose the AI brain for your tasks'**
-  String get onboardingConnectTitle;
+  /// **'Recommended'**
+  String get onboardingConnectRecommended;
 
   /// No description provided for @onboardingFirstTaskCreatedHint.
   ///
@@ -19746,6 +19776,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Create your first task'**
   String get onboardingFirstTaskTitle;
+
+  /// No description provided for @onboardingFirstWordsQuiet.
+  ///
+  /// In en, this message translates to:
+  /// **'We\'re connected, and I\'m ready to help.'**
+  String get onboardingFirstWordsQuiet;
+
+  /// No description provided for @onboardingFirstWordsVoiced.
+  ///
+  /// In en, this message translates to:
+  /// **'There, now you can hear me too!'**
+  String get onboardingFirstWordsVoiced;
+
+  /// No description provided for @onboardingMakeHerYoursContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Looks good'**
+  String get onboardingMakeHerYoursContinue;
+
+  /// No description provided for @onboardingMakeHerYoursLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick how I look. You can change all of this any time in Settings › Companion.'**
+  String get onboardingMakeHerYoursLine;
+
+  /// No description provided for @onboardingMakeHerYoursSkip.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip for now'**
+  String get onboardingMakeHerYoursSkip;
+
+  /// No description provided for @onboardingMakeHerYoursTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Make me yours'**
+  String get onboardingMakeHerYoursTitle;
 
   /// Label for the active-day count in the onboarding metrics debug view.
   ///
@@ -19825,6 +19891,78 @@ abstract class AppLocalizations {
   /// **'You\'re all set'**
   String get onboardingSuccessTitle;
 
+  /// No description provided for @onboardingVoiceElevenLabsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional, with an ElevenLabs key of its own.'**
+  String get onboardingVoiceElevenLabsDescription;
+
+  /// No description provided for @onboardingVoiceElevenLabsName.
+  ///
+  /// In en, this message translates to:
+  /// **'ElevenLabs'**
+  String get onboardingVoiceElevenLabsName;
+
+  /// No description provided for @onboardingVoiceOnDeviceDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Free and private. Works offline after a one-time download.'**
+  String get onboardingVoiceOnDeviceDescription;
+
+  /// No description provided for @onboardingVoiceOnDeviceName.
+  ///
+  /// In en, this message translates to:
+  /// **'On your device'**
+  String get onboardingVoiceOnDeviceName;
+
+  /// Screen-reader label of a voice sample's play control in onboarding.
+  ///
+  /// In en, this message translates to:
+  /// **'Play “{voice}”'**
+  String onboardingVoicePlay(String voice);
+
+  /// No description provided for @onboardingVoicesContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Next: your key'**
+  String get onboardingVoicesContinue;
+
+  /// No description provided for @onboardingVoicesEnglishNote.
+  ///
+  /// In en, this message translates to:
+  /// **'The samples are in English. Each voice speaks many other languages too.'**
+  String get onboardingVoicesEnglishNote;
+
+  /// No description provided for @onboardingVoicesLine.
+  ///
+  /// In en, this message translates to:
+  /// **'I can speak in different voices. Tap one to hear it. You can switch any time in Settings › Speech.'**
+  String get onboardingVoicesLine;
+
+  /// No description provided for @onboardingVoicesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Hear how I can sound'**
+  String get onboardingVoicesTitle;
+
+  /// Screen-reader label of a voice sample's play control in onboarding.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop “{voice}”'**
+  String onboardingVoiceStop(String voice);
+
+  /// No description provided for @onboardingVoiceVoxtralDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Comes with your Mistral key.'**
+  String get onboardingVoiceVoxtralDescription;
+
+  /// No description provided for @onboardingVoiceVoxtralName.
+  ///
+  /// In en, this message translates to:
+  /// **'Mistral Voxtral'**
+  String get onboardingVoiceVoxtralName;
+
   /// No description provided for @onboardingWelcomeConnectButton.
   ///
   /// In en, this message translates to:
@@ -19836,6 +19974,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Connect your AI brain, then speak a thought and watch it become a structured task.'**
   String get onboardingWelcomeMessage;
+
+  /// No description provided for @onboardingWelcomeOneKeyButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Get started with one key'**
+  String get onboardingWelcomeOneKeyButton;
 
   /// No description provided for @onboardingWelcomeSkipButton.
   ///

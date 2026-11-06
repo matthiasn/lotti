@@ -9,6 +9,7 @@ import 'package:lotti/features/tts/model/tts_model_option.dart';
 import 'package:lotti/features/tts/model/tts_playback_state.dart';
 import 'package:lotti/features/tts/model/tts_settings.dart';
 import 'package:lotti/features/tts/state/tts_audio_player.dart';
+import 'package:lotti/features/tts/state/tts_bundled_clip.dart';
 import 'package:lotti/features/tts/state/tts_engine_provider.dart';
 import 'package:lotti/features/tts/state/tts_model_repository.dart';
 import 'package:lotti/features/tts/state/tts_settings_controller.dart';
@@ -366,6 +367,81 @@ class TtsPlaybackController extends Notifier<TtsPlaybackState> {
       finished.complete();
     }
   }
+
+  /// Plays the bundled clip [asset], which speaks [text], attributing it to
+  /// [sourceId] — through the same player and state as synthesized speech, so
+  /// the companion lip-syncs to it. A no-op while another utterance is being
+  /// prepared or playing.
+  ///
+  /// Needs neither the on-device model nor the network: onboarding plays the
+  /// voices it offers this way before any of them is set up. The clip plays at
+  /// its natural speed, since it is a sample of how the voice sounds.
+  Future<void> playClip({
+    required String sourceId,
+    required String asset,
+    required String text,
+  }) async {
+    if (state.isBusy) return;
+    final generation = ++_generation;
+    discardPrepared();
+    bool current() => ref.mounted && generation == _generation;
+    state = TtsPlaybackState(
+      status: TtsPlaybackStatus.synthesizing,
+      sourceId: sourceId,
+    );
+    File? file;
+    try {
+      file = await ref.read(ttsBundledClipCopierProvider)(asset);
+      if (!current()) {
+        await _deleteFile(file);
+        return;
+      }
+      _playing = (
+        file: file,
+        key: (
+          sourceId: sourceId,
+          text: text,
+          voice: asset,
+          model: _bundledClipModel,
+          language: kDefaultTtsLanguage,
+        ),
+        canPlay: null,
+      );
+      final player = ref.read(ttsAudioPlayerProvider);
+      _player = player;
+      _listenToPlayer(player);
+      state = state.copyWith(
+        status: TtsPlaybackStatus.playing,
+        sourceId: sourceId,
+        clip: (path: file.path, text: text),
+      );
+      await player.play(file, speed: 1);
+    } catch (error, stackTrace) {
+      if (!current()) return;
+      _logger.error(
+        LogDomain.speech,
+        error,
+        stackTrace: stackTrace,
+        subDomain: 'ttsPlayback.playClip',
+        message: 'Bundled clip failed ($asset)',
+      );
+      _cancelPlayerSubscriptions();
+      final owned = _playing?.file ?? file;
+      _playing = null;
+      await _stopAndDelete(_player, owned);
+      if (!current()) return;
+      state = state.copyWith(
+        status: TtsPlaybackStatus.error,
+        sourceId: sourceId,
+        clip: null,
+        errorMessage: error.toString(),
+      );
+    }
+  }
+
+  /// The model slot of a bundled clip's key: never one a synthesized
+  /// utterance has, so a sample is never replayed in place of real speech.
+  static const _bundledClipModel = 'bundled-clip';
 
   /// Stops the current utterance. When [sourceId] is supplied, another
   /// surface's utterance is left playing. Preparation is invalidated before

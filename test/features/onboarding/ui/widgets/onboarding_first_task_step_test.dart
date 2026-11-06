@@ -19,7 +19,6 @@ import 'package:lotti/features/tts/state/tts_playback_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/repositories/onboarding_metrics_repository.dart';
 import 'package:lotti/services/app_prefs_service.dart';
-import 'package:lotti/utils/consts.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -109,7 +108,6 @@ void main() {
     void Function(String taskId)? onTaskCreated,
     List<OnboardingCaptureCategory>? categories,
     Future<String?>? styleValue,
-    bool companion = false,
   }) async {
     await tester.pumpWidget(
       makeTestableWidget(
@@ -139,17 +137,16 @@ void main() {
           recordingStyleAppPrefsProvider.overrideWithValue(
             _fakePrefs(styleValue: styleValue),
           ),
-          if (companion) ...[
-            configFlagProvider.overrideWith(
-              (ref, flagName) => Stream.value(flagName == enableCompanionFlag),
-            ),
-            ttsPlaybackControllerProvider.overrideWith(
-              () => TtsPlaybackController(logger: MockDomainLogger()),
-            ),
-            spokenTrackLoaderProvider.overrideWithValue(
-              (clip, text) => Completer<MouthTrack>().future,
-            ),
-          ],
+          // Her own flag off: onboarding has her regardless.
+          configFlagProvider.overrideWith(
+            (ref, flagName) => Stream.value(false),
+          ),
+          ttsPlaybackControllerProvider.overrideWith(
+            () => TtsPlaybackController(logger: MockDomainLogger()),
+          ),
+          spokenTrackLoaderProvider.overrideWithValue(
+            (clip, text) => Completer<MouthTrack>().future,
+          ),
         ],
       ),
     );
@@ -824,16 +821,16 @@ void main() {
     OnboardingCompanion her(WidgetTester tester) =>
         tester.widget<OnboardingCompanion>(find.byType(OnboardingCompanion));
 
-    testWidgets('is not there while her flag is off', (tester) async {
+    testWidgets('is there whatever her own flag says', (tester) async {
       await pumpStep(tester);
 
-      expect(find.byType(OnboardingCompanion), findsNothing);
+      expect(find.byType(OnboardingCompanion), findsOneWidget);
     });
 
     testWidgets('waves the user on, the prompt headline her line', (
       tester,
     ) async {
-      await pumpStep(tester, companion: true);
+      await pumpStep(tester);
       await tester.pump(const Duration(milliseconds: 16));
 
       expect(her(tester).beat, OnboardingCompanionBeat.prompt);
@@ -847,7 +844,7 @@ void main() {
     });
 
     testWidgets('listens in silence while the mic is open', (tester) async {
-      await pumpStep(tester, companion: true);
+      await pumpStep(tester);
 
       controller.emit(
         const CaptureState(
@@ -864,7 +861,7 @@ void main() {
     });
 
     testWidgets('thinks aloud while the words are structured', (tester) async {
-      await pumpStep(tester, companion: true);
+      await pumpStep(tester);
 
       controller.emit(
         const CaptureState(
@@ -884,7 +881,7 @@ void main() {
       tester,
     ) async {
       stubStructuring(realAha(taskId: 'suggested-task'));
-      await pumpStep(tester, companion: true);
+      await pumpStep(tester);
 
       await tester.tap(find.text('Plan my week'), warnIfMissed: false);
       for (var i = 0; i < 4; i++) {

@@ -6,6 +6,7 @@ import 'package:lotti/classes/onboarding_event.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/ai/util/profile_seeding_service.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
+import 'package:lotti/features/companion/rig/companion_painter.dart';
 import 'package:lotti/features/demo/state/demo_mode_gateway.dart';
 import 'package:lotti/features/demo/ui/demo_entry_launcher.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
@@ -17,8 +18,11 @@ import 'package:lotti/features/onboarding/ui/widgets/onboarding_category_view.da
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_companion.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_connect_panel.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_first_task_step.dart';
+import 'package:lotti/features/onboarding/ui/widgets/onboarding_first_words.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_hero.dart';
+import 'package:lotti/features/onboarding/ui/widgets/onboarding_make_her_yours_step.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_success_view.dart';
+import 'package:lotti/features/onboarding/ui/widgets/onboarding_voices_step.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -120,8 +124,8 @@ class OnboardingWelcomeModal {
               child: ModalEscapeScope(
                 child: _OnboardingScaffold(
                   heroStyle: heroStyle,
-                  onProviderModalShown: () => unawaited(
-                    repo?.recordEvent(OnboardingEventName.providerModalShown),
+                  recordEvent: (name, {provider}) => unawaited(
+                    repo?.recordEvent(name, provider: provider),
                   ),
                   // The connection succeeded (provider + models created) — record
                   // it now so it counts even if the user dismisses on the success
@@ -204,7 +208,7 @@ void openOnboardingCreatedTask(String taskId) {
 class _OnboardingScaffold extends StatelessWidget {
   const _OnboardingScaffold({
     required this.heroStyle,
-    required this.onProviderModalShown,
+    required this.recordEvent,
     required this.onConnected,
     required this.onTaskCreated,
     required this.onComplete,
@@ -213,7 +217,9 @@ class _OnboardingScaffold extends StatelessWidget {
   });
 
   final OnboardingHeroStyle heroStyle;
-  final VoidCallback onProviderModalShown;
+
+  /// Records a funnel event from inside the flow.
+  final void Function(OnboardingEventName name, {String? provider}) recordEvent;
   final void Function(InferenceProviderType) onConnected;
   final void Function(String taskId) onTaskCreated;
   final VoidCallback onComplete;
@@ -237,7 +243,7 @@ class _OnboardingScaffold extends StatelessWidget {
       onTap: () {},
       child: _OnboardingFlow(
         heroStyle: heroStyle,
-        onProviderModalShown: onProviderModalShown,
+        recordEvent: recordEvent,
         onConnected: onConnected,
         onTaskCreated: onTaskCreated,
         onComplete: onComplete,
@@ -291,6 +297,8 @@ class _OnboardingScaffold extends StatelessWidget {
 
 enum _FlowStep {
   welcome,
+  makeHerYours,
+  voices,
   connect,
   apiKey,
   success,
@@ -303,7 +311,7 @@ enum _FlowStep {
 class _OnboardingFlow extends StatefulWidget {
   const _OnboardingFlow({
     required this.heroStyle,
-    required this.onProviderModalShown,
+    required this.recordEvent,
     required this.onConnected,
     required this.onTaskCreated,
     required this.onComplete,
@@ -312,7 +320,9 @@ class _OnboardingFlow extends StatefulWidget {
   });
 
   final OnboardingHeroStyle heroStyle;
-  final VoidCallback onProviderModalShown;
+
+  /// Records a funnel event from inside the flow.
+  final void Function(OnboardingEventName name, {String? provider}) recordEvent;
   final void Function(InferenceProviderType) onConnected;
   final void Function(String taskId) onTaskCreated;
   final VoidCallback onComplete;
@@ -383,42 +393,74 @@ class _OnboardingFlowState extends State<_OnboardingFlow> {
     );
   }
 
+  /// On to the voices, from the "make me yours" step.
+  void _toVoices() {
+    setState(() => _step = _FlowStep.voices);
+    widget.recordEvent(OnboardingEventName.voiceSamplesShown);
+  }
+
+  /// On to the one key, from the voices.
+  void _toConnect() {
+    setState(() => _step = _FlowStep.connect);
+    widget.recordEvent(OnboardingEventName.providerModalShown);
+  }
+
   Widget _buildStep() {
     switch (_step) {
       case _FlowStep.welcome:
-        return Consumer(
+        return OnboardingHeroPanel(
           key: const ValueKey('onboarding-welcome'),
-          builder: (context, ref, _) {
-            final messages = context.messages;
-            return OnboardingHeroPanel(
-              heroStyle: widget.heroStyle,
-              // With her flag on she is the welcome's hero, and its promise
-              // is her first line — said once per modal.
-              companion: watchOnboardingCompanionEnabled(ref)
-                  ? OnboardingCompanion(
-                      beat: OnboardingCompanionBeat.welcome,
-                      line: _greeted
-                          ? null
-                          : '${messages.onboardingWelcomeTitle} '
-                                '${messages.onboardingWelcomeMessage}',
-                    )
-                  : null,
-              onConnect: () {
-                setState(() {
-                  _greeted = true;
-                  _step = _FlowStep.connect;
-                });
-                widget.onProviderModalShown();
-              },
-              onSkip: widget.onSkip,
-              onExploreDemo: widget.onExploreDemo,
-            );
+          heroStyle: widget.heroStyle,
+          // She is the welcome's hero, and its promise is her first line —
+          // said once per modal.
+          companion: OnboardingCompanion(
+            beat: OnboardingCompanionBeat.welcome,
+            line: _greeted
+                ? null
+                : onboardingCompanionWelcomeLine(context.messages),
+          ),
+          onConnect: () {
+            setState(() {
+              _greeted = true;
+              _step = _FlowStep.makeHerYours;
+            });
+            widget.recordEvent(OnboardingEventName.companionCustomizeShown);
           },
+          onSkip: widget.onSkip,
+          onExploreDemo: widget.onExploreDemo,
+        );
+      case _FlowStep.makeHerYours:
+        return OnboardingMakeHerYoursStep(
+          key: const ValueKey('onboarding-make-her-yours'),
+          onBack: () => setState(() => _step = _FlowStep.welcome),
+          onCustomized: () =>
+              widget.recordEvent(OnboardingEventName.companionCustomized),
+          onContinue: _toVoices,
+          onSkip: () {
+            widget.recordEvent(OnboardingEventName.companionCustomizeSkipped);
+            _toVoices();
+          },
+        );
+      case _FlowStep.voices:
+        return OnboardingVoicesStep(
+          key: const ValueKey('onboarding-voices'),
+          onBack: () => setState(() => _step = _FlowStep.makeHerYours),
+          onPlayed: (sample) => widget.recordEvent(
+            OnboardingEventName.voiceSamplePlayed,
+            provider: sample.name,
+          ),
+          onContinue: _toConnect,
         );
       case _FlowStep.connect:
         return OnboardingConnectPanel(
           key: const ValueKey('onboarding-connect'),
-          onBack: () => setState(() => _step = _FlowStep.welcome),
+          // She recommends the one key to start with, in her bubble.
+          companion: OnboardingCompanion(
+            beat: OnboardingCompanionBeat.recommend,
+            line: context.messages.onboardingConnectGuide,
+            framing: CompanionFraming.bust,
+          ),
+          onBack: () => setState(() => _step = _FlowStep.voices),
           onSelect: (type) => setState(() {
             _type = type;
             _step = _FlowStep.apiKey;
@@ -428,6 +470,12 @@ class _OnboardingFlowState extends State<_OnboardingFlow> {
         return OnboardingApiKeyPanel(
           key: ValueKey('onboarding-apikey-${_type.name}'),
           type: _type,
+          // She thinks while the key is checked, and takes the answer well
+          // or badly.
+          companion: (status) => OnboardingCompanion(
+            beat: OnboardingCompanionBeat.ofKeyCheck(status),
+            framing: CompanionFraming.bust,
+          ),
           onBack: () => setState(() => _step = _FlowStep.connect),
           onConnected: () {
             // Provider + models are created — record the win and reveal the
@@ -443,6 +491,11 @@ class _OnboardingFlowState extends State<_OnboardingFlow> {
           title: context.messages.onboardingSuccessTitle,
           subtitle: context.messages.onboardingSuccessSubtitle,
           continueLabel: context.messages.onboardingSuccessContinue,
+          // Her first words, in the connected provider's voice where it has
+          // one.
+          lead: OnboardingFirstWords(
+            profileId: onboardingSeededProfileId(_type),
+          ),
           onContinue: () => setState(() => _step = _FlowStep.category),
         );
       case _FlowStep.category:
@@ -695,6 +748,11 @@ class _OnboardingCategoryStepState
     final options = _options(messages);
     return OnboardingCategoryView(
       accent: context.designTokens.colors.interactive.enabled,
+      companion: OnboardingCompanion(
+        beat: OnboardingCompanionBeat.areas,
+        line: messages.onboardingCategoryExplanation,
+        framing: CompanionFraming.bust,
+      ),
       title: messages.onboardingCategoryTitle,
       explanation: messages.onboardingCategoryExplanation,
       whyLabel: messages.onboardingCategoryWhy,

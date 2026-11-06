@@ -11861,22 +11861,35 @@ class AppLocalizationsRo extends AppLocalizations {
   String get onboardingCategoryWork => 'Muncă';
 
   @override
+  String get onboardingCompanionGreeting => 'Bună, sunt Lotti.';
+
+  @override
+  String get onboardingCompanionOneKey =>
+      'Spuneți-mi ce aveți în minte și o transform într-un plan. Ca să încep, am nevoie doar de o cheie API, iar eu vă ajut s-o configurați.';
+
+  @override
   String get onboardingConnectGeminiName => 'Gemini';
 
   @override
   String get onboardingConnectGeminiTagline => 'Statele Unite';
 
   @override
-  String get onboardingConnectLessOptions => 'Mai puține opțiuni';
+  String get onboardingConnectGuide =>
+      'Eu aș alege Mistral: cu această singură cheie pot gândi, transcrie ce spuneți și vă pot citi cu voce tare.';
+
+  @override
+  String get onboardingConnectHideOtherProviders =>
+      'Ascundeți ceilalți furnizori';
 
   @override
   String get onboardingConnectMistralName => 'Mistral';
 
   @override
-  String get onboardingConnectMistralTagline => 'Uniunea Europeană';
+  String get onboardingConnectMistralPitch =>
+      'O cheie pentru gândire, transcriere și voce · găzduit în UE';
 
   @override
-  String get onboardingConnectMoreOptions => 'Mai multe opțiuni';
+  String get onboardingConnectMistralTagline => 'Uniunea Europeană';
 
   @override
   String get onboardingConnectNotSure =>
@@ -11886,7 +11899,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get onboardingConnectOllamaName => 'Ollama';
 
   @override
+  String get onboardingConnectOneKeyTitle => 'O singură cheie este suficientă';
+
+  @override
   String get onboardingConnectOpenAiName => 'OpenAI';
+
+  @override
+  String get onboardingConnectOtherProviders => 'Alți furnizori';
 
   @override
   String get onboardingConnectQwenName => 'Qwen';
@@ -11895,8 +11914,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get onboardingConnectQwenTagline => 'China';
 
   @override
-  String get onboardingConnectTitle =>
-      'Alegeți creierul AI pentru sarcinile dvs.';
+  String get onboardingConnectRecommended => 'Recomandat';
 
   @override
   String get onboardingFirstTaskCreatedHint =>
@@ -11927,6 +11945,25 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get onboardingFirstTaskTitle => 'Creați-vă prima sarcină';
+
+  @override
+  String get onboardingFirstWordsQuiet => 'Suntem conectați și vă pot ajuta.';
+
+  @override
+  String get onboardingFirstWordsVoiced => 'Gata, acum mă puteți și auzi!';
+
+  @override
+  String get onboardingMakeHerYoursContinue => 'Arată bine';
+
+  @override
+  String get onboardingMakeHerYoursLine =>
+      'Alegeți cum arăt. Puteți schimba oricând totul în Setări › Însoțitoare.';
+
+  @override
+  String get onboardingMakeHerYoursSkip => 'Omiteți deocamdată';
+
+  @override
+  String get onboardingMakeHerYoursTitle => 'Alegeți-mi stilul';
 
   @override
   String get onboardingMetricsActiveDays => 'Zile active';
@@ -11973,11 +12010,58 @@ class AppLocalizationsRo extends AppLocalizations {
   String get onboardingSuccessTitle => 'Gata de start';
 
   @override
+  String get onboardingVoiceElevenLabsDescription =>
+      'Opțional, cu o cheie ElevenLabs proprie.';
+
+  @override
+  String get onboardingVoiceElevenLabsName => 'ElevenLabs';
+
+  @override
+  String get onboardingVoiceOnDeviceDescription =>
+      'Gratuită și privată. Funcționează offline după o singură descărcare.';
+
+  @override
+  String get onboardingVoiceOnDeviceName => 'Pe dispozitivul dvs.';
+
+  @override
+  String onboardingVoicePlay(String voice) {
+    return 'Redați „$voice”';
+  }
+
+  @override
+  String get onboardingVoicesContinue => 'Mai departe: cheia dvs.';
+
+  @override
+  String get onboardingVoicesEnglishNote =>
+      'Mostrele sunt în engleză. Fiecare voce vorbește și multe alte limbi.';
+
+  @override
+  String get onboardingVoicesLine =>
+      'Pot vorbi cu voci diferite. Atingeți una ca s-o ascultați. O puteți schimba oricând în Setări › Vorbire.';
+
+  @override
+  String get onboardingVoicesTitle => 'Ascultați cum pot suna';
+
+  @override
+  String onboardingVoiceStop(String voice) {
+    return 'Opriți „$voice”';
+  }
+
+  @override
+  String get onboardingVoiceVoxtralDescription => 'Vine cu cheia dvs. Mistral.';
+
+  @override
+  String get onboardingVoiceVoxtralName => 'Mistral Voxtral';
+
+  @override
   String get onboardingWelcomeConnectButton => 'Alegeți creierul AI';
 
   @override
   String get onboardingWelcomeMessage =>
       'Conectați-vă creierul AI, rostiți un gând și urmăriți-l devenind o sarcină structurată.';
+
+  @override
+  String get onboardingWelcomeOneKeyButton => 'Începeți cu o singură cheie';
 
   @override
   String get onboardingWelcomeSkipButton => 'Explorați mai întâi';
