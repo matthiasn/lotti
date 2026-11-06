@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_config.dart';
 import 'package:lotti/classes/agents/agent_constants.dart';
@@ -561,6 +562,138 @@ void main() {
         agentId,
         workspaceKey: goalReportRefreshTriggerToken,
       ),
+    );
+  });
+
+  group('updateBriefingLanguage', () {
+    AgentIdentityEntity goal({
+      String? languageCode,
+      String kind = AgentKinds.goalAgent,
+    }) =>
+        AgentDomainEntity.agent(
+              id: agentId,
+              agentId: agentId,
+              kind: kind,
+              displayName: 'Goal',
+              lifecycle: AgentLifecycle.active,
+              mode: AgentInteractionMode.autonomous,
+              allowedCategoryIds: const {},
+              currentStateId: '$agentId:state',
+              config: AgentConfig(
+                automaticUpdatesEnabled: true,
+                languageCode: languageCode,
+              ),
+              createdAt: DateTime(2026),
+              updatedAt: DateTime(2026),
+              vectorClock: null,
+            )
+            as AgentIdentityEntity;
+
+    test('stores the picked language on the identity, keeping the rest of '
+        'its config, and pings the UI', () async {
+      when(
+        () => repository.getEntity(agentId),
+      ).thenAnswer((_) async => goal());
+
+      final changed = await withClock(
+        Clock.fixed(DateTime(2026, 9, 1, 8)),
+        () => service.updateBriefingLanguage(
+          agentId: agentId,
+          languageCode: 'de',
+        ),
+      );
+
+      expect(changed, isTrue);
+      final written = upserts.single as AgentIdentityEntity;
+      expect(written.config.languageCode, 'de');
+      expect(written.config.automaticUpdatesEnabled, isTrue);
+      expect(written.updatedAt, DateTime(2026, 9, 1, 8));
+      final pinged =
+          verify(
+                () => updateNotifications.notifyUiOnly(captureAny()),
+              ).captured.single
+              as Set<String>;
+      expect(pinged, containsAll(<String>{agentId, agentNotification}));
+    });
+
+    test("a language is the agent's setting: it mints no spec version and "
+        "leaves the goal's banners alone", () async {
+      when(
+        () => repository.getEntity(agentId),
+      ).thenAnswer((_) async => goal());
+
+      await service.updateBriefingLanguage(
+        agentId: agentId,
+        languageCode: 'fr',
+      );
+
+      expect(upserts, hasLength(1));
+      expect(upserts.single, isA<AgentIdentityEntity>());
+    });
+
+    test('null returns the goal to following its journal', () async {
+      when(
+        () => repository.getEntity(agentId),
+      ).thenAnswer((_) async => goal(languageCode: 'de'));
+
+      expect(
+        await service.updateBriefingLanguage(
+          agentId: agentId,
+          languageCode: null,
+        ),
+        isTrue,
+      );
+      expect(
+        (upserts.single as AgentIdentityEntity).config.languageCode,
+        isNull,
+      );
+    });
+
+    test(
+      'the language already stored writes nothing and pings nobody',
+      () async {
+        when(
+          () => repository.getEntity(agentId),
+        ).thenAnswer((_) async => goal(languageCode: 'de'));
+
+        expect(
+          await service.updateBriefingLanguage(
+            agentId: agentId,
+            languageCode: 'de',
+          ),
+          isFalse,
+        );
+        expect(upserts, isEmpty);
+        verifyNever(() => updateNotifications.notifyUiOnly(any()));
+      },
+    );
+
+    test('an unsupported code is refused before anything is read', () async {
+      await expectLater(
+        service.updateBriefingLanguage(agentId: agentId, languageCode: 'xx'),
+        throwsArgumentError,
+      );
+      expect(upserts, isEmpty);
+      verifyNever(() => repository.getEntity(any()));
+    });
+
+    test(
+      'a missing goal agent, or another kind of agent, is refused',
+      () async {
+        await expectLater(
+          service.updateBriefingLanguage(agentId: agentId, languageCode: 'de'),
+          throwsA(isA<StateError>()),
+        );
+        when(
+          () => repository.getEntity(agentId),
+        ).thenAnswer((_) async => goal(kind: AgentKinds.taskAgent));
+        await expectLater(
+          service.updateBriefingLanguage(agentId: agentId, languageCode: 'de'),
+          throwsA(isA<StateError>()),
+        );
+        expect(upserts, isEmpty);
+        verifyNever(() => updateNotifications.notifyUiOnly(any()));
+      },
     );
   });
 

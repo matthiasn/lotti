@@ -24,6 +24,7 @@ import 'package:lotti/features/ai_consumption/service/ai_interaction_capture.dar
 import 'package:lotti/features/goals/evaluation/goal_signal_reader.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_window.dart';
 import 'package:lotti/features/goals/evaluation/goal_today_portion.dart';
+import 'package:lotti/features/goals/logic/goal_briefing_language.dart';
 import 'package:lotti/features/goals/logic/goal_charter.dart';
 import 'package:lotti/features/goals/logic/goal_checkin_compaction_strategy.dart';
 import 'package:lotti/features/goals/model/goal_checkin_source.dart';
@@ -1944,6 +1945,112 @@ void main() {
           LogDomain.agentWorkflow,
           any(that: isA<StateError>()),
           message: 'goal charter unavailable for this wake',
+          stackTrace: any(named: 'stackTrace', that: isNotNull),
+        ),
+      ).called(1);
+    });
+  });
+
+  group('the briefing language', () {
+    late MockDomainLogger logger;
+
+    Future<String?> factsWith({
+      GoalJournalLanguageReader? reader,
+      String? chosen,
+    }) async {
+      stubSpec();
+      stubGlmResolution();
+      _stubBadPrior(repository, agentId, now);
+      logger = MockDomainLogger();
+      workflow = GoalAgentWorkflow(
+        domainLogger: logger,
+        repository: repository,
+        syncService: syncService,
+        phaseA: GoalAgentPhaseA(
+          repository: repository,
+          syncService: syncService,
+          signalReader: _FakeReader(),
+        ),
+        conversationRepository: conversationRepository,
+        cloudInferenceRepository: cloudInferenceRepository,
+        aiConfigRepository: aiConfigRepository,
+        journalLanguageReader: reader,
+      );
+      String? sentFacts;
+      conversationRepository.sendMessageDelegate =
+          ({
+            required conversationId,
+            required message,
+            required model,
+            required provider,
+            required inferenceRepo,
+            tools,
+            toolChoice,
+            temperature = 0.7,
+            strategy,
+          }) async {
+            sentFacts ??= message;
+            return const InferenceUsage(inputTokens: 10, outputTokens: 5);
+          };
+      await workflow.execute(
+        agentIdentity: identity.copyWith(
+          config: identity.config.copyWith(languageCode: chosen),
+        ),
+        runKey: 'run-language',
+        triggerTokens: const {'goal-escalation:2026-08-11'},
+        threadId: 'thread-language',
+      );
+      return sentFacts;
+    }
+
+    test('a goal nobody picked a language for is briefed in its journal '
+        'language, read for this goal', () async {
+      String? askedFor;
+      final facts = await factsWith(
+        reader: (id) async {
+          askedFor = id;
+          return 'de';
+        },
+      );
+
+      expect(askedFor, agentId);
+      expect(facts, contains('"language": "de (German)"'));
+    });
+
+    test('a language picked for the goal stands, without reading the '
+        'journal', () async {
+      var journalRead = false;
+      final facts = await factsWith(
+        chosen: 'fr',
+        reader: (_) async {
+          journalRead = true;
+          return 'de';
+        },
+      );
+
+      expect(facts, contains('"language": "fr (French)"'));
+      expect(journalRead, isFalse);
+    });
+
+    test("without a language anywhere the model follows the user's own "
+        'words, never a silent English', () async {
+      final facts = await factsWith(reader: (_) async => null);
+
+      expect(facts, contains(goalUnsetLanguageFactsLine));
+    });
+
+    test('a journal that cannot be read costs the wake only its fallback, is '
+        'logged, and never fails the wake', () async {
+      final facts = await factsWith(
+        reader: (_) async => throw StateError('db gone'),
+      );
+
+      expect(facts, contains(goalUnsetLanguageFactsLine));
+      verify(
+        () => logger.error(
+          LogDomain.agentWorkflow,
+          any(that: isA<StateError>()),
+          message: 'goal journal language unavailable for this wake',
           stackTrace: any(named: 'stackTrace', that: isNotNull),
         ),
       ).called(1);

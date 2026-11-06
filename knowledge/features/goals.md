@@ -40,6 +40,14 @@ sources:
     resource: ../../lib/features/goals/logic/goal_charter.dart
     title: The charter — selection under budget, FACTS section, policy
     last_modified: 2026-10-18
+  - id: briefing-language
+    resource: ../../lib/features/goals/logic/goal_briefing_language.dart
+    title: The briefing language — chosen, else the journal's, and the FACTS line
+    last_modified: 2026-11-06
+  - id: adr-0158
+    resource: ../../docs/adr/0158-goal-agents-write-in-a-language-the-goal-names.md
+    title: ADR 0158 — Goal agents write in a language the goal names
+    last_modified: 2026-11-06
   - id: charter-card
     resource: ../../lib/features/goals/ui/charter/goal_charter_card.dart
     title: About this goal — the charter on the goal page, and its sheet
@@ -306,7 +314,7 @@ flowchart TD
     CHECKIN[check-in linked to the goal\nJournalAudio / JournalEntry] --> CHECKINSTALE[mark report stale\nGoalCheckInNotifier — a wake only\nfor a substance goal, below]
     CHECKIN -- "goal measures check-in time or its\ncheck-ins are its substance:\nits goal row is an immediate token;\na substance goal's Phase A refreshes\nthe report even when no number moved\n(ADRs 0143, 0151)" --> ORCH
     PB --> COMPACT[automatic report wake only:\ncompact pending check-ins\nminimal reasoning, ≤500 output tokens,\nkeyed by agentId+entryId]
-    COMPACT --> FACTS[GoalFactsRenderer\nJSON fence: goal, charter, evaluation,\nreporting, ads, personaTone,\nrecent dialogue + userVoice, new\ncheck-ins marked sinceLastReport\ntarget ≤6k tokens, never transcripts]
+    COMPACT --> FACTS[GoalFactsRenderer\nJSON fence: language, goal, charter, evaluation,\nreporting, ads, personaTone,\nrecent dialogue + userVoice, new\ncheck-ins marked sinceLastReport\ntarget ≤6k tokens, never transcripts]
     FACTS --> CONV[one bounded conversation\nexplicit setup, Settings fallback,\ntemperature 0, 10-tool contract]
     CONV --> OUT[one transaction:\nreport+head, goalNudge writes,\nobservations, revision ChangeSet,\nvisible reply_to_user carrier]
     OUT --> REWORD[AgentAlertCopy.restate — after the txn,\nonly for a banner this wake created:\nthe armed alert in the banner's words,\nopt-in, ADR 0074]
@@ -1594,8 +1602,10 @@ handler would retract it; that wiring is a follow-up.
   the signals follow — their combination rule a `DesignSystemPickerField`
   like any other picked value — and *Your agent* closes it: whether the
   check-ins are the goal itself (an `AgentSwitchRow`, the person editor's
-  reminders row, which creation shows under the signals) and the agent's
-  name (the section the person editor ends on too). One *Save new version* runs the mapping's checks, then saves;
+  reminders row, which creation shows under the signals), the agent's
+  name (the section the person editor ends on too) and the language it
+  briefs in (see [the briefing language](#the-briefing-language)). One
+  *Save new version* runs the mapping's checks, then saves;
   *Cancel*, the back button and the system back leave at once when nothing
   changed and ask first when something did (`_GoalEditLeave`, an order-free
   fingerprint baselined as soon as the goal is on the form and moved along with what the app fills in by itself — the goal row's category, catalog clean-ups — only while the form was still untouched). The
@@ -1608,7 +1618,11 @@ handler would retract it; that wiring is a follow-up.
   chooses `at least` or `no more than` and uses a rolling seven-day average.
   Both renderings sit in
   [`AgentEditorScaffold`](../../lib/features/agents/ui/agent_editor_scaffold.dart),
-  the page the person editor uses too.
+  the page the person editor uses too; its sticky action bar is the app's
+  (large design-system buttons on the glass strip, the body scrolling behind
+  it), and the scaffold builds the primary from its label, so the goal form
+  passes *Continue*, *Create agent* or *Save new version* and a callback, not
+  a button.
   The same controls load during owner editing, retain existing criterion ids,
   and expose `all`, `any`, or `at least N` when multiple dimensions are
   selected. The combination sheet applies every choice to the page
@@ -2278,6 +2292,58 @@ flowchart TD
   card, behind-first, from reports the agents already wrote; a report for a
   superseded spec is left out, and with no briefings yet the card takes no
   room.
+
+## The briefing language
+
+Every word a goal agent writes — the daily briefing, the standing report, a
+banner, a question, a chat reply — is in **one language the wake names**
+(ADR 0158). The system prompt says *FACTS language in prose*; FACTS always
+carry `language`.
+
+```mermaid
+flowchart TD
+  CFG["AgentConfig.languageCode\n(the goal's agent identity)"] --> PICK{a supported\nlanguage picked?}
+  PICK -- yes --> CHOSEN["chosen: e.g. fr (French)"]
+  PICK -- "no / unknown code" --> READ["GoalRepository.journalLanguage:\ngoal row → its category →\ndefaultLanguageCode"]
+  READ --> JOUR{a supported\nlanguage?}
+  JOUR -- yes --> JOURNAL["journal: e.g. de (German)"]
+  JOUR -- "no / read failed (logged)" --> UNSET["unset: the language of the user's\nown words; English when none"]
+  CHOSEN --> FACTS["FACTS language"]
+  JOURNAL --> FACTS
+  UNSET --> FACTS
+```
+
+- **Where it lives.** `AgentConfig.languageCode`, on the identity, synced with
+  it. It is the agent's setting, not part of the goal: a spec revision would
+  supersede the banners and retract proposals over a change that left the goal
+  as it was, so the edit page saves it with
+  `GoalAgentService.updateBriefingLanguage` beside the revision, and a
+  language-only edit mints no version. The change applies from the next
+  report; nothing is re-run for it.
+- **Null follows the journal** — the default language of the category the goal
+  is filed in, which is the category its check-ins are recorded into. The
+  workflow reads it at wake time through the injected
+  `GoalJournalLanguageReader` (`goalJournalLanguageReaderProvider`), so a
+  category whose language changes, or a goal moved to another category, is
+  briefed in the new language on its next wake. A picked language is not
+  second-guessed: the journal is not read at all.
+- **Contained like the charter.** A journal that cannot be read costs the wake
+  only its fallback, and is logged as *goal journal language unavailable for
+  this wake*; the wake still runs.
+- **The edit page.** *Briefing language* sits in *Your agent* under the agent's
+  name: *Automatic · German* while the goal follows a journal that names a
+  language, *Automatic* when it names none, the language's name once one is
+  picked. The language picker's *Clear* returns it to Automatic. The journal
+  language shown is the one of the category picked **on the form**, read from
+  the watched category list, so a category edited in Settings — or picked
+  above — reaches the field live. When a picked language and the journal's
+  differ, `goalBriefingLanguageSuggestion` offers the journal's under the
+  field (*Your journal is in German now.* / *Use German*), applied only when
+  taken. The language is part of the edit fingerprint, so leaving with a
+  changed one asks first.
+- **Unknown codes read as unset.** `goalSupportedLanguage` accepts only
+  `SupportedLanguage` codes; anything else (a newer client's code) falls
+  through to the journal and is never overwritten by an untouched form.
 
 ## The charter
 

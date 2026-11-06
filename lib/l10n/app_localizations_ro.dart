@@ -8461,6 +8461,31 @@ class AppLocalizationsRo extends AppLocalizations {
       'Sistolică și diastolică · mmHg · medie pe 7 zile';
 
   @override
+  String get goalFormBriefingLanguageAutomatic => 'Automat';
+
+  @override
+  String goalFormBriefingLanguageAutomaticNamed(String language) {
+    return 'Automat · $language';
+  }
+
+  @override
+  String get goalFormBriefingLanguageHelper =>
+      'Limba în care vă scriu rezumatele. Automat urmează jurnalul dvs.';
+
+  @override
+  String get goalFormBriefingLanguageLabel => 'Limba rezumatelor';
+
+  @override
+  String goalFormBriefingLanguageSuggestion(String language) {
+    return 'Jurnalul dvs. este acum în $language.';
+  }
+
+  @override
+  String goalFormBriefingLanguageUse(String language) {
+    return 'Folosiți $language';
+  }
+
+  @override
   String goalFormCategoryTimeCadence(
     String categoryName,
     String direction,

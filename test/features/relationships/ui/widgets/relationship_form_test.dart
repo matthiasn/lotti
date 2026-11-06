@@ -103,31 +103,29 @@ Widget editorFor(
   BuildContext context,
   RelationshipFormHandle handle, {
   RelationshipEntry? initial,
-}) => AgentEditorScaffold(
-  title: initial == null
-      ? context.messages.relationshipCreateTitle
-      : context.messages.relationshipEditTitle,
-  onBack: handle.dismiss,
-  onCancel: handle.dismiss,
-  cancelKey: const ValueKey('person-form-cancel'),
-  primary: ListenableBuilder(
-    listenable: handle,
-    builder: (context, _) => DesignSystemButton(
-      key: const ValueKey('person-form-save'),
-      label: handle.isEditing
-          ? context.messages.saveButton
-          : context.messages.createButton,
-      onPressed: handle.canSave ? handle.save : null,
-    ),
+}) => ListenableBuilder(
+  listenable: handle,
+  builder: (context, _) => AgentEditorScaffold(
+    title: initial == null
+        ? context.messages.relationshipCreateTitle
+        : context.messages.relationshipEditTitle,
+    onBack: handle.dismiss,
+    onCancel: handle.dismiss,
+    cancelKey: const ValueKey('person-form-cancel'),
+    primaryKey: const ValueKey('person-form-save'),
+    primaryLabel: handle.isEditing
+        ? context.messages.saveButton
+        : context.messages.createButton,
+    onPrimary: handle.canSave ? handle.save : null,
+    body: [
+      RelationshipForm(
+        initial: initial,
+        handle: handle,
+        onSaved: (_) => Navigator.of(context).pop(),
+        onDismissed: () => Navigator.of(context).pop(),
+      ),
+    ],
   ),
-  body: [
-    RelationshipForm(
-      initial: initial,
-      handle: handle,
-      onSaved: (_) => Navigator.of(context).pop(),
-      onDismissed: () => Navigator.of(context).pop(),
-    ),
-  ],
 );
 
 /// Pushes [editorFor] as a page over the current one.

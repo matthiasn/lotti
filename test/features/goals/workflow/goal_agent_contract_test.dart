@@ -5,6 +5,14 @@ import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
 
 void main() {
+  test('prose is written in the FACTS language, never a guessed one', () {
+    // Before a goal could carry a language, the prompt said "the user's
+    // language" without naming one, and briefings defaulted to English for
+    // users who journal in another language.
+    expect(goalAgentSystemPrompt, contains('FACTS language in prose'));
+    expect(goalAgentSystemPrompt, isNot(contains("the user's language")));
+  });
+
   test('the prompt stays under the eval-enforced hard cap', () {
     // The payload lesson: long prompts get skimmed. The eval suite pins
     // the same bound; this pins it for the production import path. The

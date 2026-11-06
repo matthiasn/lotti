@@ -11,6 +11,7 @@ import 'package:lotti/features/ai/service/text_chunker.dart';
 import 'package:lotti/features/goals/evaluation/goal_evaluation.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_window.dart';
 import 'package:lotti/features/goals/logic/goal_aggregate_rounding.dart';
+import 'package:lotti/features/goals/logic/goal_briefing_language.dart';
 import 'package:lotti/features/goals/logic/goal_user_voice.dart';
 import 'package:lotti/features/goals/runtime/goal_wake_facts.dart';
 import 'package:lotti/features/insights/logic/time_bucketing.dart';
@@ -62,11 +63,12 @@ typedef GoalObservationDigestFact = ({String month, int notes, String text});
 ///
 /// The output shape is EXACTLY the one the eval fixtures validated
 /// model-against-model (`goal_agent_eval_fixtures.dart`): a labelled JSON
-/// fence with `goal` / optional `charter` / `evaluation` / optional raw
-/// `signals` / `reporting` / `ads` / `personaTone` /
-/// `unansweredUserMessages` / `observations` sections. Every verdict is pre-computed here — the prompt instructs the
-/// model to restate, never derive, so this renderer is the single place the
-/// model's worldview is assembled.
+/// fence with `language` / `goal` / optional `charter` / `evaluation` /
+/// optional raw `signals` / `reporting` / `ads` / `personaTone` /
+/// `unansweredUserMessages` / `observations` sections. Every verdict is
+/// pre-computed here — the prompt instructs the model to restate, never
+/// derive, so this renderer is the single place the model's worldview is
+/// assembled.
 class GoalFactsRenderer {
   const GoalFactsRenderer();
 
@@ -87,6 +89,7 @@ class GoalFactsRenderer {
     Map<String, Object?>? previousBriefing,
     Map<String, Object?>? charter,
     Map<String, Object?>? knowledge,
+    GoalBriefingLanguage? language,
   }) {
     final now = clock.now();
     final active = nudges.where((n) => n.status == NudgeStatus.active).toList();
@@ -155,6 +158,11 @@ class GoalFactsRenderer {
         'utcOffsetMinutes': now.timeZoneOffset.inMinutes,
         'timeZoneName': now.timeZoneName,
       },
+      // The language every word of prose is written in — the system prompt
+      // points here. Always present: without a language of its own the line
+      // says to follow the user's words, as goals did before one could be
+      // set.
+      'language': language?.factsLine ?? goalUnsetLanguageFactsLine,
       'goal': {
         'id': version.agentId,
         'statement': version.statement,

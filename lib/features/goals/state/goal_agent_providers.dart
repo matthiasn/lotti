@@ -26,6 +26,7 @@ import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_reader.dart';
+import 'package:lotti/features/goals/logic/goal_briefing_language.dart';
 import 'package:lotti/features/goals/logic/goal_charter.dart';
 import 'package:lotti/features/goals/model/goal_checkin_source.dart';
 import 'package:lotti/features/goals/repository/goal_repository.dart';
@@ -232,6 +233,16 @@ final Provider<GoalCharterReader?> goalCharterReaderProvider =
       return repository.charter;
     }, name: 'goalCharterReaderProvider');
 
+/// Reads the language a goal's journal is kept in for the headless workflow —
+/// null without a journal stack, in which case wakes fall back on the
+/// language the goal's own words are in rather than failing.
+final Provider<GoalJournalLanguageReader?> goalJournalLanguageReaderProvider =
+    Provider<GoalJournalLanguageReader?>((ref) {
+      final repository = ref.watch(goalRepositoryProvider);
+      if (repository == null) return null;
+      return repository.journalLanguage;
+    }, name: 'goalJournalLanguageReaderProvider');
+
 final goalAgentWorkflowProvider = Provider<GoalAgentWorkflow>(
   (ref) => GoalAgentWorkflow(
     repository: ref.watch(agentRepositoryProvider),
@@ -246,6 +257,7 @@ final goalAgentWorkflowProvider = Provider<GoalAgentWorkflow>(
     checkInDigestService: ref.watch(goalCheckInDigestServiceProvider),
     criterionNameReader: ref.watch(goalCriterionNameReaderProvider),
     charterReader: ref.watch(goalCharterReaderProvider),
+    journalLanguageReader: ref.watch(goalJournalLanguageReaderProvider),
     domainLogger: ref.watch(domainLoggerProvider),
     alertCopy: AgentAlertCopy.fromFlags(
       alerts: ref.watch(goalOffTrackAlertServiceProvider),

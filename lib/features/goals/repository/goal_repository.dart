@@ -53,6 +53,23 @@ class GoalRepository {
     return entity is GoalEntry && !entity.isDeleted ? entity : null;
   }
 
+  /// The language [agentId]'s goal journal is kept in: the default language
+  /// of the category the goal row — and so every check-in recorded against
+  /// it — is filed in. Null for a goal with no row, no category, or a
+  /// category without a language. The `GoalJournalLanguageReader` a goal
+  /// agent falls back on when nobody picked a language for it.
+  ///
+  /// Read past the private-entry gate, like the agent's other reads of a goal
+  /// it already holds: hiding private entries is for screens, and a goal
+  /// filed in a private category is still briefed in that category's
+  /// language.
+  Future<String?> journalLanguage(String agentId) async {
+    final categoryId = (await getGoalForAgent(agentId))?.meta.categoryId;
+    if (categoryId == null) return null;
+    final category = await _journalDb.getCategoryByIdForIntegrity(categoryId);
+    return category?.defaultLanguageCode;
+  }
+
   /// Every goal, newest first. Spec snapshots are excluded.
   Future<List<GoalEntry>> getGoals() => _journalDb.getGoals();
 

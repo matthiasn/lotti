@@ -19,6 +19,7 @@ import 'package:lotti/features/categories/ui/widgets/category_field_row.dart';
 import 'package:lotti/features/dashboards/ui/pages/measurables/measurables_page.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_inline_action.dart';
 import 'package:lotti/features/design_system/components/buttons/ds_segmented_toggle.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
@@ -30,6 +31,7 @@ import 'package:lotti/features/design_system/components/steppers/design_system_s
 import 'package:lotti/features/design_system/components/textareas/design_system_textarea.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/goals/logic/goal_briefing_language.dart';
 import 'package:lotti/features/goals/service/goal_spec_revision_service.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/state/goal_checkin_providers.dart';
@@ -41,7 +43,9 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/repositories/entry_category_move.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/goal_routes.dart';
+import 'package:lotti/widgets/flags/language_flag.dart';
 import 'package:lotti/widgets/modal/confirmation_modal.dart';
+import 'package:lotti/widgets/modal/language_selection_modal_content.dart';
 import 'package:material_ui/material_ui.dart';
 
 part 'create_goal_agent_mapping_step_part.dart';
@@ -50,6 +54,7 @@ part 'create_goal_agent_page_composite_rule_label_part.dart';
 part 'create_goal_agent_page_edit_agent_part.dart';
 part 'create_goal_agent_page_form_helpers.dart';
 part 'create_goal_agent_page_internals.dart';
+part 'create_goal_agent_page_language_part.dart';
 part 'create_goal_agent_pickers_part.dart';
 part 'create_goal_agent_steps_part.dart';
 part 'create_goal_agent_target_inputs_part.dart';
@@ -94,6 +99,11 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage>
   bool? _checkInsAreSubstance;
   bool get _shownCheckInsAreSubstance =>
       _checkInsAreSubstance ?? _watchesCheckInTime;
+
+  /// The briefing language picked on the form, and the one the goal had —
+  /// null follows the goal's journal (see the language part).
+  String? _languageCode;
+  String? _initialLanguageCode;
 
   GoalFormCompositeRule _compositeRule = GoalFormCompositeRule.all;
   var _requiredSuccesses = 1;
@@ -317,6 +327,9 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage>
   void _setCheckInsAreSubstance(bool value) =>
       setState(() => _checkInsAreSubstance = value);
 
+  void _setLanguage(String? languageCode) =>
+      setState(() => _languageCode = languageCode);
+
   void _continueToConfirmation(List<HabitDefinition> habits) {
     if (!_mappingIsValid()) return;
     _deriveTitle(habits);
@@ -499,6 +512,7 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage>
         throw StateError(reason);
       }
       await _moveCategoryIfChanged(container, agentId);
+      await _saveLanguageIfChanged(container, agentId);
       _invalidateGoalViews(container, agentId);
       if (mounted) beamToNamed(goalDetailPath(agentId));
     } on Object {
@@ -601,28 +615,22 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage>
     final pageTitle = _editing
         ? messages.goalFormEditTitle
         : messages.agentsCreateGoal;
-    final primaryAction = DesignSystemButton(
-      key: const ValueKey('goal-form-primary-action'),
-      label: switch (_step) {
-        _GoalFormStep.intention => messages.goalFormContinue,
-        _GoalFormStep.mapping when _editing => messages.goalFormSaveChanges,
-        _GoalFormStep.mapping => messages.goalFormContinue,
-        _GoalFormStep.confirmation =>
-          _editing
-              ? messages.goalFormSaveChanges
-              : messages.goalCreateSaveButton,
+    final primaryLabel = switch (_step) {
+      _GoalFormStep.intention => messages.goalFormContinue,
+      _GoalFormStep.mapping when _editing => messages.goalFormSaveChanges,
+      _GoalFormStep.mapping => messages.goalFormContinue,
+      _GoalFormStep.confirmation =>
+        _editing ? messages.goalFormSaveChanges : messages.goalCreateSaveButton,
+    };
+    final onPrimary = switch (_step) {
+      _GoalFormStep.intention => () => _mapIntention(habits),
+      _GoalFormStep.mapping when _editing => () {
+        // _save reports its own failure on the form.
+        if (_mappingIsValid()) _save();
       },
-      onPressed: switch (_step) {
-        _GoalFormStep.intention => () => _mapIntention(habits),
-        _GoalFormStep.mapping when _editing => () {
-          // _save reports its own failure on the form.
-          if (_mappingIsValid()) _save();
-        },
-        _GoalFormStep.mapping => () => _continueToConfirmation(habits),
-        _GoalFormStep.confirmation => _save,
-      },
-      isLoading: _saving,
-    );
+      _GoalFormStep.mapping => () => _continueToConfirmation(habits),
+      _GoalFormStep.confirmation => _save,
+    };
     return PopScope(
       canPop:
           _step == _visibleSteps.first && !_saving && !_editLeaveNeedsConfirm,
@@ -649,7 +657,9 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage>
                 child: _StepProgress(steps: _visibleSteps, step: _step),
               )
             : null,
-        primary: primaryAction,
+        primaryLabel: primaryLabel,
+        onPrimary: onPrimary,
+        primaryKey: const ValueKey('goal-form-primary-action'),
         onCancel: _editing && !_saving ? _back : null,
         cancelKey: const ValueKey('goal-form-cancel'),
         body: [

@@ -40,6 +40,7 @@ import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dar
 import 'package:lotti/features/goals/evaluation/goal_evaluation.dart';
 import 'package:lotti/features/goals/evaluation/goal_today_portion.dart';
 import 'package:lotti/features/goals/logic/goal_aggregate_rounding.dart';
+import 'package:lotti/features/goals/logic/goal_briefing_language.dart';
 import 'package:lotti/features/goals/logic/goal_charter.dart';
 import 'package:lotti/features/goals/logic/goal_checkin_compaction_strategy.dart';
 import 'package:lotti/features/goals/logic/goal_user_voice.dart';
@@ -133,6 +134,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
     this._criterionNameReader,
     this._alertCopy,
     this._charterReader,
+    this._journalLanguageReader,
     AppLocalizations Function()? messages,
   }) : _chatHistoryService =
            chatHistoryService ?? GoalChatHistoryService(_repository),
@@ -198,6 +200,11 @@ class GoalAgentWorkflow with AgentErrorLogging {
   /// injected like [_checkInSourceReader]: without it a wake carries no
   /// charter, which is where every goal stood before charters existed.
   final GoalCharterReader? _charterReader;
+
+  /// The goal's journal language, for a goal nobody picked one for (ADR
+  /// 0158). Optional like [_charterReader]: without it such a goal writes in
+  /// the language of the user's own words, as every goal did before.
+  final GoalJournalLanguageReader? _journalLanguageReader;
   final DomainLogger _domainLogger;
 
   @override
@@ -445,6 +452,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
       previousBriefing: previousBriefing,
       charter: await _charterFacts(agentId),
       knowledge: await _knowledgeFacts(agentId),
+      language: await _briefingLanguage(agentIdentity),
       derivation: derivation,
       nudges: nudges,
       reference: reference,
@@ -932,30 +940,6 @@ class GoalAgentWorkflow with AgentErrorLogging {
       provider: profile.thinkingProvider,
       geminiThinkingMode: profile.thinkingModel?.geminiThinkingMode,
     );
-  }
-
-  /// Display names for the entities [criteria] refer to, for the renderer.
-  ///
-  /// Contained like the user voice: names are ADDITIVE context, and a read
-  /// that fails must leave the wake with untitled criteria unnamed, never
-  /// fail the wake itself.
-  Future<Map<String, String>> _criterionNames(GoalCriterion criteria) async {
-    final reader = _criterionNameReader;
-    if (reader == null) return const {};
-    final ids = goalCriterionEntityIds(criteria);
-    if (ids.habitIds.isEmpty && ids.dataTypeIds.isEmpty) return const {};
-    try {
-      return await reader(ids);
-    } catch (error, stackTrace) {
-      _domainLogger.error(
-        LogDomain.agentWorkflow,
-        error,
-        subDomain: 'goalCriterionNames',
-        message: 'criterion names unavailable; rendering criteria unnamed',
-        stackTrace: stackTrace,
-      );
-      return const {};
-    }
   }
 
   /// Visible for tests: the transactional output write is exercised

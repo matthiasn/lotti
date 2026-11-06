@@ -67,6 +67,16 @@ abstract class AgentConfig with _$AgentConfig {
     /// from `AgentSlots` (config, not mutable state); legacy slot value is the
     /// read fallback for pre-existing agents.
     int? recursionDepth,
+
+    /// The language this agent writes in, as a `SupportedLanguage` code —
+    /// for a goal agent, the language of its briefings, reports, banners and
+    /// replies. Synced with the identity.
+    ///
+    /// Null is "follow the journal": the agent writes in the language its
+    /// subject's journal is kept in (a goal's category's default language,
+    /// see `resolveGoalBriefingLanguage`), so a goal nobody chose a language
+    /// for keeps up when that language changes.
+    String? languageCode,
   }) = _AgentConfig;
 
   factory AgentConfig.fromJson(Map<String, dynamic> json) =>

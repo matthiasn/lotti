@@ -14058,6 +14058,42 @@ abstract class AppLocalizations {
   /// **'Systolic and diastolic · mmHg · 7-day average'**
   String get goalFormBloodPressureSource;
 
+  /// Value of the briefing-language field when no language is picked and the goal's journal names none.
+  ///
+  /// In en, this message translates to:
+  /// **'Automatic'**
+  String get goalFormBriefingLanguageAutomatic;
+
+  /// Value of the briefing-language field when no language is picked: it follows the goal's journal, whose language is named.
+  ///
+  /// In en, this message translates to:
+  /// **'Automatic · {language}'**
+  String goalFormBriefingLanguageAutomaticNamed(String language);
+
+  /// Caption under the briefing-language field, in the goal agent's first person.
+  ///
+  /// In en, this message translates to:
+  /// **'The language I write your briefings in. Automatic follows your journal.'**
+  String get goalFormBriefingLanguageHelper;
+
+  /// Label of the goal editor field that sets the language the goal agent writes its briefings in.
+  ///
+  /// In en, this message translates to:
+  /// **'Briefing language'**
+  String get goalFormBriefingLanguageLabel;
+
+  /// Shown under the briefing-language field when the language picked for the goal differs from the goal's journal language.
+  ///
+  /// In en, this message translates to:
+  /// **'Your journal is in {language} now.'**
+  String goalFormBriefingLanguageSuggestion(String language);
+
+  /// Action that switches the goal's briefing language to the journal's language.
+  ///
+  /// In en, this message translates to:
+  /// **'Use {language}'**
+  String goalFormBriefingLanguageUse(String language);
+
   /// No description provided for @goalFormCategoryTimeCadence.
   ///
   /// In en, this message translates to:

@@ -14,6 +14,11 @@ extension _CreateGoalAgentPageStateInternals on _CreateGoalAgentPageState {
     _statement.text = spec.statement;
     _title.text = spec.title;
     _persona.text = identity.displayName;
+    // A code this build does not support reads as unset on both sides, so an
+    // untouched field never writes over it.
+    _languageCode = _initialLanguageCode = goalSupportedLanguage(
+      identity.config.languageCode,
+    )?.code;
     _baseVersionId = spec.id;
     _mapping = GoalFormMapping.fromCriteria(spec.criteria);
     _watchesSteps = _mapping.watchesSteps;

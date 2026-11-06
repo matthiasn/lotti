@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/ui/agent_editor_scaffold.dart';
-import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/state/relationships_providers.dart';
@@ -93,30 +92,30 @@ class _RelationshipEditorPageState
       initial = null;
     }
 
-    return AgentEditorScaffold(
-      title: title,
-      onBack: _handle.dismiss,
-      onCancel: _handle.dismiss,
-      cancelKey: const ValueKey('person-form-cancel'),
-      primary: ListenableBuilder(
-        listenable: _handle,
-        builder: (context, _) => DesignSystemButton(
-          key: const ValueKey('person-form-save'),
-          label: _handle.isEditing
-              ? messages.saveButton
-              : messages.createButton,
-          onPressed: _handle.canSave ? _handle.save : null,
-        ),
+    // Rebuilt as the form's save state moves: the primary's label and
+    // whether it can save follow the handle.
+    return ListenableBuilder(
+      listenable: _handle,
+      builder: (context, _) => AgentEditorScaffold(
+        title: title,
+        onBack: _handle.dismiss,
+        onCancel: _handle.dismiss,
+        cancelKey: const ValueKey('person-form-cancel'),
+        primaryKey: const ValueKey('person-form-save'),
+        primaryLabel: _handle.isEditing
+            ? messages.saveButton
+            : messages.createButton,
+        onPrimary: _handle.canSave ? _handle.save : null,
+        body: [
+          RelationshipForm(
+            key: ValueKey('person-form-$id'),
+            initial: initial,
+            handle: _handle,
+            onSaved: (saved) => beamToNamed('/people/${saved.id}'),
+            onDismissed: _leave,
+          ),
+        ],
       ),
-      body: [
-        RelationshipForm(
-          key: ValueKey('person-form-$id'),
-          initial: initial,
-          handle: _handle,
-          onSaved: (saved) => beamToNamed('/people/${saved.id}'),
-          onDismissed: _leave,
-        ),
-      ],
     );
   }
 }
