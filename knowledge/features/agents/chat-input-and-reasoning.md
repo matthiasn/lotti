@@ -11,7 +11,7 @@ sources:
   - id: chat
     resource: ../../../lib/features/agents/ui/chat
     title: Shared agent chat components
-    last_modified: 2026-10-31
+    last_modified: 2026-11-06
   - id: evolution
     resource: ../../../lib/features/agents/ui/evolution/widgets
     title: Agent improvement conversation widgets
@@ -28,10 +28,15 @@ stays on earlier evidence; a new user turn, or the start of sending, still
 scrolls to the latest message. After that the thread **follows its latest
 message as it grows** while the reader is at the bottom: a reply's cards or a
 door's answer arrive after the reply's own frame, and a lazily built list's
-real height after the first jump, so one jump landed short. Where a scroll
-leaves the reader decides it — a drag as it moves, any scroll (wheel, fling)
-where it ends: away from the bottom stops the following, back resumes it, and a conversation
-restored where it was left keeps its place until something new arrives.
+real height after the first jump, so one jump landed short. The reader
+turning back up — a drag, a wheel, toward the top (`UserScrollNotification`,
+`ScrollDirection.forward`) — stops the following at once; where any scroll
+ends decides whether it resumes (within `spacing.step9` of the bottom). The
+first is what keeps a long thread readable: while the following held through
+a slow drag still near the bottom, every row laid out above corrected the
+list's extent, each correction jumped back to the end, and the reader never
+got off the bottom. A conversation restored where it was left keeps its
+place until something new arrives.
 While a reply is on its way the thread shows `AgentTypingIndicator`'s
 pulsing dots (unspaced inside the bubble), stopped under reduced motion; a
 test of a sending thread pumps frames rather than settling.
@@ -50,26 +55,14 @@ log; the front agent uses all three, every other host keeps the defaults.
 state too, so a turn never changes shape on answering), keeps the user's
 words in a soft bubble capped short of the far edge on a phone, and drops the
 author-and-time line, leaving the footer only for what `footerTrailingBuilder`
-adds. `voiceFirst` makes the idle composer one talk disc (`spacing.step10`
-across, `_talkSize`; its tooltip and screen-reader label *Tap to talk*) with
-a caption-tier *Type instead* under it
-(`agent_chat_view_voice_first_part.dart`). On a desktop-width window the first
-printable key typed at rest starts typing with it; a chord with Ctrl, Cmd or
-Alt never does. The disc keeps its height and
-teal through recording, stretching into a pill (`_ListeningPill`, 4.4 discs
-wide at most, opened from the disc
-over `MotionDurations.medium2`, at once under reduced motion) across which
-what it hears scrolls as bars — `WaveformBarsPainter` over the recorder's
-normalised amplitude history, newest at the right, a dot for each quiet
-moment — up to a send arrow on its own dark disc at its end; a tap anywhere
-on it sends. While transcribing, the bars hold still and a
-`DesignSystemSpinner` takes the arrow's place, with *Transcribing…* as the
-pill's screen-reader label. The live composer is laid out like the idle one:
-in the slot *Type instead* held, a caption-tier Cancel (Escape too), there
-while transcribing as well, so a stalled turn always has its way out; a finished
-transcript is sent as it is (tap to talk, tap to send), and choosing to type
-holds for the session (`agentChatPrefersTypingProvider`, keep-alive) and
-focuses the field. A transcript a `voiceFirst` chat sends by itself goes to
+adds. `voiceFirst` keeps the one composer every chat has — a field with the mic
+at its end until there are words, then send — and sends what was said as
+recording stops, no second tap (tap to talk, tap to send): the stop control
+in the recording row (`_RecordingControls`, waveform, Cancel with Escape,
+stop) is then the send arrow with the send tooltip, transcribing can always
+be cancelled, and on a desktop-width window the field takes the keyboard at
+once; a phone keeps its keyboard down until the field is tapped, so talking
+stays one tap. A transcript a `voiceFirst` chat sends by itself goes to
 `onSendSpoken` when the host gives one, so the host knows the turn was
 spoken; starting to record stops any voice that is speaking first
 (`ChatRecorderController.start`), so the microphone never records the

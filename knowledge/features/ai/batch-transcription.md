@@ -11,7 +11,7 @@ sources:
   - id: service
     resource: ../../../lib/features/ai/services/audio_transcription_service.dart
     title: AudioTranscriptionService
-    last_modified: 2026-10-11
+    last_modified: 2026-11-06
   - id: daily-os-correction
     resource: ../../../lib/features/daily_os_next/state/daily_os_inference_providers.dart
     title: The Daily OS capture's correction model and correctHeardTranscript
@@ -72,13 +72,19 @@ These callers take the words back instead of leaving them on a recording, so
 the runner's [post-processing](execution-paths.md#audio-summaries) never sees
 them; the speech dictionary reaches them here instead:
 
-- **A vocabulary hint for every request.** The caller's `knownTerms` lead the
+- **A vocabulary hint for every request.** The caller's `knownTerms`, then
+  the names of the user's categories — every live, active one that is not
+  private, as a private name is never sent to an engine — lead the
   [speech dictionary](../speech/dictionary.md) entries that reach
-  `dictionaryCategoryId` — with none, the entries that apply to every
-  category — and the merged list goes to the engine as
-  `speechDictionaryTerms`. Today every caller passes no known terms and no
-  category, so each hears the global entries only; a query chat's category is not threaded through
-  yet. An unreadable dictionary gives no terms, never a failed request.
+  `dictionaryCategoryId` (with none, the entries that apply to every
+  category), and the merged list goes to the engine as
+  `speechDictionaryTerms`. The names lead so a provider's cap on the hint
+  (Mistral and Melious keep 100 terms) never drops one: a category is the
+  word spoken to the app most ("overdue in Lotti") and no engine knows it.
+  Category-scoped dictionary entries reach a caller only through
+  `dictionaryCategoryId`; a query chat's category is not threaded through
+  yet. An unreadable dictionary or category list gives no terms, never a
+  failed request.
 - **A correction by sound and spelling as the words stream.** Complete
   words are corrected against the same terms (`correctTranscriptTerms`) as
   they arrive; the letters a chunk ends in wait for the next chunk, since a

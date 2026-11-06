@@ -401,11 +401,15 @@ class FrontAgentStrategy extends ConversationStrategy
     await _accept(call, manager, due.render());
   }
 
-  /// Her words with every task or project they name by id made a link:
-  /// the prompt asks for links, this keeps a recited id from reaching the
-  /// user (see [linkFrontReferences]).
-  String _linked(String words) =>
-      linkFrontReferences(words, [...index.rows, ..._lookupRows]);
+  /// Her words with every task or project they name by id made a link —
+  /// and, for what this turn's lookups returned, by title: the prompt asks
+  /// for links, this keeps a recited id from reaching the user and a listed
+  /// task from being words alone (see [linkFrontReferences]).
+  String _linked(String words) => linkFrontReferences(
+    words,
+    [...index.rows, ..._lookupRows],
+    titled: _lookupRows,
+  );
 
   Future<void> _handleAskUser(
     ChatCompletionMessageToolCall call,

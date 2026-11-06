@@ -8,7 +8,6 @@ import 'package:lotti/features/agents/ui/chat/chat_recorder_error_message.dart';
 import 'package:lotti/features/agents/ui/chat/waveform_bars.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
-import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
@@ -137,15 +136,19 @@ class _AgentChatViewState extends ConsumerState<AgentChatView> {
     return NotificationListener<Notification>(
       onNotification: (notification) {
         switch (notification) {
-          // Where a scroll leaves the reader decides whether to follow: a
-          // drag as it moves, and every scroll — a wheel, a fling, a jump to
-          // the latest — where it ends. Content growing is no scroll.
-          case ScrollUpdateNotification(
-                depth: 0,
-                :final metrics,
-                dragDetails: _?,
-              ) ||
-              ScrollEndNotification(depth: 0, :final metrics):
+          // The reader turning back up lets go at once: a slow drag still
+          // within [nearBottom] of the end would otherwise be pulled back
+          // by every metrics change under it — each row laid out above
+          // corrects the list's extent — and never get away.
+          case UserScrollNotification(
+            depth: 0,
+            direction: ScrollDirection.forward,
+          ):
+            _followLatest = false;
+          // Where a scroll leaves the reader decides whether to follow
+          // again: every scroll — a drag, a wheel, a fling, a jump to the
+          // latest — where it ends. Content growing is no scroll.
+          case ScrollEndNotification(depth: 0, :final metrics):
             _followLatest = metrics.extentAfter <= nearBottom;
           // A host that keeps replies where they start (query chat, whose
           // reader reads an answer and its evidence from the top) is not

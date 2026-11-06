@@ -1204,6 +1204,56 @@ void main() {
       expect(position(tester).extentAfter, 0);
     });
 
+    testWidgets('dragged up from the bottom a little at a time, the reader '
+        'gets all the way to the top', (tester) async {
+      // Rows of very different heights, as a long thread has: each one laid
+      // out above the viewport corrects the list's guess at its extent, so
+      // the metrics change under every slow drag.
+      final history = [
+        for (var index = 0; index < 60; index++)
+          AgentChatMessage(
+            id: '$index',
+            role: AgentChatRole.agent,
+            text: 'Message $index ${'word ' * (index.isEven ? 40 : 2)}',
+            createdAt: DateTime(2026, 8, 11, 9, index),
+          ),
+      ];
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          Scaffold(
+            body: SizedBox(
+              height: 420,
+              child: AgentChatView(
+                agentId: 'goal-1',
+                agentName: 'Juno',
+                draft: '',
+                isSending: false,
+                history: AsyncData(history),
+                onDraftChanged: (_) {},
+                onSend: () {},
+                onRetry: () {},
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(position(tester).extentAfter, 0);
+
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.byType(ListView)),
+      );
+      for (var step = 0; step < 1000; step++) {
+        await gesture.moveBy(const Offset(0, 8));
+        await tester.pump();
+      }
+      await gesture.up();
+      await tester.pumpAndSettle();
+
+      expect(position(tester).pixels, 0);
+      expect(find.textContaining('Message 0'), findsOneWidget);
+    });
+
     testWidgets('back at the bottom, it follows again', (tester) async {
       await pumpThread(tester);
       await tester.drag(find.byType(ListView), const Offset(0, 5000));

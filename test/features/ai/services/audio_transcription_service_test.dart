@@ -23,6 +23,7 @@ import 'package:openai_dart/openai_dart.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../../../test_data/test_data.dart';
 import '../../ai_consumption/test_utils.dart';
 
 // Provider IDs used across batch guard tests
@@ -1062,6 +1063,48 @@ void main() {
           ['Wanja', 'Frida Kjellsen', 'Floe Survey'],
         );
         expect(chunks, ['Wanja met ', 'Frida Kjellsen.']);
+      },
+    );
+
+    test(
+      'hints and corrects with the names of the categories too, before the '
+      'dictionary — never a private or inactive one',
+      () async {
+        final file = await audioFile();
+        final mockCloud = MockCloudInferenceRepository();
+        _stubGenerateWithAudio(mockCloud, ['What is overdue in Lotty?']);
+        final db = dictionaryOf([entry('Waddle')]);
+        when(db.getAllCategories).thenAnswer(
+          (_) async => [
+            categoryMindfulness.copyWith(id: 'c-1', name: 'Lotti'),
+            categoryMindfulness.copyWith(
+              id: 'c-2',
+              name: 'Secret',
+              private: true,
+            ),
+            categoryMindfulness.copyWith(
+              id: 'c-3',
+              name: 'Retired',
+              active: false,
+            ),
+          ],
+        );
+        final svc = buildService(
+          repo: sharedRepo,
+          cloud: mockCloud,
+          journalDb: db,
+        );
+
+        final words = await svc.transcribe(
+          file.path,
+          target: (provider: provider, model: model),
+        );
+
+        expect(
+          _verifyGenerateWithAudio(mockCloud).speechDictionaryTerms,
+          ['Lotti', 'Waddle'],
+        );
+        expect(words, 'What is overdue in Lotti?');
       },
     );
 

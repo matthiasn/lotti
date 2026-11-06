@@ -15,11 +15,11 @@ sources:
   - id: strategy
     resource: ../../lib/features/front_agent/workflow/front_agent_strategy.dart
     title: FrontAgentStrategy — accumulating, count-capped tool handling, her words linked
-    last_modified: 2026-11-02
+    last_modified: 2026-11-06
   - id: contract
     resource: ../../lib/features/front_agent/workflow/front_agent_contract.dart
     title: The tool contract, caps and system prompt
-    last_modified: 2026-11-02
+    last_modified: 2026-11-06
   - id: validator
     resource: ../../lib/features/front_agent/workflow/front_dispatch_validator.dart
     title: validateFrontDispatch — the dispatch rules in code
@@ -59,7 +59,7 @@ sources:
   - id: reference-links
     resource: ../../lib/features/front_agent/model/front_reference_links.dart
     title: linkFrontReferences — a recited task or project id becomes a link
-    last_modified: 2026-11-02
+    last_modified: 2026-11-06
   - id: dictation
     resource: ../../lib/features/ai/state/subject_dictation_providers.dart
     title: settingsDefaultDictationTargetProvider — her dictation on the Settings default's transcription slot
@@ -103,7 +103,7 @@ sources:
   - id: pane
     resource: ../../lib/features/front_agent/ui/front_chat_pane.dart
     title: FrontChatPane — the thread on the shared AgentChatView
-    last_modified: 2026-11-02
+    last_modified: 2026-11-06
   - id: sheet
     resource: ../../lib/features/front_agent/ui/front_chat_surface.dart
     title: showFrontChat — her surface over the app
@@ -119,7 +119,7 @@ sources:
   - id: voice
     resource: ../../lib/features/front_agent/ui/front_chat_voice.dart
     title: FrontVoice — her spoken reply, its gating, her pose
-    last_modified: 2026-11-01
+    last_modified: 2026-11-06
   - id: voice-controls
     resource: ../../lib/features/front_agent/ui/front_voice_controls.dart
     title: Her voice's stop / say-it-again control and the way to her full-screen stage
@@ -345,9 +345,27 @@ accepted, so a recited id never reaches the user: `task:<id>`, or a bare id
 with a digit (every UUID has one, so no word is mistaken for an id), in
 backticks or not, becomes the link, and `Title (task:<id>)` folds into one
 link over the title. Only rows the turn could see — the index and its
-lookups — are linked; goals and people have no link. The shared
+lookups — are linked; goals and people have no link. A row a lookup returned
+(`list_due_tasks`, `match_to_corpus`) is linked by its title too, its whole
+title ignoring case, outside any link already there: a list of overdue tasks
+names them by title alone, and each must still open. A title two rows share
+stays text, and the index's rows are linked by id only, so a short task
+title in ordinary prose is never taken for a reference. The shared
 `internalRouteFromMarkdownUrl` reads the singular `lotti://task/` and
 `lotti://project/` as `/tasks/` and `/projects/`.
+
+**Dates and names.** She writes a date as her tools give it, `YYYY-MM-DD`,
+never "17 Mar": the pane shows each in her reply with `deviceDateLabel`, the
+device's own date format a due date has everywhere else, and her voice says
+it as `DateFormat.yMMMMd` in the app's language ("March 17, 2026") — both
+through `replaceIsoDays`, which leaves a link's target and a day that does
+not exist alone. The user's own words are shown as typed. The prompt also
+tells her that dictation can mishear a name: a word that sounds like a
+listed category, task, project, goal or person is that one, written as
+listed. The words reach her after transcription, though, so the spelling is
+fixed where they are heard: every dictation's vocabulary hint carries the
+category names (see [batch transcription](ai/batch-transcription.md#the-speech-dictionary)),
+with no correction pass that would keep her waiting.
 
 # The budget and the repair round
 
@@ -684,8 +702,8 @@ the *Chats* button and a new conversation on the left, an overflow (her
 internals, where the thread's cost is accounted, then this conversation's
 rename, archive and delete) and close on the right. The thread is `conversational` and `voiceFirst` (see
 [chat input](agents/chat-input-and-reasoning.md)): her replies as prose with
-their cost as a quiet line under them, one talk disc, and what she was told
-by voice sent as said.
+their cost as a quiet line under them, one pill field with the mic at its
+end, and what she was told by voice sent as said.
 `showFrontChat` opens her surface over the app, as History opens: a dialog
 behind the shared scrim, the whole screen below the page breakpoint, else a
 panel up to `kDetailContentMaxWidth` inset by `step6`. On a desktop-width
@@ -705,7 +723,7 @@ after an *Answers from* label that stays put while they scroll, when there
 are two categories or more to choose from. *All* leads and clears the
 choice; every chip is outlined and neutral, and a chosen one (*All* by
 default) takes the neutral pressed fill and a check
-(`DesignSystemChip.quietSelection`), never the accent the talk disc
+(`DesignSystemChip.quietSelection`), never the accent the send arrow
 carries. The options are the active categories she may see
 (`frontCategoryOptionsProvider`: her allow-list, or every visible category
 when it is empty; `categoriesStreamProvider` is lockdown-scoped). The choice
@@ -731,13 +749,15 @@ Settings default profile's transcription slot
 (`settingsDefaultDictationTargetProvider`, resolved when a take stops),
 and the words come back as the engine heard them: no correction model
 follows, only the speech dictionary's local pass inside
-`AudioTranscriptionService`. Without that explicit target the recorder fell
+`AudioTranscriptionService`, whose hint carries the category names, so
+"overdue in Lotti" is heard as named. Without that explicit target the recorder fell
 back on `AudioTranscriptionService.discoverTarget`, which ranks an
 installed on-device (sherpa / ONNX) model first — a short question took
 10–15 s instead of the second Voxtral needs. A default that cannot
 transcribe fails the take as "no audio model", never a discovered engine.
 Unlike a goal's or a person's chat, no category owns her, so there is no
-category tier and no dictionary category.
+category tier and no dictionary category: the dictionary's global entries
+and every category's name reach her.
 
 Leaving a conversation — another one, or the list — while it records or
 transcribes cancels the recording (`ChatRecorderController.cancel`), so what

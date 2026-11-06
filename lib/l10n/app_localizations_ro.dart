@@ -3451,10 +3451,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get chatInputListening => 'Ascultă...';
 
   @override
-  String get chatInputListeningTapWhenDone =>
-      'Ascult – atingeți când ați terminat';
-
-  @override
   String get chatInputNoAudioRecorded =>
       'Nu s-a înregistrat niciun sunet. Încercați din nou.';
 
@@ -3489,17 +3485,8 @@ class AppLocalizationsRo extends AppLocalizations {
   String get chatInputStopTranscribe => 'Opriți și transcrieți';
 
   @override
-  String get chatInputTapToTalk => 'Atingeți pentru a vorbi';
-
-  @override
-  String get chatInputTranscribing => 'Se transcrie…';
-
-  @override
   String get chatInputTranscriptionFailed =>
       'Înregistrarea a fost captată, dar transcrierea a eșuat. Vă rugăm să încercați din nou.';
-
-  @override
-  String get chatInputTypeInstead => 'Scrieți în schimb';
 
   @override
   String get checkInAddNoteHint => 'Adăugați o notă…';

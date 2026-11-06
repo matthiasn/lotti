@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
 import 'package:lotti/features/agents/ui/chat/chat_recorder_controller.dart';
@@ -18,6 +19,7 @@ import 'package:lotti/features/tts/state/tts_playback_controller.dart';
 import 'package:lotti/features/tts/ui/playback_failure_toast.dart';
 import 'package:lotti/features/tts/ui/tts_model_download_prompt.dart';
 import 'package:lotti/utils/consts.dart';
+import 'package:lotti/utils/device_datetime.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Her voice in the conversation: the route it speaks through and whether
@@ -170,9 +172,14 @@ abstract final class FrontVoice {
     // One utterance at a time: her answer takes the voice over.
     if (ref.read(ttsPlaybackControllerProvider).isBusy) await voice.stop();
     if (!context.mounted) return;
+    // A date she wrote as her tools give it is said as a date, in the app's
+    // language: "March 17, 2026", never "2026-03-17".
+    final dateFormat = DateFormat.yMMMMd(
+      Localizations.localeOf(context).toString(),
+    );
     await voice.speak(
       sourceId: frontVoiceSourceId(conversationId),
-      text: text,
+      text: replaceIsoDays(text, dateFormat.format),
       cloudRoute: route,
       // Asked again as playback starts: a mute while she was preparing holds.
       canPlay: () async => _speaks(

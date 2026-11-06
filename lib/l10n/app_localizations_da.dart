@@ -3397,9 +3397,6 @@ class AppLocalizationsDa extends AppLocalizations {
   String get chatInputListening => 'Lytter...';
 
   @override
-  String get chatInputListeningTapWhenDone => 'Lytter – tryk, når du er færdig';
-
-  @override
   String get chatInputNoAudioRecorded =>
       'Der blev ikke optaget noget lyd. Prøv igen.';
 
@@ -3433,17 +3430,8 @@ class AppLocalizationsDa extends AppLocalizations {
   String get chatInputStopTranscribe => 'Stop og transskribér';
 
   @override
-  String get chatInputTapToTalk => 'Tryk for at tale';
-
-  @override
-  String get chatInputTranscribing => 'Transskriberer…';
-
-  @override
   String get chatInputTranscriptionFailed =>
       'Optagelsen blev gemt, men transskriptionen mislykkedes. Prøv igen.';
-
-  @override
-  String get chatInputTypeInstead => 'Skriv i stedet';
 
   @override
   String get checkInAddNoteHint => 'Tilføj en note…';

@@ -129,4 +129,27 @@ void main() {
       '20.9.2026 19:08',
     );
   });
+
+  group('replaceIsoDays', () {
+    String marked(DateTime day) => '<${day.month}/${day.day}>';
+
+    test('writes each real ISO day as the format does', () {
+      expect(
+        replaceIsoDays('Due 2026-03-17, and 2026-12-01.', marked),
+        'Due <3/17>, and <12/1>.',
+      );
+    });
+
+    test('leaves a day that does not exist, a longer number and a link '
+        'target alone', () {
+      const text =
+          '2026-02-30 2026-13-01 12026-03-17 2026-03-17-1 '
+          '[the 2026-03-17 note](https://example.com/2026-03-17)';
+      expect(
+        replaceIsoDays(text, marked),
+        '2026-02-30 2026-13-01 12026-03-17 2026-03-17-1 '
+        '[the <3/17> note](https://example.com/2026-03-17)',
+      );
+    });
+  });
 }
