@@ -466,6 +466,133 @@ void main() {
     );
   });
 
+  test('a repair that fails still lets the drain run, is reported, and is '
+      'retried even with nothing queued', () async {
+    // An empty outbox: nothing but the pending repair needs another pass.
+    await repository.cancel('transcribe_session-1');
+    var repairs = 0;
+    var drains = 0;
+    final failures = <Object>[];
+    final scheduled = <Duration>[];
+    final runtime = DayProcessingRuntime(
+      repository: repository,
+      now: () => now,
+      connectivityChanges: const Stream.empty(),
+      repair: () async {
+        repairs += 1;
+        if (repairs == 1) throw StateError('intent conflict');
+        return 0;
+      },
+      onRepairFailed: (error, _) => failures.add(error),
+      drain: () async {
+        drains += 1;
+        return 0;
+      },
+      schedule: (delay, _) => scheduled.add(delay),
+    );
+    addTearDown(runtime.dispose);
+
+    await runtime.drainAndSchedule();
+    // A failed repair used to skip the drain on every pass, forever.
+    expect((repairs, drains), (1, 1));
+    expect(failures.single, isA<StateError>());
+    expect(
+      scheduled,
+      [runtime.failureRetryDelay],
+      reason: 'the pending repair schedules its own retry',
+    );
+
+    await runtime.drainAndSchedule();
+    expect((repairs, drains), (2, 2));
+    expect(scheduled, hasLength(1), reason: 'repaired: nothing left to wake');
+
+    await runtime.drainAndSchedule();
+    expect((repairs, drains), (2, 3), reason: 'repair runs once it succeeded');
+  });
+
+  test(
+    'retention prunes once per start, however often the repair retries',
+    () async {
+      var prunes = 0;
+      var repairs = 0;
+      final runtime = DayProcessingRuntime(
+        repository: repository,
+        now: () => now,
+        connectivityChanges: const Stream.empty(),
+        prune: () async {
+          prunes += 1;
+          if (prunes == 1) throw StateError('database busy');
+        },
+        repair: () async {
+          repairs += 1;
+          if (repairs < 3) throw StateError('intent conflict');
+          return 0;
+        },
+        drain: () async => 0,
+        schedule: (_, _) {},
+      );
+      addTearDown(runtime.dispose);
+
+      for (var pass = 0; pass < 4; pass++) {
+        await runtime.drainAndSchedule();
+      }
+
+      expect(
+        prunes,
+        2,
+        reason: 'a failed prune is retried, a successful one not',
+      );
+      expect(
+        repairs,
+        3,
+        reason: 'the repair retries independently until it succeeds',
+      );
+    },
+  );
+
+  test('a pending repair retry wins over a later job deadline', () async {
+    final claim = await repository.claimNext();
+    await repository.markFailure(
+      jobId: claim!.job.id,
+      claimToken: claim.token,
+      failureClass: DayProcessingFailureClass.timeout,
+      error: 'provider busy',
+      retryDelay: const Duration(minutes: 10),
+    );
+    final scheduled = <Duration>[];
+    final runtime = DayProcessingRuntime(
+      repository: repository,
+      now: () => now,
+      connectivityChanges: const Stream.empty(),
+      repair: () async => throw StateError('intent conflict'),
+      drain: () async => 0,
+      schedule: (delay, _) => scheduled.add(delay),
+    );
+    addTearDown(runtime.dispose);
+
+    await runtime.drainAndSchedule();
+
+    expect(scheduled, [runtime.failureRetryDelay]);
+  });
+
+  test('an earlier job deadline wins over a pending repair retry', () async {
+    final scheduled = <Duration>[];
+    final runtime = DayProcessingRuntime(
+      repository: repository,
+      now: () => now,
+      connectivityChanges: const Stream.empty(),
+      repair: () async => throw StateError('intent conflict'),
+      drain: () async => 0,
+      schedule: (delay, _) => scheduled.add(delay),
+    );
+    addTearDown(runtime.dispose);
+
+    // The setUp transcription job is due now.
+    await runtime.drainAndSchedule();
+
+    expect(scheduled, [Duration.zero]);
+  });
+
   test('running work is scheduled at its lease boundary', () async {
     final claim = await repository.claimNext();
     Duration? scheduledDelay;

@@ -23,6 +23,7 @@ import 'package:lotti/features/daily_os_next/state/selected_date_provider.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/logging_domains.dart';
 import 'package:lotti/utils/network_reachability.dart';
 
 final Provider<DayProcessingOutboxRepository>
@@ -155,6 +156,38 @@ final Provider<DayAudioReviewFence> dayAudioReviewFenceProvider = Provider((
 /// or refining can take tens of seconds) must never block the transcription
 /// lane, and vice versa. Each lane drains serially within itself. Returns the
 /// number of jobs processed across both lanes.
+/// The runtime's once-per-start maintenance: cancel agent work still waiting
+/// for a day before yesterday, then prune terminal rows past retention.
+///
+/// Cancellation goes first and both are attempted whatever the other does: a
+/// prune that fails on a transient lock must not let that pass drain old,
+/// paid agent jobs. Any failure is rethrown afterwards, so the runtime keeps
+/// the step pending and retries both — each is idempotent.
+Future<void> runDayProcessingMaintenance(
+  DayProcessingOutboxRepository outbox, {
+  required DateTime now,
+}) async {
+  Object? failure;
+  StackTrace? failureStack;
+  try {
+    await outbox.cancelAgentJobsBefore(
+      dayAgentIdForDate(DateTime(now.year, now.month, now.day - 1)),
+    );
+  } catch (error, stackTrace) {
+    failure = error;
+    failureStack = stackTrace;
+  }
+  try {
+    await outbox.pruneTerminalBefore(
+      now.subtract(dayProcessingLedgerRetention),
+    );
+  } catch (error, stackTrace) {
+    failure ??= error;
+    failureStack ??= stackTrace;
+  }
+  if (failure != null) Error.throwWithStackTrace(failure, failureStack!);
+}
+
 /// The drafting screen's view of a draft job's outcome, or null for every
 /// other job kind and for a `local` deferral — the executor coming back while
 /// its wake is still running, which is no attempt at all.
@@ -268,14 +301,27 @@ final Provider<DayProcessingRuntime> dayProcessingRuntimeProvider = Provider((
   final runtime = DayProcessingRuntime(
     repository: outbox,
     drain: () => drainDayProcessingLanes(processor),
+    onRepairFailed: (error, stackTrace) => ref
+        .read(domainLoggerProvider)
+        .error(
+          LogDomain.agentRuntime,
+          error,
+          stackTrace: stackTrace,
+          message:
+              'Daily OS outbox maintenance failed; retrying on the next pass',
+          subDomain: 'dayProcessingRepair',
+        ),
+    // Retention (ADR 0044 decision 5) runs once per start rather than owning a
+    // scheduler: terminal ledger rows past the window go, pending work never
+    // does regardless of age. A partial prune is harmless — the remainder is
+    // collected on the next start.
+    //
+    // The same once-per-start step cancels agent work still waiting for a day
+    // older than yesterday: a draft for a day that is over is a paid run with
+    // no use, and run late it would go ahead of the user's current request.
+    // Yesterday stays, so a refine made just before midnight survives.
+    prune: () => runDayProcessingMaintenance(outbox, now: clock.now()),
     repair: () async {
-      // Retention (ADR 0044 decision 5) rides the once-per-start repair pass
-      // rather than owning a scheduler: terminal ledger rows past the window
-      // go, pending work never does regardless of age. A partial prune is
-      // harmless — the remainder is collected on the next start.
-      await outbox.pruneTerminalBefore(
-        DateTime.now().subtract(dayProcessingLedgerRetention),
-      );
       final currentHostId = await vectorClockService.getHost();
       return DayProcessingOutboxRepair(
         repository: outbox,

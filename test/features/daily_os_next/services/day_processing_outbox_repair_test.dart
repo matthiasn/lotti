@@ -126,6 +126,54 @@ void main() {
     },
   );
 
+  test(
+    'a recording whose job conflicts is skipped, not fatal to the rest',
+    () async {
+      // A durable job already exists for the completed recording's session
+      // under a different day: its immutable intent cannot be restored.
+      await repository.enqueueTranscription(
+        dayId: 'dayplan-2026-07-17',
+        activityEntryId: 'activity-complete',
+        recordingSessionId: 'session-complete',
+        audioId: 'audio-complete',
+        audioPath: '${root.path}/audio/2026-07-18/complete.wav',
+        capturedAt: now,
+      );
+      when(
+        () => journalDb.getJournalEntities(
+          types: const <String>['JournalAudio'],
+          starredStatuses: const <bool>[true, false],
+          privateStatuses: const <bool>[true, false],
+          flaggedStatuses: const <int>[1, 0],
+          ids: null,
+          limit: 64,
+          // ignore: avoid_redundant_argument_values
+          offset: 0,
+        ),
+      ).thenAnswer(
+        (_) async => <JournalEntity>[
+          audio(completed: true),
+          audio(completed: false),
+        ],
+      );
+      final repair = DayProcessingOutboxRepair(
+        repository: repository,
+        journalDb: journalDb,
+        assetRoot: root,
+      );
+
+      expect(await repair.repair(), 1);
+      final jobs = await allDayProcessingJobs(repository.db);
+      expect(
+        jobs.map((job) => (job.id, job.dayId)),
+        unorderedEquals([
+          ('transcribe_session-complete', 'dayplan-2026-07-17'),
+          ('transcribe_session-pending', 'dayplan-2026-07-18'),
+        ]),
+      );
+    },
+  );
+
   test('does not take over another host processing intent', () async {
     when(
       () => journalDb.getJournalEntities(

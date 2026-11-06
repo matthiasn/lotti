@@ -27,6 +27,8 @@ import 'package:lotti/features/daily_os_next/state/day_processing_runtime_provid
 import 'package:lotti/features/daily_os_next/state/selected_date_provider.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/logging_domains.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -254,6 +256,75 @@ void main() {
     expect(runtime, isA<DayProcessingRuntime>());
     await runtime.nudge();
     verify(vectorClock.getHost).called(1);
+  });
+
+  test('wires maintenance: failures reach the domain log, pruning keeps '
+      'terminal rows inside the retention window, and agent work for days '
+      'before yesterday is cancelled', () async {
+    final logger = MockDomainLogger();
+    final container = ProviderContainer(
+      overrides: withServiceOverrides([
+        audioTranscriptionServiceProvider.overrideWithValue(
+          MockAudioTranscriptionService(),
+        ),
+        domainLoggerProvider.overrideWithValue(logger),
+        ..._agentJobExecutorOverrides(),
+      ]),
+    );
+    addTearDown(container.dispose);
+    final runtime = container.read(dayProcessingRuntimeProvider);
+    // Let the startup pass settle, then stop the live runtime so no drain can
+    // claim the jobs seeded below: only the wired closures are under test.
+    await runtime.nudge();
+    await runtime.dispose();
+
+    final error = StateError('intent conflict');
+    final stackTrace = StackTrace.current;
+    runtime.onRepairFailed!(error, stackTrace);
+    verify(
+      () => logger.error(
+        LogDomain.agentRuntime,
+        error,
+        stackTrace: stackTrace,
+        message: any(named: 'message'),
+        subDomain: 'dayProcessingRepair',
+      ),
+    ).called(1);
+
+    // A job finished today is well inside the 90-day window.
+    final claim = await outbox.enqueueAndClaimTranscription(
+      dayId: 'dayplan-2026-07-21',
+      activityEntryId: 'activity-1',
+      recordingSessionId: 'session-recent',
+      audioId: 'audio-1',
+      audioPath: '${root.path}/recent.m4a',
+      capturedAt: DateTime.now(),
+    );
+    await outbox.markSucceeded(jobId: claim!.job.id, claimToken: claim.token);
+
+    // Waiting drafts for the day before yesterday and for yesterday.
+    final stale = await outbox.enqueueDraftPlan(
+      dayId: 'dayplan-2026-11-04',
+      payload: const DraftPlanPayload(),
+    );
+    final yesterday = await outbox.enqueueDraftPlan(
+      dayId: 'dayplan-2026-11-05',
+      payload: const DraftPlanPayload(),
+    );
+
+    await withClock(Clock.fixed(DateTime(2026, 11, 6, 9)), runtime.prune!);
+
+    expect(await outbox.getById(claim.job.id), isNotNull);
+    expect(
+      (await outbox.getById(stale.id))!.status,
+      DayProcessingJobStatus.cancelled,
+    );
+    expect(
+      (await outbox.getById(yesterday.id))!.status,
+      DayProcessingJobStatus.queued,
+      reason:
+          'yesterday is kept, so a refine made just before midnight survives',
+    );
   });
 
   test(
@@ -772,5 +843,65 @@ void main() {
         expect(online, isTrue);
       });
     });
+  });
+
+  group('runDayProcessingMaintenance', () {
+    final now = DateTime(2026, 11, 6, 9);
+    final cutoff = now.subtract(dayProcessingLedgerRetention);
+    late MockDayProcessingOutboxRepository repository;
+
+    setUp(() => repository = MockDayProcessingOutboxRepository());
+
+    void stubCancel(Future<int> Function() answer) => when(
+      () => repository.cancelAgentJobsBefore('dayplan-2026-11-05'),
+    ).thenAnswer((_) => answer());
+    void stubPrune(Future<int> Function() answer) => when(
+      () => repository.pruneTerminalBefore(cutoff),
+    ).thenAnswer((_) => answer());
+
+    test('cancels before yesterday and prunes past retention', () async {
+      stubCancel(() async => 2);
+      stubPrune(() async => 1);
+
+      await runDayProcessingMaintenance(repository, now: now);
+
+      verifyInOrder([
+        () => repository.cancelAgentJobsBefore('dayplan-2026-11-05'),
+        () => repository.pruneTerminalBefore(cutoff),
+      ]);
+    });
+
+    test('a failing prune still cancels, then reports the failure', () async {
+      stubCancel(() async => 2);
+      stubPrune(() async => throw StateError('database is locked'));
+
+      await expectLater(
+        runDayProcessingMaintenance(repository, now: now),
+        throwsA(isA<StateError>()),
+      );
+      verify(
+        () => repository.cancelAgentJobsBefore('dayplan-2026-11-05'),
+      ).called(1);
+    });
+
+    test(
+      'a failing cancel still prunes, and its error is the one reported',
+      () async {
+        stubCancel(() async => throw StateError('cancel failed'));
+        stubPrune(() async => throw ArgumentError('prune failed'));
+
+        await expectLater(
+          runDayProcessingMaintenance(repository, now: now),
+          throwsA(
+            isA<StateError>().having(
+              (e) => e.message,
+              'message',
+              'cancel failed',
+            ),
+          ),
+        );
+        verify(() => repository.pruneTerminalBefore(cutoff)).called(1);
+      },
+    );
   });
 }

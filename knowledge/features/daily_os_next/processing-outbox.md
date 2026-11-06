@@ -172,7 +172,17 @@ claim was revoked — reviewed text satisfied the job, or its recording was dele
 # Retention
 
 Terminal rows whose `completed_at` is older than `dayProcessingLedgerRetention`
-(90 days) are removed on the once-per-start repair pass.
+(90 days) are removed by the runtime's once-per-start `prune` step. It runs
+before the repair, is retried until it succeeds, and is never repeated in the
+same runtime, however often a failing repair is retried.
+
+The same step cancels agent work still waiting for a day before yesterday:
+parses, drafts and refines in `queued`, `waitingForNetwork`, `waitingForUser`
+or `failed` (`cancelAgentJobsBefore`). A plan for a day that is over has no
+use, and each such job is a paid planner run. Run late, oldest first under the
+aging rule, they would also go ahead of the user's current request. Yesterday
+is kept, so a refine made just before midnight survives a restart. Running jobs
+and transcriptions are never cancelled this way.
 
 **No non-terminal row is ever eligible regardless of age.** A job parked in
 `failed`, `waitingForUser` or `waitingForNetwork` is outstanding user intent that
@@ -418,3 +428,16 @@ stateDiagram-v2
 persisted `dayContext` provenance, reclaims expired leases, resumes network waits
 on interface changes and periodic safety probes, and writes a job-correlated
 `AudioTranscript` receipt **before** acknowledging success.
+
+**The repair is not a gate.** It runs before the runtime's first drain, and a
+repair that throws is retried on the next pass while that pass drains anyway.
+Within the repair, a recording whose durable job disagrees with its journal
+provenance (`DayProcessingIntentConflict`) is skipped, not fatal. Both rules
+exist because the opposite once stopped every Daily OS job on a device. The
+capture screen enqueued a transcription with its local, microsecond-precise
+clock, while the row stored UTC milliseconds. The repair's immutability check
+compared the two with `DateTime` equality, which also compares the UTC flag, so
+it threw for every recording. The repair never completed, the drain never ran,
+and every parse and draft stayed `queued` with no attempts. A transcription
+job's capture time is now stored in the row's own shape (UTC, milliseconds),
+and the check compares instants.
