@@ -136,6 +136,12 @@ abstract class DayAgentInterface {
   /// re-proposals unless the user invokes Refine).
   Future<DraftPlan> commitDay(DraftPlan plan);
 
+  /// User verdict (UI-only, not an agent tool): takes a committed day back
+  /// to a draft — the Undo on the "Looks good" toast. Committed blocks
+  /// return to drafted; blocks already in progress, done or dropped keep
+  /// their state.
+  Future<DraftPlan> uncommitDay(DraftPlan plan);
+
   /// Renames a **standalone** block (no backing task) in place —
   /// the inline title-edit affordance on Agenda cards and Day blocks.
   /// Task-linked titles are edited on the task itself, never here;

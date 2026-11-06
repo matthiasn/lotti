@@ -146,6 +146,10 @@ class _FakeAgent implements DayAgentInterface {
       plan.copyWith(state: DayState.committed);
 
   @override
+  Future<DraftPlan> uncommitDay(DraftPlan plan) async =>
+      plan.copyWith(state: DayState.drafted);
+
+  @override
   Future<DraftPlan> renameBlock({
     required DraftPlan plan,
     required String blockId,

@@ -110,10 +110,56 @@ class _DayPageState extends ConsumerState<DayPage> {
     unawaited(_openRefine(initialTranscript: transcript));
   }
 
-  void _openCommit() {
-    nav_service.beamToNamed(
-      dailyOsNextRoutePath(DailyOsNextRouteTarget.commit, widget.draft.dayDate),
+  /// "Looks good" is the sign-off: it commits the day in place, with an
+  /// Undo on the toast rather than a confirmation page in front of it.
+  Future<void> _commitDay() async {
+    try {
+      await ref.read(dayAgentProvider).commitDay(widget.draft);
+    } catch (_) {
+      if (mounted) {
+        context.showToast(
+          tone: DesignSystemToastTone.error,
+          title: context.messages.dailyOsNextCommitFailed,
+          replaceCurrent: true,
+        );
+      }
+      return;
+    }
+    // The first commit retires the footer's coaching line for good.
+    ref
+        .read(dailyOsPreferencesControllerProvider.notifier)
+        .markDayFooterHintRetired();
+    ref.invalidate(currentDraftPlanProvider(widget.draft.dayDate));
+    if (!mounted) return;
+    context.showToast(
+      tone: DesignSystemToastTone.success,
+      title: context.messages.dailyOsNextCommitDone,
+      action: ToastAction(
+        label: context.messages.designSystemUndoLabel,
+        onPressed: () async {
+          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          await _uncommitDay();
+        },
+      ),
+      countdown: true,
+      replaceCurrent: true,
     );
+  }
+
+  Future<void> _uncommitDay() async {
+    try {
+      await ref.read(dayAgentProvider).uncommitDay(widget.draft);
+    } catch (_) {
+      if (mounted) {
+        context.showToast(
+          tone: DesignSystemToastTone.error,
+          title: context.messages.dailyOsNextUncommitFailed,
+          replaceCurrent: true,
+        );
+      }
+      return;
+    }
+    ref.invalidate(currentDraftPlanProvider(widget.draft.dayDate));
   }
 
   void _openShutdown() {
@@ -416,7 +462,7 @@ class _DayPageState extends ConsumerState<DayPage> {
                 showCoachHint: !prefs.dayFooterHintRetired,
                 onRefine: () => unawaited(_openRefine()),
                 onQuickRefinement: _openQuickRefinement,
-                onCommit: _openCommit,
+                onCommit: _commitDay,
                 onShutdown: _openShutdown,
               )
             else

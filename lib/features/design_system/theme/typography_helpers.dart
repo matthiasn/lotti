@@ -38,8 +38,8 @@ TextStyle monoMetaStyle(
 
 /// Calm eyebrow / overline — 11px / 600 / 0.04em tracking, `text.lowEmphasis`
 /// by default. Eyebrows should recede, not announce: never 700 weight, never
-/// the legacy +8 letter-spacing. Uppercase comes from the label string
-/// itself (the `.arb` overline strings are stored uppercase).
+/// the legacy +8 letter-spacing. The style never changes case: the `.arb`
+/// string is shown as written, in sentence case.
 TextStyle calmEyebrowStyle(DsTokens tokens, {Color? color}) {
   const fontSize = 11.0;
   return tokens.typography.styles.others.overline.copyWith(
@@ -84,7 +84,7 @@ TextStyle calmPageTitleStyle(DsTokens tokens, {Color? color}) {
 }
 
 /// Calm display moment — 26px / 600 / −0.02em. Signature lines like the
-/// Commit lead-in ("Make it yours.") and the LockInScene captions.
+/// Capture and Reconcile headlines ("Here's what I heard.").
 TextStyle calmDisplayStyle(DsTokens tokens, {Color? color}) {
   const fontSize = 26.0;
   return tokens.typography.styles.heading.heading2.copyWith(

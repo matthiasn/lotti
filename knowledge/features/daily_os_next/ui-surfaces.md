@@ -5,8 +5,8 @@ description: The Day page, the anchored voice template, timeline editing, the ca
 resource: ../../../lib/features/daily_os_next/ui
 tags: [daily-os, ui, voice, timeline, onboarding]
 status: stable
-generated: { by: claude-code/fable-5, at: 2026-11-01T20:00:00Z }
-stale_after: 2027-03-02
+generated: { by: claude-code/opus-5.5, at: 2026-11-06T12:00:00Z }
+stale_after: 2027-03-06
 sources:
   - id: ui
     resource: ../../../lib/features/daily_os_next/ui
@@ -503,49 +503,63 @@ the plan and shows a countdown Undo toast.
 
 ## The capacity ring
 
-Agenda and Commit surfaces use `CapacityDonut` (86 px on the Agenda stat strip,
-62 px on the Commit recap): a 5 px stacked **category ring** whose slices mirror
-the legend dots — via `categoryTotalsFor`, shared by both so they cannot disagree
-— over a faint remainder track, with the **remaining** capacity in the centre over
-a LEFT/OVER eyebrow whose word is always honest. Days without a capacity show the
-scheduled total with no eyebrow.
+The Agenda stat strip draws `CapacityDonut` at 86 px: a 5 px stacked **category
+ring** whose slices mirror the legend dots — via `categoryTotalsFor` — over a
+faint remainder track, with the **remaining** capacity in the centre over a
+"left"/"over" eyebrow whose word is always honest. Days without a capacity show
+the scheduled total with no eyebrow. Callers without segments get a single teal
+arc.
 
-Pressure wording lives in the stat card's overline; the ring **only changes colour
-when the day is genuinely over capacity** (error tone, half-alpha over-arc).
-Callers without segments get a single teal arc. The honest no-plan strip passes
-`neutral: true`, which keeps the calm colour but never flips OVER into LEFT.
+Pressure wording lives in the stat card's line beside the ring: *Comfortable*
+under 90 % of capacity, *Near full* up to 100 %, *Over capacity* beyond. The
+ring **only changes colour when the day is genuinely over capacity** (error
+tone, half-alpha over-arc). The honest no-plan strip passes `neutral: true`,
+which keeps the calm colour but never flips "over" into "left".
 
 ## Typography
 
 Daily OS follows the calm system through the design-system helpers:
 `calmEyebrowStyle` (11/600/0.04em) for every overline, `calmPageTitleStyle`
-(23/600) for page titles, `calmDisplayStyle` (26/600) for the Capture headline,
-Commit lead-in, and LockInScene captions, and `calmGreetingStyle` (12/500) for
-quiet helper lines.
+(23/600) for page titles, `calmDisplayStyle` (26/600) for the Capture and Reconcile
+headlines, and `calmGreetingStyle` (12/500) for quiet helper lines.
 
 **No Daily OS surface uses the legacy 12/700/+8-tracking overline token
-directly.**
+directly**, and no overline, badge or eyebrow is set in capitals: every one is
+stored in sentence case in the catalogs and shown as written, with no
+`toUpperCase` in between.
+[daily_os_sentence_case_test.dart](../../../test/l10n/daily_os_sentence_case_test.dart)
+fails on any `dailyOs*` catalog value carrying a fully capitalised word.
 
-# Commit confirmation
+# Committing the day
 
-`CommitPage` uses `HoldToConfirm` as its final user-owned transition.
+**"Looks good" is the sign-off.** On a drafted day the footer's review strip
+offers *Looks good*; tapping it calls `DayAgentInterface.commitDay` in place —
+no confirmation page, no timed hold — refreshes `currentDraftPlanProvider`, and
+retires the footer's one-shot coaching line. A success toast carries a countdown
+**Undo**, which calls `uncommitDay`. Both are user verdicts, never agent tools,
+and both go through `DayAgentPlanService`.
 
 ```mermaid
 stateDiagram-v2
-  [*] --> Idle
-  Idle --> Holding: pointer down
-  Holding --> Idle: release before duration / reverse progress
-  Holding --> Confirmed: hold duration completes
-  Idle --> Confirmed: Enter or Space key down
-  Idle --> Confirmed: semantic button activation
-  Confirmed --> [*]
+  [*] --> Draft: draft_day_plan
+  Draft --> Committed: Looks good (commitDay)
+  Committed --> Draft: toast Undo (uncommitDay)
+  Draft --> Draft: Refine diff accepted
+  Committed --> Committed: Refine diff accepted
 ```
 
-Pointer input retains the timed hold and reverse-on-early-release behaviour. Once
-the control has focus, **Enter or Space confirms immediately**, and semantic
-button activation does the same — keyboard and assistive-technology users are
-never required to simulate a long pointer press. Every path shares the same
-exactly-once `_done` guard and `onConfirmed` callback.
+- **Commit** flips `DayPlanStatus.draft` → `committed` and every `drafted`
+  block to `committed`; the review strip disappears because it renders only for
+  `DayState.drafted`. Re-committing is a no-op.
+- **Undo** walks it back: `committed` blocks return to `drafted`; blocks already
+  `inProgress`, `completed` or `dropped` keep their state, because they record
+  what happened. Undoing a draft is a no-op.
+- A failed commit shows an error toast and no Undo; a failed Undo says the plan
+  stays committed.
+
+The day used to pass through a separate *Lock it in* page with a one-second
+hold-to-confirm control between *Looks good* and the commit. It repeated the
+agenda the user had just approved and was removed.
 
 # The onboarding walkthrough
 

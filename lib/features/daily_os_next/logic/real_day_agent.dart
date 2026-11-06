@@ -383,6 +383,21 @@ class RealDayAgent implements DayAgentInterface {
   }
 
   @override
+  Future<DraftPlan> uncommitDay(DraftPlan plan) async {
+    final identity = await dayAgentService.getDayAgentForDate(plan.dayDate);
+    if (identity is! AgentIdentityEntity) {
+      throw DayAgentInteractionException(
+        'No day agent exists for ${dayAgentIdForDate(plan.dayDate)}.',
+      );
+    }
+    final draft = await planService.uncommitDay(
+      agentId: identity.agentId,
+      dayId: dayAgentIdForDate(plan.dayDate),
+    );
+    return _projectDayPlan(draft, plan.dayDate);
+  }
+
+  @override
   Future<DraftPlan> renameBlock({
     required DraftPlan plan,
     required String blockId,

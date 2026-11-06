@@ -5127,52 +5127,11 @@ class AppLocalizationsIt extends AppLocalizations {
       'Scegliere le categorie di elaborazione del sistema operativo giornaliero';
 
   @override
-  String dailyOsNextCommitCapacityNote(String scheduled, String capacity) {
-    return '$scheduled di $capacity impegnato. Confortevole margine — è possibile assorbire una sorpresa.';
-  }
+  String get dailyOsNextCommitDone => 'Piano confermato';
 
   @override
-  String get dailyOsNextCommitDraftOverline => 'Il tuo giorno, rovinato.';
-
-  @override
-  String get dailyOsNextCommitExplainer =>
-      'Firma per muoversi oggi da bozza a commesso.';
-
-  @override
-  String get dailyOsNextCommitFinalStepEyebrow => 'SETTORE FINALE';
-
-  @override
-  String get dailyOsNextCommitHeadline => 'Fallo tuo.';
-
-  @override
-  String get dailyOsNextCommitHoldHelper =>
-      'Tenere un secondo per firmare fuori';
-
-  @override
-  String get dailyOsNextCommitHoldWordDone => 'Impegno';
-
-  @override
-  String get dailyOsNextCommitHoldWordHolding => 'Continua a tenere premuto';
-
-  @override
-  String get dailyOsNextCommitHoldWordIdle => 'Aspetta.';
-
-  @override
-  String get dailyOsNextCommitLockingIn => 'Chiudere in...';
-
-  @override
-  String get dailyOsNextCommitShepherdSubline =>
-      'Io lo pastorerò — tu fai il lavoro.';
-
-  @override
-  String get dailyOsNextCommitSubCaption =>
-      'Si può ancora parlare con me in seguito — ma le ossa rimangono messe.';
-
-  @override
-  String get dailyOsNextCommitTitle => 'Bloccatelo dentro.';
-
-  @override
-  String get dailyOsNextCommitTodayIsYours => 'Oggi è tuo.';
+  String get dailyOsNextCommitFailed =>
+      'Non è stato possibile confermare il piano.';
 
   @override
   String get dailyOsNextDayAgentStatusAttention => 'Richiede attenzione';
@@ -5234,7 +5193,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get dailyOsNextDayTitle => 'La tua giornata';
 
   @override
-  String get dailyOsNextDayWhyChipLabel => 'Perche\'?';
+  String get dailyOsNextDayWhyChipLabel => 'Perché';
 
   @override
   String get dailyOsNextDayWrapUpCta => '# Wrap up #';
@@ -5291,7 +5250,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get dailyOsNextDraftingProgressSaving => 'Piano di risparmio';
 
   @override
-  String get dailyOsNextDraftingReasoningOverline => 'MOTIVAZIONE';
+  String get dailyOsNextDraftingReasoningOverline => '✦ Ragionamento';
 
   @override
   String get dailyOsNextDraftingRecoveryBody =>
@@ -5441,19 +5400,19 @@ class AppLocalizationsIt extends AppLocalizations {
   String get dailyOsNextPlanViewDay => 'Giorno';
 
   @override
-  String get dailyOsNextReconcileBadgeMatched => 'MATCHED:';
+  String get dailyOsNextReconcileBadgeMatched => 'Collegato';
 
   @override
-  String get dailyOsNextReconcileBadgeNew => 'NUOVO';
+  String get dailyOsNextReconcileBadgeNew => 'Nuovo';
 
   @override
-  String get dailyOsNextReconcileBadgeUpdate => 'AGGIORNAMENTO';
+  String get dailyOsNextReconcileBadgeUpdate => 'Aggiornamento';
 
   @override
   String get dailyOsNextReconcileBuildDayCta => 'Costruisci la mia giornata';
 
   @override
-  String get dailyOsNextReconcileDecideOverline => 'DORTH DECIDING ON';
+  String get dailyOsNextReconcileDecideOverline => 'Da decidere';
 
   @override
   String dailyOsNextReconcileDecisionProgress(int decided, int total) {
@@ -5477,7 +5436,7 @@ class AppLocalizationsIt extends AppLocalizations {
       'Carte di cattura apparirà qui una volta che la parsing finisce.';
 
   @override
-  String get dailyOsNextReconcileHeardOverline => 'CAPITOLO';
+  String get dailyOsNextReconcileHeardOverline => 'Ascoltato';
 
   @override
   String get dailyOsNextReconcileLowConfidence => 'bassa fiducia';
@@ -5497,16 +5456,16 @@ class AppLocalizationsIt extends AppLocalizations {
   String get dailyOsNextRefineAccept => 'Accettare';
 
   @override
-  String get dailyOsNextRefineCurrentPlan => 'PIANO DI CURRE';
+  String get dailyOsNextRefineCurrentPlan => 'Piano attuale';
 
   @override
-  String get dailyOsNextRefineDiffAdded => 'ADDETTI';
+  String get dailyOsNextRefineDiffAdded => 'Aggiunto';
 
   @override
-  String get dailyOsNextRefineDiffDropped => 'RIMOSSO';
+  String get dailyOsNextRefineDiffDropped => 'Rimosso';
 
   @override
-  String get dailyOsNextRefineDiffMoved => 'MOVIMENTO';
+  String get dailyOsNextRefineDiffMoved => 'Spostato';
 
   @override
   String get dailyOsNextRefineHeadlineDiffReady => 'Ecco cosa cambierei.';
@@ -5529,7 +5488,7 @@ class AppLocalizationsIt extends AppLocalizations {
       'Nessun cambiamento di piano è tornato. Riparli e riprova.';
 
   @override
-  String get dailyOsNextRefineOverline => ' ⁇  RIFERIMENTO';
+  String get dailyOsNextRefineOverline => '🎤 Ritocco';
 
   @override
   String get dailyOsNextRefineRevert => 'Torna indietro';
@@ -5598,7 +5557,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get dailyOsNextShutdownCarryoverNotStarted => 'Non iniziato';
 
   @override
-  String get dailyOsNextShutdownCarryoverOverline => 'CARRIE FORWARD';
+  String get dailyOsNextShutdownCarryoverOverline => 'Attività non completate';
 
   @override
   String get dailyOsNextShutdownCarryoverPickDate => 'Scegli un appuntamento';
@@ -5622,7 +5581,7 @@ class AppLocalizationsIt extends AppLocalizations {
       'Ancora niente di registrato per questo giorno.';
 
   @override
-  String get dailyOsNextShutdownCompletedOverline => 'Quello che hai fatto';
+  String get dailyOsNextShutdownCompletedOverline => 'Cosa hai fatto';
 
   @override
   String dailyOsNextShutdownCompletedSessions(int count) {
@@ -5636,7 +5595,7 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
-  String get dailyOsNextShutdownMetricEnergy => 'ENERGIA';
+  String get dailyOsNextShutdownMetricEnergy => 'Energia';
 
   @override
   String dailyOsNextShutdownMetricEnergyDelta(String delta) {
@@ -5648,13 +5607,13 @@ class AppLocalizationsIt extends AppLocalizations {
       'Valuta le sessioni per vederla';
 
   @override
-  String get dailyOsNextShutdownMetricFlow => 'SESSIONI FLOW';
+  String get dailyOsNextShutdownMetricFlow => 'Sessioni di flow';
 
   @override
-  String get dailyOsNextShutdownMetricFocus => 'TEMPO DEL FOCUS';
+  String get dailyOsNextShutdownMetricFocus => 'Tempo di concentrazione';
 
   @override
-  String get dailyOsNextShutdownMetricSwitches => 'SVILUPPO CONTESTO';
+  String get dailyOsNextShutdownMetricSwitches => 'Cambi di contesto';
 
   @override
   String dailyOsNextShutdownMetricSwitchesAvg(String avg) {
@@ -5663,7 +5622,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get dailyOsNextShutdownReflectionOverline =>
-      ' ⁇  RISFLETTO DI UNA LINEA';
+      '💬 Riflessione in una riga';
 
   @override
   String get dailyOsNextShutdownReflectionPlaceholder =>
@@ -5698,8 +5657,7 @@ class AppLocalizationsIt extends AppLocalizations {
       'Configura un provider di IA per ricevere una nota per domani.';
 
   @override
-  String get dailyOsNextShutdownTomorrowOverline =>
-      'allevamento per il TOMORROW';
+  String get dailyOsNextShutdownTomorrowOverline => '✦ Per domani';
 
   @override
   String dailyOsNextStateDueOnDate(String date) {
@@ -5802,10 +5760,10 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
-  String get dailyOsNextTimeSpentTitle => 'Oggi è così triste';
+  String get dailyOsNextTimeSpentTitle => 'Oggi finora';
 
   @override
-  String get dailyOsNextTimeSpentTitlePast => 'TIME SPENTO';
+  String get dailyOsNextTimeSpentTitlePast => 'Tempo registrato';
 
   @override
   String get dailyOsNextTriageConfirmDefer => 'Deferito';
@@ -5836,6 +5794,10 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get dailyOsNextTriageToday => 'Oggi';
+
+  @override
+  String get dailyOsNextUncommitFailed =>
+      'Impossibile annullare: il piano resta confermato.';
 
   @override
   String get dailyOsOnboardingCoachCapture =>

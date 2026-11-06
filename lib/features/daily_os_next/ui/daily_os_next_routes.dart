@@ -1,7 +1,8 @@
 /// The deep-linkable sub-surfaces of Daily OS Next. Each value maps to a
 /// `/calendar/<name>/<date>` route the day flow can push to (refine the
-/// plan, commit/lock-in the day, run the evening shutdown).
-enum DailyOsNextRouteTarget { refine, commit, shutdown }
+/// plan, run the evening shutdown). Committing has no page: "Looks good"
+/// commits in place on the Day surface.
+enum DailyOsNextRouteTarget { refine, shutdown }
 
 /// Builds the deep-link path for [target] on the local calendar day [date],
 /// e.g. `/calendar/refine/2026-06-16`.

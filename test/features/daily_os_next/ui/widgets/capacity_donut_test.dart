@@ -22,7 +22,8 @@ void main() {
   });
 
   group('CapacityDonut widget', () {
-    testWidgets('renders the remaining capacity over a LEFT eyebrow', (
+    testWidgets('renders the remaining capacity over the "left" eyebrow, '
+        'as the catalog writes it', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -39,8 +40,13 @@ void main() {
       expect(find.text('2h 45m'), findsOneWidget);
       final messages = tester.element(find.byType(CapacityDonut)).messages;
       expect(
-        find.text(messages.dailyOsNextAgendaDonutLeft.toUpperCase()),
+        find.text(messages.dailyOsNextAgendaDonutLeft),
         findsOneWidget,
+      );
+      // Never shouted: the eyebrow is not upper-cased on the way out.
+      expect(
+        find.text(messages.dailyOsNextAgendaDonutLeft.toUpperCase()),
+        findsNothing,
       );
     });
 
@@ -59,11 +65,11 @@ void main() {
         final context = tester.element(find.byType(CapacityDonut));
         final messages = context.messages;
         final tokens = context.designTokens;
-        // 540 of 480 → 60m over, narrated by the OVER eyebrow in the
+        // 540 of 480 → 60m over, narrated by the "over" eyebrow in the
         // error tone.
         expect(find.text('1h'), findsOneWidget);
         final eyebrow = tester.widget<Text>(
-          find.text(messages.dailyOsNextAgendaDonutOver.toUpperCase()),
+          find.text(messages.dailyOsNextAgendaDonutOver),
         );
         expect(
           eyebrow.style?.color,
@@ -73,7 +79,7 @@ void main() {
     );
 
     testWidgets(
-      'neutral mode stays honest about OVER but keeps the calm tone',
+      'neutral mode stays honest about "over" but keeps the calm tone',
       (
         tester,
       ) async {
@@ -90,12 +96,12 @@ void main() {
         final context = tester.element(find.byType(CapacityDonut));
         final messages = context.messages;
         final tokens = context.designTokens;
-        // The WORD is always honest — 60m over is OVER even in neutral mode
-        // (a "1h LEFT" reading here would be a lie). Neutral only keeps the
+        // The WORD is always honest — 60m over is "over" even in neutral mode
+        // (a "1h left" reading here would be a lie). Neutral only keeps the
         // calm color instead of the error tone.
         expect(find.text('1h'), findsOneWidget);
         final eyebrow = tester.widget<Text>(
-          find.text(messages.dailyOsNextAgendaDonutOver.toUpperCase()),
+          find.text(messages.dailyOsNextAgendaDonutOver),
         );
         expect(eyebrow.style?.color, tokens.colors.text.lowEmphasis);
       },
@@ -114,15 +120,15 @@ void main() {
       );
 
       final messages = tester.element(find.byType(CapacityDonut)).messages;
-      // No capacity → no remainder to narrate; LEFT/OVER would both be
+      // No capacity → no remainder to narrate; "left"/"over" would both be
       // meaningless, so the ring just reports what is scheduled.
       expect(find.text('2h 15m'), findsOneWidget);
       expect(
-        find.text(messages.dailyOsNextAgendaDonutLeft.toUpperCase()),
+        find.text(messages.dailyOsNextAgendaDonutLeft),
         findsNothing,
       );
       expect(
-        find.text(messages.dailyOsNextAgendaDonutOver.toUpperCase()),
+        find.text(messages.dailyOsNextAgendaDonutOver),
         findsNothing,
       );
     });

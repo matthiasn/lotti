@@ -5124,51 +5124,10 @@ class AppLocalizationsCs extends AppLocalizations {
       'Vybrat kategorie pro zpracování v Daily OS';
 
   @override
-  String dailyOsNextCommitCapacityNote(String scheduled, String capacity) {
-    return '$scheduled z $capacity naplánováno. Pohodlná rezerva — jedno překvapení den zvládne.';
-  }
+  String get dailyOsNextCommitDone => 'Plán potvrzen';
 
   @override
-  String get dailyOsNextCommitDraftOverline => 'TVŮJ DEN, NAVRŽENÝ';
-
-  @override
-  String get dailyOsNextCommitExplainer =>
-      'Podpisem přepneš dnešek z návrhu na závazný.';
-
-  @override
-  String get dailyOsNextCommitFinalStepEyebrow => 'POSLEDNÍ KROK';
-
-  @override
-  String get dailyOsNextCommitHeadline => 'Udělej ho svým.';
-
-  @override
-  String get dailyOsNextCommitHoldHelper => 'Podrž vteřinu pro podpis';
-
-  @override
-  String get dailyOsNextCommitHoldWordDone => 'Závazné';
-
-  @override
-  String get dailyOsNextCommitHoldWordHolding => 'Drž dál';
-
-  @override
-  String get dailyOsNextCommitHoldWordIdle => 'Podrž';
-
-  @override
-  String get dailyOsNextCommitLockingIn => 'Zamykám…';
-
-  @override
-  String get dailyOsNextCommitShepherdSubline =>
-      'Já provedu — práci uděláš ty.';
-
-  @override
-  String get dailyOsNextCommitSubCaption =>
-      'I potom se mnou můžeš mluvit — ale kostra zůstává.';
-
-  @override
-  String get dailyOsNextCommitTitle => 'Uzamknout';
-
-  @override
-  String get dailyOsNextCommitTodayIsYours => 'Den je tvůj.';
+  String get dailyOsNextCommitFailed => 'Plán se nepodařilo potvrdit.';
 
   @override
   String get dailyOsNextDayAgentStatusAttention => 'Vyžaduje pozornost';
@@ -5229,7 +5188,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dailyOsNextDayTitle => 'Tvůj den';
 
   @override
-  String get dailyOsNextDayWhyChipLabel => 'PROČ';
+  String get dailyOsNextDayWhyChipLabel => 'Proč';
 
   @override
   String get dailyOsNextDayWrapUpCta => 'Ukončit';
@@ -5286,7 +5245,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dailyOsNextDraftingProgressSaving => 'Ukládám plán';
 
   @override
-  String get dailyOsNextDraftingReasoningOverline => '✦ ÚVAHA';
+  String get dailyOsNextDraftingReasoningOverline => '✦ Úvaha';
 
   @override
   String get dailyOsNextDraftingRecoveryBody =>
@@ -5435,19 +5394,19 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dailyOsNextPlanViewDay => 'Den';
 
   @override
-  String get dailyOsNextReconcileBadgeMatched => 'PROPOJENO';
+  String get dailyOsNextReconcileBadgeMatched => 'Propojeno';
 
   @override
-  String get dailyOsNextReconcileBadgeNew => 'NOVÉ';
+  String get dailyOsNextReconcileBadgeNew => 'Nové';
 
   @override
-  String get dailyOsNextReconcileBadgeUpdate => 'AKTUALIZACE';
+  String get dailyOsNextReconcileBadgeUpdate => 'Aktualizace';
 
   @override
   String get dailyOsNextReconcileBuildDayCta => 'Sestavit můj den';
 
   @override
-  String get dailyOsNextReconcileDecideOverline => 'STOJÍ ZA ROZHODNUTÍ';
+  String get dailyOsNextReconcileDecideOverline => 'Stojí za rozhodnutí';
 
   @override
   String dailyOsNextReconcileDecisionProgress(int decided, int total) {
@@ -5471,7 +5430,7 @@ class AppLocalizationsCs extends AppLocalizations {
       'Karty ze záznamu se tu objeví, jakmile skončí parsování.';
 
   @override
-  String get dailyOsNextReconcileHeardOverline => 'ZACHYCENO';
+  String get dailyOsNextReconcileHeardOverline => 'Zachyceno';
 
   @override
   String get dailyOsNextReconcileLowConfidence => 'nízká důvěra';
@@ -5491,16 +5450,16 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dailyOsNextRefineAccept => 'Přijmout';
 
   @override
-  String get dailyOsNextRefineCurrentPlan => 'AKTUÁLNÍ PLÁN';
+  String get dailyOsNextRefineCurrentPlan => 'Aktuální plán';
 
   @override
-  String get dailyOsNextRefineDiffAdded => 'PŘIDÁNO';
+  String get dailyOsNextRefineDiffAdded => 'Přidáno';
 
   @override
-  String get dailyOsNextRefineDiffDropped => 'ODSTRANĚNO';
+  String get dailyOsNextRefineDiffDropped => 'Odstraněno';
 
   @override
-  String get dailyOsNextRefineDiffMoved => 'PŘESUNUTO';
+  String get dailyOsNextRefineDiffMoved => 'Přesunuto';
 
   @override
   String get dailyOsNextRefineHeadlineDiffReady => 'Tohle bych změnil.';
@@ -5522,7 +5481,7 @@ class AppLocalizationsCs extends AppLocalizations {
       'Nevrátily se žádné změny plánu. Zkus to přeformulovat a znovu odeslat.';
 
   @override
-  String get dailyOsNextRefineOverline => '🎤 ÚPRAVA';
+  String get dailyOsNextRefineOverline => '🎤 Úprava';
 
   @override
   String get dailyOsNextRefineRevert => 'Vrátit';
@@ -5592,7 +5551,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dailyOsNextShutdownCarryoverNotStarted => 'Nezahájeno';
 
   @override
-  String get dailyOsNextShutdownCarryoverOverline => 'PŘEVÁDÍ SE';
+  String get dailyOsNextShutdownCarryoverOverline => 'Převádí se';
 
   @override
   String get dailyOsNextShutdownCarryoverPickDate => 'Vyber datum';
@@ -5616,7 +5575,7 @@ class AppLocalizationsCs extends AppLocalizations {
       'Pro tento den zatím nic nezaznamenáno.';
 
   @override
-  String get dailyOsNextShutdownCompletedOverline => 'CO JSI UDĚLAL';
+  String get dailyOsNextShutdownCompletedOverline => 'Co jsi udělal';
 
   @override
   String dailyOsNextShutdownCompletedSessions(int count) {
@@ -5631,7 +5590,7 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String get dailyOsNextShutdownMetricEnergy => 'ENERGIE';
+  String get dailyOsNextShutdownMetricEnergy => 'Energie';
 
   @override
   String dailyOsNextShutdownMetricEnergyDelta(String delta) {
@@ -5643,13 +5602,13 @@ class AppLocalizationsCs extends AppLocalizations {
       'Ohodnoť relace, abys viděl svou energii';
 
   @override
-  String get dailyOsNextShutdownMetricFlow => 'FLOW RELACE';
+  String get dailyOsNextShutdownMetricFlow => 'Flow relace';
 
   @override
-  String get dailyOsNextShutdownMetricFocus => 'ČAS FOKUSU';
+  String get dailyOsNextShutdownMetricFocus => 'Čas soustředění';
 
   @override
-  String get dailyOsNextShutdownMetricSwitches => 'PŘEPÍNÁNÍ KONTEXTU';
+  String get dailyOsNextShutdownMetricSwitches => 'Přepínání kontextu';
 
   @override
   String dailyOsNextShutdownMetricSwitchesAvg(String avg) {
@@ -5657,7 +5616,7 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String get dailyOsNextShutdownReflectionOverline => '💬 JEDNOŘÁDKOVÁ REFLEXE';
+  String get dailyOsNextShutdownReflectionOverline => '💬 Jednořádková reflexe';
 
   @override
   String get dailyOsNextShutdownReflectionPlaceholder =>
@@ -5692,7 +5651,7 @@ class AppLocalizationsCs extends AppLocalizations {
       'Nastav poskytovatele AI, abys dostal poznámku na zítřek.';
 
   @override
-  String get dailyOsNextShutdownTomorrowOverline => '✦ NA ZÍTŘEK';
+  String get dailyOsNextShutdownTomorrowOverline => '✦ Na zítřek';
 
   @override
   String dailyOsNextStateDueOnDate(String date) {
@@ -5801,10 +5760,10 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String get dailyOsNextTimeSpentTitle => 'DNES ZATÍM';
+  String get dailyOsNextTimeSpentTitle => 'Dnes zatím';
 
   @override
-  String get dailyOsNextTimeSpentTitlePast => 'STRÁVENÝ ČAS';
+  String get dailyOsNextTimeSpentTitlePast => 'Strávený čas';
 
   @override
   String get dailyOsNextTriageConfirmDefer => 'Odloženo';
@@ -5835,6 +5794,10 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get dailyOsNextTriageToday => 'Dnes';
+
+  @override
+  String get dailyOsNextUncommitFailed =>
+      'Vrátit to nešlo — plán zůstává potvrzený.';
 
   @override
   String get dailyOsOnboardingCoachCapture => 'Řekni, co ti leží v hlavě.';

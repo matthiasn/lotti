@@ -14,7 +14,6 @@ import 'package:lotti/features/daily_os_next/state/daily_os_preferences_controll
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/ui/daily_os_next_routes.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/capture_page.dart';
-import 'package:lotti/features/daily_os_next/ui/pages/commit_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/daily_os_next_root.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/refine_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/shutdown_page.dart';
@@ -156,7 +155,6 @@ void main() {
         '/calendar',
         '/calendar/time',
         '/calendar/refine/:date',
-        '/calendar/commit/:date',
         '/calendar/shutdown/:date',
       ]);
     });
@@ -388,25 +386,6 @@ void main() {
       final messages = tester.element(find.byType(RefinePage)).messages;
       expect(find.byType(RefinePage), findsOneWidget);
       expect(find.text(messages.dailyOsNextRefineTitle), findsOneWidget);
-    });
-
-    testWidgets('DailyOS route resolves commit target with the current plan', (
-      tester,
-    ) async {
-      final draft = _drafted();
-      await tester.pumpWidget(
-        _wrapRouteChild(
-          _routeChildFor('/calendar/commit/2026-05-26', mockBuildContext),
-          overrides: [
-            currentDraftPlanProvider.overrideWith((ref, date) async => draft),
-          ],
-        ),
-      );
-      await tester.pump();
-      await tester.pump();
-
-      expect(find.byType(CommitPage), findsOneWidget);
-      expect(find.text('Deep work'), findsOneWidget);
     });
 
     testWidgets('DailyOS route resolves shutdown target for the date', (

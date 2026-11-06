@@ -22,8 +22,8 @@ class RecordingDayAgent implements DayAgentInterface {
     this.editErrorOnCall,
     this.submitResult = const CaptureId('cap'),
     this.draftPlanBuilder,
-    this.commitGate,
     this.commitError,
+    this.uncommitError,
   });
 
   /// Diff returned by [proposePlanDiff]; when null, a no-change diff
@@ -34,12 +34,11 @@ class RecordingDayAgent implements DayAgentInterface {
   /// `updatedPlan`.
   final DraftPlan? acceptedPlan;
 
-  /// When set, [commitDay] suspends on this completer before returning —
-  /// lets tests observe the in-flight window.
-  final Completer<void>? commitGate;
-
-  /// When set, [commitDay] throws this error (after [commitGate]).
+  /// When set, [commitDay] throws this error.
   final Error? commitError;
+
+  /// When set, [uncommitDay] throws this error.
+  final Error? uncommitError;
 
   /// When set, [proposePlanDiff] throws this error (after [proposeGate]).
   final Error? proposeError;
@@ -113,6 +112,7 @@ class RecordingDayAgent implements DayAgentInterface {
 
   DraftPlan? capturedPlan;
   int commitCount = 0;
+  int uncommitCount = 0;
 
   // ---- Recorded members ----
 
@@ -183,9 +183,16 @@ class RecordingDayAgent implements DayAgentInterface {
   Future<DraftPlan> commitDay(DraftPlan plan) async {
     capturedPlan = plan;
     commitCount++;
-    if (commitGate != null) await commitGate!.future;
     if (commitError != null) throw commitError!;
     return plan.copyWith(state: DayState.committed);
+  }
+
+  @override
+  Future<DraftPlan> uncommitDay(DraftPlan plan) async {
+    capturedPlan = plan;
+    uncommitCount++;
+    if (uncommitError != null) throw uncommitError!;
+    return plan.copyWith(state: DayState.drafted);
   }
 
   @override

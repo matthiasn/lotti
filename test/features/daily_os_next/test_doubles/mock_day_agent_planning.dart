@@ -231,6 +231,20 @@ class MockDayAgentPlanning {
     ];
   }
 
+  /// User verdict: take a committed [plan] back to a draft.
+  Future<DraftPlan> uncommitDay(DraftPlan plan) async {
+    return plan.copyWith(
+      state: DayState.drafted,
+      blocks: [
+        for (final block in plan.blocks)
+          if (block.state == TimeBlockState.committed)
+            block.copyWith(state: TimeBlockState.drafted)
+          else
+            block,
+      ],
+    );
+  }
+
   /// User verdict: commit [plan].
   Future<DraftPlan> commitDay(DraftPlan plan) async {
     await Future<void>.delayed(triageLatency);

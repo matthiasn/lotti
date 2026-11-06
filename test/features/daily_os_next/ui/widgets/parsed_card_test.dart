@@ -56,9 +56,9 @@ void main() {
     testWidgets('renders the localized badge for every kind', (tester) async {
       // Exhaustive over the enum.
       const labels = {
-        ParsedItemKind.newTask: 'NEW',
-        ParsedItemKind.matched: 'MATCHED',
-        ParsedItemKind.update: 'UPDATE',
+        ParsedItemKind.newTask: 'New',
+        ParsedItemKind.matched: 'Matched',
+        ParsedItemKind.update: 'Update',
       };
       for (final kind in ParsedItemKind.values) {
         await tester.pumpWidget(const SizedBox.shrink());

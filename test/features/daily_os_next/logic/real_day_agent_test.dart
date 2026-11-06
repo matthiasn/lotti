@@ -988,6 +988,111 @@ void main() {
     );
   });
 
+  group('RealDayAgent.uncommitDay', () {
+    late _TestBench bench;
+
+    setUp(() => bench = _TestBench.create());
+
+    test(
+      'calls uncommitDay on the plan service and projects the draft back',
+      () async {
+        const agentId = 'day-agent-001';
+        final dayDate = DateTime(_asOf.year, _asOf.month, _asOf.day);
+        when(() => bench.dayAgentService.getDayAgentForDate(any())).thenAnswer(
+          (_) async => makeTestIdentity(
+            id: agentId,
+            agentId: agentId,
+            kind: AgentKinds.dayAgent,
+          ),
+        );
+        when(
+          () => bench.planService.uncommitDay(
+            agentId: any(named: 'agentId'),
+            dayId: any(named: 'dayId'),
+          ),
+        ).thenAnswer(
+          (_) async =>
+              AgentDomainEntity.dayPlan(
+                    id: 'day_agent_plan:${dayAgentIdForDate(dayDate)}',
+                    agentId: agentId,
+                    dayId: dayAgentIdForDate(dayDate),
+                    planDate: dayDate,
+                    data: DayPlanData(
+                      planDate: dayDate,
+                      status: const DayPlanStatus.draft(),
+                      plannedBlocks: [
+                        PlannedBlock(
+                          id: 'block_1',
+                          categoryId: 'work',
+                          startTime: dayDate.add(const Duration(hours: 9)),
+                          endTime: dayDate.add(const Duration(hours: 10)),
+                          title: 'Focus block',
+                          state: PlannedBlockState.drafted,
+                        ),
+                      ],
+                    ),
+                    scheduledMinutes: 60,
+                    createdAt: dayDate,
+                    updatedAt: dayDate,
+                    vectorClock: null,
+                  )
+                  as DayPlanEntity,
+        );
+        when(
+          () => bench.journalDb.getCategoryById(any()),
+        ).thenAnswer((_) async => null);
+
+        final plan = DraftPlan(
+          dayDate: dayDate,
+          blocks: const [],
+          bands: const [],
+          capacityMinutes: 480,
+          scheduledMinutes: 60,
+          state: DayState.committed,
+        );
+
+        final result = await bench.adapter.uncommitDay(plan);
+
+        expect(result.state, DayState.drafted);
+        expect(result.blocks.single.state, TimeBlockState.drafted);
+        verify(
+          () => bench.planService.uncommitDay(
+            agentId: agentId,
+            dayId: dayAgentIdForDate(dayDate),
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'throws DayAgentInteractionException when no day-agent exists',
+      () async {
+        when(
+          () => bench.dayAgentService.getDayAgentForDate(any()),
+        ).thenAnswer((_) async => null);
+
+        final plan = DraftPlan(
+          dayDate: _asOf,
+          blocks: const [],
+          bands: const [],
+          capacityMinutes: 480,
+          scheduledMinutes: 0,
+        );
+
+        await expectLater(
+          bench.adapter.uncommitDay(plan),
+          throwsA(isA<DayAgentInteractionException>()),
+        );
+        verifyNever(
+          () => bench.planService.uncommitDay(
+            agentId: any(named: 'agentId'),
+            dayId: any(named: 'dayId'),
+          ),
+        );
+      },
+    );
+  });
+
   group('RealDayAgent.renameBlock', () {
     late _TestBench bench;
 

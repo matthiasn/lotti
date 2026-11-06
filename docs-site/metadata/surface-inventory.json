@@ -71,19 +71,6 @@
       "status": "verified"
     },
     {
-      "id": "daily-os-commit",
-      "title": "Daily OS commit",
-      "kind": "route-page",
-      "source": "lib/beamer/locations/calendar_location.dart",
-      "sourcePattern": "'/calendar/commit/:date'",
-      "locator": "/calendar/commit/:date",
-      "routes": [
-        "/calendar/commit/:date"
-      ],
-      "page": "plan-and-capture/daily-os",
-      "status": "verified"
-    },
-    {
       "id": "daily-os-shutdown",
       "title": "Daily OS shutdown",
       "kind": "route-page",
