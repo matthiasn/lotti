@@ -101,8 +101,12 @@ String _linkTitles(String text, Iterable<FrontIndexRow> rows) {
   for (final row in rows) {
     final title = _label(row.title).toLowerCase();
     if (!_linkableKinds.contains(row.kind) || title.length < 3) continue;
-    // A title two rows share names neither: null marks it ambiguous.
-    byTitle[title] = byTitle.containsKey(title) && byTitle[title]?.id != row.id
+    // A title two rows share names neither: null marks it ambiguous. A
+    // row is the same one only as the same kind with the same id.
+    final seen = byTitle[title];
+    byTitle[title] =
+        byTitle.containsKey(title) &&
+            (seen?.id != row.id || seen?.kind != row.kind)
         ? null
         : row;
   }
@@ -114,15 +118,21 @@ String _linkTitles(String text, Iterable<FrontIndexRow> rows) {
     // An existing markdown link: kept whole.
     r'\[[^\]\n]*\]\([^)\n]*\)'
     '|'
-    r'(?<![\w-])(?<title>'
+    // A title is whole only between non-letters in any script: "Plan"
+    // never inside "Planète".
+    r'(?<![\p{L}\p{N}_-])(?<title>'
     '${titles.map(RegExp.escape).join('|')}'
-    r')(?![\w-])',
+    r')(?![\p{L}\p{N}_-])',
     caseSensitive: false,
+    unicode: true,
   );
   return text.replaceAllMapped(pattern, (match) {
     final title = (match as RegExpMatch).namedGroup('title');
     if (title == null) return match[0]!;
-    final row = byTitle[title.toLowerCase()]!;
+    // The regex folds case more widely than toLowerCase ("Aſk" matches
+    // "Ask"): a match with no key of its own stays text.
+    final row = byTitle[title.toLowerCase()];
+    if (row == null) return title;
     return '[$title](${frontReferenceUrl(row.kind, row.id)})';
   });
 }

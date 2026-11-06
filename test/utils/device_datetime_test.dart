@@ -151,5 +151,19 @@ void main() {
         '[the <3/17> note](https://example.com/2026-03-17)',
       );
     });
+
+    test('leaves a date in any URL alone: a target with parentheses, an '
+        'autolink, a bare one', () {
+      const text =
+          '[log](https://example.com/(wiki)/2026-03-17) '
+          '<https://example.com/2026-03-17> '
+          'https://example.com/2026-03-17 on 2026-03-17';
+      expect(
+        replaceIsoDays(text, marked),
+        '[log](https://example.com/(wiki)/2026-03-17) '
+        '<https://example.com/2026-03-17> '
+        'https://example.com/2026-03-17 on <3/17>',
+      );
+    });
   });
 }
