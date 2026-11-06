@@ -1,9 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/companion/model/companion_customization.dart';
+import 'package:lotti/features/companion/model/companion_look.dart';
 import 'package:lotti/features/companion/model/companion_parts.dart';
 import 'package:lotti/features/companion/rig/companion_painter.dart';
 import 'package:lotti/features/companion/state/companion_customization_controller.dart';
-import 'package:lotti/features/companion/state/companion_look_controller.dart';
 import 'package:lotti/features/companion/ui/settings/companion_settings_page.dart';
 import 'package:lotti/features/companion/ui/settings/companion_swatch_row.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
@@ -215,7 +215,7 @@ class OnboardingMakeHerYoursView extends StatelessWidget {
                       selected: custom.outfitId == null,
                       onPressed: () => onOutfit(null),
                     ),
-                    for (final outfit in companionOutfits)
+                    for (final outfit in CompanionLook.of(custom.character))
                       chip(
                         label: outfitName(messages, outfit),
                         selected: custom.outfitId == outfit.id,
