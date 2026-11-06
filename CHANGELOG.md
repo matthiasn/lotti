@@ -4,6 +4,85 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.87]
+
+### Added
+
+- **Goal briefings in your language.** *Edit goal* has a *Briefing language*
+  under your agent's name. Left on *Automatic*, the agent writes its
+  briefings, reports and banners in the default language of the goal's
+  category, and follows it when that changes. Pick a language and it stays. If
+  your journal's language later moves away from it, the page offers to switch.
+- **The task card now says when the agent could not do what you asked.** An
+  agent update could finish normally while your request did not — a tool that
+  could not take everything you dictated, a capability the agent lacks — and
+  the only trace was in the agent's internals. The agent can now flag that it
+  could not meet a request: the task card shows a warning with its
+  one-sentence reason above the summary, with *See observations* for the
+  details and *Clear* once you have seen it. The warning stays until you clear
+  it, on every device.
+
+### Changed
+
+- **One field to type or talk to the companion.** Her chat now has a single
+  input like other chat apps: type into it, or tap the microphone at its end.
+  When you stop speaking, your words go out without a second tap.
+- **"Looks good" now commits your day.** Approving a drafted plan used to open
+  a separate "Lock it in" page that repeated the agenda and asked you to hold
+  a button for a second. The tap is the sign-off now: the day is committed in
+  place, and the confirmation offers Undo for a few seconds if you change your
+  mind.
+
+### Fixed
+
+- **Goal briefings came in English whatever language you journal in.** A goal
+  without a language of its own now follows its category's language, or the
+  language of your own words when the category names none.
+- **The goal and person editors had smaller Save and Cancel buttons than the
+  rest of the app.** Their bottom bar now uses the app's standard sticky
+  action bar, with the same button size and glass background as the other
+  editors.
+- **A long conversation with the companion could not be scrolled up.** The
+  chat pulled back to the bottom after a long answer, especially after *Show
+  more*. It now lets go as soon as you scroll up.
+- **Tasks the companion listed by name could not be opened.** Every task in a
+  list of due or overdue tasks is now a link that opens it.
+- **The companion wrote dates like "17 Mar" and read them aloud oddly.** Dates
+  in her answers now use your device's date format. Her voice reads them as
+  dates in your language, such as "March 17, 2026".
+- **Category names were misheard in dictation**, so "Lotti" came out as
+  "Lotty". Every dictation now knows the names of your categories, except
+  private ones, and spells them as you named them.
+- **Daily OS labels are no longer in capitals.** Section titles, badges and
+  the capacity ring's "left"/"over" read in sentence case, and several
+  translations that said something other than intended — the Italian draft
+  label read "your day, ruined", the Dutch refinement label "refinancing" —
+  now say what the English says.
+- **Wrap-up shows time as hours and minutes.** A finished task reads "1h 35m"
+  rather than "95m", like everywhere else in Daily OS.
+- **On a phone, the Day view's toggle icon now matches the view.** The
+  timeline glyph sat on Activity and a rows glyph on the Day timeline; they
+  have swapped places.
+- **Daily OS could stay on "Here's what I heard." and "Drafting your day"
+  forever, without ever reading your check-in.** On startup Daily OS checks
+  its saved recordings before processing anything. That check compared each
+  recording's time in two different formats, decided they disagreed, and
+  stopped, so after your first Daily OS recording on a device, no check-in was
+  read and no plan was drafted again. Recordings are now compared correctly,
+  one bad recording no longer blocks the others, and processing starts even if
+  the check fails.
+- **Old check-ins and drafts no longer run late.** Check-in reading, drafting
+  and refining still waiting for a day before yesterday are cancelled when
+  Daily OS starts, so they don't spend AI runs on days that are over or hold
+  up today's plan.
+- **A goal's banner kept asking after you had done today's part.** Recording
+  today's check-ins, logging today's steps or ticking off today's habit did
+  not take the goal's banner down while the week as a whole was still behind —
+  only snoozing it for the day did. Once today's share of a goal is done, its
+  banner and its off-track alert now stand down by themselves on every device
+  and stay down for the rest of the day; the next day starts fresh. The goal's
+  status still reflects the whole week.
+
 ## [1.1.86]
 
 ### Added
