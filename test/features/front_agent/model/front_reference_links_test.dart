@@ -189,6 +189,18 @@ void main() {
         );
       });
 
+      test('a match the regex folds but lowercase does not stays text', () {
+        const ask = FrontIndexRow(
+          kind: FrontDestinationKind.task,
+          id: 'ask-1',
+          title: 'Ask',
+        );
+        expect(
+          linkFrontReferences('Aſk, then Ask', rows, titled: [ask]),
+          'Aſk, then [Ask](lotti://task/ask-1)',
+        );
+      });
+
       test('an id still wins over the title beside it', () {
         expect(
           linkFrontReferences(

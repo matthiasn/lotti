@@ -129,7 +129,10 @@ String _linkTitles(String text, Iterable<FrontIndexRow> rows) {
   return text.replaceAllMapped(pattern, (match) {
     final title = (match as RegExpMatch).namedGroup('title');
     if (title == null) return match[0]!;
-    final row = byTitle[title.toLowerCase()]!;
+    // The regex folds case more widely than toLowerCase ("Aſk" matches
+    // "Ask"): a match with no key of its own stays text.
+    final row = byTitle[title.toLowerCase()];
+    if (row == null) return title;
     return '[$title](${frontReferenceUrl(row.kind, row.id)})';
   });
 }
