@@ -5,7 +5,7 @@ description: Goal-driven agents — the deterministic Phase A tier evaluating cr
 resource: ../../lib/features/goals
 tags: [goals, agents, runtime, wake, evaluation]
 status: draft
-generated: { by: claude-code/opus-5.5, at: 2026-11-04T12:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-11-06T12:00:00Z }
 stale_after: 2027-02-22
 sources:
   - id: goals-src
@@ -285,9 +285,9 @@ flowchart TD
     REARM --> READ[GoalSignalReader\njournal → GoalSignalWindow]
     READ --> EVAL[GoalProgressEvaluator\n+ GoalTrackPolicy]
     EVAL --> REG[upsert goalProgress register\ngoal_progress:agent:evaluation-day\nrecompute, never accumulate]
-    REG --> ALERT{persisted status\ntransition?}
+    REG --> ALERT{persisted status\ntransition, or\ntoday's part done?}
     ALERT -- "into a slip" --> ARM[GoalOffTrackSink.arm\nafter the transaction — one\nalert per slip, next 09:00]
-    ALERT -- "out of one" --> CLEAR[GoalOffTrackSink.clearFor\nretracts the open alert]
+    ALERT -- "out of one,\nor today's part done" --> CLEAR[GoalOffTrackSink.clearFor\nretracts the open alert]
     REG --> MATERIAL{a status the standing report\ndoes not state, a register change,\neligible banner expiry, a write to\nthe goal row of a check-in-time goal,\nor the cadence tick with no report\nfor the day — the daily briefing?}
     MATERIAL -- no --> DONE[return — the €0 no-op]
     MATERIAL -- yes --> STALE2[advance report-stale watermark]
@@ -329,14 +329,16 @@ not holding — the way ADR 0059 did for people: a durable inbox row that the
 notifications feature projects to an OS alarm, produced by the deterministic
 tier on the [producer contract](notifications.md#producers-share-one-episode-contract).
 
-- **Phase A is the producer, and only a persisted status transition
-  projects.** After `persistDerivation` commits — never inside its
-  transaction, since the alert row lives in `notifications.sqlite` behind
-  its own vector-clock scope — a transition *into* a slip calls
-  `GoalOffTrackSink.arm`; a transition out of one calls `clearFor`. A slip is
-  `automaticGoalAdEligible`, the banner's own predicate, so the two channels
-  never disagree. An unchanged slip projects nothing (one alert per slip), and
-  a fenced write projects nothing (the revision's tick judges again).
+- **Phase A is the producer, and only a persisted status transition — or a
+  day whose part is done — projects.** After `persistDerivation` commits —
+  never inside its transaction, since the alert row lives in
+  `notifications.sqlite` behind its own vector-clock scope — a transition
+  *into* a slip calls `GoalOffTrackSink.arm`; a transition out of one calls
+  `clearFor`, and so does every tick on which today's part is done
+  (`GoalWakeFacts.todayPortionMet`). A slip is `automaticGoalAdEligible`, the
+  banner's own predicate, so the two channels never disagree. An unchanged
+  slip projects nothing (one alert per slip), and a fenced write projects
+  nothing (the revision's tick judges again).
 - **The episode is the transition day and the baseline it left.**
   `GoalOffTrackAlertService` keys the row by the derivation's `periodKey` of
   the tick that transitioned plus the status it slipped *from*, links it
@@ -409,6 +411,29 @@ handler would retract it; that wiring is a follow-up.
   at risk on the initial/worsening path), that expiry re-arms the period's
   escalation so Phase B creates or reuses a replacement. Healthy expiry stays
   a EUR0 maintenance event.
+- **A day whose part is done stands every status banner down for the rest
+  of that day.** `goalTodayPortionMet` (`evaluation/goal_today_portion.dart`)
+  re-runs the evaluator over today's slice of each leaf: a per-day target
+  (`dailySumThenAverage`, `max`) against today's own value, a period total
+  (`sum`) against its even per-day share, `count` against any value today, a
+  habit quota against a credited day (the whole quota on a one-day window).
+  A leaf whose window is already satisfied is done too; an `atMost` leaf
+  never is, because a ceiling cannot vouch for a day that is not over.
+  `automaticGoalAdEligible` is false while it holds, so the status — still
+  window-driven — keeps reading off track or at risk, but Phase A's sweep
+  retires every active status banner (`retireReason: "today's part done"`,
+  question banners excepted, an overdue banner still expires), an expiry asks
+  for no replacement, Phase B's persistence refuses creates and re-runs and
+  its recovery retire names the same reason, and the OS alert is cleared.
+  This is the relationship sweep's rule — a check-in satisfies the cadence and
+  its banner retires — applied to goals. The next day starts a fresh part with
+  nothing recorded, so the goal is eligible again. Phase B rebuilds
+  `GoalWakeFacts` field by field from the derivation; the fact must be carried
+  there, or `_adRequired` would force the model to write the banner Phase A
+  just retired. An overdue escalation evaluates its own past day, yet the
+  banners it retires or raises are the actual day's: `_deriveForWake`
+  replaces the fact with `GoalAgentPhaseA.todayPortionMetAt` for the wake's
+  real `now`, so a finished yesterday never takes down a day still open.
 - **A reply with nobody to answer is unofferable too.** A wake with no
   pending user message is not handed `reply_to_user`. On such a wake
   `persistOutputs` reads only plain final prose and ignores the reply tool, so
@@ -2489,8 +2514,9 @@ stateDiagram-v2
     expired --> [*]
 ```
 
-The status sweep that retires ad banners a status no longer permits, and the
-48-hour freshness rule, both skip it. It is not an ad either:
+The status sweep that retires ad banners a status no longer permits, the
+sweep that retires them once today's part is done, and the
+48-hour freshness rule all skip it. It is not an ad either:
 `_specScopedNudges` leaves an undismissed question banner out of everything
 ad-facing — the P5 requirement, the FACTS ad sections, the ids retire and
 rerun may name — so it never stands in for the status banner an off-track

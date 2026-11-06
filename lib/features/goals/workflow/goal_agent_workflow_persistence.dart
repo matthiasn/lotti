@@ -293,7 +293,13 @@ extension _GoalOutputPersistence on GoalAgentWorkflow {
               updatedAt: now,
               provenance: {
                 ...nudge.provenance,
-                'retireReason': 'status no longer permits ads',
+                'retireReason':
+                    goalStatusPermitsAutomaticAd(
+                      derivation.facts,
+                      derivation.priors,
+                    )
+                    ? goalTodayPortionMetRetireReason
+                    : 'status no longer permits ads',
               },
             ),
           );

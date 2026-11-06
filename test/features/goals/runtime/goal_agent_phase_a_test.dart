@@ -17,8 +17,10 @@ import 'package:lotti/features/agents/sync/agent_concurrent_resolver.dart';
 import 'package:lotti/features/agents/workflow/wake_result.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_reader.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_window.dart';
+import 'package:lotti/features/goals/evaluation/goal_today_portion.dart';
 import 'package:lotti/features/goals/runtime/goal_agent_phase_a.dart';
 import 'package:lotti/features/goals/runtime/goal_wake_facts.dart';
+import 'package:lotti/features/goals/workflow/goal_question.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -380,17 +382,31 @@ void main() {
 
     await run(onTrackSignals());
 
-    final expired = upserts.whereType<GoalNudgeEntity>().toList();
-    expect(expired, hasLength(1));
-    expect(expired.single.id, 'ad-overdue');
-    expect(expired.single.status, NudgeStatus.expired);
+    final swept = {
+      for (final nudge in upserts.whereType<GoalNudgeEntity>()) nudge.id: nudge,
+    };
+    expect(swept.keys, {'ad-overdue', 'ad-fresh', 'ad-open-ended'});
+    final expired = swept['ad-overdue']!;
     expect(
-      expired.single.expiredAt,
+      expired.status,
+      NudgeStatus.expired,
+      reason:
+          "the clock's verdict outranks today's: an overdue banner is "
+          'expired even on a day whose part is done',
+    );
+    expect(
+      expired.expiredAt,
       deadline.toUtc(),
       reason:
           'the deadline itself, not this device wall clock — '
           'every sweeping device writes the identical verdict',
     );
+    // Eleven thousand steps today: today's part is done, so the banners
+    // still inside their lifetime stand down rather than chide on.
+    for (final id in ['ad-fresh', 'ad-open-ended']) {
+      expect(swept[id]!.status, NudgeStatus.retired);
+      expect(swept[id]!.retiredAt, now.toUtc());
+    }
   });
 
   test('an expired banner re-arms Phase B when an unchanged off-track goal '
@@ -690,11 +706,14 @@ void main() {
   test('a digest mismatch is ignored when the goal no longer qualifies for '
       'automatic copy — no silent banner strip', () async {
     stubSpec();
+    // At risk on one prior point is no worsening trend, so no automatic
+    // copy — and today's 8,500 steps leave today's part undone, so nothing
+    // retires the banner either.
     when(
-      () => repository.getEntity(goalProgressId(agentId, '2026-08-08')),
+      () => repository.getEntity(goalProgressId(agentId, '2026-08-07')),
     ).thenAnswer(
       (_) async => progressRow(
-        periodKey: '2026-08-08',
+        periodKey: '2026-08-07',
         status: GoalTrackStatus.onTrack,
         attainment: 1,
       ),
@@ -710,8 +729,20 @@ void main() {
       ],
     );
 
-    await run(onTrackSignals());
+    await run(
+      GoalSignalWindow(
+        quantitativeDailySums: {
+          'cumulative_step_count': {
+            for (var day = 2; day <= 8; day++) DateTime.utc(2026, 8, day): 8500,
+          },
+        },
+      ),
+    );
 
+    expect(
+      upserts.whereType<GoalProgressEntity>().single.trackStatus,
+      GoalTrackStatus.atRisk,
+    );
     expect(upserts.whereType<GoalNudgeEntity>(), isEmpty);
   });
 
@@ -1413,6 +1444,172 @@ void main() {
   // The OS alert is a projection of the register this tick writes: a slip
   // arms it once per slip, anything else clears it, and nothing happens on a
   // tick whose status did not change. Eligibility is the banner's predicate.
+  group("today's part done", () {
+    // The audio goal: three minutes of spoken check-ins a day, averaged over
+    // a rolling week.
+    final checkInVersion = (specVersion as GoalSpecVersionEntity).copyWith(
+      criteria: const GoalCriterion.checkInTime(
+        criterionId: 'check-ins',
+        window: GoalWindow.rollingDays(count: 7),
+        aggregation: GoalAggregation.dailySumThenAverage,
+        targetMinutes: 3,
+      ),
+    );
+
+    /// Today's recordings and nothing before them: the zero-filled week
+    /// stays far behind whatever today holds.
+    GoalSignalWindow recordedToday(num minutes) => GoalSignalWindow(
+      checkInDailyMinutes: {DateTime.utc(2026, 8, 8): minutes},
+    );
+
+    GoalNudgeEntity banner(
+      String id, {
+      DateTime? staleAt,
+      Map<String, String> provenance = const {},
+    }) =>
+        AgentDomainEntity.goalNudge(
+              id: id,
+              agentId: agentId,
+              status: NudgeStatus.active,
+              brief: const NudgeBrief(
+                headline: 'Two minutes before the day ends?',
+                tone: NudgeTone.nudge,
+                animation: NudgeBannerAnimation.steady,
+              ),
+              briefDigest: 'd-$id',
+              createdAt: DateTime(2026, 8, 8, 7),
+              updatedAt: DateTime(2026, 8, 8, 7),
+              vectorClock: null,
+              activatedAt: DateTime(2026, 8, 8, 7),
+              staleAt: staleAt ?? DateTime(2026, 8, 11, 7),
+              provenance: {'specVersionId': '$agentId:spec-v1', ...provenance},
+            )
+            as GoalNudgeEntity;
+
+    void stubGoal({required List<GoalNudgeEntity> banners}) {
+      when(
+        () => repository.getEntity(goalSpecHeadId(agentId)),
+      ).thenAnswer((_) async => specHead);
+      when(
+        () => repository.getEntity('$agentId:spec-v1'),
+      ).thenAnswer((_) async => checkInVersion);
+      when(
+        () => repository.getEntity(goalProgressId(agentId, '2026-08-07')),
+      ).thenAnswer(
+        (_) async => progressRow(
+          periodKey: '2026-08-07',
+          status: GoalTrackStatus.offTrack,
+          attainment: 0.1,
+        ),
+      );
+      when(
+        () => repository.getEntitiesByAgentId(agentId, type: 'goalNudge'),
+      ).thenAnswer((_) async => banners);
+    }
+
+    test('two recordings that meet the day retire the status banner while '
+        'the week is still behind', () async {
+      stubGoal(
+        banners: [
+          banner('ad-today'),
+          banner(
+            'ad-question',
+            provenance: {goalNudgeTriggerKey: goalNudgeQuestionTrigger},
+          ),
+        ],
+      );
+
+      // 1.5 + 2 minutes recorded today.
+      await run(recordedToday(3.5));
+
+      expect(
+        upserts.whereType<GoalProgressEntity>().single.trackStatus,
+        GoalTrackStatus.offTrack,
+        reason: "the goal's status stays window-driven",
+      );
+      final retired = upserts.whereType<GoalNudgeEntity>().single;
+      expect(retired.id, 'ad-today');
+      expect(retired.status, NudgeStatus.retired);
+      expect(retired.retiredAt, now.toUtc());
+      expect(
+        retired.provenance['retireReason'],
+        goalTodayPortionMetRetireReason,
+      );
+      expect(
+        retired.provenance['specVersionId'],
+        '$agentId:spec-v1',
+        reason: 'the rest of the provenance is kept',
+      );
+      // A question asks something else; it waits for its answer (ADR 0146).
+      // A retirement asks for no replacement, so Phase B is not woken.
+      expect(escalations(), isEmpty);
+      // The OS alert stands down with the banner, after the commit.
+      expect(alerts.cleared, [agentId]);
+      expect(alerts.armed, isEmpty);
+      expect(
+        events.indexOf('clear'),
+        greaterThan(events.lastIndexOf('tx:commit')),
+      );
+    });
+
+    test('a day not yet done leaves the banner and the alert up', () async {
+      stubGoal(banners: [banner('ad-today')]);
+
+      await run(recordedToday(2));
+
+      expect(upserts.whereType<GoalNudgeEntity>(), isEmpty);
+      expect(alerts.cleared, isEmpty);
+    });
+
+    test('the banner stays down for the day: its expiry on a done day asks '
+        'for no replacement', () async {
+      // Off track yesterday and today, banner past its deadline: without
+      // today's part this re-arms Phase B for fresh copy (see "an expired
+      // banner re-arms Phase B" above).
+      stubGoal(
+        banners: [banner('ad-overdue', staleAt: DateTime(2026, 8, 8, 9))],
+      );
+
+      await run(recordedToday(3.5));
+
+      expect(
+        upserts.whereType<GoalNudgeEntity>().single.status,
+        NudgeStatus.expired,
+      );
+      expect(escalations(), isEmpty);
+    });
+
+    test('no tier may raise a banner over a done day, and the next day opens '
+        'a fresh part', () async {
+      stubGoal(banners: const []);
+      final tier = phaseA(recordedToday(3.5));
+
+      final today = await withClock(
+        fixedClock,
+        () => tier.deriveWakeFacts(
+          agentId: agentId,
+          version: checkInVersion,
+          now: now,
+        ),
+      );
+      expect(today.facts.trackStatus, GoalTrackStatus.offTrack);
+      expect(today.facts.todayPortionMet, isTrue);
+      expect(automaticGoalAdEligible(today.facts, today.priors), isFalse);
+
+      final tomorrow = now.add(const Duration(days: 1));
+      final nextDay = await withClock(
+        Clock.fixed(tomorrow),
+        () => tier.deriveWakeFacts(
+          agentId: agentId,
+          version: checkInVersion,
+          now: tomorrow,
+        ),
+      );
+      expect(nextDay.facts.todayPortionMet, isFalse);
+      expect(automaticGoalAdEligible(nextDay.facts, nextDay.priors), isTrue);
+    });
+  });
+
   group('the OS alert projection', () {
     GoalSignalWindow badWeek() => GoalSignalWindow(
       quantitativeDailySums: {

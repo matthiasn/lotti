@@ -18,9 +18,11 @@ import 'package:lotti/features/agents/workflow/wake_result.dart';
 import 'package:lotti/features/goals/evaluation/goal_evaluation.dart';
 import 'package:lotti/features/goals/evaluation/goal_progress_evaluator.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_reader.dart';
+import 'package:lotti/features/goals/evaluation/goal_today_portion.dart';
 import 'package:lotti/features/goals/evaluation/goal_track_policy.dart';
 import 'package:lotti/features/goals/model/goal_checkin_weight.dart';
 import 'package:lotti/features/goals/runtime/goal_wake_facts.dart';
+import 'package:lotti/features/goals/workflow/goal_question.dart';
 
 /// Local hour at which the daily cadence tick fires.
 const goalCadenceHour = 6;
@@ -227,7 +229,7 @@ class GoalAgentPhaseA {
       // cadence tick above keeps checking until the start day arrives.
       // The deadline/superseded sweep still runs (there is no derivation
       // to compare digests against).
-      await _expireStaleNudges(agentId, now, activeVersionId: version.id);
+      await _sweepNudges(agentId, now, activeVersionId: version.id);
       return const WakeResult(success: true);
     }
 
@@ -260,10 +262,11 @@ class GoalAgentPhaseA {
         facts,
         derivation.priors,
       );
-      final activeAdExpired = await _expireStaleNudges(
+      final activeAdExpired = await _sweepNudges(
         agentId,
         now,
         activeVersionId: version.id,
+        todayPortionMet: facts.todayPortionMet,
         currentFactsDigest: replacementEligible
             ? goalFactsDigest(
                 facts,
@@ -326,7 +329,9 @@ class GoalAgentPhaseA {
     // register this tick just made durable. Only a persisted transition
     // projects — an unchanged slip must not re-alert, and a fenced write
     // means the revision's own tick will judge again.
-    if (persisted && facts.statusTransitioned) {
+    // Today's part done clears it as well (the eligibility below is false
+    // then): a slip alert must not keep standing over a day the user did.
+    if (persisted && (facts.statusTransitioned || facts.todayPortionMet)) {
       await _projectOffTrackAlert(
         agentId: agentId,
         goalTitle: version.title,
@@ -449,10 +454,19 @@ class GoalAgentPhaseA {
   /// copy, so this never strips a banner that will not be re-minted.
   /// Banners minted before digests existed carry no stamp and keep the
   /// deadline-only behavior.
-  Future<bool> _expireStaleNudges(
+  ///
+  /// When [todayPortionMet] holds, every other active status banner is
+  /// RETIRED — the relationship sweep's rule for a satisfied cadence: the
+  /// obsolete chide must not stand until its deadline, nor wait on the model
+  /// remembering `retire_goal_ad`. That retirement is not an expiry, so it
+  /// never asks for a replacement.
+  ///
+  /// Returns whether an active banner EXPIRED.
+  Future<bool> _sweepNudges(
     String agentId,
     DateTime now, {
     required String activeVersionId,
+    bool todayPortionMet = false,
     String? currentFactsDigest,
   }) async {
     var activeAdExpired = false;
@@ -515,7 +529,27 @@ class GoalAgentPhaseA {
             stampedDigest is String &&
             stampedDigest != currentFactsDigest &&
             activatedDay.isBefore(GoalWindow.dayUtc(now));
-        if (!deadlinePassed && !dataStale) continue;
+        if (!deadlinePassed && !dataStale) {
+          // Today's part is done: the status banner has nothing left to ask
+          // today. Retired, not expired — the user's day answered it, the
+          // clock did not — and `automaticGoalAdEligible` keeps every tier
+          // from raising another until tomorrow's part opens. A question's
+          // banner asks something else and stays (ADR 0146).
+          if (todayPortionMet && !isGoalQuestionNudge(nudge)) {
+            await _syncService.upsertEntity(
+              nudge.copyWith(
+                status: NudgeStatus.retired,
+                retiredAt: now.toUtc(),
+                updatedAt: now,
+                provenance: {
+                  ...nudge.provenance,
+                  'retireReason': goalTodayPortionMetRetireReason,
+                },
+              ),
+            );
+          }
+          continue;
+        }
         await _syncService.upsertEntity(
           nudge.copyWith(
             status: NudgeStatus.expired,
@@ -607,10 +641,41 @@ class GoalAgentPhaseA {
         hasActiveLabelTimer: signals.hasActiveLabelTimer,
         reportedStatus: periodReport.status,
         periodReported: periodReport.covered,
+        todayPortionMet: goalTodayPortionMet(
+          criterion: version.criteria,
+          signals: signals,
+          evaluation: evaluation,
+          reference: now,
+          evaluator: _evaluator,
+        ),
       ),
       periodKey: periodKey,
       priors: priors,
       existingToday: existingToday is GoalProgressEntity ? existingToday : null,
+    );
+  }
+
+  /// Whether today's part of [version] is done as of [now] — the banner fact
+  /// alone, for a wake whose derivation evaluates another day (an overdue
+  /// escalation): the banners it retires or raises belong to the actual day.
+  Future<bool> todayPortionMetAt({
+    required String agentId,
+    required GoalSpecVersionEntity version,
+    required DateTime now,
+  }) async {
+    final signals = await _signalReader.read(
+      criteria: version.criteria,
+      reference: now,
+      shortTermDays: _policy.shortTermDays,
+      includeTimeEntryEvidence: false,
+      goalEntryId: _goalEntryIdFor?.call(agentId),
+    );
+    return goalTodayPortionMet(
+      criterion: version.criteria,
+      signals: signals,
+      evaluation: _evaluator.evaluate(version.criteria, signals, now),
+      reference: now,
+      evaluator: _evaluator,
     );
   }
 

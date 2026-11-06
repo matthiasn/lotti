@@ -383,6 +383,51 @@ void main() {
     expect(digest(changedRetained), isNot(digest(entries)));
   });
 
+  group("today's part done stands every banner down", () {
+    const evaluation = GoalEvaluation(
+      attainment: 0.2,
+      satisfied: false,
+      dataCoverage: 1,
+      results: {},
+    );
+    GoalWakeFacts slipping({required bool todayPortionMet}) => GoalWakeFacts(
+      trackStatus: GoalTrackStatus.offTrack,
+      evaluation: evaluation,
+      todayPortionMet: todayPortionMet,
+    );
+
+    test('an off-track goal qualifies until today is done', () {
+      expect(
+        automaticGoalAdEligible(slipping(todayPortionMet: false), const []),
+        isTrue,
+      );
+      expect(
+        automaticGoalAdEligible(slipping(todayPortionMet: true), const []),
+        isFalse,
+      );
+    });
+
+    test('the status half keeps answering, so a retirement can say why', () {
+      expect(
+        goalStatusPermitsAutomaticAd(
+          slipping(todayPortionMet: true),
+          const [],
+        ),
+        isTrue,
+      );
+      expect(
+        goalStatusPermitsAutomaticAd(
+          const GoalWakeFacts(
+            trackStatus: GoalTrackStatus.onTrack,
+            evaluation: evaluation,
+          ),
+          const [],
+        ),
+        isFalse,
+      );
+    });
+  });
+
   test('label-time model evidence has a deterministic complete tie-break', () {
     final at = DateTime(2026, 8, 9, 9);
     GoalLabelTimeEntryEvidence evidence(String entryId) =>
