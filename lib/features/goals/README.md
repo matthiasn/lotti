@@ -223,7 +223,10 @@ confirmation step as the same field rendered read-only behind a pencil
 affordance. Editing is one page: *Your goal* — the statement in your words, the goal's
 name and its category, under a line naming the version the save starts —
 then the signals, then *Your agent* — whether it answers what you tell it,
-and its name — above *Cancel* and one *Save new version*; leaving with unsaved changes asks first, as the person editor
+its name, and the language it writes its briefings in (*Automatic* follows the
+goal's category language; a language picked by hand stands, and the page
+suggests the journal's when they drift apart) — above *Cancel* and one *Save
+new version* on the app's sticky action bar; leaving with unsaved changes asks first, as the person editor
 does. The goal page names the goal's category above its title with the person
 page's selector, so a goal moves to another category in two taps. The automatic step count
 is an always-visible signal row rather than an intention-gated one, and an

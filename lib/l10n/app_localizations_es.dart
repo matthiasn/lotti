@@ -8413,6 +8413,31 @@ class AppLocalizationsEs extends AppLocalizations {
       'Sistólica y diastólica · mmHg · promedio de 7 días';
 
   @override
+  String get goalFormBriefingLanguageAutomatic => 'Automático';
+
+  @override
+  String goalFormBriefingLanguageAutomaticNamed(String language) {
+    return 'Automático · $language';
+  }
+
+  @override
+  String get goalFormBriefingLanguageHelper =>
+      'El idioma en el que escribo tus resúmenes. Automático sigue tu diario.';
+
+  @override
+  String get goalFormBriefingLanguageLabel => 'Idioma de los resúmenes';
+
+  @override
+  String goalFormBriefingLanguageSuggestion(String language) {
+    return 'Tu diario ahora está en $language.';
+  }
+
+  @override
+  String goalFormBriefingLanguageUse(String language) {
+    return 'Usar $language';
+  }
+
+  @override
   String goalFormCategoryTimeCadence(
     String categoryName,
     String direction,

@@ -11,6 +11,7 @@ import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/features/ai/service/text_chunker.dart';
 import 'package:lotti/features/goals/evaluation/goal_evaluation.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_window.dart';
+import 'package:lotti/features/goals/logic/goal_briefing_language.dart';
 import 'package:lotti/features/goals/logic/goal_charter.dart';
 import 'package:lotti/features/goals/runtime/goal_wake_facts.dart';
 import 'package:lotti/features/goals/workflow/goal_facts_renderer.dart';
@@ -138,6 +139,7 @@ void main() {
     Map<String, String> criterionNames = const {},
     Map<String, Object?>? charter,
     int newCheckIns = 0,
+    GoalBriefingLanguage? language,
   }) {
     final text = withClock(
       fixedClock,
@@ -154,6 +156,7 @@ void main() {
         criterionNames: criterionNames,
         charter: charter,
         newCheckInsSinceLastReport: newCheckIns,
+        language: language,
       ),
     );
     expect(
@@ -168,11 +171,38 @@ void main() {
     return jsonDecode(fence) as Map<String, dynamic>;
   }
 
+  test('names the language every word of prose is written in', () {
+    expect(
+      renderedJson(
+        language: resolveGoalBriefingLanguage(chosen: null, journal: 'de'),
+      )['language'],
+      'de (German)',
+    );
+    expect(
+      renderedJson(
+        language: resolveGoalBriefingLanguage(chosen: 'fr', journal: 'de'),
+      )['language'],
+      'fr (French)',
+    );
+  });
+
+  test("without a language FACTS still carry one: the user's own words, "
+      'English when there are none', () {
+    expect(renderedJson()['language'], goalUnsetLanguageFactsLine);
+    expect(
+      renderedJson(
+        language: resolveGoalBriefingLanguage(chosen: null, journal: null),
+      )['language'],
+      goalUnsetLanguageFactsLine,
+    );
+  });
+
   test('renders the exact section vocabulary the evals validated', () {
     final json = renderedJson();
     expect(json.keys, {
       'generatedAt',
       'localTime',
+      'language',
       'goal',
       'evaluation',
       'reporting',

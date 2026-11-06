@@ -25,6 +25,7 @@ _AgentConfig _$AgentConfigFromJson(Map<String, dynamic> json) => _AgentConfig(
   updateIntervalMinutes: (json['updateIntervalMinutes'] as num?)?.toInt(),
   feedbackWindowDays: (json['feedbackWindowDays'] as num?)?.toInt(),
   recursionDepth: (json['recursionDepth'] as num?)?.toInt(),
+  languageCode: json['languageCode'] as String?,
 );
 
 Map<String, dynamic> _$AgentConfigToJson(_AgentConfig instance) =>
@@ -39,6 +40,7 @@ Map<String, dynamic> _$AgentConfigToJson(_AgentConfig instance) =>
       'updateIntervalMinutes': instance.updateIntervalMinutes,
       'feedbackWindowDays': instance.feedbackWindowDays,
       'recursionDepth': instance.recursionDepth,
+      'languageCode': instance.languageCode,
     };
 
 const _$AgentWakeCadenceEnumMap = {

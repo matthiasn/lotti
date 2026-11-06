@@ -8396,6 +8396,31 @@ class AppLocalizationsCs extends AppLocalizations {
       'Systolický a diastolický · mmHg · 7denní průměr';
 
   @override
+  String get goalFormBriefingLanguageAutomatic => 'Automaticky';
+
+  @override
+  String goalFormBriefingLanguageAutomaticNamed(String language) {
+    return 'Automaticky · $language';
+  }
+
+  @override
+  String get goalFormBriefingLanguageHelper =>
+      'Jazyk, ve kterém ti píšu přehledy. Automaticky se řídí tvým deníkem.';
+
+  @override
+  String get goalFormBriefingLanguageLabel => 'Jazyk přehledů';
+
+  @override
+  String goalFormBriefingLanguageSuggestion(String language) {
+    return 'Tvůj deník je teď v jazyce $language.';
+  }
+
+  @override
+  String goalFormBriefingLanguageUse(String language) {
+    return 'Použít $language';
+  }
+
+  @override
   String goalFormCategoryTimeCadence(
     String categoryName,
     String direction,

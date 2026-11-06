@@ -721,10 +721,17 @@ The editors of what an agent serves are one page:
 — the app bar with the way back and the editor's title, the scaffold's
 canvas, a reading column capped at `kActionListContentMaxWidth` with an
 optional pinned header (the goal wizard's step progress) over the scrolling
-body, and an opaque footer under a hairline holding *Cancel* on the leading
-edge and the primary at its own width on the trailing one
-(`DesignSystemModalActionBar`'s `compactPrimary`). While `busy` the body
-absorbs input and the footer stays live. The goal editor and the person
+body, and the app's sticky action bar: a `DesignSystemGlassStrip` (the
+scaffold sets `extendBody`, so the body scrolls behind the glass and pads its
+end by the bar's height) carrying a `DesignSystemModalActionBar` in
+`compactPrimary` — *Cancel* on the leading edge, the primary at its own width
+on the trailing one, both `DesignSystemButtonSize.large`, the size every other
+action bar uses. The bar sits in the same capped column as the fields, so its
+buttons line up with them on a wide window. The scaffold builds the primary
+itself from `primaryLabel` / `onPrimary` (null disables it), so an editor
+cannot hand it a button of another size; it once took a ready-made button,
+and both editors passed the default small one. While `busy` the body absorbs
+input and the primary shows its spinner. The goal editor and the person
 editor (`/people/new`, `/people/<id>/edit`) both render in it, so neither is a
 sheet beside the other's page.
 

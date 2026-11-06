@@ -14,6 +14,7 @@ import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/ai/helpers/profile_automation_resolver.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_reader.dart';
+import 'package:lotti/features/goals/logic/goal_briefing_language.dart';
 import 'package:lotti/features/goals/model/goal_checkin_weight.dart';
 import 'package:lotti/features/goals/runtime/goal_agent_phase_a.dart';
 import 'package:lotti/features/goals/service/goal_checkin_notifier.dart';
@@ -314,6 +315,51 @@ class GoalAgentService {
     } else if (catchUpNeeded) {
       await scheduleAutomaticReportRefresh(agentId);
     }
+  }
+
+  /// Sets the language [agentId]'s goal agent writes its briefings, reports,
+  /// banners and replies in (`AgentConfig.languageCode`); null returns it to
+  /// following the goal's journal language.
+  ///
+  /// A setting of the agent, not of the goal: it lives on the identity and
+  /// syncs with it, and it does not mint a spec version — a revision would
+  /// supersede the goal's banners over a change that left the goal itself as
+  /// it was. It takes effect from the agent's next report; the standing one
+  /// stays as it was written. Returns whether the identity changed.
+  ///
+  /// Throws [ArgumentError] for a code Lotti does not support, and
+  /// [StateError] when the goal agent does not exist.
+  Future<bool> updateBriefingLanguage({
+    required String agentId,
+    required String? languageCode,
+  }) async {
+    final language = goalSupportedLanguage(languageCode);
+    if (languageCode != null && language == null) {
+      throw ArgumentError.value(
+        languageCode,
+        'languageCode',
+        'not a supported language',
+      );
+    }
+    final changed = await _syncService.runInTransaction(() async {
+      final current = await _repository.getEntity(agentId);
+      if (current is! AgentIdentityEntity ||
+          current.kind != AgentKinds.goalAgent) {
+        throw StateError('Goal agent $agentId not found');
+      }
+      if (current.config.languageCode == language?.code) return false;
+      await _syncService.upsertEntity(
+        current.copyWith(
+          config: current.config.copyWith(languageCode: language?.code),
+          updatedAt: clock.now(),
+        ),
+      );
+      return true;
+    });
+    if (changed) {
+      updateNotifications?.notifyUiOnly({agentId, agentNotification});
+    }
+    return changed;
   }
 
   /// Restores the goal-specific deferred arm after restart. The trigger token

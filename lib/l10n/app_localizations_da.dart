@@ -8312,6 +8312,31 @@ class AppLocalizationsDa extends AppLocalizations {
       'Systolisk og diastolisk · mmHg · 7-dages gennemsnit';
 
   @override
+  String get goalFormBriefingLanguageAutomatic => 'Automatisk';
+
+  @override
+  String goalFormBriefingLanguageAutomaticNamed(String language) {
+    return 'Automatisk · $language';
+  }
+
+  @override
+  String get goalFormBriefingLanguageHelper =>
+      'Sproget, jeg skriver dine briefinger på. Automatisk følger din dagbog.';
+
+  @override
+  String get goalFormBriefingLanguageLabel => 'Sprog for briefinger';
+
+  @override
+  String goalFormBriefingLanguageSuggestion(String language) {
+    return 'Din dagbog er nu på $language.';
+  }
+
+  @override
+  String goalFormBriefingLanguageUse(String language) {
+    return 'Brug $language';
+  }
+
+  @override
   String goalFormCategoryTimeCadence(
     String categoryName,
     String direction,

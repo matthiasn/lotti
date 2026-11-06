@@ -716,7 +716,9 @@ editor open with its toast. The person page's menu *Edit* beams to
 The editor is a page on every screen size, as the goal editor is — the same
 [`AgentEditorScaffold`](../../lib/features/agents/ui/agent_editor_scaffold.dart)
 (app bar with the way back, the scaffold's canvas, a reading column capped at
-the action-list measure, an opaque footer with *Cancel* and the primary). It
+the action-list measure, the app's sticky glass action bar with *Cancel* and
+the primary as large design-system buttons). The page rebuilds under the form
+handle, so the primary's label and whether it can save follow the form. It
 was a modal sheet on a different surface colour while goals edited on a page,
 which made the two editors look like two products.
 [`RelationshipEditorPage`](../../lib/features/relationships/ui/pages/relationship_editor_page.dart)

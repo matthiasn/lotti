@@ -1,5 +1,6 @@
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/goal_criterion.dart';
@@ -118,6 +119,62 @@ void main() {
       ).thenAnswer((_) async => deleted);
 
       expect(await repository.getGoalForAgent('agent-1'), isNull);
+    });
+  });
+
+  group('journalLanguage', () {
+    final goalId = 'derived:${goalEntryUuidV5Input('agent-1')}';
+
+    CategoryDefinition category({String? language}) => CategoryDefinition(
+      id: 'colony',
+      createdAt: testDate,
+      updatedAt: testDate,
+      name: 'Colony',
+      vectorClock: null,
+      private: true,
+      active: true,
+      defaultLanguageCode: language,
+    );
+
+    void fileGoalIn(String? categoryId) {
+      final entry = goalEntry(id: goalId);
+      when(() => mockDb.journalEntityById(goalId)).thenAnswer(
+        (_) async => GoalEntry(
+          meta: entry.meta.copyWith(categoryId: categoryId),
+          data: entry.data,
+        ),
+      );
+    }
+
+    test('is the default language of the category the goal is filed in, '
+        'read past the private-entry gate', () async {
+      fileGoalIn('colony');
+      when(
+        () => mockDb.getCategoryByIdForIntegrity('colony'),
+      ).thenAnswer((_) async => category(language: 'de'));
+
+      expect(await repository.journalLanguage('agent-1'), 'de');
+      verifyNever(() => mockDb.getCategoryById(any()));
+    });
+
+    test('a category without a language has none', () async {
+      fileGoalIn('colony');
+      when(
+        () => mockDb.getCategoryByIdForIntegrity('colony'),
+      ).thenAnswer((_) async => category());
+
+      expect(await repository.journalLanguage('agent-1'), isNull);
+    });
+
+    test('a goal with no category, or no row, reads no category', () async {
+      fileGoalIn(null);
+      expect(await repository.journalLanguage('agent-1'), isNull);
+
+      when(
+        () => mockDb.journalEntityById(goalId),
+      ).thenAnswer((_) async => null);
+      expect(await repository.journalLanguage('agent-1'), isNull);
+      verifyNever(() => mockDb.getCategoryByIdForIntegrity(any()));
     });
   });
 

@@ -188,6 +188,24 @@ void main() {
     );
   });
 
+  test('the journal-language reader reads through the goal repository, and '
+      'is absent without a journal stack', () async {
+    final goals = MockGoalRepository();
+    when(() => goals.journalLanguage('goal-1')).thenAnswer((_) async => 'de');
+    final withJournal = ProviderContainer(
+      overrides: [goalRepositoryProvider.overrideWithValue(goals)],
+    );
+    addTearDown(withJournal.dispose);
+    final withoutJournal = ProviderContainer(
+      overrides: [goalRepositoryProvider.overrideWithValue(null)],
+    );
+    addTearDown(withoutJournal.dispose);
+
+    final reader = withJournal.read(goalJournalLanguageReaderProvider);
+    expect(await reader!('goal-1'), 'de');
+    expect(withoutJournal.read(goalJournalLanguageReaderProvider), isNull);
+  });
+
   test('the runner map routes goal_agent wakes through Phase A', () async {
     final runners = container.read(goalAgentWakeRunnersProvider);
     expect(runners.keys, contains(AgentKinds.goalAgent));

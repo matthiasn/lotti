@@ -5390,6 +5390,45 @@
     "description": "Button opening the unified signal picker on the mapping step."
   },
   "goalFormBloodPressureSource": "Systolic and diastolic · mmHg · 7-day average",
+  "goalFormBriefingLanguageAutomatic": "Automatic",
+  "@goalFormBriefingLanguageAutomatic": {
+    "description": "Value of the briefing-language field when no language is picked and the goal's journal names none."
+  },
+  "goalFormBriefingLanguageAutomaticNamed": "Automatic · {language}",
+  "@goalFormBriefingLanguageAutomaticNamed": {
+    "description": "Value of the briefing-language field when no language is picked: it follows the goal's journal, whose language is named.",
+    "placeholders": {
+      "language": {
+        "type": "String"
+      }
+    }
+  },
+  "goalFormBriefingLanguageHelper": "The language I write your briefings in. Automatic follows your journal.",
+  "@goalFormBriefingLanguageHelper": {
+    "description": "Caption under the briefing-language field, in the goal agent's first person."
+  },
+  "goalFormBriefingLanguageLabel": "Briefing language",
+  "@goalFormBriefingLanguageLabel": {
+    "description": "Label of the goal editor field that sets the language the goal agent writes its briefings in."
+  },
+  "goalFormBriefingLanguageSuggestion": "Your journal is in {language} now.",
+  "@goalFormBriefingLanguageSuggestion": {
+    "description": "Shown under the briefing-language field when the language picked for the goal differs from the goal's journal language.",
+    "placeholders": {
+      "language": {
+        "type": "String"
+      }
+    }
+  },
+  "goalFormBriefingLanguageUse": "Use {language}",
+  "@goalFormBriefingLanguageUse": {
+    "description": "Action that switches the goal's briefing language to the journal's language.",
+    "placeholders": {
+      "language": {
+        "type": "String"
+      }
+    }
+  },
   "goalFormCategoryTimeCadence": "{categoryName}: {direction} {target} {target, select, 1{hour} other{hours}} per rolling 7 days",
   "@goalFormCategoryTimeCadence": {
     "placeholders": {

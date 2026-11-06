@@ -240,6 +240,55 @@ extension _GoalWakePhases on GoalAgentWorkflow {
     }
   }
 
+  /// The language this wake writes in (`AgentConfig.languageCode`, else the
+  /// goal's journal language). Contained like the charter: a journal that
+  /// cannot be read costs this wake only the fallback — it writes in the
+  /// language of the user's own words — and is logged, never the wake.
+  Future<GoalBriefingLanguage> _briefingLanguage(
+    AgentIdentityEntity identity,
+  ) async {
+    final chosen = identity.config.languageCode;
+    final reader = _journalLanguageReader;
+    String? journal;
+    // A language picked for the goal stands without a read of the journal.
+    if (goalSupportedLanguage(chosen) == null && reader != null) {
+      try {
+        journal = await reader(identity.agentId);
+      } catch (error, stackTrace) {
+        logError(
+          'goal journal language unavailable for this wake',
+          error: error,
+          stackTrace: stackTrace,
+        );
+      }
+    }
+    return resolveGoalBriefingLanguage(chosen: chosen, journal: journal);
+  }
+
+  /// Display names for the entities [criteria] refer to, for the renderer.
+  ///
+  /// Contained like the user voice: names are ADDITIVE context, and a read
+  /// that fails must leave the wake with untitled criteria unnamed, never
+  /// fail the wake itself.
+  Future<Map<String, String>> _criterionNames(GoalCriterion criteria) async {
+    final reader = _criterionNameReader;
+    if (reader == null) return const {};
+    final ids = goalCriterionEntityIds(criteria);
+    if (ids.habitIds.isEmpty && ids.dataTypeIds.isEmpty) return const {};
+    try {
+      return await reader(ids);
+    } catch (error, stackTrace) {
+      _domainLogger.error(
+        LogDomain.agentWorkflow,
+        error,
+        subDomain: 'goalCriterionNames',
+        message: 'criterion names unavailable; rendering criteria unnamed',
+        stackTrace: stackTrace,
+      );
+      return const {};
+    }
+  }
+
   /// The `knowledge` FACTS section, or null for a goal with no confirmed
   /// facts. Contained like the charter: unreadable knowledge costs this wake
   /// its knowledge and is logged, never the wake.
@@ -274,6 +323,7 @@ extension _GoalWakePhases on GoalAgentWorkflow {
     Map<String, Object?>? previousBriefing,
     Map<String, Object?>? charter,
     Map<String, Object?>? knowledge,
+    GoalBriefingLanguage? language,
   }) async {
     final renderedFacts = _factsRenderer.render(
       version: version,
@@ -295,6 +345,7 @@ extension _GoalWakePhases on GoalAgentWorkflow {
       previousBriefing: previousBriefing,
       charter: charter,
       knowledge: knowledge,
+      language: language,
     );
     var factsBlock = pendingUserMessage == null
         ? renderedFacts

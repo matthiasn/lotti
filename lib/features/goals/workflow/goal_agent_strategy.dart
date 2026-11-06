@@ -400,8 +400,8 @@ class GoalAgentStrategy extends ConversationStrategy
     // The prompt tells the model that status names are field values, never
     // prose. That instruction is the only thing standing between a weaker
     // model and "the overall status is insufficientData" reaching the user, so
-    // it is enforced here too: reject and let the model retry in the user's
-    // own language. Deliberately not sanitized away — deleting the token would
+    // it is enforced here too: reject and let the model retry in the FACTS
+    // language. Deliberately not sanitized away — deleting the token would
     // leave a sentence with a hole in it, and mapping it to English words
     // would put English into ten other catalogs.
     final tokenInProse = _statusTokenIn([
@@ -428,7 +428,7 @@ class GoalAgentStrategy extends ConversationStrategy
       problems.add(
         '"$token" is a status field value, not prose, and appears in: '
         '"${_sentenceAround(text, token)}". '
-        "Rewrite that text in the user's language and call "
+        'Rewrite that text in the FACTS language and call '
         'update_goal_report again.',
       );
     }

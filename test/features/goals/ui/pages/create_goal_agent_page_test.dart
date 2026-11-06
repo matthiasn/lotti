@@ -26,6 +26,8 @@ import 'package:lotti/features/design_system/components/buttons/design_system_ic
 import 'package:lotti/features/design_system/components/buttons/ds_segmented_toggle.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/components/dropdowns/design_system_dropdown.dart';
+import 'package:lotti/features/design_system/components/glass_strip.dart';
+import 'package:lotti/features/design_system/components/inputs/design_system_picker_field.dart';
 import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
 import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
 import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
@@ -195,6 +197,7 @@ void main() {
     Stream<List<CategoryDefinition>>? categoriesStream,
     List<LabelDefinition> labels = const [],
     Stream<List<LabelDefinition>>? labelsStream,
+    AgentConfig identityConfig = const AgentConfig(),
   }) => withServiceOverrides([
     goalAgentServiceProvider.overrideWithValue(agentService),
     goalSpecRevisionServiceProvider.overrideWithValue(revisionService),
@@ -216,7 +219,10 @@ void main() {
       ).overrideWith((ref) async {
         if (identityFails) throw StateError('identity unavailable');
         if (identityMissing) return null;
-        return _identity.copyWith(lifecycle: identityLifecycle);
+        return _identity.copyWith(
+          lifecycle: identityLifecycle,
+          config: identityConfig,
+        );
       }),
       goalAgentHealthProvider('goal-1').overrideWith(
         (ref) async {
@@ -4628,30 +4634,28 @@ void main() {
       await tester.pumpAndSettle();
 
       final action = find.byKey(const ValueKey('goal-form-primary-action'));
-      // One pinned bottom band on every form factor: the CTA never scrolls
-      // with the content, and it sits on an opaque strip closed by a top
-      // hairline.
+      // One pinned sticky bar on every form factor: the CTA never scrolls
+      // with the content, and it sits on the app's glass action bar.
       expect(
         find.ancestor(of: action, matching: find.byType(ListView)),
         findsNothing,
       );
-      final band = tester.widget<DecoratedBox>(
-        find.ancestor(of: action, matching: find.byType(DecoratedBox)).first,
-      );
-      final bandDecoration = band.decoration as BoxDecoration;
       expect(
-        (bandDecoration.border! as Border).top.color,
-        dsTokensLight.colors.decorative.level01,
+        find.ancestor(
+          of: action,
+          matching: find.byType(DesignSystemGlassStrip),
+        ),
+        findsOneWidget,
       );
-      // As wide as its label, on the band's trailing edge — never a bar
-      // stretched across the column.
-      expect(tester.widget<DesignSystemButton>(action).fullWidth, isFalse);
-      final bandBox = tester.getRect(
-        find.ancestor(of: action, matching: find.byType(DecoratedBox)).first,
-      );
+      // The app's action-bar size, as wide as its label, on the content
+      // column's trailing edge — never a bar stretched across the column.
+      final button = tester.widget<DesignSystemButton>(action);
+      expect(button.size, DesignSystemButtonSize.large);
+      expect(button.fullWidth, isFalse);
+      final column = tester.getRect(find.byType(ListView));
       final actionBox = tester.getRect(action);
-      expect(actionBox.width, lessThan(bandBox.width / 2));
-      expect(actionBox.right, closeTo(bandBox.right, 1));
+      expect(actionBox.width, lessThan(column.width / 2));
+      expect(actionBox.right, closeTo(column.right, 1));
 
       await tester.enterText(
         find.byKey(const ValueKey('goal-form-intention')),
@@ -7040,6 +7044,271 @@ void main() {
         find.text('Saving the goal failed — please try again.'),
         findsOneWidget,
       );
+    });
+  });
+
+  group('the briefing language', () {
+    late List<String> navigated;
+
+    CategoryDefinition colony({String? language}) =>
+        _category('colony', 'Colony').copyWith(defaultLanguageCode: language);
+
+    Future<void> pumpEdit(
+      WidgetTester tester, {
+      String? chosen,
+      String? journal,
+      Stream<List<CategoryDefinition>>? categoriesStream,
+    }) async {
+      navigated = <String>[];
+      beamToNamedOverride = navigated.add;
+      addTearDown(() => beamToNamedOverride = null);
+      tester.view.physicalSize = const Size(900, 2200);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      when(
+        () => revisionService.reviseFromOwner(
+          agentId: any(named: 'agentId'),
+          baseVersionId: any(named: 'baseVersionId'),
+          displayName: any(named: 'displayName'),
+          title: any(named: 'title'),
+          statement: any(named: 'statement'),
+          criteria: any(named: 'criteria'),
+        ),
+      ).thenAnswer(
+        (_) async => const GoalSpecRevisionRefused(
+          GoalSpecRevisionService.ownerNoChangesReason,
+        ),
+      );
+      when(
+        () => agentService.updateBriefingLanguage(
+          agentId: any(named: 'agentId'),
+          languageCode: any(named: 'languageCode'),
+        ),
+      ).thenAnswer((_) async => true);
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const CreateGoalAgentPage(agentId: 'goal-1'),
+          overrides: withServiceOverrides([
+            ...overrides(
+              editSpec: _spec(),
+              identityConfig: AgentConfig(languageCode: chosen),
+              categoriesStream:
+                  categoriesStream ?? Stream.value([colony(language: journal)]),
+            ),
+            measurableDataTypesStreamProvider.overrideWith(
+              (ref) => Stream.value(const []),
+            ),
+            goalCategoryIdProvider(
+              'goal-1',
+            ).overrideWith((ref) async => 'colony'),
+          ]),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    final field = find.byKey(const ValueKey('goal-form-briefing-language'));
+    final useJournal = find.byKey(
+      const ValueKey('goal-form-briefing-language-use-journal'),
+    );
+
+    // The action's ink hugs its label inside a full-width row, so it is
+    // tapped on the label rather than at the row's centre.
+    Future<void> takeSuggestion(WidgetTester tester) async {
+      final label = find.descendant(
+        of: useJournal,
+        matching: find.text('Use German'),
+      );
+      await tester.ensureVisible(label);
+      await tester.tap(label);
+      await tester.pumpAndSettle();
+    }
+
+    String shownValue(WidgetTester tester) => tester
+        .widget<DesignSystemPickerField>(
+          find.ancestor(
+            of: field,
+            matching: find.byType(DesignSystemPickerField),
+          ),
+        )
+        .value!;
+
+    Future<void> save(WidgetTester tester) async {
+      await tester.tap(find.text('Save new version'));
+      // By frames: the saving button spins until the page leaves.
+      for (var i = 0; i < 5; i++) {
+        await tester.pump();
+      }
+    }
+
+    Future<void> pickInModal(WidgetTester tester, String label) async {
+      await tester.ensureVisible(field);
+      await tester.tap(field);
+      await tester.pumpAndSettle();
+      // The list is long: Clear, for one, closes it.
+      final row = find.text(label).last;
+      await tester.ensureVisible(row);
+      await tester.pumpAndSettle();
+      await tester.tap(row);
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('a goal nobody picked a language for follows its journal, '
+        'and says which language that is', (tester) async {
+      await pumpEdit(tester, journal: 'de');
+
+      expect(shownValue(tester), 'Automatic · German');
+      expect(
+        find.text(
+          'The language I write your briefings in. Automatic follows your '
+          'journal.',
+        ),
+        findsOneWidget,
+      );
+      expect(useJournal, findsNothing);
+    });
+
+    testWidgets('a journal without a language reads plain Automatic', (
+      tester,
+    ) async {
+      await pumpEdit(tester);
+
+      expect(shownValue(tester), 'Automatic');
+    });
+
+    testWidgets('a picked language shows by name, and an untouched one is '
+        'not written again on save', (tester) async {
+      await pumpEdit(tester, chosen: 'fr', journal: 'fr');
+
+      expect(shownValue(tester), 'French');
+      expect(useJournal, findsNothing);
+      await save(tester);
+
+      verifyNever(
+        () => agentService.updateBriefingLanguage(
+          agentId: any(named: 'agentId'),
+          languageCode: any(named: 'languageCode'),
+        ),
+      );
+      expect(navigated, ['/goals/details/goal-1']);
+    });
+
+    testWidgets('when the journal moves away from the picked language, the '
+        "journal's is suggested — and applied only when taken", (
+      tester,
+    ) async {
+      final categories = StreamController<List<CategoryDefinition>>();
+      addTearDown(categories.close);
+      await pumpEdit(
+        tester,
+        chosen: 'en',
+        categoriesStream: categories.stream,
+      );
+      categories.add([colony(language: 'en')]);
+      await tester.pumpAndSettle();
+      expect(useJournal, findsNothing);
+
+      // The category's language changes in Settings while the form is open.
+      categories.add([colony(language: 'de')]);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Your journal is in German now.'), findsOneWidget);
+      expect(shownValue(tester), 'English', reason: 'never applied by itself');
+
+      await takeSuggestion(tester);
+      expect(shownValue(tester), 'German');
+      expect(useJournal, findsNothing);
+
+      await save(tester);
+      verify(
+        () => agentService.updateBriefingLanguage(
+          agentId: 'goal-1',
+          languageCode: 'de',
+        ),
+      ).called(1);
+    });
+
+    testWidgets('a language picked in the picker is saved on the agent, '
+        'beside a spec that did not change', (tester) async {
+      await pumpEdit(tester, journal: 'de');
+
+      await pickInModal(tester, 'Italian');
+      expect(shownValue(tester), 'Italian');
+      await save(tester);
+
+      verify(
+        () => agentService.updateBriefingLanguage(
+          agentId: 'goal-1',
+          languageCode: 'it',
+        ),
+      ).called(1);
+      expect(navigated, ['/goals/details/goal-1']);
+    });
+
+    testWidgets("the picker's Clear returns the goal to its journal", (
+      tester,
+    ) async {
+      await pumpEdit(tester, chosen: 'fr', journal: 'de');
+
+      await pickInModal(tester, 'Clear');
+      expect(shownValue(tester), 'Automatic · German');
+      await save(tester);
+
+      verify(
+        () => agentService.updateBriefingLanguage(
+          agentId: 'goal-1',
+          languageCode: null,
+        ),
+      ).called(1);
+    });
+
+    testWidgets('a changed language is a change: leaving asks first', (
+      tester,
+    ) async {
+      await pumpEdit(tester, chosen: 'en', journal: 'de');
+      await takeSuggestion(tester);
+
+      await tester.tap(find.byKey(const ValueKey('goal-form-cancel')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Discard changes'), findsOneWidget);
+      expect(navigated, isEmpty);
+    });
+
+    testWidgets('a code this build does not know reads as Automatic and is '
+        'never overwritten by an untouched form', (tester) async {
+      await pumpEdit(tester, chosen: 'xx', journal: 'de');
+
+      expect(shownValue(tester), 'Automatic · German');
+      await save(tester);
+
+      verifyNever(
+        () => agentService.updateBriefingLanguage(
+          agentId: any(named: 'agentId'),
+          languageCode: any(named: 'languageCode'),
+        ),
+      );
+    });
+
+    testWidgets('a save that fails to store the language says so on the '
+        'form and stays', (tester) async {
+      await pumpEdit(tester, chosen: 'en', journal: 'de');
+      when(
+        () => agentService.updateBriefingLanguage(
+          agentId: any(named: 'agentId'),
+          languageCode: any(named: 'languageCode'),
+        ),
+      ).thenThrow(StateError('gone'));
+      await takeSuggestion(tester);
+
+      await save(tester);
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Saving the goal failed — please try again.'),
+        findsOneWidget,
+      );
+      expect(navigated, isEmpty);
     });
   });
 }

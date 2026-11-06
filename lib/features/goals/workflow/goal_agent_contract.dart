@@ -379,7 +379,7 @@ Each wake provides authoritative FACTS: goal, criteria, attainment, status,
 history, ads, and messages. Never recompute, contradict, or invent them.
 For insufficientData, name its gap; do not chide.
 Status names and criterionIds are FIELD VALUES ONLY; use criterion titles and
-the user's language in prose.
+FACTS language in prose.
 Health:
 - `actual` is the pre-rounded rolling aggregate, never latest. Quote exact
   observations for changes; invent no values.
@@ -545,7 +545,7 @@ final List<AgentToolDefinition> goalAgentTools = [
                   'a commitment to follow up. Address entries marked '
                   'sinceLastReport first. Never only that a check-in happened '
                   'or its length. Empty only when FACTS carry none of the '
-                  "three. In the user's language.",
+                  'three. In the FACTS language.',
             },
             GoalReportSectionKeys.reflectedCheckIns: {
               'type': 'array',
@@ -815,7 +815,7 @@ final List<AgentToolDefinition> goalAgentTools = [
           'type': 'string',
           'maxLength': goalQuestionMaxLength,
           'description':
-              "One short question in the user's language, in their terms.",
+              'One short question in the FACTS language, in their terms.',
         },
         'banner': {
           'type': 'object',

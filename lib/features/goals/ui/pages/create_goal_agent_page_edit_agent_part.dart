@@ -1,7 +1,7 @@
 part of 'create_goal_agent_page.dart';
 
-/// The goal's agent on the single edit page: how it answers and its name,
-/// under the statement, signals and name — the fields creation's
+/// The goal's agent on the single edit page: how it answers, its name and
+/// the language it briefs in, under the statement, signals and name — the fields creation's
 /// confirmation step asks for, here on the same page as everything else so
 /// an edit is one scroll and one *Save new version*.
 class _EditAgentSection extends StatelessWidget {
@@ -12,6 +12,9 @@ class _EditAgentSection extends StatelessWidget {
     required this.enabled,
     required this.checkInsAreSubstance,
     required this.onCheckInsAreSubstanceChanged,
+    required this.briefingLanguage,
+    required this.journalLanguage,
+    required this.onBriefingLanguageChanged,
   });
 
   /// The section as [form] stands.
@@ -23,6 +26,9 @@ class _EditAgentSection extends StatelessWidget {
         enabled: !form._saving,
         checkInsAreSubstance: form._shownCheckInsAreSubstance,
         onCheckInsAreSubstanceChanged: form._setCheckInsAreSubstance,
+        briefingLanguage: form._languageCode,
+        journalLanguage: form._journalLanguageCode,
+        onBriefingLanguageChanged: form._saving ? null : form._setLanguage,
       );
 
   final TextEditingController persona;
@@ -35,6 +41,12 @@ class _EditAgentSection extends StatelessWidget {
   /// reminders switch sits in theirs.
   final bool checkInsAreSubstance;
   final ValueChanged<bool> onCheckInsAreSubstanceChanged;
+
+  /// The language picked for the agent's briefings — null follows the
+  /// [journalLanguage] — and how it changes (null while saving).
+  final String? briefingLanguage;
+  final String? journalLanguage;
+  final ValueChanged<String?>? onBriefingLanguageChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -63,6 +75,12 @@ class _EditAgentSection extends StatelessWidget {
             errorText: personaError,
             enabled: enabled,
             onChanged: (_) => onPersonaChanged(),
+          ),
+          SizedBox(height: tokens.spacing.step5),
+          _GoalBriefingLanguageField(
+            chosen: briefingLanguage,
+            journal: journalLanguage,
+            onChanged: onBriefingLanguageChanged,
           ),
         ],
       ),
@@ -117,6 +135,7 @@ extension _GoalEditLeave on _CreateGoalAgentPageState {
       _statement.text,
       _title.text,
       _persona.text,
+      _languageCode,
       _categoryId,
       sorted(_habitTargets),
       sorted(_measurableTargets),

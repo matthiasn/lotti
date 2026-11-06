@@ -8438,6 +8438,31 @@ class AppLocalizationsFr extends AppLocalizations {
       'Systolique et diastolique · mmHg · moyenne sur 7 jours';
 
   @override
+  String get goalFormBriefingLanguageAutomatic => 'Automatique';
+
+  @override
+  String goalFormBriefingLanguageAutomaticNamed(String language) {
+    return 'Automatique · $language';
+  }
+
+  @override
+  String get goalFormBriefingLanguageHelper =>
+      'La langue dans laquelle j’écris tes briefings. Automatique suit ton journal.';
+
+  @override
+  String get goalFormBriefingLanguageLabel => 'Langue des briefings';
+
+  @override
+  String goalFormBriefingLanguageSuggestion(String language) {
+    return 'Ton journal est maintenant en $language.';
+  }
+
+  @override
+  String goalFormBriefingLanguageUse(String language) {
+    return 'Utiliser $language';
+  }
+
+  @override
   String goalFormCategoryTimeCadence(
     String categoryName,
     String direction,
