@@ -98,12 +98,26 @@ AgentStateEntity makeTestState({
   DateTime? nextWakeAt,
   DateTime? sleepUntil,
   DateTime? scheduledWakeAt,
+  DateTime? unmetRequestAt,
+  String? unmetRequestReason,
+  DateTime? unmetRequestClearedAt,
 }) {
   return AgentDomainEntity.agentState(
         id: id,
         agentId: agentId,
         revision: revision,
-        slots: slots,
+        // The unmet-request watermarks live in the slots; the named
+        // parameters are a convenience over `slots.copyWith`.
+        slots:
+            unmetRequestAt == null &&
+                unmetRequestReason == null &&
+                unmetRequestClearedAt == null
+            ? slots
+            : slots.copyWith(
+                unmetRequestAt: unmetRequestAt,
+                unmetRequestReason: unmetRequestReason,
+                unmetRequestClearedAt: unmetRequestClearedAt,
+              ),
         updatedAt: updatedAt ?? kAgentTestDate,
         vectorClock: vectorClock,
         wakeCounter: wakeCounter == 0

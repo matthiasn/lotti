@@ -121,6 +121,60 @@ extension TaskAgentToolHandlers on TaskAgentStrategy {
     );
   }
 
+  /// Handles `flag_unmet_request`: keeps the user-facing reason for the
+  /// task card and files the private details as a critical grievance, so
+  /// the card's "check observations" always has something to show — and
+  /// template evolution reads it with the other grievances.
+  ///
+  /// The flag is written with the wake's other outputs, so a wake that
+  /// fails after the call raises nothing. A second call in one wake replaces
+  /// the reason; each call's details stay as their own observation.
+  Future<void> _handleFlagUnmetRequest(
+    Map<String, dynamic> args,
+    String callId,
+    ConversationManager manager,
+  ) async {
+    final rawReason = args['reason'];
+    final rawDetails = args['details'];
+    final reason = rawReason is String ? rawReason.trim() : '';
+    final details = rawDetails is String ? rawDetails.trim() : '';
+    if (reason.isEmpty || details.isEmpty) {
+      const error =
+          'Error: flag_unmet_request needs a non-empty "reason" (one '
+          'sentence to the user) and "details" (a private paragraph).';
+      manager.addToolResponse(toolCallId: callId, response: error);
+      await _recordToolResultMessage(
+        toolName: TaskAgentStrategy.unmetRequestToolName,
+        errorMessage: error,
+      );
+      return;
+    }
+    _unmetRequestReason = reason;
+    _observations.add(
+      ObservationRecord(
+        text: 'Unmet request: $reason\n\n$details',
+        priority: ObservationPriority.critical,
+        category: ObservationCategory.grievance,
+      ),
+    );
+
+    _domainLogger.log(
+      LogDomain.agentWorkflow,
+      'Flagged an unmet request',
+      subDomain: 'TaskAgentStrategy',
+    );
+
+    manager.addToolResponse(
+      toolCallId: callId,
+      response:
+          'Flagged. The task card shows your reason until the user clears '
+          'it; the details are filed as a critical observation.',
+    );
+    await _recordToolResultMessage(
+      toolName: TaskAgentStrategy.unmetRequestToolName,
+    );
+  }
+
   /// Handles `find_related_tasks`: searches by meaning, on the device, for
   /// the tasks the model's query describes, and answers with them.
   Future<void> _handleFindRelatedTasks(

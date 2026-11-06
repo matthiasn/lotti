@@ -466,6 +466,9 @@ class TaskAgentContextBuilder {
   /// (see `AiInputRepository.buildCategoryKnowledge`); it opens the stable
   /// prefix as a `## Category Knowledge` section and is omitted when blank.
   ///
+  /// [agentState] supplies the agent's unmet-request flag, rendered in the
+  /// volatile tail as `## Unmet Request` once the agent has ever flagged.
+  ///
   /// Returns the full text plus the offsets of the embedded (derivable) log
   /// block, so the persisted prompt record can store only the non-derivable
   /// halves (ADR 0020 v2 prompt records).
@@ -487,6 +490,7 @@ class TaskAgentContextBuilder {
     String? pullRequestsContext,
     TaskStatusTransition? statusTransition,
     List<TaskProjectOption> projectCandidates = const [],
+    AgentStateEntity? agentState,
   }) async {
     final buffer = StringBuffer();
 
@@ -671,6 +675,11 @@ class TaskAgentContextBuilder {
     );
     if (attentionSection.isNotEmpty) {
       buffer.write(attentionSection);
+    }
+
+    final unmetRequestSection = _formatUnmetRequest(agentState);
+    if (unmetRequestSection.isNotEmpty) {
+      buffer.write(unmetRequestSection);
     }
 
     if (journalObservations.isNotEmpty) {

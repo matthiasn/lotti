@@ -493,7 +493,12 @@ or a merged counter that changed while the wake ran
 last-writer-wins with the row, so a face must not be read from one: the
 relationship agent records its outcomes as two watermarks, `lastWakeAt` and
 `lastWakeFailedAt`, joined by latest instant on every receive, stamped when
-the wake ends (`specs/tla/AgentWakeOutcome.tla`, ADR 0115).
+the wake ends (`specs/tla/AgentWakeOutcome.tla`, ADR 0115). The task agent's
+unmet-request flag, in its slots, is the same shape (ADR 0159): `unmetRequestAt` — with the
+`unmetRequestReason` that travels with the newer stamp, the row winner's on a
+tie — against the user's `unmetRequestClearedAt`, both joined by latest
+instant, so a clear on one device clears it on every device and a flag raised
+after the clear stands again.
 
 The head pointer, `recentHeadMessageId`, has one local writer —
 `_appendMessage`, plus `appendJoin` for a join — and every other state write

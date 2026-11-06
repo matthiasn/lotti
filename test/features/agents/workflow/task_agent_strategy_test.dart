@@ -1205,6 +1205,88 @@ void main() {
       });
     });
 
+    group('flag_unmet_request tool', () {
+      Future<void> flag(String id, Map<String, dynamic> args) =>
+          strategy.processToolCalls(
+            toolCalls: [
+              _toolCall(id: id, name: 'flag_unmet_request', args: args),
+            ],
+            manager: mockManager,
+          );
+
+      test('keeps the reason for the card and files the details as a '
+          'critical grievance, without touching the task', () async {
+        await flag('call-flag', {
+          'reason': '  I could log only one of the five time blocks.  ',
+          'details': 'create_time_entry took one entry per call.',
+        });
+
+        expect(
+          strategy.extractUnmetRequestReason(),
+          'I could log only one of the five time blocks.',
+        );
+        final obs = strategy.extractObservations().single;
+        expect(obs.priority, ObservationPriority.critical);
+        expect(obs.category, ObservationCategory.grievance);
+        expect(
+          obs.text,
+          'Unmet request: I could log only one of the five time blocks.'
+          '\n\ncreate_time_entry took one entry per call.',
+        );
+        verify(
+          () => mockManager.addToolResponse(
+            toolCallId: 'call-flag',
+            response: any(named: 'response', that: startsWith('Flagged.')),
+          ),
+        ).called(1);
+        verifyNever(
+          () => mockExecutor.execute(
+            toolName: any(named: 'toolName'),
+            args: any(named: 'args'),
+            targetEntityId: any(named: 'targetEntityId'),
+            resolveCategoryId: any(named: 'resolveCategoryId'),
+            executeHandler: any(named: 'executeHandler'),
+            readVectorClock: any(named: 'readVectorClock'),
+          ),
+        );
+      });
+
+      test('a second flag in one wake replaces the reason and keeps both '
+          'details', () async {
+        await flag('call-1', {'reason': 'First.', 'details': 'One.'});
+        await flag('call-2', {'reason': 'Second.', 'details': 'Two.'});
+
+        expect(strategy.extractUnmetRequestReason(), 'Second.');
+        expect(strategy.extractObservations(), hasLength(2));
+      });
+
+      for (final (label, args) in [
+        ('a blank reason', {'reason': '  ', 'details': 'Some details.'}),
+        ('missing details', {'reason': 'A reason.'}),
+        ('a non-string reason', {'reason': 3, 'details': 'Some details.'}),
+      ]) {
+        test('rejects $label without raising a flag', () async {
+          await flag('call-bad', args);
+
+          expect(strategy.extractUnmetRequestReason(), isNull);
+          expect(strategy.extractObservations(), isEmpty);
+          verify(
+            () => mockManager.addToolResponse(
+              toolCallId: 'call-bad',
+              response: any(
+                named: 'response',
+                that: startsWith('Error: flag_unmet_request needs'),
+              ),
+            ),
+          ).called(1);
+        });
+      }
+
+      test('raises nothing in a wake that never calls it', () {
+        expect(strategy.extractUnmetRequestReason(), isNull);
+      });
+    });
+
     group('shouldContinue', () {
       test('delegates to manager.canContinue()', () {
         when(mockManager.canContinue).thenReturn(true);

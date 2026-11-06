@@ -313,5 +313,42 @@ void main() {
         );
       });
     });
+
+    group('flag_unmet_request', () {
+      late AgentToolDefinition tool;
+
+      setUp(() {
+        tool = AgentToolRegistry.taskAgentTools.firstWhere(
+          (t) => t.name == TaskAgentToolNames.flagUnmetRequest,
+        );
+      });
+
+      test('is for a completed wake whose request did not complete, not '
+          'for waiting work or pending proposals', () {
+        expect(tool.description, contains('your wake completes'));
+        expect(tool.description, contains('frustrated'));
+        expect(tool.description, contains('until the user clears it'));
+        expect(tool.description, contains('merely waiting on someone'));
+        expect(tool.description, contains('awaiting the user'));
+        expect(tool.description, contains('Unmet Request section'));
+      });
+
+      test('requires a user-facing reason and private details, closed to '
+          'other properties', () {
+        final properties = tool.parameters['properties'] as Map;
+        expect(properties.keys, unorderedEquals(['reason', 'details']));
+        expect((properties['reason'] as Map)['type'], 'string');
+        expect((properties['details'] as Map)['type'], 'string');
+        expect(tool.parameters['required'], ['reason', 'details']);
+        expect(tool.parameters['additionalProperties'], isFalse);
+      });
+
+      test('acts at once, never as a proposal awaiting confirmation', () {
+        expect(
+          AgentToolRegistry.deferredTools,
+          isNot(contains(TaskAgentToolNames.flagUnmetRequest)),
+        );
+      });
+    });
   });
 }

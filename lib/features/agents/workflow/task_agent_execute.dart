@@ -297,6 +297,7 @@ extension TaskAgentExecute on TaskAgentWorkflow {
       projectCandidates: categoryHasProjects
           ? await _projectCandidates(taskAttentionContext.task)
           : const [],
+      agentState: state,
     );
     final userMessage = builtMessage.text;
 

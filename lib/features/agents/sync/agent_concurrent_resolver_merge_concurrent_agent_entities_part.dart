@@ -698,6 +698,10 @@ ChangeItem _mergeChangeItem(ChangeItem local, ChangeItem incoming) {
 /// says whether the last outcome was a failure; left to the LWW winner, a
 /// later unrelated write of the row carried an older outcome over a newer
 /// one, and the person page said *failed* beside a good briefing.
+/// The unmet-request pair in the slots, `unmetRequestAt` and
+/// `unmetRequestClearedAt`, is merged the same way, so a clear on one device
+/// is not undone by a concurrent write on another; the reason travels with the
+/// newer flag.
 ///
 /// The winner's vector clock is kept deliberately: a future update that causally
 /// dominates it necessarily saw — and (since every replica applies this same
@@ -726,6 +730,19 @@ AgentStateEntity mergeAgentStateCounters({
       incoming.lastWakeFailedAt,
     ),
     slots: winner.slots.copyWith(
+      unmetRequestAt: _latestInstant(
+        local.slots.unmetRequestAt,
+        incoming.slots.unmetRequestAt,
+      ),
+      unmetRequestReason: _reasonOfLatestUnmetRequest(
+        winner: winner.slots,
+        local: local.slots,
+        incoming: incoming.slots,
+      ),
+      unmetRequestClearedAt: _latestInstant(
+        local.slots.unmetRequestClearedAt,
+        incoming.slots.unmetRequestClearedAt,
+      ),
       totalSessionsCompleted: local.slots.totalSessionsCompleted.merge(
         incoming.slots.totalSessionsCompleted,
       ),
@@ -734,6 +751,23 @@ AgentStateEntity mergeAgentStateCounters({
       ),
     ),
   );
+}
+
+/// The reason written with the newer `unmetRequestAt` of [local] and
+/// [incoming], so the merged flag never pairs one device's stamp with the
+/// other's words. Equal stamps fall back to the deterministic [winner].
+String? _reasonOfLatestUnmetRequest({
+  required AgentSlots winner,
+  required AgentSlots local,
+  required AgentSlots incoming,
+}) {
+  final localAt = local.unmetRequestAt;
+  final incomingAt = incoming.unmetRequestAt;
+  if (localAt == null) return incoming.unmetRequestReason;
+  if (incomingAt == null) return local.unmetRequestReason;
+  if (localAt.isAfter(incomingAt)) return local.unmetRequestReason;
+  if (incomingAt.isAfter(localAt)) return incoming.unmetRequestReason;
+  return winner.unmetRequestReason;
 }
 
 /// The accumulator and visibility fields every nudge variant shares — the

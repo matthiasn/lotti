@@ -266,6 +266,33 @@ void main() {
         );
       });
 
+      test('an unmet request stands while it is newer than the last clear, '
+          'and a clear in the same instant clears it', () {
+        final at = DateTime.utc(2026, 2, 20, 9);
+        final later = at.add(const Duration(seconds: 1));
+        bool standing({DateTime? raisedAt, DateTime? clearedAt}) =>
+            (AgentDomainEntity.agentState(
+                      id: 'state-unmet',
+                      agentId: 'agent-001',
+                      slots: AgentSlots(
+                        unmetRequestAt: raisedAt,
+                        unmetRequestClearedAt: clearedAt,
+                      ),
+                      updatedAt: updatedAt,
+                      vectorClock: null,
+                    )
+                    as AgentStateEntity)
+                .hasOpenUnmetRequest;
+
+        expect(standing(), isFalse);
+        // A clear with nothing ever flagged stands for nothing.
+        expect(standing(clearedAt: at), isFalse);
+        expect(standing(raisedAt: at), isTrue);
+        expect(standing(raisedAt: later, clearedAt: at), isTrue);
+        expect(standing(raisedAt: at, clearedAt: later), isFalse);
+        expect(standing(raisedAt: at, clearedAt: at), isFalse);
+      });
+
       test('the conservative read, for a reader that only shortens a '
           'deadline: the count decides while no failed wake has stamped the '
           'row, and never once one has', () {

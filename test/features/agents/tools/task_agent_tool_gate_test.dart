@@ -97,6 +97,8 @@ void main() {
       // request_attention has no precondition — raising a new claim is always
       // available — so it must survive.
       expect(visible, contains(TaskAgentToolNames.requestAttention));
+      // Nor does saying a request could not be met: any wake may hit it.
+      expect(visible, contains(TaskAgentToolNames.flagUnmetRequest));
     });
 
     test('hides checklist and label tools when there is nothing to target', () {

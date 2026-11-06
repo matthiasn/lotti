@@ -195,6 +195,33 @@ class AgentService {
     onPersistedStateChanged?.call(agentId);
   }
 
+  /// Clears the agent's standing unmet-request flag — the user's answer to
+  /// the task card's "I couldn't do what you asked".
+  ///
+  /// Stamps `unmetRequestClearedAt` rather than erasing the flag: both are
+  /// watermarks merged by latest instant, so the clear reaches every device,
+  /// and a flag the agent raises afterwards stands again. A transform of the
+  /// row as it is now (ADR 0068), and a no-op when no flag stands.
+  ///
+  /// The clear is stamped no earlier than the flag it acknowledges: a flag
+  /// from a device whose clock runs ahead, or a local clock set back, would
+  /// otherwise outrank a clear stamped with this device's wall clock, and the
+  /// warning would survive every tap. A clear equal to the flag clears it.
+  Future<void> clearUnmetRequest(String agentId) async {
+    final now = clock.now();
+    final changed = await syncService.updateAgentState(agentId, (current) {
+      final raisedAt = current.slots.unmetRequestAt;
+      if (raisedAt == null || !current.hasOpenUnmetRequest) return null;
+      return current.copyWith(
+        slots: current.slots.copyWith(
+          unmetRequestClearedAt: now.isAfter(raisedAt) ? now : raisedAt,
+        ),
+        updatedAt: now,
+      );
+    });
+    if (changed) onPersistedStateChanged?.call(agentId);
+  }
+
   /// Dismiss a workspace-scoped scheduled-wake record so it neither fires nor
   /// re-surfaces in the pending list.
   ///

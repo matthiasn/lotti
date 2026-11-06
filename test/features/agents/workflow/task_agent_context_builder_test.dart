@@ -578,6 +578,7 @@ void main() {
       String? pullRequestsContext,
       TaskStatusTransition? statusTransition,
       List<TaskProjectOption> projectCandidates = const [],
+      AgentStateEntity? agentState,
     }) {
       return withClock(Clock.fixed(clockNow), () {
         when(() => timeService.getCurrent()).thenReturn(null);
@@ -602,6 +603,7 @@ void main() {
           pullRequestsContext: pullRequestsContext,
           statusTransition: statusTransition,
           projectCandidates: projectCandidates,
+          agentState: agentState,
         );
       });
     }
@@ -913,6 +915,64 @@ void main() {
 
       expect(result.text, contains('## Attention Requests For This Task'));
       expect(result.text, contains('Block time'));
+    });
+
+    group('unmet request', () {
+      final raisedAt = DateTime.utc(2026, 11, 6, 9);
+
+      test('says nothing while the agent has never flagged', () async {
+        final withoutState = await build();
+        final neverFlagged = await build(agentState: makeTestState());
+
+        expect(withoutState.text, isNot(contains('## Unmet Request')));
+        expect(neverFlagged.text, isNot(contains('## Unmet Request')));
+      });
+
+      test('a standing flag tells the agent not to raise it again', () async {
+        final result = await build(
+          agentState: makeTestState(
+            unmetRequestAt: raisedAt,
+            unmetRequestReason: 'I could log only one time block.',
+          ),
+        );
+
+        expect(result.text, contains('## Unmet Request'));
+        expect(
+          result.text,
+          contains(
+            'You flagged at 2026-11-06T09:00:00.000Z that you could not meet '
+            'the user\'s request: "I could log only one time block."',
+          ),
+        );
+        expect(result.text, contains('the user has not cleared it'));
+        expect(
+          result.text,
+          contains('Do not call `flag_unmet_request` again for the same'),
+        );
+      });
+
+      test(
+        'a cleared flag says when, and to flag again only on a new ask',
+        () async {
+          final result = await build(
+            agentState: makeTestState(
+              unmetRequestAt: raisedAt,
+              unmetRequestReason: 'I could log only one time block.',
+              unmetRequestClearedAt: DateTime.utc(2026, 11, 6, 10),
+            ),
+          );
+
+          expect(
+            result.text,
+            contains('The user cleared it at 2026-11-06T10:00:00.000Z.'),
+          );
+          expect(
+            result.text,
+            contains('Flag again only if the user asks again'),
+          );
+          expect(result.text, isNot(contains('has not cleared it')));
+        },
+      );
     });
 
     group('active running timer for the same task', () {

@@ -121,26 +121,37 @@ _AgentSlots _$AgentSlotsFromJson(Map<String, dynamic> json) => _AgentSlots(
   pendingProjectActivityAt: json['pendingProjectActivityAt'] == null
       ? null
       : DateTime.parse(json['pendingProjectActivityAt'] as String),
+  unmetRequestAt: json['unmetRequestAt'] == null
+      ? null
+      : DateTime.parse(json['unmetRequestAt'] as String),
+  unmetRequestReason: json['unmetRequestReason'] as String?,
+  unmetRequestClearedAt: json['unmetRequestClearedAt'] == null
+      ? null
+      : DateTime.parse(json['unmetRequestClearedAt'] as String),
 );
 
-Map<String, dynamic> _$AgentSlotsToJson(_AgentSlots instance) =>
-    <String, dynamic>{
-      'activeTaskId': instance.activeTaskId,
-      'activeDayId': instance.activeDayId,
-      'activeProjectId': instance.activeProjectId,
-      'activeEventId': instance.activeEventId,
-      'activeTemplateId': instance.activeTemplateId,
-      'lastOneOnOneAt': instance.lastOneOnOneAt?.toIso8601String(),
-      'lastFeedbackScanAt': instance.lastFeedbackScanAt?.toIso8601String(),
-      'feedbackWindowDays': instance.feedbackWindowDays,
-      'totalSessionsCompletedByHost': instance.totalSessionsCompleted,
-      'recursionDepth': instance.recursionDepth,
-      'lastDailyWakeAt': instance.lastDailyWakeAt?.toIso8601String(),
-      'lastWeeklyReviewAt': instance.lastWeeklyReviewAt?.toIso8601String(),
-      'weeklyReviewCountByHost': instance.weeklyReviewCount,
-      'pendingProjectActivityAt': instance.pendingProjectActivityAt
-          ?.toIso8601String(),
-    };
+Map<String, dynamic> _$AgentSlotsToJson(
+  _AgentSlots instance,
+) => <String, dynamic>{
+  'activeTaskId': instance.activeTaskId,
+  'activeDayId': instance.activeDayId,
+  'activeProjectId': instance.activeProjectId,
+  'activeEventId': instance.activeEventId,
+  'activeTemplateId': instance.activeTemplateId,
+  'lastOneOnOneAt': instance.lastOneOnOneAt?.toIso8601String(),
+  'lastFeedbackScanAt': instance.lastFeedbackScanAt?.toIso8601String(),
+  'feedbackWindowDays': instance.feedbackWindowDays,
+  'totalSessionsCompletedByHost': instance.totalSessionsCompleted,
+  'recursionDepth': instance.recursionDepth,
+  'lastDailyWakeAt': instance.lastDailyWakeAt?.toIso8601String(),
+  'lastWeeklyReviewAt': instance.lastWeeklyReviewAt?.toIso8601String(),
+  'weeklyReviewCountByHost': instance.weeklyReviewCount,
+  'pendingProjectActivityAt': instance.pendingProjectActivityAt
+      ?.toIso8601String(),
+  'unmetRequestAt': instance.unmetRequestAt?.toIso8601String(),
+  'unmetRequestReason': instance.unmetRequestReason,
+  'unmetRequestClearedAt': instance.unmetRequestClearedAt?.toIso8601String(),
+};
 
 _AgentMessageMetadata _$AgentMessageMetadataFromJson(
   Map<String, dynamic> json,

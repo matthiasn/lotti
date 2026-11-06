@@ -115,6 +115,7 @@ abstract final class TaskAgentToolNames {
   static const updateChecklistItems = 'update_checklist_items';
   static const updateReport = 'update_report';
   static const recordObservations = 'record_observations';
+  static const flagUnmetRequest = 'flag_unmet_request';
   static const retractSuggestions = 'retract_suggestions';
   static const assignTaskLabels = 'assign_task_labels';
   static const setTaskLanguage = 'set_task_language';

@@ -1247,6 +1247,18 @@
   "aiCardReadMore": "Read more",
   "aiCardShowLess": "Show less",
   "aiCardTitle": "AI summary",
+  "aiCardUnmetRequestNoReason": "My observations say what went wrong.",
+  "@aiCardUnmetRequestNoReason": {
+    "description": "Body of the unmet-request callout when the agent gave no reason; points at the observations it filed."
+  },
+  "aiCardUnmetRequestShowObservations": "See observations",
+  "@aiCardUnmetRequestShowObservations": {
+    "description": "Button on the unmet-request callout that opens the agent internals on the observations tab."
+  },
+  "aiCardUnmetRequestTitle": "I couldn't do what you asked",
+  "@aiCardUnmetRequestTitle": {
+    "description": "Title of the task card's callout when the task agent flagged that it could not meet the user's request; in the agent's first person."
+  },
   "aiConfigFailedToLoadModelsGeneric": "Failed to load models. Please try again.",
   "aiConfigNoModelsAvailable": "No AI models are configured yet. Please add one in settings.",
   "aiConfigNoSuitableModelsAvailable": "No models meet the requirements for this prompt. Please configure models that support the required capabilities.",

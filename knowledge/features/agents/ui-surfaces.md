@@ -5,9 +5,13 @@ description: The AI summary card and its proposal choreography, the internals pa
 resource: ../../../lib/features/agents/ui
 tags: [agents, ui, motion, accessibility]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-11-04T12:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-11-06T12:00:00Z }
 stale_after: 2027-02-01
 sources:
+  - id: unmet-request-callout
+    resource: ../../../lib/features/agents/ui/ai_summary_card/unmet_request_callout.dart
+    title: UnmetRequestCallout — the card's "I couldn't do what you asked"
+    last_modified: 2026-11-06
   - id: task-preview
     resource: ../../../lib/features/tasks/ui/linked_tasks/task_preview_modal.dart
     title: showTaskPreviewModal — the glance at a task a proposal names
@@ -80,6 +84,7 @@ flowchart LR
   Card -->|TLDR / report| Report["AgentReportEntity"]
   Card -->|proposals + history| Ledger["unifiedSuggestionListProvider → ProposalLedger"]
   Card -->|wake controls| Service["TaskAgentService"]
+  Card -->|clear unmet request| AgentSvc["AgentService"]
   Card -->|open internals| Panel["AgentInternalsPanel"]
   Panel --> Body["AgentInternalsBody (Stats / Reports / Conversations / Observations / Activity)"]
   DetailPage["AgentDetailPage"] --> Body
@@ -136,6 +141,9 @@ Contents:
   and speaking its utterance — the task id as `sourceId`, in the words the
   voice was given at the tap — so a tap on the control is what makes her
   talk.
+- **The unmet-request callout** — while the agent's
+  `flag_unmet_request` stands, a warning callout leads the card body, above
+  the summary. See *The unmet-request callout* below.
 - **Proposed changes** — rows from `unifiedSuggestionListProvider`, each a
   `PendingSuggestion`, confirmable or rejectable by tap or swipe (`> 70px` →
   confirm, `< -70px` → reject; in between snaps back). Change-set confirms
@@ -266,6 +274,38 @@ Everything else that used to sit in a footer under the summary — the schedule
 sentence, the automatic-updates switch, the model identity and the setup
 chevron — is **agent plumbing**, and lives behind *Open agent internals*. That
 is six controls the primary reading surface no longer carries.
+
+## The unmet-request callout
+
+A wake can complete while the user's request does not — the agent could log
+one of five dictated time blocks, a tool lacked the field the user needed. The
+agent says so with `flag_unmet_request` ([task agents](task-agents.md#saying-a-request-was-not-met),
+ADR 0159), and the card shows it the way a 500 page says *something is off*:
+`UnmetRequestCallout`, a `DesignSystemInlineCallout` in the warning tone,
+titled in the agent's voice (*I couldn't do what you asked*) over the agent's
+one-sentence reason — its own words, in the task's language, so data rather
+than copy; a blank reason falls back to *My observations say what went wrong*.
+It announces itself once, title and reason as one live node.
+
+It **leads the card body**, above the TL;DR, and stands even before the agent
+has written any report: the agent's wakes completed, so nothing else on the
+card would say the request did not. Two actions sit under it — *See
+observations* (tertiary, the way forward) opens `AgentInternalsPanel` on the
+Observations tab, where the agent filed the details as a critical grievance;
+*Clear* (quiet, a dismissal) calls `AgentService.clearUnmetRequest`, and a
+failed write shows an error toast rather than looking ignored.
+
+It is read from `AgentStateEntity.hasOpenUnmetRequest`, which the card already
+watches for freshness, so it costs no extra subscription. A later wake that
+completes does **not** clear it — only the user does. The clear is stamped no
+earlier than the flag, so a flag stamped by a device whose clock runs ahead
+still clears on the first tap.
+
+The body keeps one shape whether or not the callout shows — a `Column` with the
+report under a stable key — so a flag raised or cleared by a background wake or
+sync inserts or removes the callout above the report without rebuilding it,
+and a selection or focus inside the report survives ([stay while
+reload](../../conventions/stay-while-reload.md)).
 
 ## The maintenance band lives in the internals panel
 
@@ -773,8 +813,10 @@ and report expansion tiles paint their ink on that surface. An opaque decorated
 box between those tiles and Material would trigger a framework assertion.
 
 `AgentInternalsBody` is the shared tabbed body — **Stats / Reports /
-Conversations / Observations / Activity** — used both inside the panel and as the
-body of the standalone `AgentDetailPage`. The Observations tab reads
+Conversations / Observations / Activity** (`AgentInternalsTab`) — used both
+inside the panel and as the body of the standalone `AgentDetailPage`. It opens
+on Stats unless the host asks for another tab: `AgentInternalsPanel.show`
+takes an `initialTab`, which the unmet-request callout sets to Observations. The Observations tab reads
 `agentObservationMessagesProvider`, which asks the repository for observation
 messages by kind (`getMessagesByKind`), so the limit of 200 counts
 observations: filtering the newest 200 messages of every kind let a goal

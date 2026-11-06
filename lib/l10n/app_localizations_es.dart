@@ -1721,6 +1721,16 @@ class AppLocalizationsEs extends AppLocalizations {
   String get aiCardTitle => 'Resumen de IA';
 
   @override
+  String get aiCardUnmetRequestNoReason =>
+      'Mis observaciones explican qué salió mal.';
+
+  @override
+  String get aiCardUnmetRequestShowObservations => 'Ver observaciones';
+
+  @override
+  String get aiCardUnmetRequestTitle => 'No pude hacer lo que me pediste';
+
+  @override
   String get aiConfigFailedToLoadModelsGeneric =>
       'Error al cargar modelos. Por favor, inténtalo de nuevo.';
 

@@ -1721,6 +1721,17 @@ class AppLocalizationsDe extends AppLocalizations {
   String get aiCardTitle => 'KI-Zusammenfassung';
 
   @override
+  String get aiCardUnmetRequestNoReason =>
+      'Meine Beobachtungen sagen, was schiefgelaufen ist.';
+
+  @override
+  String get aiCardUnmetRequestShowObservations => 'Beobachtungen ansehen';
+
+  @override
+  String get aiCardUnmetRequestTitle =>
+      'Ich konnte nicht tun, worum du gebeten hast';
+
+  @override
   String get aiConfigFailedToLoadModelsGeneric =>
       'Fehler beim Laden der Modelle. Bitte versuche es erneut.';
 

@@ -22,6 +22,9 @@ import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/nav_bar/bottom_nav_safe_navigator.dart';
 import 'package:material_ui/material_ui.dart';
 
+/// The tabs of [AgentInternalsBody], in the order they are shown.
+enum AgentInternalsTab { stats, reports, conversations, observations, activity }
+
 /// Tabbed body for the agent internals view.
 ///
 /// Hosts the five canonical agent tabs — **Stats**, **Reports**,
@@ -36,12 +39,17 @@ class AgentInternalsBody extends StatefulWidget {
     required this.lifecycle,
     required this.stateAsync,
     this.subjectEntityId,
+    this.initialTab = AgentInternalsTab.stats,
     super.key,
   });
 
   final String agentId;
   final AgentLifecycle lifecycle;
   final AsyncValue<AgentDomainEntity?> stateAsync;
+
+  /// The tab the body opens on — the task card's unmet-request callout opens
+  /// straight onto the observations it points at.
+  final AgentInternalsTab initialTab;
 
   /// The goal or person a goal's or relationship agent serves; see
   /// `AgentInternalsPanel.subjectEntityId`.
@@ -58,7 +66,11 @@ class _AgentInternalsBodyState extends State<AgentInternalsBody>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 5, vsync: this);
+    _tabController = TabController(
+      length: AgentInternalsTab.values.length,
+      initialIndex: widget.initialTab.index,
+      vsync: this,
+    );
     _tabController.addListener(() => setState(() {}));
   }
 

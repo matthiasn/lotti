@@ -193,6 +193,7 @@ Future<void> _capture(
   bool companion = false,
   bool expanded = false,
   bool stage = false,
+  bool unmetRequest = false,
   String summary = _summary,
   String? nameSuffix,
 }) async {
@@ -225,6 +226,15 @@ Future<void> _capture(
         reportFreshAt: automaticUpdates
             ? _now.subtract(const Duration(minutes: 4))
             : _now.subtract(const Duration(minutes: 5)),
+        // The agent's "I couldn't do what you asked", standing uncleared.
+        slots: unmetRequest
+            ? AgentSlots(
+                unmetRequestAt: _now.subtract(const Duration(minutes: 4)),
+                unmetRequestReason:
+                    'I could log only one of the five time blocks you '
+                    'dictated.',
+              )
+            : const AgentSlots(),
       );
 
   await withClock(Clock.fixed(_now), () async {
@@ -283,6 +293,9 @@ Future<void> _capture(
     // Expanded, the full report opens with the summary again.
     expect(find.text(summary), expanded ? findsNWidgets(2) : findsOneWidget);
   }
+  if (unmetRequest) {
+    expect(find.text("I couldn't do what you asked"), findsOneWidget);
+  }
   if (locale == null && !stage) {
     expect(find.text('AI summary'), findsOneWidget);
     expect(find.text('Task Laura'), findsOneWidget);
@@ -327,6 +340,28 @@ void main() {
       }
     }
   }
+
+  // The agent's unmet-request flag leading the card, at both widths and in
+  // both themes: the warning callout is the one hue on the card.
+  group('unmet request', () {
+    for (final device in [desktopDevice, proDevice]) {
+      for (final brightness in [Brightness.dark, Brightness.light]) {
+        final theme = brightness == Brightness.dark ? 'dark' : 'light';
+        testWidgets('${device.name} manual unmet request $theme', (
+          tester,
+        ) async {
+          await _capture(
+            tester,
+            device: device,
+            brightness: brightness,
+            mode: _Mode.manual,
+            unmetRequest: true,
+            nameSuffix: 'unmet_request',
+          );
+        });
+      }
+    }
+  });
 
   // The states that stress the card's lower half specifically. Dark only
   // (the theme axis is already covered above) except where contrast is part

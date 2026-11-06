@@ -43,3 +43,19 @@ extension AgentStateWakeOutcome on AgentStateEntity {
   bool get lastWakeMayHaveFailed =>
       lastWakeFailedAt == null ? consecutiveFailureCount > 0 : lastWakeFailed;
 }
+
+/// Reads the unmet-request flag: the agent's "I could not do what you asked"
+/// that stands on the task card until the user clears it.
+extension AgentStateUnmetRequest on AgentStateEntity {
+  /// Whether the agent's latest unmet-request flag is still standing: it was
+  /// raised after the user's last clear, or has never been cleared. Both
+  /// stamps are watermarks merged by latest instant, so every device answers
+  /// the same once their writes have met. A flag raised in the same instant
+  /// as a clear counts as cleared.
+  bool get hasOpenUnmetRequest {
+    final raisedAt = slots.unmetRequestAt;
+    if (raisedAt == null) return false;
+    final clearedAt = slots.unmetRequestClearedAt;
+    return clearedAt == null || raisedAt.isAfter(clearedAt);
+  }
+}

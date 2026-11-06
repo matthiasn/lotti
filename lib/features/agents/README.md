@@ -67,6 +67,11 @@ applied until the user confirms it.
   and the live conversation each show a stop control, which ends a hung or
   unwanted run at once. Messages it has already saved stay; the reply in
   progress is dropped.
+- **Says when it could not do what you asked.** A task agent whose wake
+  finished but whose request did not — a tool too narrow for what you
+  dictated, a capability it lacks — says so on the task card, above the
+  summary, until you clear it, with a way straight to the observations it
+  filed about it.
 
 ## What it owns
 

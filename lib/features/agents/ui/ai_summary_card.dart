@@ -16,6 +16,7 @@ import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
 import 'package:lotti/features/agents/ui/agent_automation_row.dart';
+import 'package:lotti/features/agents/ui/agent_internals_body.dart';
 import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
 import 'package:lotti/features/agents/ui/agent_maintenance_section.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/assign_agent_cta_part.dart';
@@ -25,6 +26,7 @@ import 'package:lotti/features/agents/ui/ai_summary_card/companion_stage_page.da
 import 'package:lotti/features/agents/ui/ai_summary_card/proposals_section_part.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/summary_read_aloud_button.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/tldr_section_part.dart';
+import 'package:lotti/features/agents/ui/ai_summary_card/unmet_request_callout.dart';
 import 'package:lotti/features/agents/ui/query/query_ask_button.dart';
 import 'package:lotti/features/agents/ui/task_agent_model_identity.dart';
 import 'package:lotti/features/agents/ui/widgets/ai_card_chrome.dart';
@@ -362,7 +364,10 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
     _seenFingerprints.addAll(openFps);
   }
 
-  void _openInternals({required String agentName}) {
+  void _openInternals({
+    required String agentName,
+    AgentInternalsTab initialTab = AgentInternalsTab.stats,
+  }) {
     AgentInternalsPanel.show(
       context: context,
       agentId: widget.identity.agentId,
@@ -371,7 +376,33 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
         kind: AgentMaintenanceKind.task,
         entityId: widget.taskId,
       ),
+      initialTab: initialTab,
     );
+  }
+
+  /// Clears the agent's unmet-request flag; a failed write says so rather
+  /// than leaving the tap looking ignored.
+  Future<void> _clearUnmetRequest(String agentId) async {
+    // Read before the await: the card may be gone by the time it fails.
+    final service = ref.read(agentServiceProvider);
+    final logger = ref.read(domainLoggerProvider);
+    try {
+      await service.clearUnmetRequest(agentId);
+    } catch (error, stackTrace) {
+      logger.error(
+        LogDomain.agentWorkflow,
+        error,
+        stackTrace: stackTrace,
+        subDomain: 'AiSummaryCard',
+        message: 'Failed to clear unmet request',
+      );
+      if (mounted) {
+        context.showToast(
+          tone: DesignSystemToastTone.error,
+          title: context.messages.commonError,
+        );
+      }
+    }
   }
 
   /// Confirms every visible suggestion while retaining the whole batch until
@@ -576,6 +607,20 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
     // the strip omits the word entirely rather than showing a default.
     final hasReportContent = tldr.isNotEmpty || additionalReport != null;
 
+    // The agent's "I couldn't do what you asked" leads the body: its wakes
+    // completed, so nothing else on the card would say the request did not.
+    final unmetRequestCallout = (agentState?.hasOpenUnmetRequest ?? false)
+        ? UnmetRequestCallout(
+            key: const ValueKey('taskAgentUnmetRequest'),
+            reason: agentState?.slots.unmetRequestReason,
+            onShowObservations: () => _openInternals(
+              agentName: subtitle,
+              initialTab: AgentInternalsTab.observations,
+            ),
+            onClear: () => _clearUnmetRequest(agentId),
+          )
+        : null;
+
     // The strip is always there: the freshness word and *Update now* are
     // the one control a reader of the summary reaches for, and a trigger that
     // appears only once the summary is behind cannot be found when it is
@@ -775,12 +820,36 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
           // No bottom inset on the body: its own disclosure row carries the
           // trailing optical gap inside its tap target, and supplies an
           // explicit one when it renders no row at all.
-          body: hasReportContent
+          body: hasReportContent || unmetRequestCallout != null
               ? Padding(
                   padding: EdgeInsets.symmetric(
                     horizontal: tokens.spacing.cardPadding,
                   ),
-                  child: reportBody,
+                  // One parent shape whether or not the callout shows, and
+                  // the report keyed within it: a flag raised or cleared by
+                  // a background wake or sync inserts the callout above the
+                  // report without rebuilding it, so its selection and focus
+                  // survive.
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (unmetRequestCallout != null) ...[
+                        unmetRequestCallout,
+                        // The callout is a framed surface, so it owns the
+                        // gap to whatever follows: the summary, or the
+                        // footer when there is no summary yet.
+                        SizedBox(
+                          key: const ValueKey('taskAgentUnmetRequestGap'),
+                          height: tokens.spacing.cardItemSpacing,
+                        ),
+                      ],
+                      if (hasReportContent)
+                        KeyedSubtree(
+                          key: const ValueKey('taskAgentReportBody'),
+                          child: reportBody,
+                        ),
+                    ],
+                  ),
                 )
               : null,
           footer: footer,

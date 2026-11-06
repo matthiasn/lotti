@@ -33,6 +33,7 @@ class AgentInternalsPanel extends ConsumerWidget {
     required this.agentName,
     this.maintenance,
     this.subjectEntityId,
+    this.initialTab = AgentInternalsTab.stats,
     super.key,
   });
 
@@ -58,6 +59,9 @@ class AgentInternalsPanel extends ConsumerWidget {
   /// row only when this is given.
   final String? subjectEntityId;
 
+  /// The tab the panel opens on.
+  final AgentInternalsTab initialTab;
+
   /// Opens the internals for [agentId] in the shared side sheet — the same
   /// host the agent conversations use, so every panel beside a page dims the
   /// page and slides in the same way.
@@ -67,6 +71,7 @@ class AgentInternalsPanel extends ConsumerWidget {
     required String? agentName,
     AgentMaintenanceScope? maintenance,
     String? subjectEntityId,
+    AgentInternalsTab initialTab = AgentInternalsTab.stats,
   }) => showSideSheetPane<void>(
     context: context,
     sideSheet: const SizedWoltSideSheetType(
@@ -79,6 +84,7 @@ class AgentInternalsPanel extends ConsumerWidget {
       agentName: agentName,
       maintenance: maintenance,
       subjectEntityId: subjectEntityId,
+      initialTab: initialTab,
     ),
   );
 
@@ -158,6 +164,7 @@ class AgentInternalsPanel extends ConsumerWidget {
                           lifecycle: identity!.lifecycle,
                           stateAsync: stateAsync,
                           subjectEntityId: subjectEntityId,
+                          initialTab: initialTab,
                         ),
                       ],
                     ),

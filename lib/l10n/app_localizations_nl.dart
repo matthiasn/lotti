@@ -1715,6 +1715,16 @@ class AppLocalizationsNl extends AppLocalizations {
   String get aiCardTitle => 'Samenvatting van de AI';
 
   @override
+  String get aiCardUnmetRequestNoReason =>
+      'Mijn opmerkingen leggen uit wat er misging.';
+
+  @override
+  String get aiCardUnmetRequestShowObservations => 'Opmerkingen bekijken';
+
+  @override
+  String get aiCardUnmetRequestTitle => 'Ik kon niet doen wat je vroeg';
+
+  @override
   String get aiConfigFailedToLoadModelsGeneric =>
       'Laden van modellen is mislukt. Probeer het opnieuw.';
 

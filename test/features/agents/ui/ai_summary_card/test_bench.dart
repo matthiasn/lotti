@@ -94,6 +94,7 @@ class AgentTestBench {
     this.provideAgentIdentity = false,
     this._isRunningOverride,
     this.suggestionListOverride,
+    this.stateOverride,
     this.onSuggestionResolveStart,
     this.onOpenLinkedTask,
     this._extraOverrides = const [],
@@ -161,6 +162,12 @@ class AgentTestBench {
   final FutureOr<UnifiedSuggestionList> Function(Ref ref, String taskId)?
   suggestionListOverride;
 
+  /// Replaces the default static `agentStateProvider` override. Used by
+  /// tests that change the state while the card is on screen (invalidate
+  /// the provider to deliver the new value).
+  final FutureOr<AgentDomainEntity?> Function(Ref ref, String agentId)?
+  stateOverride;
+
   /// Extra Riverpod overrides appended after the defaults — e.g. to seed
   /// `proposalSwipeNudgePlayedProvider` so the swipe nudge is treated as
   /// already-shown.
@@ -221,7 +228,7 @@ class AgentTestBench {
           _isRunningOverride ?? (ref, agentId) => Stream.value(isRunning),
         ),
         agentStateProvider.overrideWith(
-          (ref, agentId) async => _state,
+          stateOverride ?? (ref, agentId) async => _state,
         ),
         unifiedSuggestionListProvider.overrideWith(
           suggestionListOverride ?? (ref, taskId) async => _suggestions,

@@ -5,9 +5,17 @@ description: The primary agent workflow — inference setup resolution, the auto
 resource: ../../../lib/features/agents/workflow/task_agent_workflow.dart
 tags: [agents, task-agent, tools, proposals, inference]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-11-01T12:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-11-06T12:00:00Z }
 stale_after: 2027-02-01
 sources:
+  - id: adr-0159
+    resource: ../../../docs/adr/0159-the-task-agent-says-when-it-could-not-meet-a-request.md
+    title: ADR 0159 — The task agent says when it could not meet a request
+    last_modified: 2026-11-06
+  - id: wake-output-writer
+    resource: ../../../lib/features/agents/workflow/wake_output_writer.dart
+    title: WakeOutputWriter — one wake's outputs in one transaction
+    last_modified: 2026-11-06
   - id: related-tasks
     resource: ../../../lib/features/agents/workflow/related_task_lookup.dart
     title: RelatedTaskLookup — the related-task search and the drill-down allowlist of one wake
@@ -31,11 +39,11 @@ sources:
   - id: planning-tools
     resource: ../../../lib/features/agents/tools/task_planning_tool_definitions.dart
     title: Evidence-backed requests for planner attention
-    last_modified: 2026-09-14
+    last_modified: 2026-11-06
   - id: prompt-builder
     resource: ../../../lib/features/agents/workflow/task_agent_prompt_builder.dart
     title: Stock and compact task-agent scaffolds
-    last_modified: 2026-09-22
+    last_modified: 2026-11-06
   - id: evidence-synthesis
     resource: ../../../lib/features/agents/workflow/task_agent_evidence_synthesis.dart
     title: Evidence-first task and report tool contracts
@@ -804,7 +812,7 @@ Tools with no precondition — `set_task_title`, `update_task_estimate`,
 `update_task_due_date`, `update_task_priority`, `set_task_status`,
 `set_task_language`, `add_multiple_checklist_items`, `create_follow_up_task`,
 `link_task`, `create_task_project`, `record_observations`, `request_attention`,
-`migrate_checklist_items` — are always offered. `create_task_project` is
+`flag_unmet_request`, `migrate_checklist_items` — are always offered. `create_task_project` is
 deliberately not under the projects row: a category with no projects is where a
 project the user names is most likely missing. `migrate_checklist_items` is
 only meaningful after `create_follow_up_task`, but that happens mid-wake and
@@ -843,9 +851,9 @@ default.
 
 ## Locally short-circuited tools
 
-Nine tools are short-circuited **locally** in `TaskAgentStrategy` and never
+Ten tools are short-circuited **locally** in `TaskAgentStrategy` and never
 reach `AgentToolExecutor`: `update_report`, `record_observations`,
-`find_related_tasks`, `get_task_tldr`, `get_task_report`,
+`flag_unmet_request`, `find_related_tasks`, `get_task_tldr`, `get_task_report`,
 `get_category_projects`, `get_unlinked_pull_requests`, `refresh_pull_requests`,
 `retract_suggestions`.
 
@@ -885,6 +893,46 @@ one-element batch (`wrapFlatCreateTimeEntryCall`). At queue time the builder
 rejects only what no apply could survive — a missing `startTime`, and a second
 running timer in one wake, since `TimeEntryHandler` refuses to start a timer
 while one runs; every other time rule stays with the apply-time handler.
+
+## Saying a request was not met
+
+A wake can complete while the user's request does not. Before
+`create_time_entry` took a batch, five dictated time blocks needed ten-plus
+wakes, each one completing normally; the only trace was in the agent's private
+observations. The app cannot tell that case from a good wake — nothing failed —
+so the agent says it (ADR 0159): `flag_unmet_request {reason, details}`,
+always offered, immediate, and short-circuited in the strategy like
+`record_observations`.
+
+- `reason` is one sentence to the user, in the task's language, kept by the
+  strategy (`extractUnmetRequestReason`; the last call of a wake wins).
+- `details` is filed as an observation, `critical` and `grievance`, prefixed
+  `Unmet request:` — what the card's *See observations* opens on, and what
+  template evolution reads with the other grievances.
+- A call missing either is answered with an error and raises nothing.
+
+`WakeOutputWriter` writes the flag in the same state transform as `lastWakeAt`,
+stamping `unmetRequestAt` with the **commit** time, not the wake's start: the
+flag is compared against `unmetRequestClearedAt`, and a clear the user made
+while the wake ran must not hide the flag that wake raises. A wake that fails
+after the call commits nothing, so it raises nothing.
+
+```mermaid
+stateDiagram-v2
+  [*] --> NeverFlagged
+  NeverFlagged --> Standing: wake commits flag_unmet_request
+  Standing --> Standing: a later wake flags again (newer stamp and reason)
+  Standing --> Cleared: user taps Clear (unmetRequestClearedAt)
+  Cleared --> Standing: a later wake flags again
+```
+
+A completed wake never moves `Standing` to `Cleared` — completed wakes are what
+hid the problem. Once the agent has ever flagged, the wake payload carries a
+`## Unmet Request` section in the volatile tail: in `Standing` it tells the
+agent not to flag the same request again; in `Cleared` it says when the user
+cleared it and to flag again only for a new ask. The prompt names the tool in
+both scaffolds and tells the model when it is *not* for: work merely waiting on
+someone, or a proposal awaiting the user's confirmation.
 
 ## Typed-relationship tools (ADR 0042)
 

@@ -5,7 +5,8 @@ import 'package:lotti/features/agents/workflow/task_agent_report_policy.dart';
 /// Tools for planning, attention negotiation, reporting, and observations:
 /// the related-task search, the drill-down into a linked or found task
 /// (TL;DR or full report), attention requests, report
-/// publishing, suggestion retraction, and recording private observations.
+/// publishing, suggestion retraction, recording private observations, and
+/// flagging a request the agent could not meet.
 final taskPlanningTools = <AgentToolDefinition>[
   const AgentToolDefinition(
     name: TaskAgentToolNames.findRelatedTasks,
@@ -321,5 +322,43 @@ final taskPlanningTools = <AgentToolDefinition>[
           'paragraph explaining the situation, what went wrong (or right), '
           'and why it matters.',
     ),
+  ),
+  const AgentToolDefinition(
+    name: TaskAgentToolNames.flagUnmetRequest,
+    description:
+        'Tell the user, on the task card, that you could not do what they '
+        'asked of you: your wake completes, but their request does not. Use '
+        'it when a tool cannot express the request (it takes fewer items '
+        'than were dictated, or lacks a field the user needs), a capability '
+        'you would need is missing, a tool call kept failing, or the user '
+        'is frustrated that what they meant did not happen. The card shows '
+        'your reason until the user clears it, and points them at your '
+        'observations. Do not use it for work that is merely waiting on '
+        "someone, for a proposal awaiting the user's confirmation, or for a "
+        'request you partly met and will finish next wake. Check the Unmet '
+        'Request section first: do not flag the same request again while '
+        'it stands.',
+    parameters: {
+      'type': 'object',
+      'properties': {
+        'reason': {
+          'type': 'string',
+          'description':
+              "One short sentence to the user, in the task's language, "
+              'naming what you could not do — e.g. "I could only log one '
+              'of the five time blocks you dictated." No apology, no '
+              'internals.',
+        },
+        'details': {
+          'type': 'string',
+          'description':
+              'A private paragraph for the agent internals: what was '
+              'asked, what you tried, which tool or capability fell short, '
+              'and what would let you meet the request.',
+        },
+      },
+      'required': ['reason', 'details'],
+      'additionalProperties': false,
+    },
   ),
 ];
