@@ -16,7 +16,9 @@ class DayProcessingRuntime {
     required this.repository,
     required this.drain,
     this.connectivityChanges,
+    this.prune,
     this.repair,
+    this.onRepairFailed,
     this.networkProbeInterval = const Duration(minutes: 1),
     this.failureRetryDelay = const Duration(seconds: 30),
     DateTime Function()? now,
@@ -30,6 +32,14 @@ class DayProcessingRuntime {
   final DateTime Function() _now;
   final DayProcessingSchedule _schedule;
   final Future<int> Function()? repair;
+
+  /// Once-per-start retention pass. Retried until it succeeds, then never
+  /// again for this runtime — a failing [repair] does not repeat it.
+  final Future<void> Function()? prune;
+
+  /// Told about each failed [prune] or [repair] attempt; the runtime itself
+  /// only retries.
+  final void Function(Object error, StackTrace stackTrace)? onRepairFailed;
   final Duration networkProbeInterval;
   final Duration failureRetryDelay;
 
@@ -41,6 +51,7 @@ class DayProcessingRuntime {
   bool _started = false;
   bool _disposed = false;
   bool _repairComplete = false;
+  bool _pruneComplete = false;
 
   void start() {
     if (_disposed || _started) return;
@@ -111,9 +122,26 @@ class DayProcessingRuntime {
         await _outboxSubscription?.cancel();
         _outboxSubscription = null;
       }
+      if (!_pruneComplete) {
+        try {
+          await prune?.call();
+          _pruneComplete = true;
+        } catch (error, stackTrace) {
+          onRepairFailed?.call(error, stackTrace);
+        }
+      }
       if (!_repairComplete) {
-        await repair?.call();
-        _repairComplete = true;
+        try {
+          await repair?.call();
+          _repairComplete = true;
+        } catch (error, stackTrace) {
+          // Repair rebuilds lost transcription intents; it is not a gate.
+          // A repair that failed on every pass used to stop the drain from
+          // ever running, leaving every parse and draft queued forever. It
+          // is retried on the next pass instead — scheduled below even when
+          // the outbox is empty.
+          onRepairFailed?.call(error, stackTrace);
+        }
       }
       await drain();
       if (wasListening) _subscribeToOutboxChanges();
@@ -124,13 +152,27 @@ class DayProcessingRuntime {
       // [networkProbeInterval], and the rule should have one implementation.
       final jobs = (await repository.getSchedulable()).toList()
         ..sort((a, b) => _effectiveDue(a).compareTo(_effectiveDue(b)));
+      // A pending repair needs a pass of its own: nothing else wakes the
+      // runtime when the outbox is empty. An earlier job deadline or network
+      // probe still wins — that pass retries the repair first anyway.
+      final repairRetry = _repairComplete && _pruneComplete
+          ? null
+          : failureRetryDelay;
       if (jobs.isEmpty) {
-        _scheduleGeneration += 1;
+        if (repairRetry != null) {
+          _scheduleNext(repairRetry);
+        } else {
+          _scheduleGeneration += 1;
+        }
         return;
       }
       final next = jobs.first;
       final due = _effectiveDue(next);
       final delay = due.isAfter(now) ? due.difference(now) : Duration.zero;
+      if (repairRetry != null && repairRetry < delay) {
+        _scheduleNext(repairRetry);
+        return;
+      }
       _scheduleNext(
         delay,
         probeNetwork: next.status == DayProcessingJobStatus.waitingForNetwork,

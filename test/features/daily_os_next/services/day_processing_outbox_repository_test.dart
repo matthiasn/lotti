@@ -1187,4 +1187,100 @@ void main() {
       expect(next!.job.id, 'parse_cap-other');
     });
   });
+
+  test('startup repair accepts a recording captured at a real local, '
+      'sub-millisecond wall-clock time', () async {
+    // What the capture screen passes: `clock.now()` at recording start —
+    // local time, microsecond precision. The outbox stores it as UTC epoch
+    // milliseconds, so the repair's restore of the same recording must not
+    // compare the two with exact DateTime equality, or every Daily OS
+    // recording ever made throws DayProcessingIntentConflict and the repair
+    // (which runs before every drain) never completes.
+    final capturedAt = DateTime(2026, 11, 4, 16, 20, 48, 123, 456);
+    final audioPath = path.join(root.path, 'check-in.m4a');
+    final claim = await repository.enqueueAndClaimTranscription(
+      dayId: 'dayplan-2026-11-05',
+      activityEntryId: 'activity-1',
+      recordingSessionId: 'session-local',
+      audioId: 'audio-1',
+      audioPath: audioPath,
+      capturedAt: capturedAt,
+    );
+    await repository.markSucceeded(
+      jobId: claim!.job.id,
+      claimToken: claim.token,
+    );
+
+    final restored = await repository.restoreTranscriptionIntent(
+      dayId: 'dayplan-2026-11-05',
+      activityEntryId: 'activity-1',
+      recordingSessionId: 'session-local',
+      audioId: 'audio-1',
+      audioPath: audioPath,
+      capturedAt: capturedAt,
+      completedTranscript: 'Plan the penguin census.',
+    );
+
+    expect(restored, isFalse, reason: 'already succeeded: nothing to restore');
+  });
+
+  test('cancelAgentJobsBefore cancels only waiting agent work for earlier '
+      'days', () async {
+    const oldDay = 'dayplan-2026-07-10';
+    const keptDay = 'dayplan-2026-07-17';
+    final oldDraft = await repository.enqueueDraftPlan(
+      dayId: oldDay,
+      payload: const DraftPlanPayload(),
+    );
+    final oldParse = await repository.enqueueParseCapture(
+      dayId: oldDay,
+      captureId: 'capture-old',
+    );
+    final oldRefine = await repository.enqueueRefinePlan(dayId: oldDay);
+    final keptDraft = await repository.enqueueDraftPlan(
+      dayId: keptDay,
+      payload: const DraftPlanPayload(),
+    );
+    final oldTranscription = await repository.enqueueTranscription(
+      dayId: oldDay,
+      activityEntryId: 'activity-old',
+      recordingSessionId: 'session-old',
+      audioId: 'audio-old',
+      audioPath: path.join(root.path, 'old.m4a'),
+      capturedAt: DateTime.utc(2026, 7, 10, 8),
+    );
+    // Parked states are cancelled too; a running claim is not.
+    final parseClaim = await repository.claimById(oldParse.id);
+    await repository.markFailure(
+      jobId: oldParse.id,
+      claimToken: parseClaim!.token,
+      failureClass: DayProcessingFailureClass.network,
+      error: 'Offline',
+    );
+    final refineClaim = await repository.claimById(oldRefine.id);
+    await repository.markFailure(
+      jobId: oldRefine.id,
+      claimToken: refineClaim!.token,
+      failureClass: DayProcessingFailureClass.deterministic,
+      error: 'No plan to refine',
+    );
+    final runningParse = await repository.enqueueParseCapture(
+      dayId: oldDay,
+      captureId: 'capture-running',
+    );
+    await repository.claimById(runningParse.id);
+
+    final cancelled = await repository.cancelAgentJobsBefore(keptDay);
+
+    expect(cancelled, 3);
+    Future<DayProcessingJobStatus> statusOf(String id) async =>
+        (await repository.getById(id))!.status;
+    for (final id in [oldDraft.id, oldParse.id, oldRefine.id]) {
+      expect(await statusOf(id), DayProcessingJobStatus.cancelled, reason: id);
+      expect((await repository.getById(id))!.completedAt, now, reason: id);
+    }
+    expect(await statusOf(keptDraft.id), DayProcessingJobStatus.queued);
+    expect(await statusOf(oldTranscription.id), DayProcessingJobStatus.queued);
+    expect(await statusOf(runningParse.id), DayProcessingJobStatus.running);
+  });
 }

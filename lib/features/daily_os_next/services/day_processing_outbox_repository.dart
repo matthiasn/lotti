@@ -432,8 +432,10 @@ class DayProcessingOutboxRepository {
       case TranscribeAudioPayload():
         // Transcription intent is fully immutable, including its capture
         // time (createdAt = capturedAt, derived from durable provenance).
+        // The same instant, not the same DateTime: equality also compares
+        // the UTC flag and microseconds, which say nothing about intent.
         if (existing.payload != requested.payload ||
-            existing.createdAt != requested.createdAt) {
+            !existing.createdAt.isAtSameMomentAs(requested.createdAt)) {
           throw DayProcessingIntentConflict(existing.id);
         }
       case ParseCapturePayload() || RefinePlanPayload():
@@ -470,23 +472,33 @@ class DayProcessingOutboxRepository {
     required String audioPath,
     required DateTime capturedAt,
     required DateTime now,
-  }) => DayProcessingJob(
-    id: transcriptionJobId(recordingSessionId),
-    status: DayProcessingJobStatus.queued,
-    dayId: dayId,
-    payload: TranscribeAudioPayload(
-      activityEntryId: activityEntryId,
-      recordingSessionId: recordingSessionId,
-      audioId: audioId,
-      audioPath: path.normalize(File(audioPath).absolute.path),
-    ),
-    createdAt: capturedAt,
-    updatedAt: now,
-    requestedAt: capturedAt,
-    nextAttemptAt: now,
-    attempts: 0,
-    generation: 0,
-  );
+  }) {
+    // The row stores epoch milliseconds and reads them back as UTC, so the
+    // capture time is brought to that shape here. The capture screen passes
+    // its local, microsecond-precise wall clock; kept as-is it never equals
+    // the stored copy, and the startup repair's immutability check threw for
+    // every Daily OS recording.
+    final capturedAtStored = dayProcessingTime(
+      capturedAt.millisecondsSinceEpoch,
+    );
+    return DayProcessingJob(
+      id: transcriptionJobId(recordingSessionId),
+      status: DayProcessingJobStatus.queued,
+      dayId: dayId,
+      payload: TranscribeAudioPayload(
+        activityEntryId: activityEntryId,
+        recordingSessionId: recordingSessionId,
+        audioId: audioId,
+        audioPath: path.normalize(File(audioPath).absolute.path),
+      ),
+      createdAt: capturedAtStored,
+      updatedAt: now,
+      requestedAt: capturedAtStored,
+      nextAttemptAt: now,
+      attempts: 0,
+      generation: 0,
+    );
+  }
 
   Future<DayProcessingJob?> getById(String id) => _readJobOrNull(id);
 
@@ -776,6 +788,38 @@ class DayProcessingOutboxRepository {
       variables: [Variable<int>(now)],
     );
     _notify();
+  }
+
+  /// Cancels agent work — check-in parses, drafts and refines — for days
+  /// before [firstKeptDayId] that is still waiting to run, and returns how
+  /// many jobs that cancelled.
+  ///
+  /// A plan for a day that is over has no use, and each of these jobs is a
+  /// paid planner run: run late, they would draft past days ahead of the
+  /// user's current request. Running jobs and transcriptions are left alone —
+  /// a transcript of a real recording is still worth having.
+  /// [firstKeptDayId] is a `dayplan-YYYY-MM-DD` id; the zero-padded format
+  /// makes string order date order.
+  Future<int> cancelAgentJobsBefore(String firstKeptDayId) async {
+    final now = _ms(_now());
+    final agentKinds = [
+      DayProcessingJobKind.parseCapture,
+      DayProcessingJobKind.draftPlan,
+      DayProcessingJobKind.refinePlan,
+    ].map((kind) => "'${kind.name}'").join(', ');
+    final cancelled = await db.customUpdate(
+      'UPDATE day_processing_jobs SET '
+      "status = 'cancelled', updated_at = ?1, completed_at = ?1, "
+      'generation = generation + 1, claim_token = NULL, lease_until = NULL '
+      'WHERE kind IN ($agentKinds) '
+      "AND status IN ('queued', 'waitingForNetwork', 'waitingForUser', "
+      "'failed') "
+      'AND day_id < ?2',
+      variables: [Variable<int>(now), Variable<String>(firstKeptDayId)],
+      updateKind: UpdateKind.update,
+    );
+    if (cancelled > 0) _notify();
+    return cancelled;
   }
 
   /// Deletes ledger rows completed before [cutoff] (ADR 0044 decision 5).

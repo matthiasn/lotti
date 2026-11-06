@@ -50,16 +50,24 @@ class DayProcessingOutboxRepair {
         final receipt = audio.data.transcripts
             ?.where((item) => item.processingJobId == context.processingJobId)
             .firstOrNull;
-        final restored = await repository.restoreTranscriptionIntent(
-          dayId: context.dayId,
-          activityEntryId: context.activityEntryId,
-          recordingSessionId: context.recordingSessionId,
-          audioId: audio.meta.id,
-          audioPath:
-              '${assetRoot.path}${audio.data.audioDirectory}${audio.data.audioFile}',
-          capturedAt: context.capturedAt,
-          completedTranscript: receipt?.transcript,
-        );
+        final bool restored;
+        try {
+          restored = await repository.restoreTranscriptionIntent(
+            dayId: context.dayId,
+            activityEntryId: context.activityEntryId,
+            recordingSessionId: context.recordingSessionId,
+            audioId: audio.meta.id,
+            audioPath:
+                '${assetRoot.path}${audio.data.audioDirectory}${audio.data.audioFile}',
+            capturedAt: context.capturedAt,
+            completedTranscript: receipt?.transcript,
+          );
+        } on DayProcessingIntentConflict {
+          // This recording's durable job disagrees with its journal
+          // provenance. The job stays as it is; one such recording must not
+          // stop every later one from being repaired.
+          continue;
+        }
         if (restored) repaired += 1;
       }
       if (page.length < pageSize) break;
