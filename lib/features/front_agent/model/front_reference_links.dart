@@ -27,7 +27,18 @@ String frontReferenceLink(FrontIndexRow row) =>
 /// rather than the title twice. Links already in the text are left as
 /// they are, and an id no row lists stays text: only what the turn could
 /// see is linked.
-String linkFrontReferences(String text, Iterable<FrontIndexRow> rows) {
+///
+/// A row of [titled] — what a lookup of the turn returned, the tasks she
+/// lists from it — is linked by its title too: a list of due tasks names
+/// them by title alone, and each must still open. Only the whole title,
+/// ignoring case; a title two rows share stays text.
+String linkFrontReferences(
+  String text,
+  Iterable<FrontIndexRow> rows, {
+  Iterable<FrontIndexRow> titled = const [],
+}) => _linkTitles(_linkIds(text, rows), titled);
+
+String _linkIds(String text, Iterable<FrontIndexRow> rows) {
   final byId = <String, FrontIndexRow>{
     for (final row in rows)
       if (_linkableKinds.contains(row.kind) && row.id.isNotEmpty) row.id: row,
@@ -83,6 +94,37 @@ String linkFrontReferences(String text, Iterable<FrontIndexRow> rows) {
   if (last == 0) return text;
   out.write(text.substring(last));
   return out.toString();
+}
+
+String _linkTitles(String text, Iterable<FrontIndexRow> rows) {
+  final byTitle = <String, FrontIndexRow?>{};
+  for (final row in rows) {
+    final title = _label(row.title).toLowerCase();
+    if (!_linkableKinds.contains(row.kind) || title.length < 3) continue;
+    // A title two rows share names neither: null marks it ambiguous.
+    byTitle[title] = byTitle.containsKey(title) && byTitle[title]?.id != row.id
+        ? null
+        : row;
+  }
+  byTitle.removeWhere((_, row) => row == null);
+  if (byTitle.isEmpty || text.isEmpty) return text;
+  final titles = byTitle.keys.toList()
+    ..sort((a, b) => b.length.compareTo(a.length));
+  final pattern = RegExp(
+    // An existing markdown link: kept whole.
+    r'\[[^\]\n]*\]\([^)\n]*\)'
+    '|'
+    r'(?<![\w-])(?<title>'
+    '${titles.map(RegExp.escape).join('|')}'
+    r')(?![\w-])',
+    caseSensitive: false,
+  );
+  return text.replaceAllMapped(pattern, (match) {
+    final title = (match as RegExpMatch).namedGroup('title');
+    if (title == null) return match[0]!;
+    final row = byTitle[title.toLowerCase()]!;
+    return '[$title](${frontReferenceUrl(row.kind, row.id)})';
+  });
 }
 
 /// [before] without the [title] it ends with — plain, quoted or bold — or

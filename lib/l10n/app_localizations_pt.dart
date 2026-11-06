@@ -3432,10 +3432,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get chatInputListening => 'Ouvindo...';
 
   @override
-  String get chatInputListeningTapWhenDone =>
-      'A ouvir – toca quando terminares';
-
-  @override
   String get chatInputNoAudioRecorded =>
       'Não foi gravado áudio. Tenta novamente.';
 
@@ -3469,17 +3465,8 @@ class AppLocalizationsPt extends AppLocalizations {
   String get chatInputStopTranscribe => 'Pare e transcreva';
 
   @override
-  String get chatInputTapToTalk => 'Toca para falar';
-
-  @override
-  String get chatInputTranscribing => 'A transcrever…';
-
-  @override
   String get chatInputTranscriptionFailed =>
       'A gravação foi captada, mas a transcrição falhou. Tenta de novo.';
-
-  @override
-  String get chatInputTypeInstead => 'Escrever antes';
 
   @override
   String get checkInAddNoteHint => 'Adiciona uma nota…';

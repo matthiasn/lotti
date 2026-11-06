@@ -3406,9 +3406,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get chatInputListening => 'Lyssnar...';
 
   @override
-  String get chatInputListeningTapWhenDone => 'Lyssnar – tryck när du är klar';
-
-  @override
   String get chatInputNoAudioRecorded => 'Inget ljud spelades in. Försök igen.';
 
   @override
@@ -3442,17 +3439,8 @@ class AppLocalizationsSv extends AppLocalizations {
   String get chatInputStopTranscribe => 'Stoppa och transkribera';
 
   @override
-  String get chatInputTapToTalk => 'Tryck för att prata';
-
-  @override
-  String get chatInputTranscribing => 'Transkriberar…';
-
-  @override
   String get chatInputTranscriptionFailed =>
       'Inspelningen gjordes, men transkriberingen misslyckades. Försök igen.';
-
-  @override
-  String get chatInputTypeInstead => 'Skriv i stället';
 
   @override
   String get checkInAddNoteHint => 'Lägg till en anteckning…';

@@ -59,3 +59,29 @@ String deviceDateLabel(BuildContext context, DateTime date) =>
 /// Date and clock together, each in the device's own convention.
 String deviceTimestampLabel(BuildContext context, DateTime date) =>
     '${deviceDateLabel(context, date)} ${deviceClockLabel(context, date)}';
+
+final _isoDayOrLinkTarget = RegExp(
+  // A markdown link's target, kept whole: a date in a URL is the URL's.
+  r'\]\([^)\n]*\)'
+  '|'
+  r'(?<![\d-])(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})(?![\d-])',
+);
+
+/// [text] with every calendar day written as `YYYY-MM-DD` in it put as
+/// [format] puts it — outside link targets, and only a day that exists.
+///
+/// An agent copies dates as its tools give them, ISO; the screen and the
+/// voice each write them for the person: [deviceDateLabel] on screen, a
+/// spoken date aloud.
+String replaceIsoDays(String text, String Function(DateTime day) format) =>
+    text.replaceAllMapped(_isoDayOrLinkTarget, (match) {
+      final m = match as RegExpMatch;
+      final year = m.namedGroup('year');
+      if (year == null) return m[0]!;
+      final month = int.parse(m.namedGroup('month')!);
+      final dayOfMonth = int.parse(m.namedGroup('day')!);
+      final day = DateTime(int.parse(year), month, dayOfMonth);
+      // DateTime rolls 2026-02-30 over into March: that is no day at all.
+      if (day.month != month || day.day != dayOfMonth) return m[0]!;
+      return format(day);
+    });

@@ -3441,10 +3441,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get chatInputListening => 'Naslouchám...';
 
   @override
-  String get chatInputListeningTapWhenDone =>
-      'Poslouchám – klepni, až budeš hotov';
-
-  @override
   String get chatInputNoAudioRecorded =>
       'Nebyl nahrán žádný zvuk. Zkus to znovu.';
 
@@ -3478,17 +3474,8 @@ class AppLocalizationsCs extends AppLocalizations {
   String get chatInputStopTranscribe => 'Zastavit a přepsat';
 
   @override
-  String get chatInputTapToTalk => 'Klepni a mluv';
-
-  @override
-  String get chatInputTranscribing => 'Přepisuji…';
-
-  @override
   String get chatInputTranscriptionFailed =>
       'Nahrávka se pořídila, ale přepis se nezdařil. Zkus to prosím znovu.';
-
-  @override
-  String get chatInputTypeInstead => 'Raději psát';
 
   @override
   String get checkInAddNoteHint => 'Přidej poznámku…';

@@ -5748,12 +5748,6 @@ abstract class AppLocalizations {
   /// **'Listening...'**
   String get chatInputListening;
 
-  /// No description provided for @chatInputListeningTapWhenDone.
-  ///
-  /// In en, this message translates to:
-  /// **'Listening — tap when done'**
-  String get chatInputListeningTapWhenDone;
-
   /// No description provided for @chatInputNoAudioRecorded.
   ///
   /// In en, this message translates to:
@@ -5814,29 +5808,11 @@ abstract class AppLocalizations {
   /// **'Stop and transcribe'**
   String get chatInputStopTranscribe;
 
-  /// No description provided for @chatInputTapToTalk.
-  ///
-  /// In en, this message translates to:
-  /// **'Tap to talk'**
-  String get chatInputTapToTalk;
-
-  /// No description provided for @chatInputTranscribing.
-  ///
-  /// In en, this message translates to:
-  /// **'Transcribing…'**
-  String get chatInputTranscribing;
-
   /// No description provided for @chatInputTranscriptionFailed.
   ///
   /// In en, this message translates to:
   /// **'The recording was captured, but transcribing it failed. Please try again.'**
   String get chatInputTranscriptionFailed;
-
-  /// No description provided for @chatInputTypeInstead.
-  ///
-  /// In en, this message translates to:
-  /// **'Type instead'**
-  String get chatInputTypeInstead;
 
   /// The empty note's placeholder beside a recording in the check-in composer
   ///

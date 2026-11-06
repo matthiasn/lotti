@@ -200,7 +200,8 @@ on a recording, so the summary above never runs for them. Dictation into a
 goal's or a person's chat, and a goal's charter sheet, also gets the model
 correction: `subjectDictationProvider` corrects a speech-to-text engine's
 words on the subject profile's post-processing model, like their check-ins. They get the
-dictionary there: its entries as the engine's vocabulary hint, a correction of
+dictionary there: its entries as the engine's vocabulary hint, the names of
+the user's categories ahead of them, a correction of
 each chunk by sound and spelling, and — for a Daily OS capture heard by a
 speech-to-text engine — the same quoted-edit correction as a model call of
 its own, before the capture is stored or shown. See

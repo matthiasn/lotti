@@ -259,6 +259,19 @@ void main() {
       expect(container.read(frontSpokenTurnProvider), isNull);
     });
 
+    testWidgets('says a date she copied from her tools as a date, in the '
+        "app's language", (tester) async {
+      final container = await pumpHost(tester);
+      speakTurn(container, 'c-1');
+
+      await reply(tester, container, 'Fix the fence was due 2026-03-17.');
+
+      expect(
+        voice.spoken.single.text,
+        'Fix the fence was due March 17, 2026.',
+      );
+    });
+
     testWidgets('a voice whose model is not there yet asks before it is '
         'fetched', (tester) async {
       final container = await pumpHost(tester);

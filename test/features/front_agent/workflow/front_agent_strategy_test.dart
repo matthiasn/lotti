@@ -378,6 +378,31 @@ hologram:x: not listed''');
       );
     });
 
+    test('a task the list returned is linked when she names it by title '
+        'alone', () async {
+      final s = strategy(
+        dueLister: (query) async => FrontDueTasks(
+          window: query.window,
+          today: today,
+          through: today,
+          rows: [shed],
+        ),
+      );
+      await s.processToolCalls(
+        toolCalls: [
+          _call('list_due_tasks', {'which': 'overdue'}),
+          _call('reply_to_user', {
+            'message': 'Overdue:\n- Paint the shed',
+          }, id: 'call-2'),
+        ],
+        manager: manager,
+      );
+      expect(
+        s.replyToUser,
+        'Overdue:\n- [Paint the shed](lotti://task/shed)',
+      );
+    });
+
     test('refuses a missing window, a reach past a week, a second list, and '
         'reports an unwired lister', () async {
       final s = strategy(dueLister: (query) async => none(query));

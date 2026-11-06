@@ -96,6 +96,26 @@ class AudioTranscriptionService {
     }
   }
 
+  /// The names of the user's categories, which words spoken to the app name
+  /// more than any others — "overdue in Lotti" — and no engine knows: every
+  /// live, active one that is not private, as a private name is never sent
+  /// to an engine as a hint. Empty when they cannot be read, as the
+  /// dictionary is.
+  Future<List<String>> _categoryNames() async {
+    try {
+      return [
+        for (final category
+            in await ref.read(journalDbProvider).getAllCategories())
+          if (category.active &&
+              !category.private &&
+              category.deletedAt == null)
+            category.name,
+      ];
+    } catch (_) {
+      return const [];
+    }
+  }
+
   /// Transcribes audio from a local file at [filePath] to natural text.
   ///
   /// Returns the full transcription as a single concatenated string by
@@ -187,7 +207,8 @@ class AudioTranscriptionService {
   /// each yield represents a portion of the audio (e.g., 60-second segments).
   /// For other providers, the entire transcription may come as a single chunk.
   ///
-  /// [knownTerms] — words the caller expects — lead the speech dictionary
+  /// [knownTerms] — words the caller expects — and the names of the user's
+  /// categories ([_categoryNames]) lead the speech dictionary
   /// entries that reach [dictionaryCategoryId] (with none, those that apply
   /// to every category). Together they are the engine's vocabulary hint, and
   /// each chunk is corrected against them by sound and spelling
@@ -206,10 +227,16 @@ class AudioTranscriptionService {
 
     final bytes = await File(filePath).readAsBytes();
     final audioBase64 = base64Encode(bytes);
-    final speechDictionaryTerms = mergeSpeechTerms(knownTerms, [
-      for (final entry in await _dictionaryEntries(dictionaryCategoryId))
-        entry.term,
-    ]);
+    final (entries, categoryNames) = await (
+      _dictionaryEntries(dictionaryCategoryId),
+      _categoryNames(),
+    ).wait;
+    // The category names lead the dictionary, so a provider's cap on the
+    // hint never drops one.
+    final speechDictionaryTerms = mergeSpeechTerms(
+      [...knownTerms, ...categoryNames],
+      [for (final entry in entries) entry.term],
+    );
 
     final cloud = ref.read(cloudInferenceRepositoryProvider);
     final impactCollector =

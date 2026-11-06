@@ -8,6 +8,7 @@ import 'package:lotti/features/agents/ui/chat/chat_recorder_controller.dart';
 import 'package:lotti/features/ai/state/subject_dictation_providers.dart';
 import 'package:lotti/features/daily_os_next/state/selected_date_provider.dart';
 import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
+import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
@@ -27,6 +28,7 @@ import 'package:lotti/features/front_agent/ui/front_door_wizards.dart';
 import 'package:lotti/features/front_agent/ui/front_turn_cost_line.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/utils/device_datetime.dart';
 import 'package:lotti/utils/goal_routes.dart';
 import 'package:lotti/widgets/markdown_link_utils.dart';
 import 'package:material_ui/material_ui.dart';
@@ -153,7 +155,24 @@ class _Body extends ConsumerWidget {
         threadAsync.stackTrace ?? StackTrace.empty,
       ),
       null => const AsyncLoading<List<AgentChatMessage>>(),
-      final t => AsyncData(t.messages),
+      // She copies dates as her tools give them (ISO); on screen each is in
+      // the device's own format, as a due date is everywhere else.
+      final t => AsyncData([
+        for (final m in t.messages)
+          if (m.role == AgentChatRole.agent)
+            AgentChatMessage(
+              id: m.id,
+              role: m.role,
+              text: replaceIsoDays(
+                m.text,
+                (day) => deviceDateLabel(context, day),
+              ),
+              createdAt: m.createdAt,
+              runKey: m.runKey,
+            )
+          else
+            m,
+      ]),
     };
     final composer = ref.watch(frontChatControllerProvider);
     // Kept across a reread (`.value`): an answer is not taken off the screen
@@ -263,9 +282,12 @@ class _Body extends ConsumerWidget {
           : 'front-chat:${conversationId ?? ''}',
       history: shown,
       // A conversation with her, not a log: her words as prose, the user's
-      // in a soft bubble, and a talk control that leads.
+      // in a soft bubble; what was said goes out as it stops.
       conversational: true,
       voiceFirst: true,
+      // One field for both, as a chat app has it: the mic at its end until
+      // there are words, then the send arrow.
+      composerShape: DesignSystemTextInputShape.pill,
       // She leads the thread, and scrolls away with it.
       leading: inboxOnly ? null : const FrontChatHero(),
       // A conversation not begun opens on her, and what she can do.

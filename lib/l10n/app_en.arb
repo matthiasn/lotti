@@ -2246,7 +2246,6 @@
   "chatInputHintDefault": "Ask about your tasks and productivity...",
   "chatInputHintSelectModel": "Select a model to start chatting",
   "chatInputListening": "Listening...",
-  "chatInputListeningTapWhenDone": "Listening — tap when done",
   "chatInputNoAudioRecorded": "No audio was recorded. Try again.",
   "chatInputPleaseWait": "Please wait...",
   "chatInputProcessing": "Processing...",
@@ -2257,10 +2256,7 @@
   "chatInputSendTooltip": "Send message",
   "chatInputStopRealtime": "Stop live transcription",
   "chatInputStopTranscribe": "Stop and transcribe",
-  "chatInputTapToTalk": "Tap to talk",
-  "chatInputTranscribing": "Transcribing…",
   "chatInputTranscriptionFailed": "The recording was captured, but transcribing it failed. Please try again.",
-  "chatInputTypeInstead": "Type instead",
   "checkInAddNoteHint": "Add a note…",
   "@checkInAddNoteHint": {
     "description": "The empty note's placeholder beside a recording in the check-in composer"

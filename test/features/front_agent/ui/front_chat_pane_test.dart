@@ -78,12 +78,6 @@ void main() {
     runKey: runKey,
   );
 
-  /// The composer leads with talking; this swaps in the text field.
-  Future<void> typeInstead(WidgetTester tester) async {
-    await tester.tap(find.byKey(const Key('agent-chat-type-instead')));
-    await tester.pump();
-  }
-
   Future<void> pumpPane(
     WidgetTester tester, {
     Future<FrontChatThread> Function()? thread,
@@ -216,11 +210,10 @@ void main() {
       ),
       findsOneWidget,
     );
-    // Voice first: one talk control leads, typing a tap away.
-    expect(find.byKey(const Key('agent-chat-talk')), findsOneWidget);
-    expect(find.text('Ask anything…'), findsNothing);
-    await typeInstead(tester);
+    // One field for typing and talking: the mic at its end, no mode to
+    // switch first.
     expect(find.text('Ask anything…'), findsOneWidget);
+    expect(find.byIcon(LottiIcons.mic), findsOneWidget);
   });
 
   testWidgets('a thread still loading shows a shell', (tester) async {
@@ -382,10 +375,9 @@ void main() {
     ).thenAnswer((_) async {});
     await pumpPane(tester);
 
-    await typeInstead(tester);
     await tester.enterText(find.byType(TextField), 'Hello');
     await tester.pump();
-    await tester.tap(find.byIcon(LottiIcons.send));
+    await tester.tap(find.byIcon(LottiIcons.arrowUp));
     await tester.pumpAndSettle();
 
     verify(
@@ -528,7 +520,13 @@ void main() {
 
     // The first conversation resolved during the pump: nothing was left.
     expect(recording.cancels, 0);
-    expect(find.byKey(const Key('agent-chat-talk-cancel')), findsOne);
+    expect(
+      find.descendant(
+        of: find.byType(AgentChatView),
+        matching: find.byIcon(LottiIcons.close),
+      ),
+      findsOne,
+    );
   });
 
   testWidgets('the header close hands back to the host', (tester) async {
@@ -723,10 +721,9 @@ void main() {
       await openInbox(tester);
       expect(find.text('Fine.'), findsNothing);
 
-      await typeInstead(tester);
       await tester.enterText(find.byType(TextField), 'Hello');
       await tester.pump();
-      await tester.tap(find.byIcon(LottiIcons.send));
+      await tester.tap(find.byIcon(LottiIcons.arrowUp));
       await tester.pump();
       await tester.pump();
 
@@ -907,6 +904,31 @@ void main() {
 
     expect(paths, ['/tasks/t-9']);
     expect(find.byType(FrontChatPane), findsNothing);
+  });
+
+  testWidgets('a date she copied from her tools shows as the device writes '
+      "it; the user's own words stay as typed", (tester) async {
+    await pumpPane(
+      tester,
+      thread: () async => FrontChatThread(
+        messages: [
+          message('u1', AgentChatRole.user, 'Since 2026-03-01?', now),
+          message(
+            'a1',
+            AgentChatRole.agent,
+            'Fix the fence was due 2026-03-17.',
+            now,
+          ),
+        ],
+      ),
+    );
+
+    expect(
+      find.textContaining('was due 3/17/2026.', findRichText: true),
+      findsOneWidget,
+    );
+    expect(find.textContaining('2026-03-17', findRichText: true), findsNothing);
+    expect(find.text('Since 2026-03-01?'), findsOneWidget);
   });
 
   testWidgets('a link the app does not route keeps her open and goes '

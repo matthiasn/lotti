@@ -3414,10 +3414,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get chatInputListening => 'Luisteren...';
 
   @override
-  String get chatInputListeningTapWhenDone =>
-      'Ik luister – tik als je klaar bent';
-
-  @override
   String get chatInputNoAudioRecorded =>
       'Er is geen audio opgenomen. Probeer het opnieuw.';
 
@@ -3451,17 +3447,8 @@ class AppLocalizationsNl extends AppLocalizations {
   String get chatInputStopTranscribe => 'Stoppen en transcriberen';
 
   @override
-  String get chatInputTapToTalk => 'Tik om te praten';
-
-  @override
-  String get chatInputTranscribing => 'Bezig met uitschrijven…';
-
-  @override
   String get chatInputTranscriptionFailed =>
       'De opname is gelukt, maar het transcriberen is mislukt. Probeer het opnieuw.';
-
-  @override
-  String get chatInputTypeInstead => 'Liever typen';
 
   @override
   String get checkInAddNoteHint => 'Voeg een notitie toe…';

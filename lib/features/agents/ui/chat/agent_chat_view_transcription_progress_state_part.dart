@@ -63,8 +63,11 @@ class AgentChatView extends ConsumerStatefulWidget {
   /// [footerTrailingBuilder] adds.
   final bool conversational;
 
-  /// The idle composer leads with one large talk control, typing a tap
-  /// away.
+  /// What was said goes out as recording stops — no second tap on send —
+  /// through [onSendSpoken] when given; the stop control then reads as
+  /// send, transcribing can always be cancelled, and on a desktop the field
+  /// takes the keyboard at once. The composer is the same one field, mic at
+  /// its end, as any chat's.
   final bool voiceFirst;
 
   /// Scrolls in above the first message, with the thread.
@@ -233,29 +236,13 @@ class _ChatComposer extends ConsumerWidget {
         ),
       ),
       child: Padding(
-        // A voice-first composer gives its disc air above and below, at
-        // rest and live alike, so it never changes height.
-        padding: voiceFirst
-            ? EdgeInsets.symmetric(
-                horizontal: tokens.spacing.step5,
-                vertical: tokens.spacing.step4,
-              )
-            : EdgeInsets.all(tokens.spacing.step4),
+        padding: EdgeInsets.all(tokens.spacing.step4),
         child: _withHeader(switch (status) {
-          ChatRecorderStatus.recording ||
-          ChatRecorderStatus.processing when voiceFirst => _VoiceFirstLive(
-            processing: status == ChatRecorderStatus.processing,
-            amplitudes: ref
-                .read(chatRecorderControllerProvider.notifier)
-                .getNormalizedAmplitudeHistory(),
-            onStop: () => ref
-                .read(chatRecorderControllerProvider.notifier)
-                .stopAndTranscribe(),
-            onCancel: () =>
-                ref.read(chatRecorderControllerProvider.notifier).cancel(),
-          ),
           ChatRecorderStatus.recording => _RecordingControls(
             elapsed: showVoiceDetails ? recorderState.elapsed : null,
+            // Voice first, what was said goes out as it stops: the stop
+            // control reads as the send it is.
+            sendsOnStop: voiceFirst,
             amplitudes: ref
                 .read(chatRecorderControllerProvider.notifier)
                 .getNormalizedAmplitudeHistory(),
@@ -268,7 +255,9 @@ class _ChatComposer extends ConsumerWidget {
           ChatRecorderStatus.processing => _TranscriptionProgress(
             availableHeight: availableHeight,
             partialTranscript: recorderState.partialTranscript ?? '',
-            onCancel: showVoiceDetails
+            // Voice first, the turn waits on the words: a stalled one always
+            // has its way out.
+            onCancel: showVoiceDetails || voiceFirst
                 ? () =>
                       ref.read(chatRecorderControllerProvider.notifier).cancel()
                 : null,
@@ -281,7 +270,7 @@ class _ChatComposer extends ConsumerWidget {
                   correctTranscript: correctTranscript,
                   resolveDictionaryCategory: resolveDictionaryCategory,
                 );
-            final text = _IdleComposer(
+            return _IdleComposer(
               controller: controller,
               hintText: hintText,
               isSending: isSending,
@@ -292,18 +281,11 @@ class _ChatComposer extends ConsumerWidget {
               onSend: onSend,
               shape: shape,
               onStartRecording: startRecording,
-              autofocus: voiceFirst,
+              // Where there is a keyboard, it types at once; a phone keeps
+              // its keyboard down until the field is tapped, so talking
+              // stays one tap.
+              autofocus: voiceFirst && isDesktopLayout(context),
             );
-            return voiceFirst
-                ? _VoiceFirstIdle(
-                    textComposer: text,
-                    hasDraft: draft.trim().isNotEmpty,
-                    canRecord: !isSending,
-                    onStartRecording: startRecording,
-                    onTypeStart: (character) =>
-                        onDraftChanged('$draft$character'),
-                  )
-                : text;
           }(),
         }),
       ),
@@ -388,12 +370,17 @@ class _RecordingControls extends StatelessWidget {
     required this.onCancel,
     required this.onStop,
     this.elapsed,
+    this.sendsOnStop = false,
   });
 
   final List<double> amplitudes;
   final VoidCallback onCancel;
   final VoidCallback onStop;
   final Duration? elapsed;
+
+  /// Whether stopping sends what was said: the stop control is then the
+  /// send arrow, as the text field's is.
+  final bool sendsOnStop;
 
   @override
   Widget build(BuildContext context) {
@@ -460,9 +447,11 @@ class _RecordingControls extends StatelessWidget {
                   ),
                   SizedBox(width: tokens.spacing.step2),
                   _CircleIconButton(
-                    icon: LottiIcons.stop,
+                    icon: sendsOnStop ? LottiIcons.arrowUp : LottiIcons.stop,
                     onPressed: onStop,
-                    tooltip: context.messages.chatInputStopTranscribe,
+                    tooltip: sendsOnStop
+                        ? context.messages.chatInputSendTooltip
+                        : context.messages.chatInputStopTranscribe,
                   ),
                 ],
               ),

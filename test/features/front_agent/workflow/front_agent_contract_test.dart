@@ -118,6 +118,15 @@ void main() {
     expect(frontAgentSystemPrompt, contains('Never write a bare id'));
   });
 
+  test('dates are written as the tools give them, and a misheard name '
+      'as listed', () {
+    expect(frontAgentSystemPrompt, contains('`YYYY-MM-DD`'));
+    expect(
+      frontAgentSystemPrompt,
+      contains('write its name exactly as listed, never as it was heard'),
+    );
+  });
+
   test('her manner follows the sass the user set, and never touches the '
       'routing', () {
     final manners = {

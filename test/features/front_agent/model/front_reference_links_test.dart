@@ -112,6 +112,67 @@ void main() {
       );
     });
 
+    group('by title, for the rows a lookup returned', () {
+      const fence = FrontIndexRow(
+        kind: FrontDestinationKind.task,
+        id: 'fence-1',
+        title: 'Fix the fence',
+      );
+
+      test('links each listed title, whatever its case, in place', () {
+        expect(
+          linkFrontReferences(
+            'Overdue:\n- **Fix the Fence**, due 2026-10-30\n'
+            '- feed the penguins',
+            rows,
+            titled: [feed, fence],
+          ),
+          'Overdue:\n- **[Fix the Fence](lotti://task/fence-1)**, due '
+          '2026-10-30\n- [feed the penguins](lotti://task/${feed.id})',
+        );
+      });
+
+      test('leaves a title alone without a lookup, inside a word or a '
+          'link, or when two rows share it', () {
+        expect(
+          linkFrontReferences('Fix the fence today', rows),
+          'Fix the fence today',
+        );
+        expect(
+          linkFrontReferences(
+            'Fix the fences, and $feedLink',
+            rows,
+            titled: [feed, fence],
+          ),
+          'Fix the fences, and $feedLink',
+        );
+        const twin = FrontIndexRow(
+          kind: FrontDestinationKind.task,
+          id: 'fence-2',
+          title: 'fix the fence',
+        );
+        expect(
+          linkFrontReferences(
+            'Fix the fence',
+            rows,
+            titled: [fence, twin, fence],
+          ),
+          'Fix the fence',
+        );
+      });
+
+      test('an id still wins over the title beside it', () {
+        expect(
+          linkFrontReferences(
+            'Feed the penguins (task:${feed.id})',
+            rows,
+            titled: [feed],
+          ),
+          feedLink,
+        );
+      });
+    });
+
     test('is the text itself when there is nothing to link with', () {
       expect(
         linkFrontReferences('task:${feed.id}', const []),
