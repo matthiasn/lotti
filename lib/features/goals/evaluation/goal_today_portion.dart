@@ -45,7 +45,9 @@ bool goalTodayPortionMet({
   required DateTime reference,
   GoalProgressEvaluator evaluator = const GoalProgressEvaluator(),
 }) {
-  if (goalCriterionHasUnsupported(criterion)) return false;
+  // The evaluator scores an unknown leaf as never met, so the slice is safe
+  // to evaluate; the veto below keeps an `anyOf` sibling from vouching for a
+  // goal this build cannot read at all.
   final today = evaluator.evaluate(
     _todaySlice(criterion, reference),
     signals,
@@ -67,7 +69,7 @@ bool goalTodayPortionMet({
           satisfied(today, node.criterionId),
   };
 
-  return done(criterion);
+  return !goalCriterionHasUnsupported(criterion) && done(criterion);
 }
 
 /// [node] re-windowed to the reference day, every leaf keeping its id so its

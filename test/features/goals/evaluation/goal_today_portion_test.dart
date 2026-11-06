@@ -152,6 +152,37 @@ void main() {
         isFalse,
       );
     });
+
+    test('tracked time shares its weekly hours across the days', () {
+      // Seven hours a week is one hour today, for a category or a label.
+      const category = GoalCriterion.categoryTime(
+        criterionId: 'practice',
+        categoryId: 'music',
+        window: GoalWindow.rollingDays(count: 7),
+        aggregation: GoalAggregation.sum,
+        targetHours: 7,
+        direction: GoalDirection.atLeast,
+      );
+      const label = GoalCriterion.labelTime(
+        criterionId: 'drafting',
+        labelId: 'writing',
+        window: GoalWindow.rollingDays(count: 7),
+        aggregation: GoalAggregation.sum,
+        targetHours: 7,
+      );
+      GoalSignalWindow hours(num value) => GoalSignalWindow(
+        categoryTimeDailyHours: {
+          'practice': {today: value},
+        },
+        labelTimeDailyHours: {
+          'drafting': {today: value},
+        },
+      );
+      expect(met(category, hours(1)), isTrue);
+      expect(met(category, hours(0.5)), isFalse);
+      expect(met(label, hours(1)), isTrue);
+      expect(met(label, hours(0.5)), isFalse);
+    });
   });
 
   group('a habit quota', () {
