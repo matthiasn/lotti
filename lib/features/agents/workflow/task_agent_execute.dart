@@ -150,9 +150,10 @@ extension TaskAgentExecute on TaskAgentWorkflow {
       threadId: threadId,
       setupSource: resolvedSetup.source,
       setupOrigin: resolvedSetup.setupOrigin,
-      profileId:
-          agentIdentity.config.inferenceSetup?.baseProfileId ??
-          agentIdentity.config.profileId,
+      // The profile that resolved for this run, not the setup's stored id:
+      // a setup that follows its category runs on the category's profile
+      // now, or the Settings default.
+      profileId: resolvedProfile.profileId,
       executor: InferenceRouteSnapshot.fromResolvedProfile(resolvedProfile),
     );
 
