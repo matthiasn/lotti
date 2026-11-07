@@ -4,6 +4,7 @@ import 'package:lotti/features/agents/query/query_source_access.dart';
 import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/front_agent/model/front_chat_thread.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
+import 'package:lotti/features/tts/cloud/tts_cloud_route.dart';
 import 'package:lotti/features/tts/engine/speech_text.dart';
 
 /// A turn the user spoke, whose reply she speaks back: the conversation it
@@ -129,4 +130,39 @@ class FrontSpokenTurnNotifier extends Notifier<FrontSpokenTurn?> {
 
   /// Her reply is on its way to the voice, or no longer wanted.
   void settle() => state = null;
+}
+
+/// What her voice last said in a conversation: the answer as the thread
+/// gave it, and the cloud voice it was said in (null: the on-device voice).
+typedef FrontSaid = ({String answer, TtsCloudRoute? route});
+
+/// What she last said in each conversation, so the same answer said again
+/// is said by the same voice ([FrontSaidNotifier.routeFor]) — and, the
+/// voice's clip being kept under that voice, played at once rather than
+/// made again. Kept for the session.
+final NotifierProvider<FrontSaidNotifier, Map<String, FrontSaid>>
+frontSaidProvider = NotifierProvider<FrontSaidNotifier, Map<String, FrontSaid>>(
+  FrontSaidNotifier.new,
+  name: 'frontSaidProvider',
+);
+
+class FrontSaidNotifier extends Notifier<Map<String, FrontSaid>> {
+  @override
+  Map<String, FrontSaid> build() => const {};
+
+  /// She said [answer] in [conversationId], in [route]'s voice.
+  void said(String conversationId, String answer, TtsCloudRoute? route) =>
+      state = {...state, conversationId: (answer: answer, route: route)};
+
+  /// The voice [answer] was said in, in [conversationId], when it was the
+  /// last she said there; [current] — the voice her profile names now —
+  /// for anything new.
+  TtsCloudRoute? routeFor(
+    String conversationId,
+    String answer, {
+    required TtsCloudRoute? current,
+  }) {
+    final said = state[conversationId];
+    return said != null && said.answer == answer ? said.route : current;
+  }
 }

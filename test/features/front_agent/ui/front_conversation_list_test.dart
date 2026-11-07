@@ -3,14 +3,17 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_grouped_list.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/components/search/design_system_search.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
 import 'package:lotti/features/front_agent/model/front_conversation.dart';
 import 'package:lotti/features/front_agent/state/front_conversation_providers.dart';
 import 'package:lotti/features/front_agent/ui/front_conversation_actions.dart';
 import 'package:lotti/features/front_agent/ui/front_conversation_list.dart';
+import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -658,6 +661,48 @@ void main() {
     expect(find.text("That didn't go through. Try again."), findsOne);
     expect(find.text('Chat archived.'), findsNothing);
     expect(find.text('Count the hatchlings'), findsOne);
+  });
+
+  testWidgets("a row's ⋯ opens the agent pages' menu over the scrim — "
+      'rounded, raised, Delete in a group of its own — and a tap on the '
+      'scrim closes it without acting', (tester) async {
+    await pumpList(tester);
+
+    await tester.tap(find.byKey(FrontConversationListKeys.menu('c-1')));
+    await tester.pumpAndSettle();
+
+    // The page steps back behind the shared scrim, not under a bare
+    // dropdown.
+    final menuContext = tester.element(find.byType(DesignSystemContextMenu));
+    final scrim = ModalUtils.getModalBarrierColor(
+      isDark: Theme.of(menuContext).brightness == Brightness.dark,
+      context: menuContext,
+    );
+    expect(
+      tester
+          .widgetList<ModalBarrier>(find.byType(ModalBarrier))
+          .map((barrier) => barrier.color),
+      contains(scrim),
+    );
+    final menu = tester.widget<DesignSystemContextMenu>(
+      find.byType(DesignSystemContextMenu),
+    );
+    expect(menu.surfaceColor, dsCardSurface(menuContext));
+    // It says which chat it acts on, above Delete.
+    expect(menu.header, 'Plan the census');
+    expect(
+      [
+        for (final item in menu.items)
+          if (item.startsGroup) item.label,
+      ],
+      ['Delete chat'],
+    );
+
+    await tester.tapAt(const Offset(4, 4));
+    await tester.pumpAndSettle();
+    expect(find.byType(DesignSystemContextMenu), findsNothing);
+    verifyNever(() => service.delete(any()));
+    verifyNever(() => service.archive(any(), archived: any(named: 'archived')));
   });
 
   testWidgets('delete asks first, says what it does, and only deletes on '

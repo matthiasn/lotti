@@ -28,11 +28,16 @@ class AgentSurfaceMenuButton extends StatelessWidget {
     required this.items,
     required this.triggerBuilder,
     this.semanticsLabel,
+    this.header,
     super.key,
   });
 
   final List<DesignSystemContextMenuItem> items;
   final AgentSurfaceMenuTriggerBuilder triggerBuilder;
+
+  /// A quiet heading above the rows: what they act on, when the trigger
+  /// alone does not say it — a row of a list.
+  final String? header;
 
   /// Names the open menu for assistive technology.
   final String? semanticsLabel;
@@ -45,6 +50,7 @@ class AgentSurfaceMenuButton extends StatelessWidget {
         anchorContext,
         items: items,
         semanticsLabel: semanticsLabel,
+        header: header,
       ),
     ),
   );
@@ -72,6 +78,7 @@ Future<void> showAgentSurfaceMenu(
   BuildContext anchorContext, {
   required List<DesignSystemContextMenuItem> items,
   String? semanticsLabel,
+  String? header,
 }) {
   final navigator = Navigator.of(anchorContext, rootNavigator: true);
   final anchorBox = anchorContext.findRenderObject()! as RenderBox;
@@ -86,6 +93,7 @@ Future<void> showAgentSurfaceMenu(
       anchor: anchor,
       items: items,
       semanticsLabel: semanticsLabel,
+      header: header,
       barrierColor: ModalUtils.getModalBarrierColor(
         isDark: theme.brightness == Brightness.dark,
         context: anchorContext,
@@ -107,6 +115,7 @@ class _AgentSurfaceMenuRoute extends PopupRoute<void> {
     required this.anchor,
     required this.items,
     required this.semanticsLabel,
+    required this.header,
     required this.barrierColor,
     required this.barrierLabel,
     required this.textDirection,
@@ -116,6 +125,7 @@ class _AgentSurfaceMenuRoute extends PopupRoute<void> {
   final Rect anchor;
   final List<DesignSystemContextMenuItem> items;
   final String? semanticsLabel;
+  final String? header;
   final TextDirection textDirection;
   final CapturedThemes capturedThemes;
 
@@ -140,6 +150,7 @@ class _AgentSurfaceMenuRoute extends PopupRoute<void> {
     final tokens = context.designTokens;
     final menu = DesignSystemContextMenu(
       semanticsLabel: semanticsLabel,
+      header: header,
       // As wide as its longest row, and raised off the dimmed page on the
       // card surface — the base level read as a dark hole in the scrim.
       fitContent: true,

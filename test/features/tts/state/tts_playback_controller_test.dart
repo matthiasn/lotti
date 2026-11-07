@@ -122,6 +122,10 @@ void main() {
     expect(playing.status, TtsPlaybackStatus.playing);
     expect(playing.clip?.path, '/tmp/tts_clip.wav');
     await controller.stop();
+    // Kept for a replay, deleted once let go.
+    verifyNever(file.delete);
+    controller.discardPrepared();
+    await pumpEventQueue();
     verify(file.delete).called(1);
   });
 
@@ -387,6 +391,8 @@ void main() {
         expect(engine.calls, hasLength(1));
         expect(player.playCount, 1);
         await controller.stop();
+        controller.discardPrepared();
+        await pumpEventQueue();
         verify(file.delete).called(1);
       },
     );
@@ -658,22 +664,63 @@ void main() {
     expect(player.stopCount, 1);
   });
 
-  test('stopping playback removes its temporary synthesized file', () async {
+  test('a stopped clip is kept: the same words play again at once, without '
+      'synthesizing them again, and a discard deletes it', () async {
     final file = MockIoFile();
     when(() => file.path).thenReturn('/tmp/tts_clip.wav');
     when(file.existsSync).thenReturn(true);
     when(file.delete).thenAnswer((_) async => file);
     final player = FakeTtsAudioPlayer();
     addTearDown(player.dispose);
-    final h = harness(
-      engine: FakeTtsEngine(output: file),
-      player: player,
-    );
+    final engine = FakeTtsEngine(output: file);
+    final h = harness(engine: engine, player: player);
     final controller = controllerOf(h.container);
     await controller.speak(sourceId: 'chat', text: 'Answer');
     await controller.stop();
-    verify(file.delete).called(1);
     expect(player.stopCount, 1);
+    verifyNever(file.delete);
+
+    await controller.speak(sourceId: 'chat', text: 'Answer');
+    expect(engine.calls, hasLength(1), reason: 'the replay is the kept clip');
+    expect(player.playCount, 2);
+    expect(
+      h.container.read(ttsPlaybackControllerProvider).clip?.path,
+      '/tmp/tts_clip.wav',
+    );
+
+    await controller.stop();
+    controller.discardPrepared();
+    await pumpEventQueue();
+    verify(file.delete).called(1);
+  });
+
+  test('a stopped clip whose owner no longer allows it is deleted', () async {
+    final file = MockIoFile();
+    when(() => file.path).thenReturn('/tmp/tts_clip.wav');
+    when(file.existsSync).thenReturn(true);
+    when(file.delete).thenAnswer((_) async => file);
+    final player = FakeTtsAudioPlayer();
+    addTearDown(player.dispose);
+    final engine = FakeTtsEngine(output: file);
+    final h = harness(engine: engine, player: player);
+    final controller = controllerOf(h.container);
+    var allowed = true;
+    await controller.speak(
+      sourceId: 'chat',
+      text: 'Answer',
+      canPlay: () async => allowed,
+    );
+    allowed = false;
+    await controller.stop();
+    verify(file.delete).called(1);
+
+    allowed = true;
+    await controller.speak(
+      sourceId: 'chat',
+      text: 'Answer',
+      canPlay: () async => allowed,
+    );
+    expect(engine.calls, hasLength(2), reason: 'nothing was kept to replay');
   });
 
   test(
@@ -694,6 +741,8 @@ void main() {
       final controller = controllerOf(h.container);
       await controller.speak(sourceId: 'chat', text: 'Answer');
       await controller.stop();
+      controller.discardPrepared();
+      await pumpEventQueue();
       expect(
         h.container.read(ttsPlaybackControllerProvider).status,
         TtsPlaybackStatus.stopped,
@@ -766,6 +815,8 @@ void main() {
       final controller = controllerOf(h.container);
       await controller.speak(sourceId: 'chat', text: 'Private answer');
       await controller.stop();
+      controller.discardPrepared();
+      await pumpEventQueue();
 
       expect(player.stopCount, 1);
       verify(file.delete).called(1);

@@ -71,8 +71,12 @@ and a proposal she got wrong goes to the inbox rather than being retyped.
   and its title), her voice (`front_chat_voice.dart`: the spoken reply, when
   she may speak, the pose she holds), her voice's control and her stage
   (`front_voice_controls.dart`: stop her, or have her say her latest answer
-  again from the start; stand her up full screen on any form factor), the
-  list of conversations, the
+  again from the start, in the voice she said it in; stand her up full
+  screen on any form factor), what stands at her feet there
+  (`front_stage_controls.dart`: hold the disc to talk to her, let go to
+  send, drag off to cancel, or tap for hands free), the
+  list of conversations with each one's ⋯ on the agent pages' shared menu
+  (`front_conversation_actions.dart`), the
   category chips, her AI profile choice (`front_profile_choice.dart`: the
   profile she thinks with, whose read-aloud model is her voice), the door
   card with its proposals and inbox chips, the

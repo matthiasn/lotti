@@ -9,9 +9,8 @@ import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/agents/ui/chat/agent_chat_view.dart';
 import 'package:lotti/features/agents/ui/chat/agent_typing_indicator.dart';
 import 'package:lotti/features/agents/ui/chat/chat_recorder_controller.dart';
-import 'package:lotti/features/agents/ui/chat/waveform_bars.dart';
+import 'package:lotti/features/agents/ui/chat/chat_recording_pill.dart';
 import 'package:lotti/features/ai/util/inference_provider_resolver.dart';
-import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/markdown/agent_markdown_view.dart';
@@ -317,7 +316,6 @@ void main() {
                   onDraftChanged: drafts.add,
                   onSend: () => sent++,
                   onRetry: () {},
-                  showVoiceDetails: true,
                   history: const AsyncData([]),
                   footer: Padding(
                     padding: EdgeInsets.all(context.designTokens.spacing.step4),
@@ -375,7 +373,7 @@ void main() {
         final viewport = tester.getRect(scroll);
         final chat = tester.getRect(find.byType(AgentChatView));
         expect(viewport.height, lessThanOrEqualTo(chat.height / 4));
-        final cancel = find.widgetWithText(DesignSystemButton, 'Cancel');
+        final cancel = find.byKey(ChatRecordingPillKeys.cancel);
         final cancelRect = tester.getRect(cancel);
         expect(cancelRect.height, greaterThanOrEqualTo(TapTargets.minimum));
         expect(cancelRect.top, greaterThanOrEqualTo(viewport.bottom));
@@ -394,7 +392,7 @@ void main() {
         expect(tester.widget<Text>(previewText).maxLines, collapsed.maxLines);
         await tester.tap(find.text('Show more'));
         await tester.pump();
-        await tester.tap(find.text('Cancel'));
+        await tester.tap(find.byKey(ChatRecordingPillKeys.cancel));
         await tester.pump();
         expect(cancelled, 1);
         expect(drafts, isEmpty);
@@ -429,7 +427,6 @@ void main() {
               onDraftChanged: (_) {},
               onSend: () {},
               onRetry: () {},
-              showVoiceDetails: true,
               history: const AsyncData([]),
             ),
           ),
@@ -446,12 +443,12 @@ void main() {
       expect(find.text(partial ?? 'Transcribing…'), findsOneWidget);
       expect(find.text('Show more'), findsNothing);
       expect(find.text('Show less'), findsNothing);
-      final cancel = find.widgetWithText(DesignSystemButton, 'Cancel');
+      final cancel = find.byKey(ChatRecordingPillKeys.cancel);
       expect(
         tester.getSize(cancel).height,
         greaterThanOrEqualTo(TapTargets.minimum),
       );
-      await tester.tap(find.text('Cancel'));
+      await tester.tap(find.byKey(ChatRecordingPillKeys.cancel));
       await tester.pump();
       expect(cancelled, isTrue);
       expect(find.byType(CircularProgressIndicator), findsNothing);
@@ -1505,7 +1502,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      expect(find.byType(WaveformBars), findsOneWidget);
+      expect(find.byKey(ChatRecordingPillKeys.waveform), findsOneWidget);
       expect(find.byIcon(LottiIcons.close), findsOneWidget);
       expect(find.byIcon(LottiIcons.stop), findsOneWidget);
       expect(find.byType(TextField), findsNothing);
@@ -1668,8 +1665,11 @@ void main() {
       await tester.pump();
 
       expect(find.text('Transcribing audio…'), findsOneWidget);
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
-      expect(find.byIcon(LottiIcons.mic), findsOneWidget);
+      // The pill holds its place: the spinner where the send arrow was,
+      // the way out still at its start.
+      expect(find.byKey(ChatRecordingPillKeys.transcribing), findsOneWidget);
+      expect(find.byKey(ChatRecordingPillKeys.stop), findsNothing);
+      expect(find.byKey(ChatRecordingPillKeys.cancel), findsOneWidget);
       expect(find.byType(TextField), findsNothing);
     });
 
@@ -1701,8 +1701,11 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
-      expect(find.byIcon(LottiIcons.mic), findsOneWidget);
+      // The pill holds its place: the spinner where the send arrow was,
+      // the way out still at its start.
+      expect(find.byKey(ChatRecordingPillKeys.transcribing), findsOneWidget);
+      expect(find.byKey(ChatRecordingPillKeys.stop), findsNothing);
+      expect(find.byKey(ChatRecordingPillKeys.cancel), findsOneWidget);
       expect(find.byType(TextField), findsNothing);
     });
 
@@ -1993,7 +1996,7 @@ void main() {
     },
   );
   testWidgets(
-    'query recording clock crosses a minute without moving stop controls',
+    'the recording clock crosses a minute without moving the stop control',
     (tester) async {
       var stopped = 0;
       final recorder = RecordingCallbackController(
@@ -2011,7 +2014,6 @@ void main() {
               onDraftChanged: (_) {},
               onSend: () {},
               onRetry: () {},
-              showVoiceDetails: true,
               history: const AsyncData([]),
             ),
           ),
@@ -2020,22 +2022,22 @@ void main() {
           ],
         ),
       );
-      final clock = tester.getRect(find.text('00:59'));
-      final stop = tester.getRect(find.text('Stop'));
+      final clock = tester.getRect(find.text('0:59'));
+      final stop = tester.getRect(find.byKey(ChatRecordingPillKeys.stop));
       recorder.updateElapsed(const Duration(minutes: 1));
       await tester.pump();
-      expect(tester.getRect(find.text('01:00')), clock);
-      expect(tester.getRect(find.text('Stop')), stop);
-      await tester.tap(find.text('Stop'));
+      expect(tester.getRect(find.text('1:00')), clock);
+      expect(tester.getRect(find.byKey(ChatRecordingPillKeys.stop)), stop);
+      await tester.tap(find.byKey(ChatRecordingPillKeys.stop));
       await tester.pump();
       expect(stopped, 1);
-      expect(find.text('01:00'), findsNothing);
+      expect(find.text('1:00'), findsNothing);
       await tester.pumpWidget(const SizedBox());
     },
   );
 
   testWidgets(
-    'query transcription can be cancelled without submitting partial text',
+    'transcription can be cancelled without submitting partial text',
     (tester) async {
       var cancelled = 0;
       var sent = 0;
@@ -2054,7 +2056,6 @@ void main() {
               onDraftChanged: (_) {},
               onSend: () => sent++,
               onRetry: () {},
-              showVoiceDetails: true,
               history: const AsyncData([]),
             ),
           ),
@@ -2064,7 +2065,7 @@ void main() {
         ),
       );
       expect(find.text('Feeder cali'), findsOneWidget);
-      await tester.tap(find.text('Cancel'));
+      await tester.tap(find.byKey(ChatRecordingPillKeys.cancel));
       await tester.pump();
       expect(cancelled, 1);
       expect(sent, 0);

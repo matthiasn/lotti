@@ -5,6 +5,7 @@ import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/agents/ui/chat/agent_chat_view.dart';
 import 'package:lotti/features/agents/ui/chat/agent_typing_indicator.dart';
 import 'package:lotti/features/agents/ui/chat/chat_recorder_controller.dart';
+import 'package:lotti/features/agents/ui/chat/chat_recording_pill.dart';
 import 'package:lotti/features/agents/ui/chat/waveform_bars.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -299,8 +300,14 @@ void main() {
         status: ChatRecorderStatus.recording,
       );
 
-      final waveform = tester.widget<WaveformBars>(find.byType(WaveformBars));
-      expect(waveform.amplitudesNormalized, const [0.4, 0.6, 0.5]);
+      final waveform =
+          tester
+                  .widget<CustomPaint>(
+                    find.byKey(ChatRecordingPillKeys.waveform),
+                  )
+                  .painter!
+              as WaveformBarsPainter;
+      expect(waveform.amplitudes, const [0.4, 0.6, 0.5]);
       expect(tooltipped('Stop and transcribe'), findsNothing);
       expect(
         find.descendant(
@@ -354,7 +361,7 @@ void main() {
       );
 
       expect(find.text('Transcribing…'), findsOne);
-      await tester.tap(find.text('Cancel'));
+      await tester.tap(find.byKey(ChatRecordingPillKeys.cancel));
       expect(recorder.cancels, 1);
     });
 

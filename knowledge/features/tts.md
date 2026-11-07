@@ -11,7 +11,7 @@ sources:
   - id: src
     resource: ../../lib/features/tts
     title: Text-to-speech source
-    last_modified: 2026-11-04
+    last_modified: 2026-11-07
   - id: cloud-route
     resource: ../../lib/features/tts/cloud/tts_cloud_route.dart
     title: The cloud route a profile's read-aloud slot names
@@ -353,9 +353,9 @@ but the resulting file is deleted without playback. A caller may provide a
 [privacy and lifecycle rules](agents/query-chat.md#audio-evidence-and-spoken-answers)
 use that boundary. Source-specific stopping cannot stop another surface's
 utterance. `MediaKitTtsAudioPlayer` also invalidates in-flight open/rate changes
-on stop or disposal. Temporary utterance WAV files are removed on stop,
-cancellation, error or disposal; one that plays to its end is kept as the
-prepared result (below) for a replay. Model weights remain installed. Cleanup reports
+on stop or disposal. Temporary utterance WAV files are removed on
+cancellation, error or disposal; one that plays to its end, or is stopped
+once made, is kept as the prepared result (below) for a replay. Model weights remain installed. Cleanup reports
 native shutdown failures and still attempts file deletion. It ignores only a
 confirmed missing-file error; other filesystem failures are reported through
 the speech logging domain without including the temporary file path or content.
@@ -377,17 +377,21 @@ the one chosen for its language, so another voice never replays the old one's
 clip. Speed is applied at playback and does not invalidate the WAV.
 
 **A replay plays the kept clip.** The same slot holds the WAV of an utterance
-that played to its end, under that utterance's key, so pressing play again on
-the same words starts at once — no second synthesis and, for a cloud voice, no
-second upload of the text. When playback ends the clip goes into the slot at
+that played to its end — or was stopped once its clip was made — under that
+utterance's key, so pressing play again on the same words starts at once — no
+second synthesis and, for a cloud voice, no second upload of the text. When
+playback ends or is stopped (`_keepForReplay`) the clip goes into the slot at
 once, so a discard, other speech and disposal reach it from then on, and the
 utterance's own `canPlay` is asked again; a no takes it out and deletes it. An
 owner that lost access or let go of the utterance never leaves a clip behind,
 however its cleanup and the completion interleave, and a question that is
 never answered leaves the clip where disposal still deletes it. A replay
 rechecks `canPlay` too, and a denied replay deletes the clip. Anything else spoken or prepared, `discardPrepared`
-and disposal delete it like any prepared result; a stop while playing deletes
-the clip it stopped, as before. `speak` waits for a
+and disposal delete it like any prepared result. A stop keeps the clip it
+stopped: stopping the voice and asking for the same words again plays them at
+once, in the voice they were made in, rather than making them again (the
+companion's *Say it again*). A stop that lands between synthesis and play
+leaves the file to the slot, which `speak` then never deletes. `speak` waits for a
 matching job and takes ownership of its file instead of synthesizing again;
 `canPlay` still rechecks live access. A speculative failure remains silent and a
 later tap retries normally. `discardPrepared` invalidates a pending job and
@@ -407,7 +411,7 @@ stateDiagram-v2
   preparing --> consumed: explicit Play waits for matching WAV
   discarded --> empty: delete any late result
   consumed --> empty: playback owns cleanup
-  consumed --> ready: played to its end, kept for replay
+  consumed --> ready: played to its end or stopped, kept for replay
 ```
 
 The selected query chat owns scheduling and access checks; see its

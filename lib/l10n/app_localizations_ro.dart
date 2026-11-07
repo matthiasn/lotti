@@ -7430,6 +7430,18 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get frontStageReleaseToCancel => 'Eliberați pentru a anula';
+
+  @override
+  String get frontStageReleaseToSend => 'Eliberați pentru a trimite';
+
+  @override
+  String get frontStageTalkHint => 'Atingeți sau țineți apăsat pentru a vorbi';
+
+  @override
+  String get frontStageTapToSend => 'Atingeți pentru a trimite';
+
+  @override
   String get geminiThinkingModeHighDescription =>
       'Raționament cel mai profund; poate crește latența și costul.';
 

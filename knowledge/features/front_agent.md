@@ -118,24 +118,32 @@ sources:
     last_modified: 2026-11-01
   - id: voice
     resource: ../../lib/features/front_agent/ui/front_chat_voice.dart
-    title: FrontVoice — her spoken reply, its gating, her pose
-    last_modified: 2026-11-06
+    title: FrontVoice — her spoken reply, its gating, her pose, the voice an answer said again keeps
+    last_modified: 2026-11-07
   - id: voice-controls
     resource: ../../lib/features/front_agent/ui/front_voice_controls.dart
     title: Her voice's stop / say-it-again control and the way to her full-screen stage
-    last_modified: 2026-11-03
+    last_modified: 2026-11-07
+  - id: stage-controls
+    resource: ../../lib/features/front_agent/ui/front_stage_controls.dart
+    title: FrontStageControls — hold to talk to her on her stage, and her answer said again
+    last_modified: 2026-11-07
+  - id: conversation-actions
+    resource: ../../lib/features/front_agent/ui/front_conversation_actions.dart
+    title: A conversation's rename, archive and delete, and her ⋯ on the agent-surface menu
+    last_modified: 2026-11-07
   - id: stage
     resource: ../../lib/features/agents/ui/ai_summary_card/companion_stage_page.dart
     title: CompanionStagePage — the shared full-screen stage
-    last_modified: 2026-11-03
+    last_modified: 2026-11-07
   - id: profile-choice
     resource: ../../lib/features/front_agent/ui/front_profile_choice.dart
     title: FrontProfileChoice — her AI profile, and with it her voice
     last_modified: 2026-11-01
   - id: voice-state
     resource: ../../lib/features/front_agent/state/front_voice_providers.dart
-    title: The spoken turn awaiting her spoken reply, and her voice's source id
-    last_modified: 2026-11-02
+    title: The spoken turn awaiting her spoken reply, her voice's source id, and what she last said in each conversation
+    last_modified: 2026-11-07
   - id: plan
     resource: ../../docs/implementation_plans/2026-10-23_single_agent_entry_point.md
     title: The single-entry-point plan — decisions and slices
@@ -628,7 +636,14 @@ every preview ends on the same line. On the open row's fill the second line
 is as bright as the title. A row's rename, archive and delete (its ⋯ in the
 time's place) show on hover and focus, at rest on the open row too unless
 the list sits beside the conversation (`FrontConversationList.beside`), whose
-header carries the same menu; a long press offers them on any row. Archived
+header carries the same menu; a long press opens that menu under any row.
+The ⋯ is `FrontMenuButton`, on the menu every agent page opens
+(`AgentSurfaceMenuButton`): rounded, raised on the card surface over the
+shared modal scrim, placed inside the window's safe area, closed without
+acting by a tap on the scrim or Escape — never a bare popover over the rows.
+Delete is set off in a group of its own at the bottom, and a row's menu
+names its chat in a quiet heading above the rows, so it is plain which one
+Delete deletes. Archived
 ones fold away at the end; a search looks through them too.
 
 # The chat surface
@@ -700,7 +715,8 @@ another conversation opens or the list opens or closes, so a thread that
 comes back at its top has her there. Otherwise the control row holds only
 the *Chats* button and a new conversation on the left, an overflow (her
 internals, where the thread's cost is accounted, then this conversation's
-rename, archive and delete) and close on the right. The thread is `conversational` and `voiceFirst` (see
+rename, archive and delete as a group of their own — the same
+`FrontMenuButton` the list's rows have) and close on the right. The thread is `conversational` and `voiceFirst` (see
 [chat input](agents/chat-input-and-reasoning.md)): her replies as prose with
 their cost as a quiet line under them, one pill field with the mic at its
 end, and what she was told by voice sent as said.
@@ -867,18 +883,77 @@ her — shown then even if she was muted meanwhile, so a stop is always in
 reach — and once she has stopped, *Say it again* speaks her answer to the
 latest turn from the start (`frontLatestAnswer`, the same words
 `frontSpokenAnswer` gives a spoken turn) through `FrontVoice.speak`, so the
-mute, the voice route and the take-over hold as for a spoken reply — the
+mute and the take-over hold as for a spoken reply — the
 mute read at playback start from the app's container, so closing the stage
-mid-synthesis does not cut her off. It is gone while she may not speak, in
+mid-synthesis does not cut her off. **An answer said again keeps its
+voice:** `FrontVoice.speak` records, per conversation, the answer it said
+and the cloud route it said it with (`frontSaidProvider`), and the same
+answer said again takes that route rather than the one her profile resolves
+to at the tap — a profile still resolving there would otherwise hand it to
+the on-device voice, and any other voice would key a new clip. With the same
+route the read-aloud's kept clip matches (see [read-aloud](tts.md)), so the
+answer plays at once, with no synthesis spinner — after she finished it, and
+after she was stopped mid-sentence too. It is gone while she may not speak, in
 the inbox, for a conversation other than the one on screen, while a send is
 in flight or a spoken reply is still owed, while the thread or its journal
 access is being read, and before that answer has landed.
 `FrontStageButton` — and a tap on her bust or the header's — opens
 `openFrontStage`: the shared full-screen `CompanionStagePage`, head to toe,
 on a phone and on a desktop window alike, still speaking on her source,
-with `FrontVoiceButton` at her feet in place of a summary's read-aloud
-control (`readAloud`). The bust keeps one tree whatever she does, so her
-animator lives through a start and a stop.
+with `FrontStageControls` at her feet in place of a summary's read-aloud
+control (the page's `controls`). The bust keeps one tree whatever she does,
+so her animator lives through a start and a stop.
+
+**Her stage is never a dead end.** Whatever has been said, `FrontStageControls`
+offers a way to answer her, in a band of its own below her figure (the
+stage page lays her out above its `controls`, on her stage's floor colour,
+so nothing is drawn on her). One teal disc (`spacing.step10` across) is the
+stage's one control to talk with, in every state, its caption saying what it
+does — at rest *Tap or hold to talk*, teaching both ways; an instruction for
+the moment (*Release to send*, *Tap to send*) at full strength, the hint and
+the waits quieter; the disc keeps its full teal while held, and a ring shows
+when it has the keyboard; `FrontVoiceButton` stands beside it once there is an answer to say
+again. Pressing the disc starts the shared recorder on the Settings
+default's transcription slot, the same ears as the conversation's composer.
+Held past `kLongPressTimeout` — a hold counts once the recorder is really
+listening, however late the microphone opened (a first permission prompt, a
+slow device), and a refused one never promises a send — its glyph turns
+to the send arrow (*Release to send*), and letting go sends. Dragged more
+than `spacing.step6` off the disc it turns red with a × (*Release to
+cancel*), and letting go there discards; back on, it sends again. A quick
+tap — and a screen reader's tap, Space or Enter — leaves her listening hands
+free, the disc the send arrow (*Tap to send*). While she listens the chats'
+own recording pill (`ChatRecordingPill`, `showEndControl: false`, so the
+disc stays the one send) shows the time and the voice above it, its × letting
+it go; the band keeps the pill's height whether it shows or not, so nothing
+moves under a finger. While the words are written down, and while her answer
+is on its way (a send in flight or a spoken reply owed), the disc is a quiet
+spinner captioned *Transcribing…* or her *Finding who knows…*, and presses do
+nothing. A press the system takes away (a pointer cancel) carries on hands
+free, so nothing said is lost to it. The stage sends nothing itself: the conversation's
+`AgentChatView`, which the stage only covers, receives the transcript from
+the shared recorder and sends it as a spoken turn, so her answer is spoken
+on the stage.
+
+```mermaid
+stateDiagram-v2
+    [*] --> Idle
+    Idle --> Pressed: press the disc (recorder starts)
+    Idle --> HandsFree: screen-reader tap, Space or Enter
+    Pressed --> Held: still pressed after kLongPressTimeout, recorder listening
+    Pressed --> HandsFree: released on the disc before it (a tap)
+    Pressed --> Idle: released off the disc (cancelled)
+    Held --> Cancelling: dragged off the disc
+    Cancelling --> Held: back on the disc
+    Held --> Transcribing: released (stopAndTranscribe)
+    Cancelling --> Idle: released (cancelled)
+    Held --> HandsFree: pointer cancelled by the system
+    HandsFree --> Transcribing: a tap on the disc, Space or Enter
+    HandsFree --> Idle: the pill's × or Escape (cancelled)
+    Transcribing --> Waiting: transcript sent as a spoken turn
+    Transcribing --> Idle: cancelled
+    Waiting --> Idle: her answer lands
+```
 
 # Where it plugs in
 

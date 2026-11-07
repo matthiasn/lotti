@@ -3,13 +3,16 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/query/query_source_access.dart';
 import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
 import 'package:lotti/features/agents/ui/chat/chat_recorder_controller.dart';
+import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/companion/model/companion_customization.dart';
 import 'package:lotti/features/companion/state/companion_customization_controller.dart';
+import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
 import 'package:lotti/features/front_agent/model/front_chat_thread.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
@@ -28,6 +31,7 @@ import 'package:lotti/features/tts/state/tts_playback_controller.dart';
 import 'package:lotti/utils/consts.dart';
 
 import '../../../test_helper.dart';
+import '../../agents/test_data/ai_config_factories.dart';
 import '../../tts/test_utils.dart';
 
 /// The voice as the conversation sees it: what it was asked to speak, and
@@ -37,6 +41,7 @@ class _Voice extends TtsPlaybackController {
 
   final TtsPlaybackState _initial;
   final spoken = <({String sourceId, String text})>[];
+  final routes = <TtsCloudRoute?>[];
   final stoppedSources = <String?>[];
   TtsModelDownloadConsent? consent;
   Future<bool> Function()? canPlayNow;
@@ -57,6 +62,7 @@ class _Voice extends TtsPlaybackController {
     consent = confirmModelDownload;
     canPlayNow = canPlay;
     spoken.add((sourceId: sourceId, text: text));
+    routes.add(cloudRoute);
     state = TtsPlaybackState(
       status: TtsPlaybackStatus.playing,
       sourceId: sourceId,
@@ -110,14 +116,26 @@ class _Composer extends FrontChatController {
   void settle() => state = const FrontChatComposerState();
 }
 
-/// Hosts the voice as the pane does, and shows the pose she holds.
+/// Hosts the voice as the pane does, shows the pose she holds, and says
+/// [say] again in `c-1` on a tap — as her replay control does.
 class _Host extends ConsumerWidget {
   const _Host();
+
+  static String say = '';
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     FrontVoice.listenForSpokenReply(ref, context);
-    return Text('${FrontVoice.holdingOf(ref)?.name}');
+    return Column(
+      children: [
+        Text('${FrontVoice.holdingOf(ref)?.name}'),
+        TextButton(
+          key: const Key('say-again'),
+          onPressed: () => FrontVoice.speak(ref, context, 'c-1', say),
+          child: const Text('again'),
+        ),
+      ],
+    );
   }
 }
 
@@ -136,8 +154,10 @@ void main() {
   late _Voice voice;
   late _Custom custom;
   late _Composer composer;
+  ResolvedAgentSetup? setup;
 
   setUp(() {
+    setup = null;
     doors = {};
     thread = [
       message('u-old', AgentChatRole.user, 'Earlier', DateTime(2026, 10, 30)),
@@ -175,7 +195,7 @@ void main() {
             ),
           ),
           ttsPlaybackControllerProvider.overrideWith(() => voice),
-          agentResolvedSetupProvider.overrideWith((ref, id) async => null),
+          agentResolvedSetupProvider.overrideWith((ref, id) async => setup),
           frontActiveConversationProvider.overrideWith((ref) async => active),
           // Nothing her journal answers rest on is hidden.
           frontJournalAccessProvider.overrideWith(
@@ -242,6 +262,57 @@ void main() {
         conversationId: conversationId,
         spokenAt: spokenAt,
       );
+
+  group('her answer said again', () {
+    final mistral = testInferenceProvider(
+      id: 'mistral',
+      inferenceProviderType: InferenceProviderType.mistral,
+    );
+    final voxtral = testAiModel(
+      id: 'voice-row',
+      providerModelId: 'voxtral-mini-tts-3-0',
+    );
+    final cloudVoice = ResolvedAgentSetup(
+      status: AgentSetupResolutionStatus.resolved,
+      profile: ResolvedProfile(
+        thinkingModelId: 'thinking',
+        thinkingProvider: mistral,
+        speechModelId: voxtral.providerModelId,
+        speechProvider: mistral,
+        speechModel: voxtral,
+      ),
+    );
+
+    testWidgets('is said in the voice it was said in, though her profile no '
+        'longer resolves to it at the tap; a new answer takes the voice her '
+        'profile names now', (tester) async {
+      setup = cloudVoice;
+      final container = await pumpHost(tester);
+      speakTurn(container, 'c-1');
+      await reply(tester, container, 'Forty-two.');
+      final first = voice.routes.single;
+      expect(first?.provider, mistral);
+      expect(first?.model, voxtral);
+
+      // Her profile is resolving again — or now names no cloud voice.
+      setup = null;
+      container.invalidate(agentResolvedSetupProvider(frontAgentId));
+      await tester.pump();
+      await tester.pump();
+
+      _Host.say = 'Forty-two.';
+      await tester.tap(find.byKey(const Key('say-again')));
+      await tester.pump();
+      expect(voice.spoken.last.text, 'Forty-two.');
+      expect(voice.routes.last, first, reason: 'never the on-device voice');
+
+      _Host.say = 'Something new.';
+      await tester.tap(find.byKey(const Key('say-again')));
+      await tester.pump();
+      expect(voice.spoken.last.text, 'Something new.');
+      expect(voice.routes.last, isNull);
+    });
+  });
 
   group('her answer to a spoken turn', () {
     testWidgets('is spoken — her first reply after it, under the '

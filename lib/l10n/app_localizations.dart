@@ -12467,6 +12467,30 @@ abstract class AppLocalizations {
   /// **'Asking {owner}…'**
   String frontDoorWalking(String owner);
 
+  /// Caption under the talk button while a held finger has slid off it: letting go discards what was said.
+  ///
+  /// In en, this message translates to:
+  /// **'Release to cancel'**
+  String get frontStageReleaseToCancel;
+
+  /// Caption under the talk button while it is held: letting go sends what was said.
+  ///
+  /// In en, this message translates to:
+  /// **'Release to send'**
+  String get frontStageReleaseToSend;
+
+  /// Caption under the talk button on the companion's full-screen stage: tap it to talk hands free, or press and hold it and let go to send.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap or hold to talk'**
+  String get frontStageTalkHint;
+
+  /// Caption under the talk button on the companion's stage while she listens hands free: the next tap sends.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to send'**
+  String get frontStageTapToSend;
+
   /// No description provided for @geminiThinkingModeHighDescription.
   ///
   /// In en, this message translates to:

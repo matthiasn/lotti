@@ -1,7 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/agents/ui/agent_surface_menu.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_modal_action_bar.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
+import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu_button.dart';
 import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
@@ -39,8 +41,13 @@ class FrontConversationActions {
   FrontChatController get _controller =>
       _ref.read(frontChatControllerProvider.notifier);
 
-  /// The three menu rows for [conversation].
-  List<DesignSystemContextMenuItem> menuItems(FrontConversation conversation) {
+  /// The three menu rows for [conversation], Delete in a group of its own
+  /// at the bottom. [startsGroup] sets them off from rows above them — the
+  /// header's own.
+  List<DesignSystemContextMenuItem> menuItems(
+    FrontConversation conversation, {
+    bool startsGroup = false,
+  }) {
     final messages = _context.messages;
     final id = conversation.id;
     return [
@@ -48,6 +55,7 @@ class FrontConversationActions {
         key: FrontConversationActionKeys.rename(id),
         label: messages.queryRenameChat,
         icon: LottiIcons.edit,
+        startsGroup: startsGroup,
         onTap: () => _run(() => _rename(conversation)),
       ),
       DesignSystemContextMenuItem(
@@ -63,6 +71,7 @@ class FrontConversationActions {
         label: messages.queryDeleteChat,
         icon: LottiIcons.delete,
         isDestructive: true,
+        startsGroup: true,
         onTap: () => _run(() => _delete(conversation)),
       ),
     ];
@@ -130,6 +139,50 @@ class FrontConversationActions {
     if (confirmed) {
       await _controller.deleteConversation(conversation.id);
     }
+  }
+}
+
+/// Her `⋯`: the menu every agent page opens ([AgentSurfaceMenuButton]) —
+/// rounded, raised off the page behind the shared scrim, which a tap or
+/// Escape dismisses — on the list's rows and in her header alike.
+class FrontMenuButton extends StatelessWidget {
+  const FrontMenuButton({
+    required this.items,
+    this.iconColor,
+    this.header,
+    super.key,
+  });
+
+  final List<DesignSystemContextMenuItem> items;
+
+  /// What the rows act on, above them: a list row's chat.
+  final String? header;
+
+  /// The glyph's ink; low emphasis when null.
+  final Color? iconColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final label = MaterialLocalizations.of(context).showMenuTooltip;
+    return AgentSurfaceMenuButton(
+      items: items,
+      semanticsLabel: label,
+      header: header,
+      triggerBuilder: (context, open) => SizedBox.square(
+        dimension: DesignSystemContextMenuButton.extent(tokens),
+        child: IconButton(
+          tooltip: label,
+          padding: EdgeInsets.zero,
+          iconSize: tokens.spacing.step5,
+          icon: Icon(
+            LottiIcons.more,
+            color: iconColor ?? tokens.colors.text.lowEmphasis,
+          ),
+          onPressed: open,
+        ),
+      ),
+    );
   }
 }
 

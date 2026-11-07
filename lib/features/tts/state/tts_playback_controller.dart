@@ -321,7 +321,8 @@ class TtsPlaybackController extends Notifier<TtsPlaybackState> {
       final allowed = canPlay == null || await canPlay();
       if (!current() || !allowed) {
         if (identical(_playing?.file, file)) _playing = null;
-        await _deleteFile(file);
+        // A stop meanwhile kept the clip for a replay: it is the slot's now.
+        if (!identical(_prepared?.file, file)) await _deleteFile(file);
         if (current()) _onPlaybackEnded();
         return;
       }
@@ -445,18 +446,24 @@ class TtsPlaybackController extends Notifier<TtsPlaybackState> {
 
   /// Stops the current utterance. When [sourceId] is supplied, another
   /// surface's utterance is left playing. Preparation is invalidated before
-  /// awaiting native work, and any owned temporary WAV is removed.
+  /// awaiting native work.
+  ///
+  /// A clip already made is kept for a replay, as one played to its end is
+  /// ([_keepForReplay]): stopping her and asking for the answer again plays
+  /// it at once, in the voice it was made in, rather than making it again.
   Future<void> stop({String? sourceId}) async {
     if (!ref.mounted || (sourceId != null && state.sourceId != sourceId)) {
       return;
     }
     _generation++;
-    final file = _playing?.file;
+    final played = _playing;
     _playing = null;
     final player = _player;
     // Invalidate preparation and presentation before the native await.
     _onPlaybackEnded();
-    await _stopAndDelete(player, file);
+    final kept = _keepForReplay(played);
+    await _stopAndDelete(player, null);
+    await kept;
   }
 
   /// The model's directory, downloading it first when the user agrees, or
@@ -506,18 +513,25 @@ class TtsPlaybackController extends Notifier<TtsPlaybackState> {
     });
   }
 
-  /// The utterance played to its end: its clip becomes the prepared result
+  /// The utterance played to its end: its clip is kept for a replay.
+  Future<void> _onPlaybackFinished() async {
+    final played = _playing;
+    _playing = null;
+    _onPlaybackEnded();
+    await _keepForReplay(played);
+  }
+
+  /// [played]'s clip — finished or stopped — becomes the prepared result
   /// for its key, so the same words, voice and language play again at once —
   /// while the caller's `canPlay` still allows it, asked again now. The clip
   /// goes into the slot before the question, so a discard, anything else
   /// spoken or prepared, and disposal reach it however long the answer takes;
   /// a no takes it out again. An owner that lost access or let go of the
   /// utterance never leaves a clip behind, however its own cleanup and this
-  /// completion interleave. A stop deletes a clip still playing.
-  Future<void> _onPlaybackFinished() async {
-    final played = _playing;
-    _playing = null;
-    _onPlaybackEnded();
+  /// interleave.
+  Future<void> _keepForReplay(
+    ({File file, _SpeechKey key, Future<bool> Function()? canPlay})? played,
+  ) async {
     if (played == null) return;
     discardPrepared();
     final job = _prepared = _PreparedSpeech(played.key)

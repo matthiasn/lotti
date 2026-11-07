@@ -7395,6 +7395,18 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
+  String get frontStageReleaseToCancel => 'Rilascia per annullare';
+
+  @override
+  String get frontStageReleaseToSend => 'Rilascia per inviare';
+
+  @override
+  String get frontStageTalkHint => 'Tocca o tieni premuto per parlare';
+
+  @override
+  String get frontStageTapToSend => 'Tocca per inviare';
+
+  @override
   String get geminiThinkingModeHighDescription =>
       'Il ragionamento più profondo; può aumentare la latenza e il costo.';
 

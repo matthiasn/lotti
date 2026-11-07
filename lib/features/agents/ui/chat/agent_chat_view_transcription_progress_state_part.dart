@@ -38,7 +38,6 @@ class AgentChatView extends ConsumerStatefulWidget {
     this.footer,
     this.composerEnabled = true,
     this.allowDraftWhileSending = false,
-    this.showVoiceDetails = false,
     this.scrollOnReplies = true,
     this.conversationId,
     this.groupAttachmentsWithReply = false,
@@ -131,8 +130,6 @@ class AgentChatView extends ConsumerStatefulWidget {
   /// Allow preparation of the next draft while Send remains disabled.
   final bool allowDraftWhileSending;
 
-  /// Show elapsed capture time and a cancellable transcription state.
-  final bool showVoiceDetails;
   final bool scrollOnReplies;
   final String? conversationId;
 
@@ -167,8 +164,9 @@ class AgentChatView extends ConsumerStatefulWidget {
 /// [chatRecorderControllerProvider] — the same recorder the evolution chat
 /// uses — so transcription, error toasts, and the waveform are shared
 /// infrastructure. Idle shows a text field with a mic/send trailing icon;
-/// recording shows the waveform with cancel/stop; processing shows the
-/// streaming partial transcript.
+/// recording and transcribing show the one [ChatRecordingPill] every chat
+/// and the companion's stage share, the streaming partial transcript above
+/// it while transcribing.
 ///
 /// Watches [chatRecorderControllerProvider] internally so the 10 Hz amplitude
 /// stream rebuilds only this subtree, not the full message list above.
@@ -179,7 +177,6 @@ class _ChatComposer extends ConsumerWidget {
     required this.hintText,
     required this.isSending,
     required this.allowDraftWhileSending,
-    required this.showVoiceDetails,
     required this.sendingLabel,
     required this.draft,
     required this.onDraftChanged,
@@ -201,7 +198,6 @@ class _ChatComposer extends ConsumerWidget {
   final String hintText;
   final bool isSending;
   final bool allowDraftWhileSending;
-  final bool showVoiceDetails;
   final String sendingLabel;
   final String draft;
   final ValueChanged<String> onDraftChanged;
@@ -238,8 +234,9 @@ class _ChatComposer extends ConsumerWidget {
       child: Padding(
         padding: EdgeInsets.all(tokens.spacing.step4),
         child: _withHeader(switch (status) {
-          ChatRecorderStatus.recording => _RecordingControls(
-            elapsed: showVoiceDetails ? recorderState.elapsed : null,
+          ChatRecorderStatus.recording => ChatRecordingPill(
+            processing: false,
+            elapsed: recorderState.elapsed,
             // Voice first, what was said goes out as it stops: the stop
             // control reads as the send it is.
             sendsOnStop: voiceFirst,
@@ -255,12 +252,9 @@ class _ChatComposer extends ConsumerWidget {
           ChatRecorderStatus.processing => _TranscriptionProgress(
             availableHeight: availableHeight,
             partialTranscript: recorderState.partialTranscript ?? '',
-            // Voice first, the turn waits on the words: a stalled one always
-            // has its way out.
-            onCancel: showVoiceDetails || voiceFirst
-                ? () =>
-                      ref.read(chatRecorderControllerProvider.notifier).cancel()
-                : null,
+            // A stalled transcription always has its way out.
+            onCancel: () =>
+                ref.read(chatRecorderControllerProvider.notifier).cancel(),
           ),
           _ => () {
             void startRecording() => ref
@@ -364,114 +358,20 @@ class _IdleComposer extends StatelessWidget {
   }
 }
 
-class _RecordingControls extends StatelessWidget {
-  const _RecordingControls({
-    required this.amplitudes,
-    required this.onCancel,
-    required this.onStop,
-    this.elapsed,
-    this.sendsOnStop = false,
-  });
-
-  final List<double> amplitudes;
-  final VoidCallback onCancel;
-  final VoidCallback onStop;
-  final Duration? elapsed;
-
-  /// Whether stopping sends what was said: the stop control is then the
-  /// send arrow, as the text field's is.
-  final bool sendsOnStop;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    return CallbackShortcuts(
-      bindings: {
-        const SingleActivator(LogicalKeyboardKey.escape): onCancel,
-      },
-      child: Focus(
-        autofocus: true,
-        child: elapsed != null
-            ? Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Row(
-                    children: [
-                      SizedBox(
-                        width: tokens.spacing.step9,
-                        child: Text(
-                          '${elapsed!.inMinutes.toString().padLeft(2, '0')}:${(elapsed!.inSeconds % 60).toString().padLeft(2, '0')}',
-                          style: tokens.typography.styles.others.caption
-                              .copyWith(
-                                fontFeatures: const [
-                                  FontFeature.tabularFigures(),
-                                ],
-                              ),
-                        ),
-                      ),
-                      SizedBox(width: tokens.spacing.step3),
-                      Expanded(
-                        child: WaveformBars(amplitudesNormalized: amplitudes),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: tokens.spacing.step2),
-                  Wrap(
-                    alignment: WrapAlignment.end,
-                    spacing: tokens.spacing.step3,
-                    runSpacing: tokens.spacing.step2,
-                    children: [
-                      DesignSystemButton(
-                        label: context.messages.cancelButton,
-                        onPressed: onCancel,
-                        variant: DesignSystemButtonVariant.outlined,
-                      ),
-                      DesignSystemButton(
-                        label: context.messages.audioRecordingStop,
-                        onPressed: onStop,
-                      ),
-                    ],
-                  ),
-                ],
-              )
-            : Row(
-                children: [
-                  Expanded(
-                    child: WaveformBars(amplitudesNormalized: amplitudes),
-                  ),
-                  SizedBox(width: tokens.spacing.step3),
-                  _CircleIconButton(
-                    icon: LottiIcons.close,
-                    onPressed: onCancel,
-                    tooltip: context.messages.chatInputCancelRecording,
-                  ),
-                  SizedBox(width: tokens.spacing.step2),
-                  _CircleIconButton(
-                    icon: sendsOnStop ? LottiIcons.arrowUp : LottiIcons.stop,
-                    onPressed: onStop,
-                    tooltip: sendsOnStop
-                        ? context.messages.chatInputSendTooltip
-                        : context.messages.chatInputStopTranscribe,
-                  ),
-                ],
-              ),
-      ),
-    );
-  }
-}
-
-/// Keeps streaming text inspectable without letting it push Cancel out of the
-/// composer. The host height already accounts for its header and keyboard.
+/// The recording pill while transcribing, with the streaming words above
+/// it — kept inspectable without letting them push the pill, and its
+/// Cancel, out of the composer. The host height already accounts for its
+/// header and keyboard.
 class _TranscriptionProgress extends StatefulWidget {
   const _TranscriptionProgress({
     required this.availableHeight,
     required this.partialTranscript,
-    this.onCancel,
+    required this.onCancel,
   });
 
   final double availableHeight;
   final String partialTranscript;
-  final VoidCallback? onCancel;
+  final VoidCallback onCancel;
 
   @override
   State<_TranscriptionProgress> createState() => _TranscriptionProgressState();
@@ -555,123 +455,34 @@ class _TranscriptionProgressState extends State<_TranscriptionProgress> {
               ),
               SizedBox(height: tokens.spacing.step1),
             ],
-            Row(
-              children: [
-                SizedBox.square(
-                  dimension: ControlSizes.iconChipCompact,
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      SizedBox.square(
-                        dimension: IconSizes.l,
-                        child: CircularProgressIndicator(
-                          strokeWidth: BorderWidths.emphasis,
-                          color: tokens.colors.interactive.enabled,
-                          semanticsLabel: hasPartial
-                              ? context.messages.timelineTranscribing
-                              : null,
-                        ),
-                      ),
-                      Icon(
-                        LottiIcons.mic,
-                        size: IconSizes.s,
-                        color: tokens.colors.interactive.enabled,
-                      ),
-                    ],
+            if (hasPartial && overflows)
+              Align(
+                alignment: AlignmentDirectional.centerEnd,
+                child: MergeSemantics(
+                  child: Semantics(
+                    expanded: _expanded,
+                    child: DesignSystemButton(
+                      label: _expanded
+                          ? context.messages.aiResponseShowLess
+                          : context.messages.aiResponseShowMore,
+                      onPressed: () => setState(() => _expanded = !_expanded),
+                      variant: DesignSystemButtonVariant.tertiary,
+                      size: DesignSystemButtonSize.dense,
+                      tapTargetSize: MaterialTapTargetSize.padded,
+                    ),
                   ),
                 ),
-                SizedBox(width: tokens.spacing.step2),
-                if (!hasPartial)
-                  Expanded(
-                    child: Text(
-                      context.messages.timelineTranscribing,
-                      style: style,
-                    ),
-                  ),
-                if (hasPartial || widget.onCancel != null)
-                  Expanded(
-                    child: Wrap(
-                      alignment: WrapAlignment.end,
-                      spacing: tokens.spacing.step1,
-                      children: [
-                        if (hasPartial && overflows)
-                          MergeSemantics(
-                            child: Semantics(
-                              expanded: _expanded,
-                              child: DesignSystemButton(
-                                label: _expanded
-                                    ? context.messages.aiResponseShowLess
-                                    : context.messages.aiResponseShowMore,
-                                onPressed: () => setState(
-                                  () => _expanded = !_expanded,
-                                ),
-                                variant: DesignSystemButtonVariant.tertiary,
-                                size: DesignSystemButtonSize.dense,
-                                tapTargetSize: MaterialTapTargetSize.padded,
-                              ),
-                            ),
-                          ),
-                        if (widget.onCancel != null)
-                          DesignSystemButton(
-                            label: context.messages.cancelButton,
-                            onPressed: widget.onCancel,
-                            variant: DesignSystemButtonVariant.tertiary,
-                            size: DesignSystemButtonSize.dense,
-                            tapTargetSize: MaterialTapTargetSize.padded,
-                          ),
-                      ],
-                    ),
-                  ),
-              ],
+              ),
+            if (hasPartial) SizedBox(height: tokens.spacing.step1),
+            ChatRecordingPill(
+              processing: true,
+              amplitudes: const [],
+              elapsed: Duration.zero,
+              onCancel: widget.onCancel,
             ),
           ],
         );
       },
-    );
-  }
-}
-
-class _CircleIconButton extends StatelessWidget {
-  const _CircleIconButton({
-    required this.icon,
-    required this.onPressed,
-    required this.tooltip,
-  });
-
-  final IconData icon;
-  final VoidCallback onPressed;
-  final String tooltip;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    return Semantics(
-      button: true,
-      label: tooltip,
-      onTap: onPressed,
-      child: ExcludeSemantics(
-        child: Tooltip(
-          message: tooltip,
-          excludeFromSemantics: true,
-          child: Container(
-            width: TapTargets.minimum,
-            height: TapTargets.minimum,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: tokens.colors.interactive.enabled,
-            ),
-            child: IconButton(
-              onPressed: onPressed,
-              icon: Icon(
-                icon,
-                size: IconSizes.s,
-                color: tokens.colors.text.onInteractiveAlert,
-              ),
-              padding: EdgeInsets.zero,
-            ),
-          ),
-        ),
-      ),
     );
   }
 }

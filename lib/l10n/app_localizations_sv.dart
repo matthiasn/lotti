@@ -7322,6 +7322,18 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String get frontStageReleaseToCancel => 'Släpp för att avbryta';
+
+  @override
+  String get frontStageReleaseToSend => 'Släpp för att skicka';
+
+  @override
+  String get frontStageTalkHint => 'Tryck eller håll in för att prata';
+
+  @override
+  String get frontStageTapToSend => 'Tryck för att skicka';
+
+  @override
   String get geminiThinkingModeHighDescription =>
       'Djupaste resonemang; kan öka latens och kostnad.';
 

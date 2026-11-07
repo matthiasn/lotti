@@ -7364,6 +7364,18 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get frontStageReleaseToCancel => 'Loslassen zum Abbrechen';
+
+  @override
+  String get frontStageReleaseToSend => 'Loslassen zum Senden';
+
+  @override
+  String get frontStageTalkHint => 'Tippen oder halten zum Sprechen';
+
+  @override
+  String get frontStageTapToSend => 'Tippen zum Senden';
+
+  @override
   String get geminiThinkingModeHighDescription =>
       'Tiefstes Reasoning; kann Latenz und Kosten erhöhen.';
 
