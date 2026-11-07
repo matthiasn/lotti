@@ -2482,7 +2482,6 @@
   "dailyOsNextDraftingProgressQueued": "In wachtrij",
   "dailyOsNextDraftingProgressReading": "Inchecken bij lezen",
   "dailyOsNextDraftingProgressSaving": "Opslaan van plan",
-  "dailyOsNextDraftingReasoningOverline": "✦ Redenering",
   "dailyOsNextDraftingRecoveryBody": "De wake heeft geen plan gemaakt. Probeer het opnieuw, of ga terug en pas de beslissingen voor het opstellen.",
   "dailyOsNextDraftingRecoveryTitle": "Opstellen is vertraagd",
   "dailyOsNextDraftingRetry": "Probeer het opnieuw",
@@ -2507,7 +2506,7 @@
   "dailyOsNextGenericError": "Er is iets misgegaan.",
   "dailyOsNextGreetingAfternoon": "Goedemiddag.",
   "dailyOsNextGreetingEvening": "Goedenavond.",
-  "dailyOsNextGreetingHiName": "Hoi. {name}  👋",
+  "dailyOsNextGreetingHiName": "Hoi {name}",
   "@dailyOsNextGreetingHiName": {
     "placeholders": {
       "name": {
@@ -2577,16 +2576,16 @@
   "dailyOsNextRefineHeadlineDiffReady": "Hier is wat ik zou veranderen.",
   "dailyOsNextRefineHeadlineIdle": "Wat moet er veranderen?",
   "dailyOsNextRefineHeadlineThinking": "Je plan herwerkt...",
+  "dailyOsNextRefineKeepChanges": "Wijzigingen houden",
   "dailyOsNextRefineKeepTalking": "Blijf praten.",
-  "dailyOsNextRefineLooksGood": "Ziet er goed uit.",
   "dailyOsNextRefineNoChanges": "Geen planwijzigingen kwamen terug, herword het en probeer het opnieuw.",
-  "dailyOsNextRefineOverline": "🎤 Bijsturen",
+  "dailyOsNextRefineOverline": "Bijsturen",
   "dailyOsNextRefineRevert": "Terugdraaien",
   "dailyOsNextRefineStatusAccepted": "Opgesloten.",
   "dailyOsNextRefineStatusDiffReady": "Dit is veranderd.",
   "dailyOsNextRefineStatusIdle": "Tik op praten.",
   "dailyOsNextRefineStatusListening": "Luisteren...",
-  "dailyOsNextRefineStatusThinking": ".. Herwerken van het plan...",
+  "dailyOsNextRefineStatusThinking": "Herwerken van het plan...",
   "dailyOsNextRefineTitle": "Het plan verfijnen",
   "dailyOsNextRenameFailed": "Kon de naam van",
   "dailyOsNextReviewAddBuffer": "Buffer toevoegen",
@@ -2634,17 +2633,16 @@
       }
     }
   },
-  "dailyOsNextShutdownReflectionOverline": "💬 Reflectie in één regel",
+  "dailyOsNextShutdownReflectionOverline": "Reflectie in één regel",
   "dailyOsNextShutdownReflectionPlaceholder": "Bijvoorbeeld, de ochtend was scherp, de middag gesleept na de koffie met Sarah duurde lang.",
   "dailyOsNextShutdownReflectionPrompt": "Hoe is vandaag geland? (Dit voedt de tocht van morgen.)",
   "dailyOsNextShutdownReflectionSave": "Opslaan",
   "dailyOsNextShutdownReflectionSpeak": "Zeg het.",
   "dailyOsNextShutdownReflectionThanks": "Opgeslagen — gaat mee in de notitie voor morgen.",
-  "dailyOsNextShutdownSaveAndClose": "& Sluiten opslaan",
   "dailyOsNextShutdownTitle": "Sluit de dag af",
   "dailyOsNextShutdownTomorrowError": "De notitie voor morgen kon niet worden geschreven.",
   "dailyOsNextShutdownTomorrowNoProvider": "Stel een AI-provider in om een notitie voor morgen te krijgen.",
-  "dailyOsNextShutdownTomorrowOverline": "✦ Voor morgen",
+  "dailyOsNextShutdownTomorrowOverline": "Voor morgen",
   "dailyOsNextStateDueOnDate": "Verloopdatum {date}",
   "@dailyOsNextStateDueOnDate": {
     "placeholders": {

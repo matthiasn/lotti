@@ -5166,9 +5166,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dailyOsNextDraftingProgressSaving => 'Saving plan';
 
   @override
-  String get dailyOsNextDraftingReasoningOverline => '✦ Reasoning';
-
-  @override
   String get dailyOsNextDraftingRecoveryBody =>
       'The wake did not produce a plan. Try again, or go back and adjust the decisions before drafting.';
 
@@ -5254,7 +5251,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String dailyOsNextGreetingHiName(String name) {
-    return 'Hi $name 👋';
+    return 'Hi $name';
   }
 
   @override
@@ -5395,14 +5392,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dailyOsNextRefineKeepTalking => 'Keep talking';
 
   @override
-  String get dailyOsNextRefineLooksGood => 'Looks good';
+  String get dailyOsNextRefineKeepChanges => 'Keep changes';
 
   @override
   String get dailyOsNextRefineNoChanges =>
       'No plan changes came back. Reword it and try again.';
 
   @override
-  String get dailyOsNextRefineOverline => '🎤 Refinement';
+  String get dailyOsNextRefineOverline => 'Refinement';
 
   @override
   String get dailyOsNextRefineRevert => 'Revert';
@@ -5420,7 +5417,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dailyOsNextRefineStatusListening => 'Listening…';
 
   @override
-  String get dailyOsNextRefineStatusThinking => '✦ Reworking the plan…';
+  String get dailyOsNextRefineStatusThinking => 'Reworking the plan…';
 
   @override
   String get dailyOsNextRefineTitle => 'Refine the plan';
@@ -5535,7 +5532,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get dailyOsNextShutdownReflectionOverline => '💬 One-line reflection';
+  String get dailyOsNextShutdownReflectionOverline => 'One-line reflection';
 
   @override
   String get dailyOsNextShutdownReflectionPlaceholder =>
@@ -5556,9 +5553,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Saved — it goes into tomorrow\'s note.';
 
   @override
-  String get dailyOsNextShutdownSaveAndClose => 'Save & close';
-
-  @override
   String get dailyOsNextShutdownTitle => 'Close out the day';
 
   @override
@@ -5570,7 +5564,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Set up an AI provider to get a note for tomorrow.';
 
   @override
-  String get dailyOsNextShutdownTomorrowOverline => '✦ For tomorrow';
+  String get dailyOsNextShutdownTomorrowOverline => 'For tomorrow';
 
   @override
   String dailyOsNextStateDueOnDate(String date) {

@@ -8741,12 +8741,6 @@ abstract class AppLocalizations {
   /// **'Saving plan'**
   String get dailyOsNextDraftingProgressSaving;
 
-  /// No description provided for @dailyOsNextDraftingReasoningOverline.
-  ///
-  /// In en, this message translates to:
-  /// **'✦ Reasoning'**
-  String get dailyOsNextDraftingReasoningOverline;
-
   /// No description provided for @dailyOsNextDraftingRecoveryBody.
   ///
   /// In en, this message translates to:
@@ -8894,7 +8888,7 @@ abstract class AppLocalizations {
   /// No description provided for @dailyOsNextGreetingHiName.
   ///
   /// In en, this message translates to:
-  /// **'Hi {name} 👋'**
+  /// **'Hi {name}'**
   String dailyOsNextGreetingHiName(String name);
 
   /// No description provided for @dailyOsNextGreetingMorning.
@@ -9125,11 +9119,11 @@ abstract class AppLocalizations {
   /// **'Keep talking'**
   String get dailyOsNextRefineKeepTalking;
 
-  /// No description provided for @dailyOsNextRefineLooksGood.
+  /// No description provided for @dailyOsNextRefineKeepChanges.
   ///
   /// In en, this message translates to:
-  /// **'Looks good'**
-  String get dailyOsNextRefineLooksGood;
+  /// **'Keep changes'**
+  String get dailyOsNextRefineKeepChanges;
 
   /// No description provided for @dailyOsNextRefineNoChanges.
   ///
@@ -9140,7 +9134,7 @@ abstract class AppLocalizations {
   /// No description provided for @dailyOsNextRefineOverline.
   ///
   /// In en, this message translates to:
-  /// **'🎤 Refinement'**
+  /// **'Refinement'**
   String get dailyOsNextRefineOverline;
 
   /// No description provided for @dailyOsNextRefineRevert.
@@ -9176,7 +9170,7 @@ abstract class AppLocalizations {
   /// No description provided for @dailyOsNextRefineStatusThinking.
   ///
   /// In en, this message translates to:
-  /// **'✦ Reworking the plan…'**
+  /// **'Reworking the plan…'**
   String get dailyOsNextRefineStatusThinking;
 
   /// No description provided for @dailyOsNextRefineTitle.
@@ -9368,7 +9362,7 @@ abstract class AppLocalizations {
   /// No description provided for @dailyOsNextShutdownReflectionOverline.
   ///
   /// In en, this message translates to:
-  /// **'💬 One-line reflection'**
+  /// **'One-line reflection'**
   String get dailyOsNextShutdownReflectionOverline;
 
   /// No description provided for @dailyOsNextShutdownReflectionPlaceholder.
@@ -9401,12 +9395,6 @@ abstract class AppLocalizations {
   /// **'Saved — it goes into tomorrow\'s note.'**
   String get dailyOsNextShutdownReflectionThanks;
 
-  /// No description provided for @dailyOsNextShutdownSaveAndClose.
-  ///
-  /// In en, this message translates to:
-  /// **'Save & close'**
-  String get dailyOsNextShutdownSaveAndClose;
-
   /// No description provided for @dailyOsNextShutdownTitle.
   ///
   /// In en, this message translates to:
@@ -9428,7 +9416,7 @@ abstract class AppLocalizations {
   /// No description provided for @dailyOsNextShutdownTomorrowOverline.
   ///
   /// In en, this message translates to:
-  /// **'✦ For tomorrow'**
+  /// **'For tomorrow'**
   String get dailyOsNextShutdownTomorrowOverline;
 
   /// No description provided for @dailyOsNextStateDueOnDate.

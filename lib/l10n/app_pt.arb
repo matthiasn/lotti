@@ -2482,7 +2482,6 @@
   "dailyOsNextDraftingProgressQueued": "Na fila",
   "dailyOsNextDraftingProgressReading": "Check-in de leitura",
   "dailyOsNextDraftingProgressSaving": "Plano de poupança",
-  "dailyOsNextDraftingReasoningOverline": "✦ Raciocínio",
   "dailyOsNextDraftingRecoveryBody": "O velório não produziu um plano. Tente novamente ou volte e ajuste as decisões antes de redigir.",
   "dailyOsNextDraftingRecoveryTitle": "Rascunho parado",
   "dailyOsNextDraftingRetry": "Tente novamente",
@@ -2507,7 +2506,7 @@
   "dailyOsNextGenericError": "Algo deu errado. Tente novamente em alguns instantes.",
   "dailyOsNextGreetingAfternoon": "Boa tarde.",
   "dailyOsNextGreetingEvening": "Boa noite.",
-  "dailyOsNextGreetingHiName": "Olá {name} 👋",
+  "dailyOsNextGreetingHiName": "Olá {name}",
   "@dailyOsNextGreetingHiName": {
     "placeholders": {
       "name": {
@@ -2577,16 +2576,16 @@
   "dailyOsNextRefineHeadlineDiffReady": "Aqui está o que eu mudaria.",
   "dailyOsNextRefineHeadlineIdle": "O que deveria mudar?",
   "dailyOsNextRefineHeadlineThinking": "Reformulando seu plano…",
+  "dailyOsNextRefineKeepChanges": "Manter alterações",
   "dailyOsNextRefineKeepTalking": "Continue falando",
-  "dailyOsNextRefineLooksGood": "Parece bom",
   "dailyOsNextRefineNoChanges": "Nenhuma mudança de plano voltou. Reformule-o e tente novamente.",
-  "dailyOsNextRefineOverline": "🎤 Ajuste",
+  "dailyOsNextRefineOverline": "Ajuste",
   "dailyOsNextRefineRevert": "Reverter",
   "dailyOsNextRefineStatusAccepted": "Trancado.",
   "dailyOsNextRefineStatusDiffReady": "Aqui está o que mudou.",
   "dailyOsNextRefineStatusIdle": "Toque para falar.",
   "dailyOsNextRefineStatusListening": "Ouvindo…",
-  "dailyOsNextRefineStatusThinking": "✦ Reelaborando o plano…",
+  "dailyOsNextRefineStatusThinking": "Reelaborando o plano…",
   "dailyOsNextRefineTitle": "Refinar o plano",
   "dailyOsNextRenameFailed": "Não foi possível renomear. Tente novamente.",
   "dailyOsNextReviewAddBuffer": "Adicionar buffer",
@@ -2634,17 +2633,16 @@
       }
     }
   },
-  "dailyOsNextShutdownReflectionOverline": "💬 Reflexão em uma linha",
+  "dailyOsNextShutdownReflectionOverline": "Reflexão em uma linha",
   "dailyOsNextShutdownReflectionPlaceholder": "por exemplo, a manhã foi nítida, a tarde arrastada depois do café com Sarah demorou muito.",
   "dailyOsNextShutdownReflectionPrompt": "Como hoje pousou? (Isso alimenta o rascunho de amanhã.)",
   "dailyOsNextShutdownReflectionSave": "Salvar",
   "dailyOsNextShutdownReflectionSpeak": "Fale",
   "dailyOsNextShutdownReflectionThanks": "Salvo — entra na nota para amanhã.",
-  "dailyOsNextShutdownSaveAndClose": "Salvar e fechar",
   "dailyOsNextShutdownTitle": "Encerre o dia",
   "dailyOsNextShutdownTomorrowError": "Não foi possível escrever a nota para amanhã.",
   "dailyOsNextShutdownTomorrowNoProvider": "Configure um provedor de IA para receber uma nota para amanhã.",
-  "dailyOsNextShutdownTomorrowOverline": "✦ Para amanhã",
+  "dailyOsNextShutdownTomorrowOverline": "Para amanhã",
   "dailyOsNextStateDueOnDate": "Vencimento em {date}",
   "@dailyOsNextStateDueOnDate": {
     "placeholders": {

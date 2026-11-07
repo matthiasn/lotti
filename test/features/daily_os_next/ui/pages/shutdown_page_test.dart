@@ -219,10 +219,6 @@ void main() {
       final actions = [
         find.widgetWithText(TextButton, messages.dailyOsNextDayBack),
         find.widgetWithText(
-          TextButton,
-          messages.dailyOsNextShutdownSaveAndClose,
-        ),
-        find.widgetWithText(
           FilledButton,
           messages.dailyOsNextShutdownCloseDay,
         ),
@@ -363,10 +359,6 @@ void main() {
         (messages) => find.widgetWithText(
           TextButton,
           messages.dailyOsNextDayBack,
-        ),
-        (messages) => find.widgetWithText(
-          TextButton,
-          messages.dailyOsNextShutdownSaveAndClose,
         ),
         (messages) => find.widgetWithText(
           FilledButton,

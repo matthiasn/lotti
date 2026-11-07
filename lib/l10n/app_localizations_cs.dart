@@ -5245,9 +5245,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dailyOsNextDraftingProgressSaving => 'Ukládám plán';
 
   @override
-  String get dailyOsNextDraftingReasoningOverline => '✦ Úvaha';
-
-  @override
   String get dailyOsNextDraftingRecoveryBody =>
       'Probuzení nevytvořilo plán. Zkus to znovu, nebo se vrať a uprav rozhodnutí před plánováním.';
 
@@ -5331,7 +5328,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String dailyOsNextGreetingHiName(String name) {
-    return 'Ahoj $name 👋';
+    return 'Ahoj $name';
   }
 
   @override
@@ -5474,14 +5471,14 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dailyOsNextRefineKeepTalking => 'Mluv dál';
 
   @override
-  String get dailyOsNextRefineLooksGood => 'Vypadá to dobře';
+  String get dailyOsNextRefineKeepChanges => 'Ponechat změny';
 
   @override
   String get dailyOsNextRefineNoChanges =>
       'Nevrátily se žádné změny plánu. Zkus to přeformulovat a znovu odeslat.';
 
   @override
-  String get dailyOsNextRefineOverline => '🎤 Úprava';
+  String get dailyOsNextRefineOverline => 'Úprava';
 
   @override
   String get dailyOsNextRefineRevert => 'Vrátit';
@@ -5499,7 +5496,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dailyOsNextRefineStatusListening => 'Poslouchám…';
 
   @override
-  String get dailyOsNextRefineStatusThinking => '✦ Přepracovávám plán…';
+  String get dailyOsNextRefineStatusThinking => 'Přepracovávám plán…';
 
   @override
   String get dailyOsNextRefineTitle => 'Upravit plán';
@@ -5616,7 +5613,7 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String get dailyOsNextShutdownReflectionOverline => '💬 Jednořádková reflexe';
+  String get dailyOsNextShutdownReflectionOverline => 'Jednořádková reflexe';
 
   @override
   String get dailyOsNextShutdownReflectionPlaceholder =>
@@ -5637,9 +5634,6 @@ class AppLocalizationsCs extends AppLocalizations {
       'Uloženo — promítne se do poznámky na zítřek.';
 
   @override
-  String get dailyOsNextShutdownSaveAndClose => 'Uložit a zavřít';
-
-  @override
   String get dailyOsNextShutdownTitle => 'Uzavřít den';
 
   @override
@@ -5651,7 +5645,7 @@ class AppLocalizationsCs extends AppLocalizations {
       'Nastav poskytovatele AI, abys dostal poznámku na zítřek.';
 
   @override
-  String get dailyOsNextShutdownTomorrowOverline => '✦ Na zítřek';
+  String get dailyOsNextShutdownTomorrowOverline => 'Na zítřek';
 
   @override
   String dailyOsNextStateDueOnDate(String date) {

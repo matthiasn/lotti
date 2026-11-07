@@ -5250,9 +5250,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get dailyOsNextDraftingProgressSaving => 'Guardando plan';
 
   @override
-  String get dailyOsNextDraftingReasoningOverline => '✦ Razonamiento';
-
-  @override
   String get dailyOsNextDraftingRecoveryBody =>
       'El agente no produjo un plan. Inténtalo de nuevo o vuelve y ajusta las decisiones antes de planificar.';
 
@@ -5339,7 +5336,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String dailyOsNextGreetingHiName(String name) {
-    return 'Hola $name 👋';
+    return 'Hola $name';
   }
 
   @override
@@ -5481,14 +5478,14 @@ class AppLocalizationsEs extends AppLocalizations {
   String get dailyOsNextRefineKeepTalking => 'Seguir hablando';
 
   @override
-  String get dailyOsNextRefineLooksGood => 'Se ve bien';
+  String get dailyOsNextRefineKeepChanges => 'Conservar cambios';
 
   @override
   String get dailyOsNextRefineNoChanges =>
       'No llegaron cambios del plan. Reformúlalo e inténtalo de nuevo.';
 
   @override
-  String get dailyOsNextRefineOverline => '🎤 Ajuste';
+  String get dailyOsNextRefineOverline => 'Ajuste';
 
   @override
   String get dailyOsNextRefineRevert => 'Deshacer';
@@ -5506,7 +5503,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get dailyOsNextRefineStatusListening => 'Escuchando…';
 
   @override
-  String get dailyOsNextRefineStatusThinking => '✦ Reformando el plan…';
+  String get dailyOsNextRefineStatusThinking => 'Reformando el plan…';
 
   @override
   String get dailyOsNextRefineTitle => 'Refinar el plan';
@@ -5622,8 +5619,7 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get dailyOsNextShutdownReflectionOverline =>
-      '💬 Reflexión en una línea';
+  String get dailyOsNextShutdownReflectionOverline => 'Reflexión en una línea';
 
   @override
   String get dailyOsNextShutdownReflectionPlaceholder =>
@@ -5644,9 +5640,6 @@ class AppLocalizationsEs extends AppLocalizations {
       'Guardado — entra en la nota para mañana.';
 
   @override
-  String get dailyOsNextShutdownSaveAndClose => 'Guardar y cerrar';
-
-  @override
   String get dailyOsNextShutdownTitle => 'Cerrar el día';
 
   @override
@@ -5658,7 +5651,7 @@ class AppLocalizationsEs extends AppLocalizations {
       'Configura un proveedor de IA para recibir una nota para mañana.';
 
   @override
-  String get dailyOsNextShutdownTomorrowOverline => '✦ Para mañana';
+  String get dailyOsNextShutdownTomorrowOverline => 'Para mañana';
 
   @override
   String dailyOsNextStateDueOnDate(String date) {

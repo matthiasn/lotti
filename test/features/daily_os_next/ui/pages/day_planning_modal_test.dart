@@ -766,7 +766,7 @@ void main() {
     });
   });
 
-  group('showDayPlanningModal — adapt (refine) Looks good', () {
+  group('showDayPlanningModal — adapt (refine) confirm pill', () {
     const focus = DayAgentCategory(
       id: 'cat_focus',
       name: 'Focus',
@@ -819,7 +819,15 @@ void main() {
       final agent = RecordingDayAgent();
       final result = await openAdapt(tester, draft: draft, agent: agent);
 
-      await _tapPill(tester, _l10n(tester).dailyOsNextRefineLooksGood);
+      // Nothing is pending, so the pill only closes — and says so.
+      expect(
+        find.widgetWithText(
+          DsGlassPill,
+          _l10n(tester).dailyOsNextRefineKeepChanges,
+        ),
+        findsNothing,
+      );
+      await _tapPill(tester, _l10n(tester).doneButton);
 
       expect(find.byType(RefineModalContent), findsNothing);
       expect(result.settled, isTrue);
@@ -853,7 +861,13 @@ void main() {
           .finishWithTranscript('add a sardine inventory slot');
       await tester.pump();
 
-      await _tapPill(tester, _l10n(tester).dailyOsNextRefineLooksGood);
+      // A pending diff turns the pill into "Keep changes"; "Done" would
+      // hide that the tap persists the proposal.
+      expect(
+        find.widgetWithText(DsGlassPill, _l10n(tester).doneButton),
+        findsNothing,
+      );
+      await _tapPill(tester, _l10n(tester).dailyOsNextRefineKeepChanges);
 
       expect(agent.capturedDiff, same(diff));
       expect(result.value, isA<DayPlanningAdapted>());

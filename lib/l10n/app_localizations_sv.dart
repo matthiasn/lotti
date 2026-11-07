@@ -5194,9 +5194,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get dailyOsNextDraftingProgressSaving => 'Sparplan';
 
   @override
-  String get dailyOsNextDraftingReasoningOverline => '✦ Resonemang';
-
-  @override
   String get dailyOsNextDraftingRecoveryBody =>
       'Vaket gav ingen plan. Försök igen, eller gå tillbaka och justera besluten innan du utkastar.';
 
@@ -5282,7 +5279,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String dailyOsNextGreetingHiName(String name) {
-    return 'Hej $name 👋';
+    return 'Hej $name';
   }
 
   @override
@@ -5424,14 +5421,14 @@ class AppLocalizationsSv extends AppLocalizations {
   String get dailyOsNextRefineKeepTalking => 'Fortsätt prata';
 
   @override
-  String get dailyOsNextRefineLooksGood => 'Ser bra ut';
+  String get dailyOsNextRefineKeepChanges => 'Behåll ändringar';
 
   @override
   String get dailyOsNextRefineNoChanges =>
       'Inga ändringar i planen kom tillbaka tillbaka. Formulera om det och försök igen.';
 
   @override
-  String get dailyOsNextRefineOverline => '🎤 Finjustering';
+  String get dailyOsNextRefineOverline => 'Finjustering';
 
   @override
   String get dailyOsNextRefineRevert => 'Återställ';
@@ -5449,7 +5446,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get dailyOsNextRefineStatusListening => 'Lyssnar...';
 
   @override
-  String get dailyOsNextRefineStatusThinking => '✦ Omarbetar planen...';
+  String get dailyOsNextRefineStatusThinking => 'Omarbetar planen...';
 
   @override
   String get dailyOsNextRefineTitle => 'Förfina planen';
@@ -5564,7 +5561,7 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String get dailyOsNextShutdownReflectionOverline => '💬 Reflektion på en rad';
+  String get dailyOsNextShutdownReflectionOverline => 'Reflektion på en rad';
 
   @override
   String get dailyOsNextShutdownReflectionPlaceholder =>
@@ -5585,9 +5582,6 @@ class AppLocalizationsSv extends AppLocalizations {
       'Sparat — kommer med i anteckningen inför i morgon.';
 
   @override
-  String get dailyOsNextShutdownSaveAndClose => 'Spara och stäng';
-
-  @override
   String get dailyOsNextShutdownTitle => 'Avsluta dagen';
 
   @override
@@ -5599,7 +5593,7 @@ class AppLocalizationsSv extends AppLocalizations {
       'Konfigurera en AI-leverantör för att få en anteckning inför i morgon.';
 
   @override
-  String get dailyOsNextShutdownTomorrowOverline => '✦ Till i morgon';
+  String get dailyOsNextShutdownTomorrowOverline => 'Till i morgon';
 
   @override
   String dailyOsNextStateDueOnDate(String date) {

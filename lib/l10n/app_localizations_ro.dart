@@ -5272,9 +5272,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsNextDraftingProgressSaving => 'Se salvează planul';
 
   @override
-  String get dailyOsNextDraftingReasoningOverline => '✦ Raționament';
-
-  @override
   String get dailyOsNextDraftingRecoveryBody =>
       'Wake-ul nu a produs un plan. Încercați din nou sau reveniți și ajustați deciziile înainte de planificare.';
 
@@ -5362,7 +5359,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String dailyOsNextGreetingHiName(String name) {
-    return 'Bună, $name 👋';
+    return 'Bună, $name';
   }
 
   @override
@@ -5505,14 +5502,14 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsNextRefineKeepTalking => 'Continuați să vorbiți';
 
   @override
-  String get dailyOsNextRefineLooksGood => 'Arată bine';
+  String get dailyOsNextRefineKeepChanges => 'Păstrați modificările';
 
   @override
   String get dailyOsNextRefineNoChanges =>
       'Nu au venit modificări ale planului. Reformulați și încercați din nou.';
 
   @override
-  String get dailyOsNextRefineOverline => '🎤 Ajustare';
+  String get dailyOsNextRefineOverline => 'Ajustare';
 
   @override
   String get dailyOsNextRefineRevert => 'Anulați';
@@ -5530,7 +5527,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsNextRefineStatusListening => 'Ascult…';
 
   @override
-  String get dailyOsNextRefineStatusThinking => '✦ Reorganizez planul…';
+  String get dailyOsNextRefineStatusThinking => 'Reorganizez planul…';
 
   @override
   String get dailyOsNextRefineTitle => 'Reglează planul';
@@ -5647,8 +5644,7 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get dailyOsNextShutdownReflectionOverline =>
-      '💬 Reflecție într-un rând';
+  String get dailyOsNextShutdownReflectionOverline => 'Reflecție într-un rând';
 
   @override
   String get dailyOsNextShutdownReflectionPlaceholder =>
@@ -5669,9 +5665,6 @@ class AppLocalizationsRo extends AppLocalizations {
       'Salvat — va fi inclus în nota pentru mâine.';
 
   @override
-  String get dailyOsNextShutdownSaveAndClose => 'Salvați și închideți';
-
-  @override
   String get dailyOsNextShutdownTitle => 'Închideți ziua';
 
   @override
@@ -5683,7 +5676,7 @@ class AppLocalizationsRo extends AppLocalizations {
       'Configurați un furnizor de AI pentru a primi o notă pentru mâine.';
 
   @override
-  String get dailyOsNextShutdownTomorrowOverline => '✦ Pentru mâine';
+  String get dailyOsNextShutdownTomorrowOverline => 'Pentru mâine';
 
   @override
   String dailyOsNextStateDueOnDate(String date) {

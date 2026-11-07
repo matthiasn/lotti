@@ -5250,9 +5250,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get dailyOsNextDraftingProgressSaving => 'Piano di risparmio';
 
   @override
-  String get dailyOsNextDraftingReasoningOverline => '✦ Ragionamento';
-
-  @override
   String get dailyOsNextDraftingRecoveryBody =>
       'La scia non ha prodotto un piano, riprovare, o tornare indietro e regolare le decisioni prima di redigere.';
 
@@ -5481,14 +5478,14 @@ class AppLocalizationsIt extends AppLocalizations {
   String get dailyOsNextRefineKeepTalking => 'Continua a parlare';
 
   @override
-  String get dailyOsNextRefineLooksGood => 'Sembra buono.';
+  String get dailyOsNextRefineKeepChanges => 'Mantieni le modifiche';
 
   @override
   String get dailyOsNextRefineNoChanges =>
       'Nessun cambiamento di piano è tornato. Riparli e riprova.';
 
   @override
-  String get dailyOsNextRefineOverline => '🎤 Ritocco';
+  String get dailyOsNextRefineOverline => 'Ritocco';
 
   @override
   String get dailyOsNextRefineRevert => 'Torna indietro';
@@ -5621,8 +5618,7 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
-  String get dailyOsNextShutdownReflectionOverline =>
-      '💬 Riflessione in una riga';
+  String get dailyOsNextShutdownReflectionOverline => 'Riflessione in una riga';
 
   @override
   String get dailyOsNextShutdownReflectionPlaceholder =>
@@ -5643,9 +5639,6 @@ class AppLocalizationsIt extends AppLocalizations {
       'Salvato — finisce nella nota per domani.';
 
   @override
-  String get dailyOsNextShutdownSaveAndClose => 'Salva e chiudi';
-
-  @override
   String get dailyOsNextShutdownTitle => 'Chiudere il giorno';
 
   @override
@@ -5657,7 +5650,7 @@ class AppLocalizationsIt extends AppLocalizations {
       'Configura un provider di IA per ricevere una nota per domani.';
 
   @override
-  String get dailyOsNextShutdownTomorrowOverline => '✦ Per domani';
+  String get dailyOsNextShutdownTomorrowOverline => 'Per domani';
 
   @override
   String dailyOsNextStateDueOnDate(String date) {
