@@ -494,6 +494,13 @@ void main() {
               archived: false,
               preview: 'Forty-two across the three colonies.',
             ),
+            // Not answered yet: one line, and no answer under it.
+            FrontConversation(
+              id: 'c-3',
+              title: 'Feeding rota',
+              lastActivity: DateTime(2026, 10, 31, 8),
+              archived: false,
+            ),
           ],
         ),
       );
@@ -541,6 +548,17 @@ void main() {
       );
       expect(row.top, lessThanOrEqualTo(target.top));
       expect(row.bottom, greaterThanOrEqualTo(target.bottom));
+
+      // The shortest row — one line, nothing under it — still holds its
+      // menu's whole target.
+      final short = tester.getRect(
+        find.byKey(FrontConversationListKeys.row('c-3')),
+      );
+      final shortTarget = tester.getRect(
+        find.byKey(FrontConversationListKeys.menu('c-3')),
+      );
+      expect(short.top, lessThanOrEqualTo(shortTarget.top));
+      expect(short.bottom, greaterThanOrEqualTo(shortTarget.bottom));
     });
   });
 
@@ -805,9 +823,11 @@ void main() {
 }
 
 /// A row's label: the text itself, or the title leading a conversation
-/// row (its title over its preview-and-time line).
+/// row (its title-and-time line over its preview, in a box no shorter than
+/// its menu's target).
 String _textOf(Widget content) => switch (content) {
   Text(:final data) => data!,
+  ConstrainedBox(:final child?) => _textOf(child),
   Column(:final children) => _textOf(children.first),
   Row(:final children) => _textOf(
     switch (children.first) {

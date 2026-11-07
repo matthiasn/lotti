@@ -579,56 +579,69 @@ class _ConversationRowState extends State<_ConversationRow> {
       // last answer, on the row's whole width, when there is one. While the
       // menu shows, it takes the time's place; the time keeps its room, so
       // nothing reflows.
-      titleContent: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            // The time on the title's first line, sharing its baseline.
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
-            children: [
-              Expanded(
-                child: Text(
-                  conversation.title,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: titleStyle,
-                ),
-              ),
-              SizedBox(width: tokens.spacing.step4),
-              Visibility(
-                visible: !showMenu,
-                maintainSize: true,
-                maintainAnimation: true,
-                maintainState: true,
-                child: SizedBox(
-                  width: widget.timeWidth,
+      titleContent: ConstrainedBox(
+        // Never shorter than the menu's whole tap target: a one-line chat
+        // with no answer yet would leave its lower part outside the row.
+        constraints: BoxConstraints(
+          minHeight:
+              extent -
+              2 *
+                  DesignSystemListItem.verticalInset(
+                    tokens,
+                    _conversationRowSize,
+                  ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              // The time on the title's first line, sharing its baseline.
+              crossAxisAlignment: CrossAxisAlignment.baseline,
+              textBaseline: TextBaseline.alphabetic,
+              children: [
+                Expanded(
                   child: Text(
-                    when,
-                    textAlign: TextAlign.end,
-                    maxLines: 1,
-                    softWrap: false,
-                    style: _timeStyle(context).copyWith(
-                      color: widget.selected
-                          ? tokens.colors.text.highEmphasis
-                          : tokens.colors.text.mediumEmphasis,
+                    conversation.title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: titleStyle,
+                  ),
+                ),
+                SizedBox(width: tokens.spacing.step4),
+                Visibility(
+                  visible: !showMenu,
+                  maintainSize: true,
+                  maintainAnimation: true,
+                  maintainState: true,
+                  child: SizedBox(
+                    width: widget.timeWidth,
+                    child: Text(
+                      when,
+                      textAlign: TextAlign.end,
+                      maxLines: 1,
+                      softWrap: false,
+                      style: _timeStyle(context).copyWith(
+                        color: widget.selected
+                            ? tokens.colors.text.highEmphasis
+                            : tokens.colors.text.mediumEmphasis,
+                      ),
                     ),
                   ),
                 ),
+              ],
+            ),
+            if (preview != null && preview.isNotEmpty) ...[
+              SizedBox(height: tokens.spacing.step1),
+              Text(
+                preview,
+                maxLines: 1,
+                softWrap: false,
+                overflow: TextOverflow.fade,
+                style: quiet,
               ),
             ],
-          ),
-          if (preview != null && preview.isNotEmpty) ...[
-            SizedBox(height: tokens.spacing.step1),
-            Text(
-              preview,
-              maxLines: 1,
-              softWrap: false,
-              overflow: TextOverflow.fade,
-              style: quiet,
-            ),
           ],
-        ],
+        ),
       ),
       size: _conversationRowSize,
       borderRadius: widget.borderRadius,
