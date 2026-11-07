@@ -470,6 +470,80 @@ void main() {
     expect(titles(tester), contains('Search chats'));
   });
 
+  testWidgets("when it moved and its menu sit on the title's first line — "
+      "a wrapped title and her answer below them — and the menu's whole "
+      'target stays inside the row', (tester) async {
+    await withClock(Clock.fixed(now), () async {
+      await pumpList(
+        tester,
+        index: FrontConversationIndex(
+          conversations: [
+            FrontConversation(
+              id: 'c-1',
+              title:
+                  'Plan the census along the northern shelf before the '
+                  'tide turns and the colony wakes',
+              lastActivity: DateTime(2026, 10, 29, 9),
+              archived: false,
+              preview: 'Saturday works: low tide is early.',
+            ),
+            FrontConversation(
+              id: 'c-2',
+              title: 'Count the hatchlings',
+              lastActivity: DateTime(2026, 10, 31, 9),
+              archived: false,
+              preview: 'Forty-two across the three colonies.',
+            ),
+          ],
+        ),
+      );
+      Finder inRow(String id, Finder finder) => find.descendant(
+        of: find.byKey(FrontConversationListKeys.row(id)),
+        matching: finder,
+      );
+
+      // A one-line title: the time on its line, above her answer.
+      final title = tester.getRect(
+        inRow('c-2', find.text('Count the hatchlings')),
+      );
+      final time = tester.getRect(inRow('c-2', find.text('9:00 AM')));
+      final answer = tester.getRect(
+        inRow('c-2', find.textContaining('Forty-two')),
+      );
+      expect(time.center.dy, closeTo(title.center.dy, 2));
+      expect(time.bottom, lessThanOrEqualTo(answer.top));
+      expect(answer.left, title.left);
+
+      // The open row's wrapped title: the menu, in the time's place, on its
+      // first line — not on the line of her answer.
+      final wrapped = tester.getRect(
+        inRow('c-1', find.textContaining('Plan the census')),
+      );
+      final glyph = tester.getCenter(
+        find.descendant(
+          of: find.byKey(FrontConversationListKeys.menu('c-1')),
+          matching: find.byIcon(LottiIcons.more),
+        ),
+      );
+      final firstLine = wrapped.top + wrapped.height / 4;
+      expect(glyph.dy, closeTo(firstLine, 3));
+      expect(
+        glyph.dy,
+        lessThan(
+          tester.getRect(inRow('c-1', find.textContaining('Saturday'))).top,
+        ),
+      );
+      final target = tester.getRect(
+        find.byKey(FrontConversationListKeys.menu('c-1')),
+      );
+      final row = tester.getRect(
+        find.byKey(FrontConversationListKeys.row('c-1')),
+      );
+      expect(row.top, lessThanOrEqualTo(target.top));
+      expect(row.bottom, greaterThanOrEqualTo(target.bottom));
+    });
+  });
+
   testWidgets("a tap at the edge of a row's menu opens the menu, never the "
       'conversation', (tester) async {
     final container = await pumpList(tester);
