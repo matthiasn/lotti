@@ -482,7 +482,6 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
                       scrollOnReplies: false,
                       groupAttachmentsWithReply: true,
                       allowDraftWhileSending: true,
-                      showVoiceDetails: true,
                       replyTextStyle: tokens.typography.styles.body.bodySmall,
                       resolveTranscriptionTarget: ref.watch(
                         queryTranscriptionTargetResolverProvider(widget.scope),
