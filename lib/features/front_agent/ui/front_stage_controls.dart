@@ -102,6 +102,12 @@ class _FrontStageControlsState extends ConsumerState<FrontStageControls> {
 
   void _send() => _recorder.stopAndTranscribe().ignore();
 
+  /// Lets what she is listening to, or writing down, go unsent.
+  void _cancelTake() {
+    _release();
+    _recorder.cancel().ignore();
+  }
+
   /// A tap that is not a press: a screen reader's, Space, Enter.
   void _tap() {
     switch (_status) {
@@ -238,14 +244,20 @@ class _FrontStageControlsState extends ConsumerState<FrontStageControls> {
         child: Focus(
           onFocusChange: (focused) => setState(() => _focused = focused),
           onKeyEvent: (node, event) {
-            final key = event.logicalKey;
-            if (event is! KeyDownEvent ||
-                (key != LogicalKeyboardKey.space &&
-                    key != LogicalKeyboardKey.enter)) {
-              return KeyEventResult.ignored;
+            if (event is! KeyDownEvent) return KeyEventResult.ignored;
+            switch (event.logicalKey) {
+              case LogicalKeyboardKey.space || LogicalKeyboardKey.enter:
+                _tap();
+                return KeyEventResult.handled;
+              // Started from the keyboard, the disc keeps the focus the
+              // pill would take: Escape lets it go here too.
+              case LogicalKeyboardKey.escape
+                  when _status != ChatRecorderStatus.idle:
+                _cancelTake();
+                return KeyEventResult.handled;
+              case _:
+                return KeyEventResult.ignored;
             }
-            _tap();
-            return KeyEventResult.handled;
           },
           child: Listener(
             key: FrontStageControlKeys.talk,
@@ -290,10 +302,7 @@ class _FrontStageControlsState extends ConsumerState<FrontStageControls> {
                     elapsed: recorder.elapsed,
                     // The disc sends: one send on screen.
                     showEndControl: false,
-                    onCancel: () {
-                      _release();
-                      _recorder.cancel().ignore();
-                    },
+                    onCancel: _cancelTake,
                     onStop: _send,
                   )
                 : null,

@@ -306,6 +306,25 @@ void main() {
     expect(recorder.targets, isEmpty);
   });
 
+  testWidgets('started from the keyboard, Escape lets it go — the disc '
+      'keeps the focus the pill would take', (tester) async {
+    await pump(tester);
+    Focus.of(
+      tester.element(find.byKey(FrontStageControlKeys.talk)),
+    ).requestFocus();
+    await tester.pump();
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.space);
+    await tester.pump();
+    expect(caption(tester), 'Tap to send');
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pump();
+    expect(recorder.cancels, 1);
+    expect(recorder.stops, 0);
+    expect(caption(tester), 'Tap or hold to talk');
+  });
+
   for (final key in [LogicalKeyboardKey.space, LogicalKeyboardKey.enter]) {
     testWidgets('${key.keyLabel} starts her listening hands free, and sends', (
       tester,
