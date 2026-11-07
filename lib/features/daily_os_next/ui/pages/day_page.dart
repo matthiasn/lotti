@@ -9,6 +9,7 @@ import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/logic/day_plan_availability.dart';
 import 'package:lotti/features/daily_os_next/services/day_activity_repository.dart';
 import 'package:lotti/features/daily_os_next/state/actual_time_blocks_provider.dart';
+import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_inference_providers.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_preferences_controller.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
@@ -23,16 +24,17 @@ import 'package:lotti/features/daily_os_next/ui/widgets/day_activity_view.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_block_edit_modal.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_block_task_picker.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_briefing_companion.dart';
-import 'package:lotti/features/daily_os_next/ui/widgets/day_check_in_composer.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_check_in_spotlight_host.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/day_composer.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/edge_fade.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/knowledge_nudge.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/plan_view_toggle.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
 import 'package:lotti/features/design_system/components/glass_strip.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
-import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -129,10 +131,6 @@ class _DayPageState extends ConsumerState<DayPage> {
       }
       return;
     }
-    // The first commit retires the footer's coaching line for good.
-    ref
-        .read(dailyOsPreferencesControllerProvider.notifier)
-        .markDayFooterHintRetired();
     ref.invalidate(currentDraftPlanProvider(widget.draft.dayDate));
     if (!mounted) return;
     context.showToast(
@@ -399,6 +397,13 @@ class _DayPageState extends ConsumerState<DayPage> {
                 draft: widget.draft,
                 hasPlan: widget.hasPlan,
               ),
+              stageAction: widget.hasPlan
+                  ? _DayStageAction(
+                      draft: widget.draft,
+                      onCommit: _commitDay,
+                      onShutdown: _openShutdown,
+                    )
+                  : null,
             ),
             if (setupStatus?.needsAttention ?? false)
               _DailyOsSetupNudge(
@@ -458,13 +463,10 @@ class _DayPageState extends ConsumerState<DayPage> {
               ),
             ),
             if (widget.hasPlan)
-              _DayFooter(
+              _DayReviewFooter(
                 draft: widget.draft,
-                showCoachHint: !prefs.dayFooterHintRetired,
-                onRefine: () => unawaited(_openRefine()),
+                onRefineWords: (words) => _openRefine(initialTranscript: words),
                 onQuickRefinement: _openQuickRefinement,
-                onCommit: _commitDay,
-                onShutdown: _openShutdown,
               )
             else
               _NoPlanFooter(

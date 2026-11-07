@@ -29,6 +29,7 @@ class DayHeader extends StatelessWidget {
     required this.onDeletePlan,
     this.onSettings,
     this.companion,
+    this.stageAction,
     super.key,
   });
 
@@ -49,6 +50,11 @@ class DayHeader extends StatelessWidget {
   /// The companion who briefs the day, leading the actions; it takes no room
   /// when she is off.
   final Widget? companion;
+
+  /// The day's next step ("Looks good" / "Wrap up"). It has a slot of its
+  /// own, so on a phone it can sit at the end of the toggle's row instead of
+  /// stretching the actions past the room beside the title.
+  final Widget? stageAction;
 
   @override
   Widget build(BuildContext context) {
@@ -150,6 +156,7 @@ class DayHeader extends StatelessWidget {
             SizedBox(width: tokens.spacing.step2),
           ],
         ),
+        stage: stageAction ?? const SizedBox.shrink(),
       ),
     );
   }
@@ -212,11 +219,12 @@ class _MeasuredDayHeader extends MultiChildRenderObjectWidget {
     required Widget title,
     required Widget toggle,
     required Widget actions,
+    required Widget stage,
     required this.horizontalPadding,
     required this.verticalPadding,
     required this.itemGap,
     required this.rowGap,
-  }) : super(children: [title, toggle, actions]);
+  }) : super(children: [title, toggle, actions, stage]);
 
   final double horizontalPadding;
   final double verticalPadding;
@@ -304,6 +312,12 @@ class _RenderMeasuredDayHeader extends RenderBox
     return child!;
   }
 
+  RenderBox get _stage {
+    final child = childAfter(_actions);
+    assert(child != null, 'Measured header stage child is missing.');
+    return child!;
+  }
+
   @override
   void setupParentData(RenderBox child) {
     if (child.parentData is! _MeasuredDayHeaderParentData) {
@@ -329,36 +343,40 @@ class _RenderMeasuredDayHeader extends RenderBox
     final title = _title;
     final toggle = _toggle;
     final actions = _actions;
+    final stage = _stage;
 
     final actionsSize =
         (actions..layout(looseContentConstraints, parentUsesSize: true)).size;
     final toggleSize =
         (toggle..layout(looseContentConstraints, parentUsesSize: true)).size;
-    var titleSize =
+    final stageSize =
+        (stage..layout(looseContentConstraints, parentUsesSize: true)).size;
+    final titleSize =
         (title..layout(looseContentConstraints, parentUsesSize: true)).size;
+    final hasStage = stageSize.width > 0;
+    // The stage action leads the actions cluster, one gap before it.
+    final trailingWidth =
+        actionsSize.width + (hasStage ? stageSize.width + itemGap : 0);
 
     final inlineWidth =
-        titleSize.width +
-        itemGap +
-        toggleSize.width +
-        itemGap +
-        actionsSize.width;
-    final fitsInline = inlineWidth <= contentWidth;
-
-    if (fitsInline) {
-      final rowHeight = math.max(
-        math.max(titleSize.height, actionsSize.height),
+        titleSize.width + itemGap + toggleSize.width + itemGap + trailingWidth;
+    if (inlineWidth <= contentWidth) {
+      final rowHeight = [
+        titleSize.height,
+        actionsSize.height,
         toggleSize.height,
-      );
+        stageSize.height,
+      ].reduce(math.max);
       size = constraints.constrain(
         Size(width, verticalPadding * 2 + rowHeight),
       );
       // A multi-line title block (chevron line + title + date) reads as a
       // masthead: actions belong on its FIRST line, not centered against
       // the whole block.
-      final actionsY = titleSize.height > actionsSize.height
+      final trailingHeight = math.max(actionsSize.height, stageSize.height);
+      final trailingTop = titleSize.height > trailingHeight
           ? verticalPadding
-          : verticalPadding + (rowHeight - actionsSize.height) / 2;
+          : verticalPadding + (rowHeight - trailingHeight) / 2;
       _position(
         title,
         Offset(
@@ -373,72 +391,112 @@ class _RenderMeasuredDayHeader extends RenderBox
           verticalPadding + (rowHeight - toggleSize.height) / 2,
         ),
       );
+      final actionsLeft = width - horizontalPadding - actionsSize.width;
       _position(
         actions,
-        Offset(width - horizontalPadding - actionsSize.width, actionsY),
+        Offset(
+          actionsLeft,
+          trailingTop + (trailingHeight - actionsSize.height) / 2,
+        ),
+      );
+      _position(
+        stage,
+        Offset(
+          actionsLeft - itemGap - stageSize.width,
+          trailingTop + (trailingHeight - stageSize.height) / 2,
+        ),
       );
       return;
     }
 
     // Too narrow for one row: **day navigation gets a row of its own**, and
-    // the toggle and actions share the row beneath it. Sharing row one with
-    // the actions cluster is what squeezed the date into an ellipsis on a
-    // phone — the element that must stay readable and repeatedly tappable
-    // was the one giving up its width.
-    title.layout(
-      BoxConstraints.loose(Size(contentWidth, maxChildHeight)),
-      parentUsesSize: true,
-    );
-    titleSize = title.size;
+    // the rest flows beneath it. Squeezing the title beside the actions
+    // cluster is what pressed the date into an ellipsis on a phone — the
+    // element that must stay readable and repeatedly tappable was the one
+    // giving up its width. The actions only join the title's row when they
+    // fit beside its natural width, at the top of a masthead.
+    final actionsBesideTitle =
+        titleSize.width + itemGap + actionsSize.width <= contentWidth;
+    final firstRowHeight = actionsBesideTitle
+        ? math.max(titleSize.height, actionsSize.height)
+        : titleSize.height;
 
-    // The toggle and the actions only share the second row if they actually
-    // fit side by side. Pinning them to opposite edges without checking
-    // overlaps them the moment the actions cluster grows — a non-idle
-    // "Needs attention" agent chip, or any large text scale.
-    //
-    // "Fits" means the room left over covers the toggle's own measured
-    // width, not merely that some room is left: the segmented control
-    // shrink-wraps to a minimum, so squeezing it into a narrower loose
-    // constraint overflows its row and paints over the actions instead.
-    final toggleRoom = contentWidth - actionsSize.width - itemGap;
-    final shareSecondRow = toggleRoom >= toggleSize.width;
+    // Then the toggle, with the remaining items right-aligned after it in
+    // order, each on the current row while it fits there and on a row of its
+    // own otherwise. "Fits" means the room left covers the item's own
+    // measured width: the segmented control shrink-wraps to a minimum, so
+    // squeezing it into a narrower loose constraint overflows its row and
+    // paints over the actions instead.
+    final rows = <List<RenderBox>>[
+      [toggle],
+    ];
+    var rowWidth = toggleSize.width;
+    for (final item in [
+      if (!actionsBesideTitle) actions,
+      if (hasStage) stage,
+    ]) {
+      final itemWidth = item.size.width;
+      if (rowWidth + itemGap + itemWidth <= contentWidth) {
+        rows.last.add(item);
+        rowWidth += itemGap + itemWidth;
+      } else {
+        rows.add([item]);
+        rowWidth = itemWidth;
+      }
+    }
 
-    final secondRowHeight = shareSecondRow
-        ? math.max(toggleSize.height, actionsSize.height)
-        : toggleSize.height;
-    final thirdRowHeight = shareSecondRow ? 0.0 : actionsSize.height;
-    final thirdRowGap = shareSecondRow ? 0.0 : rowGap;
-
+    final rowHeights = [
+      for (final row in rows)
+        row.map((child) => child.size.height).reduce(math.max),
+    ];
     size = constraints.constrain(
       Size(
         width,
         verticalPadding * 2 +
-            titleSize.height +
-            rowGap +
-            secondRowHeight +
-            thirdRowGap +
-            thirdRowHeight,
+            firstRowHeight +
+            rowHeights.fold(0, (sum, height) => sum + rowGap + height),
       ),
     );
 
-    final secondRowTop = verticalPadding + titleSize.height + rowGap;
-    _position(title, Offset(horizontalPadding, verticalPadding));
     _position(
-      toggle,
+      title,
       Offset(
         horizontalPadding,
-        secondRowTop + (secondRowHeight - toggleSize.height) / 2,
+        verticalPadding + (firstRowHeight - titleSize.height) / 2,
       ),
     );
-    _position(
-      actions,
-      Offset(
-        width - horizontalPadding - actionsSize.width,
-        shareSecondRow
-            ? secondRowTop + (secondRowHeight - actionsSize.height) / 2
-            : secondRowTop + secondRowHeight + rowGap,
-      ),
-    );
+    if (actionsBesideTitle) {
+      _position(
+        actions,
+        Offset(
+          width - horizontalPadding - actionsSize.width,
+          titleSize.height > actionsSize.height
+              ? verticalPadding
+              : verticalPadding + (firstRowHeight - actionsSize.height) / 2,
+        ),
+      );
+    }
+    var rowTop = verticalPadding + firstRowHeight;
+    for (var index = 0; index < rows.length; index++) {
+      rowTop += rowGap;
+      final row = rows[index];
+      final rowHeight = rowHeights[index];
+      // The toggle holds the left edge of its row; everything else is
+      // right-aligned, in order.
+      var right = width - horizontalPadding;
+      for (final child in row.reversed) {
+        final childSize = child.size;
+        final left = identical(child, toggle)
+            ? horizontalPadding
+            : right - childSize.width;
+        _position(
+          child,
+          Offset(left, rowTop + (rowHeight - childSize.height) / 2),
+        );
+        right = left - itemGap;
+      }
+      rowTop += rowHeight;
+    }
   }
 
   void _position(RenderBox child, Offset offset) {

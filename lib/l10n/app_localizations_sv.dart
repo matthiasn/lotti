@@ -4892,11 +4892,11 @@ class AppLocalizationsSv extends AppLocalizations {
   String get dailyOsNextBlockResizeStartTooltip => 'Justera start';
 
   @override
-  String get dailyOsNextBlockTaskCreatedNotLinked =>
-      'Uppgiften är skapad men inte kopplad till det här blocket.';
+  String get dailyOsNextBlockTaskCreated => 'Uppgift skapad.';
 
   @override
-  String get dailyOsNextBlockTaskCreated => 'Uppgift skapad.';
+  String get dailyOsNextBlockTaskCreatedNotLinked =>
+      'Uppgiften är skapad men inte kopplad till det här blocket.';
 
   @override
   String get dailyOsNextBlockUnlinked => 'Bortkopplat från uppgiften.';
@@ -5154,13 +5154,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get dailyOsNextDayMoreTooltip => 'Mer';
-
-  @override
-  String get dailyOsNextDayRefineCta => 'Förfina';
-
-  @override
-  String get dailyOsNextDayRefineFooterHint =>
-      'Prata för att omforma planen – du kommer att se varje förändring innan något sparas.';
 
   @override
   String get dailyOsNextDayTitle => 'Din dag';
@@ -5491,9 +5484,6 @@ class AppLocalizationsSv extends AppLocalizations {
       'Lägg till en realistisk buffert mellan de planerade blocken, särskilt vid övergångar och efter krävande arbete.';
 
   @override
-  String get dailyOsNextReviewAdjust => 'Justera';
-
-  @override
   String get dailyOsNextReviewLooksGood => 'Ser bra ut';
 
   @override
@@ -5509,9 +5499,6 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get dailyOsNextReviewTooMuchPrompt =>
       'Den här planen är för mycket för idag. Minska belastningen, skydda andningsutrymmet och behåll bara de viktigaste blocken.';
-
-  @override
-  String get dailyOsNextReviewWhyTitle => 'Varför dessa kom med';
 
   @override
   String get dailyOsNextShutdownCarryoverDrop => 'Släpp';

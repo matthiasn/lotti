@@ -47,7 +47,6 @@ class _PreferencesController extends DailyOsPreferencesController {
   @override
   DailyOsPreferences build() => DailyOsPreferences(
     userName: 'Director Aurora',
-    dayFooterHintRetired: true,
   );
 }
 

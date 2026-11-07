@@ -621,14 +621,10 @@ CaptureController _stubCapture() {
 }
 
 class _ScreenshotPreferencesController extends DailyOsPreferencesController {
-  _ScreenshotPreferencesController({required this.retireDayFooterHint});
-
-  final bool retireDayFooterHint;
+  _ScreenshotPreferencesController();
 
   @override
-  DailyOsPreferences build() => DailyOsPreferences(
-    dayFooterHintRetired: retireDayFooterHint,
-  );
+  DailyOsPreferences build() => DailyOsPreferences();
 }
 
 /// Production-page data source for the manual's Refine and Shutdown routes.
@@ -946,9 +942,7 @@ Future<void> _pumpDayPage(
             },
           ),
           dailyOsPreferencesControllerProvider.overrideWith(
-            () => _ScreenshotPreferencesController(
-              retireDayFooterHint: !showPlannerReview,
-            ),
+            _ScreenshotPreferencesController.new,
           ),
           for (final coverImage in _manualWorld.coverImages)
             createEntryControllerOverride(coverImage),
@@ -1009,7 +1003,7 @@ Future<void> _pumpManualDailyOsSurface(
             (ref) async => _knowledgeView(),
           ),
           dailyOsPreferencesControllerProvider.overrideWith(
-            () => _ScreenshotPreferencesController(retireDayFooterHint: true),
+            _ScreenshotPreferencesController.new,
           ),
         ],
         home: home,

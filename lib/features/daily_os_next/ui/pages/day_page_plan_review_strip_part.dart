@@ -10,13 +10,14 @@ enum _QuickRefinement { tooMuch, moveLighter, addBuffer }
 /// projection, where planned blocks and the day's recorded time and events
 /// sit on one time axis. Agenda ("what today is about") and Activity are a
 /// tap away, and a pick survives day changes through
-/// [dailyOsNextPlanViewProvider]. A footer pill opens the Refine screen for
-/// voice-driven plan changes.
+/// [dailyOsNextPlanViewProvider]. With a plan, the footer is the composer
+/// asking what should change (spoken or typed straight into Refine), and the
+/// header carries the day's next step — "Looks good" or "Wrap up".
 ///
 /// With no plan ([hasPlan] false — the route-level root passes a
 /// synthetic empty [draft]) the page still lands on Day, so recorded
 /// sessions and events stay visible on the timeline, and the footer is the
-/// [DayCheckInComposer] instead of Refine/Commit: talk or type a check-in from
+/// [DayComposer] instead of Refine/Commit: talk or type a check-in from
 /// where you are. Saved or recoverable recordings remain one tap away on
 /// Activity.
 class DayPage extends ConsumerStatefulWidget {
@@ -41,7 +42,7 @@ class DayPage extends ConsumerStatefulWidget {
 
   /// Continues a check-in spoken or typed into the empty-state composer:
   /// the words, and the recording behind them when they were spoken.
-  final DayCheckInSubmitter? onSubmitCheckIn;
+  final DayComposerSubmitter? onSubmitCheckIn;
 
   /// Optional widget rendered in place of the default static title.
   /// The route-level `DailyOsNextRoot` uses this to inject a date
@@ -53,429 +54,122 @@ class DayPage extends ConsumerStatefulWidget {
   ConsumerState<DayPage> createState() => _DayPageState();
 }
 
-class _DayFooter extends StatelessWidget {
-  const _DayFooter({
+/// A planned day's footer: the same composer as the empty day's check-in,
+/// asking what should change. What is said or typed goes straight into
+/// Refine, which proposes the change for review. While the plan is still a
+/// draft the quick refinements ride above the field as chips (hidden at large
+/// accessibility text sizes, where they would crowd out the day); the day's
+/// stage action ("Looks good" / "Wrap up") lives in the header.
+class _DayReviewFooter extends StatelessWidget {
+  const _DayReviewFooter({
     required this.draft,
-    required this.showCoachHint,
-    required this.onRefine,
+    required this.onRefineWords,
     required this.onQuickRefinement,
+  });
+
+  final DraftPlan draft;
+  final Future<void> Function(String words) onRefineWords;
+  final ValueChanged<_QuickRefinement> onQuickRefinement;
+
+  @override
+  Widget build(BuildContext context) {
+    // At large accessibility text sizes the chips would take the timeline's
+    // room; the same requests are a sentence away in the field.
+    final showChips =
+        draft.state == DayState.drafted &&
+        dailyOsTextScaleOf(context) < kDailyOsHideCoachingScale;
+    return DayComposer(
+      day: draft.dayDate,
+      barKey: const Key('daily_os_day_refine_composer'),
+      hintText: context.messages.dailyOsNextRefineHeadlineIdle,
+      intent: AudioCaptureIntent.dayRefine,
+      clearOnSubmit: true,
+      header: showChips
+          ? _QuickRefinementChips(onSelected: onQuickRefinement)
+          : null,
+      onSubmit: (words, {audioId}) => onRefineWords(words),
+    );
+  }
+}
+
+/// The drafted plan's one-tap refinements, each sent to Refine as if said.
+class _QuickRefinementChips extends StatelessWidget {
+  const _QuickRefinementChips({required this.onSelected});
+
+  final ValueChanged<_QuickRefinement> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final messages = context.messages;
+    DesignSystemChip chip(
+      _QuickRefinement refinement,
+      IconData icon,
+      String label,
+    ) => DesignSystemChip(
+      label: label,
+      leadingIcon: icon,
+      outlined: true,
+      size: DesignSystemChipSize.compactPillTouch,
+      onPressed: () => onSelected(refinement),
+    );
+    return Wrap(
+      alignment: WrapAlignment.center,
+      spacing: tokens.spacing.step2,
+      runSpacing: tokens.spacing.step2,
+      children: [
+        chip(
+          _QuickRefinement.tooMuch,
+          LottiIcons.removeCircled,
+          messages.dailyOsNextReviewTooMuch,
+        ),
+        chip(
+          _QuickRefinement.moveLighter,
+          LottiIcons.lowPriority,
+          messages.dailyOsNextReviewMoveLighter,
+        ),
+        chip(
+          _QuickRefinement.addBuffer,
+          LottiIcons.add,
+          messages.dailyOsNextReviewAddBuffer,
+        ),
+      ],
+    );
+  }
+}
+
+/// The day's next step, in the header: "Looks good" commits a drafted day
+/// (with Undo on its toast); once committed, "Wrap up" opens the shutdown.
+class _DayStageAction extends StatelessWidget {
+  const _DayStageAction({
+    required this.draft,
     required this.onCommit,
     required this.onShutdown,
   });
 
   final DraftPlan draft;
-
-  /// One-shot coaching line — retired permanently after the first
-  /// commit (the promise has been experienced; chrome stops narrating).
-  final bool showCoachHint;
-
-  final VoidCallback onRefine;
-  final ValueChanged<_QuickRefinement> onQuickRefinement;
   final VoidCallback onCommit;
   final VoidCallback onShutdown;
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final teal = tokens.colors.interactive.enabled;
-    final isDesktop = isDesktopLayout(context);
-    // Coaching copy yields the fold to actionable rows at large
-    // accessibility text sizes, and retires for good after the first
-    // commit.
-    final showHint =
-        showCoachHint &&
-        draft.state != DayState.drafted &&
-        dailyOsTextScaleOf(context) < kDailyOsHideCoachingScale;
-    final hint = Text(
-      context.messages.dailyOsNextDayRefineFooterHint,
-      style: tokens.typography.styles.body.bodySmall.copyWith(
-        color: tokens.colors.text.lowEmphasis,
-      ),
-    );
-    final actions = _DayFooterActions(
-      draft: draft,
-      teal: teal,
-      onRefine: onRefine,
-      onShutdown: onShutdown,
-      expand: !isDesktop,
-    );
-    final actionLayout = isDesktop
-        // Constrained to the agenda's reading width so the commit
-        // actions belong to the content column, not the page chrome.
-        ? Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 760),
-              child: Row(
-                children: [
-                  if (showHint) ...[
-                    Expanded(child: hint),
-                    SizedBox(width: tokens.spacing.step4),
-                  ] else
-                    const Spacer(),
-                  actions,
-                ],
-              ),
-            ),
-          )
-        : Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              if (showHint) ...[
-                hint,
-                SizedBox(height: tokens.spacing.step3),
-              ],
-              actions,
-            ],
-          );
-    return DesignSystemGlassStrip(
-      child: Padding(
-        padding: EdgeInsets.symmetric(
-          horizontal: tokens.spacing.step6,
-          vertical: tokens.spacing.step4,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (draft.state == DayState.drafted) ...[
-              _PlanReviewStrip(
-                draft: draft,
-                onLooksGood: onCommit,
-                onQuickRefinement: onQuickRefinement,
-              ),
-              SizedBox(height: tokens.spacing.step4),
-            ],
-            actionLayout,
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _PlanReviewStrip extends StatelessWidget {
-  const _PlanReviewStrip({
-    required this.draft,
-    required this.onLooksGood,
-    required this.onQuickRefinement,
-  });
-
-  final DraftPlan draft;
-  final VoidCallback onLooksGood;
-  final ValueChanged<_QuickRefinement> onQuickRefinement;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
     final messages = context.messages;
-    final textScale = dailyOsTextScaleOf(context);
-    final reasons = textScale < kDailyOsHideCoachingScale
-        ? _planReasons(draft)
-        : const <String>[];
-    final compactActions =
-        !isDesktopLayout(context) || textScale >= kDailyOsHideCoachingScale;
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 760),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            if (reasons.isNotEmpty) ...[
-              Text(
-                messages.dailyOsNextReviewWhyTitle,
-                style: tokens.typography.styles.others.caption.copyWith(
-                  color: tokens.colors.text.lowEmphasis,
-                ),
-              ),
-              SizedBox(height: tokens.spacing.step2),
-              for (final reason in reasons) ...[
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(
-                      LottiIcons.aiSpark,
-                      size: tokens.spacing.step4,
-                      color: tokens.colors.interactive.enabled,
-                    ),
-                    SizedBox(width: tokens.spacing.step2),
-                    Expanded(
-                      child: Text(
-                        reason,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: tokens.typography.styles.body.bodySmall.copyWith(
-                          color: tokens.colors.text.mediumEmphasis,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: tokens.spacing.step2),
-              ],
-              SizedBox(height: tokens.spacing.step2),
-            ],
-            if (compactActions)
-              _CompactReviewActions(
-                onLooksGood: onLooksGood,
-                onQuickRefinement: onQuickRefinement,
-              )
-            else
-              Wrap(
-                alignment: WrapAlignment.center,
-                spacing: tokens.spacing.step2,
-                runSpacing: tokens.spacing.step2,
-                children: [
-                  FilledButton.icon(
-                    onPressed: onLooksGood,
-                    icon: const Icon(LottiIcons.confirm),
-                    label: Text(messages.dailyOsNextReviewLooksGood),
-                  ),
-                  OutlinedButton.icon(
-                    onPressed: () =>
-                        onQuickRefinement(_QuickRefinement.tooMuch),
-                    icon: const Icon(LottiIcons.removeCircled),
-                    label: Text(messages.dailyOsNextReviewTooMuch),
-                  ),
-                  OutlinedButton.icon(
-                    onPressed: () =>
-                        onQuickRefinement(_QuickRefinement.moveLighter),
-                    icon: const Icon(LottiIcons.lowPriority),
-                    label: Text(messages.dailyOsNextReviewMoveLighter),
-                  ),
-                  OutlinedButton.icon(
-                    onPressed: () =>
-                        onQuickRefinement(_QuickRefinement.addBuffer),
-                    icon: const Icon(LottiIcons.add),
-                    label: Text(messages.dailyOsNextReviewAddBuffer),
-                  ),
-                ],
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  List<String> _planReasons(DraftPlan draft) {
-    final reasons = <String>[];
-    final seen = <String>{};
-    for (final block in draft.blocks) {
-      final reason = block.reason?.trim();
-      if (reason == null || reason.isEmpty || !seen.add(reason)) continue;
-      reasons.add(reason);
-      if (reasons.length == 2) break;
-    }
-    return reasons;
-  }
-}
-
-class _CompactReviewActions extends StatelessWidget {
-  const _CompactReviewActions({
-    required this.onLooksGood,
-    required this.onQuickRefinement,
-  });
-
-  final VoidCallback onLooksGood;
-  final ValueChanged<_QuickRefinement> onQuickRefinement;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final messages = context.messages;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        FilledButton.icon(
-          onPressed: onLooksGood,
-          icon: const Icon(LottiIcons.confirm),
-          label: Text(
-            messages.dailyOsNextReviewLooksGood,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-        SizedBox(height: tokens.spacing.step2),
-        PopupMenuButton<_QuickRefinement>(
-          tooltip: messages.dailyOsNextReviewAdjust,
-          onSelected: onQuickRefinement,
-          itemBuilder: (context) => [
-            PopupMenuItem(
-              value: _QuickRefinement.tooMuch,
-              child: _QuickReviewMenuItem(
-                icon: LottiIcons.removeCircled,
-                label: messages.dailyOsNextReviewTooMuch,
-              ),
-            ),
-            PopupMenuItem(
-              value: _QuickRefinement.moveLighter,
-              child: _QuickReviewMenuItem(
-                icon: LottiIcons.lowPriority,
-                label: messages.dailyOsNextReviewMoveLighter,
-              ),
-            ),
-            PopupMenuItem(
-              value: _QuickRefinement.addBuffer,
-              child: _QuickReviewMenuItem(
-                icon: LottiIcons.add,
-                label: messages.dailyOsNextReviewAddBuffer,
-              ),
-            ),
-          ],
-          child: _ReviewAdjustButton(label: messages.dailyOsNextReviewAdjust),
-        ),
-      ],
+    final drafted = draft.state == DayState.drafted;
+    return DesignSystemButton(
+      key: const Key('daily_os_day_stage_action'),
+      label: drafted
+          ? messages.dailyOsNextReviewLooksGood
+          : messages.dailyOsNextDayWrapUpCta,
+      leadingIcon: drafted ? LottiIcons.confirm : LottiIcons.night,
+      variant: drafted
+          ? DesignSystemButtonVariant.primary
+          : DesignSystemButtonVariant.secondary,
+      onPressed: drafted ? onCommit : onShutdown,
     );
   }
 }
 
-class _ReviewAdjustButton extends StatelessWidget {
-  const _ReviewAdjustButton({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final teal = tokens.colors.interactive.enabled;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        border: Border.all(color: teal.withValues(alpha: 0.32)),
-        borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
-      ),
-      child: Padding(
-        padding: EdgeInsets.symmetric(
-          horizontal: tokens.spacing.step4,
-          vertical: tokens.spacing.step2,
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(LottiIcons.tune, size: 18, color: teal),
-            SizedBox(width: tokens.spacing.step2),
-            Flexible(
-              child: Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: tokens.typography.styles.body.bodyMedium.copyWith(
-                  color: teal,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-            SizedBox(width: tokens.spacing.step1),
-            Icon(LottiIcons.expand, size: 18, color: teal),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _QuickReviewMenuItem extends StatelessWidget {
-  const _QuickReviewMenuItem({required this.icon, required this.label});
-
-  final IconData icon;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, color: tokens.colors.interactive.enabled),
-        SizedBox(width: tokens.spacing.step3),
-        Flexible(child: Text(label)),
-      ],
-    );
-  }
-}
-
-/// The day footer's action row for a committed plan: refine / commit /
-/// shutdown buttons. [expand] switches between the wide side-by-side layout
-/// and a stacked layout on narrow widths.
-class _DayFooterActions extends StatelessWidget {
-  const _DayFooterActions({
-    required this.draft,
-    required this.teal,
-    required this.onRefine,
-    required this.onShutdown,
-    required this.expand,
-  });
-
-  final DraftPlan draft;
-  final Color teal;
-  final VoidCallback onRefine;
-  final VoidCallback onShutdown;
-  final bool expand;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final refineButton = OutlinedButton.icon(
-      onPressed: onRefine,
-      icon: Icon(LottiIcons.mic, size: 14, color: teal),
-      label: Text(
-        context.messages.dailyOsNextDayRefineCta,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
-      style: OutlinedButton.styleFrom(
-        foregroundColor: teal,
-        side: BorderSide(color: teal.withValues(alpha: 0.32)),
-        padding: EdgeInsets.symmetric(
-          horizontal: tokens.spacing.step4,
-          vertical: tokens.spacing.step2,
-        ),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
-        ),
-      ),
-    );
-    if (draft.state == DayState.drafted) {
-      return Row(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [
-          if (expand) Expanded(child: refineButton) else refineButton,
-        ],
-      );
-    }
-    final primaryButton = OutlinedButton.icon(
-      onPressed: onShutdown,
-      icon: Icon(
-        LottiIcons.night,
-        size: 14,
-        color: tokens.colors.text.mediumEmphasis,
-      ),
-      label: Text(
-        context.messages.dailyOsNextDayWrapUpCta,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
-      style: OutlinedButton.styleFrom(
-        foregroundColor: tokens.colors.text.mediumEmphasis,
-        side: BorderSide(color: tokens.colors.decorative.level01),
-        padding: EdgeInsets.symmetric(
-          horizontal: tokens.spacing.step4,
-          vertical: tokens.spacing.step2,
-        ),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
-        ),
-      ),
-    );
-
-    return Row(
-      children: [
-        if (expand) Expanded(child: refineButton) else refineButton,
-        SizedBox(width: tokens.spacing.step2),
-        if (expand) Expanded(child: primaryButton) else primaryButton,
-      ],
-    );
-  }
-}
-
-/// Footer for a day without a drafted plan: the [DayCheckInComposer], so a
+/// Footer for a day without a drafted plan: the [DayComposer], so a
 /// check-in is spoken or typed right where the day's tracked time is. When
 /// Daily OS has no inference route yet the composer would lead nowhere, so
 /// the footer is the single "Set up Daily OS" action instead.
@@ -490,7 +184,7 @@ class _NoPlanFooter extends StatelessWidget {
   });
 
   final DateTime day;
-  final DayCheckInSubmitter? onSubmitCheckIn;
+  final DayComposerSubmitter? onSubmitCheckIn;
   final VoidCallback onOpenSetup;
   final bool needsInferenceSetup;
 
@@ -509,7 +203,7 @@ class _NoPlanFooter extends StatelessWidget {
     if (!needsInferenceSetup) {
       return KeyedSubtree(
         key: ctaKey,
-        child: DayCheckInComposer(
+        child: DayComposer(
           day: day,
           enabled: setupResolved && onSubmitCheckIn != null,
           onSubmit: (words, {audioId}) async =>

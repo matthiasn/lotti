@@ -28,9 +28,14 @@ class DayComposerBar extends StatefulWidget {
     this.controller,
     this.replacement,
     this.errorText,
+    this.header,
     this.enabled = true,
     super.key,
   });
+
+  /// Shown above the field, inside the bar's reading column — quick
+  /// refinements on a planned day.
+  final Widget? header;
 
   /// False while the host cannot yet tell whether a check-in can go
   /// anywhere: the field shows but takes no words, so nothing typed can be
@@ -115,6 +120,10 @@ class _DayComposerBarState extends State<DayComposerBar> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                if (widget.header case final header?) ...[
+                  header,
+                  SizedBox(height: tokens.spacing.step3),
+                ],
                 widget.replacement ??
                     ChatComposerField(
                       controller: _controller,

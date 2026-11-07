@@ -6,45 +6,70 @@ import 'package:lotti/features/daily_os_next/ui/widgets/day_composer_bar.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// Hands a finished check-in to the host: the words, and the recording
-/// behind them when they were spoken.
-typedef DayCheckInSubmitter =
+/// Hands finished words to the host, with the recording behind them when
+/// they were spoken.
+typedef DayComposerSubmitter =
     Future<void> Function(String transcript, {String? audioId});
 
-/// The empty Day's check-in, spoken or typed in one place — the composer is
-/// the capture, so there is no separate Capture screen in front of it.
+/// Talks to the day's planner from the bottom of the Day surface, spoken or
+/// typed in one place: the empty day's check-in, and on a planned day what
+/// should change. The composer is the capture, so no separate Capture screen
+/// stands in front of it.
 ///
 /// The mic records through the Daily OS [captureControllerProvider], the same
 /// recorder the Capture screen uses, so the recording is saved as a journal
-/// entry and shows on Activity like any other check-in. While it runs, the
+/// entry and shows on Activity like any other take. While it runs, the
 /// [ChatRecordingPill] takes the field's place; once transcribed, the words
-/// land in the field for review and the capture returns to rest. Sending hands them to [onSubmit], with the
-/// recording's id while the words came from one.
+/// land in the field for review and the capture returns to rest. Sending
+/// hands them to [onSubmit], with the recording's id while the words came
+/// from one.
 ///
 /// A capture failure reads under the field, in the Capture screen's words.
 ///
 /// It acts only on takes it started. The recorder is shared with the
 /// planning sheet's Capture step, which the onboarding spotlight opens over
 /// this page, and that sheet's typing, recordings and failures are left to it.
-class DayCheckInComposer extends ConsumerStatefulWidget {
-  const DayCheckInComposer({
+class DayComposer extends ConsumerStatefulWidget {
+  const DayComposer({
     required this.day,
     required this.onSubmit,
+    this.hintText,
+    this.intent = AudioCaptureIntent.dayPlan,
+    this.clearOnSubmit = false,
+    this.header,
     this.enabled = true,
+    this.barKey = const Key('daily_os_day_check_in_cta'),
     super.key,
   });
 
   final DateTime day;
-  final DayCheckInSubmitter onSubmit;
+  final DayComposerSubmitter onSubmit;
+
+  /// The field's hint; the check-in's by default.
+  final String? hintText;
+
+  /// What a take records for: a check-in, or a refine pass.
+  final AudioCaptureIntent intent;
+
+  /// Empties the field once [onSubmit] has handled the words — for a
+  /// request that is done once sent. A check-in keeps them, so backing out of
+  /// the sheet it opens loses nothing.
+  final bool clearOnSubmit;
+
+  /// Shown above the field, inside the bar (quick refinements).
+  final Widget? header;
+
+  /// The bar's key, for finders and the onboarding spotlight.
+  final Key barKey;
 
   /// See [DayComposerBar.enabled].
   final bool enabled;
 
   @override
-  ConsumerState<DayCheckInComposer> createState() => _DayCheckInComposerState();
+  ConsumerState<DayComposer> createState() => _DayComposerState();
 }
 
-class _DayCheckInComposerState extends ConsumerState<DayCheckInComposer> {
+class _DayComposerState extends ConsumerState<DayComposer> {
   final _controller = TextEditingController();
   final _elapsed = Stopwatch();
 
@@ -52,7 +77,7 @@ class _DayCheckInComposerState extends ConsumerState<DayCheckInComposer> {
   /// emptied, so typed words alone never claim someone else's audio.
   String? _audioId;
 
-  /// True while [DayCheckInComposer.onSubmit] runs — a second send would
+  /// True while [DayComposer.onSubmit] runs — a second send would
   /// submit the same check-in twice.
   bool _submitting = false;
 
@@ -92,7 +117,7 @@ class _DayCheckInComposerState extends ConsumerState<DayCheckInComposer> {
     });
     await ref
         .read(captureControllerProvider.notifier)
-        .toggle(forDate: widget.day);
+        .toggle(forDate: widget.day, intent: widget.intent);
   }
 
   void _onCaptureChanged(CaptureState? previous, CaptureState next) {
@@ -137,6 +162,7 @@ class _DayCheckInComposerState extends ConsumerState<DayCheckInComposer> {
     setState(() => _submitting = true);
     try {
       await widget.onSubmit(words, audioId: _audioId);
+      if (widget.clearOnSubmit && mounted) _controller.clear();
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
@@ -161,7 +187,8 @@ class _DayCheckInComposerState extends ConsumerState<DayCheckInComposer> {
               amplitudes: capture.amplitudes,
               elapsed: _elapsed.elapsed,
               onCancel: notifier.reset,
-              onStop: () => notifier.toggle(forDate: widget.day),
+              onStop: () =>
+                  notifier.toggle(forDate: widget.day, intent: widget.intent),
             ),
             CapturePhase.transcribing => ChatRecordingPill(
               processing: true,
@@ -173,9 +200,11 @@ class _DayCheckInComposerState extends ConsumerState<DayCheckInComposer> {
           };
 
     return DayComposerBar(
-      key: const Key('daily_os_day_check_in_cta'),
+      key: widget.barKey,
       controller: _controller,
-      hintText: context.messages.dailyOsNextDayComposerCheckInHint,
+      header: widget.header,
+      hintText:
+          widget.hintText ?? context.messages.dailyOsNextDayComposerCheckInHint,
       enabled: widget.enabled && !_submitting,
       replacement: replacement,
       errorText: captureErrorMessage(context, _error),

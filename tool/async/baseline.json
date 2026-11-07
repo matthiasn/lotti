@@ -64,7 +64,7 @@
     "lib/features/daily_os_next/state/day_processing_runtime_provider.dart": 1,
     "lib/features/daily_os_next/state/drafting_controller.dart": 1,
     "lib/features/daily_os_next/ui/pages/daily_os_next_root.dart": 1,
-    "lib/features/daily_os_next/ui/pages/day_page.dart": 9,
+    "lib/features/daily_os_next/ui/pages/day_page.dart": 8,
     "lib/features/daily_os_next/ui/pages/day_page_header.dart": 1,
     "lib/features/daily_os_next/ui/pages/day_planning_modal.dart": 2,
     "lib/features/daily_os_next/ui/pages/refine_page.dart": 1,

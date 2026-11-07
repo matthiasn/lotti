@@ -310,14 +310,16 @@ void main() {
           // Recorded time is visible without creating a plan first
           // (handoff v2 item 2): the Day surface mounts in empty mode
           // with the tracked session on the timeline.
-          final messages = tester.element(find.byType(DayPage)).messages;
           expect(find.byType(DayPage), findsOneWidget);
           expect(find.byType(CapturePage), findsNothing);
           expect(find.text('Client follow-up'), findsOneWidget);
           // Honest "No plan yet" footer CTA instead of Refine/Commit.
           final cta = find.byKey(const Key('daily_os_day_check_in_cta'));
           expect(cta, findsOneWidget);
-          expect(find.text(messages.dailyOsNextDayRefineCta), findsNothing);
+          expect(
+            find.byKey(const Key('daily_os_day_refine_composer')),
+            findsNothing,
+          );
 
           // The composer was the capture: the sheet opens at Reconcile, with
           // no Capture step, and the Day surface stays mounted underneath.

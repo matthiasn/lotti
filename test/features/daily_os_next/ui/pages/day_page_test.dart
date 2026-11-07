@@ -13,11 +13,12 @@ import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/state/refine_controller.dart';
 import 'package:lotti/features/daily_os_next/ui/daily_os_next_routes.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/day_page.dart';
+import 'package:lotti/features/daily_os_next/ui/pages/day_page_header.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/refine_page.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/agenda_view.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_activity_view.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_block_task_picker.dart';
-import 'package:lotti/features/daily_os_next/ui/widgets/day_check_in_composer.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/day_composer.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/plan_view_toggle.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
@@ -97,9 +98,27 @@ DraftPlan _draftedWithReasons() => DraftPlan(
   ],
 );
 
+/// Types [words] into a planned Day's composer and sends them to Refine.
+Future<void> _sendRefineWords(WidgetTester tester, String words) async {
+  final composer = find.byKey(const Key('daily_os_day_refine_composer'));
+  await tester.enterText(
+    find.descendant(of: composer, matching: find.byType(TextField)),
+    words,
+  );
+  await tester.pump();
+  await tester.tap(
+    find.descendant(
+      of: composer,
+      matching: findMaterialTooltip(
+        tester.element(composer).messages.chatInputSendTooltip,
+      ),
+    ),
+  );
+}
+
 /// Types [words] into the empty Day's check-in composer and sends them.
 Future<void> _sendCheckIn(WidgetTester tester, String words) async {
-  final composer = find.byType(DayCheckInComposer);
+  final composer = find.byType(DayComposer);
   await tester.enterText(
     find.descendant(of: composer, matching: find.byType(TextField)),
     words,
@@ -213,11 +232,14 @@ void main() {
 
         // Footer is the check-in composer, not Refine/Commit.
         final messages = tester.element(find.byType(DayPage)).messages;
-        expect(find.text(messages.dailyOsNextDayRefineCta), findsNothing);
+        expect(
+          find.byKey(const Key('daily_os_day_refine_composer')),
+          findsNothing,
+        );
         expect(find.text(messages.dailyOsNextDayLockInCta), findsNothing);
         final cta = find.byKey(const Key('daily_os_day_check_in_cta'));
         expect(cta, findsOneWidget);
-        expect(find.byType(DayCheckInComposer), findsOneWidget);
+        expect(find.byType(DayComposer), findsOneWidget);
         await _sendCheckIn(tester, 'Finish the deck');
         expect(checkIns, ['Finish the deck']);
 
@@ -271,7 +293,7 @@ void main() {
           find.text(messages.dailyOsSettingsSetupAction),
           findsNWidgets(2),
         );
-        expect(find.byType(DayCheckInComposer), findsNothing);
+        expect(find.byType(DayComposer), findsNothing);
 
         await tester.tap(find.byIcon(LottiIcons.moreVertical));
         await tester.pump();
@@ -500,7 +522,7 @@ void main() {
         find.text(messages.dailyOsSettingsNameNudgeTitle),
         findsOneWidget,
       );
-      expect(find.byType(DayCheckInComposer), findsOneWidget);
+      expect(find.byType(DayComposer), findsOneWidget);
 
       await _sendCheckIn(tester, 'Finish the deck');
       expect(checkIns, ['Finish the deck']);
@@ -527,9 +549,9 @@ void main() {
       // The composer holds its place, so the footer does not jump, but takes
       // no words: they would be lost if setup turns out to be missing.
       final messages = tester.element(find.byType(DayPage)).messages;
-      expect(find.byType(DayCheckInComposer), findsOneWidget);
+      expect(find.byType(DayComposer), findsOneWidget);
       final field = find.descendant(
-        of: find.byType(DayCheckInComposer),
+        of: find.byType(DayComposer),
         matching: find.byType(TextField),
       );
       expect(tester.widget<TextField>(field).enabled, isFalse);
@@ -681,7 +703,7 @@ void main() {
 
         expect(find.text(messages.dailyOsNextBlockEditTitle), findsOneWidget);
         await tester.enterText(
-          find.byType(TextField),
+          find.widgetWithText(TextField, block.title),
           'Move penguin diplomacy forward',
         );
         await tester.pump();
@@ -930,7 +952,10 @@ void main() {
           find.byKey(const Key('daily_os_edit_block_blk_failure')),
         );
         await tester.pumpAndSettle();
-        await tester.enterText(find.byType(TextField), 'Count all sardines');
+        await tester.enterText(
+          find.widgetWithText(TextField, block.title),
+          'Count all sardines',
+        );
         await tester.pump();
         tester
             .widget<DesignSystemButton>(
@@ -1097,7 +1122,10 @@ void main() {
         find.byKey(const Key('daily_os_edit_block_blk_undo_failure')),
       );
       await tester.pumpAndSettle();
-      await tester.enterText(find.byType(TextField), 'Count every herring');
+      await tester.enterText(
+        find.widgetWithText(TextField, block.title),
+        'Count every herring',
+      );
       await tester.pump();
       tester
           .widget<DesignSystemButton>(
@@ -1315,91 +1343,53 @@ void main() {
       expect(find.byType(DayTimeline), findsOneWidget);
     });
 
-    testWidgets('drafted footer keeps Refine and commits via Looks good', (
-      tester,
-    ) async {
+    testWidgets('a drafted day: Looks good in the header, quick refinements '
+        'over the composer', (tester) async {
       _setSurface(tester);
-      await tester.pumpWidget(_wrap(DayPage(draft: _drafted())));
+      await tester.pumpWidget(_wrap(DayPage(draft: _draftedWithReasons())));
       await tester.pump();
 
       final messages = tester.element(find.byType(DayPage)).messages;
-      expect(find.byType(DesignSystemGlassStrip), findsOneWidget);
-      expect(find.text(messages.dailyOsNextDayRefineCta), findsOneWidget);
-      expect(find.text(messages.dailyOsNextReviewLooksGood), findsOneWidget);
-      expect(find.text(messages.dailyOsNextDayLockInCta), findsNothing);
+      final header = find.byType(DayHeader);
+      expect(
+        find.descendant(
+          of: header,
+          matching: find.text(messages.dailyOsNextReviewLooksGood),
+        ),
+        findsOneWidget,
+      );
       expect(find.text(messages.dailyOsNextDayWrapUpCta), findsNothing);
-    });
-
-    testWidgets(
-      'drafted footer explains why items made it in and shows quick review',
-      (tester) async {
-        _setSurface(tester);
-        await tester.pumpWidget(_wrap(DayPage(draft: _draftedWithReasons())));
-        await tester.pump();
-
-        final messages = tester.element(find.byType(DayPage)).messages;
-        expect(find.text(messages.dailyOsNextReviewWhyTitle), findsOneWidget);
-        expect(
-          find.text('Morning is the strongest focus window.'),
-          findsOneWidget,
-        );
-        expect(
-          find.text('Keeps shallow work away from deep work.'),
-          findsOneWidget,
-        );
-        expect(find.text(messages.dailyOsNextReviewLooksGood), findsOneWidget);
-        expect(find.text(messages.dailyOsNextReviewTooMuch), findsOneWidget);
-        expect(
-          find.text(messages.dailyOsNextReviewMoveLighter),
-          findsOneWidget,
-        );
-        expect(find.text(messages.dailyOsNextReviewAddBuffer), findsOneWidget);
-      },
-    );
-
-    testWidgets('drafted review footer fits an iPhone SE viewport', (
-      tester,
-    ) async {
-      const size = Size(320, 568);
-      setTestSurfaceSize(tester, size);
-      await tester.pumpWidget(
-        _wrap(
-          DayPage(draft: _draftedWithReasons()),
-          size: size,
+      final composer = find.byKey(const Key('daily_os_day_refine_composer'));
+      expect(composer, findsOneWidget);
+      expect(
+        find.descendant(
+          of: composer,
+          matching: find.text(messages.dailyOsNextRefineHeadlineIdle),
         ),
+        findsOneWidget,
       );
-      await tester.pump();
-
-      final messages = tester.element(find.byType(DayPage)).messages;
-      expect(find.text(messages.dailyOsNextReviewLooksGood), findsOneWidget);
-      expect(find.text(messages.dailyOsNextReviewAdjust), findsOneWidget);
-      expect(tester.takeException(), isNull);
-    });
-
-    testWidgets('large text hides review reasons on an iPhone SE viewport', (
-      tester,
-    ) async {
-      const size = Size(320, 568);
-      final mediaQueryData = phoneMediaQueryData.copyWith(
-        size: size,
-        textScaler: const TextScaler.linear(2),
-      );
-      setTestSurfaceSize(tester, size);
-      await tester.pumpWidget(
-        _wrap(
-          DayPage(draft: _draftedWithReasons()),
-          mediaQueryData: mediaQueryData,
+      for (final chip in [
+        messages.dailyOsNextReviewTooMuch,
+        messages.dailyOsNextReviewMoveLighter,
+        messages.dailyOsNextReviewAddBuffer,
+      ]) {
+        expect(
+          find.descendant(of: composer, matching: find.text(chip)),
+          findsOneWidget,
+        );
+      }
+      // The block reasons stay on the blocks, not repeated in the footer.
+      expect(
+        find.descendant(
+          of: find.byType(DesignSystemGlassStrip),
+          matching: find.text('Morning is the strongest focus window.'),
         ),
+        findsNothing,
       );
-      await tester.pump();
-
-      final messages = tester.element(find.byType(DayPage)).messages;
-      expect(find.text(messages.dailyOsNextReviewAdjust), findsOneWidget);
-      expect(find.text(messages.dailyOsNextReviewWhyTitle), findsNothing);
-      expect(tester.takeException(), isNull);
     });
 
-    testWidgets('committed footer swaps Lock In for Wrap up', (tester) async {
+    testWidgets('a committed day: Wrap up in the header, the composer '
+        'without chips', (tester) async {
       _setSurface(tester);
       await tester.pumpWidget(
         _wrap(DayPage(draft: _drafted(state: DayState.committed))),
@@ -1407,43 +1397,69 @@ void main() {
       await tester.pump();
 
       final messages = tester.element(find.byType(DayPage)).messages;
-      expect(find.text(messages.dailyOsNextDayLockInCta), findsNothing);
-      expect(find.text(messages.dailyOsNextDayWrapUpCta), findsOneWidget);
-      expect(find.text(messages.dailyOsNextDayRefineCta), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(DayHeader),
+          matching: find.text(messages.dailyOsNextDayWrapUpCta),
+        ),
+        findsOneWidget,
+      );
+      expect(find.text(messages.dailyOsNextReviewLooksGood), findsNothing);
+      expect(
+        find.byKey(const Key('daily_os_day_refine_composer')),
+        findsOneWidget,
+      );
+      expect(find.text(messages.dailyOsNextReviewTooMuch), findsNothing);
     });
 
-    testWidgets(
-      'mobile committed footer stacks the coaching hint above actions',
-      (
-        tester,
-      ) async {
+    testWidgets('Wrap up opens the shutdown for the day', (tester) async {
+      String? route;
+      nav_service.beamToNamedOverride = (path) => route = path;
+      _setSurface(tester);
+      await tester.pumpWidget(
+        _wrap(DayPage(draft: _drafted(state: DayState.committed))),
+      );
+      await tester.pump();
+
+      final messages = tester.element(find.byType(DayPage)).messages;
+      await tester.tap(find.text(messages.dailyOsNextDayWrapUpCta));
+      await tester.pump();
+
+      expect(route, contains('shutdown'));
+    });
+
+    for (final (name, size, scale) in [
+      ('an iPhone SE viewport', const Size(320, 568), 1.0),
+      ('an iPhone SE viewport at large text', const Size(320, 568), 2.0),
+    ]) {
+      testWidgets('the drafted footer and header fit $name', (tester) async {
+        final mediaQueryData = phoneMediaQueryData.copyWith(
+          size: size,
+          textScaler: TextScaler.linear(scale),
+        );
+        setTestSurfaceSize(tester, size);
         await tester.pumpWidget(
           _wrap(
-            DayPage(draft: _drafted(state: DayState.committed)),
-            mediaQueryData: phoneMediaQueryData,
+            DayPage(draft: _draftedWithReasons()),
+            mediaQueryData: mediaQueryData,
           ),
         );
         await tester.pump();
 
         final messages = tester.element(find.byType(DayPage)).messages;
+        expect(find.text(messages.dailyOsNextReviewLooksGood), findsOneWidget);
+        // Large text gives the chips' room back to the day.
         expect(
-          find.text(messages.dailyOsNextDayRefineFooterHint),
+          find.text(messages.dailyOsNextReviewTooMuch),
+          scale < 1.5 ? findsOneWidget : findsNothing,
+        );
+        expect(
+          find.byKey(const Key('daily_os_day_refine_composer')),
           findsOneWidget,
         );
-        expect(find.text(messages.dailyOsNextDayRefineCta), findsOneWidget);
-        expect(find.text(messages.dailyOsNextDayWrapUpCta), findsOneWidget);
-        expect(
-          tester
-              .getBottomLeft(
-                find.text(messages.dailyOsNextDayRefineFooterHint),
-              )
-              .dy,
-          lessThan(
-            tester.getTopLeft(find.text(messages.dailyOsNextDayRefineCta)).dy,
-          ),
-        );
-      },
-    );
+        expect(tester.takeException(), isNull);
+      });
+    }
 
     testWidgets('syncs displayed agenda when the draft prop changes', (
       tester,
@@ -1483,18 +1499,15 @@ void main() {
       final bottomNavHeight = DesignSystemBottomNavigationBar.occupiedHeight(
         context,
       );
-      final messages = context.messages;
-      final looksGoodBottom = tester
-          .getBottomLeft(find.text(messages.dailyOsNextReviewLooksGood))
+      final composerBottom = tester
+          .getBottomLeft(
+            find.byKey(const Key('daily_os_day_refine_composer')),
+          )
           .dy;
 
       expect(
-        looksGoodBottom,
-        lessThan(phoneMediaQueryData.size.height - bottomNavHeight),
-      );
-      expect(
-        tester.getCenter(find.text(messages.dailyOsNextDayRefineCta)),
-        isA<Offset>(),
+        composerBottom,
+        lessThanOrEqualTo(phoneMediaQueryData.size.height - bottomNavHeight),
       );
     });
 
@@ -1621,25 +1634,44 @@ void main() {
     );
 
     testWidgets(
-      'tapping Refine opens the modal over the current day page',
+      'words sent from the composer go straight into Refine over the day',
       (tester) async {
         final agent = RecordingDayAgent();
-        final draft = _drafted();
-        await _pumpDayPage(tester, draft: draft, agent: agent);
+        await _pumpDayPage(tester, draft: _drafted(), agent: agent);
 
-        final messages = tester.element(find.byType(DayPage)).messages;
-        await tester.tap(find.text(messages.dailyOsNextDayRefineCta));
+        await _sendRefineWords(tester, 'Move the run to the evening');
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 600));
+        await tester.pump();
 
         expect(find.byType(DayPage), findsOneWidget);
         expect(find.byType(RefineModalContent), findsOneWidget);
-        expect(
-          find.text(messages.dailyOsNextRefineHeadlineIdle),
-          findsOneWidget,
-        );
+        expect(agent.proposeCount, 1);
+        expect(agent.proposedTranscript, 'Move the run to the evening');
       },
     );
+
+    testWidgets('the composer empties once the Refine it opened is done', (
+      tester,
+    ) async {
+      final agent = RecordingDayAgent();
+      await _pumpDayPage(tester, draft: _drafted(), agent: agent);
+
+      await _sendRefineWords(tester, 'Lighter afternoon');
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 600));
+      Navigator.of(tester.element(find.byType(RefineModalContent))).pop();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 600));
+
+      final field = tester.widget<TextField>(
+        find.descendant(
+          of: find.byKey(const Key('daily_os_day_refine_composer')),
+          matching: find.byType(TextField),
+        ),
+      );
+      expect(field.controller!.text, isEmpty);
+    });
 
     testWidgets(
       'quick review action opens refine modal and submits its seeded prompt',
@@ -1709,49 +1741,6 @@ void main() {
       });
     }
 
-    testWidgets('large text folds quick refinements into an Adjust menu', (
-      tester,
-    ) async {
-      final agent = RecordingDayAgent(
-        diff: PlanDiff(
-          id: 'compact_diff',
-          changes: const [],
-          updatedPlan: _draftedWithReasons(),
-        ),
-      );
-      final mediaQueryData = phoneMediaQueryData.copyWith(
-        textScaler: const TextScaler.linear(2),
-      );
-      setTestSurfaceSize(tester, mediaQueryData.size);
-      await tester.pumpWidget(
-        _wrap(
-          DayPage(draft: _draftedWithReasons()),
-          mediaQueryData: mediaQueryData,
-          overrides: [dayAgentProvider.overrideWithValue(agent)],
-        ),
-      );
-      await tester.pump();
-
-      final messages = tester.element(find.byType(DayPage)).messages;
-      expect(find.text(messages.dailyOsNextReviewAdjust), findsOneWidget);
-      expect(find.text(messages.dailyOsNextReviewTooMuch), findsNothing);
-
-      await tester.tap(find.text(messages.dailyOsNextReviewAdjust));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 600));
-      await tester.pump();
-      await tester.tap(find.text(messages.dailyOsNextReviewTooMuch));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 600));
-      await tester.pump();
-
-      expect(agent.proposeCount, 1);
-      expect(
-        agent.proposedTranscript,
-        messages.dailyOsNextReviewTooMuchPrompt,
-      );
-    });
-
     testWidgets(
       'accepted refine modal invalidates the current draft and keeps day page',
       (tester) async {
@@ -1775,7 +1764,7 @@ void main() {
         await _pumpDayPage(tester, draft: draft, agent: agent);
 
         final messages = tester.element(find.byType(DayPage)).messages;
-        await tester.tap(find.text(messages.dailyOsNextDayRefineCta));
+        await _sendRefineWords(tester, 'Move focus');
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 600));
 

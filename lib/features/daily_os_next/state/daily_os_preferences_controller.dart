@@ -27,7 +27,6 @@ class DailyOsPreferences {
     this.userName = '',
     Set<String> excludedCategoryIds = const <String>{},
     this.timelineGesturesLearned = false,
-    this.dayFooterHintRetired = false,
   }) : excludedCategoryIds = Set<String>.unmodifiable(excludedCategoryIds);
 
   final String userName;
@@ -37,11 +36,6 @@ class DailyOsPreferences {
   /// pinch-zoomed, or toggled the lane mode — the "Swipe for actual ·
   /// pinch to zoom" hint retires permanently after the first use.
   final bool timelineGesturesLearned;
-
-  /// One-shot coachmark: true once the user has locked in a day — the
-  /// footer's "Talk to reshape the plan…" explainer retires after the
-  /// promise has been experienced once.
-  final bool dayFooterHintRetired;
 
   bool get hasUserName => userName.trim().isNotEmpty;
 
@@ -55,14 +49,12 @@ class DailyOsPreferences {
     String? userName,
     Set<String>? excludedCategoryIds,
     bool? timelineGesturesLearned,
-    bool? dayFooterHintRetired,
   }) {
     return DailyOsPreferences(
       userName: userName ?? this.userName,
       excludedCategoryIds: excludedCategoryIds ?? this.excludedCategoryIds,
       timelineGesturesLearned:
           timelineGesturesLearned ?? this.timelineGesturesLearned,
-      dayFooterHintRetired: dayFooterHintRetired ?? this.dayFooterHintRetired,
     );
   }
 }
@@ -114,7 +106,6 @@ class DailyOsPreferencesController extends Notifier<DailyOsPreferences> {
         dailyOsUserNameSyncedAtSettingsKey,
         dailyOsExcludedCategoryIdsSettingsKey,
         dailyOsTimelineGesturesLearnedSettingsKey,
-        dailyOsDayFooterHintRetiredSettingsKey,
       ],
     );
     if (!ref.mounted) return;
@@ -138,9 +129,6 @@ class DailyOsPreferencesController extends Notifier<DailyOsPreferences> {
       timelineGesturesLearned:
           next.timelineGesturesLearned ||
           values[dailyOsTimelineGesturesLearnedSettingsKey] == 'true',
-      dayFooterHintRetired:
-          next.dayFooterHintRetired ||
-          values[dailyOsDayFooterHintRetiredSettingsKey] == 'true',
     );
     state = next;
 
@@ -184,14 +172,6 @@ class DailyOsPreferencesController extends Notifier<DailyOsPreferences> {
     if (state.timelineGesturesLearned) return;
     state = state.copyWith(timelineGesturesLearned: true);
     _save(dailyOsTimelineGesturesLearnedSettingsKey, 'true');
-  }
-
-  /// Permanently retires the day footer's coaching line — called on the
-  /// first successful commit.
-  void markDayFooterHintRetired() {
-    if (state.dayFooterHintRetired) return;
-    state = state.copyWith(dayFooterHintRetired: true);
-    _save(dailyOsDayFooterHintRetiredSettingsKey, 'true');
   }
 
   void setUserName(String value) {

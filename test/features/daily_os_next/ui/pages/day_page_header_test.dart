@@ -142,6 +142,73 @@ void main() {
       },
     );
 
+    group('the stage action', () {
+      Future<({Rect stage, Rect toggle, Rect actions})> pumpHeader(
+        WidgetTester tester,
+        Size size, {
+        double textScale = 1,
+      }) async {
+        setTestSurfaceSize(tester, size);
+        await tester.pumpWidget(
+          wrapDayPage(
+            DayPage(draft: draftedPlan()),
+            mediaQueryData: phoneMediaQueryData.copyWith(
+              size: size,
+              textScaler: TextScaler.linear(textScale),
+            ),
+          ),
+        );
+        await tester.pump();
+        return (
+          stage: tester.getRect(
+            find.byKey(const Key('daily_os_day_stage_action')),
+          ),
+          toggle: tester.getRect(find.byType(PlanViewToggle)),
+          actions: tester.getRect(find.byType(ProcessingCategoryFilterButton)),
+        );
+      }
+
+      testWidgets('leads the actions on one row when everything fits', (
+        tester,
+      ) async {
+        final rects = await pumpHeader(tester, const Size(1400, 900));
+
+        expect(rects.stage.right, lessThan(rects.actions.left));
+        expect(rects.stage.overlaps(rects.toggle), isFalse);
+        expect(rects.stage.left, greaterThan(rects.toggle.right));
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets(
+        'ends the toggle row on a phone while the actions stay beside '
+        'the title',
+        (tester) async {
+          final rects = await pumpHeader(tester, phoneMediaQueryData.size);
+
+          // Side by side with the toggle, right-aligned.
+          expect(rects.stage.left, greaterThan(rects.toggle.right));
+          expect(rects.stage.center.dy, closeTo(rects.toggle.center.dy, 1));
+          // The actions moved up to the title's first line.
+          expect(rects.actions.bottom, lessThanOrEqualTo(rects.toggle.top));
+          expect(tester.takeException(), isNull);
+        },
+      );
+
+      testWidgets('takes a row of its own when the toggle row is full', (
+        tester,
+      ) async {
+        final rects = await pumpHeader(
+          tester,
+          const Size(320, 900),
+          textScale: 1.3,
+        );
+
+        expect(rects.stage.top, greaterThanOrEqualTo(rects.toggle.bottom));
+        expect(rects.stage.overlaps(rects.actions), isFalse);
+        expect(tester.takeException(), isNull);
+      });
+    });
+
     testWidgets('header relayouts when design-system spacing changes', (
       tester,
     ) async {

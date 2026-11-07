@@ -4939,11 +4939,11 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dailyOsNextBlockResizeStartTooltip => 'Upravit začátek';
 
   @override
-  String get dailyOsNextBlockTaskCreatedNotLinked =>
-      'Úkol je vytvořený, ale s tímto blokem se nepropojil.';
+  String get dailyOsNextBlockTaskCreated => 'Úkol vytvořen.';
 
   @override
-  String get dailyOsNextBlockTaskCreated => 'Úkol vytvořen.';
+  String get dailyOsNextBlockTaskCreatedNotLinked =>
+      'Úkol je vytvořený, ale s tímto blokem se nepropojil.';
 
   @override
   String get dailyOsNextBlockUnlinked => 'Propojení s úkolem zrušeno.';
@@ -5204,13 +5204,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get dailyOsNextDayMoreTooltip => 'Více';
-
-  @override
-  String get dailyOsNextDayRefineCta => 'Upravit';
-
-  @override
-  String get dailyOsNextDayRefineFooterHint =>
-      'Mluv a přetvoř plán — každou změnu uvidíš, než se cokoli uloží.';
 
   @override
   String get dailyOsNextDayTitle => 'Tvůj den';
@@ -5541,9 +5534,6 @@ class AppLocalizationsCs extends AppLocalizations {
       'Přidej realistickou rezervu mezi plánované bloky, hlavně kolem přechodů a po náročné práci.';
 
   @override
-  String get dailyOsNextReviewAdjust => 'Upravit';
-
-  @override
   String get dailyOsNextReviewLooksGood => 'Vypadá dobře';
 
   @override
@@ -5559,9 +5549,6 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get dailyOsNextReviewTooMuchPrompt =>
       'Tenhle plán je na dnešek moc. Zmenši zátěž, chraň prostor k nadechnutí a nech jen nejdůležitější bloky.';
-
-  @override
-  String get dailyOsNextReviewWhyTitle => 'Proč se to dostalo do plánu';
 
   @override
   String get dailyOsNextShutdownCarryoverDrop => 'Zahodit';

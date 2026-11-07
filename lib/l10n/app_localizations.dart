@@ -8255,17 +8255,17 @@ abstract class AppLocalizations {
   /// **'Adjust start'**
   String get dailyOsNextBlockResizeStartTooltip;
 
-  /// No description provided for @dailyOsNextBlockTaskCreatedNotLinked.
-  ///
-  /// In en, this message translates to:
-  /// **'Task created, but not linked to this block.'**
-  String get dailyOsNextBlockTaskCreatedNotLinked;
-
   /// No description provided for @dailyOsNextBlockTaskCreated.
   ///
   /// In en, this message translates to:
   /// **'Task created.'**
   String get dailyOsNextBlockTaskCreated;
+
+  /// No description provided for @dailyOsNextBlockTaskCreatedNotLinked.
+  ///
+  /// In en, this message translates to:
+  /// **'Task created, but not linked to this block.'**
+  String get dailyOsNextBlockTaskCreatedNotLinked;
 
   /// No description provided for @dailyOsNextBlockUnlinked.
   ///
@@ -8674,18 +8674,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'More'**
   String get dailyOsNextDayMoreTooltip;
-
-  /// No description provided for @dailyOsNextDayRefineCta.
-  ///
-  /// In en, this message translates to:
-  /// **'Refine'**
-  String get dailyOsNextDayRefineCta;
-
-  /// No description provided for @dailyOsNextDayRefineFooterHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Talk to reshape the plan — you\'ll see every change before anything is saved.'**
-  String get dailyOsNextDayRefineFooterHint;
 
   /// No description provided for @dailyOsNextDayTitle.
   ///
@@ -9251,12 +9239,6 @@ abstract class AppLocalizations {
   /// **'Add a realistic buffer between the planned blocks, especially around transitions and after demanding work.'**
   String get dailyOsNextReviewAddBufferPrompt;
 
-  /// No description provided for @dailyOsNextReviewAdjust.
-  ///
-  /// In en, this message translates to:
-  /// **'Adjust'**
-  String get dailyOsNextReviewAdjust;
-
   /// No description provided for @dailyOsNextReviewLooksGood.
   ///
   /// In en, this message translates to:
@@ -9286,12 +9268,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This plan is too much for today. Reduce the load, protect breathing room, and keep only the most important blocks.'**
   String get dailyOsNextReviewTooMuchPrompt;
-
-  /// No description provided for @dailyOsNextReviewWhyTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Why these made it in'**
-  String get dailyOsNextReviewWhyTitle;
 
   /// No description provided for @dailyOsNextShutdownCarryoverDrop.
   ///

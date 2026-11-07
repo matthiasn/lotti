@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/ui/chat/chat_recording_pill.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
-import 'package:lotti/features/daily_os_next/ui/widgets/day_check_in_composer.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/day_composer.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -52,7 +52,7 @@ void main() {
     await tester.pumpWidget(
       makeTestableWidget2(
         Material(
-          child: DayCheckInComposer(
+          child: DayComposer(
             day: day,
             onSubmit: (words, {audioId}) async {
               submitted.add((words: words, audioId: audioId));
@@ -66,14 +66,10 @@ void main() {
     await tester.pump();
   }
 
-  String send(WidgetTester tester) => tester
-      .element(find.byType(DayCheckInComposer))
-      .messages
-      .chatInputSendTooltip;
-  String mic(WidgetTester tester) => tester
-      .element(find.byType(DayCheckInComposer))
-      .messages
-      .chatInputRecordVoice;
+  String send(WidgetTester tester) =>
+      tester.element(find.byType(DayComposer)).messages.chatInputSendTooltip;
+  String mic(WidgetTester tester) =>
+      tester.element(find.byType(DayComposer)).messages.chatInputRecordVoice;
 
   /// Starts a take from this composer's own mic.
   Future<void> startTake(WidgetTester tester) async {
@@ -178,7 +174,7 @@ void main() {
     );
     await tester.pump();
 
-    final messages = tester.element(find.byType(DayCheckInComposer)).messages;
+    final messages = tester.element(find.byType(DayComposer)).messages;
     expect(
       find.text(messages.dailyOsNextCaptureErrorMicrophonePermissionDenied),
       findsOneWidget,
@@ -279,7 +275,7 @@ void main() {
     );
     await tester.pump();
 
-    final messages = tester.element(find.byType(DayCheckInComposer)).messages;
+    final messages = tester.element(find.byType(DayComposer)).messages;
     expect(capture.resets, 0);
     expect(find.byType(ChatRecordingPill), findsNothing);
     expect(find.text('For the sheet'), findsNothing);

@@ -4865,11 +4865,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dailyOsNextBlockResizeStartTooltip => 'Adjust start';
 
   @override
-  String get dailyOsNextBlockTaskCreatedNotLinked =>
-      'Task created, but not linked to this block.';
+  String get dailyOsNextBlockTaskCreated => 'Task created.';
 
   @override
-  String get dailyOsNextBlockTaskCreated => 'Task created.';
+  String get dailyOsNextBlockTaskCreatedNotLinked =>
+      'Task created, but not linked to this block.';
 
   @override
   String get dailyOsNextBlockUnlinked => 'Unlinked from the task.';
@@ -5125,13 +5125,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dailyOsNextDayMoreTooltip => 'More';
-
-  @override
-  String get dailyOsNextDayRefineCta => 'Refine';
-
-  @override
-  String get dailyOsNextDayRefineFooterHint =>
-      'Talk to reshape the plan — you\'ll see every change before anything is saved.';
 
   @override
   String get dailyOsNextDayTitle => 'Your day';
@@ -5461,9 +5454,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Add a realistic buffer between the planned blocks, especially around transitions and after demanding work.';
 
   @override
-  String get dailyOsNextReviewAdjust => 'Adjust';
-
-  @override
   String get dailyOsNextReviewLooksGood => 'Looks good';
 
   @override
@@ -5479,9 +5469,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get dailyOsNextReviewTooMuchPrompt =>
       'This plan is too much for today. Reduce the load, protect breathing room, and keep only the most important blocks.';
-
-  @override
-  String get dailyOsNextReviewWhyTitle => 'Why these made it in';
 
   @override
   String get dailyOsNextShutdownCarryoverDrop => 'Drop';
