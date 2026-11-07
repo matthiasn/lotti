@@ -8,7 +8,6 @@ import 'package:lotti/features/design_system/components/badges/design_system_bad
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
-import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
 import 'package:lotti/features/front_agent/state/front_chat_controller.dart';
@@ -222,7 +221,7 @@ class FrontChatHeader extends ConsumerWidget {
         // Her profile and internals, then the open conversation's own ways
         // out — the same menu its row in the list has — so the destructive
         // one is last.
-        DesignSystemContextMenuButton(
+        FrontMenuButton(
           key: FrontChatHeaderKeys.more,
           iconColor: tokens.colors.text.mediumEmphasis,
           items: [
@@ -251,7 +250,10 @@ class FrontChatHeader extends ConsumerWidget {
             ),
             // This conversation's ways out after it, so Delete is last.
             if (conversation != null && !inboxOnly)
-              ...FrontConversationActions(context, ref).menuItems(conversation),
+              ...FrontConversationActions(
+                context,
+                ref,
+              ).menuItems(conversation, startsGroup: true),
           ],
         ),
         close,

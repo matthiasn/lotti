@@ -19,7 +19,7 @@ import 'package:lotti/features/companion/ui/companion_speaker.dart';
 import 'package:lotti/features/companion/ui/companion_view.dart';
 import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
-import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu_button.dart';
+import 'package:lotti/features/front_agent/ui/front_conversation_actions.dart';
 import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
@@ -225,7 +225,7 @@ void main() {
       await pumpHeader(tester, conversations: census);
 
       final items = tester
-          .widget<DesignSystemContextMenuButton>(
+          .widget<FrontMenuButton>(
             find.byKey(FrontChatHeaderKeys.more),
           )
           .items
@@ -245,7 +245,7 @@ void main() {
       await pumpHeader(tester);
 
       final items = tester
-          .widget<DesignSystemContextMenuButton>(
+          .widget<FrontMenuButton>(
             find.byKey(FrontChatHeaderKeys.more),
           )
           .items;
@@ -266,7 +266,7 @@ void main() {
       expect(titleOf(tester), 'Inbox');
       expect(
         tester
-            .widget<DesignSystemContextMenuButton>(
+            .widget<FrontMenuButton>(
               find.byKey(FrontChatHeaderKeys.more),
             )
             .items
@@ -352,7 +352,7 @@ void main() {
     );
 
     List<String> overflow(WidgetTester tester) => tester
-        .widget<DesignSystemContextMenuButton>(
+        .widget<FrontMenuButton>(
           find.byKey(FrontChatHeaderKeys.more),
         )
         .items

@@ -1,6 +1,7 @@
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:lotti/features/agents/ui/agent_surface_menu.dart';
 import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu_button.dart';
@@ -18,7 +19,6 @@ import 'package:lotti/features/front_agent/ui/front_conversation_actions.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/device_datetime.dart';
-import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Stable keys for the list's controls.
@@ -532,44 +532,6 @@ class _ConversationRowState extends State<_ConversationRow> {
   bool _hovered = false;
   bool _focused = false;
 
-  /// The row's menu as a sheet: the same ways out its ⋯ offers.
-  Future<void> _showMenuSheet(BuildContext context) =>
-      ModalUtils.showSinglePageModal<void>(
-        context: context,
-        title: widget.conversation.title,
-        builder: (sheet) {
-          final tokens = sheet.designTokens;
-          return Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              for (final item in widget.menu)
-                DesignSystemListItem(
-                  key: item.key,
-                  titleContent: Text(
-                    item.label,
-                    style: tokens.typography.styles.body.bodyMedium.copyWith(
-                      color: item.isDestructive
-                          ? tokens.colors.alert.error.ink
-                          : tokens.colors.text.highEmphasis,
-                    ),
-                  ),
-                  leading: Icon(
-                    item.icon,
-                    size: IconSizes.s,
-                    color: item.isDestructive
-                        ? tokens.colors.alert.error.ink
-                        : tokens.colors.text.mediumEmphasis,
-                  ),
-                  onTap: () {
-                    Navigator.of(sheet).pop();
-                    item.onTap?.call();
-                  },
-                ),
-            ],
-          );
-        },
-      );
-
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
@@ -674,7 +636,9 @@ class _ConversationRowState extends State<_ConversationRow> {
       child: Stack(
         children: [
           GestureDetector(
-            onLongPress: () => _showMenuSheet(context),
+            // The same menu its ⋯ opens, under the row pressed.
+            onLongPress: () =>
+                showAgentSurfaceMenu(context, items: widget.menu).ignore(),
             child: row,
           ),
           // Over the row, inside its bounds, so the whole target answers:
@@ -706,7 +670,7 @@ class _ConversationRowState extends State<_ConversationRow> {
                 maintainSize: true,
                 maintainAnimation: true,
                 maintainState: true,
-                child: DesignSystemContextMenuButton(
+                child: FrontMenuButton(
                   key: FrontConversationListKeys.menu(widget.conversation.id),
                   // Quiet on every row but the open one, so the rail of
                   // menus a touch screen shows does not read as a column.
