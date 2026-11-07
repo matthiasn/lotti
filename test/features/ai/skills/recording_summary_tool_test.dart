@@ -6,7 +6,11 @@ import 'package:lotti/features/ai/skills/entry_summary_tool.dart';
 import 'package:lotti/features/ai/skills/recording_summary_tool.dart';
 import 'package:lotti/features/ai/skills/transcript_name_correction_tool.dart';
 import 'package:lotti/features/speech_dictionary/domain/speech_dictionary_terms.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
+
+import '../../../mocks/mocks.dart';
+import '../../speech_dictionary/test_people.dart';
 
 ChatCompletionMessageToolCall _call(
   Object arguments, {
@@ -242,6 +246,67 @@ void main() {
 
       expect(result.text, 'Then Wanja called.');
       expect(result.applied, [(from: 'Vanja', to: 'Wanja')]);
+    });
+  });
+
+  group('withCategoryPeople', () {
+    final kubernetes = SpeechDictionaryEntry(
+      id: 'entry-kubernetes',
+      createdAt: DateTime(2026),
+      updatedAt: DateTime(2026),
+      term: 'Kubernetes',
+      vectorClock: null,
+    );
+    late MockJournalDb db;
+
+    setUp(() {
+      db = MockJournalDb();
+      when(db.getRelationships).thenAnswer(
+        (_) async => [
+          testPerson('pip', 'Commander Pip Frostbeak', nickname: 'Pip'),
+          testPerson('rockhop', 'Captain Rockhop', categoryId: 'other'),
+          testPerson('kube', 'Kubernetes'),
+        ],
+      );
+    });
+
+    test('leads the entries with the names of the people filed in the '
+        'category, keeping an entry a name already has', () async {
+      final merged = await withCategoryPeople(
+        [kubernetes],
+        journalDb: db,
+        categoryId: 'penguin-operations',
+      );
+
+      expect(merged.map((e) => e.term), [
+        'Commander Pip Frostbeak',
+        'Pip',
+        'Kubernetes',
+      ]);
+      expect(merged.last, same(kubernetes));
+    });
+
+    test('adds nothing, and reads nobody, without a category', () async {
+      final merged = await withCategoryPeople(
+        [kubernetes],
+        journalDb: db,
+        categoryId: null,
+      );
+
+      expect(merged, [kubernetes]);
+      verifyNever(db.getRelationships);
+    });
+
+    test('keeps the dictionary when the people cannot be read', () async {
+      when(db.getRelationships).thenThrow(StateError('db closed'));
+
+      final merged = await withCategoryPeople(
+        [kubernetes],
+        journalDb: db,
+        categoryId: 'penguin-operations',
+      );
+
+      expect(merged, [kubernetes]);
     });
   });
 }

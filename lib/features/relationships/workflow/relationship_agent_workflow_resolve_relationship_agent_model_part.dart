@@ -156,13 +156,9 @@ Future<RelationshipModelResolution?> resolveRelationshipAgentModel({
     domainLogger: domainLogger,
   );
   final setup = agentIdentity?.config.inferenceSetup;
-  // A copy of the category's profile follows the category — unless the
-  // user has since picked a thinking model on it, which is their own choice
-  // and keeps the snapshot's origin only because the override is layered on
-  // it (`updateAgentThinkingModelOverride`).
-  final followsCategory =
-      setup?.origin == AgentInferenceSetupOrigin.categorySnapshot &&
-      setup?.thinkingModelOverrideId == null;
+  // The person's category as it is NOW, not the one the setup was copied
+  // from: moving the person moves the agent.
+  final followsCategory = setup?.followsCategory ?? false;
   if (setup != null && !followsCategory) {
     final details = await profileResolver.resolveSetup(setup);
     final profile = details.profile;

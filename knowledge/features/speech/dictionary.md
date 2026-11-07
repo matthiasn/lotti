@@ -75,6 +75,21 @@ recording's category — its own, else its linked task's
 category gets only the global terms. The category filter exists so niche
 vocabulary does not "correct" unrelated transcripts.
 
+**The category's people lead the terms.** `withCategoryPeople` puts the names
+and nicknames of the people filed in the recording's category
+(`categoryPeopleNames`) ahead of its entries, on both paths that build a
+category's terms: the skill path above, and dictation and its correction
+(`AudioTranscriptionService`). The names therefore reach the request the
+route takes — Mistral's `context_bias`, the chat prompt's dictionary block
+for contextual Voxtral and other multimodal models, the vocabulary `prompt` —
+and the correction that follows a speech-to-text engine, so a family
+category's names are corrected in a Whisper transcript even when the category
+has no entries of its own. They lead because providers keep only the first
+100 terms. A private or deleted person contributes nothing, as the terms
+leave the device with the recording, and people that cannot be read add
+nothing rather than costing the dictionary. A name is never stored as an
+entry, so a correction to one is applied but not learned.
+
 ```mermaid
 stateDiagram-v2
   [*] --> Live: added, or migrated at the epoch stamp

@@ -824,15 +824,15 @@ void main() {
           meta: testRelationship.meta.copyWith(categoryId: 'people'),
         ),
       );
-      // Shaped as `RelationshipAgentService` makes it: no template, the
-      // profile in a configured setup alone.
+      // No template, and the profile the user picked in the agent's setup
+      // sheet — a copy of the category's would follow the category instead.
       final agent = makeTestIdentity(
         agentId: 'person-agent',
         config: const AgentConfig(
           profileId: 'mistral-eu',
           inferenceSetup: AgentInferenceSetup(
             mode: AgentInferenceSetupMode.configured,
-            origin: AgentInferenceSetupOrigin.categorySnapshot,
+            origin: AgentInferenceSetupOrigin.user,
             baseProfileId: 'mistral-eu',
           ),
         ),

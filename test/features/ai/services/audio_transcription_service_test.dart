@@ -25,6 +25,7 @@ import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
 import '../../ai_consumption/test_utils.dart';
+import '../../speech_dictionary/test_people.dart';
 
 // Provider IDs used across batch guard tests
 const _pMistral = 'p-mistral-guard';
@@ -1067,6 +1068,43 @@ void main() {
     );
 
     test(
+      'hints the engine with the names of the people filed in the category, '
+      'ahead of its dictionary entries',
+      () async {
+        final file = await audioFile();
+        final mockCloud = MockCloudInferenceRepository();
+        _stubGenerateWithAudio(mockCloud, ['Pip waddled in.']);
+        final db = dictionaryOf([
+          entry('Floe Survey', categoryIds: ['cat-ice']),
+        ]);
+        when(db.getRelationships).thenAnswer(
+          (_) async => [
+            testPerson('pip', 'Commander Pip Frostbeak', categoryId: 'cat-ice'),
+            testPerson('rockhop', 'Captain Rockhop', categoryId: 'cat-other'),
+          ],
+        );
+        final svc = buildService(
+          repo: sharedRepo,
+          cloud: mockCloud,
+          journalDb: db,
+        );
+
+        await svc
+            .transcribeStream(
+              file.path,
+              dictionaryCategoryId: 'cat-ice',
+              target: (provider: provider, model: model),
+            )
+            .toList();
+
+        expect(
+          _verifyGenerateWithAudio(mockCloud).speechDictionaryTerms,
+          ['Commander Pip Frostbeak', 'Floe Survey'],
+        );
+      },
+    );
+
+    test(
       'hints and corrects with the names of the categories too, before the '
       'dictionary — never a private or inactive one',
       () async {
@@ -1325,6 +1363,44 @@ void main() {
             AiInteractionKind.textGeneration,
           );
           expect(events.single.inputTokens, 30);
+        },
+      );
+
+      test(
+        'corrects a misheard name of a person in the category even when the '
+        'category has no dictionary entries',
+        () async {
+          final mockCloud = MockCloudInferenceRepository();
+          stubCorrection(mockCloud, [
+            {
+              'heard': 'Frost Peak',
+              'term': 'Frostbeak',
+              'context': 'Pip Frost Peak called',
+            },
+          ]);
+          final db = dictionaryOf(const []);
+          when(db.getRelationships).thenAnswer(
+            (_) async => [
+              testPerson(
+                'pip',
+                'Commander Pip Frostbeak',
+                categoryId: 'cat-ice',
+              ),
+            ],
+          );
+          final svc = buildService(
+            repo: sharedRepo,
+            cloud: mockCloud,
+            journalDb: db,
+          );
+
+          final corrected = await svc.correctTranscript(
+            'Commander Pip Frost Peak called.',
+            target: (provider: provider, model: editor),
+            dictionaryCategoryId: 'cat-ice',
+          );
+
+          expect(corrected, 'Commander Pip Frostbeak called.');
         },
       );
 

@@ -819,9 +819,10 @@ void main() {
             config: config,
           );
 
+      // A profile the user picked for the agent in its setup sheet.
       const configuredSetup = AgentInferenceSetup(
         mode: AgentInferenceSetupMode.configured,
-        origin: AgentInferenceSetupOrigin.categorySnapshot,
+        origin: AgentInferenceSetupOrigin.user,
         baseProfileId: 'profile-claude',
       );
 
@@ -900,6 +901,74 @@ void main() {
         expect(row('project-study').hasProjectAgent, isFalse);
         expect(row('project-study').inferenceProfileName, isNull);
       });
+
+      test(
+        "an agent that follows its category names the category's profile as "
+        'it is now, else the Settings default — never the copy it was '
+        'created with',
+        () async {
+          final followingSetup = AgentInferenceSetup(
+            mode: AgentInferenceSetupMode.configured,
+            origin: AgentInferenceSetupOrigin.categorySnapshot,
+            baseProfileId: 'profile-stale-copy',
+            originEntityId: workCategory.id,
+          );
+          AgentIdentityEntity following(String agentId, String categoryId) =>
+              projectAgent(
+                agentId,
+                AgentConfig(
+                  inferenceSetup: followingSetup.copyWith(
+                    originEntityId: categoryId,
+                  ),
+                ),
+              );
+          final snapshot = makeSnapshot();
+          final withWorkProfile = ProjectsOverviewSnapshot(
+            groups: [
+              ProjectCategoryGroup(
+                categoryId: workCategory.id,
+                category: workCategory.copyWith(
+                  defaultProfileId: 'profile-voxtral',
+                ),
+                projects: snapshot.groups.first.projects,
+              ),
+              snapshot.groups.last,
+            ],
+          );
+          stubAgents(
+            links: {
+              'project-work': [projectLink('agent-work', 'project-work')],
+              'project-study': [projectLink('agent-study', 'project-study')],
+            },
+            identities: {
+              'agent-work': following('agent-work', workCategory.id),
+              'agent-study': following('agent-study', studyCategory.id),
+            },
+          );
+          when(
+            () => mockRepo.watchProjectsOverview(query: const ProjectsQuery()),
+          ).thenAnswer((_) => Stream.value(withWorkProfile));
+          when(
+            mockAiConfigRepo.getDefaultProfileId,
+          ).thenAnswer((_) async => 'profile-default');
+          for (final (id, name) in [
+            ('profile-voxtral', 'Mistral (EU)'),
+            ('profile-default', 'Settings default'),
+          ]) {
+            when(
+              () => mockAiConfigRepo.getConfigById(id),
+            ).thenAnswer((_) async => testInferenceProfile(id: id, name: name));
+          }
+
+          final row = await loadRows(container);
+
+          expect(row('project-work').inferenceProfileName, 'Mistral (EU)');
+          expect(row('project-study').inferenceProfileName, 'Settings default');
+          verifyNever(
+            () => mockAiConfigRepo.getConfigById('profile-stale-copy'),
+          );
+        },
+      );
 
       test(
         'an agent on the legacy chain has an agent but no profile',

@@ -1,4 +1,6 @@
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/skills/entry_summary_tool.dart';
 import 'package:lotti/features/ai/skills/transcript_correction_tool.dart';
 import 'package:lotti/features/ai/skills/transcript_name_correction_tool.dart';
@@ -132,6 +134,34 @@ List<SpeechDictionaryEntry> withKnownTerms(
           vectorClock: null,
         ),
   ];
+}
+
+/// [entries] led by the names of the people filed in [categoryId]
+/// ([categoryPeopleNames]), as entries the correction can name — so a
+/// recording in a family category is heard, and corrected, with its people's
+/// names spelled as the user wrote them. Unchanged without a category.
+///
+/// The names lead because providers keep only the first terms of a hint
+/// (100 on Mistral's `context_bias` and the chat prompt's dictionary).
+/// People that cannot be read add nothing: the names improve the words and
+/// must never cost the dictionary.
+Future<List<SpeechDictionaryEntry>> withCategoryPeople(
+  List<SpeechDictionaryEntry> entries, {
+  required JournalDb journalDb,
+  required String? categoryId,
+}) async {
+  if (categoryId == null) return entries;
+  final List<RelationshipEntry> people;
+  try {
+    people = await journalDb.getRelationships();
+  } catch (_) {
+    return entries;
+  }
+  final merged = withKnownTerms(
+    entries,
+    categoryPeopleNames(people, categoryId),
+  );
+  return [...merged.skip(entries.length), ...entries];
 }
 
 /// The misheard spellings of [entries] by term, lower-cased, as

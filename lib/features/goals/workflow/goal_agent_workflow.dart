@@ -28,6 +28,7 @@ import 'package:lotti/features/agents/workflow/wake_result.dart';
 import 'package:lotti/features/agents/workflow/wake_token_usage.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
+import 'package:lotti/features/ai/helpers/profile_automation_resolver.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
@@ -135,6 +136,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
     this._alertCopy,
     this._charterReader,
     this._journalLanguageReader,
+    this._categoryProfileLookup,
     AppLocalizations Function()? messages,
   }) : _chatHistoryService =
            chatHistoryService ?? GoalChatHistoryService(_repository),
@@ -206,6 +208,10 @@ class GoalAgentWorkflow with AgentErrorLogging {
   /// the language of the user's own words, as every goal did before.
   final GoalJournalLanguageReader? _journalLanguageReader;
   final DomainLogger _domainLogger;
+
+  /// A category's current default profile, so a goal agent that follows its
+  /// category runs on what the category names today.
+  final CategoryProfileLookup? _categoryProfileLookup;
 
   @override
   DomainLogger get domainLogger => _domainLogger;
@@ -929,6 +935,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
         await ProfileResolver(
           aiConfigRepository: _aiConfigRepository,
           domainLogger: _domainLogger,
+          categoryProfileLookup: _categoryProfileLookup,
         ).resolveStandalone(
           agentConfig: agentIdentity.config,
           legacyModelId: meliousGlm52ModelId,

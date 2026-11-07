@@ -369,7 +369,10 @@ flowchart TD
 - The same `ProfileResolver.resolveDetailed` result drives both wake execution
   and the AI-summary identity header, so the two can never disagree.
 
-New agents snapshot where their setup came from (`user`, category, or template).
+New agents record where their setup came from (`user`, category, or template).
+A configured setup copied from the category follows it: every wake resolves
+the category's current profile, else the Settings default
+([agents that follow their category](../ai/profile-resolution.md#agents-that-follow-their-category)).
 Category assignment with no default profile creates an explicit **disabled**
 setup even if the selected template has a profile; the header then shows *No
 profile selected* and *Update now* stays disabled until a profile or direct

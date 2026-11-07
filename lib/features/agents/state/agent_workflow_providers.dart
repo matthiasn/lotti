@@ -17,6 +17,7 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/vector_search_repository.dart';
+import 'package:lotti/features/ai/state/profile_automation_providers.dart';
 import 'package:lotti/features/ai/state/pull_request_context_source_provider.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/notifications/repository/notification_repository.dart';
@@ -160,6 +161,7 @@ ProjectAgentWorkflow projectAgentWorkflow(Ref ref) {
       inferenceRepository: ref.watch(cloudInferenceRepositoryProvider),
     ),
     armProjectUpdate: armProjectUpdate(ref),
+    categoryProfileLookup: ref.watch(categoryProfileLookupProvider),
   );
 }
 

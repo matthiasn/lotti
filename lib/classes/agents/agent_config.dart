@@ -94,14 +94,18 @@ extension AgentConfigAssignedProfile on AgentConfig {
   /// it has none.
   ///
   /// A typed [inferenceSetup] is authoritative: a disabled setup runs no
-  /// inference, so any profile it still carries is not assigned. A null setup
-  /// preserves the legacy chain, where the agent's own [profileId] is the only
-  /// explicit choice — template and model fallbacks are not assignments.
+  /// inference, so any profile it still carries is not assigned, and a setup
+  /// that follows its category ([AgentInferenceSetupFollowsCategory]) carries
+  /// only a copy of what the category named once — the category's profile as
+  /// it is now is what applies. A null setup preserves the legacy chain, where
+  /// the agent's own [profileId] is the only explicit choice — template and
+  /// model fallbacks are not assignments.
   String? get assignedProfileId {
     final setup = inferenceSetup;
     final assigned = setup == null
         ? profileId
-        : setup.mode == AgentInferenceSetupMode.disabled
+        : setup.mode == AgentInferenceSetupMode.disabled ||
+              setup.followsCategory
         ? null
         : setup.baseProfileId;
     return assigned == null || assigned.isEmpty ? null : assigned;
@@ -131,6 +135,22 @@ abstract class AgentInferenceSetup with _$AgentInferenceSetup {
 
   factory AgentInferenceSetup.fromJson(Map<String, dynamic> json) =>
       _$AgentInferenceSetupFromJson(json);
+}
+
+extension AgentInferenceSetupFollowsCategory on AgentInferenceSetup {
+  /// Whether this setup inherits its category's profile at every run instead
+  /// of keeping the one it was created with.
+  ///
+  /// A setup copied from the category — at creation, or by *Use category
+  /// default* — is not a choice the user made for this agent, so it must not
+  /// pin the agent to whatever the category named that day: changing the
+  /// category's profile, or the Settings default it falls back to, moves the
+  /// agent on its next run. A thinking model picked by hand is the user's
+  /// own choice and keeps the setup as it is; a setup the user picked in the
+  /// setup sheet (`user` origin) never follows.
+  bool get followsCategory =>
+      origin == AgentInferenceSetupOrigin.categorySnapshot &&
+      thinkingModelOverrideId == null;
 }
 
 /// Named slots that an agent uses to track its active work items.

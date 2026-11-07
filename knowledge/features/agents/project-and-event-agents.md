@@ -140,9 +140,11 @@ expensive and useless.
 ## Inference profile at creation
 
 A project agent is created with the profile it is handed, and a handed profile
-is stored as a **typed, authoritative** `AgentInferenceSetup` (`configured`,
-`baseProfileId` = that profile). Typed setups never fall through to template or
-legacy defaults, so the agent runs on exactly that profile.
+is stored as a typed `AgentInferenceSetup` (`configured`, `baseProfileId` =
+that profile). Typed setups never fall through to template or legacy defaults.
+One the user picked is authoritative; one copied from the category follows it
+— each wake resolves the category's current profile, else the Settings
+default ([agents that follow their category](../ai/profile-resolution.md#agents-that-follow-their-category)).
 
 - **New project** (`ProjectCreateForm`): the category's `defaultProfileId`,
   with `setupOrigin: categorySnapshot` and the category id as origin entity —

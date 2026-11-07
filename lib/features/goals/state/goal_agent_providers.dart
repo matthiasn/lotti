@@ -15,7 +15,6 @@ import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
-import 'package:lotti/features/agents/service/category_snapshot_setup.dart';
 import 'package:lotti/features/agents/service/change_set_confirmation_service.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/agent_runtime_registry.dart';
@@ -25,6 +24,7 @@ import 'package:lotti/features/agents/workflow/wake_result.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
+import 'package:lotti/features/ai/state/profile_automation_providers.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_reader.dart';
 import 'package:lotti/features/goals/logic/goal_briefing_language.dart';
 import 'package:lotti/features/goals/logic/goal_charter.dart';
@@ -258,6 +258,7 @@ final goalAgentWorkflowProvider = Provider<GoalAgentWorkflow>(
     criterionNameReader: ref.watch(goalCriterionNameReaderProvider),
     charterReader: ref.watch(goalCharterReaderProvider),
     journalLanguageReader: ref.watch(goalJournalLanguageReaderProvider),
+    categoryProfileLookup: ref.watch(categoryProfileLookupProvider),
     domainLogger: ref.watch(domainLoggerProvider),
     alertCopy: AgentAlertCopy.fromFlags(
       alerts: ref.watch(goalOffTrackAlertServiceProvider),

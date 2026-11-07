@@ -96,6 +96,7 @@ extension TaskAgentExecute on TaskAgentWorkflow {
     final profileResolver = ProfileResolver(
       aiConfigRepository: this.aiConfigRepository,
       domainLogger: domainLogger,
+      categoryProfileLookup: categoryDefaultProfileLookup(journalDb),
     );
     final resolvedSetup = await profileResolver.resolveDetailed(
       agentConfig: agentIdentity.config,

@@ -35,6 +35,7 @@ import 'package:lotti/features/agents/workflow/wake_result.dart';
 import 'package:lotti/features/agents/workflow/wake_token_usage.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
+import 'package:lotti/features/ai/helpers/profile_automation_resolver.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_wrapper.dart';
@@ -71,6 +72,7 @@ class ProjectAgentWorkflow with AgentErrorLogging {
     this.inputCaptureService,
     this.logSummarizer,
     this.armProjectUpdate,
+    this.categoryProfileLookup,
     this.compactionTailBudgetTokens = 50000,
     this.compactionTailRetainTokens = 20000,
   });
@@ -96,6 +98,10 @@ class ProjectAgentWorkflow with AgentErrorLogging {
 
   /// LLM edge for compaction folds (ADR 0017).
   final AgentLogLlmSummarizer? logSummarizer;
+
+  /// A category's current default profile, so an agent that follows its
+  /// category runs on what the category names today.
+  final CategoryProfileLookup? categoryProfileLookup;
 
   /// Arms the agent's next update slot when its report is still stale and
   /// automatic updates are on (`ProjectUpdateCadence.arm`). Called after a

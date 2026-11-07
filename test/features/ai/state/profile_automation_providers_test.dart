@@ -92,6 +92,33 @@ void main() {
     );
 
     test(
+      "categoryProfileLookupProvider reads the category's profile at each "
+      'call, so a change to the category is seen by the next run',
+      () async {
+        final mockDb = MockJournalDb();
+        var category = categoryMindfulness.copyWith(defaultProfileId: 'first');
+        when(
+          () => mockDb.getCategoryById(categoryMindfulness.id),
+        ).thenAnswer((_) async => category);
+        when(() => mockDb.getCategoryById('missing')).thenAnswer(
+          (_) async => null,
+        );
+        final scoped = ProviderContainer(
+          overrides: withServiceOverrides([
+            journalDbProvider.overrideWithValue(mockDb),
+          ]),
+        );
+        addTearDown(scoped.dispose);
+        final lookup = scoped.read(categoryProfileLookupProvider);
+
+        expect(await lookup(categoryMindfulness.id), 'first');
+        category = category.copyWith(defaultProfileId: 'second');
+        expect(await lookup(categoryMindfulness.id), 'second');
+        expect(await lookup('missing'), isNull);
+      },
+    );
+
+    test(
       'profileAutomationServiceProvider reports no automation when nothing '
       'is configured',
       () async {

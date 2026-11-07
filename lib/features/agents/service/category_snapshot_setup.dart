@@ -1,14 +1,14 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/agents/agent_config.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/features/ai/helpers/profile_automation_resolver.dart';
-import 'package:lotti/providers/service_providers.dart';
 
 /// The inference setup a subject's agent — a person's or a goal's — starts
-/// with: the profile its category names *at the time*, snapshotted the way a
-/// task's agent takes its category default (`assignCategoryDefaultTaskAgent`),
-/// so the user can change it afterwards in the agent's setup sheet and a later
-/// change to the category's default does not move it under them.
+/// with: a `categorySnapshot` of the profile its category names, as a task's
+/// agent takes its category default (`assignCategoryDefaultTaskAgent`). The
+/// copy only records where the agent came from — such a setup follows its
+/// category (`AgentInferenceSetup.followsCategory`), so a later change to the
+/// category's profile moves the agent on its next run, until the user picks
+/// a profile or a model for it in the setup sheet.
 ///
 /// Null when there is no category or the category names no profile. Unlike a
 /// task's, such an agent is not created switched off: it keeps its kind's
@@ -28,19 +28,3 @@ Future<AgentInferenceSetup?> categorySnapshotSetup({
     originEntityId: categoryId,
   );
 }
-
-/// A category's default profile, read from the journal's category row — the
-/// read a subject's agent snapshots at creation and the automation resolver
-/// uses for a recording's transcript, so the two agree on what a category
-/// names.
-final categoryProfileLookupProvider = Provider<CategoryProfileLookup>(
-  (ref) => (categoryId) async {
-    final category = await ref
-        .read(journalDbProvider)
-        .getCategoryById(
-          categoryId,
-        );
-    return category?.defaultProfileId;
-  },
-  name: 'categoryProfileLookupProvider',
-);

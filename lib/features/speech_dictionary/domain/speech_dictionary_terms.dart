@@ -1,4 +1,5 @@
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:uuid/uuid.dart';
 
 /// Maximum length of one dictionary term, enforced where a term is typed and
@@ -56,6 +57,29 @@ extension SpeechDictionaryEntryScope on SpeechDictionaryEntry {
       (appliesToAllCategories ||
           (categoryId != null && categoryIds!.contains(categoryId)));
 }
+
+/// The names and nicknames of the people filed in [categoryId] — the names
+/// a recording in that category most likely contains, and that no engine
+/// knows how to spell. [exceptId] leaves one person out (the caller lists
+/// them first itself).
+///
+/// A deleted or private person contributes nothing: these terms leave the
+/// device with the recording as a hint, and one recording must not carry a
+/// private person's name to the provider.
+List<String> categoryPeopleNames(
+  Iterable<RelationshipEntry> people,
+  String categoryId, {
+  String? exceptId,
+}) => [
+  for (final person in people)
+    if (person.id != exceptId &&
+        person.meta.categoryId == categoryId &&
+        person.meta.deletedAt == null &&
+        !(person.meta.private ?? false)) ...[
+      person.data.title,
+      ?person.data.nickname,
+    ],
+];
 
 /// The live entries that reach a recording in [categoryId], in the order
 /// given.

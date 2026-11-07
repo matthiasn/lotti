@@ -262,10 +262,12 @@ while the profile switch below is on — identities and one cached read per
 distinct profile), then stored on each
 `ProjectListItemData`. Rows therefore render a stable subtitle without one
 provider/query chain per card, and local search matches the same one-liner text
-that the list displays. The assigned profile follows
-`AgentConfig.assignedProfileId`: a typed setup's base profile, nothing for a
-disabled setup, the legacy `profileId` otherwise; template and model fallbacks
-are not assignments. The filter sheet's *Show inference profile* switch
+that the list displays. The named profile is the one the agent
+runs on: `AgentConfig.assignedProfileId` (a profile the user gave it, nothing
+for a disabled setup, the legacy `profileId` otherwise; template and model
+fallbacks are not assignments), and for an agent that follows its category the
+profile the row's category names now — read from the snapshot's
+`CategoryDefinition` — else the Settings default. The filter sheet's *Show inference profile* switch
 (`ProjectsFilter.showInferenceProfile`, off by default and kept by
 `resetToCurrent`) puts it on each row as a tag — the profile name, a muted
 *No inference profile* for an agent without one, or a warning *Inference

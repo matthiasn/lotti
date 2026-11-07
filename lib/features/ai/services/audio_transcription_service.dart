@@ -80,16 +80,23 @@ class AudioTranscriptionService {
       ? getIt<AiInteractionCapture>()
       : null;
 
-  /// The speech dictionary entries that reach [categoryId] — with none, the
-  /// entries that apply to every category. Empty when the dictionary cannot
-  /// be read: it improves the words, and must never cost them.
+  /// The speech dictionary entries that reach [categoryId], led by the
+  /// names of the people filed there ([withCategoryPeople]) — with no
+  /// category, the entries that apply to every category. Empty when the
+  /// dictionary cannot be read: it improves the words, and must never cost
+  /// them.
   Future<List<SpeechDictionaryEntry>> _dictionaryEntries(
     String? categoryId,
   ) async {
     try {
-      return entriesForCategory(
-        await ref.read(journalDbProvider).getAllSpeechDictionaryEntries(),
-        categoryId,
+      final db = ref.read(journalDbProvider);
+      return await withCategoryPeople(
+        entriesForCategory(
+          await db.getAllSpeechDictionaryEntries(),
+          categoryId,
+        ),
+        journalDb: db,
+        categoryId: categoryId,
       );
     } catch (_) {
       return const [];

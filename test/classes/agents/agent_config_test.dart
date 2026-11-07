@@ -293,6 +293,31 @@ void main() {
       expect(config.assignedProfileId, isNull);
     });
 
+    test("a copy of the category's profile is inherited, not assigned — "
+        'until the user picks a thinking model on it', () {
+      const copied = AgentInferenceSetup(
+        mode: AgentInferenceSetupMode.configured,
+        origin: AgentInferenceSetupOrigin.categorySnapshot,
+        baseProfileId: 'category-copy',
+        originEntityId: 'family',
+      );
+      expect(copied.followsCategory, isTrue);
+      expect(
+        const AgentConfig(
+          profileId: 'category-copy',
+          inferenceSetup: copied,
+        ).assignedProfileId,
+        isNull,
+      );
+
+      final overridden = copied.copyWith(thinkingModelOverrideId: 'model');
+      expect(overridden.followsCategory, isFalse);
+      expect(
+        AgentConfig(inferenceSetup: overridden).assignedProfileId,
+        'category-copy',
+      );
+    });
+
     test('without a setup the legacy profileId is the assignment', () {
       expect(
         const AgentConfig(profileId: 'legacy').assignedProfileId,

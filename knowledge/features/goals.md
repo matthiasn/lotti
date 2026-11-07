@@ -2182,10 +2182,13 @@ overwrites a pick, and a changed category with no goal row to move fails the
 save rather than reporting success. On create,
 `GoalAgentService.createGoalAgent(categoryId:)` mirrors the goal row into it —
 so every check-in recorded against the goal takes it
-(`goalCategoryIdProvider` feeds both composers) — and snapshots the profile
+(`goalCategoryIdProvider` feeds both composers) — and writes the profile
 the category names into the agent's setup (`categorySnapshotSetup`, origin
-`categorySnapshot`), as a task's agent takes its category default; a category
-naming no profile leaves the agent on its standalone resolution, running. On
+`categorySnapshot`), as a task's agent takes its category default. That setup
+follows the category: every run resolves what the category names then, else
+the Settings default ([agents that follow their category](ai/profile-resolution.md#agents-that-follow-their-category)).
+A category naming no profile leaves the agent on its standalone resolution,
+running. On
 edit, a changed category goes through `EntryCategoryMove`, which takes the goal
 row, everything linked from it and its charter (linked *into* the goal) along,
 across a crash, and never a task it links to. The agent internals panel opened
