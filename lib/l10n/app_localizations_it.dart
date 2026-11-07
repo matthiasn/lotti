@@ -7402,13 +7402,13 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
-  String get frontStageHoldToTalk => 'Tieni premuto per parlare';
-
-  @override
   String get frontStageReleaseToCancel => 'Rilascia per annullare';
 
   @override
   String get frontStageReleaseToSend => 'Rilascia per inviare';
+
+  @override
+  String get frontStageTalkHint => 'Tocca o tieni premuto per parlare';
 
   @override
   String get frontStageTapToSend => 'Tocca per inviare';

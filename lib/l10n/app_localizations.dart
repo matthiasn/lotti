@@ -12479,12 +12479,6 @@ abstract class AppLocalizations {
   /// **'Asking {owner}…'**
   String frontDoorWalking(String owner);
 
-  /// Caption under the talk button on the companion's full-screen stage: press and hold to speak to her.
-  ///
-  /// In en, this message translates to:
-  /// **'Hold to talk'**
-  String get frontStageHoldToTalk;
-
   /// Caption under the talk button while a held finger has slid off it: letting go discards what was said.
   ///
   /// In en, this message translates to:
@@ -12496,6 +12490,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Release to send'**
   String get frontStageReleaseToSend;
+
+  /// Caption under the talk button on the companion's full-screen stage: tap it to talk hands free, or press and hold it and let go to send.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap or hold to talk'**
+  String get frontStageTalkHint;
 
   /// Caption under the talk button on the companion's stage while she listens hands free: the next tap sends.
   ///

@@ -688,6 +688,8 @@ void main() {
       find.byType(DesignSystemContextMenu),
     );
     expect(menu.surfaceColor, dsCardSurface(menuContext));
+    // It says which chat it acts on, above Delete.
+    expect(menu.header, 'Plan the census');
     expect(
       [
         for (final item in menu.items)

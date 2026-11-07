@@ -641,7 +641,9 @@ The ⋯ is `FrontMenuButton`, on the menu every agent page opens
 (`AgentSurfaceMenuButton`): rounded, raised on the card surface over the
 shared modal scrim, placed inside the window's safe area, closed without
 acting by a tap on the scrim or Escape — never a bare popover over the rows.
-Delete is set off in a group of its own at the bottom. Archived
+Delete is set off in a group of its own at the bottom, and a row's menu
+names its chat in a quiet heading above the rows, so it is plain which one
+Delete deletes. Archived
 ones fold away at the end; a search looks through them too.
 
 # The chat surface
@@ -907,7 +909,10 @@ offers a way to answer her, in a band of its own below her figure (the
 stage page lays her out above its `controls`, on her stage's floor colour,
 so nothing is drawn on her). One teal disc (`spacing.step10` across) is the
 stage's one control to talk with, in every state, its caption saying what it
-does; `FrontVoiceButton` stands beside it once there is an answer to say
+does — at rest *Tap or hold to talk*, teaching both ways; an instruction for
+the moment (*Release to send*, *Tap to send*) at full strength, the hint and
+the waits quieter; the disc keeps its full teal while held, and a ring shows
+when it has the keyboard; `FrontVoiceButton` stands beside it once there is an answer to say
 again. Pressing the disc starts the shared recorder on the Settings
 default's transcription slot, the same ears as the conversation's composer.
 Held past `kLongPressTimeout` — counted only once the recorder is really
@@ -923,8 +928,8 @@ it go; the band keeps the pill's height whether it shows or not, so nothing
 moves under a finger. While the words are written down, and while her answer
 is on its way (a send in flight or a spoken reply owed), the disc is a quiet
 spinner captioned *Transcribing…* or her *Finding who knows…*, and presses do
-nothing. A press the system takes away (a pointer cancel) lets what it
-started go unsent. The stage sends nothing itself: the conversation's
+nothing. A press the system takes away (a pointer cancel) carries on hands
+free, so nothing said is lost to it. The stage sends nothing itself: the conversation's
 `AgentChatView`, which the stage only covers, receives the transcript from
 the shared recorder and sends it as a spoken turn, so her answer is spoken
 on the stage.
@@ -941,7 +946,7 @@ stateDiagram-v2
     Cancelling --> Held: back on the disc
     Held --> Transcribing: released (stopAndTranscribe)
     Cancelling --> Idle: released (cancelled)
-    Held --> Idle: pointer cancelled (cancelled)
+    Held --> HandsFree: pointer cancelled by the system
     HandsFree --> Transcribing: a tap on the disc, Space or Enter
     HandsFree --> Idle: the pill's × or Escape (cancelled)
     Transcribing --> Waiting: transcript sent as a spoken turn

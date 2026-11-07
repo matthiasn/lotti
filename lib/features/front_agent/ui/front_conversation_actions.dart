@@ -146,9 +146,17 @@ class FrontConversationActions {
 /// rounded, raised off the page behind the shared scrim, which a tap or
 /// Escape dismisses — on the list's rows and in her header alike.
 class FrontMenuButton extends StatelessWidget {
-  const FrontMenuButton({required this.items, this.iconColor, super.key});
+  const FrontMenuButton({
+    required this.items,
+    this.iconColor,
+    this.header,
+    super.key,
+  });
 
   final List<DesignSystemContextMenuItem> items;
+
+  /// What the rows act on, above them: a list row's chat.
+  final String? header;
 
   /// The glyph's ink; low emphasis when null.
   final Color? iconColor;
@@ -160,6 +168,7 @@ class FrontMenuButton extends StatelessWidget {
     return AgentSurfaceMenuButton(
       items: items,
       semanticsLabel: label,
+      header: header,
       triggerBuilder: (context, open) => SizedBox.square(
         dimension: DesignSystemContextMenuButton.extent(tokens),
         child: IconButton(

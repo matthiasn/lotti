@@ -637,8 +637,11 @@ class _ConversationRowState extends State<_ConversationRow> {
         children: [
           GestureDetector(
             // The same menu its ⋯ opens, under the row pressed.
-            onLongPress: () =>
-                showAgentSurfaceMenu(context, items: widget.menu).ignore(),
+            onLongPress: () => showAgentSurfaceMenu(
+              context,
+              items: widget.menu,
+              header: widget.conversation.title,
+            ).ignore(),
             child: row,
           ),
           // Over the row, inside its bounds, so the whole target answers:
@@ -672,6 +675,8 @@ class _ConversationRowState extends State<_ConversationRow> {
                 maintainState: true,
                 child: FrontMenuButton(
                   key: FrontConversationListKeys.menu(widget.conversation.id),
+                  // Which chat Delete deletes, said above it.
+                  header: widget.conversation.title,
                   // Quiet on every row but the open one, so the rail of
                   // menus a touch screen shows does not read as a column.
                   iconColor: widget.selected

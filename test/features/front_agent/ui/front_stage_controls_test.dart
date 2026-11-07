@@ -168,7 +168,7 @@ void main() {
   testWidgets('held, she listens on the Settings default ears, and letting '
       'go sends what was said', (tester) async {
     await pump(tester);
-    expect(caption(tester), 'Hold to talk');
+    expect(caption(tester), 'Tap or hold to talk');
     // Nothing said yet: nothing to say again.
     expect(find.byKey(FrontVoiceControlKeys.replay), findsNothing);
 
@@ -222,7 +222,7 @@ void main() {
 
     expect(recorder.cancels, 1);
     expect(recorder.stops, 0);
-    expect(caption(tester), 'Hold to talk');
+    expect(caption(tester), 'Tap or hold to talk');
   });
 
   testWidgets('a hold dragged off the disc turns to cancel, and letting go '
@@ -257,7 +257,7 @@ void main() {
       tester.getCenter(find.byKey(FrontStageControlKeys.talk)),
     );
     await tester.pump(kLongPressTimeout);
-    expect(caption(tester), 'Hold to talk');
+    expect(caption(tester), 'Tap or hold to talk');
 
     await finger.up();
     await tester.pump();
@@ -296,9 +296,8 @@ void main() {
     });
   }
 
-  testWidgets('a hold taken away by the system is let go unsent', (
-    tester,
-  ) async {
+  testWidgets('a hold the system takes away carries on hands free: nothing '
+      'said is lost to it, and nothing is sent', (tester) async {
     await pump(tester);
 
     final finger = await tester.startGesture(
@@ -308,9 +307,9 @@ void main() {
     await finger.cancel();
     await tester.pump();
 
-    expect(recorder.cancels, 1);
+    expect(recorder.cancels, 0);
     expect(recorder.stops, 0);
-    expect(caption(tester), 'Hold to talk');
+    expect(caption(tester), 'Tap to send');
   });
 
   testWidgets('a screen reader, which taps, starts her listening hands free', (
@@ -320,7 +319,7 @@ void main() {
     await pump(tester);
 
     // One node says it, the disc's: the caption is not read twice.
-    tester.semantics.tap(find.semantics.byLabel('Hold to talk'));
+    tester.semantics.tap(find.semantics.byLabel('Tap or hold to talk'));
     await tester.pump();
 
     expect(recorder.targets, hasLength(1));
@@ -354,6 +353,6 @@ void main() {
     }
 
     expect(find.byKey(FrontStageControlKeys.talk), findsOneWidget);
-    expect(caption(tester), 'Hold to talk');
+    expect(caption(tester), 'Tap or hold to talk');
   });
 }

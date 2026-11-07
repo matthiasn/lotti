@@ -4537,10 +4537,6 @@
       }
     }
   },
-  "frontStageHoldToTalk": "Hold to talk",
-  "@frontStageHoldToTalk": {
-    "description": "Caption under the talk button on the companion's full-screen stage: press and hold to speak to her."
-  },
   "frontStageReleaseToCancel": "Release to cancel",
   "@frontStageReleaseToCancel": {
     "description": "Caption under the talk button while a held finger has slid off it: letting go discards what was said."
@@ -4548,6 +4544,10 @@
   "frontStageReleaseToSend": "Release to send",
   "@frontStageReleaseToSend": {
     "description": "Caption under the talk button while it is held: letting go sends what was said."
+  },
+  "frontStageTalkHint": "Tap or hold to talk",
+  "@frontStageTalkHint": {
+    "description": "Caption under the talk button on the companion's full-screen stage: tap it to talk hands free, or press and hold it and let go to send."
   },
   "frontStageTapToSend": "Tap to send",
   "@frontStageTapToSend": {

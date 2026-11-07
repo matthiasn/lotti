@@ -7437,13 +7437,13 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get frontStageHoldToTalk => 'Țineți apăsat pentru a vorbi';
-
-  @override
   String get frontStageReleaseToCancel => 'Eliberați pentru a anula';
 
   @override
   String get frontStageReleaseToSend => 'Eliberați pentru a trimite';
+
+  @override
+  String get frontStageTalkHint => 'Atingeți sau țineți apăsat pentru a vorbi';
 
   @override
   String get frontStageTapToSend => 'Atingeți pentru a trimite';

@@ -86,13 +86,14 @@ starts: × cancel (Escape too) leads, then a red recording dot, the elapsed
 `m:ss` in tabular `bodySmall`, the voice as `WaveformBarsPainter` bars in
 quiet ink (`text.mediumEmphasis`), and at the end the teal control that ends
 it — the send arrow when stopping sends (`voiceFirst`), a stop square when it
-only transcribes into the field. The teal edge is the field's focused one,
-there only while listening. Transcribing, the time and bars give way to
+only transcribes into the field. Its edge is the field's resting one: teal is
+for what to do, and the red dot already says the microphone is on.
+Transcribing, the time and bars give way to
 *Transcribing…* and a quiet spinner takes the end control's place; Cancel
 stays in every host, so a stalled transcription always has its way out. Both
 ends are whole tap targets (`TapTargets.minimum`). A host whose own control
 ends the take (the companion's talk disc) passes `showEndControl: false`, so
-one send is on screen; the slot keeps its width. There is no per-host
+one send is on screen; the voice then runs out to the ×'s inset, mirrored. There is no per-host
 recording layout any more.
 
 Its composer and the agent improvement input widgets use

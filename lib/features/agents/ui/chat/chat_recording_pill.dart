@@ -19,18 +19,17 @@ abstract final class ChatRecordingPillKeys {
 /// The composer while the microphone is live — in every agent chat, and on
 /// the companion's stage.
 ///
-/// It is the pill the text field is, at the field's height, fill and
-/// corners, so nothing jumps as recording starts; its teal edge is the
-/// field's focused one, saying the microphone is on. Cancel (×) leads; then
+/// It is the pill the text field is, at the field's height, fill,
+/// corners and edge, so nothing jumps as recording starts. Cancel (×) leads; then
 /// the elapsed time behind a recording dot and the voice scrolling across
 /// as bars, newest at the right; at the end the round control that ends it
 /// — the send arrow when stopping sends what was said ([sendsOnStop]), a
 /// stop square when it only transcribes into the field.
 ///
 /// While [processing] (transcribing) the time and bars give way to
-/// *Transcribing…* and a quiet spinner takes the end control's place; the
-/// teal edge, which says the microphone is on, goes, and cancel stays, so a
-/// stalled turn always has its way out. Escape cancels too.
+/// *Transcribing…* and a quiet spinner takes the end control's place;
+/// cancel stays, so a stalled turn always has its way out. Escape cancels
+/// too.
 ///
 /// Teal is for what to do (the end control), red for live (the dot), and
 /// the voice itself is quiet ink, so the send stays the one thing that
@@ -61,7 +60,7 @@ class ChatRecordingPill extends StatelessWidget {
 
   /// Whether the pill carries the control that ends it. A host whose own
   /// control ends it — the companion's talk disc — leaves it out, so there
-  /// is one send on screen; the slot keeps its width either way.
+  /// is one send on screen; the voice then runs to the ×'s inset, mirrored.
   final bool showEndControl;
 
   /// `m:ss`, the way a voice note's length reads.
@@ -82,7 +81,9 @@ class ChatRecordingPill extends StatelessWidget {
     );
 
     final Widget end = !showEndControl
-        ? SizedBox.square(dimension: height)
+        // With the gap before it, the ×'s own inset mirrored: the voice
+        // runs out evenly.
+        ? SizedBox(width: tokens.spacing.step3)
         : processing
         ? SizedBox.square(
             dimension: height,
@@ -147,10 +148,9 @@ class ChatRecordingPill extends StatelessWidget {
             foregroundDecoration: BoxDecoration(
               borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
               border: Border.all(
-                color: designSystemFieldBorderColor(
-                  tokens,
-                  focused: !processing,
-                ),
+                // The field's own edge: teal is for what to do, and the
+                // red dot already says the microphone is on.
+                color: designSystemFieldBorderColor(tokens),
               ),
             ),
             child: Row(

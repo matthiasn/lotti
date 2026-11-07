@@ -7428,13 +7428,13 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get frontStageHoldToTalk => 'Maintiens pour parler';
-
-  @override
   String get frontStageReleaseToCancel => 'Relâche pour annuler';
 
   @override
   String get frontStageReleaseToSend => 'Relâche pour envoyer';
+
+  @override
+  String get frontStageTalkHint => 'Touche ou maintiens pour parler';
 
   @override
   String get frontStageTapToSend => 'Touche pour envoyer';

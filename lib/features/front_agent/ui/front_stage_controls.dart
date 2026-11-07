@@ -25,12 +25,14 @@ abstract final class FrontStageControlKeys {
 /// latest answer said again — so the stage is never only a figure to look
 /// at, whatever has been said so far.
 ///
-/// One disc is the stage's one control to talk with, in every state. Held,
-/// she listens, and letting go sends what was said; dragged off before
-/// letting go, it turns to a red ×, and letting go lets it go unsent. A
-/// quick tap — and a screen reader's tap, Space or Enter — starts her
-/// listening hands free, and the disc, now the send arrow, sends on the
-/// next tap. While she listens, the chats' own recording pill
+/// One disc is the stage's one control to talk with, in every state, its
+/// caption teaching both ways: *Tap or hold to talk*. Held, she listens,
+/// and letting go sends what was said; dragged off before letting go, it
+/// turns to a red ×, and letting go lets it go unsent. A quick tap — and a
+/// screen reader's tap, Space or Enter — starts her listening hands free,
+/// and the disc, now the send arrow, sends on the next tap; a hold the
+/// system takes away (a pointer cancel) carries on hands free, so nothing
+/// said is lost to it. While she listens, the chats' own recording pill
 /// ([ChatRecordingPill], without its own send) shows the time and the voice
 /// above the disc, × letting it go; while the words are written down and
 /// while she answers, the disc waits. The band keeps its height in every
@@ -65,6 +67,9 @@ class _FrontStageControlsState extends ConsumerState<FrontStageControls> {
 
   /// Dragged off the disc: letting go sends nothing.
   bool _off = false;
+
+  /// The disc has the keyboard: its ring shows it.
+  bool _focused = false;
 
   /// The disc's square with the room a finger may stray before it counts as
   /// gone — set by the build, read by the pointer handlers.
@@ -149,15 +154,10 @@ class _FrontStageControlsState extends ConsumerState<FrontStageControls> {
     if (held || !fromIdle) _send();
   }
 
-  /// The press was taken away — a scroll, a system gesture: what a press
-  /// started goes unsent; hands free, she listens on.
-  void _cancel(PointerCancelEvent _) {
-    final fromIdle = _fromIdle;
-    _release();
-    if (fromIdle && _status == ChatRecorderStatus.recording) {
-      _recorder.cancel().ignore();
-    }
-  }
+  /// The press was taken away — a scroll, a system gesture: she listens on,
+  /// hands free, so nothing said is lost to it; the disc sends or the pill's
+  /// × lets it go.
+  void _cancel(PointerCancelEvent _) => _release();
 
   void _release() {
     _holdTimer?.cancel();
@@ -200,12 +200,15 @@ class _FrontStageControlsState extends ConsumerState<FrontStageControls> {
       _ when cancelling => messages.frontStageReleaseToCancel,
       _ when listening && _held => messages.frontStageReleaseToSend,
       _ when listening && !_fromIdle => messages.frontStageTapToSend,
-      _ => messages.frontStageHoldToTalk,
+      _ => messages.frontStageTalkHint,
     };
+    // An instruction for the moment — what letting go, or the next tap,
+    // does — reads at full strength; the hint and the waits stay quiet.
+    final instructs = cancelling || sends;
+    // The held primary keeps its full teal: a press never washes it out.
     final fill = switch (()) {
       _ when waiting => tokens.colors.surface.enabled,
       _ when cancelling => tokens.colors.alert.error.defaultColor,
-      _ when _pressing => tokens.colors.interactive.pressed,
       _ => tokens.colors.interactive.enabled,
     };
     final glyph = waiting
@@ -231,6 +234,7 @@ class _FrontStageControlsState extends ConsumerState<FrontStageControls> {
       onTap: waiting ? null : _tap,
       child: ExcludeSemantics(
         child: Focus(
+          onFocusChange: (focused) => setState(() => _focused = focused),
           onKeyEvent: (node, event) {
             final key = event.logicalKey;
             if (event is! KeyDownEvent ||
@@ -248,7 +252,16 @@ class _FrontStageControlsState extends ConsumerState<FrontStageControls> {
             onPointerUp: _up,
             onPointerCancel: _cancel,
             child: DecoratedBox(
-              decoration: BoxDecoration(color: fill, shape: BoxShape.circle),
+              decoration: BoxDecoration(
+                color: fill,
+                shape: BoxShape.circle,
+                border: _focused
+                    ? Border.all(
+                        color: tokens.colors.text.highEmphasis,
+                        width: BorderWidths.emphasis,
+                      )
+                    : null,
+              ),
               child: SizedBox.square(
                 dimension: disc,
                 child: Center(child: glyph),
@@ -315,6 +328,8 @@ class _FrontStageControlsState extends ConsumerState<FrontStageControls> {
               style: tokens.typography.styles.body.bodySmall.copyWith(
                 color: cancelling
                     ? tokens.colors.alert.error.ink
+                    : instructs
+                    ? tokens.colors.text.highEmphasis
                     : tokens.colors.text.mediumEmphasis,
               ),
             ),
