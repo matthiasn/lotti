@@ -960,6 +960,35 @@ void main() {
       expect(result.profile?.profileId, 'current');
     });
 
+    test('a setup written for a category that named no profile follows it '
+        'too: the Settings default, then the category once it names one, and '
+        'the default alone without a category', () async {
+      const bare = AgentInferenceSetup(
+        mode: AgentInferenceSetupMode.configured,
+        origin: AgentInferenceSetupOrigin.categorySnapshot,
+        originEntityId: 'family',
+      );
+      categoryProfiles['family'] = null;
+      expect(
+        (await following.resolveSetup(bare)).profile?.profileId,
+        'settings-default',
+      );
+
+      categoryProfiles['family'] = 'current';
+      expect(
+        (await following.resolveSetup(bare)).profile?.profileId,
+        'current',
+      );
+
+      final noCategory = await following.resolveSetup(
+        const AgentInferenceSetup(
+          mode: AgentInferenceSetupMode.configured,
+          origin: AgentInferenceSetupOrigin.categorySnapshot,
+        ),
+      );
+      expect(noCategory.profile?.profileId, 'settings-default');
+    });
+
     test('without a category lookup the stored copy is used', () async {
       final result = await resolver.resolveSetup(setup());
 

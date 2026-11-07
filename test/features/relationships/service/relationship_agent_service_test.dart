@@ -218,11 +218,15 @@ void main() {
         expect(config.automaticUpdatesEnabled, isTrue);
       });
 
-      test('a category naming no profile leaves the agent running on its '
-          'live chain — never a switched-off setup', () async {
+      test('a category naming no profile gives the agent a running setup '
+          'that follows the category — never a switched-off one', () async {
         final config = await createdConfig((_) async => null);
 
-        expect(config.inferenceSetup, isNull);
+        expect(
+          config.inferenceSetup!.mode,
+          AgentInferenceSetupMode.configured,
+        );
+        expect(config.inferenceSetup!.followsCategory, isTrue);
         expect(config.profileId, isNull);
       });
     });

@@ -808,7 +808,8 @@ void main() {
       });
 
       test(
-        'missing category default is disabled even when template has a profile',
+        'a category default without a profile follows the category, running '
+        "— never switched off, never on the template's profile",
         () async {
           final template = makeTestTemplate().copyWith(
             profileId: 'template-profile',
@@ -847,24 +848,18 @@ void main() {
             setupOriginEntityId: 'category-1',
           );
 
-          expect(result.lifecycle, AgentLifecycle.dormant);
+          expect(result.lifecycle, isNot(AgentLifecycle.dormant));
           expect(
             result.config.inferenceSetup,
             const AgentInferenceSetup(
-              mode: AgentInferenceSetupMode.disabled,
+              mode: AgentInferenceSetupMode.configured,
               origin: AgentInferenceSetupOrigin.categorySnapshot,
               originEntityId: 'category-1',
             ),
           );
+          expect(result.config.inferenceSetup!.followsCategory, isTrue);
           expect(result.config.profileId, isNull);
-          verifyNever(() => mockOrchestrator.addSubscription(any()));
-          verifyNever(
-            () => mockOrchestrator.enqueueManualWake(
-              agentId: any(named: 'agentId'),
-              reason: any(named: 'reason'),
-              triggerTokens: any(named: 'triggerTokens'),
-            ),
-          );
+          verify(() => mockOrchestrator.addSubscription(any())).called(1);
         },
       );
 

@@ -736,7 +736,8 @@ void main() {
     semanticsHandle.dispose();
   });
 
-  testWidgets('category without a default persists visible no-setup state', (
+  testWidgets('copying a category without a default hands the agent back to '
+      'the category — running, never switched off', (
     tester,
   ) async {
     final saveCompleter = Completer<void>();
@@ -777,9 +778,11 @@ void main() {
               ),
             ).captured.single
             as AgentInferenceSetup;
-    expect(setup.mode, AgentInferenceSetupMode.disabled);
+    expect(setup.mode, AgentInferenceSetupMode.configured);
     expect(setup.origin, AgentInferenceSetupOrigin.categorySnapshot);
     expect(setup.originEntityId, 'category-1');
+    expect(setup.baseProfileId, isNull);
+    expect(setup.followsCategory, isTrue);
     expect(find.text('Agent setup'), findsNothing);
   });
 
