@@ -13,12 +13,14 @@ class _Host extends StatefulWidget {
     required this.onStartRecording,
     this.isSending = false,
     this.sendingLabel,
+    this.enabled = true,
   });
 
   final void Function(String draft) onSend;
   final VoidCallback onStartRecording;
   final bool isSending;
   final String? sendingLabel;
+  final bool enabled;
 
   @override
   State<_Host> createState() => _HostState();
@@ -41,6 +43,7 @@ class _HostState extends State<_Host> {
     draft: _draft,
     isSending: widget.isSending,
     sendingLabel: widget.sendingLabel,
+    enabled: widget.enabled,
     onDraftChanged: (value) => setState(() => _draft = value),
     onSend: () => widget.onSend(_draft),
     onStartRecording: widget.onStartRecording,
@@ -142,6 +145,24 @@ void main() {
     expect(find.text('Answering…'), findsOneWidget);
     expect(tester.widget<TextField>(find.byType(TextField)).enabled, isFalse);
     // No mic to tap mid-send: a recording cannot start over a reply.
+    expect(findMaterialTooltip(recordTooltip(tester)), findsNothing);
+    expect(recordings, 0);
+  });
+
+  testWidgets('a closed field takes no words and offers no mic', (
+    tester,
+  ) async {
+    var recordings = 0;
+    await pump(
+      tester,
+      _Host(
+        onSend: (_) {},
+        onStartRecording: () => recordings++,
+        enabled: false,
+      ),
+    );
+
+    expect(tester.widget<TextField>(find.byType(TextField)).enabled, isFalse);
     expect(findMaterialTooltip(recordTooltip(tester)), findsNothing);
     expect(recordings, 0);
   });

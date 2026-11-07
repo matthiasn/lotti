@@ -20,8 +20,14 @@ class DayComposerBar extends StatefulWidget {
     required this.hintText,
     required this.onStartVoice,
     required this.onSubmitText,
+    this.enabled = true,
     super.key,
   });
+
+  /// False while the host cannot yet tell whether a check-in can go
+  /// anywhere: the field shows but takes no words, so nothing typed can be
+  /// lost when the footer turns out to need setup instead.
+  final bool enabled;
 
   final String hintText;
   final VoidCallback onStartVoice;
@@ -72,6 +78,7 @@ class _DayComposerBarState extends State<DayComposerBar> {
               onDraftChanged: (value) => setState(() => _draft = value),
               onSend: _send,
               onStartRecording: widget.onStartVoice,
+              enabled: widget.enabled,
             ),
           ),
         ),

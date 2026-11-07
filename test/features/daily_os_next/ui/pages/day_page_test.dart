@@ -48,7 +48,7 @@ const Widget Function(
   List<DayActivityEntry> activityEntries,
   MediaQueryData? mediaQueryData,
   List<Override> overrides,
-  DailyOsSetupStatus setupStatus,
+  DailyOsSetupStatus? setupStatus,
   Size size,
   ThemeData? theme,
 })
@@ -484,6 +484,36 @@ void main() {
 
       await tester.tap(findMaterialTooltip(messages.chatInputRecordVoice));
       expect(checkIns, 1);
+    });
+
+    testWidgets('the composer stays closed until setup status is known', (
+      tester,
+    ) async {
+      _setSurface(tester);
+      await tester.pumpWidget(
+        _wrap(
+          DayPage(
+            draft: DraftPlan.emptyForDay(DateTime(2026, 5, 26)),
+            hasPlan: false,
+            onCheckIn: ({transcript, listen = false}) =>
+                fail('no check-in before setup status is known'),
+          ),
+          setupStatus: null,
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      // The composer holds its place, so the footer does not jump, but takes
+      // no words: they would be lost if setup turns out to be missing.
+      final messages = tester.element(find.byType(DayPage)).messages;
+      expect(find.byType(DayComposerBar), findsOneWidget);
+      final field = find.descendant(
+        of: find.byType(DayComposerBar),
+        matching: find.byType(TextField),
+      );
+      expect(tester.widget<TextField>(field).enabled, isFalse);
+      expect(findMaterialTooltip(messages.chatInputRecordVoice), findsNothing);
     });
 
     testWidgets(

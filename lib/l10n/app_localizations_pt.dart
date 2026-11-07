@@ -5137,7 +5137,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get dailyOsNextDayBack => 'Voltar';
 
   @override
-  String get dailyOsNextDayComposerCheckInHint => 'Fale ou escreva um check-in';
+  String get dailyOsNextDayComposerCheckInHint => 'Fala ou escreve um check-in';
 
   @override
   String get dailyOsNextDayDeleteDialogBody =>

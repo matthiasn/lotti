@@ -484,12 +484,18 @@ class _NoPlanFooter extends StatelessWidget {
     required this.onCheckIn,
     required this.onOpenSetup,
     required this.needsInferenceSetup,
+    required this.setupResolved,
     required this.ctaKey,
   });
 
   final DayCheckInStarter? onCheckIn;
   final VoidCallback onOpenSetup;
   final bool needsInferenceSetup;
+
+  /// Whether the Daily OS setup status has loaded. Until it has, the
+  /// composer shows closed: words typed into it would be thrown away if the
+  /// status then says setup is missing and the setup action takes its place.
+  final bool setupResolved;
 
   /// Measurement key for the onboarding spotlight to anchor to. The stable
   /// [Key] used as a test finder stays on the footer's control regardless.
@@ -504,6 +510,7 @@ class _NoPlanFooter extends StatelessWidget {
         child: DayComposerBar(
           key: const Key('daily_os_day_check_in_cta'),
           hintText: context.messages.dailyOsNextDayComposerCheckInHint,
+          enabled: setupResolved,
           onStartVoice: () => onCheckIn?.call(listen: true),
           onSubmitText: (words) => onCheckIn?.call(transcript: words),
         ),

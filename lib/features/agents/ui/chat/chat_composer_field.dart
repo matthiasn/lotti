@@ -14,7 +14,8 @@ import 'package:material_ui/material_ui.dart';
 ///
 /// [isSending] disables the field (unless [allowDraftWhileSending]) and
 /// shows [sendingLabel] under it; Enter sends when there is something to
-/// send.
+/// send. [enabled] false closes the field outright — no typing, no mic, no
+/// send — for a host that cannot take a message yet.
 class ChatComposerField extends StatelessWidget {
   const ChatComposerField({
     required this.controller,
@@ -28,10 +29,12 @@ class ChatComposerField extends StatelessWidget {
     this.sendingLabel,
     this.shape = DesignSystemTextInputShape.pill,
     this.autofocus = false,
+    this.enabled = true,
     super.key,
   });
 
   final bool autofocus;
+  final bool enabled;
   final TextEditingController controller;
   final String hintText;
   final bool isSending;
@@ -46,8 +49,8 @@ class ChatComposerField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hasText = draft.trim().isNotEmpty;
-    final canSend = hasText && !isSending;
-    final canRecord = !isSending && !hasText;
+    final canSend = enabled && hasText && !isSending;
+    final canRecord = enabled && !isSending && !hasText;
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.end,
@@ -61,7 +64,7 @@ class ChatComposerField extends StatelessWidget {
             helperText: isSending && !allowDraftWhileSending
                 ? sendingLabel
                 : null,
-            enabled: !isSending || allowDraftWhileSending,
+            enabled: enabled && (!isSending || allowDraftWhileSending),
             textCapitalization: TextCapitalization.sentences,
             emphasizeTrailingIcon:
                 hasText && shape == DesignSystemTextInputShape.pill,
