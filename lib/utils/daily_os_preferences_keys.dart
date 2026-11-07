@@ -24,7 +24,3 @@ const dailyOsExcludedCategoryIdsSettingsKey = 'DAILY_OS_EXCLUDED_CATEGORY_IDS';
 /// One-shot coachmark flag: the timeline gesture hint has been retired.
 const dailyOsTimelineGesturesLearnedSettingsKey =
     'DAILY_OS_TIMELINE_GESTURES_LEARNED';
-
-/// One-shot coachmark flag: the day footer coaching line has been retired.
-const dailyOsDayFooterHintRetiredSettingsKey =
-    'DAILY_OS_DAY_FOOTER_HINT_RETIRED';

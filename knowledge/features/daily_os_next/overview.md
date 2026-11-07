@@ -75,7 +75,7 @@ stateDiagram-v2
   Loading --> DayEmpty: no plan (timeline still shows tracked time)
   DayEmpty --> Modal: composer check-in sent (reconcile)
   DayEmpty --> Modal: onboarding spotlight (create)
-  DayPlan --> Modal: Refine CTA (adapt)
+  DayPlan --> Modal: footer composer or quick refinement (adapt)
   state Modal {
     [*] --> Capture: create intent
     [*] --> Reconcile: reconcile intent
@@ -98,8 +98,9 @@ the same provider.
 events stay visible on the Day timeline — the default projection, plan or not —
 without creating a plan first. Empty mode says so honestly — the header
 briefing reads "There's no plan for this day yet…" and the Agenda view's
-capacity strip reads "No plan yet" — swaps the with-plan footer (Refine, Commit,
-Shutdown and the quick refinements) for the `DayCheckInComposer`, and hides
+capacity strip reads "No plan yet" — swaps the with-plan footer (the "What should change?"
+composer, its quick refinements and the stage action beside it — Looks good /
+Wrap up) for the check-in `DayComposer`, and hides
 the delete-plan menu entry. **The composer is the capture.** It is the shared
 chat field (`ChatComposerField` inside `DayComposerBar`): mic while empty, send
 arrow once there are words. The mic records through `captureControllerProvider`

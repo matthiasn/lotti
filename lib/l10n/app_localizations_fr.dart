@@ -4958,11 +4958,11 @@ class AppLocalizationsFr extends AppLocalizations {
   String get dailyOsNextBlockResizeStartTooltip => 'Ajuster le début';
 
   @override
-  String get dailyOsNextBlockTaskCreatedNotLinked =>
-      'Tâche créée, mais pas liée à ce bloc.';
+  String get dailyOsNextBlockTaskCreated => 'Tâche créée.';
 
   @override
-  String get dailyOsNextBlockTaskCreated => 'Tâche créée.';
+  String get dailyOsNextBlockTaskCreatedNotLinked =>
+      'Tâche créée, mais pas liée à ce bloc.';
 
   @override
   String get dailyOsNextBlockUnlinked => 'Délié de la tâche.';
@@ -5221,13 +5221,6 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get dailyOsNextDayMoreTooltip => 'Plus';
-
-  @override
-  String get dailyOsNextDayRefineCta => 'Ajuster';
-
-  @override
-  String get dailyOsNextDayRefineFooterHint =>
-      'Parle pour réorganiser le plan — tu verras chaque changement avant qu\'il soit enregistré.';
 
   @override
   String get dailyOsNextDayTitle => 'Ta journée';
@@ -5566,9 +5559,6 @@ class AppLocalizationsFr extends AppLocalizations {
       'Ajoute un tampon réaliste entre les blocs prévus, surtout autour des transitions et après un travail exigeant.';
 
   @override
-  String get dailyOsNextReviewAdjust => 'Ajuster';
-
-  @override
   String get dailyOsNextReviewLooksGood => 'Ça me va';
 
   @override
@@ -5584,9 +5574,6 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get dailyOsNextReviewTooMuchPrompt =>
       'Ce plan est trop chargé pour aujourd\'hui. Réduis la charge, garde de l\'air, et conserve seulement les blocs les plus importants.';
-
-  @override
-  String get dailyOsNextReviewWhyTitle => 'Pourquoi c\'est dans le plan';
 
   @override
   String get dailyOsNextShutdownCarryoverDrop => 'Abandonner';

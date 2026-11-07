@@ -4965,11 +4965,11 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsNextBlockResizeStartTooltip => 'Ajustați începutul';
 
   @override
-  String get dailyOsNextBlockTaskCreatedNotLinked =>
-      'Sarcina a fost creată, dar nu a fost asociată cu acest bloc.';
+  String get dailyOsNextBlockTaskCreated => 'Sarcină creată.';
 
   @override
-  String get dailyOsNextBlockTaskCreated => 'Sarcină creată.';
+  String get dailyOsNextBlockTaskCreatedNotLinked =>
+      'Sarcina a fost creată, dar nu a fost asociată cu acest bloc.';
 
   @override
   String get dailyOsNextBlockUnlinked => 'Dezasociat de sarcină.';
@@ -5232,13 +5232,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get dailyOsNextDayMoreTooltip => 'Mai mult';
-
-  @override
-  String get dailyOsNextDayRefineCta => 'Ajustați';
-
-  @override
-  String get dailyOsNextDayRefineFooterHint =>
-      'Vorbiți pentru a reorganiza planul — vedeți fiecare schimbare înainte ca ceva să fie salvat.';
 
   @override
   String get dailyOsNextDayTitle => 'Ziua dvs.';
@@ -5573,9 +5566,6 @@ class AppLocalizationsRo extends AppLocalizations {
       'Adăugați o rezervă realistă între blocurile planificate, mai ales la tranziții și după munca solicitantă.';
 
   @override
-  String get dailyOsNextReviewAdjust => 'Ajustați';
-
-  @override
   String get dailyOsNextReviewLooksGood => 'Arată bine';
 
   @override
@@ -5591,9 +5581,6 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get dailyOsNextReviewTooMuchPrompt =>
       'Acest plan este prea mult pentru astăzi. Reduceți încărcarea, protejați spațiul de respiro și păstrați doar cele mai importante blocuri.';
-
-  @override
-  String get dailyOsNextReviewWhyTitle => 'De ce au intrat în plan';
 
   @override
   String get dailyOsNextShutdownCarryoverDrop => 'Renunță';

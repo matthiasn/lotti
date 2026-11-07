@@ -4907,11 +4907,11 @@ class AppLocalizationsNl extends AppLocalizations {
   String get dailyOsNextBlockResizeStartTooltip => 'Start aanpassen';
 
   @override
-  String get dailyOsNextBlockTaskCreatedNotLinked =>
-      'Taak gemaakt, maar niet aan dit blok gekoppeld.';
+  String get dailyOsNextBlockTaskCreated => 'Taak gemaakt.';
 
   @override
-  String get dailyOsNextBlockTaskCreated => 'Taak gemaakt.';
+  String get dailyOsNextBlockTaskCreatedNotLinked =>
+      'Taak gemaakt, maar niet aan dit blok gekoppeld.';
 
   @override
   String get dailyOsNextBlockUnlinked => 'Losgekoppeld van de taak.';
@@ -5169,13 +5169,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get dailyOsNextDayMoreTooltip => 'Meer';
-
-  @override
-  String get dailyOsNextDayRefineCta => 'Verfijnen';
-
-  @override
-  String get dailyOsNextDayRefineFooterHint =>
-      'Praat met het plan te wijzigen . . Je zult elke verandering te zien voordat er iets wordt opgeslagen.';
 
   @override
   String get dailyOsNextDayTitle => 'Jouw dag';
@@ -5504,9 +5497,6 @@ class AppLocalizationsNl extends AppLocalizations {
       'Voeg een realistische buffer toe tussen de geplande blokken, vooral rond overgangen en na veeleisend werk.';
 
   @override
-  String get dailyOsNextReviewAdjust => 'Aanpassen';
-
-  @override
   String get dailyOsNextReviewLooksGood => 'Ziet er goed uit.';
 
   @override
@@ -5522,9 +5512,6 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get dailyOsNextReviewTooMuchPrompt =>
       'Dit plan is te veel voor vandaag. Verminder de lading, bescherm ademruimte, en houd alleen de belangrijkste blokken.';
-
-  @override
-  String get dailyOsNextReviewWhyTitle => 'Waarom zijn ze in de buurt gekomen?';
 
   @override
   String get dailyOsNextShutdownCarryoverDrop => 'Laat vallen';

@@ -4882,11 +4882,11 @@ class AppLocalizationsDa extends AppLocalizations {
   String get dailyOsNextBlockResizeStartTooltip => 'Juster start';
 
   @override
-  String get dailyOsNextBlockTaskCreatedNotLinked =>
-      'Opgaven er oprettet, men ikke knyttet til denne blok.';
+  String get dailyOsNextBlockTaskCreated => 'Opgave oprettet.';
 
   @override
-  String get dailyOsNextBlockTaskCreated => 'Opgave oprettet.';
+  String get dailyOsNextBlockTaskCreatedNotLinked =>
+      'Opgaven er oprettet, men ikke knyttet til denne blok.';
 
   @override
   String get dailyOsNextBlockUnlinked => 'Ikke længere knyttet til opgaven.';
@@ -5143,13 +5143,6 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get dailyOsNextDayMoreTooltip => 'Mere';
-
-  @override
-  String get dailyOsNextDayRefineCta => 'Forfine';
-
-  @override
-  String get dailyOsNextDayRefineFooterHint =>
-      'Tal med at omforme planen — du vil se alle ændringer, før noget bliver gemt.';
 
   @override
   String get dailyOsNextDayTitle => 'Din dag';
@@ -5481,9 +5474,6 @@ class AppLocalizationsDa extends AppLocalizations {
       'Tilføj en realistisk buffer mellem de planlagte blokke, især omkring overgange og efter krævende arbejde.';
 
   @override
-  String get dailyOsNextReviewAdjust => 'Juster';
-
-  @override
   String get dailyOsNextReviewLooksGood => 'Ser godt ud';
 
   @override
@@ -5499,9 +5489,6 @@ class AppLocalizationsDa extends AppLocalizations {
   @override
   String get dailyOsNextReviewTooMuchPrompt =>
       'Denne plan er for meget for i dag. Reducer belastningen, beskyt luftrummet, og behold kun de vigtigste blokke.';
-
-  @override
-  String get dailyOsNextReviewWhyTitle => 'Hvorfor disse kom med';
 
   @override
   String get dailyOsNextShutdownCarryoverDrop => 'Drop';

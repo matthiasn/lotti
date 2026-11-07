@@ -56,16 +56,27 @@ class DayHeader extends StatelessWidget {
     return Material(
       color: tokens.colors.background.level01,
       child: _MeasuredDayHeader(
-        // step3 chrome padding + step2 internal lead-ins put the title,
-        // the toggle, and the content below on ONE left rail (step5);
-        // the back chevron hangs in the gutter left of it.
+        // step3 chrome padding + step3 lead-ins put the title, the toggle,
+        // and the content below on ONE left rail (step5); the back chevron
+        // hangs in the gutter left of it. The end inset does the same on
+        // the right, so the menu lines up with the timeline toolbar.
         horizontalPadding: tokens.spacing.step3,
+        endInset: tokens.spacing.step3,
         verticalPadding: tokens.spacing.step2,
         itemGap: tokens.spacing.step3,
         rowGap: tokens.spacing.step2,
-        title: dateStrip ?? _DefaultDayHeaderTitle(onBack: onBack, date: date),
+        back: dateStrip != null
+            ? const SizedBox.shrink()
+            : IconButton(
+                icon: const Icon(LottiIcons.back, size: 20),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                tooltip: context.messages.dailyOsNextDayBack,
+                onPressed: onBack,
+              ),
+        title: dateStrip ?? _DefaultDayHeaderTitle(date: date),
         toggle: Padding(
-          padding: EdgeInsets.only(left: tokens.spacing.step2),
+          padding: EdgeInsets.only(left: tokens.spacing.step3),
           child: PlanViewToggle(
             selected: selectedView,
             onChanged: onViewChanged,
@@ -147,7 +158,6 @@ class DayHeader extends StatelessWidget {
                   ),
               ],
             ),
-            SizedBox(width: tokens.spacing.step2),
           ],
         ),
       ),
@@ -156,69 +166,59 @@ class DayHeader extends StatelessWidget {
 }
 
 class _DefaultDayHeaderTitle extends StatelessWidget {
-  const _DefaultDayHeaderTitle({required this.onBack, required this.date});
+  const _DefaultDayHeaderTitle({required this.date});
 
-  final VoidCallback onBack;
   final DateTime date;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final locale = Localizations.localeOf(context).toString();
-    // Apple large-title anatomy: the chevron rides its own quiet line in
-    // the gutter; the title and its date overline sit on the page's left
-    // rail (header padding step3 + step2 lead = step5, same as content).
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        IconButton(
-          icon: const Icon(LottiIcons.back, size: 20),
-          padding: EdgeInsets.zero,
-          constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
-          tooltip: context.messages.dailyOsNextDayBack,
-          onPressed: onBack,
-        ),
-        Padding(
-          padding: EdgeInsets.only(left: tokens.spacing.step2),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                context.messages.dailyOsNextDayTitle,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: calmPageTitleStyle(tokens),
-              ),
-              SizedBox(height: tokens.spacing.step1),
-              Text(
-                DateFormat.MMMMEEEEd(locale).format(date),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: calmEyebrowStyle(tokens),
-              ),
-            ],
+    // Apple large-title anatomy: the chevron rides the nav row above in the
+    // gutter; the title and its date overline sit on the page's left rail
+    // (header padding step3 + step3 lead = step5, same as content).
+    return Padding(
+      padding: EdgeInsets.only(left: tokens.spacing.step3),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            context.messages.dailyOsNextDayTitle,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: calmPageTitleStyle(tokens),
           ),
-        ),
-        SizedBox(height: tokens.spacing.step2),
-      ],
+          SizedBox(height: tokens.spacing.step1),
+          Text(
+            DateFormat.MMMMEEEEd(locale).format(date),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: calmEyebrowStyle(tokens),
+          ),
+        ],
+      ),
     );
   }
 }
 
 class _MeasuredDayHeader extends MultiChildRenderObjectWidget {
   _MeasuredDayHeader({
+    required Widget back,
     required Widget title,
     required Widget toggle,
     required Widget actions,
     required this.horizontalPadding,
+    required this.endInset,
     required this.verticalPadding,
     required this.itemGap,
     required this.rowGap,
-  }) : super(children: [title, toggle, actions]);
+  }) : super(children: [back, title, toggle, actions]);
 
   final double horizontalPadding;
+
+  /// Extra inset of the right-aligned items, beyond [horizontalPadding].
+  final double endInset;
   final double verticalPadding;
   final double itemGap;
   final double rowGap;
@@ -227,6 +227,7 @@ class _MeasuredDayHeader extends MultiChildRenderObjectWidget {
   RenderObject createRenderObject(BuildContext context) {
     return _RenderMeasuredDayHeader(
       horizontalPadding: horizontalPadding,
+      endInset: endInset,
       verticalPadding: verticalPadding,
       itemGap: itemGap,
       rowGap: rowGap,
@@ -240,6 +241,7 @@ class _MeasuredDayHeader extends MultiChildRenderObjectWidget {
   ) {
     renderObject.updateMetrics(
       horizontalPadding: horizontalPadding,
+      endInset: endInset,
       verticalPadding: verticalPadding,
       itemGap: itemGap,
       rowGap: rowGap,
@@ -256,38 +258,49 @@ class _RenderMeasuredDayHeader extends RenderBox
         > {
   _RenderMeasuredDayHeader({
     required this.horizontalPadding,
+    required this.endInset,
     required this.verticalPadding,
     required this.itemGap,
     required this.rowGap,
   });
 
   double horizontalPadding;
+  double endInset;
   double verticalPadding;
   double itemGap;
   double rowGap;
 
   void updateMetrics({
     required double horizontalPadding,
+    required double endInset,
     required double verticalPadding,
     required double itemGap,
     required double rowGap,
   }) {
     final changed =
         this.horizontalPadding != horizontalPadding ||
+        this.endInset != endInset ||
         this.verticalPadding != verticalPadding ||
         this.itemGap != itemGap ||
         this.rowGap != rowGap;
     if (!changed) return;
     this
       ..horizontalPadding = horizontalPadding
+      ..endInset = endInset
       ..verticalPadding = verticalPadding
       ..itemGap = itemGap
       ..rowGap = rowGap;
     markNeedsLayout();
   }
 
-  RenderBox get _title {
+  RenderBox get _back {
     final child = firstChild;
+    assert(child != null, 'Measured header back child is missing.');
+    return child!;
+  }
+
+  RenderBox get _title {
+    final child = childAfter(_back);
     assert(child != null, 'Measured header title child is missing.');
     return child!;
   }
@@ -326,119 +339,85 @@ class _RenderMeasuredDayHeader extends RenderBox
       Size(contentWidth, maxChildHeight),
     );
 
+    final back = _back;
     final title = _title;
     final toggle = _toggle;
     final actions = _actions;
+    for (final child in [back, title, toggle, actions]) {
+      child.layout(looseContentConstraints, parentUsesSize: true);
+    }
+    final hasBack = back.size.width > 0;
 
-    final actionsSize =
-        (actions..layout(looseContentConstraints, parentUsesSize: true)).size;
-    final toggleSize =
-        (toggle..layout(looseContentConstraints, parentUsesSize: true)).size;
-    var titleSize =
-        (title..layout(looseContentConstraints, parentUsesSize: true)).size;
-
-    final inlineWidth =
-        titleSize.width +
-        itemGap +
-        toggleSize.width +
-        itemGap +
-        actionsSize.width;
-    final fitsInline = inlineWidth <= contentWidth;
-
-    if (fitsInline) {
-      final rowHeight = math.max(
-        math.max(titleSize.height, actionsSize.height),
-        toggleSize.height,
-      );
-      size = constraints.constrain(
-        Size(width, verticalPadding * 2 + rowHeight),
-      );
-      // A multi-line title block (chevron line + title + date) reads as a
-      // masthead: actions belong on its FIRST line, not centered against
-      // the whole block.
-      final actionsY = titleSize.height > actionsSize.height
-          ? verticalPadding
-          : verticalPadding + (rowHeight - actionsSize.height) / 2;
-      _position(
-        title,
-        Offset(
-          horizontalPadding,
-          verticalPadding + (rowHeight - titleSize.height) / 2,
-        ),
-      );
-      _position(
-        toggle,
-        Offset(
-          horizontalPadding + titleSize.width + itemGap,
-          verticalPadding + (rowHeight - toggleSize.height) / 2,
-        ),
-      );
-      _position(
-        actions,
-        Offset(width - horizontalPadding - actionsSize.width, actionsY),
-      );
-      return;
+    // Rows on two rails: items added to a row's start hold the left rail,
+    // items added to its end are right-aligned in order, and every item sits
+    // on its row's centre line. An item joins the current row only when the
+    // room left covers its measured width — the segmented toggle
+    // shrink-wraps to a minimum, so squeezing it overflows and paints over
+    // its neighbours — and otherwise starts a row of its own.
+    final rows = <_HeaderRow>[];
+    bool fits(_HeaderRow row, RenderBox item) =>
+        row.width(itemGap) + itemGap + item.size.width <=
+        contentWidth - endInset;
+    void addEnd(RenderBox item) {
+      if (rows.isEmpty || !fits(rows.last, item)) rows.add(_HeaderRow());
+      rows.last.end.add(item);
     }
 
-    // Too narrow for one row: **day navigation gets a row of its own**, and
-    // the toggle and actions share the row beneath it. Sharing row one with
-    // the actions cluster is what squeezed the date into an ellipsis on a
-    // phone — the element that must stay readable and repeatedly tappable
-    // was the one giving up its width.
-    title.layout(
-      BoxConstraints.loose(Size(contentWidth, maxChildHeight)),
-      parentUsesSize: true,
-    );
-    titleSize = title.size;
+    // A nav row, when there is a chevron: it sits in the gutter and the
+    // actions across from it, so the large title and the toggle make the
+    // row beneath.
+    var actionsPlaced = false;
+    if (hasBack) {
+      final nav = _HeaderRow()..start.add(back);
+      rows.add(nav);
+      if (fits(nav, actions)) {
+        nav.end.add(actions);
+        actionsPlaced = true;
+      }
+    }
+    // Day navigation leads its row; it never gives up width to sit beside
+    // the actions, which is what pressed the date into an ellipsis on a
+    // phone. The toggle joins it only when the actions, if still to place,
+    // fit there too; otherwise the toggle leads the next row and the actions
+    // follow it, rather than being stranded on a row of their own.
+    final titleRow = _HeaderRow()..start.add(title);
+    rows.add(titleRow);
+    final pendingWidth = actionsPlaced ? 0 : itemGap + actions.size.width;
+    if (titleRow.width(itemGap) + itemGap + toggle.size.width + pendingWidth <=
+        contentWidth - endInset) {
+      titleRow.start.add(toggle);
+    } else {
+      rows.add(_HeaderRow()..start.add(toggle));
+    }
+    if (!actionsPlaced) addEnd(actions);
 
-    // The toggle and the actions only share the second row if they actually
-    // fit side by side. Pinning them to opposite edges without checking
-    // overlaps them the moment the actions cluster grows — a non-idle
-    // "Needs attention" agent chip, or any large text scale.
-    //
-    // "Fits" means the room left over covers the toggle's own measured
-    // width, not merely that some room is left: the segmented control
-    // shrink-wraps to a minimum, so squeezing it into a narrower loose
-    // constraint overflows its row and paints over the actions instead.
-    final toggleRoom = contentWidth - actionsSize.width - itemGap;
-    final shareSecondRow = toggleRoom >= toggleSize.width;
-
-    final secondRowHeight = shareSecondRow
-        ? math.max(toggleSize.height, actionsSize.height)
-        : toggleSize.height;
-    final thirdRowHeight = shareSecondRow ? 0.0 : actionsSize.height;
-    final thirdRowGap = shareSecondRow ? 0.0 : rowGap;
-
+    final rowHeights = [for (final row in rows) row.height];
     size = constraints.constrain(
       Size(
         width,
-        verticalPadding * 2 +
-            titleSize.height +
-            rowGap +
-            secondRowHeight +
-            thirdRowGap +
-            thirdRowHeight,
+        verticalPadding * 2 + rowHeights.reduce((a, b) => a + rowGap + b),
       ),
     );
 
-    final secondRowTop = verticalPadding + titleSize.height + rowGap;
-    _position(title, Offset(horizontalPadding, verticalPadding));
-    _position(
-      toggle,
-      Offset(
-        horizontalPadding,
-        secondRowTop + (secondRowHeight - toggleSize.height) / 2,
-      ),
-    );
-    _position(
-      actions,
-      Offset(
-        width - horizontalPadding - actionsSize.width,
-        shareSecondRow
-            ? secondRowTop + (secondRowHeight - actionsSize.height) / 2
-            : secondRowTop + secondRowHeight + rowGap,
-      ),
-    );
+    var rowTop = verticalPadding;
+    for (var index = 0; index < rows.length; index++) {
+      final row = rows[index];
+      final rowHeight = rowHeights[index];
+      double centred(RenderBox child) =>
+          rowTop + (rowHeight - child.size.height) / 2;
+      var left = horizontalPadding;
+      for (final child in row.start) {
+        _position(child, Offset(left, centred(child)));
+        left += child.size.width + itemGap;
+      }
+      var right = width - horizontalPadding - endInset;
+      for (final child in row.end.reversed) {
+        right -= child.size.width;
+        _position(child, Offset(right, centred(child)));
+        right -= itemGap;
+      }
+      rowTop += rowHeight + rowGap;
+    }
   }
 
   void _position(RenderBox child, Offset offset) {
@@ -457,3 +436,24 @@ class _RenderMeasuredDayHeader extends RenderBox
 }
 
 class _MeasuredDayHeaderParentData extends ContainerBoxParentData<RenderBox> {}
+
+/// One row of the measured header: [start] items from the left rail,
+/// [end] items right-aligned in order.
+class _HeaderRow {
+  final start = <RenderBox>[];
+  final end = <RenderBox>[];
+
+  Iterable<RenderBox> get _all => [...start, ...end];
+
+  double width(double gap) {
+    final items = _all.toList();
+    if (items.isEmpty) return -gap;
+    return items.fold<double>(0, (sum, child) => sum + child.size.width) +
+        gap * (items.length - 1);
+  }
+
+  double get height => _all.fold<double>(
+    0,
+    (tallest, child) => math.max(tallest, child.size.height),
+  );
+}

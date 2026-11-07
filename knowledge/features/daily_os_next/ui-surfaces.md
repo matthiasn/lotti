@@ -50,7 +50,8 @@ is a full-height bottom sheet on phones (covering the bottom nav) and a
 right-anchored full-height **side panel** on wide screens (45% of the window
 clamped to 480–720 px), so the day surface stays visible beside the conversation.
 
-It opens from the empty surface's footer CTA and the Day surface's Refine CTA.
+It opens from the empty surface's check-in composer and, on a planned day, from
+the footer's "What should change?" composer and its quick refinements.
 Each step submits against the selected date for day-agent routing. On create, the
 Drafting step closes the whole modal once the plan is ready and invalidates
 `currentDraftPlanProvider` so the root re-renders.
@@ -130,8 +131,9 @@ arbitrary five or six lines.
   accept/reject, and the bar carries "Revert" (enabled once a diff is pending) and
   a confirm pill that says what it does: "Keep changes" while a diff is pending
   (it accepts every open row, then closes), "Done" otherwise (it just closes).
-  "Looks good" is the Day footer's commit and appears nowhere else. Quick review buttons on the Day surface open Refine and
-  immediately submit that prompt through the normal diff/accept/revert path, so
+  "Looks good" is the Day footer's commit and appears nowhere else. Words sent
+  from the Day footer's composer, and its quick-refinement chips, open Refine
+  and immediately submit that prompt through the normal diff/accept/revert path, so
   "Too much", "Move lighter" and "Add buffer" are **shortcuts over the same
   user-gated machinery**, not a separate path.
 
@@ -157,14 +159,21 @@ Three invariants make repeated navigation cheap:
   year-less `MMMEd` — is itself a fit check against the pane (see below), not a
   device class: the widest `yMMMEd` string plus two chevrons does not fit a
   390 pt phone, but it does fit a wide pane on any device.
-- **Day navigation owns its row when the header stacks.** `_MeasuredDayHeader`
-  lays title, toggle and actions out inline when they fit; when they do not, the
-  date strip takes the first row alone. The toggle and the actions then share
-  the second row **only if the room left over covers the toggle's measured
-  width** — otherwise the actions drop to a third row, because the segmented
-  control shrink-wraps to a minimum and would otherwise paint over them.
-  Sharing row one with the actions cluster is what truncated the date to an
-  ellipsis on a phone.
+- **The header is a nav row over a title row, on the page's rails.**
+  `_MeasuredDayHeader` lays out back chevron, title, toggle and actions in rows
+  whose items share the row's centre line: start items from the left rail,
+  end items right-aligned. With a chevron, it and the actions make a nav row
+  and the large title takes the row beneath, the toggle beside it. The title
+  and toggle lead in by step3 and the actions inset by step3, so both sit on
+  the step5 rail the timeline toolbar and briefing use. Without a chevron (a
+  date strip) everything shares one row when it fits.
+- **Day navigation owns its row when the header stacks.** The title never
+  gives up width to sit beside the actions — that is what truncated the date
+  to an ellipsis on a phone. The toggle joins the title only when the actions,
+  if still unplaced, fit there too; otherwise the toggle leads the next row and
+  the actions follow it, each item on a row **only if the room left covers its
+  measured width** — the segmented control shrink-wraps to a minimum and would
+  otherwise paint over them.
 - **The strip sizes itself against the pane, not the window.** A `LayoutBuilder`
   supplies the width, because the desktop sidebar is resizable to
   `maxSidebarWidth` (500 px) and a "desktop" `MediaQuery` can still leave this
@@ -484,9 +493,18 @@ direct manipulation on planned non-calendar blocks: drag the body to move, or th
 top/bottom handles to resize. Preview motion is optimistic and snaps to
 fifteen-minute increments within the plan day.
 
-On phone layouts the drafted-plan footer folds its three refinement shortcuts
-into one **Adjust** menu. At large accessibility text sizes it also omits the
-explanatory reason rows, preserving the plan projection and primary actions.
+On a planned day the footer is one `DayComposer` — "What should change?", with
+`AudioCaptureIntent.dayRefine` and the field cleared once the words are sent.
+On a drafted day its header row carries the three quick refinements as one
+horizontally scrolling chip row; at large accessibility text sizes
+(`kDailyOsHideCoachingScale`) the chips are dropped so the field keeps its
+height, and while a take records or transcribes they hide with the field, so
+no chip opens Refine over the shared recorder. The day's stage action sits beside the field — the sticky bottom bar
+is where a screen's primary action lives, in thumb reach on a phone: *Looks
+good* while drafted, *Wrap up* (the shutdown) once committed. It shows while
+the field is empty and nothing records, beside the field while that leaves
+the field half the bar, under it at full width otherwise (large text on a
+narrow phone).
 When the timeline itself receives less height than its toolbar requires, the
 toolbar yields and the scrollable timeline takes the available space.
 
@@ -545,10 +563,9 @@ fails on any `dailyOs*` catalog value carrying a fully capitalised word.
 
 # Committing the day
 
-**"Looks good" is the sign-off.** On a drafted day the footer's review strip
+**"Looks good" is the sign-off.** On a drafted day the footer's stage action
 offers *Looks good*; tapping it calls `DayAgentInterface.commitDay` in place —
-no confirmation page, no timed hold — refreshes `currentDraftPlanProvider`, and
-retires the footer's one-shot coaching line. A success toast carries a countdown
+no confirmation page, no timed hold — and refreshes `currentDraftPlanProvider`. A success toast carries a countdown
 **Undo**, which calls `uncommitDay`. Both are user verdicts, never agent tools,
 and both go through `DayAgentPlanService`.
 
@@ -562,8 +579,8 @@ stateDiagram-v2
 ```
 
 - **Commit** flips `DayPlanStatus.draft` → `committed` and every `drafted`
-  block to `committed`; the review strip disappears because it renders only for
-  `DayState.drafted`. Re-committing is a no-op.
+  block to `committed`; the stage action becomes *Wrap up* and the quick
+  refinement chips go, because both follow `DayState.drafted`. Re-committing is a no-op.
 - **Undo** walks it back: `committed` blocks return to `drafted`; blocks already
   `inProgress`, `completed` or `dropped` keep their state, because they record
   what happened. Undoing a draft is a no-op.
