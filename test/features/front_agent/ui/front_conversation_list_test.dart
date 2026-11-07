@@ -193,7 +193,7 @@ void main() {
         ),
       );
 
-      // The section names the day; its rows say the time.
+      // The section says when; its rows say no time of their own.
       expect(find.text('Yesterday'), findsOne);
       expect(find.text('Older'), findsOne);
       expect(find.text('Today'), findsNothing);
@@ -319,11 +319,11 @@ void main() {
     expect(days.map((t) => t.style!.color), everyElement(accent));
   });
 
-  testWidgets('every time sits in one column, so every preview ends on the '
-      'same line; the open row says its second line as brightly as its '
-      'title', (tester) async {
+  testWidgets('a row says no time of its own — its section says when — and '
+      "her answer runs the row's width; the open row says it as brightly as "
+      'its title', (tester) async {
     // Every frame of this test reads the fixed day: "today at 11:58" is
-    // a time only while the clock says it is that day.
+    // today only while the clock says it is that day.
     await withClock(Clock.fixed(now), () async {
       FrontConversation chat(String id, DateTime at) => FrontConversation(
         id: id,
@@ -338,31 +338,30 @@ void main() {
         tester,
         index: FrontConversationIndex(
           conversations: [
-            // Today at 11:58 — the widest time — and a weekday, much narrower.
             chat('c-1', DateTime(2026, 10, 31, 11, 58)),
             chat('c-2', DateTime(2026, 10, 27, 9)),
           ],
         ),
       );
-      Text preview(String id) => tester.widget<Text>(
-        find.descendant(
-          of: find.byKey(FrontConversationListKeys.row(id)),
-          matching: find.textContaining('Saturday works'),
-        ),
+      Finder inRow(String id, Finder finder) => find.descendant(
+        of: find.byKey(FrontConversationListKeys.row(id)),
+        matching: finder,
       );
-      Rect previewBox(String id) => tester.getRect(
-        find.descendant(
-          of: find.byKey(FrontConversationListKeys.row(id)),
-          matching: find.textContaining('Saturday works'),
-        ),
-      );
+      // Neither the clock today nor the weekday this week.
+      expect(find.text('11:58 AM'), findsNothing);
+      expect(find.text('Tue'), findsNothing);
+      expect(find.text('Today'), findsOne);
+      expect(find.text('Previous 7 days'), findsOne);
+
+      Text preview(String id) =>
+          tester.widget<Text>(inRow(id, find.textContaining('Saturday works')));
+      Rect previewBox(String id) =>
+          tester.getRect(inRow(id, find.textContaining('Saturday works')));
+      Rect titleBox(String id) =>
+          tester.getRect(inRow(id, find.text('Chat $id')));
       expect(previewBox('c-1').right, previewBox('c-2').right);
+      expect(previewBox('c-1').left, titleBox('c-1').left);
       expect(preview('c-1').overflow, TextOverflow.fade);
-      // Digits line up down the column.
-      expect(
-        tester.widget<Text>(find.text('11:58 AM')).style!.fontFeatures,
-        contains(const FontFeature.tabularFigures()),
-      );
 
       final colors = tester
           .element(find.byKey(FrontConversationListKeys.row('c-1')))
@@ -408,7 +407,7 @@ void main() {
     expect(shown('c-2'), isFalse);
   });
 
-  testWidgets('beside the open conversation its row keeps its time, and '
+  testWidgets('beside the open conversation its row keeps its menu out of '
       'shows its menu only on hover like any other', (tester) async {
     tester.view.physicalSize = const Size(1600, 1200);
     tester.view.devicePixelRatio = 1;
@@ -470,9 +469,9 @@ void main() {
     expect(titles(tester), contains('Search chats'));
   });
 
-  testWidgets("when it moved and its menu sit on the title's first line — "
-      "a wrapped title and her answer below them — and the menu's whole "
-      'target stays inside the row', (tester) async {
+  testWidgets("a row's menu sits on its title's first line, at its end — a "
+      "wrapped title and her answer below — and the menu's whole target "
+      'stays inside the row', (tester) async {
     await withClock(Clock.fixed(now), () async {
       await pumpList(
         tester,
@@ -509,20 +508,19 @@ void main() {
         matching: finder,
       );
 
-      // A one-line title: the time on its line, above her answer.
+      // A one-line title over her answer, both from the same edge.
       final title = tester.getRect(
         inRow('c-2', find.text('Count the hatchlings')),
       );
-      final time = tester.getRect(inRow('c-2', find.text('9:00 AM')));
       final answer = tester.getRect(
         inRow('c-2', find.textContaining('Forty-two')),
       );
-      expect(time.center.dy, closeTo(title.center.dy, 2));
-      expect(time.bottom, lessThanOrEqualTo(answer.top));
+      expect(title.bottom, lessThanOrEqualTo(answer.top));
       expect(answer.left, title.left);
 
-      // The open row's wrapped title: the menu, in the time's place, on its
-      // first line — not on the line of her answer.
+      // The open row's wrapped title: the menu on its first line, in the
+      // room kept for it at its end — never over the title, and not on the
+      // line of her answer.
       final wrapped = tester.getRect(
         inRow('c-1', find.textContaining('Plan the census')),
       );
@@ -534,6 +532,17 @@ void main() {
       );
       final firstLine = wrapped.top + wrapped.height / 4;
       expect(glyph.dy, closeTo(firstLine, 3));
+      expect(
+        tester
+            .getRect(
+              find.descendant(
+                of: find.byKey(FrontConversationListKeys.menu('c-1')),
+                matching: find.byIcon(LottiIcons.more),
+              ),
+            )
+            .left,
+        greaterThan(wrapped.right),
+      );
       expect(
         glyph.dy,
         lessThan(
@@ -823,11 +832,12 @@ void main() {
 }
 
 /// A row's label: the text itself, or the title leading a conversation
-/// row (its title-and-time line over its preview, in a box no shorter than
-/// its menu's target).
+/// row (its title, in the room it leaves its menu, over its preview, in a
+/// box no shorter than its menu's target).
 String _textOf(Widget content) => switch (content) {
   Text(:final data) => data!,
   ConstrainedBox(:final child?) => _textOf(child),
+  Padding(:final child?) => _textOf(child),
   Column(:final children) => _textOf(children.first),
   Row(:final children) => _textOf(
     switch (children.first) {
