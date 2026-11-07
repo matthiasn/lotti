@@ -12239,18 +12239,6 @@ abstract class AppLocalizations {
   /// **'Chat actions'**
   String get frontChatRowMenuHint;
 
-  /// No description provided for @frontChatScopeAll.
-  ///
-  /// In en, this message translates to:
-  /// **'All'**
-  String get frontChatScopeAll;
-
-  /// No description provided for @frontChatScopeLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Answers from'**
-  String get frontChatScopeLabel;
-
   /// No description provided for @frontChatSearchChats.
   ///
   /// In en, this message translates to:
@@ -12262,6 +12250,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Companion'**
   String get frontChatTitle;
+
+  /// No description provided for @frontChatVoiceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice'**
+  String get frontChatVoiceLabel;
 
   /// No description provided for @frontChatYesterday.
   ///

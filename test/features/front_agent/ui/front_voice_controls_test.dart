@@ -13,6 +13,7 @@ import 'package:lotti/features/front_agent/state/front_conversation_providers.da
 import 'package:lotti/features/front_agent/state/front_inbox_filter.dart';
 import 'package:lotti/features/front_agent/state/front_journal_access_provider.dart';
 import 'package:lotti/features/front_agent/state/front_voice_providers.dart';
+import 'package:lotti/features/front_agent/ui/front_chat_pane.dart';
 import 'package:lotti/features/front_agent/ui/front_voice_controls.dart';
 import 'package:lotti/features/tts/cloud/tts_cloud_route.dart';
 import 'package:lotti/features/tts/model/tts_playback_state.dart';
@@ -334,9 +335,9 @@ void main() {
 
   testWidgets('the stage control stands her up full screen in her '
       'conversation, her voice control at her feet', (tester) async {
-    await pump(tester, child: const FrontStageButton(conversationId: 'c-1'));
+    await pump(tester, child: const _OpenStage());
 
-    await tester.tap(find.byTooltip('View companion full screen'));
+    await tester.tap(find.byType(_OpenStage));
     for (var i = 0; i < 10; i++) {
       await tester.pump(const Duration(milliseconds: 50));
     }
@@ -350,4 +351,43 @@ void main() {
     await tester.pump();
     expect(voice.spoken.single.sourceId, source);
   });
+
+  testWidgets('on a desktop window her stage keeps the conversation beside '
+      'her; on a phone she has the screen', (tester) async {
+    tester.view
+      ..physicalSize = const Size(1600, 1000)
+      ..devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await pump(tester, child: const _OpenStage());
+
+    await tester.tap(find.byType(_OpenStage));
+    for (var i = 0; i < 10; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+
+    final transcript = find.byKey(FrontVoiceControlKeys.transcript);
+    expect(transcript, findsOne);
+    expect(
+      find.descendant(
+        of: transcript,
+        matching: find.byType(FrontChatThreadView),
+      ),
+      findsOne,
+    );
+    final figure = tester.getRect(
+      find.byKey(const ValueKey('companionStageFigure')),
+    );
+    expect(tester.getRect(transcript).left, greaterThanOrEqualTo(figure.right));
+  });
+}
+
+/// Opens her stage in conversation c-1, as the header's stage control does.
+class _OpenStage extends StatelessWidget {
+  const _OpenStage();
+
+  @override
+  Widget build(BuildContext context) => TextButton(
+    onPressed: () => openFrontStage(context, 'c-1'),
+    child: const Text('Open her stage'),
+  );
 }

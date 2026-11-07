@@ -7252,16 +7252,13 @@ class AppLocalizationsPt extends AppLocalizations {
   String get frontChatRowMenuHint => 'Ações do chat';
 
   @override
-  String get frontChatScopeAll => 'Tudo';
-
-  @override
-  String get frontChatScopeLabel => 'Respostas de';
-
-  @override
   String get frontChatSearchChats => 'Procurar nos chats';
 
   @override
   String get frontChatTitle => 'Acompanhante';
+
+  @override
+  String get frontChatVoiceLabel => 'Voz';
 
   @override
   String get frontChatYesterday => 'Ontem';

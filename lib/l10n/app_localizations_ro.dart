@@ -7298,16 +7298,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get frontChatRowMenuHint => 'Acțiunile conversației';
 
   @override
-  String get frontChatScopeAll => 'Toate';
-
-  @override
-  String get frontChatScopeLabel => 'Răspunsuri din';
-
-  @override
   String get frontChatSearchChats => 'Căutați în conversații';
 
   @override
   String get frontChatTitle => 'Însoțitor';
+
+  @override
+  String get frontChatVoiceLabel => 'Voce';
 
   @override
   String get frontChatYesterday => 'Ieri';

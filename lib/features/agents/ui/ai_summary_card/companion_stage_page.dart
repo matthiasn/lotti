@@ -8,6 +8,7 @@ import 'package:lotti/features/companion/rig/stage_painter.dart';
 import 'package:lotti/features/companion/state/companion_look_controller.dart';
 import 'package:lotti/features/companion/ui/companion_speaker.dart';
 import 'package:lotti/features/design_system/components/buttons/ds_ai_disc_button.dart';
+import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tts/cloud/tts_cloud_route.dart';
@@ -27,7 +28,8 @@ import 'package:material_ui/material_ui.dart';
 /// on, so the figure the bust was tapped on stands up in the same pose. A
 /// host whose voice is not a summary's — the front agent's answers — passes
 /// its own [controls] instead of the words: its voice, and a way to answer
-/// her. She
+/// her — and may pass a [sidePanel] that stands beside her on a desktop
+/// window (the conversation she is speaking in). She
 /// wears what the card dressed her in: a host that dresses her for another
 /// subject than [sourceId] names it as [dressedFor].
 Future<void> openCompanionStage(
@@ -35,6 +37,7 @@ Future<void> openCompanionStage(
   required String sourceId,
   String spokenText = '',
   Widget? controls,
+  Widget? sidePanel,
   CompanionMood mood = CompanionMood.calm,
   GestureName? holding,
   TtsCloudRoute? cloudRoute,
@@ -47,6 +50,7 @@ Future<void> openCompanionStage(
         sourceId: sourceId,
         spokenText: spokenText,
         controls: controls,
+        sidePanel: sidePanel,
         mood: mood,
         holding: holding,
         cloudRoute: cloudRoute,
@@ -74,6 +78,7 @@ class CompanionStagePage extends ConsumerWidget {
     required this.sourceId,
     required this.spokenText,
     this.controls,
+    this.sidePanel,
     this.mood = CompanionMood.calm,
     this.holding,
     this.cloudRoute,
@@ -84,6 +89,18 @@ class CompanionStagePage extends ConsumerWidget {
   /// The host's own controls at her feet, in place of the summary's
   /// read-aloud control; they gate themselves.
   final Widget? controls;
+
+  /// Beside her on a desktop window, the host's own panel — the front
+  /// agent's conversation — so a wide stage is not mostly empty floor
+  /// either side of her. Left out on a phone, where she takes the screen.
+  final Widget? sidePanel;
+
+  /// The host's own panel's share of a desktop window's width; she keeps
+  /// the rest.
+  static const int sidePanelFlex = 2;
+
+  /// Her share beside [sidePanel].
+  static const int figureFlex = 3;
 
   /// The host's cloud voice, or `null` for the on-device voice.
   final TtsCloudRoute? cloudRoute;
@@ -127,91 +144,109 @@ class CompanionStagePage extends ConsumerWidget {
                 backgroundColor: CompanionStage.bottom,
                 // She stands above, the controls in a band of their own
                 // below her, so nothing is ever drawn on her.
-                body: Column(
-                  children: [
-                    Expanded(
-                      child: Stack(
-                        children: [
-                          // Decorative: the close and read-aloud controls carry
-                          // the page's meaning, and she says nothing a reader
-                          // would miss.
-                          Positioned.fill(
-                            child: ExcludeSemantics(
-                              child: CompanionSpeaker(
-                                key: const ValueKey('companionStageFigure'),
-                                sourceId: sourceId,
-                                stage: true,
-                                mood: mood,
-                                holding: holding,
-                                dressedFor: dressedFor,
+                body: _besideSidePanel(
+                  context,
+                  Column(
+                    children: [
+                      Expanded(
+                        child: Stack(
+                          children: [
+                            // Decorative: the close and read-aloud controls carry
+                            // the page's meaning, and she says nothing a reader
+                            // would miss.
+                            Positioned.fill(
+                              child: ExcludeSemantics(
+                                child: CompanionSpeaker(
+                                  key: const ValueKey('companionStageFigure'),
+                                  sourceId: sourceId,
+                                  stage: true,
+                                  mood: mood,
+                                  holding: holding,
+                                  dressedFor: dressedFor,
+                                ),
                               ),
                             ),
-                          ),
-                          SafeArea(
-                            bottom: false,
-                            child: Padding(
-                              padding: EdgeInsets.all(
-                                tokens.spacing.cardPadding,
-                              ),
-                              child: Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  DsAiDiscButton(
-                                    key: const ValueKey(
-                                      'companionStageOutfit',
+                            SafeArea(
+                              bottom: false,
+                              child: Padding(
+                                padding: EdgeInsets.all(
+                                  tokens.spacing.cardPadding,
+                                ),
+                                child: Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    DsAiDiscButton(
+                                      key: const ValueKey(
+                                        'companionStageOutfit',
+                                      ),
+                                      icon: LottiIcons.palette,
+                                      label: context
+                                          .messages
+                                          .aiCardCompanionStageNextOutfit,
+                                      onPressed: () => ref
+                                          .read(
+                                            companionOutfitProvider.notifier,
+                                          )
+                                          .next(
+                                            ref
+                                                .read(companionLookRollProvider)
+                                                .outfitFor(dressedFor),
+                                          ),
                                     ),
-                                    icon: LottiIcons.palette,
-                                    label: context
-                                        .messages
-                                        .aiCardCompanionStageNextOutfit,
-                                    onPressed: () => ref
-                                        .read(companionOutfitProvider.notifier)
-                                        .next(
-                                          ref
-                                              .read(companionLookRollProvider)
-                                              .outfitFor(dressedFor),
-                                        ),
-                                  ),
-                                  DsAiDiscButton(
-                                    icon: LottiIcons.close,
-                                    label: MaterialLocalizations.of(
-                                      context,
-                                    ).closeButtonTooltip,
-                                    onPressed: () =>
-                                        Navigator.of(context).pop(),
-                                  ),
-                                ],
+                                    DsAiDiscButton(
+                                      icon: LottiIcons.close,
+                                      label: MaterialLocalizations.of(
+                                        context,
+                                      ).closeButtonTooltip,
+                                      onPressed: () =>
+                                          Navigator.of(context).pop(),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    if (controls ??
-                            (canReadAloud
-                                ? SummaryReadAloudButton(
-                                    sourceId: sourceId,
-                                    text: spokenText,
-                                    cloudRoute: cloudRoute,
-                                  )
-                                : null)
-                        case final footer?)
-                      SafeArea(
-                        top: false,
-                        child: Padding(
-                          padding: EdgeInsets.all(tokens.spacing.cardPadding),
-                          child: Center(child: footer),
+                          ],
                         ),
                       ),
-                  ],
+                      if (controls ??
+                              (canReadAloud
+                                  ? SummaryReadAloudButton(
+                                      sourceId: sourceId,
+                                      text: spokenText,
+                                      cloudRoute: cloudRoute,
+                                    )
+                                  : null)
+                          case final footer?)
+                        SafeArea(
+                          top: false,
+                          child: Padding(
+                            padding: EdgeInsets.all(tokens.spacing.cardPadding),
+                            child: Center(child: footer),
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
               ),
             ),
           );
         },
       ),
+    );
+  }
+
+  /// [stage] alone, or beside the host's [sidePanel] on a desktop window.
+  Widget _besideSidePanel(BuildContext context, Widget stage) {
+    final panel = sidePanel;
+    if (panel == null || !isDesktopLayout(context)) return stage;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Expanded(flex: figureFlex, child: stage),
+        Expanded(flex: sidePanelFlex, child: panel),
+      ],
     );
   }
 }

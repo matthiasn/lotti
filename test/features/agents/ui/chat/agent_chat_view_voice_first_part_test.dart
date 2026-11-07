@@ -89,11 +89,10 @@ void main() {
     bool voiceFirst = true,
     bool isSending = false,
     List<AgentChatMessage>? history,
-    Widget? leading,
     Widget? Function(BuildContext, AgentChatMessage)? footerTrailing,
-    ValueChanged<ScrollMetrics>? onThreadScrolled,
     bool reducedMotion = false,
     VoidCallback? onSendSpoken,
+    double? contentMaxWidth,
   }) async {
     final recorder = _Recorder(status);
     await tester.pumpWidget(
@@ -115,10 +114,9 @@ void main() {
                 history: AsyncData(history ?? messages),
                 conversational: conversational,
                 voiceFirst: voiceFirst,
-                leading: leading,
                 footerTrailingBuilder: footerTrailing,
-                onThreadScrolled: onThreadScrolled,
                 onSendSpoken: onSendSpoken,
+                contentMaxWidth: contentMaxWidth,
               ),
             ),
           ),
@@ -188,47 +186,6 @@ void main() {
       expect(userWidth(), kActionListContentMaxWidth);
     });
 
-    testWidgets("the thread's own list reports where it is; a scroll inside "
-        'a message does not', (tester) async {
-      final offsets = <double>[];
-      await pumpView(
-        tester,
-        history: [
-          for (var i = 0; i < 40; i++)
-            AgentChatMessage(
-              id: 'm$i',
-              role: i.isEven ? AgentChatRole.user : AgentChatRole.agent,
-              text: 'Penguin count $i',
-              createdAt: at,
-            ),
-        ],
-        // A scrollable inside a message, as a long transcript preview is.
-        footerTrailing: (context, message) => message.id == 'm39'
-            ? SizedBox(
-                key: const Key('inner'),
-                height: 40,
-                child: ListView(
-                  children: [for (var i = 0; i < 20; i++) Text('line $i')],
-                ),
-              )
-            : null,
-        onThreadScrolled: (metrics) => offsets.add(metrics.pixels),
-      );
-      await tester.pumpAndSettle();
-      expect(offsets, isNotEmpty, reason: 'laid out, it reports where it is');
-      final thread = offsets.last;
-
-      offsets.clear();
-      await tester.drag(find.byKey(const Key('inner')), const Offset(0, -30));
-      await tester.pump();
-      expect(offsets, isEmpty);
-
-      await tester.drag(find.text('Penguin count 39'), const Offset(0, 300));
-      await tester.pump();
-      expect(offsets, isNotEmpty);
-      expect(offsets.last, lessThan(thread));
-    });
-
     testWidgets('her thinking is unboxed too, so her turn keeps its shape', (
       tester,
     ) async {
@@ -241,15 +198,54 @@ void main() {
       final box = tester.widget<DecoratedBox>(thinking.first);
       expect((box.decoration as BoxDecoration).color, isNull);
     });
+  });
 
-    testWidgets('what leads the thread scrolls in above its first message', (
+  group('a reading column', () {
+    testWidgets('keeps the thread and the field to one centred width, their '
+        'edges lined up', (tester) async {
+      tester.view
+        ..physicalSize = const Size(1400, 900)
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await pumpView(tester, contentMaxWidth: 600);
+
+      final field = tester.getRect(find.byType(TextField));
+      final bubble = tester.getRect(
+        find
+            .ancestor(
+              of: find.text('How many hatchlings?'),
+              matching: find.byType(Align),
+            )
+            .first,
+      );
+      final view = tester.getRect(find.byType(AgentChatView));
+      expect(field.center.dx, closeTo(view.center.dx, 1));
+      // The user's bubble keeps to the column's right edge, as the field
+      // does.
+      expect(bubble.right, closeTo(view.center.dx + 300, 1));
+      expect(field.right, lessThanOrEqualTo(view.center.dx + 300));
+    });
+
+    testWidgets('without one, the thread keeps its usual gutter', (
       tester,
     ) async {
-      await pumpView(tester, leading: const Text('Her', key: Key('lead')));
+      tester.view
+        ..physicalSize = const Size(1400, 900)
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await pumpView(tester);
 
-      final lead = tester.getRect(find.byKey(const Key('lead')));
-      final first = tester.getRect(find.text('How many hatchlings?'));
-      expect(lead.bottom, lessThanOrEqualTo(first.top));
+      final list = tester.widget<ListView>(find.byType(ListView).first);
+      expect(
+        list.padding,
+        EdgeInsets.all(
+          tester
+              .element(find.byType(ListView).first)
+              .designTokens
+              .spacing
+              .step5,
+        ),
+      );
     });
   });
 

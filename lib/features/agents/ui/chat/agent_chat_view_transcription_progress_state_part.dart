@@ -50,9 +50,7 @@ class AgentChatView extends ConsumerStatefulWidget {
     this.resolveDictionaryCategory,
     this.conversational = false,
     this.voiceFirst = false,
-    this.leading,
-    this.composerHeader,
-    this.onThreadScrolled,
+    this.contentMaxWidth,
     super.key,
   });
 
@@ -69,16 +67,10 @@ class AgentChatView extends ConsumerStatefulWidget {
   /// its end, as any chat's.
   final bool voiceFirst;
 
-  /// Scrolls in above the first message, with the thread.
-  final Widget? leading;
-
-  /// Sits inside the composer, above its controls: what the question will
-  /// be asked with (a scope), part of the asking rather than the thread.
-  final Widget? composerHeader;
-
-  /// Where the thread's list is, on each scroll and layout — its own list
-  /// only, not a scroll inside a message or the composer.
-  final ValueChanged<ScrollMetrics>? onThreadScrolled;
+  /// The width of one reading column, centred, that the thread and the
+  /// composer's controls share, so the field's edges line up with the
+  /// messages above it; null lets both take the full width.
+  final double? contentMaxWidth;
 
   final String agentId;
   final String agentName;
@@ -183,7 +175,7 @@ class _ChatComposer extends ConsumerWidget {
     required this.onSend,
     required this.shape,
     this.voiceFirst = false,
-    this.header,
+    this.contentMaxWidth,
     this.resolveTranscriptionTarget,
     this.correctTranscript,
     this.resolveDictionaryCategory,
@@ -191,8 +183,9 @@ class _ChatComposer extends ConsumerWidget {
 
   final bool voiceFirst;
 
-  /// Shown above the controls, inside the composer.
-  final Widget? header;
+  /// The reading column the controls keep to, centred; null for the full
+  /// width.
+  final double? contentMaxWidth;
   final double availableHeight;
   final TextEditingController controller;
   final String hintText;
@@ -207,14 +200,15 @@ class _ChatComposer extends ConsumerWidget {
   final ChatTranscriptCorrector? correctTranscript;
   final ChatDictionaryCategoryResolver? resolveDictionaryCategory;
 
-  /// [header] over [controls]. The header brings its own gap below it, so
-  /// a header that renders nothing leaves no blank band.
-  Widget _withHeader(Widget controls) {
-    final header = this.header;
-    if (header == null) return controls;
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [header, controls],
+  /// [controls] in the reading column, when there is one.
+  Widget _inColumn(Widget controls) {
+    final maxWidth = contentMaxWidth;
+    if (maxWidth == null) return controls;
+    return Center(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: maxWidth),
+        child: controls,
+      ),
     );
   }
 
@@ -233,7 +227,7 @@ class _ChatComposer extends ConsumerWidget {
       ),
       child: Padding(
         padding: EdgeInsets.all(tokens.spacing.step4),
-        child: _withHeader(switch (status) {
+        child: _inColumn(switch (status) {
           ChatRecorderStatus.recording => ChatRecordingPill(
             processing: false,
             elapsed: recorderState.elapsed,

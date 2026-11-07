@@ -43,6 +43,7 @@ void main() {
     bool engineSupported = true,
     Stream<bool>? readAloudFlag,
     Widget? hostControl,
+    Widget? sidePanel,
     String? dressedFor,
     bool surprise = false,
   }) async {
@@ -56,6 +57,7 @@ void main() {
                     sourceId: 'task-1',
                     spokenText: 'Two items left.',
                     controls: hostControl,
+                    sidePanel: sidePanel,
                     dressedFor: dressedFor,
                   )
                 : openCompanionStage(
@@ -320,5 +322,51 @@ void main() {
 
     expect(find.byType(CompanionStagePage), findsNothing);
     expect(find.text('open'), findsOneWidget);
+  });
+
+  group("a host's side panel", () {
+    const panel = SizedBox.expand(key: Key('host-panel'));
+
+    testWidgets('stands beside her on a desktop window, she keeping the '
+        'larger share', (tester) async {
+      tester.view
+        ..physicalSize = const Size(1600, 1000)
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await openStage(tester, sidePanel: panel);
+
+      final side = tester.getRect(find.byKey(const Key('host-panel')));
+      final figure = tester.getRect(
+        find.byKey(const ValueKey('companionStageFigure')),
+      );
+      expect(side.left, greaterThanOrEqualTo(figure.right));
+      expect(
+        side.width / (side.width + figure.width),
+        closeTo(
+          CompanionStagePage.sidePanelFlex /
+              (CompanionStagePage.sidePanelFlex +
+                  CompanionStagePage.figureFlex),
+          0.01,
+        ),
+      );
+    });
+
+    testWidgets('is left out on a phone, where she takes the screen', (
+      tester,
+    ) async {
+      tester.view
+        ..physicalSize = const Size(390, 844)
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await openStage(tester, sidePanel: panel);
+
+      expect(find.byKey(const Key('host-panel')), findsNothing);
+      expect(
+        tester
+            .getRect(find.byKey(const ValueKey('companionStageFigure')))
+            .width,
+        390,
+      );
+    });
   });
 }

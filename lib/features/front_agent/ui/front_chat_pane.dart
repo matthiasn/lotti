@@ -9,6 +9,7 @@ import 'package:lotti/features/ai/state/subject_dictation_providers.dart';
 import 'package:lotti/features/daily_os_next/state/selected_date_provider.dart';
 import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
 import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
+import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
@@ -18,7 +19,6 @@ import 'package:lotti/features/front_agent/state/front_conversation_providers.da
 import 'package:lotti/features/front_agent/state/front_inbox_filter.dart';
 import 'package:lotti/features/front_agent/state/front_journal_access_provider.dart';
 import 'package:lotti/features/front_agent/ui/front_ask_options_row.dart';
-import 'package:lotti/features/front_agent/ui/front_category_chips.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_header.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_hero.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_voice.dart';
@@ -60,18 +60,14 @@ class FrontChatPane extends ConsumerWidget {
     // Her reply to a spoken turn is spoken back, list open or not.
     FrontVoice.listenForSpokenReply(ref, context);
     final inboxOnly = ref.watch(frontInboxFilterProvider);
-    // A thread opens at its top, her bust in view, so the header lets her
-    // go: on another conversation, and on the thread coming back from the
-    // list (it is rebuilt at its top). Listened here, where it is always
-    // mounted, not in the thread, which the list replaces.
+    // What was being said belongs to the conversation it was said in:
+    // leaving it — for another, or for the list — lets it go, rather than
+    // sending it into wherever the user went. Listened here, where it is
+    // always mounted, not in the thread, which the list replaces.
     void letHerGo(Object? previous, Object? next) {
       if (previous == next) return;
-      ref.read(frontHeroScrolledProvider.notifier).reset();
-      // What was being said belongs to the conversation it was said in:
-      // leaving it — for another, or for the list — lets it go, rather than
-      // sending it into wherever the user went.
-      // (Only on leaving one: a conversation resolving as the surface opens
-      // is where the user already is.)
+      // Only on leaving one: a conversation resolving as the surface opens
+      // is where the user already is.
       final recorder = ref.read(chatRecorderControllerProvider);
       if (previous != null &&
           (recorder.status == ChatRecorderStatus.recording ||
@@ -114,7 +110,7 @@ class FrontChatPane extends ConsumerWidget {
                   child: Column(
                     children: [
                       FrontChatHeader(onClose: onClose, listBeside: true),
-                      Expanded(child: _Body(onClose: onClose)),
+                      Expanded(child: FrontChatThreadView(onClose: onClose)),
                     ],
                   ),
                 ),
@@ -126,7 +122,7 @@ class FrontChatPane extends ConsumerWidget {
                 Expanded(
                   child: listOpen
                       ? const FrontConversationList()
-                      : _Body(onClose: onClose),
+                      : FrontChatThreadView(onClose: onClose),
                 ),
               ],
             ),
@@ -134,8 +130,11 @@ class FrontChatPane extends ConsumerWidget {
   }
 }
 
-class _Body extends ConsumerWidget {
-  const _Body({required this.onClose});
+/// One conversation's thread and the field under it — or, while the inbox is
+/// on, every turn still waiting on the user. In the pane under her header,
+/// and beside her on her full-screen stage on a desktop window.
+class FrontChatThreadView extends ConsumerWidget {
+  const FrontChatThreadView({required this.onClose, super.key});
 
   /// Closes her surface. Everything that leaves her for a page goes through
   /// this, never `maybePop`: while the list or the inbox is open, back is
@@ -267,15 +266,8 @@ class _Body extends ConsumerWidget {
     );
 
     return AgentChatView(
-      // The thread's scroll moves her: once her bust has gone by, the
-      // header carries her and the title in a line.
-      onThreadScrolled: (metrics) =>
-          ref.read(frontHeroScrolledProvider.notifier).follow(metrics.pixels),
       agentId: frontAgentId,
       agentName: messages.frontChatTitle,
-      // Where the question is asked, its scope: the conversation's chips,
-      // in the composer — not in the inbox, which spans every conversation.
-      composerHeader: inboxOnly ? null : const FrontCategoryChips(),
       // Each conversation keeps its own scroll position.
       conversationId: inboxOnly
           ? 'front-chat-inbox'
@@ -284,28 +276,49 @@ class _Body extends ConsumerWidget {
       // A conversation with her, not a log: her words as prose, the user's
       // in a soft bubble; what was said goes out as it stops.
       conversational: true,
+      // One reading column for the thread and the field under it, so the
+      // field's edges line up with the messages on a wide window.
+      contentMaxWidth: kProseMeasureWidth,
       voiceFirst: true,
       // One field for both, as a chat app has it: the mic at its end until
       // there are words, then the send arrow.
       composerShape: DesignSystemTextInputShape.pill,
-      // She leads the thread, and scrolls away with it.
-      leading: inboxOnly ? null : const FrontChatHero(),
-      // A conversation not begun opens on her, and what she can do.
+      // A conversation not begun opens on her, and what she can do, in the
+      // middle of where the thread will be.
       emptyState: inboxOnly
           ? null
-          : ListView(
-              padding: EdgeInsets.all(context.designTokens.spacing.step5),
-              children: [
-                const FrontChatHero(),
-                Text(
-                  messages.frontChatEmpty,
-                  textAlign: TextAlign.center,
-                  style: context.designTokens.typography.styles.body.bodyMedium
-                      .copyWith(
-                        color: context.designTokens.colors.text.mediumEmphasis,
+          : Center(
+              child: SingleChildScrollView(
+                padding: EdgeInsets.all(context.designTokens.spacing.step5),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    maxWidth: kProseMeasureWidth,
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const FrontChatHero(),
+                      Text(
+                        messages.frontChatEmpty,
+                        textAlign: TextAlign.center,
+                        style: context
+                            .designTokens
+                            .typography
+                            .styles
+                            .body
+                            .bodyMedium
+                            .copyWith(
+                              color: context
+                                  .designTokens
+                                  .colors
+                                  .text
+                                  .mediumEmphasis,
+                            ),
                       ),
+                    ],
+                  ),
                 ),
-              ],
+              ),
             ),
       emptyMessage: inboxOnly
           ? messages.frontChatInboxEmpty

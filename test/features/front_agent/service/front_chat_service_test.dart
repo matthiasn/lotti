@@ -174,17 +174,17 @@ void main() {
     );
 
     test(
-      "a turn sent with the conversation's chips carries them, sorted",
+      'a turn names no categories of its own: a category named in the '
+      'question narrows it',
       () async {
         await service.appendMessage(
           text: 'How is the garden?',
           conversationId: 'c-1',
-          categoryIds: const {'nests', 'colony'},
         );
 
         final payload = upserts.whereType<AgentMessagePayloadEntity>().single;
-        expect(payload.content['categoryIds'], ['colony', 'nests']);
-        expect(frontCategoriesOf(payload.content), {'colony', 'nests'});
+        expect(payload.content.containsKey(frontCategoriesKey), isFalse);
+        expect(frontCategoriesOf(payload.content), isEmpty);
       },
     );
 

@@ -30,8 +30,8 @@ overdue) and answers in her own words. So is how much time was logged —
 today, yesterday, this week, the past 7 or 30 days, this month or last
 month: she sums it per category, with the numbers the Insights page shows,
 and says it as text. She knows the categories by name: one
-named in the question narrows the answer, and so do the categories chosen in
-the conversation's chips, alone or together. Every task
+named in the question narrows the answer — there is nothing to pick. Two
+tasks or more come back as a list, one per line. Every task
 or project she names is a link that closes her and opens it, and every
 answer is shown as the Markdown it was written in. A statement under a task or a project is a **proposal**: one tap
 files the user's words verbatim as an entry under it, and only the tap
@@ -68,21 +68,21 @@ and a proposal she got wrong goes to the inbox rather than being retyped.
   recovery on every device.
 - `state/` — providers, the composer controller, the thread providers, the
   picked and active conversation, the spoken turn awaiting her spoken reply
-  (`front_voice_providers.dart`), the chip options and each conversation's
-  chosen categories (`front_category_scope.dart`), and the wake-runner,
+  (`front_voice_providers.dart`), and the wake-runner,
   maintenance and
   setup-resolver contributions merged in `app_bootstrap.dart`.
-- `ui/` — her control row and the hero that leads a conversation (her bust
-  and its title), her voice (`front_chat_voice.dart`: the spoken reply, when
+- `ui/` — her header (her face, her name and the conversation's title, her
+  voice's controls), the hero that greets a conversation not begun (her
+  bust), the switch that mutes her (`front_voice_switch.dart`), her voice (`front_chat_voice.dart`: the spoken reply, when
   she may speak, the pose she holds), her voice's control and her stage
   (`front_voice_controls.dart`: stop her, or have her say her latest answer
   again from the start, in the voice she said it in; stand her up full
-  screen on any form factor), what stands at her feet there
+  screen on any form factor, the conversation beside her on a desktop
+  window), what stands at her feet there
   (`front_stage_controls.dart`: hold the disc to talk to her, let go to
   send, drag off to cancel, or tap for hands free), the
   list of conversations with each one's ⋯ on the agent pages' shared menu
-  (`front_conversation_actions.dart`), the
-  category chips, her AI profile choice (`front_profile_choice.dart`: the
+  (`front_conversation_actions.dart`), her AI profile choice (`front_profile_choice.dart`: the
   profile she thinks with, whose read-aloud model is her voice), the door
   card with its proposals and inbox chips, the
   clarifying chips, the per-turn cost line, the pane on the shared

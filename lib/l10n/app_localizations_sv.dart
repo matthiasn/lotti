@@ -7190,16 +7190,13 @@ class AppLocalizationsSv extends AppLocalizations {
   String get frontChatRowMenuHint => 'Chattåtgärder';
 
   @override
-  String get frontChatScopeAll => 'Allt';
-
-  @override
-  String get frontChatScopeLabel => 'Svar från';
-
-  @override
   String get frontChatSearchChats => 'Sök i chattar';
 
   @override
   String get frontChatTitle => 'Följeslagare';
+
+  @override
+  String get frontChatVoiceLabel => 'Röst';
 
   @override
   String get frontChatYesterday => 'Igår';

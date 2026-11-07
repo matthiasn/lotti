@@ -15,6 +15,7 @@ import 'package:lotti/features/ai_consumption/model/consumption_aggregation_mode
 import 'package:lotti/features/ai_consumption/state/consumption_providers.dart';
 import 'package:lotti/features/daily_os_next/state/selected_date_provider.dart';
 import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
+import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
 import 'package:lotti/features/front_agent/model/front_chat_thread.dart';
@@ -413,87 +414,60 @@ void main() {
     expect(find.byType(AgentChatView), findsOneWidget);
   });
 
-  testWidgets('scrolling the thread past her bust puts her and the title in '
-      "the header's line", (tester) async {
+  testWidgets('a begun conversation leads with its first message — she is '
+      'in the header — and one not begun greets with her figure', (
+    tester,
+  ) async {
     var fresh = false;
     await pumpPane(
       tester,
       thread: () async => FrontChatThread(
         messages: [
-          for (var i = 0; i < (fresh ? 0 : 80); i++)
-            message(
-              'm$i',
-              i.isEven ? AgentChatRole.user : AgentChatRole.agent,
-              'Penguin count $i',
-              now,
-            ),
+          if (!fresh) message('m0', AgentChatRole.user, 'Penguin count 0', now),
         ],
       ),
     );
     final container = ProviderScope.containerOf(
       tester.element(find.byType(FrontChatHeader)),
     );
-    final scrolled = container.listen(frontHeroScrolledProvider, (_, _) {});
-    addTearDown(scrolled.close);
-    final list = find.byType(ListView).first;
-    await tester.drag(list, const Offset(0, -600));
-    await tester.pump();
-    expect(scrolled.read(), isTrue);
+    expect(find.byKey(FrontChatHeroKeys.hero), findsNothing);
+    final header = tester.getRect(find.byType(FrontChatHeader));
+    final first = tester.getRect(find.text('Penguin count 0'));
+    expect(first.top - header.bottom, lessThan(ControlSizes.avatarHero));
 
-    // Another conversation opens at its top, her bust in view: the header
-    // lets her go.
-    await withClock(Clock.fixed(now), () async {
-      container.read(frontPickedConversationProvider.notifier).picked = 'c-2';
-      await tester.pump();
-      await tester.pump();
-    });
-    expect(scrolled.read(), isFalse);
-
-    await tester.drag(find.byType(ListView).first, const Offset(0, -600));
-    await tester.pump();
-    expect(scrolled.read(), isTrue);
-
-    // Back to the top, she leaves the header line again.
-    await tester.fling(
-      find.byType(ListView).first,
-      const Offset(0, 3000),
-      5000,
-    );
-    await tester.pumpAndSettle();
-    expect(scrolled.read(), isFalse);
-
-    // Back from the list in the same chat, the thread is where it was left
-    // — at its latest message, where nothing moves on the way back — and so
-    // is she.
-    await tester.drag(find.byType(ListView).first, const Offset(0, -100000));
-    await tester.pumpAndSettle();
-    expect(scrolled.read(), isTrue);
-    await tester.tap(find.byKey(FrontChatHeaderKeys.chats));
-    await tester.pump();
-    container.read(frontConversationListOpenProvider.notifier).close();
-    await tester.pump();
-    await tester.pump();
-    expect(scrolled.read(), isTrue);
-
-    // A new chat started from the list: the thread was not there to see
-    // it, and an empty one has nothing to scroll, yet she stands at its
-    // top and the header lets her go.
-    await tester.drag(find.byType(ListView).first, const Offset(0, -600));
-    await tester.pump();
-    expect(scrolled.read(), isTrue);
-    await tester.tap(find.byKey(FrontChatHeaderKeys.chats));
-    await tester.pump();
     fresh = true;
     container
       ..invalidate(frontChatThreadProvider)
       ..read(frontPickedConversationProvider.notifier).startNew();
-    // The new chat is resolved while the list is still up.
     await tester.pump();
     await tester.pump();
-    container.read(frontConversationListOpenProvider.notifier).close();
-    await tester.pump();
-    await tester.pump();
-    expect(scrolled.read(), isFalse);
+
+    expect(find.byKey(FrontChatHeroKeys.hero), findsOne);
+  });
+
+  testWidgets('the thread and the field under it keep to one reading '
+      'column on a wide window, their edges lined up', (tester) async {
+    tester.view
+      ..physicalSize = const Size(1400, 900)
+      ..devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await pumpPane(
+      tester,
+      thread: () async => FrontChatThread(
+        messages: [message('m0', AgentChatRole.user, 'Penguin count 0', now)],
+      ),
+    );
+
+    final field = tester.getRect(find.byType(TextField));
+    final view = tester.widget<AgentChatView>(find.byType(AgentChatView));
+    expect(view.contentMaxWidth, kProseMeasureWidth);
+    expect(field.width, lessThanOrEqualTo(kProseMeasureWidth));
+    // Centred in the pane, as the thread's column is.
+    final pane = tester.getRect(find.byType(AgentChatView));
+    expect(
+      field.center.dx,
+      closeTo(pane.center.dx, kProseMeasureWidth / 2),
+    );
   });
 
   testWidgets('what is being said stays with its conversation: leaving it '
