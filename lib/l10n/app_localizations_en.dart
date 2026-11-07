@@ -5068,7 +5068,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dailyOsNextDayBack => 'Back';
 
   @override
-  String get dailyOsNextDayCheckInCta => 'Speak a check-in';
+  String get dailyOsNextDayComposerCheckInHint => 'Talk or type a check-in';
 
   @override
   String get dailyOsNextDayDeleteDialogBody =>
@@ -5389,10 +5389,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dailyOsNextRefineHeadlineThinking => 'Reworking your plan…';
 
   @override
-  String get dailyOsNextRefineKeepTalking => 'Keep talking';
+  String get dailyOsNextRefineKeepChanges => 'Keep changes';
 
   @override
-  String get dailyOsNextRefineKeepChanges => 'Keep changes';
+  String get dailyOsNextRefineKeepTalking => 'Keep talking';
 
   @override
   String get dailyOsNextRefineNoChanges =>

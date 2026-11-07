@@ -264,7 +264,7 @@ class _ChatComposer extends ConsumerWidget {
                   correctTranscript: correctTranscript,
                   resolveDictionaryCategory: resolveDictionaryCategory,
                 );
-            return _IdleComposer(
+            return ChatComposerField(
               controller: controller,
               hintText: hintText,
               isSending: isSending,
@@ -283,77 +283,6 @@ class _ChatComposer extends ConsumerWidget {
           }(),
         }),
       ),
-    );
-  }
-}
-
-class _IdleComposer extends StatelessWidget {
-  const _IdleComposer({
-    required this.controller,
-    required this.hintText,
-    required this.isSending,
-    required this.allowDraftWhileSending,
-    required this.sendingLabel,
-    required this.draft,
-    required this.onDraftChanged,
-    required this.onSend,
-    required this.onStartRecording,
-    required this.shape,
-    this.autofocus = false,
-  });
-
-  final bool autofocus;
-  final TextEditingController controller;
-  final String hintText;
-  final bool isSending;
-  final bool allowDraftWhileSending;
-  final String sendingLabel;
-  final String draft;
-  final ValueChanged<String> onDraftChanged;
-  final VoidCallback onSend;
-  final VoidCallback onStartRecording;
-  final DesignSystemTextInputShape shape;
-
-  @override
-  Widget build(BuildContext context) {
-    final hasText = draft.trim().isNotEmpty;
-    final canSend = hasText && !isSending;
-    final canRecord = !isSending && !hasText;
-
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        Expanded(
-          child: DesignSystemTextInput(
-            controller: controller,
-            autofocus: autofocus,
-            shape: shape,
-            hintText: hintText,
-            helperText: isSending && !allowDraftWhileSending
-                ? sendingLabel
-                : null,
-            enabled: !isSending || allowDraftWhileSending,
-            textCapitalization: TextCapitalization.sentences,
-            emphasizeTrailingIcon:
-                hasText && shape == DesignSystemTextInputShape.pill,
-            trailingIcon: hasText
-                ? (shape == DesignSystemTextInputShape.pill
-                      ? LottiIcons.arrowUp
-                      : LottiIcons.send)
-                : (canRecord ? LottiIcons.mic : null),
-            onTrailingIconTap: hasText
-                ? (canSend ? onSend : null)
-                : (canRecord ? onStartRecording : null),
-            trailingIconTooltip: hasText
-                ? context.messages.chatInputSendTooltip
-                : (canRecord ? context.messages.chatInputRecordVoice : null),
-            onChanged: onDraftChanged,
-            onSubmitted: (_) {
-              if (canSend) onSend();
-            },
-          ),
-        ),
-      ],
     );
   }
 }

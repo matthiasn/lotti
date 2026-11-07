@@ -2,6 +2,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/agents/ui/chat/agent_typing_indicator.dart';
+import 'package:lotti/features/agents/ui/chat/chat_composer_field.dart';
 import 'package:lotti/features/agents/ui/chat/chat_recorder_controller.dart';
 import 'package:lotti/features/agents/ui/chat/chat_recorder_error_message.dart';
 import 'package:lotti/features/agents/ui/chat/chat_recording_pill.dart';

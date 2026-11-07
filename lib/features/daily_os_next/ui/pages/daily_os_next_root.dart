@@ -46,7 +46,14 @@ class _DailyOsNextRootState extends ConsumerState<DailyOsNextRoot> {
   /// no-ops — `complete`/`dismiss` return immediately — so this behaves exactly
   /// like the previous fire-and-forget open. During a walkthrough it records
   /// completion (retiring the auto-show cadence) or a dismissal skip.
-  Future<void> _runCheckIn(DateTime date) async {
+  ///
+  /// [transcript] opens the capture with those typed words; [listen] opens
+  /// it already recording — the two ways the Day composer starts one.
+  Future<void> _runCheckIn(
+    DateTime date, {
+    String? transcript,
+    bool listen = false,
+  }) async {
     final setupStatus = await ref.read(dailyOsSetupStatusProvider.future);
     if (!mounted) return;
     if (!setupStatus.hasInferenceRoute) {
@@ -56,7 +63,10 @@ class _DailyOsNextRootState extends ConsumerState<DailyOsNextRoot> {
     final result = await showDayPlanningModal(
       context: context,
       dayDate: date,
-      intent: const DayPlanningCreate(),
+      intent: DayPlanningCreate(
+        initialTranscript: transcript,
+        startListening: listen,
+      ),
     );
     if (!mounted) return;
     final controller = ref.read(
@@ -120,13 +130,15 @@ class _DailyOsNextRootState extends ConsumerState<DailyOsNextRoot> {
     }
     // No plan for the selected date — show the Day surface in its empty
     // mode so any recorded sessions are still visible on the timeline.
-    // The footer CTA opens the day-planning modal (Capture → Reconcile →
-    // Drafting), a full-height layer that covers the bottom nav.
+    // The footer composer opens the day-planning modal (Capture → Reconcile
+    // → Drafting), a full-height layer that covers the bottom nav.
     return DayPage(
       key: ValueKey('empty-${selectedDate.toIso8601String()}'),
       draft: DraftPlan.emptyForDay(selectedDate),
       hasPlan: false,
-      onCheckIn: () => unawaited(_runCheckIn(selectedDate)),
+      onCheckIn: ({transcript, listen = false}) => unawaited(
+        _runCheckIn(selectedDate, transcript: transcript, listen: listen),
+      ),
       dateStrip: strip,
     );
   }

@@ -5174,7 +5174,8 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsNextDayBack => 'Înapoi';
 
   @override
-  String get dailyOsNextDayCheckInCta => 'Rostiți un check-in';
+  String get dailyOsNextDayComposerCheckInHint =>
+      'Spuneți sau scrieți un check-in';
 
   @override
   String get dailyOsNextDayDeleteDialogBody =>
@@ -5499,10 +5500,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsNextRefineHeadlineThinking => 'Se reface planul dvs.…';
 
   @override
-  String get dailyOsNextRefineKeepTalking => 'Continuați să vorbiți';
+  String get dailyOsNextRefineKeepChanges => 'Păstrați modificările';
 
   @override
-  String get dailyOsNextRefineKeepChanges => 'Păstrați modificările';
+  String get dailyOsNextRefineKeepTalking => 'Continuați să vorbiți';
 
   @override
   String get dailyOsNextRefineNoChanges =>

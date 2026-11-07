@@ -5147,7 +5147,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dailyOsNextDayBack => 'Zpět';
 
   @override
-  String get dailyOsNextDayCheckInCta => 'Namluvit check-in';
+  String get dailyOsNextDayComposerCheckInHint => 'Namluv nebo napiš check-in';
 
   @override
   String get dailyOsNextDayDeleteDialogBody =>
@@ -5468,10 +5468,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dailyOsNextRefineHeadlineThinking => 'Předělávám tvůj plán…';
 
   @override
-  String get dailyOsNextRefineKeepTalking => 'Mluv dál';
+  String get dailyOsNextRefineKeepChanges => 'Ponechat změny';
 
   @override
-  String get dailyOsNextRefineKeepChanges => 'Ponechat změny';
+  String get dailyOsNextRefineKeepTalking => 'Mluv dál';
 
   @override
   String get dailyOsNextRefineNoChanges =>

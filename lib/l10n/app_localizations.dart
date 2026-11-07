@@ -8561,11 +8561,11 @@ abstract class AppLocalizations {
   /// **'Back'**
   String get dailyOsNextDayBack;
 
-  /// No description provided for @dailyOsNextDayCheckInCta.
+  /// No description provided for @dailyOsNextDayComposerCheckInHint.
   ///
   /// In en, this message translates to:
-  /// **'Speak a check-in'**
-  String get dailyOsNextDayCheckInCta;
+  /// **'Talk or type a check-in'**
+  String get dailyOsNextDayComposerCheckInHint;
 
   /// No description provided for @dailyOsNextDayDeleteDialogBody.
   ///
@@ -9113,17 +9113,17 @@ abstract class AppLocalizations {
   /// **'Reworking your plan…'**
   String get dailyOsNextRefineHeadlineThinking;
 
-  /// No description provided for @dailyOsNextRefineKeepTalking.
-  ///
-  /// In en, this message translates to:
-  /// **'Keep talking'**
-  String get dailyOsNextRefineKeepTalking;
-
   /// No description provided for @dailyOsNextRefineKeepChanges.
   ///
   /// In en, this message translates to:
   /// **'Keep changes'**
   String get dailyOsNextRefineKeepChanges;
+
+  /// No description provided for @dailyOsNextRefineKeepTalking.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep talking'**
+  String get dailyOsNextRefineKeepTalking;
 
   /// No description provided for @dailyOsNextRefineNoChanges.
   ///

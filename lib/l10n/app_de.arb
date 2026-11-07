@@ -2181,7 +2181,7 @@
   "dailyOsNextDayAgentStatusWorking": "Plant…",
   "dailyOsNextDayAgentTokensToday": "{tokens} Tokens für die Planung dieses Tages",
   "dailyOsNextDayBack": "Zurück",
-  "dailyOsNextDayCheckInCta": "Check-in einsprechen",
+  "dailyOsNextDayComposerCheckInHint": "Sprich oder schreib einen Check-in",
   "dailyOsNextDayDeleteDialogBody": "Die geplanten Blöcke für diesen Tag werden entfernt. Deine Aufnahmen und ihre Audio-Dateien bleiben in deinem Journal.",
   "dailyOsNextDayDeleteDialogCancel": "Abbrechen",
   "dailyOsNextDayDeleteDialogConfirm": "Löschen",

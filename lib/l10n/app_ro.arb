@@ -2181,7 +2181,7 @@
   "dailyOsNextDayAgentStatusWorking": "Se planifică…",
   "dailyOsNextDayAgentTokensToday": "{tokens} tokenuri folosite pentru planificarea acestei zile",
   "dailyOsNextDayBack": "Înapoi",
-  "dailyOsNextDayCheckInCta": "Rostiți un check-in",
+  "dailyOsNextDayComposerCheckInHint": "Spuneți sau scrieți un check-in",
   "dailyOsNextDayDeleteDialogBody": "Blocurile schițate pentru această zi vor fi eliminate. Capturile dvs. și înregistrările audio rămân în jurnal.",
   "dailyOsNextDayDeleteDialogCancel": "Anulați",
   "dailyOsNextDayDeleteDialogConfirm": "Ștergeți",

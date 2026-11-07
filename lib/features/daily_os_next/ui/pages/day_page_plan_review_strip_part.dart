@@ -15,9 +15,10 @@ enum _QuickRefinement { tooMuch, moveLighter, addBuffer }
 ///
 /// With no plan ([hasPlan] false — the route-level root passes a
 /// synthetic empty [draft]) the page still lands on Day, so recorded
-/// sessions and events stay visible on the timeline, and the footer carries
-/// a single "Speak a check-in" CTA instead of Refine/Commit (handoff v2
-/// item 2). Saved or recoverable recordings remain one tap away on Activity.
+/// sessions and events stay visible on the timeline, and the footer is the
+/// [DayComposerBar] instead of Refine/Commit: talk or type a check-in from
+/// where you are. Saved or recoverable recordings remain one tap away on
+/// Activity.
 class DayPage extends ConsumerStatefulWidget {
   const DayPage({
     required this.draft,
@@ -33,8 +34,10 @@ class DayPage extends ConsumerStatefulWidget {
   /// without a drafted plan.
   final bool hasPlan;
 
-  /// Routes to the Capture screen — the empty-state footer CTA.
-  final VoidCallback? onCheckIn;
+  /// Opens the check-in — from the empty-state composer (with the typed
+  /// words, or already recording when its mic was tapped) and from the
+  /// onboarding spotlight (plain).
+  final DayCheckInStarter? onCheckIn;
 
   /// Optional widget rendered in place of the default static title.
   /// The route-level `DailyOsNextRoot` uses this to inject a date
@@ -468,37 +471,51 @@ class _DayFooterActions extends StatelessWidget {
   }
 }
 
-/// Footer for a day without a drafted plan: a single primary CTA that
-/// routes to Capture so the assistant can draft a day around the
-/// already-tracked time (handoff v2 item 2).
+/// Starts the create ritual: plain, with typed [transcript] words, or with
+/// the capture already recording ([listen]).
+typedef DayCheckInStarter = void Function({String? transcript, bool listen});
+
+/// Footer for a day without a drafted plan: the [DayComposerBar], so a
+/// check-in is spoken or typed right where the day's tracked time is. When
+/// Daily OS has no inference route yet the composer would lead nowhere, so
+/// the footer is the single "Set up Daily OS" action instead.
 class _NoPlanFooter extends StatelessWidget {
   const _NoPlanFooter({
     required this.onCheckIn,
+    required this.onOpenSetup,
     required this.needsInferenceSetup,
     required this.ctaKey,
   });
 
-  final VoidCallback? onCheckIn;
+  final DayCheckInStarter? onCheckIn;
+  final VoidCallback onOpenSetup;
   final bool needsInferenceSetup;
 
   /// Measurement key for the onboarding spotlight to anchor to. The stable
-  /// [Key] used as a test finder stays on the button regardless.
+  /// [Key] used as a test finder stays on the footer's control regardless.
   final GlobalKey ctaKey;
 
   @override
   Widget build(BuildContext context) {
+    final onCheckIn = this.onCheckIn;
+    if (!needsInferenceSetup) {
+      return KeyedSubtree(
+        key: ctaKey,
+        child: DayComposerBar(
+          key: const Key('daily_os_day_check_in_cta'),
+          hintText: context.messages.dailyOsNextDayComposerCheckInHint,
+          onStartVoice: () => onCheckIn?.call(listen: true),
+          onSubmitText: (words) => onCheckIn?.call(transcript: words),
+        ),
+      );
+    }
     final tokens = context.designTokens;
     final button = FilledButton.icon(
       key: const Key('daily_os_day_check_in_cta'),
-      onPressed: onCheckIn,
-      icon: Icon(
-        needsInferenceSetup ? LottiIcons.settings : LottiIcons.mic,
-        size: 14,
-      ),
+      onPressed: onOpenSetup,
+      icon: const Icon(LottiIcons.settings, size: 14),
       label: Text(
-        needsInferenceSetup
-            ? context.messages.dailyOsSettingsSetupAction
-            : context.messages.dailyOsNextDayCheckInCta,
+        context.messages.dailyOsSettingsSetupAction,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),

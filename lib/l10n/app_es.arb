@@ -2181,7 +2181,7 @@
   "dailyOsNextDayAgentStatusWorking": "Planificando…",
   "dailyOsNextDayAgentTokensToday": "{tokens} tokens usados en planificar este día",
   "dailyOsNextDayBack": "Atrás",
-  "dailyOsNextDayCheckInCta": "Hacer un check-in por voz",
+  "dailyOsNextDayComposerCheckInHint": "Habla o escribe un check-in",
   "dailyOsNextDayDeleteDialogBody": "Los bloques planificados para este día se eliminarán. Tus capturas y sus grabaciones de audio se quedan en tu diario.",
   "dailyOsNextDayDeleteDialogCancel": "Cancelar",
   "dailyOsNextDayDeleteDialogConfirm": "Eliminar",

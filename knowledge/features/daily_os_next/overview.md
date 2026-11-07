@@ -73,7 +73,7 @@ stateDiagram-v2
   [*] --> Loading: route enters date
   Loading --> DayPlan: plan exists
   Loading --> DayEmpty: no plan (timeline still shows tracked time)
-  DayEmpty --> Modal: "Speak a check-in" CTA (create)
+  DayEmpty --> Modal: composer mic or typed words (create)
   DayPlan --> Modal: Refine CTA (adapt)
   state Modal {
     [*] --> Capture
@@ -97,8 +97,13 @@ events stay visible on the Day timeline — the default projection, plan or not 
 without creating a plan first. Empty mode says so honestly — the header
 briefing reads "There's no plan for this day yet…" and the Agenda view's
 capacity strip reads "No plan yet" — swaps the with-plan footer (Refine, Commit,
-Shutdown and the quick refinements) for a single "Speak a check-in" CTA, and
-hides the delete-plan menu entry.
+Shutdown and the quick refinements) for the `DayComposerBar` — the shared
+chat field (`ChatComposerField`), mic while empty, send arrow once there are
+words — and hides the delete-plan menu entry. The mic opens the create ritual
+already recording (`DayPlanningCreate.startListening`); sent words open it in
+the typed path with the words filled in (`initialTranscript`), where the user
+reviews them as any typed capture. Without an inference route the footer is a
+single "Set up Daily OS" action instead.
 
 Background agent or sync updates reload **stale-while-revalidate**: the root
 keeps rendering the last Day surface while the provider re-fetches, and only
