@@ -2187,8 +2187,8 @@ the category names into the agent's setup (`categorySnapshotSetup`, origin
 `categorySnapshot`), as a task's agent takes its category default. That setup
 follows the category: every run resolves what the category names then, else
 the Settings default ([agents that follow their category](ai/profile-resolution.md#agents-that-follow-their-category)).
-A category naming no profile leaves the agent on its standalone resolution,
-running. On
+A category naming no profile gives the agent the same following setup, so it
+runs on the Settings default until the category names one. On
 edit, a changed category goes through `EntryCategoryMove`, which takes the goal
 row, everything linked from it and its charter (linked *into* the goal) along,
 across a crash, and never a task it links to. The agent internals panel opened

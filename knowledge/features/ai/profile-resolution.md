@@ -166,11 +166,12 @@ An agent's profile is resolved on every run, never fixed when the agent is
 made. What a run resolves depends on who chose the setup:
 
 1. **The user's choice for this agent** — a profile or a thinking model picked
-   in the agent's setup sheet (origin `user`, or any setup carrying a
-   `thinkingModelOverrideId`). Authoritative, as above.
+   in the agent's setup sheet or the *Assign agent* picker (origin `user`, or
+   any setup carrying a `thinkingModelOverrideId`). Authoritative, as above.
 2. **The agent's category** — a setup of origin `categorySnapshot`, written
    when the agent was created from its category's default (task, project,
-   goal and person agents) or by *Copy category default*. Its
+   goal and person agents, including the task agents the agent tools and
+   onboarding create) or by *Copy category default*. Its
    `baseProfileId` only records what the category named that day.
    `AgentInferenceSetup.followsCategory` marks it, and
    `ProfileResolver.resolveSetup` resolves the category's **current**
@@ -185,9 +186,15 @@ The surfaces that cache a resolved setup — `taskAgentResolvedSetupProvider`
 and `goalAgentResolvedSetupProvider`, behind read-aloud and query chat —
 re-resolve on a `categoriesNotification` while the agent follows its
 category, so they move at the same moment.
-A disabled setup stays disabled whatever the category names, so a task agent
-created switched off in a category without a profile is not turned on by
-one appearing later.
+An agent the user has not touched is never created switched off.
+`categoryFollowingSetup` writes the same configured, following setup whether
+or not the category names a profile — the Settings default runs it until the
+category names one — and so does the setup sheet's *Copy category default*.
+Task agents an earlier build created switched off for a category without a
+profile (dormant, disabled, `categorySnapshot` origin — a shape nothing else
+writes) are handed back to their category at startup by
+`resumeTaskAgentsSwitchedOffForCategory`. A setup the user switched off
+(*Turn off AI*, `user` origin) stays off.
 
 ```mermaid
 flowchart TD

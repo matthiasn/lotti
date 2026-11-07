@@ -132,6 +132,31 @@ void main() {
     ).called(1);
   });
 
+  test('a failed listing is logged and returns without handing anything '
+      'back, so startup goes on', () async {
+    when(
+      () => agentService.listAgents(lifecycle: AgentLifecycle.dormant),
+    ).thenThrow(StateError('db closed'));
+
+    expect(await resume(), 0);
+
+    verify(
+      () => logger.error(
+        LogDomain.agentRuntime,
+        any<Object>(that: isA<StateError>()),
+        stackTrace: any(named: 'stackTrace'),
+        subDomain: 'restore',
+        message: any(named: 'message'),
+      ),
+    ).called(1);
+    verifyNever(
+      () => taskAgentService.updateAgentInferenceSetup(
+        agentId: any(named: 'agentId'),
+        setup: any(named: 'setup'),
+      ),
+    );
+  });
+
   test(
     'changes nothing when no agent was switched off for its category',
     () async {

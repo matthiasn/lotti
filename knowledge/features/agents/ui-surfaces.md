@@ -681,8 +681,9 @@ row, *Use profile default*, *Copy category default* and *Turn off AI* appear onl
 when the sheet is opened for an entity (`entityId`); other profile-only opens
 show the profile row alone. *Copy category default* reads the category of a
 task, a project, a person or a goal — the entities an agent serves that carry
-their own — and writes a `categorySnapshot` setup naming its default
-profile, which then follows the category at every run; reading it for tasks and
+their own — and writes `categoryFollowingSetup`, which follows the category
+at every run (its profile, else the Settings default) and runs an agent that
+was switched off for a category without one; reading it for tasks and
 projects alone made it write a disabled setup for a person's or a goal's
 agent. The internals panel passes a goal's row as the entity
 (`AgentInternalsPanel.subjectEntityId`) when the goal page opens it.

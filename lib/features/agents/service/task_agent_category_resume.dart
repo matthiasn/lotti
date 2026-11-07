@@ -1,4 +1,5 @@
 import 'package:lotti/classes/agents/agent_constants.dart';
+import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/features/agents/service/category_snapshot_setup.dart';
 import 'package:lotti/features/agents/service/task_agent_service.dart';
@@ -25,9 +26,23 @@ Future<int> resumeTaskAgentsSwitchedOffForCategory({
   required TaskAgentService taskAgentService,
   required DomainLogger domainLogger,
 }) async {
-  final dormant = await taskAgentService.agentService.listAgents(
-    lifecycle: AgentLifecycle.dormant,
-  );
+  final List<AgentIdentityEntity> dormant;
+  try {
+    dormant = await taskAgentService.agentService.listAgents(
+      lifecycle: AgentLifecycle.dormant,
+    );
+  } catch (error, stackTrace) {
+    // A repair, not a precondition: the agents stay as they were until the
+    // next start, and startup goes on.
+    domainLogger.error(
+      LogDomain.agentRuntime,
+      error,
+      stackTrace: stackTrace,
+      subDomain: 'restore',
+      message: 'Could not list dormant agents to hand back to their category',
+    );
+    return 0;
+  }
   var resumed = 0;
   for (final agent in dormant) {
     final setup = agent.config.inferenceSetup;

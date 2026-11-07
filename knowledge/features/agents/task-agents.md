@@ -265,11 +265,12 @@ The manual *Assign agent* CTA is **excluded on purpose**: the user picks templat
 and profile in a modal and the result is marked `setupOrigin: user`, so it is an
 explicit setup gesture rather than the category acting on the user's behalf.
 
-The three non-helper paths deliberately do **not** route through
-`assignCategoryDefaultTaskAgent`, because it also passes
-`setupOrigin: categorySnapshot` — which makes a category without a
-`defaultProfileId` produce a *disabled* agent rather than falling back to the
-template's profile. **Any new category default has to be added to all three.**
+The three non-helper paths forward the category defaults themselves rather
+than routing through `assignCategoryDefaultTaskAgent`, and each passes
+`setupOrigin: categorySnapshot` with the category id, so their agents follow
+the category like the helper's instead of keeping the profile they were
+created with as if the user had picked it. **Any new category default has to
+be added to all three.**
 
 ## Why the announcement exists
 
@@ -373,10 +374,13 @@ New agents record where their setup came from (`user`, category, or template).
 A configured setup copied from the category follows it: every wake resolves
 the category's current profile, else the Settings default
 ([agents that follow their category](../ai/profile-resolution.md#agents-that-follow-their-category)).
-Category assignment with no default profile creates an explicit **disabled**
-setup even if the selected template has a profile; the header then shows *No
-profile selected* and *Update now* stays disabled until a profile or direct
-thinking model is chosen.
+Category assignment with no default profile creates the same following setup
+(`categoryFollowingSetup`), never a disabled one, and never takes the
+template's profile: the agent runs on the Settings default until the category
+names a profile. Agents an earlier build created switched off that way are
+handed back to their category at startup
+(`resumeTaskAgentsSwitchedOffForCategory`); only *Turn off AI* (`user`
+origin) keeps an agent off.
 
 Task-agent wakes pass the resolved profile's `thinkingModel?.geminiThinkingMode`
 into `CloudInferenceWrapper`. Thinking level is profile-driven — there is no

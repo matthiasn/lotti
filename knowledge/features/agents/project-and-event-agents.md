@@ -146,27 +146,29 @@ One the user picked is authoritative; one copied from the category follows it
 — each wake resolves the category's current profile, else the Settings
 default ([agents that follow their category](../ai/profile-resolution.md#agents-that-follow-their-category)).
 
-- **New project** (`ProjectCreateForm`): the category's `defaultProfileId`,
-  with `setupOrigin: categorySnapshot` and the category id as origin entity —
-  the same default a new task's agent takes from its category (see
-  [task agents](task-agents.md)). The two differ when the category has no
-  default: a task agent is then created with a *disabled* setup, while a
-  project agent gets no typed setup and falls back to the legacy chain below.
+- **New project** (`ProjectCreateForm`): `setupOrigin: categorySnapshot` and
+  the category id as origin entity, so `categoryFollowingSetup` writes a
+  configured setup that follows the category — the same default a new task's
+  agent takes from its category (see [task agents](task-agents.md)). A
+  category without a default still gets that setup: the agent runs on the
+  Settings default until the category names a profile, never on the
+  template's built-in model.
 - **Assign agent** on a project without one: the profile picked in the
   creation modal, `setupOrigin: user`.
-- **No profile** (a category without a default): no typed setup is written,
-  so the agent keeps the legacy chain in `ProfileResolver` — template profile,
-  then the template's built-in model (the seeded templates carry
-  `models/gemini-3-flash-preview`), then the device's Settings default. That
-  chain is what every project agent used before, which is why projects ran on
-  Gemini regardless of the category.
+- **No profile and no category origin** — only an agent created by an older
+  build: no typed setup, so the legacy chain in `ProfileResolver` applies —
+  template profile, then the template's built-in model (the seeded templates
+  carry `models/gemini-3-flash-preview`), then the device's Settings default.
 
 ```mermaid
 flowchart TD
-  Create["createProjectAgent(profileId, setupOrigin)"] --> Has{"profileId?"}
+  Create["createProjectAgent(profileId, setupOrigin)"] --> Origin{"setupOrigin categorySnapshot?"}
+  Origin -->|yes| Follow["categoryFollowingSetup<br/>configured · follows the category"]
+  Origin -->|no| Has{"profileId?"}
   Has -->|yes| Typed["AgentInferenceSetup<br/>configured · baseProfileId"]
   Has -->|no| Legacy["inferenceSetup = null<br/>legacy chain"]
-  Typed --> Resolve["ProfileResolver.resolveSetup"]
+  Follow --> Resolve["ProfileResolver.resolveSetup"]
+  Typed --> Resolve
   Legacy --> Chain["template profile → template model → Settings default"]
 ```
 
