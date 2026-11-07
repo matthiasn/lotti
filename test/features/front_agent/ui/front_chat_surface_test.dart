@@ -18,7 +18,11 @@ import 'package:material_ui/material_ui.dart';
 import '../../../widget_test_utils.dart';
 
 void main() {
-  Future<void> open(WidgetTester tester, Size window) async {
+  Future<void> open(
+    WidgetTester tester,
+    Size window, {
+    EdgeInsets padding = EdgeInsets.zero,
+  }) async {
     await setUpTestGetIt();
     addTearDown(tearDownTestGetIt);
     setTestSurfaceSize(tester, window);
@@ -30,7 +34,11 @@ void main() {
             child: const Text('Ask'),
           ),
         ),
-        mediaQueryData: MediaQueryData(size: window),
+        mediaQueryData: MediaQueryData(
+          size: window,
+          padding: padding,
+          viewPadding: padding,
+        ),
         overrides: [
           frontChatThreadProvider.overrideWith(
             (ref) async => FrontChatThread.empty,
@@ -89,6 +97,40 @@ void main() {
     final rect = tester.getRect(find.byType(FrontChatPane));
     expect(rect.width, moreOrLessEquals(phone.width, epsilon: 1));
     expect(rect.height, moreOrLessEquals(phone.height, epsilon: 1));
+  });
+
+  testWidgets('on a phone with a notch and a home indicator she still reaches '
+      'both edges, her header and composer clear of them', (tester) async {
+    const phone = Size(390, 844);
+    const insets = EdgeInsets.only(top: 47, bottom: 34);
+    await open(tester, phone, padding: insets);
+
+    // No strip of barrier above or below her.
+    final surface = tester.getRect(find.byType(Scaffold).last);
+    expect(surface.top, 0);
+    expect(surface.bottom, phone.height);
+    // What she draws keeps clear of the status bar and the home indicator.
+    expect(
+      tester.getRect(find.byType(FrontChatHeader)).top,
+      greaterThanOrEqualTo(insets.top),
+    );
+    expect(
+      tester.getRect(find.byType(TextField)).bottom,
+      lessThanOrEqualTo(phone.height - insets.bottom),
+    );
+  });
+
+  testWidgets('a panel stands clear of the system bars, its header at its '
+      'own top', (tester) async {
+    const tablet = Size(800, 900);
+    const insets = EdgeInsets.only(top: 24, bottom: 20);
+    await open(tester, tablet, padding: insets);
+
+    final panel = tester.getRect(find.byType(FrontChatPane));
+    expect(panel.top, greaterThan(insets.top));
+    expect(panel.bottom, lessThan(tablet.height - insets.bottom));
+    // Not padded a second time inside the panel.
+    expect(tester.getRect(find.byType(FrontChatHeader)).top, panel.top);
   });
 
   testWidgets("the pane's close dismisses her", (tester) async {
