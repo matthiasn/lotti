@@ -15,6 +15,7 @@ import 'package:lotti/classes/agents/agent_link.dart';
 import 'package:lotti/database/agents/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_automation_policy.dart';
 import 'package:lotti/features/agents/service/agent_service.dart';
+import 'package:lotti/features/agents/service/category_snapshot_setup.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/logic/repositories/project_agent_mutation_coordinator.dart';
@@ -139,12 +140,21 @@ class ProjectAgentService {
         );
       }
 
+      // The category's default follows its category even when it names no
+      // profile yet, so the agent lands on the Settings default rather than
+      // the template's built-in model.
       final identity = await agentService.createAgent(
         kind: _agentKind,
         displayName: displayName,
         config: AgentConfig(
           profileId: assignedProfileId,
-          inferenceSetup: assignedProfileId == null
+          inferenceSetup:
+              setupOrigin == AgentInferenceSetupOrigin.categorySnapshot
+              ? categoryFollowingSetup(
+                  categoryId: setupOriginEntityId,
+                  profileId: assignedProfileId,
+                )
+              : assignedProfileId == null
               ? null
               : AgentInferenceSetup(
                   mode: AgentInferenceSetupMode.configured,

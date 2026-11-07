@@ -15,6 +15,7 @@ import 'package:lotti/database/agents/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_automation_policy.dart';
 import 'package:lotti/features/agents/service/agent_service.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
+import 'package:lotti/features/agents/service/category_snapshot_setup.dart';
 import 'package:lotti/features/agents/service/task_agent_retirement.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
@@ -162,36 +163,34 @@ class TaskAgentService {
         );
       }
 
+      // The category default follows its category — with or without a
+      // profile named today — and never falls back to the template's.
       final templateProfileId = templateEntity.profileId;
-      final categoryHasNoDefault =
-          setupOrigin == AgentInferenceSetupOrigin.categorySnapshot &&
-          profileId == null;
-      final baseProfileId = categoryHasNoDefault
-          ? null
-          : profileId ?? templateProfileId;
-      final effectiveOrigin = profileId != null
-          ? (setupOrigin ?? AgentInferenceSetupOrigin.user)
-          : !categoryHasNoDefault && templateProfileId != null
-          ? AgentInferenceSetupOrigin.templateSnapshot
-          : (setupOrigin ?? AgentInferenceSetupOrigin.user);
-      final inferenceSetup = AgentInferenceSetup(
-        mode: baseProfileId == null
-            ? AgentInferenceSetupMode.disabled
-            : AgentInferenceSetupMode.configured,
-        origin: effectiveOrigin,
-        baseProfileId: baseProfileId,
-        originEntityId: profileId != null
-            ? setupOriginEntityId
-            : !categoryHasNoDefault && templateProfileId != null
-            ? resolvedTemplateId
-            : setupOriginEntityId,
-      );
+      final baseProfileId = profileId ?? templateProfileId;
+      final inferenceSetup =
+          setupOrigin == AgentInferenceSetupOrigin.categorySnapshot
+          ? categoryFollowingSetup(
+              categoryId: setupOriginEntityId,
+              profileId: profileId,
+            )
+          : AgentInferenceSetup(
+              mode: baseProfileId == null
+                  ? AgentInferenceSetupMode.disabled
+                  : AgentInferenceSetupMode.configured,
+              origin: profileId == null && templateProfileId != null
+                  ? AgentInferenceSetupOrigin.templateSnapshot
+                  : (setupOrigin ?? AgentInferenceSetupOrigin.user),
+              baseProfileId: baseProfileId,
+              originEntityId: profileId == null && templateProfileId != null
+                  ? resolvedTemplateId
+                  : setupOriginEntityId,
+            );
       final createdIdentity = await agentService.createAgent(
         kind: _agentKind,
         displayName: displayName ?? 'Task Agent',
         config: AgentConfig(
           modelId: templateEntity.modelId,
-          profileId: baseProfileId,
+          profileId: inferenceSetup.baseProfileId,
           inferenceSetup: inferenceSetup,
           automaticUpdatesEnabled: automaticUpdatesEnabled,
         ),

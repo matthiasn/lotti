@@ -404,10 +404,11 @@ Future<Map<String, String?>> _assignedProfileNamesByAgentId(
     if (setup == null ||
         setup.mode != AgentInferenceSetupMode.configured ||
         !setup.followsCategory ||
-        !categoryProfileIds.containsKey(categoryId)) {
+        (categoryId != null && !categoryProfileIds.containsKey(categoryId))) {
       return config.assignedProfileId;
     }
-    return categoryProfileIds[categoryId] ?? await settingsDefaultId;
+    return (categoryId == null ? null : categoryProfileIds[categoryId]) ??
+        await settingsDefaultId;
   }
 
   final profileIdsByAgentId = <String, String>{

@@ -1,4 +1,5 @@
 import 'package:clock/clock.dart';
+import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -402,6 +403,8 @@ class ProjectToolDispatcher {
         taskId: task.meta.id,
         templateId: templateId,
         profileId: category.defaultProfileId,
+        setupOrigin: AgentInferenceSetupOrigin.categorySnapshot,
+        setupOriginEntityId: categoryId,
         allowedCategoryIds: {categoryId},
         awaitContent: true,
         automaticUpdatesEnabled: category.automaticAgentWakesEnabledEffective,

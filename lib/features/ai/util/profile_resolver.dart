@@ -170,7 +170,7 @@ class ProfileResolver {
 
     final categoryId = setup.originEntityId;
     final categoryLookup = _categoryProfileLookup;
-    if (setup.followsCategory && categoryId != null && categoryLookup != null) {
+    if (setup.followsCategory && categoryLookup != null) {
       return _resolveCategoryOrDefault(
         categoryId: categoryId,
         lookup: categoryLookup,
@@ -227,15 +227,17 @@ class ProfileResolver {
   }
 
   /// The category's current profile, else the Settings default — the
-  /// inheritance below an agent that has no profile of its own. A category
-  /// profile that no longer resolves falls through to the default rather
-  /// than breaking the agent; with neither, the setup is broken.
+  /// inheritance below an agent that has no profile of its own. Without a
+  /// category, or when the category names none or one that no longer
+  /// resolves, the default; with neither, the setup is broken.
   Future<ResolvedAgentSetup> _resolveCategoryOrDefault({
-    required String categoryId,
+    required String? categoryId,
     required Future<String?> Function(String categoryId) lookup,
     required AgentInferenceSetupOrigin setupOrigin,
   }) async {
-    final categoryProfileId = await lookup(categoryId);
+    final categoryProfileId = categoryId == null
+        ? null
+        : await lookup(categoryId);
     final profile =
         (categoryProfileId == null
             ? null

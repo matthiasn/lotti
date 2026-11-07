@@ -7,6 +7,7 @@ import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/model/agent_report_provenance.dart';
+import 'package:lotti/features/agents/service/category_snapshot_setup.dart';
 import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
@@ -278,13 +279,12 @@ class _AgentSetupFlowController {
         .read(taskAgentServiceProvider)
         .updateAgentInferenceSetup(
           agentId: agentId,
-          setup: AgentInferenceSetup(
-            mode: profileId == null
-                ? AgentInferenceSetupMode.disabled
-                : AgentInferenceSetupMode.configured,
-            origin: AgentInferenceSetupOrigin.categorySnapshot,
-            baseProfileId: profileId,
-            originEntityId: categoryId,
+          // Hands the agent back to its category: it follows what the category
+          // names at each run, else the Settings default — and an agent that
+          // was switched off for a category without a profile runs again.
+          setup: categoryFollowingSetup(
+            categoryId: categoryId,
+            profileId: profileId,
           ),
         );
 
