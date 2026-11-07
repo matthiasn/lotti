@@ -21,8 +21,8 @@ import 'package:lotti/features/daily_os_next/ui/widgets/agenda_view.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_activity_view.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_block_edit_modal.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_briefing_companion.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/day_check_in_composer.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_check_in_spotlight_host.dart';
-import 'package:lotti/features/daily_os_next/ui/widgets/day_composer_bar.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/edge_fade.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/knowledge_nudge.dart';
@@ -468,7 +468,8 @@ class _DayPageState extends ConsumerState<DayPage> {
               )
             else
               _NoPlanFooter(
-                onCheckIn: widget.onCheckIn,
+                day: widget.draft.dayDate,
+                onSubmitCheckIn: widget.onSubmitCheckIn,
                 onOpenSetup: () =>
                     nav_service.beamToNamed('/settings/daily-os'),
                 needsInferenceSetup: setupStatus?.hasInferenceRoute == false,
@@ -492,9 +493,7 @@ class _DayPageState extends ConsumerState<DayPage> {
               ctaKey: _checkInCtaKey,
               date: widget.draft.dayDate,
               enabled: !widget.hasPlan,
-              onCheckIn: widget.onCheckIn == null
-                  ? null
-                  : () => widget.onCheckIn!(),
+              onCheckIn: widget.onCheckIn,
             ),
           ),
         ],

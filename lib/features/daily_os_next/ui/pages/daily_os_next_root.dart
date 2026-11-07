@@ -11,7 +11,11 @@ import 'package:lotti/features/daily_os_next/ui/pages/day_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/day_planning_modal.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/day_planning_result.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/daily_os_date_strip.dart';
+import 'package:lotti/features/daily_os_next/util/day_arithmetic.dart';
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
+import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart' as nav_service;
 import 'package:material_ui/material_ui.dart';
 
@@ -46,27 +50,16 @@ class _DailyOsNextRootState extends ConsumerState<DailyOsNextRoot> {
   /// no-ops — `complete`/`dismiss` return immediately — so this behaves exactly
   /// like the previous fire-and-forget open. During a walkthrough it records
   /// completion (retiring the auto-show cadence) or a dismissal skip.
-  ///
-  /// [transcript] opens the capture with those typed words; [listen] opens
-  /// it already recording — the two ways the Day composer starts one.
   Future<void> _runCheckIn(
     DateTime date, {
-    String? transcript,
-    bool listen = false,
+    DayPlanningIntent intent = const DayPlanningCreate(),
   }) async {
-    final setupStatus = await ref.read(dailyOsSetupStatusProvider.future);
+    if (!await _hasInferenceRoute()) return;
     if (!mounted) return;
-    if (!setupStatus.hasInferenceRoute) {
-      nav_service.beamToNamed('/settings/daily-os');
-      return;
-    }
     final result = await showDayPlanningModal(
       context: context,
       dayDate: date,
-      intent: DayPlanningCreate(
-        initialTranscript: transcript,
-        startListening: listen,
-      ),
+      intent: intent,
     );
     if (!mounted) return;
     final controller = ref.read(
@@ -77,6 +70,50 @@ class _DailyOsNextRootState extends ConsumerState<DailyOsNextRoot> {
     } else {
       controller.dismiss();
     }
+  }
+
+  /// Whether Daily OS can plan at all; sends the user to its settings when it
+  /// cannot (the route was lost after the Day surface rendered).
+  Future<bool> _hasInferenceRoute() async {
+    final setupStatus = await ref.read(dailyOsSetupStatusProvider.future);
+    if (setupStatus.hasInferenceRoute) return true;
+    nav_service.beamToNamed('/settings/daily-os');
+    return false;
+  }
+
+  /// Continues a check-in spoken or typed into the Day composer: submits it
+  /// as a capture for [date] — with the recording behind it, when spoken —
+  /// and opens the planning sheet straight at Reconcile. The composer was
+  /// the capture, so there is no Capture step in front of it.
+  ///
+  /// A submit that fails leaves the words in the composer and says so.
+  Future<void> _submitCheckIn(
+    DateTime date,
+    String transcript, {
+    String? audioId,
+  }) async {
+    if (!await _hasInferenceRoute()) return;
+    final CaptureId captureId;
+    try {
+      captureId = await ref
+          .read(dayAgentProvider)
+          .submitCapture(
+            transcript: transcript,
+            capturedAt: capturedAtForDay(date, clock.now()),
+            dayDate: date,
+            audioId: audioId,
+          );
+    } on Object {
+      if (mounted) {
+        context.showToast(
+          tone: DesignSystemToastTone.error,
+          title: context.messages.dailyOsNextGenericError,
+        );
+      }
+      return;
+    }
+    if (!mounted) return;
+    await _runCheckIn(date, intent: DayPlanningReconcile(captureId));
   }
 
   /// Opens the design-system date picker.
@@ -130,15 +167,16 @@ class _DailyOsNextRootState extends ConsumerState<DailyOsNextRoot> {
     }
     // No plan for the selected date — show the Day surface in its empty
     // mode so any recorded sessions are still visible on the timeline.
-    // The footer composer opens the day-planning modal (Capture → Reconcile
-    // → Drafting), a full-height layer that covers the bottom nav.
+    // The footer composer is the check-in; sending it opens the planning
+    // sheet at Reconcile → Drafting, a full-height layer over the bottom nav.
+    // The onboarding spotlight still opens the whole ritual from Capture.
     return DayPage(
       key: ValueKey('empty-${selectedDate.toIso8601String()}'),
       draft: DraftPlan.emptyForDay(selectedDate),
       hasPlan: false,
-      onCheckIn: ({transcript, listen = false}) => unawaited(
-        _runCheckIn(selectedDate, transcript: transcript, listen: listen),
-      ),
+      onCheckIn: () => unawaited(_runCheckIn(selectedDate)),
+      onSubmitCheckIn: (words, {audioId}) =>
+          _submitCheckIn(selectedDate, words, audioId: audioId),
       dateStrip: strip,
     );
   }

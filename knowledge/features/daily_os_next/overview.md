@@ -73,10 +73,12 @@ stateDiagram-v2
   [*] --> Loading: route enters date
   Loading --> DayPlan: plan exists
   Loading --> DayEmpty: no plan (timeline still shows tracked time)
-  DayEmpty --> Modal: composer mic or typed words (create)
+  DayEmpty --> Modal: composer check-in sent (reconcile)
+  DayEmpty --> Modal: onboarding spotlight (create)
   DayPlan --> Modal: Refine CTA (adapt)
   state Modal {
-    [*] --> Capture
+    [*] --> Capture: create intent
+    [*] --> Reconcile: reconcile intent
     Capture --> Reconcile: continue
     Reconcile --> Drafting: build my day
     [*] --> Refine: adapt intent
@@ -97,13 +99,21 @@ events stay visible on the Day timeline — the default projection, plan or not 
 without creating a plan first. Empty mode says so honestly — the header
 briefing reads "There's no plan for this day yet…" and the Agenda view's
 capacity strip reads "No plan yet" — swaps the with-plan footer (Refine, Commit,
-Shutdown and the quick refinements) for the `DayComposerBar` — the shared
-chat field (`ChatComposerField`), mic while empty, send arrow once there are
-words — and hides the delete-plan menu entry. The mic opens the create ritual
-already recording (`DayPlanningCreate.startListening`); sent words open it in
-the typed path with the words filled in (`initialTranscript`), where the user
-reviews them as any typed capture. Without an inference route the footer is a
-single "Set up Daily OS" action instead.
+Shutdown and the quick refinements) for the `DayCheckInComposer`, and hides
+the delete-plan menu entry. **The composer is the capture.** It is the shared
+chat field (`ChatComposerField` inside `DayComposerBar`): mic while empty, send
+arrow once there are words. The mic records through `captureControllerProvider`
+— the same recorder, and the same saved journal audio, as the Capture step — with
+the `ChatRecordingPill` in the field's place; the finished transcript lands in
+the field for review and the recorder returns to idle. It acts only on takes it
+started: the recorder is shared with the sheet's Capture step, which the
+onboarding spotlight opens over the page. Sending submits the capture (`submitCapture`, with the recording's
+`audioId` when spoken) and opens the planning sheet with
+`DayPlanningReconcile`, straight at Reconcile → Drafting; Re-record there
+closes the sheet, leaving the words in the field. The onboarding spotlight
+still opens the full `DayPlanningCreate` ritual from Capture. The composer
+stays closed until the setup status loads; without an inference route the
+footer is a single "Set up Daily OS" action instead.
 
 Background agent or sync updates reload **stale-while-revalidate**: the root
 keeps rendering the last Day surface while the provider re-fetches, and only

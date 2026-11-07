@@ -16,7 +16,7 @@ enum _QuickRefinement { tooMuch, moveLighter, addBuffer }
 /// With no plan ([hasPlan] false — the route-level root passes a
 /// synthetic empty [draft]) the page still lands on Day, so recorded
 /// sessions and events stay visible on the timeline, and the footer is the
-/// [DayComposerBar] instead of Refine/Commit: talk or type a check-in from
+/// [DayCheckInComposer] instead of Refine/Commit: talk or type a check-in from
 /// where you are. Saved or recoverable recordings remain one tap away on
 /// Activity.
 class DayPage extends ConsumerStatefulWidget {
@@ -24,6 +24,7 @@ class DayPage extends ConsumerStatefulWidget {
     required this.draft,
     this.hasPlan = true,
     this.onCheckIn,
+    this.onSubmitCheckIn,
     this.dateStrip,
     super.key,
   });
@@ -34,10 +35,13 @@ class DayPage extends ConsumerStatefulWidget {
   /// without a drafted plan.
   final bool hasPlan;
 
-  /// Opens the check-in — from the empty-state composer (with the typed
-  /// words, or already recording when its mic was tapped) and from the
-  /// onboarding spotlight (plain).
-  final DayCheckInStarter? onCheckIn;
+  /// Opens the full check-in ritual (Capture → Reconcile → Drafting) —
+  /// the onboarding spotlight's call.
+  final VoidCallback? onCheckIn;
+
+  /// Continues a check-in spoken or typed into the empty-state composer:
+  /// the words, and the recording behind them when they were spoken.
+  final DayCheckInSubmitter? onSubmitCheckIn;
 
   /// Optional widget rendered in place of the default static title.
   /// The route-level `DailyOsNextRoot` uses this to inject a date
@@ -471,24 +475,22 @@ class _DayFooterActions extends StatelessWidget {
   }
 }
 
-/// Starts the create ritual: plain, with typed [transcript] words, or with
-/// the capture already recording ([listen]).
-typedef DayCheckInStarter = void Function({String? transcript, bool listen});
-
-/// Footer for a day without a drafted plan: the [DayComposerBar], so a
+/// Footer for a day without a drafted plan: the [DayCheckInComposer], so a
 /// check-in is spoken or typed right where the day's tracked time is. When
 /// Daily OS has no inference route yet the composer would lead nowhere, so
 /// the footer is the single "Set up Daily OS" action instead.
 class _NoPlanFooter extends StatelessWidget {
   const _NoPlanFooter({
-    required this.onCheckIn,
+    required this.day,
+    required this.onSubmitCheckIn,
     required this.onOpenSetup,
     required this.needsInferenceSetup,
     required this.setupResolved,
     required this.ctaKey,
   });
 
-  final DayCheckInStarter? onCheckIn;
+  final DateTime day;
+  final DayCheckInSubmitter? onSubmitCheckIn;
   final VoidCallback onOpenSetup;
   final bool needsInferenceSetup;
 
@@ -503,16 +505,15 @@ class _NoPlanFooter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final onCheckIn = this.onCheckIn;
+    final onSubmitCheckIn = this.onSubmitCheckIn;
     if (!needsInferenceSetup) {
       return KeyedSubtree(
         key: ctaKey,
-        child: DayComposerBar(
-          key: const Key('daily_os_day_check_in_cta'),
-          hintText: context.messages.dailyOsNextDayComposerCheckInHint,
-          enabled: setupResolved,
-          onStartVoice: () => onCheckIn?.call(listen: true),
-          onSubmitText: (words) => onCheckIn?.call(transcript: words),
+        child: DayCheckInComposer(
+          day: day,
+          enabled: setupResolved && onSubmitCheckIn != null,
+          onSubmit: (words, {audioId}) async =>
+              onSubmitCheckIn?.call(words, audioId: audioId),
         ),
       );
     }

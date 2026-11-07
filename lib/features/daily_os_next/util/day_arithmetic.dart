@@ -17,3 +17,12 @@ int daysBetween(DateTime from, DateTime to) {
   final toDay = DateTime.utc(to.year, to.month, to.day);
   return toDay.difference(fromDay).inDays;
 }
+
+/// The moment a check-in for [day] is recorded as captured: [day] plus the
+/// wall-clock time already elapsed today at [now].
+///
+/// Keeps [day]'s own timezone by adding the elapsed time since midnight,
+/// rather than mixing [day]'s date with [now]'s wall-clock components — so a
+/// check-in for another day lands at the same time of day on that day.
+DateTime capturedAtForDay(DateTime day, DateTime now) =>
+    day.add(now.difference(DateTime(now.year, now.month, now.day)));

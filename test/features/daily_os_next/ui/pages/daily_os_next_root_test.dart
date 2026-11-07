@@ -18,7 +18,9 @@ import 'package:lotti/features/daily_os_next/state/selected_date_provider.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/capture_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/daily_os_next_root.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/day_page.dart';
+import 'package:lotti/features/daily_os_next/ui/pages/reconcile_page.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/agenda_view.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/daily_os_onboarding_spotlight.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_activity_view.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/plan_view_toggle.dart';
@@ -153,6 +155,43 @@ class _CapturedCaptureController extends CaptureController {
   );
 }
 
+/// Agent whose submitted check-ins are recorded, answering at once.
+class _RecordingSubmitAgent extends MockDayAgent {
+  _RecordingSubmitAgent()
+    : super(
+        parseLatency: Duration.zero,
+        pendingLatency: Duration.zero,
+        triageLatency: Duration.zero,
+        draftLatency: Duration.zero,
+        summarizeLatency: Duration.zero,
+      );
+
+  final submitted =
+      <({String transcript, DateTime dayDate, String? audioId})>[];
+
+  @override
+  Future<CaptureId> submitCapture({
+    required String transcript,
+    required DateTime capturedAt,
+    required DateTime dayDate,
+    String? audioId,
+  }) async {
+    submitted.add((transcript: transcript, dayDate: dayDate, audioId: audioId));
+    return const CaptureId('cap_composer');
+  }
+}
+
+/// Agent whose capture submit fails.
+class _FailingSubmitAgent extends MockDayAgent {
+  @override
+  Future<CaptureId> submitCapture({
+    required String transcript,
+    required DateTime capturedAt,
+    required DateTime dayDate,
+    String? audioId,
+  }) => Future.error(StateError('offline'));
+}
+
 /// Taps the mic of the empty Day's check-in composer.
 Future<void> _tapCheckInMic(WidgetTester tester) => tester.tap(
   find.descendant(
@@ -238,7 +277,7 @@ void main() {
 
     testWidgets(
       'a no-plan day with tracked time lands on the empty Day surface; '
-      'the check-in CTA opens the day-planning modal over it',
+      'words sent from its composer open the planning sheet at Reconcile',
       (tester) async {
         final actualBlock = TimeBlock(
           id: 'actual:entry-1',
@@ -261,6 +300,7 @@ void main() {
                   () => CaptureController(recorder: _permissionlessRecorder()),
                 ),
                 currentDraftPlanProvider.overrideWith((ref, _) async => null),
+                dayAgentProvider.overrideWithValue(_RecordingSubmitAgent()),
               ],
             ),
           );
@@ -279,55 +319,139 @@ void main() {
           expect(cta, findsOneWidget);
           expect(find.text(messages.dailyOsNextDayRefineCta), findsNothing);
 
-          // The CTA opens the day-planning modal (Capture step) as a
-          // full-cover layer; the Day surface stays mounted underneath.
-          await _tapCheckInMic(tester);
-          await tester.pump();
-          await tester.pump(const Duration(milliseconds: 400));
-
-          expect(find.byType(CaptureModalContent), findsOneWidget);
-          expect(find.byType(DayPage), findsOneWidget);
-          // The tracked-time the user saw on the Day surface now also rides
-          // the top of the modal's capture step (handoff v2 item 1): the
-          // session title appears both on the timeline and in the card.
-          expect(find.text('Client follow-up'), findsNWidgets(2));
-        });
-      },
-    );
-
-    testWidgets(
-      'words sent from the composer open the check-in with them filled in',
-      (tester) async {
-        await withClock(Clock.fixed(DateTime(2026, 5, 26, 9)), () async {
-          await tester.pumpWidget(
-            _wrap(
-              const DailyOsNextRoot(),
-              overrides: [
-                captureControllerProvider.overrideWith(
-                  () => CaptureController(recorder: _permissionlessRecorder()),
-                ),
-                currentDraftPlanProvider.overrideWith((ref, _) async => null),
-              ],
-            ),
-          );
-          await tester.pump();
-          await tester.pump();
-
+          // The composer was the capture: the sheet opens at Reconcile, with
+          // no Capture step, and the Day surface stays mounted underneath.
           await _sendCheckInWords(tester, 'Finish the launch deck');
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 400));
 
-          expect(find.byType(CaptureModalContent), findsOneWidget);
-          final capture = ProviderScope.containerOf(
-            tester.element(find.byType(CaptureModalContent)),
-          ).read(captureControllerProvider);
-          expect(capture.phase, CapturePhase.captured);
-          expect(capture.transcript, 'Finish the launch deck');
+          expect(find.byType(ReconcileModalContent), findsOneWidget);
+          expect(find.byType(CaptureModalContent), findsNothing);
+          expect(find.byType(DayPage), findsOneWidget);
         });
       },
     );
 
-    testWidgets('the composer mic opens the check-in already recording', (
+    testWidgets('a sent check-in is submitted for the shown day', (
+      tester,
+    ) async {
+      final agent = _RecordingSubmitAgent();
+      await withClock(Clock.fixed(DateTime(2026, 5, 26, 9)), () async {
+        await tester.pumpWidget(
+          _wrap(
+            const DailyOsNextRoot(),
+            overrides: [
+              captureControllerProvider.overrideWith(
+                () => CaptureController(recorder: _permissionlessRecorder()),
+              ),
+              currentDraftPlanProvider.overrideWith((ref, _) async => null),
+              dayAgentProvider.overrideWithValue(agent),
+            ],
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
+
+        await _sendCheckInWords(tester, '  Finish the launch deck  ');
+        for (var i = 0; i < 12; i++) {
+          await tester.pump(const Duration(milliseconds: 80));
+        }
+
+        expect(agent.submitted, hasLength(1));
+        expect(agent.submitted.single.transcript, 'Finish the launch deck');
+        expect(agent.submitted.single.dayDate, DateTime(2026, 5, 26));
+        // Typed words carry no recording.
+        expect(agent.submitted.single.audioId, isNull);
+      });
+    });
+
+    testWidgets('a check-in that cannot be submitted says so and keeps '
+        'the words', (tester) async {
+      await withClock(Clock.fixed(DateTime(2026, 5, 26, 9)), () async {
+        await tester.pumpWidget(
+          _wrap(
+            const DailyOsNextRoot(),
+            overrides: [
+              captureControllerProvider.overrideWith(
+                () => CaptureController(recorder: _permissionlessRecorder()),
+              ),
+              currentDraftPlanProvider.overrideWith((ref, _) async => null),
+              dayAgentProvider.overrideWithValue(_FailingSubmitAgent()),
+            ],
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
+
+        await _sendCheckInWords(tester, 'Finish the launch deck');
+        await tester.pump();
+        await tester.pump();
+
+        final messages = tester.element(find.byType(DayPage)).messages;
+        expect(find.text(messages.dailyOsNextGenericError), findsOneWidget);
+        expect(find.byType(ReconcileModalContent), findsNothing);
+        expect(find.text('Finish the launch deck'), findsOneWidget);
+      });
+    });
+
+    testWidgets('a check-in sent after setup was lost opens Daily OS '
+        'settings instead', (tester) async {
+      var hasInferenceRoute = true;
+      String? route;
+      nav_service.beamToNamedOverride = (path) => route = path;
+      final agent = _RecordingSubmitAgent();
+      await withClock(Clock.fixed(DateTime(2026, 5, 26, 9)), () async {
+        await tester.pumpWidget(
+          _wrap(
+            const DailyOsNextRoot(),
+            setupStatus: () => DailyOsSetupStatus(
+              hasInferenceRoute: hasInferenceRoute,
+              hasPreferredName: true,
+            ),
+            overrides: [
+              captureControllerProvider.overrideWith(
+                () => CaptureController(recorder: _permissionlessRecorder()),
+              ),
+              currentDraftPlanProvider.overrideWith((ref, _) async => null),
+              dayAgentProvider.overrideWithValue(agent),
+            ],
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
+
+        final composer = find.byKey(const Key('daily_os_day_check_in_cta'));
+        await tester.enterText(
+          find.descendant(of: composer, matching: find.byType(TextField)),
+          'Finish the launch deck',
+        );
+        await tester.pump();
+        // The route goes away between rendering and sending.
+        hasInferenceRoute = false;
+        ProviderScope.containerOf(
+          tester.element(find.byType(DailyOsNextRoot)),
+        ).invalidate(dailyOsSetupStatusProvider);
+        await tester.tap(
+          find.descendant(
+            of: composer,
+            matching: findMaterialTooltip(
+              tester
+                  .element(find.byType(DayPage))
+                  .messages
+                  .chatInputSendTooltip,
+            ),
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
+
+        expect(route, '/settings/daily-os');
+        expect(agent.submitted, isEmpty);
+        expect(find.byType(ReconcileModalContent), findsNothing);
+      });
+    });
+
+    testWidgets('the composer mic records in place, with no sheet', (
       tester,
     ) async {
       final recorder = _permissionlessRecorder();
@@ -351,10 +475,18 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 400));
 
-        expect(find.byType(CaptureModalContent), findsOneWidget);
-        // The sheet went straight for the microphone — the permission ask is
-        // the first step of recording — instead of waiting for a second tap.
+        // Recording starts in the composer itself — the permission ask is its
+        // first step — and no Capture sheet opens over the day.
         verify(recorder.hasPermission).called(1);
+        expect(find.byType(CaptureModalContent), findsNothing);
+        // Refused here, so the composer says why, in the Capture words.
+        final messages = tester.element(find.byType(DayPage)).messages;
+        expect(
+          find.text(
+            messages.dailyOsNextCaptureErrorMicrophonePermissionDenied,
+          ),
+          findsOneWidget,
+        );
       });
     });
 
@@ -380,6 +512,7 @@ void main() {
                 () => CaptureController(recorder: _permissionlessRecorder()),
               ),
               currentDraftPlanProvider.overrideWith((ref, _) async => null),
+              dayAgentProvider.overrideWithValue(_RecordingSubmitAgent()),
               dailyOsOnboardingCadenceProvider.overrideWith(
                 _InMemoryOnboardingCadence.new,
               ),
@@ -396,7 +529,12 @@ void main() {
             .read(dailyOsOnboardingSessionControllerProvider.notifier)
             .start(targetDate: DateTime(2026, 5, 26), sessionId: 's-1');
 
-        await _tapCheckInMic(tester);
+        // The walkthrough's spotlight sits over the composer: a tap on it
+        // opens the guided ritual, Capture step and all.
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+        expect(find.byType(DailyOsOnboardingSpotlight), findsOneWidget);
+        await tester.tap(find.byKey(const Key('daily_os_day_check_in_cta')));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 400));
         expect(find.byType(CaptureModalContent), findsOneWidget);
@@ -423,6 +561,57 @@ void main() {
             valueBucket: any(named: 'valueBucket'),
           ),
         ).called(1);
+      });
+    });
+
+    testWidgets('the guided Capture step keeps its own capture while the '
+        'composer sits underneath', (tester) async {
+      await withClock(Clock.fixed(DateTime(2026, 5, 26, 9)), () async {
+        await tester.pumpWidget(
+          _wrap(
+            const DailyOsNextRoot(),
+            overrides: [
+              captureControllerProvider.overrideWith(
+                () => CaptureController(recorder: _permissionlessRecorder()),
+              ),
+              currentDraftPlanProvider.overrideWith((ref, _) async => null),
+              dailyOsOnboardingCadenceProvider.overrideWith(
+                _InMemoryOnboardingCadence.new,
+              ),
+            ],
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(DailyOsNextRoot)),
+        );
+        container
+            .read(dailyOsOnboardingSessionControllerProvider.notifier)
+            .start(targetDate: DateTime(2026, 5, 26), sessionId: 's-1');
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+        await tester.tap(find.byKey(const Key('daily_os_day_check_in_cta')));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+        expect(find.byType(CaptureModalContent), findsOneWidget);
+
+        final messages = tester.element(find.byType(DayPage)).messages;
+        await tester.tap(
+          find.widgetWithText(
+            DsGlassPill,
+            messages.dailyOsNextCaptureTypeInstead,
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
+
+        // Typing opened in the sheet, and the composer below did not take it
+        // back to rest.
+        expect(
+          container.read(captureControllerProvider).phase,
+          CapturePhase.captured,
+        );
       });
     });
 
@@ -463,10 +652,10 @@ void main() {
             .read(dailyOsOnboardingSessionControllerProvider.notifier)
             .start(targetDate: DateTime(2026, 5, 26), sessionId: 's-1');
 
-        await _sendCheckInWords(
-          tester,
-          'Count the colony before the sardine delivery',
-        );
+        // Through the walkthrough spotlight: the guided ritual from Capture.
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+        await tester.tap(find.byKey(const Key('daily_os_day_check_in_cta')));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 400));
         final messages = tester.element(find.byType(DayPage)).messages;
@@ -530,11 +719,15 @@ void main() {
         ProviderScope.containerOf(rootContext).invalidate(
           dailyOsSetupStatusProvider,
         );
-        await _tapCheckInMic(tester);
+        await tester.pump();
+        await tester.pump();
+        // The footer now leads to setup instead of a check-in.
+        await tester.tap(find.byKey(const Key('daily_os_day_check_in_cta')));
         await tester.pump();
 
         expect(route, '/settings/daily-os');
         expect(find.byType(CaptureModalContent), findsNothing);
+        expect(find.byType(ReconcileModalContent), findsNothing);
       });
     });
 
