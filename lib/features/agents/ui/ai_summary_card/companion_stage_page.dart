@@ -1,5 +1,6 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show ProviderListenable;
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/summary_read_aloud_button.dart';
 import 'package:lotti/features/companion/model/companion_gesture.dart';
@@ -29,7 +30,8 @@ import 'package:material_ui/material_ui.dart';
 /// host whose voice is not a summary's — the front agent's answers — passes
 /// its own [controls] instead of the words: its voice, and a way to answer
 /// her — and may pass a [sidePanel] that stands beside her on a desktop
-/// window (the conversation she is speaking in). She
+/// window (the conversation she is speaking in), and [pointsAtSidePanel],
+/// true while she should point at what that panel shows. She
 /// wears what the card dressed her in: a host that dresses her for another
 /// subject than [sourceId] names it as [dressedFor].
 Future<void> openCompanionStage(
@@ -38,6 +40,7 @@ Future<void> openCompanionStage(
   String spokenText = '',
   Widget? controls,
   Widget? sidePanel,
+  ProviderListenable<bool>? pointsAtSidePanel,
   CompanionMood mood = CompanionMood.calm,
   GestureName? holding,
   TtsCloudRoute? cloudRoute,
@@ -51,6 +54,7 @@ Future<void> openCompanionStage(
         spokenText: spokenText,
         controls: controls,
         sidePanel: sidePanel,
+        pointsAtSidePanel: pointsAtSidePanel,
         mood: mood,
         holding: holding,
         cloudRoute: cloudRoute,
@@ -79,6 +83,7 @@ class CompanionStagePage extends ConsumerWidget {
     required this.spokenText,
     this.controls,
     this.sidePanel,
+    this.pointsAtSidePanel,
     this.mood = CompanionMood.calm,
     this.holding,
     this.cloudRoute,
@@ -94,6 +99,11 @@ class CompanionStagePage extends ConsumerWidget {
   /// agent's conversation — so a wide stage is not mostly empty floor
   /// either side of her. Left out on a phone, where she takes the screen.
   final Widget? sidePanel;
+
+  /// While true, and [sidePanel] stands beside her, she points at it
+  /// ([GestureName.pointRight]) in place of [holding] — at the tasks the
+  /// conversation lists as she says them.
+  final ProviderListenable<bool>? pointsAtSidePanel;
 
   /// The host's own panel's share of a desktop window's width; she keeps
   /// the rest.
@@ -124,6 +134,9 @@ class CompanionStagePage extends ConsumerWidget {
         (ref.watch(configFlagProvider(enableAiSummaryTtsFlag)).value ??
             false) &&
         (cloudRoute != null || ref.watch(ttsEngineProvider).isSupported);
+    final beside = sidePanel != null && isDesktopLayout(context);
+    final points = pointsAtSidePanel;
+    final pointing = beside && points != null && ref.watch(points);
     return Theme(
       data: DesignSystemTheme.dark(),
       child: Builder(
@@ -145,7 +158,7 @@ class CompanionStagePage extends ConsumerWidget {
                 // She stands above, the controls in a band of their own
                 // below her, so nothing is ever drawn on her.
                 body: _besideSidePanel(
-                  context,
+                  beside,
                   Column(
                     children: [
                       Expanded(
@@ -161,7 +174,9 @@ class CompanionStagePage extends ConsumerWidget {
                                   sourceId: sourceId,
                                   stage: true,
                                   mood: mood,
-                                  holding: holding,
+                                  holding: pointing
+                                      ? GestureName.pointRight
+                                      : holding,
                                   dressedFor: dressedFor,
                                 ),
                               ),
@@ -237,10 +252,11 @@ class CompanionStagePage extends ConsumerWidget {
     );
   }
 
-  /// [stage] alone, or beside the host's [sidePanel] on a desktop window.
-  Widget _besideSidePanel(BuildContext context, Widget stage) {
+  /// [stage] alone, or beside the host's [sidePanel] when [beside] — on a
+  /// desktop window.
+  Widget _besideSidePanel(bool beside, Widget stage) {
     final panel = sidePanel;
-    if (panel == null || !isDesktopLayout(context)) return stage;
+    if (panel == null || !beside) return stage;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [

@@ -81,7 +81,8 @@ and a proposal she got wrong goes to the inbox rather than being retyped.
   (`front_voice_controls.dart`: stop her, or have her say her latest answer
   again from the start, in the voice she said it in; stand her up full
   screen on any form factor, the conversation beside her on a desktop
-  window), what stands at her feet there
+  window, where she points at the tasks she lists as she says them —
+  `state/front_stage_pointing.dart`), what stands at her feet there
   (`front_stage_controls.dart`: hold the disc to talk to her, let go to
   send, drag off to cancel, or tap for hands free), the
   list of conversations with each one's ⋯ on the agent pages' shared menu

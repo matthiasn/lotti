@@ -7,6 +7,7 @@ import 'package:lotti/features/front_agent/state/front_chat_thread_provider.dart
 import 'package:lotti/features/front_agent/state/front_conversation_providers.dart';
 import 'package:lotti/features/front_agent/state/front_inbox_filter.dart';
 import 'package:lotti/features/front_agent/state/front_journal_access_provider.dart';
+import 'package:lotti/features/front_agent/state/front_stage_pointing.dart';
 import 'package:lotti/features/front_agent/state/front_voice_providers.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_pane.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_voice.dart';
@@ -26,7 +27,9 @@ abstract final class FrontVoiceControlKeys {
 /// Opens her full screen, head to toe on her stage — on a desktop window as
 /// on a phone — still speaking in [conversationId], with a way to answer
 /// her and her voice's control at her feet ([FrontStageControls]), and, on a
-/// desktop window, the conversation beside her ([FrontStageTranscript]).
+/// desktop window, the conversation beside her ([FrontStageTranscript]),
+/// pointing at it while she says the tasks it lists
+/// ([frontStagePointsProvider]).
 Future<void> openFrontStage(BuildContext context, String conversationId) =>
     openCompanionStage(
       context,
@@ -34,6 +37,7 @@ Future<void> openFrontStage(BuildContext context, String conversationId) =>
       dressedFor: frontCompanionDressedFor,
       controls: FrontStageControls(conversationId: conversationId),
       sidePanel: const FrontStageTranscript(),
+      pointsAtSidePanel: frontStagePointsProvider(conversationId),
     );
 
 /// The conversation beside her on her stage: its thread, read only, on the

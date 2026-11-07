@@ -5,7 +5,9 @@ import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/companion_stage_page.dart';
 import 'package:lotti/features/companion/model/companion_customization.dart';
+import 'package:lotti/features/companion/model/companion_gesture.dart';
 import 'package:lotti/features/companion/state/companion_customization_controller.dart';
+import 'package:lotti/features/companion/ui/companion_speaker.dart';
 import 'package:lotti/features/front_agent/model/front_chat_thread.dart';
 import 'package:lotti/features/front_agent/state/front_chat_controller.dart';
 import 'package:lotti/features/front_agent/state/front_chat_thread_provider.dart';
@@ -392,6 +394,50 @@ void main() {
     thread.onClose();
     await tester.pumpAndSettle();
     expect(find.byType(CompanionStagePage), findsNothing);
+  });
+
+  testWidgets('on a desktop window she points at the conversation while she '
+      'says the tasks her answer lists', (tester) async {
+    tester.view
+      ..physicalSize = const Size(1600, 1000)
+      ..devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await pump(
+      tester,
+      child: const _OpenStage(),
+      playing: const TtsPlaybackState(
+        status: TtsPlaybackStatus.playing,
+        sourceId: source,
+      ),
+      thread: FrontChatThread(
+        messages: [
+          message('u1', AgentChatRole.user, 'Anything overdue?', 0),
+          message(
+            'a1',
+            AgentChatRole.agent,
+            'Two:\n\n- [Count the eggs](lotti://task/t1)\n'
+                '- [Mend the nest](lotti://task/t2)',
+            1,
+          ),
+        ],
+      ),
+    );
+
+    await tester.tap(find.byType(_OpenStage));
+    for (var i = 0; i < 10; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+    GestureName? held() => tester
+        .widget<CompanionSpeaker>(
+          find.byKey(const ValueKey('companionStageFigure')),
+        )
+        .holding;
+    expect(held(), GestureName.pointRight);
+
+    // Once she stops, her arm comes down.
+    await voice.stop();
+    await tester.pump();
+    expect(held(), isNull);
   });
 }
 

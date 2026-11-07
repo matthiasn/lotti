@@ -136,6 +136,10 @@ sources:
     resource: ../../lib/features/front_agent/ui/front_voice_controls.dart
     title: Her voice's stop / say-it-again control, her full-screen stage and the conversation beside her there
     last_modified: 2026-11-07
+  - id: stage-pointing
+    resource: ../../lib/features/front_agent/state/front_stage_pointing.dart
+    title: frontStagePointsProvider — she points at the tasks she lists, on her stage
+    last_modified: 2026-11-07
   - id: stage-controls
     resource: ../../lib/features/front_agent/ui/front_stage_controls.dart
     title: FrontStageControls — hold to talk to her on her stage, and her answer said again
@@ -975,8 +979,13 @@ the width (`CompanionStagePage.sidePanelFlex` to `figureFlex`):
 the same one the pane shows), read only — `composerEnabled: false` — since
 the disc at her feet is the way to answer her there; the pane under the
 stage, which stays mounted, is the one view that sends what was said. Its
-ways out to a page close the stage and her surface both. On a phone she keeps the
-screen. The bust keeps one tree whatever she does,
+ways out to a page close the stage and her surface both. While her voice
+plays in the conversation and her latest reply lists tasks
+(`frontStagePointsProvider` over `frontLatestReplyListsTasks`, in
+`state/front_stage_pointing.dart`), the page's `pointsAtSidePanel` has her
+hold `GestureName.pointRight` at the panel — at the task rows as she says
+them — and let her arm down when she stops. On a phone she keeps the
+screen, and never points. The bust keeps one tree whatever she does,
 so her animator lives through a start and a stop.
 
 **Her stage is never a dead end.** Whatever has been said, `FrontStageControls`

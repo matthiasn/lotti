@@ -14,4 +14,5 @@
   it.
 - **Full screen uses the space.** On a desktop window her full-screen stage
   keeps the conversation beside her, so you can read and answer while she
-  speaks.
+  speaks, and when she lists your tasks she points at them as she says
+  them.
