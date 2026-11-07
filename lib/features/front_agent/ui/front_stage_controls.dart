@@ -230,31 +230,28 @@ class _FrontStageControlsState extends ConsumerState<FrontStageControls> {
       label: caption,
       onTap: waiting ? null : _tap,
       child: ExcludeSemantics(
-        child: Tooltip(
-          message: caption,
-          child: Focus(
-            onKeyEvent: (node, event) {
-              final key = event.logicalKey;
-              if (event is! KeyDownEvent ||
-                  (key != LogicalKeyboardKey.space &&
-                      key != LogicalKeyboardKey.enter)) {
-                return KeyEventResult.ignored;
-              }
-              _tap();
-              return KeyEventResult.handled;
-            },
-            child: Listener(
-              key: FrontStageControlKeys.talk,
-              onPointerDown: _down,
-              onPointerMove: _move,
-              onPointerUp: _up,
-              onPointerCancel: _cancel,
-              child: DecoratedBox(
-                decoration: BoxDecoration(color: fill, shape: BoxShape.circle),
-                child: SizedBox.square(
-                  dimension: disc,
-                  child: Center(child: glyph),
-                ),
+        child: Focus(
+          onKeyEvent: (node, event) {
+            final key = event.logicalKey;
+            if (event is! KeyDownEvent ||
+                (key != LogicalKeyboardKey.space &&
+                    key != LogicalKeyboardKey.enter)) {
+              return KeyEventResult.ignored;
+            }
+            _tap();
+            return KeyEventResult.handled;
+          },
+          child: Listener(
+            key: FrontStageControlKeys.talk,
+            onPointerDown: _down,
+            onPointerMove: _move,
+            onPointerUp: _up,
+            onPointerCancel: _cancel,
+            child: DecoratedBox(
+              decoration: BoxDecoration(color: fill, shape: BoxShape.circle),
+              child: SizedBox.square(
+                dimension: disc,
+                child: Center(child: glyph),
               ),
             ),
           ),

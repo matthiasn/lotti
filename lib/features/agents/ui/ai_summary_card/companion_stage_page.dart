@@ -4,6 +4,7 @@ import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/summary_read_aloud_button.dart';
 import 'package:lotti/features/companion/model/companion_gesture.dart';
 import 'package:lotti/features/companion/model/companion_mood.dart';
+import 'package:lotti/features/companion/rig/stage_painter.dart';
 import 'package:lotti/features/companion/state/companion_look_controller.dart';
 import 'package:lotti/features/companion/ui/companion_speaker.dart';
 import 'package:lotti/features/design_system/components/buttons/ds_ai_disc_button.dart';
@@ -121,7 +122,9 @@ class CompanionStagePage extends ConsumerWidget {
               explicitChildNodes: true,
               label: context.messages.aiCardCompanionStageTitle,
               child: Scaffold(
-                backgroundColor: tokens.colors.background.level01,
+                // The stage's own floor, so the band under her is more of
+                // her stage, not a slab of page.
+                backgroundColor: CompanionStage.bottom,
                 // She stands above, the controls in a band of their own
                 // below her, so nothing is ever drawn on her.
                 body: Column(
