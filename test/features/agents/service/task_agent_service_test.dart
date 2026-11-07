@@ -9,6 +9,7 @@ import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/agents/agent_link.dart';
 import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
+import 'package:lotti/features/agents/service/category_snapshot_setup.dart';
 import 'package:lotti/features/agents/service/task_agent_service.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -2558,6 +2559,85 @@ void main() {
           );
         });
       }
+
+      test('a setup that follows its category is accepted without a profile, '
+          'and turns a category-switched-off agent back on', () async {
+        final identity = makeIdentity(
+          lifecycle: AgentLifecycle.dormant,
+          config: const AgentConfig(
+            automaticUpdatesEnabled: true,
+            inferenceSetup: AgentInferenceSetup(
+              mode: AgentInferenceSetupMode.disabled,
+              origin: AgentInferenceSetupOrigin.categorySnapshot,
+              originEntityId: 'category-1',
+            ),
+          ),
+        );
+        when(
+          () => mockAgentService.getAgent('agent-1'),
+        ).thenAnswer((_) async => identity);
+        when(
+          () => mockRepository.getLinksFrom(
+            'agent-1',
+            type: AgentLinkTypes.agentTask,
+          ),
+        ).thenAnswer((_) async => []);
+
+        // The exact setup the startup repair and *Copy category default*
+        // write for a category that names no profile.
+        await service.updateAgentInferenceSetup(
+          agentId: 'agent-1',
+          setup: categoryFollowingSetup(categoryId: 'category-1'),
+        );
+
+        final updated =
+            verify(
+                  () => mockSyncService.upsertEntity(captureAny()),
+                ).captured.single
+                as AgentIdentityEntity;
+        expect(updated.lifecycle, AgentLifecycle.active);
+        expect(updated.config.inferenceSetup!.followsCategory, isTrue);
+        expect(
+          updated.config.inferenceSetup!.mode,
+          AgentInferenceSetupMode.configured,
+        );
+        verify(
+          () => mockOrchestrator.enableAutomaticUpdatesRuntime('agent-1'),
+        ).called(1);
+      });
+
+      test('clearing the model on a category setup without a profile hands '
+          'the agent back to its category, never switches it off', () async {
+        final identity = makeIdentity(
+          config: const AgentConfig(
+            inferenceSetup: AgentInferenceSetup(
+              mode: AgentInferenceSetupMode.configured,
+              origin: AgentInferenceSetupOrigin.categorySnapshot,
+              thinkingModelOverrideId: 'model-1',
+              originEntityId: 'category-1',
+            ),
+          ),
+        );
+        when(
+          () => mockAgentService.getAgent('agent-1'),
+        ).thenAnswer((_) async => identity);
+
+        await service.updateAgentThinkingModelOverride(
+          agentId: 'agent-1',
+          modelConfigId: null,
+        );
+
+        final updated =
+            verify(
+                  () => mockSyncService.upsertEntity(captureAny()),
+                ).captured.single
+                as AgentIdentityEntity;
+        expect(
+          updated.config.inferenceSetup,
+          categoryFollowingSetup(categoryId: 'category-1'),
+        );
+        expect(updated.lifecycle, isNot(AgentLifecycle.dormant));
+      });
 
       test(
         'disabling project inference consumes its update slots',

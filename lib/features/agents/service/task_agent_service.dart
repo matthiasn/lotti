@@ -343,7 +343,10 @@ class TaskAgentService {
     required String agentId,
     required AgentInferenceSetup setup,
   }) async {
+    // A setup that follows its category needs no profile of its own: it
+    // resolves the category's, else the Settings default.
     if (setup.mode == AgentInferenceSetupMode.configured &&
+        !setup.followsCategory &&
         setup.baseProfileId == null &&
         setup.thinkingModelOverrideId == null) {
       throw ArgumentError.value(
@@ -671,7 +674,16 @@ class TaskAgentService {
     final baseProfileId = current?.mode == AgentInferenceSetupMode.configured
         ? current?.baseProfileId
         : identity.config.profileId;
-    final next = modelConfigId == null && baseProfileId == null
+    // Clearing the model on a category's setup hands the agent back to the
+    // category rather than switching it off for want of a profile.
+    final next =
+        modelConfigId == null &&
+            current?.origin == AgentInferenceSetupOrigin.categorySnapshot
+        ? categoryFollowingSetup(
+            categoryId: current?.originEntityId,
+            profileId: baseProfileId,
+          )
+        : modelConfigId == null && baseProfileId == null
         ? const AgentInferenceSetup(
             mode: AgentInferenceSetupMode.disabled,
             origin: AgentInferenceSetupOrigin.user,
