@@ -181,6 +181,10 @@ made. What a run resolves depends on who chose the setup:
 
 So changing a category's profile, or the Settings default below it, moves
 every agent that inherits it on its next run, with no write to the agents.
+The surfaces that cache a resolved setup — `taskAgentResolvedSetupProvider`
+and `goalAgentResolvedSetupProvider`, behind read-aloud and query chat —
+re-resolve on a `categoriesNotification` while the agent follows its
+category, so they move at the same moment.
 A disabled setup stays disabled whatever the category names, so a task agent
 created switched off in a category without a profile is not turned on by
 one appearing later.
