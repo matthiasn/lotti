@@ -37,6 +37,7 @@ class DayComposer extends ConsumerStatefulWidget {
     this.intent = AudioCaptureIntent.dayPlan,
     this.clearOnSubmit = false,
     this.header,
+    this.trailing,
     this.enabled = true,
     this.barKey = const Key('daily_os_day_check_in_cta'),
     super.key,
@@ -58,6 +59,9 @@ class DayComposer extends ConsumerStatefulWidget {
 
   /// Shown above the field, inside the bar (quick refinements).
   final Widget? header;
+
+  /// See [DayComposerBar.trailing].
+  final Widget? trailing;
 
   /// The bar's key, for finders and the onboarding spotlight.
   final Key barKey;
@@ -203,6 +207,7 @@ class _DayComposerState extends ConsumerState<DayComposer> {
       key: widget.barKey,
       controller: _controller,
       header: widget.header,
+      trailing: widget.trailing,
       hintText:
           widget.hintText ?? context.messages.dailyOsNextDayComposerCheckInHint,
       enabled: widget.enabled && !_submitting,

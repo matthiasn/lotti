@@ -397,13 +397,6 @@ class _DayPageState extends ConsumerState<DayPage> {
                 draft: widget.draft,
                 hasPlan: widget.hasPlan,
               ),
-              stageAction: widget.hasPlan
-                  ? _DayStageAction(
-                      draft: widget.draft,
-                      onCommit: _commitDay,
-                      onShutdown: _openShutdown,
-                    )
-                  : null,
             ),
             if (setupStatus?.needsAttention ?? false)
               _DailyOsSetupNudge(
@@ -467,6 +460,8 @@ class _DayPageState extends ConsumerState<DayPage> {
                 draft: widget.draft,
                 onRefineWords: (words) => _openRefine(initialTranscript: words),
                 onQuickRefinement: _openQuickRefinement,
+                onCommit: _commitDay,
+                onShutdown: _openShutdown,
               )
             else
               _NoPlanFooter(

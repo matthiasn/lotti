@@ -1,3 +1,6 @@
+import 'dart:math' as math;
+
+import 'package:flutter/rendering.dart';
 import 'package:lotti/features/agents/ui/chat/chat_composer_field.dart';
 import 'package:lotti/features/design_system/components/glass_strip.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -29,6 +32,7 @@ class DayComposerBar extends StatefulWidget {
     this.replacement,
     this.errorText,
     this.header,
+    this.trailing,
     this.enabled = true,
     super.key,
   });
@@ -36,6 +40,11 @@ class DayComposerBar extends StatefulWidget {
   /// Shown above the field, inside the bar's reading column — quick
   /// refinements on a planned day.
   final Widget? header;
+
+  /// Beside the field, in thumb reach, while the field is empty and nothing
+  /// records — the day's next step. Typing or speaking a change gives the
+  /// field the whole width.
+  final Widget? trailing;
 
   /// False while the host cannot yet tell whether a check-in can go
   /// anywhere: the field shows but takes no words, so nothing typed can be
@@ -101,14 +110,25 @@ class _DayComposerBarState extends State<DayComposerBar> {
     widget.onSubmitText(words);
   }
 
+  Widget _withTrailing(BuildContext context, Widget field) {
+    final trailing = widget.trailing;
+    if (trailing == null || _controller.text.trim().isNotEmpty) return field;
+    return _FieldWithTrailing(
+      gap: context.designTokens.spacing.step3,
+      children: [field, trailing],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final errorText = widget.errorText;
     return DesignSystemGlassStrip(
       child: Padding(
+        // step5: the page's content rail, shared with the header and the
+        // timeline toolbar.
         padding: EdgeInsets.symmetric(
-          horizontal: tokens.spacing.step6,
+          horizontal: tokens.spacing.step5,
           vertical: tokens.spacing.step4,
         ),
         child: Center(
@@ -125,15 +145,18 @@ class _DayComposerBarState extends State<DayComposerBar> {
                   SizedBox(height: tokens.spacing.step3),
                 ],
                 widget.replacement ??
-                    ChatComposerField(
-                      controller: _controller,
-                      hintText: widget.hintText,
-                      draft: _controller.text,
-                      // The controller listener tracks the draft.
-                      onDraftChanged: (_) {},
-                      onSend: _send,
-                      onStartRecording: widget.onStartVoice,
-                      enabled: widget.enabled,
+                    _withTrailing(
+                      context,
+                      ChatComposerField(
+                        controller: _controller,
+                        hintText: widget.hintText,
+                        draft: _controller.text,
+                        // The controller listener tracks the draft.
+                        onDraftChanged: (_) {},
+                        onSend: _send,
+                        onStartRecording: widget.onStartVoice,
+                        enabled: widget.enabled,
+                      ),
                     ),
                 if (errorText != null) ...[
                   SizedBox(height: tokens.spacing.step2),
@@ -151,4 +174,96 @@ class _DayComposerBarState extends State<DayComposerBar> {
       ),
     );
   }
+}
+
+/// The field with the day's next step beside it while the field keeps at
+/// least half the bar, and the step under it, full width, once it needs
+/// more — large text on a narrow phone. Either way it stays at the bottom,
+/// in thumb reach.
+class _FieldWithTrailing extends MultiChildRenderObjectWidget {
+  const _FieldWithTrailing({required this.gap, required super.children});
+
+  final double gap;
+
+  @override
+  RenderObject createRenderObject(BuildContext context) =>
+      _RenderFieldWithTrailing(gap);
+
+  @override
+  void updateRenderObject(
+    BuildContext context,
+    _RenderFieldWithTrailing renderObject,
+  ) {
+    renderObject.gap = gap;
+  }
+}
+
+class _FieldWithTrailingParentData extends ContainerBoxParentData<RenderBox> {}
+
+class _RenderFieldWithTrailing extends RenderBox
+    with
+        ContainerRenderObjectMixin<RenderBox, _FieldWithTrailingParentData>,
+        RenderBoxContainerDefaultsMixin<
+          RenderBox,
+          _FieldWithTrailingParentData
+        > {
+  _RenderFieldWithTrailing(this._gap);
+
+  double _gap;
+  double get gap => _gap;
+  set gap(double value) {
+    if (value == _gap) return;
+    _gap = value;
+    markNeedsLayout();
+  }
+
+  @override
+  void setupParentData(RenderBox child) {
+    if (child.parentData is! _FieldWithTrailingParentData) {
+      child.parentData = _FieldWithTrailingParentData();
+    }
+  }
+
+  @override
+  void performLayout() {
+    final width = constraints.maxWidth;
+    final field = firstChild!;
+    final trailing = childAfter(field)!
+      ..layout(BoxConstraints(maxWidth: width), parentUsesSize: true);
+    final fieldData = field.parentData! as _FieldWithTrailingParentData;
+    final trailingData = trailing.parentData! as _FieldWithTrailingParentData;
+    final beside = trailing.size.width <= (width - _gap) / 2;
+    if (beside) {
+      field.layout(
+        BoxConstraints.tightFor(width: width - _gap - trailing.size.width),
+        parentUsesSize: true,
+      );
+      final height = math.max(field.size.height, trailing.size.height);
+      fieldData.offset = Offset(0, (height - field.size.height) / 2);
+      trailingData.offset = Offset(
+        width - trailing.size.width,
+        (height - trailing.size.height) / 2,
+      );
+      size = constraints.constrain(Size(width, height));
+      return;
+    }
+    field.layout(BoxConstraints.tightFor(width: width), parentUsesSize: true);
+    trailing.layout(
+      BoxConstraints.tightFor(width: width),
+      parentUsesSize: true,
+    );
+    fieldData.offset = Offset.zero;
+    trailingData.offset = Offset(0, field.size.height + _gap);
+    size = constraints.constrain(
+      Size(width, field.size.height + _gap + trailing.size.height),
+    );
+  }
+
+  @override
+  void paint(PaintingContext context, Offset offset) =>
+      defaultPaint(context, offset);
+
+  @override
+  bool hitTestChildren(BoxHitTestResult result, {required Offset position}) =>
+      defaultHitTestChildren(result, position: position);
 }

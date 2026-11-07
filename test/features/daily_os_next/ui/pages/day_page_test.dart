@@ -1343,23 +1343,31 @@ void main() {
       expect(find.byType(DayTimeline), findsOneWidget);
     });
 
-    testWidgets('a drafted day: Looks good in the header, quick refinements '
-        'over the composer', (tester) async {
+    testWidgets('a drafted day: Looks good beside the composer, quick '
+        'refinements over it', (tester) async {
       _setSurface(tester);
       await tester.pumpWidget(_wrap(DayPage(draft: _draftedWithReasons())));
       await tester.pump();
 
       final messages = tester.element(find.byType(DayPage)).messages;
-      final header = find.byType(DayHeader);
+      final composer = find.byKey(const Key('daily_os_day_refine_composer'));
+      // The day's next step sits in the footer, in thumb reach — never in
+      // the header.
       expect(
         find.descendant(
-          of: header,
+          of: composer,
           matching: find.text(messages.dailyOsNextReviewLooksGood),
         ),
         findsOneWidget,
       );
+      expect(
+        find.descendant(
+          of: find.byType(DayHeader),
+          matching: find.text(messages.dailyOsNextReviewLooksGood),
+        ),
+        findsNothing,
+      );
       expect(find.text(messages.dailyOsNextDayWrapUpCta), findsNothing);
-      final composer = find.byKey(const Key('daily_os_day_refine_composer'));
       expect(composer, findsOneWidget);
       expect(
         find.descendant(
@@ -1388,8 +1396,9 @@ void main() {
       );
     });
 
-    testWidgets('a committed day: Wrap up in the header, the composer '
-        'without chips', (tester) async {
+    testWidgets('a committed day: Wrap up beside the composer, no chips', (
+      tester,
+    ) async {
       _setSurface(tester);
       await tester.pumpWidget(
         _wrap(DayPage(draft: _drafted(state: DayState.committed))),
@@ -1399,7 +1408,7 @@ void main() {
       final messages = tester.element(find.byType(DayPage)).messages;
       expect(
         find.descendant(
-          of: find.byType(DayHeader),
+          of: find.byKey(const Key('daily_os_day_refine_composer')),
           matching: find.text(messages.dailyOsNextDayWrapUpCta),
         ),
         findsOneWidget,

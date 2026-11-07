@@ -99,8 +99,8 @@ events stay visible on the Day timeline — the default projection, plan or not 
 without creating a plan first. Empty mode says so honestly — the header
 briefing reads "There's no plan for this day yet…" and the Agenda view's
 capacity strip reads "No plan yet" — swaps the with-plan footer (the "What should change?"
-composer and its quick refinements) for the check-in `DayComposer`, drops the
-header's stage action (Looks good / Wrap up), and hides
+composer, its quick refinements and the stage action beside it — Looks good /
+Wrap up) for the check-in `DayComposer`, and hides
 the delete-plan menu entry. **The composer is the capture.** It is the shared
 chat field (`ChatComposerField` inside `DayComposerBar`): mic while empty, send
 arrow once there are words. The mic records through `captureControllerProvider`

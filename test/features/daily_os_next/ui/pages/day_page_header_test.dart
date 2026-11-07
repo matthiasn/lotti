@@ -142,71 +142,70 @@ void main() {
       },
     );
 
-    group('the stage action', () {
-      Future<({Rect stage, Rect toggle, Rect actions})> pumpHeader(
-        WidgetTester tester,
-        Size size, {
-        double textScale = 1,
-      }) async {
-        setTestSurfaceSize(tester, size);
-        await tester.pumpWidget(
-          wrapDayPage(
-            DayPage(draft: draftedPlan()),
-            mediaQueryData: phoneMediaQueryData.copyWith(
-              size: size,
-              textScaler: TextScaler.linear(textScale),
-            ),
-          ),
-        );
-        await tester.pump();
-        return (
-          stage: tester.getRect(
-            find.byKey(const Key('daily_os_day_stage_action')),
-          ),
-          toggle: tester.getRect(find.byType(PlanViewToggle)),
-          actions: tester.getRect(find.byType(ProcessingCategoryFilterButton)),
-        );
-      }
-
-      testWidgets('leads the actions on one row when everything fits', (
-        tester,
-      ) async {
-        final rects = await pumpHeader(tester, const Size(1400, 900));
-
-        expect(rects.stage.right, lessThan(rects.actions.left));
-        expect(rects.stage.overlaps(rects.toggle), isFalse);
-        expect(rects.stage.left, greaterThan(rects.toggle.right));
-        expect(tester.takeException(), isNull);
-      });
-
+    group('the nav row', () {
       testWidgets(
-        'ends the toggle row on a phone while the actions stay beside '
-        'the title',
+        'carries the chevron and the actions on one centre line, the title '
+        'and toggle beneath',
         (tester) async {
-          final rects = await pumpHeader(tester, phoneMediaQueryData.size);
+          setTestSurfaceSize(tester, phoneMediaQueryData.size);
+          await tester.pumpWidget(
+            wrapDayPage(
+              DayPage(draft: draftedPlan()),
+              mediaQueryData: phoneMediaQueryData,
+            ),
+          );
+          await tester.pump();
 
-          // Side by side with the toggle, right-aligned.
-          expect(rects.stage.left, greaterThan(rects.toggle.right));
-          expect(rects.stage.center.dy, closeTo(rects.toggle.center.dy, 1));
-          // The actions moved up to the title's first line.
-          expect(rects.actions.bottom, lessThanOrEqualTo(rects.toggle.top));
+          final back = tester.getRect(
+            find.byTooltip(
+              tester.element(find.byType(DayPage)).messages.dailyOsNextDayBack,
+            ),
+          );
+          final filter = tester.getRect(
+            find.byType(ProcessingCategoryFilterButton),
+          );
+          final title = tester.getRect(find.text('Your day'));
+          final toggle = tester.getRect(find.byType(PlanViewToggle));
+
+          expect(filter.center.dy, closeTo(back.center.dy, 0.5));
+          expect(title.top, greaterThanOrEqualTo(back.bottom));
+          // The toggle rides the title's row, on its centre line.
+          expect(toggle.left, greaterThan(title.right));
+          expect(toggle.top, lessThan(title.bottom));
+          // Not centred on the chevron and title together, as it once was.
+          expect(toggle.top, greaterThanOrEqualTo(back.bottom));
           expect(tester.takeException(), isNull);
         },
       );
 
-      testWidgets('takes a row of its own when the toggle row is full', (
-        tester,
-      ) async {
-        final rects = await pumpHeader(
-          tester,
-          const Size(320, 900),
-          textScale: 1.3,
-        );
+      testWidgets(
+        'keeps the title and the content below on one rail, and the actions '
+        'flush with the toolbar edge',
+        (tester) async {
+          setTestSurfaceSize(tester, phoneMediaQueryData.size);
+          await tester.pumpWidget(
+            wrapDayPage(
+              DayPage(draft: draftedPlan()),
+              mediaQueryData: phoneMediaQueryData,
+            ),
+          );
+          await tester.pump();
 
-        expect(rects.stage.top, greaterThanOrEqualTo(rects.toggle.bottom));
-        expect(rects.stage.overlaps(rects.actions), isFalse);
-        expect(tester.takeException(), isNull);
-      });
+          final tokens = tester.element(find.byType(DayPage)).designTokens;
+          final rail = tokens.spacing.step5;
+          final title = tester.getRect(find.text('Your day'));
+          final menu = tester.getRect(find.byIcon(LottiIcons.moreVertical));
+
+          expect(title.left, closeTo(rail, 1));
+          // The menu glyph centres where the timeline toolbar's last icon
+          // button would: one 48 pt button in from the right rail.
+          expect(
+            phoneMediaQueryData.size.width - menu.center.dx,
+            closeTo(rail + kMinInteractiveDimension / 2, 1),
+          );
+          expect(tester.takeException(), isNull);
+        },
+      );
     });
 
     testWidgets('header relayouts when design-system spacing changes', (

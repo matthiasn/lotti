@@ -177,4 +177,66 @@ void main() {
 
     expect(texts, ['Fresh words']);
   });
+
+  group('trailing', () {
+    const stageKey = Key('stage');
+
+    Future<void> pumpWithTrailing(WidgetTester tester, double width) async {
+      final size = Size(width, 800);
+      setTestSurfaceSize(tester, size);
+      await tester.pumpWidget(
+        makeTestableWidget2(
+          Material(
+            child: Align(
+              alignment: Alignment.bottomCenter,
+              child: DayComposerBar(
+                hintText: 'What should change?',
+                onStartVoice: () {},
+                onSubmitText: texts.add,
+                trailing: const SizedBox(key: stageKey, width: 120, height: 48),
+              ),
+            ),
+          ),
+          mediaQueryData: MediaQueryData(size: size),
+        ),
+      );
+      await tester.pump();
+    }
+
+    testWidgets('sits beside the field, on its centre line, while it leaves '
+        'the field half the bar', (tester) async {
+      await pumpWithTrailing(tester, 402);
+
+      final field = tester.getRect(find.byType(ChatComposerField));
+      final stage = tester.getRect(find.byKey(stageKey));
+      expect(stage.left, greaterThan(field.right));
+      expect(stage.center.dy, closeTo(field.center.dy, 0.5));
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('moves under the field, full width, once it needs more', (
+      tester,
+    ) async {
+      // 200 wide less the bar's padding leaves the field under half.
+      await pumpWithTrailing(tester, 240);
+
+      final field = tester.getRect(find.byType(ChatComposerField));
+      final stage = tester.getRect(find.byKey(stageKey));
+      expect(stage.top, greaterThan(field.bottom));
+      expect(stage.width, field.width);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('gives the field the whole width once there are words', (
+      tester,
+    ) async {
+      await pumpWithTrailing(tester, 402);
+
+      await tester.enterText(find.byType(TextField), 'less meetings');
+      await tester.pump();
+
+      expect(find.byKey(stageKey), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+  });
 }

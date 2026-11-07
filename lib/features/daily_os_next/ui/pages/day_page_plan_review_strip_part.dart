@@ -58,18 +58,22 @@ class DayPage extends ConsumerStatefulWidget {
 /// asking what should change. What is said or typed goes straight into
 /// Refine, which proposes the change for review. While the plan is still a
 /// draft the quick refinements ride above the field as chips (hidden at large
-/// accessibility text sizes, where they would crowd out the day); the day's
-/// stage action ("Looks good" / "Wrap up") lives in the header.
+/// accessibility text sizes, where they would crowd out the day), and the
+/// day's next step sits beside the field, in thumb reach.
 class _DayReviewFooter extends StatelessWidget {
   const _DayReviewFooter({
     required this.draft,
     required this.onRefineWords,
     required this.onQuickRefinement,
+    required this.onCommit,
+    required this.onShutdown,
   });
 
   final DraftPlan draft;
   final Future<void> Function(String words) onRefineWords;
   final ValueChanged<_QuickRefinement> onQuickRefinement;
+  final VoidCallback onCommit;
+  final VoidCallback onShutdown;
 
   @override
   Widget build(BuildContext context) {
@@ -87,6 +91,11 @@ class _DayReviewFooter extends StatelessWidget {
       header: showChips
           ? _QuickRefinementChips(onSelected: onQuickRefinement)
           : null,
+      trailing: _DayStageAction(
+        draft: draft,
+        onCommit: onCommit,
+        onShutdown: onShutdown,
+      ),
       onSubmit: (words, {audioId}) => onRefineWords(words),
     );
   }
@@ -113,33 +122,37 @@ class _QuickRefinementChips extends StatelessWidget {
       size: DesignSystemChipSize.compactPillTouch,
       onPressed: () => onSelected(refinement),
     );
-    return Wrap(
-      alignment: WrapAlignment.center,
-      spacing: tokens.spacing.step2,
-      runSpacing: tokens.spacing.step2,
-      children: [
-        chip(
-          _QuickRefinement.tooMuch,
-          LottiIcons.removeCircled,
-          messages.dailyOsNextReviewTooMuch,
-        ),
-        chip(
-          _QuickRefinement.moveLighter,
-          LottiIcons.lowPriority,
-          messages.dailyOsNextReviewMoveLighter,
-        ),
-        chip(
-          _QuickRefinement.addBuffer,
-          LottiIcons.add,
-          messages.dailyOsNextReviewAddBuffer,
-        ),
-      ],
+    // One row at any width: a narrow phone scrolls it rather than stacking
+    // chips over the day.
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        spacing: tokens.spacing.step2,
+        children: [
+          chip(
+            _QuickRefinement.tooMuch,
+            LottiIcons.removeCircled,
+            messages.dailyOsNextReviewTooMuch,
+          ),
+          chip(
+            _QuickRefinement.moveLighter,
+            LottiIcons.lowPriority,
+            messages.dailyOsNextReviewMoveLighter,
+          ),
+          chip(
+            _QuickRefinement.addBuffer,
+            LottiIcons.add,
+            messages.dailyOsNextReviewAddBuffer,
+          ),
+        ],
+      ),
     );
   }
 }
 
-/// The day's next step, in the header: "Looks good" commits a drafted day
-/// (with Undo on its toast); once committed, "Wrap up" opens the shutdown.
+/// The day's next step, beside the footer's field: "Looks good" commits a
+/// drafted day (with Undo on its toast); once committed, "Wrap up" opens the
+/// shutdown.
 class _DayStageAction extends StatelessWidget {
   const _DayStageAction({
     required this.draft,
@@ -160,10 +173,10 @@ class _DayStageAction extends StatelessWidget {
       label: drafted
           ? messages.dailyOsNextReviewLooksGood
           : messages.dailyOsNextDayWrapUpCta,
-      leadingIcon: drafted ? LottiIcons.confirm : LottiIcons.night,
       variant: drafted
           ? DesignSystemButtonVariant.primary
           : DesignSystemButtonVariant.secondary,
+      size: DesignSystemButtonSize.large,
       onPressed: drafted ? onCommit : onShutdown,
     );
   }
