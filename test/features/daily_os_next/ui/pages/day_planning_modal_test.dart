@@ -320,6 +320,79 @@ void main() {
       expect(find.byIcon(LottiIcons.forward), findsOneWidget);
     });
 
+    testWidgets('startListening opens the capture already recording', (
+      tester,
+    ) async {
+      late _FakeCaptureController capture;
+      await _openCreate(
+        tester,
+        captureFactory: () =>
+            capture = _FakeCaptureController(const CaptureState.idle()),
+        intent: const DayPlanningCreate(startListening: true),
+      );
+
+      expect(find.byType(CaptureModalContent), findsOneWidget);
+      expect(capture.lastToggleForDate, DateTime(2024, 3, 15));
+    });
+
+    testWidgets('a plain open waits for the user to tap the orb', (
+      tester,
+    ) async {
+      late _FakeCaptureController capture;
+      await _openCreate(
+        tester,
+        captureFactory: () =>
+            capture = _FakeCaptureController(const CaptureState.idle()),
+      );
+
+      expect(capture.lastToggleForDate, isNull);
+    });
+
+    testWidgets('startListening leaves a capture that holds words alone', (
+      tester,
+    ) async {
+      late _FakeCaptureController capture;
+      await _openCreate(
+        tester,
+        captureFactory: () => capture = _FakeCaptureController(
+          const CaptureState(
+            phase: CapturePhase.captured,
+            transcript: 'Already said',
+            amplitudes: [],
+          ),
+        ),
+        intent: const DayPlanningCreate(startListening: true),
+      );
+
+      expect(capture.lastToggleForDate, isNull);
+      expect(
+        ProviderScope.containerOf(
+          tester.element(find.byType(CaptureModalContent)),
+        ).read(captureControllerProvider).transcript,
+        'Already said',
+      );
+    });
+
+    testWidgets('typed words win over startListening', (tester) async {
+      late _FakeCaptureController capture;
+      await _openCreate(
+        tester,
+        captureFactory: () =>
+            capture = _FakeCaptureController(const CaptureState.idle()),
+        intent: const DayPlanningCreate(
+          initialTranscript: 'Call mom about Sunday',
+          startListening: true,
+        ),
+      );
+
+      expect(capture.lastToggleForDate, isNull);
+      final state = ProviderScope.containerOf(
+        tester.element(find.byType(CaptureModalContent)),
+      ).read(captureControllerProvider);
+      expect(state.phase, CapturePhase.captured);
+      expect(state.transcript, 'Call mom about Sunday');
+    });
+
     testWidgets('idle bar offers only the "type instead" action', (
       tester,
     ) async {

@@ -36,6 +36,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/service_overrides.dart';
 import '../../../../mocks/mocks.dart';
+import '../../../../test_utils/material_ui_finders.dart';
 import '../../../../test_utils/screenshot_harness.dart';
 import '../../../../widget_test_utils.dart';
 import '../../test_doubles/mock_day_agent.dart';
@@ -152,6 +153,34 @@ class _CapturedCaptureController extends CaptureController {
   );
 }
 
+/// Taps the mic of the empty Day's check-in composer.
+Future<void> _tapCheckInMic(WidgetTester tester) => tester.tap(
+  find.descendant(
+    of: find.byKey(const Key('daily_os_day_check_in_cta')),
+    matching: findMaterialTooltip(
+      tester.element(find.byType(DayPage)).messages.chatInputRecordVoice,
+    ),
+  ),
+);
+
+/// Types [words] into the empty Day's check-in composer and sends them.
+Future<void> _sendCheckInWords(WidgetTester tester, String words) async {
+  final composer = find.byKey(const Key('daily_os_day_check_in_cta'));
+  await tester.enterText(
+    find.descendant(of: composer, matching: find.byType(TextField)),
+    words,
+  );
+  await tester.pump();
+  await tester.tap(
+    find.descendant(
+      of: composer,
+      matching: findMaterialTooltip(
+        tester.element(find.byType(DayPage)).messages.chatInputSendTooltip,
+      ),
+    ),
+  );
+}
+
 MockAudioRecorderRepository _permissionlessRecorder() {
   final recorder = MockAudioRecorderRepository();
   when(recorder.hasPermission).thenAnswer((_) async => false);
@@ -252,7 +281,7 @@ void main() {
 
           // The CTA opens the day-planning modal (Capture step) as a
           // full-cover layer; the Day surface stays mounted underneath.
-          await tester.tap(cta);
+          await _tapCheckInMic(tester);
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 400));
 
@@ -265,6 +294,69 @@ void main() {
         });
       },
     );
+
+    testWidgets(
+      'words sent from the composer open the check-in with them filled in',
+      (tester) async {
+        await withClock(Clock.fixed(DateTime(2026, 5, 26, 9)), () async {
+          await tester.pumpWidget(
+            _wrap(
+              const DailyOsNextRoot(),
+              overrides: [
+                captureControllerProvider.overrideWith(
+                  () => CaptureController(recorder: _permissionlessRecorder()),
+                ),
+                currentDraftPlanProvider.overrideWith((ref, _) async => null),
+              ],
+            ),
+          );
+          await tester.pump();
+          await tester.pump();
+
+          await _sendCheckInWords(tester, 'Finish the launch deck');
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 400));
+
+          expect(find.byType(CaptureModalContent), findsOneWidget);
+          final capture = ProviderScope.containerOf(
+            tester.element(find.byType(CaptureModalContent)),
+          ).read(captureControllerProvider);
+          expect(capture.phase, CapturePhase.captured);
+          expect(capture.transcript, 'Finish the launch deck');
+        });
+      },
+    );
+
+    testWidgets('the composer mic opens the check-in already recording', (
+      tester,
+    ) async {
+      final recorder = _permissionlessRecorder();
+      await withClock(Clock.fixed(DateTime(2026, 5, 26, 9)), () async {
+        await tester.pumpWidget(
+          _wrap(
+            const DailyOsNextRoot(),
+            overrides: [
+              captureControllerProvider.overrideWith(
+                () => CaptureController(recorder: recorder),
+              ),
+              currentDraftPlanProvider.overrideWith((ref, _) async => null),
+            ],
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
+        verifyNever(recorder.hasPermission);
+
+        await _tapCheckInMic(tester);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        expect(find.byType(CaptureModalContent), findsOneWidget);
+        // The sheet went straight for the microphone — the permission ask is
+        // the first step of recording — instead of waiting for a second tap.
+        verify(recorder.hasPermission).called(1);
+      });
+    });
 
     testWidgets('dismissing the check-in modal records the walkthrough '
         'skip and ends the onboarding session', (tester) async {
@@ -304,7 +396,7 @@ void main() {
             .read(dailyOsOnboardingSessionControllerProvider.notifier)
             .start(targetDate: DateTime(2026, 5, 26), sessionId: 's-1');
 
-        await tester.tap(find.byKey(const Key('daily_os_day_check_in_cta')));
+        await _tapCheckInMic(tester);
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 400));
         expect(find.byType(CaptureModalContent), findsOneWidget);
@@ -371,7 +463,10 @@ void main() {
             .read(dailyOsOnboardingSessionControllerProvider.notifier)
             .start(targetDate: DateTime(2026, 5, 26), sessionId: 's-1');
 
-        await tester.tap(find.byKey(const Key('daily_os_day_check_in_cta')));
+        await _sendCheckInWords(
+          tester,
+          'Count the colony before the sardine delivery',
+        );
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 400));
         final messages = tester.element(find.byType(DayPage)).messages;
@@ -435,7 +530,7 @@ void main() {
         ProviderScope.containerOf(rootContext).invalidate(
           dailyOsSetupStatusProvider,
         );
-        await tester.tap(find.byKey(const Key('daily_os_day_check_in_cta')));
+        await _tapCheckInMic(tester);
         await tester.pump();
 
         expect(route, '/settings/daily-os');

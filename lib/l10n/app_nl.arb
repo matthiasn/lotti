@@ -2452,7 +2452,7 @@
   "dailyOsNextDayAgentStatusWorking": "Bezig met plannen…",
   "dailyOsNextDayAgentTokensToday": "{tokens} tokens gebruikt om deze dag te plannen",
   "dailyOsNextDayBack": "Terug",
-  "dailyOsNextDayCheckInCta": "Spreek een check-in",
+  "dailyOsNextDayComposerCheckInHint": "Spreek of typ een check-in",
   "dailyOsNextDayDeleteDialogBody": "De opgestelde blokken voor deze dag zullen worden verwijderd. Opnames en hun audio opnames blijven in uw dagboek.",
   "dailyOsNextDayDeleteDialogCancel": "Annuleren",
   "dailyOsNextDayDeleteDialogConfirm": "Verwijderen",

@@ -15,6 +15,7 @@ import 'package:lotti/features/daily_os_next/ui/pages/day_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/refine_page.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/agenda_view.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_activity_view.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/day_composer_bar.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/plan_view_toggle.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
@@ -30,6 +31,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
+import '../../../../test_utils/material_ui_finders.dart';
 import '../../../../widget_test_utils.dart';
 import '../../../agents/test_data/entity_factories.dart';
 import '../../../categories/test_utils.dart';
@@ -165,7 +167,7 @@ void main() {
             DayPage(
               draft: DraftPlan.emptyForDay(DateTime(2026, 5, 26)),
               hasPlan: false,
-              onCheckIn: () => checkIns++,
+              onCheckIn: ({transcript, listen = false}) => checkIns++,
             ),
             actualBlocks: [tracked],
           ),
@@ -189,13 +191,14 @@ void main() {
         expect(find.byType(DayTimeline), findsNothing);
         expect(find.text('Recorded session'), findsOneWidget);
 
-        // Footer carries the single check-in CTA, not Refine/Commit.
+        // Footer is the check-in composer, not Refine/Commit.
         final messages = tester.element(find.byType(DayPage)).messages;
         expect(find.text(messages.dailyOsNextDayRefineCta), findsNothing);
         expect(find.text(messages.dailyOsNextDayLockInCta), findsNothing);
         final cta = find.byKey(const Key('daily_os_day_check_in_cta'));
         expect(cta, findsOneWidget);
-        await tester.tap(cta);
+        expect(find.byType(DayComposerBar), findsOneWidget);
+        await tester.tap(findMaterialTooltip(messages.chatInputRecordVoice));
         expect(checkIns, 1);
 
         // The overflow menu offers no delete-plan entry without a plan.
@@ -223,7 +226,8 @@ void main() {
             DayPage(
               draft: DraftPlan.emptyForDay(DateTime(2026, 5, 26)),
               hasPlan: false,
-              onCheckIn: () => fail('check-in must stay blocked'),
+              onCheckIn: ({transcript, listen = false}) =>
+                  fail('check-in must stay blocked'),
             ),
             setupStatus: const DailyOsSetupStatus(
               hasInferenceRoute: false,
@@ -247,7 +251,7 @@ void main() {
           find.text(messages.dailyOsSettingsSetupAction),
           findsNWidgets(2),
         );
-        expect(find.text(messages.dailyOsNextDayCheckInCta), findsNothing);
+        expect(find.byType(DayComposerBar), findsNothing);
 
         await tester.tap(find.byIcon(LottiIcons.moreVertical));
         await tester.pump();
@@ -460,7 +464,7 @@ void main() {
           DayPage(
             draft: DraftPlan.emptyForDay(DateTime(2026, 5, 26)),
             hasPlan: false,
-            onCheckIn: () => checkIns++,
+            onCheckIn: ({transcript, listen = false}) => checkIns++,
           ),
           setupStatus: const DailyOsSetupStatus(
             hasInferenceRoute: true,
@@ -476,9 +480,9 @@ void main() {
         find.text(messages.dailyOsSettingsNameNudgeTitle),
         findsOneWidget,
       );
-      expect(find.text(messages.dailyOsNextDayCheckInCta), findsOneWidget);
+      expect(find.byType(DayComposerBar), findsOneWidget);
 
-      await tester.tap(find.byKey(const Key('daily_os_day_check_in_cta')));
+      await tester.tap(findMaterialTooltip(messages.chatInputRecordVoice));
       expect(checkIns, 1);
     });
 

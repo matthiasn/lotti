@@ -3400,7 +3400,7 @@
     }
   },
   "dailyOsNextDayBack": "Back",
-  "dailyOsNextDayCheckInCta": "Speak a check-in",
+  "dailyOsNextDayComposerCheckInHint": "Talk or type a check-in",
   "dailyOsNextDayDeleteDialogBody": "The drafted blocks for this day will be removed. Captures and their audio recordings stay in your journal.",
   "dailyOsNextDayDeleteDialogCancel": "Cancel",
   "dailyOsNextDayDeleteDialogConfirm": "Delete",

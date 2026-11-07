@@ -36,11 +36,20 @@ sealed class DayPlanningIntent {
 
 /// Start a brand-new plan: Capture → Reconcile → Drafting.
 class DayPlanningCreate extends DayPlanningIntent {
-  const DayPlanningCreate({this.initialTranscript});
+  const DayPlanningCreate({
+    this.initialTranscript,
+    this.startListening = false,
+  });
 
   /// Optional words the capture opens with, typed in and ready to send —
-  /// what the user already said elsewhere, such as to the companion.
+  /// what the user already said elsewhere, such as to the companion, or
+  /// typed into the Day surface's composer.
   final String? initialTranscript;
+
+  /// Opens the capture already recording — the Day composer's mic, where
+  /// the tap that opened the sheet was the tap on the microphone. Ignored
+  /// when [initialTranscript] carries words.
+  final bool startListening;
 }
 
 /// Adapt an existing plan via the voice-driven Refine step.
@@ -90,11 +99,13 @@ Future<DayPlanningResult?> showDayPlanningModal({
         _dayPlanningModalType(modalContext, intent),
     pageListBuilder: (modalContext) => [
       switch (intent) {
-        DayPlanningCreate(:final initialTranscript) => _captureStepPage(
-          modalContext,
-          day,
-          initialTranscript: initialTranscript,
-        ),
+        DayPlanningCreate(:final initialTranscript, :final startListening) =>
+          _captureStepPage(
+            modalContext,
+            day,
+            initialTranscript: initialTranscript,
+            startListening: startListening,
+          ),
         DayPlanningAdapt(:final draft, :final initialTranscript) =>
           _refineStepPage(
             modalContext,
@@ -221,6 +232,7 @@ SliverWoltModalSheetPage _captureStepPage(
   BuildContext context,
   DateTime day, {
   String? initialTranscript,
+  bool startListening = false,
 }) {
   return ModalUtils.sliverModalSheetPage(
     context: context,
@@ -231,6 +243,7 @@ SliverWoltModalSheetPage _captureStepPage(
           child: _CaptureStepBody(
             day: day,
             initialTranscript: initialTranscript,
+            startListening: startListening,
           ),
         ),
       ),
@@ -244,9 +257,16 @@ SliverWoltModalSheetPage _captureStepPage(
 /// matching the standalone capture surface. A loading/error projection falls
 /// through as "no tracked time" rather than blocking the ritual.
 class _CaptureStepBody extends ConsumerStatefulWidget {
-  const _CaptureStepBody({required this.day, this.initialTranscript});
+  const _CaptureStepBody({
+    required this.day,
+    this.initialTranscript,
+    this.startListening = false,
+  });
 
   final DateTime day;
+
+  /// Starts recording once the step is on screen.
+  final bool startListening;
 
   /// Words the capture opens with, typed in: the user reviews and sends
   /// them like any typed capture.
@@ -261,14 +281,24 @@ class _CaptureStepBodyState extends ConsumerState<_CaptureStepBody> {
   void initState() {
     super.initState();
     final words = widget.initialTranscript?.trim() ?? '';
-    if (words.isEmpty) return;
+    if (words.isEmpty && !widget.startListening) return;
     // After the first frame: a provider is not changed while the tree
     // builds, and by then the capture content watches it, keeping it alive.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
-      ref.read(captureControllerProvider.notifier)
-        ..startTyping()
-        ..updateTranscript(words);
+      final capture = ref.read(captureControllerProvider.notifier);
+      if (words.isNotEmpty) {
+        capture
+          ..startTyping()
+          ..updateTranscript(words);
+        return;
+      }
+      // The same call the voice orb makes on its first tap — but only from
+      // rest: on a capture already under way or holding words, a toggle would
+      // stop or discard it instead of starting one.
+      final phase = ref.read(captureControllerProvider).phase;
+      if (phase != CapturePhase.idle && phase != CapturePhase.error) return;
+      await capture.toggle(forDate: widget.day);
     });
   }
 

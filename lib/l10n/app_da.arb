@@ -2453,7 +2453,7 @@
   "dailyOsNextDayAgentStatusWorking": "Planlægger…",
   "dailyOsNextDayAgentTokensToday": "{tokens} tokens brugt på at planlægge denne dag",
   "dailyOsNextDayBack": "Tilbage",
-  "dailyOsNextDayCheckInCta": "Tal en check-in",
+  "dailyOsNextDayComposerCheckInHint": "Tal eller skriv et check-in",
   "dailyOsNextDayDeleteDialogBody": "De udkastede blokke for denne dag vil blive fjernet. Optagelser og deres lydoptagelser bliver i din dagbog.",
   "dailyOsNextDayDeleteDialogCancel": "Annuller",
   "dailyOsNextDayDeleteDialogConfirm": "Slet",

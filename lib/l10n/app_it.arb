@@ -2453,7 +2453,7 @@
   "dailyOsNextDayAgentStatusWorking": "Pianificazione…",
   "dailyOsNextDayAgentTokensToday": "{tokens} token usati per pianificare questa giornata",
   "dailyOsNextDayBack": "Indietro",
-  "dailyOsNextDayCheckInCta": "Parlare un check-in",
+  "dailyOsNextDayComposerCheckInHint": "Parla o scrivi un check-in",
   "dailyOsNextDayDeleteDialogBody": "I blocchi elaborati per questo giorno saranno rimossi. Capture e le loro registrazioni audio rimangono nel tuo diario.",
   "dailyOsNextDayDeleteDialogCancel": "Annullamento",
   "dailyOsNextDayDeleteDialogConfirm": "Cancella",

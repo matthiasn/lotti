@@ -2453,7 +2453,7 @@
   "dailyOsNextDayAgentStatusWorking": "Planerar…",
   "dailyOsNextDayAgentTokensToday": "{tokens} tokens använda för att planera den här dagen",
   "dailyOsNextDayBack": "Tillbaka",
-  "dailyOsNextDayCheckInCta": "Tala en incheckning",
+  "dailyOsNextDayComposerCheckInHint": "Tala eller skriv en incheckning",
   "dailyOsNextDayDeleteDialogBody": "De utkastade blocken för denna dag kommer att tas bort. Inspelningar och deras ljudinspelningar stannar i din dagbok.",
   "dailyOsNextDayDeleteDialogCancel": "Avbryt",
   "dailyOsNextDayDeleteDialogConfirm": "Radera",
