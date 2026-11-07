@@ -10,6 +10,7 @@ import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/ai/helpers/prompt_placeholder_formatting.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/task_summary_resolver.dart';
+import 'package:lotti/features/ai/skills/recording_summary_tool.dart';
 import 'package:lotti/features/ai/util/preconfigured_prompts.dart';
 import 'package:lotti/features/speech_dictionary/domain/speech_dictionary_terms.dart';
 import 'package:lotti/get_it.dart';
@@ -300,7 +301,8 @@ class PromptBuilderHelper {
 
   /// The speech dictionary entries that reach [entity]: those limited to
   /// its category — its own, or its linked task's — and those that apply to
-  /// every category. Empty when the dictionary cannot be read.
+  /// every category, led by the names of the people filed in that category
+  /// ([withCategoryPeople]). Empty when the dictionary cannot be read.
   ///
   /// Used for prompt text, for the transcription endpoints' `context_bias`
   /// and, with each entry's misheard spellings, for the correction step.
@@ -315,9 +317,14 @@ class PromptBuilderHelper {
 
     if (!getIt.isRegistered<JournalDb>()) return const [];
     try {
-      final entries = entriesForCategory(
-        await getIt<JournalDb>().getAllSpeechDictionaryEntries(),
-        categoryId,
+      final db = getIt<JournalDb>();
+      final entries = await withCategoryPeople(
+        entriesForCategory(
+          await db.getAllSpeechDictionaryEntries(),
+          categoryId,
+        ),
+        journalDb: db,
+        categoryId: categoryId,
       );
       _domainLogger.log(
         LogDomain.ai,

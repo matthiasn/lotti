@@ -1,4 +1,5 @@
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/speech_dictionary/domain/speech_dictionary_terms.dart';
 
 /// The names a dictated check-in about [person] is likely to contain, most
 /// specific first: the person's name and nickname, the names the user listed
@@ -21,13 +22,6 @@ List<String> relationshipKnownTerms({
     ?data.nickname,
     ...data.knownTerms,
     if (categoryId != null)
-      for (final other in people)
-        if (other.id != person.id &&
-            other.meta.categoryId == categoryId &&
-            other.meta.deletedAt == null &&
-            !(other.meta.private ?? false)) ...[
-          other.data.title,
-          ?other.data.nickname,
-        ],
+      ...categoryPeopleNames(people, categoryId, exceptId: person.id),
   ];
 }

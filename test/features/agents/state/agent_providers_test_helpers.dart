@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
+import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/agent_runtime_registry.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart';
@@ -144,6 +145,11 @@ class InitProviderBench {
     when(mockOrchestrator.restoreWakeIntents).thenAnswer((_) async => 0);
     when(mockOrchestrator.stop).thenAnswer((_) async {});
     when(mockTaskAgentService.restoreSubscriptions).thenAnswer((_) async {});
+    // Startup hands category-switched-off task agents back first; none here.
+    when(() => mockTaskAgentService.agentService).thenReturn(mockService);
+    when(
+      () => mockService.listAgents(lifecycle: AgentLifecycle.dormant),
+    ).thenAnswer((_) async => const []);
     when(
       () => mockTaskAgentService.retirement,
     ).thenReturn(mockTaskAgentRetirement);

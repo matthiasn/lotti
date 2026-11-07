@@ -772,17 +772,21 @@ void main() {
       subjectCategoryLookup: subjectCategoryLookup,
     );
 
-    /// Gives [subjectId] an agent the way `GoalAgentService.createGoalAgent`
-    /// and `RelationshipAgentService` make one: no template, and a configured
-    /// setup naming [profileId] (mirrored into the legacy field).
-    void stubAgent(String subjectId, {String? profileId}) {
+    /// Gives [subjectId] a template-less agent (a goal's or a person's) whose
+    /// user picked [profileId] in its setup sheet: a configured setup of
+    /// `user` origin naming it, mirrored into the legacy field.
+    void stubAgent(
+      String subjectId, {
+      String? profileId,
+      AgentInferenceSetupOrigin origin = AgentInferenceSetupOrigin.user,
+    }) {
       final agent = makeTestIdentity(
         agentId: 'agent-$subjectId',
         config: AgentConfig(
           profileId: profileId,
           inferenceSetup: AgentInferenceSetup(
             mode: AgentInferenceSetupMode.configured,
-            origin: AgentInferenceSetupOrigin.categorySnapshot,
+            origin: origin,
             baseProfileId: profileId,
           ),
         ),
@@ -1238,17 +1242,63 @@ void main() {
       },
     );
 
+    test(
+      "an agent created with a copy of its category's Whisper profile "
+      'transcribes with Voxtral once the category names Voxtral',
+      () async {
+        // As `RelationshipAgentService` created it while the family
+        // category still named the Whisper profile.
+        final agent = makeTestIdentity(
+          agentId: 'person-agent',
+          config: const AgentConfig(
+            profileId: 'family-profile',
+            inferenceSetup: AgentInferenceSetup(
+              mode: AgentInferenceSetupMode.configured,
+              origin: AgentInferenceSetupOrigin.categorySnapshot,
+              baseProfileId: 'family-profile',
+              originEntityId: 'family',
+            ),
+          ),
+        );
+        when(
+          () => mockTaskAgentService.getTaskAgentForTask('person'),
+        ).thenAnswer((_) async => agent);
+        when(
+          () => mockTemplateService.getTemplateForAgent('person-agent'),
+        ).thenAnswer((_) async => null);
+        final familyNowNamesVoxtral = ProfileAutomationResolver(
+          subjectAgentLookup: mockTaskAgentService.getTaskAgentForTask,
+          templateService: mockTemplateService,
+          profileResolver: ProfileResolver(
+            aiConfigRepository: AiConfigRepository(configDb),
+            domainLogger: MockDomainLogger(),
+          ),
+          domainLogger: MockDomainLogger(),
+          categoryProfileLookup: (categoryId) async =>
+              categoryId == 'family' ? 'default-profile' : null,
+        );
+
+        final profile = await familyNowNamesVoxtral.resolveTranscriptionProfile(
+          subjectId: 'person',
+          categoryId: 'family',
+        );
+
+        expect(profile!.transcriptionModel!.name, 'Voxtral Mini Transcribe');
+        expect(profile.transcriptionProvider!.id, 'mistral');
+      },
+    );
+
     group('a goal whose agent is assigned the Voxtral profile', () {
       setUp(() {
-        // Shaped as `GoalAgentService.createGoalAgent` makes it: no template,
-        // the profile in a configured setup alone.
+        // No template, and the profile the user picked in the agent's setup
+        // sheet in a configured setup alone.
         final agent = makeTestIdentity(
           agentId: 'goal-agent',
           config: const AgentConfig(
             profileId: 'default-profile',
             inferenceSetup: AgentInferenceSetup(
               mode: AgentInferenceSetupMode.configured,
-              origin: AgentInferenceSetupOrigin.categorySnapshot,
+              origin: AgentInferenceSetupOrigin.user,
               baseProfileId: 'default-profile',
             ),
           ),

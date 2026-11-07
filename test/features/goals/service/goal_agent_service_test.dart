@@ -321,11 +321,13 @@ void main() {
       expect(config.automaticUpdatesEnabled, isTrue);
     });
 
-    test('a category naming no profile leaves the agent on its standalone '
-        'resolution, running', () async {
+    test('a category naming no profile gives the agent a running setup that '
+        'follows the category', () async {
       final config = await created(filing(profile: null));
 
-      expect(config.inferenceSetup, isNull);
+      expect(config.inferenceSetup!.mode, AgentInferenceSetupMode.configured);
+      expect(config.inferenceSetup!.followsCategory, isTrue);
+      expect(config.inferenceSetup!.baseProfileId, isNull);
       expect(config.automaticUpdatesEnabled, isTrue);
     });
   });

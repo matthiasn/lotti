@@ -14,6 +14,8 @@ import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/state/profile_automation_providers.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -55,6 +57,80 @@ void main() {
       isFalse,
     );
   });
+
+  test(
+    'a goal agent that follows its category re-resolves when a category is '
+    'edited, so read-aloud and chat move with the next wake',
+    () async {
+      final updates = StreamController<Set<String>>.broadcast();
+      addTearDown(updates.close);
+      when(
+        () => getIt<UpdateNotifications>().updateStream,
+      ).thenAnswer((_) => updates.stream);
+      final repository = MockAiConfigRepository();
+      when(repository.getDefaultProfileId).thenAnswer((_) async => null);
+      when(
+        () => repository.getConfigsByType(AiConfigType.model),
+      ).thenAnswer((_) async => [model()]);
+      final provider = AiConfigInferenceProvider(
+        id: 'provider',
+        name: 'Provider',
+        baseUrl: 'https://example.com',
+        apiKey: 'key',
+        createdAt: DateTime(2024),
+        inferenceProviderType: InferenceProviderType.mistral,
+      );
+      when(
+        () => repository.getConfigById(any()),
+      ).thenAnswer((call) async {
+        final id = call.positionalArguments.first as String;
+        return id == 'provider'
+            ? provider
+            : testInferenceProfile(id: id, thinkingModelId: 'model');
+      });
+      var categoryProfile = 'profile-whisper';
+      final container = ProviderContainer(
+        overrides: [
+          agentIdentityProvider.overrideWith(
+            (ref, id) async => makeTestIdentity(
+              kind: AgentKinds.goalAgent,
+              config: const AgentConfig(
+                inferenceSetup: AgentInferenceSetup(
+                  mode: AgentInferenceSetupMode.configured,
+                  origin: AgentInferenceSetupOrigin.categorySnapshot,
+                  baseProfileId: 'profile-whisper',
+                  originEntityId: 'penguin-operations',
+                ),
+              ),
+            ),
+          ),
+          aiConfigRepositoryProvider.overrideWithValue(repository),
+          categoryProfileLookupProvider.overrideWithValue(
+            (categoryId) async => categoryProfile,
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+      container.listen(goalAgentResolvedSetupProvider('agent'), (_, _) {});
+      expect(
+        (await container.read(
+          goalAgentResolvedSetupProvider('agent').future,
+        ))?.profile?.profileId,
+        'profile-whisper',
+      );
+
+      categoryProfile = 'profile-voxtral';
+      updates.add({categoriesNotification});
+      await Future<void>.value();
+
+      expect(
+        (await container.read(
+          goalAgentResolvedSetupProvider('agent').future,
+        ))?.profile?.profileId,
+        'profile-voxtral',
+      );
+    },
+  );
 
   test(
     'resolved setup returns null when identity, template, or version is absent',

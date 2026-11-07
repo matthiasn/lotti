@@ -26,6 +26,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 import '../../../mocks/mocks.dart';
+import '../../categories/test_utils.dart';
 import '../test_utils.dart';
 import 'task_agent_workflow_test_helpers.dart';
 
@@ -1400,6 +1401,118 @@ void main() {
           },
         );
       }
+
+      test(
+        "a report's provenance names the profile the run resolved — the "
+        "category's current one — not the copy stored on the agent",
+        () async {
+          stubMeliousTaskAgentModel(
+            providerId: 'melious-provider-glm',
+            modelConfigId: 'glm-model',
+            modelName: 'GLM',
+            providerModelId: meliousGlm53FlashModelId,
+          );
+          when(
+            () => mockAiConfigRepository.getConfigById('profile-current'),
+          ).thenAnswer(
+            (_) async => testInferenceProfile(
+              id: 'profile-current',
+              thinkingModelId: 'glm-model',
+            ),
+          );
+          when(
+            () => mockJournalDb.getCategoryById('penguin-operations'),
+          ).thenAnswer(
+            (_) async => CategoryTestUtils.createTestCategory(
+              id: 'penguin-operations',
+              name: 'Penguin Operations',
+            ).copyWith(defaultProfileId: 'profile-current'),
+          );
+          final followingIdentity = testAgentIdentity.copyWith(
+            config: const AgentConfig(
+              profileId: 'profile-stale-copy',
+              inferenceSetup: AgentInferenceSetup(
+                mode: AgentInferenceSetupMode.configured,
+                origin: AgentInferenceSetupOrigin.categorySnapshot,
+                baseProfileId: 'profile-stale-copy',
+                originEntityId: 'penguin-operations',
+              ),
+            ),
+          );
+          final capturingRepo =
+              MockConversationRepository(mockConversationManager)
+                ..sendMessageDelegate =
+                    ({
+                      required conversationId,
+                      required message,
+                      required model,
+                      required provider,
+                      required inferenceRepo,
+                      tools,
+                      toolChoice,
+                      temperature = 0.7,
+                      strategy,
+                    }) async {
+                      await strategy!.processToolCalls(
+                        toolCalls: [
+                          ChatCompletionMessageToolCall(
+                            id: 'report-call',
+                            type: ChatCompletionMessageToolCallType.function,
+                            function: ChatCompletionMessageFunctionCall(
+                              name: TaskAgentToolNames.updateReport,
+                              arguments: jsonEncode({
+                                'oneLiner': 'Survey on track',
+                                'tldr': 'The floe survey is on track.',
+                                'content': 'The floe survey is on track.',
+                              }),
+                            ),
+                          ),
+                        ],
+                        manager: mockConversationManager,
+                      );
+                      return const InferenceUsage(
+                        inputTokens: 10,
+                        outputTokens: 5,
+                      );
+                    };
+          final workflow = createTestWorkflow(
+            agentRepository: mockAgentRepository,
+            conversationRepository: capturingRepo,
+            aiInputRepository: mockAiInputRepository,
+            aiConfigRepository: mockAiConfigRepository,
+            journalDb: mockJournalDb,
+            cloudInferenceRepository: mockCloudInferenceRepository,
+            journalRepository: mockJournalRepository,
+            checklistRepository: mockChecklistRepository,
+            labelsRepository: mockLabelsRepository,
+            syncService: mockSyncService,
+            templateService: mockTemplateService,
+          );
+
+          final result = await workflow.execute(
+            agentIdentity: followingIdentity,
+            runKey: runKey,
+            triggerTokens: {'entity-a'},
+            threadId: threadId,
+          );
+
+          expect(result.success, isTrue);
+          final report = capturedEntitiesOfType<AgentReportEntity>(
+            verify(() => mockSyncService.upsertEntity(captureAny())).captured,
+          ).single;
+          final provenance = ReportInferenceProvenance.tryRead(
+            report.provenance,
+          )!;
+          expect(provenance.profileId, 'profile-current');
+          expect(
+            provenance.setupOrigin,
+            AgentInferenceSetupOrigin.categorySnapshot,
+          );
+          verifyNever(
+            () => mockAiConfigRepository.getConfigById('profile-stale-copy'),
+          );
+        },
+      );
 
       test('Mistral evidence mode accepts a grounded Qwen report revision and '
           'attributes usage to both models', () async {

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/agents/agent_config.dart';
 import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
+import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/agents/agent_link.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/classes/projects_overview_models.dart';
@@ -357,6 +358,11 @@ Future<ProjectsOverviewSnapshot> _attachProjectAgentSidecars(
             agentIds,
             agentRepository,
             aiConfigRepository,
+            categoryProfileIds: {
+              for (final group in snapshot.groups)
+                if (group.categoryId case final String categoryId)
+                  categoryId: group.category?.defaultProfileId,
+            },
           ),
   ).wait;
   return _mapOverviewItems(snapshot, (item) {
@@ -374,23 +380,41 @@ Future<ProjectsOverviewSnapshot> _attachProjectAgentSidecars(
   });
 }
 
-/// Names of the inference profiles [agentIds] are explicitly assigned.
+/// Names of the inference profiles [agentIds] run on: the one each is
+/// explicitly assigned, or — for an agent that follows its category — the
+/// profile [categoryProfileIds] says its category names now, else the
+/// Settings default, as the agent's next run resolves it.
 ///
-/// An agent without an assigned profile is absent from the result. An agent
-/// whose assigned id no longer resolves to an inference profile — deleted, or
+/// An agent without such a profile is absent from the result. An agent
+/// whose profile id no longer resolves to an inference profile — deleted, or
 /// some other config — maps to `null`: it is assigned, but nothing can run.
 /// Profile reads go through the repository's per-id cache, so a shared
 /// profile is fetched once.
 Future<Map<String, String?>> _assignedProfileNamesByAgentId(
   List<String> agentIds,
   AgentRepository agentRepository,
-  AiConfigRepository aiConfigRepository,
-) async {
+  AiConfigRepository aiConfigRepository, {
+  required Map<String, String?> categoryProfileIds,
+}) async {
   final entities = await agentRepository.getEntitiesByIds(agentIds);
+  late final settingsDefaultId = aiConfigRepository.getDefaultProfileId();
+  Future<String?> runningProfileId(AgentConfig config) async {
+    final setup = config.inferenceSetup;
+    final categoryId = setup?.originEntityId;
+    if (setup == null ||
+        setup.mode != AgentInferenceSetupMode.configured ||
+        !setup.followsCategory ||
+        (categoryId != null && !categoryProfileIds.containsKey(categoryId))) {
+      return config.assignedProfileId;
+    }
+    return (categoryId == null ? null : categoryProfileIds[categoryId]) ??
+        await settingsDefaultId;
+  }
+
   final profileIdsByAgentId = <String, String>{
     for (final entity in entities.values)
       if (entity case final AgentIdentityEntity identity)
-        if (identity.config.assignedProfileId case final String profileId)
+        if (await runningProfileId(identity.config) case final String profileId)
           identity.agentId: profileId,
   };
   final profileIds = profileIdsByAgentId.values.toSet().toList();

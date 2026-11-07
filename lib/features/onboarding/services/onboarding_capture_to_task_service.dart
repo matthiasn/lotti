@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -287,6 +288,8 @@ class OnboardingCaptureToTaskService {
         taskId: task.id,
         templateId: templateId,
         profileId: category.defaultProfileId,
+        setupOrigin: AgentInferenceSetupOrigin.categorySnapshot,
+        setupOriginEntityId: category.id,
         allowedCategoryIds: {category.id},
         additionalWakeTokens: {?audioId},
         automaticUpdatesEnabled: category.automaticAgentWakesEnabledEffective,

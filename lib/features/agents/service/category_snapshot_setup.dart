@@ -1,46 +1,41 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/agents/agent_config.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/features/ai/helpers/profile_automation_resolver.dart';
-import 'package:lotti/providers/service_providers.dart';
+
+/// The setup of an agent that takes its category's default rather than a
+/// profile the user picked for it: it follows [categoryId]
+/// (`AgentInferenceSetup.followsCategory`), so every run resolves what the
+/// category names then, else the Settings default — also when the category
+/// names nothing yet, or the agent has no category at all.
+///
+/// [profileId] records what the category named when the setup was written,
+/// for the legacy mirror and older clients; it never decides a run. The setup
+/// is always configured: an agent the user has not touched runs on the
+/// default, it is never created switched off.
+AgentInferenceSetup categoryFollowingSetup({
+  required String? categoryId,
+  String? profileId,
+}) => AgentInferenceSetup(
+  mode: AgentInferenceSetupMode.configured,
+  origin: AgentInferenceSetupOrigin.categorySnapshot,
+  baseProfileId: profileId,
+  originEntityId: categoryId,
+);
 
 /// The inference setup a subject's agent — a person's or a goal's — starts
-/// with: the profile its category names *at the time*, snapshotted the way a
-/// task's agent takes its category default (`assignCategoryDefaultTaskAgent`),
-/// so the user can change it afterwards in the agent's setup sheet and a later
-/// change to the category's default does not move it under them.
+/// with: [categoryFollowingSetup] for its category, as a task's agent takes
+/// its category default (`assignCategoryDefaultTaskAgent`), until the user
+/// picks a profile or a model for it in the setup sheet.
 ///
-/// Null when there is no category or the category names no profile. Unlike a
-/// task's, such an agent is not created switched off: it keeps its kind's
-/// own resolution — the Settings default — rather than a disabled setup,
-/// because a person's or a goal's agent was always created running.
+/// Null for a subject in no category: such an agent keeps its kind's own
+/// standalone resolution, which ends on the Settings default too.
 Future<AgentInferenceSetup?> categorySnapshotSetup({
   required String? categoryId,
   required CategoryProfileLookup lookup,
 }) async {
   if (categoryId == null) return null;
-  final profileId = await lookup(categoryId);
-  if (profileId == null) return null;
-  return AgentInferenceSetup(
-    mode: AgentInferenceSetupMode.configured,
-    origin: AgentInferenceSetupOrigin.categorySnapshot,
-    baseProfileId: profileId,
-    originEntityId: categoryId,
+  return categoryFollowingSetup(
+    categoryId: categoryId,
+    profileId: await lookup(categoryId),
   );
 }
-
-/// A category's default profile, read from the journal's category row — the
-/// read a subject's agent snapshots at creation and the automation resolver
-/// uses for a recording's transcript, so the two agree on what a category
-/// names.
-final categoryProfileLookupProvider = Provider<CategoryProfileLookup>(
-  (ref) => (categoryId) async {
-    final category = await ref
-        .read(journalDbProvider)
-        .getCategoryById(
-          categoryId,
-        );
-    return category?.defaultProfileId;
-  },
-  name: 'categoryProfileLookupProvider',
-);

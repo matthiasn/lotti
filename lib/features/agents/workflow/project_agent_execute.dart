@@ -120,6 +120,7 @@ extension ProjectAgentExecute on ProjectAgentWorkflow {
     final profileResolver = ProfileResolver(
       aiConfigRepository: this.aiConfigRepository,
       domainLogger: domainLogger,
+      categoryProfileLookup: categoryProfileLookup,
     );
     final resolvedProfile = templateCtx != null
         ? await profileResolver.resolve(

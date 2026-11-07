@@ -817,6 +817,185 @@ void main() {
     });
   });
 
+  group('a setup that follows its category', () {
+    // Two profiles on distinct thinking models, so the winner is visible in
+    // the resolved route: the category's copy at creation (Melious Whisper
+    // in the field) and what the category or Settings names today.
+    late Map<String, AiConfig> configs;
+    late Map<String, String?> categoryProfiles;
+    late ProfileResolver following;
+
+    AiConfigInferenceProfile profileOn(String id) =>
+        testInferenceProfile(id: id, thinkingModelId: '$id-thinking');
+
+    setUp(() {
+      configs = {
+        'provider': testInferenceProvider(id: 'provider'),
+        for (final id in ['snapshot', 'current', 'settings-default']) ...{
+          id: profileOn(id),
+          '$id-thinking': testAiModel(
+            id: '$id-thinking',
+            providerModelId: '$id-native',
+            inferenceProviderId: 'provider',
+          ),
+        },
+      };
+      categoryProfiles = {'family': 'current'};
+      when(
+        () => mockAiConfig.getConfigById(any()),
+      ).thenAnswer((call) async => configs[call.positionalArguments.first]);
+      when(
+        () => mockAiConfig.getConfigsByType(AiConfigType.model),
+      ).thenAnswer(
+        (_) async => configs.values.whereType<AiConfigModel>().toList(),
+      );
+      when(
+        mockAiConfig.getDefaultProfileId,
+      ).thenAnswer((_) async => 'settings-default');
+      following = ProfileResolver(
+        aiConfigRepository: mockAiConfig,
+        domainLogger: MockDomainLogger(),
+        categoryProfileLookup: (categoryId) async =>
+            categoryProfiles[categoryId],
+      );
+    });
+
+    AgentInferenceSetup setup({
+      AgentInferenceSetupOrigin origin =
+          AgentInferenceSetupOrigin.categorySnapshot,
+      String? thinkingModelOverrideId,
+      AgentInferenceSetupMode mode = AgentInferenceSetupMode.configured,
+    }) => AgentInferenceSetup(
+      mode: mode,
+      origin: origin,
+      baseProfileId: 'snapshot',
+      thinkingModelOverrideId: thinkingModelOverrideId,
+      originEntityId: 'family',
+    );
+
+    test("runs on the category's profile as it is now, not the copy taken "
+        'at creation', () async {
+      final result = await following.resolveSetup(setup());
+
+      expect(result.status, AgentSetupResolutionStatus.resolved);
+      expect(result.profile?.profileId, 'current');
+      expect(result.profile?.thinkingModelId, 'current-native');
+      expect(result.source, AgentSetupResolutionSource.baseProfile);
+      expect(result.setupOrigin, AgentInferenceSetupOrigin.categorySnapshot);
+    });
+
+    test('a later change to the category moves the agent on its next run, '
+        'with no write to the agent', () async {
+      final agentSetup = setup();
+      expect(
+        (await following.resolveSetup(agentSetup)).profile?.profileId,
+        'current',
+      );
+
+      categoryProfiles['family'] = 'snapshot';
+
+      expect(
+        (await following.resolveSetup(agentSetup)).profile?.profileId,
+        'snapshot',
+      );
+    });
+
+    test('falls back to the Settings default when the category names no '
+        'profile, or one that no longer resolves', () async {
+      categoryProfiles['family'] = null;
+      expect(
+        (await following.resolveSetup(setup())).profile?.profileId,
+        'settings-default',
+      );
+
+      categoryProfiles['family'] = 'deleted-profile';
+      expect(
+        (await following.resolveSetup(setup())).profile?.profileId,
+        'settings-default',
+      );
+    });
+
+    test('is broken, never the stale copy, when neither the category nor '
+        'Settings name a profile that resolves', () async {
+      categoryProfiles['family'] = null;
+      when(mockAiConfig.getDefaultProfileId).thenAnswer((_) async => null);
+
+      final result = await following.resolveSetup(setup());
+
+      expect(result.status, AgentSetupResolutionStatus.broken);
+      expect(result.profile, isNull);
+    });
+
+    test('an explicit choice on the agent outranks the category', () async {
+      final userPicked = await following.resolveSetup(
+        setup(origin: AgentInferenceSetupOrigin.user),
+      );
+      expect(userPicked.profile?.profileId, 'snapshot');
+
+      final modelPicked = await following.resolveSetup(
+        setup(thinkingModelOverrideId: 'settings-default-thinking'),
+      );
+      expect(modelPicked.source, AgentSetupResolutionSource.directModel);
+      expect(modelPicked.profile?.thinkingModelId, 'settings-default-native');
+    });
+
+    test(
+      'a disabled setup stays disabled whatever the category names',
+      () async {
+        final result = await following.resolveSetup(
+          setup(mode: AgentInferenceSetupMode.disabled),
+        );
+
+        expect(result.status, AgentSetupResolutionStatus.disabled);
+        expect(result.profile, isNull);
+      },
+    );
+
+    test('resolveStandalone (goal agents) follows the category too', () async {
+      final result = await following.resolveStandalone(
+        agentConfig: AgentConfig(inferenceSetup: setup()),
+        legacyModelId: 'unused',
+      );
+
+      expect(result.profile?.profileId, 'current');
+    });
+
+    test('a setup written for a category that named no profile follows it '
+        'too: the Settings default, then the category once it names one, and '
+        'the default alone without a category', () async {
+      const bare = AgentInferenceSetup(
+        mode: AgentInferenceSetupMode.configured,
+        origin: AgentInferenceSetupOrigin.categorySnapshot,
+        originEntityId: 'family',
+      );
+      categoryProfiles['family'] = null;
+      expect(
+        (await following.resolveSetup(bare)).profile?.profileId,
+        'settings-default',
+      );
+
+      categoryProfiles['family'] = 'current';
+      expect(
+        (await following.resolveSetup(bare)).profile?.profileId,
+        'current',
+      );
+
+      final noCategory = await following.resolveSetup(
+        const AgentInferenceSetup(
+          mode: AgentInferenceSetupMode.configured,
+          origin: AgentInferenceSetupOrigin.categorySnapshot,
+        ),
+      );
+      expect(noCategory.profile?.profileId, 'settings-default');
+    });
+
+    test('without a category lookup the stored copy is used', () async {
+      final result = await resolver.resolveSetup(setup());
+
+      expect(result.profile?.profileId, 'snapshot');
+    });
+  });
+
   group('resolveByProfileId', () {
     test('resolves valid profile by ID', () async {
       final profile = testInferenceProfile(

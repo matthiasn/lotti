@@ -1004,12 +1004,20 @@ void main() {
             );
 
             expect(config.profileId, isNull);
-            expect(config.inferenceSetup, isNull);
+            expect(
+              config.inferenceSetup,
+              const AgentInferenceSetup(
+                mode: AgentInferenceSetupMode.configured,
+                origin: AgentInferenceSetupOrigin.categorySnapshot,
+                originEntityId: 'category-1',
+              ),
+            );
           },
         );
 
         test(
-          'without a profile the agent keeps the legacy resolution chain',
+          'without a profile the agent follows its category — the Settings '
+          "default until the category names one — not the template's model",
           () async {
             final config = await createAndCaptureConfig(
               setupOrigin: AgentInferenceSetupOrigin.categorySnapshot,
@@ -1017,7 +1025,15 @@ void main() {
             );
 
             expect(config.profileId, isNull);
-            expect(config.inferenceSetup, isNull);
+            expect(config.inferenceSetup!.followsCategory, isTrue);
+            expect(
+              config.inferenceSetup,
+              const AgentInferenceSetup(
+                mode: AgentInferenceSetupMode.configured,
+                origin: AgentInferenceSetupOrigin.categorySnapshot,
+                originEntityId: 'category-1',
+              ),
+            );
           },
         );
       });

@@ -2,6 +2,7 @@ import 'package:lotti/classes/agents/agent_config.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
@@ -9,6 +10,16 @@ import 'package:lotti/features/ai/util/inference_provider_resolver.dart';
 import 'package:lotti/services/domain_logging.dart';
 
 const _logTag = 'ProfileResolver';
+
+/// A category's current `defaultProfileId`, read from the journal's category
+/// row — the one read every inheritance step agrees on: an agent that follows
+/// its category, a recording's transcription profile, a subject's agent
+/// created in the category.
+Future<String?> Function(String categoryId) categoryDefaultProfileLookup(
+  JournalDb journalDb,
+) =>
+    (categoryId) async =>
+        (await journalDb.getCategoryById(categoryId))?.defaultProfileId;
 
 /// Resolves the inference profile for an agent wake.
 ///
@@ -23,9 +34,16 @@ class ProfileResolver {
   const ProfileResolver({
     required this._aiConfigRepository,
     required this._domainLogger,
+    this._categoryProfileLookup,
   });
 
   final AiConfigRepository _aiConfigRepository;
+
+  /// Reads a category's current `defaultProfileId`, so a setup that follows
+  /// its category ([AgentInferenceSetupFollowsCategory]) resolves what the
+  /// category names at run time. Without it such a setup keeps the profile
+  /// copied at creation.
+  final Future<String?> Function(String categoryId)? _categoryProfileLookup;
 
   /// Receives the reasons a profile or model cannot be resolved.
   final DomainLogger _domainLogger;
@@ -136,12 +154,26 @@ class ProfileResolver {
 
   /// Resolves an authoritative agent setup without requiring a template.
   /// Disabled or broken setups never fall through to legacy/default routes.
+  ///
+  /// A configured setup that follows its category is resolved fresh on every
+  /// call: the category's current profile, else the Settings default — never
+  /// the copy taken at creation (see [_resolveCategoryOrDefault]).
   Future<ResolvedAgentSetup> resolveSetup(
     AgentInferenceSetup setup,
   ) async {
     if (setup.mode == AgentInferenceSetupMode.disabled) {
       return ResolvedAgentSetup(
         status: AgentSetupResolutionStatus.disabled,
+        setupOrigin: setup.origin,
+      );
+    }
+
+    final categoryId = setup.originEntityId;
+    final categoryLookup = _categoryProfileLookup;
+    if (setup.followsCategory && categoryLookup != null) {
+      return _resolveCategoryOrDefault(
+        categoryId: categoryId,
+        lookup: categoryLookup,
         setupOrigin: setup.origin,
       );
     }
@@ -191,6 +223,36 @@ class ProfileResolver {
     return ResolvedAgentSetup(
       status: AgentSetupResolutionStatus.broken,
       setupOrigin: setup.origin,
+    );
+  }
+
+  /// The category's current profile, else the Settings default — the
+  /// inheritance below an agent that has no profile of its own. Without a
+  /// category, or when the category names none or one that no longer
+  /// resolves, the default; with neither, the setup is broken.
+  Future<ResolvedAgentSetup> _resolveCategoryOrDefault({
+    required String? categoryId,
+    required Future<String?> Function(String categoryId) lookup,
+    required AgentInferenceSetupOrigin setupOrigin,
+  }) async {
+    final categoryProfileId = categoryId == null
+        ? null
+        : await lookup(categoryId);
+    final profile =
+        (categoryProfileId == null
+            ? null
+            : await resolveByProfileId(categoryProfileId)) ??
+        await resolveDefaultProfile();
+    if (profile == null) {
+      return ResolvedAgentSetup(
+        status: AgentSetupResolutionStatus.broken,
+        setupOrigin: setupOrigin,
+      );
+    }
+    return _resolvedDetails(
+      profile: profile,
+      source: AgentSetupResolutionSource.baseProfile,
+      setupOrigin: setupOrigin,
     );
   }
 

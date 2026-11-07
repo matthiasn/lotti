@@ -133,7 +133,9 @@ flowchart TD
 
 An `AgentConfig.inferenceSetup` is authoritative: `resolveSetup` honors a direct
 thinking-model override and its optional base profile, or returns disabled/broken.
-It never falls through to unrelated defaults. On the skill path, a disabled or
+It never falls through to unrelated defaults — except a setup that only copied
+its category's profile, which [follows the category](#agents-that-follow-their-category)
+at every run. On the skill path, a disabled or
 broken setup yields no profile, and `resolveForSubject` then resolves the
 subject's own `profileId`. Without a typed setup, the first
 configured profile id wins selection: agent, version, then template. If that
@@ -157,6 +159,70 @@ resolve best-effort. An explicitly selected but unavailable Chat model sets
 chat presents its existing recoverable setup error. An unavailable audio
 post-processing model sets `audioPostProcessingModelUnavailable` the same way,
 and only the recording summary fails.
+
+# Agents that follow their category
+
+An agent's profile is resolved on every run, never fixed when the agent is
+made. What a run resolves depends on who chose the setup:
+
+1. **The user's choice for this agent** — a profile or a thinking model picked
+   in the agent's setup sheet or the *Assign agent* picker (origin `user`, or
+   any setup carrying a `thinkingModelOverrideId`). Authoritative, as above.
+2. **The agent's category** — a setup of origin `categorySnapshot`, written
+   when the agent was created from its category's default (task, project,
+   goal and person agents, including the task agents the agent tools and
+   onboarding create) or by *Copy category default*. Its
+   `baseProfileId` only records what the category named that day.
+   `AgentInferenceSetup.followsCategory` marks it, and
+   `ProfileResolver.resolveSetup` resolves the category's **current**
+   `defaultProfileId` (read through the `categoryProfileLookup` it is given,
+   by `originEntityId`), else
+3. **the device's Settings default**. With neither resolving, the setup is
+   broken — the stale copy is never used.
+
+So changing a category's profile, or the Settings default below it, moves
+every agent that inherits it on its next run, with no write to the agents.
+The surfaces that cache a resolved setup — `taskAgentResolvedSetupProvider`
+and `goalAgentResolvedSetupProvider`, behind read-aloud and query chat —
+re-resolve on a `categoriesNotification` while the agent follows its
+category, so they move at the same moment.
+An agent the user has not touched is never created switched off.
+`categoryFollowingSetup` writes the same configured, following setup whether
+or not the category names a profile — the Settings default runs it until the
+category names one — and so does the setup sheet's *Copy category default*.
+Task agents an earlier build created switched off for a category without a
+profile (dormant, disabled, `categorySnapshot` origin — a shape nothing else
+writes) are handed back to their category at startup by
+`resumeTaskAgentsSwitchedOffForCategory`. A setup the user switched off
+(*Turn off AI*, `user` origin) stays off.
+
+```mermaid
+flowchart TD
+  Run["Agent run: ProfileResolver.resolveSetup(setup)"] --> Disabled{"mode disabled?"}
+  Disabled -->|yes| Off["disabled — no inference"]
+  Disabled -->|no| Follows{"followsCategory<br/>(categorySnapshot, no thinking override)<br/>and a category lookup?"}
+  Follows -->|no| Own["the setup's own override / base profile"]
+  Follows -->|yes| Cat["category's current defaultProfileId"]
+  Cat -->|resolves| Use["run on it"]
+  Cat -->|"none, or it no longer resolves"| Def["Settings default"]
+  Def -->|resolves| Use
+  Def -->|none| Broken["broken"]
+```
+
+`categoryProfileLookupProvider` (`categoryDefaultProfileLookup` over the
+journal database) is the one read of a category's profile: it wires
+`profileResolverProvider`, the automation resolver, and the task, project and
+goal workflows, and it is what a subject's agent snapshots at creation. A
+`ProfileResolver` built without it — Daily OS and event agents, whose setups
+are template copies — keeps the stored profile. Person agents resolve the
+same way through `resolveRelationshipAgentModel`, which uses the person's
+category as it is now rather than the one the setup was copied from, and
+puts the person's own profile first (see [relationships](../relationships.md)).
+
+`AgentConfig.assignedProfileId` answers "which profile did the user give this
+agent?", so it is null for a setup that follows its category: the profiles
+page does not count the stale copy as in use, and the transcription rule
+below reaches the category's current profile at its third tier.
 
 # Choosing a chat model
 
@@ -258,7 +324,7 @@ an id reached through two tiers is resolved once.
 
 ```mermaid
 flowchart TD
-  Start["resolveTranscriptionProfile(subjectId, categoryId)"] --> Agent["1. The subject's agent profile: assignedProfileId<br/>(typed setup's base profile; legacy profileId, else template)"]
+  Start["resolveTranscriptionProfile(subjectId, categoryId)"] --> Agent["1. The subject's agent profile: assignedProfileId<br/>(a profile the user gave the agent; legacy profileId, else template)"]
   Agent --> AgentSlot{"Transcription model and provider?"}
   AgentSlot -->|yes| UseAgent["The agent's profile"]
   AgentSlot -->|"no, or no agent"| Own["2. The subject's own profileId"]
@@ -275,11 +341,12 @@ flowchart TD
 
 Goal and person agents have no template: `GoalAgentService` and
 `RelationshipAgentService` store the profile in `AgentConfig.inferenceSetup`
-(snapshotted from the category at creation, changeable in the agent's setup
-sheet). Tier 1 therefore reads `AgentConfig.assignedProfileId` — a typed
-setup is authoritative, and a disabled one assigns nothing — and only an
-agent without a setup falls back to its legacy `profileId`, then its
-template's. The same holds on the subject path above: a template-less agent
+(a copy of the category's at creation, changeable in the agent's setup
+sheet). Tier 1 therefore reads `AgentConfig.assignedProfileId` — a profile
+the user picked for the agent is authoritative, a disabled setup assigns
+nothing, and a copy of the category's assigns nothing either, so tier 3
+reads what the category names *now* — and only an agent without a setup
+falls back to its legacy `profileId`, then its template's. The same holds on the subject path above: a template-less agent
 resolves its own setup instead of nothing, so a category's automated skill
 cannot outrank the profile the user gave the agent.
 
@@ -287,7 +354,11 @@ Without a `subjectId` the rule starts at tier 3. The agent tier comes first
 because assigning an agent a profile is the most specific choice the user
 makes; it outranks the category's profile and the Settings default, so a goal
 agent set to Mistral (EU) is heard by Voxtral even when its category names
-Melious Whisper or the Settings default is a Whisper profile.
+Melious Whisper or the Settings default is a Whisper profile. The converse
+held too, and was the bug: an agent created while its category named Melious
+Whisper kept that copy at tier 1, so its recordings stayed on Whisper after
+the category moved to Voxtral. A copy now assigns nothing, and the category
+tier decides.
 
 No model is named in code: the slot's provider and model, and the
 post-processing route that follows, come from whichever profile wins. Who asks:

@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
+import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
@@ -226,6 +227,8 @@ void main() {
           taskId: taskId,
           templateId: 'template-001',
           profileId: 'profile-001',
+          setupOrigin: AgentInferenceSetupOrigin.categorySnapshot,
+          setupOriginEntityId: 'cat-001',
           allowedCategoryIds: {'cat-001'},
         ),
       ).thenAnswer((_) async => makeTestIdentity());
@@ -278,6 +281,8 @@ void main() {
           taskId: taskId,
           templateId: 'template-001',
           profileId: 'profile-001',
+          setupOrigin: AgentInferenceSetupOrigin.categorySnapshot,
+          setupOriginEntityId: 'cat-001',
           allowedCategoryIds: {'cat-001'},
           awaitContent: true,
           // ignore: avoid_redundant_argument_values
@@ -375,6 +380,8 @@ void main() {
           taskId: taskId,
           templateId: 'template-001',
           profileId: 'profile-001',
+          setupOrigin: AgentInferenceSetupOrigin.categorySnapshot,
+          setupOriginEntityId: 'cat-001',
           allowedCategoryIds: {'cat-001'},
           awaitContent: any(named: 'awaitContent'),
           automaticUpdatesEnabled: any(named: 'automaticUpdatesEnabled'),
@@ -393,6 +400,8 @@ void main() {
           taskId: taskId,
           templateId: 'template-001',
           profileId: 'profile-001',
+          setupOrigin: AgentInferenceSetupOrigin.categorySnapshot,
+          setupOriginEntityId: 'cat-001',
           allowedCategoryIds: {'cat-001'},
           awaitContent: true,
           automaticUpdatesEnabled: true,
@@ -486,6 +495,8 @@ void main() {
             taskId: any(named: 'taskId'),
             templateId: any(named: 'templateId'),
             profileId: any(named: 'profileId'),
+            setupOrigin: any(named: 'setupOrigin'),
+            setupOriginEntityId: any(named: 'setupOriginEntityId'),
             allowedCategoryIds: any(named: 'allowedCategoryIds'),
             awaitContent: any(named: 'awaitContent'),
           ),
@@ -543,6 +554,8 @@ void main() {
             taskId: taskId,
             templateId: 'template-001',
             profileId: 'profile-001',
+            setupOrigin: AgentInferenceSetupOrigin.categorySnapshot,
+            setupOriginEntityId: 'cat-001',
             allowedCategoryIds: {'cat-001'},
             awaitContent: true,
           ),
@@ -1003,6 +1016,8 @@ void main() {
           taskId: any(named: 'taskId'),
           templateId: any(named: 'templateId'),
           profileId: any(named: 'profileId'),
+          setupOrigin: any(named: 'setupOrigin'),
+          setupOriginEntityId: any(named: 'setupOriginEntityId'),
           allowedCategoryIds: any(named: 'allowedCategoryIds'),
           awaitContent: any(named: 'awaitContent'),
         ),
@@ -1057,6 +1072,8 @@ void main() {
             taskId: any(named: 'taskId'),
             templateId: any(named: 'templateId'),
             profileId: any(named: 'profileId'),
+            setupOrigin: any(named: 'setupOrigin'),
+            setupOriginEntityId: any(named: 'setupOriginEntityId'),
             allowedCategoryIds: any(named: 'allowedCategoryIds'),
             awaitContent: any(named: 'awaitContent'),
           ),
@@ -1104,6 +1121,8 @@ void main() {
             taskId: any(named: 'taskId'),
             templateId: any(named: 'templateId'),
             profileId: any(named: 'profileId'),
+            setupOrigin: any(named: 'setupOrigin'),
+            setupOriginEntityId: any(named: 'setupOriginEntityId'),
             allowedCategoryIds: any(named: 'allowedCategoryIds'),
             awaitContent: any(named: 'awaitContent'),
           ),
@@ -1150,6 +1169,8 @@ void main() {
             taskId: any(named: 'taskId'),
             templateId: any(named: 'templateId'),
             profileId: any(named: 'profileId'),
+            setupOrigin: any(named: 'setupOrigin'),
+            setupOriginEntityId: any(named: 'setupOriginEntityId'),
             allowedCategoryIds: any(named: 'allowedCategoryIds'),
             awaitContent: any(named: 'awaitContent'),
           ),
@@ -1360,6 +1381,8 @@ void main() {
                 taskId: derivedId,
                 templateId: 'template-001',
                 profileId: any(named: 'profileId'),
+                setupOrigin: any(named: 'setupOrigin'),
+                setupOriginEntityId: any(named: 'setupOriginEntityId'),
                 allowedCategoryIds: {'cat-001'},
                 awaitContent: true,
                 automaticUpdatesEnabled: any(

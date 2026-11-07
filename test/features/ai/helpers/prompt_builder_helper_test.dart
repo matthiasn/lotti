@@ -25,6 +25,7 @@ import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 import '../../categories/test_utils.dart';
+import '../../speech_dictionary/test_people.dart';
 
 // ---------------------------------------------------------------------------
 // From prompt_builder_helper_current_task_summary_test.dart
@@ -2772,6 +2773,43 @@ void main() {
     });
 
     tearDown(tearDownTestGetIt);
+
+    test(
+      'getSpeechDictionaryEntries leads with the names of the people in the '
+      "entity's category, so a Whisper transcript is corrected against them",
+      () async {
+        when(mocksSD.journalDb.getAllSpeechDictionaryEntries).thenAnswer(
+          (_) async => [
+            SpeechDictionaryEntry(
+              id: 'floe',
+              createdAt: DateTime(2025),
+              updatedAt: DateTime(2025),
+              term: 'Floe Survey',
+              vectorClock: null,
+            ),
+          ],
+        );
+        when(mocksSD.journalDb.getRelationships).thenAnswer(
+          (_) async => [
+            testPerson(
+              'pip',
+              'Commander Pip Frostbeak',
+              categoryId: 'category-1',
+            ),
+            testPerson('rockhop', 'Captain Rockhop', categoryId: 'elsewhere'),
+          ],
+        );
+
+        final entries = await promptBuilderSD.getSpeechDictionaryEntries(
+          testTaskSD,
+        );
+
+        expect(entries.map((entry) => entry.term), [
+          'Commander Pip Frostbeak',
+          'Floe Survey',
+        ]);
+      },
+    );
 
     group('buildSystemMessageWithData', () {
       // Note: {{speech_dictionary}} is intentionally NOT supported in system

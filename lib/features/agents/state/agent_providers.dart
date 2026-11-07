@@ -21,6 +21,7 @@ import 'package:lotti/features/agents/service/improver_agent_service.dart';
 import 'package:lotti/features/agents/service/project_activity_monitor.dart';
 import 'package:lotti/features/agents/service/project_update_cadence.dart';
 import 'package:lotti/features/agents/service/soul_document_service.dart';
+import 'package:lotti/features/agents/service/task_agent_category_resume.dart';
 import 'package:lotti/features/agents/state/agent_runtime_registry.dart';
 import 'package:lotti/features/agents/state/agent_wiring.dart';
 import 'package:lotti/features/agents/state/agent_workflow_providers.dart';
@@ -697,6 +698,13 @@ Future<void> agentInitialization(Ref ref) async {
   // loop. A preload failure therefore produces one startup diagnostic instead
   // of one full error per persisted agent, then remains a provider failure so
   // Riverpod refresh/retry can rerun the idempotent restoration pass.
+  // Before the restore passes: an agent handed back here is active again and
+  // is restored with the others (its subscription registration is
+  // idempotent).
+  await resumeTaskAgentsSwitchedOffForCategory(
+    taskAgentService: taskAgentService,
+    domainLogger: ref.read(domainLoggerProvider),
+  );
   try {
     // Contributors sit where day restoration used to, between task and project.
     // `Future.wait` builds its futures in list order and all three passes call

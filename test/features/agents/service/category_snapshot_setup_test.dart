@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/agents/agent_config.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/features/agents/service/category_snapshot_setup.dart';
 
@@ -24,12 +25,18 @@ void main() {
   });
 
   test(
-    'a category naming no profile gives no setup, not a disabled one',
+    'a category naming no profile still gives a running setup that follows '
+    'it — the Settings default until the category names one',
     () async {
-      expect(
-        await categorySnapshotSetup(categoryId: 'bare', lookup: lookup),
-        isNull,
+      final setup = await categorySnapshotSetup(
+        categoryId: 'bare',
+        lookup: lookup,
       );
+
+      expect(setup!.mode, AgentInferenceSetupMode.configured);
+      expect(setup.followsCategory, isTrue);
+      expect(setup.baseProfileId, isNull);
+      expect(setup.originEntityId, 'bare');
       expect(asked, ['bare']);
     },
   );

@@ -3,6 +3,8 @@ import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/speech_dictionary/domain/speech_dictionary_terms.dart';
 
+import '../test_people.dart';
+
 SpeechDictionaryEntry _entry(
   String term, {
   List<String>? categoryIds,
@@ -18,6 +20,27 @@ SpeechDictionaryEntry _entry(
 );
 
 void main() {
+  group('categoryPeopleNames', () {
+    test('names and nicknames of the live, non-private people filed in the '
+        'category, in order, leaving out the one excepted', () {
+      final names = categoryPeopleNames(
+        [
+          testPerson('pip', 'Commander Pip Frostbeak', nickname: 'Pip'),
+          testPerson('wanja', 'Wanja Iceflow'),
+          testPerson('self', 'Frida Kjellsen'),
+          testPerson('elsewhere', 'Captain Rockhop', categoryId: 'other'),
+          testPerson('unfiled', 'Pebble', categoryId: null),
+          testPerson('secret', 'Secret Waddler', private: true),
+          testPerson('gone', 'Gone Glider', deleted: true),
+        ],
+        'penguin-operations',
+        exceptId: 'self',
+      );
+
+      expect(names, ['Commander Pip Frostbeak', 'Pip', 'Wanja Iceflow']);
+    });
+  });
+
   group('speechDictionaryEntryId', () {
     test('is the same for spellings that differ in case and spacing', () {
       expect(

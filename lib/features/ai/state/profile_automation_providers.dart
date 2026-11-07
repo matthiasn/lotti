@@ -18,8 +18,23 @@ ProfileResolver profileResolver(Ref ref) {
   return ProfileResolver(
     aiConfigRepository: ref.watch(aiConfigRepositoryProvider),
     domainLogger: ref.watch(domainLoggerProvider),
+    categoryProfileLookup: ref.watch(categoryProfileLookupProvider),
   );
 }
+
+/// A category's current default profile ([categoryDefaultProfileLookup]):
+/// what a subject's agent snapshots at creation, what an agent that follows
+/// its category resolves at every run, and what the automation resolver
+/// uses for a recording's transcript — so all of them agree on what a
+/// category names.
+final categoryProfileLookupProvider = Provider<CategoryProfileLookup>(
+  // Read at call time, not watched: a resolver that never meets a following
+  // setup must not need the journal database to exist.
+  (ref) =>
+      (categoryId) =>
+          categoryDefaultProfileLookup(ref.read(journalDbProvider))(categoryId),
+  name: 'categoryProfileLookupProvider',
+);
 
 /// The `profileId` a subject entity carries in its own payload.
 ///
@@ -69,12 +84,7 @@ ProfileAutomationResolver profileAutomationResolver(Ref ref) {
           .journalEntityById(subjectId);
       return subjectProfileIdOf(entity);
     },
-    categoryProfileLookup: (categoryId) async {
-      final category = await ref
-          .read(journalDbProvider)
-          .getCategoryById(categoryId);
-      return category?.defaultProfileId;
-    },
+    categoryProfileLookup: ref.watch(categoryProfileLookupProvider),
     subjectCategoryLookup: (subjectId) async {
       final entity = await ref
           .read(journalDbProvider)
