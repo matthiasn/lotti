@@ -378,6 +378,20 @@ void main() {
       find.byKey(const ValueKey('companionStageFigure')),
     );
     expect(tester.getRect(transcript).left, greaterThanOrEqualTo(figure.right));
+    // Read only: the disc at her feet is the way to answer her here, so a
+    // finished recording is sent once, by the pane under the stage.
+    final thread = tester.widget<FrontChatThreadView>(
+      find.descendant(
+        of: transcript,
+        matching: find.byType(FrontChatThreadView),
+      ),
+    );
+    expect(thread.composerEnabled, isFalse);
+
+    // A way out to a page closes the stage and everything under it.
+    thread.onClose();
+    await tester.pumpAndSettle();
+    expect(find.byType(CompanionStagePage), findsNothing);
   });
 }
 

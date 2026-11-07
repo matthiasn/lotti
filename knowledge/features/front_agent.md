@@ -755,9 +755,10 @@ Then her voice while the companion is on: `FrontVoiceButton`, the
 `FrontVoiceSwitch` that mutes her, and her stage; then an overflow and close.
 Where the list is a page over the conversation (a phone, a narrow window) the
 row opens with the *Chats* button and the inbox count, and the overflow
-leads with a new conversation and her stage, so the row fits a phone, the
-switch trading its word *Voice* for the speaker glyph. Beside the list the
-switch says *Voice* and the stage has its own control. The overflow then
+leads with a new conversation, her stage and the switch that mutes her as a
+checked row (`frontVoiceMenuItem`), so the row fits a 360 dp phone with every
+control showing. Beside the list the switch sits on the row under the word
+*Voice* and the stage has its own control. The overflow then
 holds her AI profile once she exists, her internals, where the thread's cost
 is accounted, and this conversation's rename, archive and delete as a group
 of their own — the same `FrontMenuButton` the list's rows have. A
@@ -947,9 +948,11 @@ her source, with `FrontStageControls` at her feet in place of a summary's
 read-aloud control (the page's `controls`). On a desktop window
 (`isDesktopLayout`) the page's `sidePanel` stands beside her, two fifths of
 the width (`CompanionStagePage.sidePanelFlex` to `figureFlex`):
-`FrontStageTranscript`, the conversation's thread and field
-(`FrontChatThreadView`, the same one the pane shows), whose ways out to a
-page close the stage and her surface both. On a phone she keeps the
+`FrontStageTranscript`, the conversation's thread (`FrontChatThreadView`,
+the same one the pane shows), read only — `composerEnabled: false` — since
+the disc at her feet is the way to answer her there; the pane under the
+stage, which stays mounted, is the one view that sends what was said. Its
+ways out to a page close the stage and her surface both. On a phone she keeps the
 screen. The bust keeps one tree whatever she does,
 so her animator lives through a start and a stop.
 

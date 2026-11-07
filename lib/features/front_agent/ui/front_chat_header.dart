@@ -55,7 +55,8 @@ abstract final class FrontChatHeaderKeys {
 /// Where the list is a page over the conversation, the row opens with the
 /// way to it — in the slot the list's back arrow takes, so both pages share
 /// one leading rail — with the inbox count after it, and a new conversation
-/// joins the overflow, as does the stage, so the row fits a phone. Beside
+/// joins the overflow, as do the stage and the switch that mutes her (a
+/// checked row), so the row fits a 360 dp phone. Beside
 /// the list, the list carries those.
 ///
 /// On the list the row is a page header: back to the conversation, "Chats",
@@ -145,6 +146,11 @@ class FrontChatHeader extends ConsumerWidget {
       final startConversation = notBegun && !inboxOnly
           ? null
           : ref.read(frontChatControllerProvider.notifier).startConversation;
+      // Where the row has to fit a phone, the switch that mutes her is a
+      // checked row of the overflow instead.
+      final voiceItem = !listBeside && voiceId != null
+          ? frontVoiceMenuItem(context, ref)
+          : null;
       row = [
         if (!listBeside) ...[
           // Said in a word as well as the glyph: three lines alone do not
@@ -179,9 +185,9 @@ class FrontChatHeader extends ConsumerWidget {
         ),
         if (voiceId != null) ...[
           FrontVoiceButton(conversationId: voiceId),
-          SizedBox(width: tokens.spacing.step2),
-          FrontVoiceSwitch(showLabel: listBeside),
           if (listBeside) ...[
+            SizedBox(width: tokens.spacing.step2),
+            const FrontVoiceSwitch(),
             SizedBox(width: tokens.spacing.step2),
             DesignSystemIconAction(
               key: FrontChatHeaderKeys.stage,
@@ -213,6 +219,7 @@ class FrontChatHeader extends ConsumerWidget {
                 icon: LottiIcons.expandFull,
                 onTap: () => openFrontStage(context, voiceId).ignore(),
               ),
+            ?voiceItem,
             if (identity is AgentIdentityEntity && profiles != null)
               DesignSystemContextMenuItem(
                 key: FrontChatHeaderKeys.profile,

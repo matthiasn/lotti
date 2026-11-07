@@ -69,6 +69,10 @@ centred reading column: the list's side gutter grows with the window (never
 under `step5`) and the composer keeps its controls to the same width, so the
 field's edges line up with the messages while the whole pane scrolls; the
 front agent passes `kProseMeasureWidth`, other hosts take the full width.
+A view with `composerEnabled` off ignores the shared recorder's results — no
+error toast, no draft, no send: when two views of one conversation are
+mounted (the front agent's stage over its pane), only the one with the
+composer acts on a finished recording, so a spoken turn is sent once.
 `replyTextStyle` lets the host select its answer typography from design tokens;
 scoped queries use `bodySmall`, while other hosts retain `bodyMedium`.
 Hosts can supply `onLinkTap` to resolve each link against its containing message.

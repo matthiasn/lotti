@@ -13,6 +13,8 @@ import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
 import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/companion_stage_page.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/companion/model/companion_customization.dart';
+import 'package:lotti/features/companion/state/companion_customization_controller.dart';
 import 'package:lotti/features/companion/state/companion_look_controller.dart';
 import 'package:lotti/features/companion/ui/companion_speaker.dart';
 import 'package:lotti/features/companion/ui/companion_view.dart';
@@ -615,10 +617,20 @@ void main() {
       );
     });
 
-    testWidgets('her voice — say it again, mute her — rides the row for the '
-        'open conversation, her stage in the overflow, only while the '
-        'companion is on', (tester) async {
-      await pumpHeader(tester, companion: true, conversations: census);
+    List<DesignSystemContextMenuItem> overflowOf(WidgetTester tester) => tester
+        .widget<FrontMenuButton>(find.byKey(FrontChatHeaderKeys.more))
+        .items;
+    // Her saved setting, known: the switch that mutes her is offered.
+    final known = companionCustomizationProvider.overrideWith(_KnownCustom.new);
+
+    testWidgets('on a phone, say it again rides the row; the switch that '
+        'mutes her and her stage are rows of the overflow', (tester) async {
+      await pumpHeader(
+        tester,
+        companion: true,
+        conversations: census,
+        extra: [known],
+      );
 
       expect(
         tester
@@ -626,45 +638,111 @@ void main() {
             .conversationId,
         'c-1',
       );
-      // The glyph, not the word, where the row has to fit a phone.
-      expect(
-        tester
-            .widget<FrontVoiceSwitch>(find.byType(FrontVoiceSwitch))
-            .showLabel,
-        isFalse,
+      expect(find.byType(FrontVoiceSwitch), findsNothing);
+      final keys = overflowOf(tester).map((item) => item.key).toList();
+      expect(keys, contains(FrontChatHeaderKeys.stage));
+      final voice = overflowOf(
+        tester,
+      ).singleWhere((item) => item.key == FrontVoiceSwitchKeys.menuItem);
+      expect(voice.checked, isTrue);
+    });
+
+    testWidgets('fits a 360 dp phone with every control showing: the inbox '
+        'count, her voice speaking, her name and the title', (tester) async {
+      final voice = _Voice(const TtsPlaybackState());
+      await pumpHeader(
+        tester,
+        companion: true,
+        conversations: census,
+        width: 360,
+        voice: () => voice,
+        extra: [known],
+        thread: FrontChatThread(
+          messages: const [],
+          doorsByMessageId: {
+            'u1': [
+              FrontDoorEntry(
+                doorId: 'd:door:0',
+                record: FrontDoorRecord(
+                  segmentIndex: 0,
+                  text: 'A loose thought',
+                  kind: FrontDestinationKind.unrouted,
+                  status: FrontDoorStatus.done,
+                  claimedAt: DateTime.utc(2026, 10, 26),
+                  outcome: const FrontDoorInbox(),
+                ),
+              ),
+            ],
+          },
+        ),
       );
-      final items = tester
-          .widget<FrontMenuButton>(find.byKey(FrontChatHeaderKeys.more))
-          .items;
+      voice.play('front-chat:c-1');
+      await tester.pump();
+
+      // A row that overflows reports it as an exception; none was.
+      expect(tester.takeException(), isNull);
+      expect(find.byKey(FrontChatHeaderKeys.inbox), findsOne);
+      expect(find.byType(FrontVoiceButton), findsOne);
+      final header = tester.getRect(find.byType(FrontChatHeader));
       expect(
-        items.where((item) => item.key == FrontChatHeaderKeys.stage),
-        hasLength(1),
+        tester.getRect(find.byKey(FrontChatHeaderKeys.close)).right,
+        lessThanOrEqualTo(header.right),
+      );
+      expect(
+        tester.getSize(find.byKey(FrontChatHeaderKeys.title)).width,
+        greaterThan(0),
       );
     });
 
-    testWidgets('beside the list, with room, the switch says "Voice" and '
-        'the stage has a control of its own', (tester) async {
+    testWidgets("the overflow's stage row stands her up full screen", (
+      tester,
+    ) async {
+      await pumpHeader(tester, companion: true, conversations: census);
+
+      overflowOf(
+        tester,
+      ).singleWhere((item) => item.key == FrontChatHeaderKeys.stage).onTap!();
+      for (var i = 0; i < 10; i++) {
+        await tester.pump(const Duration(milliseconds: 50));
+      }
+
+      expect(
+        tester
+            .widget<CompanionStagePage>(find.byType(CompanionStagePage))
+            .sourceId,
+        'front-chat:c-1',
+      );
+    });
+
+    testWidgets('beside the list, with room, the switch says "Voice" on the '
+        'row and the stage has a control of its own that stands her up', (
+      tester,
+    ) async {
       await pumpHeader(
         tester,
         companion: true,
         conversations: census,
         listBeside: true,
         width: 900,
+        extra: [known],
       );
 
+      expect(find.byKey(FrontVoiceSwitchKeys.toggle), findsOne);
       expect(
-        tester
-            .widget<FrontVoiceSwitch>(find.byType(FrontVoiceSwitch))
-            .showLabel,
-        isTrue,
+        overflowOf(tester).map((item) => item.key),
+        isNot(contains(FrontVoiceSwitchKeys.menuItem)),
       );
-      expect(
-        find.descendant(
-          of: find.byType(FrontChatHeader),
-          matching: find.byKey(FrontChatHeaderKeys.stage),
-        ),
-        findsOne,
+      final stage = find.descendant(
+        of: find.byType(FrontChatHeader),
+        matching: find.byKey(FrontChatHeaderKeys.stage),
       );
+      expect(stage, findsOne);
+
+      await tester.tap(stage);
+      for (var i = 0; i < 10; i++) {
+        await tester.pump(const Duration(milliseconds: 50));
+      }
+      expect(find.byType(CompanionStagePage), findsOne);
     });
 
     testWidgets('with the companion off she has neither', (tester) async {
@@ -672,11 +750,13 @@ void main() {
       expect(find.byType(FrontVoiceButton), findsNothing);
       expect(find.byType(FrontVoiceSwitch), findsNothing);
       expect(
-        tester
-            .widget<FrontMenuButton>(find.byKey(FrontChatHeaderKeys.more))
-            .items
-            .where((item) => item.key == FrontChatHeaderKeys.stage),
-        isEmpty,
+        overflowOf(tester).map((item) => item.key),
+        isNot(
+          anyOf(
+            contains(FrontChatHeaderKeys.stage),
+            contains(FrontVoiceSwitchKeys.menuItem),
+          ),
+        ),
       );
     });
   });
@@ -794,4 +874,13 @@ class _Voice extends TtsPlaybackController {
     status: TtsPlaybackStatus.playing,
     sourceId: sourceId,
   );
+}
+
+/// Her saved customization, already known: she speaks her replies.
+class _KnownCustom extends CompanionCustomizationController {
+  @override
+  bool get loaded => true;
+
+  @override
+  CompanionCustomization build() => const CompanionCustomization();
 }

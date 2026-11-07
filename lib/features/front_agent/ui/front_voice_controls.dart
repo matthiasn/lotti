@@ -36,8 +36,8 @@ Future<void> openFrontStage(BuildContext context, String conversationId) =>
       sidePanel: const FrontStageTranscript(),
     );
 
-/// The conversation beside her on her stage: its thread and the field
-/// under it, on the conversation's own ground. Whatever leaves her for a
+/// The conversation beside her on her stage: its thread, read only, on the
+/// conversation's own ground. Whatever leaves her for a
 /// page — a task she names, a source — closes the stage and her surface
 /// both, so the page opens on top rather than behind them.
 class FrontStageTranscript extends StatelessWidget {
@@ -56,7 +56,10 @@ class FrontStageTranscript extends StatelessWidget {
       ),
       child: SafeArea(
         left: false,
+        // Read only: the disc at her feet is the way to answer her here,
+        // and the pane under the stage sends what is said.
         child: FrontChatThreadView(
+          composerEnabled: false,
           onClose: () => Navigator.of(
             context,
             rootNavigator: true,

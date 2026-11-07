@@ -65,6 +65,10 @@ class _AgentChatViewState extends ConsumerState<AgentChatView> {
     _recorderSubscription = ref.listenManual<ChatRecorderState>(
       chatRecorderControllerProvider,
       (previous, next) {
+        // Without a composer this view is not where anything was said: the
+        // view that has one owns the recording's result, and acting here
+        // too would send a spoken turn twice.
+        if (!widget.composerEnabled) return;
         final error = next.error?.trim();
         if (error != null &&
             error.isNotEmpty &&

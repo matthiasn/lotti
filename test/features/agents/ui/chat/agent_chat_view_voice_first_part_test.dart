@@ -93,6 +93,7 @@ void main() {
     bool reducedMotion = false,
     VoidCallback? onSendSpoken,
     double? contentMaxWidth,
+    bool composerEnabled = true,
   }) async {
     final recorder = _Recorder(status);
     await tester.pumpWidget(
@@ -117,6 +118,7 @@ void main() {
                 footerTrailingBuilder: footerTrailing,
                 onSendSpoken: onSendSpoken,
                 contentMaxWidth: contentMaxWidth,
+                composerEnabled: composerEnabled,
               ),
             ),
           ),
@@ -394,6 +396,23 @@ void main() {
       await tester.pump();
 
       expect(draft, 'And the tagging?');
+      expect(sends, 0);
+    });
+
+    testWidgets('a view without a composer leaves what was said to the one '
+        'that has it: it neither drafts nor sends it', (tester) async {
+      var spoken = 0;
+      final recorder = await pumpView(
+        tester,
+        composerEnabled: false,
+        onSendSpoken: () => spoken++,
+      );
+
+      recorder.hear('And the tagging?');
+      await tester.pump();
+
+      expect(draft, isEmpty);
+      expect(spoken, 0);
       expect(sends, 0);
     });
   });
