@@ -5,8 +5,8 @@ description: The one agent the user talks to in one place — how a durable user
 resource: ../../lib/features/front_agent
 tags: [agents, front-agent, routing, dispatch, doors, filing, inbox, companion, chat]
 status: draft
-generated: { by: claude-code/opus-5.5, at: 2026-11-02T12:00:00Z }
-stale_after: 2027-05-02
+generated: { by: claude-code/opus-5.5, at: 2026-11-08T09:00:00Z }
+stale_after: 2027-05-08
 sources:
   - id: workflow
     resource: ../../lib/features/front_agent/workflow/front_agent_workflow.dart
