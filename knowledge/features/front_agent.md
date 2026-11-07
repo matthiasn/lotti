@@ -915,8 +915,9 @@ the waits quieter; the disc keeps its full teal while held, and a ring shows
 when it has the keyboard; `FrontVoiceButton` stands beside it once there is an answer to say
 again. Pressing the disc starts the shared recorder on the Settings
 default's transcription slot, the same ears as the conversation's composer.
-Held past `kLongPressTimeout` — counted only once the recorder is really
-listening, so a refused microphone never promises a send — its glyph turns
+Held past `kLongPressTimeout` — a hold counts once the recorder is really
+listening, however late the microphone opened (a first permission prompt, a
+slow device), and a refused one never promises a send — its glyph turns
 to the send arrow (*Release to send*), and letting go sends. Dragged more
 than `spacing.step6` off the disc it turns red with a × (*Release to
 cancel*), and letting go there discards; back on, it sends again. A quick
