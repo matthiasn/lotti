@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter_riverpod/misc.dart';
@@ -69,7 +70,9 @@ Widget wrapDayPage(
   Size size = const Size(1400, 1200),
   MediaQueryData? mediaQueryData,
   ThemeData? theme,
-  DailyOsSetupStatus setupStatus = const DailyOsSetupStatus(
+
+  /// Null keeps the setup status loading for the whole test.
+  DailyOsSetupStatus? setupStatus = const DailyOsSetupStatus(
     hasInferenceRoute: true,
     hasPreferredName: true,
   ),
@@ -86,7 +89,9 @@ Widget wrapDayPage(
       // the realtime service providers during dispose.
       captureControllerProvider.overrideWith(stubCaptureController),
       dailyOsSetupStatusProvider.overrideWith(
-        (ref) async => setupStatus,
+        (ref) => setupStatus == null
+            ? Completer<DailyOsSetupStatus>().future
+            : Future.value(setupStatus),
       ),
       ...overrides,
     ],

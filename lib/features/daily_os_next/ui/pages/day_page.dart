@@ -472,6 +472,7 @@ class _DayPageState extends ConsumerState<DayPage> {
                 onOpenSetup: () =>
                     nav_service.beamToNamed('/settings/daily-os'),
                 needsInferenceSetup: setupStatus?.hasInferenceRoute == false,
+                setupResolved: setupStatus != null,
                 ctaKey: _checkInCtaKey,
               ),
           ],
