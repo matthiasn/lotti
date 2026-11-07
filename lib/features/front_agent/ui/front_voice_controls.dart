@@ -10,6 +10,7 @@ import 'package:lotti/features/front_agent/state/front_inbox_filter.dart';
 import 'package:lotti/features/front_agent/state/front_journal_access_provider.dart';
 import 'package:lotti/features/front_agent/state/front_voice_providers.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_voice.dart';
+import 'package:lotti/features/front_agent/ui/front_stage_controls.dart';
 import 'package:lotti/features/tts/state/tts_playback_controller.dart';
 import 'package:lotti/features/tts/ui/widgets/tts_source_play_button.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -23,14 +24,14 @@ abstract final class FrontVoiceControlKeys {
 }
 
 /// Opens her full screen, head to toe on her stage — on a desktop window as
-/// on a phone — still speaking in [conversationId], with her voice's
-/// control at her feet.
+/// on a phone — still speaking in [conversationId], with a way to answer
+/// her and her voice's control at her feet ([FrontStageControls]).
 Future<void> openFrontStage(BuildContext context, String conversationId) =>
     openCompanionStage(
       context,
       sourceId: frontVoiceSourceId(conversationId),
       dressedFor: frontCompanionDressedFor,
-      readAloud: FrontVoiceButton(conversationId: conversationId),
+      controls: FrontStageControls(conversationId: conversationId),
     );
 
 /// Her voice's control in [conversationId]: while she speaks it stops her;

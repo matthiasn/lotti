@@ -7317,6 +7317,12 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
+  String get frontStageHoldToTalk => 'Hold inde for at tale';
+
+  @override
+  String get frontStageReleaseToSend => 'Slip for at sende';
+
+  @override
   String get geminiThinkingModeHighDescription =>
       'Dybeste ræsonnement; kan øge latenstid og omkostninger.';
 

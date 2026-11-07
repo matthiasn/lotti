@@ -3316,6 +3316,8 @@
   "frontDoorUndo": "Ongedaan maken",
   "frontDoorUnfiled": "Uit {owner} gehaald. Opnieuw opbergen?",
   "frontDoorWalking": "Vraagt {owner}…",
+  "frontStageHoldToTalk": "Houd ingedrukt om te praten",
+  "frontStageReleaseToSend": "Laat los om te versturen",
   "geminiThinkingModeHighDescription": "De diepste redenering; kan latency en kosten verhogen.",
   "geminiThinkingModeHighLabel": "Hoog",
   "geminiThinkingModeLowDescription": "Lage redenatie voor snelle dagelijkse prompts.",

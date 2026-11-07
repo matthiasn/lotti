@@ -2972,6 +2972,8 @@
   "frontDoorUndo": "Anulați",
   "frontDoorUnfiled": "Scos din {owner}. Înregistrați din nou?",
   "frontDoorWalking": "Întreabă {owner}…",
+  "frontStageHoldToTalk": "Țineți apăsat pentru a vorbi",
+  "frontStageReleaseToSend": "Eliberați pentru a trimite",
   "geminiThinkingModeHighDescription": "Raționament cel mai profund; poate crește latența și costul.",
   "geminiThinkingModeHighLabel": "Ridicat",
   "geminiThinkingModeLowDescription": "Raționament redus pentru prompturi zilnice rapide.",

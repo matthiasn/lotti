@@ -2979,6 +2979,8 @@
   "frontDoorUndo": "Zpět",
   "frontDoorUnfiled": "Vyňato z: {owner}. Uložit znovu?",
   "frontDoorWalking": "Ptá se: {owner}…",
+  "frontStageHoldToTalk": "Podrž a mluv",
+  "frontStageReleaseToSend": "Pusť a odešli",
   "geminiThinkingModeHighDescription": "Nejhlubší uvažování; může zvýšit latenci a cenu.",
   "geminiThinkingModeHighLabel": "Vysoké",
   "geminiThinkingModeLowDescription": "Nízké uvažování pro rychlé každodenní prompty.",

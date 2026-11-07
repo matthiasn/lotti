@@ -12479,6 +12479,18 @@ abstract class AppLocalizations {
   /// **'Asking {owner}…'**
   String frontDoorWalking(String owner);
 
+  /// Caption under the talk button on the companion's full-screen stage: press and hold to speak to her.
+  ///
+  /// In en, this message translates to:
+  /// **'Hold to talk'**
+  String get frontStageHoldToTalk;
+
+  /// Caption under the talk button while it is held: letting go sends what was said.
+  ///
+  /// In en, this message translates to:
+  /// **'Release to send'**
+  String get frontStageReleaseToSend;
+
   /// No description provided for @geminiThinkingModeHighDescription.
   ///
   /// In en, this message translates to:

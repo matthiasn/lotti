@@ -55,7 +55,7 @@ void main() {
                     context,
                     sourceId: 'task-1',
                     spokenText: 'Two items left.',
-                    readAloud: hostControl,
+                    controls: hostControl,
                     dressedFor: dressedFor,
                   )
                 : openCompanionStage(

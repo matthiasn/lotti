@@ -2972,6 +2972,8 @@
   "frontDoorUndo": "Rückgängig",
   "frontDoorUnfiled": "Aus {owner} herausgenommen. Noch einmal ablegen?",
   "frontDoorWalking": "Fragt {owner}…",
+  "frontStageHoldToTalk": "Halten und sprechen",
+  "frontStageReleaseToSend": "Loslassen zum Senden",
   "geminiThinkingModeHighDescription": "Tiefstes Reasoning; kann Latenz und Kosten erhöhen.",
   "geminiThinkingModeHighLabel": "Hoch",
   "geminiThinkingModeLowDescription": "Wenig Reasoning für schnelle Alltagsprompts.",

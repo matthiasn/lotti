@@ -25,14 +25,15 @@ import 'package:material_ui/material_ui.dart';
 /// that poses her ([mood], [holding] — a goal's status pose) passes the pose
 /// on, so the figure the bust was tapped on stands up in the same pose. A
 /// host whose voice is not a summary's — the front agent's answers — passes
-/// its own play and stop control as [readAloud] instead of the words. She
+/// its own [controls] instead of the words: its voice, and a way to answer
+/// her. She
 /// wears what the card dressed her in: a host that dresses her for another
 /// subject than [sourceId] names it as [dressedFor].
 Future<void> openCompanionStage(
   BuildContext context, {
   required String sourceId,
   String spokenText = '',
-  Widget? readAloud,
+  Widget? controls,
   CompanionMood mood = CompanionMood.calm,
   GestureName? holding,
   TtsCloudRoute? cloudRoute,
@@ -44,7 +45,7 @@ Future<void> openCompanionStage(
       builder: (_) => CompanionStagePage(
         sourceId: sourceId,
         spokenText: spokenText,
-        readAloud: readAloud,
+        controls: controls,
         mood: mood,
         holding: holding,
         cloudRoute: cloudRoute,
@@ -71,7 +72,7 @@ class CompanionStagePage extends ConsumerWidget {
   const CompanionStagePage({
     required this.sourceId,
     required this.spokenText,
-    this.readAloud,
+    this.controls,
     this.mood = CompanionMood.calm,
     this.holding,
     this.cloudRoute,
@@ -79,9 +80,9 @@ class CompanionStagePage extends ConsumerWidget {
     super.key,
   }) : dressedFor = dressedFor ?? sourceId;
 
-  /// The host's own read-aloud control at her feet, in place of the
-  /// summary's; it gates itself.
-  final Widget? readAloud;
+  /// The host's own controls at her feet, in place of the summary's
+  /// read-aloud control; they gate themselves.
+  final Widget? controls;
 
   /// The host's cloud voice, or `null` for the on-device voice.
   final TtsCloudRoute? cloudRoute;
@@ -169,7 +170,7 @@ class CompanionStagePage extends ConsumerWidget {
                               ],
                             ),
                             const Spacer(),
-                            if (readAloud case final control?)
+                            if (controls case final control?)
                               control
                             else if (canReadAloud)
                               SummaryReadAloudButton(

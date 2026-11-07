@@ -2972,6 +2972,8 @@
   "frontDoorUndo": "Deshacer",
   "frontDoorUnfiled": "Sacado de {owner}. ¿Archivar otra vez?",
   "frontDoorWalking": "Preguntando a {owner}…",
+  "frontStageHoldToTalk": "Mantén pulsado para hablar",
+  "frontStageReleaseToSend": "Suelta para enviar",
   "geminiThinkingModeHighDescription": "Razonamiento más profundo; puede aumentar la latencia y el coste.",
   "geminiThinkingModeHighLabel": "Alto",
   "geminiThinkingModeLowDescription": "Razonamiento bajo para prompts cotidianos rápidos.",

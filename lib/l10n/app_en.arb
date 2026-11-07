@@ -4537,6 +4537,14 @@
       }
     }
   },
+  "frontStageHoldToTalk": "Hold to talk",
+  "@frontStageHoldToTalk": {
+    "description": "Caption under the talk button on the companion's full-screen stage: press and hold to speak to her."
+  },
+  "frontStageReleaseToSend": "Release to send",
+  "@frontStageReleaseToSend": {
+    "description": "Caption under the talk button while it is held: letting go sends what was said."
+  },
   "geminiThinkingModeHighDescription": "Deepest reasoning; can increase latency and cost.",
   "geminiThinkingModeHighLabel": "High",
   "geminiThinkingModeLowDescription": "Low reasoning for fast everyday prompts.",

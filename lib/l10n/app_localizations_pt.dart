@@ -7392,6 +7392,12 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
+  String get frontStageHoldToTalk => 'Mantém premido para falar';
+
+  @override
+  String get frontStageReleaseToSend => 'Solta para enviar';
+
+  @override
   String get geminiThinkingModeHighDescription =>
       'Raciocínio mais profundo; pode aumentar a latência e o custo.';
 

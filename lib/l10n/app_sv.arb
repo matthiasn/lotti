@@ -3317,6 +3317,8 @@
   "frontDoorUndo": "Ångra",
   "frontDoorUnfiled": "Borttaget ur {owner}. Spara igen?",
   "frontDoorWalking": "Frågar {owner}…",
+  "frontStageHoldToTalk": "Håll in för att prata",
+  "frontStageReleaseToSend": "Släpp för att skicka",
   "geminiThinkingModeHighDescription": "Djupaste resonemang; kan öka latens och kostnad.",
   "geminiThinkingModeHighLabel": "Högt",
   "geminiThinkingModeLowDescription": "Låg logik för snabba vardagspromptar.",

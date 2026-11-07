@@ -7293,6 +7293,12 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get frontStageHoldToTalk => 'Hold to talk';
+
+  @override
+  String get frontStageReleaseToSend => 'Release to send';
+
+  @override
   String get geminiThinkingModeHighDescription =>
       'Deepest reasoning; can increase latency and cost.';
 

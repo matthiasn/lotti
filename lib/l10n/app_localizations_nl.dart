@@ -7350,6 +7350,12 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String get frontStageHoldToTalk => 'Houd ingedrukt om te praten';
+
+  @override
+  String get frontStageReleaseToSend => 'Laat los om te versturen';
+
+  @override
   String get geminiThinkingModeHighDescription =>
       'De diepste redenering; kan latency en kosten verhogen.';
 

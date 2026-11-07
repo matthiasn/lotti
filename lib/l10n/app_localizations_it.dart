@@ -7402,6 +7402,12 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
+  String get frontStageHoldToTalk => 'Tieni premuto per parlare';
+
+  @override
+  String get frontStageReleaseToSend => 'Rilascia per inviare';
+
+  @override
   String get geminiThinkingModeHighDescription =>
       'Il ragionamento più profondo; può aumentare la latenza e il costo.';
 

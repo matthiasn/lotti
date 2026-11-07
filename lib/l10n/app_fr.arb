@@ -2972,6 +2972,8 @@
   "frontDoorUndo": "Annuler",
   "frontDoorUnfiled": "Retiré de {owner}. Classer à nouveau ?",
   "frontDoorWalking": "Question à {owner}…",
+  "frontStageHoldToTalk": "Maintiens pour parler",
+  "frontStageReleaseToSend": "Relâche pour envoyer",
   "geminiThinkingModeHighDescription": "Raisonnement le plus poussé ; peut augmenter la latence et le coût.",
   "geminiThinkingModeHighLabel": "Élevé",
   "geminiThinkingModeLowDescription": "Raisonnement faible pour des prompts quotidiens rapides.",

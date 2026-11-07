@@ -3317,6 +3317,8 @@
   "frontDoorUndo": "Annulla",
   "frontDoorUnfiled": "Tolto da {owner}. Archiviare di nuovo?",
   "frontDoorWalking": "Sta chiedendo a {owner}…",
+  "frontStageHoldToTalk": "Tieni premuto per parlare",
+  "frontStageReleaseToSend": "Rilascia per inviare",
   "geminiThinkingModeHighDescription": "Il ragionamento più profondo; può aumentare la latenza e il costo.",
   "geminiThinkingModeHighLabel": "Alto.",
   "geminiThinkingModeLowDescription": "Basso ragionamento per veloci richieste di tutti i giorni.",

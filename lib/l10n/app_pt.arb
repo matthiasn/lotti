@@ -3316,6 +3316,8 @@
   "frontDoorUndo": "Desfazer",
   "frontDoorUnfiled": "Retirado de {owner}. Arquivar outra vez?",
   "frontDoorWalking": "A perguntar a {owner}…",
+  "frontStageHoldToTalk": "Mantém premido para falar",
+  "frontStageReleaseToSend": "Solta para enviar",
   "geminiThinkingModeHighDescription": "Raciocínio mais profundo; pode aumentar a latência e o custo.",
   "geminiThinkingModeHighLabel": "Alto",
   "geminiThinkingModeLowDescription": "Baixo raciocínio para solicitações rápidas do dia a dia.",

@@ -19,7 +19,6 @@ import 'package:lotti/features/companion/ui/companion_speaker.dart';
 import 'package:lotti/features/companion/ui/companion_view.dart';
 import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
-import 'package:lotti/features/front_agent/ui/front_conversation_actions.dart';
 import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
@@ -33,7 +32,9 @@ import 'package:lotti/features/front_agent/state/front_inbox_filter.dart';
 import 'package:lotti/features/front_agent/state/front_voice_providers.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_header.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_hero.dart';
+import 'package:lotti/features/front_agent/ui/front_conversation_actions.dart';
 import 'package:lotti/features/front_agent/ui/front_profile_choice.dart';
+import 'package:lotti/features/front_agent/ui/front_stage_controls.dart';
 import 'package:lotti/features/front_agent/ui/front_voice_controls.dart';
 import 'package:lotti/features/tts/model/tts_playback_state.dart';
 import 'package:lotti/features/tts/state/tts_playback_controller.dart';
@@ -582,9 +583,10 @@ void main() {
       expect(stage.sourceId, 'front-chat:c-1');
       // In the outfit her bust wore.
       expect(stage.dressedFor, frontCompanionDressedFor);
-      // Her own voice control at her feet, not the summary's.
+      // Her own controls at her feet — a way to answer her, and her voice —
+      // not the summary's.
       expect(
-        (stage.readAloud! as FrontVoiceButton).conversationId,
+        (stage.controls! as FrontStageControls).conversationId,
         'c-1',
       );
       expect(voice.stoppedSources, isEmpty, reason: 'she speaks on');

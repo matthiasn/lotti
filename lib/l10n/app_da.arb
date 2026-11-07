@@ -3317,6 +3317,8 @@
   "frontDoorUndo": "Fortryd",
   "frontDoorUnfiled": "Taget ud af {owner}. Gem igen?",
   "frontDoorWalking": "Spørger {owner}…",
+  "frontStageHoldToTalk": "Hold inde for at tale",
+  "frontStageReleaseToSend": "Slip for at sende",
   "geminiThinkingModeHighDescription": "Dybeste ræsonnement; kan øge latenstid og omkostninger.",
   "geminiThinkingModeHighLabel": "Høj",
   "geminiThinkingModeLowDescription": "Lav begrundelse for hurtige daglige prompts.",

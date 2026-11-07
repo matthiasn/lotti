@@ -7394,6 +7394,12 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get frontStageHoldToTalk => 'Podrž a mluv';
+
+  @override
+  String get frontStageReleaseToSend => 'Pusť a odešli';
+
+  @override
   String get geminiThinkingModeHighDescription =>
       'Nejhlubší uvažování; může zvýšit latenci a cenu.';
 
