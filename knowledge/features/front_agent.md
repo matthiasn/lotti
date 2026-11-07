@@ -626,15 +626,17 @@ recency — *Today*, *Yesterday*, *Previous 7 days*, *Older* — flat: each
 group's day a caption in the accent, snug over its dense rows, no card and no
 hairlines. The accent splits the days while the rows stay neutral, so the open
 row's rounded fill is still the one strong surface in the list.
-A row is the title on the full width (two lines before it is cut) over one
-line of her last answer (`FrontConversation.preview`, the first line of her
-latest `reply_to_user` or `ask_user` in it, read by
-`FrontConversationService`), fading out before the time it last moved (the
-clock today and yesterday, the weekday within a week, else the date). The
-times share one column as wide as the list's widest, in tabular figures, so
-every preview ends on the same line. On the open row's fill the second line
-is as bright as the title. A row's rename, archive and delete (its ⋯ in the
-time's place) show on hover and focus, at rest on the open row too unless
+A row is the title (two lines before it is cut) with the time it last moved
+at the end of its first line, on the title's baseline (the clock today and
+yesterday, the weekday within a week, else the date), as a chat list has it;
+under them, on the row's whole width, one line of her last answer
+(`FrontConversation.preview`, the first line of her latest `reply_to_user`
+or `ask_user` in it, read by `FrontConversationService`), fading out at its
+end — left out when there is none. The times share one column as wide as the
+list's widest, in tabular figures, so every title stops short of the same
+edge. On the open row's fill the second line is as bright as the title. A
+row's rename, archive and delete (its ⋯ in the time's place, its glyph on
+the title's first line, its whole tap target inside the row) show on hover and focus, at rest on the open row too unless
 the list sits beside the conversation (`FrontConversationList.beside`), whose
 header carries the same menu; a long press opens that menu under any row.
 The ⋯ is `FrontMenuButton`, on the menu every agent page opens
