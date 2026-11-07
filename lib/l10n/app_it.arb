@@ -2312,6 +2312,7 @@
       }
     }
   },
+  "dailyOsNextBlockCreateTask": "Crea un'attività",
   "dailyOsNextBlockEditCategoryLabel": "Categoria",
   "dailyOsNextBlockEditFailed": "Non è stato possibile aggiornare il blocco — riprovare.",
   "dailyOsNextBlockEditNameLabel": "Titolo",
@@ -2322,9 +2323,17 @@
   "dailyOsNextBlockEditTitle": "Modifica blocco",
   "dailyOsNextBlockEditTooltip": "Modifica blocco",
   "dailyOsNextBlockEditWhyLabel": "Perché questa volta",
+  "dailyOsNextBlockLinked": "Collegato all'attività.",
+  "dailyOsNextBlockLinkTask": "Collega a un'attività",
   "dailyOsNextBlockMoveTooltip": "Blocco di spostamento",
+  "dailyOsNextBlockRemove": "Rimuovi dal piano",
+  "dailyOsNextBlockRemoved": "Rimosso dal piano.",
   "dailyOsNextBlockResizeEndTooltip": "Regolare la fine",
   "dailyOsNextBlockResizeStartTooltip": "Regolare l'inizio",
+  "dailyOsNextBlockTaskCreated": "Attività creata.",
+  "dailyOsNextBlockTaskCreatedNotLinked": "Attività creata, ma non collegata a questo blocco.",
+  "dailyOsNextBlockUnlinked": "Scollegato dall'attività.",
+  "dailyOsNextBlockUnlinkTask": "Scollega attività",
   "dailyOsNextBriefingBlockCount": "{count, plural, =0{Non c'è ancora niente in programma.} =1{Hai un blocco in programma.} other{Hai {count} blocchi in programma.}}",
   "@dailyOsNextBriefingBlockCount": {
     "placeholders": {

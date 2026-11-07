@@ -2054,6 +2054,7 @@
     }
   },
   "dailyOsNextAgendaTrackedLegend": "Registrado · {duration} · {completedCount, plural, =1{1 tarea completada} other{{completedCount} tareas completadas}}",
+  "dailyOsNextBlockCreateTask": "Crear una tarea",
   "dailyOsNextBlockEditCategoryLabel": "Categoría",
   "dailyOsNextBlockEditFailed": "No se pudo actualizar el bloque — inténtalo de nuevo.",
   "dailyOsNextBlockEditNameLabel": "Título",
@@ -2064,9 +2065,17 @@
   "dailyOsNextBlockEditTitle": "Editar bloque",
   "dailyOsNextBlockEditTooltip": "Editar bloque",
   "dailyOsNextBlockEditWhyLabel": "Por qué a esta hora",
+  "dailyOsNextBlockLinked": "Vinculado a la tarea.",
+  "dailyOsNextBlockLinkTask": "Vincular a una tarea",
   "dailyOsNextBlockMoveTooltip": "Mover bloque",
+  "dailyOsNextBlockRemove": "Quitar del plan",
+  "dailyOsNextBlockRemoved": "Quitado del plan.",
   "dailyOsNextBlockResizeEndTooltip": "Ajustar fin",
   "dailyOsNextBlockResizeStartTooltip": "Ajustar inicio",
+  "dailyOsNextBlockTaskCreated": "Tarea creada.",
+  "dailyOsNextBlockTaskCreatedNotLinked": "Tarea creada, pero no vinculada a este bloque.",
+  "dailyOsNextBlockUnlinked": "Desvinculado de la tarea.",
+  "dailyOsNextBlockUnlinkTask": "Desvincular tarea",
   "dailyOsNextBriefingBlockCount": "{count, plural, =0{Todavía no hay nada planificado.} =1{Tienes un bloque planificado.} other{Tienes {count} bloques planificados.}}",
   "@dailyOsNextBriefingBlockCount": {
     "placeholders": {

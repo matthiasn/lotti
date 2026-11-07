@@ -4837,6 +4837,9 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String get dailyOsNextBlockCreateTask => 'Skapa en uppgift';
+
+  @override
   String get dailyOsNextBlockEditCategoryLabel => 'Kategori';
 
   @override
@@ -4868,13 +4871,38 @@ class AppLocalizationsSv extends AppLocalizations {
   String get dailyOsNextBlockEditWhyLabel => 'Varför just den här gången';
 
   @override
+  String get dailyOsNextBlockLinked => 'Kopplat till uppgiften.';
+
+  @override
+  String get dailyOsNextBlockLinkTask => 'Koppla till en uppgift';
+
+  @override
   String get dailyOsNextBlockMoveTooltip => 'Flyttblockering';
+
+  @override
+  String get dailyOsNextBlockRemove => 'Ta bort från planen';
+
+  @override
+  String get dailyOsNextBlockRemoved => 'Borttaget från planen.';
 
   @override
   String get dailyOsNextBlockResizeEndTooltip => 'Justera änden';
 
   @override
   String get dailyOsNextBlockResizeStartTooltip => 'Justera start';
+
+  @override
+  String get dailyOsNextBlockTaskCreatedNotLinked =>
+      'Uppgiften är skapad men inte kopplad till det här blocket.';
+
+  @override
+  String get dailyOsNextBlockTaskCreated => 'Uppgift skapad.';
+
+  @override
+  String get dailyOsNextBlockUnlinked => 'Bortkopplat från uppgiften.';
+
+  @override
+  String get dailyOsNextBlockUnlinkTask => 'Koppla bort uppgiften';
 
   @override
   String dailyOsNextBriefingBlockCount(int count) {

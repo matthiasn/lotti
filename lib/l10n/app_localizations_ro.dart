@@ -4910,6 +4910,9 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get dailyOsNextBlockCreateTask => 'Creați o sarcină';
+
+  @override
   String get dailyOsNextBlockEditCategoryLabel => 'Categorie';
 
   @override
@@ -4941,13 +4944,38 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsNextBlockEditWhyLabel => 'De ce la această oră';
 
   @override
+  String get dailyOsNextBlockLinked => 'Asociat cu sarcina.';
+
+  @override
+  String get dailyOsNextBlockLinkTask => 'Asociați cu o sarcină';
+
+  @override
   String get dailyOsNextBlockMoveTooltip => 'Mutați blocul';
+
+  @override
+  String get dailyOsNextBlockRemove => 'Eliminați din plan';
+
+  @override
+  String get dailyOsNextBlockRemoved => 'Eliminat din plan.';
 
   @override
   String get dailyOsNextBlockResizeEndTooltip => 'Ajustați sfârșitul';
 
   @override
   String get dailyOsNextBlockResizeStartTooltip => 'Ajustați începutul';
+
+  @override
+  String get dailyOsNextBlockTaskCreatedNotLinked =>
+      'Sarcina a fost creată, dar nu a fost asociată cu acest bloc.';
+
+  @override
+  String get dailyOsNextBlockTaskCreated => 'Sarcină creată.';
+
+  @override
+  String get dailyOsNextBlockUnlinked => 'Dezasociat de sarcină.';
+
+  @override
+  String get dailyOsNextBlockUnlinkTask => 'Dezasociați sarcina';
 
   @override
   String dailyOsNextBriefingBlockCount(int count) {

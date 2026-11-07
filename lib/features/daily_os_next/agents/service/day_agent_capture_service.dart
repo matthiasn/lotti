@@ -68,7 +68,7 @@ class DayAgentCaptureService {
     this.taskAgentService,
     this.onPersistedStateChanged,
     this.nudgeProcessing,
-  }) : _taskFactory = taskFactory ?? _defaultTaskFactory,
+  }) : _taskFactory = taskFactory ?? defaultDayAgentTaskFactory,
        _reads = DayAgentCaptureReads(agentRepository: agentRepository) {
     _corpus = DayAgentCorpusService(
       journalDb: journalDb,
@@ -759,7 +759,9 @@ DateTime? _dueFromAnchor(String? raw, DateTime now) {
   return due;
 }
 
-Future<Task?> _defaultTaskFactory({
+/// The production [DayAgentTaskFactory]: an open task through
+/// [PersistenceLogic.createTaskEntry].
+Future<Task?> defaultDayAgentTaskFactory({
   required String title,
   required String categoryId,
   required DateTime now,

@@ -4903,6 +4903,9 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get dailyOsNextBlockCreateTask => 'Créer une tâche';
+
+  @override
   String get dailyOsNextBlockEditCategoryLabel => 'Catégorie';
 
   @override
@@ -4934,13 +4937,38 @@ class AppLocalizationsFr extends AppLocalizations {
   String get dailyOsNextBlockEditWhyLabel => 'Pourquoi à cette heure';
 
   @override
+  String get dailyOsNextBlockLinked => 'Lié à la tâche.';
+
+  @override
+  String get dailyOsNextBlockLinkTask => 'Lier à une tâche';
+
+  @override
   String get dailyOsNextBlockMoveTooltip => 'Déplacer le bloc';
+
+  @override
+  String get dailyOsNextBlockRemove => 'Retirer du plan';
+
+  @override
+  String get dailyOsNextBlockRemoved => 'Retiré du plan.';
 
   @override
   String get dailyOsNextBlockResizeEndTooltip => 'Ajuster la fin';
 
   @override
   String get dailyOsNextBlockResizeStartTooltip => 'Ajuster le début';
+
+  @override
+  String get dailyOsNextBlockTaskCreatedNotLinked =>
+      'Tâche créée, mais pas liée à ce bloc.';
+
+  @override
+  String get dailyOsNextBlockTaskCreated => 'Tâche créée.';
+
+  @override
+  String get dailyOsNextBlockUnlinked => 'Délié de la tâche.';
+
+  @override
+  String get dailyOsNextBlockUnlinkTask => 'Délier la tâche';
 
   @override
   String dailyOsNextBriefingBlockCount(int count) {

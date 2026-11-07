@@ -27,6 +27,7 @@ import 'package:timezone/timezone.dart' as tz;
 
 import '../../../../helpers/fallbacks.dart';
 import '../../../../mocks/mocks.dart';
+import '../../../../test_data/test_data.dart';
 import '../../../agents/test_data/entity_factories.dart';
 
 const _agentId = 'day-agent-001';
@@ -3532,6 +3533,60 @@ void main() {
               contains('no plan'),
             ),
           ),
+        );
+      });
+    });
+
+    group('block actions', () {
+      test('remove, restore, link, unlink and create go through to the '
+          'block actions', () async {
+        seedPlanEntity();
+        when(() => journalDb.journalEntityById('task-1')).thenAnswer(
+          (_) async => testTask.copyWith(
+            meta: testTask.meta.copyWith(id: 'task-1'),
+          ),
+        );
+        when(() => journalDb.getCategoryById(any())).thenAnswer(
+          (_) async => null,
+        );
+        final service = createService();
+
+        final removal = await service.removeBlock(
+          agentId: _agentId,
+          dayId: _dayId,
+          blockId: 'block-1',
+        );
+        expect(removal.plan.data.plannedBlocks, isEmpty);
+
+        final restored = await service.restoreBlock(
+          agentId: _agentId,
+          dayId: _dayId,
+          block: removal.removed,
+        );
+        expect(restored.data.plannedBlocks.single.id, 'block-1');
+
+        final linked = await service.linkBlockToTask(
+          agentId: _agentId,
+          dayId: _dayId,
+          blockId: 'block-1',
+          taskId: 'task-1',
+        );
+        expect(linked.data.plannedBlocks.single.taskId, 'task-1');
+
+        final unlinked = await service.unlinkBlockFromTask(
+          agentId: _agentId,
+          dayId: _dayId,
+          blockId: 'block-1',
+        );
+        expect(unlinked.data.plannedBlocks.single.taskId, isNull);
+
+        await expectLater(
+          service.createTaskForBlock(
+            agentId: _agentId,
+            dayId: _dayId,
+            blockId: 'block-unknown',
+          ),
+          throwsA(isA<DayAgentCaptureException>()),
         );
       });
     });

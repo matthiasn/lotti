@@ -10,6 +10,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart';
+import 'package:lotti/features/daily_os_next/agents/service/day_agent_block_actions.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_service.dart';
@@ -443,6 +444,104 @@ class RealDayAgent implements DayAgentInterface {
       categoryId: category?.id,
     );
     return _projectDayPlan(edited, plan.dayDate);
+  }
+
+  /// Blocks taken off a plan by [removeBlock] in this session, by id, so the
+  /// Undo on their toast can put them back exactly as they were.
+  final Map<String, PlannedBlock> _removedBlocks = {};
+
+  Future<String> _agentIdFor(DateTime dayDate) async {
+    final identity = await dayAgentService.getDayAgentForDate(dayDate);
+    if (identity is! AgentIdentityEntity) {
+      throw DayAgentInteractionException(
+        'No day agent exists for ${dayAgentIdForDate(dayDate)}.',
+      );
+    }
+    return identity.agentId;
+  }
+
+  @override
+  Future<DraftPlan> removeBlock({
+    required DraftPlan plan,
+    required String blockId,
+  }) async {
+    final result = await planService.removeBlock(
+      agentId: await _agentIdFor(plan.dayDate),
+      dayId: dayAgentIdForDate(plan.dayDate),
+      blockId: blockId,
+    );
+    _removedBlocks[blockId] = result.removed;
+    return _projectDayPlan(result.plan, plan.dayDate);
+  }
+
+  @override
+  Future<DraftPlan> restoreBlock({
+    required DraftPlan plan,
+    required String blockId,
+  }) async {
+    final block = _removedBlocks[blockId];
+    if (block == null) {
+      throw DayAgentInteractionException(
+        'Block $blockId was not removed in this session.',
+      );
+    }
+    final restored = await planService.restoreBlock(
+      agentId: await _agentIdFor(plan.dayDate),
+      dayId: dayAgentIdForDate(plan.dayDate),
+      block: block,
+    );
+    _removedBlocks.remove(blockId);
+    return _projectDayPlan(restored, plan.dayDate);
+  }
+
+  @override
+  Future<DraftPlan> linkBlockToTask({
+    required DraftPlan plan,
+    required String blockId,
+    required String taskId,
+  }) async {
+    final linked = await planService.linkBlockToTask(
+      agentId: await _agentIdFor(plan.dayDate),
+      dayId: dayAgentIdForDate(plan.dayDate),
+      blockId: blockId,
+      taskId: taskId,
+    );
+    return _projectDayPlan(linked, plan.dayDate);
+  }
+
+  @override
+  Future<DraftPlan> unlinkBlockFromTask({
+    required DraftPlan plan,
+    required String blockId,
+  }) async {
+    final unlinked = await planService.unlinkBlockFromTask(
+      agentId: await _agentIdFor(plan.dayDate),
+      dayId: dayAgentIdForDate(plan.dayDate),
+      blockId: blockId,
+    );
+    return _projectDayPlan(unlinked, plan.dayDate);
+  }
+
+  @override
+  Future<({DraftPlan plan, String taskId})> createTaskForBlock({
+    required DraftPlan plan,
+    required String blockId,
+  }) async {
+    final agentId = await _agentIdFor(plan.dayDate);
+    final ({DayPlanEntity plan, Task task}) created;
+    try {
+      created = await planService.createTaskForBlock(
+        agentId: agentId,
+        dayId: dayAgentIdForDate(plan.dayDate),
+        blockId: blockId,
+      );
+    } on DayAgentTaskNotLinkedException catch (error) {
+      throw CreatedTaskNotLinkedException(error.taskId);
+    }
+    return (
+      plan: await _projectDayPlan(created.plan, plan.dayDate),
+      taskId: created.task.meta.id,
+    );
   }
 
   @override

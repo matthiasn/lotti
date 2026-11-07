@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
 import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.dart'
     as agent_providers;
@@ -15,6 +16,7 @@ import 'package:lotti/features/daily_os_next/ui/pages/day_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/refine_page.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/agenda_view.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_activity_view.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/day_block_task_picker.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_check_in_composer.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/plan_view_toggle.dart';
@@ -23,6 +25,7 @@ import 'package:lotti/features/design_system/components/glass_strip.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart' as nav_service;
@@ -31,6 +34,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
+import '../../../../test_data/test_data.dart';
 import '../../../../test_utils/material_ui_finders.dart';
 import '../../../../widget_test_utils.dart';
 import '../../../agents/test_data/entity_factories.dart';
@@ -717,6 +721,182 @@ void main() {
         expect(agent.editedBlocks.last.end, block.end);
       },
     );
+
+    group('block actions', () {
+      TimeBlock blockFor({String? taskId}) => TimeBlock(
+        id: 'blk_act',
+        title: 'Sort the sardine shipment',
+        start: DateTime(2026, 5, 26, 9),
+        end: DateTime(2026, 5, 26, 10),
+        type: TimeBlockType.manual,
+        state: TimeBlockState.drafted,
+        category: _category,
+        taskId: taskId,
+      );
+
+      Future<AppLocalizations> openEditor(
+        WidgetTester tester, {
+        required RecordingDayAgent agent,
+        TimeBlock? block,
+        Task? picked,
+      }) async {
+        final shown = block ?? blockFor();
+        _setSurface(tester);
+        await tester.pumpWidget(
+          _wrap(
+            DayPage(
+              draft: DraftPlan(
+                dayDate: DateTime(2026, 5, 26),
+                blocks: [shown],
+                bands: const [],
+                capacityMinutes: 240,
+                scheduledMinutes: 60,
+              ),
+            ),
+            overrides: [
+              dayAgentProvider.overrideWithValue(agent),
+              dayBlockTaskPickerProvider.overrideWithValue(
+                (_) async => picked,
+              ),
+            ],
+          ),
+        );
+        await tester.pump();
+        final messages = tester.element(find.byType(DayPage)).messages;
+        await tester.tap(find.text(messages.dailyOsNextPlanViewDay).last);
+        await tester.pump();
+        await tester.pump();
+        await tester.tap(find.byKey(Key('daily_os_edit_block_${shown.id}')));
+        await tester.pumpAndSettle();
+        return messages;
+      }
+
+      Future<void> tapText(WidgetTester tester, String text) async {
+        await tester.ensureVisible(find.text(text));
+        await tester.tap(find.text(text));
+        await tester.pumpAndSettle();
+      }
+
+      DesignSystemToast toast(WidgetTester tester) =>
+          tester.widget<DesignSystemToast>(find.byType(DesignSystemToast));
+
+      testWidgets('remove takes the block off, and Undo puts it back', (
+        tester,
+      ) async {
+        final agent = RecordingDayAgent();
+        final messages = await openEditor(tester, agent: agent);
+
+        await tapText(tester, messages.dailyOsNextBlockRemove);
+
+        expect(agent.blockActions.single.action, 'remove');
+        expect(agent.blockActions.single.blockId, 'blk_act');
+        expect(find.text(messages.dailyOsNextBlockRemoved), findsOneWidget);
+        expect(toast(tester).action?.label, messages.designSystemUndoLabel);
+
+        toast(tester).action!.onPressed();
+        await tester.pump();
+        await tester.pump();
+
+        expect(agent.blockActions.map((call) => call.action), [
+          'remove',
+          'restore',
+        ]);
+      });
+
+      testWidgets('link picks a task and ties the block to it', (
+        tester,
+      ) async {
+        final agent = RecordingDayAgent();
+        final messages = await openEditor(
+          tester,
+          agent: agent,
+          picked: testTask,
+        );
+
+        await tapText(tester, messages.dailyOsNextBlockLinkTask);
+
+        expect(agent.blockActions.single.action, 'link');
+        expect(agent.blockActions.single.taskId, testTask.meta.id);
+        expect(find.text(messages.dailyOsNextBlockLinked), findsOneWidget);
+      });
+
+      testWidgets('closing the picker links nothing', (tester) async {
+        final agent = RecordingDayAgent();
+        final messages = await openEditor(tester, agent: agent);
+
+        await tapText(tester, messages.dailyOsNextBlockLinkTask);
+
+        expect(agent.blockActions, isEmpty);
+        expect(find.byType(DesignSystemToast), findsNothing);
+      });
+
+      testWidgets('create makes a task and offers to open it', (tester) async {
+        final routes = <String>[];
+        nav_service.beamToNamedOverride = routes.add;
+        final agent = RecordingDayAgent();
+        final messages = await openEditor(tester, agent: agent);
+
+        await tapText(tester, messages.dailyOsNextBlockCreateTask);
+
+        expect(agent.blockActions.single.action, 'create');
+        expect(
+          find.text(messages.dailyOsNextBlockTaskCreated),
+          findsOneWidget,
+        );
+        expect(
+          toast(tester).action?.label,
+          messages.dailyOsNextBlockEditOpenTask,
+        );
+        toast(tester).action!.onPressed();
+        expect(routes, ['/tasks/task-for-blk_act']);
+      });
+
+      testWidgets('a task made but not linked says so and still opens', (
+        tester,
+      ) async {
+        final routes = <String>[];
+        nav_service.beamToNamedOverride = routes.add;
+        final agent = RecordingDayAgent(createdTaskNotLinked: true);
+        final messages = await openEditor(tester, agent: agent);
+
+        await tapText(tester, messages.dailyOsNextBlockCreateTask);
+
+        expect(
+          find.text(messages.dailyOsNextBlockTaskCreatedNotLinked),
+          findsOneWidget,
+        );
+        expect(find.text(messages.dailyOsNextBlockEditFailed), findsNothing);
+        expect(toast(tester).tone, DesignSystemToastTone.warning);
+        toast(tester).action!.onPressed();
+        expect(routes, ['/tasks/task-for-blk_act']);
+      });
+
+      testWidgets('a task-linked block unlinks from its task', (tester) async {
+        final agent = RecordingDayAgent();
+        final messages = await openEditor(
+          tester,
+          agent: agent,
+          block: blockFor(taskId: 'task-1'),
+        );
+
+        await tapText(tester, messages.dailyOsNextBlockUnlinkTask);
+
+        expect(agent.blockActions.single.action, 'unlink');
+        expect(find.text(messages.dailyOsNextBlockUnlinked), findsOneWidget);
+      });
+
+      testWidgets('a failing action says so', (tester) async {
+        final agent = RecordingDayAgent(
+          blockActionError: StateError('offline'),
+        );
+        final messages = await openEditor(tester, agent: agent);
+
+        await tapText(tester, messages.dailyOsNextBlockRemove);
+
+        expect(find.text(messages.dailyOsNextBlockEditFailed), findsOneWidget);
+        expect(find.text(messages.dailyOsNextBlockRemoved), findsNothing);
+      });
+    });
 
     testWidgets(
       'block editor failure keeps the page stable and shows a toast',

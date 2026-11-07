@@ -2312,6 +2312,7 @@
       }
     }
   },
+  "dailyOsNextBlockCreateTask": "Opret en opgave",
   "dailyOsNextBlockEditCategoryLabel": "Kategori",
   "dailyOsNextBlockEditFailed": "Kunne ikke opdatere blokeringen — prøv igen.",
   "dailyOsNextBlockEditNameLabel": "Titel",
@@ -2322,9 +2323,17 @@
   "dailyOsNextBlockEditTitle": "Rediger blok",
   "dailyOsNextBlockEditTooltip": "Rediger blok",
   "dailyOsNextBlockEditWhyLabel": "Hvorfor denne gang",
+  "dailyOsNextBlockLinked": "Knyttet til opgaven.",
+  "dailyOsNextBlockLinkTask": "Knyt til en opgave",
   "dailyOsNextBlockMoveTooltip": "Flytblok",
+  "dailyOsNextBlockRemove": "Fjern fra planen",
+  "dailyOsNextBlockRemoved": "Fjernet fra planen.",
   "dailyOsNextBlockResizeEndTooltip": "Juster enden",
   "dailyOsNextBlockResizeStartTooltip": "Juster start",
+  "dailyOsNextBlockTaskCreated": "Opgave oprettet.",
+  "dailyOsNextBlockTaskCreatedNotLinked": "Opgaven er oprettet, men ikke knyttet til denne blok.",
+  "dailyOsNextBlockUnlinked": "Ikke længere knyttet til opgaven.",
+  "dailyOsNextBlockUnlinkTask": "Fjern opgavelink",
   "dailyOsNextBriefingBlockCount": "{count, plural, =0{Der er ikke planlagt noget endnu.} =1{Du har én blok planlagt.} other{Du har {count} blokke planlagt.}}",
   "@dailyOsNextBriefingBlockCount": {
     "placeholders": {

@@ -3242,6 +3242,7 @@
       }
     }
   },
+  "dailyOsNextBlockCreateTask": "Create a task",
   "dailyOsNextBlockEditCategoryLabel": "Category",
   "dailyOsNextBlockEditFailed": "Couldn't update the block — try again.",
   "dailyOsNextBlockEditNameLabel": "Title",
@@ -3252,9 +3253,17 @@
   "dailyOsNextBlockEditTitle": "Edit block",
   "dailyOsNextBlockEditTooltip": "Edit block",
   "dailyOsNextBlockEditWhyLabel": "Why this time",
+  "dailyOsNextBlockLinked": "Linked to the task.",
+  "dailyOsNextBlockLinkTask": "Link to a task",
   "dailyOsNextBlockMoveTooltip": "Move block",
+  "dailyOsNextBlockRemove": "Remove from plan",
+  "dailyOsNextBlockRemoved": "Removed from the plan.",
   "dailyOsNextBlockResizeEndTooltip": "Adjust end",
   "dailyOsNextBlockResizeStartTooltip": "Adjust start",
+  "dailyOsNextBlockTaskCreated": "Task created.",
+  "dailyOsNextBlockTaskCreatedNotLinked": "Task created, but not linked to this block.",
+  "dailyOsNextBlockUnlinked": "Unlinked from the task.",
+  "dailyOsNextBlockUnlinkTask": "Unlink task",
   "dailyOsNextBriefingBlockCount": "{count, plural, =0{Nothing is planned yet.} =1{You have one block planned.} other{You have {count} blocks planned.}}",
   "@dailyOsNextBriefingBlockCount": {
     "placeholders": {

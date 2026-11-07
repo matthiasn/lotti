@@ -13,6 +13,8 @@ import 'package:lotti/classes/day_agent_identity.dart';
 import 'package:lotti/classes/day_agent_plan_models.dart';
 import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart';
+import 'package:lotti/features/daily_os_next/agents/service/day_agent_block_actions.dart';
+import 'package:lotti/features/daily_os_next/logic/day_agent_interface.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/logic/real_day_agent.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_job.dart';
@@ -1334,6 +1336,201 @@ void main() {
           end: any(named: 'end'),
         ),
       );
+    });
+  });
+
+  group('RealDayAgent block actions', () {
+    late _TestBench bench;
+    const agentId = 'day-agent-001';
+    final dayDate = DateTime(_asOf.year, _asOf.month, _asOf.day);
+    final dayId = dayAgentIdForDate(dayDate);
+    final removed = PlannedBlock(
+      id: 'block_1',
+      categoryId: 'life',
+      startTime: dayDate.add(const Duration(hours: 9)),
+      endTime: dayDate.add(const Duration(hours: 10)),
+      title: 'Lunch with Sarah',
+    );
+    final plan = DraftPlan(
+      dayDate: dayDate,
+      blocks: const [],
+      bands: const [],
+      capacityMinutes: 480,
+      scheduledMinutes: 60,
+    );
+
+    DayPlanEntity entity(List<PlannedBlock> blocks) =>
+        AgentDomainEntity.dayPlan(
+              id: 'day_agent_plan:$dayId',
+              agentId: agentId,
+              dayId: dayId,
+              planDate: dayDate,
+              data: DayPlanData(
+                planDate: dayDate,
+                status: const DayPlanStatus.draft(),
+                plannedBlocks: blocks,
+              ),
+              createdAt: dayDate,
+              updatedAt: dayDate,
+              vectorClock: null,
+            )
+            as DayPlanEntity;
+
+    setUp(() {
+      bench = _TestBench.create();
+      when(() => bench.dayAgentService.getDayAgentForDate(any())).thenAnswer(
+        (_) async => makeTestIdentity(
+          id: agentId,
+          agentId: agentId,
+          kind: AgentKinds.dayAgent,
+        ),
+      );
+      when(
+        () => bench.journalDb.getCategoryById(any()),
+      ).thenAnswer((_) async => null);
+    });
+
+    test('remove then Undo puts back the very block that left', () async {
+      when(
+        () => bench.planService.removeBlock(
+          agentId: agentId,
+          dayId: dayId,
+          blockId: 'block_1',
+        ),
+      ).thenAnswer((_) async => (plan: entity(const []), removed: removed));
+      when(
+        () => bench.planService.restoreBlock(
+          agentId: agentId,
+          dayId: dayId,
+          block: removed,
+        ),
+      ).thenAnswer((_) async => entity([removed]));
+
+      final afterRemove = await bench.adapter.removeBlock(
+        plan: plan,
+        blockId: 'block_1',
+      );
+      expect(afterRemove.blocks, isEmpty);
+
+      final afterUndo = await bench.adapter.restoreBlock(
+        plan: plan,
+        blockId: 'block_1',
+      );
+      expect(afterUndo.blocks.single.id, 'block_1');
+      expect(afterUndo.blocks.single.title, 'Lunch with Sarah');
+
+      // One Undo per removal: the block is no longer held.
+      await expectLater(
+        bench.adapter.restoreBlock(plan: plan, blockId: 'block_1'),
+        throwsA(isA<DayAgentInteractionException>()),
+      );
+    });
+
+    test('Undo for a block never removed here is refused', () async {
+      await expectLater(
+        bench.adapter.restoreBlock(plan: plan, blockId: 'block_x'),
+        throwsA(isA<DayAgentInteractionException>()),
+      );
+    });
+
+    test('link, unlink and create go through the plan service', () async {
+      final linked = removed.copyWith(taskId: 'task-1');
+      when(
+        () => bench.planService.linkBlockToTask(
+          agentId: agentId,
+          dayId: dayId,
+          blockId: 'block_1',
+          taskId: 'task-1',
+        ),
+      ).thenAnswer((_) async => entity([linked]));
+      when(
+        () => bench.planService.unlinkBlockFromTask(
+          agentId: agentId,
+          dayId: dayId,
+          blockId: 'block_1',
+        ),
+      ).thenAnswer((_) async => entity([removed]));
+      when(
+        () => bench.planService.createTaskForBlock(
+          agentId: agentId,
+          dayId: dayId,
+          blockId: 'block_1',
+        ),
+      ).thenAnswer(
+        (_) async => (
+          plan: entity([linked]),
+          task: testTask.copyWith(
+            meta: testTask.meta.copyWith(id: 'task-1'),
+          ),
+        ),
+      );
+
+      final afterLink = await bench.adapter.linkBlockToTask(
+        plan: plan,
+        blockId: 'block_1',
+        taskId: 'task-1',
+      );
+      expect(afterLink.blocks.single.taskId, 'task-1');
+
+      final afterUnlink = await bench.adapter.unlinkBlockFromTask(
+        plan: plan,
+        blockId: 'block_1',
+      );
+      expect(afterUnlink.blocks.single.taskId, isNull);
+
+      final created = await bench.adapter.createTaskForBlock(
+        plan: plan,
+        blockId: 'block_1',
+      );
+      expect(created.taskId, 'task-1');
+      expect(created.plan.blocks.single.taskId, 'task-1');
+    });
+
+    test('a task created but not linked surfaces with its id', () async {
+      when(
+        () => bench.planService.createTaskForBlock(
+          agentId: agentId,
+          dayId: dayId,
+          blockId: 'block_1',
+        ),
+      ).thenThrow(
+        DayAgentTaskNotLinkedException(
+          taskId: 'task-orphan',
+          blockId: 'block_1',
+          cause: StateError('disk full'),
+        ),
+      );
+
+      await expectLater(
+        bench.adapter.createTaskForBlock(plan: plan, blockId: 'block_1'),
+        throwsA(
+          isA<CreatedTaskNotLinkedException>()
+              .having((e) => e.taskId, 'taskId', 'task-orphan')
+              .having((e) => e.toString(), 'toString', contains('orphan')),
+        ),
+      );
+    });
+
+    test('every action needs a day agent', () async {
+      when(
+        () => bench.dayAgentService.getDayAgentForDate(any()),
+      ).thenAnswer((_) async => null);
+
+      for (final action in <Future<Object?> Function()>[
+        () => bench.adapter.removeBlock(plan: plan, blockId: 'block_1'),
+        () => bench.adapter.linkBlockToTask(
+          plan: plan,
+          blockId: 'block_1',
+          taskId: 'task-1',
+        ),
+        () => bench.adapter.unlinkBlockFromTask(plan: plan, blockId: 'block_1'),
+        () => bench.adapter.createTaskForBlock(plan: plan, blockId: 'block_1'),
+      ]) {
+        await expectLater(
+          action(),
+          throwsA(isA<DayAgentInteractionException>()),
+        );
+      }
     });
   });
 

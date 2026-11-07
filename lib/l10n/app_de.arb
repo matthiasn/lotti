@@ -2054,6 +2054,7 @@
     }
   },
   "dailyOsNextAgendaTrackedLegend": "Erfasst · {duration} · {completedCount} erledigt",
+  "dailyOsNextBlockCreateTask": "Aufgabe erstellen",
   "dailyOsNextBlockEditCategoryLabel": "Kategorie",
   "dailyOsNextBlockEditFailed": "Der Block konnte nicht aktualisiert werden — versuch es nochmal.",
   "dailyOsNextBlockEditNameLabel": "Titel",
@@ -2064,9 +2065,17 @@
   "dailyOsNextBlockEditTitle": "Block bearbeiten",
   "dailyOsNextBlockEditTooltip": "Block bearbeiten",
   "dailyOsNextBlockEditWhyLabel": "Warum zu dieser Zeit",
+  "dailyOsNextBlockLinked": "Mit der Aufgabe verknüpft.",
+  "dailyOsNextBlockLinkTask": "Mit Aufgabe verknüpfen",
   "dailyOsNextBlockMoveTooltip": "Block verschieben",
+  "dailyOsNextBlockRemove": "Aus dem Plan entfernen",
+  "dailyOsNextBlockRemoved": "Aus dem Plan entfernt.",
   "dailyOsNextBlockResizeEndTooltip": "Ende anpassen",
   "dailyOsNextBlockResizeStartTooltip": "Start anpassen",
+  "dailyOsNextBlockTaskCreated": "Aufgabe erstellt.",
+  "dailyOsNextBlockTaskCreatedNotLinked": "Aufgabe erstellt, aber nicht mit diesem Block verknüpft.",
+  "dailyOsNextBlockUnlinked": "Verknüpfung mit der Aufgabe gelöst.",
+  "dailyOsNextBlockUnlinkTask": "Verknüpfung lösen",
   "dailyOsNextBriefingBlockCount": "{count, plural, =0{Noch ist nichts geplant.} =1{Du hast einen Block geplant.} other{Du hast {count} Blöcke geplant.}}",
   "@dailyOsNextBriefingBlockCount": {
     "placeholders": {

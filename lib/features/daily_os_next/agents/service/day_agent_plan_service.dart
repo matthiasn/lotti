@@ -2,11 +2,14 @@ import 'package:clock/clock.dart';
 import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/day_agent_plan_models.dart';
+import 'package:lotti/classes/day_plan.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/agents/agent_repository.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_config.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart';
+import 'package:lotti/features/daily_os_next/agents/service/day_agent_block_actions.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_editor.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_reads.dart';
@@ -53,6 +56,12 @@ class DayAgentPlanService {
       writer: _writer,
       onPersistedStateChanged: onPersistedStateChanged,
     );
+    _blockActions = DayAgentBlockActions(
+      syncService: syncService,
+      journalDb: journalDb,
+      reads: _reads,
+      onPersistedStateChanged: onPersistedStateChanged,
+    );
     _dispatcher = DayAgentPlanToolDispatcher(
       writer: _writer,
       editor: _editor,
@@ -78,6 +87,7 @@ class DayAgentPlanService {
   final DayAgentPlanReads _reads;
   late final DayAgentPlanWriter _writer;
   late final DayAgentPlanEditor _editor;
+  late final DayAgentBlockActions _blockActions;
   late final DayAgentPlanToolDispatcher _dispatcher;
 
   /// Executes a foundation day-plan tool.
@@ -222,6 +232,63 @@ class DayAgentPlanService {
     end: end,
     title: title,
     categoryId: categoryId,
+  );
+
+  /// Takes a planned block off the plan; see [DayAgentBlockActions].
+  Future<({DayPlanEntity plan, PlannedBlock removed})> removeBlock({
+    required String agentId,
+    required String dayId,
+    required String blockId,
+  }) => _blockActions.removeBlock(
+    agentId: agentId,
+    dayId: dayId,
+    blockId: blockId,
+  );
+
+  /// Puts a removed block back on the plan.
+  Future<DayPlanEntity> restoreBlock({
+    required String agentId,
+    required String dayId,
+    required PlannedBlock block,
+  }) => _blockActions.restoreBlock(
+    agentId: agentId,
+    dayId: dayId,
+    block: block,
+  );
+
+  /// Ties a planned block to an existing task.
+  Future<DayPlanEntity> linkBlockToTask({
+    required String agentId,
+    required String dayId,
+    required String blockId,
+    required String taskId,
+  }) => _blockActions.linkTask(
+    agentId: agentId,
+    dayId: dayId,
+    blockId: blockId,
+    taskId: taskId,
+  );
+
+  /// Unties a task-linked planned block.
+  Future<DayPlanEntity> unlinkBlockFromTask({
+    required String agentId,
+    required String dayId,
+    required String blockId,
+  }) => _blockActions.unlinkTask(
+    agentId: agentId,
+    dayId: dayId,
+    blockId: blockId,
+  );
+
+  /// Turns a standalone planned block into a new task and ties it to it.
+  Future<({DayPlanEntity plan, Task task})> createTaskForBlock({
+    required String agentId,
+    required String dayId,
+    required String blockId,
+  }) => _blockActions.createTaskForBlock(
+    agentId: agentId,
+    dayId: dayId,
+    blockId: blockId,
   );
 
   /// Revert a committed day plan back to draft.

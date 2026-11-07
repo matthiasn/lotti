@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/ui/agent_nav_helpers.dart';
 import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.dart'
     as agent_providers;
+import 'package:lotti/features/daily_os_next/logic/day_agent_interface.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/logic/day_plan_availability.dart';
 import 'package:lotti/features/daily_os_next/services/day_activity_repository.dart';
@@ -20,6 +21,7 @@ import 'package:lotti/features/daily_os_next/ui/text_scale_policy.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/agenda_view.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_activity_view.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_block_edit_modal.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/day_block_task_picker.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_briefing_companion.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_check_in_composer.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_check_in_spotlight_host.dart';
@@ -40,6 +42,7 @@ import 'package:lotti/widgets/modal/confirmation_modal.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 import 'package:material_ui/material_ui.dart';
 
+part 'day_page_block_actions_part.dart';
 part 'day_page_plan_review_strip_part.dart';
 
 class _DayPageState extends ConsumerState<DayPage> {
@@ -242,7 +245,6 @@ class _DayPageState extends ConsumerState<DayPage> {
   }
 
   Future<void> _openBlockEditor(TimeBlock block) async {
-    final taskId = block.taskId?.trim();
     final categoryOptions = getIt.isRegistered<EntitiesCacheService>()
         ? filterDayPlanCategories(
             getIt<EntitiesCacheService>().sortedCategories,
@@ -252,9 +254,7 @@ class _DayPageState extends ConsumerState<DayPage> {
       context: context,
       block: block,
       categoryOptions: categoryOptions,
-      onOpenTask: taskId == null || taskId.isEmpty
-          ? null
-          : () => nav_service.beamToNamed('/tasks/$taskId'),
+      actions: _blockActionsFor(block),
     );
     if (!mounted || result == null) return;
     await _persistBlockEdit(block: block, result: result);

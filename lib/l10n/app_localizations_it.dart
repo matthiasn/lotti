@@ -4890,6 +4890,9 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
+  String get dailyOsNextBlockCreateTask => 'Crea un\'attività';
+
+  @override
   String get dailyOsNextBlockEditCategoryLabel => 'Categoria';
 
   @override
@@ -4921,13 +4924,38 @@ class AppLocalizationsIt extends AppLocalizations {
   String get dailyOsNextBlockEditWhyLabel => 'Perché questa volta';
 
   @override
+  String get dailyOsNextBlockLinked => 'Collegato all\'attività.';
+
+  @override
+  String get dailyOsNextBlockLinkTask => 'Collega a un\'attività';
+
+  @override
   String get dailyOsNextBlockMoveTooltip => 'Blocco di spostamento';
+
+  @override
+  String get dailyOsNextBlockRemove => 'Rimuovi dal piano';
+
+  @override
+  String get dailyOsNextBlockRemoved => 'Rimosso dal piano.';
 
   @override
   String get dailyOsNextBlockResizeEndTooltip => 'Regolare la fine';
 
   @override
   String get dailyOsNextBlockResizeStartTooltip => 'Regolare l\'inizio';
+
+  @override
+  String get dailyOsNextBlockTaskCreatedNotLinked =>
+      'Attività creata, ma non collegata a questo blocco.';
+
+  @override
+  String get dailyOsNextBlockTaskCreated => 'Attività creata.';
+
+  @override
+  String get dailyOsNextBlockUnlinked => 'Scollegato dall\'attività.';
+
+  @override
+  String get dailyOsNextBlockUnlinkTask => 'Scollega attività';
 
   @override
   String dailyOsNextBriefingBlockCount(int count) {

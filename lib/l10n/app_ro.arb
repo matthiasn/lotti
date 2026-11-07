@@ -2054,6 +2054,7 @@
     }
   },
   "dailyOsNextAgendaTrackedLegend": "Înregistrat · {duration} · {completedCount, plural, =1{1 finalizată} few{{completedCount} finalizate} other{{completedCount} de finalizate}}",
+  "dailyOsNextBlockCreateTask": "Creați o sarcină",
   "dailyOsNextBlockEditCategoryLabel": "Categorie",
   "dailyOsNextBlockEditFailed": "Blocul nu a putut fi actualizat — încercați din nou.",
   "dailyOsNextBlockEditNameLabel": "Titlu",
@@ -2064,9 +2065,17 @@
   "dailyOsNextBlockEditTitle": "Editați blocul",
   "dailyOsNextBlockEditTooltip": "Editați blocul",
   "dailyOsNextBlockEditWhyLabel": "De ce la această oră",
+  "dailyOsNextBlockLinked": "Asociat cu sarcina.",
+  "dailyOsNextBlockLinkTask": "Asociați cu o sarcină",
   "dailyOsNextBlockMoveTooltip": "Mutați blocul",
+  "dailyOsNextBlockRemove": "Eliminați din plan",
+  "dailyOsNextBlockRemoved": "Eliminat din plan.",
   "dailyOsNextBlockResizeEndTooltip": "Ajustați sfârșitul",
   "dailyOsNextBlockResizeStartTooltip": "Ajustați începutul",
+  "dailyOsNextBlockTaskCreated": "Sarcină creată.",
+  "dailyOsNextBlockTaskCreatedNotLinked": "Sarcina a fost creată, dar nu a fost asociată cu acest bloc.",
+  "dailyOsNextBlockUnlinked": "Dezasociat de sarcină.",
+  "dailyOsNextBlockUnlinkTask": "Dezasociați sarcina",
   "dailyOsNextBriefingBlockCount": "{count, plural, =0{Încă nu este nimic planificat.} one{Aveți un bloc planificat.} few{Aveți {count} blocuri planificate.} other{Aveți {count} de blocuri planificate.}}",
   "@dailyOsNextBriefingBlockCount": {
     "placeholders": {
