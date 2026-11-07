@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show ProviderFamily;
 import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/front_agent/model/front_chat_thread.dart';
 import 'package:lotti/features/front_agent/model/front_reply_parts.dart';
@@ -31,17 +32,19 @@ bool frontLatestReplyListsTasks(FrontChatThread thread) {
 /// conversation id: while her voice plays there and her latest reply lists
 /// tasks, so she points at their rows as she says them, and lets her arm
 /// down once she has.
-final frontStagePointsProvider = Provider.family<bool, String>((
-  ref,
-  conversationId,
-) {
-  final sourceId = frontVoiceSourceId(conversationId);
-  final speaking = ref.watch(
-    ttsPlaybackControllerProvider.select(
-      (s) => s.status == TtsPlaybackStatus.playing && s.sourceId == sourceId,
-    ),
-  );
-  if (!speaking) return false;
-  final thread = ref.watch(frontChatThreadProvider).value;
-  return thread != null && frontLatestReplyListsTasks(thread);
-}, name: 'frontStagePointsProvider');
+final ProviderFamily<bool, String> frontStagePointsProvider =
+    Provider.family<bool, String>((
+      ref,
+      conversationId,
+    ) {
+      final sourceId = frontVoiceSourceId(conversationId);
+      final speaking = ref.watch(
+        ttsPlaybackControllerProvider.select(
+          (s) =>
+              s.status == TtsPlaybackStatus.playing && s.sourceId == sourceId,
+        ),
+      );
+      if (!speaking) return false;
+      final thread = ref.watch(frontChatThreadProvider).value;
+      return thread != null && frontLatestReplyListsTasks(thread);
+    }, name: 'frontStagePointsProvider');
