@@ -560,7 +560,7 @@ class _TranscriptZone extends StatelessWidget {
       case CapturePhase.error:
         return Center(
           child: Text(
-            _captureErrorMessage(context, state.error) ??
+            captureErrorMessage(context, state.error) ??
                 context.messages.dailyOsNextCaptureIdleHint,
             textAlign: TextAlign.center,
             style: tokens.typography.styles.body.bodySmall.copyWith(
@@ -638,7 +638,10 @@ class _OrbZone extends ConsumerWidget {
   }
 }
 
-String? _captureErrorMessage(BuildContext context, CaptureError? error) {
+/// The localized line for a capture [error], or null when there is none.
+/// Shared by the capture surfaces and the Day composer, so a failure reads
+/// the same wherever the recording was started.
+String? captureErrorMessage(BuildContext context, CaptureError? error) {
   final messages = context.messages;
   return switch (error) {
     CaptureError.microphonePermissionDenied =>

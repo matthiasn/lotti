@@ -15,7 +15,7 @@ import 'package:lotti/features/daily_os_next/ui/pages/day_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/refine_page.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/agenda_view.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_activity_view.dart';
-import 'package:lotti/features/daily_os_next/ui/widgets/day_composer_bar.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/day_check_in_composer.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/plan_view_toggle.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
@@ -93,6 +93,22 @@ DraftPlan _draftedWithReasons() => DraftPlan(
   ],
 );
 
+/// Types [words] into the empty Day's check-in composer and sends them.
+Future<void> _sendCheckIn(WidgetTester tester, String words) async {
+  final composer = find.byType(DayCheckInComposer);
+  await tester.enterText(
+    find.descendant(of: composer, matching: find.byType(TextField)),
+    words,
+  );
+  await tester.pump();
+  await tester.tap(
+    findMaterialTooltip(
+      tester.element(composer).messages.chatInputSendTooltip,
+    ),
+  );
+  await tester.pump();
+}
+
 void _setSurface(WidgetTester tester) {
   setTestSurfaceSize(tester, const Size(1400, 1200));
 }
@@ -152,7 +168,7 @@ void main() {
       'instead of Refine/Commit, and hides the delete-plan menu entry',
       (tester) async {
         _setSurface(tester);
-        var checkIns = 0;
+        final checkIns = <String>[];
         final tracked = TimeBlock(
           id: 'tr1',
           title: 'Recorded session',
@@ -167,7 +183,7 @@ void main() {
             DayPage(
               draft: DraftPlan.emptyForDay(DateTime(2026, 5, 26)),
               hasPlan: false,
-              onCheckIn: ({transcript, listen = false}) => checkIns++,
+              onSubmitCheckIn: (words, {audioId}) async => checkIns.add(words),
             ),
             actualBlocks: [tracked],
           ),
@@ -197,9 +213,9 @@ void main() {
         expect(find.text(messages.dailyOsNextDayLockInCta), findsNothing);
         final cta = find.byKey(const Key('daily_os_day_check_in_cta'));
         expect(cta, findsOneWidget);
-        expect(find.byType(DayComposerBar), findsOneWidget);
-        await tester.tap(findMaterialTooltip(messages.chatInputRecordVoice));
-        expect(checkIns, 1);
+        expect(find.byType(DayCheckInComposer), findsOneWidget);
+        await _sendCheckIn(tester, 'Finish the deck');
+        expect(checkIns, ['Finish the deck']);
 
         // The overflow menu offers no delete-plan entry without a plan.
         await tester.tap(find.byIcon(LottiIcons.moreVertical));
@@ -226,7 +242,7 @@ void main() {
             DayPage(
               draft: DraftPlan.emptyForDay(DateTime(2026, 5, 26)),
               hasPlan: false,
-              onCheckIn: ({transcript, listen = false}) =>
+              onSubmitCheckIn: (words, {audioId}) async =>
                   fail('check-in must stay blocked'),
             ),
             setupStatus: const DailyOsSetupStatus(
@@ -251,7 +267,7 @@ void main() {
           find.text(messages.dailyOsSettingsSetupAction),
           findsNWidgets(2),
         );
-        expect(find.byType(DayComposerBar), findsNothing);
+        expect(find.byType(DayCheckInComposer), findsNothing);
 
         await tester.tap(find.byIcon(LottiIcons.moreVertical));
         await tester.pump();
@@ -458,13 +474,13 @@ void main() {
       tester,
     ) async {
       _setSurface(tester);
-      var checkIns = 0;
+      final checkIns = <String>[];
       await tester.pumpWidget(
         _wrap(
           DayPage(
             draft: DraftPlan.emptyForDay(DateTime(2026, 5, 26)),
             hasPlan: false,
-            onCheckIn: ({transcript, listen = false}) => checkIns++,
+            onSubmitCheckIn: (words, {audioId}) async => checkIns.add(words),
           ),
           setupStatus: const DailyOsSetupStatus(
             hasInferenceRoute: true,
@@ -480,10 +496,10 @@ void main() {
         find.text(messages.dailyOsSettingsNameNudgeTitle),
         findsOneWidget,
       );
-      expect(find.byType(DayComposerBar), findsOneWidget);
+      expect(find.byType(DayCheckInComposer), findsOneWidget);
 
-      await tester.tap(findMaterialTooltip(messages.chatInputRecordVoice));
-      expect(checkIns, 1);
+      await _sendCheckIn(tester, 'Finish the deck');
+      expect(checkIns, ['Finish the deck']);
     });
 
     testWidgets('the composer stays closed until setup status is known', (
@@ -495,7 +511,7 @@ void main() {
           DayPage(
             draft: DraftPlan.emptyForDay(DateTime(2026, 5, 26)),
             hasPlan: false,
-            onCheckIn: ({transcript, listen = false}) =>
+            onSubmitCheckIn: (words, {audioId}) async =>
                 fail('no check-in before setup status is known'),
           ),
           setupStatus: null,
@@ -507,9 +523,9 @@ void main() {
       // The composer holds its place, so the footer does not jump, but takes
       // no words: they would be lost if setup turns out to be missing.
       final messages = tester.element(find.byType(DayPage)).messages;
-      expect(find.byType(DayComposerBar), findsOneWidget);
+      expect(find.byType(DayCheckInComposer), findsOneWidget);
       final field = find.descendant(
-        of: find.byType(DayComposerBar),
+        of: find.byType(DayCheckInComposer),
         matching: find.byType(TextField),
       );
       expect(tester.widget<TextField>(field).enabled, isFalse);

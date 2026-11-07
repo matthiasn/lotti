@@ -20,6 +20,7 @@ import 'package:lotti/features/daily_os_next/ui/text_scale_policy.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/daily_os_onboarding_coach_slot.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_planning_glass_action_bar.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_planning_thinking_shader.dart';
+import 'package:lotti/features/daily_os_next/util/day_arithmetic.dart';
 import 'package:lotti/features/design_system/components/glass_action_bar.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -36,20 +37,20 @@ sealed class DayPlanningIntent {
 
 /// Start a brand-new plan: Capture → Reconcile → Drafting.
 class DayPlanningCreate extends DayPlanningIntent {
-  const DayPlanningCreate({
-    this.initialTranscript,
-    this.startListening = false,
-  });
+  const DayPlanningCreate({this.initialTranscript});
 
   /// Optional words the capture opens with, typed in and ready to send —
-  /// what the user already said elsewhere, such as to the companion, or
-  /// typed into the Day surface's composer.
+  /// what the user already said elsewhere, such as to the companion.
   final String? initialTranscript;
+}
 
-  /// Opens the capture already recording — the Day composer's mic, where
-  /// the tap that opened the sheet was the tap on the microphone. Ignored
-  /// when [initialTranscript] carries words.
-  final bool startListening;
+/// Continue a check-in already submitted from the Day surface's composer:
+/// Reconcile → Drafting, with no Capture step — the composer was the
+/// capture. Backing out of Reconcile closes the sheet, back to the composer.
+class DayPlanningReconcile extends DayPlanningIntent {
+  const DayPlanningReconcile(this.captureId);
+
+  final CaptureId captureId;
 }
 
 /// Adapt an existing plan via the voice-driven Refine step.
@@ -99,13 +100,17 @@ Future<DayPlanningResult?> showDayPlanningModal({
         _dayPlanningModalType(modalContext, intent),
     pageListBuilder: (modalContext) => [
       switch (intent) {
-        DayPlanningCreate(:final initialTranscript, :final startListening) =>
-          _captureStepPage(
-            modalContext,
-            day,
-            initialTranscript: initialTranscript,
-            startListening: startListening,
-          ),
+        DayPlanningCreate(:final initialTranscript) => _captureStepPage(
+          modalContext,
+          day,
+          initialTranscript: initialTranscript,
+        ),
+        DayPlanningReconcile(:final captureId) => _reconcileStepPage(
+          modalContext,
+          day,
+          captureId,
+          onBack: () => Navigator.of(modalContext).pop(),
+        ),
         DayPlanningAdapt(:final draft, :final initialTranscript) =>
           _refineStepPage(
             modalContext,
@@ -174,14 +179,6 @@ double _stepViewportHeight(BuildContext context, {bool hasBar = true}) {
   return math.max(280, size.height - chrome);
 }
 
-DateTime _capturedAtForDay(DateTime day) {
-  final now = clock.now();
-  // Preserve [day]'s timezone by adding the elapsed time since midnight,
-  // rather than mixing [day]'s date with [now]'s wall-clock components.
-  // `clock.now()` is always local here, so local midnight is correct.
-  return day.add(now.difference(DateTime(now.year, now.month, now.day)));
-}
-
 /// Lays out action-bar pills for the host container: phones get
 /// edge-to-edge pills (each wrapped in [Expanded]); the desktop side sheet
 /// gets intrinsic-width pills aligned to the trailing edge so they read as
@@ -232,7 +229,6 @@ SliverWoltModalSheetPage _captureStepPage(
   BuildContext context,
   DateTime day, {
   String? initialTranscript,
-  bool startListening = false,
 }) {
   return ModalUtils.sliverModalSheetPage(
     context: context,
@@ -243,7 +239,6 @@ SliverWoltModalSheetPage _captureStepPage(
           child: _CaptureStepBody(
             day: day,
             initialTranscript: initialTranscript,
-            startListening: startListening,
           ),
         ),
       ),
@@ -257,16 +252,9 @@ SliverWoltModalSheetPage _captureStepPage(
 /// matching the standalone capture surface. A loading/error projection falls
 /// through as "no tracked time" rather than blocking the ritual.
 class _CaptureStepBody extends ConsumerStatefulWidget {
-  const _CaptureStepBody({
-    required this.day,
-    this.initialTranscript,
-    this.startListening = false,
-  });
+  const _CaptureStepBody({required this.day, this.initialTranscript});
 
   final DateTime day;
-
-  /// Starts recording once the step is on screen.
-  final bool startListening;
 
   /// Words the capture opens with, typed in: the user reviews and sends
   /// them like any typed capture.
@@ -281,24 +269,14 @@ class _CaptureStepBodyState extends ConsumerState<_CaptureStepBody> {
   void initState() {
     super.initState();
     final words = widget.initialTranscript?.trim() ?? '';
-    if (words.isEmpty && !widget.startListening) return;
+    if (words.isEmpty) return;
     // After the first frame: a provider is not changed while the tree
     // builds, and by then the capture content watches it, keeping it alive.
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      final capture = ref.read(captureControllerProvider.notifier);
-      if (words.isNotEmpty) {
-        capture
-          ..startTyping()
-          ..updateTranscript(words);
-        return;
-      }
-      // The same call the voice orb makes on its first tap — but only from
-      // rest: on a capture already under way or holding words, a toggle would
-      // stop or discard it instead of starting one.
-      final phase = ref.read(captureControllerProvider).phase;
-      if (phase != CapturePhase.idle && phase != CapturePhase.error) return;
-      await capture.toggle(forDate: widget.day);
+      ref.read(captureControllerProvider.notifier)
+        ..startTyping()
+        ..updateTranscript(words);
     });
   }
 
@@ -345,7 +323,7 @@ class _CaptureStepBarState extends ConsumerState<_CaptureStepBar> {
     try {
       final captureId = await agent.submitCapture(
         transcript: transcript,
-        capturedAt: _capturedAtForDay(widget.day),
+        capturedAt: capturedAtForDay(widget.day, clock.now()),
         dayDate: widget.day,
         audioId: state.audioId,
       );
@@ -464,7 +442,11 @@ SliverWoltModalSheetPage _reconcileStepPage(
       SliverToBoxAdapter(child: _ReconcileStepContent(params: params)),
       const SliverToBoxAdapter(child: SizedBox(height: _barClearance)),
     ],
-    stickyActionBar: _ReconcileStepBar(params: params, day: day),
+    stickyActionBar: _ReconcileStepBar(
+      params: params,
+      day: day,
+      onReRecord: onBack,
+    ),
   );
 }
 
@@ -508,10 +490,18 @@ class _ReconcileStepContent extends ConsumerWidget {
 }
 
 class _ReconcileStepBar extends ConsumerStatefulWidget {
-  const _ReconcileStepBar({required this.params, required this.day});
+  const _ReconcileStepBar({
+    required this.params,
+    required this.day,
+    required this.onReRecord,
+  });
 
   final ReconcileParams params;
   final DateTime day;
+
+  /// Back to where the words came from: the Capture step in the create
+  /// flow, the Day composer (closing the sheet) for a composer check-in.
+  final VoidCallback onReRecord;
 
   @override
   ConsumerState<_ReconcileStepBar> createState() => _ReconcileStepBarState();
@@ -560,7 +550,7 @@ class _ReconcileStepBarState extends ConsumerState<_ReconcileStepBar> {
           label: messages.dailyOsNextReconcileReRecord,
           fillColor: tokens.colors.surface.focusPressed,
           enabled: !_pushing,
-          onTap: () => WoltModalSheet.of(context).popPage(),
+          onTap: widget.onReRecord,
         ),
         DsGlassPill(
           icon: LottiIcons.forward,

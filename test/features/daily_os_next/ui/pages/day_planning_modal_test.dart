@@ -175,7 +175,7 @@ Future<void> _openCreate(
   MockDayAgent? agent,
   List<TimeBlock> actualBlocks = const [],
   Size size = const Size(420, 900),
-  DayPlanningCreate intent = const DayPlanningCreate(),
+  DayPlanningIntent intent = const DayPlanningCreate(),
 }) async {
   await tester.pumpWidget(
     makeTestableWidget(
@@ -318,79 +318,6 @@ void main() {
       expect(capture.phase, CapturePhase.captured);
       expect(capture.transcript, 'Move the count to the afternoon');
       expect(find.byIcon(LottiIcons.forward), findsOneWidget);
-    });
-
-    testWidgets('startListening opens the capture already recording', (
-      tester,
-    ) async {
-      late _FakeCaptureController capture;
-      await _openCreate(
-        tester,
-        captureFactory: () =>
-            capture = _FakeCaptureController(const CaptureState.idle()),
-        intent: const DayPlanningCreate(startListening: true),
-      );
-
-      expect(find.byType(CaptureModalContent), findsOneWidget);
-      expect(capture.lastToggleForDate, DateTime(2024, 3, 15));
-    });
-
-    testWidgets('a plain open waits for the user to tap the orb', (
-      tester,
-    ) async {
-      late _FakeCaptureController capture;
-      await _openCreate(
-        tester,
-        captureFactory: () =>
-            capture = _FakeCaptureController(const CaptureState.idle()),
-      );
-
-      expect(capture.lastToggleForDate, isNull);
-    });
-
-    testWidgets('startListening leaves a capture that holds words alone', (
-      tester,
-    ) async {
-      late _FakeCaptureController capture;
-      await _openCreate(
-        tester,
-        captureFactory: () => capture = _FakeCaptureController(
-          const CaptureState(
-            phase: CapturePhase.captured,
-            transcript: 'Already said',
-            amplitudes: [],
-          ),
-        ),
-        intent: const DayPlanningCreate(startListening: true),
-      );
-
-      expect(capture.lastToggleForDate, isNull);
-      expect(
-        ProviderScope.containerOf(
-          tester.element(find.byType(CaptureModalContent)),
-        ).read(captureControllerProvider).transcript,
-        'Already said',
-      );
-    });
-
-    testWidgets('typed words win over startListening', (tester) async {
-      late _FakeCaptureController capture;
-      await _openCreate(
-        tester,
-        captureFactory: () =>
-            capture = _FakeCaptureController(const CaptureState.idle()),
-        intent: const DayPlanningCreate(
-          initialTranscript: 'Call mom about Sunday',
-          startListening: true,
-        ),
-      );
-
-      expect(capture.lastToggleForDate, isNull);
-      final state = ProviderScope.containerOf(
-        tester.element(find.byType(CaptureModalContent)),
-      ).read(captureControllerProvider);
-      expect(state.phase, CapturePhase.captured);
-      expect(state.transcript, 'Call mom about Sunday');
     });
 
     testWidgets('idle bar offers only the "type instead" action', (
@@ -698,6 +625,35 @@ void main() {
 
       expect(result.settled, isTrue);
       expect(result.value, isNull);
+    });
+
+    testWidgets('a composer check-in opens straight at Reconcile', (
+      tester,
+    ) async {
+      await _openCreate(
+        tester,
+        agent: _fastAgent(),
+        intent: const DayPlanningReconcile(CaptureId('cap_composer')),
+      );
+
+      expect(find.byType(ReconcileModalContent), findsOneWidget);
+      expect(find.byType(CaptureModalContent), findsNothing);
+    });
+
+    testWidgets('re-record on a composer check-in closes the sheet', (
+      tester,
+    ) async {
+      await _openCreate(
+        tester,
+        agent: _fastAgent(),
+        intent: const DayPlanningReconcile(CaptureId('cap_composer')),
+      );
+      await _tapPill(tester, _l10n(tester).dailyOsNextReconcileReRecord);
+
+      // Back to the Day composer, not to a Capture step it never had.
+      expect(find.byType(ReconcileModalContent), findsNothing);
+      expect(find.byType(CaptureModalContent), findsNothing);
+      expect(find.text('open'), findsOneWidget);
     });
 
     testWidgets('reconcile re-record steps back to capture', (tester) async {
