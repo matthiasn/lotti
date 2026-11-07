@@ -498,7 +498,8 @@ On a planned day the footer is one `DayComposer` — "What should change?", with
 On a drafted day its header row carries the three quick refinements as one
 horizontally scrolling chip row; at large accessibility text sizes
 (`kDailyOsHideCoachingScale`) the chips are dropped so the field keeps its
-height. The day's stage action sits beside the field — the sticky bottom bar
+height, and while a take records or transcribes they hide with the field, so
+no chip opens Refine over the shared recorder. The day's stage action sits beside the field — the sticky bottom bar
 is where a screen's primary action lives, in thumb reach on a phone: *Looks
 good* while drafted, *Wrap up* (the shutdown) once committed. It shows while
 the field is empty and nothing records, beside the field while that leaves

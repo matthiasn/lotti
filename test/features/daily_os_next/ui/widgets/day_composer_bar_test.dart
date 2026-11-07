@@ -123,7 +123,8 @@ void main() {
     expect(texts, ['Finished transcript']);
   });
 
-  testWidgets("a replacement takes the field's place; errors read below", (
+  testWidgets("a replacement takes the field's place and the header's; "
+      'errors read below', (
     tester,
   ) async {
     await tester.pumpWidget(
@@ -131,6 +132,7 @@ void main() {
         Material(
           child: DayComposerBar(
             hintText: 'Talk or type a check-in',
+            header: const Text('Quick refinements'),
             replacement: const Text('Recording…'),
             errorText: 'The microphone is off',
             onStartVoice: () => voices.add(1),
@@ -143,6 +145,8 @@ void main() {
 
     expect(find.text('Recording…'), findsOneWidget);
     expect(find.byType(ChatComposerField), findsNothing);
+    // No chip may open a flow over a take that is still recording.
+    expect(find.text('Quick refinements'), findsNothing);
     expect(find.text('The microphone is off'), findsOneWidget);
   });
 
@@ -225,6 +229,32 @@ void main() {
       expect(stage.top, greaterThan(field.bottom));
       expect(stage.width, field.width);
       expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('typing and clearing keep the same field, focused', (
+      tester,
+    ) async {
+      await pumpWithTrailing(tester, 402);
+      final besideWidth = tester.getSize(find.byType(ChatComposerField)).width;
+      await tester.showKeyboard(find.byType(TextField));
+      final editable = tester.state<EditableTextState>(
+        find.byType(EditableText),
+      );
+
+      tester.testTextInput.enterText('less meetings');
+      await tester.pump();
+      expect(
+        tester.getSize(find.byType(ChatComposerField)).width,
+        greaterThan(besideWidth),
+      );
+      tester.testTextInput.enterText('');
+      await tester.pump();
+
+      // A remount would hand back a new, unfocused field — and close a
+      // phone's keyboard after the first keystroke.
+      expect(tester.state(find.byType(EditableText)), same(editable));
+      expect(editable.widget.focusNode.hasFocus, isTrue);
+      expect(find.byKey(stageKey), findsOneWidget);
     });
 
     testWidgets('gives the field the whole width once there are words', (

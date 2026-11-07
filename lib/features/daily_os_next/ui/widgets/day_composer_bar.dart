@@ -38,7 +38,8 @@ class DayComposerBar extends StatefulWidget {
   });
 
   /// Shown above the field, inside the bar's reading column — quick
-  /// refinements on a planned day.
+  /// refinements on a planned day. Hidden while [replacement] shows, so
+  /// nothing opens a flow over a take that is still recording.
   final Widget? header;
 
   /// Beside the field, in thumb reach, while the field is empty and nothing
@@ -112,10 +113,13 @@ class _DayComposerBarState extends State<DayComposerBar> {
 
   Widget _withTrailing(BuildContext context, Widget field) {
     final trailing = widget.trailing;
-    if (trailing == null || _controller.text.trim().isNotEmpty) return field;
+    if (trailing == null) return field;
+    final show = _controller.text.trim().isEmpty;
+    // Same widget at the same index either way, so the field keeps its
+    // state and focus while the next step comes and goes.
     return _FieldWithTrailing(
-      gap: context.designTokens.spacing.step3,
-      children: [field, trailing],
+      gap: show ? context.designTokens.spacing.step3 : 0,
+      children: [field, if (show) trailing else const SizedBox.shrink()],
     );
   }
 
@@ -140,7 +144,8 @@ class _DayComposerBarState extends State<DayComposerBar> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                if (widget.header case final header?) ...[
+                if (widget.header case final header?
+                    when widget.replacement == null) ...[
                   header,
                   SizedBox(height: tokens.spacing.step3),
                 ],

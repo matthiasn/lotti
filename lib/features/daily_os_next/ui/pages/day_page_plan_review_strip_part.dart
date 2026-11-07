@@ -11,8 +11,8 @@ enum _QuickRefinement { tooMuch, moveLighter, addBuffer }
 /// sit on one time axis. Agenda ("what today is about") and Activity are a
 /// tap away, and a pick survives day changes through
 /// [dailyOsNextPlanViewProvider]. With a plan, the footer is the composer
-/// asking what should change (spoken or typed straight into Refine), and the
-/// header carries the day's next step — "Looks good" or "Wrap up".
+/// asking what should change (spoken or typed straight into Refine), with the
+/// day's next step — "Looks good" or "Wrap up" — beside its field.
 ///
 /// With no plan ([hasPlan] false — the route-level root passes a
 /// synthetic empty [draft]) the page still lands on Day, so recorded
