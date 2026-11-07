@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
+import 'package:lotti/classes/agents/agent_config.dart';
 import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
@@ -11,6 +14,8 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/state/ai_runtime_settings_controller.dart';
 import 'package:lotti/features/ai/state/profile_automation_providers.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
+import 'package:lotti/providers/update_notifications_providers.dart';
+import 'package:lotti/services/db_notification.dart';
 
 /// Shared detailed inference resolution used by agent headers and setup sheets.
 /// A kind with an entry in [agentResolvedSetupResolversProvider] (relationship
@@ -38,6 +43,21 @@ goalAgentResolvedSetupProvider = FutureProvider.autoDispose
       name: 'goalAgentResolvedSetupProvider',
     );
 
+/// Re-resolves the provider [ref] belongs to on every category edit while
+/// [config]'s setup follows its category: that setup resolves from what the
+/// category names now, so a surface still showing it — the read-aloud
+/// route, query chat — must move with the category as the next wake does.
+void _reResolveOnCategoryEdits(Ref ref, AgentConfig config) {
+  if (!(config.inferenceSetup?.followsCategory ?? false)) return;
+  final subscription = ref
+      .watch(maybeUpdateNotificationsProvider)
+      ?.updateStream
+      .listen((ids) {
+        if (ids.contains(categoriesNotification)) ref.invalidateSelf();
+      });
+  ref.onDispose(() => unawaited(subscription?.cancel()));
+}
+
 Future<ResolvedAgentSetup?> goalAgentResolvedSetup(
   Ref ref,
   String agentId,
@@ -46,6 +66,7 @@ Future<ResolvedAgentSetup?> goalAgentResolvedSetup(
   final identity = identityEntity?.mapOrNull(agent: (value) => value);
   if (identity == null || identity.kind != AgentKinds.goalAgent) return null;
 
+  _reResolveOnCategoryEdits(ref, identity.config);
   ref.watch(
     defaultInferenceProfileControllerProvider.select((value) => value.value),
   );
@@ -83,6 +104,7 @@ Future<ResolvedAgentSetup?> taskAgentResolvedSetup(
   );
   if (version == null) return null;
 
+  _reResolveOnCategoryEdits(ref, identity.config);
   ref.watch(
     defaultInferenceProfileControllerProvider.select((value) => value.value),
   );
