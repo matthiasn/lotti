@@ -310,6 +310,7 @@ class _AgentChatViewState extends ConsumerState<AgentChatView> {
                                       measuredHeights: _measuredHeights,
                                       conversational: widget.conversational,
                                       replyTextStyle: widget.replyTextStyle,
+                                      replyBodyBuilder: widget.replyBodyBuilder,
                                       onLinkTap: widget.onLinkTap == null
                                           ? null
                                           : (url, title) => widget.onLinkTap!(

@@ -94,6 +94,7 @@ void main() {
     VoidCallback? onSendSpoken,
     double? contentMaxWidth,
     bool composerEnabled = true,
+    AgentReplyBodyBuilder? replyBodyBuilder,
   }) async {
     final recorder = _Recorder(status);
     await tester.pumpWidget(
@@ -119,6 +120,7 @@ void main() {
                 onSendSpoken: onSendSpoken,
                 contentMaxWidth: contentMaxWidth,
                 composerEnabled: composerEnabled,
+                replyBodyBuilder: replyBodyBuilder,
               ),
             ),
           ),
@@ -248,6 +250,56 @@ void main() {
               .step5,
         ),
       );
+    });
+  });
+
+  group('a host-drawn reply body', () {
+    testWidgets('draws her reply where the host asks, her words in it as '
+        'the view draws them; other replies as usual', (tester) async {
+      final asked = <String>[];
+      await pumpView(
+        tester,
+        history: [
+          AgentChatMessage(
+            id: 'drawn',
+            role: AgentChatRole.agent,
+            text: 'ignored',
+            createdAt: DateTime(2026, 11, 7, 9),
+          ),
+          AgentChatMessage(
+            id: 'plain',
+            role: AgentChatRole.agent,
+            text: 'Left as she wrote it.',
+            createdAt: DateTime(2026, 11, 7, 9, 1),
+          ),
+          AgentChatMessage(
+            id: 'mine',
+            role: AgentChatRole.user,
+            text: 'And mine?',
+            createdAt: DateTime(2026, 11, 7, 9, 2),
+          ),
+        ],
+        replyBodyBuilder: (context, message, prose) {
+          asked.add(message.id);
+          if (message.id != 'drawn') return null;
+          return Column(
+            children: [
+              prose('Her **own** words'),
+              const SizedBox(key: Key('drawn-by-host'), height: 8),
+            ],
+          );
+        },
+      );
+
+      expect(find.byKey(const Key('drawn-by-host')), findsOne);
+      expect(find.textContaining('own', findRichText: true), findsOne);
+      expect(find.textContaining('ignored', findRichText: true), findsNothing);
+      expect(
+        find.textContaining('Left as she wrote it.', findRichText: true),
+        findsOne,
+      );
+      // Asked only for her replies: the user's words are never drawn so.
+      expect(asked, isNot(contains('mine')));
     });
   });
 

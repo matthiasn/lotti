@@ -15,6 +15,14 @@ typedef AgentChatMessageDividerBuilder =
 
 /// Reusable durable-agent conversation surface. Consumers own sending and
 /// draft state; this component owns only projection, bubbles and composition.
+/// Draws an agent reply's body; see [AgentChatView.replyBodyBuilder].
+typedef AgentReplyBodyBuilder =
+    Widget? Function(
+      BuildContext context,
+      AgentChatMessage message,
+      Widget Function(String markdown) prose,
+    );
+
 class AgentChatView extends ConsumerStatefulWidget {
   const AgentChatView({
     required this.agentId,
@@ -51,6 +59,7 @@ class AgentChatView extends ConsumerStatefulWidget {
     this.conversational = false,
     this.voiceFirst = false,
     this.contentMaxWidth,
+    this.replyBodyBuilder,
     super.key,
   });
 
@@ -71,6 +80,13 @@ class AgentChatView extends ConsumerStatefulWidget {
   /// composer's controls share, so the field's edges line up with the
   /// messages above it; null lets both take the full width.
   final double? contentMaxWidth;
+
+  /// Draws an agent reply's body in place of its Markdown, for a host whose
+  /// replies carry more than words (the front agent's lists of tasks, as
+  /// task rows). `prose` renders a stretch of Markdown as the view renders
+  /// replies — style, links — so the host keeps her words as they are around
+  /// what it draws. Returns null for a reply drawn as usual.
+  final AgentReplyBodyBuilder? replyBodyBuilder;
 
   final String agentId;
   final String agentName;
@@ -420,10 +436,12 @@ class _MessageBubble extends StatelessWidget {
     this.replyTextStyle,
     this.onLinkTap,
     this.conversational = false,
+    this.replyBodyBuilder,
     super.key,
   });
 
   final bool conversational;
+  final AgentReplyBodyBuilder? replyBodyBuilder;
   final AgentChatMessage message;
   final String agentName;
   final Widget? attachment;
@@ -435,6 +453,12 @@ class _MessageBubble extends StatelessWidget {
 
   /// List-owned reply heights; see [_AgentChatViewState._measuredHeights].
   final Map<String, double> measuredHeights;
+
+  /// Her words' style: the host's, else body text, high emphasis.
+  TextStyle _replyStyle(DsTokens tokens) =>
+      (replyTextStyle ?? tokens.typography.styles.body.bodyMedium).copyWith(
+        color: tokens.colors.text.highEmphasis,
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -497,21 +521,26 @@ class _MessageBubble extends StatelessWidget {
                   else
                     ExcludeSemantics(
                       excluding: onLinkTap == null,
-                      child: _CollapsibleAgentMarkdown(
-                        onLinkTap: onLinkTap,
-                        cacheKey: message.id,
-                        measuredHeights: measuredHeights,
-                        text: message.text,
-                        style:
-                            (replyTextStyle ??
-                                    tokens.typography.styles.body.bodyMedium)
-                                .copyWith(
-                                  color: tokens.colors.text.highEmphasis,
-                                ),
-                        fadeColor: conversational
-                            ? tokens.colors.background.level01
-                            : tokens.colors.background.level02,
-                      ),
+                      child:
+                          replyBodyBuilder?.call(
+                            context,
+                            message,
+                            (markdown) => AgentMarkdownView(
+                              markdown,
+                              style: _replyStyle(tokens),
+                              onLinkTap: onLinkTap,
+                            ),
+                          ) ??
+                          _CollapsibleAgentMarkdown(
+                            onLinkTap: onLinkTap,
+                            cacheKey: message.id,
+                            measuredHeights: measuredHeights,
+                            text: message.text,
+                            style: _replyStyle(tokens),
+                            fadeColor: conversational
+                                ? tokens.colors.background.level01
+                                : tokens.colors.background.level02,
+                          ),
                     ),
                   if (attachment != null) ...[
                     SizedBox(height: tokens.spacing.step3),

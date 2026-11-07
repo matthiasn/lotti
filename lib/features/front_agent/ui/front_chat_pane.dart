@@ -13,6 +13,7 @@ import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
+import 'package:lotti/features/front_agent/model/front_reply_parts.dart';
 import 'package:lotti/features/front_agent/state/front_chat_controller.dart';
 import 'package:lotti/features/front_agent/state/front_chat_thread_provider.dart';
 import 'package:lotti/features/front_agent/state/front_conversation_providers.dart';
@@ -25,6 +26,7 @@ import 'package:lotti/features/front_agent/ui/front_chat_voice.dart';
 import 'package:lotti/features/front_agent/ui/front_conversation_list.dart';
 import 'package:lotti/features/front_agent/ui/front_door_card.dart';
 import 'package:lotti/features/front_agent/ui/front_door_wizards.dart';
+import 'package:lotti/features/front_agent/ui/front_task_list.dart';
 import 'package:lotti/features/front_agent/ui/front_turn_cost_line.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -352,6 +354,27 @@ class FrontChatThreadView extends ConsumerWidget {
         settingsDefaultDictationTargetProvider,
       ),
       onLinkTap: (_, url, title) => openLink(url, title),
+      // A list of tasks in her words is drawn as task rows, her words
+      // around it as she wrote them; a reply without one is drawn as usual.
+      replyBodyBuilder: (context, message, prose) {
+        final parts = frontReplyParts(message.text);
+        if (!parts.any((part) => part is FrontReplyTasks)) return null;
+        final tokens = context.designTokens;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          spacing: tokens.spacing.step4,
+          children: [
+            for (final part in parts)
+              switch (part) {
+                FrontReplyText(:final markdown) => prose(markdown),
+                FrontReplyTasks(:final tasks) => FrontTaskList(
+                  tasks: tasks,
+                  onOpen: (id) => openLink('lotti://task/$id', ''),
+                ),
+              },
+          ],
+        );
+      },
       onRetry: controller.retry,
       attachmentBuilder: (context, message) {
         if (thread == null) return null;

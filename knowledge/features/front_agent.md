@@ -120,6 +120,14 @@ sources:
     resource: ../../lib/features/front_agent/ui/front_chat_voice.dart
     title: FrontVoice — her spoken reply, its gating, her pose, the voice an answer said again keeps
     last_modified: 2026-11-07
+  - id: reply-parts
+    resource: ../../lib/features/front_agent/model/front_reply_parts.dart
+    title: frontReplyParts — her words and the lists of tasks in them
+    last_modified: 2026-11-07
+  - id: task-list
+    resource: ../../lib/features/front_agent/ui/front_task_list.dart
+    title: FrontTaskList — her lists of tasks as a card of task rows
+    last_modified: 2026-11-07
   - id: voice-switch
     resource: ../../lib/features/front_agent/ui/front_voice_switch.dart
     title: FrontVoiceSwitch — mutes her where she speaks
@@ -790,6 +798,21 @@ and the journal door reads it back and narrows her allow-list by it, never
 widening it (`frontNarrowedCategories`): with no allow-list those categories
 are the scope, and ones that fall outside the allow-list leave it as it is,
 since an empty scope would be the whole journal. New turns carry none.
+
+**Her lists of tasks are task rows.** The prompt asks her to write two
+tasks or more as a Markdown list, one task link per line. The pane hands
+`AgentChatView.replyBodyBuilder` a body for any reply that holds such a list:
+`frontReplyParts` cuts the reply into her words and the runs of
+`frontTaskListMinimum` (2) or more consecutive list lines that are one task
+link and nothing else, and each run is drawn as `FrontTaskList` — one card of
+`FrontTaskRow`s, between her words as she wrote them (rendered by the view's
+own Markdown, so links and style are unchanged). A row reads the task live
+(`taskLiveDataProvider`, through `.value`, so a reload keeps the row): its
+`StatusGlyph`, its title, its status and category, and — while it is not done
+or rejected — the tasks list's own `DueDateText`; until it loads, or if it is
+gone, the title she gave it stands alone. A tap opens the task through the
+pane's link handler, closing her surface first. A single task, or a line that
+says more than the link, stays a link in her words.
 
 A link in her bubble or in a card's answer goes through the pane's one
 handler: a route in the app (`internalRouteFromMarkdownUrl`) closes her

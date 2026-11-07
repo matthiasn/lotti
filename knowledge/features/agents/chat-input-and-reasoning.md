@@ -69,6 +69,10 @@ centred reading column: the list's side gutter grows with the window (never
 under `step5`) and the composer keeps its controls to the same width, so the
 field's edges line up with the messages while the whole pane scrolls; the
 front agent passes `kProseMeasureWidth`, other hosts take the full width.
+`replyBodyBuilder` lets a host draw an agent reply's body itself, given a
+`prose` function that renders a stretch of Markdown as the view renders
+replies; a null return keeps the usual collapsible Markdown. The front agent
+uses it to draw her lists of tasks as task rows.
 A view with `composerEnabled` off ignores the shared recorder's results — no
 error toast, no draft, no send: when two views of one conversation are
 mounted (the front agent's stage over its pane), only the one with the

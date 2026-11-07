@@ -31,7 +31,8 @@ today, yesterday, this week, the past 7 or 30 days, this month or last
 month: she sums it per category, with the numbers the Insights page shows,
 and says it as text. She knows the categories by name: one
 named in the question narrows the answer — there is nothing to pick. Two
-tasks or more come back as a list, one per line. Every task
+tasks or more come back as a card of task rows — status, category, when it
+is due — rather than a run of links. Every task
 or project she names is a link that closes her and opens it, and every
 answer is shown as the Markdown it was written in. A statement under a task or a project is a **proposal**: one tap
 files the user's words verbatim as an entry under it, and only the tap
@@ -73,7 +74,9 @@ and a proposal she got wrong goes to the inbox rather than being retyped.
   setup-resolver contributions merged in `app_bootstrap.dart`.
 - `ui/` — her header (her face, her name and the conversation's title, her
   voice's controls), the hero that greets a conversation not begun (her
-  bust), the switch that mutes her (`front_voice_switch.dart`), her voice (`front_chat_voice.dart`: the spoken reply, when
+  bust), the switch that mutes her (`front_voice_switch.dart`), the card her
+  lists of tasks are drawn as (`front_task_list.dart`, over
+  `model/front_reply_parts.dart`), her voice (`front_chat_voice.dart`: the spoken reply, when
   she may speak, the pose she holds), her voice's control and her stage
   (`front_voice_controls.dart`: stop her, or have her say her latest answer
   again from the start, in the voice she said it in; stand her up full

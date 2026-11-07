@@ -8,8 +8,10 @@
   is the same setting as in the companion settings.
 - **No more category chips above the field.** Name the category in your
   question ("what's overdue in Work?") and she narrows her answer to it.
-- **Lists of tasks are lists.** When she names two or more tasks, they come
-  back one per line instead of in a sentence of links.
+- **Tasks she lists are task rows.** When she names two or more tasks, they
+  show as a card of rows instead of a sentence of links: each with its
+  status, its category and when it is due, kept up to date, and a tap opens
+  it.
 - **Full screen uses the space.** On a desktop window her full-screen stage
   keeps the conversation beside her, so you can read and answer while she
   speaks.
