@@ -62,8 +62,14 @@ class _FrontStageControlsState extends ConsumerState<FrontStageControls> {
   /// listening hands free.
   bool _fromIdle = false;
 
-  /// Pressed long enough, while she listens, to be a hold: letting go sends.
-  bool _held = false;
+  /// Pressed for `kLongPressTimeout`, whether or not the microphone has
+  /// opened yet: a first permission prompt or a slow device can take longer.
+  bool _pressedLong = false;
+
+  /// A hold: pressed long enough, and she is listening — so letting go
+  /// sends, however late the microphone opened, and a refused one never
+  /// promises a send.
+  bool get _held => _pressedLong && _status == ChatRecorderStatus.recording;
 
   /// Dragged off the disc: letting go sends nothing.
   bool _off = false;
@@ -124,13 +130,9 @@ class _FrontStageControlsState extends ConsumerState<FrontStageControls> {
     HapticFeedback.selectionClick().ignore();
     _start();
     _holdTimer = Timer(kLongPressTimeout, () {
-      // Only a hold she is listening to: a microphone refused never
-      // promises a send.
-      if (!mounted || !_pressing || _status != ChatRecorderStatus.recording) {
-        return;
-      }
-      HapticFeedback.mediumImpact().ignore();
-      setState(() => _held = true);
+      if (!mounted || !_pressing) return;
+      setState(() => _pressedLong = true);
+      if (_held) HapticFeedback.mediumImpact().ignore();
     });
   }
 
@@ -165,7 +167,7 @@ class _FrontStageControlsState extends ConsumerState<FrontStageControls> {
     setState(() {
       _pressing = false;
       _fromIdle = false;
-      _held = false;
+      _pressedLong = false;
       _off = false;
     });
   }

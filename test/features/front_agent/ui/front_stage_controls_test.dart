@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -30,10 +32,14 @@ import '../../tts/test_utils.dart';
 /// The shared recorder as the stage drives it: what it was asked to do, and
 /// the transcription target each take was started with.
 class _Recorder extends ChatRecorderController {
-  _Recorder({this.micAllowed = true});
+  _Recorder({this.micAllowed = true, this.opening});
 
   /// Whether the microphone opens: a refused one leaves the recorder idle.
   final bool micAllowed;
+
+  /// Holds the microphone's opening back until completed — a permission
+  /// prompt, a slow device.
+  final Future<void>? opening;
   int stops = 0;
   int cancels = 0;
   final targets = <ChatTranscriptionTargetResolver?>[];
@@ -48,6 +54,7 @@ class _Recorder extends ChatRecorderController {
     ChatDictionaryCategoryResolver? resolveDictionaryCategory,
   }) async {
     targets.add(resolveTranscriptionTarget);
+    if (opening case final opening?) await opening;
     if (micAllowed) {
       state = state.copyWith(status: ChatRecorderStatus.recording);
     }
@@ -247,6 +254,30 @@ void main() {
     await tester.pump();
     expect(recorder.cancels, 1);
     expect(recorder.stops, 0);
+  });
+
+  testWidgets('a hold is a hold however late the microphone opens: '
+      'letting go after it opened sends', (tester) async {
+    final opened = Completer<void>();
+    recorder = _Recorder(opening: opened.future);
+    await pump(tester);
+
+    final finger = await tester.startGesture(
+      tester.getCenter(find.byKey(FrontStageControlKeys.talk)),
+    );
+    // Held past the threshold while the microphone is still opening.
+    await tester.pump(kLongPressTimeout * 2);
+    expect(caption(tester), 'Tap or hold to talk');
+
+    opened.complete();
+    await tester.pump();
+    await tester.pump();
+    expect(caption(tester), 'Release to send');
+
+    await finger.up();
+    await tester.pump();
+    expect(recorder.stops, 1);
+    expect(recorder.cancels, 0);
   });
 
   testWidgets('a refused microphone never promises a send', (tester) async {
