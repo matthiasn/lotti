@@ -325,6 +325,36 @@ void main() {
     expect(caption(tester), 'Tap or hold to talk');
   });
 
+  testWidgets('Escape while the microphone is still opening lets the take '
+      "go before it listens; at rest Escape is not the disc's", (
+    tester,
+  ) async {
+    final opened = Completer<void>();
+    recorder = _Recorder(opening: opened.future);
+    await pump(tester);
+    Focus.of(
+      tester.element(find.byKey(FrontStageControlKeys.talk)),
+    ).requestFocus();
+    await tester.pump();
+
+    // At rest the disc lets Escape through, to whatever closes the stage.
+    expect(
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape),
+      isFalse,
+    );
+    expect(recorder.cancels, 0);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.space);
+    await tester.pump();
+    expect(recorder.targets, hasLength(1), reason: 'the start is pending');
+
+    expect(
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape),
+      isTrue,
+    );
+    expect(recorder.cancels, 1);
+  });
+
   for (final key in [LogicalKeyboardKey.space, LogicalKeyboardKey.enter]) {
     testWidgets('${key.keyLabel} starts her listening hands free, and sends', (
       tester,

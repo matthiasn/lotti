@@ -92,13 +92,22 @@ class _FrontStageControlsState extends ConsumerState<FrontStageControls> {
       ref.read(frontChatControllerProvider).isSending ||
       ref.read(frontSpokenTurnProvider) != null;
 
-  void _start() => _recorder
-      .start(
-        resolveTranscriptionTarget: ref.read(
-          settingsDefaultDictationTargetProvider,
-        ),
-      )
-      .ignore();
+  /// A start this disc asked for that has not settled yet: the microphone
+  /// may still be opening (a permission prompt, a slow device) while the
+  /// recorder reads idle.
+  bool _starting = false;
+
+  void _start() {
+    _starting = true;
+    _recorder
+        .start(
+          resolveTranscriptionTarget: ref.read(
+            settingsDefaultDictationTargetProvider,
+          ),
+        )
+        .whenComplete(() => _starting = false)
+        .ignore();
+  }
 
   void _send() => _recorder.stopAndTranscribe().ignore();
 
@@ -250,9 +259,11 @@ class _FrontStageControlsState extends ConsumerState<FrontStageControls> {
                 _tap();
                 return KeyEventResult.handled;
               // Started from the keyboard, the disc keeps the focus the
-              // pill would take: Escape lets it go here too.
+              // pill would take: Escape lets it go here too — a start still
+              // opening the microphone included, so it never goes on to
+              // listen. At rest, Escape is the stage's.
               case LogicalKeyboardKey.escape
-                  when _status != ChatRecorderStatus.idle:
+                  when _starting || _status != ChatRecorderStatus.idle:
                 _cancelTake();
                 return KeyEventResult.handled;
               case _:
