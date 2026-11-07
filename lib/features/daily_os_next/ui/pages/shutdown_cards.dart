@@ -416,13 +416,6 @@ class _ShutdownFooterState extends ConsumerState<ShutdownFooter> {
           ),
           onPressed: () => Navigator.of(context).maybePop(),
         ),
-        TextButton(
-          style: TextButton.styleFrom(
-            foregroundColor: tokens.colors.text.mediumEmphasis,
-          ),
-          onPressed: () => Navigator.of(context).maybePop(),
-          child: Text(messages.dailyOsNextShutdownSaveAndClose),
-        ),
       ],
       primary: FilledButton.icon(
         icon: _closing

@@ -872,7 +872,7 @@ void main() {
 
         final messages = tester.element(find.byType(CapturePage)).messages;
         // The personalised greeting is merged into the single greeting line
-        // ("<Hi Alex 👋> · <greeting word>").
+        // ("<Hi Alex> · <greeting word>").
         expect(
           find.textContaining(messages.dailyOsNextGreetingHiName('Alex')),
           findsOneWidget,

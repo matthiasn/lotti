@@ -11,8 +11,6 @@
 /// The "AI is thinking" decoder-bars use a fragment shader that does not
 /// compile under headless `flutter test`, so the shader paints nothing in
 /// these captures — review the bar layout/clearance, not the shader itself.
-/// The 👋 emoji in the greeting renders as tofu for the same reason (no
-/// emoji font in the test harness); it is correct on devices.
 ///
 /// Opt-in (real-font loading leaks process-wide — see `main`). Run:
 /// `LOTTI_SCREENSHOT_DIR=/tmp/day_planning fvm flutter test \

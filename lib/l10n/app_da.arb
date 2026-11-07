@@ -2483,7 +2483,6 @@
   "dailyOsNextDraftingProgressQueued": "Sat i kø",
   "dailyOsNextDraftingProgressReading": "Læse-check-in",
   "dailyOsNextDraftingProgressSaving": "Opsparingsplan",
-  "dailyOsNextDraftingReasoningOverline": "✦ Ræsonnement",
   "dailyOsNextDraftingRecoveryBody": "Vågen gav ikke en plan. Prøv igen, eller gå tilbage og juster beslutningerne, før du udkaster.",
   "dailyOsNextDraftingRecoveryTitle": "Udkastningen gik i stå",
   "dailyOsNextDraftingRetry": "Prøv igen",
@@ -2508,7 +2507,7 @@
   "dailyOsNextGenericError": "Noget gik galt. Prøv igen om et øjeblik.",
   "dailyOsNextGreetingAfternoon": "God eftermiddag.",
   "dailyOsNextGreetingEvening": "God aften.",
-  "dailyOsNextGreetingHiName": "Hej {name} 👋",
+  "dailyOsNextGreetingHiName": "Hej {name}",
   "@dailyOsNextGreetingHiName": {
     "placeholders": {
       "name": {
@@ -2578,16 +2577,16 @@
   "dailyOsNextRefineHeadlineDiffReady": "Her er, hvad jeg ville ændre.",
   "dailyOsNextRefineHeadlineIdle": "Hvad bør ændres?",
   "dailyOsNextRefineHeadlineThinking": "At omarbejde din plan...",
+  "dailyOsNextRefineKeepChanges": "Behold ændringer",
   "dailyOsNextRefineKeepTalking": "Bliv ved med at snakke",
-  "dailyOsNextRefineLooksGood": "Ser godt ud",
   "dailyOsNextRefineNoChanges": "Der kom ingen ændringer i planen. Omformuler det og prøv igen.",
-  "dailyOsNextRefineOverline": "🎤 Finjustering",
+  "dailyOsNextRefineOverline": "Finjustering",
   "dailyOsNextRefineRevert": "Tilbagevend",
   "dailyOsNextRefineStatusAccepted": "Låst inde.",
   "dailyOsNextRefineStatusDiffReady": "Her er, hvad der ændrede sig.",
   "dailyOsNextRefineStatusIdle": "Tryk for at tale.",
   "dailyOsNextRefineStatusListening": "Lytter...",
-  "dailyOsNextRefineStatusThinking": "✦ Omarbejder planen...",
+  "dailyOsNextRefineStatusThinking": "Omarbejder planen...",
   "dailyOsNextRefineTitle": "Forfine planen",
   "dailyOsNextRenameFailed": "Kunne ikke omdøbe — prøve igen.",
   "dailyOsNextReviewAddBuffer": "Tilføj buffer",
@@ -2635,17 +2634,16 @@
       }
     }
   },
-  "dailyOsNextShutdownReflectionOverline": "💬 Refleksion på én linje",
+  "dailyOsNextShutdownReflectionOverline": "Refleksion på én linje",
   "dailyOsNextShutdownReflectionPlaceholder": "f.eks. var morgenen skarp, eftermiddagen trak ud efter kaffen med Sarah trak ud.",
   "dailyOsNextShutdownReflectionPrompt": "Hvordan landede dagen i dag? (Dette fodrer morgendagens udkast.)",
   "dailyOsNextShutdownReflectionSave": "Gem",
   "dailyOsNextShutdownReflectionSpeak": "Sig det",
   "dailyOsNextShutdownReflectionThanks": "Gemt — kommer med i noten til i morgen.",
-  "dailyOsNextShutdownSaveAndClose": "Gem og luk",
   "dailyOsNextShutdownTitle": "Afslutte dagen",
   "dailyOsNextShutdownTomorrowError": "Noten til i morgen kunne ikke skrives.",
   "dailyOsNextShutdownTomorrowNoProvider": "Opsæt en AI-udbyder for at få en note til i morgen.",
-  "dailyOsNextShutdownTomorrowOverline": "✦ Til i morgen",
+  "dailyOsNextShutdownTomorrowOverline": "Til i morgen",
   "dailyOsNextStateDueOnDate": "To {date}",
   "@dailyOsNextStateDueOnDate": {
     "placeholders": {

@@ -2483,7 +2483,6 @@
   "dailyOsNextDraftingProgressQueued": "Köad",
   "dailyOsNextDraftingProgressReading": "Läsincheckning",
   "dailyOsNextDraftingProgressSaving": "Sparplan",
-  "dailyOsNextDraftingReasoningOverline": "✦ Resonemang",
   "dailyOsNextDraftingRecoveryBody": "Vaket gav ingen plan. Försök igen, eller gå tillbaka och justera besluten innan du utkastar.",
   "dailyOsNextDraftingRecoveryTitle": "Draften stannade av",
   "dailyOsNextDraftingRetry": "Försök igen",
@@ -2508,7 +2507,7 @@
   "dailyOsNextGenericError": "Något gick fel. Försök igen om en stund.",
   "dailyOsNextGreetingAfternoon": "God eftermiddag.",
   "dailyOsNextGreetingEvening": "God kväll.",
-  "dailyOsNextGreetingHiName": "Hej {name} 👋",
+  "dailyOsNextGreetingHiName": "Hej {name}",
   "@dailyOsNextGreetingHiName": {
     "placeholders": {
       "name": {
@@ -2578,16 +2577,16 @@
   "dailyOsNextRefineHeadlineDiffReady": "Här är vad jag skulle ändra.",
   "dailyOsNextRefineHeadlineIdle": "Vad bör förändras?",
   "dailyOsNextRefineHeadlineThinking": "Att omarbeta din plan...",
+  "dailyOsNextRefineKeepChanges": "Behåll ändringar",
   "dailyOsNextRefineKeepTalking": "Fortsätt prata",
-  "dailyOsNextRefineLooksGood": "Ser bra ut",
   "dailyOsNextRefineNoChanges": "Inga ändringar i planen kom tillbaka tillbaka. Formulera om det och försök igen.",
-  "dailyOsNextRefineOverline": "🎤 Finjustering",
+  "dailyOsNextRefineOverline": "Finjustering",
   "dailyOsNextRefineRevert": "Återställ",
   "dailyOsNextRefineStatusAccepted": "Låst.",
   "dailyOsNextRefineStatusDiffReady": "Här är vad som förändrades.",
   "dailyOsNextRefineStatusIdle": "Tryck för att prata.",
   "dailyOsNextRefineStatusListening": "Lyssnar...",
-  "dailyOsNextRefineStatusThinking": "✦ Omarbetar planen...",
+  "dailyOsNextRefineStatusThinking": "Omarbetar planen...",
   "dailyOsNextRefineTitle": "Förfina planen",
   "dailyOsNextRenameFailed": "Kunde inte byta namn – försöka igen.",
   "dailyOsNextReviewAddBuffer": "Lägg till buffert",
@@ -2635,17 +2634,16 @@
       }
     }
   },
-  "dailyOsNextShutdownReflectionOverline": "💬 Reflektion på en rad",
+  "dailyOsNextShutdownReflectionOverline": "Reflektion på en rad",
   "dailyOsNextShutdownReflectionPlaceholder": "t.ex. morgonen var skarp, eftermiddagen släpade ut efter kaffet med Sarah som drog ut på tiden.",
   "dailyOsNextShutdownReflectionPrompt": "Hur hamnade dagen? (Detta matar morgondagens utkast.)",
   "dailyOsNextShutdownReflectionSave": "Spara",
   "dailyOsNextShutdownReflectionSpeak": "Säg det",
   "dailyOsNextShutdownReflectionThanks": "Sparat — kommer med i anteckningen inför i morgon.",
-  "dailyOsNextShutdownSaveAndClose": "Spara och stäng",
   "dailyOsNextShutdownTitle": "Avsluta dagen",
   "dailyOsNextShutdownTomorrowError": "Anteckningen inför i morgon kunde inte skrivas.",
   "dailyOsNextShutdownTomorrowNoProvider": "Konfigurera en AI-leverantör för att få en anteckning inför i morgon.",
-  "dailyOsNextShutdownTomorrowOverline": "✦ Till i morgon",
+  "dailyOsNextShutdownTomorrowOverline": "Till i morgon",
   "dailyOsNextStateDueOnDate": "Förfaller: {date}",
   "@dailyOsNextStateDueOnDate": {
     "placeholders": {

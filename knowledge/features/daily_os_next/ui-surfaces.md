@@ -128,7 +128,9 @@ arbitrary five or six lines.
 - **Refine** runs on the same template: idle shows the current plan where the
   spoken words will land, diff rows render in the middle zone with inline
   accept/reject, and the bar carries "Revert" (enabled once a diff is pending) and
-  "Looks good". Quick review buttons on the Day surface open Refine and
+  a confirm pill that says what it does: "Keep changes" while a diff is pending
+  (it accepts every open row, then closes), "Done" otherwise (it just closes).
+  "Looks good" is the Day footer's commit and appears nowhere else. Quick review buttons on the Day surface open Refine and
   immediately submit that prompt through the normal diff/accept/revert path, so
   "Too much", "Move lighter" and "Add buffer" are **shortcuts over the same
   user-gated machinery**, not a separate path.

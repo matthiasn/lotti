@@ -152,8 +152,8 @@ stateDiagram-v2
   `OneShotTextGeneration.generateText`, which records it in the consumption
   ledger as `automation:daily-os-tomorrow-note`.
 - **Close the day** refreshes the note after the decisions and reflection, then
-  leaves; a note that cannot be written does not keep the day open. *Save &
-  close* leaves without rewriting it.
+  leaves; a note that cannot be written does not keep the day open. *Back*
+  leaves without rewriting it.
 - **Tomorrow's draft reads it**: the week context fetches each lookback day's
   note with its plan and summary and renders it under that day as
   `Note for the next day: …`.

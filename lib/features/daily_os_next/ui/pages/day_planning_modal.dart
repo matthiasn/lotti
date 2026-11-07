@@ -724,7 +724,7 @@ class _RefineStepBar extends ConsumerWidget {
     final messages = context.messages;
     final state = ref.watch(refineControllerProvider(draft));
     final notifier = ref.read(refineControllerProvider(draft).notifier);
-    // Reviewing also blocks "Looks good": tapping it there would silently
+    // Reviewing also blocks the confirm pill: tapping it there would silently
     // discard a recorded-but-unsubmitted transcript. An in-flight accept
     // blocks it too — a second tap would double-pop the host route.
     final busy =
@@ -755,11 +755,16 @@ class _RefineStepBar extends ConsumerWidget {
         ),
         DsGlassPill(
           icon: LottiIcons.confirm,
-          label: messages.dailyOsNextRefineLooksGood,
+          // The label says what the tap does: with a pending diff it keeps
+          // the proposed changes; with none it just closes the sheet.
+          // "Looks good" is reserved for the Day footer, where it commits.
+          label: hasPendingDiff
+              ? messages.dailyOsNextRefineKeepChanges
+              : messages.doneButton,
           fillColor: tokens.colors.interactive.enabled,
           foregroundColor: tokens.colors.text.onInteractiveAlert,
           enabled: !busy,
-          // With a pending diff on screen, "Looks good" must PERSIST it —
+          // With a pending diff on screen, "Keep changes" must PERSIST it —
           // accept() resolves all pending rows via the agent and flips to
           // accepted, whose listener pops with the final plan. A bare pop
           // would silently discard everything the user just approved.
