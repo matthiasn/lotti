@@ -14,8 +14,9 @@ import 'package:lotti/services/domain_logging.dart';
 /// Bridges the sync blind spot for goal signals (ADR 0054 Decision 4).
 ///
 /// `WakeOrchestrator` deliberately listens to `localUpdateStream` only —
-/// synced writes must not wake LLM tiers. Bounded observations run goal
-/// *Phase A* directly because it is deterministic and idempotent (keyed
+/// synced writes must not wake LLM tiers. Bounded observations — a habit
+/// check-off, a measurement, a check-in on a goal that counts its minutes —
+/// run goal *Phase A* directly because it is deterministic and idempotent (keyed
 /// registers). Health mutations also advance the report-stale watermark
 /// because exact timestamped evidence can change without moving an aggregate.
 /// High-frequency category-time mutations only advance that watermark;
@@ -30,6 +31,7 @@ class GoalSignalSyncDispatcher {
     required this._phaseA,
     this._domainLogger,
     this._onAgentEvaluated,
+    this._goalEntryIdFor,
   });
 
   final AgentService _agentService;
@@ -41,6 +43,10 @@ class GoalSignalSyncDispatcher {
   /// notification — the health projections would otherwise show stale
   /// attainment until an unrelated event.
   final void Function(String agentId)? _onAgentEvaluated;
+
+  /// The journal row of a goal: a synced check-in notifies it through its
+  /// link, like a local one does.
+  final String Function(String agentId)? _goalEntryIdFor;
 
   /// Per-agent single flight: a burst of synced batches must not stack
   /// concurrent evaluations of the same goal.
@@ -135,6 +141,14 @@ class GoalSignalSyncDispatcher {
       ...goalImmediateSignalTriggerTokens(
         version.criteria,
       ).intersection(tokens),
+      // A check-in recorded on another device moves this goal's minutes as
+      // much as a local one: today's part can be done only by the two
+      // devices' recordings together, and the device that receives the
+      // second must judge it — or its banner stands until tomorrow.
+      if (goalCriteriaMeasureCheckInTime(version.criteria))
+        if (_goalEntryIdFor?.call(agentId) case final goalEntryId?
+            when tokens.contains(goalEntryId))
+          goalEntryId,
     };
     final stale = goalStaleSignalTriggerTokens(
       version.criteria,

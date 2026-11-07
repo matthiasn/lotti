@@ -241,6 +241,59 @@ void main() {
     expect(evaluated, isEmpty, reason: 'no Phase A projection was written');
   });
 
+  group('a check-in synced in from another device', () {
+    // Spoken check-ins — the audio goal: three minutes a day.
+    const checkIns = GoalCriterion.checkInTime(
+      criterionId: 'check-ins',
+      window: GoalWindow.rollingDays(count: 7),
+      aggregation: GoalAggregation.dailySumThenAverage,
+      targetMinutes: 3,
+    );
+    // The synced link notifies both of its ends.
+    const syncedLink = {'goal-row-a', 'recording-id'};
+
+    GoalSignalSyncDispatcher withGoalRows() => GoalSignalSyncDispatcher(
+      agentService: agentService,
+      repository: repository,
+      phaseA: phaseA,
+      onAgentEvaluated: evaluated.add,
+      goalEntryIdFor: (agentId) => 'goal-row-${agentId.split('-').last}',
+    );
+
+    setUp(() {
+      when(
+        () => agentService.listAgents(lifecycle: AgentLifecycle.active),
+      ).thenAnswer((_) async => [identity('goal-a', AgentKinds.goalAgent)]);
+    });
+
+    test('runs Phase A on a goal that counts its minutes — the other '
+        "device's recording can be what finishes today's part", () async {
+      stubSpec('goal-a', goalCriteria: checkIns);
+
+      await withGoalRows().dispatchBatch(syncedLink);
+
+      expect(phaseA.calls.single.$1, 'goal-a');
+      expect(phaseA.calls.single.$2, {'goal-row-a'});
+      expect(evaluated, ['goal-a']);
+    });
+
+    test('leaves a goal whose check-ins move no number alone', () async {
+      stubSpec('goal-a');
+
+      await withGoalRows().dispatchBatch(syncedLink);
+
+      expect(phaseA.calls, isEmpty);
+    });
+
+    test("ignores another goal's check-in", () async {
+      stubSpec('goal-a', goalCriteria: checkIns);
+
+      await withGoalRows().dispatchBatch({'goal-row-b', 'recording-id'});
+
+      expect(phaseA.calls, isEmpty);
+    });
+  });
+
   test('a mixed synced batch marks category evidence stale and evaluates '
       'bounded evidence once', () async {
     const composite = GoalCriterion.allOf(

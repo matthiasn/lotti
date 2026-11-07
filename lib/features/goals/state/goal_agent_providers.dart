@@ -380,6 +380,7 @@ final goalSignalSyncDispatcherProvider = Provider<GoalSignalSyncDispatcher>(
     repository: ref.watch(agentRepositoryProvider),
     phaseA: ref.watch(goalAgentPhaseAProvider),
     domainLogger: ref.watch(domainLoggerProvider),
+    goalEntryIdFor: ref.watch(goalRepositoryProvider)?.goalIdForAgent,
     // A synced-batch Phase A run persists new attainment without any UI
     // notification — surface it to the health projections.
     onAgentEvaluated: (agentId) =>
