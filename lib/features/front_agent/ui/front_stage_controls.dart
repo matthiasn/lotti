@@ -98,6 +98,9 @@ class _FrontStageControlsState extends ConsumerState<FrontStageControls> {
   bool _starting = false;
 
   void _start() {
+    // One start at a time: a second, which the recorder refuses, would
+    // settle first and leave the first one uncancellable.
+    if (_starting) return;
     _starting = true;
     _recorder
         .start(

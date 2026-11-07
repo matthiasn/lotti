@@ -348,6 +348,12 @@ void main() {
     await tester.pump();
     expect(recorder.targets, hasLength(1), reason: 'the start is pending');
 
+    // A second key while it opens asks for no second start…
+    await tester.sendKeyEvent(LogicalKeyboardKey.space);
+    await tester.pump();
+    expect(recorder.targets, hasLength(1));
+
+    // …so the first can still be let go.
     expect(
       await tester.sendKeyEvent(LogicalKeyboardKey.escape),
       isTrue,
