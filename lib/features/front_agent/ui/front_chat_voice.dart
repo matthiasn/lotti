@@ -157,14 +157,23 @@ abstract final class FrontVoice {
   /// Speaks [text] as her voice in [conversationId], from the start: once
   /// she may speak, taking the voice over from whatever else holds it, and
   /// held back if she is muted while it prepares.
+  ///
+  /// An answer said again is said in the voice it was first said in
+  /// ([frontSaidProvider]), never in whichever her profile resolves to at
+  /// the tap — a profile still resolving there would hand it to the
+  /// on-device voice, and any other voice would make it again rather than
+  /// play the clip kept from the first time.
   static Future<void> speak(
     WidgetRef ref,
     BuildContext context,
     String conversationId,
     String text,
   ) async {
-    final route = routeOf(ref, context);
+    final route = ref
+        .read(frontSaidProvider.notifier)
+        .routeFor(conversationId, text, current: routeOf(ref, context));
     if (!canSpeak(ref, route)) return;
+    ref.read(frontSaidProvider.notifier).said(conversationId, text, route);
     // The app's container, not the caller's ref: the control that started
     // her may be gone — her stage closed — by the time playback starts.
     final container = ProviderScope.containerOf(context, listen: false);
