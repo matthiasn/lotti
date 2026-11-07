@@ -4,6 +4,68 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.89]
+
+### Added
+
+- **Daily OS planned blocks can be removed, linked to a task, or turned into
+  one.** The block editor now offers **Remove from plan** (with Undo), **Link
+  to a task** for a block that has none, **Create a task** to make one named
+  after the block and estimated at its length, and **Unlink task** for a
+  linked block. Calendar events stay read-only.
+- **Ask the companion how much time you logged.** "How much did I log
+  yesterday?", "this week?", "the past 30 days?" now get an answer: the total
+  and each category's share, the same numbers the time analysis page shows.
+  She can sum today, yesterday, this week, the past 7 or 30 days, this month
+  and last month.
+
+### Changed
+
+- **The companion's chat is calmer and easier to read.** Her face, her name
+  and what the conversation is about now sit together in the header, so the
+  conversation starts right below it. On a wide window, the messages and the
+  field you type in share one reading column and line up.
+- **You can mute her where she speaks.** A *Voice* switch in the chat's header
+  turns her spoken answers off and on, and stops her mid-sentence. It is the
+  same setting as in the companion settings.
+- **No more category chips above the field.** Name the category in your
+  question ("what's overdue in Work?") and she narrows her answer to it.
+- **Tasks she lists are task rows.** When she names two or more tasks, they
+  show as a card of rows instead of a sentence of links: each with its status,
+  its category and when it is due, kept up to date, and a tap opens it.
+- **Full screen uses the space.** On a desktop window her full-screen stage
+  keeps the conversation beside her, so you can read and answer while she
+  speaks, and when she lists your tasks she points at them as she says them.
+- **A Daily OS check-in no longer starts on a screen of its own.** Tap the mic
+  in the field at the bottom of the day and the recording runs right there;
+  when you stop, the transcript lands in the field so you can fix a name or a
+  number before you send. Sending goes straight to matching your words with
+  your tasks ("Heard" and "Worth deciding on"), and backing out keeps your
+  words in the field. The guided first-run tour still walks through every
+  step.
+- **Daily OS asks "What should change?" at the bottom of a planned day.**
+  Speak or type an adjustment there and it goes straight to the planner. "Too
+  much", "Move lighter" and "Add buffer" sit above the field while the day is
+  a draft, and "Looks good" and "Wrap up" sit right beside it.
+
+### Fixed
+
+- **On a phone the companion chat left a strip at the bottom of the screen.**
+  It stopped short of the home indicator, and of the status bar at the top,
+  showing the dimmed app behind it. It now reaches both edges, with its header
+  and the field you type in still clear of them.
+- **Words typed into Daily OS's check-in field are no longer thrown away while
+  the app is still starting up.** If Daily OS turned out to need setup, the
+  field was swapped for the setup button and took what you had typed with it.
+  The field now waits, closed, until the app knows whether a check-in can go
+  anywhere.
+- **A goal's banner stayed up after you had done today's part on two
+  devices.** When the minutes you recorded on your phone and on your computer
+  only reached the day's target together, neither device noticed, and the
+  banner kept asking until the next morning. A check-in that arrives from your
+  other device now counts the moment it lands, and the banner steps down for
+  the rest of the day.
+
 ## [1.1.88]
 
 ### Changed
