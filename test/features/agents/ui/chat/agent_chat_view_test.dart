@@ -11,7 +11,6 @@ import 'package:lotti/features/agents/ui/chat/agent_typing_indicator.dart';
 import 'package:lotti/features/agents/ui/chat/chat_recorder_controller.dart';
 import 'package:lotti/features/agents/ui/chat/chat_recording_pill.dart';
 import 'package:lotti/features/ai/util/inference_provider_resolver.dart';
-import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/markdown/agent_markdown_view.dart';
