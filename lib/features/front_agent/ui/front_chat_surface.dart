@@ -15,6 +15,9 @@ import 'package:material_ui/material_ui.dart';
 /// (the list, then the inbox) before it closes her.
 Future<void> showFrontChat(BuildContext context) => showDialog<void>(
   context: context,
+  // The route's SafeArea would leave a strip of barrier over a phone's status
+  // bar and home indicator: her surface keeps clear of them itself.
+  useSafeArea: false,
   barrierColor: ModalUtils.getModalBarrierColor(
     isDark: Theme.of(context).brightness == Brightness.dark,
     context: context,
@@ -40,26 +43,31 @@ class FrontChatSurface extends StatelessWidget {
     void close() => Navigator.of(context).pop();
     // The composer's field needs a Material ancestor; the Scaffold also keeps
     // the keyboard inset honest on a phone.
-    Widget pane({double? listWidth}) => ModalEscapeScope(
-      child: Scaffold(
-        body: FrontChatPane(onClose: close, listWidth: listWidth),
-      ),
-    );
+    Widget pane({double? listWidth, bool underSystemBars = false}) {
+      final chat = FrontChatPane(onClose: close, listWidth: listWidth);
+      return ModalEscapeScope(
+        // Full screen, its ground runs under the system bars and what it
+        // draws stays clear of them.
+        child: Scaffold(body: underSystemBars ? SafeArea(child: chat) : chat),
+      );
+    }
 
     if (window.width < WoltModalConfig.pageBreakpoint) {
-      return Dialog.fullscreen(child: pane());
+      return Dialog.fullscreen(child: pane(underSystemBars: true));
     }
     final inset = tokens.spacing.step6;
     final width = (window.width - 2 * inset).clamp(0.0, kDetailContentMaxWidth);
+    // A panel stands clear of the system bars, inset from the window.
+    final padding = MediaQuery.paddingOf(context);
     return Dialog(
-      insetPadding: EdgeInsets.all(inset),
+      insetPadding: EdgeInsets.all(inset) + padding,
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(tokens.radii.m),
       ),
       child: SizedBox(
         width: width,
-        height: window.height - 2 * inset,
+        height: window.height - 2 * inset - padding.vertical,
         child: pane(
           listWidth: isDesktopLayout(context) ? width * listShare : null,
         ),

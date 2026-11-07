@@ -5,8 +5,8 @@ description: The one agent the user talks to in one place — how a durable user
 resource: ../../lib/features/front_agent
 tags: [agents, front-agent, routing, dispatch, doors, filing, inbox, companion, chat]
 status: draft
-generated: { by: claude-code/opus-5.5, at: 2026-11-02T12:00:00Z }
-stale_after: 2027-05-02
+generated: { by: claude-code/opus-5.5, at: 2026-11-08T09:00:00Z }
+stale_after: 2027-05-08
 sources:
   - id: workflow
     resource: ../../lib/features/front_agent/workflow/front_agent_workflow.dart
@@ -111,7 +111,7 @@ sources:
   - id: sheet
     resource: ../../lib/features/front_agent/ui/front_chat_surface.dart
     title: showFrontChat — her surface over the app
-    last_modified: 2026-11-01
+    last_modified: 2026-11-08
   - id: providers
     resource: ../../lib/features/front_agent/state/front_agent_providers.dart
     title: The registry contributions, the wake runner that routes then walks, and the setup resolver
@@ -782,7 +782,11 @@ their cost as a quiet line under them, one pill field with the mic at its
 end, and what she was told by voice sent as said.
 `showFrontChat` opens her surface over the app, as History opens: a dialog
 behind the shared scrim, the whole screen below the page breakpoint, else a
-panel up to `kDetailContentMaxWidth` inset by `step6`. On a desktop-width
+panel up to `kDetailContentMaxWidth` inset by `step6`. The dialog opens with
+`useSafeArea: false`: full screen, her ground runs under the status bar and
+the home indicator and a `SafeArea` inside the Scaffold keeps her header and
+composer clear of them (the route's own `SafeArea` left a strip of scrim at
+either edge); a panel adds the window's padding to its inset. On a desktop-width
 window (`isDesktopLayout`) the list sits beside the conversation, 38% of
 the panel (`FrontChatSurface.listShare`), and the header leaves out the way
 to the list and a new conversation, which the list carries. Escape goes
