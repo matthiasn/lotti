@@ -903,32 +903,50 @@ control (the page's `controls`). The bust keeps one tree whatever she does,
 so her animator lives through a start and a stop.
 
 **Her stage is never a dead end.** Whatever has been said, `FrontStageControls`
-offers a way to answer her: a teal talk disc (`spacing.step10` across,
-captioned *Hold to talk*), with `FrontVoiceButton` beside it once there is an
-answer to say again. Pressing the disc starts the shared recorder on the
-Settings default's transcription slot, the same ears as the conversation's
-composer; held past `kLongPressTimeout` its glyph becomes the send arrow and
-the caption *Release to send*, and letting go sends. A quick tap leaves her
-listening hands free — the disc steps aside and the chats' own recording pill
-(`ChatRecordingPill`) carries on alone, its arrow sending, × and Escape
-letting it go; a screen reader, which taps, talks to her that way. A press
-the system takes away (a pointer cancel) lets a hold go unsent. The stage
-sends nothing itself: the conversation's `AgentChatView`, which the stage
-only covers, receives the transcript from the shared recorder and sends it as
-a spoken turn, so her answer is spoken on the stage.
+offers a way to answer her, in a band of its own below her figure (the
+stage page lays her out above its `controls`, on her stage's floor colour,
+so nothing is drawn on her). One teal disc (`spacing.step10` across) is the
+stage's one control to talk with, in every state, its caption saying what it
+does; `FrontVoiceButton` stands beside it once there is an answer to say
+again. Pressing the disc starts the shared recorder on the Settings
+default's transcription slot, the same ears as the conversation's composer.
+Held past `kLongPressTimeout` — counted only once the recorder is really
+listening, so a refused microphone never promises a send — its glyph turns
+to the send arrow (*Release to send*), and letting go sends. Dragged more
+than `spacing.step6` off the disc it turns red with a × (*Release to
+cancel*), and letting go there discards; back on, it sends again. A quick
+tap — and a screen reader's tap, Space or Enter — leaves her listening hands
+free, the disc the send arrow (*Tap to send*). While she listens the chats'
+own recording pill (`ChatRecordingPill`, `showEndControl: false`, so the
+disc stays the one send) shows the time and the voice above it, its × letting
+it go; the band keeps the pill's height whether it shows or not, so nothing
+moves under a finger. While the words are written down, and while her answer
+is on its way (a send in flight or a spoken reply owed), the disc is a quiet
+spinner captioned *Transcribing…* or her *Finding who knows…*, and presses do
+nothing. A press the system takes away (a pointer cancel) lets what it
+started go unsent. The stage sends nothing itself: the conversation's
+`AgentChatView`, which the stage only covers, receives the transcript from
+the shared recorder and sends it as a spoken turn, so her answer is spoken
+on the stage.
 
 ```mermaid
 stateDiagram-v2
     [*] --> Idle
     Idle --> Pressed: press the disc (recorder starts)
-    Idle --> HandsFree: screen-reader tap
-    Pressed --> Held: still pressed after kLongPressTimeout
-    Pressed --> HandsFree: released before it (a tap)
+    Idle --> HandsFree: screen-reader tap, Space or Enter
+    Pressed --> Held: still pressed after kLongPressTimeout, recorder listening
+    Pressed --> HandsFree: released on the disc before it (a tap)
+    Pressed --> Idle: released off the disc (cancelled)
+    Held --> Cancelling: dragged off the disc
+    Cancelling --> Held: back on the disc
     Held --> Transcribing: released (stopAndTranscribe)
-    Held --> Idle: pointer cancelled (recording cancelled)
-    HandsFree --> Transcribing: the pill's send arrow
-    HandsFree --> Idle: × or Escape (cancel)
-    Transcribing --> Idle: transcript sent as a spoken turn, or cancelled
+    Cancelling --> Idle: released (cancelled)
+    Held --> Idle: pointer cancelled (cancelled)
+    HandsFree --> Transcribing: a tap on the disc, Space or Enter
+    HandsFree --> Idle: the pill's × or Escape (cancelled)
+    Transcribing --> Waiting: transcript sent as a spoken turn
+    Transcribing --> Idle: cancelled
+    Waiting --> Idle: her answer lands
 ```
 
 # Where it plugs in

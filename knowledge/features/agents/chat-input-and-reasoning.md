@@ -11,7 +11,7 @@ sources:
   - id: chat
     resource: ../../../lib/features/agents/ui/chat
     title: Shared agent chat components
-    last_modified: 2026-11-06
+    last_modified: 2026-11-07
   - id: evolution
     resource: ../../../lib/features/agents/ui/evolution/widgets
     title: Agent improvement conversation widgets
@@ -57,11 +57,9 @@ words in a soft bubble capped short of the far edge on a phone, and drops the
 author-and-time line, leaving the footer only for what `footerTrailingBuilder`
 adds. `voiceFirst` keeps the one composer every chat has — a field with the mic
 at its end until there are words, then send — and sends what was said as
-recording stops, no second tap (tap to talk, tap to send): the stop control
-in the recording row (`_RecordingControls`, waveform, Cancel with Escape,
-stop) is then the send arrow with the send tooltip, transcribing can always
-be cancelled, and on a desktop-width window the field takes the keyboard at
-once; a phone keeps its keyboard down until the field is tapped, so talking
+recording stops, no second tap (tap to talk, tap to send): the recording
+pill's end control is then the send arrow with the send tooltip, and on a
+desktop-width window the field takes the keyboard at once; a phone keeps its keyboard down until the field is tapped, so talking
 stays one tap. A transcript a `voiceFirst` chat sends by itself goes to
 `onSendSpoken` when the host gives one, so the host knows the turn was
 spoken; starting to record stops any voice that is speaking first
@@ -79,6 +77,24 @@ Hosts can supply `onLinkTap` to resolve each link against its containing message
 That opt-in preserves the rich reply's accessible text and link actions, with
 only author/time on the enclosing semantic node. Other hosts keep the existing
 flattened message announcement.
+**One recording pill everywhere.** While the microphone is live, every
+chat's composer — the companion's, the in-task query chat's, a goal's, a
+person's — is the same `ChatRecordingPill` (`chat_recording_pill.dart`),
+and the companion's stage uses it too. It is the idle pill field's own
+height (`spacing.step9`), fill and corners, so nothing jumps as recording
+starts: × cancel (Escape too) leads, then a red recording dot, the elapsed
+`m:ss` in tabular `bodySmall`, the voice as `WaveformBarsPainter` bars in
+quiet ink (`text.mediumEmphasis`), and at the end the teal control that ends
+it — the send arrow when stopping sends (`voiceFirst`), a stop square when it
+only transcribes into the field. The teal edge is the field's focused one,
+there only while listening. Transcribing, the time and bars give way to
+*Transcribing…* and a quiet spinner takes the end control's place; Cancel
+stays in every host, so a stalled transcription always has its way out. Both
+ends are whole tap targets (`TapTargets.minimum`). A host whose own control
+ends the take (the companion's talk disc) passes `showEndControl: false`, so
+one send is on screen; the slot keeps its width. There is no per-host
+recording layout any more.
+
 Its composer and the agent improvement input widgets use
 the same voice-input primitives under `agents/ui/chat/`:
 
@@ -111,8 +127,8 @@ stateDiagram-v2
 Start checks microphone permission, records to an app-scoped temporary `.m4a`
 file, samples amplitude, and arms a maximum-duration stop. The injected clock
 also supplies elapsed capture time on amplitude updates; a new recording resets
-it to zero. Query hosts opt into a stable tabular clock and visible Stop/Cancel
-controls, including Cancel during transcription. Stop moves to
+it to zero; the pill shows it in tabular figures, so the clock crossing a
+minute never moves the controls. Stop moves to
 `processing`, streams transcription chunks into `partialTranscript`, then
 publishes the finished `transcript` or a typed error and returns to `idle`.
 The UI consumes the finished transcript into its editable composer. During
@@ -120,7 +136,7 @@ processing, the shared composer shows up to three measured lines of partial
 text. Overflowing text offers Show more/less; expansion enables scrolling
 within six lines and a quarter of the available chat height, whichever is
 smaller. This height comes from the host layout, including keyboard constraints.
-Progress and Cancel remain outside that scroll area. Short text has no toggle;
+The recording pill, with its Cancel, stays below that scroll area. Short text has no toggle;
 empty progress has a localized transcription label. Partial text is never sent
 or copied into the draft before transcription finishes.
 
