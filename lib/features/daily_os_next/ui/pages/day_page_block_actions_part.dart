@@ -84,17 +84,28 @@ extension _DayPageBlockActions on _DayPageState {
 
   Future<void> _createTaskForBlock(TimeBlock block) async {
     String? taskId;
+    String? orphanTaskId;
     final done = await _runBlockAction(() async {
-      final created = await ref
-          .read(dayAgentProvider)
-          .createTaskForBlock(plan: widget.draft, blockId: block.id);
-      taskId = created.taskId;
+      try {
+        final created = await ref
+            .read(dayAgentProvider)
+            .createTaskForBlock(plan: widget.draft, blockId: block.id);
+        taskId = created.taskId;
+      } on CreatedTaskNotLinkedException catch (error) {
+        // The task exists; say so and point to it rather than failing
+        // silently, so a retry links it instead of making another.
+        orphanTaskId = error.taskId;
+      }
     });
     if (!done || !mounted) return;
-    final id = taskId;
+    final id = taskId ?? orphanTaskId;
     context.showToast(
-      tone: DesignSystemToastTone.success,
-      title: context.messages.dailyOsNextBlockTaskCreated,
+      tone: orphanTaskId == null
+          ? DesignSystemToastTone.success
+          : DesignSystemToastTone.warning,
+      title: orphanTaskId == null
+          ? context.messages.dailyOsNextBlockTaskCreated
+          : context.messages.dailyOsNextBlockTaskCreatedNotLinked,
       action: id == null
           ? null
           : ToastAction(

@@ -2331,6 +2331,7 @@
   "dailyOsNextBlockResizeEndTooltip": "Regolare la fine",
   "dailyOsNextBlockResizeStartTooltip": "Regolare l'inizio",
   "dailyOsNextBlockTaskCreated": "Attività creata.",
+  "dailyOsNextBlockTaskCreatedNotLinked": "Attività creata, ma non collegata a questo blocco.",
   "dailyOsNextBlockUnlinked": "Scollegato dall'attività.",
   "dailyOsNextBlockUnlinkTask": "Scollega attività",
   "dailyOsNextBriefingBlockCount": "{count, plural, =0{Non c'è ancora niente in programma.} =1{Hai un blocco in programma.} other{Hai {count} blocchi in programma.}}",

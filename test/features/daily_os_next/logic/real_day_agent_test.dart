@@ -13,6 +13,8 @@ import 'package:lotti/classes/day_agent_identity.dart';
 import 'package:lotti/classes/day_agent_plan_models.dart';
 import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart';
+import 'package:lotti/features/daily_os_next/agents/service/day_agent_block_actions.dart';
+import 'package:lotti/features/daily_os_next/logic/day_agent_interface.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/logic/real_day_agent.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_job.dart';
@@ -1482,6 +1484,31 @@ void main() {
       );
       expect(created.taskId, 'task-1');
       expect(created.plan.blocks.single.taskId, 'task-1');
+    });
+
+    test('a task created but not linked surfaces with its id', () async {
+      when(
+        () => bench.planService.createTaskForBlock(
+          agentId: agentId,
+          dayId: dayId,
+          blockId: 'block_1',
+        ),
+      ).thenThrow(
+        DayAgentTaskNotLinkedException(
+          taskId: 'task-orphan',
+          blockId: 'block_1',
+          cause: StateError('disk full'),
+        ),
+      );
+
+      await expectLater(
+        bench.adapter.createTaskForBlock(plan: plan, blockId: 'block_1'),
+        throwsA(
+          isA<CreatedTaskNotLinkedException>()
+              .having((e) => e.taskId, 'taskId', 'task-orphan')
+              .having((e) => e.toString(), 'toString', contains('orphan')),
+        ),
+      );
     });
 
     test('every action needs a day agent', () async {

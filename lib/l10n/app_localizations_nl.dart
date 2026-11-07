@@ -4852,28 +4852,7 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String get dailyOsNextBlockRemove => 'Uit het plan halen';
-
-  @override
-  String get dailyOsNextBlockRemoved => 'Uit het plan gehaald.';
-
-  @override
-  String get dailyOsNextBlockLinkTask => 'Koppelen aan een taak';
-
-  @override
-  String get dailyOsNextBlockLinked => 'Gekoppeld aan de taak.';
-
-  @override
-  String get dailyOsNextBlockUnlinkTask => 'Taak ontkoppelen';
-
-  @override
-  String get dailyOsNextBlockUnlinked => 'Losgekoppeld van de taak.';
-
-  @override
   String get dailyOsNextBlockCreateTask => 'Taak maken';
-
-  @override
-  String get dailyOsNextBlockTaskCreated => 'Taak gemaakt.';
 
   @override
   String get dailyOsNextBlockEditCategoryLabel => 'Categorie';
@@ -4907,13 +4886,38 @@ class AppLocalizationsNl extends AppLocalizations {
   String get dailyOsNextBlockEditWhyLabel => 'Waarom deze keer?';
 
   @override
+  String get dailyOsNextBlockLinked => 'Gekoppeld aan de taak.';
+
+  @override
+  String get dailyOsNextBlockLinkTask => 'Koppelen aan een taak';
+
+  @override
   String get dailyOsNextBlockMoveTooltip => 'Blok verplaatsen';
+
+  @override
+  String get dailyOsNextBlockRemove => 'Uit het plan halen';
+
+  @override
+  String get dailyOsNextBlockRemoved => 'Uit het plan gehaald.';
 
   @override
   String get dailyOsNextBlockResizeEndTooltip => 'Einde aanpassen';
 
   @override
   String get dailyOsNextBlockResizeStartTooltip => 'Start aanpassen';
+
+  @override
+  String get dailyOsNextBlockTaskCreatedNotLinked =>
+      'Taak gemaakt, maar niet aan dit blok gekoppeld.';
+
+  @override
+  String get dailyOsNextBlockTaskCreated => 'Taak gemaakt.';
+
+  @override
+  String get dailyOsNextBlockUnlinked => 'Losgekoppeld van de taak.';
+
+  @override
+  String get dailyOsNextBlockUnlinkTask => 'Taak ontkoppelen';
 
   @override
   String dailyOsNextBriefingBlockCount(int count) {

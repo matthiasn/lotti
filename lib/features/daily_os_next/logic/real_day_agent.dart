@@ -10,6 +10,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart';
+import 'package:lotti/features/daily_os_next/agents/service/day_agent_block_actions.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_service.dart';
@@ -526,11 +527,17 @@ class RealDayAgent implements DayAgentInterface {
     required DraftPlan plan,
     required String blockId,
   }) async {
-    final created = await planService.createTaskForBlock(
-      agentId: await _agentIdFor(plan.dayDate),
-      dayId: dayAgentIdForDate(plan.dayDate),
-      blockId: blockId,
-    );
+    final agentId = await _agentIdFor(plan.dayDate);
+    final ({DayPlanEntity plan, Task task}) created;
+    try {
+      created = await planService.createTaskForBlock(
+        agentId: agentId,
+        dayId: dayAgentIdForDate(plan.dayDate),
+        blockId: blockId,
+      );
+    } on DayAgentTaskNotLinkedException catch (error) {
+      throw CreatedTaskNotLinkedException(error.taskId);
+    }
     return (
       plan: await _projectDayPlan(created.plan, plan.dayDate),
       taskId: created.task.meta.id,

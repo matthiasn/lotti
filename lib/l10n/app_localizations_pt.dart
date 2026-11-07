@@ -4877,28 +4877,7 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String get dailyOsNextBlockRemove => 'Remover do plano';
-
-  @override
-  String get dailyOsNextBlockRemoved => 'Removido do plano.';
-
-  @override
-  String get dailyOsNextBlockLinkTask => 'Associar a uma tarefa';
-
-  @override
-  String get dailyOsNextBlockLinked => 'Associado à tarefa.';
-
-  @override
-  String get dailyOsNextBlockUnlinkTask => 'Desassociar tarefa';
-
-  @override
-  String get dailyOsNextBlockUnlinked => 'Desassociado da tarefa.';
-
-  @override
   String get dailyOsNextBlockCreateTask => 'Criar uma tarefa';
-
-  @override
-  String get dailyOsNextBlockTaskCreated => 'Tarefa criada.';
 
   @override
   String get dailyOsNextBlockEditCategoryLabel => 'Categoria';
@@ -4932,13 +4911,38 @@ class AppLocalizationsPt extends AppLocalizations {
   String get dailyOsNextBlockEditWhyLabel => 'Por que desta vez';
 
   @override
+  String get dailyOsNextBlockLinked => 'Associado à tarefa.';
+
+  @override
+  String get dailyOsNextBlockLinkTask => 'Associar a uma tarefa';
+
+  @override
   String get dailyOsNextBlockMoveTooltip => 'Mover bloco';
+
+  @override
+  String get dailyOsNextBlockRemove => 'Remover do plano';
+
+  @override
+  String get dailyOsNextBlockRemoved => 'Removido do plano.';
 
   @override
   String get dailyOsNextBlockResizeEndTooltip => 'Ajustar final';
 
   @override
   String get dailyOsNextBlockResizeStartTooltip => 'Ajustar início';
+
+  @override
+  String get dailyOsNextBlockTaskCreatedNotLinked =>
+      'Tarefa criada, mas não associada a este bloco.';
+
+  @override
+  String get dailyOsNextBlockTaskCreated => 'Tarefa criada.';
+
+  @override
+  String get dailyOsNextBlockUnlinked => 'Desassociado da tarefa.';
+
+  @override
+  String get dailyOsNextBlockUnlinkTask => 'Desassociar tarefa';
 
   @override
   String dailyOsNextBriefingBlockCount(int count) {

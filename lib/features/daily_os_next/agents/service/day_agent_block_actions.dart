@@ -43,7 +43,7 @@ class DayAgentBlockActions {
     required String agentId,
     required String dayId,
     required String blockId,
-  }) async {
+  }) => syncService.runInTransaction(() async {
     final (:plan, :block, identity: _) = await _load(
       agentId: agentId,
       dayId: dayId,
@@ -65,7 +65,7 @@ class DayAgentBlockActions {
       blocks: remaining,
     );
     return (plan: saved, removed: block);
-  }
+  });
 
   /// Puts [block] back on the plan, where its own times place it. A block
   /// already on the plan (a repeated Undo, or one restored elsewhere and
@@ -74,7 +74,7 @@ class DayAgentBlockActions {
     required String agentId,
     required String dayId,
     required PlannedBlock block,
-  }) async {
+  }) => syncService.runInTransaction(() async {
     await reads.requireIdentity(agentId);
     final plan = await _requirePlan(agentId: agentId, dayId: dayId);
     if (plan.data.plannedBlocks.any((candidate) => candidate.id == block.id)) {
@@ -86,7 +86,7 @@ class DayAgentBlockActions {
       plan: plan,
       blocks: [...plan.data.plannedBlocks, block],
     );
-  }
+  });
 
   /// Ties the block to the task [taskId]. The task becomes the source of the
   /// block's title, and of its category when that category may be planned
@@ -97,7 +97,7 @@ class DayAgentBlockActions {
     required String blockId,
     required String taskId,
   }) async {
-    final (:plan, :block, :identity) = await _load(
+    final (plan: _, :block, identity: _) = await _load(
       agentId: agentId,
       dayId: dayId,
       blockId: blockId,
@@ -110,20 +110,19 @@ class DayAgentBlockActions {
     return _link(
       agentId: agentId,
       dayId: dayId,
-      plan: plan,
-      block: block,
+      blockId: blockId,
       task: entity,
-      identity: identity,
     );
   }
 
   /// Unties a task-linked block. It keeps the task's title as its own, so
-  /// the timeline reads the same until it is renamed.
+  /// the timeline reads the same until it is renamed; the share of the task
+  /// it left unscheduled (`remainingMinutes`) goes with the task.
   Future<DayPlanEntity> unlinkTask({
     required String agentId,
     required String dayId,
     required String blockId,
-  }) async {
+  }) => syncService.runInTransaction(() async {
     final (:plan, :block, identity: _) = await _load(
       agentId: agentId,
       dayId: dayId,
@@ -136,18 +135,27 @@ class DayAgentBlockActions {
       agentId: agentId,
       dayId: dayId,
       plan: plan,
-      blocks: _replace(plan, block.copyWith(taskId: null)),
+      blocks: _replace(
+        plan,
+        block.copyWith(taskId: null, remainingMinutes: null),
+      ),
     );
-  }
+  });
 
   /// Turns a standalone block into a new open task — named after the block,
   /// in its category, estimated at its length — and ties the block to it.
+  ///
+  /// The task is created first, outside the plan write; the block is then
+  /// linked on the plan as it is by then. Should that link fail, the task
+  /// already exists, so this throws [DayAgentTaskNotLinkedException] with its
+  /// id rather than leaving it unaccounted for — the caller can point to it,
+  /// and a retry links it instead of creating another.
   Future<({DayPlanEntity plan, Task task})> createTaskForBlock({
     required String agentId,
     required String dayId,
     required String blockId,
   }) async {
-    final (:plan, :block, :identity) = await _load(
+    final (plan: _, :block, identity: _) = await _load(
       agentId: agentId,
       dayId: dayId,
       blockId: blockId,
@@ -171,25 +179,43 @@ class DayAgentBlockActions {
     if (task == null) {
       throw DayAgentCaptureException('could not create a task for $blockId');
     }
-    final saved = await _link(
-      agentId: agentId,
-      dayId: dayId,
-      plan: plan,
-      block: block,
-      task: task,
-      identity: identity,
-    );
-    return (plan: saved, task: task);
+    try {
+      final saved = await _link(
+        agentId: agentId,
+        dayId: dayId,
+        blockId: blockId,
+        task: task,
+        requireUnlinked: true,
+      );
+      return (plan: saved, task: task);
+    } on Object catch (error) {
+      throw DayAgentTaskNotLinkedException(
+        taskId: task.meta.id,
+        blockId: blockId,
+        cause: error,
+      );
+    }
   }
 
+  /// Links [task] to the block on the plan as it is now, read and written in
+  /// one transaction so a concurrent change to the plan is not overwritten.
+  /// The unscheduled remainder survives only a re-link to the same task.
   Future<DayPlanEntity> _link({
     required String agentId,
     required String dayId,
-    required DayPlanEntity plan,
-    required PlannedBlock block,
+    required String blockId,
     required Task task,
-    required AgentIdentityEntity identity,
-  }) async {
+    bool requireUnlinked = false,
+  }) => syncService.runInTransaction(() async {
+    final (:plan, :block, :identity) = await _load(
+      agentId: agentId,
+      dayId: dayId,
+      blockId: blockId,
+    );
+    _requireTaskable(block);
+    if (requireUnlinked && _isLinked(block)) {
+      throw DayAgentCaptureException('block $blockId already has a task');
+    }
     final taskCategoryId = task.meta.categoryId;
     final categoryId =
         taskCategoryId != null &&
@@ -197,6 +223,7 @@ class DayAgentBlockActions {
         ? taskCategoryId
         : block.categoryId;
     final title = task.data.title.trim();
+    final sameTask = block.taskId == task.meta.id;
     return _save(
       agentId: agentId,
       dayId: dayId,
@@ -207,10 +234,11 @@ class DayAgentBlockActions {
           taskId: task.meta.id,
           title: title.isEmpty ? block.title : title,
           categoryId: categoryId,
+          remainingMinutes: sameTask ? block.remainingMinutes : null,
         ),
       ),
     );
-  }
+  });
 
   Future<bool> _categoryPlannable(
     String categoryId,
@@ -308,4 +336,26 @@ class DayAgentBlockActions {
       ..call(saved.id);
     return saved;
   }
+}
+
+/// A task was created for a planned block, but the block could not be linked
+/// to it. The task exists — [taskId] — so a caller can say so and point to it
+/// instead of creating another on retry.
+class DayAgentTaskNotLinkedException implements Exception {
+  const DayAgentTaskNotLinkedException({
+    required this.taskId,
+    required this.blockId,
+    required this.cause,
+  });
+
+  final String taskId;
+  final String blockId;
+
+  /// Why the link failed.
+  final Object cause;
+
+  @override
+  String toString() =>
+      'task $taskId was created but block $blockId could not be linked: '
+      '$cause';
 }

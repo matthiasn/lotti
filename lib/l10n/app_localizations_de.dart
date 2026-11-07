@@ -4864,28 +4864,7 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get dailyOsNextBlockRemove => 'Aus dem Plan entfernen';
-
-  @override
-  String get dailyOsNextBlockRemoved => 'Aus dem Plan entfernt.';
-
-  @override
-  String get dailyOsNextBlockLinkTask => 'Mit Aufgabe verknüpfen';
-
-  @override
-  String get dailyOsNextBlockLinked => 'Mit der Aufgabe verknüpft.';
-
-  @override
-  String get dailyOsNextBlockUnlinkTask => 'Verknüpfung lösen';
-
-  @override
-  String get dailyOsNextBlockUnlinked => 'Verknüpfung mit der Aufgabe gelöst.';
-
-  @override
   String get dailyOsNextBlockCreateTask => 'Aufgabe erstellen';
-
-  @override
-  String get dailyOsNextBlockTaskCreated => 'Aufgabe erstellt.';
 
   @override
   String get dailyOsNextBlockEditCategoryLabel => 'Kategorie';
@@ -4919,13 +4898,38 @@ class AppLocalizationsDe extends AppLocalizations {
   String get dailyOsNextBlockEditWhyLabel => 'Warum zu dieser Zeit';
 
   @override
+  String get dailyOsNextBlockLinked => 'Mit der Aufgabe verknüpft.';
+
+  @override
+  String get dailyOsNextBlockLinkTask => 'Mit Aufgabe verknüpfen';
+
+  @override
   String get dailyOsNextBlockMoveTooltip => 'Block verschieben';
+
+  @override
+  String get dailyOsNextBlockRemove => 'Aus dem Plan entfernen';
+
+  @override
+  String get dailyOsNextBlockRemoved => 'Aus dem Plan entfernt.';
 
   @override
   String get dailyOsNextBlockResizeEndTooltip => 'Ende anpassen';
 
   @override
   String get dailyOsNextBlockResizeStartTooltip => 'Start anpassen';
+
+  @override
+  String get dailyOsNextBlockTaskCreatedNotLinked =>
+      'Aufgabe erstellt, aber nicht mit diesem Block verknüpft.';
+
+  @override
+  String get dailyOsNextBlockTaskCreated => 'Aufgabe erstellt.';
+
+  @override
+  String get dailyOsNextBlockUnlinked => 'Verknüpfung mit der Aufgabe gelöst.';
+
+  @override
+  String get dailyOsNextBlockUnlinkTask => 'Verknüpfung lösen';
 
   @override
   String dailyOsNextBriefingBlockCount(int count) {

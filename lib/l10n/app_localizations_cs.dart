@@ -4884,28 +4884,7 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String get dailyOsNextBlockRemove => 'Odebrat z plánu';
-
-  @override
-  String get dailyOsNextBlockRemoved => 'Odebráno z plánu.';
-
-  @override
-  String get dailyOsNextBlockLinkTask => 'Propojit s úkolem';
-
-  @override
-  String get dailyOsNextBlockLinked => 'Propojeno s úkolem.';
-
-  @override
-  String get dailyOsNextBlockUnlinkTask => 'Zrušit propojení';
-
-  @override
-  String get dailyOsNextBlockUnlinked => 'Propojení s úkolem zrušeno.';
-
-  @override
   String get dailyOsNextBlockCreateTask => 'Vytvořit úkol';
-
-  @override
-  String get dailyOsNextBlockTaskCreated => 'Úkol vytvořen.';
 
   @override
   String get dailyOsNextBlockEditCategoryLabel => 'Kategorie';
@@ -4939,13 +4918,38 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dailyOsNextBlockEditWhyLabel => 'Proč právě teď';
 
   @override
+  String get dailyOsNextBlockLinked => 'Propojeno s úkolem.';
+
+  @override
+  String get dailyOsNextBlockLinkTask => 'Propojit s úkolem';
+
+  @override
   String get dailyOsNextBlockMoveTooltip => 'Přesunout blok';
+
+  @override
+  String get dailyOsNextBlockRemove => 'Odebrat z plánu';
+
+  @override
+  String get dailyOsNextBlockRemoved => 'Odebráno z plánu.';
 
   @override
   String get dailyOsNextBlockResizeEndTooltip => 'Upravit konec';
 
   @override
   String get dailyOsNextBlockResizeStartTooltip => 'Upravit začátek';
+
+  @override
+  String get dailyOsNextBlockTaskCreatedNotLinked =>
+      'Úkol je vytvořený, ale s tímto blokem se nepropojil.';
+
+  @override
+  String get dailyOsNextBlockTaskCreated => 'Úkol vytvořen.';
+
+  @override
+  String get dailyOsNextBlockUnlinked => 'Propojení s úkolem zrušeno.';
+
+  @override
+  String get dailyOsNextBlockUnlinkTask => 'Zrušit propojení';
 
   @override
   String dailyOsNextBriefingBlockCount(int count) {

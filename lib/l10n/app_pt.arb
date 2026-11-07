@@ -2330,6 +2330,7 @@
   "dailyOsNextBlockResizeEndTooltip": "Ajustar final",
   "dailyOsNextBlockResizeStartTooltip": "Ajustar início",
   "dailyOsNextBlockTaskCreated": "Tarefa criada.",
+  "dailyOsNextBlockTaskCreatedNotLinked": "Tarefa criada, mas não associada a este bloco.",
   "dailyOsNextBlockUnlinked": "Desassociado da tarefa.",
   "dailyOsNextBlockUnlinkTask": "Desassociar tarefa",
   "dailyOsNextBriefingBlockCount": "{count, plural, =0{Ainda não há nada planeado.} =1{Tens um bloco planeado.} other{Tens {count} blocos planeados.}}",

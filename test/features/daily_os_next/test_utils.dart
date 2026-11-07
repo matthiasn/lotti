@@ -25,7 +25,12 @@ class RecordingDayAgent implements DayAgentInterface {
     this.commitError,
     this.uncommitError,
     this.blockActionError,
+    this.createdTaskNotLinked = false,
   });
+
+  /// When true, [createTaskForBlock] reports a task it created but could not
+  /// link (`CreatedTaskNotLinkedException`).
+  final bool createdTaskNotLinked;
 
   /// When set, the block actions (remove, restore, link, unlink, create a
   /// task) throw this error.
@@ -76,10 +81,13 @@ class RecordingDayAgent implements DayAgentInterface {
   Future<({DraftPlan plan, String taskId})> createTaskForBlock({
     required DraftPlan plan,
     required String blockId,
-  }) async => (
-    plan: await _blockAction('create', plan, blockId),
-    taskId: 'task-for-$blockId',
-  );
+  }) async {
+    final created = await _blockAction('create', plan, blockId);
+    if (createdTaskNotLinked) {
+      throw CreatedTaskNotLinkedException('task-for-$blockId');
+    }
+    return (plan: created, taskId: 'task-for-$blockId');
+  }
 
   /// Diff returned by [proposePlanDiff]; when null, a no-change diff
   /// echoing the current plan is fabricated.

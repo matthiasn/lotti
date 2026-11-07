@@ -308,6 +308,30 @@ void main() {
       }
     });
 
+    test('a remainder survives only a re-link to the same task', () async {
+      seedPlan([_linked().copyWith(remainingMinutes: 120)]);
+      when(() => journalDb.journalEntityById(any())).thenAnswer(
+        (invocation) async =>
+            _task(id: invocation.positionalArguments.single as String),
+      );
+
+      final same = await actions().linkTask(
+        agentId: _agentId,
+        dayId: _dayId,
+        blockId: 'block-linked',
+        taskId: 'task-roll-call',
+      );
+      expect(blockOf(same, 'block-linked').remainingMinutes, 120);
+
+      final other = await actions().linkTask(
+        agentId: _agentId,
+        dayId: _dayId,
+        blockId: 'block-linked',
+        taskId: 'task-sardines',
+      );
+      expect(blockOf(other, 'block-linked').remainingMinutes, isNull);
+    });
+
     test('a block placed by hand can carry a task too', () async {
       seedPlan([_standalone().copyWith(type: PlannedBlockType.manual)]);
       when(
@@ -404,6 +428,18 @@ void main() {
       expect(upserted.single, unlinked);
     });
 
+    test("the task's unscheduled remainder leaves with it", () async {
+      seedPlan([_linked().copyWith(remainingMinutes: 120)]);
+
+      final unlinked = await actions().unlinkTask(
+        agentId: _agentId,
+        dayId: _dayId,
+        blockId: 'block-linked',
+      );
+
+      expect(blockOf(unlinked, 'block-linked').remainingMinutes, isNull);
+    });
+
     test('refuses a block without a task', () async {
       seedPlan([_standalone()]);
       await expectLater(
@@ -418,6 +454,77 @@ void main() {
   });
 
   group('createTaskForBlock', () {
+    test('links on the plan as it is after the task exists', () async {
+      seedPlan([_standalone()]);
+      // Another writer changes the plan while the task is being created.
+      factoryResult = () {
+        seedPlan([_standalone(), _buffer()]);
+        return _task(id: 'task-new', title: 'Draft the launch memo');
+      };
+
+      final created = await actions().createTaskForBlock(
+        agentId: _agentId,
+        dayId: _dayId,
+        blockId: 'block-plain',
+      );
+
+      expect(
+        created.plan.data.plannedBlocks.map((block) => block.id),
+        ['block-plain', 'block-buffer'],
+      );
+      expect(blockOf(created.plan, 'block-plain').taskId, 'task-new');
+    });
+
+    test('a task created but not linked is reported with its id', () async {
+      seedPlan([_standalone()]);
+      when(
+        () => syncService.upsertEntity(any()),
+      ).thenThrow(StateError('disk full'));
+
+      await expectLater(
+        actions().createTaskForBlock(
+          agentId: _agentId,
+          dayId: _dayId,
+          blockId: 'block-plain',
+        ),
+        throwsA(
+          isA<DayAgentTaskNotLinkedException>()
+              .having((e) => e.taskId, 'taskId', 'task-new')
+              .having((e) => e.blockId, 'blockId', 'block-plain')
+              .having((e) => e.cause, 'cause', isA<StateError>())
+              .having(
+                (e) => e.toString(),
+                'toString',
+                contains('task-new was created'),
+              ),
+        ),
+      );
+    });
+
+    test('a block that gained a task meanwhile is not taken over', () async {
+      seedPlan([_standalone()]);
+      factoryResult = () {
+        seedPlan([_standalone().copyWith(taskId: 'task-other')]);
+        return _task(id: 'task-new');
+      };
+
+      await expectLater(
+        actions().createTaskForBlock(
+          agentId: _agentId,
+          dayId: _dayId,
+          blockId: 'block-plain',
+        ),
+        throwsA(
+          isA<DayAgentTaskNotLinkedException>().having(
+            (e) => e.taskId,
+            'taskId',
+            'task-new',
+          ),
+        ),
+      );
+      expect(upserted, isEmpty);
+    });
+
     test('makes a task named, filed and estimated after the block, and '
         'links it', () async {
       seedPlan([_standalone()]);

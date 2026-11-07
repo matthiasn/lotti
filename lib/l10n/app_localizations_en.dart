@@ -4810,28 +4810,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get dailyOsNextBlockRemove => 'Remove from plan';
-
-  @override
-  String get dailyOsNextBlockRemoved => 'Removed from the plan.';
-
-  @override
-  String get dailyOsNextBlockLinkTask => 'Link to a task';
-
-  @override
-  String get dailyOsNextBlockLinked => 'Linked to the task.';
-
-  @override
-  String get dailyOsNextBlockUnlinkTask => 'Unlink task';
-
-  @override
-  String get dailyOsNextBlockUnlinked => 'Unlinked from the task.';
-
-  @override
   String get dailyOsNextBlockCreateTask => 'Create a task';
-
-  @override
-  String get dailyOsNextBlockTaskCreated => 'Task created.';
 
   @override
   String get dailyOsNextBlockEditCategoryLabel => 'Category';
@@ -4865,13 +4844,38 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dailyOsNextBlockEditWhyLabel => 'Why this time';
 
   @override
+  String get dailyOsNextBlockLinked => 'Linked to the task.';
+
+  @override
+  String get dailyOsNextBlockLinkTask => 'Link to a task';
+
+  @override
   String get dailyOsNextBlockMoveTooltip => 'Move block';
+
+  @override
+  String get dailyOsNextBlockRemove => 'Remove from plan';
+
+  @override
+  String get dailyOsNextBlockRemoved => 'Removed from the plan.';
 
   @override
   String get dailyOsNextBlockResizeEndTooltip => 'Adjust end';
 
   @override
   String get dailyOsNextBlockResizeStartTooltip => 'Adjust start';
+
+  @override
+  String get dailyOsNextBlockTaskCreatedNotLinked =>
+      'Task created, but not linked to this block.';
+
+  @override
+  String get dailyOsNextBlockTaskCreated => 'Task created.';
+
+  @override
+  String get dailyOsNextBlockUnlinked => 'Unlinked from the task.';
+
+  @override
+  String get dailyOsNextBlockUnlinkTask => 'Unlink task';
 
   @override
   String dailyOsNextBriefingBlockCount(int count) {

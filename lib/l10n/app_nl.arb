@@ -2330,6 +2330,7 @@
   "dailyOsNextBlockResizeEndTooltip": "Einde aanpassen",
   "dailyOsNextBlockResizeStartTooltip": "Start aanpassen",
   "dailyOsNextBlockTaskCreated": "Taak gemaakt.",
+  "dailyOsNextBlockTaskCreatedNotLinked": "Taak gemaakt, maar niet aan dit blok gekoppeld.",
   "dailyOsNextBlockUnlinked": "Losgekoppeld van de taak.",
   "dailyOsNextBlockUnlinkTask": "Taak ontkoppelen",
   "dailyOsNextBriefingBlockCount": "{count, plural, =0{Er is nog niets gepland.} =1{Je hebt één blok gepland.} other{Je hebt {count} blokken gepland.}}",

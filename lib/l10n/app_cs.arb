@@ -2080,6 +2080,7 @@
   "dailyOsNextBlockResizeEndTooltip": "Upravit konec",
   "dailyOsNextBlockResizeStartTooltip": "Upravit začátek",
   "dailyOsNextBlockTaskCreated": "Úkol vytvořen.",
+  "dailyOsNextBlockTaskCreatedNotLinked": "Úkol je vytvořený, ale s tímto blokem se nepropojil.",
   "dailyOsNextBlockUnlinked": "Propojení s úkolem zrušeno.",
   "dailyOsNextBlockUnlinkTask": "Zrušit propojení",
   "dailyOsNextBriefingBlockCount": "{count, plural, =0{Zatím nemáš nic naplánováno.} =1{Máš naplánovaný jeden blok.} few{Máš naplánované {count} bloky.} other{Máš naplánováno {count} bloků.}}",

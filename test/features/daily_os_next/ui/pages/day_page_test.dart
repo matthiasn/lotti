@@ -851,6 +851,26 @@ void main() {
         expect(routes, ['/tasks/task-for-blk_act']);
       });
 
+      testWidgets('a task made but not linked says so and still opens', (
+        tester,
+      ) async {
+        final routes = <String>[];
+        nav_service.beamToNamedOverride = routes.add;
+        final agent = RecordingDayAgent(createdTaskNotLinked: true);
+        final messages = await openEditor(tester, agent: agent);
+
+        await tapText(tester, messages.dailyOsNextBlockCreateTask);
+
+        expect(
+          find.text(messages.dailyOsNextBlockTaskCreatedNotLinked),
+          findsOneWidget,
+        );
+        expect(find.text(messages.dailyOsNextBlockEditFailed), findsNothing);
+        expect(toast(tester).tone, DesignSystemToastTone.warning);
+        toast(tester).action!.onPressed();
+        expect(routes, ['/tasks/task-for-blk_act']);
+      });
+
       testWidgets('a task-linked block unlinks from its task', (tester) async {
         final agent = RecordingDayAgent();
         final messages = await openEditor(

@@ -3261,6 +3261,7 @@
   "dailyOsNextBlockResizeEndTooltip": "Adjust end",
   "dailyOsNextBlockResizeStartTooltip": "Adjust start",
   "dailyOsNextBlockTaskCreated": "Task created.",
+  "dailyOsNextBlockTaskCreatedNotLinked": "Task created, but not linked to this block.",
   "dailyOsNextBlockUnlinked": "Unlinked from the task.",
   "dailyOsNextBlockUnlinkTask": "Unlink task",
   "dailyOsNextBriefingBlockCount": "{count, plural, =0{Nothing is planned yet.} =1{You have one block planned.} other{You have {count} blocks planned.}}",

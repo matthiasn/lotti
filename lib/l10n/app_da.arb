@@ -2331,6 +2331,7 @@
   "dailyOsNextBlockResizeEndTooltip": "Juster enden",
   "dailyOsNextBlockResizeStartTooltip": "Juster start",
   "dailyOsNextBlockTaskCreated": "Opgave oprettet.",
+  "dailyOsNextBlockTaskCreatedNotLinked": "Opgaven er oprettet, men ikke knyttet til denne blok.",
   "dailyOsNextBlockUnlinked": "Ikke længere knyttet til opgaven.",
   "dailyOsNextBlockUnlinkTask": "Fjern opgavelink",
   "dailyOsNextBriefingBlockCount": "{count, plural, =0{Der er ikke planlagt noget endnu.} =1{Du har én blok planlagt.} other{Du har {count} blokke planlagt.}}",

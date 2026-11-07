@@ -199,6 +199,9 @@ abstract class DayAgentInterface {
   /// Turns a standalone planned block into a new open task — named after
   /// the block, in its category, estimated at its length — and ties the
   /// block to it. Returns the plan and the new task's id.
+  ///
+  /// Throws [CreatedTaskNotLinkedException] when the task was created but
+  /// the block could not be linked to it.
   Future<({DraftPlan plan, String taskId})> createTaskForBlock({
     required DraftPlan plan,
     required String blockId,
@@ -241,4 +244,15 @@ abstract class DayAgentInterface {
   /// for [forDate], written from the day's facts and reused while they do
   /// not change.
   Future<TomorrowNote> generateTomorrowNote({required DateTime forDate});
+}
+
+/// [DayAgentInterface.createTaskForBlock] created the task but could not link
+/// the block to it. The task exists ([taskId]); the block stays as it was.
+class CreatedTaskNotLinkedException implements Exception {
+  const CreatedTaskNotLinkedException(this.taskId);
+
+  final String taskId;
+
+  @override
+  String toString() => 'CreatedTaskNotLinkedException: task $taskId';
 }
