@@ -366,6 +366,7 @@ void main() {
                 'read_tldr',
                 'match_to_corpus',
                 'list_due_tasks',
+                'summarize_logged_time',
                 'ask_user',
                 'reply_to_user',
               ]);
@@ -872,6 +873,82 @@ void main() {
         listed,
         'Open tasks overdue (due before 2026-11-02) (1):\n'
         '- task:dishes | Dishes | OPEN | due 2026-11-01 | Home',
+      );
+    });
+
+    test("a time question is summed from the journal over yesterday's local "
+        'day inside the chips and answered in her words', () async {
+      when(
+        () => journalDb.insightsTimeRows(
+          start: any(named: 'start'),
+          end: any(named: 'end'),
+        ),
+      ).thenAnswer(
+        (_) async => [
+          (
+            entryId: 'e1',
+            dateFrom: DateTime(2026, 11, 1, 9),
+            dateTo: DateTime(2026, 11, 1, 10, 30),
+            categoryId: 'home',
+          ),
+          (
+            entryId: 'e2',
+            dateFrom: DateTime(2026, 11, 1, 11),
+            dateTo: DateTime(2026, 11, 1, 13),
+            categoryId: 'work',
+          ),
+        ],
+      );
+      seedMessage(chips: ['home']);
+      String? summed;
+      stubModel(
+        (_) => [
+          call('summarize_logged_time', {'period': 'yesterday'}),
+          call('reply_to_user', {'message': 'Yesterday: 1h 30m on Home.'}),
+        ],
+      );
+      when(
+        () => manager.addToolResponse(
+          toolCallId: 'call-summarize_logged_time',
+          response: any(named: 'response'),
+        ),
+      ).thenAnswer((invocation) {
+        summed = invocation.namedArguments[#response] as String;
+      });
+
+      final result = await withClock(
+        Clock.fixed(DateTime(2026, 11, 2, 9)),
+        () => run(
+          agentIdentity: makeTestIdentity(
+            id: frontAgentId,
+            agentId: frontAgentId,
+            kind: AgentKinds.frontAgent,
+            allowedCategoryIds: {'work', 'home'},
+          ),
+        ),
+      );
+
+      expect(result.success, isTrue);
+      verify(
+        () => journalDb.insightsTimeRows(
+          start: DateTime(2026, 11),
+          end: DateTime(2026, 11, 2),
+        ),
+      ).called(1);
+      expect(
+        summed,
+        'Time logged yesterday (2026-11-01): 1h 30m in total, by category:\n'
+        '- Home: 1h 30m',
+      );
+      final reply = upserts.whereType<AgentMessageEntity>().singleWhere(
+        (m) => m.id == frontAgentReplyMessageId(frontAgentId, runKey),
+      );
+      expect(reply.metadata.toolName, AgentConversationToolNames.replyToUser);
+      expect(
+        upserts.whereType<AgentMessageEntity>().where(
+          (m) => m.id == frontAgentDispatchMessageId(frontAgentId, runKey),
+        ),
+        isEmpty,
       );
     });
   });

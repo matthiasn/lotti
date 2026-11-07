@@ -6,7 +6,7 @@ import 'package:lotti/features/front_agent/model/front_routing_index.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_contract.dart';
 
 void main() {
-  test('six tools, never one, in a fixed order', () {
+  test('seven tools, never one, in a fixed order', () {
     // A single tool makes DeepSeek rewrite tool_choice; the list is fixed
     // so the request prefix stays byte-stable across turns.
     expect(frontAgentTools.map((t) => t.name), [
@@ -14,6 +14,7 @@ void main() {
       FrontAgentToolNames.readTldr,
       FrontAgentToolNames.matchToCorpus,
       FrontAgentToolNames.listDueTasks,
+      FrontAgentToolNames.summarizeLoggedTime,
       FrontAgentToolNames.askUser,
       FrontAgentToolNames.replyToUser,
     ]);
@@ -68,6 +69,27 @@ void main() {
     expect(frontAgentSystemPrompt, contains('pass its id in `categoryIds`'));
   });
 
+  test('summarize_logged_time asks for one period by the names the strategy '
+      'reads, and the prompt sends a time question there, never to a door', () {
+    final summarize = frontAgentTools[4];
+    final properties = summarize.parameters['properties'] as Map;
+    expect(
+      (properties['period'] as Map)['enum'],
+      [for (final period in FrontTimePeriod.values) period.wireName],
+    );
+    expect(summarize.parameters['required'], ['period']);
+    expect(frontAgentSystemPrompt, contains('call `summarize_logged_time`'));
+    expect(
+      frontAgentSystemPrompt,
+      contains('"the past month" is `past_30_days`'),
+    );
+    expect(frontTimeSummariesPerTurn, 1);
+    expect(
+      frontTimeSummaryExhaustedAnswer,
+      contains('$frontTimeSummariesPerTurn used'),
+    );
+  });
+
   test("lookup caps and the per-turn budget are the plan's", () {
     expect(frontProviderCallsPerTurn, 3);
     expect(frontTldrReadsPerTurn, 1);
@@ -86,7 +108,7 @@ void main() {
       ((readTldr.parameters['properties'] as Map)['ids'] as Map)['maxItems'],
       frontTldrIdsPerRead,
     );
-    final askUser = frontAgentTools[4];
+    final askUser = frontAgentTools[5];
     expect(
       ((askUser.parameters['properties'] as Map)['options'] as Map)['maxItems'],
       frontAskUserMaxOptions,

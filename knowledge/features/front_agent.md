@@ -1,7 +1,7 @@
 ---
 type: Feature Module
 title: Front agent
-description: The one agent the user talks to in one place — how a durable user turn becomes a routing wake, what the routing index holds, how the dispatch contract is validated in code, the capped lookups and the repair round, the deterministic records a turn leaves behind, how the door walker takes each segment to its owner and mirrors the answer, how a statement becomes a proposal the user's one tap files, what the inbox is, how an unanswered turn is recovered on any device, how turns form conversations, how she answers what is due and names tasks as links, what the chat surface renders, and what she hears and says.
+description: The one agent the user talks to in one place — how a durable user turn becomes a routing wake, what the routing index holds, how the dispatch contract is validated in code, the capped lookups and the repair round, the deterministic records a turn leaves behind, how the door walker takes each segment to its owner and mirrors the answer, how a statement becomes a proposal the user's one tap files, what the inbox is, how an unanswered turn is recovered on any device, how turns form conversations, how she answers what is due and how much time was logged and names tasks as links, what the chat surface renders, and what she hears and says.
 resource: ../../lib/features/front_agent
 tags: [agents, front-agent, routing, dispatch, doors, filing, inbox, companion, chat]
 status: draft
@@ -11,15 +11,15 @@ sources:
   - id: workflow
     resource: ../../lib/features/front_agent/workflow/front_agent_workflow.dart
     title: FrontAgentWorkflow — one routing turn per wake
-    last_modified: 2026-10-23
+    last_modified: 2026-11-07
   - id: strategy
     resource: ../../lib/features/front_agent/workflow/front_agent_strategy.dart
     title: FrontAgentStrategy — accumulating, count-capped tool handling, her words linked
-    last_modified: 2026-11-06
+    last_modified: 2026-11-07
   - id: contract
     resource: ../../lib/features/front_agent/workflow/front_agent_contract.dart
     title: The tool contract, caps and system prompt
-    last_modified: 2026-11-06
+    last_modified: 2026-11-07
   - id: validator
     resource: ../../lib/features/front_agent/workflow/front_dispatch_validator.dart
     title: validateFrontDispatch — the dispatch rules in code
@@ -27,11 +27,15 @@ sources:
   - id: index
     resource: ../../lib/features/front_agent/model/front_routing_index.dart
     title: FrontRoutingIndex — the bounded, byte-stable catalogue
-    last_modified: 2026-11-02
+    last_modified: 2026-11-07
+  - id: insights-bucketing
+    resource: ../../lib/features/insights/logic/time_bucketing.dart
+    title: The Insights bucketing a logged-time summary reuses
+    last_modified: 2026-11-07
   - id: index-builder
     resource: ../../lib/features/front_agent/service/front_routing_index_builder.dart
     title: FrontRoutingIndexBuilder — the index from existing reads
-    last_modified: 2026-11-02
+    last_modified: 2026-11-07
   - id: corpus
     resource: ../../lib/features/agents/service/open_task_corpus.dart
     title: The open-task corpus shared with the day agent
@@ -261,7 +265,7 @@ tokens.
 
 # The contract
 
-Six tools, never fewer (a single tool makes DeepSeek rewrite
+Seven tools, never fewer (a single tool makes DeepSeek rewrite
 `tool_choice`), in a fixed order:
 
 | Tool | Ends the turn | Cap | Over the cap |
@@ -270,6 +274,7 @@ Six tools, never fewer (a single tool makes DeepSeek rewrite
 | `read_tldr(ids ≤ 5)` | no | 1 per turn | `frontTldrExhaustedAnswer` — the tool stays listed |
 | `match_to_corpus(phrase)` | no | 1 per turn | `frontCorpusMatchExhaustedAnswer`; unavailable when no FTS index is wired |
 | `list_due_tasks(which, daysAhead 0–7, categoryIds)` | no | 1 per turn | `frontDueListExhaustedAnswer`; unavailable when no lister is wired |
+| `summarize_logged_time(period)` | no | 1 per turn | `frontTimeSummaryExhaustedAnswer`; unavailable when no summarizer is wired |
 | `ask_user(question, options ≤ 3)` | yes | once | refused |
 | `reply_to_user(text)` | yes | once | refused |
 
@@ -310,7 +315,7 @@ Her **manner** follows the contract in the system prompt:
 shapes only her own words (`reply_to_user`, `ask_user`), never routing, ids
 or an owner's answer, and asks for short spoken-friendly sentences. Appended
 after the contract, so a sass change leaves the cached prefix as it is.
-## Her own answers: what is due, and naming things
+## Her own answers: what is due, logged time, and naming things
 
 A question about which tasks are due — *what is due today?*, *anything
 overdue?*, *what's due this week?* — no single owner holds, so it is hers,
@@ -344,6 +349,35 @@ both together all filter the list. `FrontDueTasks.render` is what the model
 reads: the window and any named category in its heading, one row per task in
 the index's shape plus its category's name, an overdue one marked only in
 `all`, or a plain *None*.
+
+**How much time was logged** — *how much did I log yesterday?*, *this
+week?*, *the past 30 days?* — is hers too. Rule 9 sends it to
+`summarize_logged_time` and then `reply_to_user` alone; it is never
+dispatched. `period` names one `FrontTimePeriod`, resolved in code against
+the local day the question was asked on (`FrontTimePeriod.rangeOn`), never
+by the model:
+
+| `period` | Local days |
+|----------|------------|
+| `today`, `yesterday` | that one day |
+| `this_week` | the week's first day through today; weeks start on the device region's first weekday (`firstDayOfWeekIndexProvider`), as the Insights page starts them |
+| `past_7_days`, `past_30_days` | the N days ending with today |
+| `this_month` | the 1st through today |
+| `last_month` | the previous calendar month, whole |
+
+The prompt maps "last month" to `last_month` and "the past month" to
+`past_30_days`; a period the enum lacks is answered by naming the ones she
+can sum. `FrontRoutingIndexBuilder.loggedTimeSummarizer` reads the
+Insights page's own query (`JournalDb.insightsTimeRows` through
+`InsightsRepository`) and buckets it with its `bucketize` and
+`rankedCategoryTotals`, so her numbers are that page's: private entries only
+while they are shown, a task's time in the task's category, overlapping
+entries in one category counted once, an entry across midnight split. Rows
+outside the turn's scope are dropped before bucketing, so time in no
+category is left out whenever the scope is narrowed. `FrontLoggedTime.render`
+is what the model reads — the period, its `YYYY-MM-DD` days and the total,
+then each category's hours and minutes, largest first — or a plain *None*.
+No chart: the answer is text in her reply.
 
 Her own words name a task or a project as a Markdown link titled as listed:
 `[title](lotti://task/<id>)`, `lotti://project/<id>` (`frontReferenceUrl`).

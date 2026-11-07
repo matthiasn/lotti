@@ -26,7 +26,10 @@ from the journal, within the categories she may see (a category named in the
 question narrows it), with the passages she relied on, each opening its
 source. A question about what is due — today, overdue, this week — is
 hers too: she reads only what was asked (due today is never mixed with
-overdue) and answers in her own words. She knows the categories by name: one
+overdue) and answers in her own words. So is how much time was logged —
+today, yesterday, this week, the past 7 or 30 days, this month or last
+month: she sums it per category, with the numbers the Insights page shows,
+and says it as text. She knows the categories by name: one
 named in the question narrows the answer, and so do the categories chosen in
 the conversation's chips, alone or together. Every task
 or project she names is a link that closes her and opens it, and every
@@ -45,7 +48,8 @@ and a proposal she got wrong goes to the inbox rather than being retyped.
 ## What it owns
 
 - `model/` — the fixed identity (`front_agent`), the dispatch shape and its
-  thresholds, the routing index and its caps, what a due-task list holds,
+  thresholds, the routing index and its caps, what a due-task list and a
+  logged-time summary hold,
   the links her words name tasks and projects with
   (`front_reference_links.dart`), the door record, the thread
   projection the chat surface renders, and what a conversation is.
@@ -54,7 +58,8 @@ and a proposal she got wrong goes to the inbox rather than being retyped.
   terminal calls, her words linked), the model resolution (its own setup, never a category's)
   and the wake workflow that persists the dispatch record.
 - `service/` — the index builder over existing reads (and the due-task
-  lister behind `list_due_tasks`), the singleton's lazy
+  lister behind `list_due_tasks` and the logged-time summarizer behind
+  `summarize_logged_time`), the singleton's lazy
   creation, the chat service that makes a user turn durable with a recovery
   record and runs the wake, the door walker, the owner titles, the thread
   builder that mirrors specialists' replies, the conversation service, and

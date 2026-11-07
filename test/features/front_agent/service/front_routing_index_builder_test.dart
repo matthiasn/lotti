@@ -10,6 +10,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_routing_index.dart';
 import 'package:lotti/features/front_agent/service/front_routing_index_builder.dart';
@@ -131,12 +132,15 @@ void main() {
   late MockAgentRepository agentRepository;
   late MockFts5Db fts5Db;
 
-  FrontRoutingIndexBuilder builder({bool withFts = true}) =>
-      FrontRoutingIndexBuilder(
-        journalDb: journalDb,
-        agentRepository: agentRepository,
-        fts5Db: withFts ? fts5Db : null,
-      );
+  FrontRoutingIndexBuilder builder({
+    bool withFts = true,
+    Future<int> Function()? firstDayOfWeekIndex,
+  }) => FrontRoutingIndexBuilder(
+    journalDb: journalDb,
+    agentRepository: agentRepository,
+    fts5Db: withFts ? fts5Db : null,
+    firstDayOfWeekIndex: firstDayOfWeekIndex,
+  );
 
   setUp(() {
     journalDb = MockJournalDb();
@@ -609,6 +613,118 @@ void main() {
 
       expect(due.rows, hasLength(frontDueTaskLimit));
       expect(due.omitted, 3);
+    });
+  });
+
+  group('loggedTimeSummarizer', () {
+    InsightsTimeRowRecord row(String? categoryId, DateTime from, DateTime to) =>
+        (
+          entryId: '$categoryId@$from',
+          dateFrom: from,
+          dateTo: to,
+          categoryId: categoryId,
+        );
+
+    // Today is Friday 2026-10-23; everything below was logged yesterday.
+    setUp(() {
+      when(
+        () => journalDb.insightsTimeRows(
+          start: any(named: 'start'),
+          end: any(named: 'end'),
+        ),
+      ).thenAnswer(
+        (_) async => [
+          // Started the day before yesterday: only its last 30 minutes count.
+          row(
+            'work',
+            DateTime(2026, 10, 21, 23),
+            DateTime(2026, 10, 22, 0, 30),
+          ),
+          row('work', DateTime(2026, 10, 22, 9), DateTime(2026, 10, 22, 11)),
+          // Overlaps the one before it: the shared half hour counts once.
+          row(
+            'work',
+            DateTime(2026, 10, 22, 10),
+            DateTime(2026, 10, 22, 11, 30),
+          ),
+          row('home', DateTime(2026, 10, 22, 20), DateTime(2026, 10, 22, 21)),
+          row(null, DateTime(2026, 10, 22, 13), DateTime(2026, 10, 22, 13, 15)),
+          row(
+            'gone',
+            DateTime(2026, 10, 22, 14),
+            DateTime(2026, 10, 22, 14, 10),
+          ),
+        ],
+      );
+      when(() => journalDb.getAllCategories()).thenAnswer(
+        (_) async => [
+          CategoryTestUtils.createTestCategory(id: 'work', name: 'Work'),
+          CategoryTestUtils.createTestCategory(id: 'home', name: 'Home'),
+        ],
+      );
+    });
+
+    test("yesterday reads yesterday's local day and sums each category, "
+        'largest first, overlaps once', () async {
+      final logged = await builder().loggedTimeSummarizer(
+        const FrontRoutingScope(),
+        now: _now,
+      )(FrontTimePeriod.yesterday);
+
+      verify(
+        () => journalDb.insightsTimeRows(
+          start: DateTime(2026, 10, 22),
+          end: DateTime(2026, 10, 23),
+        ),
+      ).called(1);
+      expect(logged.period, FrontTimePeriod.yesterday);
+      expect(logged.from, DateTime(2026, 10, 22));
+      expect(logged.through, DateTime(2026, 10, 22));
+      expect(logged.byCategory, [
+        (name: 'Work', seconds: 3 * 3600),
+        (name: 'Home', seconds: 3600),
+        (name: null, seconds: 15 * 60),
+        (name: 'Unnamed', seconds: 10 * 60),
+      ]);
+    });
+
+    test('time outside the scope, and in no category once it is narrowed, '
+        'is left out', () async {
+      for (final scope in const [
+        FrontRoutingScope(allowedCategoryIds: {'work'}),
+        FrontRoutingScope(chosenCategoryIds: {'work'}),
+      ]) {
+        final logged = await builder().loggedTimeSummarizer(
+          scope,
+          now: _now,
+        )(FrontTimePeriod.yesterday);
+        expect(logged.byCategory, [(name: 'Work', seconds: 3 * 3600)]);
+      }
+    });
+
+    test("this week starts on the region's first weekday, Monday without "
+        'one, and ends today', () async {
+      final sunday =
+          await builder(
+            firstDayOfWeekIndex: () async => 0,
+          ).loggedTimeSummarizer(const FrontRoutingScope(), now: _now)(
+            FrontTimePeriod.thisWeek,
+          );
+      verify(
+        () => journalDb.insightsTimeRows(
+          start: DateTime(2026, 10, 18),
+          end: DateTime(2026, 10, 24),
+        ),
+      ).called(1);
+      expect(sunday.through, DateTime(2026, 10, 23));
+      // The row from the day before yesterday now counts whole.
+      expect(sunday.byCategory.first, (name: 'Work', seconds: 3 * 3600 + 3600));
+
+      final monday = await builder().loggedTimeSummarizer(
+        const FrontRoutingScope(),
+        now: _now,
+      )(FrontTimePeriod.thisWeek);
+      expect(monday.from, DateTime(2026, 10, 19));
     });
   });
 }

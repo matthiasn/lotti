@@ -12,6 +12,9 @@ import 'package:lotti/features/agents/service/open_task_corpus.dart';
 import 'package:lotti/features/front_agent/model/front_conversation.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_routing_index.dart';
+import 'package:lotti/features/insights/logic/period_navigation.dart';
+import 'package:lotti/features/insights/logic/time_bucketing.dart';
+import 'package:lotti/features/insights/repository/insights_repository.dart';
 import 'package:lotti/utils/day_agent_capture_helpers.dart';
 
 /// What the front agent may see (the owner's decision 4: narrow by default).
@@ -49,6 +52,7 @@ class FrontRoutingIndexBuilder {
     required this.journalDb,
     required this.agentRepository,
     this.fts5Db,
+    this.firstDayOfWeekIndex,
   });
 
   final JournalDb journalDb;
@@ -57,6 +61,10 @@ class FrontRoutingIndexBuilder {
   /// Null when no full-text index is wired; `match_to_corpus` is then
   /// unavailable for the turn.
   final Fts5Db? fts5Db;
+
+  /// The device region's first weekday (`0 = Sunday` … `6 = Saturday`) that
+  /// `this_week` starts on; Monday when null.
+  final Future<int> Function()? firstDayOfWeekIndex;
 
   Future<FrontRoutingIndex> build({
     required FrontRoutingScope scope,
@@ -179,6 +187,54 @@ class FrontRoutingIndexBuilder {
         narrowedTo: [
           for (final id in narrowed) ?names[id],
         ]..sort(),
+      );
+    };
+  }
+
+  /// Sums the time logged inside [scope] in one period of [now]'s local
+  /// days, per category, largest first. The Insights page's read and
+  /// bucketing, so she answers with the numbers that page shows: private
+  /// entries only while they are shown, a task's time in the task's
+  /// category, overlapping entries in one category counted once. Time in
+  /// no category is left out whenever the scope is narrowed.
+  Future<FrontLoggedTime> Function(FrontTimePeriod period) loggedTimeSummarizer(
+    FrontRoutingScope scope, {
+    required DateTime now,
+  }) {
+    return (period) async {
+      final range = period.rangeOn(
+        now,
+        firstDayOfWeekIndex:
+            await firstDayOfWeekIndex?.call() ?? defaultFirstDayOfWeekIndex,
+      );
+      final rows = await InsightsRepository(journalDb).fetchTimeRows(
+        start: dayStart(range.startDay),
+        end: dayStart(range.endDayExclusive),
+      );
+      final buckets = bucketize(
+        [
+          for (final row in rows)
+            if (categoryAllowed(row.categoryId, scope.categoryIds)) row,
+        ],
+        windowStartDay: range.startDay,
+      );
+      final names = {
+        for (final category in await journalDb.getAllCategories())
+          category.id: category.name,
+      };
+      return FrontLoggedTime(
+        period: period,
+        from: dayStart(range.startDay),
+        through: dayStart(range.endDayExclusive - 1),
+        byCategory: [
+          for (final MapEntry(key: id, value: seconds) in rankedCategoryTotals(
+            dailyTotals(buckets, range),
+          ))
+            (
+              name: id == null ? null : names[id] ?? 'Unnamed',
+              seconds: seconds,
+            ),
+        ],
       );
     };
   }

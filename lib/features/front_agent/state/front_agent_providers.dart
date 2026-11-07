@@ -36,6 +36,7 @@ import 'package:lotti/logic/repositories/journal_repository.dart';
 import 'package:lotti/providers/agent_repository_providers.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/providers/update_notifications_providers.dart';
+import 'package:lotti/utils/device_region.dart';
 
 /// The routing index over the journal and the agent store.
 final frontRoutingIndexBuilderProvider = Provider<FrontRoutingIndexBuilder>(
@@ -44,6 +45,7 @@ final frontRoutingIndexBuilderProvider = Provider<FrontRoutingIndexBuilder>(
     agentRepository: ref.watch(agentRepositoryProvider),
     // A host without a full-text index simply has no corpus match.
     fts5Db: ref.watch(fts5DbProvider),
+    firstDayOfWeekIndex: () => ref.read(firstDayOfWeekIndexProvider.future),
   ),
   name: 'frontRoutingIndexBuilderProvider',
 );

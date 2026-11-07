@@ -24,6 +24,11 @@ typedef FrontCorpusMatcher =
 typedef FrontDueTaskLister =
     Future<FrontDueTasks> Function(FrontDueQuery query);
 
+/// Sums the time logged in one period, per category, inside the turn's
+/// scope.
+typedef FrontLoggedTimeSummarizer =
+    Future<FrontLoggedTime> Function(FrontTimePeriod period);
+
 /// One candidate offered by `ask_user`.
 typedef FrontAskOption = ({FrontDestinationKind kind, String id, String label});
 
@@ -36,7 +41,7 @@ typedef FrontAskUser = ({String question, List<FrontAskOption> options});
 /// writes the outputs in one transaction.
 ///
 /// Three calls end the turn — `dispatch`, `ask_user`, `reply_to_user` — and
-/// the three lookups are capped by count, not by removing them from the list:
+/// the four lookups are capped by count, not by removing them from the list:
 /// a shrinking tool list changes the request prefix and voids the provider's
 /// cache, which a routing turn exists to keep warm.
 class FrontAgentStrategy extends ConversationStrategy
@@ -51,6 +56,7 @@ class FrontAgentStrategy extends ConversationStrategy
     required this.index,
     this.corpusMatcher,
     this.dueTaskLister,
+    this.loggedTimeSummarizer,
   });
 
   @override
@@ -76,12 +82,17 @@ class FrontAgentStrategy extends ConversationStrategy
   /// that it is unavailable.
   final FrontDueTaskLister? dueTaskLister;
 
+  /// Null when no journal is wired (tests, evals): the tool then answers
+  /// that it is unavailable.
+  final FrontLoggedTimeSummarizer? loggedTimeSummarizer;
+
   FrontDispatch? _dispatch;
   FrontAskUser? _askUser;
   String? _replyToUser;
   int _tldrReads = 0;
   int _corpusMatches = 0;
   int _dueLists = 0;
+  int _timeSummaries = 0;
   int _rejectedDispatches = 0;
   final _lookupRows = <FrontIndexRow>[];
 
@@ -97,7 +108,8 @@ class FrontAgentStrategy extends ConversationStrategy
   int get rejectedDispatches => _rejectedDispatches;
 
   /// How many lookup calls ran (refused ones excluded).
-  int get lookupCalls => _tldrReads + _corpusMatches + _dueLists;
+  int get lookupCalls =>
+      _tldrReads + _corpusMatches + _dueLists + _timeSummaries;
 
   @override
   Future<ConversationAction> processToolCalls({
@@ -141,6 +153,8 @@ class FrontAgentStrategy extends ConversationStrategy
           await _handleMatchToCorpus(call, args, manager);
         case FrontAgentToolNames.listDueTasks:
           await _handleListDueTasks(call, args, manager);
+        case FrontAgentToolNames.summarizeLoggedTime:
+          await _handleSummarizeLoggedTime(call, args, manager);
         case FrontAgentToolNames.askUser:
           await _handleAskUser(call, args, manager);
         case FrontAgentToolNames.replyToUser:
@@ -399,6 +413,38 @@ class FrontAgentStrategy extends ConversationStrategy
     ));
     _lookupRows.addAll(due.rows);
     await _accept(call, manager, due.render());
+  }
+
+  Future<void> _handleSummarizeLoggedTime(
+    ChatCompletionMessageToolCall call,
+    Map<String, dynamic> args,
+    ConversationManager manager,
+  ) async {
+    if (_timeSummaries >= frontTimeSummariesPerTurn) {
+      await _reject(call, manager, frontTimeSummaryExhaustedAnswer);
+      return;
+    }
+    final period = FrontTimePeriod.fromWire(args['period']);
+    if (period == null) {
+      await _reject(
+        call,
+        manager,
+        'Error: summarize_logged_time needs period: one of '
+        '${FrontTimePeriod.values.map((p) => p.wireName).join(', ')}.',
+      );
+      return;
+    }
+    final summarizer = loggedTimeSummarizer;
+    if (summarizer == null) {
+      await _reject(
+        call,
+        manager,
+        'Logged time is unavailable this turn; say so in reply_to_user.',
+      );
+      return;
+    }
+    _timeSummaries++;
+    await _accept(call, manager, (await summarizer(period)).render());
   }
 
   /// Her words with every task or project they name by id made a link —

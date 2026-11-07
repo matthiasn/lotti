@@ -1,4 +1,7 @@
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
+import 'package:lotti/features/insights/logic/period_navigation.dart';
+import 'package:lotti/features/insights/logic/time_bucketing.dart';
+import 'package:lotti/features/insights/model/insights_models.dart';
 
 /// Caps per kind. Deterministic, so the rendered block is bounded whatever
 /// the workspace holds; a truncated kind says so in the block. At every
@@ -117,6 +120,118 @@ class FrontDueTasks {
       buffer.writeln();
     }
     return buffer.toString().trimRight();
+  }
+}
+
+/// The periods one `summarize_logged_time` may sum, each a run of whole
+/// local days resolved against the day the question was asked on.
+enum FrontTimePeriod {
+  today('today'),
+  yesterday('yesterday'),
+  thisWeek('this_week'),
+  past7Days('past_7_days'),
+  past30Days('past_30_days'),
+  thisMonth('this_month'),
+  lastMonth('last_month');
+
+  const FrontTimePeriod(this.wireName);
+
+  /// The name the tool contract uses.
+  final String wireName;
+
+  /// The period [value] names on the wire, or null for none of them.
+  static FrontTimePeriod? fromWire(Object? value) =>
+      values.where((period) => period.wireName == value).firstOrNull;
+
+  /// The local days this period covers on [now]'s day. The past N days end
+  /// with today; a week or month still running ends with today too, never
+  /// in the future. Weeks start on [firstDayOfWeekIndex] (`0 = Sunday` …
+  /// `6 = Saturday`), as the Insights page starts them.
+  InsightsRange rangeOn(
+    DateTime now, {
+    int firstDayOfWeekIndex = defaultFirstDayOfWeekIndex,
+  }) {
+    final day = epochDay(now);
+    InsightsRange lastDays(int count) =>
+        InsightsRange(startDay: day - count + 1, endDayExclusive: day + 1);
+    InsightsRange soFar(InsightsRange period) =>
+        InsightsRange(startDay: period.startDay, endDayExclusive: day + 1);
+    return switch (this) {
+      FrontTimePeriod.today => lastDays(1),
+      FrontTimePeriod.yesterday => InsightsRange(
+        startDay: day - 1,
+        endDayExclusive: day,
+      ),
+      FrontTimePeriod.thisWeek => soFar(
+        periodContaining(
+          InsightsPeriodUnit.week,
+          now,
+          firstDayOfWeekIndex: firstDayOfWeekIndex,
+        ),
+      ),
+      FrontTimePeriod.past7Days => lastDays(7),
+      FrontTimePeriod.past30Days => lastDays(30),
+      FrontTimePeriod.thisMonth => soFar(
+        periodContaining(InsightsPeriodUnit.month, now),
+      ),
+      FrontTimePeriod.lastMonth => periodContaining(
+        InsightsPeriodUnit.month,
+        DateTime(now.year, now.month - 1),
+      ),
+    };
+  }
+}
+
+/// What one `summarize_logged_time` found: the time logged in [period],
+/// per category, largest first.
+class FrontLoggedTime {
+  const FrontLoggedTime({
+    required this.period,
+    required this.from,
+    required this.through,
+    required this.byCategory,
+  });
+
+  final FrontTimePeriod period;
+
+  /// Local midnights of the first and the last day summed.
+  final DateTime from;
+  final DateTime through;
+
+  /// Each category's name — null for time in no category — and its seconds,
+  /// largest first, none of them zero.
+  final List<({String? name, int seconds})> byCategory;
+
+  /// The tool's answer: a heading naming the period, its days and the
+  /// total, then one line per category.
+  String render() {
+    const day = FrontRoutingIndex._isoDay;
+    final days = from == through
+        ? day(from)
+        : '${day(from)} through ${day(through)}';
+    final what = '${period.wireName.replaceAll('_', ' ')} ($days)';
+    if (byCategory.isEmpty) return 'None: no time logged $what.';
+    final total = byCategory.fold(0, (sum, entry) => sum + entry.seconds);
+    final buffer = StringBuffer(
+      'Time logged $what: ${_hoursMinutes(total)} in total, by category:\n',
+    );
+    for (final (:name, :seconds) in byCategory) {
+      final label = name == null
+          ? 'No category'
+          : FrontRoutingIndex._oneLine(name);
+      buffer.writeln('- $label: ${_hoursMinutes(seconds)}');
+    }
+    return buffer.toString().trimRight();
+  }
+
+  /// `45m`, `2h`, `31h 5m`: hours never roll into days, so a month's total
+  /// reads as the hours it is.
+  static String _hoursMinutes(int seconds) {
+    final minutes = (seconds / 60).round();
+    final hours = minutes ~/ 60;
+    final rest = minutes % 60;
+    if (hours == 0) return '${rest}m';
+    return rest == 0 ? '${hours}h' : '${hours}h ${rest}m';
   }
 }
 
