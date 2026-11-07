@@ -1,6 +1,7 @@
+import 'dart:math' as math;
+
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import 'package:lotti/features/agents/ui/agent_surface_menu.dart';
 import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
@@ -18,7 +19,6 @@ import 'package:lotti/features/front_agent/state/front_inbox_filter.dart';
 import 'package:lotti/features/front_agent/ui/front_conversation_actions.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/utils/device_datetime.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Stable keys for the list's controls.
@@ -122,20 +122,11 @@ class _FrontConversationListState extends ConsumerState<FrontConversationList> {
     final rowSize = _rowSize(context);
     // Labels sit on the row text's own edge.
     final textInset = DesignSystemListItem.contentInset(tokens, rowSize);
-    // One time column for the whole list, as wide as its widest time: every
-    // preview then ends on the same line, whatever its own time says.
-    final timeWidth = _timeWidth(context, [
-      for (final c in [...live, if (showArchived) ...archived])
-        _when(context, c.lastActivity, now),
-    ]);
-
     final rounded = BorderRadius.circular(tokens.radii.m);
 
     Widget row(FrontConversation c) => _ConversationRow(
       key: FrontConversationListKeys.row(c.id),
       conversation: c,
-      now: now,
-      timeWidth: timeWidth,
       borderRadius: rounded,
       selected: !inboxOnly && c.id == activeId,
       pinMenu: !widget.beside,
@@ -448,58 +439,15 @@ double _lineHeight(BuildContext context, TextStyle style) {
   return height;
 }
 
-/// The style a row's time is set in.
-/// In tabular figures, so the column lines up digit for digit.
-TextStyle _timeStyle(BuildContext context) => context
-    .designTokens
-    .typography
-    .styles
-    .others
-    .caption
-    .copyWith(fontFeatures: const [FontFeature.tabularFigures()]);
-
-/// The width the widest of [times] takes as it lays out here — with the
-/// text scaler — so every row's time column is that wide.
-double _timeWidth(BuildContext context, Iterable<String> times) {
-  var widest = 0.0;
-  for (final time in times) {
-    final painter = TextPainter(
-      text: TextSpan(text: time, style: _timeStyle(context)),
-      textDirection: Directionality.of(context),
-      textScaler: MediaQuery.textScalerOf(context),
-      maxLines: 1,
-    )..layout();
-    if (painter.width > widest) widest = painter.width;
-    painter.dispose();
-  }
-  // Rounded up: a fraction short would wrap the widest one.
-  return widest.ceilToDouble();
-}
-
-/// When a conversation last moved, as a chat list says it: the time today
-/// and yesterday (its section names the day), the weekday within a week,
-/// else the date.
-String _when(BuildContext context, DateTime at, DateTime now) {
-  final locale = Localizations.localeOf(context).toLanguageTag();
-  final days = DateTime(
-    now.year,
-    now.month,
-    now.day,
-  ).difference(DateTime(at.year, at.month, at.day)).inDays;
-  if (days <= 1) return deviceClockLabel(context, at);
-  if (days < 7) return DateFormat.E(locale).format(at);
-  return DateFormat.MMMd(locale).format(at);
-}
-
-/// One conversation: its title on one line, and its menu. The open one is
+/// One conversation: its title, her last answer under it, and its menu.
+/// When it moved is its section's to say (Today, Yesterday, …), as a chat
+/// list has it, so the title has its line to itself. The open one is
 /// the brightest neutral rounded fill — not the accent, which is the user's
 /// own bubbles' colour. On a wide window the menu shows on
 /// hover or focus and on the open row; the rest of the list stays words.
 class _ConversationRow extends StatefulWidget {
   const _ConversationRow({
     required this.conversation,
-    required this.now,
-    required this.timeWidth,
     required this.borderRadius,
     required this.selected,
     required this.menu,
@@ -509,10 +457,6 @@ class _ConversationRow extends StatefulWidget {
   });
 
   final FrontConversation conversation;
-  final DateTime now;
-
-  /// The list's time column: the widest time any row shows.
-  final double timeWidth;
 
   /// The row's own corners, for its fill.
   final BorderRadius borderRadius;
@@ -540,9 +484,9 @@ class _ConversationRowState extends State<_ConversationRow> {
     final showMenu =
         (widget.selected && widget.pinMenu) || _hovered || _focused;
     final extent = DesignSystemContextMenuButton.extent(tokens);
+    final glyph = tokens.spacing.step5;
     final conversation = widget.conversation;
     final preview = conversation.preview?.trim();
-    final when = _when(context, conversation.lastActivity, widget.now);
     // On the open row's fill, the second line is as bright as the title:
     // dim text never sits on the brightest neutral.
     final quiet = tokens.typography.styles.body.bodySmall.copyWith(
@@ -550,64 +494,69 @@ class _ConversationRowState extends State<_ConversationRow> {
           ? tokens.colors.text.highEmphasis
           : tokens.colors.text.mediumEmphasis,
     );
+    final titleStyle = tokens.typography.styles.subtitle.subtitle2.copyWith(
+      // An archived one is quieter in tone as well as marked — unless it is
+      // the open one, whose fill never carries dim text.
+      color: conversation.archived && !widget.selected
+          ? tokens.colors.text.mediumEmphasis
+          : tokens.colors.text.highEmphasis,
+    );
+    // The menu's glyph is centred on the title's first line; its whole tap
+    // target stays inside the row, so where the target would reach above
+    // it, the target stops at the row's top and the glyph moves up in it.
+    final glyphCentre =
+        DesignSystemListItem.verticalInset(tokens, _conversationRowSize) +
+        _lineHeight(context, titleStyle) / 2;
+    final menuTop = math.max(0, glyphCentre - extent / 2).toDouble();
+    // From the content's end to the glyph's far side, and a gap before it:
+    // the target sits a quarter past the content's edge (see below).
+    final menuRoom = extent / 4 + glyph / 2 + tokens.spacing.step3;
+    final glyphAlignment = Alignment(
+      0,
+      2 * (glyphCentre - menuTop - glyph / 2) / (extent - glyph) - 1,
+    );
     final row = DesignSystemListItem(
-      // The title on the whole width — two lines before it is cut, so no
-      // title is left mid-word — and under it where the conversation got
-      // to, her last answer, with when it moved at the line's end. While the
-      // menu shows, it takes the time's place; the time keeps its room, so
-      // nothing reflows.
-      titleContent: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            conversation.title,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            // An archived one is quieter in tone as well as marked — unless
-            // it is the open one, whose fill never carries dim text.
-            style: tokens.typography.styles.subtitle.subtitle2.copyWith(
-              color: conversation.archived && !widget.selected
-                  ? tokens.colors.text.mediumEmphasis
-                  : tokens.colors.text.highEmphasis,
-            ),
-          ),
-          SizedBox(height: tokens.spacing.step1),
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  (preview?.isNotEmpty ?? false) ? preview! : '',
-                  maxLines: 1,
-                  softWrap: false,
-                  overflow: TextOverflow.fade,
-                  style: quiet,
-                ),
-              ),
-              // Room for the fade to finish before the time begins.
-              SizedBox(width: tokens.spacing.step4),
-              Visibility(
-                visible: !showMenu,
-                maintainSize: true,
-                maintainAnimation: true,
-                maintainState: true,
-                child: SizedBox(
-                  width: widget.timeWidth,
-                  child: Text(
-                    when,
-                    textAlign: TextAlign.end,
-                    maxLines: 1,
-                    softWrap: false,
-                    style: _timeStyle(context).copyWith(
-                      color: widget.selected
-                          ? tokens.colors.text.highEmphasis
-                          : tokens.colors.text.mediumEmphasis,
-                    ),
+      // The title leads, two lines before it is cut, so no title is left
+      // mid-word; under it where the conversation got to, her last answer,
+      // on the row's whole width, when there is one.
+      titleContent: ConstrainedBox(
+        // Never shorter than the menu's whole tap target: a one-line chat
+        // with no answer yet would leave its lower part outside the row.
+        constraints: BoxConstraints(
+          minHeight:
+              extent -
+              2 *
+                  DesignSystemListItem.verticalInset(
+                    tokens,
+                    _conversationRowSize,
                   ),
-                ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              // Room for the menu at the title's end, kept on every row: it
+              // shows on hover, focus and the open row, and nothing reflows.
+              padding: EdgeInsetsDirectional.only(end: menuRoom),
+              child: Text(
+                conversation.title,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: titleStyle,
+              ),
+            ),
+            if (preview != null && preview.isNotEmpty) ...[
+              SizedBox(height: tokens.spacing.step1),
+              Text(
+                preview,
+                maxLines: 1,
+                softWrap: false,
+                overflow: TextOverflow.fade,
+                style: quiet,
               ),
             ],
-          ),
-        ],
+          ],
+        ),
       ),
       size: _conversationRowSize,
       borderRadius: widget.borderRadius,
@@ -646,19 +595,9 @@ class _ConversationRowState extends State<_ConversationRow> {
           ),
           // Over the row, inside its bounds, so the whole target answers:
           // a near miss opens the menu, never the conversation.
-          // On the preview line, at its end: in the very place of the time it
-          // stands in for.
+          // On the title's first line, at its end, in the room kept for it.
           Positioned(
-            // Centred on the preview line: the row's bottom inset plus half
-            // that line's own height, as its text lays out.
-            bottom:
-                DesignSystemListItem.verticalInset(
-                  tokens,
-                  _conversationRowSize,
-                ) +
-                _lineHeight(context, quiet) / 2 +
-                tokens.spacing.step2 -
-                extent / 2,
+            top: menuTop,
             right:
                 DesignSystemListItem.contentInset(
                   tokens,
@@ -677,6 +616,7 @@ class _ConversationRowState extends State<_ConversationRow> {
                   key: FrontConversationListKeys.menu(widget.conversation.id),
                   // Which chat Delete deletes, said above it.
                   header: widget.conversation.title,
+                  glyphAlignment: glyphAlignment,
                   // Quiet on every row but the open one, so the rail of
                   // menus a touch screen shows does not read as a column.
                   iconColor: widget.selected

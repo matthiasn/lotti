@@ -150,6 +150,7 @@ class FrontMenuButton extends StatelessWidget {
     required this.items,
     this.iconColor,
     this.header,
+    this.glyphAlignment = Alignment.center,
     super.key,
   });
 
@@ -157,6 +158,10 @@ class FrontMenuButton extends StatelessWidget {
 
   /// What the rows act on, above them: a list row's chat.
   final String? header;
+
+  /// Where the glyph sits in its tap target: off centre where the target
+  /// must stay inside a row while the glyph lines up with a line of text.
+  final Alignment glyphAlignment;
 
   /// The glyph's ink; low emphasis when null.
   final Color? iconColor;
@@ -174,6 +179,7 @@ class FrontMenuButton extends StatelessWidget {
         child: IconButton(
           tooltip: label,
           padding: EdgeInsets.zero,
+          alignment: glyphAlignment,
           iconSize: tokens.spacing.step5,
           icon: Icon(
             LottiIcons.more,

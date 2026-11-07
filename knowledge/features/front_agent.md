@@ -626,15 +626,17 @@ recency — *Today*, *Yesterday*, *Previous 7 days*, *Older* — flat: each
 group's day a caption in the accent, snug over its dense rows, no card and no
 hairlines. The accent splits the days while the rows stay neutral, so the open
 row's rounded fill is still the one strong surface in the list.
-A row is the title on the full width (two lines before it is cut) over one
-line of her last answer (`FrontConversation.preview`, the first line of her
-latest `reply_to_user` or `ask_user` in it, read by
-`FrontConversationService`), fading out before the time it last moved (the
-clock today and yesterday, the weekday within a week, else the date). The
-times share one column as wide as the list's widest, in tabular figures, so
-every preview ends on the same line. On the open row's fill the second line
-is as bright as the title. A row's rename, archive and delete (its ⋯ in the
-time's place) show on hover and focus, at rest on the open row too unless
+A row is the title (two lines before it is cut) over one line of her last
+answer on the row's whole width (`FrontConversation.preview`, the first line
+of her latest `reply_to_user` or `ask_user` in it, read by
+`FrontConversationService`), fading out at its end — left out when there is
+none. A row says no time of its own: its recency section (Today, Yesterday,
+Previous 7 days, Older) says when, as the Claude and ChatGPT lists have it,
+and the title has its line to itself. On the open row's fill the second line
+is as bright as the title. A row's rename, archive and delete (its ⋯ at the
+end of the title's first line, in room every title leaves it so nothing
+reflows when it shows, its whole tap target inside the row) show on hover
+and focus, at rest on the open row too unless
 the list sits beside the conversation (`FrontConversationList.beside`), whose
 header carries the same menu; a long press opens that menu under any row.
 The ⋯ is `FrontMenuButton`, on the menu every agent page opens
