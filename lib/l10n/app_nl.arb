@@ -5364,7 +5364,7 @@
       }
     }
   },
-  "projectShowcaseTasksCompleted": "{total, plural, one{{completed}'{total} taak voltooid} other{{completed}'{total} voltooide taken}}",
+  "projectShowcaseTasksCompleted": "{total, plural, one{{completed}/{total} taak voltooid} other{{completed}/{total} voltooide taken}}",
   "@projectShowcaseTasksCompleted": {
     "placeholders": {
       "completed": {

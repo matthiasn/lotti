@@ -12702,8 +12702,8 @@ class AppLocalizationsNl extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       total,
       locale: localeName,
-      other: '$completed\'$total voltooide taken',
-      one: '$completed\'$total taak voltooid',
+      other: '$completed/$total voltooide taken',
+      one: '$completed/$total taak voltooid',
     );
     return '$_temp0';
   }
