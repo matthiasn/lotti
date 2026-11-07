@@ -12485,11 +12485,23 @@ abstract class AppLocalizations {
   /// **'Hold to talk'**
   String get frontStageHoldToTalk;
 
+  /// Caption under the talk button while a held finger has slid off it: letting go discards what was said.
+  ///
+  /// In en, this message translates to:
+  /// **'Release to cancel'**
+  String get frontStageReleaseToCancel;
+
   /// Caption under the talk button while it is held: letting go sends what was said.
   ///
   /// In en, this message translates to:
   /// **'Release to send'**
   String get frontStageReleaseToSend;
+
+  /// Caption under the talk button on the companion's stage while she listens hands free: the next tap sends.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to send'**
+  String get frontStageTapToSend;
 
   /// No description provided for @geminiThinkingModeHighDescription.
   ///

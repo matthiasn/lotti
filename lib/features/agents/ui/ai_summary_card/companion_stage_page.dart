@@ -122,66 +122,86 @@ class CompanionStagePage extends ConsumerWidget {
               label: context.messages.aiCardCompanionStageTitle,
               child: Scaffold(
                 backgroundColor: tokens.colors.background.level01,
-                body: Stack(
+                // She stands above, the controls in a band of their own
+                // below her, so nothing is ever drawn on her.
+                body: Column(
                   children: [
-                    // Decorative: the close and read-aloud controls carry the
-                    // page's meaning, and she says nothing a reader would miss.
-                    Positioned.fill(
-                      child: ExcludeSemantics(
-                        child: CompanionSpeaker(
-                          key: const ValueKey('companionStageFigure'),
-                          sourceId: sourceId,
-                          stage: true,
-                          mood: mood,
-                          holding: holding,
-                          dressedFor: dressedFor,
-                        ),
-                      ),
-                    ),
-                    SafeArea(
-                      child: Padding(
-                        padding: EdgeInsets.all(tokens.spacing.cardPadding),
-                        child: Column(
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                DsAiDiscButton(
-                                  key: const ValueKey('companionStageOutfit'),
-                                  icon: LottiIcons.palette,
-                                  label: context
-                                      .messages
-                                      .aiCardCompanionStageNextOutfit,
-                                  onPressed: () => ref
-                                      .read(companionOutfitProvider.notifier)
-                                      .next(
-                                        ref
-                                            .read(companionLookRollProvider)
-                                            .outfitFor(dressedFor),
-                                      ),
-                                ),
-                                DsAiDiscButton(
-                                  icon: LottiIcons.close,
-                                  label: MaterialLocalizations.of(
-                                    context,
-                                  ).closeButtonTooltip,
-                                  onPressed: () => Navigator.of(context).pop(),
-                                ),
-                              ],
-                            ),
-                            const Spacer(),
-                            if (controls case final control?)
-                              control
-                            else if (canReadAloud)
-                              SummaryReadAloudButton(
+                    Expanded(
+                      child: Stack(
+                        children: [
+                          // Decorative: the close and read-aloud controls carry
+                          // the page's meaning, and she says nothing a reader
+                          // would miss.
+                          Positioned.fill(
+                            child: ExcludeSemantics(
+                              child: CompanionSpeaker(
+                                key: const ValueKey('companionStageFigure'),
                                 sourceId: sourceId,
-                                text: spokenText,
-                                cloudRoute: cloudRoute,
+                                stage: true,
+                                mood: mood,
+                                holding: holding,
+                                dressedFor: dressedFor,
                               ),
-                          ],
-                        ),
+                            ),
+                          ),
+                          SafeArea(
+                            bottom: false,
+                            child: Padding(
+                              padding: EdgeInsets.all(
+                                tokens.spacing.cardPadding,
+                              ),
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  DsAiDiscButton(
+                                    key: const ValueKey(
+                                      'companionStageOutfit',
+                                    ),
+                                    icon: LottiIcons.palette,
+                                    label: context
+                                        .messages
+                                        .aiCardCompanionStageNextOutfit,
+                                    onPressed: () => ref
+                                        .read(companionOutfitProvider.notifier)
+                                        .next(
+                                          ref
+                                              .read(companionLookRollProvider)
+                                              .outfitFor(dressedFor),
+                                        ),
+                                  ),
+                                  DsAiDiscButton(
+                                    icon: LottiIcons.close,
+                                    label: MaterialLocalizations.of(
+                                      context,
+                                    ).closeButtonTooltip,
+                                    onPressed: () =>
+                                        Navigator.of(context).pop(),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
+                    if (controls ??
+                            (canReadAloud
+                                ? SummaryReadAloudButton(
+                                    sourceId: sourceId,
+                                    text: spokenText,
+                                    cloudRoute: cloudRoute,
+                                  )
+                                : null)
+                        case final footer?)
+                      SafeArea(
+                        top: false,
+                        child: Padding(
+                          padding: EdgeInsets.all(tokens.spacing.cardPadding),
+                          child: Center(child: footer),
+                        ),
+                      ),
                   ],
                 ),
               ),

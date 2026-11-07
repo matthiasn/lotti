@@ -28,8 +28,13 @@ abstract final class ChatRecordingPillKeys {
 /// stop square when it only transcribes into the field.
 ///
 /// While [processing] (transcribing) the time and bars give way to
-/// *Transcribing…* and a spinner takes the end control's place; cancel
-/// stays, so a stalled turn always has its way out. Escape cancels too.
+/// *Transcribing…* and a quiet spinner takes the end control's place; the
+/// teal edge, which says the microphone is on, goes, and cancel stays, so a
+/// stalled turn always has its way out. Escape cancels too.
+///
+/// Teal is for what to do (the end control), red for live (the dot), and
+/// the voice itself is quiet ink, so the send stays the one thing that
+/// leads.
 class ChatRecordingPill extends StatelessWidget {
   const ChatRecordingPill({
     required this.processing,
@@ -38,6 +43,7 @@ class ChatRecordingPill extends StatelessWidget {
     required this.onCancel,
     required this.onStop,
     this.sendsOnStop = false,
+    this.showEndControl = true,
     super.key,
   });
 
@@ -52,6 +58,11 @@ class ChatRecordingPill extends StatelessWidget {
   /// Whether stopping sends what was said: the end control is then the send
   /// arrow, as the text field's is.
   final bool sendsOnStop;
+
+  /// Whether the pill carries the control that ends it. A host whose own
+  /// control ends it — the companion's talk disc — leaves it out, so there
+  /// is one send on screen; the slot keeps its width either way.
+  final bool showEndControl;
 
   /// `m:ss`, the way a voice note's length reads.
   static String formatElapsed(Duration elapsed) =>
@@ -70,15 +81,18 @@ class ChatRecordingPill extends StatelessWidget {
       color: tokens.colors.text.mediumEmphasis,
     );
 
-    final Widget end = processing
+    final Widget end = !showEndControl
+        ? SizedBox.square(dimension: height)
+        : processing
         ? SizedBox.square(
             dimension: height,
             child: Center(
+              // Quiet ink: a wait, not something to tap.
               child: DesignSystemSpinner(
                 key: ChatRecordingPillKeys.transcribing,
                 style: DesignSystemSpinnerStyle.plain,
                 size: IconSizes.m,
-                color: tokens.colors.interactive.enabled,
+                color: tokens.colors.text.mediumEmphasis,
               ),
             ),
           )
@@ -133,7 +147,10 @@ class ChatRecordingPill extends StatelessWidget {
             foregroundDecoration: BoxDecoration(
               borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
               border: Border.all(
-                color: designSystemFieldBorderColor(tokens, focused: true),
+                color: designSystemFieldBorderColor(
+                  tokens,
+                  focused: !processing,
+                ),
               ),
             ),
             child: Row(
@@ -147,7 +164,7 @@ class ChatRecordingPill extends StatelessWidget {
                     icon: Icon(
                       LottiIcons.close,
                       size: IconSizes.s,
-                      color: tokens.colors.text.mediumEmphasis,
+                      color: tokens.colors.text.highEmphasis,
                     ),
                     onPressed: onCancel,
                   ),
@@ -175,7 +192,8 @@ class ChatRecordingPill extends StatelessWidget {
                   Text(
                     formatElapsed(elapsed),
                     key: ChatRecordingPillKeys.elapsed,
-                    style: tokens.typography.styles.others.caption.copyWith(
+                    // The status line's one style, in either state.
+                    style: tokens.typography.styles.body.bodySmall.copyWith(
                       color: tokens.colors.text.highEmphasis,
                       fontFeatures: const [FontFeature.tabularFigures()],
                     ),
@@ -194,13 +212,14 @@ class ChatRecordingPill extends StatelessWidget {
                             amplitudes: amplitudes,
                             barWidth: tokens.spacing.step1,
                             barSpacing: tokens.spacing.step1,
-                            color: tokens.colors.text.highEmphasis,
+                            color: tokens.colors.text.mediumEmphasis,
                           ),
                         ),
                       ),
                     ),
                   ),
                 ],
+                SizedBox(width: tokens.spacing.step3),
                 end,
               ],
             ),

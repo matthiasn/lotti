@@ -7408,7 +7408,13 @@ class AppLocalizationsEs extends AppLocalizations {
   String get frontStageHoldToTalk => 'Mantén pulsado para hablar';
 
   @override
+  String get frontStageReleaseToCancel => 'Suelta para cancelar';
+
+  @override
   String get frontStageReleaseToSend => 'Suelta para enviar';
+
+  @override
+  String get frontStageTapToSend => 'Toca para enviar';
 
   @override
   String get geminiThinkingModeHighDescription =>

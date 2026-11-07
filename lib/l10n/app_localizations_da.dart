@@ -7320,7 +7320,13 @@ class AppLocalizationsDa extends AppLocalizations {
   String get frontStageHoldToTalk => 'Hold inde for at tale';
 
   @override
+  String get frontStageReleaseToCancel => 'Slip for at annullere';
+
+  @override
   String get frontStageReleaseToSend => 'Slip for at sende';
+
+  @override
+  String get frontStageTapToSend => 'Tryk for at sende';
 
   @override
   String get geminiThinkingModeHighDescription =>

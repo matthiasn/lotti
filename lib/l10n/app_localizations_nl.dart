@@ -7353,7 +7353,13 @@ class AppLocalizationsNl extends AppLocalizations {
   String get frontStageHoldToTalk => 'Houd ingedrukt om te praten';
 
   @override
+  String get frontStageReleaseToCancel => 'Laat los om te annuleren';
+
+  @override
   String get frontStageReleaseToSend => 'Laat los om te versturen';
+
+  @override
+  String get frontStageTapToSend => 'Tik om te versturen';
 
   @override
   String get geminiThinkingModeHighDescription =>

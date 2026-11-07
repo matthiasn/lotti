@@ -96,8 +96,10 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
   }
 
-  testWidgets('stands her head to toe on her stage, filling the screen, '
-      "speaking this summary's utterance", (tester) async {
+  testWidgets('stands her head to toe on her stage, the width of the screen '
+      "and down to its controls, speaking this summary's utterance", (
+    tester,
+  ) async {
     await openStage(tester);
 
     expect(find.byType(CompanionStagePage), findsOneWidget);
@@ -107,9 +109,15 @@ void main() {
     expect(speaker.sourceId, 'task-1');
     expect(speaker.framing, CompanionFraming.full);
     expect(speaker.stage, isTrue);
+    final page = tester.getRect(find.byType(CompanionStagePage));
+    final figure = tester.getRect(find.byType(CompanionView));
+    expect(figure.width, page.width);
+    expect(figure.top, page.top);
+    // The controls stand in a band of their own below her: nothing is drawn
+    // on her.
     expect(
-      tester.getSize(find.byType(CompanionView)),
-      tester.getSize(find.byType(CompanionStagePage)),
+      tester.getRect(find.byType(SummaryReadAloudButton)).top,
+      greaterThanOrEqualTo(figure.bottom),
     );
   });
 

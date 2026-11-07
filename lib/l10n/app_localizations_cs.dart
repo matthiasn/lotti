@@ -7397,7 +7397,13 @@ class AppLocalizationsCs extends AppLocalizations {
   String get frontStageHoldToTalk => 'Podrž a mluv';
 
   @override
+  String get frontStageReleaseToCancel => 'Pusť a zruš';
+
+  @override
   String get frontStageReleaseToSend => 'Pusť a odešli';
+
+  @override
+  String get frontStageTapToSend => 'Klepni a odešli';
 
   @override
   String get geminiThinkingModeHighDescription =>

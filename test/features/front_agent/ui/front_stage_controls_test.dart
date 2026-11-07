@@ -1,4 +1,5 @@
 import 'package:flutter/gestures.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/query/query_source_access.dart';
@@ -10,7 +11,10 @@ import 'package:lotti/features/ai/state/subject_dictation_providers.dart';
 import 'package:lotti/features/ai/util/inference_provider_resolver.dart';
 import 'package:lotti/features/companion/model/companion_customization.dart';
 import 'package:lotti/features/companion/state/companion_customization_controller.dart';
+import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
+import 'package:lotti/features/design_system/theme/icon_tokens.dart';
 import 'package:lotti/features/front_agent/model/front_chat_thread.dart';
+import 'package:lotti/features/front_agent/state/front_chat_controller.dart';
 import 'package:lotti/features/front_agent/state/front_chat_thread_provider.dart';
 import 'package:lotti/features/front_agent/state/front_conversation_providers.dart';
 import 'package:lotti/features/front_agent/state/front_journal_access_provider.dart';
@@ -26,6 +30,10 @@ import '../../tts/test_utils.dart';
 /// The shared recorder as the stage drives it: what it was asked to do, and
 /// the transcription target each take was started with.
 class _Recorder extends ChatRecorderController {
+  _Recorder({this.micAllowed = true});
+
+  /// Whether the microphone opens: a refused one leaves the recorder idle.
+  final bool micAllowed;
   int stops = 0;
   int cancels = 0;
   final targets = <ChatTranscriptionTargetResolver?>[];
@@ -40,7 +48,9 @@ class _Recorder extends ChatRecorderController {
     ChatDictionaryCategoryResolver? resolveDictionaryCategory,
   }) async {
     targets.add(resolveTranscriptionTarget);
-    state = state.copyWith(status: ChatRecorderStatus.recording);
+    if (micAllowed) {
+      state = state.copyWith(status: ChatRecorderStatus.recording);
+    }
   }
 
   @override
@@ -57,6 +67,16 @@ class _Recorder extends ChatRecorderController {
 
   @override
   List<double> getNormalizedAmplitudeHistory() => const [0.3, 0.6];
+}
+
+/// Her composer, mid-send or settled as the test says.
+class _Composer extends FrontChatController {
+  _Composer({required this.sending});
+
+  final bool sending;
+
+  @override
+  FrontChatComposerState build() => FrontChatComposerState(isSending: sending);
 }
 
 /// Her customization, known and speaking.
@@ -100,6 +120,7 @@ void main() {
   Future<void> pump(
     WidgetTester tester, {
     FrontChatThread? thread,
+    bool sending = false,
     Widget child = const FrontStageControls(conversationId: 'c-1'),
   }) async {
     await tester.pumpWidget(
@@ -130,6 +151,9 @@ void main() {
             (ref) async => thread ?? FrontChatThread.empty,
           ),
           chatRecorderControllerProvider.overrideWith(() => recorder),
+          frontChatControllerProvider.overrideWith(
+            () => _Composer(sending: sending),
+          ),
           settingsDefaultDictationTargetProvider.overrideWithValue(ears),
         ],
       ),
@@ -159,6 +183,9 @@ void main() {
 
     await tester.pump(kLongPressTimeout);
     expect(caption(tester), 'Release to send');
+    expect(find.byIcon(LottiIcons.arrowUp), findsOneWidget);
+    // The disc is the one send on screen: the pill carries none.
+    expect(find.byKey(ChatRecordingPillKeys.stop), findsNothing);
     expect(recorder.stops, 0);
 
     await finger.up();
@@ -167,8 +194,8 @@ void main() {
     expect(recorder.cancels, 0);
   });
 
-  testWidgets('a quick tap leaves her listening hands free: the pill alone, '
-      'whose arrow sends', (tester) async {
+  testWidgets('a quick tap leaves her listening hands free, the disc now '
+      'the send arrow that the next tap sends with', (tester) async {
     await pump(tester);
 
     await tester.tap(find.byKey(FrontStageControlKeys.talk));
@@ -176,12 +203,98 @@ void main() {
 
     expect(recorder.targets, hasLength(1));
     expect(recorder.stops, 0, reason: 'a tap is not a hold: nothing is sent');
-    expect(find.byKey(FrontStageControlKeys.talk), findsNothing);
+    expect(caption(tester), 'Tap to send');
+    expect(find.byKey(ChatRecordingPillKeys.stop), findsNothing);
 
-    await tester.tap(find.byKey(ChatRecordingPillKeys.stop));
+    await tester.tap(find.byKey(FrontStageControlKeys.talk));
     await tester.pump();
     expect(recorder.stops, 1);
+    expect(recorder.targets, hasLength(1), reason: 'no second take');
   });
+
+  testWidgets("hands free, the pill's × lets it go", (tester) async {
+    await pump(tester);
+    await tester.tap(find.byKey(FrontStageControlKeys.talk));
+    await tester.pump();
+
+    await tester.tap(find.byKey(ChatRecordingPillKeys.cancel));
+    await tester.pump();
+
+    expect(recorder.cancels, 1);
+    expect(recorder.stops, 0);
+    expect(caption(tester), 'Hold to talk');
+  });
+
+  testWidgets('a hold dragged off the disc turns to cancel, and letting go '
+      'there sends nothing; back on, it sends again', (tester) async {
+    await pump(tester);
+    final centre = tester.getCenter(find.byKey(FrontStageControlKeys.talk));
+
+    final finger = await tester.startGesture(centre);
+    await tester.pump(kLongPressTimeout);
+    await finger.moveBy(const Offset(0, -200));
+    await tester.pump();
+    expect(caption(tester), 'Release to cancel');
+    expect(find.byIcon(LottiIcons.close), findsWidgets);
+
+    await finger.moveTo(centre);
+    await tester.pump();
+    expect(caption(tester), 'Release to send');
+
+    await finger.moveBy(const Offset(0, -200));
+    await tester.pump();
+    await finger.up();
+    await tester.pump();
+    expect(recorder.cancels, 1);
+    expect(recorder.stops, 0);
+  });
+
+  testWidgets('a refused microphone never promises a send', (tester) async {
+    recorder = _Recorder(micAllowed: false);
+    await pump(tester);
+
+    final finger = await tester.startGesture(
+      tester.getCenter(find.byKey(FrontStageControlKeys.talk)),
+    );
+    await tester.pump(kLongPressTimeout);
+    expect(caption(tester), 'Hold to talk');
+
+    await finger.up();
+    await tester.pump();
+    expect(recorder.stops, 0);
+  });
+
+  testWidgets('while her answer is on its way the disc waits, and a press '
+      'starts nothing', (tester) async {
+    await pump(tester, sending: true);
+
+    expect(caption(tester), 'Finding who knows…');
+    expect(find.byType(DesignSystemSpinner), findsOneWidget);
+    await tester.tap(find.byKey(FrontStageControlKeys.talk));
+    await tester.pump();
+    expect(recorder.targets, isEmpty);
+  });
+
+  for (final key in [LogicalKeyboardKey.space, LogicalKeyboardKey.enter]) {
+    testWidgets('${key.keyLabel} starts her listening hands free, and sends', (
+      tester,
+    ) async {
+      await pump(tester);
+      Focus.of(
+        tester.element(find.byKey(FrontStageControlKeys.talk)),
+      ).requestFocus();
+      await tester.pump();
+
+      await tester.sendKeyEvent(key);
+      await tester.pump();
+      expect(recorder.targets, hasLength(1));
+      expect(caption(tester), 'Tap to send');
+
+      await tester.sendKeyEvent(key);
+      await tester.pump();
+      expect(recorder.stops, 1);
+    });
+  }
 
   testWidgets('a hold taken away by the system is let go unsent', (
     tester,

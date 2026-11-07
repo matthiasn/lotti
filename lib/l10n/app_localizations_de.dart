@@ -7373,7 +7373,13 @@ class AppLocalizationsDe extends AppLocalizations {
   String get frontStageHoldToTalk => 'Halten und sprechen';
 
   @override
+  String get frontStageReleaseToCancel => 'Loslassen zum Abbrechen';
+
+  @override
   String get frontStageReleaseToSend => 'Loslassen zum Senden';
+
+  @override
+  String get frontStageTapToSend => 'Tippen zum Senden';
 
   @override
   String get geminiThinkingModeHighDescription =>
