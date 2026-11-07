@@ -1,6 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_routing_index.dart';
+import 'package:lotti/features/insights/logic/time_bucketing.dart';
+import 'package:lotti/features/insights/model/insights_models.dart';
 
 void main() {
   FrontIndexRow task(String id, {String? oneLiner, DateTime? due}) =>
@@ -235,6 +237,89 @@ void main() {
           narrowedTo: const ['Penguin Colony', 'Work'],
         ).render(),
         'None: no open task due today (2026-11-02) in Penguin Colony, Work.',
+      );
+    });
+  });
+
+  group('FrontTimePeriod.rangeOn', () {
+    // A Saturday afternoon.
+    final now = DateTime(2026, 11, 7, 14);
+
+    (DateTime, DateTime) days(InsightsRange range) =>
+        (dayStart(range.startDay), dayStart(range.endDayExclusive - 1));
+
+    test('each period is the local days it names, none past today', () {
+      expect(
+        {
+          for (final period in FrontTimePeriod.values)
+            period.wireName: days(period.rangeOn(now)),
+        },
+        {
+          'today': (DateTime(2026, 11, 7), DateTime(2026, 11, 7)),
+          'yesterday': (DateTime(2026, 11, 6), DateTime(2026, 11, 6)),
+          // Monday when no region says otherwise.
+          'this_week': (DateTime(2026, 11, 2), DateTime(2026, 11, 7)),
+          'past_7_days': (DateTime(2026, 11), DateTime(2026, 11, 7)),
+          'past_30_days': (DateTime(2026, 10, 9), DateTime(2026, 11, 7)),
+          'this_month': (DateTime(2026, 11), DateTime(2026, 11, 7)),
+          'last_month': (DateTime(2026, 10), DateTime(2026, 10, 31)),
+        },
+      );
+    });
+
+    test("a week starts on the region's first weekday, and last month "
+        'reaches back across a year', () {
+      expect(
+        days(FrontTimePeriod.thisWeek.rangeOn(now, firstDayOfWeekIndex: 0)),
+        (DateTime(2026, 11), DateTime(2026, 11, 7)),
+      );
+      expect(
+        days(FrontTimePeriod.lastMonth.rangeOn(DateTime(2026, 1, 10))),
+        (DateTime(2025, 12), DateTime(2025, 12, 31)),
+      );
+    });
+
+    test('fromWire reads the contract names and nothing else', () {
+      expect(
+        FrontTimePeriod.fromWire('past_30_days'),
+        FrontTimePeriod.past30Days,
+      );
+      expect(FrontTimePeriod.fromWire('past30Days'), isNull);
+      expect(FrontTimePeriod.fromWire(null), isNull);
+    });
+  });
+
+  group('FrontLoggedTime.render', () {
+    test('the period, its days and the total, then each category in hours '
+        'and minutes, as given', () {
+      expect(
+        FrontLoggedTime(
+          period: FrontTimePeriod.past7Days,
+          from: DateTime(2026, 11),
+          through: DateTime(2026, 11, 7),
+          byCategory: const [
+            (name: 'Work', seconds: 9300),
+            (name: '  Penguin\ncolony ', seconds: 3600),
+            (name: null, seconds: 2700),
+          ],
+        ).render(),
+        'Time logged past 7 days (2026-11-01 through 2026-11-07): 4h 20m in '
+        'total, by category:\n'
+        '- Work: 2h 35m\n'
+        '- Penguin colony: 1h\n'
+        '- No category: 45m',
+      );
+    });
+
+    test('one day is named once; nothing logged says so', () {
+      expect(
+        FrontLoggedTime(
+          period: FrontTimePeriod.yesterday,
+          from: DateTime(2026, 11, 6),
+          through: DateTime(2026, 11, 6),
+          byCategory: const [],
+        ).render(),
+        'None: no time logged yesterday (2026-11-06).',
       );
     });
   });

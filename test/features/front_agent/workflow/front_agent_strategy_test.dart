@@ -65,6 +65,7 @@ void main() {
   FrontAgentStrategy strategy({
     FrontCorpusMatcher? matcher,
     FrontDueTaskLister? dueLister,
+    FrontLoggedTimeSummarizer? timeSummarizer,
     FrontRoutingIndex? routingIndex,
   }) => FrontAgentStrategy(
     syncService: syncService,
@@ -76,6 +77,7 @@ void main() {
     index: routingIndex ?? index,
     corpusMatcher: matcher,
     dueTaskLister: dueLister,
+    loggedTimeSummarizer: timeSummarizer,
   );
 
   Map<String, dynamic> segment({
@@ -510,6 +512,97 @@ hologram:x: not listed''');
         manager: manager,
       );
       expect(asked.map(described), ['upcoming/3/home']);
+    });
+  });
+
+  group('summarize_logged_time', () {
+    FrontLoggedTime logged(FrontTimePeriod period) => FrontLoggedTime(
+      period: period,
+      from: DateTime(2026, 11, 6),
+      through: DateTime(2026, 11, 6),
+      byCategory: const [
+        (name: 'Work', seconds: 7200),
+        (name: 'Health', seconds: 5400),
+      ],
+    );
+
+    test('answers with the summary for the period asked; the reply then '
+        'ends the turn', () async {
+      final asked = <FrontTimePeriod>[];
+      final s = strategy(
+        timeSummarizer: (period) async {
+          asked.add(period);
+          return logged(period);
+        },
+      );
+      await s.processToolCalls(
+        toolCalls: [
+          _call('summarize_logged_time', {'period': 'yesterday'}),
+        ],
+        manager: manager,
+      );
+      expect(asked, [FrontTimePeriod.yesterday]);
+      expect(
+        responses().single,
+        'Time logged yesterday (2026-11-06): 3h 30m in total, by category:\n'
+        '- Work: 2h\n'
+        '- Health: 1h 30m',
+      );
+      expect(s.lookupCalls, 1);
+      expect(s.hasTerminalOutput, isFalse);
+
+      final action = await s.processToolCalls(
+        toolCalls: [
+          _call('reply_to_user', {
+            'message': 'Yesterday: 3h 30m — 2h Work, 1h 30m Health.',
+          }, id: 'call-2'),
+        ],
+        manager: manager,
+      );
+      expect(action, ConversationAction.complete);
+      expect(s.replyToUser, 'Yesterday: 3h 30m — 2h Work, 1h 30m Health.');
+      expect(s.dispatch, isNull);
+    });
+
+    test('refuses a missing or unknown period and a second summary, and '
+        'reports an unwired summarizer', () async {
+      final asked = <FrontTimePeriod>[];
+      final s = strategy(
+        timeSummarizer: (period) async {
+          asked.add(period);
+          return logged(period);
+        },
+      );
+      await s.processToolCalls(
+        toolCalls: [
+          _call('summarize_logged_time', const <String, dynamic>{}),
+          _call('summarize_logged_time', {'period': 'last_week'}, id: 'call-2'),
+          _call('summarize_logged_time', {
+            'period': 'past_7_days',
+          }, id: 'call-3'),
+          _call('summarize_logged_time', {'period': 'today'}, id: 'call-4'),
+        ],
+        manager: manager,
+      );
+      expect(asked, [FrontTimePeriod.past7Days]);
+      expect(responses(), [
+        contains(
+          'needs period: one of today, yesterday, this_week, past_7_days, '
+          'past_30_days, this_month, last_month',
+        ),
+        contains('needs period'),
+        startsWith('Time logged past 7 days'),
+        frontTimeSummaryExhaustedAnswer,
+      ]);
+      expect(s.lookupCalls, 1);
+
+      await strategy().processToolCalls(
+        toolCalls: [
+          _call('summarize_logged_time', {'period': 'today'}),
+        ],
+        manager: manager,
+      );
+      expect(responses().last, contains('Logged time is unavailable'));
     });
   });
 

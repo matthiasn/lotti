@@ -41,6 +41,7 @@ import 'package:lotti/logic/repositories/journal_repository.dart';
 import 'package:lotti/providers/agent_repository_providers.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/providers/update_notifications_providers.dart';
+import 'package:lotti/utils/device_region.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -457,7 +458,7 @@ void main() {
   });
 
   group('wiring', () {
-    test('every provider of the feature builds from its leaves', () {
+    test('every provider of the feature builds from its leaves', () async {
       final wired = ProviderContainer(
         overrides: [
           agentRepositoryProvider.overrideWithValue(repository),
@@ -489,14 +490,17 @@ void main() {
           relationshipChatServiceProvider.overrideWithValue(
             MockRelationshipChatService(),
           ),
+          // A Sunday-first region.
+          firstDayOfWeekIndexProvider.overrideWith((ref) => 0),
         ],
       );
       addTearDown(wired.dispose);
 
       // A host without a full-text index gives the builder no corpus
-      // matcher.
+      // matcher; its weeks start where the device region starts them.
       final builder = wired.read(frontRoutingIndexBuilderProvider);
       expect(builder.fts5Db, isNull);
+      expect(await builder.firstDayOfWeekIndex!(), 0);
       expect(wired.read(frontAgentWorkflowProvider), isA<FrontAgentWorkflow>());
       expect(wired.read(frontAgentServiceProvider), isA<FrontAgentService>());
       expect(wired.read(frontChatServiceProvider), isA<FrontChatService>());

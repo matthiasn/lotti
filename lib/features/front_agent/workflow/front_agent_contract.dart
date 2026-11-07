@@ -2,6 +2,7 @@ import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/companion/model/companion_reaction.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
+import 'package:lotti/features/front_agent/model/front_routing_index.dart';
 
 /// The front agent's tool names.
 abstract final class FrontAgentToolNames {
@@ -16,6 +17,10 @@ abstract final class FrontAgentToolNames {
 
   /// The open tasks due by a day: what she answers a due-date question from.
   static const listDueTasks = 'list_due_tasks';
+
+  /// The time logged in one period, per category: what she answers a
+  /// how-much-time question from.
+  static const summarizeLoggedTime = 'summarize_logged_time';
 
   /// One short clarifying question with up to three candidates; terminal.
   static const askUser = 'ask_user';
@@ -44,6 +49,9 @@ const int frontDueListsPerTurn = 1;
 /// How many days past today one `list_due_tasks` may reach: a week.
 const int frontDueMaxDaysAhead = 7;
 
+/// How many `summarize_logged_time` calls a turn may make.
+const int frontTimeSummariesPerTurn = 1;
+
 /// How many candidates `ask_user` may offer.
 const int frontAskUserMaxOptions = 3;
 
@@ -63,6 +71,11 @@ const String frontCorpusMatchExhaustedAnswer =
 const String frontDueListExhaustedAnswer =
     'No more due-task lists this turn ($frontDueListsPerTurn used); answer '
     'from the list you have.';
+
+/// The answer once a turn has summed its logged time.
+const String frontTimeSummaryExhaustedAnswer =
+    'No more time summaries this turn ($frontTimeSummariesPerTurn used); '
+    'answer from the summary you have.';
 
 /// The instruction after an invalid `dispatch`, or a turn that ended
 /// without a terminal call: the one repair the budget allows.
@@ -104,7 +117,7 @@ This shapes only your own words — the text of `reply_to_user` and the question
 /// manner ([frontAgentPersonality]) follows it.
 const String frontAgentSystemPrompt =
     '''
-You are the front agent of a personal journal and task app. The user talks to you in one place; you decide where each part of what they said belongs and dispatch it. A question about one task, project, goal or person is its owner's to answer; a question about the user's records that no single row owns — what happened, what was decided, where something was noted, across their journal — is yours, and you answer it from the journal by dispatching it to `journal`. A question about which tasks are due — today, overdue, this week — is yours as well: you answer it from `list_due_tasks`. You never answer an owner's question yourself and you never change the record yourself.
+You are the front agent of a personal journal and task app. The user talks to you in one place; you decide where each part of what they said belongs and dispatch it. A question about one task, project, goal or person is its owner's to answer; a question about the user's records that no single row owns — what happened, what was decided, where something was noted, across their journal — is yours, and you answer it from the journal by dispatching it to `journal`. A question about which tasks are due — today, overdue, this week — is yours as well: you answer it from `list_due_tasks`. So is a question about how much time the user logged: you answer it from `summarize_logged_time`. You never answer an owner's question yourself and you never change the record yourself.
 
 ## What you see
 
@@ -122,6 +135,7 @@ You are the front agent of a personal journal and task app. The user talks to yo
 6. A statement about a project as a whole goes to the project. One about a particular piece of its work goes to that task when you can see it.
 7. Moving, planning or changing something in today's plan ("my day"): destination `day`. A question about what is due is not the day's — see 8.
 8. A question about which tasks are due — "what is due today?", "anything overdue?", "what's due this week?": call `list_due_tasks` with `which` for exactly what was asked — `today` for due today (never the overdue ones), `overdue` for overdue (never today's), `upcoming` with `daysAhead` (at most $frontDueMaxDaysAhead) for the days ahead, `all` only when both overdue and due are asked for — then end the turn with `reply_to_user` alone. When the user names a category listed under Categories ("overdue in Work"), pass its id in `categoryIds`; a category they name that is not chosen in a narrowed conversation is outside it, so say so. Name only the tasks the list returned, or say plainly that none are. Never dispatch it, and never say you cannot answer it.
+9. A question about how much time was logged or where the time went — "how much did I log yesterday?", "what did I log this week?", "time in the past 30 days?": call `summarize_logged_time` with the `period` asked about — "last month" is `last_month`, the previous calendar month; "the past month" is `past_30_days` — then end the turn with `reply_to_user` alone: the total, then each category with its time, largest first, only as the summary gives them, or say plainly that nothing was logged. For a period it does not offer, say which periods you can sum. Never dispatch it, and never say you cannot answer it.
 
 ## Naming things
 
@@ -137,7 +151,7 @@ Split the message into segments only where the destinations differ. Each segment
 
 ## Discipline
 
-- One `read_tldr`, one `match_to_corpus` and one `list_due_tasks` per turn at most; a turn that needs more is fishing. Decide from the index first.
+- One `read_tldr`, one `match_to_corpus`, one `list_due_tasks` and one `summarize_logged_time` per turn at most; a turn that needs more is fishing. Decide from the index first.
 - `dispatch`, `ask_user` and `reply_to_user` end the turn. Call exactly one of them, except that `reply_to_user` may accompany `dispatch` with one line about where things went.
 - Keep every visible sentence short and in the user's language.
 ''';
@@ -305,6 +319,28 @@ final List<AgentToolDefinition> frontAgentTools = [
       'required': ['which'],
     },
   ),
+  AgentToolDefinition(
+    name: FrontAgentToolNames.summarizeLoggedTime,
+    description:
+        'Sum the time the user logged in one period, per category, to '
+        'answer a question about how much time was logged. Once per turn.',
+    parameters: {
+      'type': 'object',
+      'properties': {
+        'period': {
+          'type': 'string',
+          'enum': [
+            for (final period in FrontTimePeriod.values) period.wireName,
+          ],
+          'description':
+              'today; yesterday; this_week: the week so far; past_7_days and '
+              'past_30_days: the days ending today; this_month: the month so '
+              'far; last_month: the previous calendar month.',
+        },
+      },
+      'required': ['period'],
+    },
+  ),
   const AgentToolDefinition(
     name: FrontAgentToolNames.askUser,
     description:
@@ -338,7 +374,8 @@ final List<AgentToolDefinition> frontAgentTools = [
     name: FrontAgentToolNames.replyToUser,
     description:
         'Say something in your own words: where things went, the answer to '
-        'a question about what is due, or that nothing could be placed. '
+        'a question about what is due or about logged time, or that nothing '
+        'could be placed. '
         'Tasks and projects as markdown links, never bare ids. At most once '
         'per turn.',
     parameters: {
