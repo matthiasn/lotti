@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/classes/agents/agent_config.dart';
@@ -55,7 +53,7 @@ void _reResolveOnCategoryEdits(Ref ref, AgentConfig config) {
       .listen((ids) {
         if (ids.contains(categoriesNotification)) ref.invalidateSelf();
       });
-  ref.onDispose(() => unawaited(subscription?.cancel()));
+  if (subscription != null) ref.onDispose(subscription.cancel);
 }
 
 Future<ResolvedAgentSetup?> goalAgentResolvedSetup(
