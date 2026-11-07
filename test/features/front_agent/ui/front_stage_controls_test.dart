@@ -430,10 +430,10 @@ void main() {
       'a way to answer her', (tester) async {
     await pump(
       tester,
-      child: const FrontStageButton(conversationId: 'c-1'),
+      child: const _OpenStage(),
     );
 
-    await tester.tap(find.byKey(FrontVoiceControlKeys.stage));
+    await tester.tap(find.byType(_OpenStage));
     for (var i = 0; i < 10; i++) {
       await tester.pump(const Duration(milliseconds: 50));
     }
@@ -441,4 +441,15 @@ void main() {
     expect(find.byKey(FrontStageControlKeys.talk), findsOneWidget);
     expect(caption(tester), 'Tap or hold to talk');
   });
+}
+
+/// Opens her stage in conversation c-1, as the header's stage control does.
+class _OpenStage extends StatelessWidget {
+  const _OpenStage();
+
+  @override
+  Widget build(BuildContext context) => TextButton(
+    onPressed: () => openFrontStage(context, 'c-1'),
+    child: const Text('Open her stage'),
+  );
 }

@@ -110,6 +110,9 @@ class CompanionCustomizationController
       }
       _loaded = true;
       _reloadIfAsked();
+      // [loaded] is not state: a host waiting on it (her voice switch) hears
+      // it flip even when nothing was stored, and her state stays the same.
+      ref.notifyListeners();
       if (found == null || json == null) return;
       state = found;
       // Every write stores its stamp with the value, so one without a stamp

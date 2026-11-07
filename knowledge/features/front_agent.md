@@ -112,10 +112,6 @@ sources:
     resource: ../../lib/features/front_agent/ui/front_chat_surface.dart
     title: showFrontChat — her surface over the app
     last_modified: 2026-11-01
-  - id: category-scope
-    resource: ../../lib/features/front_agent/state/front_category_scope.dart
-    title: The chip options and each conversation's chosen categories
-    last_modified: 2026-11-01
   - id: providers
     resource: ../../lib/features/front_agent/state/front_agent_providers.dart
     title: The registry contributions, the wake runner that routes then walks, and the setup resolver
@@ -124,9 +120,25 @@ sources:
     resource: ../../lib/features/front_agent/ui/front_chat_voice.dart
     title: FrontVoice — her spoken reply, its gating, her pose, the voice an answer said again keeps
     last_modified: 2026-11-07
+  - id: reply-parts
+    resource: ../../lib/features/front_agent/model/front_reply_parts.dart
+    title: frontReplyParts — her words and the lists of tasks in them
+    last_modified: 2026-11-07
+  - id: task-list
+    resource: ../../lib/features/front_agent/ui/front_task_list.dart
+    title: FrontTaskList — her lists of tasks as a card of task rows
+    last_modified: 2026-11-07
+  - id: voice-switch
+    resource: ../../lib/features/front_agent/ui/front_voice_switch.dart
+    title: FrontVoiceSwitch — mutes her where she speaks
+    last_modified: 2026-11-07
   - id: voice-controls
     resource: ../../lib/features/front_agent/ui/front_voice_controls.dart
-    title: Her voice's stop / say-it-again control and the way to her full-screen stage
+    title: Her voice's stop / say-it-again control, her full-screen stage and the conversation beside her there
+    last_modified: 2026-11-07
+  - id: stage-pointing
+    resource: ../../lib/features/front_agent/state/front_stage_pointing.dart
+    title: frontStagePointsProvider — she points at the tasks she lists, on her stage
     last_modified: 2026-11-07
   - id: stage-controls
     resource: ../../lib/features/front_agent/ui/front_stage_controls.dart
@@ -244,16 +256,17 @@ contained and logged under `FrontRuntimeMaintenance`.
 | people | ≤50, newest first, only when `FrontRoutingScope.includePeople` | `getRelationships` | the relationship entry's id; names only |
 
 Tasks, projects and people are filtered through `FrontRoutingScope.categoryIds`:
-the identity's `allowedCategoryIds` narrowed by the chips the turn was sent
-with (`frontCategoriesOf` on the user turn's payload, read in
+the identity's `allowedCategoryIds` narrowed by any categories the turn's
+payload carries — written by builds that had category chips; new turns carry
+none (`frontCategoriesOf` on the user turn's payload, read in
 `executeUserMessage`), never widened — `frontNarrowedCategories`, the same
 rule the journal door applies; empty is unrestricted, the `categoryAllowed`
 convention. Goals carry no category and are listed whenever `includeGoals`.
 
 The block opens with **`## Categories`**: every active category her
 allow-list lets her see (`JournalDb.getAllCategories`, the privacy-gated read
-the task queries share), `category:id | name`, by name, the ones the chips
-chose marked `chosen`. That is what a category the user *names* resolves
+the task queries share), `category:id | name`, by name, the ones the turn's
+payload narrowed it to marked `chosen`. That is what a category the user *names* resolves
 against; a category is never a destination.
 
 The rendered block is **byte-stable**: rows sorted by id within each kind,
@@ -339,13 +352,13 @@ it:
 `FrontRoutingIndexBuilder.dueTaskLister` reads
 `JournalDb.getTasksDueOnOrBefore` — the read the Daily OS and those views
 share — and checks both ends of the window itself, inside the turn's scope
-(her allow-list narrowed by the chips), soonest due first, at most
+(her allow-list, narrowed by any categories the turn's payload carries), soonest due first, at most
 `frontDueTaskLimit` (30). A category the user names (*overdue in Work*) is
 passed as its id from `## Categories` in `categoryIds` and narrows it
 further, never widens it: the strategy refuses an id the index does not
-list, and — in a conversation the chips narrowed — one they did not choose,
-telling her to say it is outside. So the chips alone, the words alone, and
-both together all filter the list. `FrontDueTasks.render` is what the model
+list, and — in a turn whose payload narrowed it — one outside that,
+telling her to say it is outside. So naming a category is how the user
+filters the list. `FrontDueTasks.render` is what the model
 reads: the window and any named category in its heading, one row per task in
 the index's shape plus its category's name, an overdue one marked only in
 `all`, or a plain *None*.
@@ -470,7 +483,7 @@ walker died. Outcomes:
 | `task` / `project` question with an active agent | the owner's query pipeline, headless: `QueryAnswerBuilder.build` over an in-memory `QueryChatHistory` whose one event is the segment, chat id the source message id | `FrontDoorAnswer(text, summaryBased, incomplete, ownerIds)` — the answer is the record's, attributed to the owner, never reworded |
 | `goal` / `person`, question or statement, with an active agent | that agent's own chat: `appendMessage` then `enqueueMessage`, **never awaited** | `FrontDoorChatTurn(specialistAgentId, specialistMessageId)`; the reply lands in the specialist's thread with the turn as its `operationId` |
 | `task` or `project` statement or instruction | none — the walker writes nothing | `FrontDoorProposal(ownerId)`: waits for the user's tap |
-| `journal` question | the journal answer engine, headless: `QueryAnswerBuilder.build` over `QueryScope.journalIn(allowedCategoryIds)` narrowed by the turn's chips (`frontNarrowedCategories`) (empty = every visible category), agent id `front_agent`, the Settings default profile | `FrontDoorAnswer(fromJournal: true, evidence, dependencies, private)` — her own answer, with the passages it cites |
+| `journal` question | the journal answer engine, headless: `QueryAnswerBuilder.build` over `QueryScope.journalIn(allowedCategoryIds)` narrowed by any categories the turn's payload carries (`frontNarrowedCategories`) (empty = every visible category), agent id `front_agent`, the Settings default profile | `FrontDoorAnswer(fromJournal: true, evidence, dependencies, private)` — her own answer, with the passages it cites |
 | `new`, `journal` statement, `unrouted` | none | `FrontDoorInbox(newKind?)` — what the router thought it would become leads the chips |
 | `day` statement or instruction, while `enable_daily_os_page` is on | none — the walker writes nothing | `FrontDoorDay()`: waits for the user's tap |
 | `day` question, or anything about the day while the Daily OS is off | — | `FrontDoorSkipped(noDoor)` |
@@ -745,18 +758,25 @@ status says so in the error ink and the tap reads *Try again*
 the sheet for the entry's or the task's page. The inbox filter keeps a
 waiting turn's words and the reply that carries its cards together.
 
-She leads the conversation (`FrontChatHero`): her bust at hero size — the
-spark when `enable_companion` is off — and under it the conversation's title,
-scrolling in above the first message as `AgentChatView`'s `leading`, and
-opening an empty conversation with her invitation. Once the thread
-(`AgentChatView.onThreadScrolled`) is past her bust, `frontHeroScrolledProvider`
-puts her and the title in a line in the header's control row — reset when
-another conversation opens or the list opens or closes, so a thread that
-comes back at its top has her there. Otherwise the control row holds only
-the *Chats* button and a new conversation on the left, an overflow (her
-internals, where the thread's cost is accounted, then this conversation's
-rename, archive and delete as a group of their own — the same
-`FrontMenuButton` the list's rows have) and close on the right. The thread is `conversational` and `voiceFirst` (see
+The header (`FrontChatHeader`) says who the conversation is with and what
+about, in one row: her face at `ControlSizes.avatarCompact` — the spark when
+`enable_companion` is off — her name, and under it the open conversation's
+title (the inbox's name while that view is on; her name alone for a
+conversation not begun), an archived conversation marked before its title.
+Then her voice while the companion is on: `FrontVoiceButton`, the
+`FrontVoiceSwitch` that mutes her, and her stage; then an overflow and close.
+Where the list is a page over the conversation (a phone, a narrow window) the
+row opens with the *Chats* button and the inbox count, and the overflow
+leads with a new conversation, her stage and the switch that mutes her as a
+checked row (`frontVoiceMenuItem`), so the row fits a 360 dp phone with every
+control showing. Beside the list the switch sits on the row under the word
+*Voice* and the stage has its own control. The overflow then
+holds her AI profile once she exists, her internals, where the thread's cost
+is accounted, and this conversation's rename, archive and delete as a group
+of their own — the same `FrontMenuButton` the list's rows have. A
+conversation not begun opens on her bust at hero size (`FrontChatHero`) and
+her invitation, centred where the thread will be; once it has begun the
+thread is the conversation's alone. The thread is `conversational` and `voiceFirst` (see
 [chat input](agents/chat-input-and-reasoning.md)): her replies as prose with
 their cost as a quiet line under them, one pill field with the mic at its
 end, and what she was told by voice sent as said.
@@ -773,24 +793,30 @@ above Settings, the phone launcher's utility button beside the menu, or the
 `enable_front_agent` and all closed under lockdown: her thread spans every
 category.
 
-**Category chips** (`FrontCategoryChips`) sit at the top of a
-conversation's composer (`AgentChatView.composerHeader`) — not in the inbox —
-after an *Answers from* label that stays put while they scroll, when there
-are two categories or more to choose from. *All* leads and clears the
-choice; every chip is outlined and neutral, and a chosen one (*All* by
-default) takes the neutral pressed fill and a check
-(`DesignSystemChip.quietSelection`), never the accent the send arrow
-carries. The options are the active categories she may see
-(`frontCategoryOptionsProvider`: her allow-list, or every visible category
-when it is empty; `categoriesStreamProvider` is lockdown-scoped). The choice
-is kept per conversation for the session
-(`frontConversationCategoriesProvider`) and travels with each turn: the
-controller passes it to `sendMessage`, which writes it sorted under
-`categoryIds` (`frontCategoriesKey`) in the turn's payload. The journal door
-reads it back from the source turn and narrows her allow-list by it, never
-widening it: with no allow-list the chips are the scope, and chips that fall
-outside the allow-list leave it as it is — an empty scope would be the whole
-journal. A category named in the question narrows further, as before.
+**Narrowing to a category is said, not picked.** There are no category
+chips: a category named in the question (she knows them by name) narrows
+the answer, as `list_due_tasks`' `categoryIds` and the journal door's scope
+show. A turn's payload can still carry `categoryIds` (`frontCategoriesKey`)
+— turns written while conversations had chips, synced from another device —
+and the journal door reads it back and narrows her allow-list by it, never
+widening it (`frontNarrowedCategories`): with no allow-list those categories
+are the scope, and ones that fall outside the allow-list leave it as it is,
+since an empty scope would be the whole journal. New turns carry none.
+
+**Her lists of tasks are task rows.** The prompt asks her to write two
+tasks or more as a Markdown list, one task link per line. The pane hands
+`AgentChatView.replyBodyBuilder` a body for any reply that holds such a list:
+`frontReplyParts` cuts the reply into her words and the runs of
+`frontTaskListMinimum` (2) or more consecutive list lines that are one task
+link and nothing else, and each run is drawn as `FrontTaskList` — one card of
+`FrontTaskRow`s, between her words as she wrote them (rendered by the view's
+own Markdown, so links and style are unchanged). A row reads the task live
+(`taskLiveDataProvider`, through `.value`, so a reload keeps the row): its
+`StatusGlyph`, its title, its status and category, and — while it is not done
+or rejected — the tasks list's own `DueDateText`; until it loads, or if it is
+gone, the title she gave it stands alone. A tap opens the task through the
+pane's link handler, closing her surface first. A single task, or a line that
+says more than the link, stays a link in her words.
 
 A link in her bubble or in a card's answer goes through the pane's one
 handler: a route in the app (`internalRouteFromMarkdownUrl`) closes her
@@ -916,8 +942,13 @@ records and `think` while a send is in flight or a spoken answer is owed
 microphone opens (`ChatRecorderController.start`), so she never records
 herself.
 
-**Her voice's control and her stage** (`front_voice_controls.dart`) stand
-under her bust in the hero while the companion is on. `FrontVoiceButton` is
+**Her voice's controls and her stage** (`front_voice_controls.dart`,
+`front_voice_switch.dart`) ride the header while the companion is on.
+`FrontVoiceSwitch` mutes her: it writes the companion customization's
+`speaksReplies`, the same setting as the companion settings' switch, so a
+mute here holds everywhere and stops her mid-sentence; it is shown only
+once that setting has loaded, since a mute is never guessed at.
+`FrontVoiceButton` is
 the shared `TtsSourcePlayButton` on her source: while she speaks it stops
 her — shown then even if she was muted meanwhile, so a stop is always in
 reach — and once she has stopped, *Say it again* speaks her answer to the
@@ -937,11 +968,24 @@ after she was stopped mid-sentence too. It is gone while she may not speak, in
 the inbox, for a conversation other than the one on screen, while a send is
 in flight or a spoken reply is still owed, while the thread or its journal
 access is being read, and before that answer has landed.
-`FrontStageButton` — and a tap on her bust or the header's — opens
-`openFrontStage`: the shared full-screen `CompanionStagePage`, head to toe,
-on a phone and on a desktop window alike, still speaking on her source,
-with `FrontStageControls` at her feet in place of a summary's read-aloud
-control (the page's `controls`). The bust keeps one tree whatever she does,
+The header's stage control — or its overflow entry, and a tap on her
+face — opens `openFrontStage`: the shared full-screen `CompanionStagePage`,
+head to toe, on a phone and on a desktop window alike, still speaking on
+her source, with `FrontStageControls` at her feet in place of a summary's
+read-aloud control (the page's `controls`). On a desktop window
+(`isDesktopLayout`) the page's `sidePanel` stands beside her, two fifths of
+the width (`CompanionStagePage.sidePanelFlex` to `figureFlex`):
+`FrontStageTranscript`, the conversation's thread (`FrontChatThreadView`,
+the same one the pane shows), read only — `composerEnabled: false` — since
+the disc at her feet is the way to answer her there; the pane under the
+stage, which stays mounted, is the one view that sends what was said. Its
+ways out to a page close the stage and her surface both. While her voice
+plays in the conversation and her latest reply lists tasks
+(`frontStagePointsProvider` over `frontLatestReplyListsTasks`, in
+`state/front_stage_pointing.dart`), the page's `pointsAtSidePanel` has her
+hold `GestureName.pointRight` at the panel — at the task rows as she says
+them — and let her arm down when she stops. On a phone she keeps the
+screen, and never points. The bust keeps one tree whatever she does,
 so her animator lives through a start and a stop.
 
 **Her stage is never a dead end.** Whatever has been said, `FrontStageControls`

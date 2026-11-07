@@ -170,6 +170,22 @@ void main() {
       });
     });
 
+    test('a watcher hears it become known, even when nothing was stored '
+        'and her state is unchanged', () {
+      fakeAsync((async) {
+        final load = Completer<Map<String, String>>();
+        when(() => db.itemsByKeys(any())).thenAnswer((_) => load.future);
+        final c = start(async);
+        var heard = 0;
+        c.listen(companionCustomizationProvider, (_, _) => heard++);
+
+        load.complete(const {});
+        async.flushMicrotasks();
+        expect(heard, 1);
+        expect(c.read(companionCustomizationProvider.notifier).loaded, isTrue);
+      });
+    });
+
     test('a read that fails leaves it unknown, so nothing guesses at it', () {
       fakeAsync((async) {
         stored({companionCustomizationKey: 'not json'});

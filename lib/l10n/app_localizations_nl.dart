@@ -7197,16 +7197,13 @@ class AppLocalizationsNl extends AppLocalizations {
   String get frontChatRowMenuHint => 'Chatacties';
 
   @override
-  String get frontChatScopeAll => 'Alles';
-
-  @override
-  String get frontChatScopeLabel => 'Antwoorden uit';
-
-  @override
   String get frontChatSearchChats => 'Chats doorzoeken';
 
   @override
   String get frontChatTitle => 'Metgezel';
+
+  @override
+  String get frontChatVoiceLabel => 'Stem';
 
   @override
   String get frontChatYesterday => 'Gisteren';

@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show ProviderListenable;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/companion_stage_page.dart';
@@ -24,6 +26,16 @@ import '../../../../widget_test_utils.dart';
 import '../../../companion/companion_overrides.dart';
 import '../../../tts/test_utils.dart';
 
+/// Whether the host would have her point at its panel, switched by a test.
+class _Pointing extends Notifier<bool> {
+  @override
+  bool build() => true;
+
+  void stop() => state = false;
+}
+
+final _pointingProvider = NotifierProvider<_Pointing, bool>(_Pointing.new);
+
 /// She ticks for as long as she is mounted: pump frames, never settle.
 Future<void> _pumpFrames(WidgetTester tester) async {
   for (var i = 0; i < 6; i++) {
@@ -43,6 +55,8 @@ void main() {
     bool engineSupported = true,
     Stream<bool>? readAloudFlag,
     Widget? hostControl,
+    Widget? sidePanel,
+    ProviderListenable<bool>? pointsAtSidePanel,
     String? dressedFor,
     bool surprise = false,
   }) async {
@@ -56,6 +70,8 @@ void main() {
                     sourceId: 'task-1',
                     spokenText: 'Two items left.',
                     controls: hostControl,
+                    sidePanel: sidePanel,
+                    pointsAtSidePanel: pointsAtSidePanel,
                     dressedFor: dressedFor,
                   )
                 : openCompanionStage(
@@ -320,5 +336,94 @@ void main() {
 
     expect(find.byType(CompanionStagePage), findsNothing);
     expect(find.text('open'), findsOneWidget);
+  });
+
+  group("a host's side panel", () {
+    const panel = SizedBox.expand(key: Key('host-panel'));
+
+    testWidgets('stands beside her on a desktop window, she keeping the '
+        'larger share', (tester) async {
+      tester.view
+        ..physicalSize = const Size(1600, 1000)
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await openStage(tester, sidePanel: panel);
+
+      final side = tester.getRect(find.byKey(const Key('host-panel')));
+      final figure = tester.getRect(
+        find.byKey(const ValueKey('companionStageFigure')),
+      );
+      expect(side.left, greaterThanOrEqualTo(figure.right));
+      expect(
+        side.width / (side.width + figure.width),
+        closeTo(
+          CompanionStagePage.sidePanelFlex /
+              (CompanionStagePage.sidePanelFlex +
+                  CompanionStagePage.figureFlex),
+          0.01,
+        ),
+      );
+    });
+
+    testWidgets('is left out on a phone, where she takes the screen', (
+      tester,
+    ) async {
+      tester.view
+        ..physicalSize = const Size(390, 844)
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await openStage(tester, sidePanel: panel);
+
+      expect(find.byKey(const Key('host-panel')), findsNothing);
+      expect(
+        tester
+            .getRect(find.byKey(const ValueKey('companionStageFigure')))
+            .width,
+        390,
+      );
+    });
+
+    GestureName? held(WidgetTester tester) => tester
+        .widget<CompanionSpeaker>(
+          find.byKey(const ValueKey('companionStageFigure')),
+        )
+        .holding;
+
+    testWidgets('she points at it while the host says so, and lets her arm '
+        'down after', (tester) async {
+      tester.view
+        ..physicalSize = const Size(1600, 1000)
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await openStage(
+        tester,
+        sidePanel: panel,
+        pointsAtSidePanel: _pointingProvider,
+      );
+      // The panel is on her right, the screen's right.
+      expect(held(tester), GestureName.pointRight);
+
+      ProviderScope.containerOf(
+        tester.element(find.byType(CompanionSpeaker)),
+      ).read(_pointingProvider.notifier).stop();
+      await _pumpFrames(tester);
+      expect(held(tester), isNull);
+    });
+
+    testWidgets('on a phone, with no panel beside her, she never points', (
+      tester,
+    ) async {
+      tester.view
+        ..physicalSize = const Size(390, 844)
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await openStage(
+        tester,
+        sidePanel: panel,
+        pointsAtSidePanel: _pointingProvider,
+      );
+
+      expect(held(tester), isNull);
+    });
   });
 }

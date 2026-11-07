@@ -64,13 +64,19 @@ stays one tap. A transcript a `voiceFirst` chat sends by itself goes to
 `onSendSpoken` when the host gives one, so the host knows the turn was
 spoken; starting to record stops any voice that is speaking first
 (`ChatRecorderController.start`), so the microphone never records the
-app. `leading` is a widget that scrolls in above the first
-message, with the thread. `onThreadScrolled` reports the thread list's own
-scroll metrics, on every scroll and on layout (a list restored to its saved
-offset moves without a scroll); a scroll nested inside a message or the
-composer is not reported. `composerHeader` sits inside the composer, above
-its controls and a larger step from them, so what scopes the next turn (the
-front agent's category chips) belongs to the composer rather than the thread.
+app. `contentMaxWidth` gives the thread and the composer's controls one
+centred reading column: the list's side gutter grows with the window (never
+under `step5`) and the composer keeps its controls to the same width, so the
+field's edges line up with the messages while the whole pane scrolls; the
+front agent passes `kProseMeasureWidth`, other hosts take the full width.
+`replyBodyBuilder` lets a host draw an agent reply's body itself, given a
+`prose` function that renders a stretch of Markdown as the view renders
+replies; a null return keeps the usual collapsible Markdown. The front agent
+uses it to draw her lists of tasks as task rows.
+A view with `composerEnabled` off ignores the shared recorder's results — no
+error toast, no draft, no send: when two views of one conversation are
+mounted (the front agent's stage over its pane), only the one with the
+composer acts on a finished recording, so a spoken turn is sent once.
 `replyTextStyle` lets the host select its answer typography from design tokens;
 scoped queries use `bodySmall`, while other hosts retain `bodyMedium`.
 Hosts can supply `onLinkTap` to resolve each link against its containing message.

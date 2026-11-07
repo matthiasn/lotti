@@ -15,6 +15,14 @@ typedef AgentChatMessageDividerBuilder =
 
 /// Reusable durable-agent conversation surface. Consumers own sending and
 /// draft state; this component owns only projection, bubbles and composition.
+/// Draws an agent reply's body; see [AgentChatView.replyBodyBuilder].
+typedef AgentReplyBodyBuilder =
+    Widget? Function(
+      BuildContext context,
+      AgentChatMessage message,
+      Widget Function(String markdown) prose,
+    );
+
 class AgentChatView extends ConsumerStatefulWidget {
   const AgentChatView({
     required this.agentId,
@@ -50,9 +58,8 @@ class AgentChatView extends ConsumerStatefulWidget {
     this.resolveDictionaryCategory,
     this.conversational = false,
     this.voiceFirst = false,
-    this.leading,
-    this.composerHeader,
-    this.onThreadScrolled,
+    this.contentMaxWidth,
+    this.replyBodyBuilder,
     super.key,
   });
 
@@ -69,16 +76,17 @@ class AgentChatView extends ConsumerStatefulWidget {
   /// its end, as any chat's.
   final bool voiceFirst;
 
-  /// Scrolls in above the first message, with the thread.
-  final Widget? leading;
+  /// The width of one reading column, centred, that the thread and the
+  /// composer's controls share, so the field's edges line up with the
+  /// messages above it; null lets both take the full width.
+  final double? contentMaxWidth;
 
-  /// Sits inside the composer, above its controls: what the question will
-  /// be asked with (a scope), part of the asking rather than the thread.
-  final Widget? composerHeader;
-
-  /// Where the thread's list is, on each scroll and layout — its own list
-  /// only, not a scroll inside a message or the composer.
-  final ValueChanged<ScrollMetrics>? onThreadScrolled;
+  /// Draws an agent reply's body in place of its Markdown, for a host whose
+  /// replies carry more than words (the front agent's lists of tasks, as
+  /// task rows). `prose` renders a stretch of Markdown as the view renders
+  /// replies — style, links — so the host keeps her words as they are around
+  /// what it draws. Returns null for a reply drawn as usual.
+  final AgentReplyBodyBuilder? replyBodyBuilder;
 
   final String agentId;
   final String agentName;
@@ -183,7 +191,7 @@ class _ChatComposer extends ConsumerWidget {
     required this.onSend,
     required this.shape,
     this.voiceFirst = false,
-    this.header,
+    this.contentMaxWidth,
     this.resolveTranscriptionTarget,
     this.correctTranscript,
     this.resolveDictionaryCategory,
@@ -191,8 +199,9 @@ class _ChatComposer extends ConsumerWidget {
 
   final bool voiceFirst;
 
-  /// Shown above the controls, inside the composer.
-  final Widget? header;
+  /// The reading column the controls keep to, centred; null for the full
+  /// width.
+  final double? contentMaxWidth;
   final double availableHeight;
   final TextEditingController controller;
   final String hintText;
@@ -207,14 +216,15 @@ class _ChatComposer extends ConsumerWidget {
   final ChatTranscriptCorrector? correctTranscript;
   final ChatDictionaryCategoryResolver? resolveDictionaryCategory;
 
-  /// [header] over [controls]. The header brings its own gap below it, so
-  /// a header that renders nothing leaves no blank band.
-  Widget _withHeader(Widget controls) {
-    final header = this.header;
-    if (header == null) return controls;
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [header, controls],
+  /// [controls] in the reading column, when there is one.
+  Widget _inColumn(Widget controls) {
+    final maxWidth = contentMaxWidth;
+    if (maxWidth == null) return controls;
+    return Center(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: maxWidth),
+        child: controls,
+      ),
     );
   }
 
@@ -233,7 +243,7 @@ class _ChatComposer extends ConsumerWidget {
       ),
       child: Padding(
         padding: EdgeInsets.all(tokens.spacing.step4),
-        child: _withHeader(switch (status) {
+        child: _inColumn(switch (status) {
           ChatRecorderStatus.recording => ChatRecordingPill(
             processing: false,
             elapsed: recorderState.elapsed,
@@ -426,10 +436,12 @@ class _MessageBubble extends StatelessWidget {
     this.replyTextStyle,
     this.onLinkTap,
     this.conversational = false,
+    this.replyBodyBuilder,
     super.key,
   });
 
   final bool conversational;
+  final AgentReplyBodyBuilder? replyBodyBuilder;
   final AgentChatMessage message;
   final String agentName;
   final Widget? attachment;
@@ -441,6 +453,12 @@ class _MessageBubble extends StatelessWidget {
 
   /// List-owned reply heights; see [_AgentChatViewState._measuredHeights].
   final Map<String, double> measuredHeights;
+
+  /// Her words' style: the host's, else body text, high emphasis.
+  TextStyle _replyStyle(DsTokens tokens) =>
+      (replyTextStyle ?? tokens.typography.styles.body.bodyMedium).copyWith(
+        color: tokens.colors.text.highEmphasis,
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -503,21 +521,26 @@ class _MessageBubble extends StatelessWidget {
                   else
                     ExcludeSemantics(
                       excluding: onLinkTap == null,
-                      child: _CollapsibleAgentMarkdown(
-                        onLinkTap: onLinkTap,
-                        cacheKey: message.id,
-                        measuredHeights: measuredHeights,
-                        text: message.text,
-                        style:
-                            (replyTextStyle ??
-                                    tokens.typography.styles.body.bodyMedium)
-                                .copyWith(
-                                  color: tokens.colors.text.highEmphasis,
-                                ),
-                        fadeColor: conversational
-                            ? tokens.colors.background.level01
-                            : tokens.colors.background.level02,
-                      ),
+                      child:
+                          replyBodyBuilder?.call(
+                            context,
+                            message,
+                            (markdown) => AgentMarkdownView(
+                              markdown,
+                              style: _replyStyle(tokens),
+                              onLinkTap: onLinkTap,
+                            ),
+                          ) ??
+                          _CollapsibleAgentMarkdown(
+                            onLinkTap: onLinkTap,
+                            cacheKey: message.id,
+                            measuredHeights: measuredHeights,
+                            text: message.text,
+                            style: _replyStyle(tokens),
+                            fadeColor: conversational
+                                ? tokens.colors.background.level01
+                                : tokens.colors.background.level02,
+                          ),
                     ),
                   if (attachment != null) ...[
                     SizedBox(height: tokens.spacing.step3),

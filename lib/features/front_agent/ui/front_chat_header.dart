@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
+import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
 import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
@@ -17,13 +18,18 @@ import 'package:lotti/features/front_agent/state/front_inbox_filter.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_hero.dart';
 import 'package:lotti/features/front_agent/ui/front_conversation_actions.dart';
 import 'package:lotti/features/front_agent/ui/front_profile_choice.dart';
+import 'package:lotti/features/front_agent/ui/front_voice_controls.dart';
+import 'package:lotti/features/front_agent/ui/front_voice_switch.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Stable keys for the header's controls.
 @visibleForTesting
 abstract final class FrontChatHeaderKeys {
   static const Key title = Key('front-chat-title');
+  static const Key name = Key('front-chat-name');
+  static const Key archived = Key('front-chat-archived');
   static const Key inbox = Key('front-chat-inbox');
   static const Key chats = Key('front-chat-chats');
   static const Key back = Key('front-chat-back');
@@ -31,21 +37,27 @@ abstract final class FrontChatHeaderKeys {
   static const Key newChat = Key('front-chat-new');
   static const Key internals = Key('front-chat-internals');
   static const Key profile = Key('front-chat-profile');
+  static const Key stage = Key('front-chat-open-stage');
   static const Key close = Key('front-chat-close');
 }
 
 /// The front chat's one-row header, in two modes.
 ///
-/// On a conversation the row opens with the way to the list of
-/// conversations — in the slot the list's back arrow takes, so both pages
-/// share one leading rail — then her face while the companion is switched
-/// on (with it off there is no stand-in tile), then the title, the open
-/// conversation's or her name for one not begun, taking the row's width.
-/// After it come the inbox
-/// chip while something waits on the user in any conversation, a new
-/// conversation, one overflow for the rest (her AI profile, which is also
-/// her voice, once she exists; her internals, where what the thread has
-/// cost is accounted), and the sheet's close.
+/// On a conversation it says who you are talking to and about what: her
+/// face (while the companion is switched on; the spark every agent wears
+/// while it is off), her name, and under it the open conversation's title.
+/// Then her voice: the way to have her say her latest answer again, the
+/// switch that mutes her, and her full-screen stage; then one overflow for
+/// the rest (her AI profile, which is also her voice, once she exists; her
+/// internals, where what the thread has cost is accounted; the open
+/// conversation's own actions) and the sheet's close.
+///
+/// Where the list is a page over the conversation, the row opens with the
+/// way to it — in the slot the list's back arrow takes, so both pages share
+/// one leading rail — with the inbox count after it, and a new conversation
+/// joins the overflow, as do the stage and the switch that mutes her (a
+/// checked row), so the row fits a 360 dp phone. Beside
+/// the list, the list carries those.
 ///
 /// On the list the row is a page header: back to the conversation, "Chats",
 /// close — nothing that would duplicate the list's own new-chat row.
@@ -69,10 +81,6 @@ class FrontChatHeader extends ConsumerWidget {
     final listOpen =
         !listBeside && ref.watch(frontConversationListOpenProvider);
     final inboxOnly = ref.watch(frontInboxFilterProvider);
-    // The title rides the control row once the hero has scrolled away —
-    // and always in the inbox, which has no hero of its own.
-    final inLine = ref.watch(frontHeroScrolledProvider) || inboxOnly;
-    final open = frontOpenConversation(ref, messages);
     // Watched in both modes: the conversation is still there behind the list,
     // and its title must not blink out when the list closes.
     final activeId = ref.watch(frontActiveConversationProvider).value;
@@ -86,7 +94,6 @@ class FrontChatHeader extends ConsumerWidget {
       onPressed: onClose,
       icon: LottiIcons.close,
     );
-    final titleStyle = tokens.typography.styles.subtitle.subtitle1;
 
     final List<Widget> row;
     if (listOpen) {
@@ -104,7 +111,9 @@ class FrontChatHeader extends ConsumerWidget {
             key: FrontChatHeaderKeys.title,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: titleStyle.copyWith(color: tokens.colors.text.highEmphasis),
+            style: tokens.typography.styles.subtitle.subtitle1.copyWith(
+              color: tokens.colors.text.highEmphasis,
+            ),
           ),
         ),
         close,
@@ -125,111 +134,98 @@ class FrontChatHeader extends ConsumerWidget {
             frontAllChatsThreadProvider.select((t) => t.value?.inboxCount),
           ) ??
           0;
+      // Her voice and her stage go with her figure: with the character off
+      // she neither stands up nor speaks. Never in the inbox, which gathers
+      // every conversation.
+      final companionOn =
+          ref.watch(configFlagProvider(enableCompanionFlag)).value ?? false;
+      final voiceId = companionOn && !inboxOnly ? activeId : null;
       final openList = ref
           .read(frontConversationListOpenProvider.notifier)
           .toggle;
+      final startConversation = notBegun && !inboxOnly
+          ? null
+          : ref.read(frontChatControllerProvider.notifier).startConversation;
+      // Where the row has to fit a phone, the switch that mutes her is a
+      // checked row of the overflow instead.
+      final voiceItem = !listBeside && voiceId != null
+          ? frontVoiceMenuItem(context, ref)
+          : null;
       row = [
-        // Beside the list these live in it: the way to it, a new
-        // conversation, the inbox.
         if (!listBeside) ...[
-          // The way to the list sits where the list's own back arrow does,
-          // so the two pages share one leading rail.
-          // While something waits on the user in any conversation, its count
-          // on the way to the list — where the inbox is — rather than a chip
-          // taking the title's width.
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Said in a word as well as the glyph: three lines alone do
-              // not tell anyone that their other chats live there. Its
-              // glyph on the thread's own edge.
-              DesignSystemButton(
-                key: FrontChatHeaderKeys.chats,
-                label: messages.queryChats,
-                variant: DesignSystemButtonVariant.quiet,
-                leadingIcon: LottiIcons.menu,
-                alignsLabelToLeadingEdge: true,
-                onPressed: openList,
+          // Said in a word as well as the glyph: three lines alone do not
+          // tell anyone that their other chats live there.
+          DesignSystemButton(
+            key: FrontChatHeaderKeys.chats,
+            label: messages.queryChats,
+            variant: DesignSystemButtonVariant.quiet,
+            leadingIcon: LottiIcons.menu,
+            alignsLabelToLeadingEdge: true,
+            onPressed: openList,
+          ),
+          // After the word, never over it: "Chats ②" reads as one thing,
+          // and a tap on the count opens the list as well.
+          if (inboxCount > 0)
+            GestureDetector(
+              onTap: openList,
+              child: DesignSystemBadge.number(
+                key: FrontChatHeaderKeys.inbox,
+                value: '$inboxCount',
+                // The tone query chat marks "waiting on you" with.
+                tone: DesignSystemBadgeTone.warning,
+                semanticLabel: messages.frontChatInboxChip(inboxCount),
               ),
-              // After the word, never over it: "Chats ②" reads as one
-              // thing, and a tap on the count opens the list as well.
-              if (inboxCount > 0)
-                GestureDetector(
-                  onTap: openList,
-                  child: DesignSystemBadge.number(
-                    key: FrontChatHeaderKeys.inbox,
-                    value: '$inboxCount',
-                    // The tone query chat marks "waiting on you" with.
-                    tone: DesignSystemBadgeTone.warning,
-                    semanticLabel: messages.frontChatInboxChip(inboxCount),
-                  ),
-                ),
-            ],
-          ),
-          // A step before the next control, so the count reads as the
-          // word's, never the pencil's.
+            ),
           SizedBox(width: tokens.spacing.step3),
-          // Beside the list, as ChatGPT groups them: the ways to another
-          // conversation lead, so the pencil never reads as "rename this".
-          DesignSystemIconAction(
-            key: FrontChatHeaderKeys.newChat,
-            tooltip: messages.queryNewChat,
-            // Nothing to start while the open one is new and empty already.
-            onPressed: notBegun && !inboxOnly
-                ? null
-                : ref
-                      .read(frontChatControllerProvider.notifier)
-                      .startConversation,
-            icon: LottiIcons.editNote,
-          ),
         ],
-        // She and the title lead the thread from its hero; once that has
-        // scrolled away, they ride here in a line.
+        const FrontCompanionFigure(size: ControlSizes.avatarCompact),
+        SizedBox(width: tokens.spacing.step3),
         Expanded(
-          child: AnimatedOpacity(
-            opacity: inLine ? 1 : 0,
-            duration: const Duration(milliseconds: 150),
-            child: inLine
-                ? Row(
-                    children: [
-                      SizedBox(width: tokens.spacing.step3),
-                      const FrontCompanionFigure(
-                        size: ControlSizes.avatarCompact,
-                      ),
-                      SizedBox(width: tokens.spacing.step3),
-                      Expanded(
-                        child: Tooltip(
-                          message: open.title,
-                          child: Text(
-                            open.title,
-                            key: FrontChatHeaderKeys.title,
-                            maxLines: 1,
-                            softWrap: false,
-                            overflow: TextOverflow.fade,
-                            style: tokens.typography.styles.subtitle.subtitle2
-                                .copyWith(
-                                  color: tokens.colors.text.highEmphasis,
-                                ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  )
-                : const SizedBox.shrink(),
-          ),
+          child: _Identity(name: messages.frontChatTitle),
         ),
-        // Her profile and internals, then the open conversation's own ways
-        // out — the same menu its row in the list has — so the destructive
-        // one is last.
+        if (voiceId != null) ...[
+          FrontVoiceButton(conversationId: voiceId),
+          if (listBeside) ...[
+            SizedBox(width: tokens.spacing.step2),
+            const FrontVoiceSwitch(),
+            SizedBox(width: tokens.spacing.step2),
+            DesignSystemIconAction(
+              key: FrontChatHeaderKeys.stage,
+              tooltip: messages.aiCardCompanionOpenFullScreen,
+              icon: LottiIcons.expandFull,
+              onPressed: () => openFrontStage(context, voiceId).ignore(),
+            ),
+          ],
+        ],
+        // A new conversation and the stage when the row has no room for
+        // them, then her profile and internals, then the open
+        // conversation's own ways out — the same menu its row in the list
+        // has — so the destructive one is last.
         FrontMenuButton(
           key: FrontChatHeaderKeys.more,
           iconColor: tokens.colors.text.mediumEmphasis,
           items: [
+            if (!listBeside)
+              DesignSystemContextMenuItem(
+                key: FrontChatHeaderKeys.newChat,
+                label: messages.queryNewChat,
+                icon: LottiIcons.editNote,
+                onTap: startConversation,
+              ),
+            if (!listBeside && voiceId != null)
+              DesignSystemContextMenuItem(
+                key: FrontChatHeaderKeys.stage,
+                label: messages.aiCardCompanionOpenFullScreen,
+                icon: LottiIcons.expandFull,
+                onTap: () => openFrontStage(context, voiceId).ignore(),
+              ),
+            ?voiceItem,
             if (identity is AgentIdentityEntity && profiles != null)
               DesignSystemContextMenuItem(
                 key: FrontChatHeaderKeys.profile,
                 label: messages.frontChatProfileMenuItem,
                 icon: LottiIcons.aiModel,
+                startsGroup: !listBeside,
                 onTap: () => FrontProfileChoice.choose(
                   context,
                   ref,
@@ -242,6 +238,9 @@ class FrontChatHeader extends ConsumerWidget {
               key: FrontChatHeaderKeys.internals,
               label: messages.aiInternalsTitle,
               icon: LottiIcons.reasoning,
+              startsGroup:
+                  !listBeside &&
+                  !(identity is AgentIdentityEntity && profiles != null),
               onTap: () => AgentInternalsPanel.show(
                 context: context,
                 agentId: frontAgentId,
@@ -263,13 +262,9 @@ class FrontChatHeader extends ConsumerWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: tokens.colors.background.level01,
-        // A rule under the controls only once the hero has gone, or on the
-        // list: over her, the thread's own day divider is the only line.
-        border: listOpen || inLine
-            ? Border(
-                bottom: BorderSide(color: tokens.colors.decorative.level01),
-              )
-            : null,
+        border: Border(
+          bottom: BorderSide(color: tokens.colors.decorative.level01),
+        ),
       ),
       child: Padding(
         // The side gutter the bubbles and the list keep: the header's
@@ -279,13 +274,72 @@ class FrontChatHeader extends ConsumerWidget {
           horizontal: tokens.spacing.step5,
           vertical: tokens.spacing.step3,
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+        child: Row(children: row),
+      ),
+    );
+  }
+}
+
+/// Who the conversation is with, and what it is about: her name over the
+/// open conversation's title — the inbox's name while that view is on — and
+/// her name alone for a conversation not begun. An archived conversation
+/// says so before its title, as its row does in the list.
+class _Identity extends ConsumerWidget {
+  const _Identity({required this.name});
+
+  final String name;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tokens = context.designTokens;
+    final open = frontOpenConversation(ref, context.messages);
+    final subtitle = open.title == name ? null : open.title;
+    final nameText = Text(
+      name,
+      key: subtitle == null
+          ? FrontChatHeaderKeys.title
+          : FrontChatHeaderKeys.name,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: tokens.typography.styles.subtitle.subtitle1.copyWith(
+        color: tokens.colors.text.highEmphasis,
+      ),
+    );
+    if (subtitle == null) return nameText;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        nameText,
+        Row(
           children: [
-            Row(children: row),
+            if (open.archived) ...[
+              Icon(
+                LottiIcons.archive,
+                key: FrontChatHeaderKeys.archived,
+                size: IconSizes.xs,
+                color: tokens.colors.text.mediumEmphasis,
+              ),
+              SizedBox(width: tokens.spacing.step2),
+            ],
+            Flexible(
+              child: Tooltip(
+                message: subtitle,
+                child: Text(
+                  subtitle,
+                  key: FrontChatHeaderKeys.title,
+                  maxLines: 1,
+                  softWrap: false,
+                  overflow: TextOverflow.ellipsis,
+                  style: tokens.typography.styles.others.caption.copyWith(
+                    color: tokens.colors.text.mediumEmphasis,
+                  ),
+                ),
+              ),
+            ),
           ],
         ),
-      ),
+      ],
     );
   }
 }

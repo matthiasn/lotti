@@ -1,14 +1,15 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/companion_stage_page.dart';
-import 'package:lotti/features/design_system/components/buttons/ds_ai_disc_button.dart';
-import 'package:lotti/features/design_system/theme/icon_tokens.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/front_agent/model/front_chat_thread.dart';
 import 'package:lotti/features/front_agent/state/front_chat_controller.dart';
 import 'package:lotti/features/front_agent/state/front_chat_thread_provider.dart';
 import 'package:lotti/features/front_agent/state/front_conversation_providers.dart';
 import 'package:lotti/features/front_agent/state/front_inbox_filter.dart';
 import 'package:lotti/features/front_agent/state/front_journal_access_provider.dart';
+import 'package:lotti/features/front_agent/state/front_stage_pointing.dart';
 import 'package:lotti/features/front_agent/state/front_voice_providers.dart';
+import 'package:lotti/features/front_agent/ui/front_chat_pane.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_voice.dart';
 import 'package:lotti/features/front_agent/ui/front_stage_controls.dart';
 import 'package:lotti/features/tts/state/tts_playback_controller.dart';
@@ -20,19 +21,58 @@ import 'package:material_ui/material_ui.dart';
 @visibleForTesting
 abstract final class FrontVoiceControlKeys {
   static const Key replay = Key('front-chat-voice-replay');
-  static const Key stage = Key('front-chat-open-stage');
+  static const Key transcript = Key('front-chat-stage-transcript');
 }
 
 /// Opens her full screen, head to toe on her stage — on a desktop window as
 /// on a phone — still speaking in [conversationId], with a way to answer
-/// her and her voice's control at her feet ([FrontStageControls]).
+/// her and her voice's control at her feet ([FrontStageControls]), and, on a
+/// desktop window, the conversation beside her ([FrontStageTranscript]),
+/// pointing at it while she says the tasks it lists
+/// ([frontStagePointsProvider]).
 Future<void> openFrontStage(BuildContext context, String conversationId) =>
     openCompanionStage(
       context,
       sourceId: frontVoiceSourceId(conversationId),
       dressedFor: frontCompanionDressedFor,
       controls: FrontStageControls(conversationId: conversationId),
+      sidePanel: const FrontStageTranscript(),
+      pointsAtSidePanel: frontStagePointsProvider(conversationId),
     );
+
+/// The conversation beside her on her stage: its thread, read only, on the
+/// conversation's own ground. Whatever leaves her for a
+/// page — a task she names, a source — closes the stage and her surface
+/// both, so the page opens on top rather than behind them.
+class FrontStageTranscript extends StatelessWidget {
+  const FrontStageTranscript({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    return DecoratedBox(
+      key: FrontVoiceControlKeys.transcript,
+      decoration: BoxDecoration(
+        color: tokens.colors.background.level01,
+        border: Border(
+          left: BorderSide(color: tokens.colors.decorative.level01),
+        ),
+      ),
+      child: SafeArea(
+        left: false,
+        // Read only: the disc at her feet is the way to answer her here,
+        // and the pane under the stage sends what is said.
+        child: FrontChatThreadView(
+          composerEnabled: false,
+          onClose: () => Navigator.of(
+            context,
+            rootNavigator: true,
+          ).popUntil((route) => route.isFirst),
+        ),
+      ),
+    );
+  }
+}
 
 /// Her voice's control in [conversationId]: while she speaks it stops her;
 /// once she has stopped it says her latest answer again, from the start.
@@ -81,19 +121,4 @@ class FrontVoiceButton extends ConsumerWidget {
           FrontVoice.speak(ref, context, conversationId, answer).ignore(),
     );
   }
-}
-
-/// The way to her full-screen stage from the conversation.
-class FrontStageButton extends StatelessWidget {
-  const FrontStageButton({required this.conversationId, super.key});
-
-  final String conversationId;
-
-  @override
-  Widget build(BuildContext context) => DsAiDiscButton(
-    key: FrontVoiceControlKeys.stage,
-    icon: LottiIcons.expandFull,
-    label: context.messages.aiCardCompanionOpenFullScreen,
-    onPressed: () => openFrontStage(context, conversationId).ignore(),
-  );
 }

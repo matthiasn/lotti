@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/state/agent_chat_projection.dart';
@@ -63,6 +65,10 @@ class _AgentChatViewState extends ConsumerState<AgentChatView> {
     _recorderSubscription = ref.listenManual<ChatRecorderState>(
       chatRecorderControllerProvider,
       (previous, next) {
+        // Without a composer this view is not where anything was said: the
+        // view that has one owns the recording's result, and acting here
+        // too would send a spoken turn twice.
+        if (!widget.composerEnabled) return;
         final error = next.error?.trim();
         if (error != null &&
             error.isNotEmpty &&
@@ -124,15 +130,10 @@ class _AgentChatViewState extends ConsumerState<AgentChatView> {
     super.dispose();
   }
 
-  /// Tells [AgentChatView.onThreadScrolled] where the thread is: on a
-  /// scroll, and on a layout — a thread restored where it was left moves
-  /// without one. The thread's own list only (depth 0 here), never a scroll
-  /// nested inside a message or the composer.
-  ///
-  /// It also keeps the thread at its latest message while [_followLatest]
-  /// holds, whenever the content grows.
+  /// Keeps the thread at its latest message while [_followLatest] holds,
+  /// whenever the content grows. The thread's own list only (depth 0
+  /// here), never a scroll nested inside a message or the composer.
   Widget _followThread(Widget list, {required double nearBottom}) {
-    final follow = widget.onThreadScrolled;
     return NotificationListener<Notification>(
       onNotification: (notification) {
         switch (notification) {
@@ -159,12 +160,6 @@ class _AgentChatViewState extends ConsumerState<AgentChatView> {
                   metrics.extentAfter > 0:
             _scrollToLatest();
         }
-        final metrics = switch (notification) {
-          ScrollUpdateNotification(depth: 0, :final metrics) => metrics,
-          ScrollMetricsNotification(depth: 0, :final metrics) => metrics,
-          _ => null,
-        };
-        if (metrics != null) follow?.call(metrics);
         return false;
       },
       child: list,
@@ -198,192 +193,209 @@ class _AgentChatViewState extends ConsumerState<AgentChatView> {
     _lastMessageId = latestMessageId;
     _wasSending = widget.isSending;
     if (shouldScroll) _scrollToLatest();
-    // What scrolls in above the first message, with the thread.
-    final lead = widget.leading == null ? 0 : 1;
 
     return LayoutBuilder(
-      builder: (context, constraints) => Column(
-        children: [
-          Expanded(
-            child: switch (messages) {
-              null when historyAsync.hasError => Center(
-                child: Padding(
-                  padding: EdgeInsets.all(tokens.spacing.step5),
-                  child: Text(
-                    context.messages.goalChatHistoryError,
-                    style: tokens.typography.styles.body.bodyMedium.copyWith(
-                      color: tokens.colors.alert.error.ink,
+      builder: (context, constraints) {
+        // In a reading column the side gutter grows with the window, so the
+        // messages keep to the composer's width while the whole pane
+        // scrolls; never under the usual gutter on a narrow one.
+        final maxWidth = widget.contentMaxWidth;
+        final gutter = maxWidth == null
+            ? tokens.spacing.step5
+            : math.max(
+                tokens.spacing.step5,
+                (constraints.maxWidth - maxWidth) / 2,
+              );
+        return Column(
+          children: [
+            Expanded(
+              child: switch (messages) {
+                null when historyAsync.hasError => Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(tokens.spacing.step5),
+                    child: Text(
+                      context.messages.goalChatHistoryError,
+                      style: tokens.typography.styles.body.bodyMedium.copyWith(
+                        color: tokens.colors.alert.error.ink,
+                      ),
                     ),
                   ),
                 ),
-              ),
-              null => const Center(child: CircularProgressIndicator()),
-              final history =>
-                history.isEmpty && !widget.isSending
-                    ? widget.emptyState ??
-                          Center(
-                            child: Padding(
-                              padding: EdgeInsets.all(tokens.spacing.step5),
-                              child: Text(
-                                widget.emptyMessage ??
-                                    context.messages.goalChatEmpty(
-                                      widget.agentName,
-                                    ),
-                                textAlign: TextAlign.center,
-                                style: tokens.typography.styles.body.bodyMedium
-                                    .copyWith(
-                                      color: tokens.colors.text.mediumEmphasis,
-                                    ),
+                null => const Center(child: CircularProgressIndicator()),
+                final history =>
+                  history.isEmpty && !widget.isSending
+                      ? widget.emptyState ??
+                            Center(
+                              child: Padding(
+                                padding: EdgeInsets.all(tokens.spacing.step5),
+                                child: Text(
+                                  widget.emptyMessage ??
+                                      context.messages.goalChatEmpty(
+                                        widget.agentName,
+                                      ),
+                                  textAlign: TextAlign.center,
+                                  style: tokens
+                                      .typography
+                                      .styles
+                                      .body
+                                      .bodyMedium
+                                      .copyWith(
+                                        color:
+                                            tokens.colors.text.mediumEmphasis,
+                                      ),
+                                ),
                               ),
+                            )
+                      : _followThread(
+                          nearBottom: tokens.spacing.step9,
+                          ListView.builder(
+                            key: widget.conversationId == null
+                                ? null
+                                : PageStorageKey(widget.conversationId),
+                            controller: _scrollController,
+                            padding: EdgeInsets.symmetric(
+                              horizontal: gutter,
+                              vertical: tokens.spacing.step5,
                             ),
-                          )
-                    : _followThread(
-                        nearBottom: tokens.spacing.step9,
-                        ListView.builder(
-                          key: widget.conversationId == null
-                              ? null
-                              : PageStorageKey(widget.conversationId),
-                          controller: _scrollController,
-                          padding: EdgeInsets.all(tokens.spacing.step5),
-                          itemCount:
-                              lead +
-                              history.length +
-                              (widget.isSending ? 1 : 0),
-                          itemBuilder: (context, at) {
-                            if (at < lead) return widget.leading!;
-                            final index = at - lead;
-                            if (index == history.length) {
-                              return widget.activity ??
-                                  _ThinkingBubble(
-                                    conversational: widget.conversational,
-                                    label:
-                                        widget.sendingLabel ??
-                                        context.messages.goalChatResponding(
-                                          widget.agentName,
-                                        ),
-                                  );
-                            }
-                            final message = history[index];
-                            final groupAttachment =
-                                widget.groupAttachmentsWithReply &&
-                                message.role == AgentChatRole.agent;
-                            final attachment = widget.attachmentBuilder?.call(
-                              context,
-                              message,
-                            );
-                            final divider = widget.dividerBuilder?.call(
-                              context,
-                              message,
-                              index == 0 ? null : history[index - 1],
-                            );
-                            return Padding(
-                              padding: EdgeInsets.only(
-                                bottom: tokens.spacing.cardItemSpacing,
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  if (divider != null) ...[
-                                    KeyedSubtree(
-                                      key: ValueKey(
-                                        'goal-chat-divider-${message.id}',
-                                      ),
-                                      child: divider,
-                                    ),
-                                    SizedBox(height: tokens.spacing.step3),
-                                  ],
-                                  _MessageBubble(
-                                    key: ValueKey(
-                                      'goal-chat-message-${message.id}',
-                                    ),
-                                    message: message,
-                                    agentName: widget.agentName,
-                                    measuredHeights: _measuredHeights,
-                                    conversational: widget.conversational,
-                                    replyTextStyle: widget.replyTextStyle,
-                                    onLinkTap: widget.onLinkTap == null
-                                        ? null
-                                        : (url, title) => widget.onLinkTap!(
-                                            message,
-                                            url,
-                                            title,
+                            itemCount:
+                                history.length + (widget.isSending ? 1 : 0),
+                            itemBuilder: (context, index) {
+                              if (index == history.length) {
+                                return widget.activity ??
+                                    _ThinkingBubble(
+                                      conversational: widget.conversational,
+                                      label:
+                                          widget.sendingLabel ??
+                                          context.messages.goalChatResponding(
+                                            widget.agentName,
                                           ),
-                                    attachment: groupAttachment
-                                        ? attachment
-                                        : null,
-                                    footerTrailing: widget.footerTrailingBuilder
-                                        ?.call(context, message),
-                                  ),
-                                  if (attachment != null &&
-                                      !groupAttachment) ...[
-                                    SizedBox(height: tokens.spacing.step2),
-                                    KeyedSubtree(
-                                      key: ValueKey(
-                                        'goal-chat-attachment-${message.id}',
+                                    );
+                              }
+                              final message = history[index];
+                              final groupAttachment =
+                                  widget.groupAttachmentsWithReply &&
+                                  message.role == AgentChatRole.agent;
+                              final attachment = widget.attachmentBuilder?.call(
+                                context,
+                                message,
+                              );
+                              final divider = widget.dividerBuilder?.call(
+                                context,
+                                message,
+                                index == 0 ? null : history[index - 1],
+                              );
+                              return Padding(
+                                padding: EdgeInsets.only(
+                                  bottom: tokens.spacing.cardItemSpacing,
+                                ),
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    if (divider != null) ...[
+                                      KeyedSubtree(
+                                        key: ValueKey(
+                                          'goal-chat-divider-${message.id}',
+                                        ),
+                                        child: divider,
                                       ),
-                                      child: attachment,
+                                      SizedBox(height: tokens.spacing.step3),
+                                    ],
+                                    _MessageBubble(
+                                      key: ValueKey(
+                                        'goal-chat-message-${message.id}',
+                                      ),
+                                      message: message,
+                                      agentName: widget.agentName,
+                                      measuredHeights: _measuredHeights,
+                                      conversational: widget.conversational,
+                                      replyTextStyle: widget.replyTextStyle,
+                                      replyBodyBuilder: widget.replyBodyBuilder,
+                                      onLinkTap: widget.onLinkTap == null
+                                          ? null
+                                          : (url, title) => widget.onLinkTap!(
+                                              message,
+                                              url,
+                                              title,
+                                            ),
+                                      attachment: groupAttachment
+                                          ? attachment
+                                          : null,
+                                      footerTrailing: widget
+                                          .footerTrailingBuilder
+                                          ?.call(context, message),
                                     ),
+                                    if (attachment != null &&
+                                        !groupAttachment) ...[
+                                      SizedBox(height: tokens.spacing.step2),
+                                      KeyedSubtree(
+                                        key: ValueKey(
+                                          'goal-chat-attachment-${message.id}',
+                                        ),
+                                        child: attachment,
+                                      ),
+                                    ],
                                   ],
-                                ],
-                              ),
-                            );
-                          },
+                                ),
+                              );
+                            },
+                          ),
                         ),
+              },
+            ),
+            if (widget.isSending && widget.pinnedActivity != null)
+              widget.pinnedActivity!,
+            if (widget.hasFailedTurn)
+              Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: tokens.spacing.step5,
+                  vertical: tokens.spacing.step2,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      context.messages.goalChatFailed,
+                      style: tokens.typography.styles.others.caption.copyWith(
+                        color: tokens.colors.alert.error.ink,
                       ),
-            },
-          ),
-          if (widget.isSending && widget.pinnedActivity != null)
-            widget.pinnedActivity!,
-          if (widget.hasFailedTurn)
-            Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: tokens.spacing.step5,
-                vertical: tokens.spacing.step2,
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    context.messages.goalChatFailed,
-                    style: tokens.typography.styles.others.caption.copyWith(
-                      color: tokens.colors.alert.error.ink,
                     ),
-                  ),
-                  SizedBox(width: tokens.spacing.step2),
-                  DesignSystemButton(
-                    label: context.messages.aiInferenceErrorRetryButton,
-                    onPressed: widget.onRetry,
-                    variant: DesignSystemButtonVariant.dangerTertiary,
-                    size: DesignSystemButtonSize.dense,
-                  ),
-                ],
+                    SizedBox(width: tokens.spacing.step2),
+                    DesignSystemButton(
+                      label: context.messages.aiInferenceErrorRetryButton,
+                      onPressed: widget.onRetry,
+                      variant: DesignSystemButtonVariant.dangerTertiary,
+                      size: DesignSystemButtonSize.dense,
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ?widget.footer,
-          if (widget.composerEnabled)
-            _ChatComposer(
-              header: widget.composerHeader,
-              availableHeight: constraints.maxHeight,
-              controller: _controller,
-              hintText:
-                  widget.composerHint ??
-                  context.messages.goalChatPlaceholder(widget.agentName),
-              isSending: widget.isSending,
-              allowDraftWhileSending: widget.allowDraftWhileSending,
-              sendingLabel:
-                  widget.sendingLabel ??
-                  context.messages.goalChatResponding(widget.agentName),
-              draft: widget.draft,
-              onDraftChanged: widget.onDraftChanged,
-              onSend: widget.onSend,
-              shape: widget.composerShape,
-              voiceFirst: widget.voiceFirst,
-              resolveTranscriptionTarget: widget.resolveTranscriptionTarget,
-              correctTranscript: widget.correctTranscript,
-              resolveDictionaryCategory: widget.resolveDictionaryCategory,
-            ),
-        ],
-      ),
+            ?widget.footer,
+            if (widget.composerEnabled)
+              _ChatComposer(
+                contentMaxWidth: maxWidth,
+                availableHeight: constraints.maxHeight,
+                controller: _controller,
+                hintText:
+                    widget.composerHint ??
+                    context.messages.goalChatPlaceholder(widget.agentName),
+                isSending: widget.isSending,
+                allowDraftWhileSending: widget.allowDraftWhileSending,
+                sendingLabel:
+                    widget.sendingLabel ??
+                    context.messages.goalChatResponding(widget.agentName),
+                draft: widget.draft,
+                onDraftChanged: widget.onDraftChanged,
+                onSend: widget.onSend,
+                shape: widget.composerShape,
+                voiceFirst: widget.voiceFirst,
+                resolveTranscriptionTarget: widget.resolveTranscriptionTarget,
+                correctTranscript: widget.correctTranscript,
+                resolveDictionaryCategory: widget.resolveDictionaryCategory,
+              ),
+          ],
+        );
+      },
     );
   }
 }

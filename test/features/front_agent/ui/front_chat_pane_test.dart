@@ -15,6 +15,7 @@ import 'package:lotti/features/ai_consumption/model/consumption_aggregation_mode
 import 'package:lotti/features/ai_consumption/state/consumption_providers.dart';
 import 'package:lotti/features/daily_os_next/state/selected_date_provider.dart';
 import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
+import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
 import 'package:lotti/features/front_agent/model/front_chat_thread.dart';
@@ -34,8 +35,10 @@ import 'package:lotti/features/front_agent/ui/front_chat_pane.dart';
 import 'package:lotti/features/front_agent/ui/front_conversation_list.dart';
 import 'package:lotti/features/front_agent/ui/front_door_card.dart';
 import 'package:lotti/features/front_agent/ui/front_door_wizards.dart';
+import 'package:lotti/features/front_agent/ui/front_task_list.dart';
 import 'package:lotti/features/front_agent/ui/front_turn_cost_line.dart';
 import 'package:lotti/features/projects/ui/widgets/project_create_modal.dart';
+import 'package:lotti/features/tasks/state/task_live_data_provider.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -151,6 +154,9 @@ void main() {
                 (ref) => Stream.value(journalAccess),
               ),
             configFlagProvider.overrideWith((ref, _) => Stream.value(false)),
+            // The tasks her lists name: none loads, so each row keeps the
+            // title she gave it.
+            taskLiveDataProvider.overrideWith((ref, id) async => null),
             agentConsumptionTotalsProvider(
               frontAgentId,
             ).overrideWith((ref) => const Stream<ConsumptionTotals>.empty()),
@@ -413,87 +419,57 @@ void main() {
     expect(find.byType(AgentChatView), findsOneWidget);
   });
 
-  testWidgets('scrolling the thread past her bust puts her and the title in '
-      "the header's line", (tester) async {
+  testWidgets('a begun conversation leads with its first message — she is '
+      'in the header — and one not begun greets with her figure', (
+    tester,
+  ) async {
     var fresh = false;
     await pumpPane(
       tester,
       thread: () async => FrontChatThread(
         messages: [
-          for (var i = 0; i < (fresh ? 0 : 80); i++)
-            message(
-              'm$i',
-              i.isEven ? AgentChatRole.user : AgentChatRole.agent,
-              'Penguin count $i',
-              now,
-            ),
+          if (!fresh) message('m0', AgentChatRole.user, 'Penguin count 0', now),
         ],
       ),
     );
     final container = ProviderScope.containerOf(
       tester.element(find.byType(FrontChatHeader)),
     );
-    final scrolled = container.listen(frontHeroScrolledProvider, (_, _) {});
-    addTearDown(scrolled.close);
-    final list = find.byType(ListView).first;
-    await tester.drag(list, const Offset(0, -600));
-    await tester.pump();
-    expect(scrolled.read(), isTrue);
+    expect(find.byKey(FrontChatHeroKeys.hero), findsNothing);
+    final header = tester.getRect(find.byType(FrontChatHeader));
+    final first = tester.getRect(find.text('Penguin count 0'));
+    expect(first.top - header.bottom, lessThan(ControlSizes.avatarHero));
 
-    // Another conversation opens at its top, her bust in view: the header
-    // lets her go.
-    await withClock(Clock.fixed(now), () async {
-      container.read(frontPickedConversationProvider.notifier).picked = 'c-2';
-      await tester.pump();
-      await tester.pump();
-    });
-    expect(scrolled.read(), isFalse);
-
-    await tester.drag(find.byType(ListView).first, const Offset(0, -600));
-    await tester.pump();
-    expect(scrolled.read(), isTrue);
-
-    // Back to the top, she leaves the header line again.
-    await tester.fling(
-      find.byType(ListView).first,
-      const Offset(0, 3000),
-      5000,
-    );
-    await tester.pumpAndSettle();
-    expect(scrolled.read(), isFalse);
-
-    // Back from the list in the same chat, the thread is where it was left
-    // — at its latest message, where nothing moves on the way back — and so
-    // is she.
-    await tester.drag(find.byType(ListView).first, const Offset(0, -100000));
-    await tester.pumpAndSettle();
-    expect(scrolled.read(), isTrue);
-    await tester.tap(find.byKey(FrontChatHeaderKeys.chats));
-    await tester.pump();
-    container.read(frontConversationListOpenProvider.notifier).close();
-    await tester.pump();
-    await tester.pump();
-    expect(scrolled.read(), isTrue);
-
-    // A new chat started from the list: the thread was not there to see
-    // it, and an empty one has nothing to scroll, yet she stands at its
-    // top and the header lets her go.
-    await tester.drag(find.byType(ListView).first, const Offset(0, -600));
-    await tester.pump();
-    expect(scrolled.read(), isTrue);
-    await tester.tap(find.byKey(FrontChatHeaderKeys.chats));
-    await tester.pump();
     fresh = true;
     container
       ..invalidate(frontChatThreadProvider)
       ..read(frontPickedConversationProvider.notifier).startNew();
-    // The new chat is resolved while the list is still up.
     await tester.pump();
     await tester.pump();
-    container.read(frontConversationListOpenProvider.notifier).close();
-    await tester.pump();
-    await tester.pump();
-    expect(scrolled.read(), isFalse);
+
+    expect(find.byKey(FrontChatHeroKeys.hero), findsOne);
+  });
+
+  testWidgets('the thread and the field under it keep to one reading '
+      'column on a wide window, their edges lined up', (tester) async {
+    tester.view
+      ..physicalSize = const Size(1400, 900)
+      ..devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await pumpPane(
+      tester,
+      thread: () async => FrontChatThread(
+        messages: [message('m0', AgentChatRole.user, 'Penguin count 0', now)],
+      ),
+    );
+
+    final field = tester.getRect(find.byType(TextField));
+    final view = tester.widget<AgentChatView>(find.byType(AgentChatView));
+    expect(view.contentMaxWidth, kProseMeasureWidth);
+    expect(field.width, lessThanOrEqualTo(kProseMeasureWidth));
+    // Centred in the pane, as the thread's column is.
+    final pane = tester.getRect(find.byType(AgentChatView));
+    expect(field.center.dx, closeTo(pane.center.dx, 1));
   });
 
   testWidgets('what is being said stays with its conversation: leaving it '
@@ -904,6 +880,69 @@ void main() {
 
     expect(paths, ['/tasks/t-9']);
     expect(find.byType(FrontChatPane), findsNothing);
+  });
+
+  testWidgets('a list of tasks in her words is drawn as task rows, her words '
+      'around it kept; a row leaves her surface and opens its task', (
+    tester,
+  ) async {
+    final paths = <String>[];
+    beamToNamedOverride = paths.add;
+    addTearDown(() => beamToNamedOverride = null);
+    await pumpPane(
+      tester,
+      pushed: true,
+      thread: () async => FrontChatThread(
+        messages: [
+          message('u1', AgentChatRole.user, 'What is due today?', now),
+          message(
+            'a1',
+            AgentChatRole.agent,
+            'Two things:\n\n'
+                '- [Feed the penguins](lotti://task/t-9)\n'
+                '- [Count the eggs](lotti://task/t-8)\n\n'
+                'Eggs first.',
+            now,
+          ),
+        ],
+      ),
+    );
+
+    final list = tester.widget<FrontTaskList>(find.byType(FrontTaskList));
+    expect(list.tasks.map((t) => t.id), ['t-9', 't-8']);
+    final words = tester.getTopLeft(
+      find.textContaining('Two things:', findRichText: true),
+    );
+    final card = tester.getRect(find.byKey(FrontTaskListKeys.card));
+    final after = tester.getTopLeft(
+      find.textContaining('Eggs first.', findRichText: true),
+    );
+    expect(words.dy, lessThan(card.top));
+    expect(after.dy, greaterThan(card.bottom));
+
+    await tester.tap(find.byKey(FrontTaskListKeys.row('t-8')));
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(paths, ['/tasks/t-8']);
+    expect(find.byType(FrontChatPane), findsNothing);
+  });
+
+  testWidgets('a reply with no list of tasks has no task rows', (tester) async {
+    await pumpPane(
+      tester,
+      thread: () async => FrontChatThread(
+        messages: [
+          message('a1', AgentChatRole.agent, 'Nothing is due today.', now),
+        ],
+      ),
+    );
+
+    expect(find.byType(FrontTaskList), findsNothing);
+    expect(
+      find.textContaining('Nothing is due today.', findRichText: true),
+      findsOne,
+    );
   });
 
   testWidgets('a date she copied from her tools shows as the device writes '

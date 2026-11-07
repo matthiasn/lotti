@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/front_agent/service/front_chat_service.dart';
 import 'package:lotti/features/front_agent/service/front_filing_service.dart';
 import 'package:lotti/features/front_agent/state/front_agent_providers.dart';
-import 'package:lotti/features/front_agent/state/front_category_scope.dart';
 import 'package:lotti/features/front_agent/state/front_chat_thread_provider.dart';
 import 'package:lotti/features/front_agent/state/front_conversation_providers.dart';
 import 'package:lotti/features/front_agent/state/front_inbox_filter.dart';
@@ -123,10 +122,6 @@ class FrontChatController extends Notifier<FrontChatComposerState> {
           .sendMessage(
             text: message,
             conversationId: landing,
-            // The conversation's chips narrow what she answers from.
-            categoryIds: ref
-                .read(frontConversationCategoriesProvider.notifier)
-                .of(landing),
           );
       await _unarchive(landing);
       _reproject();
@@ -189,10 +184,6 @@ class FrontChatController extends Notifier<FrontChatComposerState> {
         await service.sendMessage(
           text: failed,
           conversationId: conversationId,
-          // Its conversation's chips, as the first try carried them.
-          categoryIds: ref
-              .read(frontConversationCategoriesProvider.notifier)
-              .of(conversationId),
         );
       } else {
         await service.retryMessage(messageId: messageId);
