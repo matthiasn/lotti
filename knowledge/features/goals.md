@@ -223,7 +223,7 @@ sources:
   - id: sync-dispatcher
     resource: ../../lib/features/goals/sync/goal_signal_sync_dispatcher.dart
     title: GoalSignalSyncDispatcher — the sync blind-spot bridge
-    last_modified: 2026-08-13
+    last_modified: 2026-11-07
   - id: adr-0054
     resource: ../../docs/adr/0054-deterministic-first-two-tier-wakes.md
     title: "ADR 0054: Deterministic-First Two-Tier Wakes"
@@ -283,7 +283,7 @@ flowchart TD
         MEASURE --> SIG
     end
     ORCH --> PA[GoalAgentPhaseA.execute]
-    DISP --> SYNCROUTE{bounded signal or\ntracked-time mutation?}
+    DISP --> SYNCROUTE{bounded signal — incl. the goal row\nof a check-in-time goal — or\ntracked-time mutation?}
     SYNCROUTE -- bounded --> PA
     SYNCROUTE -- tracked time --> STALE
     MGR --> PA
@@ -442,6 +442,12 @@ handler would retract it; that wiring is a follow-up.
   banners it retires or raises are the actual day's: `_deriveForWake`
   replaces the fact with `GoalAgentPhaseA.todayPortionMetAt` for the wake's
   real `now`, so a finished yesterday never takes down a day still open.
+  Check-in minutes add up across devices, so the device that receives the
+  recording which finishes today's part must judge it: for a goal that
+  counts check-in time, `GoalSignalSyncDispatcher` treats the goal's own
+  journal row — which a synced check-in's link notifies — as a bounded
+  signal and runs Phase A, as a local check-in does through the
+  subscription.
 - **A reply with nobody to answer is unofferable too.** A wake with no
   pending user message is not handed `reply_to_user`. On such a wake
   `persistOutputs` reads only plain final prose and ignores the reply tool, so
