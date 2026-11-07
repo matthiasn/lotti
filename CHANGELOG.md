@@ -4,6 +4,70 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.88]
+
+### Changed
+
+- **Check in from the bottom of the day, by voice or by typing.** A day
+  without a plan used to end in a single "Speak a check-in" button. It is now
+  the same field every Lotti chat uses: tap its mic and the check-in opens
+  already recording, or type what the day needs and send it to open the
+  check-in with your words filled in. Typed words stay in the field if you
+  back out.
+- **The companion's list of chats is calmer.** Each chat shows its title, with
+  her last answer underneath on the full width; the time is gone from every
+  row, since the sections — Today, Yesterday, Previous 7 days, Older — already
+  say when. The ⋯ now sits at the end of the title's own line instead of
+  floating under it, and a chat with no answer yet is a single line.
+- **Recording looks the same in every chat.** While you speak, the input turns
+  into one pill: cancel, a running timer, your voice as a live waveform, and
+  the button that ends it. The companion's chat and the chat inside a task now
+  show the very same control, and transcribing stays in that pill with a way
+  to cancel.
+- **The chat list's ⋯ menu stands out from the list.** It opens as the same
+  rounded, raised menu as on goals and people, over a darkened background that
+  closes it when tapped, and names the chat it acts on. A long press on any
+  chat opens that same menu.
+- **Daily OS's Refine sheet says what its button does.** It used to read
+  "Looks good" — the same words that commit your day on the Day page — even
+  though in Refine it only kept the proposed changes or closed the sheet. It
+  now reads "Keep changes" while proposals are waiting, and "Done" when
+  nothing is.
+- **The end-of-day review has one way out instead of two identical ones.**
+  "Save & close" did exactly what "Back" did, so it is gone; "Back" leaves
+  without closing the day and "Close the day" closes it.
+- **No more emoji in Daily OS headings.** The greeting, the Refine and
+  reflection headings and the "For tomorrow" note drop their 👋, 🎤, 💬 and ✦
+  marks, matching the rest of the app.
+
+### Fixed
+
+- **The companion's full-screen view was a dead end.** Opened before she had
+  said anything, it offered no way to talk to her. It now has a talk button
+  below her: hold it and speak, then let go to send, or slide off it to
+  cancel; or tap it once to talk hands-free. She answers aloud right there,
+  and *Say it again* sits beside it.
+- **Hearing the companion's answer again showed a spinner, sometimes in a
+  different voice.** Saying it again now plays the answer she just spoke, at
+  once, in the same voice, even after you stopped her mid-sentence.
+- **Changing a category's AI profile now reaches the agents already in it.**
+  An agent created from its category's profile kept a copy of that profile for
+  good, so moving a category from a Whisper profile to a Voxtral one left its
+  people, goals, tasks and projects transcribing and thinking on Whisper.
+  Agents now look up their profile on every run: the one you picked for the
+  agent first, then whatever the category names now, then your Settings
+  default. The projects list names the profile each agent actually runs on.
+- **Task agents in a category without its own AI profile no longer start
+  switched off.** They, and project agents in such a category, now run on your
+  Settings default until the category names a profile. Task agents created
+  switched off this way before are turned back on; agents you turned off
+  yourself stay off.
+- **Names of the people in a category are spelled right in its recordings.**
+  Every recording and dictation filed in a category now hands the speech model
+  the names of the people in that category, and the correction that follows a
+  Whisper transcript fixes misheard ones — even in a category with no speech
+  dictionary entries. Private people are never sent.
+
 ## [1.1.87]
 
 ### Added
