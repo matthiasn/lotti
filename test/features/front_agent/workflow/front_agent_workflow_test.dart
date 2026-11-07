@@ -196,6 +196,9 @@ void main() {
       ],
     );
     when(
+      () => journalDb.getAllCategoriesIncludingPrivate(),
+    ).thenAnswer((_) async => const []);
+    when(
       () => repository.getLatestTaskReportsForTaskIds(any()),
     ).thenAnswer((_) async => const {});
     when(

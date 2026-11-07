@@ -162,6 +162,9 @@ void main() {
     when(() => journalDb.getRelationships()).thenAnswer((_) async => const []);
     when(() => journalDb.getAllCategories()).thenAnswer((_) async => const []);
     when(
+      () => journalDb.getAllCategoriesIncludingPrivate(),
+    ).thenAnswer((_) async => const []);
+    when(
       () => agentRepository.getLatestTaskReportsForTaskIds(any()),
     ).thenAnswer((_) async => const {});
     when(
@@ -649,10 +652,18 @@ void main() {
           ),
           row('home', DateTime(2026, 10, 22, 20), DateTime(2026, 10, 22, 21)),
           row(null, DateTime(2026, 10, 22, 13), DateTime(2026, 10, 22, 13, 15)),
+          // A category deleted since: its time stays, unnamed.
           row(
             'gone',
             DateTime(2026, 10, 22, 14),
             DateTime(2026, 10, 22, 14, 10),
+          ),
+          // A private category while private entries are hidden: the entry
+          // itself is not private, yet none of its time may show.
+          row(
+            'secret',
+            DateTime(2026, 10, 22, 15),
+            DateTime(2026, 10, 22, 18),
           ),
         ],
       );
@@ -662,31 +673,45 @@ void main() {
           CategoryTestUtils.createTestCategory(id: 'home', name: 'Home'),
         ],
       );
+      when(() => journalDb.getAllCategoriesIncludingPrivate()).thenAnswer(
+        (_) async => [
+          CategoryTestUtils.createTestCategory(id: 'work', name: 'Work'),
+          CategoryTestUtils.createTestCategory(id: 'home', name: 'Home'),
+          CategoryTestUtils.createTestCategory(
+            id: 'secret',
+            name: 'Secret',
+            private: true,
+          ),
+        ],
+      );
     });
 
-    test("yesterday reads yesterday's local day and sums each category, "
-        'largest first, overlaps once', () async {
-      final logged = await builder().loggedTimeSummarizer(
-        const FrontRoutingScope(),
-        now: _now,
-      )(FrontTimePeriod.yesterday);
+    test(
+      "yesterday reads yesterday's local day and sums each category, "
+      'largest first, overlaps once, a hidden private category never',
+      () async {
+        final logged = await builder().loggedTimeSummarizer(
+          const FrontRoutingScope(),
+          now: _now,
+        )(FrontTimePeriod.yesterday);
 
-      verify(
-        () => journalDb.insightsTimeRows(
-          start: DateTime(2026, 10, 22),
-          end: DateTime(2026, 10, 23),
-        ),
-      ).called(1);
-      expect(logged.period, FrontTimePeriod.yesterday);
-      expect(logged.from, DateTime(2026, 10, 22));
-      expect(logged.through, DateTime(2026, 10, 22));
-      expect(logged.byCategory, [
-        (name: 'Work', seconds: 3 * 3600),
-        (name: 'Home', seconds: 3600),
-        (name: null, seconds: 15 * 60),
-        (name: 'Unnamed', seconds: 10 * 60),
-      ]);
-    });
+        verify(
+          () => journalDb.insightsTimeRows(
+            start: DateTime(2026, 10, 22),
+            end: DateTime(2026, 10, 23),
+          ),
+        ).called(1);
+        expect(logged.period, FrontTimePeriod.yesterday);
+        expect(logged.from, DateTime(2026, 10, 22));
+        expect(logged.through, DateTime(2026, 10, 22));
+        expect(logged.byCategory, [
+          (name: 'Work', seconds: 3 * 3600),
+          (name: 'Home', seconds: 3600),
+          (name: null, seconds: 15 * 60),
+          (name: 'Unnamed', seconds: 10 * 60),
+        ]);
+      },
+    );
 
     test('time outside the scope, and in no category once it is narrowed, '
         'is left out', () async {

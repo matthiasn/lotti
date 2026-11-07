@@ -374,7 +374,11 @@ Insights page's own query (`JournalDb.insightsTimeRows` through
 while they are shown, a task's time in the task's category, overlapping
 entries in one category counted once, an entry across midnight split. Rows
 outside the turn's scope are dropped before bucketing, so time in no
-category is left out whenever the scope is narrowed. `FrontLoggedTime.render`
+category is left out whenever the scope is narrowed. So is time in a
+private category while private entries are hidden — a category
+`getAllCategoriesIncludingPrivate` lists but `getAllCategories` does not —
+since an entry need not be private itself to sit in one; time in a deleted
+category stays, unnamed. `FrontLoggedTime.render`
 is what the model reads — the period, its `YYYY-MM-DD` days and the total,
 then each category's hours and minutes, largest first — or a plain *None*.
 No chart: the answer is text in her reply.

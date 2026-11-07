@@ -196,7 +196,9 @@ class FrontRoutingIndexBuilder {
   /// bucketing, so she answers with the numbers that page shows: private
   /// entries only while they are shown, a task's time in the task's
   /// category, overlapping entries in one category counted once. Time in
-  /// no category is left out whenever the scope is narrowed.
+  /// a private category is left out while private entries are hidden — an
+  /// entry need not be private itself to sit in one — and time in no
+  /// category whenever the scope is narrowed.
   Future<FrontLoggedTime> Function(FrontTimePeriod period) loggedTimeSummarizer(
     FrontRoutingScope scope, {
     required DateTime now,
@@ -211,17 +213,25 @@ class FrontRoutingIndexBuilder {
         start: dayStart(range.startDay),
         end: dayStart(range.endDayExclusive),
       );
-      final buckets = bucketize(
-        [
-          for (final row in rows)
-            if (categoryAllowed(row.categoryId, scope.categoryIds)) row,
-        ],
-        windowStartDay: range.startDay,
-      );
+      // Private categories are dropped from this read while hidden.
       final names = {
         for (final category in await journalDb.getAllCategories())
           category.id: category.name,
       };
+      final hidden = {
+        for (final category
+            in await journalDb.getAllCategoriesIncludingPrivate())
+          if (!names.containsKey(category.id)) category.id,
+      };
+      final buckets = bucketize(
+        [
+          for (final row in rows)
+            if (categoryAllowed(row.categoryId, scope.categoryIds) &&
+                !hidden.contains(row.categoryId))
+              row,
+        ],
+        windowStartDay: range.startDay,
+      );
       return FrontLoggedTime(
         period: period,
         from: dayStart(range.startDay),
