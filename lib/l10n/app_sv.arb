@@ -2312,6 +2312,7 @@
       }
     }
   },
+  "dailyOsNextBlockCreateTask": "Skapa en uppgift",
   "dailyOsNextBlockEditCategoryLabel": "Kategori",
   "dailyOsNextBlockEditFailed": "Kunde inte uppdatera blocket — försök igen.",
   "dailyOsNextBlockEditNameLabel": "Titel",
@@ -2322,9 +2323,16 @@
   "dailyOsNextBlockEditTitle": "Redigera block",
   "dailyOsNextBlockEditTooltip": "Redigera block",
   "dailyOsNextBlockEditWhyLabel": "Varför just den här gången",
+  "dailyOsNextBlockLinked": "Kopplat till uppgiften.",
+  "dailyOsNextBlockLinkTask": "Koppla till en uppgift",
   "dailyOsNextBlockMoveTooltip": "Flyttblockering",
+  "dailyOsNextBlockRemove": "Ta bort från planen",
+  "dailyOsNextBlockRemoved": "Borttaget från planen.",
   "dailyOsNextBlockResizeEndTooltip": "Justera änden",
   "dailyOsNextBlockResizeStartTooltip": "Justera start",
+  "dailyOsNextBlockTaskCreated": "Uppgift skapad.",
+  "dailyOsNextBlockUnlinked": "Bortkopplat från uppgiften.",
+  "dailyOsNextBlockUnlinkTask": "Koppla bort uppgiften",
   "dailyOsNextBriefingBlockCount": "{count, plural, =0{Inget är planerat än.} =1{Du har ett block planerat.} other{Du har {count} block planerade.}}",
   "@dailyOsNextBriefingBlockCount": {
     "placeholders": {

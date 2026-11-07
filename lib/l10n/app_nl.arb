@@ -2311,6 +2311,7 @@
       }
     }
   },
+  "dailyOsNextBlockCreateTask": "Taak maken",
   "dailyOsNextBlockEditCategoryLabel": "Categorie",
   "dailyOsNextBlockEditFailed": "Kon het blok niet bijwerken . Probeer het opnieuw.",
   "dailyOsNextBlockEditNameLabel": "Titel",
@@ -2321,9 +2322,16 @@
   "dailyOsNextBlockEditTitle": "Blok bewerken",
   "dailyOsNextBlockEditTooltip": "Blok bewerken",
   "dailyOsNextBlockEditWhyLabel": "Waarom deze keer?",
+  "dailyOsNextBlockLinked": "Gekoppeld aan de taak.",
+  "dailyOsNextBlockLinkTask": "Koppelen aan een taak",
   "dailyOsNextBlockMoveTooltip": "Blok verplaatsen",
+  "dailyOsNextBlockRemove": "Uit het plan halen",
+  "dailyOsNextBlockRemoved": "Uit het plan gehaald.",
   "dailyOsNextBlockResizeEndTooltip": "Einde aanpassen",
   "dailyOsNextBlockResizeStartTooltip": "Start aanpassen",
+  "dailyOsNextBlockTaskCreated": "Taak gemaakt.",
+  "dailyOsNextBlockUnlinked": "Losgekoppeld van de taak.",
+  "dailyOsNextBlockUnlinkTask": "Taak ontkoppelen",
   "dailyOsNextBriefingBlockCount": "{count, plural, =0{Er is nog niets gepland.} =1{Je hebt één blok gepland.} other{Je hebt {count} blokken gepland.}}",
   "@dailyOsNextBriefingBlockCount": {
     "placeholders": {

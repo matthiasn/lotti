@@ -6,6 +6,8 @@ import 'package:lotti/features/daily_os_next/ui/widgets/day_block_edit_modal.dar
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/time_pickers/design_system_picker_wheels.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/l10n/app_localizations.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/settings/settings_picker_field.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
@@ -46,12 +48,14 @@ class _Launcher extends StatelessWidget {
     required this.onResult,
     required this.categories,
     this.onOpenTask,
+    this.actions,
   });
 
   final TimeBlock block;
   final ValueChanged<DayBlockEditResult?> onResult;
   final List<CategoryDefinition> categories;
   final VoidCallback? onOpenTask;
+  final DayBlockEditActions? actions;
 
   @override
   Widget build(BuildContext context) {
@@ -61,7 +65,7 @@ class _Launcher extends StatelessWidget {
           context: context,
           block: block,
           categoryOptions: categories,
-          onOpenTask: onOpenTask,
+          actions: actions ?? DayBlockEditActions(onOpenTask: onOpenTask),
         ),
       ),
       child: const Text('Open'),
@@ -631,5 +635,132 @@ void main() {
       tester.getTopLeft(wheels.last).dx,
     );
     expect(tester.takeException(), isNull);
+  });
+
+  group('block actions', () {
+    Future<List<String>> openWith(
+      WidgetTester tester, {
+      required TimeBlock block,
+      required DayBlockEditActions Function(List<String> calls) actions,
+    }) async {
+      useWideView(tester);
+      final calls = <String>[];
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          _Launcher(
+            block: block,
+            categories: [focusDefinition],
+            onResult: (_) {},
+            actions: actions(calls),
+          ),
+        ),
+      );
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
+      return calls;
+    }
+
+    // The launcher stays mounted under the sheet; its context reads the
+    // same localizations.
+    AppLocalizations messagesOf(WidgetTester tester) =>
+        tester.element(find.byType(_Launcher)).messages;
+
+    DayBlockEditActions all(List<String> calls) => DayBlockEditActions(
+      onOpenTask: () => calls.add('open'),
+      onLinkTask: () => calls.add('link'),
+      onUnlinkTask: () => calls.add('unlink'),
+      onCreateTask: () => calls.add('create'),
+      onRemove: () => calls.add('remove'),
+    );
+
+    Future<void> tapText(WidgetTester tester, String text) async {
+      await tester.ensureVisible(find.text(text));
+      await tester.tap(find.text(text));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('a standalone block offers link, create and remove', (
+      tester,
+    ) async {
+      final calls = await openWith(tester, block: _block(), actions: all);
+      final messages = messagesOf(tester);
+
+      expect(find.text(messages.dailyOsNextBlockLinkTask), findsOneWidget);
+      expect(find.text(messages.dailyOsNextBlockCreateTask), findsOneWidget);
+      expect(find.text(messages.dailyOsNextBlockRemove), findsOneWidget);
+      // Open and unlink belong to task-linked blocks.
+      expect(find.text(messages.dailyOsNextBlockEditOpenTask), findsNothing);
+      expect(find.text(messages.dailyOsNextBlockUnlinkTask), findsNothing);
+
+      await tapText(tester, messages.dailyOsNextBlockCreateTask);
+
+      // The editor closed first, then the action ran.
+      expect(find.text(messages.dailyOsNextBlockCreateTask), findsNothing);
+      expect(calls, ['create']);
+    });
+
+    testWidgets('link to a task runs from the editor', (tester) async {
+      final calls = await openWith(tester, block: _block(), actions: all);
+
+      await tapText(tester, messagesOf(tester).dailyOsNextBlockLinkTask);
+
+      expect(calls, ['link']);
+    });
+
+    testWidgets('a task-linked block offers open, unlink and remove', (
+      tester,
+    ) async {
+      final calls = await openWith(
+        tester,
+        block: _block(taskId: 'task-1'),
+        actions: all,
+      );
+      final messages = messagesOf(tester);
+
+      expect(find.text(messages.dailyOsNextBlockEditOpenTask), findsOneWidget);
+      expect(find.text(messages.dailyOsNextBlockLinkTask), findsNothing);
+      expect(find.text(messages.dailyOsNextBlockCreateTask), findsNothing);
+
+      await tapText(tester, messages.dailyOsNextBlockUnlinkTask);
+      expect(calls, ['unlink']);
+    });
+
+    testWidgets('remove closes the editor and takes the block off', (
+      tester,
+    ) async {
+      final calls = await openWith(tester, block: _block(), actions: all);
+      final messages = messagesOf(tester);
+
+      await tapText(tester, messages.dailyOsNextBlockRemove);
+
+      expect(calls, ['remove']);
+      expect(find.text(messages.dailyOsNextBlockRemove), findsNothing);
+    });
+
+    testWidgets('a buffer offers no task actions', (tester) async {
+      await openWith(
+        tester,
+        block: _block(type: TimeBlockType.buffer),
+        actions: all,
+      );
+      final messages = messagesOf(tester);
+
+      expect(find.text(messages.dailyOsNextBlockLinkTask), findsNothing);
+      expect(find.text(messages.dailyOsNextBlockCreateTask), findsNothing);
+      expect(find.text(messages.dailyOsNextBlockRemove), findsOneWidget);
+    });
+
+    testWidgets('actions left out are not offered', (tester) async {
+      await openWith(
+        tester,
+        block: _block(),
+        actions: (_) => const DayBlockEditActions(),
+      );
+      final messages = messagesOf(tester);
+
+      expect(find.text(messages.dailyOsNextBlockLinkTask), findsNothing);
+      expect(find.text(messages.dailyOsNextBlockCreateTask), findsNothing);
+      expect(find.text(messages.dailyOsNextBlockRemove), findsNothing);
+    });
   });
 }

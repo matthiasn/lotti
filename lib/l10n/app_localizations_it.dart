@@ -4890,6 +4890,30 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
+  String get dailyOsNextBlockRemove => 'Rimuovi dal piano';
+
+  @override
+  String get dailyOsNextBlockRemoved => 'Rimosso dal piano.';
+
+  @override
+  String get dailyOsNextBlockLinkTask => 'Collega a un\'attività';
+
+  @override
+  String get dailyOsNextBlockLinked => 'Collegato all\'attività.';
+
+  @override
+  String get dailyOsNextBlockUnlinkTask => 'Scollega attività';
+
+  @override
+  String get dailyOsNextBlockUnlinked => 'Scollegato dall\'attività.';
+
+  @override
+  String get dailyOsNextBlockCreateTask => 'Crea un\'attività';
+
+  @override
+  String get dailyOsNextBlockTaskCreated => 'Attività creata.';
+
+  @override
   String get dailyOsNextBlockEditCategoryLabel => 'Categoria';
 
   @override

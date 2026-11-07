@@ -4877,6 +4877,30 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
+  String get dailyOsNextBlockRemove => 'Remover do plano';
+
+  @override
+  String get dailyOsNextBlockRemoved => 'Removido do plano.';
+
+  @override
+  String get dailyOsNextBlockLinkTask => 'Associar a uma tarefa';
+
+  @override
+  String get dailyOsNextBlockLinked => 'Associado à tarefa.';
+
+  @override
+  String get dailyOsNextBlockUnlinkTask => 'Desassociar tarefa';
+
+  @override
+  String get dailyOsNextBlockUnlinked => 'Desassociado da tarefa.';
+
+  @override
+  String get dailyOsNextBlockCreateTask => 'Criar uma tarefa';
+
+  @override
+  String get dailyOsNextBlockTaskCreated => 'Tarefa criada.';
+
+  @override
   String get dailyOsNextBlockEditCategoryLabel => 'Categoria';
 
   @override

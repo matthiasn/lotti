@@ -464,7 +464,18 @@ glass footer.
   the persistence boundary **revalidates that opt-in before writing**.
 - **Task-linked blocks** have read-only title and category fields — the task is
   their source of truth — and the modal submits no identity fields for them. It
-  offers *Open task*; start and end stay editable.
+  offers *Open task* and *Unlink task*; start and end stay editable.
+- **Block actions** (`DayBlockEditActions`) close the editor, then run on the
+  Day page (`day_page_block_actions_part.dart`) through the day agent, backed by
+  `DayAgentBlockActions`: *Remove from plan* (any non-calendar block; deletes it
+  like an accepted "drop" change, with an Undo toast that restores the same
+  block, held in `RealDayAgent` for the session), *Link to a task* (standalone
+  non-buffer blocks; the open-task picker `showDayBlockTaskPicker`, behind
+  `dayBlockTaskPickerProvider`; the task then supplies the title, and the
+  category when it may be planned with), *Unlink task* (the block keeps the
+  task's title), and *Create a task* (a new open task named after the block, in
+  its category, estimated at its length, then linked; its toast offers *Open
+  task*). Calendar blocks get none of these; buffers only *Remove*.
 - The time subpage reuses the public `EntryDateTimeEditor` and modal sizing
   contract from time-recording entries.
 

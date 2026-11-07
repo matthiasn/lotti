@@ -445,6 +445,98 @@ class RealDayAgent implements DayAgentInterface {
     return _projectDayPlan(edited, plan.dayDate);
   }
 
+  /// Blocks taken off a plan by [removeBlock] in this session, by id, so the
+  /// Undo on their toast can put them back exactly as they were.
+  final Map<String, PlannedBlock> _removedBlocks = {};
+
+  Future<String> _agentIdFor(DateTime dayDate) async {
+    final identity = await dayAgentService.getDayAgentForDate(dayDate);
+    if (identity is! AgentIdentityEntity) {
+      throw DayAgentInteractionException(
+        'No day agent exists for ${dayAgentIdForDate(dayDate)}.',
+      );
+    }
+    return identity.agentId;
+  }
+
+  @override
+  Future<DraftPlan> removeBlock({
+    required DraftPlan plan,
+    required String blockId,
+  }) async {
+    final result = await planService.removeBlock(
+      agentId: await _agentIdFor(plan.dayDate),
+      dayId: dayAgentIdForDate(plan.dayDate),
+      blockId: blockId,
+    );
+    _removedBlocks[blockId] = result.removed;
+    return _projectDayPlan(result.plan, plan.dayDate);
+  }
+
+  @override
+  Future<DraftPlan> restoreBlock({
+    required DraftPlan plan,
+    required String blockId,
+  }) async {
+    final block = _removedBlocks[blockId];
+    if (block == null) {
+      throw DayAgentInteractionException(
+        'Block $blockId was not removed in this session.',
+      );
+    }
+    final restored = await planService.restoreBlock(
+      agentId: await _agentIdFor(plan.dayDate),
+      dayId: dayAgentIdForDate(plan.dayDate),
+      block: block,
+    );
+    _removedBlocks.remove(blockId);
+    return _projectDayPlan(restored, plan.dayDate);
+  }
+
+  @override
+  Future<DraftPlan> linkBlockToTask({
+    required DraftPlan plan,
+    required String blockId,
+    required String taskId,
+  }) async {
+    final linked = await planService.linkBlockToTask(
+      agentId: await _agentIdFor(plan.dayDate),
+      dayId: dayAgentIdForDate(plan.dayDate),
+      blockId: blockId,
+      taskId: taskId,
+    );
+    return _projectDayPlan(linked, plan.dayDate);
+  }
+
+  @override
+  Future<DraftPlan> unlinkBlockFromTask({
+    required DraftPlan plan,
+    required String blockId,
+  }) async {
+    final unlinked = await planService.unlinkBlockFromTask(
+      agentId: await _agentIdFor(plan.dayDate),
+      dayId: dayAgentIdForDate(plan.dayDate),
+      blockId: blockId,
+    );
+    return _projectDayPlan(unlinked, plan.dayDate);
+  }
+
+  @override
+  Future<({DraftPlan plan, String taskId})> createTaskForBlock({
+    required DraftPlan plan,
+    required String blockId,
+  }) async {
+    final created = await planService.createTaskForBlock(
+      agentId: await _agentIdFor(plan.dayDate),
+      dayId: dayAgentIdForDate(plan.dayDate),
+      blockId: blockId,
+    );
+    return (
+      plan: await _projectDayPlan(created.plan, plan.dayDate),
+      taskId: created.task.meta.id,
+    );
+  }
+
   @override
   Future<
     ({

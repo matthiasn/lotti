@@ -4827,6 +4827,30 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
+  String get dailyOsNextBlockRemove => 'Fjern fra planen';
+
+  @override
+  String get dailyOsNextBlockRemoved => 'Fjernet fra planen.';
+
+  @override
+  String get dailyOsNextBlockLinkTask => 'Knyt til en opgave';
+
+  @override
+  String get dailyOsNextBlockLinked => 'Knyttet til opgaven.';
+
+  @override
+  String get dailyOsNextBlockUnlinkTask => 'Fjern opgavelink';
+
+  @override
+  String get dailyOsNextBlockUnlinked => 'Ikke længere knyttet til opgaven.';
+
+  @override
+  String get dailyOsNextBlockCreateTask => 'Opret en opgave';
+
+  @override
+  String get dailyOsNextBlockTaskCreated => 'Opgave oprettet.';
+
+  @override
   String get dailyOsNextBlockEditCategoryLabel => 'Kategori';
 
   @override

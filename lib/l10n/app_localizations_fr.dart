@@ -4903,6 +4903,30 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get dailyOsNextBlockRemove => 'Retirer du plan';
+
+  @override
+  String get dailyOsNextBlockRemoved => 'Retiré du plan.';
+
+  @override
+  String get dailyOsNextBlockLinkTask => 'Lier à une tâche';
+
+  @override
+  String get dailyOsNextBlockLinked => 'Lié à la tâche.';
+
+  @override
+  String get dailyOsNextBlockUnlinkTask => 'Délier la tâche';
+
+  @override
+  String get dailyOsNextBlockUnlinked => 'Délié de la tâche.';
+
+  @override
+  String get dailyOsNextBlockCreateTask => 'Créer une tâche';
+
+  @override
+  String get dailyOsNextBlockTaskCreated => 'Tâche créée.';
+
+  @override
   String get dailyOsNextBlockEditCategoryLabel => 'Catégorie';
 
   @override

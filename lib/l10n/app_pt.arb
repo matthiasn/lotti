@@ -2311,6 +2311,7 @@
       }
     }
   },
+  "dailyOsNextBlockCreateTask": "Criar uma tarefa",
   "dailyOsNextBlockEditCategoryLabel": "Categoria",
   "dailyOsNextBlockEditFailed": "Não foi possível atualizar o bloco. Tente novamente.",
   "dailyOsNextBlockEditNameLabel": "Título",
@@ -2321,9 +2322,16 @@
   "dailyOsNextBlockEditTitle": "Editar bloco",
   "dailyOsNextBlockEditTooltip": "Editar bloco",
   "dailyOsNextBlockEditWhyLabel": "Por que desta vez",
+  "dailyOsNextBlockLinked": "Associado à tarefa.",
+  "dailyOsNextBlockLinkTask": "Associar a uma tarefa",
   "dailyOsNextBlockMoveTooltip": "Mover bloco",
+  "dailyOsNextBlockRemove": "Remover do plano",
+  "dailyOsNextBlockRemoved": "Removido do plano.",
   "dailyOsNextBlockResizeEndTooltip": "Ajustar final",
   "dailyOsNextBlockResizeStartTooltip": "Ajustar início",
+  "dailyOsNextBlockTaskCreated": "Tarefa criada.",
+  "dailyOsNextBlockUnlinked": "Desassociado da tarefa.",
+  "dailyOsNextBlockUnlinkTask": "Desassociar tarefa",
   "dailyOsNextBriefingBlockCount": "{count, plural, =0{Ainda não há nada planeado.} =1{Tens um bloco planeado.} other{Tens {count} blocos planeados.}}",
   "@dailyOsNextBriefingBlockCount": {
     "placeholders": {

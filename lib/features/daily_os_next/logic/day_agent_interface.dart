@@ -167,6 +167,43 @@ abstract class DayAgentInterface {
     DayAgentCategory? category,
   });
 
+  /// Takes a planned block off the plan — the manual counterpart of an
+  /// accepted "drop" change. Imported calendar blocks are rejected.
+  Future<DraftPlan> removeBlock({
+    required DraftPlan plan,
+    required String blockId,
+  });
+
+  /// Puts a block removed by [removeBlock] back on the plan — the Undo on
+  /// its toast.
+  Future<DraftPlan> restoreBlock({
+    required DraftPlan plan,
+    required String blockId,
+  });
+
+  /// Ties a planned block to an existing task, which then owns the block's
+  /// title (and its category, when that category may be planned with).
+  /// Calendar blocks and buffers are rejected.
+  Future<DraftPlan> linkBlockToTask({
+    required DraftPlan plan,
+    required String blockId,
+    required String taskId,
+  });
+
+  /// Unties a task-linked block; it keeps the task's title as its own.
+  Future<DraftPlan> unlinkBlockFromTask({
+    required DraftPlan plan,
+    required String blockId,
+  });
+
+  /// Turns a standalone planned block into a new open task — named after
+  /// the block, in its category, estimated at its length — and ties the
+  /// block to it. Returns the plan and the new task's id.
+  Future<({DraftPlan plan, String taskId})> createTaskForBlock({
+    required DraftPlan plan,
+    required String blockId,
+  });
+
   /// Tool: `surface_shutdown_data`. Returns the three lists the
   /// Shutdown screen needs: what the day's recorded time went to, the tasks
   /// meant for it that are still open, and the metrics card payload.
