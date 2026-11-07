@@ -4852,6 +4852,30 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String get dailyOsNextBlockRemove => 'Uit het plan halen';
+
+  @override
+  String get dailyOsNextBlockRemoved => 'Uit het plan gehaald.';
+
+  @override
+  String get dailyOsNextBlockLinkTask => 'Koppelen aan een taak';
+
+  @override
+  String get dailyOsNextBlockLinked => 'Gekoppeld aan de taak.';
+
+  @override
+  String get dailyOsNextBlockUnlinkTask => 'Taak ontkoppelen';
+
+  @override
+  String get dailyOsNextBlockUnlinked => 'Losgekoppeld van de taak.';
+
+  @override
+  String get dailyOsNextBlockCreateTask => 'Taak maken';
+
+  @override
+  String get dailyOsNextBlockTaskCreated => 'Taak gemaakt.';
+
+  @override
   String get dailyOsNextBlockEditCategoryLabel => 'Categorie';
 
   @override

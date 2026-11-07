@@ -2061,6 +2061,7 @@
     }
   },
   "dailyOsNextAgendaTrackedLegend": "Zaznamenáno · {duration} · {completedCount} hotovo",
+  "dailyOsNextBlockCreateTask": "Vytvořit úkol",
   "dailyOsNextBlockEditCategoryLabel": "Kategorie",
   "dailyOsNextBlockEditFailed": "Blok se nepodařilo upravit — zkus to znovu.",
   "dailyOsNextBlockEditNameLabel": "Název",
@@ -2071,9 +2072,16 @@
   "dailyOsNextBlockEditTitle": "Upravit blok",
   "dailyOsNextBlockEditTooltip": "Upravit blok",
   "dailyOsNextBlockEditWhyLabel": "Proč právě teď",
+  "dailyOsNextBlockLinked": "Propojeno s úkolem.",
+  "dailyOsNextBlockLinkTask": "Propojit s úkolem",
   "dailyOsNextBlockMoveTooltip": "Přesunout blok",
+  "dailyOsNextBlockRemove": "Odebrat z plánu",
+  "dailyOsNextBlockRemoved": "Odebráno z plánu.",
   "dailyOsNextBlockResizeEndTooltip": "Upravit konec",
   "dailyOsNextBlockResizeStartTooltip": "Upravit začátek",
+  "dailyOsNextBlockTaskCreated": "Úkol vytvořen.",
+  "dailyOsNextBlockUnlinked": "Propojení s úkolem zrušeno.",
+  "dailyOsNextBlockUnlinkTask": "Zrušit propojení",
   "dailyOsNextBriefingBlockCount": "{count, plural, =0{Zatím nemáš nic naplánováno.} =1{Máš naplánovaný jeden blok.} few{Máš naplánované {count} bloky.} other{Máš naplánováno {count} bloků.}}",
   "@dailyOsNextBriefingBlockCount": {
     "placeholders": {

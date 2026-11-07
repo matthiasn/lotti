@@ -4910,6 +4910,30 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get dailyOsNextBlockRemove => 'Eliminați din plan';
+
+  @override
+  String get dailyOsNextBlockRemoved => 'Eliminat din plan.';
+
+  @override
+  String get dailyOsNextBlockLinkTask => 'Asociați cu o sarcină';
+
+  @override
+  String get dailyOsNextBlockLinked => 'Asociat cu sarcina.';
+
+  @override
+  String get dailyOsNextBlockUnlinkTask => 'Dezasociați sarcina';
+
+  @override
+  String get dailyOsNextBlockUnlinked => 'Dezasociat de sarcină.';
+
+  @override
+  String get dailyOsNextBlockCreateTask => 'Creați o sarcină';
+
+  @override
+  String get dailyOsNextBlockTaskCreated => 'Sarcină creată.';
+
+  @override
   String get dailyOsNextBlockEditCategoryLabel => 'Categorie';
 
   @override

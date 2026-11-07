@@ -165,6 +165,47 @@ class MockDayAgent implements DayAgentInterface {
   );
 
   @override
+  Future<DraftPlan> removeBlock({
+    required DraftPlan plan,
+    required String blockId,
+  }) async => plan.copyWith(
+    blocks: [
+      for (final block in plan.blocks)
+        if (block.id != blockId) block,
+    ],
+  );
+
+  @override
+  Future<DraftPlan> restoreBlock({
+    required DraftPlan plan,
+    required String blockId,
+  }) async => plan;
+
+  @override
+  Future<DraftPlan> linkBlockToTask({
+    required DraftPlan plan,
+    required String blockId,
+    required String taskId,
+  }) async => plan.copyWith(
+    blocks: [
+      for (final block in plan.blocks)
+        if (block.id == blockId) block.copyWith(taskId: taskId) else block,
+    ],
+  );
+
+  @override
+  Future<DraftPlan> unlinkBlockFromTask({
+    required DraftPlan plan,
+    required String blockId,
+  }) async => plan;
+
+  @override
+  Future<({DraftPlan plan, String taskId})> createTaskForBlock({
+    required DraftPlan plan,
+    required String blockId,
+  }) async => (plan: plan, taskId: 'task-for-$blockId');
+
+  @override
   Future<
     ({
       List<CompletedItem> completed,

@@ -24,7 +24,62 @@ class RecordingDayAgent implements DayAgentInterface {
     this.draftPlanBuilder,
     this.commitError,
     this.uncommitError,
+    this.blockActionError,
   });
+
+  /// When set, the block actions (remove, restore, link, unlink, create a
+  /// task) throw this error.
+  final Error? blockActionError;
+
+  /// `(action, blockId, taskId)` for every block action received, in order.
+  final List<({String action, String blockId, String? taskId})> blockActions =
+      [];
+
+  Future<DraftPlan> _blockAction(
+    String action,
+    DraftPlan plan,
+    String blockId, {
+    String? taskId,
+  }) async {
+    blockActions.add((action: action, blockId: blockId, taskId: taskId));
+    final error = blockActionError;
+    if (error != null) throw error;
+    return plan;
+  }
+
+  @override
+  Future<DraftPlan> removeBlock({
+    required DraftPlan plan,
+    required String blockId,
+  }) => _blockAction('remove', plan, blockId);
+
+  @override
+  Future<DraftPlan> restoreBlock({
+    required DraftPlan plan,
+    required String blockId,
+  }) => _blockAction('restore', plan, blockId);
+
+  @override
+  Future<DraftPlan> linkBlockToTask({
+    required DraftPlan plan,
+    required String blockId,
+    required String taskId,
+  }) => _blockAction('link', plan, blockId, taskId: taskId);
+
+  @override
+  Future<DraftPlan> unlinkBlockFromTask({
+    required DraftPlan plan,
+    required String blockId,
+  }) => _blockAction('unlink', plan, blockId);
+
+  @override
+  Future<({DraftPlan plan, String taskId})> createTaskForBlock({
+    required DraftPlan plan,
+    required String blockId,
+  }) async => (
+    plan: await _blockAction('create', plan, blockId),
+    taskId: 'task-for-$blockId',
+  );
 
   /// Diff returned by [proposePlanDiff]; when null, a no-change diff
   /// echoing the current plan is fabricated.

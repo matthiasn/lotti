@@ -4837,6 +4837,30 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String get dailyOsNextBlockRemove => 'Ta bort från planen';
+
+  @override
+  String get dailyOsNextBlockRemoved => 'Borttaget från planen.';
+
+  @override
+  String get dailyOsNextBlockLinkTask => 'Koppla till en uppgift';
+
+  @override
+  String get dailyOsNextBlockLinked => 'Kopplat till uppgiften.';
+
+  @override
+  String get dailyOsNextBlockUnlinkTask => 'Koppla bort uppgiften';
+
+  @override
+  String get dailyOsNextBlockUnlinked => 'Bortkopplat från uppgiften.';
+
+  @override
+  String get dailyOsNextBlockCreateTask => 'Skapa en uppgift';
+
+  @override
+  String get dailyOsNextBlockTaskCreated => 'Uppgift skapad.';
+
+  @override
   String get dailyOsNextBlockEditCategoryLabel => 'Kategori';
 
   @override

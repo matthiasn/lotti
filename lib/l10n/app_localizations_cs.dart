@@ -4884,6 +4884,30 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get dailyOsNextBlockRemove => 'Odebrat z plánu';
+
+  @override
+  String get dailyOsNextBlockRemoved => 'Odebráno z plánu.';
+
+  @override
+  String get dailyOsNextBlockLinkTask => 'Propojit s úkolem';
+
+  @override
+  String get dailyOsNextBlockLinked => 'Propojeno s úkolem.';
+
+  @override
+  String get dailyOsNextBlockUnlinkTask => 'Zrušit propojení';
+
+  @override
+  String get dailyOsNextBlockUnlinked => 'Propojení s úkolem zrušeno.';
+
+  @override
+  String get dailyOsNextBlockCreateTask => 'Vytvořit úkol';
+
+  @override
+  String get dailyOsNextBlockTaskCreated => 'Úkol vytvořen.';
+
+  @override
   String get dailyOsNextBlockEditCategoryLabel => 'Kategorie';
 
   @override

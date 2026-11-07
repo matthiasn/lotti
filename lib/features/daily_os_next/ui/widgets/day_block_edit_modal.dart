@@ -36,6 +36,34 @@ class DayBlockEditResult {
   final DateTime end;
 }
 
+/// What the editor can do beyond saving an edit. Each closes the editor
+/// before it runs; a null callback leaves its action out.
+@immutable
+class DayBlockEditActions {
+  const DayBlockEditActions({
+    this.onOpenTask,
+    this.onLinkTask,
+    this.onUnlinkTask,
+    this.onCreateTask,
+    this.onRemove,
+  });
+
+  /// Opens the block's task (task-linked blocks).
+  final VoidCallback? onOpenTask;
+
+  /// Picks an existing task for the block (standalone blocks).
+  final VoidCallback? onLinkTask;
+
+  /// Unties the block from its task (task-linked blocks).
+  final VoidCallback? onUnlinkTask;
+
+  /// Turns the block into a new task (standalone blocks).
+  final VoidCallback? onCreateTask;
+
+  /// Takes the block off the plan.
+  final VoidCallback? onRemove;
+}
+
 /// Design-system editor for a planned Daily OS calendar block.
 ///
 /// The overview follows the app's recent modal form language. Start/end opens
@@ -47,7 +75,7 @@ class DayBlockEditModal {
     required BuildContext context,
     required TimeBlock block,
     List<CategoryDefinition>? categoryOptions,
-    VoidCallback? onOpenTask,
+    DayBlockEditActions actions = const DayBlockEditActions(),
   }) async {
     final tokens = context.designTokens;
     final session = _BlockEditSession(
@@ -87,12 +115,7 @@ class DayBlockEditModal {
             rangeNotifier: session.rangeNotifier,
             categoryOptions: categoryOptions,
             onEditTime: () => session.pageIndexNotifier.value = 1,
-            onOpenTask: onOpenTask == null
-                ? null
-                : () {
-                    Navigator.of(modalContext).pop();
-                    onOpenTask();
-                  },
+            actions: _closingFirst(modalContext, actions),
           ),
         ),
         ModalUtils.modalSheetPage(
@@ -116,6 +139,27 @@ class DayBlockEditModal {
           ),
         ),
       ],
+    );
+  }
+
+  /// The same actions, each closing the editor before it runs: what they
+  /// open or change happens over the Day, not under the editor.
+  static DayBlockEditActions _closingFirst(
+    BuildContext context,
+    DayBlockEditActions actions,
+  ) {
+    VoidCallback? close(VoidCallback? action) => action == null
+        ? null
+        : () {
+            Navigator.of(context).pop();
+            action();
+          };
+    return DayBlockEditActions(
+      onOpenTask: close(actions.onOpenTask),
+      onLinkTask: close(actions.onLinkTask),
+      onUnlinkTask: close(actions.onUnlinkTask),
+      onCreateTask: close(actions.onCreateTask),
+      onRemove: close(actions.onRemove),
     );
   }
 
@@ -194,7 +238,7 @@ class _BlockEditOverview extends StatelessWidget {
     required this.rangeNotifier,
     required this.categoryOptions,
     required this.onEditTime,
-    required this.onOpenTask,
+    required this.actions,
   });
 
   final TimeBlock block;
@@ -203,7 +247,7 @@ class _BlockEditOverview extends StatelessWidget {
   final ValueNotifier<EntryDateTimeRange> rangeNotifier;
   final List<CategoryDefinition>? categoryOptions;
   final VoidCallback onEditTime;
-  final VoidCallback? onOpenTask;
+  final DayBlockEditActions actions;
 
   bool get _taskOwned => block.taskId?.trim().isNotEmpty ?? false;
   bool get _identityEditable =>
@@ -258,7 +302,7 @@ class _BlockEditOverview extends StatelessWidget {
                       value: category.name,
                       leading: _CategoryDot(category: category),
                     ),
-                    if (onOpenTask != null) ...[
+                    if (actions.onOpenTask case final onOpenTask?) ...[
                       SizedBox(height: tokens.spacing.step5),
                       DesignSystemButton(
                         label: context.messages.dailyOsNextBlockEditOpenTask,
@@ -267,6 +311,17 @@ class _BlockEditOverview extends StatelessWidget {
                         size: DesignSystemButtonSize.large,
                         fullWidth: true,
                         onPressed: onOpenTask,
+                      ),
+                    ],
+                    if (actions.onUnlinkTask case final onUnlinkTask?) ...[
+                      SizedBox(height: tokens.spacing.step3),
+                      DesignSystemButton(
+                        label: context.messages.dailyOsNextBlockUnlinkTask,
+                        leadingIcon: LottiIcons.linkOff,
+                        variant: DesignSystemButtonVariant.tertiary,
+                        size: DesignSystemButtonSize.large,
+                        fullWidth: true,
+                        onPressed: onUnlinkTask,
                       ),
                     ],
                   ],
@@ -290,6 +345,39 @@ class _BlockEditOverview extends StatelessWidget {
                 onTap: onEditTime,
               ),
             ),
+            if (_identityEditable &&
+                (actions.onLinkTask != null ||
+                    actions.onCreateTask != null)) ...[
+              SizedBox(height: tokens.spacing.step6),
+              DesignSystemPickerSection(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (actions.onLinkTask case final onLinkTask?)
+                      DesignSystemButton(
+                        label: context.messages.dailyOsNextBlockLinkTask,
+                        leadingIcon: LottiIcons.link,
+                        variant: DesignSystemButtonVariant.secondary,
+                        size: DesignSystemButtonSize.large,
+                        fullWidth: true,
+                        onPressed: onLinkTask,
+                      ),
+                    if (actions.onLinkTask != null &&
+                        actions.onCreateTask != null)
+                      SizedBox(height: tokens.spacing.step3),
+                    if (actions.onCreateTask case final onCreateTask?)
+                      DesignSystemButton(
+                        label: context.messages.dailyOsNextBlockCreateTask,
+                        leadingIcon: LottiIcons.addTask,
+                        variant: DesignSystemButtonVariant.secondary,
+                        size: DesignSystemButtonSize.large,
+                        fullWidth: true,
+                        onPressed: onCreateTask,
+                      ),
+                  ],
+                ),
+              ),
+            ],
             if (block.reason?.trim().isNotEmpty ?? false) ...[
               SizedBox(height: tokens.spacing.step6),
               DesignSystemPickerSection(
@@ -302,6 +390,17 @@ class _BlockEditOverview extends StatelessWidget {
                     size: tokens.spacing.step6,
                   ),
                 ),
+              ),
+            ],
+            if (actions.onRemove case final onRemove?) ...[
+              SizedBox(height: tokens.spacing.step6),
+              DesignSystemButton(
+                label: context.messages.dailyOsNextBlockRemove,
+                leadingIcon: LottiIcons.delete,
+                variant: DesignSystemButtonVariant.dangerTertiary,
+                size: DesignSystemButtonSize.large,
+                fullWidth: true,
+                onPressed: onRemove,
               ),
             ],
           ],

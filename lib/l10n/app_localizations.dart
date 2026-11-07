@@ -8147,6 +8147,54 @@ abstract class AppLocalizations {
   /// **'Tracked · {duration} · {completedCount} done'**
   String dailyOsNextAgendaTrackedLegend(String duration, int completedCount);
 
+  /// No description provided for @dailyOsNextBlockRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from plan'**
+  String get dailyOsNextBlockRemove;
+
+  /// No description provided for @dailyOsNextBlockRemoved.
+  ///
+  /// In en, this message translates to:
+  /// **'Removed from the plan.'**
+  String get dailyOsNextBlockRemoved;
+
+  /// No description provided for @dailyOsNextBlockLinkTask.
+  ///
+  /// In en, this message translates to:
+  /// **'Link to a task'**
+  String get dailyOsNextBlockLinkTask;
+
+  /// No description provided for @dailyOsNextBlockLinked.
+  ///
+  /// In en, this message translates to:
+  /// **'Linked to the task.'**
+  String get dailyOsNextBlockLinked;
+
+  /// No description provided for @dailyOsNextBlockUnlinkTask.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlink task'**
+  String get dailyOsNextBlockUnlinkTask;
+
+  /// No description provided for @dailyOsNextBlockUnlinked.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlinked from the task.'**
+  String get dailyOsNextBlockUnlinked;
+
+  /// No description provided for @dailyOsNextBlockCreateTask.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a task'**
+  String get dailyOsNextBlockCreateTask;
+
+  /// No description provided for @dailyOsNextBlockTaskCreated.
+  ///
+  /// In en, this message translates to:
+  /// **'Task created.'**
+  String get dailyOsNextBlockTaskCreated;
+
   /// No description provided for @dailyOsNextBlockEditCategoryLabel.
   ///
   /// In en, this message translates to:
