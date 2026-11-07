@@ -479,8 +479,6 @@ class _TranscriptionProgressState extends State<_TranscriptionProgress> {
               amplitudes: const [],
               elapsed: Duration.zero,
               onCancel: widget.onCancel,
-              // Nothing to stop: the words are on their way.
-              onStop: () {},
             ),
           ],
         );

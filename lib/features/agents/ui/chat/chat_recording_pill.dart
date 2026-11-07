@@ -40,7 +40,7 @@ class ChatRecordingPill extends StatelessWidget {
     required this.amplitudes,
     required this.elapsed,
     required this.onCancel,
-    required this.onStop,
+    this.onStop,
     this.sendsOnStop = false,
     this.showEndControl = true,
     super.key,
@@ -52,7 +52,10 @@ class ChatRecordingPill extends StatelessWidget {
   final List<double> amplitudes;
   final Duration elapsed;
   final VoidCallback onCancel;
-  final VoidCallback onStop;
+
+  /// Ends the take; unused while [processing], when there is nothing left
+  /// to stop.
+  final VoidCallback? onStop;
 
   /// Whether stopping sends what was said: the end control is then the send
   /// arrow, as the text field's is.
