@@ -76,9 +76,9 @@ const int frontTaskListMinimum = 2;
 
 /// [markdown] cut into her words and the lists of tasks in them, in order.
 ///
-/// A list is [frontTaskListMinimum] or more consecutive list lines, each one
-/// task link and nothing else — what the prompt asks her to write when she
-/// names tasks. Everything else, a line that says more than the link
+/// A list is consecutive list lines naming [frontTaskListMinimum] or more
+/// distinct tasks, each line one task link and nothing else — what the
+/// prompt asks her to write when she names tasks. Everything else, a line that says more than the link
 /// included, stays her words. A reply with no such list is one
 /// [FrontReplyText].
 List<FrontReplyPart> frontReplyParts(String markdown) {
@@ -94,9 +94,15 @@ List<FrontReplyPart> frontReplyParts(String markdown) {
   }
 
   void flushRun() {
-    if (run.length >= frontTaskListMinimum) {
+    // A task named twice in one list is one row: rows are keyed by task id.
+    final seen = <String>{};
+    final tasks = [
+      for (final r in run)
+        if (seen.add(r.task.id)) r.task,
+    ];
+    if (tasks.length >= frontTaskListMinimum) {
       flushWords();
-      parts.add(FrontReplyTasks([for (final r in run) r.task]));
+      parts.add(FrontReplyTasks(tasks));
     } else {
       words.addAll([for (final r in run) r.line]);
     }

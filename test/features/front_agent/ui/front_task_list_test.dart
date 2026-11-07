@@ -9,8 +9,7 @@ import 'package:lotti/features/front_agent/ui/front_task_list.dart';
 import 'package:lotti/features/tasks/state/task_live_data_provider.dart';
 import 'package:lotti/features/tasks/ui/due_date_text.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/linked_task_row.dart';
-import 'package:lotti/get_it.dart';
-import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -72,11 +71,6 @@ void main() {
     final cache = MockEntitiesCacheService();
     when(() => cache.getCategoryById(any())).thenReturn(null);
     when(() => cache.getCategoryById('colony')).thenReturn(colony);
-    await setUpTestGetIt(
-      additionalSetup: () =>
-          getIt.registerSingleton<EntitiesCacheService>(cache),
-    );
-    addTearDown(tearDownTestGetIt);
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
         Scaffold(
@@ -85,6 +79,7 @@ void main() {
           ),
         ),
         overrides: [
+          entitiesCacheServiceProvider.overrideWithValue(cache),
           taskLiveDataProvider.overrideWith(
             (ref, id) =>
                 load?.call(id) ??

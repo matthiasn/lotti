@@ -469,10 +469,7 @@ void main() {
     expect(field.width, lessThanOrEqualTo(kProseMeasureWidth));
     // Centred in the pane, as the thread's column is.
     final pane = tester.getRect(find.byType(AgentChatView));
-    expect(
-      field.center.dx,
-      closeTo(pane.center.dx, kProseMeasureWidth / 2),
-    );
+    expect(field.center.dx, closeTo(pane.center.dx, 1));
   });
 
   testWidgets('what is being said stays with its conversation: leaving it '

@@ -10,8 +10,7 @@ import 'package:lotti/features/tasks/ui/due_date_text.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/linked_task_row.dart'
     show StatusGlyph;
 import 'package:lotti/features/tasks/ui/utils.dart';
-import 'package:lotti/get_it.dart';
-import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Stable keys for her lists of tasks.
@@ -89,7 +88,7 @@ class FrontTaskRow extends ConsumerWidget {
     }
     final status = task.data.status;
     final statusLabel = taskLabelFromStatusString(status.toDbString, context);
-    final category = _categoryName(task);
+    final category = _categoryName(ref, task);
     final due = task.data.due;
     final settled = status is TaskDone || status is TaskRejected;
     return DesignSystemListItem(
@@ -121,9 +120,9 @@ class FrontTaskRow extends ConsumerWidget {
   }
 
   /// The name of [task]'s category, when it has one the app knows.
-  static String? _categoryName(Task task) {
+  static String? _categoryName(WidgetRef ref, Task task) {
     final id = task.meta.categoryId;
     if (id == null) return null;
-    return getIt<EntitiesCacheService>().getCategoryById(id)?.name;
+    return ref.watch(entitiesCacheServiceProvider)?.getCategoryById(id)?.name;
   }
 }

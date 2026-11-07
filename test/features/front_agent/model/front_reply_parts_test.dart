@@ -39,6 +39,22 @@ Start with the cameras.''';
     ]);
   });
 
+  test('a task named twice in one list is one row, and one task named twice '
+      'stays a link in her words', () {
+    const twice = '''
+- [Count the hatchlings](lotti://task/t1)
+- [Check the nest cameras](lotti://task/t2)
+- [Count the hatchlings](lotti://task/t1)''';
+    expect(frontReplyParts(twice), const [
+      FrontReplyTasks([hatchlings, cameras]),
+    ]);
+
+    const same = '''
+- [Count the hatchlings](lotti://task/t1)
+- [Count the hatchlings](lotti://task/t1)''';
+    expect(frontReplyParts(same), const [FrontReplyText(same)]);
+  });
+
   test('a single task stays a link in her words', () {
     const reply = 'Only one:\n- [Count the hatchlings](lotti://task/t1)';
     expect(frontReplyParts(reply), const [FrontReplyText(reply)]);
