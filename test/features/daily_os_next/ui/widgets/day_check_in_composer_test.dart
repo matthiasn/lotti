@@ -75,6 +75,12 @@ void main() {
       .messages
       .chatInputRecordVoice;
 
+  /// Starts a take from this composer's own mic.
+  Future<void> startTake(WidgetTester tester) async {
+    await tester.tap(findMaterialTooltip(mic(tester)));
+    await tester.pump();
+  }
+
   CaptureState phase(
     CapturePhase phase, {
     String transcript = '',
@@ -100,6 +106,8 @@ void main() {
   testWidgets("a running recording takes the field's place", (tester) async {
     await pump(tester);
 
+    await startTake(tester);
+
     capture.emit(phase(CapturePhase.listening));
     await tester.pump();
 
@@ -110,6 +118,8 @@ void main() {
   testWidgets('a finished transcript lands in the field for review, with '
       'its recording', (tester) async {
     await pump(tester);
+
+    await startTake(tester);
 
     capture
       ..emit(phase(CapturePhase.listening))
@@ -133,24 +143,12 @@ void main() {
     expect(submitted, [(words: 'Finish the launch deck', audioId: 'audio-1')]);
   });
 
-  testWidgets('a spoken take adds to words already typed', (tester) async {
-    await pump(tester);
-    await tester.enterText(find.byType(TextField), 'Call mom');
-    await tester.pump();
-
-    capture
-      ..emit(phase(CapturePhase.listening))
-      ..emit(phase(CapturePhase.captured, transcript: 'about Sunday'));
-    await tester.pump();
-
-    expect(find.text('Call mom about Sunday'), findsOneWidget);
-  });
-
   testWidgets('typed words alone carry no recording', (tester) async {
     await pump(tester);
 
     // A take, then the field cleared and retyped: that audio no longer
     // stands behind the words.
+    await startTake(tester);
     capture
       ..emit(phase(CapturePhase.listening))
       ..emit(
@@ -169,6 +167,8 @@ void main() {
 
   testWidgets('a capture failure reads under the field', (tester) async {
     await pump(tester);
+
+    await startTake(tester);
 
     capture.emit(
       phase(
@@ -207,5 +207,102 @@ void main() {
     await tester.pump();
     await tester.pump();
     expect(tester.widget<TextField>(find.byType(TextField)).enabled, isTrue);
+  });
+
+  testWidgets('stop on the recording pill finishes the take for the day', (
+    tester,
+  ) async {
+    await pump(tester);
+    await startTake(tester);
+    capture.emit(phase(CapturePhase.listening));
+    await tester.pump();
+
+    await tester.tap(find.byKey(ChatRecordingPillKeys.stop));
+    await tester.pump();
+
+    // One toggle started the take, the second ends it.
+    expect(capture.toggles, [day, day]);
+  });
+
+  testWidgets('cancel on the recording pill puts the recorder back to rest', (
+    tester,
+  ) async {
+    await pump(tester);
+    await startTake(tester);
+    capture.emit(phase(CapturePhase.listening));
+    await tester.pump();
+
+    await tester.tap(find.byKey(ChatRecordingPillKeys.cancel));
+    await tester.pump();
+
+    expect(capture.resets, 1);
+    expect(find.byType(ChatRecordingPill), findsNothing);
+    expect(find.byType(TextField), findsOneWidget);
+  });
+
+  testWidgets('while transcribing the pill shows it is working, with no stop', (
+    tester,
+  ) async {
+    await pump(tester);
+    await startTake(tester);
+    capture
+      ..emit(phase(CapturePhase.listening))
+      ..emit(phase(CapturePhase.transcribing));
+    await tester.pump();
+
+    expect(find.byKey(ChatRecordingPillKeys.transcribing), findsOneWidget);
+    expect(find.byKey(ChatRecordingPillKeys.stop), findsNothing);
+    // Its way out stays: cancel discards the in-flight transcription.
+    await tester.tap(find.byKey(ChatRecordingPillKeys.cancel));
+    await tester.pump();
+    expect(capture.resets, 1);
+  });
+
+  testWidgets('a capture this composer did not start is left alone', (
+    tester,
+  ) async {
+    await pump(tester);
+
+    // The planning sheet's Capture step, open over the day: typing, then a
+    // recording that finishes with words, then a failure.
+    capture.emit(phase(CapturePhase.captured));
+    await tester.pump();
+    capture
+      ..emit(phase(CapturePhase.listening))
+      ..emit(phase(CapturePhase.captured, transcript: 'For the sheet'));
+    await tester.pump();
+    capture.emit(
+      phase(
+        CapturePhase.error,
+        error: CaptureError.microphonePermissionDenied,
+      ),
+    );
+    await tester.pump();
+
+    final messages = tester.element(find.byType(DayCheckInComposer)).messages;
+    expect(capture.resets, 0);
+    expect(find.byType(ChatRecordingPill), findsNothing);
+    expect(find.text('For the sheet'), findsNothing);
+    expect(
+      find.text(messages.dailyOsNextCaptureErrorMicrophonePermissionDenied),
+      findsNothing,
+    );
+  });
+
+  testWidgets('a cancelled take hands the recorder back', (tester) async {
+    await pump(tester);
+    await startTake(tester);
+    capture
+      ..emit(phase(CapturePhase.listening))
+      ..emit(const CaptureState.idle());
+    await tester.pump();
+
+    // Later captures belong to whoever starts them.
+    capture
+      ..emit(phase(CapturePhase.listening))
+      ..emit(phase(CapturePhase.captured, transcript: 'Not mine'));
+    await tester.pump();
+
+    expect(find.text('Not mine'), findsNothing);
   });
 }

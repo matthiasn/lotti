@@ -105,8 +105,9 @@ chat field (`ChatComposerField` inside `DayComposerBar`): mic while empty, send
 arrow once there are words. The mic records through `captureControllerProvider`
 — the same recorder, and the same saved journal audio, as the Capture step — with
 the `ChatRecordingPill` in the field's place; the finished transcript lands in
-the field for review, appended to anything typed, and the recorder returns to
-idle. Sending submits the capture (`submitCapture`, with the recording's
+the field for review and the recorder returns to idle. It acts only on takes it
+started: the recorder is shared with the sheet's Capture step, which the
+onboarding spotlight opens over the page. Sending submits the capture (`submitCapture`, with the recording's
 `audioId` when spoken) and opens the planning sheet with
 `DayPlanningReconcile`, straight at Reconcile → Drafting; Re-record there
 closes the sheet, leaving the words in the field. The onboarding spotlight
