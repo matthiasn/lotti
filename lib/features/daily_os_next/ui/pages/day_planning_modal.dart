@@ -284,7 +284,7 @@ class _CaptureStepBodyState extends ConsumerState<_CaptureStepBody> {
     if (words.isEmpty && !widget.startListening) return;
     // After the first frame: a provider is not changed while the tree
     // builds, and by then the capture content watches it, keeping it alive.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
       final capture = ref.read(captureControllerProvider.notifier);
       if (words.isNotEmpty) {
@@ -298,7 +298,7 @@ class _CaptureStepBodyState extends ConsumerState<_CaptureStepBody> {
       // stop or discard it instead of starting one.
       final phase = ref.read(captureControllerProvider).phase;
       if (phase != CapturePhase.idle && phase != CapturePhase.error) return;
-      unawaited(capture.toggle(forDate: widget.day));
+      await capture.toggle(forDate: widget.day);
     });
   }
 
