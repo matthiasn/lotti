@@ -1284,8 +1284,10 @@ face — opens `openFrontStage`: the shared full-screen `CompanionStagePage`,
 head to toe, on a phone and on a desktop window alike, still speaking on
 her source, with `FrontStageControls` at her feet in place of a summary's
 read-aloud control (the page's `controls`). On a desktop window
-(`isDesktopLayout`) the page's `sidePanel` stands beside her, two fifths of
-the width (`CompanionStagePage.sidePanelFlex` to `figureFlex`):
+(`isDesktopLayout`) the page's `sidePanel` stands beside her, behind the
+shared `ResizableDivider`: she takes `PaneWidths.companionStageShare` of the
+width (three fifths go to the panel by default, dragged between a quarter and
+three fifths for her, saved by `PaneWidthController` like the app's columns):
 `FrontStageTranscript`, the conversation's thread (`FrontChatThreadView`,
 the same one the pane shows), read only — `composerEnabled: false` — since
 the disc at her feet is the way to answer her there; the pane under the

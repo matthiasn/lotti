@@ -9,6 +9,8 @@ import 'package:lotti/features/companion/rig/stage_painter.dart';
 import 'package:lotti/features/companion/state/companion_look_controller.dart';
 import 'package:lotti/features/companion/ui/companion_speaker.dart';
 import 'package:lotti/features/design_system/components/buttons/ds_ai_disc_button.dart';
+import 'package:lotti/features/design_system/components/navigation/resizable_divider.dart';
+import 'package:lotti/features/design_system/state/pane_width_controller.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -120,12 +122,9 @@ class CompanionStagePage extends ConsumerWidget {
   /// conversation lists as she says them.
   final ProviderListenable<bool>? pointsAtSidePanel;
 
-  /// The host's own panel's share of a desktop window's width; she keeps
-  /// the rest.
-  static const int sidePanelFlex = 2;
-
-  /// Her share beside [sidePanel].
-  static const int figureFlex = 3;
+  /// The divider between her and [sidePanel] on a desktop window.
+  @visibleForTesting
+  static const Key sidePanelDividerKey = Key('companionStageSideDivider');
 
   /// The phone's control that opens [sidePanel] in a sheet.
   @visibleForTesting
@@ -314,16 +313,38 @@ class CompanionStagePage extends ConsumerWidget {
   ).ignore();
 
   /// [stage] alone, or beside the host's [sidePanel] when [beside] — on a
-  /// desktop window.
+  /// desktop window — split by a [ResizableDivider] at the user's saved
+  /// share (`PaneWidths.companionStageShare`), as the app's own columns are.
   Widget _besideSidePanel(bool beside, Widget stage) {
     final panel = sidePanel;
     if (panel == null || !beside) return stage;
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Expanded(flex: figureFlex, child: stage),
-        Expanded(flex: sidePanelFlex, child: panel),
-      ],
+    return Consumer(
+      builder: (context, ref, _) {
+        final share = ref.watch(
+          paneWidthControllerProvider.select((w) => w.companionStageShare),
+        );
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final span = constraints.maxWidth - ResizableDivider.layoutWidth;
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                SizedBox(width: span * share, child: stage),
+                ResizableDivider(
+                  key: sidePanelDividerKey,
+                  onDrag: (delta) => ref
+                      .read(paneWidthControllerProvider.notifier)
+                      .updateCompanionStageShare(delta / span),
+                  currentValue: span * share,
+                  minValue: span * minCompanionStageShare,
+                  maxValue: span * maxCompanionStageShare,
+                ),
+                Expanded(child: panel),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 }

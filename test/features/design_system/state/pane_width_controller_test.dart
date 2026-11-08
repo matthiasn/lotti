@@ -624,6 +624,87 @@ void main() {
     });
   });
 
+  group('PaneWidthController companion stage share', () {
+    test('defaults to two fifths for her when nothing is saved', () async {
+      expect(
+        (await hAwaitHydration(container)).companionStageShare,
+        defaultCompanionStageShare,
+      );
+    });
+
+    test('hydrates the saved share, clamped into its window', () async {
+      container.dispose();
+      container = await hCreateContainerWithPersistedWidths(
+        companionStageShare: '0.5',
+      );
+      expect((await hAwaitHydration(container)).companionStageShare, 0.5);
+
+      container.dispose();
+      container = await hCreateContainerWithPersistedWidths(
+        companionStageShare: '0.9',
+      );
+      expect(
+        (await hAwaitHydration(container)).companionStageShare,
+        maxCompanionStageShare,
+      );
+
+      container.dispose();
+      container = await hCreateContainerWithPersistedWidths(
+        companionStageShare: 'wide',
+      );
+      expect(
+        (await hAwaitHydration(container)).companionStageShare,
+        defaultCompanionStageShare,
+      );
+    });
+
+    test('updateCompanionStageShare applies delta and clamps, leaving the '
+        'other panes alone', () {
+      final notifier = container.read(paneWidthControllerProvider.notifier)
+        ..updateCompanionStageShare(0.1);
+      final state = container.read(paneWidthControllerProvider);
+      expect(state.companionStageShare, closeTo(0.5, 1e-9));
+      expect(state.sidebarWidth, defaultSidebarWidth);
+      expect(state.listPaneWidth, defaultListPaneWidth);
+
+      notifier.updateCompanionStageShare(-1);
+      expect(
+        container.read(paneWidthControllerProvider).companionStageShare,
+        minCompanionStageShare,
+      );
+      notifier.updateCompanionStageShare(1);
+      expect(
+        container.read(paneWidthControllerProvider).companionStageShare,
+        maxCompanionStageShare,
+      );
+    });
+
+    test('persists after debounce, coalescing rapid drags', () {
+      fakeAsync((async) {
+        container.read(paneWidthControllerProvider.notifier)
+          ..updateCompanionStageShare(0.01)
+          ..updateCompanionStageShare(0.02)
+          ..updateCompanionStageShare(0.03);
+        async.flushMicrotasks();
+        verifyNever(
+          () => getIt<SettingsDb>().saveSettingsItem(
+            companionStageShareKey,
+            any(),
+          ),
+        );
+
+        async.elapse(persistDebounce);
+
+        verify(
+          () => getIt<SettingsDb>().saveSettingsItem(
+            companionStageShareKey,
+            '0.460',
+          ),
+        ).called(1);
+      });
+    });
+  });
+
   group('PaneWidthController day view panel', () {
     test('hydrates the persisted width and hidden flag', () async {
       container.dispose();

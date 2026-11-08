@@ -12,6 +12,7 @@ const sidebarCollapsedKey = 'PANE_WIDTH_SIDEBAR_COLLAPSED';
 const listPaneCollapsedKey = 'PANE_WIDTH_LIST_COLLAPSED';
 const dayViewPanelWidthKey = 'PANE_WIDTH_DAY_VIEW';
 const dayViewPanelHiddenKey = 'PANE_WIDTH_DAY_VIEW_HIDDEN';
+const companionStageShareKey = 'PANE_WIDTH_COMPANION_STAGE_SHARE';
 
 /// Default and constraint values for pane widths.
 ///
@@ -42,6 +43,14 @@ const maxJournalListPaneWidth = 800.0;
 const defaultDayViewPanelWidth = 380.0;
 const minDayViewPanelWidth = 300.0;
 const maxDayViewPanelWidth = 800.0;
+
+/// The companion's share of her full-screen stage when the conversation
+/// stands beside her on a desktop window — a share, not a width, because the
+/// stage spans the whole window. She is drawn portrait, so the conversation
+/// gets the larger part by default.
+const defaultCompanionStageShare = 0.4;
+const minCompanionStageShare = 0.25;
+const maxCompanionStageShare = 0.6;
 
 /// How long to wait after the last drag update before persisting to disk.
 @visibleForTesting
@@ -136,6 +145,7 @@ class PaneWidths {
     this.sidebarCollapsed = false,
     this.listPaneCollapsed = false,
     this.dayViewPanelHidden = true,
+    this.companionStageShare = defaultCompanionStageShare,
   });
 
   final double sidebarWidth;
@@ -152,6 +162,9 @@ class PaneWidths {
   /// hidden because width drags are refused in that state.
   final bool dayViewPanelHidden;
 
+  /// The companion's share of her desktop stage beside the conversation.
+  final double companionStageShare;
+
   PaneWidths copyWith({
     double? sidebarWidth,
     double? listPaneWidth,
@@ -160,6 +173,7 @@ class PaneWidths {
     bool? sidebarCollapsed,
     bool? listPaneCollapsed,
     bool? dayViewPanelHidden,
+    double? companionStageShare,
   }) {
     return PaneWidths(
       sidebarWidth: sidebarWidth ?? this.sidebarWidth,
@@ -169,6 +183,7 @@ class PaneWidths {
       sidebarCollapsed: sidebarCollapsed ?? this.sidebarCollapsed,
       listPaneCollapsed: listPaneCollapsed ?? this.listPaneCollapsed,
       dayViewPanelHidden: dayViewPanelHidden ?? this.dayViewPanelHidden,
+      companionStageShare: companionStageShare ?? this.companionStageShare,
     );
   }
 
@@ -183,7 +198,8 @@ class PaneWidths {
           dayViewPanelWidth == other.dayViewPanelWidth &&
           sidebarCollapsed == other.sidebarCollapsed &&
           listPaneCollapsed == other.listPaneCollapsed &&
-          dayViewPanelHidden == other.dayViewPanelHidden;
+          dayViewPanelHidden == other.dayViewPanelHidden &&
+          companionStageShare == other.companionStageShare;
 
   @override
   int get hashCode => Object.hash(
@@ -194,6 +210,7 @@ class PaneWidths {
     sidebarCollapsed,
     listPaneCollapsed,
     dayViewPanelHidden,
+    companionStageShare,
   );
 }
 
@@ -216,6 +233,7 @@ class PaneWidthController extends Notifier<PaneWidths> {
   Timer? _listPaneDebounce;
   Timer? _journalListPaneDebounce;
   Timer? _dayViewPanelDebounce;
+  Timer? _companionStageDebounce;
 
   @override
   PaneWidths build() {
@@ -224,6 +242,7 @@ class PaneWidthController extends Notifier<PaneWidths> {
       _listPaneDebounce?.cancel();
       _journalListPaneDebounce?.cancel();
       _dayViewPanelDebounce?.cancel();
+      _companionStageDebounce?.cancel();
     });
     unawaited(_loadPersistedWidths());
     return const PaneWidths();
@@ -240,6 +259,7 @@ class PaneWidthController extends Notifier<PaneWidths> {
         sidebarCollapsedKey,
         listPaneCollapsedKey,
         dayViewPanelHiddenKey,
+        companionStageShareKey,
       });
 
       if (_userAdjusted) return;
@@ -268,6 +288,12 @@ class PaneWidthController extends Notifier<PaneWidths> {
         minDayViewPanelWidth,
         maxDayViewPanelWidth,
       );
+      final companionStageShare = _parseWidth(
+        values[companionStageShareKey],
+        defaultCompanionStageShare,
+        minCompanionStageShare,
+        maxCompanionStageShare,
+      );
       final sidebarCollapsed = values[sidebarCollapsedKey] == 'true';
       final listPaneCollapsed = values[listPaneCollapsedKey] == 'true';
       // Hidden unless the user has explicitly shown the column: a missing
@@ -282,6 +308,7 @@ class PaneWidthController extends Notifier<PaneWidths> {
         sidebarCollapsed: sidebarCollapsed,
         listPaneCollapsed: listPaneCollapsed,
         dayViewPanelHidden: dayViewPanelHidden,
+        companionStageShare: companionStageShare,
       );
     } catch (error, stackTrace) {
       debugPrint(
@@ -367,6 +394,27 @@ class PaneWidthController extends Notifier<PaneWidths> {
     );
     state = state.copyWith(dayViewPanelWidth: newWidth);
     _debounceDayViewPanelPersist();
+  }
+
+  /// Applies a drag [delta] — a fraction of the stage's width — to the
+  /// companion's share of her desktop stage, clamped to
+  /// [minCompanionStageShare]..[maxCompanionStageShare], and debounces
+  /// persistence.
+  void updateCompanionStageShare(double delta) {
+    _userAdjusted = true;
+    final newShare = (state.companionStageShare + delta).clamp(
+      minCompanionStageShare,
+      maxCompanionStageShare,
+    );
+    state = state.copyWith(companionStageShare: newShare);
+    _companionStageDebounce?.cancel();
+    _companionStageDebounce = Timer(
+      persistDebounce,
+      () async => _persistString(
+        companionStageShareKey,
+        state.companionStageShare.toStringAsFixed(3),
+      ),
+    );
   }
 
   /// Hides the docked day-view column. `dayViewPanelWidth` is left as-is as
