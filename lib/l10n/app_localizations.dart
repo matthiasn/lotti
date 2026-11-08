@@ -12221,6 +12221,12 @@ abstract class AppLocalizations {
   /// **'Search chats'**
   String get frontChatSearchChats;
 
+  /// On a phone, the companion's full-screen stage: the control in her top bar that opens the conversation she is speaking in, and that sheet's title.
+  ///
+  /// In en, this message translates to:
+  /// **'Conversation'**
+  String get frontChatStageConversation;
+
   /// No description provided for @frontChatTitle.
   ///
   /// In en, this message translates to:

@@ -16,6 +16,7 @@ import 'package:lotti/features/tts/cloud/tts_cloud_route.dart';
 import 'package:lotti/features/tts/state/tts_engine_provider.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/consts.dart';
+import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Opens the companion full screen, head to toe on her stage — the place a
@@ -30,8 +31,10 @@ import 'package:material_ui/material_ui.dart';
 /// host whose voice is not a summary's — the front agent's answers — passes
 /// its own [controls] instead of the words: its voice, and a way to answer
 /// her — and may pass a [sidePanel] that stands beside her on a desktop
-/// window (the conversation she is speaking in), and [pointsAtSidePanel],
-/// true while she should point at what that panel shows. She
+/// window (the conversation she is speaking in) and opens in a sheet titled
+/// [sidePanelLabel] from a control in her top bar on a phone, and
+/// [pointsAtSidePanel], true while she should point at what that panel
+/// shows beside her. She
 /// wears what the card dressed her in: a host that dresses her for another
 /// subject than [sourceId] names it as [dressedFor].
 Future<void> openCompanionStage(
@@ -40,6 +43,7 @@ Future<void> openCompanionStage(
   String spokenText = '',
   Widget? controls,
   Widget? sidePanel,
+  String? sidePanelLabel,
   ProviderListenable<bool>? pointsAtSidePanel,
   CompanionMood mood = CompanionMood.calm,
   GestureName? holding,
@@ -54,6 +58,7 @@ Future<void> openCompanionStage(
         spokenText: spokenText,
         controls: controls,
         sidePanel: sidePanel,
+        sidePanelLabel: sidePanelLabel,
         pointsAtSidePanel: pointsAtSidePanel,
         mood: mood,
         holding: holding,
@@ -83,6 +88,7 @@ class CompanionStagePage extends ConsumerWidget {
     required this.spokenText,
     this.controls,
     this.sidePanel,
+    this.sidePanelLabel,
     this.pointsAtSidePanel,
     this.mood = CompanionMood.calm,
     this.holding,
@@ -97,8 +103,17 @@ class CompanionStagePage extends ConsumerWidget {
 
   /// Beside her on a desktop window, the host's own panel — the front
   /// agent's conversation — so a wide stage is not mostly empty floor
-  /// either side of her. Left out on a phone, where she takes the screen.
+  /// either side of her. On a phone she takes the screen, and a control in
+  /// her top bar opens the panel in a sheet titled [sidePanelLabel].
   final Widget? sidePanel;
+
+  /// What [sidePanel] is, said by the phone's control and its sheet's title.
+  /// Without it a phone offers no way to the panel.
+  final String? sidePanelLabel;
+
+  /// The phone sheet's share of the screen's height: room for the panel,
+  /// with her still in view above it.
+  static const double sidePanelSheetHeightFactor = 0.75;
 
   /// While true, and [sidePanel] stands beside her, she points at it
   /// ([GestureName.pointRight]) in place of [holding] — at the tasks the
@@ -111,6 +126,10 @@ class CompanionStagePage extends ConsumerWidget {
 
   /// Her share beside [sidePanel].
   static const int figureFlex = 3;
+
+  /// The phone's control that opens [sidePanel] in a sheet.
+  @visibleForTesting
+  static const Key sidePanelButtonKey = Key('companionStageSidePanel');
 
   /// The host's cloud voice, or `null` for the on-device voice.
   final TtsCloudRoute? cloudRoute;
@@ -135,6 +154,8 @@ class CompanionStagePage extends ConsumerWidget {
             false) &&
         (cloudRoute != null || ref.watch(ttsEngineProvider).isSupported);
     final beside = sidePanel != null && isDesktopLayout(context);
+    final panel = sidePanel;
+    final panelLabel = sidePanelLabel;
     final points = pointsAtSidePanel;
     final pointing = beside && points != null && ref.watch(points);
     return Theme(
@@ -210,13 +231,36 @@ class CompanionStagePage extends ConsumerWidget {
                                                 .outfitFor(dressedFor),
                                           ),
                                     ),
-                                    DsAiDiscButton(
-                                      icon: LottiIcons.close,
-                                      label: MaterialLocalizations.of(
-                                        context,
-                                      ).closeButtonTooltip,
-                                      onPressed: () =>
-                                          Navigator.of(context).pop(),
+                                    Row(
+                                      children: [
+                                        if (!beside &&
+                                            panel != null &&
+                                            panelLabel != null) ...[
+                                          DsAiDiscButton(
+                                            key: CompanionStagePage
+                                                .sidePanelButtonKey,
+                                            icon: LottiIcons.chat,
+                                            label: panelLabel,
+                                            onPressed: () =>
+                                                _openSidePanelSheet(
+                                                  context,
+                                                  panel,
+                                                  panelLabel,
+                                                ),
+                                          ),
+                                          SizedBox(
+                                            width: tokens.spacing.step3,
+                                          ),
+                                        ],
+                                        DsAiDiscButton(
+                                          icon: LottiIcons.close,
+                                          label: MaterialLocalizations.of(
+                                            context,
+                                          ).closeButtonTooltip,
+                                          onPressed: () =>
+                                              Navigator.of(context).pop(),
+                                        ),
+                                      ],
                                     ),
                                   ],
                                 ),
@@ -251,6 +295,23 @@ class CompanionStagePage extends ConsumerWidget {
       ),
     );
   }
+
+  /// The host's [panel] in a sheet titled [label], on a phone, where it
+  /// has no room beside her.
+  static void _openSidePanelSheet(
+    BuildContext context,
+    Widget panel,
+    String label,
+  ) => ModalUtils.showSinglePageModal<void>(
+    context: context,
+    title: label,
+    padding: EdgeInsets.zero,
+    builder: (sheetContext) => SizedBox(
+      height:
+          MediaQuery.sizeOf(sheetContext).height * sidePanelSheetHeightFactor,
+      child: panel,
+    ),
+  ).ignore();
 
   /// [stage] alone, or beside the host's [sidePanel] when [beside] — on a
   /// desktop window.

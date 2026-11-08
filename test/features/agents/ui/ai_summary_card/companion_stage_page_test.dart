@@ -56,6 +56,7 @@ void main() {
     Stream<bool>? readAloudFlag,
     Widget? hostControl,
     Widget? sidePanel,
+    String? sidePanelLabel,
     ProviderListenable<bool>? pointsAtSidePanel,
     String? dressedFor,
     bool surprise = false,
@@ -71,6 +72,7 @@ void main() {
                     spokenText: 'Two items left.',
                     controls: hostControl,
                     sidePanel: sidePanel,
+                    sidePanelLabel: sidePanelLabel,
                     pointsAtSidePanel: pointsAtSidePanel,
                     dressedFor: dressedFor,
                   )
@@ -381,6 +383,75 @@ void main() {
             .width,
         390,
       );
+    });
+
+    testWidgets('on a phone a control in her top bar opens it in a sheet '
+        'under its label', (tester) async {
+      tester.view
+        ..physicalSize = const Size(390, 844)
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await openStage(
+        tester,
+        sidePanel: panel,
+        sidePanelLabel: 'Conversation',
+      );
+      final button = find.byKey(CompanionStagePage.sidePanelButtonKey);
+      // Beside the close control, in her top bar.
+      expect(
+        tester.getRect(button).right,
+        lessThanOrEqualTo(tester.getRect(find.byTooltip('Close')).left),
+      );
+      expect(find.byKey(const Key('host-panel')), findsNothing);
+
+      await tester.tap(find.byTooltip('Conversation'));
+      await _pumpFrames(tester);
+      await tester.pump(const Duration(milliseconds: 400));
+
+      final sheetPanel = find.byKey(const Key('host-panel'));
+      expect(sheetPanel, findsOne);
+      expect(find.text('Conversation'), findsOne);
+      expect(
+        tester.getSize(sheetPanel).height,
+        closeTo(844 * CompanionStagePage.sidePanelSheetHeightFactor, 1),
+      );
+    });
+
+    for (final (why, withPanel, label) in [
+      ('no panel', false, 'Conversation'),
+      ('no label', true, null),
+    ]) {
+      testWidgets('a phone offers no control with $why', (tester) async {
+        tester.view
+          ..physicalSize = const Size(390, 844)
+          ..devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        await openStage(
+          tester,
+          sidePanel: withPanel ? panel : null,
+          sidePanelLabel: label,
+        );
+        expect(find.byType(CompanionStagePage), findsOne);
+        expect(
+          find.byKey(CompanionStagePage.sidePanelButtonKey),
+          findsNothing,
+        );
+      });
+    }
+
+    testWidgets('a desktop window offers no control: the panel is already '
+        'beside her', (tester) async {
+      tester.view
+        ..physicalSize = const Size(1600, 1000)
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await openStage(
+        tester,
+        sidePanel: panel,
+        sidePanelLabel: 'Conversation',
+      );
+      expect(find.byKey(CompanionStagePage.sidePanelButtonKey), findsNothing);
+      expect(find.byKey(const Key('host-panel')), findsOne);
     });
 
     GestureName? held(WidgetTester tester) => tester

@@ -2929,6 +2929,7 @@
   "frontChatResponding": "Recherche de qui sait…",
   "frontChatRowMenuHint": "Actions du chat",
   "frontChatSearchChats": "Rechercher dans les chats",
+  "frontChatStageConversation": "Conversation",
   "frontChatTitle": "Compagnon",
   "frontChatVoiceLabel": "Voix",
   "frontChatYesterday": "Hier",

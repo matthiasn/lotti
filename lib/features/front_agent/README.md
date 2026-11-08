@@ -56,7 +56,7 @@ category's agent assigned. A follow-up ("a follow-up to that one") names
 the task it follows — any task the conversation named, finished ones too —
 and the tap links the two as *follows up on*. The user keeps many **conversations** with her, as in a ChatGPT
 or Claude window: each a subject of its own, titled by its first question,
-listed newest first by recency behind the header's *Chats* button (beside
+listed newest first by recency behind the header's *Chats* glyph (beside
 the conversation on a desktop window), renamed, archived or deleted there. What nothing owns waits in the **inbox** — every conversation,
 filtered — with chips that make it a task, start a goal or project with
 its words, or save it as a note, or leave it. Whatever a tap wrote can be
@@ -101,7 +101,8 @@ and a proposal she got wrong goes to the inbox rather than being retyped.
   again from the start, in the voice she said it in; stand her up full
   screen on any form factor, the conversation beside her on a desktop
   window, where she points at the tasks she lists as she says them —
-  `state/front_stage_pointing.dart`), what stands at her feet there
+  `state/front_stage_pointing.dart` — and in a sheet from her top bar on a
+  phone), what stands at her feet there
   (`front_stage_controls.dart`: hold the disc to talk to her, let go to
   send, drag off to cancel, or tap for hands free), the
   list of conversations with each one's ⋯ on the agent pages' shared menu

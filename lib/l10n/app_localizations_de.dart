@@ -7222,6 +7222,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get frontChatSearchChats => 'Chats durchsuchen';
 
   @override
+  String get frontChatStageConversation => 'Unterhaltung';
+
+  @override
   String get frontChatTitle => 'Begleitung';
 
   @override
