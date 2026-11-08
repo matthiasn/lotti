@@ -3438,6 +3438,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get chatInputConfigureModel => 'Configurer le modèle';
 
   @override
+  String get chatInputFinishRecording => 'Terminé — relis avant d’envoyer';
+
+  @override
   String get chatInputHintDefault =>
       'Pose tes questions sur tes tâches et ta productivité...';
 
@@ -3446,7 +3449,14 @@ class AppLocalizationsFr extends AppLocalizations {
       'Choisis un modèle pour commencer à discuter';
 
   @override
+  String get chatInputKeyboardHint =>
+      'Entrée envoie · Maj+Entrée pour une nouvelle ligne';
+
+  @override
   String get chatInputListening => 'Écoute en cours...';
+
+  @override
+  String get chatInputMentionsLabel => 'Suggestions';
 
   @override
   String get chatInputNoAudioRecorded =>
@@ -6426,6 +6436,65 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get designSystemCaptionWithoutActionsLabel => 'Sans actions';
+
+  @override
+  String get designSystemChatInputBusyLabel => 'En attente d’une réponse';
+
+  @override
+  String get designSystemChatInputBusySample => 'Répond…';
+
+  @override
+  String get designSystemChatInputDraftSample =>
+      'Cet après-midi, de deux à cinq heures, je veux prendre le train pour Berlin et finir les diapos de lundi en route. Planifie-le pour que la déclaration d’impôts soit faite avant.';
+
+  @override
+  String get designSystemChatInputErrorLabel => 'Pas passé';
+
+  @override
+  String get designSystemChatInputErrorSample =>
+      'Ça n’est pas passé. Tes mots sont toujours là.';
+
+  @override
+  String get designSystemChatInputHelperSample =>
+      'Tape @ pour nommer une catégorie';
+
+  @override
+  String get designSystemChatInputHintSample => 'Demande n’importe quoi…';
+
+  @override
+  String get designSystemChatInputIdleLabel => 'Au repos';
+
+  @override
+  String get designSystemChatInputMentionDraftSample =>
+      'Qu’est-ce qui est en retard dans @Wo';
+
+  @override
+  String get designSystemChatInputMentionLabel => 'Nommer une catégorie avec @';
+
+  @override
+  String get designSystemChatInputMentionWoodworking => 'Woodworking';
+
+  @override
+  String get designSystemChatInputMentionWork => 'Work';
+
+  @override
+  String get designSystemChatInputMentionWorkshop => 'Workshop prep';
+
+  @override
+  String get designSystemChatInputPartialSample =>
+      'Cet après-midi, de deux à cinq heures, je veux';
+
+  @override
+  String get designSystemChatInputProofreadLabel => 'Dit — relis, puis envoie';
+
+  @override
+  String get designSystemChatInputRecordingLabel => 'Enregistrement';
+
+  @override
+  String get designSystemChatInputStatesTitle => 'États du champ de discussion';
+
+  @override
+  String get designSystemChatInputTranscribingLabel => 'Transcription';
 
   @override
   String get designSystemCheckboxLabel => 'Case à cocher';
