@@ -5,6 +5,9 @@
   logged time in. Now only the category you named appears by name, and
   everything else is a single "Other" slice in both her words and the
   chart.
+- **The ⋯ menus on chats, goals and people highlight their first and last
+  row cleanly.** Hovering the top or bottom entry no longer leaves a strip
+  of empty padding above or below the highlight.
 
 ### Added
 - **The companion tells you which tasks your time went to.** Ask "what did

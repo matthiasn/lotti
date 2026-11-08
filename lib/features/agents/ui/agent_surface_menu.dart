@@ -155,6 +155,9 @@ class _AgentSurfaceMenuRoute extends PopupRoute<void> {
       // card surface — the base level read as a dark hole in the scrim.
       fitContent: true,
       surfaceColor: dsCardSurface(context),
+      // The first and last row's hover fill meets the rounded edge instead
+      // of leaving a strip of padding above and below it.
+      edgeToEdge: true,
       items: [
         for (final item in items)
           DesignSystemContextMenuItem(
