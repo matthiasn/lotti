@@ -2974,6 +2974,7 @@
   "frontDoorUndo": "Annuler",
   "frontDoorUnfiled": "Retiré de {owner}. Classer à nouveau ?",
   "frontDoorWalking": "Question à {owner}…",
+  "frontLoggedTimeExpand": "Agrandir le graphique",
   "frontStageReleaseToCancel": "Relâche pour annuler",
   "frontStageReleaseToSend": "Relâche pour envoyer",
   "frontStageTalkHint": "Touche ou maintiens pour parler",

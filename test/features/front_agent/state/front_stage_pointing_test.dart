@@ -2,9 +2,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/front_agent/model/front_chat_thread.dart';
+import 'package:lotti/features/front_agent/model/front_logged_time_chart.dart';
 import 'package:lotti/features/front_agent/state/front_chat_thread_provider.dart';
 import 'package:lotti/features/front_agent/state/front_stage_pointing.dart';
 import 'package:lotti/features/front_agent/state/front_voice_providers.dart';
+import 'package:lotti/features/insights/model/insights_models.dart';
 import 'package:lotti/features/tts/model/tts_playback_state.dart';
 import 'package:lotti/features/tts/state/tts_playback_controller.dart';
 
@@ -35,10 +37,10 @@ Two are due today:
   FrontChatThread thread(List<AgentChatMessage> messages) =>
       FrontChatThread(messages: messages);
 
-  group('frontLatestReplyListsTasks', () {
+  group('frontLatestReplyHasVisual', () {
     test('her reply to the latest turn lists tasks', () {
       expect(
-        frontLatestReplyListsTasks(
+        frontLatestReplyHasVisual(
           thread([
             message('u1', AgentChatRole.user, 'What is due?'),
             message('a1', AgentChatRole.agent, list, second: 1),
@@ -48,9 +50,43 @@ Two are due today:
       );
     });
 
+    test('her reply to the latest turn charts logged time; an earlier '
+        "reply's chart is not the one she is saying", () {
+      const chart = FrontLoggedTimeChart(
+        range: InsightsRange(startDay: 20396, endDayExclusive: 20401),
+        categoryIds: {},
+      );
+      final turns = [
+        message('u1', AgentChatRole.user, 'Time this week?'),
+        message('a1', AgentChatRole.agent, '12h this week.', second: 1),
+      ];
+      expect(
+        frontLatestReplyHasVisual(
+          FrontChatThread(
+            messages: turns,
+            loggedTimeByMessageId: const {'a1': chart},
+          ),
+        ),
+        isTrue,
+      );
+      expect(
+        frontLatestReplyHasVisual(
+          FrontChatThread(
+            messages: [
+              ...turns,
+              message('u2', AgentChatRole.user, 'Thanks', second: 2),
+              message('a2', AgentChatRole.agent, 'Any time.', second: 3),
+            ],
+            loggedTimeByMessageId: const {'a1': chart},
+          ),
+        ),
+        isFalse,
+      );
+    });
+
     test('a single task link is not a list', () {
       expect(
-        frontLatestReplyListsTasks(
+        frontLatestReplyHasVisual(
           thread([
             message('u1', AgentChatRole.user, 'What is due?'),
             message('a1', AgentChatRole.agent, oneLink, second: 1),
@@ -62,7 +98,7 @@ Two are due today:
 
     test('a list in an earlier reply is not the one she is saying', () {
       expect(
-        frontLatestReplyListsTasks(
+        frontLatestReplyHasVisual(
           thread([
             message('u1', AgentChatRole.user, 'What is due?'),
             message('a1', AgentChatRole.agent, list, second: 1),
@@ -75,9 +111,9 @@ Two are due today:
     });
 
     test('no turn, or no reply yet, lists nothing', () {
-      expect(frontLatestReplyListsTasks(FrontChatThread.empty), isFalse);
+      expect(frontLatestReplyHasVisual(FrontChatThread.empty), isFalse);
       expect(
-        frontLatestReplyListsTasks(
+        frontLatestReplyHasVisual(
           thread([
             message('a0', AgentChatRole.agent, list),
             message('u1', AgentChatRole.user, 'What is due?', second: 1),

@@ -3319,6 +3319,7 @@
   "frontDoorUndo": "Ångra",
   "frontDoorUnfiled": "Borttaget ur {owner}. Spara igen?",
   "frontDoorWalking": "Frågar {owner}…",
+  "frontLoggedTimeExpand": "Förstora diagrammet",
   "frontStageReleaseToCancel": "Släpp för att avbryta",
   "frontStageReleaseToSend": "Släpp för att skicka",
   "frontStageTalkHint": "Tryck eller håll in för att prata",

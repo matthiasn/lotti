@@ -12,8 +12,11 @@ import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
+import 'package:lotti/features/front_agent/model/front_logged_time_chart.dart';
 import 'package:lotti/features/front_agent/model/front_routing_index.dart';
 import 'package:lotti/features/front_agent/service/front_routing_index_builder.dart';
+import 'package:lotti/features/insights/logic/time_bucketing.dart';
+import 'package:lotti/features/insights/model/insights_models.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -710,6 +713,17 @@ void main() {
           (name: null, seconds: 15 * 60),
           (name: 'Unnamed', seconds: 10 * 60),
         ]);
+        // Her reply's chart covers the same day, in every category.
+        expect(
+          logged.chart,
+          FrontLoggedTimeChart(
+            range: InsightsRange(
+              startDay: epochDay(DateTime(2026, 10, 22)),
+              endDayExclusive: epochDay(DateTime(2026, 10, 23)),
+            ),
+            categoryIds: const {},
+          ),
+        );
       },
     );
 
@@ -724,6 +738,7 @@ void main() {
           now: _now,
         )(FrontTimePeriod.yesterday);
         expect(logged.byCategory, [(name: 'Work', seconds: 3 * 3600)]);
+        expect(logged.chart.categoryIds, {'work'});
       }
     });
 

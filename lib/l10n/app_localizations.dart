@@ -12491,6 +12491,12 @@ abstract class AppLocalizations {
   /// **'Asking {owner}…'**
   String frontDoorWalking(String owner);
 
+  /// No description provided for @frontLoggedTimeExpand.
+  ///
+  /// In en, this message translates to:
+  /// **'Expand chart'**
+  String get frontLoggedTimeExpand;
+
   /// Caption under the talk button while a held finger has slid off it: letting go discards what was said.
   ///
   /// In en, this message translates to:

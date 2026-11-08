@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
+import 'package:lotti/features/front_agent/model/front_logged_time_chart.dart';
 
 /// One choice the front agent offered with a clarifying question: an owner
 /// the segment could belong to, by kind and id, labelled as the model
@@ -64,6 +65,7 @@ class FrontChatThread {
     this.optionsByMessageId = const {},
     this.doorsByMessageId = const {},
     this.specialistAgentIds = const {},
+    this.loggedTimeByMessageId = const {},
   });
 
   static const empty = FrontChatThread(messages: []);
@@ -83,6 +85,10 @@ class FrontChatThread {
   /// in their own threads, so the surface refreshes when one of them
   /// finishes a wake.
   final Set<String> specialistAgentIds;
+
+  /// The chart of logged time a reply draws under her words, by the
+  /// reply's id.
+  final Map<String, FrontLoggedTimeChart> loggedTimeByMessageId;
 
   /// The message that carries a user turn's doors on the surface: her
   /// reply right after it, when there is one — the doors are her answer,

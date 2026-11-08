@@ -4539,6 +4539,7 @@
       }
     }
   },
+  "frontLoggedTimeExpand": "Expand chart",
   "frontStageReleaseToCancel": "Release to cancel",
   "@frontStageReleaseToCancel": {
     "description": "Caption under the talk button while a held finger has slid off it: letting go discards what was said."

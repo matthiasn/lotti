@@ -1,7 +1,7 @@
 ---
 type: Feature Module
 title: Front agent
-description: The one agent the user talks to in one place — how a durable user turn becomes a routing wake, what the routing index holds, how the dispatch contract is validated in code, the capped lookups and the repair round, the deterministic records a turn leaves behind, how the door walker takes each segment to its owner and mirrors the answer, how a statement becomes a proposal the user's one tap files, how a dictated task is filled from her reading of the words and made on the tap, what the inbox is, how an unanswered turn is recovered on any device, how turns form conversations, how she answers what is due and how much time was logged and names tasks as links, what the chat surface renders, and what she hears and says.
+description: The one agent the user talks to in one place — how a durable user turn becomes a routing wake, what the routing index holds, how the dispatch contract is validated in code, the capped lookups and the repair round, the deterministic records a turn leaves behind, how the door walker takes each segment to its owner and mirrors the answer, how a statement becomes a proposal the user's one tap files, how a dictated task is filled from her reading of the words and made on the tap, what the inbox is, how an unanswered turn is recovered on any device, how turns form conversations, how she answers what is due and how much time was logged, with a chart under her words, and names tasks as links, what the chat surface renders, and what she hears and says.
 resource: ../../lib/features/front_agent
 tags: [agents, front-agent, routing, dispatch, doors, filing, inbox, companion, chat]
 status: draft
@@ -136,6 +136,14 @@ sources:
     resource: ../../lib/features/front_agent/ui/front_task_list.dart
     title: FrontTaskList — her lists of tasks and projects as a card of rows
     last_modified: 2026-11-07
+  - id: logged-time-chart
+    resource: ../../lib/features/front_agent/ui/front_logged_time_chart_card.dart
+    title: FrontLoggedTimeChartCard — her answer about logged time as the Insights chart
+    last_modified: 2026-11-08
+  - id: logged-time-reader
+    resource: ../../lib/features/front_agent/service/front_logged_time_reader.dart
+    title: readFrontLoggedTime — the Insights read inside her scope, private categories hidden
+    last_modified: 2026-11-08
   - id: voice-switch
     resource: ../../lib/features/front_agent/ui/front_voice_switch.dart
     title: FrontVoiceSwitch — mutes her where she speaks
@@ -390,9 +398,10 @@ by the model:
 
 The prompt maps "last month" to `last_month` and "the past month" to
 `past_30_days`; a period the enum lacks is answered by naming the ones she
-can sum. `FrontRoutingIndexBuilder.loggedTimeSummarizer` reads the
+can sum. `FrontRoutingIndexBuilder.loggedTimeSummarizer` sums what
+`readFrontLoggedTime` (`service/front_logged_time_reader.dart`) reads — the
 Insights page's own query (`JournalDb.insightsTimeRows` through
-`InsightsRepository`) and buckets it with its `bucketize` and
+`InsightsRepository`), bucketed with its `bucketize` — ranked with its
 `rankedCategoryTotals`, so her numbers are that page's: private entries only
 while they are shown, a task's time in the task's category, overlapping
 entries in one category counted once, an entry across midnight split. Rows
@@ -404,7 +413,34 @@ since an entry need not be private itself to sit in one; time in a deleted
 category stays, unnamed. `FrontLoggedTime.render`
 is what the model reads — the period, its `YYYY-MM-DD` days and the total,
 then each category's hours and minutes, largest first — or a plain *None*.
-No chart: the answer is text in her reply.
+
+**Her answer carries a chart.** The model still reads only that text, and
+her words stay the answer; the prompt and the tool description tell her a
+chart is drawn under her reply, so she never describes one. When a summary
+found time, the strategy keeps its `FrontLoggedTimeChart` — the days summed
+(`InsightsRange`) and the turn's category scope, never the figures — and
+the workflow stores it on her `reply_to_user` payload as `loggedTime`. The
+thread builder reads it back into `FrontChatThread.loggedTimeByMessageId`,
+and the chart reads the numbers again when drawn
+(`frontLoggedTimeChartProvider`, through the same `readFrontLoggedTime`
+and the Insights page's `buildChartData`), so time in a private category
+shows only while private entries do, at any age of the reply. While shown
+it reads again on the notifications the Insights page refetches on — an
+entry, a task or a link changing, and `privateToggleNotification` —
+unthrottled, so hiding private entries takes their time off a chart
+already on screen at once.
+
+```mermaid
+flowchart LR
+  Tool["summarize_logged_time"] --> Read["readFrontLoggedTime"]
+  Read --> Text["FrontLoggedTime.render: text the model reads"]
+  Tool --> Spec["FrontLoggedTimeChart: days + scope"]
+  Spec --> Payload["reply_to_user payload: loggedTime"]
+  Payload --> Thread["FrontChatThread.loggedTimeByMessageId"]
+  Thread --> Card["FrontLoggedTimeChartCard"]
+  Card --> Read
+  Card --> Bars["Insights StackedBarChart + ChartLegend"]
+```
 
 Her own words name a task or a project as a Markdown link titled as listed:
 `[title](lotti://task/<id>)`, `lotti://project/<id>` (`frontReferenceUrl`).
@@ -907,6 +943,19 @@ task leaves it a link in her words. The parts are cut from her reply as
 written, before `replaceIsoDays` turns its days into the device's format,
 and her words between the lists get the device's dates after the cut.
 
+**Her answer about logged time is a chart under her words.** A reply in
+`loggedTimeByMessageId` gets the same `replyBodyBuilder` body, her words
+first, then `FrontLoggedTimeChartCard`: the Insights page's
+`StackedBarChart` — one bar per day, per hour for a single day — each split
+into the categories' colours (one category is one colour), an empty day a
+bar of zero, a tap on a bar reading out every category and its time; under
+it the Insights `ChartLegend` when more than one category shows, and an
+expand action (`DesignSystemIconAction`) opening the Insights
+`InsightsChartCard`, with its per-day and running-total views, in the
+shared modal over the conversation, titled with the days. The card holds
+its height while it reads, and draws nothing once the time it charted is
+gone.
+
 A link in her bubble or in a card's answer goes through the pane's one
 handler, as *Open* and a cited source do. A task (`/tasks/<id>`) opens **on
 top of her**: `pushTaskDetailPage` pushes `TaskDetailsPage` onto the root
@@ -1077,11 +1126,11 @@ the same one the pane shows), read only — `composerEnabled: false` — since
 the disc at her feet is the way to answer her there; the pane under the
 stage, which stays mounted, is the one view that sends what was said. Its
 ways out to a page close the stage and her surface both. While her voice
-plays in the conversation and her latest reply lists tasks
-(`frontStagePointsProvider` over `frontLatestReplyListsTasks`, in
+plays in the conversation and her latest reply lists tasks or charts logged
+time (`frontStagePointsProvider` over `frontLatestReplyHasVisual`, in
 `state/front_stage_pointing.dart`), the page's `pointsAtSidePanel` has her
-hold `GestureName.pointRight` at the panel — at the task rows as she says
-them — and let her arm down when she stops. On a phone she keeps the
+hold `GestureName.pointRight` at the panel — at the task rows or the chart
+as she says them — and let her arm down when she stops. On a phone she keeps the
 screen, and never points. The bust keeps one tree whatever she does,
 so her animator lives through a start and a stop.
 

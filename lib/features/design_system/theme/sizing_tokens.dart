@@ -153,3 +153,14 @@ abstract final class BorderWidths {
   /// linework.
   static const double emphasis = 2;
 }
+
+/// Plot heights for charts — the drawing area, not the card around it.
+abstract final class ChartSizes {
+  /// 140 — a chart riding inside a chat reply, low enough to keep the reply
+  /// a reply.
+  static const double inline = 140;
+
+  /// 260 — a chart card's plot on a page or in a modal: the Insights and AI
+  /// consumption cards.
+  static const double card = 260;
+}

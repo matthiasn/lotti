@@ -9,8 +9,10 @@ import 'package:lotti/features/front_agent/model/front_chat_thread.dart';
 import 'package:lotti/features/front_agent/model/front_conversation.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
+import 'package:lotti/features/front_agent/model/front_logged_time_chart.dart';
 import 'package:lotti/features/front_agent/service/front_chat_thread_builder.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_contract.dart';
+import 'package:lotti/features/insights/model/insights_models.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -222,6 +224,47 @@ void main() {
     expect(options.single.id, 'goal-a');
     expect(options.single.label, 'Swim 2 km');
     expect(thread.optionsByMessageId.containsKey('u2'), isFalse);
+  });
+
+  test('a reply that charts logged time carries its chart; one without, '
+      'or with a chart this build cannot read, carries none', () async {
+    userTurn('u1', 'Time this week?', at: DateTime(2026, 11, 8, 9));
+    row(
+      id: 'reply-1',
+      kind: AgentMessageKind.action,
+      toolName: FrontAgentToolNames.replyToUser,
+      operationId: 'u1',
+      content: {
+        'text': '12h this week.',
+        'loggedTime': {
+          'startDay': 20396,
+          'endDayExclusive': 20401,
+          'categoryIds': ['work'],
+        },
+      },
+      createdAt: DateTime(2026, 11, 8, 9, 1),
+    );
+    userTurn('u2', 'And the garden?', at: DateTime(2026, 11, 8, 10));
+    row(
+      id: 'reply-2',
+      kind: AgentMessageKind.action,
+      toolName: FrontAgentToolNames.replyToUser,
+      operationId: 'u2',
+      content: {
+        'text': 'Asked it.',
+        'loggedTime': {'startDay': 'soon'},
+      },
+      createdAt: DateTime(2026, 11, 8, 10, 1),
+    );
+
+    final thread = await builder.build();
+
+    expect(thread.loggedTimeByMessageId, {
+      'reply-1': const FrontLoggedTimeChart(
+        range: InsightsRange(startDay: 20396, endDayExclusive: 20401),
+        categoryIds: {'work'},
+      ),
+    });
   });
 
   test('a row without a payload, or with an empty text, is left out', () async {

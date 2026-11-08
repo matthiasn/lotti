@@ -12,8 +12,6 @@ import 'package:material_ui/material_ui.dart';
 
 /// Fixed plot height, matching the Insights chart card so the two
 /// dashboards read as siblings.
-const double _chartHeight = 260;
-
 /// Chart mode: per-bucket values, running cumulative totals, or per-bucket
 /// 100%-normalized composition (share).
 enum ImpactChartMode { perBucket, cumulative, share }
@@ -200,7 +198,7 @@ class _ImpactChartCardState extends State<ImpactChartCard> {
             ),
             SizedBox(height: tokens.spacing.step5),
             SizedBox(
-              height: _chartHeight,
+              height: ChartSizes.card,
               child: widget.chartData.isEmpty
                   ? Center(
                       child: Text(

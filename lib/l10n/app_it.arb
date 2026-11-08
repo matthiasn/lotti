@@ -3319,6 +3319,7 @@
   "frontDoorUndo": "Annulla",
   "frontDoorUnfiled": "Tolto da {owner}. Archiviare di nuovo?",
   "frontDoorWalking": "Sta chiedendo a {owner}…",
+  "frontLoggedTimeExpand": "Ingrandisci il grafico",
   "frontStageReleaseToCancel": "Rilascia per annullare",
   "frontStageReleaseToSend": "Rilascia per inviare",
   "frontStageTalkHint": "Tocca o tieni premuto per parlare",

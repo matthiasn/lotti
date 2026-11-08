@@ -22,6 +22,7 @@ import 'package:lotti/features/front_agent/model/front_chat_thread.dart';
 import 'package:lotti/features/front_agent/model/front_conversation.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
+import 'package:lotti/features/front_agent/model/front_logged_time_chart.dart';
 import 'package:lotti/features/front_agent/service/front_chat_service.dart';
 import 'package:lotti/features/front_agent/state/front_agent_providers.dart';
 import 'package:lotti/features/front_agent/state/front_chat_thread_provider.dart';
@@ -35,8 +36,10 @@ import 'package:lotti/features/front_agent/ui/front_chat_pane.dart';
 import 'package:lotti/features/front_agent/ui/front_conversation_list.dart';
 import 'package:lotti/features/front_agent/ui/front_door_card.dart';
 import 'package:lotti/features/front_agent/ui/front_door_wizards.dart';
+import 'package:lotti/features/front_agent/ui/front_logged_time_chart_card.dart';
 import 'package:lotti/features/front_agent/ui/front_task_list.dart';
 import 'package:lotti/features/front_agent/ui/front_turn_cost_line.dart';
+import 'package:lotti/features/insights/model/insights_models.dart';
 import 'package:lotti/features/projects/ui/widgets/project_create_modal.dart';
 import 'package:lotti/features/tasks/state/task_preview_provider.dart';
 import 'package:lotti/features/tasks/ui/pages/task_details_page.dart';
@@ -999,6 +1002,45 @@ void main() {
       find.byKey(FrontTaskListKeys.row('t-9')),
       't-9',
       paths,
+    );
+  });
+
+  testWidgets('an answer about logged time draws its chart under her words; '
+      'a reply without one draws none', (tester) async {
+    const chart = FrontLoggedTimeChart(
+      range: InsightsRange(startDay: 20396, endDayExclusive: 20403),
+      categoryIds: {},
+    );
+    await pumpPane(
+      tester,
+      thread: () async => FrontChatThread(
+        messages: [
+          message('u1', AgentChatRole.user, 'Time this week?', now),
+          message('a1', AgentChatRole.agent, '12h this week.', now),
+          message('u2', AgentChatRole.user, 'Thanks', now),
+          message('a2', AgentChatRole.agent, 'Any time.', now),
+        ],
+        loggedTimeByMessageId: const {'a1': chart},
+      ),
+    );
+
+    final card = find.byType(FrontLoggedTimeChartCard);
+    expect(tester.widget<FrontLoggedTimeChartCard>(card).chart, chart);
+    expect(
+      tester.getTopLeft(card).dy,
+      greaterThan(
+        tester
+            .getTopLeft(
+              find.textContaining('12h this week.', findRichText: true),
+            )
+            .dy,
+      ),
+    );
+    expect(
+      tester.getTopLeft(card).dy,
+      lessThan(
+        tester.getTopLeft(find.textContaining('Thanks', findRichText: true)).dy,
+      ),
     );
   });
 

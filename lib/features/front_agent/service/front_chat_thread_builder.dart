@@ -7,6 +7,7 @@ import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
 import 'package:lotti/features/front_agent/model/front_chat_thread.dart';
 import 'package:lotti/features/front_agent/model/front_conversation.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
+import 'package:lotti/features/front_agent/model/front_logged_time_chart.dart';
 import 'package:lotti/features/front_agent/service/front_chat_history_service.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_contract.dart';
 
@@ -69,6 +70,7 @@ class FrontChatThreadBuilder {
 
     final messages = <AgentChatMessage>[];
     final options = <String, List<FrontAskOption>>{};
+    final charts = <String, FrontLoggedTimeChart>{};
     final doorRecords = <String, List<(String, FrontDoorRecord)>>{};
 
     for (final row in rows) {
@@ -82,9 +84,14 @@ class FrontChatThreadBuilder {
       } else if (isFrontAnswerRow(row)) {
         switch (row.metadata.toolName) {
           case FrontAgentToolNames.replyToUser:
-            final text = await _text(row.contentEntryId, 'text');
-            if (text == null) continue;
+            final payload = await _payload(row.contentEntryId);
+            final text = payload?.content['text'];
+            if (text is! String || text.trim().isEmpty) continue;
             messages.add(_message(row, AgentChatRole.agent, text));
+            final chart = FrontLoggedTimeChart.fromJson(
+              payload!.content['loggedTime'],
+            );
+            if (chart != null) charts[row.id] = chart;
           case FrontAgentToolNames.askUser:
             final payload = await _payload(row.contentEntryId);
             final question = payload?.content['question'];
@@ -159,6 +166,10 @@ class FrontChatThreadBuilder {
       },
       doorsByMessageId: doors,
       specialistAgentIds: specialists,
+      loggedTimeByMessageId: {
+        for (final entry in charts.entries)
+          if (visibleIds.contains(entry.key)) entry.key: entry.value,
+      },
     );
   }
 

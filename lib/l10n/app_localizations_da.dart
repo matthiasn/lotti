@@ -7322,6 +7322,9 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
+  String get frontLoggedTimeExpand => 'Forstør diagram';
+
+  @override
   String get frontStageReleaseToCancel => 'Slip for at annullere';
 
   @override

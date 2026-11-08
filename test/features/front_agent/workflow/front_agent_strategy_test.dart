@@ -6,9 +6,11 @@ import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
+import 'package:lotti/features/front_agent/model/front_logged_time_chart.dart';
 import 'package:lotti/features/front_agent/model/front_routing_index.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_contract.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_strategy.dart';
+import 'package:lotti/features/insights/model/insights_models.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -597,14 +599,22 @@ hologram:x: not listed''');
   });
 
   group('summarize_logged_time', () {
-    FrontLoggedTime logged(FrontTimePeriod period) => FrontLoggedTime(
-      period: period,
-      from: DateTime(2026, 11, 6),
-      through: DateTime(2026, 11, 6),
-      byCategory: const [
+    const chart = FrontLoggedTimeChart(
+      range: InsightsRange(startDay: 20398, endDayExclusive: 20399),
+      categoryIds: {'work'},
+    );
+    FrontLoggedTime logged(
+      FrontTimePeriod period, {
+      List<({String? name, int seconds})> byCategory = const [
         (name: 'Work', seconds: 7200),
         (name: 'Health', seconds: 5400),
       ],
+    }) => FrontLoggedTime(
+      period: period,
+      from: DateTime(2026, 11, 6),
+      through: DateTime(2026, 11, 6),
+      byCategory: byCategory,
+      chart: chart,
     );
 
     test('answers with the summary for the period asked; the reply then '
@@ -643,6 +653,23 @@ hologram:x: not listed''');
       expect(action, ConversationAction.complete);
       expect(s.replyToUser, 'Yesterday: 3h 30m — 2h Work, 1h 30m Health.');
       expect(s.dispatch, isNull);
+      // Her reply charts the days summed, in the turn's scope.
+      expect(s.loggedTimeChart, chart);
+    });
+
+    test('a period with nothing logged gets no chart', () async {
+      final s = strategy(
+        timeSummarizer: (period) async => logged(period, byCategory: const []),
+      );
+      expect(s.loggedTimeChart, isNull);
+      await s.processToolCalls(
+        toolCalls: [
+          _call('summarize_logged_time', {'period': 'yesterday'}),
+        ],
+        manager: manager,
+      );
+      expect(responses().single, startsWith('None: no time logged'));
+      expect(s.loggedTimeChart, isNull);
     });
 
     test('refuses a missing or unknown period and a second summary, and '

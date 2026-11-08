@@ -6,6 +6,7 @@ import 'package:lotti/features/agents/workflow/agent_message_recording.dart';
 import 'package:lotti/features/agents/workflow/agent_tool_arg_parsing.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
+import 'package:lotti/features/front_agent/model/front_logged_time_chart.dart';
 import 'package:lotti/features/front_agent/model/front_reference_links.dart';
 import 'package:lotti/features/front_agent/model/front_routing_index.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_contract.dart';
@@ -100,10 +101,15 @@ class FrontAgentStrategy extends ConversationStrategy
   int _timeSummaries = 0;
   int _rejectedDispatches = 0;
   final _lookupRows = <FrontIndexRow>[];
+  FrontLoggedTimeChart? _loggedTimeChart;
 
   FrontDispatch? get dispatch => _dispatch;
   FrontAskUser? get askUser => _askUser;
   String? get replyToUser => _replyToUser;
+
+  /// What her reply charts: the days a `summarize_logged_time` this turn
+  /// found time in, and the scope it summed; null when none did.
+  FrontLoggedTimeChart? get loggedTimeChart => _loggedTimeChart;
 
   /// Whether the model ended the turn with one of the three terminal calls.
   bool get hasTerminalOutput =>
@@ -459,7 +465,9 @@ class FrontAgentStrategy extends ConversationStrategy
       return;
     }
     _timeSummaries++;
-    await _accept(call, manager, (await summarizer(period)).render());
+    final logged = await summarizer(period);
+    if (logged.byCategory.isNotEmpty) _loggedTimeChart = logged.chart;
+    await _accept(call, manager, logged.render());
   }
 
   /// Her words with every task or project they name by id made a link —

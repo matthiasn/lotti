@@ -68,7 +68,8 @@ and a proposal she got wrong goes to the inbox rather than being retyped.
   and the wake workflow that persists the dispatch record.
 - `service/` — the index builder over existing reads (and the due-task
   lister behind `list_due_tasks` and the logged-time summarizer behind
-  `summarize_logged_time`), the singleton's lazy
+  `summarize_logged_time`, whose read her reply's chart of logged time
+  shares), the singleton's lazy
   creation, the chat service that makes a user turn durable with a recovery
   record and runs the wake, the door walker, the owner titles, the thread
   builder that mirrors specialists' replies, the conversation service, and

@@ -2974,6 +2974,7 @@
   "frontDoorUndo": "Rückgängig",
   "frontDoorUnfiled": "Aus {owner} herausgenommen. Noch einmal ablegen?",
   "frontDoorWalking": "Fragt {owner}…",
+  "frontLoggedTimeExpand": "Diagramm vergrößern",
   "frontStageReleaseToCancel": "Loslassen zum Abbrechen",
   "frontStageReleaseToSend": "Loslassen zum Senden",
   "frontStageTalkHint": "Tippen oder halten zum Sprechen",
