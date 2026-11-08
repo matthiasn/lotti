@@ -7,6 +7,7 @@ import 'package:lotti/features/design_system/components/spinners/design_system_s
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../../../test_utils/screenshot_harness.dart';
 import '../../../../widget_test_utils.dart';
 
 void main() {
@@ -175,6 +176,29 @@ void main() {
 
       await tester.sendKeyEvent(LogicalKeyboardKey.enter);
       expect(sends, 0);
+    });
+
+    testWidgets('a focused field draws no ring of its own inside the card '
+        'under the app theme', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          DesignSystemChatInput(
+            controller: controller,
+            hintText: 'Ask anything…',
+            onSend: () {},
+            onStartRecording: () {},
+          ),
+          theme: screenshotTheme(),
+        ),
+      );
+      await tester.tap(find.byType(TextField));
+      await tester.pump();
+
+      final decoration = tester
+          .widget<InputDecorator>(find.byType(InputDecorator))
+          .decoration;
+      expect(decoration.focusedBorder, InputBorder.none);
+      expect(decoration.enabledBorder, InputBorder.none);
     });
 
     testWidgets('Enter on an empty field sends nothing', (tester) async {

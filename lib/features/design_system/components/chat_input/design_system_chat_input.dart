@@ -438,17 +438,30 @@ class _DesignSystemChatInputState extends State<DesignSystemChatInput> {
           textCapitalization: TextCapitalization.sentences,
           cursorColor: tokens.colors.interactive.enabled,
           style: style.copyWith(color: tokens.colors.text.highEmphasis),
-          decoration: InputDecoration.collapsed(
-            hintText:
-                busy ??
-                (recording
-                    ? context.messages.chatInputListening
-                    : widget.hintText),
-            hintStyle: style.copyWith(color: tokens.colors.text.lowEmphasis),
-            // A prompt never grows the card; at large text it would wrap
-            // into several empty-looking lines on a phone.
-            hintMaxLines: 1,
-          ),
+          // The card draws the one frame. `collapsed` only clears `border`:
+          // the app's InputDecorationTheme would still add its focused
+          // outline, a second ring inside the card.
+          decoration:
+              InputDecoration.collapsed(
+                hintText:
+                    busy ??
+                    (recording
+                        ? context.messages.chatInputListening
+                        : widget.hintText),
+                hintStyle: style.copyWith(
+                  color: tokens.colors.text.lowEmphasis,
+                ),
+                // A prompt never grows the card; at large text it would wrap
+                // into several empty-looking lines on a phone.
+                hintMaxLines: 1,
+              ).copyWith(
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                disabledBorder: InputBorder.none,
+                errorBorder: InputBorder.none,
+                focusedErrorBorder: InputBorder.none,
+                filled: false,
+              ),
         ),
       ),
     );
