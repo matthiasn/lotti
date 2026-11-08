@@ -7353,6 +7353,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get frontStageTapToSend => 'Tryck för att skicka';
 
   @override
+  String get frontTaskCreatedSpoken =>
+      'Så där, raring, jag har skapat uppgiften.';
+
+  @override
   String get geminiThinkingModeHighDescription =>
       'Djupaste resonemang; kan öka latens och kostnad.';
 

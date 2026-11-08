@@ -7418,6 +7418,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get frontStageTapToSend => 'Klepni a odešli';
 
   @override
+  String get frontTaskCreatedSpoken =>
+      'Hotovo, zlatíčko, ten úkol jsem vytvořila.';
+
+  @override
   String get geminiThinkingModeHighDescription =>
       'Nejhlubší uvažování; může zvýšit latenci a cenu.';
 

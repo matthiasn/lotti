@@ -18,6 +18,7 @@ import 'package:lotti/features/tts/state/tts_engine_provider.dart';
 import 'package:lotti/features/tts/state/tts_playback_controller.dart';
 import 'package:lotti/features/tts/ui/playback_failure_toast.dart';
 import 'package:lotti/features/tts/ui/tts_model_download_prompt.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/device_datetime.dart';
 import 'package:material_ui/material_ui.dart';
@@ -152,6 +153,29 @@ abstract final class FrontVoice {
     ref
       ..listen(frontChatThreadProvider, (_, _) => speakWhenLanded())
       ..listen(frontJournalAccessProvider, (_, _) => speakWhenLanded());
+  }
+
+  /// Makes a task of the inbox item [doorId] — the user's tap, the approval
+  /// — and once it is made says so aloud in [conversationId]
+  /// (`frontTaskCreatedSpoken`) through [speak], so her mute, her voice and
+  /// the take-over hold as for any answer. A task not made says nothing; the
+  /// door shows the failure.
+  static Future<void> makeTask(
+    WidgetRef ref,
+    BuildContext context,
+    String? conversationId,
+    String doorId,
+  ) async {
+    final made = await ref
+        .read(frontChatControllerProvider.notifier)
+        .makeTask(doorId);
+    if (!made || conversationId == null || !context.mounted) return;
+    await speak(
+      ref,
+      context,
+      conversationId,
+      context.messages.frontTaskCreatedSpoken,
+    );
   }
 
   /// Speaks [text] as her voice in [conversationId], from the start: once

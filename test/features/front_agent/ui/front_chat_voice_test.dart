@@ -110,6 +110,16 @@ class _Composer extends FrontChatController {
 
   final bool sending;
 
+  /// What a tap on *Make it a task* answers: whether the task was made.
+  bool makes = true;
+  final madeDoors = <String>[];
+
+  @override
+  Future<bool> makeTask(String doorId) async {
+    madeDoors.add(doorId);
+    return makes;
+  }
+
   @override
   FrontChatComposerState build() => FrontChatComposerState(isSending: sending);
 
@@ -134,10 +144,18 @@ class _Host extends ConsumerWidget {
           onPressed: () => FrontVoice.speak(ref, context, 'c-1', say),
           child: const Text('again'),
         ),
+        TextButton(
+          key: const Key('make-task'),
+          onPressed: () => FrontVoice.makeTask(ref, context, 'c-1', 'd-1'),
+          child: const Text('make'),
+        ),
       ],
     );
   }
 }
+
+/// `frontTaskCreatedSpoken` in English, the bench's locale.
+const _taskCreatedLine = 'Hey, dear, I created that task.';
 
 void main() {
   final spokenAt = DateTime(2026, 10, 31, 9);
@@ -609,6 +627,47 @@ void main() {
       await answerInDoor(tester, container, settleFirst: true);
 
       expect(voice.spoken.single.text, 'Let me look.\n\nYou fixed the feeder.');
+    });
+  });
+
+  group('a task made from an inbox item', () {
+    Future<void> tapMake(WidgetTester tester) async {
+      await tester.tap(find.byKey(const Key('make-task')));
+      await tester.pump();
+      await tester.pump();
+    }
+
+    testWidgets('is confirmed aloud, in her voice in the conversation on '
+        'screen, once the tap made it', (tester) async {
+      await pumpHost(tester);
+
+      await tapMake(tester);
+
+      expect(composer.madeDoors, ['d-1']);
+      expect(voice.spoken, [
+        (sourceId: frontVoiceSourceId('c-1'), text: _taskCreatedLine),
+      ]);
+    });
+
+    testWidgets('says nothing when the task was not made', (tester) async {
+      await pumpHost(tester);
+      composer.makes = false;
+
+      await tapMake(tester);
+
+      expect(composer.madeDoors, ['d-1']);
+      expect(voice.spoken, isEmpty);
+    });
+
+    testWidgets('says nothing while she is muted, though the task is made', (
+      tester,
+    ) async {
+      await pumpHost(tester, speaksReplies: false);
+
+      await tapMake(tester);
+
+      expect(composer.madeDoors, ['d-1']);
+      expect(voice.spoken, isEmpty);
     });
   });
 

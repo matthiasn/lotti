@@ -728,6 +728,20 @@ void main() {
       verifyNoMoreInteractions(filing);
     });
 
+    test('making a task answers whether it was made: true once made, false '
+        'when it failed or the door was already busy', () async {
+      final gate = Completer<void>();
+      when(() => filing.makeTask('d1')).thenAnswer((_) => gate.future);
+      final made = controller().makeTask('d1');
+      expect(await controller().makeTask('d1'), isFalse);
+      gate.complete();
+      expect(await made, isTrue);
+
+      when(() => filing.makeTask('d1')).thenThrow(StateError('gone'));
+      expect(await controller().makeTask('d1'), isFalse);
+      expect(state().failedDoorIds, {'d1'});
+    });
+
     test("the doors' state survives a send settling either way", () async {
       when(() => filing.decline('d1')).thenThrow(StateError('gone'));
       await controller().decline('d1');

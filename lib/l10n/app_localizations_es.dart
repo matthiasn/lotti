@@ -7428,6 +7428,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get frontStageTapToSend => 'Toca para enviar';
 
   @override
+  String get frontTaskCreatedSpoken => 'Listo, cariño, he creado esa tarea.';
+
+  @override
   String get geminiThinkingModeHighDescription =>
       'Razonamiento más profundo; puede aumentar la latencia y el coste.';
 

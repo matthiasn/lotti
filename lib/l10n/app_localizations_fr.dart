@@ -7452,6 +7452,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get frontStageTapToSend => 'Touche pour envoyer';
 
   @override
+  String get frontTaskCreatedSpoken =>
+      'Voilà, mon chou, j\'ai créé cette tâche.';
+
+  @override
   String get geminiThinkingModeHighDescription =>
       'Raisonnement le plus poussé ; peut augmenter la latence et le coût.';
 

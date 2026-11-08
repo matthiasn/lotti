@@ -3324,6 +3324,7 @@
   "frontStageReleaseToSend": "Solta para enviar",
   "frontStageTalkHint": "Toca ou mantém premido para falar",
   "frontStageTapToSend": "Toca para enviar",
+  "frontTaskCreatedSpoken": "Pronto, meu bem, criei essa tarefa.",
   "geminiThinkingModeHighDescription": "Raciocínio mais profundo; pode aumentar a latência e o custo.",
   "geminiThinkingModeHighLabel": "Alto",
   "geminiThinkingModeLowDescription": "Baixo raciocínio para solicitações rápidas do dia a dia.",

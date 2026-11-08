@@ -3324,6 +3324,7 @@
   "frontStageReleaseToSend": "Laat los om te versturen",
   "frontStageTalkHint": "Tik of houd ingedrukt om te praten",
   "frontStageTapToSend": "Tik om te versturen",
+  "frontTaskCreatedSpoken": "Zo, lieverd, ik heb die taak aangemaakt.",
   "geminiThinkingModeHighDescription": "De diepste redenering; kan latency en kosten verhogen.",
   "geminiThinkingModeHighLabel": "Hoog",
   "geminiThinkingModeLowDescription": "Lage redenatie voor snelle dagelijkse prompts.",

@@ -4560,6 +4560,10 @@
   "@frontStageTapToSend": {
     "description": "Caption under the talk button on the companion's stage while she listens hands free: the next tap sends."
   },
+  "frontTaskCreatedSpoken": "Hey, dear, I created that task.",
+  "@frontTaskCreatedSpoken": {
+    "description": "Said aloud by the companion, in her voice, right after the user's tap made a task from an inbox item"
+  },
   "geminiThinkingModeHighDescription": "Deepest reasoning; can increase latency and cost.",
   "geminiThinkingModeHighLabel": "High",
   "geminiThinkingModeLowDescription": "Low reasoning for fast everyday prompts.",

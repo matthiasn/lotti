@@ -7395,6 +7395,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get frontStageTapToSend => 'Tippen zum Senden';
 
   @override
+  String get frontTaskCreatedSpoken =>
+      'So, mein Schatz, ich habe die Aufgabe angelegt.';
+
+  @override
   String get geminiThinkingModeHighDescription =>
       'Tiefstes Reasoning; kann Latenz und Kosten erhöhen.';
 

@@ -7340,6 +7340,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get frontStageTapToSend => 'Tryk for at sende';
 
   @override
+  String get frontTaskCreatedSpoken => 'Sådan, skat, jeg har oprettet opgaven.';
+
+  @override
   String get geminiThinkingModeHighDescription =>
       'Dybeste ræsonnement; kan øge latenstid og omkostninger.';
 

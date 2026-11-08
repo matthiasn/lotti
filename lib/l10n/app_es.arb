@@ -2980,6 +2980,7 @@
   "frontStageReleaseToSend": "Suelta para enviar",
   "frontStageTalkHint": "Toca o mantén pulsado para hablar",
   "frontStageTapToSend": "Toca para enviar",
+  "frontTaskCreatedSpoken": "Listo, cariño, he creado esa tarea.",
   "geminiThinkingModeHighDescription": "Razonamiento más profundo; puede aumentar la latencia y el coste.",
   "geminiThinkingModeHighLabel": "Alto",
   "geminiThinkingModeLowDescription": "Razonamiento bajo para prompts cotidianos rápidos.",
