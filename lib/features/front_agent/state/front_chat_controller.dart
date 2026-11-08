@@ -361,8 +361,9 @@ class FrontChatController extends Notifier<FrontChatComposerState> {
   Future<void> takeBack(String doorId) =>
       _doorAction(doorId, (filing) => filing.takeBack(doorId));
 
-  /// Makes a task of an inbox item.
-  Future<void> makeTask(String doorId) =>
+  /// Makes a task of an inbox item; whether it was made, so the surface can
+  /// say so aloud.
+  Future<bool> makeTask(String doorId) =>
       _doorAction(doorId, (filing) => filing.makeTask(doorId));
 
   /// Saves an inbox item as a note.
@@ -371,20 +372,23 @@ class FrontChatController extends Notifier<FrontChatComposerState> {
 
   /// Runs one action on a door: the door is busy meanwhile, the thread is
   /// re-projected after, and a failure is kept on the door until its next
-  /// action. A door already busy takes no second tap.
-  Future<void> _doorAction(
+  /// action. A door already busy takes no second tap. Answers whether the
+  /// action went through.
+  Future<bool> _doorAction(
     String doorId,
     Future<void> Function(FrontFilingService filing) action,
   ) async {
-    if (state.busyDoorIds.contains(doorId)) return;
+    if (state.busyDoorIds.contains(doorId)) return false;
     state = state.copyWith(
       busyDoorIds: {...state.busyDoorIds, doorId},
       failedDoorIds: {...state.failedDoorIds}..remove(doorId),
     );
     try {
       await action(ref.read(frontFilingServiceProvider));
+      return true;
     } catch (_) {
       state = state.copyWith(failedDoorIds: {...state.failedDoorIds, doorId});
+      return false;
     } finally {
       _reproject();
       state = state.copyWith(

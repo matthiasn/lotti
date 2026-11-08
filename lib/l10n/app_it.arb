@@ -3325,6 +3325,7 @@
   "frontStageReleaseToSend": "Rilascia per inviare",
   "frontStageTalkHint": "Tocca o tieni premuto per parlare",
   "frontStageTapToSend": "Tocca per inviare",
+  "frontTaskCreatedSpoken": "Ecco fatto, tesoro, ho creato quell'attività.",
   "geminiThinkingModeHighDescription": "Il ragionamento più profondo; può aumentare la latenza e il costo.",
   "geminiThinkingModeHighLabel": "Alto.",
   "geminiThinkingModeLowDescription": "Basso ragionamento per veloci richieste di tutti i giorni.",

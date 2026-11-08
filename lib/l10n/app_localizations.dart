@@ -12527,6 +12527,12 @@ abstract class AppLocalizations {
   /// **'Tap to send'**
   String get frontStageTapToSend;
 
+  /// Said aloud by the companion, in her voice, right after the user's tap made a task from an inbox item
+  ///
+  /// In en, this message translates to:
+  /// **'Hey, dear, I created that task.'**
+  String get frontTaskCreatedSpoken;
+
   /// No description provided for @geminiThinkingModeHighDescription.
   ///
   /// In en, this message translates to:

@@ -7461,6 +7461,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get frontStageTapToSend => 'Atingeți pentru a trimite';
 
   @override
+  String get frontTaskCreatedSpoken => 'Gata, am creat sarcina.';
+
+  @override
   String get geminiThinkingModeHighDescription =>
       'Raționament cel mai profund; poate crește latența și costul.';
 

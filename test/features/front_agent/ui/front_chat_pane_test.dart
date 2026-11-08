@@ -1301,6 +1301,19 @@ void main() {
       },
     );
 
+    testWidgets('make it a task makes the task through the filing service', (
+      tester,
+    ) async {
+      when(() => filing.makeTask('d:door:0')).thenAnswer((_) async {});
+      await pumpPane(tester, thread: () async => inbox(FrontNewKind.task));
+
+      await tester.tap(find.byKey(const ValueKey('front-door-task-0')));
+      await tester.pump();
+      await tester.pump();
+
+      verify(() => filing.makeTask('d:door:0')).called(1);
+    });
+
     testWidgets('start a goal leaves the sheet and goes to the goal wizard, '
         'with the words as its intention', (tester) async {
       final paths = <String>[];

@@ -2980,6 +2980,7 @@
   "frontStageReleaseToSend": "Relâche pour envoyer",
   "frontStageTalkHint": "Touche ou maintiens pour parler",
   "frontStageTapToSend": "Touche pour envoyer",
+  "frontTaskCreatedSpoken": "Voilà, mon chou, j'ai créé cette tâche.",
   "geminiThinkingModeHighDescription": "Raisonnement le plus poussé ; peut augmenter la latence et le coût.",
   "geminiThinkingModeHighLabel": "Élevé",
   "geminiThinkingModeLowDescription": "Raisonnement faible pour des prompts quotidiens rapides.",

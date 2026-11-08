@@ -84,6 +84,10 @@ sources:
     resource: ../../lib/features/front_agent/workflow/front_conversation_tasks.dart
     title: frontConversationTaskIds — the tasks a conversation named, newest first
     last_modified: 2026-11-08
+  - id: adr-0162
+    resource: ../../docs/adr/0162-she-says-the-task-is-made.md
+    title: ADR 0162 — she says the task is made
+    last_modified: 2026-11-08
   - id: adr-0161
     resource: ../../docs/adr/0161-a-follow-up-names-the-task-it-follows.md
     title: ADR 0161 — a follow-up names the task it follows
@@ -753,6 +757,14 @@ its title, never as a link — the task has no id yet (the live eval caught
 her linking an invented `lotti://task/task-new`) — and never says it was
 created; the card's *Made into a task* is the receipt.
 
+**After the tap she says it is made** (ADR 0162). The pane's *Make it a
+task* runs `FrontVoice.makeTask`: `FrontChatController.makeTask` answers
+whether the task was written, and only then she says
+`frontTaskCreatedSpoken` ("Hey, dear, I created that task.") through
+`FrontVoice.speak` in the conversation on screen, so her mute, read-aloud
+being off and her voice choice hold as for any answer. A failed tap, or one
+on a door already busy, says nothing.
+
 **No audio is linked.** Her recorder transcribes and deletes the clip
 (`chat_recorder_controller.dart`); the verbatim words under the task are
 the provenance. The extras after the task run only when the task is first
@@ -1169,6 +1181,11 @@ in the app's language, else the on-device engine) — speaks it under
 was speaking first. It keeps those flags and her resolved setup watched, so
 they are known the moment the reply lands. A voice that fails surfaces the
 shared playback toast.
+
+Besides answers to spoken turns she says one line of her own: the
+confirmation after *Make it a task* made a task
+([a task from her words](#a-task-from-her-words)), spoken or typed turn
+alike, under the same mute.
 
 **What she says** is `frontSpokenAnswer`: her first reply after the turn,
 then the answer of each of the turn's doors — a journal or owner answer, a

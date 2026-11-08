@@ -2980,6 +2980,7 @@
   "frontStageReleaseToSend": "Eliberați pentru a trimite",
   "frontStageTalkHint": "Atingeți sau țineți apăsat pentru a vorbi",
   "frontStageTapToSend": "Atingeți pentru a trimite",
+  "frontTaskCreatedSpoken": "Gata, am creat sarcina.",
   "geminiThinkingModeHighDescription": "Raționament cel mai profund; poate crește latența și costul.",
   "geminiThinkingModeHighLabel": "Ridicat",
   "geminiThinkingModeLowDescription": "Raționament redus pentru prompturi zilnice rapide.",

@@ -237,7 +237,8 @@ class FrontChatThreadView extends ConsumerWidget {
       onDecline: controller.decline,
       onUndoDecline: controller.undoDecline,
       onTakeBack: controller.takeBack,
-      onMakeTask: controller.makeTask,
+      onMakeTask: (doorId) =>
+          FrontVoice.makeTask(ref, context, conversationId, doorId),
       onSaveNote: controller.saveAsNote,
       // What a door wrote lives on its own page: leave the sheet, then go.
       onOpen: (door) {

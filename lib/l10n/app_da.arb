@@ -3325,6 +3325,7 @@
   "frontStageReleaseToSend": "Slip for at sende",
   "frontStageTalkHint": "Tryk eller hold inde for at tale",
   "frontStageTapToSend": "Tryk for at sende",
+  "frontTaskCreatedSpoken": "Sådan, skat, jeg har oprettet opgaven.",
   "geminiThinkingModeHighDescription": "Dybeste ræsonnement; kan øge latenstid og omkostninger.",
   "geminiThinkingModeHighLabel": "Høj",
   "geminiThinkingModeLowDescription": "Lav begrundelse for hurtige daglige prompts.",

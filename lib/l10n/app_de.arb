@@ -2980,6 +2980,7 @@
   "frontStageReleaseToSend": "Loslassen zum Senden",
   "frontStageTalkHint": "Tippen oder halten zum Sprechen",
   "frontStageTapToSend": "Tippen zum Senden",
+  "frontTaskCreatedSpoken": "So, mein Schatz, ich habe die Aufgabe angelegt.",
   "geminiThinkingModeHighDescription": "Tiefstes Reasoning; kann Latenz und Kosten erhöhen.",
   "geminiThinkingModeHighLabel": "Hoch",
   "geminiThinkingModeLowDescription": "Wenig Reasoning für schnelle Alltagsprompts.",

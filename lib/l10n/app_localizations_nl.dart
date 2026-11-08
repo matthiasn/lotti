@@ -7373,6 +7373,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get frontStageTapToSend => 'Tik om te versturen';
 
   @override
+  String get frontTaskCreatedSpoken =>
+      'Zo, lieverd, ik heb die taak aangemaakt.';
+
+  @override
   String get geminiThinkingModeHighDescription =>
       'De diepste redenering; kan latency en kosten verhogen.';
 

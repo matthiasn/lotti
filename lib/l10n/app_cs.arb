@@ -2987,6 +2987,7 @@
   "frontStageReleaseToSend": "Pusť a odešli",
   "frontStageTalkHint": "Klepni nebo podrž a mluv",
   "frontStageTapToSend": "Klepni a odešli",
+  "frontTaskCreatedSpoken": "Hotovo, zlatíčko, ten úkol jsem vytvořila.",
   "geminiThinkingModeHighDescription": "Nejhlubší uvažování; může zvýšit latenci a cenu.",
   "geminiThinkingModeHighLabel": "Vysoké",
   "geminiThinkingModeLowDescription": "Nízké uvažování pro rychlé každodenní prompty.",
