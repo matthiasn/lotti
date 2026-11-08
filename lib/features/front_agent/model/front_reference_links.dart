@@ -26,7 +26,9 @@ String frontReferenceLink(FrontIndexRow row) =>
 /// (`Feed the penguins (task:<id>)`) becomes one link over that title
 /// rather than the title twice. Links already in the text are left as
 /// they are, and an id no row lists stays text: only what the turn could
-/// see is linked.
+/// see is linked — except a link she wrote with the id as its url
+/// (`[title](task:<id>)`, the form the tools list rows in), which gets the
+/// row's url: it would neither open nor be drawn as a row.
 ///
 /// A row of [titled] — what a lookup of the turn returned, the tasks she
 /// lists from it — is linked by its title too: a list of due tasks names
@@ -47,8 +49,9 @@ String _linkIds(String text, Iterable<FrontIndexRow> rows) {
   // Longest first, so an id that prefixes another never wins the match.
   final ids = byId.keys.toList()..sort((a, b) => b.length.compareTo(a.length));
   final pattern = RegExp(
-    // An existing markdown link: kept whole.
-    r'\[[^\]\n]*\]\([^)\n]*\)'
+    // An existing markdown link, its label holding one level of brackets:
+    // kept whole.
+    r'\[(?<label>(?:[^\[\]\n]|\[[^\[\]\n]*\])*)\]\((?<url>[^)\n]*)\)'
     '|'
     r'(?<open>\(\s*)?(?<tick>`)?(?<![\w-])(?<kind>(?:task|project):)?'
     '(?<id>${ids.map(RegExp.escape).join('|')})'
@@ -58,6 +61,18 @@ String _linkIds(String text, Iterable<FrontIndexRow> rows) {
   final out = StringBuffer();
   var last = 0;
   for (final match in pattern.allMatches(text)) {
+    if (match.namedGroup('url') case final url?) {
+      final row = _rowOfIdUrl(url.trim(), byId);
+      if (row == null) continue;
+      out
+        ..write(text.substring(last, match.start))
+        ..write(
+          '[${_label(match.namedGroup('label')!)}]'
+          '(${frontReferenceUrl(row.kind, row.id)})',
+        );
+      last = match.end;
+      continue;
+    }
     final id = match.namedGroup('id');
     // A bare id is linked only when no word could be it: one with a digit,
     // as every UUID has.
@@ -94,6 +109,16 @@ String _linkIds(String text, Iterable<FrontIndexRow> rows) {
   if (last == 0) return text;
   out.write(text.substring(last));
   return out.toString();
+}
+
+/// The row a link's [url] names when it is an id rather than a url —
+/// `task:<id>`, `project:<id>` or the id alone — or null.
+FrontIndexRow? _rowOfIdUrl(String url, Map<String, FrontIndexRow> byId) {
+  final colon = url.indexOf(':');
+  final kind = colon < 0 ? null : url.substring(0, colon);
+  final row = byId[colon < 0 ? url : url.substring(colon + 1)];
+  if (row == null || (kind != null && kind != row.kind.wireName)) return null;
+  return row;
 }
 
 String _linkTitles(String text, Iterable<FrontIndexRow> rows) {

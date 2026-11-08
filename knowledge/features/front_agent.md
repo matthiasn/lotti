@@ -572,7 +572,10 @@ runs over every `reply_to_user` and `ask_user` question before it is
 accepted, so a recited id never reaches the user: `task:<id>`, or a bare id
 with a digit (every UUID has one, so no word is mistaken for an id), in
 backticks or not, becomes the link, and `Title (task:<id>)` folds into one
-link over the title. Only rows the turn could see — the index and its
+link over the title. A link she wrote with the id as its url —
+`[title](task:<id>)`, the form the tools list rows in, or the bare id —
+gets the row's `lotti://` url: as written it neither opens nor is drawn as
+a task row. Only rows the turn could see — the index and its
 lookups — are linked; goals and people have no link. A row a lookup returned
 (`list_due_tasks`, `match_to_corpus`) is linked by its title too, its whole
 title ignoring case, between non-letters of any script, outside any link already there: a list of overdue tasks
