@@ -834,8 +834,14 @@ void main() {
           subdir: _subdir,
         );
 
+        // Scroll to the last example, not the section title: on a phone the
+        // title alone leaves the examples below the fold, unbuilt.
+        final lastExample = find.textContaining(
+          _t('Project Waddle habitat', 'Project-Waddle-Habitat'),
+          findRichText: true,
+        );
         await tester.scrollUntilVisible(
-          find.text(_messages(tester).correctionExamplesSectionTitle),
+          lastExample,
           300,
           scrollable: find.byType(Scrollable).first,
         );
@@ -844,7 +850,7 @@ void main() {
           find.text(_messages(tester).correctionExamplesSectionTitle),
           findsOneWidget,
         );
-        expect(find.textContaining('Project Waddle'), findsWidgets);
+        expect(lastExample, findsOneWidget);
         await captureScreenshot(
           tester,
           'categories_automation_${viewport}_$theme',

@@ -8,6 +8,7 @@ const sidebars: SidebarsConfig = {
       label: 'Start here',
       collapsed: false,
       items: [
+        'getting-started/companion',
         'getting-started/mental-model',
         'getting-started/onboarding',
         'getting-started/first-task',

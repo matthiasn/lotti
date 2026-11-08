@@ -1,0 +1,196 @@
+---
+title: Parla con il tuo compagno
+description: Chiedi al compagno cosa è in scadenza, dove è andato il tuo tempo o a che punto è un'attività, un progetto o un obiettivo, e raccontagli cosa è successo. Non archivia nulla finché non tocchi.
+---
+
+# Parla con il tuo compagno
+
+Il compagno è il punto da cui partire. Invece di aprire prima la pagina
+giusta, gli chiedi – per iscritto o a voce – e lui trova la risposta: cosa
+scade oggi, quanto tempo hai registrato questa settimana, come sta andando un
+progetto. Quando gli racconti qualcosa, capisce se riguarda un'attività, un
+progetto, un obiettivo o il piano di oggi, e propone di archiviarlo lì. Nulla
+viene scritto finché non tocchi.
+
+Le pagine di dettaglio restano dove sono. La chat è dove le cose iniziano;
+attività, progetti, obiettivi e Daily OS sono dove rifinisci ciò che è stato
+avviato – stime, checklist, priorità, blocchi sulla timeline.
+
+:::note[Sperimentale]
+
+La chat con il compagno è nuova e sta ancora crescendo. È disattivata di
+serie, e ciò che sa fare cambia da una versione all'altra. Questa pagina
+descrive ciò che funziona oggi; [In arrivo](#what-is-coming) elenca ciò che è
+previsto.
+
+:::
+
+## Attivalo
+
+Apri **Impostazioni → Impostazioni avanzate → Flag di configurazione**. Nel
+gruppo **Avanzate e sperimentali**, attiva:
+
+| Interruttore | Cosa fa |
+| --- | --- |
+| **Chat con il compagno** | La chat vera e propria. Necessario. |
+| **Compagno** | La sua figura animata nella chat, accanto ai riepiloghi AI e nell'intestazione del giorno, più **Impostazioni → Preferenze → Compagno** per vestirlo. Facoltativo. |
+| **Riproduzione di sintesi AI** (nel gruppo Preferenze) | La sua voce. Serve, insieme a **Compagno**, perché risponda a voce. |
+
+La chat ha bisogno di un fornitore di AI funzionante. Usa il profilo AI
+**Predefinito delle Impostazioni**, a meno che tu non gliene scelga un altro,
+e ripiega su un piccolo modello ospitato di Melious o Mistral se hai
+configurato uno di questi fornitori. Vedi
+[Collegare un fornitore di AI](../ai-and-automation/provider-setup.mdx).
+
+## Apri la chat
+
+- **Desktop:** scegli **Chiedi al compagno** nella barra laterale, oppure
+  premi **Cmd+L** (macOS) / **Ctrl+L** (Linux e Windows) da qualsiasi punto.
+- **Telefono:** tocca **Chiedi al compagno** accanto al pulsante del menu
+  nella barra di navigazione.
+
+Finché l'app è bloccata su una sola categoria, è nascosto, perché le sue
+conversazioni abbracciano tutte le categorie.
+
+## Fagli domande
+
+Scrivi in **Chiedi qualsiasi cosa…** e invia. Le domande a cui risponde oggi:
+
+- **Cosa è in scadenza.** «Cosa scade oggi?», «Cosa è in ritardo?», «Cosa
+  scade questa settimana?» Tiene separati oggi e il ritardo, a meno che tu
+  non chieda entrambi.
+- **Dove è andato il tuo tempo.** «Quanto tempo ho registrato questa
+  settimana?» funziona per oggi, ieri, questa settimana, gli ultimi 7 o 30
+  giorni, questo mese e il mese scorso. Somma il tempo per categoria con gli
+  stessi numeri dell'[analisi del tempo](../organize-and-reflect/time-analysis.mdx),
+  mostra un grafico e nomina le attività a cui è andato il tempo quando chiedi
+  su cosa hai lavorato.
+- **Cosa hai concluso.** «Cosa ho completato questa settimana?» conta ogni
+  attività nel giorno in cui è stata completata o rifiutata, non in quello in
+  cui è stata creata.
+- **Un'attività o un progetto preciso.** «A che punto è il rinnovo
+  dell'habitat?» Passa la domanda all'agente di quell'attività o di quel
+  progetto e mostra la sua risposta sotto il suo nome – **Da …** – senza
+  riformularla.
+- **Un obiettivo.** Una domanda o un aggiornamento su uno dei tuoi obiettivi
+  diventa un messaggio nella chat dell'agente di quell'obiettivo, e la sua
+  risposta compare nella tua. Gli obiettivi sono una sezione facoltativa:
+  attiva **Obiettivi** in **Impostazioni → Sezioni**.
+- **Il tuo diario.** «Cosa abbiamo deciso sul fornitore di sardine?» Quando
+  nessuna attività o progetto ha la risposta, cerca nel tuo diario e risponde
+  **Dal tuo diario**, elencando le voci su cui si basa. Ognuna apre la sua
+  fonte.
+- **Le tue pull request.** «Quante pull request ho unito questa settimana?»
+  funziona quando GitHub è collegato in **Impostazioni → Impostazioni avanzate
+  → GitHub**. Conta solo le pull request già salvate su questo dispositivo.
+
+Due o più attività tornano come una scheda a righe – stato, riepilogo di una
+riga dell'agente, categoria, priorità e scadenza. Tocca un'attività per
+aprirla sopra la chat; tornando indietro ritrovi la conversazione.
+
+Digita **@** per nominare una categoria e restringere la risposta a quella.
+Vede sempre e solo le categorie che gli è permesso vedere.
+
+Se non è sicuro di cosa intendi, fa una breve domanda con al massimo tre
+scelte.
+
+## Raccontagli cosa è successo
+
+Quando gli racconti qualcosa invece di chiedere, propone dove metterlo. Una
+proposta è una scheda con dei pulsanti; non viene archiviato nulla finché non
+tocchi.
+
+| Tu dici | Lui propone |
+| --- | --- |
+| Un aggiornamento su un'attività o un progetto | **Archivia** – le tue parole esatte diventano una voce sotto di esso. |
+| «Crea un'attività per riparare il cancello, priorità alta» | **Fanne un’attività** – compila titolo, categoria, priorità, scadenza, stima e ora di inizio da ciò che hai detto e ti dice cosa ha capito. Viene assegnato l'agente della categoria. |
+| «Un seguito di quella» | **Fanne un’attività**, collegata come seguito dell'attività nominata prima nella conversazione. |
+| «Sposta il conteggio al pomeriggio» | **Cambia oggi** – apre la pianificazione di [Daily OS](../plan-and-capture/daily-os.mdx) con le tue parole. |
+| Qualcosa di nuovo e più grande | **Nuovo progetto…** o **Avvia un obiettivo…**, che aprono il modulo con le tue parole dentro. |
+| Tutto il resto | **Salva come nota** oppure **Lascia stare**. |
+
+Se ha sbagliato posto, scegli **Da un’altra parte**. Ciò che non appartiene a
+nulla aspetta in **In arrivo**, che apri dal suo chip nell'intestazione della
+chat o nell'elenco delle conversazioni. Tutto ciò che un tocco ha scritto può
+essere aperto o annullato.
+
+## Tieni più conversazioni
+
+Come in una finestra di ChatGPT o Claude, ogni argomento può avere la sua
+conversazione – avviane una con **Nuova chat**. Le conversazioni prendono come
+titolo la prima domanda e sono elencate dalla più recente dietro il pulsante
+**Chat** nell'intestazione (accanto alla conversazione su una finestra
+desktop ampia). Usa **Cerca nelle chat** per ritrovarne una e il menu di ogni
+riga per rinominarla, archiviarla o eliminarla. Eliminare nasconde una
+conversazione su tutti i dispositivi; ciò che hai archiviato da lì resta dov'è.
+
+## Parlagli
+
+Fai una domanda a voce e lui risponde a voce, con le labbra che seguono la
+sua voce. Una domanda scritta riceve sempre una risposta scritta. Tocca per
+parlare e tocca di nuovo per inviare, oppure tieni premuto per parlare e
+rilascia per inviare.
+
+Per parlare servono **Compagno** e **Riproduzione di sintesi AI** attivi, e
+una voce: il modello di lettura del suo profilo AI oppure la voce del
+dispositivo, dove la tua piattaforma la supporta. Nell'intestazione puoi
+silenziarlo, fargli ripetere con **Ripetilo**, oppure scegliere **Mostra il
+compagno a schermo intero** per vederlo in grande. Su una finestra desktop
+ampia la conversazione sta accanto a lui, e lui indica ogni attività che
+elenca mentre la nomina.
+
+Per scegliere il profilo AI con cui ragiona, apri **Profilo IA** nel menu
+dell'intestazione. **Predefinito delle Impostazioni** gli fa di nuovo seguire
+la tua impostazione predefinita.
+
+## Rendilo tuo
+
+Con **Compagno** attivo, apri **Impostazioni → Preferenze → Compagno**:
+
+- **Personaggio:** Lotti (una nonna), Nonno, Zia o Zio.
+- **Carnagione, Colore dei capelli, Acconciatura, Colore degli occhi** e
+  **Vestito** – oppure un vestito nuovo ogni volta che apri l'app.
+- **Pepe:** Calore, Malizia o Sfacciataggine – come reagisce a ciò che legge
+  ad alta voce.
+- **Voce:** **Rispondere ad alta voce alle domande vocali** attiva o
+  disattiva le sue risposte parlate.
+
+Fuori dalla chat, sta accanto al riepilogo AI di un'attività e lo legge
+quando premi il suo comando di lettura, siede nell'intestazione della pagina
+del giorno e ti presenta la giornata quando lo tocchi, e ti accoglie durante
+l'onboarding.
+
+## Prima la chat, le pagine di dettaglio per i dettagli
+
+| Inizia nella chat | Rifinisci sulla pagina |
+| --- | --- |
+| «Cosa scade oggi?» | [Attività](../organize-and-reflect/tasks.mdx) – stato, priorità, scadenza, checklist |
+| «Crea un'attività per…» | La nuova attività – stima, etichette, checklist, voci collegate |
+| «Quanto tempo questa settimana?» | [Analisi del tempo](../organize-and-reflect/time-analysis.mdx) – qualsiasi periodo, qualsiasi categoria |
+| «Sposta X al pomeriggio» | [Daily OS](../plan-and-capture/daily-os.mdx) – blocchi sulla timeline |
+| Un aggiornamento su un progetto | [Progetti](../organize-and-reflect/projects.mdx) – il report e le attività del progetto |
+
+## In arrivo \{#what-is-coming\}
+
+Tutto ciò che segue è una direzione, non una funzione rilasciata; portata e
+ordine possono cambiare.
+
+- **Persone.** Chiedere delle persone della tua vita e raccontargli di loro,
+  con il passaggio all'agente di ciascuna persona, come già avviene per gli
+  obiettivi.
+- **Eventi.** Chiedere di un evento e archiviarvi foto e note dalla chat.
+- **Impostazioni e personalizzazione chiedendo.** Cambiare il comportamento
+  di Lotti – o l'aspetto del compagno – semplicemente dicendolo, invece di
+  cercare la pagina di impostazioni giusta.
+- **Archiviare senza toccare,** su richiesta, per i tipi di aggiornamento che
+  confermi sempre.
+- **Ancora più compagno.** Umori che riflettono il tuo diario, piccoli
+  promemoria gentili e un volto per ogni agente.
+
+## Privacy
+
+Legge solo ciò che è già sul tuo dispositivo, nelle categorie che può vedere.
+La tua domanda e le parti del tuo diario necessarie per rispondere vanno al
+fornitore di AI del suo profilo – scegli un modello locale per tenere tutto
+sul tuo dispositivo. Non modifica mai i tuoi dati di sua iniziativa: ogni
+scrittura è un tocco.

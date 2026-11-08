@@ -1,0 +1,195 @@
+---
+title: Praat met je metgezel
+description: Vraag de metgezel wat er moet gebeuren, waar je tijd heen ging of hoe een taak, project of doel ervoor staat, en vertel wat er gebeurd is. Ze bergt pas iets op als je tikt.
+---
+
+# Praat met je metgezel
+
+De metgezel is waar je begint. In plaats van eerst de juiste pagina te
+zoeken, vraag je het haar – getypt of hardop – en zij vindt het antwoord: wat
+er vandaag moet gebeuren, hoeveel tijd je deze week hebt geregistreerd, hoe
+een project loopt. Als je haar iets vertelt, bepaalt ze of het bij een taak,
+een project, een doel of de planning van vandaag hoort, en stelt ze voor het
+daar op te bergen. Er wordt niets geschreven tot je tikt.
+
+De detailpagina's blijven waar ze zijn. De chat is waar dingen beginnen;
+taken, projecten, doelen en Daily OS zijn waar je verfijnt wat begonnen is –
+schattingen, checklists, prioriteiten, blokken op de tijdlijn.
+
+:::note[Experimenteel]
+
+De metgezel-chat is nieuw en groeit nog. Hij staat standaard uit, en wat ze
+kan verandert van versie tot versie. Deze pagina beschrijft wat vandaag
+werkt; [Wat er komt](#what-is-coming) noemt wat gepland is.
+
+:::
+
+## Zet haar aan
+
+Open **Instellingen → Geavanceerde instellingen → Vlaggen instellen**. Zet in
+de groep **Geavanceerd en experimenteel** aan:
+
+| Schakelaar | Wat hij doet |
+| --- | --- |
+| **Metgezel-chat** | De chat zelf. Vereist. |
+| **Metgezel** | Haar geanimeerde figuur in de chat, naast AI-samenvattingen en in de kop van de dag, plus **Instellingen → Voorkeuren → Metgezel** om haar aan te kleden. Optioneel. |
+| **AI samenvatting afspelen** (in de groep Voorkeuren) | Haar stem. Samen met **Metgezel** nodig om hardop te antwoorden. |
+
+De chat heeft een werkende AI-aanbieder nodig. Ze gebruikt het AI-profiel
+**Standaard uit Instellingen**, tenzij je haar een ander geeft, en valt terug
+op een klein gehost model van Melious of Mistral als je een van die
+aanbieders hebt ingesteld. Zie
+[Een AI-aanbieder koppelen](../ai-and-automation/provider-setup.mdx).
+
+## Open de chat
+
+- **Desktop:** kies **Vraag het de metgezel** in de zijbalk, of druk overal
+  op **Cmd+L** (macOS) / **Ctrl+L** (Linux en Windows).
+- **Telefoon:** tik op **Vraag het de metgezel** naast de menuknop in de
+  navigatiebalk.
+
+Zolang de app op één categorie is vergrendeld, is ze verborgen, want haar
+gesprekken beslaan alle categorieën.
+
+## Vraag het haar
+
+Typ in **Vraag wat je wilt…** en verstuur. Vragen die ze vandaag beantwoordt:
+
+- **Wat er moet gebeuren.** "Wat moet er vandaag af?", "Wat is te laat?",
+  "Wat moet er deze week af?" Vandaag en te laat houdt ze uit elkaar, tenzij
+  je naar allebei vraagt.
+- **Waar je tijd heen ging.** "Hoeveel tijd heb ik deze week geregistreerd?"
+  werkt voor vandaag, gisteren, deze week, de afgelopen 7 of 30 dagen, deze
+  maand en vorige maand. Ze telt de tijd per categorie op met dezelfde
+  getallen als de [tijdsanalyse](../organize-and-reflect/time-analysis.mdx),
+  toont een grafiek en noemt de taken waar de tijd naartoe ging als je vraagt
+  waar je aan gewerkt hebt.
+- **Wat je hebt afgerond.** "Wat heb ik deze week afgerond?" telt elke taak
+  op de dag dat hij werd afgerond of afgewezen, niet op de dag dat hij werd
+  aangemaakt.
+- **Een bepaalde taak of een project.** "Hoe staat de verbouwing van het
+  habitat ervoor?" Ze geeft de vraag aan de agent van die taak of dat project
+  en toont het antwoord onder zijn naam – **Van …** – zonder het te
+  herformuleren.
+- **Een doel.** Een vraag of update over een van je doelen wordt een beurt in
+  de eigen chat van de agent van dat doel, en het antwoord verschijnt in de
+  jouwe. Doelen zijn een optioneel onderdeel: zet **Doelen** aan onder
+  **Instellingen → Onderdelen**.
+- **Je dagboek.** "Wat hebben we besloten over de sardineleverancier?" Als
+  geen enkele taak of project het antwoord heeft, doorzoekt ze je dagboek en
+  antwoordt ze **Uit je dagboek**, met de items waarop ze steunt. Elk item
+  opent zijn bron.
+- **Je pull requests.** "Hoeveel pull requests heb ik deze week gemerged?"
+  werkt als GitHub gekoppeld is onder **Instellingen → Geavanceerde
+  instellingen → GitHub**. Ze telt alleen de pull requests die al op dit
+  apparaat zijn opgeslagen.
+
+Twee of meer taken komen terug als een kaart met rijen – status, de
+samenvatting van één regel van de agent, categorie, prioriteit en
+vervaldatum. Tik op een taak om hem boven de chat te openen; terug brengt je
+weer bij het gesprek.
+
+Typ **@** om een categorie te noemen en het antwoord daartoe te beperken. Ze
+ziet altijd alleen de categorieën die ze mag zien.
+
+Als ze niet zeker weet wat je bedoelt, stelt ze één korte vraag met hooguit
+drie keuzes.
+
+## Vertel haar wat er gebeurd is
+
+Als je haar iets vertelt in plaats van iets vraagt, stelt ze voor waar het
+heen moet. Een voorstel is een kaart met knoppen; er wordt niets opgeborgen
+tot je tikt.
+
+| Je zegt | Ze stelt voor |
+| --- | --- |
+| Een update over een taak of project | **Opbergen** – je exacte woorden worden een item eronder. |
+| "Maak een taak om het hek te repareren, hoge prioriteit" | **Maak er een taak van** – ze vult titel, categorie, prioriteit, vervaldag, schatting en starttijd in op basis van wat je zei en vertelt wat ze heeft begrepen. De agent van de categorie wordt toegewezen. |
+| "Een vervolg op die" | **Maak er een taak van**, gekoppeld als vervolg op de taak die eerder in het gesprek werd genoemd. |
+| "Zet de telling op de middag" | **Vandaag aanpassen** – opent de planning in [Daily OS](../plan-and-capture/daily-os.mdx) met je woorden. |
+| Iets nieuws en groters | **Nieuw project…** of **Doel starten…**, die het formulier met je woorden erin openen. |
+| Al het andere | **Opslaan als notitie** of **Laat maar**. |
+
+Zat ze ernaast, kies dan **Ergens anders**. Wat nergens bij hoort, wacht in
+de **Inbox**, die je opent met de chip in de kop van de chat of in de lijst
+met gesprekken. Alles wat een tik heeft geschreven, kun je openen of
+ongedaan maken.
+
+## Voer meerdere gesprekken
+
+Net als in een ChatGPT- of Claude-venster kan elk onderwerp een eigen gesprek
+hebben – begin er een met **Nieuwe chat**. Gesprekken krijgen hun eerste
+vraag als titel en staan, nieuwste eerst, achter de knop **Chats** in de kop
+(naast het gesprek in een breed desktopvenster). Gebruik **Chats doorzoeken**
+om er een te vinden, en het menu van elke rij om het te hernoemen, te
+archiveren of te verwijderen. Verwijderen verbergt een gesprek op al je
+apparaten; wat je eruit hebt opgeborgen, blijft waar het is.
+
+## Praat met haar
+
+Stel een vraag hardop en ze antwoordt hardop, met haar lippen op haar stem.
+Een getypte vraag krijgt altijd een geschreven antwoord. Tik om te praten en
+tik opnieuw om te versturen, of houd ingedrukt om te praten en laat los om
+te versturen.
+
+Om te spreken moeten **Metgezel** en **AI samenvatting afspelen** aan staan,
+en heeft ze een stem nodig: het voorleesmodel van haar AI-profiel, of de stem
+van het apparaat waar je platform die ondersteunt. In de kop kun je haar
+dempen, haar laten herhalen met **Zeg het nog eens**, of **Metgezel op
+volledig scherm bekijken** kiezen om haar groot te zien. In een breed
+desktopvenster staat het gesprek dan naast haar, en ze wijst elke taak aan
+die ze opsomt terwijl ze die noemt.
+
+Kies het AI-profiel waarmee ze denkt via **AI-profiel** in het menu van de
+kop. **Standaard uit Instellingen** laat haar weer je standaard volgen.
+
+## Maak haar de jouwe
+
+Met **Metgezel** aan open je **Instellingen → Voorkeuren → Metgezel**:
+
+- **Personage:** Lotti (een oma), Opa, Tante of Oom.
+- **Huidskleur, Haarkleur, Kapsel, Oogkleur** en **Outfit** – of elke keer
+  dat je de app opent een nieuwe outfit.
+- **Pit:** Warm, Ondeugend of Brutaal – hoe ze reageert op wat ze voorleest.
+- **Stem:** **Gesproken vragen hardop beantwoorden** zet haar gesproken
+  antwoorden aan of uit.
+
+Buiten de chat staat ze naast de AI-samenvatting van een taak en leest die
+voor als je op de voorleesknop drukt, zit ze in de kop van de dagpagina en
+presenteert ze de dag als je op haar tikt, en verwelkomt ze je tijdens de
+onboarding.
+
+## Eerst de chat, de detailpagina's voor de details
+
+| Begin in de chat | Verfijn op de pagina |
+| --- | --- |
+| "Wat moet er vandaag af?" | [Taken](../organize-and-reflect/tasks.mdx) – status, prioriteit, vervaldatum, checklists |
+| "Maak een taak om…" | De nieuwe taak – schatting, labels, checklist, gekoppelde items |
+| "Hoeveel tijd deze week?" | [Tijdsanalyse](../organize-and-reflect/time-analysis.mdx) – elke periode, elke categorie |
+| "Zet X op de middag" | [Daily OS](../plan-and-capture/daily-os.mdx) – blokken op de tijdlijn |
+| Een update over een project | [Projecten](../organize-and-reflect/projects.mdx) – het rapport en de taken van het project |
+
+## Wat er komt \{#what-is-coming\}
+
+Alles hieronder is een richting, geen uitgebrachte functie; omvang en
+volgorde kunnen veranderen.
+
+- **Mensen.** Vragen naar de mensen in je leven en haar over hen vertellen,
+  doorgegeven aan de agent van elke persoon, zoals nu al bij doelen.
+- **Gebeurtenissen.** Vragen naar een gebeurtenis en er vanuit de chat foto's
+  en notities bij opbergen.
+- **Instellingen en aanpassing door het te vragen.** Veranderen hoe Lotti
+  zich gedraagt – of hoe zij eruitziet – door het te zeggen, in plaats van de
+  juiste instellingenpagina te zoeken.
+- **Opbergen zonder tik,** als keuze, voor het soort updates dat je toch
+  altijd bevestigt.
+- **Meer van haar.** Stemmingen die je dagboek weerspiegelen, vriendelijke
+  duwtjes en een gezicht voor elke agent.
+
+## Privacy
+
+Ze leest alleen wat al op je apparaat staat, binnen de categorieën die ze
+mag zien. Je vraag en de delen van je dagboek die nodig zijn voor het
+antwoord gaan naar de AI-aanbieder van haar profiel – kies een lokaal model
+om alles op je apparaat te houden. Ze verandert nooit uit zichzelf iets aan
+je gegevens: elke schrijfactie is een tik.

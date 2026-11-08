@@ -1,0 +1,197 @@
+---
+title: Vorbiți cu însoțitorul
+description: Întrebați însoțitorul ce este scadent, unde v-a mers timpul sau cum stă o sarcină, un proiect ori un obiectiv și spuneți-i ce s-a întâmplat. Înregistrează ceva doar când atingeți.
+---
+
+# Vorbiți cu însoțitorul
+
+Însoțitorul este locul de unde începeți. În loc să căutați mai întâi pagina
+potrivită, îl întrebați – în scris sau cu voce tare – și el găsește
+răspunsul: ce este scadent azi, cât timp ați înregistrat săptămâna aceasta,
+cum merge un proiect. Când îi spuneți ceva, el stabilește dacă ține de o
+sarcină, un proiect, un obiectiv sau de planul de azi și propune să-l
+înregistreze acolo. Nu se scrie nimic până nu atingeți.
+
+Paginile de detaliu rămân la locul lor. Chatul este locul unde lucrurile
+încep; sarcinile, proiectele, obiectivele și Daily OS sunt locul unde
+rafinați ce a fost pornit – estimări, liste de verificare, priorități,
+blocuri pe cronologie.
+
+:::note[Experimental]
+
+Chatul cu însoțitorul este nou și încă se dezvoltă. Este dezactivat implicit,
+iar ce știe să facă se schimbă de la o versiune la alta. Această pagină
+descrie ce funcționează astăzi; [Ce urmează](#what-is-coming) arată ce este
+planificat.
+
+:::
+
+## Activați-l
+
+Deschideți **Setări → Setări avansate → Marcaje**. În grupul **Avansat și
+experimental**, activați:
+
+| Comutator | Ce face |
+| --- | --- |
+| **Chat cu însoțitorul** | Chatul propriu-zis. Obligatoriu. |
+| **Însoțitor** | Figura lui animată în chat, lângă rezumatele AI și în antetul zilei, plus **Setări → Preferințe → Însoțitor**, unde îl puteți îmbrăca. Opțional. |
+| **Redare rezumate AI** (în grupul Preferințe) | Vocea lui. Necesară, împreună cu **Însoțitor**, ca să răspundă cu voce tare. |
+
+Chatul are nevoie de un furnizor AI funcțional. Folosește profilul AI
+**Implicit din Setări**, dacă nu îi alegeți altul, și recurge la un model
+găzduit mic de la Melious sau Mistral dacă ați configurat unul dintre acești
+furnizori. Consultați
+[Conectarea unui furnizor AI](../ai-and-automation/provider-setup.mdx).
+
+## Deschideți chatul
+
+- **Desktop:** alegeți **Întrebați însoțitorul** în bara laterală sau apăsați
+  **Cmd+L** (macOS) / **Ctrl+L** (Linux și Windows) de oriunde.
+- **Telefon:** atingeți **Întrebați însoțitorul** lângă butonul de meniu din
+  bara de navigare.
+
+Cât timp aplicația este blocată pe o singură categorie, el este ascuns,
+pentru că conversațiile lui cuprind toate categoriile.
+
+## Întrebați-l
+
+Scrieți în **Întrebați orice…** și trimiteți. Întrebările la care răspunde
+astăzi:
+
+- **Ce este scadent.** „Ce este scadent azi?”, „Ce este întârziat?”, „Ce este
+  scadent săptămâna aceasta?” Ține separat ziua de azi și întârzierile, dacă
+  nu cereți ambele.
+- **Unde v-a mers timpul.** „Cât timp am înregistrat săptămâna aceasta?”
+  funcționează pentru azi, ieri, săptămâna aceasta, ultimele 7 sau 30 de
+  zile, luna aceasta și luna trecută. Adună timpul pe categorii cu aceleași
+  cifre ca [analiza timpului](../organize-and-reflect/time-analysis.mdx), afișează
+  un grafic și numește sarcinile în care a mers timpul când întrebați la ce
+  ați lucrat.
+- **Ce ați terminat.** „Ce am finalizat săptămâna aceasta?” numără fiecare
+  sarcină în ziua în care a fost finalizată sau respinsă, nu în ziua în care
+  a fost creată.
+- **O anumită sarcină sau un proiect.** „Cum stă reamenajarea habitatului?”
+  Transmite întrebarea agentului acelei sarcini sau acelui proiect și arată
+  răspunsul lui sub numele lui – **De la …** – fără să-l reformuleze.
+- **Un obiectiv.** O întrebare sau o noutate despre unul dintre obiectivele
+  dumneavoastră devine un mesaj în chatul agentului acelui obiectiv, iar
+  răspunsul lui apare în al dumneavoastră. Obiectivele sunt o secțiune
+  opțională: activați **Obiective** în **Setări → Secțiuni**.
+- **Jurnalul dumneavoastră.** „Ce am hotărât despre furnizorul de sardine?”
+  Când nicio sarcină sau proiect nu are răspunsul, caută în jurnal și
+  răspunde **Din jurnalul dumneavoastră**, cu intrările pe care se bazează.
+  Fiecare își deschide sursa.
+- **Pull request-urile dumneavoastră.** „Câte pull request-uri am îmbinat
+  săptămâna aceasta?” funcționează când GitHub este conectat în **Setări →
+  Setări avansate → GitHub**. Numără doar pull request-urile deja salvate pe
+  acest dispozitiv.
+
+Două sau mai multe sarcini vin ca un card cu rânduri – stare, rezumatul de un
+rând al agentului, categorie, prioritate și scadență. Atingeți o sarcină
+pentru a o deschide peste chat; înapoi vă readuce în conversație.
+
+Tastați **@** pentru a numi o categorie și a restrânge răspunsul la ea. Vede
+întotdeauna doar categoriile pe care are voie să le vadă.
+
+Dacă nu este sigur ce ați vrut să spuneți, pune o întrebare scurtă cu cel
+mult trei variante.
+
+## Spuneți-i ce s-a întâmplat
+
+Când îi spuneți ceva în loc să întrebați, propune unde merge. O propunere
+este un card cu butoane; nu se înregistrează nimic până nu atingeți.
+
+| Spuneți | Propune |
+| --- | --- |
+| O noutate despre o sarcină sau un proiect | **Înregistrați** – cuvintele dumneavoastră exacte devin o intrare sub acesta. |
+| „Fă o sarcină să repar poarta, prioritate mare” | **Transformați în sarcină** – completează titlul, categoria, prioritatea, scadența, estimarea și ora de început din ce ați spus și vă spune ce a înțeles. Se atribuie agentul categoriei. |
+| „O continuare a aceleia” | **Transformați în sarcină**, legată ca o continuare a sarcinii numite mai devreme în conversație. |
+| „Mută numărătoarea după-amiază” | **Modificați ziua de azi** – deschide planificarea din [Daily OS](../plan-and-capture/daily-os.mdx) cu cuvintele dumneavoastră. |
+| Ceva nou și mai mare | **Proiect nou…** sau **Începeți un obiectiv…**, care deschid formularul cu cuvintele dumneavoastră. |
+| Orice altceva | **Salvați ca notiță** sau **Lăsați-l**. |
+
+Dacă a ales locul greșit, alegeți **Altundeva**. Ce nu aparține nimănui
+așteaptă în **Primite**, deschise din cipul lor din antetul chatului sau din
+lista conversațiilor. Tot ce a scris o atingere poate fi deschis sau anulat.
+
+## Purtați mai multe conversații
+
+Ca într-o fereastră ChatGPT sau Claude, fiecare subiect poate avea propria
+conversație – începeți una cu **Conversație nouă**. Conversațiile au ca titlu
+prima întrebare și sunt listate de la cea mai recentă în spatele butonului
+**Conversații** din antet (lângă conversație, într-o fereastră desktop
+lată). Folosiți **Căutați în conversații** pentru a găsi una și meniul
+fiecărui rând pentru a o redenumi, arhiva sau șterge. Ștergerea ascunde o
+conversație pe toate dispozitivele; ce ați înregistrat din ea rămâne unde
+este.
+
+## Vorbiți cu el
+
+Puneți o întrebare cu voce tare și el răspunde cu voce tare, cu buzele în
+ritmul vocii. O întrebare scrisă primește întotdeauna un răspuns scris.
+Atingeți pentru a vorbi și atingeți din nou pentru a trimite, sau țineți
+apăsat pentru a vorbi și eliberați pentru a trimite.
+
+Ca să vorbească, **Însoțitor** și **Redare rezumate AI** trebuie să fie
+activate și are nevoie de o voce: modelul de citire al profilului său AI sau
+vocea dispozitivului, acolo unde platforma o acceptă. În antet îl puteți
+opri din vorbit, îl puteți pune să repete cu **Spuneți din nou** sau puteți
+alege **Vizualizați însoțitorul pe tot ecranul**. Într-o fereastră desktop
+lată, conversația stă lângă el, iar el arată spre fiecare sarcină pe care o
+enumeră în timp ce o numește.
+
+Pentru a alege profilul AI cu care gândește, deschideți **Profil AI** din
+meniul antetului. **Implicit din Setări** îl face să urmeze din nou setarea
+dumneavoastră implicită.
+
+## Faceți-l al dumneavoastră
+
+Cu **Însoțitor** activat, deschideți **Setări → Preferințe → Însoțitor**:
+
+- **Personaj:** Lotti (o bunică), Bunicul, Mătușa sau Unchiul.
+- **Nuanța pielii, Culoarea părului, Coafură, Culoarea ochilor** și
+  **Ținută** – sau o ținută nouă de fiecare dată când deschideți aplicația.
+- **Îndrăzneală:** Căldură, Ștrengărie sau Obrăznicie – cum reacționează la
+  ce citește cu voce tare.
+- **Voce:** **Răspundeți cu voce tare la întrebările rostite** pornește sau
+  oprește răspunsurile lui vorbite.
+
+În afara chatului, stă lângă rezumatul AI al unei sarcini și îl citește când
+apăsați comanda de citire, stă în antetul paginii zilei și vă prezintă ziua
+când îl atingeți și vă întâmpină la configurarea inițială.
+
+## Întâi chatul, paginile de detaliu pentru detalii
+
+| Începeți în chat | Rafinați pe pagină |
+| --- | --- |
+| „Ce este scadent azi?” | [Sarcini](../organize-and-reflect/tasks.mdx) – stare, prioritate, scadență, liste de verificare |
+| „Fă o sarcină să…” | Sarcina nouă – estimare, etichete, listă de verificare, intrări legate |
+| „Cât timp săptămâna aceasta?” | [Analiza timpului](../organize-and-reflect/time-analysis.mdx) – orice perioadă, orice categorie |
+| „Mută X după-amiază” | [Daily OS](../plan-and-capture/daily-os.mdx) – blocuri pe cronologie |
+| O noutate despre un proiect | [Proiecte](../organize-and-reflect/projects.mdx) – raportul și sarcinile proiectului |
+
+## Ce urmează \{#what-is-coming\}
+
+Tot ce urmează este o direcție, nu o funcție lansată; amploarea și ordinea se
+pot schimba.
+
+- **Oameni.** Întrebări despre oamenii din viața dumneavoastră și povești
+  despre ei, transmise agentului fiecărei persoane, așa cum se întâmplă deja
+  la obiective.
+- **Evenimente.** Întrebări despre un eveniment și înregistrarea de fotografii
+  și notițe la el direct din chat.
+- **Setări și personalizare la cerere.** Schimbarea modului în care se
+  comportă Lotti – sau a felului în care arată însoțitorul – doar spunând
+  asta, în loc să căutați pagina de setări potrivită.
+- **Înregistrare fără atingere,** opțional, pentru tipurile de noutăți pe
+  care le confirmați oricum.
+- **Mai mult din el.** Stări care reflectă jurnalul dumneavoastră, mici
+  îndemnuri blânde și o față pentru fiecare agent.
+
+## Confidențialitate
+
+Citește doar ce se află deja pe dispozitivul dumneavoastră, în categoriile pe
+care are voie să le vadă. Întrebarea și părțile din jurnal necesare pentru
+răspuns ajung la furnizorul AI al profilului său – alegeți un model local
+pentru ca totul să rămână pe dispozitiv. Nu vă modifică niciodată datele din
+proprie inițiativă: fiecare scriere este o atingere.

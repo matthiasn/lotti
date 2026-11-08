@@ -1,0 +1,198 @@
+---
+title: Fala com o teu acompanhante
+description: Pergunta ao acompanhante o que tem prazo, para onde foi o teu tempo ou como está uma tarefa, um projeto ou um objetivo, e conta-lhe o que aconteceu. Só arquiva quando tocas.
+---
+
+# Fala com o teu acompanhante
+
+O acompanhante é o sítio por onde começas. Em vez de procurares primeiro a
+página certa, perguntas-lhe – por escrito ou em voz alta – e ele encontra a
+resposta: o que tem prazo hoje, quanto tempo registaste esta semana, como
+está a correr um projeto. Quando lhe contas algo, ele percebe se pertence a
+uma tarefa, a um projeto, a um objetivo ou ao plano de hoje, e propõe
+arquivá-lo aí. Nada é escrito até tocares.
+
+As páginas de detalhe continuam onde estão. O chat é onde as coisas
+começam; tarefas, projetos, objetivos e o Daily OS são onde afinas o que foi
+iniciado – estimativas, listas de verificação, prioridades, blocos na linha
+do tempo.
+
+:::note[Experimental]
+
+O chat com o acompanhante é novo e ainda está a crescer. Vem desligado, e o
+que ele sabe fazer muda de versão para versão. Esta página descreve o que
+funciona hoje; [O que vem aí](#what-is-coming) lista o que está planeado.
+
+:::
+
+## Liga-o
+
+Abre **Configurações → Configurações avançadas → Sinalizadores de
+configuração**. No grupo **Avançado e experimental**, liga:
+
+| Interruptor | O que faz |
+| --- | --- |
+| **Chat com o teu acompanhante** | O próprio chat. Obrigatório. |
+| **Acompanhante** | A sua figura animada no chat, ao lado dos resumos de IA e no cabeçalho do dia, mais **Configurações → Preferências → Acompanhante** para o vestires. Opcional. |
+| **Reprodução de resumo de IA** (no grupo Preferências) | A sua voz. Necessária, junto com **Acompanhante**, para que responda em voz alta. |
+
+O chat precisa de um fornecedor de IA a funcionar. Usa o perfil de IA
+**Predefinido das Configurações**, a menos que lhe escolhas outro, e recorre
+a um pequeno modelo alojado da Melious ou da Mistral se configuraste um
+desses fornecedores. Vê
+[Ligar um fornecedor de IA](../ai-and-automation/provider-setup.mdx).
+
+## Abre o chat
+
+- **Computador:** escolhe **Perguntar ao teu acompanhante** na barra lateral,
+  ou carrega em **Cmd+L** (macOS) / **Ctrl+L** (Linux e Windows) em qualquer
+  lado.
+- **Telemóvel:** toca em **Perguntar ao teu acompanhante** ao lado do botão
+  de menu na barra de navegação.
+
+Enquanto a app está bloqueada numa única categoria, ele fica escondido,
+porque as suas conversas abrangem todas as categorias.
+
+## Pergunta-lhe
+
+Escreve em **Pergunta o que quiseres…** e envia. Perguntas a que responde
+hoje:
+
+- **O que tem prazo.** "O que tem prazo hoje?", "O que está atrasado?", "O
+  que tem prazo esta semana?" Mantém hoje e o atrasado separados, a menos que
+  peças os dois.
+- **Para onde foi o teu tempo.** "Quanto tempo registei esta semana?"
+  funciona para hoje, ontem, esta semana, os últimos 7 ou 30 dias, este mês e
+  o mês passado. Soma o tempo por categoria com os mesmos números da
+  [análise de tempo](../organize-and-reflect/time-analysis.mdx), mostra um
+  gráfico e nomeia as tarefas para onde foi o tempo quando perguntas em que
+  trabalhaste.
+- **O que concluíste.** "O que concluí esta semana?" conta cada tarefa no
+  dia em que foi concluída ou rejeitada, não no dia em que foi criada.
+- **Uma tarefa ou um projeto concreto.** "Como está a remodelação do
+  habitat?" Passa a pergunta ao agente dessa tarefa ou projeto e mostra a sua
+  resposta sob o seu nome – **De …** – sem a reformular.
+- **Um objetivo.** Uma pergunta ou novidade sobre um dos teus objetivos
+  torna-se uma mensagem no chat do agente desse objetivo, e a resposta
+  aparece no teu. Os objetivos são uma secção opcional: liga **Objetivos** em
+  **Configurações → Seções**.
+- **O teu diário.** "O que decidimos sobre o fornecedor de sardinhas?" Quando
+  nenhuma tarefa ou projeto tem a resposta, procura no teu diário e responde
+  **Do teu diário**, com as entradas em que se baseou. Cada uma abre a sua
+  origem.
+- **Os teus pull requests.** "Quantos pull requests fiz merge esta semana?"
+  funciona quando o GitHub está ligado em **Configurações → Configurações
+  avançadas → GitHub**. Só conta os pull requests já guardados neste
+  dispositivo.
+
+Duas ou mais tarefas voltam como um cartão de linhas – estado, resumo de uma
+linha do agente, categoria, prioridade e prazo. Toca numa tarefa para a
+abrires por cima do chat; voltar leva-te de novo à conversa.
+
+Escreve **@** para nomear uma categoria e limitar a resposta a ela. Ele só vê
+as categorias que pode ver.
+
+Se não tiver a certeza do que querias dizer, faz uma pergunta curta com até
+três opções.
+
+## Conta-lhe o que aconteceu
+
+Quando lhe contas algo em vez de perguntar, ele propõe para onde vai. Uma
+proposta é um cartão com botões; nada é arquivado até tocares.
+
+| Dizes | Ele propõe |
+| --- | --- |
+| Uma novidade sobre uma tarefa ou um projeto | **Arquivar** – as tuas palavras exatas tornam-se uma entrada nele. |
+| "Cria uma tarefa para arranjar o portão, prioridade alta" | **Transformar em tarefa** – preenche título, categoria, prioridade, prazo, estimativa e hora de início a partir do que disseste e diz-te o que percebeu. O agente da categoria é atribuído. |
+| "Uma continuação dessa" | **Transformar em tarefa**, ligada como continuação da tarefa referida antes na conversa. |
+| "Passa a contagem para a tarde" | **Mudar hoje** – abre o planeamento do [Daily OS](../plan-and-capture/daily-os.mdx) com as tuas palavras. |
+| Algo novo e maior | **Novo projeto…** ou **Começar um objetivo…**, que abrem o formulário com as tuas palavras. |
+| Qualquer outra coisa | **Guardar como nota** ou **Deixar**. |
+
+Se ele escolheu o sítio errado, escolhe **Para outro sítio**. O que não
+pertence a nada espera na **Caixa de entrada**, que abres pelo seu chip no
+cabeçalho do chat ou na lista de conversas. Tudo o que um toque escreveu
+pode ser aberto ou anulado.
+
+## Mantém várias conversas
+
+Como numa janela do ChatGPT ou do Claude, cada assunto pode ter a sua
+conversa – começa uma com **Novo chat**. As conversas têm como título a
+primeira pergunta e aparecem da mais recente para a mais antiga atrás do
+botão **Chats** no cabeçalho (ao lado da conversa numa janela larga de
+computador). Usa **Procurar nos chats** para encontrar uma, e o menu de cada
+linha para lhe mudar o nome, arquivá-la ou apagá-la. Apagar esconde uma
+conversa em todos os teus dispositivos; o que arquivaste a partir dela fica
+onde está.
+
+## Fala com ele
+
+Faz uma pergunta em voz alta e ele responde em voz alta, com os lábios ao
+ritmo da voz. Uma pergunta escrita recebe sempre uma resposta escrita. Toca
+para falar e toca outra vez para enviar, ou mantém premido para falar e
+larga para enviar.
+
+Para falar, **Acompanhante** e **Reprodução de resumo de IA** têm de estar
+ligados, e ele precisa de uma voz: o modelo de leitura do seu perfil de IA
+ou a voz do dispositivo, onde a tua plataforma a suporte. No cabeçalho podes
+silenciá-lo, pedir-lhe que repita com **Diz outra vez** ou escolher **Ver o
+teu acompanhante em tela cheia** para o veres em grande. Numa janela larga de
+computador, a conversa fica ao lado dele, e ele aponta para cada tarefa que
+enumera enquanto a diz.
+
+Para escolher o perfil de IA com que ele pensa, abre **Perfil de IA** no menu
+do cabeçalho. **Predefinido das Configurações** fá-lo seguir de novo a tua
+predefinição.
+
+## Torna-o teu
+
+Com **Acompanhante** ligado, abre **Configurações → Preferências →
+Acompanhante**:
+
+- **Personagem:** Lotti (uma avó), Avô, Tia ou Tio.
+- **Tom de pele, Cor do cabelo, Penteado, Cor dos olhos** e **Roupa** – ou
+  roupa nova sempre que abres a app.
+- **Atrevimento:** Calor, Marotice ou Atrevimento – como reage ao que lê em
+  voz alta.
+- **Voz:** **Responder em voz alta a perguntas faladas** liga ou desliga as
+  suas respostas faladas.
+
+Fora do chat, ele está ao lado do resumo de IA de uma tarefa e lê-o quando
+carregas no seu controlo de leitura, senta-se no cabeçalho da página do dia e
+apresenta-te o dia quando lhe tocas, e dá-te as boas-vindas durante o
+onboarding.
+
+## Primeiro o chat, as páginas de detalhe para os detalhes
+
+| Começa no chat | Afina na página |
+| --- | --- |
+| "O que tem prazo hoje?" | [Tarefas](../organize-and-reflect/tasks.mdx) – estado, prioridade, prazo, listas de verificação |
+| "Cria uma tarefa para…" | A nova tarefa – estimativa, etiquetas, lista de verificação, entradas ligadas |
+| "Quanto tempo esta semana?" | [Análise de tempo](../organize-and-reflect/time-analysis.mdx) – qualquer período, qualquer categoria |
+| "Passa X para a tarde" | [Daily OS](../plan-and-capture/daily-os.mdx) – blocos na linha do tempo |
+| Uma novidade sobre um projeto | [Projetos](../organize-and-reflect/projects.mdx) – o relatório e as tarefas do projeto |
+
+## O que vem aí \{#what-is-coming\}
+
+Tudo o que segue é uma direção, não uma funcionalidade lançada; o âmbito e a
+ordem podem mudar.
+
+- **Pessoas.** Perguntar pelas pessoas da tua vida e contar-lhe sobre elas,
+  passando ao agente de cada pessoa, como já acontece com os objetivos.
+- **Eventos.** Perguntar por um evento e arquivar nele fotos e notas a partir
+  do chat.
+- **Configurações e personalização a pedido.** Mudar o comportamento do
+  Lotti – ou o aspeto do acompanhante – só por o dizeres, em vez de
+  procurares a página de configurações certa.
+- **Arquivar sem tocar,** como opção, para os tipos de novidades que
+  confirmas sempre.
+- **Mais dele.** Humores que refletem o teu diário, pequenos lembretes
+  gentis e uma cara para cada agente.
+
+## Privacidade
+
+Ele só lê o que já está no teu dispositivo, dentro das categorias que pode
+ver. A tua pergunta e as partes do teu diário necessárias para a resposta vão
+para o fornecedor de IA do seu perfil – escolhe um modelo local para manter
+tudo no teu dispositivo. Nunca altera os teus dados por iniciativa própria:
+cada escrita é um toque.

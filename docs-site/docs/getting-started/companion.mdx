@@ -1,0 +1,181 @@
+---
+title: Talk to your companion
+description: Ask the companion what is due, where your time went, or what a task, project or goal stands at, and tell her what happened. She files it only when you tap.
+---
+
+# Talk to your companion
+
+The companion is the place to start. Instead of opening the right page first,
+you ask her — in writing or aloud — and she finds the answer: what is due
+today, how much time you logged this week, how a project is going. When you
+tell her something, she works out whether it belongs to a task, a project, a
+goal or today's plan, and proposes filing it there. Nothing is written until
+you tap.
+
+The detail pages stay where they are. The chat is where things start; tasks,
+projects, goals and the Daily OS are where you refine what was started —
+estimates, checklists, priorities, blocks on the timeline.
+
+:::note[Experimental]
+
+The companion chat is new and still growing. It ships switched off, and what
+she can do changes from release to release. This page describes what works
+today; [What is coming](#what-is-coming) lists what is planned.
+
+:::
+
+## Turn her on
+
+Open **Settings → Advanced Settings → Config Flags**. In the **Advanced &
+experimental** group, turn on:
+
+| Switch | What it does |
+| --- | --- |
+| **Companion chat** | The chat itself. Required. |
+| **Companion** | Her animated figure in the chat, beside AI summaries and in the Day header, plus **Settings → Preferences → Companion** to dress her. Optional. |
+| **AI summary playback** (in the Preferences group) | Her voice. Needed, together with **Companion**, for her to answer aloud. |
+
+The chat needs a working AI provider. She uses the **Settings default** AI
+profile unless you pick another one for her, and falls back to a small hosted
+model from Melious or Mistral when you have set up one of those providers. See
+[Connect an AI provider](../ai-and-automation/provider-setup.mdx).
+
+## Open the chat
+
+- **Desktop:** select **Ask the companion** in the sidebar, or press
+  **Cmd+L** (macOS) / **Ctrl+L** (Linux and Windows) from anywhere.
+- **Phone:** tap **Ask the companion** beside the menu button in the
+  navigation bar.
+
+While the app is locked to a single category, she is hidden, because her
+conversations span every category.
+
+## Ask her
+
+Type in **Ask anything…** and send. Questions she answers today:
+
+- **What is due.** "What's due today?", "What's overdue?", "What's due this
+  week?" She keeps today and overdue apart unless you ask for both.
+- **Where your time went.** "How much time did I log this week?" works for
+  today, yesterday, this week, the past 7 or 30 days, this month and last
+  month. She sums time per category with the same numbers as
+  [Time analysis](../organize-and-reflect/time-analysis.mdx), shows a chart, and
+  names the tasks the time went to when you ask what you worked on.
+- **What you finished.** "What did I complete this week?" counts each task on
+  the day it was completed or rejected, not the day it was created.
+- **A specific task or project.** "Where does the habitat redesign stand?" She
+  hands the question to that task's or project's agent and shows its answer
+  under its name — **From …** — without rewording it.
+- **A goal.** A question or update about one of your goals becomes a turn in
+  that goal agent's own chat, and its reply appears in yours. Goals are an
+  optional section: turn on **Goals** under **Settings → Sections**.
+- **Your journal.** "What did we decide about the sardine supplier?" When no
+  single task or project holds the answer, she searches your journal and
+  answers **From your journal**, listing the entries she relied on. Each one
+  opens its source.
+- **Your pull requests.** "How many pull requests did I merge this week?" works
+  when GitHub is connected under **Settings → Advanced Settings → GitHub**. She
+  counts only the pull requests already stored on this device.
+
+Two or more tasks come back as a card of rows — status, the agent's one-line
+summary, category, priority and due date. Tap a task to open it on top of the
+chat; going back returns you to the conversation.
+
+Type **@** to name a category and narrow the answer to it. She only ever sees
+the categories she is allowed to see.
+
+If she is not sure what you meant, she asks one short question with up to
+three choices.
+
+## Tell her what happened
+
+When you tell her something instead of asking, she proposes where it goes. A
+proposal is a card with buttons; nothing is filed until you tap.
+
+| You say | She proposes |
+| --- | --- |
+| An update about a task or project | **File it** — your exact words become an entry under it. |
+| "Make a task to fix the gate, high priority" | **Make it a task** — she fills in the title, category, priority, due day, estimate and start time from what you said and tells you what she read. The task's category agent is assigned. |
+| "A follow-up to that one" | **Make it a task**, linked as a follow-up to the task named earlier in the conversation. |
+| "Move the count to the afternoon" | **Change today** — opens [Daily OS](../plan-and-capture/daily-os.mdx) planning with your words. |
+| Something new and bigger | **New project…** or **Start a goal…**, opening the form with your words in it. |
+| Anything else | **Save as a note**, or **Leave it**. |
+
+If she guessed the wrong place, choose **Somewhere else**. Anything nothing
+owns waits in the **Inbox**, opened from its chip in the chat header or the
+list of conversations.
+Everything a tap wrote can be opened or undone.
+
+## Keep several conversations
+
+Like a ChatGPT or Claude window, each subject can have its own conversation —
+start one with **New chat**.
+Conversations are titled by their first question and listed newest first
+behind the **Chats** button in the header (beside the conversation on a wide
+desktop window). Use **Search chats** to find one, and each row's menu to
+rename, archive or delete it. Deleting hides a conversation on every device;
+anything you filed from it stays where it is.
+
+## Talk to her
+
+Ask a question aloud and she answers aloud, with her lips moving to her
+voice. A typed question always gets a written answer. Tap to talk and tap
+again to send, or hold to talk and let go to send.
+
+Speaking needs **Companion** and **AI summary playback** on, and a voice:
+either the read-aloud model of her AI profile, or the on-device voice where
+your platform supports it. In the header you can mute her, have her **Say it
+again**, or choose **View companion full screen** to see her full size. On a
+wide desktop window the conversation sits beside her there, and she points at
+each task she lists as she says it.
+
+To pick the AI profile she thinks with, open **AI profile** in the header
+menu. **Settings default** makes her follow your default again.
+
+## Make her yours
+
+With **Companion** on, open **Settings → Preferences → Companion**:
+
+- **Character:** Lotti (a grandmother), Grandpa, Aunt or Uncle.
+- **Skin tone, Hair color, Hairstyle, Eye color** and **Outfit** — or a fresh
+  outfit each time you open the app.
+- **Sass:** Warm, Cheeky or Sassy — how she reacts to what she reads aloud.
+- **Voice:** **Answer spoken questions aloud** turns her spoken replies on or
+  off.
+
+Besides the chat, she stands beside a task's AI summary and reads it when you
+press its read-aloud control, sits in the Day page header and briefs you on
+the day when tapped, and greets you during onboarding.
+
+## Chat first, detail pages for the details
+
+| Start in the chat | Refine on the page |
+| --- | --- |
+| "What's due today?" | [Tasks](../organize-and-reflect/tasks.mdx) — status, priority, due date, checklists |
+| "Make a task to…" | The new task — estimate, labels, checklist, linked entries |
+| "How much time this week?" | [Time analysis](../organize-and-reflect/time-analysis.mdx) — any range, any category |
+| "Move X to the afternoon" | [Daily OS](../plan-and-capture/daily-os.mdx) — blocks on the timeline |
+| An update on a project | [Projects](../organize-and-reflect/projects.mdx) — the project's report and tasks |
+
+## What is coming \{#what-is-coming\}
+
+Everything below is direction, not a shipped feature; scope and order can
+change.
+
+- **People.** Asking about and telling her about the people in your life,
+  handed to each person's agent the way goals already are.
+- **Events.** Asking about an event and filing photos and notes to it from the
+  chat.
+- **Settings and customization by asking.** Changing how Lotti behaves — or
+  how she looks — by saying so, instead of finding the right settings page.
+- **Filing without the tap,** as an opt-in, for the kinds of updates you
+  always confirm.
+- **More of her.** Moods that reflect your record, gentle nudges, and a face
+  for each agent.
+
+## Privacy
+
+She reads only what is already on your device, within the categories she may
+see. Your question and the parts of your record needed to answer it go to the
+AI provider of her profile — choose a local model to keep everything on your
+device. She never changes your record on her own: every write is a tap.
