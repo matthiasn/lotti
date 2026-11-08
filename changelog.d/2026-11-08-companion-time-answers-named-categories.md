@@ -5,9 +5,10 @@
   logged time in. Now only the category you named appears by name, and
   everything else is a single "Other" slice in both her words and the
   chart.
-- **The ⋯ menus on chats, goals and people highlight their first and last
-  row cleanly.** Hovering the top or bottom entry no longer leaves a strip
-  of empty padding above or below the highlight.
+- **The ⋯ menus on chats, goals and people highlight every row cleanly.**
+  Hovering the top or bottom entry, or one next to a divider, no longer
+  leaves a strip of empty padding between the highlight and the edge or
+  the divider.
 - **Searching your chats works while something waits in the inbox.** The
   first letter you typed vanished and the search field lost focus whenever
   the inbox had an item. The field now keeps what you type.
