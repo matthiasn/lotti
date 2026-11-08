@@ -575,6 +575,10 @@ void main() {
       addTearDown(wired.dispose);
       when(() => timeService.linkedFrom).thenReturn(null);
       when(() => timeService.stop()).thenAnswer((_) async {});
+      // Nothing else is there to delete unless a test says so.
+      when(
+        () => journalRepository.deleteJournalEntity(any()),
+      ).thenAnswer((_) async => false);
       when(
         () => persistence.createMetadata(
           id: any(named: 'id'),
@@ -834,6 +838,23 @@ void main() {
       when(() => timeService.linkedFrom).thenReturn(task('other', 'Nest'));
       await wired.read(frontFilingServiceProvider).takeBack(doorId);
       verifyNever(() => timeService.stop());
+    });
+
+    test('taking back a task deletes the copy of the words filed under it '
+        'and keeps its timer entry — logged time outlives the task', () async {
+      seed(const FrontDoorTaskCreated(taskId: 'task-1'));
+      when(
+        () => journalRepository.deleteJournalEntity('task-1'),
+      ).thenAnswer((_) async => true);
+
+      await wired.read(frontFilingServiceProvider).takeBack(doorId);
+
+      verify(
+        () => journalRepository.deleteJournalEntity(frontTaskWordsId('task-1')),
+      ).called(1);
+      verifyNever(
+        () => journalRepository.deleteJournalEntity(frontTaskTimerId('task-1')),
+      );
     });
 
     test(

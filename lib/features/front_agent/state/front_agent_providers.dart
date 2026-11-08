@@ -181,10 +181,16 @@ final frontFilingServiceProvider = Provider<FrontFilingService>(
         ),
     makeTask: ref.watch(frontTaskMakerProvider),
     deleteEntry: (entryId) async {
-      // A task taken back stops the timer a dictated start ran on it.
+      // A task taken back stops the timer a dictated start ran on it, and
+      // takes its copy of the words along, so a re-make files no second
+      // one. Its timer entry stays: logged time outlives the task, as on
+      // any task deleted. For a note or a filed entry no such copy exists.
       final time = ref.read(timeServiceProvider);
       if (time.linkedFrom?.meta.id == entryId) await time.stop();
-      return ref.read(journalRepositoryProvider).deleteJournalEntity(entryId);
+      final journal = ref.read(journalRepositoryProvider);
+      final deleted = await journal.deleteJournalEntity(entryId);
+      if (deleted) await journal.deleteJournalEntity(frontTaskWordsId(entryId));
+      return deleted;
     },
   ),
   name: 'frontFilingServiceProvider',
