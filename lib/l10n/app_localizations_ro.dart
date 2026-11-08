@@ -3440,6 +3440,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get chatInputConfigureModel => 'Configurați modelul';
 
   @override
+  String get chatInputFinishRecording => 'Gata — citiți înainte de a trimite';
+
+  @override
   String get chatInputHintDefault =>
       'Întreabă despre sarcinile și productivitatea ta...';
 
@@ -3448,7 +3451,14 @@ class AppLocalizationsRo extends AppLocalizations {
       'Selectați un model pentru a începe conversația';
 
   @override
+  String get chatInputKeyboardHint =>
+      'Enter trimite · Shift+Enter pentru un rând nou';
+
+  @override
   String get chatInputListening => 'Ascultă...';
+
+  @override
+  String get chatInputMentionsLabel => 'Sugestii';
 
   @override
   String get chatInputNoAudioRecorded =>
@@ -6439,6 +6449,67 @@ class AppLocalizationsRo extends AppLocalizations {
   String get designSystemCaptionWithoutActionsLabel => 'Fără acțiuni';
 
   @override
+  String get designSystemChatInputBusyLabel => 'Se așteaptă un răspuns';
+
+  @override
+  String get designSystemChatInputBusySample => 'Răspunde…';
+
+  @override
+  String get designSystemChatInputDraftSample =>
+      'În această după-amiază, de la două la cinci, vreau să merg cu trenul la Berlin și să termin pe drum prezentarea de luni. Planificați astfel încât declarația fiscală să fie gata înainte.';
+
+  @override
+  String get designSystemChatInputErrorLabel => 'Nu a fost trimis';
+
+  @override
+  String get designSystemChatInputErrorSample =>
+      'Nu a fost trimis. Cuvintele dumneavoastră sunt încă aici.';
+
+  @override
+  String get designSystemChatInputHelperSample =>
+      'Tastați @ pentru a numi o categorie';
+
+  @override
+  String get designSystemChatInputHintSample => 'Întrebați orice…';
+
+  @override
+  String get designSystemChatInputIdleLabel => 'Inactiv';
+
+  @override
+  String get designSystemChatInputMentionDraftSample =>
+      'Ce este întârziat în @Lu';
+
+  @override
+  String get designSystemChatInputMentionLabel => 'Numirea unei categorii cu @';
+
+  @override
+  String get designSystemChatInputMentionWoodworking => 'Lucru în lemn';
+
+  @override
+  String get designSystemChatInputMentionWork => 'Lucru';
+
+  @override
+  String get designSystemChatInputMentionWorkshop =>
+      'Lucrări de atelier de pregătit';
+
+  @override
+  String get designSystemChatInputPartialSample =>
+      'În această după-amiază, de la două la cinci, vreau';
+
+  @override
+  String get designSystemChatInputProofreadLabel =>
+      'Spus — citiți, apoi trimiteți';
+
+  @override
+  String get designSystemChatInputRecordingLabel => 'Înregistrare';
+
+  @override
+  String get designSystemChatInputStatesTitle => 'Stările câmpului de chat';
+
+  @override
+  String get designSystemChatInputTranscribingLabel => 'Transcriere';
+
+  @override
   String get designSystemCheckboxLabel => 'Casetă de selectare';
 
   @override
@@ -7239,6 +7310,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get frontChatInboxTitle => 'Primite';
+
+  @override
+  String get frontChatMentionHint => 'Tastați @ pentru a numi o categorie';
 
   @override
   String get frontChatNoChats =>

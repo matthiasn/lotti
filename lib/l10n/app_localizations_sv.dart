@@ -3396,6 +3396,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get chatInputConfigureModel => 'Konfigurera modell';
 
   @override
+  String get chatInputFinishRecording => 'Klar — läs innan du skickar';
+
+  @override
   String get chatInputHintDefault =>
       'Fråga om dina uppgifter och produktivitet...';
 
@@ -3403,7 +3406,13 @@ class AppLocalizationsSv extends AppLocalizations {
   String get chatInputHintSelectModel => 'Välj en modell för att börja chatta';
 
   @override
+  String get chatInputKeyboardHint => 'Enter skickar · Skift+Enter för ny rad';
+
+  @override
   String get chatInputListening => 'Lyssnar...';
+
+  @override
+  String get chatInputMentionsLabel => 'Förslag';
 
   @override
   String get chatInputNoAudioRecorded => 'Inget ljud spelades in. Försök igen.';
@@ -6338,6 +6347,64 @@ class AppLocalizationsSv extends AppLocalizations {
   String get designSystemCaptionWithoutActionsLabel => 'Utan handlingar';
 
   @override
+  String get designSystemChatInputBusyLabel => 'Väntar på svar';
+
+  @override
+  String get designSystemChatInputBusySample => 'Svarar…';
+
+  @override
+  String get designSystemChatInputDraftSample =>
+      'I eftermiddag mellan två och fem vill jag ta tåget till Berlin och göra klart måndagens bilder på vägen. Planera det så att deklarationen är klar innan jag åker.';
+
+  @override
+  String get designSystemChatInputErrorLabel => 'Gick inte fram';
+
+  @override
+  String get designSystemChatInputErrorSample =>
+      'Det gick inte fram. Dina ord finns kvar.';
+
+  @override
+  String get designSystemChatInputHelperSample =>
+      'Skriv @ för att nämna en kategori';
+
+  @override
+  String get designSystemChatInputHintSample => 'Fråga vad som helst…';
+
+  @override
+  String get designSystemChatInputIdleLabel => 'Tomt';
+
+  @override
+  String get designSystemChatInputMentionDraftSample => 'Vad är försenat i @Ar';
+
+  @override
+  String get designSystemChatInputMentionLabel => 'Nämn en kategori med @';
+
+  @override
+  String get designSystemChatInputMentionWoodworking => 'Träarbete';
+
+  @override
+  String get designSystemChatInputMentionWork => 'Arbete';
+
+  @override
+  String get designSystemChatInputMentionWorkshop => 'Arbetsmöte att förbereda';
+
+  @override
+  String get designSystemChatInputPartialSample =>
+      'I eftermiddag mellan två och fem vill jag';
+
+  @override
+  String get designSystemChatInputProofreadLabel => 'Sagt — läs och skicka';
+
+  @override
+  String get designSystemChatInputRecordingLabel => 'Spelar in';
+
+  @override
+  String get designSystemChatInputStatesTitle => 'Chattfältets lägen';
+
+  @override
+  String get designSystemChatInputTranscribingLabel => 'Transkriberar';
+
+  @override
   String get designSystemCheckboxLabel => 'Kryssruta';
 
   @override
@@ -7132,6 +7199,9 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get frontChatInboxTitle => 'Inkorg';
+
+  @override
+  String get frontChatMentionHint => 'Skriv @ för att nämna en kategori';
 
   @override
   String get frontChatNoChats =>

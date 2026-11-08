@@ -21,8 +21,8 @@ import 'package:lotti/features/agents/ui/query/query_audio_controls.dart';
 import 'package:lotti/features/agents/ui/query/query_chat_pane.dart';
 import 'package:lotti/features/agents/ui/query/query_evidence_card.dart';
 import 'package:lotti/features/agents/ui/query/query_summary_preview.dart';
+import 'package:lotti/features/design_system/components/chat_input/design_system_chat_input.dart';
 import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
-import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
@@ -1024,10 +1024,11 @@ void main() {
         final label = answering
             ? 'Preparing an answer…'
             : 'Checking available information…';
+        // Drafting the next question stays open while she answers.
         expect(
           tester
-              .widget<DesignSystemTextInput>(find.byType(DesignSystemTextInput))
-              .helperText,
+              .widget<DesignSystemChatInput>(find.byType(DesignSystemChatInput))
+              .busyText,
           isNull,
         );
         expect(find.text('Habitat Watcher is replying…'), findsNothing);
@@ -1037,7 +1038,8 @@ void main() {
         );
         await tester.enterText(find.byType(TextField), 'Next feeder question');
         await tester.pump();
-        await tester.testTextInput.receiveAction(TextInputAction.send);
+        // Enter would send; while she answers it does not.
+        await tester.sendKeyEvent(LogicalKeyboardKey.enter);
         await tester.pump();
         expect(inferenceCalls, 0);
         expect(
@@ -1242,7 +1244,7 @@ void main() {
         activeRecorder: capturingRecorder,
         transcriptionResolver: resolver,
       );
-      await tester.tap(find.byIcon(LottiIcons.mic));
+      await tester.tap(find.byKey(DesignSystemChatInputKeys.mic));
       await tester.pump();
       expect(capturingRecorder.lastTranscriptionTargetResolver, same(resolver));
       expect(resolutions, 0);
@@ -1363,7 +1365,7 @@ void main() {
         ),
         findsOneWidget,
       );
-      await tester.tap(find.byIcon(LottiIcons.arrowUp));
+      await tester.tap(find.byKey(DesignSystemChatInputKeys.send));
       await tester.pump();
       expect(inferenceCalls, 1);
       expect(
@@ -1527,7 +1529,7 @@ void main() {
       await tester.tap(find.text('Recordings'));
       await tester.enterText(find.byType(TextField), 'Which feeder recording?');
       await tester.pump();
-      await tester.tap(find.byIcon(LottiIcons.arrowUp));
+      await tester.tap(find.byKey(DesignSystemChatInputKeys.send));
       await tester.pump();
       await tester.pump();
       expect(inferenceCalls, 1);

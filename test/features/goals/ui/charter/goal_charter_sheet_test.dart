@@ -5,8 +5,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/ui/chat/chat_recorder_controller.dart';
-import 'package:lotti/features/agents/ui/chat/waveform_bars.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/chat_input/design_system_voice_waveform.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/state/goal_dictation_provider.dart';
 import 'package:lotti/features/goals/ui/charter/goal_charter_sheet.dart';
@@ -317,7 +317,7 @@ void main() {
       await dictate(tester);
 
       expect(recorder.startCalls, 1);
-      expect(find.byType(WaveformBars), findsOneWidget);
+      expect(find.byType(DesignSystemVoiceWaveform), findsOneWidget);
       // On the goal's transcription profile, corrected like its check-ins —
       // never a discovered model.
       final dictation = ProviderScope.containerOf(
@@ -361,7 +361,7 @@ void main() {
       // The goal's chat composer shares the recorder.
       recorder.emitRecording();
       await tester.pump();
-      expect(find.byType(WaveformBars), findsNothing);
+      expect(find.byType(DesignSystemVoiceWaveform), findsNothing);
       expect(
         button(tester, 'goal-charter-dictate').onPressed,
         isNull,
@@ -464,7 +464,7 @@ void main() {
       await dictate(tester);
 
       Rect rectOf(Finder finder) => tester.getRect(finder);
-      final waveform = find.byType(WaveformBars);
+      final waveform = find.byType(DesignSystemVoiceWaveform);
       final stop = find.byKey(const ValueKey('goal-charter-dictation-stop'));
       final elapsed = find.byKey(const ValueKey('goal-charter-elapsed'));
 

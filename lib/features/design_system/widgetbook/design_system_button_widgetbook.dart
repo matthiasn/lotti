@@ -7,6 +7,7 @@ import 'package:lotti/features/design_system/widgetbook/design_system_branding_w
 import 'package:lotti/features/design_system/widgetbook/design_system_breadcrumbs_widgetbook.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_calendar_picker_widgetbook.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_caption_widgetbook.dart';
+import 'package:lotti/features/design_system/widgetbook/design_system_chat_input_widgetbook.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_checkbox_widgetbook.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_chip_widgetbook.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_confirmation_modal_widgetbook.dart';
@@ -84,6 +85,7 @@ WidgetbookFolder buildDesignSystemWidgetbookFolder() {
         buildDesignSystemTextareaWidgetbookComponent(),
         buildDesignSystemScrollbarWidgetbookComponent(),
         buildDesignSystemTextInputWidgetbookComponent(),
+        buildDesignSystemChatInputWidgetbookComponent(),
         buildDesignSystemTooltipIconWidgetbookComponent(),
         buildDesignSystemContextMenuWidgetbookComponent(),
         buildDesignSystemConfirmationModalWidgetbookComponent(),

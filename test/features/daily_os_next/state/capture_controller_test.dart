@@ -518,19 +518,20 @@ void main() {
       );
     });
 
-    test('amplitude stream feeds the rolling waveform window', () async {
+    test('amplitude stream feeds the rolling waveform window: four seconds '
+        'at the 20 ms cadence', () async {
       final container = bench.aliveContainer();
       addTearDown(container.dispose);
       final controller = container.read(captureControllerProvider.notifier);
 
       await controller.toggle();
-      for (var i = 0; i < 90; i++) {
+      for (var i = 0; i < 210; i++) {
         bench.ampController.add(Amplitude(current: -20, max: 0));
       }
       await Future<void>.delayed(Duration.zero);
 
       final state = container.read(captureControllerProvider);
-      expect(state.amplitudes.length, 80);
+      expect(state.amplitudes.length, 200);
       expect(state.dbfs, -20);
     });
 

@@ -1,8 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/features/agents/ui/chat/chat_recording_pill.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/capture_page.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_composer_bar.dart';
+import 'package:lotti/features/design_system/components/chat_input/design_system_chat_input.dart';
+import 'package:lotti/features/speech/state/recorder_controller.dart'
+    show intervalMs;
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -19,8 +21,9 @@ typedef DayComposerSubmitter =
 /// The mic records through the Daily OS [captureControllerProvider], the same
 /// recorder the Capture screen uses, so the recording is saved as a journal
 /// entry and shows on Activity like any other take. While it runs, the
-/// [ChatRecordingPill] takes the field's place; once transcribed, the words
-/// land in the field for review and the capture returns to rest. Sending
+/// input's row shows the voice across its whole width; Done ends it, the
+/// words land in the field — after anything already typed — for review, and
+/// the capture returns to rest. Sending
 /// hands them to [onSubmit], with the recording's id while the words came
 /// from one.
 ///
@@ -37,7 +40,7 @@ class DayComposer extends ConsumerStatefulWidget {
     this.intent = AudioCaptureIntent.dayPlan,
     this.clearOnSubmit = false,
     this.header,
-    this.trailing,
+    this.nextStep,
     this.enabled = true,
     this.barKey = const Key('daily_os_day_check_in_cta'),
     super.key,
@@ -60,8 +63,8 @@ class DayComposer extends ConsumerStatefulWidget {
   /// Shown above the field, inside the bar (quick refinements).
   final Widget? header;
 
-  /// See [DayComposerBar.trailing].
-  final Widget? trailing;
+  /// See [DayComposerBar.nextStep].
+  final Widget? nextStep;
 
   /// The bar's key, for finders and the onboarding spotlight.
   final Key barKey;
@@ -149,10 +152,15 @@ class _DayComposerState extends ConsumerState<DayComposer> {
         _elapsed.stop();
         setState(() => _ownsCapture = false);
         final words = next.transcript.trim();
-        // A take only starts from an empty field — once there are words the
-        // mic is the send arrow — so the transcript is the field's text.
+        // What was said lands after anything already in the field, to be
+        // read before sending; the field keeps the latest take's audio.
         if (words.isNotEmpty) {
-          _controller.text = words;
+          final before = _controller.text.trimRight();
+          final text = before.isEmpty ? words : '$before $words';
+          _controller.value = TextEditingValue(
+            text: text,
+            selection: TextSelection.collapsed(offset: text.length),
+          );
           _audioId = next.audioId;
         }
         // The words now live in the field; the recorder goes back to rest
@@ -183,35 +191,33 @@ class _DayComposerState extends ConsumerState<DayComposer> {
     final capture = ref.watch(captureControllerProvider);
     final notifier = ref.read(captureControllerProvider.notifier);
 
-    final replacement = !_ownsCapture
-        ? null
+    // Only a take this composer started shows in it: the recorder is
+    // shared with the planning sheet's Capture step.
+    final phase = !_ownsCapture
+        ? DesignSystemChatInputPhase.compose
         : switch (capture.phase) {
-            CapturePhase.listening => ChatRecordingPill(
-              processing: false,
-              amplitudes: capture.amplitudes,
-              elapsed: _elapsed.elapsed,
-              onCancel: notifier.reset,
-              onStop: () =>
-                  notifier.toggle(forDate: widget.day, intent: widget.intent),
-            ),
-            CapturePhase.transcribing => ChatRecordingPill(
-              processing: true,
-              amplitudes: capture.amplitudes,
-              elapsed: _elapsed.elapsed,
-              onCancel: notifier.reset,
-            ),
-            _ => null,
+            CapturePhase.listening => DesignSystemChatInputPhase.recording,
+            CapturePhase.transcribing =>
+              DesignSystemChatInputPhase.transcribing,
+            _ => DesignSystemChatInputPhase.compose,
           };
 
     return DayComposerBar(
       key: widget.barKey,
       controller: _controller,
       header: widget.header,
-      trailing: widget.trailing,
+      nextStep: widget.nextStep,
       hintText:
           widget.hintText ?? context.messages.dailyOsNextDayComposerCheckInHint,
       enabled: widget.enabled && !_submitting,
-      replacement: replacement,
+      phase: phase,
+      levels: capture.amplitudes,
+      sampleInterval: const Duration(milliseconds: intervalMs),
+      elapsed: _elapsed.elapsed,
+      onCancelRecording: notifier.reset,
+      // Done ends the take; its words land in the field to be read.
+      onFinishRecording: () =>
+          notifier.toggle(forDate: widget.day, intent: widget.intent),
       errorText: captureErrorMessage(context, _error),
       onStartVoice: _startVoice,
       onSubmitText: _submit,

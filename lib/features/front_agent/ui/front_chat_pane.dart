@@ -7,8 +7,8 @@ import 'package:lotti/features/agents/ui/chat/agent_chat_view.dart';
 import 'package:lotti/features/agents/ui/chat/chat_recorder_controller.dart';
 import 'package:lotti/features/ai/state/subject_dictation_providers.dart';
 import 'package:lotti/features/daily_os_next/state/selected_date_provider.dart';
+import 'package:lotti/features/design_system/components/chat_input/design_system_chat_input.dart';
 import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
-import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
@@ -20,6 +20,7 @@ import 'package:lotti/features/front_agent/state/front_chat_thread_provider.dart
 import 'package:lotti/features/front_agent/state/front_conversation_providers.dart';
 import 'package:lotti/features/front_agent/state/front_inbox_filter.dart';
 import 'package:lotti/features/front_agent/state/front_journal_access_provider.dart';
+import 'package:lotti/features/front_agent/state/front_mention_categories.dart';
 import 'package:lotti/features/front_agent/ui/front_ask_options_row.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_header.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_hero.dart';
@@ -33,6 +34,7 @@ import 'package:lotti/features/front_agent/ui/front_turn_cost_line.dart';
 import 'package:lotti/features/tasks/util/task_navigation.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/utils/color.dart';
 import 'package:lotti/utils/device_datetime.dart';
 import 'package:lotti/utils/goal_routes.dart';
 import 'package:lotti/widgets/markdown_link_utils.dart';
@@ -194,6 +196,7 @@ class FrontChatThreadView extends ConsumerWidget {
       ]),
     };
     final composer = ref.watch(frontChatControllerProvider);
+    final mentions = ref.watch(frontMentionCategoriesProvider);
     // Kept across a reread (`.value`): an answer is not taken off the screen
     // while its sources' visibility is checked again.
     final journalAccess = ref.watch(frontJournalAccessProvider).value;
@@ -306,9 +309,15 @@ class FrontChatThreadView extends ConsumerWidget {
       contentMaxWidth: kProseMeasureWidth,
       composerEnabled: composerEnabled,
       voiceFirst: true,
-      // One field for both, as a chat app has it: the mic at its end until
-      // there are words, then the send arrow.
-      composerShape: DesignSystemTextInputShape.pill,
+      // `@` names a category she may see; naming one narrows her answer.
+      composerHelper: mentions.isEmpty ? null : messages.frontChatMentionHint,
+      mentionOptions: [
+        for (final category in mentions)
+          DesignSystemChatInputMention(
+            label: category.name,
+            color: colorFromCssHex(category.color),
+          ),
+      ],
       // A conversation not begun opens on her, and what she can do, in the
       // middle of where the thread will be.
       emptyState: inboxOnly

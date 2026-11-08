@@ -3431,6 +3431,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get chatInputConfigureModel => 'Configurare il modello';
 
   @override
+  String get chatInputFinishRecording => 'Fatto: rileggi prima di inviare';
+
+  @override
   String get chatInputHintDefault =>
       'Chiedete i vostri compiti e la vostra produttività...';
 
@@ -3439,7 +3442,14 @@ class AppLocalizationsIt extends AppLocalizations {
       'Selezionare un modello per iniziare a chattare';
 
   @override
+  String get chatInputKeyboardHint =>
+      'Invio invia · Maiusc+Invio per una nuova riga';
+
+  @override
   String get chatInputListening => 'Ascoltare...';
+
+  @override
+  String get chatInputMentionsLabel => 'Suggerimenti';
 
   @override
   String get chatInputNoAudioRecorded =>
@@ -6404,6 +6414,66 @@ class AppLocalizationsIt extends AppLocalizations {
   String get designSystemCaptionWithoutActionsLabel => 'Senza azioni';
 
   @override
+  String get designSystemChatInputBusyLabel => 'In attesa di una risposta';
+
+  @override
+  String get designSystemChatInputBusySample => 'Sta rispondendo…';
+
+  @override
+  String get designSystemChatInputDraftSample =>
+      'Oggi pomeriggio, dalle due alle cinque, voglio prendere il treno per Berlino e finire in viaggio le slide di lunedì. Organizza tutto in modo che la dichiarazione sia fatta prima.';
+
+  @override
+  String get designSystemChatInputErrorLabel => 'Non inviato';
+
+  @override
+  String get designSystemChatInputErrorSample =>
+      'Non è arrivato. Le tue parole sono ancora qui.';
+
+  @override
+  String get designSystemChatInputHelperSample =>
+      'Scrivi @ per nominare una categoria';
+
+  @override
+  String get designSystemChatInputHintSample => 'Chiedi qualsiasi cosa…';
+
+  @override
+  String get designSystemChatInputIdleLabel => 'Inattivo';
+
+  @override
+  String get designSystemChatInputMentionDraftSample =>
+      'Cosa è in ritardo in @La';
+
+  @override
+  String get designSystemChatInputMentionLabel =>
+      'Nominare una categoria con @';
+
+  @override
+  String get designSystemChatInputMentionWoodworking => 'Lavorazione del legno';
+
+  @override
+  String get designSystemChatInputMentionWork => 'Lavoro';
+
+  @override
+  String get designSystemChatInputMentionWorkshop => 'Laboratorio da preparare';
+
+  @override
+  String get designSystemChatInputPartialSample =>
+      'Oggi pomeriggio, dalle due alle cinque, voglio';
+
+  @override
+  String get designSystemChatInputProofreadLabel => 'Detto: rileggi e invia';
+
+  @override
+  String get designSystemChatInputRecordingLabel => 'Registrazione';
+
+  @override
+  String get designSystemChatInputStatesTitle => 'Stati del campo chat';
+
+  @override
+  String get designSystemChatInputTranscribingLabel => 'Trascrizione';
+
+  @override
   String get designSystemCheckboxLabel => 'Check-in';
 
   @override
@@ -7204,6 +7274,9 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get frontChatInboxTitle => 'In arrivo';
+
+  @override
+  String get frontChatMentionHint => 'Scrivi @ per nominare una categoria';
 
   @override
   String get frontChatNoChats =>

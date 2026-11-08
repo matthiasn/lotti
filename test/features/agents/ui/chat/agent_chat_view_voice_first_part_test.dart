@@ -5,8 +5,7 @@ import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/agents/ui/chat/agent_chat_view.dart';
 import 'package:lotti/features/agents/ui/chat/agent_typing_indicator.dart';
 import 'package:lotti/features/agents/ui/chat/chat_recorder_controller.dart';
-import 'package:lotti/features/agents/ui/chat/chat_recording_pill.dart';
-import 'package:lotti/features/agents/ui/chat/waveform_bars.dart';
+import 'package:lotti/features/design_system/components/chat_input/design_system_chat_input.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:material_ui/material_ui.dart';
@@ -213,7 +212,7 @@ void main() {
       addTearDown(tester.view.reset);
       await pumpView(tester, contentMaxWidth: 600);
 
-      final field = tester.getRect(find.byType(TextField));
+      final card = tester.getRect(find.byKey(DesignSystemChatInputKeys.card));
       final bubble = tester.getRect(
         find
             .ancestor(
@@ -223,11 +222,12 @@ void main() {
             .first,
       );
       final view = tester.getRect(find.byType(AgentChatView));
-      expect(field.center.dx, closeTo(view.center.dx, 1));
-      // The user's bubble keeps to the column's right edge, as the field
+      // The input's card is the column: centred, its edges the column's.
+      expect(card.center.dx, closeTo(view.center.dx, 1));
+      expect(card.width, closeTo(600, 1));
+      // The user's bubble keeps to the column's right edge, as the card
       // does.
-      expect(bubble.right, closeTo(view.center.dx + 300, 1));
-      expect(field.right, lessThanOrEqualTo(view.center.dx + 300));
+      expect(bubble.right, closeTo(card.right, 1));
     });
 
     testWidgets('without one, the thread keeps its usual gutter', (
@@ -304,21 +304,16 @@ void main() {
   });
 
   group('voice first', () {
-    Finder tooltipped(String message) => find.byWidgetPredicate(
-      (w) => w is Tooltip && w.message == message,
-    );
-
     testWidgets('one field for both: the mic at its end starts listening, '
-        'and words typed turn it into send', (tester) async {
+        'and words typed bring send beside it', (tester) async {
       final recorder = await pumpView(tester);
 
       // No talk disc and no mode to switch: the field is there at once.
       expect(find.byType(TextField), findsOne);
-      expect(find.text('Type instead'), findsNothing);
       // A phone keeps its keyboard down until the field is tapped.
       expect(tester.widget<TextField>(find.byType(TextField)).autofocus, false);
 
-      await tester.tap(find.byIcon(LottiIcons.mic));
+      await tester.tap(find.byKey(DesignSystemChatInputKeys.mic));
       await tester.pump();
       expect(recorder.starts, 1);
       await recorder.cancel();
@@ -326,8 +321,8 @@ void main() {
 
       draft = 'How many?';
       await pumpView(tester);
-      expect(find.byIcon(LottiIcons.mic), findsNothing);
-      await tester.tap(tooltipped('Send message'));
+      expect(find.byKey(DesignSystemChatInputKeys.mic), findsOne);
+      await tester.tap(find.byKey(DesignSystemChatInputKeys.send));
       expect(sends, 1);
     });
 
@@ -343,33 +338,25 @@ void main() {
       expect(tester.widget<TextField>(find.byType(TextField)).autofocus, true);
     });
 
-    testWidgets('while listening, stop is the send arrow it is, and Cancel '
-        'or Escape lets it go', (tester) async {
+    testWidgets('while listening, the voice runs across the row, Done ends '
+        'the take, and Cancel or Escape lets it go', (tester) async {
       final recorder = await pumpView(
         tester,
         status: ChatRecorderStatus.recording,
       );
 
-      final waveform =
-          tester
-                  .widget<CustomPaint>(
-                    find.byKey(ChatRecordingPillKeys.waveform),
-                  )
-                  .painter!
-              as WaveformBarsPainter;
-      expect(waveform.amplitudes, const [0.4, 0.6, 0.5]);
-      expect(tooltipped('Stop and transcribe'), findsNothing);
       expect(
-        find.descendant(
-          of: tooltipped('Send message'),
-          matching: find.byIcon(LottiIcons.arrowUp),
-        ),
-        findsOne,
+        tester
+            .widget<DesignSystemVoiceWaveform>(
+              find.byKey(DesignSystemChatInputKeys.waveform),
+            )
+            .levels,
+        const [0.4, 0.6, 0.5],
       );
-      await tester.tap(find.byIcon(LottiIcons.arrowUp));
+      await tester.tap(find.byKey(DesignSystemChatInputKeys.done));
       expect(recorder.stops, 1);
 
-      await tester.tap(find.byIcon(LottiIcons.close));
+      await tester.tap(find.byKey(DesignSystemChatInputKeys.cancel));
       expect(recorder.cancels, 1);
     });
 
@@ -378,28 +365,12 @@ void main() {
         tester,
         status: ChatRecorderStatus.recording,
       );
+      await tester.tap(find.byType(TextField));
+      await tester.pump();
 
       await tester.sendKeyEvent(LogicalKeyboardKey.escape);
 
       expect(recorder.cancels, 1);
-    });
-
-    testWidgets('outside a voice-first chat stop says it transcribes', (
-      tester,
-    ) async {
-      await pumpView(
-        tester,
-        status: ChatRecorderStatus.recording,
-        voiceFirst: false,
-      );
-
-      expect(
-        find.descendant(
-          of: tooltipped('Stop and transcribe'),
-          matching: find.byIcon(LottiIcons.stop),
-        ),
-        findsOne,
-      );
     });
 
     testWidgets('while transcribing, Cancel still lets the turn go', (
@@ -410,45 +381,62 @@ void main() {
         status: ChatRecorderStatus.processing,
       );
 
-      expect(find.text('Transcribing…'), findsOne);
-      await tester.tap(find.byKey(ChatRecordingPillKeys.cancel));
+      expect(find.text('Transcribing…'), findsWidgets);
+      await tester.tap(find.byKey(DesignSystemChatInputKeys.cancel));
       expect(recorder.cancels, 1);
     });
 
-    testWidgets('a host that asks hears a transcript went out spoken', (
-      tester,
-    ) async {
-      var spoken = 0;
-      final recorder = await pumpView(tester, onSendSpoken: () => spoken++);
-
-      recorder.hear('And the tagging?');
-      await tester.pump();
-
-      expect(draft, 'And the tagging?');
-      expect(spoken, 1);
-      expect(sends, 0, reason: 'a spoken send is not a typed one');
-    });
-
-    testWidgets('what was said goes out as it is', (tester) async {
+    testWidgets('what was said lands in the field to be read — nothing goes '
+        'out by itself', (tester) async {
       final recorder = await pumpView(tester);
 
       recorder.hear('And the tagging?');
       await tester.pump();
 
       expect(draft, 'And the tagging?');
-      expect(sends, 1);
+      expect(sends, 0);
+      expect(find.text('And the tagging?'), findsOne);
     });
 
-    testWidgets('outside a voice-first chat a transcript waits in the draft', (
-      tester,
-    ) async {
-      final recorder = await pumpView(tester, voiceFirst: false);
+    testWidgets('a take adds to what is already written', (tester) async {
+      draft = 'First the count.';
+      final recorder = await pumpView(tester);
 
       recorder.hear('And the tagging?');
       await tester.pump();
 
-      expect(draft, 'And the tagging?');
-      expect(sends, 0);
+      expect(draft, 'First the count. And the tagging?');
+    });
+
+    testWidgets('read and corrected, what was said goes out as a spoken turn '
+        'to a host that asks', (tester) async {
+      var spoken = 0;
+      final recorder = await pumpView(tester, onSendSpoken: () => spoken++);
+
+      recorder.hear('And the taging?');
+      await tester.pump();
+      await tester.enterText(find.byType(TextField), 'And the tagging?');
+      await tester.pump();
+      await tester.tap(find.byKey(DesignSystemChatInputKeys.send));
+
+      expect(spoken, 1);
+      expect(sends, 0, reason: 'a spoken send is not a typed one');
+    });
+
+    testWidgets('a typed draft, or one cleared and typed again, goes out as '
+        'typed', (tester) async {
+      var spoken = 0;
+      final recorder = await pumpView(tester, onSendSpoken: () => spoken++);
+
+      recorder.hear('And the tagging?');
+      await tester.pump();
+      await tester.enterText(find.byType(TextField), '');
+      await tester.pump();
+      await tester.enterText(find.byType(TextField), 'Typed instead');
+      await tester.pump();
+      await tester.tap(find.byKey(DesignSystemChatInputKeys.send));
+
+      expect((sends, spoken), (1, 0));
     });
 
     testWidgets('a view without a composer leaves what was said to the one '

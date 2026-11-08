@@ -3432,13 +3432,22 @@ class AppLocalizationsCs extends AppLocalizations {
   String get chatInputConfigureModel => 'Konfigurovat model';
 
   @override
+  String get chatInputFinishRecording => 'Hotovo — před odesláním si to přečti';
+
+  @override
   String get chatInputHintDefault => 'Ptejte se na své úkoly a produktivitu...';
 
   @override
   String get chatInputHintSelectModel => 'Vyberte model pro zahájení chatu';
 
   @override
+  String get chatInputKeyboardHint => 'Enter odešle · Shift+Enter nový řádek';
+
+  @override
   String get chatInputListening => 'Naslouchám...';
+
+  @override
+  String get chatInputMentionsLabel => 'Návrhy';
 
   @override
   String get chatInputNoAudioRecorded =>
@@ -6398,6 +6407,67 @@ class AppLocalizationsCs extends AppLocalizations {
   String get designSystemCaptionWithoutActionsLabel => 'Bez akcí';
 
   @override
+  String get designSystemChatInputBusyLabel => 'Čeká se na odpověď';
+
+  @override
+  String get designSystemChatInputBusySample => 'Odpovídá…';
+
+  @override
+  String get designSystemChatInputDraftSample =>
+      'Dnes odpoledne od dvou do pěti chci jet vlakem do Berlína a cestou dodělat prezentaci na pondělí. Naplánuj to tak, aby bylo daňové přiznání hotové ještě předtím.';
+
+  @override
+  String get designSystemChatInputErrorLabel => 'Neodešlo se';
+
+  @override
+  String get designSystemChatInputErrorSample =>
+      'Neodešlo se to. Tvoje slova tu zůstala.';
+
+  @override
+  String get designSystemChatInputHelperSample =>
+      'Napiš @ a pojmenuj kategorii';
+
+  @override
+  String get designSystemChatInputHintSample => 'Zeptej se na cokoli…';
+
+  @override
+  String get designSystemChatInputIdleLabel => 'Nečinné';
+
+  @override
+  String get designSystemChatInputMentionDraftSample =>
+      'Co je po termínu v @Pr';
+
+  @override
+  String get designSystemChatInputMentionLabel =>
+      'Pojmenování kategorie přes @';
+
+  @override
+  String get designSystemChatInputMentionWoodworking => 'Práce se dřevem';
+
+  @override
+  String get designSystemChatInputMentionWork => 'Práce';
+
+  @override
+  String get designSystemChatInputMentionWorkshop =>
+      'Pracovní dílna – příprava';
+
+  @override
+  String get designSystemChatInputPartialSample =>
+      'Dnes odpoledne od dvou do pěti chci';
+
+  @override
+  String get designSystemChatInputProofreadLabel => 'Řečeno — přečti a odešli';
+
+  @override
+  String get designSystemChatInputRecordingLabel => 'Nahrávání';
+
+  @override
+  String get designSystemChatInputStatesTitle => 'Stavy pole zprávy';
+
+  @override
+  String get designSystemChatInputTranscribingLabel => 'Přepis';
+
+  @override
   String get designSystemCheckboxLabel => 'Zaškrtávací políčko';
 
   @override
@@ -7197,6 +7267,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get frontChatInboxTitle => 'Příchozí';
+
+  @override
+  String get frontChatMentionHint => 'Napiš @ a pojmenuj kategorii';
 
   @override
   String get frontChatNoChats =>

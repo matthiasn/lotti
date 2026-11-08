@@ -5730,6 +5730,12 @@ abstract class AppLocalizations {
   /// **'Configure model'**
   String get chatInputConfigureModel;
 
+  /// No description provided for @chatInputFinishRecording.
+  ///
+  /// In en, this message translates to:
+  /// **'Done — read it before sending'**
+  String get chatInputFinishRecording;
+
   /// No description provided for @chatInputHintDefault.
   ///
   /// In en, this message translates to:
@@ -5742,11 +5748,23 @@ abstract class AppLocalizations {
   /// **'Select a model to start chatting'**
   String get chatInputHintSelectModel;
 
+  /// No description provided for @chatInputKeyboardHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter sends · Shift+Enter for a new line'**
+  String get chatInputKeyboardHint;
+
   /// No description provided for @chatInputListening.
   ///
   /// In en, this message translates to:
   /// **'Listening...'**
   String get chatInputListening;
+
+  /// No description provided for @chatInputMentionsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Suggestions'**
+  String get chatInputMentionsLabel;
 
   /// No description provided for @chatInputNoAudioRecorded.
   ///
@@ -10661,6 +10679,114 @@ abstract class AppLocalizations {
   /// **'Without actions'**
   String get designSystemCaptionWithoutActionsLabel;
 
+  /// No description provided for @designSystemChatInputBusyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for an answer'**
+  String get designSystemChatInputBusyLabel;
+
+  /// No description provided for @designSystemChatInputBusySample.
+  ///
+  /// In en, this message translates to:
+  /// **'Answering…'**
+  String get designSystemChatInputBusySample;
+
+  /// No description provided for @designSystemChatInputDraftSample.
+  ///
+  /// In en, this message translates to:
+  /// **'This afternoon, from two to five, I want to take the train to Berlin and finish Monday’s slides on the way. Plan it so the tax return is done before I leave.'**
+  String get designSystemChatInputDraftSample;
+
+  /// No description provided for @designSystemChatInputErrorLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Didn\'t go through'**
+  String get designSystemChatInputErrorLabel;
+
+  /// No description provided for @designSystemChatInputErrorSample.
+  ///
+  /// In en, this message translates to:
+  /// **'That didn\'t go through. Your words are still here.'**
+  String get designSystemChatInputErrorSample;
+
+  /// No description provided for @designSystemChatInputHelperSample.
+  ///
+  /// In en, this message translates to:
+  /// **'Type @ to name a category'**
+  String get designSystemChatInputHelperSample;
+
+  /// No description provided for @designSystemChatInputHintSample.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask anything…'**
+  String get designSystemChatInputHintSample;
+
+  /// No description provided for @designSystemChatInputIdleLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Idle'**
+  String get designSystemChatInputIdleLabel;
+
+  /// No description provided for @designSystemChatInputMentionDraftSample.
+  ///
+  /// In en, this message translates to:
+  /// **'What\'s overdue in @Wo'**
+  String get designSystemChatInputMentionDraftSample;
+
+  /// No description provided for @designSystemChatInputMentionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Naming a category with @'**
+  String get designSystemChatInputMentionLabel;
+
+  /// No description provided for @designSystemChatInputMentionWoodworking.
+  ///
+  /// In en, this message translates to:
+  /// **'Woodworking'**
+  String get designSystemChatInputMentionWoodworking;
+
+  /// No description provided for @designSystemChatInputMentionWork.
+  ///
+  /// In en, this message translates to:
+  /// **'Work'**
+  String get designSystemChatInputMentionWork;
+
+  /// No description provided for @designSystemChatInputMentionWorkshop.
+  ///
+  /// In en, this message translates to:
+  /// **'Workshop prep'**
+  String get designSystemChatInputMentionWorkshop;
+
+  /// No description provided for @designSystemChatInputPartialSample.
+  ///
+  /// In en, this message translates to:
+  /// **'This afternoon, from two to five, I want to'**
+  String get designSystemChatInputPartialSample;
+
+  /// No description provided for @designSystemChatInputProofreadLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Said — read it, then send'**
+  String get designSystemChatInputProofreadLabel;
+
+  /// No description provided for @designSystemChatInputRecordingLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Recording'**
+  String get designSystemChatInputRecordingLabel;
+
+  /// No description provided for @designSystemChatInputStatesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat input states'**
+  String get designSystemChatInputStatesTitle;
+
+  /// No description provided for @designSystemChatInputTranscribingLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Transcribing'**
+  String get designSystemChatInputTranscribingLabel;
+
   /// No description provided for @designSystemCheckboxLabel.
   ///
   /// In en, this message translates to:
@@ -12136,6 +12262,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Inbox'**
   String get frontChatInboxTitle;
+
+  /// No description provided for @frontChatMentionHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Type @ to name a category'**
+  String get frontChatMentionHint;
 
   /// No description provided for @frontChatNoChats.
   ///

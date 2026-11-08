@@ -91,7 +91,7 @@ class _DayReviewFooter extends StatelessWidget {
       header: showChips
           ? _QuickRefinementChips(onSelected: onQuickRefinement)
           : null,
-      trailing: _DayStageAction(
+      nextStep: _DayStageAction(
         draft: draft,
         onCommit: onCommit,
         onShutdown: onShutdown,

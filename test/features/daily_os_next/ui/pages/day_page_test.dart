@@ -22,6 +22,7 @@ import 'package:lotti/features/daily_os_next/ui/widgets/day_composer.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/plan_view_toggle.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/chat_input/design_system_chat_input.dart';
 import 'package:lotti/features/design_system/components/glass_strip.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -548,14 +549,21 @@ void main() {
 
       // The composer holds its place, so the footer does not jump, but takes
       // no words: they would be lost if setup turns out to be missing.
-      final messages = tester.element(find.byType(DayPage)).messages;
       expect(find.byType(DayComposer), findsOneWidget);
       final field = find.descendant(
         of: find.byType(DayComposer),
         matching: find.byType(TextField),
       );
       expect(tester.widget<TextField>(field).enabled, isFalse);
-      expect(findMaterialTooltip(messages.chatInputRecordVoice), findsNothing);
+      // The mic stays in its place too, but cannot open a take.
+      expect(
+        tester
+            .widget<DesignSystemChatInputDisc>(
+              find.byKey(DesignSystemChatInputKeys.mic),
+            )
+            .onPressed,
+        isNull,
+      );
     });
 
     testWidgets(

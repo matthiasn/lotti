@@ -99,14 +99,17 @@ events stay visible on the Day timeline — the default projection, plan or not 
 without creating a plan first. Empty mode says so honestly — the header
 briefing reads "There's no plan for this day yet…" and the Agenda view's
 capacity strip reads "No plan yet" — swaps the with-plan footer (the "What should change?"
-composer, its quick refinements and the stage action beside it — Looks good /
+composer, its quick refinements and the stage action beside its mic — Looks good /
 Wrap up) for the check-in `DayComposer`, and hides
-the delete-plan menu entry. **The composer is the capture.** It is the shared
-chat field (`ChatComposerField` inside `DayComposerBar`): mic while empty, send
-arrow once there are words. The mic records through `captureControllerProvider`
-— the same recorder, and the same saved journal audio, as the Capture step — with
-the `ChatRecordingPill` in the field's place; the finished transcript lands in
-the field for review and the recorder returns to idle. It acts only on takes it
+the delete-plan menu entry. **The composer is the capture.** It is the
+design system's chat input (`DesignSystemChatInput` inside `DayComposerBar`):
+the mic always, send beside it once there are words. The mic records through
+`captureControllerProvider` — the same recorder, and the same saved journal
+audio, as the Capture step — and while the take runs the input's row shows the
+voice across its whole width (the capture keeps four seconds of levels, 200
+at its 20 ms cadence); Done ends it, the finished transcript lands in the
+field after anything already typed, for review, and the recorder returns to
+idle. It acts only on takes it
 started: the recorder is shared with the sheet's Capture step, which the
 onboarding spotlight opens over the page. Sending submits the capture (`submitCapture`, with the recording's
 `audioId` when spoken) and opens the planning sheet with

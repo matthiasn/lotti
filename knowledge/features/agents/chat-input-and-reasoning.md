@@ -42,9 +42,10 @@ pulsing dots (unspaced inside the bubble), stopped under reduced motion; a
 test of a sending thread pumps frames rather than settling.
 `groupAttachmentsWithReply` places a consumer's supporting widgets inside the
 reply surface and its reading width, under a transparent Material ancestor for
-interactive disclosures. `composerShape` selects the input shell; pill composers
-use an emphasized upward-arrow Send action. Both options default to the existing
-separate attachment and rounded-field treatment for other hosts.
+interactive disclosures; other hosts keep separate attachments.
+`composerHelper` is the line the composer says under its field — only what
+the chat supports — and `mentionOptions` what `@` offers there (the front
+agent's categories); without them the composer says nothing about `@`.
 `footerTrailingBuilder` lets a host tail a bubble's footer line — after the
 author and the time, on the same line — with a widget of its own, so a turn's
 metadata stays one row.
@@ -55,14 +56,15 @@ log; the front agent uses all three, every other host keeps the defaults.
 state too, so a turn never changes shape on answering), keeps the user's
 words in a soft bubble capped short of the far edge on a phone, and drops the
 author-and-time line, leaving the footer only for what `footerTrailingBuilder`
-adds. `voiceFirst` keeps the one composer every chat has — a field with the mic
-at its end until there are words, then send — and sends what was said as
-recording stops, no second tap (tap to talk, tap to send): the recording
-pill's end control is then the send arrow with the send tooltip, and on a
-desktop-width window the field takes the keyboard at once; a phone keeps its keyboard down until the field is tapped, so talking
-stays one tap. A transcript a `voiceFirst` chat sends by itself goes to
-`onSendSpoken` when the host gives one, so the host knows the turn was
-spoken; starting to record stops any voice that is speaking first
+adds. `voiceFirst` makes talking lead: on a desktop-width window the field
+takes the keyboard at once, while a phone keeps its keyboard down until the
+field is tapped, so talking stays one tap. **Nothing said goes out by
+itself**, in any chat: Done ends a take and its words land in the field —
+after anything already there — to be read, corrected and sent like typed
+words. A draft that came from what was said still goes out through
+`onSendSpoken` when the host gives one (`_draftSpoken`, cleared once the
+field is emptied or sent), so the host knows the turn was spoken; starting to
+record stops any voice that is speaking first
 (`ChatRecorderController.start`), so the microphone never records the
 app. `contentMaxWidth` gives the thread and the composer's controls one
 centred reading column: the list's side gutter grows with the window (never
@@ -83,24 +85,18 @@ Hosts can supply `onLinkTap` to resolve each link against its containing message
 That opt-in preserves the rich reply's accessible text and link actions, with
 only author/time on the enclosing semantic node. Other hosts keep the existing
 flattened message announcement.
-**One recording pill everywhere.** While the microphone is live, every
-chat's composer — the companion's, the in-task query chat's, a goal's, a
-person's — is the same `ChatRecordingPill` (`chat_recording_pill.dart`),
-and the companion's stage uses it too. It is the idle pill field's own
-height (`spacing.step9`), fill and corners, so nothing jumps as recording
-starts: × cancel (Escape too) leads, then a red recording dot, the elapsed
-`m:ss` in tabular `bodySmall`, the voice as `WaveformBarsPainter` bars in
-quiet ink (`text.mediumEmphasis`), and at the end the teal control that ends
-it — the send arrow when stopping sends (`voiceFirst`), a stop square when it
-only transcribes into the field. Its edge is the field's resting one: teal is
-for what to do, and the red dot already says the microphone is on.
-Transcribing, the time and bars give way to
-*Transcribing…* and a quiet spinner takes the end control's place; Cancel
-stays in every host, so a stalled transcription always has its way out. Both
-ends are whole tap targets (`TapTargets.minimum`). A host whose own control
-ends the take (the companion's talk disc) passes `showEndControl: false`, so
-one send is on screen; the voice then runs out to the ×'s inset, mirrored. There is no per-host
-recording layout any more.
+**One chat input everywhere.** Every chat's composer — the companion's,
+the in-task query chat's, a goal's, a person's — and the Daily OS composer
+are the design system's `DesignSystemChatInput` (see
+[component contracts](../design_system/component-contracts.md#one-chat-input-for-typing-and-talking)),
+driven here by `chatRecorderControllerProvider`: its phase from the
+recorder's status, its levels from `getNormalizedAmplitudeHistory`, Done to
+`stopAndTranscribe`, cancel to `cancel`. Recording changes only the input's
+bottom row, so nothing jumps as it starts, and the voice runs across all the
+width the row has (`DesignSystemVoiceWaveform`, the last four seconds of the
+take). The companion's stage has no field — its talk disc sends — so it shows
+a take in `FrontStageTake`: the same surface, cancel, dot, time and bars,
+without a send of its own. There is no per-host recording layout.
 
 Its composer and the agent improvement input widgets use
 the same voice-input primitives under `agents/ui/chat/`:
@@ -108,7 +104,9 @@ the same voice-input primitives under `agents/ui/chat/`:
 - `ChatRecorderController` and `ChatRecorderState` manage a temporary recording,
   streamed transcript feedback, and typed errors.
 - `chat_amplitude_history.dart` provides bounded history and normalization
-  functions; `WaveformBars` renders the normalized samples.
+  functions; the design system's `DesignSystemVoiceWaveform` renders the
+  normalized samples (the evolution chat and the goal charter sheet use it
+  directly).
 - `chatRecorderErrorMessage` maps error kinds to localized messages.
 - `thinking_parser.dart` separates reasoning from visible assistant text;
   `ThinkingDisclosure` renders it collapsed by default in improvement replies.
@@ -134,18 +132,17 @@ stateDiagram-v2
 Start checks microphone permission, records to an app-scoped temporary `.m4a`
 file, samples amplitude, and arms a maximum-duration stop. The injected clock
 also supplies elapsed capture time on amplitude updates; a new recording resets
-it to zero; the pill shows it in tabular figures, so the clock crossing a
+it to zero; the input shows it in tabular figures, so the clock crossing a
 minute never moves the controls. Stop moves to
 `processing`, streams transcription chunks into `partialTranscript`, then
 publishes the finished `transcript` or a typed error and returns to `idle`.
 The UI consumes the finished transcript into its editable composer. During
-processing, the shared composer shows up to three measured lines of partial
-text. Overflowing text offers Show more/less; expansion enables scrolling
-within six lines and a quarter of the available chat height, whichever is
-smaller. This height comes from the host layout, including keyboard constraints.
-The recording pill, with its Cancel, stays below that scroll area. Short text has no toggle;
-empty progress has a localized transcription label. Partial text is never sent
-or copied into the draft before transcription finishes.
+processing the partial text shows where the words will land — in the input,
+after anything already written, in quieter ink, up to the field's six lines —
+with Cancel and a spinner in the controls' place, so a stalled transcription
+always has its way out. Empty progress has a localized transcription label.
+Partial text is never sent or copied into the draft before transcription
+finishes.
 
 Hosts can pass a lazy `resolveTranscriptionTarget` callback into `start`. It is
 captured for that recording and awaited immediately before transcription;

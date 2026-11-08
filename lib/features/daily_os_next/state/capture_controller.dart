@@ -103,8 +103,10 @@ class CaptureController extends Notifier<CaptureState> {
   _correctionTargetOverride;
   final DateTime Function() _now;
 
-  /// Rolling-window size for the live waveform (~1.6s at 20ms cadence).
-  static const _maxAmplitudeSamples = 80;
+  /// Rolling-window size for the live waveform: the four seconds the
+  /// composer's row shows across its whole width (200 at the 20 ms
+  /// cadence), so a wide row is full rather than half empty.
+  static const _maxAmplitudeSamples = 200;
 
   late final AudioRecorderRepository _recorder =
       _recorderOverride ?? AudioRecorderRepository();
