@@ -189,7 +189,7 @@ extension _GoalOutputPersistence on GoalAgentWorkflow {
               // leaving them raw put the internal ids the sanitizer exists to
               // remove straight back in front of the reader — and made the
               // sections disagree with the sanitized fallback beneath them.
-              GoalReportProvenanceKeys.sections: ?_sanitizeReportSections(
+              GoalReportProvenanceKeys.sections: ?sanitizeReportSections(
                 strategy.reportSections,
               ),
               // What the reflection had in front of it, so the next wake can

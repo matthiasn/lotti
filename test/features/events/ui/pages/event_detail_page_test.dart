@@ -12,7 +12,6 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/agents/state/event_agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
-import 'package:lotti/features/demo/seed/demo_entity_factories.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/events/ui/pages/event_detail_page.dart';
 import 'package:lotti/features/events/ui/widgets/event_cover_image.dart';
@@ -41,6 +40,7 @@ import 'package:lotti/widgets/markdown/agent_markdown_view.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../helpers/entity_factories.dart';
 import '../../../../helpers/fake_entry_controller.dart';
 import '../../../../helpers/service_overrides.dart';
 import '../../../../helpers/stub_audio_recorder_controller.dart';

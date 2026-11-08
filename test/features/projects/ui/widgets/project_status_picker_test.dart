@@ -27,53 +27,51 @@ void main() {
     utcOffset: 0,
   );
 
-  group('ProjectStatusPicker', () {
-    testWidgets('displays current status label and chevron', (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          ProjectStatusPicker(
-            currentStatus: makeOpen(),
-            onStatusChanged: (_) {},
-          ),
-        ),
-      );
-      await tester.pump();
-
-      expect(find.text('Open'), findsOneWidget);
-      expect(find.byIcon(LottiIcons.chevronRight), findsOneWidget);
-    });
-
-    testWidgets('tapping opens adaptive modal with all 6 status options', (
-      tester,
+  group('showProjectStatusPickerModal', () {
+    /// Opens the picker over [currentStatus]; the returned list receives the
+    /// modal's result once it closes.
+    Future<List<ProjectStatus?>> openPicker(
+      WidgetTester tester,
+      ProjectStatus currentStatus,
     ) async {
+      final results = <ProjectStatus?>[];
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          ProjectStatusPicker(
-            currentStatus: makeOpen(),
-            onStatusChanged: (_) {},
+          Builder(
+            builder: (context) => TextButton(
+              onPressed: () async => results.add(
+                await showProjectStatusPickerModal(
+                  context: context,
+                  currentStatus: currentStatus,
+                ),
+              ),
+              child: const Text('open picker'),
+            ),
           ),
         ),
       );
-      await tester.pump();
-
-      await tester.tap(find.text('Open'));
+      await tester.tap(find.text('open picker'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
+      return results;
+    }
 
-      // Adaptive modal title.
+    testWidgets('lists every status kind under the change-status title', (
+      tester,
+    ) async {
+      await openPicker(tester, makeOpen());
+
       expect(find.text('Change status'), findsOneWidget);
-
-      // All 6 options
-      // "Open" appears twice: once in the picker widget behind the sheet,
-      // and once as an option in the sheet.
-      expect(find.text('Open'), findsNWidgets(2));
-      expect(find.text('Active'), findsOneWidget);
-      expect(find.text('Monitoring'), findsOneWidget);
-      expect(find.text('On Hold'), findsOneWidget);
-      expect(find.text('Completed'), findsOneWidget);
-      expect(find.text('Archived'), findsOneWidget);
-
-      // The shared selection anatomy renders one row per status kind.
+      for (final label in [
+        'Open',
+        'Active',
+        'Monitoring',
+        'On Hold',
+        'Completed',
+        'Archived',
+      ]) {
+        expect(find.text(label), findsOneWidget, reason: label);
+      }
       expect(
         find.descendant(
           of: find.byType(ProjectStatusModalContent),
@@ -84,94 +82,14 @@ void main() {
       expect(find.byType(Divider), findsNothing);
     });
 
-    testWidgets('current status shows check mark in sheet', (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          ProjectStatusPicker(
-            currentStatus: makeOpen(),
-            onStatusChanged: (_) {},
-          ),
-        ),
-      );
-      await tester.pump();
-
-      await tester.tap(find.text('Open'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
+    testWidgets('marks only the current status', (tester) async {
+      await openPicker(tester, makeOpen());
 
       expect(find.byIcon(LottiIcons.confirm), findsOneWidget);
     });
 
-    testWidgets('selecting a different status calls onStatusChanged', (
-      tester,
-    ) async {
-      ProjectStatus? selectedStatus;
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          ProjectStatusPicker(
-            currentStatus: makeOpen(),
-            onStatusChanged: (status) => selectedStatus = status,
-          ),
-        ),
-      );
-      await tester.pump();
-
-      await tester.tap(find.text('Open'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
-      await tester.tap(find.text('Active'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
-      expect(selectedStatus, isA<ProjectActive>());
-    });
-
-    testWidgets('selecting current status does not call onStatusChanged', (
-      tester,
-    ) async {
-      var callCount = 0;
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          ProjectStatusPicker(
-            currentStatus: makeOpen(),
-            onStatusChanged: (_) => callCount++,
-          ),
-        ),
-      );
-      await tester.pump();
-
-      await tester.tap(find.text('Open'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
-      // Tap the "Open" option in the sheet (second occurrence)
-      final openOptions = find.text('Open');
-      await tester.tap(openOptions.last);
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
-      expect(callCount, 0);
-    });
-
-    testWidgets('sheet dismisses after selection', (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          ProjectStatusPicker(
-            currentStatus: makeOpen(),
-            onStatusChanged: (_) {},
-          ),
-        ),
-      );
-      await tester.pump();
-
-      await tester.tap(find.text('Open'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
-      expect(find.text('Change status'), findsOneWidget);
+    testWidgets('returns a different status and closes', (tester) async {
+      final results = await openPicker(tester, makeOpen());
 
       await tester.ensureVisible(find.text('Completed'));
       await tester.pump();
@@ -179,8 +97,20 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      // Sheet should be dismissed
+      expect(results.single, isA<ProjectCompleted>());
       expect(find.text('Change status'), findsNothing);
+    });
+
+    testWidgets('returns null when the current status is picked again', (
+      tester,
+    ) async {
+      final results = await openPicker(tester, makeOpen());
+
+      await tester.tap(find.text('Open'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(results, [null]);
     });
   });
 }

@@ -48,7 +48,7 @@ String foldDiacritics(String text) {
   for (final rune in text.runes) {
     if (rune >= 0x300 && rune <= 0x36F) continue;
     final char = String.fromCharCode(rune);
-    folded.write(_baseLetters[char] ?? char);
+    folded.write(foldedLetters[char] ?? char);
   }
   return folded.toString();
 }
@@ -56,10 +56,7 @@ String foldDiacritics(String text) {
 /// The precomposed letters [foldDiacritics] maps, each to its base letter.
 /// Every one must be a letter the index's tokenizer folds the same way, or a
 /// query folded here would no longer match the title the index stored.
-@visibleForTesting
-Map<String, String> get foldedLetters => _baseLetters;
-
-final Map<String, String> _baseLetters = {
+final Map<String, String> foldedLetters = {
   for (final MapEntry(key: base, value: accented) in const {
     'a': 'àáâãäåāăąǎǟǻȁȃȧḁạảấầẩẫậắằẳẵặ',
     'b': 'ḃḅḇ',

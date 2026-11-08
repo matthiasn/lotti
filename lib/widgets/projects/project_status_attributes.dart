@@ -9,8 +9,8 @@ import 'package:material_ui/material_ui.dart';
 /// Shared mapping from [ProjectStatus] to its display attributes:
 /// label, color (brightness-aware), and icon.
 ///
-/// Used by both `ProjectStatusChip` and `ProjectStatusPicker` to ensure
-/// consistent visual representation across all project status surfaces.
+/// Shared by every project status surface (chip, picker, project pages) so
+/// they stay visually consistent.
 (String, Color, IconData) projectStatusAttributes(
   BuildContext context,
   ProjectStatus status,

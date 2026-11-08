@@ -8491,7 +8491,7 @@ void main() {
     },
   );
   test('persisted sections are sanitized like every other visible string', () {
-    final sections = sanitizeReportSectionsForTest({
+    final sections = sanitizeReportSections({
       GoalReportSectionKeys.currentPeriod:
           'Close the gap on habit-71ca84b0 today.',
       GoalReportSectionKeys.nextActions: [

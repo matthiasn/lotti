@@ -109,10 +109,3 @@ const Map<ConfigFlagGroup, List<String>> configFlagGroups = {
     resendAttachments,
   ],
 };
-
-/// Every flag the Config Flags page renders, flattened across the groups in
-/// render order — the view the coverage and retirement checks read, and what
-/// callers that only care *whether* a flag is on that page should use.
-List<String> get configFlagsOnFlagsPage => [
-  for (final group in ConfigFlagGroup.values) ...?configFlagGroups[group],
-];

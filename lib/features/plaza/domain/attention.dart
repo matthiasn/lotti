@@ -209,10 +209,3 @@ const _months = [
 
 /// `Jul 18` — the short date used on facades, billboards and tickers.
 String shortDate(DateTime date) => '${_months[date.month - 1]} ${date.day}';
-
-/// The small print under a task's title, on its facade and in the side
-/// panel: the due date and the link count, each only when there is one.
-List<String> taskMetaBits(PlazaTask task) => [
-  if (task.due != null) 'due ${shortDate(task.due!)}',
-  if (task.linkedTaskIds.isNotEmpty) 'links ${task.linkedTaskIds.length}',
-];

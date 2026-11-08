@@ -105,17 +105,10 @@ const int _inlineSyncDecodeThreshold = 4 * 1024;
 /// Worker entry point for `compute`. Must be a top-level function so the
 /// runtime can hand it to a background isolate. Decodes a base64-encoded
 /// Matrix sync message body into its JSON map representation.
-Map<String, dynamic> _decodeSyncEventPayload(String raw) {
+Map<String, dynamic> decodeSyncEventPayload(String raw) {
   final decoded = utf8.decode(base64.decode(raw));
   return json.decode(decoded) as Map<String, dynamic>;
 }
-
-/// Test seam for [_decodeSyncEventPayload], the `compute` worker entry point.
-/// Exposes the pure base64→utf8→json decode so the compute-offload path can be
-/// pinned without spinning up a background isolate.
-@visibleForTesting
-Map<String, dynamic> decodeSyncEventPayloadForTesting(String raw) =>
-    _decodeSyncEventPayload(raw);
 
 /// Internal classification signal for a sync payload that was found but can
 /// never succeed on retry (malformed JSON, invalid path, or a missing required
@@ -442,7 +435,7 @@ class SyncEventProcessor {
       // pointers, short messages) stay inline.
       final Map<String, dynamic> messageJson;
       if (raw.length >= _inlineSyncDecodeThreshold) {
-        messageJson = await compute(_decodeSyncEventPayload, raw);
+        messageJson = await compute(decodeSyncEventPayload, raw);
       } else {
         final decoded = utf8.decode(base64.decode(raw));
         messageJson = json.decode(decoded) as Map<String, dynamic>;
@@ -790,21 +783,4 @@ class SyncEventProcessor {
     loggingService: _loggingService,
     trace: _trace,
   );
-}
-
-Future<T> runWithDeferredMissingEntryNudges<T>(
-  SyncEventProcessor processor,
-  Future<T> Function() action,
-) {
-  // Production always uses the concrete SyncEventProcessor. Tests often inject
-  // mock implementations of its interface; fall back to the plain action there
-  // so the helper does not force new stubs across unrelated test suites.
-  if (processor.runtimeType != SyncEventProcessor) {
-    return action();
-  }
-  final sequenceLogService = processor._sequenceLogService;
-  if (sequenceLogService == null) {
-    return action();
-  }
-  return sequenceLogService.runWithDeferredMissingEntries(action);
 }

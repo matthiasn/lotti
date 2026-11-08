@@ -16,7 +16,7 @@ part of 'get_it.dart';
 /// restored log lacks every row written after the snapshot, and an own
 /// counter with no row is answered as burned, so a peer would give up on
 /// payloads this device still holds (ADR 0135).
-Future<void> _checkAndPopulateSequenceLog() async {
+Future<void> checkAndPopulateSequenceLog() async {
   // Bumped from 'maintenance_sequenceLogPopulated' to V2 so devices that
   // ran V1 (journal + links only) will re-run with agent data included.
   const settingsKey = 'maintenance_sequenceLogPopulatedV2';
@@ -174,10 +174,6 @@ Future<String?> _syncDbRestoreMarker() async {
   return marker.existsSync() ? marker.readAsString() : null;
 }
 
-@visibleForTesting
-Future<void> checkAndPopulateSequenceLogForTesting() =>
-    _checkAndPopulateSequenceLog();
-
 /// Stamps, once per device, the entity definitions and entry links saved
 /// before they carried a vector clock, and sends them.
 ///
@@ -193,7 +189,7 @@ Future<void> checkAndPopulateSequenceLogForTesting() =>
 /// an older peer, and completion is recorded only if the token read before
 /// the sweep is unchanged, so a row stored even mid-sweep leaves the next
 /// start to sweep again.
-Future<void> _repairClocklessRowsOnce() async {
+Future<void> repairClocklessRowsOnce() async {
   final settingsDb = getIt<SettingsDb>();
   final domainLogger = getIt<DomainLogger>();
   try {
@@ -236,10 +232,7 @@ Future<void> _repairClocklessRowsOnce() async {
   }
 }
 
-@visibleForTesting
-Future<void> repairClocklessRowsOnceForTesting() => _repairClocklessRowsOnce();
-
-/// Settings key recording that [_resendOwnCounterZeroOnce] ran.
+/// Settings key recording that [resendOwnCounterZeroOnce] ran.
 const counterZeroResentSettingsKey = 'maintenance_counterZeroResentV1';
 
 /// Resends, once per device, this host's own write at counter 0, which a
@@ -247,7 +240,7 @@ const counterZeroResentSettingsKey = 'maintenance_counterZeroResentV1';
 /// ([BackfillResponseHandler.resendOwnCounterZero], ADR 0130). The flag is
 /// set once the attempt returns, whether or not there was anything to send,
 /// and not when it throws, so a failure retries at the next start.
-Future<void> _resendOwnCounterZeroOnce() async {
+Future<void> resendOwnCounterZeroOnce() async {
   final settingsDb = getIt<SettingsDb>();
   final domainLogger = getIt<DomainLogger>();
   try {
@@ -273,7 +266,7 @@ Future<void> _resendOwnCounterZeroOnce() async {
   }
 }
 
-/// Settings key recording that [_resendBurnedOwnCountersOnce] ran.
+/// Settings key recording that [resendBurnedOwnCountersOnce] ran.
 const burnedOwnCountersResentSettingsKey = 'maintenance_burnedOwnCountersV1';
 
 /// Resends and rebinds, once per device, the own counters an older build
@@ -281,7 +274,7 @@ const burnedOwnCountersResentSettingsKey = 'maintenance_burnedOwnCountersV1';
 /// ([BackfillResponseHandler.resendBurnedOwnCountersCarried], ADR 0131). The
 /// flag is set once the sweep returns and not when it throws, so a failure
 /// retries at the next start.
-Future<void> _resendBurnedOwnCountersOnce() async {
+Future<void> resendBurnedOwnCountersOnce() async {
   final settingsDb = getIt<SettingsDb>();
   final domainLogger = getIt<DomainLogger>();
   try {
@@ -312,25 +305,14 @@ Future<void> _resendBurnedOwnCountersOnce() async {
   }
 }
 
-@visibleForTesting
-Future<void> resendBurnedOwnCountersOnceForTesting() =>
-    _resendBurnedOwnCountersOnce();
-
-@visibleForTesting
-Future<void> resendOwnCounterZeroOnceForTesting() =>
-    _resendOwnCounterZeroOnce();
-
 /// The categories' legacy speech dictionaries into dictionary entries. Runs
 /// at every start: it writes only terms this device holds no entry for, so
 /// after the first run it changes nothing.
-Future<void> _migrateSpeechDictionary() => SpeechDictionaryMigration(
+Future<void> migrateSpeechDictionary() => SpeechDictionaryMigration(
   journalDb: getIt<JournalDb>(),
   persistenceLogic: getIt<PersistenceLogic>(),
   domainLogger: getIt<DomainLogger>(),
 ).run();
-
-@visibleForTesting
-Future<void> migrateSpeechDictionaryForTesting() => _migrateSpeechDictionary();
 
 /// The registers of the vector store as a sequence-log record source (ADR
 /// 0150): the store is ObjectBox, so the shared registers are read whole and

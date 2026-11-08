@@ -11,10 +11,6 @@ const int kMaxTermLength = 50;
 /// long tail would only crowd the prompt.
 const int kMaxMisheardForms = 8;
 
-/// Above this many entries the dictionary page warns that a very long list
-/// dilutes the hints a transcription model can use.
-const int kDictionaryWarningThreshold = 500;
-
 /// Namespace of the entry ids, so they never collide with another v5 id.
 const _entryIdNamespace = '5b0a1f3e-8d2c-5f6e-9a47-3c1d2e4b6a70';
 

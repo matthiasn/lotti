@@ -76,8 +76,6 @@ void main() {
         final snapshot = goal.copyWith(snapshotOf: 'goal-1');
 
         expect(goal.snapshotOf, isNull);
-        expect(goal.isSpecSnapshot, isFalse);
-        expect(snapshot.isSpecSnapshot, isTrue);
         expect(snapshot.snapshotOf, 'goal-1');
       },
     );

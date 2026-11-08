@@ -77,7 +77,7 @@ Future<void> _registerLateAndOptionalServices({
     getIt<StartupTasks>().track(getIt<SyncService>().init());
   }
 
-  getIt<StartupTasks>().track(_migrateSpeechDictionary());
+  getIt<StartupTasks>().track(migrateSpeechDictionary());
 
   // Indexes every journal change from here on and resumes a rebuild the
   // index still owes the journal; see SearchIndexService.
@@ -114,11 +114,11 @@ Future<void> _registerLateAndOptionalServices({
       // the counters a reservation must not hand out again.
       ..track(
         getIt<VectorClockService>()
-            .holdReservationsWhile(_checkAndPopulateSequenceLog)
-            .then((_) => _resendOwnCounterZeroOnce())
-            .then((_) => _resendBurnedOwnCountersOnce()),
+            .holdReservationsWhile(checkAndPopulateSequenceLog)
+            .then((_) => resendOwnCounterZeroOnce())
+            .then((_) => resendBurnedOwnCountersOnce()),
       )
-      ..track(_repairClocklessRowsOnce());
+      ..track(repairClocklessRowsOnce());
   }
 }
 

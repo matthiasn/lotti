@@ -51,7 +51,7 @@ void main() {
     await getIt.popScope();
   });
 
-  group('resendBurnedOwnCountersOnceForTesting', () {
+  group('resendBurnedOwnCountersOnce', () {
     late MockDomainLogger logger;
     late MockSettingsDb settingsDb;
     late MockBackfillResponseHandler handler;
@@ -90,7 +90,7 @@ void main() {
       ).thenAnswer((_) async => null);
       when(handler.resendBurnedOwnCountersCarried).thenAnswer((_) async => 2);
 
-      await resendBurnedOwnCountersOnceForTesting();
+      await resendBurnedOwnCountersOnce();
 
       verify(
         () => settingsDb.saveSettingsItem(
@@ -112,7 +112,7 @@ void main() {
         () => settingsDb.itemByKey(burnedOwnCountersResentSettingsKey),
       ).thenAnswer((_) async => 'true');
 
-      await resendBurnedOwnCountersOnceForTesting();
+      await resendBurnedOwnCountersOnce();
 
       verifyNever(handler.resendBurnedOwnCountersCarried);
     });
@@ -125,7 +125,7 @@ void main() {
         handler.resendBurnedOwnCountersCarried,
       ).thenThrow(StateError('closed'));
 
-      await resendBurnedOwnCountersOnceForTesting();
+      await resendBurnedOwnCountersOnce();
 
       verifyNever(
         () => settingsDb.saveSettingsItem(
@@ -144,7 +144,7 @@ void main() {
     });
   });
 
-  group('resendOwnCounterZeroOnceForTesting', () {
+  group('resendOwnCounterZeroOnce', () {
     late MockDomainLogger logger;
     late MockSettingsDb settingsDb;
     late MockBackfillResponseHandler handler;
@@ -185,7 +185,7 @@ void main() {
         ).thenAnswer((_) async => null);
         when(handler.resendOwnCounterZero).thenAnswer((_) async => true);
 
-        await resendOwnCounterZeroOnceForTesting();
+        await resendOwnCounterZeroOnce();
 
         verify(
           () =>
@@ -206,7 +206,7 @@ void main() {
         () => settingsDb.itemByKey(counterZeroResentSettingsKey),
       ).thenAnswer((_) async => 'true');
 
-      await resendOwnCounterZeroOnceForTesting();
+      await resendOwnCounterZeroOnce();
 
       verifyNever(handler.resendOwnCounterZero);
     });
@@ -217,7 +217,7 @@ void main() {
       ).thenAnswer((_) async => null);
       when(handler.resendOwnCounterZero).thenThrow(StateError('closed'));
 
-      await resendOwnCounterZeroOnceForTesting();
+      await resendOwnCounterZeroOnce();
 
       verifyNever(
         () => settingsDb.saveSettingsItem(counterZeroResentSettingsKey, any()),
@@ -233,7 +233,7 @@ void main() {
     });
   });
 
-  group('repairClocklessRowsOnceForTesting', () {
+  group('repairClocklessRowsOnce', () {
     late MockDomainLogger logger;
     late MockSettingsDb settingsDb;
     late MockJournalDb journalDb;
@@ -290,7 +290,7 @@ void main() {
         () => settingsDb.itemByKey(clocklessRepairSettingsKey),
       ).thenAnswer((_) async => clocklessRepairDone);
 
-      await repairClocklessRowsOnceForTesting();
+      await repairClocklessRowsOnce();
 
       verifyNever(journalDb.clocklessDefinitions);
       verifyNever(journalDb.entryLinksWithNullVectorClock);
@@ -303,7 +303,7 @@ void main() {
           () => settingsDb.itemByKey(clocklessRepairSettingsKey),
         ).thenAnswer((_) async => null);
 
-        await repairClocklessRowsOnceForTesting();
+        await repairClocklessRowsOnce();
 
         verify(journalDb.clocklessDefinitions).called(1);
         verify(journalDb.entryLinksWithNullVectorClock).called(1);
@@ -332,7 +332,7 @@ void main() {
           ),
         ).thenAnswer((_) async => false);
 
-        await repairClocklessRowsOnceForTesting();
+        await repairClocklessRowsOnce();
 
         verify(journalDb.entryLinksWithNullVectorClock).called(1);
         verify(
@@ -355,7 +355,7 @@ void main() {
           journalDb.entryLinksWithNullVectorClock,
         ).thenThrow(StateError('database closed'));
 
-        await repairClocklessRowsOnceForTesting();
+        await repairClocklessRowsOnce();
 
         verifyNever(
           () => settingsDb.saveSettingsItemIfUnchanged(
@@ -376,7 +376,7 @@ void main() {
     );
   });
 
-  group('checkAndPopulateSequenceLogForTesting', () {
+  group('checkAndPopulateSequenceLog', () {
     late MockDomainLogger mockDomainLogger;
     late MockSettingsDb settingsDb;
     late MockSyncDatabase syncDatabase;
@@ -525,7 +525,7 @@ void main() {
         getIt.registerSingleton<EmbeddingVectorsSync>(vectors);
         addTearDown(() => getIt.unregister<EmbeddingVectorsSync>());
 
-        await checkAndPopulateSequenceLogForTesting();
+        await checkAndPopulateSequenceLog();
 
         final call = verify(
           () => sequenceLogService.populateFromRecords(
@@ -550,7 +550,7 @@ void main() {
         () => settingsDb.itemByKey(settingsKey),
       ).thenAnswer((_) async => 'true');
 
-      await checkAndPopulateSequenceLogForTesting();
+      await checkAndPopulateSequenceLog();
 
       verifyNever(() => syncDatabase.getSequenceLogCount());
       verifyNever(() => journalDb.countAllJournalEntries());
@@ -589,8 +589,8 @@ void main() {
       when(() => agentDb.countAllAgentEntities()).thenAnswer((_) async => 0);
       when(() => agentDb.countAllAgentLinks()).thenAnswer((_) async => 0);
 
-      await checkAndPopulateSequenceLogForTesting();
-      await checkAndPopulateSequenceLogForTesting();
+      await checkAndPopulateSequenceLog();
+      await checkAndPopulateSequenceLog();
 
       verify(() => journalDb.countAllJournalEntries()).called(1);
       expect(handled, '2026-10-11T10:00:00.000');
@@ -621,7 +621,7 @@ void main() {
           () => settingsDb.saveSettingsItem(any(), any()),
         ).thenAnswer((_) async => 1);
 
-        await checkAndPopulateSequenceLogForTesting();
+        await checkAndPopulateSequenceLog();
 
         verify(
           () => settingsDb.saveSettingsItem(
@@ -640,7 +640,7 @@ void main() {
       stubEmptyPopulation();
       when(notificationsDb.countAllNotifications).thenAnswer((_) async => 3);
 
-      await checkAndPopulateSequenceLogForTesting();
+      await checkAndPopulateSequenceLog();
 
       final populated = verify(
         () => sequenceLogService.populateFromRecords(
@@ -666,7 +666,7 @@ void main() {
         () => syncDatabase.getSequenceLogCount(),
       ).thenThrow(Exception('db error'));
 
-      await checkAndPopulateSequenceLogForTesting();
+      await checkAndPopulateSequenceLog();
 
       verifyNever(() => settingsDb.saveSettingsItem(any(), any()));
     });
@@ -743,7 +743,7 @@ void main() {
         () => settingsDb.saveSettingsItem(any(), any()),
       ).thenAnswer((_) async => 1);
 
-      await checkAndPopulateSequenceLogForTesting();
+      await checkAndPopulateSequenceLog();
 
       // Verify settings saved (which means population completed)
       verify(
@@ -795,7 +795,7 @@ void main() {
     });
   });
 
-  group('migrateSpeechDictionaryForTesting', () {
+  group('migrateSpeechDictionary', () {
     test(
       "migrates the categories' lists through the registered services",
       () async {
@@ -827,7 +827,7 @@ void main() {
           ..registerSingleton<PersistenceLogic>(persistence)
           ..registerSingleton<DomainLogger>(logger);
 
-        await migrateSpeechDictionaryForTesting();
+        await migrateSpeechDictionary();
 
         final seeded =
             verify(

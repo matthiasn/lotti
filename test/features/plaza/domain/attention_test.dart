@@ -257,16 +257,6 @@ void main() {
     expect(LanternState.off.word, 'done');
   });
 
-  test('the meta bits name only what the task has', () {
-    expect(taskMetaBits(_task()), isEmpty);
-    expect(taskMetaBits(_task(due: DateTime.utc(2026, 8, 2))), ['due Aug 2']);
-    expect(taskMetaBits(_task(links: const ['a', 'b'])), ['links 2']);
-    expect(
-      taskMetaBits(_task(due: DateTime.utc(2026, 8, 2), links: const ['a'])),
-      ['due Aug 2', 'links 1'],
-    );
-  });
-
   group('properties', () {
     // Tasks with every state, due dates from ten weeks late to ten days out,
     // activity up to a quarter back, and project portals with or without
