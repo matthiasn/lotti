@@ -241,7 +241,9 @@ test('the 404 page sends every missing manual URL to a kept snapshot', () => {
     aliases: {'1.0.12': '1.0.11'},
     fallback: '1.0.11',
   });
-  const script = page.match(/<script>([\s\S]*?)<\/script>/)[1];
+  // The page is our own generated document: slice its one inline script.
+  const scriptStart = page.indexOf('<script>') + '<script>'.length;
+  const script = page.slice(scriptStart, page.indexOf('</script>', scriptStart));
   const redirectFor = (pathname, search = '', hash = '') => {
     let target = null;
     vm.runInNewContext(script, {

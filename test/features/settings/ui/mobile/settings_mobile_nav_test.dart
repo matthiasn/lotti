@@ -6,6 +6,7 @@ import 'package:lotti/features/settings/domain/settings_node.dart';
 import 'package:lotti/features/settings/ui/mobile/settings_mobile_nav.dart';
 import 'package:lotti/features/whats_new/model/whats_new_state.dart';
 import 'package:lotti/features/whats_new/state/whats_new_controller.dart';
+import 'package:lotti/providers/manual_language_controller.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
@@ -108,11 +109,17 @@ void main() {
     addTearDown(() => UrlLauncherPlatform.instance = originalLauncher);
     when(() => launcher.launchUrl(any(), any())).thenAnswer((_) async => true);
 
-    await _tapNode(tester, _manual);
+    await _tapNode(
+      tester,
+      _manual,
+      overrides: [appVersionProvider.overrideWith((ref) async => '1.1.93')],
+    );
+    // Opening awaits the running version before it launches.
+    await tester.pump();
 
     verify(
       () => launcher.launchUrl(
-        'https://matthiasn.github.io/lotti/manual/development/',
+        'https://matthiasn.github.io/lotti/manual/1.1.93/',
         any(),
       ),
     ).called(1);
