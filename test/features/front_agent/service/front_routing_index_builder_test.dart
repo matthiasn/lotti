@@ -869,10 +869,15 @@ void main() {
       'two counted for the later started, a hidden link for none',
       () async {
         stubTasks();
-        final logged = await builder().loggedTimeSummarizer(
-          const FrontRoutingScope(),
-          now: _now,
-        )((period: FrontTimePeriod.yesterday, categoryIds: const {}));
+        final logged =
+            await builder().loggedTimeSummarizer(
+              const FrontRoutingScope(),
+              now: _now,
+            )((
+              period: FrontTimePeriod.yesterday,
+              range: null,
+              categoryIds: const {},
+            ));
 
         expect(
           [for (final task in logged.tasks) (task.row.id, task.seconds)],
@@ -896,10 +901,15 @@ void main() {
       'none is one unnamed slice, and only its tasks are listed',
       () async {
         stubTasks();
-        final logged = await builder().loggedTimeSummarizer(
-          const FrontRoutingScope(),
-          now: _now,
-        )((period: FrontTimePeriod.yesterday, categoryIds: {'work'}));
+        final logged =
+            await builder().loggedTimeSummarizer(
+              const FrontRoutingScope(),
+              now: _now,
+            )((
+              period: FrontTimePeriod.yesterday,
+              range: null,
+              categoryIds: {'work'},
+            ));
 
         expect(logged.byCategory, [
           (name: 'Work', seconds: 3 * 3600),
@@ -953,10 +963,15 @@ void main() {
           ],
         );
 
-        final logged = await builder().loggedTimeSummarizer(
-          const FrontRoutingScope(),
-          now: _now,
-        )((period: FrontTimePeriod.yesterday, categoryIds: const {}));
+        final logged =
+            await builder().loggedTimeSummarizer(
+              const FrontRoutingScope(),
+              now: _now,
+            )((
+              period: FrontTimePeriod.yesterday,
+              range: null,
+              categoryIds: const {},
+            ));
 
         expect(
           [for (final task in logged.tasks) (task.row.id, task.seconds)],
@@ -990,10 +1005,15 @@ void main() {
         (_) async => [for (final id in ids) _task(id)],
       );
 
-      final logged = await builder().loggedTimeSummarizer(
-        const FrontRoutingScope(),
-        now: _now,
-      )((period: FrontTimePeriod.yesterday, categoryIds: const {}));
+      final logged =
+          await builder().loggedTimeSummarizer(
+            const FrontRoutingScope(),
+            now: _now,
+          )((
+            period: FrontTimePeriod.yesterday,
+            range: null,
+            categoryIds: const {},
+          ));
 
       expect(logged.tasks, hasLength(frontLoggedTaskLimit));
       expect(logged.omittedTasks, 1);
@@ -1004,10 +1024,15 @@ void main() {
       "yesterday reads yesterday's local day and sums each category, "
       'largest first, overlaps once, a hidden private category never',
       () async {
-        final logged = await builder().loggedTimeSummarizer(
-          const FrontRoutingScope(),
-          now: _now,
-        )((period: FrontTimePeriod.yesterday, categoryIds: const {}));
+        final logged =
+            await builder().loggedTimeSummarizer(
+              const FrontRoutingScope(),
+              now: _now,
+            )((
+              period: FrontTimePeriod.yesterday,
+              range: null,
+              categoryIds: const {},
+            ));
 
         verify(
           () => journalDb.insightsTimeRows(
@@ -1044,10 +1069,15 @@ void main() {
         FrontRoutingScope(allowedCategoryIds: {'work'}),
         FrontRoutingScope(chosenCategoryIds: {'work'}),
       ]) {
-        final logged = await builder().loggedTimeSummarizer(
-          scope,
-          now: _now,
-        )((period: FrontTimePeriod.yesterday, categoryIds: const {}));
+        final logged =
+            await builder().loggedTimeSummarizer(
+              scope,
+              now: _now,
+            )((
+              period: FrontTimePeriod.yesterday,
+              range: null,
+              categoryIds: const {},
+            ));
         expect(logged.byCategory, [(name: 'Work', seconds: 3 * 3600)]);
         expect(logged.chart.categoryIds, {'work'});
       }
@@ -1060,6 +1090,7 @@ void main() {
             firstDayOfWeekIndex: () async => 0,
           ).loggedTimeSummarizer(const FrontRoutingScope(), now: _now)((
             period: FrontTimePeriod.thisWeek,
+            range: null,
             categoryIds: const {},
           ));
       verify(
@@ -1075,9 +1106,42 @@ void main() {
       final monday = await builder().loggedTimeSummarizer(
         const FrontRoutingScope(),
         now: _now,
-      )((period: FrontTimePeriod.thisWeek, categoryIds: const {}));
+      )((period: FrontTimePeriod.thisWeek, range: null, categoryIds: const {}));
       expect(monday.from, DateTime(2026, 10, 19));
     });
+
+    test(
+      'days the call spelled out are read whole, first through last '
+      'inclusive across a month end, and named by their days alone',
+      () async {
+        final range = InsightsRange(
+          startDay: epochDay(DateTime(2026, 9, 28)),
+          endDayExclusive: epochDay(DateTime(2026, 10, 23)),
+        );
+        final logged = await builder().loggedTimeSummarizer(
+          const FrontRoutingScope(),
+          now: _now,
+        )((period: null, range: range, categoryIds: const {}));
+
+        verify(
+          () => journalDb.insightsTimeRows(
+            start: DateTime(2026, 9, 28),
+            end: DateTime(2026, 10, 23),
+          ),
+        ).called(1);
+        expect(logged.period, isNull);
+        expect(logged.from, DateTime(2026, 9, 28));
+        expect(logged.through, DateTime(2026, 10, 22));
+        expect(logged.chart.range, range);
+        expect(
+          logged.render(),
+          startsWith(
+            // Yesterday's 4h 25m and the hour the day before.
+            'Time logged 2026-09-28 through 2026-10-22: 5h 25m in total',
+          ),
+        );
+      },
+    );
   });
 
   group('closedTaskLister', () {

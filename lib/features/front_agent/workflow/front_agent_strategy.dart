@@ -478,13 +478,20 @@ class FrontAgentStrategy extends ConversationStrategy
       await _reject(call, manager, frontTimeSummaryExhaustedAnswer);
       return;
     }
-    final period = FrontTimePeriod.fromWire(args['period']);
-    if (period == null) {
+    final window = frontPullRequestQuery(
+      args,
+      now,
+      maxDays: frontLoggedTimeMaxDays,
+    );
+    if (window == null) {
       await _reject(
         call,
         manager,
-        'Error: summarize_logged_time needs period: one of '
-        '${FrontTimePeriod.values.map((p) => p.wireName).join(', ')}.',
+        'Error: summarize_logged_time needs exactly one of: period (one of '
+        '${FrontTimePeriod.values.map((p) => p.wireName).join(', ')}), '
+        'pastDays (1 to $frontLoggedTimeMaxDays), or from and through '
+        '(YYYY-MM-DD, through not before from, at most '
+        '$frontLoggedTimeMaxDays days).',
       );
       return;
     }
@@ -501,7 +508,8 @@ class FrontAgentStrategy extends ConversationStrategy
     }
     _timeSummaries++;
     final logged = await summarizer((
-      period: period,
+      period: window.period,
+      range: window.range,
       categoryIds: categoryIds,
     ));
     _lookupRows.addAll([for (final task in logged.tasks) task.row]);

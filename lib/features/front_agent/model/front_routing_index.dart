@@ -25,6 +25,10 @@ const int frontDueTaskLimit = 30;
 /// How many tasks with logged time one `summarize_logged_time` may return.
 const int frontLoggedTaskLimit = 30;
 
+/// How many days one `summarize_logged_time` may span: a leap year, so
+/// "this year" fits. Past 120 days its chart draws one bar per week.
+const int frontLoggedTimeMaxDays = 366;
+
 /// How many of the tasks one `list_closed_tasks` found its answer names;
 /// the cards under her reply list every one.
 const int frontClosedTaskLimit = 30;
@@ -192,15 +196,21 @@ enum FrontTimePeriod {
   }
 }
 
-/// One `summarize_logged_time` call, validated: the `period` and the
-/// categories the user named — empty when they named none.
-typedef FrontTimeQuery = ({FrontTimePeriod period, Set<String> categoryIds});
+/// One `summarize_logged_time` call, validated: a named `period`, or days
+/// the call spelled out — the past N days, or a first and last day —
+/// already resolved to `range`, and the categories the user named — empty
+/// when they named none.
+typedef FrontTimeQuery = ({
+  FrontTimePeriod? period,
+  InsightsRange? range,
+  Set<String> categoryIds,
+});
 
-/// What one `summarize_logged_time` found: the time logged in [period],
-/// per category, largest first, and the tasks that time went to.
+/// What one `summarize_logged_time` found: the time logged from [from]
+/// through [through], per category, largest first, and the tasks that time
+/// went to.
 class FrontLoggedTime {
   const FrontLoggedTime({
-    required this.period,
     required this.from,
     required this.through,
     required this.byCategory,
@@ -208,9 +218,11 @@ class FrontLoggedTime {
     this.named = const [],
     this.tasks = const [],
     this.omittedTasks = 0,
+    this.period,
   });
 
-  final FrontTimePeriod period;
+  /// The named period asked about; null for days the call spelled out.
+  final FrontTimePeriod? period;
 
   /// The days summed and the turn's category scope, for her reply's chart.
   final FrontLoggedTimeChart chart;
@@ -245,7 +257,10 @@ class FrontLoggedTime {
     final days = from == through
         ? day(from)
         : '${day(from)} through ${day(through)}';
-    final what = '${period.wireName.replaceAll('_', ' ')} ($days)';
+    final what = switch (period) {
+      final period? => '${period.wireName.replaceAll('_', ' ')} ($days)',
+      null => days,
+    };
     if (byCategory.isEmpty) return 'None: no time logged $what.';
     final total = byCategory.fold(0, (sum, entry) => sum + entry.seconds);
     final against = named.isEmpty

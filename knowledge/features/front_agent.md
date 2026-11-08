@@ -355,7 +355,7 @@ Nine tools, never fewer (a single tool makes DeepSeek rewrite
 | `read_tldr(ids ≤ 5)` | no | 1 per turn | `frontTldrExhaustedAnswer` — the tool stays listed |
 | `match_to_corpus(phrase)` | no | 1 per turn | `frontCorpusMatchExhaustedAnswer`; unavailable when no FTS index is wired |
 | `list_due_tasks(which, daysAhead 0–7, categoryIds)` | no | 1 per turn | `frontDueListExhaustedAnswer`; unavailable when no lister is wired |
-| `summarize_logged_time(period, categoryIds?)` | no | 1 per turn | `frontTimeSummaryExhaustedAnswer`; unavailable when no summarizer is wired |
+| `summarize_logged_time(period \| pastDays \| from+through, categoryIds?)` | no | 1 per turn | `frontTimeSummaryExhaustedAnswer`; unavailable when no summarizer is wired |
 | `list_closed_tasks(period \| pastDays \| from+through, categoryIds?)` | no | 1 per turn | `frontClosedListExhaustedAnswer`; unavailable when no lister is wired |
 | `summarize_pull_requests(period \| pastDays \| from+through)` | no | 1 per turn | `frontPullRequestSummaryExhaustedAnswer`; unavailable when no summarizer is wired |
 | `ask_user(question, options ≤ 3)` | yes | once | refused |
@@ -440,9 +440,17 @@ the index's shape plus its category's name, an overdue one marked only in
 I work on in the past seven days?*, *time in Work this week?* — is hers too.
 Rule 9 sends it to
 `summarize_logged_time` and then `reply_to_user` alone; it is never
-dispatched. `period` names one `FrontTimePeriod`, resolved in code against
-the local day the question was asked on (`FrontTimePeriod.rangeOn`), never
-by the model:
+dispatched. Its window is exactly one of a `period`, `pastDays` (the past N
+days ending today) or `from` and `through` (`YYYY-MM-DD`, both included),
+read by the same `frontPullRequestQuery` as `list_closed_tasks` and
+`summarize_pull_requests` but up to `frontLoggedTimeMaxDays` (366, so a
+leap year fits) instead of a month. A window that runs backwards, names a
+day the month lacks, is longer than that or is given twice is refused with
+the forms it takes, and the model asks again; nothing falls back to a
+default. "The past 14 days" is `pastDays: 14`; "June 1st to June 5th" is
+`from`/`through`, a day without a year its latest one not after today. A
+`period` is resolved in code against the local day the question was asked
+on (`FrontTimePeriod.rangeOn`), never by the model:
 
 | `period` | Local days |
 |----------|------------|
@@ -453,8 +461,10 @@ by the model:
 | `last_month` | the previous calendar month, whole |
 
 The prompt maps "last month" to `last_month` and "the past month" to
-`past_30_days`; a period the enum lacks is answered by naming the ones she
-can sum. `FrontRoutingIndexBuilder.loggedTimeSummarizer` sums what
+`past_30_days`; a window longer than `frontLoggedTimeMaxDays` is answered by
+saying how far back she can sum. A spelled-out window's summary names its
+days alone (`Time logged 2026-06-01 through 2026-06-05: …`), a period's its
+name and days. `FrontRoutingIndexBuilder.loggedTimeSummarizer` sums what
 `readFrontLoggedTime` (`service/front_logged_time_reader.dart`) reads — the
 Insights page's own query (`JournalDb.insightsTimeRows`, read directly so
 each row keeps its entry id), bucketed with its `bucketize` — ranked with its
@@ -520,8 +530,12 @@ and the Insights page's `buildChartData`), so time in a private category
 shows only while private entries do, at any age of the reply. While shown
 it reads again on the notifications the Insights page refetches on — an
 entry, a task or a link changing, and `privateToggleNotification` —
-unthrottled, so hiding private entries takes their time off a chart
-already on screen at once.
+unthrottled up to 31 days, so hiding private entries takes their time off a
+chart already on screen at once. A longer chart re-reads as many days as
+the Insights page does, so it takes that page's trailing-edge
+`insightsRefetchThrottleProvider`, the private toggle included. Past
+`kInsightsWeeklyThresholdDays` (120) its bars are weeks, by the same
+`buildChartData`.
 
 ```mermaid
 flowchart LR
@@ -1208,7 +1222,8 @@ bar of zero, a tap on a bar reading out every category and its time; under
 it the Insights `ChartLegend` when more than one category shows, and an
 expand action (`DesignSystemIconAction`) opening the Insights
 `InsightsChartCard`, with its per-day and running-total views, in the
-shared modal over the conversation, titled with the days. The card holds
+shared modal over the conversation, titled with the days — with their
+years unless every day is in the current one. The card holds
 its height while it reads, and draws nothing once the time it charted is
 gone. A chart of named categories draws them and one `Other` bar segment
 (the resolver's `insightsOtherCategories` label): `buildChartData` counts

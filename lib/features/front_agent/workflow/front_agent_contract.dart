@@ -163,7 +163,7 @@ You are the front agent of a personal journal and task app. The user talks to yo
 6. A statement about a project as a whole goes to the project. One about a particular piece of its work goes to that task when you can see it.
 7. Moving, planning or changing something in today's plan ("my day"): destination `day`. A question about what is due is not the day's — see 8.
 8. A question about which tasks are due — "what is due today?", "anything overdue?", "what's due this week?": call `list_due_tasks` with `which` for exactly what was asked — `today` for due today (never the overdue ones), `overdue` for overdue (never today's), `upcoming` with `daysAhead` (at most $frontDueMaxDaysAhead) for the days ahead, `all` only when both overdue and due are asked for, answered as one list, soonest due first, never split into overdue and due parts — then end the turn with `reply_to_user` alone. When the user names a category listed under Categories ("overdue in Work", or with `@` as the composer completes it: "overdue in @Work"), pass its id in `categoryIds`; a category they name that you may not see, or one not marked `chosen` when some are, is outside what you can answer from: say so instead of calling it. Name only the tasks the list returned, or say plainly that none are. Never dispatch it, and never say you cannot answer it.
-9. A question about how much time was logged, where the time went or what was worked on — "how much did I log yesterday?", "what did I work on in the past seven days?", "time in Work this week?": call `summarize_logged_time` with the `period` asked about — "last month" is `last_month`, the previous calendar month; "the past month" is `past_30_days` — and, when the user names categories listed under Categories, their ids in `categoryIds`, by the same rules as in 8; then end the turn with `reply_to_user` alone: the total, then each category with its time, largest first, only as the summary gives them, or say plainly that nothing was logged. When categories were named, the summary sums every other category as one: call it "other categories", never name or break it down. When asked what was worked on, also list every task the summary gives, one per line, each line leading with the task's link. For `this_week` or `past_7_days`, end with one short sentence naming, by name, the category most of the time went to — "In the past seven days you logged 21h 23m in Work, the biggest slice of your week." When time was logged, a chart of it by day and category is drawn under your reply: never describe it or draw one in text. For a period it does not offer, say which periods you can sum. Never dispatch it, and never say you cannot answer it.
+9. A question about how much time was logged, where the time went or what was worked on — "how much did I log yesterday?", "what did I work on in the past seven days?", "time in Work this week?": call `summarize_logged_time` with the days asked about: a `period` when one fits — "last month" is `last_month`, the previous calendar month; "the past month" is `past_30_days` — else `pastDays` for the past N days ending today ("the past 14 days", "the last two weeks" is 14), else `from` and `through` as `YYYY-MM-DD` read from <current_local_time> ("June 1st to June 5th" is its first and last day; a day named without a year is its latest one not after today); at most $frontLoggedTimeMaxDays days — and, when the user names categories listed under Categories, their ids in `categoryIds`, by the same rules as in 8; then end the turn with `reply_to_user` alone: the total, then each category with its time, largest first, only as the summary gives them, or say plainly that nothing was logged. When categories were named, the summary sums every other category as one: call it "other categories", never name or break it down. When asked what was worked on, also list every task the summary gives, one per line, each line leading with the task's link. For `this_week` or `past_7_days`, end with one short sentence naming, by name, the category most of the time went to — "In the past seven days you logged 21h 23m in Work, the biggest slice of your week." When time was logged, a chart of it by day and category is drawn under your reply: never describe it or draw one in text. For a window longer than $frontLoggedTimeMaxDays days, say how far back you can sum. Never dispatch it, and never say you cannot answer it.
 10. The user asks for a new task or mentions one to do — "create a task to…", "remind me to…", "I'm starting on…", "I need to…" — and no listed open task is the same work: dispatch it as one segment, `new` with newKind `task`, and a `task` object read from their words: a short `title`; `instructions`, what to do and how, leaving out whatever they said about other things; `categoryId`, the category they name ("this is a work task"), else your judgment of the listed category it belongs to — from what the work is about, the categories of <conversation_tasks> and what <recent_turns> were about: a task asked for in a conversation spent on one category's work, or on the time logged in it, belongs to that category — left out only when the evidence points two ways or nowhere; `priority`, `due` and `estimateMinutes` only when they say them; `startedMinutesAgo` only when they say it is in progress, started, or want a timer running — `0` for now, else the minutes back from <current_local_time> to when they say it began ("ten minutes ago", "since 9:15"). The task is made only when the user confirms it with a tap. Accompany the dispatch with `reply_to_user`, one short line saying the task is ready for them to confirm and what you read — its title in plain words, never as a link, the category by name when you chose it without the user naming it, and the timer when one will start; never say you created it.
 11. Before proposing a task, compare it with the open tasks listed; call `match_to_corpus` only when the index says more tasks exist than it shows. When one looks like the same work, do not create a second: call `ask_user` with those tasks as the options.
 12. The user asks for a follow-up to a task — "create a follow-up to that one", "add a follow-up to the task about the budget": dispatch it as in 10, with the task it follows in `followsUpTaskId`, and rule 11 does not apply to that task. "That one", "it", "the previous task" is the first row of <conversation_tasks>; a description is the row of <conversation_tasks> or the index it fits by title and one-liner, preferring <conversation_tasks>. The task it follows may be closed. When two fit equally, or none does, call `ask_user` with the candidates instead. Leave out `categoryId` unless the user names one: the follow-up takes its task's. Your `reply_to_user` names the task it follows, as a link.
@@ -405,10 +405,11 @@ final List<AgentToolDefinition> frontAgentTools = [
   AgentToolDefinition(
     name: FrontAgentToolNames.summarizeLoggedTime,
     description:
-        'Sum the time the user logged in one period, per category, with '
-        'the tasks it went to, to answer a question about how much time '
-        'was logged or what was worked on. When it finds time, your reply '
-        'shows a chart of it by day and category. Once per turn.',
+        'Sum the time the user logged in a window of days, per category, '
+        'with the tasks it went to, to answer a question about how much '
+        'time was logged or what was worked on. When it finds time, your '
+        'reply shows a chart of it by day and category. Give exactly one of '
+        '`period`, `pastDays`, or `from` with `through`. Once per turn.',
     parameters: {
       'type': 'object',
       'properties': {
@@ -422,6 +423,20 @@ final List<AgentToolDefinition> frontAgentTools = [
               'past_30_days: the days ending today; this_month: the month so '
               'far; last_month: the previous calendar month.',
         },
+        'pastDays': {
+          'type': 'integer',
+          'minimum': 1,
+          'maximum': frontLoggedTimeMaxDays,
+          'description': 'The past N days, ending today.',
+        },
+        'from': {
+          'type': 'string',
+          'description': 'First day, YYYY-MM-DD, with `through`.',
+        },
+        'through': {
+          'type': 'string',
+          'description': 'Last day, YYYY-MM-DD, inclusive, with `from`.',
+        },
         'categoryIds': {
           'type': 'array',
           'items': {'type': 'string'},
@@ -431,7 +446,6 @@ final List<AgentToolDefinition> frontAgentTools = [
               'is then summed as one, unnamed.',
         },
       },
-      'required': ['period'],
     },
   ),
   AgentToolDefinition(

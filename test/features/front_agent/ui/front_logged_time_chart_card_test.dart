@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
+
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -49,18 +51,22 @@ void main() {
     );
   }
 
-  InsightsChartData data(List<InsightsTimeRow> rows) => buildChartData(
-    bucketize(rows, windowStartDay: monday),
-    chart.range,
+  InsightsChartData data(
+    List<InsightsTimeRow> rows, {
+    InsightsRange? range,
+  }) => buildChartData(
+    bucketize(rows, windowStartDay: (range ?? chart.range).startDay),
+    range ?? chart.range,
   );
 
   Future<void> pump(
     WidgetTester tester,
-    Future<InsightsChartData> Function() load,
-  ) async {
+    Future<InsightsChartData> Function() load, {
+    FrontLoggedTimeChart? shown,
+  }) async {
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
-        Scaffold(body: FrontLoggedTimeChartCard(chart: chart)),
+        Scaffold(body: FrontLoggedTimeChartCard(chart: shown ?? chart)),
         overrides: [
           frontLoggedTimeChartProvider.overrideWith(
             (ref, _) => Stream.fromFuture(load()),
@@ -146,8 +152,10 @@ void main() {
       'titled with them', (tester) async {
     await pump(tester, () async => data([row('colony', 0, 9, 12)]));
 
-    await tester.tap(find.byIcon(LottiIcons.expandFull));
-    await tester.pumpAndSettle();
+    await withClock(Clock.fixed(DateTime(2026, 11, 9)), () async {
+      await tester.tap(find.byIcon(LottiIcons.expandFull));
+      await tester.pumpAndSettle();
+    });
 
     final card = tester.widget<InsightsChartCard>(
       find.byType(InsightsChartCard),
@@ -155,5 +163,37 @@ void main() {
     expect(card.chartData.bucketStarts.first, dayStart(monday));
     expect(card.chartData.bucketStarts, hasLength(7));
     expect(find.text('Oct 26 – Nov 1'), findsOne);
+  });
+
+  testWidgets('days asked for outside this year are titled with their '
+      'years, one bar per day across the new year', (tester) async {
+    final range = InsightsRange(
+      startDay: epochDay(DateTime(2025, 12, 29)),
+      endDayExclusive: epochDay(DateTime(2026, 1, 5)),
+    );
+    final shown = FrontLoggedTimeChart(range: range, categoryIds: const {});
+    await pump(
+      tester,
+      () async => data([
+        InsightsTimeRow(
+          dateFrom: DateTime(2025, 12, 31, 9),
+          dateTo: DateTime(2025, 12, 31, 11),
+          categoryId: 'colony',
+        ),
+      ], range: range),
+      shown: shown,
+    );
+
+    await withClock(Clock.fixed(DateTime(2026, 11, 9)), () async {
+      await tester.tap(find.byIcon(LottiIcons.expandFull));
+      await tester.pumpAndSettle();
+    });
+
+    final card = tester.widget<InsightsChartCard>(
+      find.byType(InsightsChartCard),
+    );
+    expect(card.chartData.bucketStarts.first, DateTime(2025, 12, 29));
+    expect(card.chartData.bucketStarts.last, DateTime(2026, 1, 4));
+    expect(find.text('Dec 29, 2025 – Jan 4, 2026'), findsOne);
   });
 }

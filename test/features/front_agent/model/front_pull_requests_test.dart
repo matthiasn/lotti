@@ -86,6 +86,20 @@ void main() {
         isNotNull,
       );
     });
+
+    test('a caller may allow a longer window, and still no longer', () {
+      const year = {'from': '2025-11-03', 'through': '2026-11-02'};
+      expect(frontPullRequestQuery(year, now), isNull);
+      expect(
+        frontPullRequestQuery(year, now, maxDays: 365)?.range?.dayCount,
+        365,
+      );
+      expect(frontPullRequestQuery(year, now, maxDays: 364), isNull);
+      expect(
+        frontPullRequestQuery({'pastDays': 365}, now, maxDays: 365)?.range,
+        InsightsRange(startDay: today - 364, endDayExclusive: today + 1),
+      );
+    });
   });
 
   group('frontPullRequestDays', () {

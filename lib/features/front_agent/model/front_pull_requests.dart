@@ -23,11 +23,12 @@ typedef FrontPullRequestQuery = ({
 /// day: exactly one of a `period`, `pastDays` — the past N days, ending
 /// today — or `from` with `through`, two `YYYY-MM-DD` days, both included.
 /// Null when it names none, more than one, or one that is malformed, runs
-/// backwards or spans more than [frontPullRequestMaxDays] days.
+/// backwards or spans more than [maxDays] days.
 FrontPullRequestQuery? frontPullRequestQuery(
   Map<String, dynamic> args,
-  DateTime now,
-) {
+  DateTime now, {
+  int maxDays = frontPullRequestMaxDays,
+}) {
   final period = args['period'];
   final pastDays = args['pastDays'];
   final from = args['from'];
@@ -48,7 +49,7 @@ FrontPullRequestQuery? frontPullRequestQuery(
     final days = pastDays is num && pastDays == pastDays.roundToDouble()
         ? pastDays.toInt()
         : null;
-    if (days == null || days < 1 || days > frontPullRequestMaxDays) {
+    if (days == null || days < 1 || days > maxDays) {
       return null;
     }
     return (
@@ -64,7 +65,7 @@ FrontPullRequestQuery? frontPullRequestQuery(
   if (first == null ||
       last == null ||
       last < first ||
-      last - first + 1 > frontPullRequestMaxDays) {
+      last - first + 1 > maxDays) {
     return null;
   }
   return (
