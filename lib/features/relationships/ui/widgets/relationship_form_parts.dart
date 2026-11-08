@@ -45,14 +45,6 @@ String contactChannelTypeLabel(BuildContext context, ContactChannelType type) =>
         context.messages.contactChannelTypeMessaging,
     };
 
-/// The icon for a contact channel type — shared with the detail page.
-IconData contactChannelTypeIcon(ContactChannelType type) => switch (type) {
-  ContactChannelType.phone => LottiIcons.call,
-  ContactChannelType.mobile => LottiIcons.phone,
-  ContactChannelType.email => LottiIcons.mail,
-  ContactChannelType.messaging => LottiIcons.chat,
-};
-
 /// The localized label for a relationship status — shared by the form's
 /// status picker and the detail page's status chip.
 String relationshipStatusLabel(

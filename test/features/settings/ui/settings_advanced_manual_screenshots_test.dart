@@ -15,7 +15,6 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:form_builder_validators/localization/l10n.dart';
 import 'package:lotti/beamer/beamer_delegates.dart';
-import 'package:lotti/classes/config_flag_placement.dart';
 import 'package:lotti/classes/onboarding_event.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/maintenance.dart';
@@ -45,6 +44,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
+import '../../../helpers/config_flags_on_flags_page.dart';
 import '../../../helpers/service_overrides.dart';
 import '../../../helpers/target_platform.dart';
 import '../../../mocks/mocks.dart';

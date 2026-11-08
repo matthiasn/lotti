@@ -7,6 +7,7 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../../../helpers/config_flags_on_flags_page.dart';
 import '../../../../widget_test_utils.dart';
 
 /// Every flag either settings page lists. Deriving it from the two production

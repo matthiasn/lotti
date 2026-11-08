@@ -147,7 +147,6 @@ import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/location.dart';
-import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 

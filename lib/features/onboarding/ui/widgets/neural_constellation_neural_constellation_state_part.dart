@@ -106,7 +106,11 @@ class _NeuralConstellationState extends State<NeuralConstellation>
   @override
   void initState() {
     super.initState();
-    _nodes = _buildNodes(widget.nodeCount, widget.seed, widget.vineCount);
+    _nodes = neuralConstellationNodes(
+      widget.nodeCount,
+      widget.seed,
+      widget.vineCount,
+    );
     _controller = AnimationController(vsync: this, duration: _loop);
   }
 
@@ -125,7 +129,11 @@ class _NeuralConstellationState extends State<NeuralConstellation>
     if (oldWidget.nodeCount != widget.nodeCount ||
         oldWidget.seed != widget.seed ||
         oldWidget.vineCount != widget.vineCount) {
-      _nodes = _buildNodes(widget.nodeCount, widget.seed, widget.vineCount);
+      _nodes = neuralConstellationNodes(
+        widget.nodeCount,
+        widget.seed,
+        widget.vineCount,
+      );
     }
   }
 
@@ -513,8 +521,7 @@ class NeuralNode {
 }
 
 /// The seeded node field [NeuralConstellation] grows for [count] nodes over
-/// [vineCount] vines. Public for topology tests.
-@visibleForTesting
+/// [vineCount] vines.
 List<NeuralNode> neuralConstellationNodes(int count, int seed, int vineCount) =>
     _NeuralConstellationState._buildNodes(count, seed, vineCount);
 

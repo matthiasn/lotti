@@ -90,10 +90,6 @@ int _workerDecodesPeak = 0;
 @visibleForTesting
 int get workerDecodesPeak => _workerDecodesPeak;
 
-/// Resets [workerDecodesPeak] between tests.
-@visibleForTesting
-void resetWorkerDecodesPeak() => _workerDecodesPeak = 0;
-
 Future<T> _oneWorkerDecodeAtATime<T>(Future<T> Function() decode) async {
   final previous = _workerDecodeTail;
   final turn = Completer<void>();

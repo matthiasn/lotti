@@ -30,10 +30,6 @@ const subjectAgentLinkTypes = <String>[
   AgentLinkTypes.agentGoal,
 ];
 
-/// Resolves "which agent is about this entity" for any subject kind.
-typedef SubjectAgentLookup =
-    Future<AgentIdentityEntity?> Function(String subjectId);
-
 /// Kind-agnostic counterpart to `TaskAgentService.getTaskAgentForTask`.
 ///
 /// Automated capabilities — transcription, image analysis, the post-work wake

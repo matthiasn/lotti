@@ -147,7 +147,6 @@ void main() {
         'worker-isolate decodes run one at a time, so the limit is also '
         'the most inflated output held at once',
         () async {
-          resetWorkerDecodesPeak();
           // Each takes the compute path, and they are started together.
           final inputs = [
             for (var i = 0; i < 3; i++)
@@ -171,7 +170,6 @@ void main() {
       );
 
       test('a rejected worker decode still lets the next one run', () async {
-        resetWorkerDecodesPeak();
         await expectLater(
           decode(bomb(64 * 1024 * 1024), 1024 * 1024),
           throwsA(isA<AttachmentTooLargeException>()),

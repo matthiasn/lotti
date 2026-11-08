@@ -189,9 +189,6 @@ void main() {
           'reason',
         ]),
       );
-      expect(relationshipDeferredTools, {
-        RelationshipAgentToolNames.createAndLinkTask,
-      });
       expect(relationshipAgentSystemPrompt, contains('explicit commitment'));
       expect(relationshipAgentSystemPrompt, contains('Never re-propose'));
       expect(relationshipAgentSystemPrompt, contains('confirmation'));

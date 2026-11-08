@@ -352,7 +352,7 @@ Three things keep that honest:
 
 - **`database_config_flags_test.dart` partitions the set.** It reads the flags a
   real in-memory database ends up holding and asserts that `sectionFlags` and
-  `configFlagsOnFlagsPage` are disjoint and, together with the logging set,
+  the flags in `configFlagGroups` are disjoint and, together with the logging set,
   cover all of them. A flag added to `initConfigFlags` without a home fails
   there instead of shipping as a toggle nobody can reach.
 - **`nav_service_test.dart` pins the navigation correspondence.** `NavService`

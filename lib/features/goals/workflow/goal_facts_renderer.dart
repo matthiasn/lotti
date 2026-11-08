@@ -35,7 +35,6 @@ const goalReusableMinMeanRating = 4.0;
 /// Maximum number of raw category sessions included in one model message.
 /// The complete lifetime remains represented by the bounded summaries below.
 const goalCategorySessionEvidenceLimit = 200;
-const int goalFactsTargetTokenBudget = 6000;
 const int goalCategorySessionTokenBudget = 700;
 const int goalCategorySummaryTokenBudget = 700;
 const int goalLabelTimeEvidenceTokenBudget = 1000;

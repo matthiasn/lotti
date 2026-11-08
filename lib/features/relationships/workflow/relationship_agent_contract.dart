@@ -303,11 +303,6 @@ final List<AgentToolDefinition> relationshipAgentTools = [
   ),
 ];
 
-/// Mutations that are accumulated for user confirmation, never run by the LLM.
-const Set<String> relationshipDeferredTools = {
-  RelationshipAgentToolNames.createAndLinkTask,
-};
-
 /// Rejects malformed task proposals at both production and confirmation.
 /// Calendar dates must round-trip: Dart otherwise normalizes February 30.
 String? relationshipTaskProposalError(Map<String, dynamic> args) {

@@ -947,10 +947,3 @@ List<Beacon> beaconsFor(
   }
   return beacons;
 }
-
-/// `W12 · Mar 23` for the bucket that starts `bucketIndex` weeks after
-/// [epoch].
-String weekLabelFor(DateTime epoch, int bucketIndex) {
-  final start = epoch.add(Duration(days: 7 * bucketIndex));
-  return 'W${bucketIndex + 1} · ${shortDate(start)}';
-}

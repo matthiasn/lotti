@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
-import 'package:lotti/classes/config_flag_placement.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/settings/ui/pages/flags_page.dart';
 import 'package:lotti/features/settings/ui/widgets/config_flag_labels.dart';
+import '../../../../helpers/config_flags_on_flags_page.dart';
 
 /// Builds a deterministic title/subtitle map from a list of
 /// `(flagName, title, subtitle)` triples and returns the matching

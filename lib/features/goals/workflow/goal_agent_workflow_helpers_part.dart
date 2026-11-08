@@ -88,7 +88,7 @@ Map<String, String> _withoutGoalBannerSnooze(
 ///
 /// The values arrive as model-authored prose, exactly like `content` and
 /// `tldr`, and are rendered directly.
-Map<String, Object?>? _sanitizeReportSections(Map<String, Object?>? sections) {
+Map<String, Object?>? sanitizeReportSections(Map<String, Object?>? sections) {
   if (sections == null) return null;
   return {
     for (final entry in sections.entries)
@@ -108,10 +108,3 @@ Map<String, Object?>? _sanitizeReportSections(Map<String, Object?>? sections) {
       },
   };
 }
-
-/// Test seam for [_sanitizeReportSections] — the sanitization contract is
-/// worth pinning directly rather than only through a full wake.
-@visibleForTesting
-Map<String, Object?>? sanitizeReportSectionsForTest(
-  Map<String, Object?>? sections,
-) => _sanitizeReportSections(sections);

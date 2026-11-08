@@ -338,7 +338,7 @@ void main() {
       plaza,
       anomalyList,
       projectLabel: 'Test',
-      weekLabel: (b) => weekLabelFor(plan.epoch, b),
+      weekLabel: (b) => 'W${b + 1}',
     );
 
     test('home first, then blocks newest-first, corners, then attention', () {
@@ -389,11 +389,6 @@ void main() {
     test('ids are unique', () {
       expect(beacons.map((b) => b.id).toSet().length, beacons.length);
     });
-  });
-
-  test('weekLabelFor', () {
-    expect(weekLabelFor(DateTime.utc(2026, 6, 8), 0), 'W1 · Jun 8');
-    expect(weekLabelFor(DateTime.utc(2026, 6, 8), 5), 'W6 · Jul 13');
   });
 
   test('CameraPose distance and toString', () {

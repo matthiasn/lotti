@@ -904,7 +904,6 @@ void main() {
       // version history an indexed lookup and keeps snapshots out of the goal
       // list.
       expect(snapshot!.data.snapshotOf, 'goal-1');
-      expect(snapshot.data.isSpecSnapshot, isTrue);
     });
   });
 }

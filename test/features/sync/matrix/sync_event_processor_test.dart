@@ -26,7 +26,6 @@ import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
 import 'package:lotti/features/sync/queue/inbound_worker.dart';
 import 'package:lotti/features/sync/queue/queue_apply_adapter.dart';
-import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -3025,67 +3024,6 @@ void main() {
     );
   });
 
-  group('runWithDeferredMissingEntryNudges', () {
-    test('falls back to plain action for mock processor instances', () async {
-      final mockProcessor = MockSyncEventProcessor();
-
-      final result = await runWithDeferredMissingEntryNudges<String>(
-        mockProcessor,
-        () async => 'plain-action',
-      );
-
-      expect(result, 'plain-action');
-    });
-
-    test(
-      'falls back to plain action when sequence log service is absent',
-      () async {
-        final result = await runWithDeferredMissingEntryNudges<String>(
-          processor,
-          () async => 'no-sequence-log',
-        );
-
-        expect(result, 'no-sequence-log');
-      },
-    );
-
-    test(
-      'delegates through the concrete sequence log service when present',
-      () async {
-        final sequenceLogService = SyncSequenceLogService(
-          syncDatabase: MockSyncDatabase(),
-          vectorClockService: MockVectorClockService(),
-          loggingService: loggingService,
-        );
-        final processorWithSequenceLog = SyncEventProcessor(
-          loggingService: loggingService,
-          updateNotifications: updateNotifications,
-          aiConfigRepository: aiConfigRepository,
-          savedTaskFiltersRepository: savedTaskFiltersRepository,
-          settingsDb: settingsDb,
-          journalEntityLoader: journalEntityLoader,
-          sequenceLogService: sequenceLogService,
-        );
-
-        final executionOrder = <String>[];
-        sequenceLogService.onMissingEntriesDetected = () {
-          executionOrder.add('flush');
-        };
-
-        final result = await runWithDeferredMissingEntryNudges<String>(
-          processorWithSequenceLog,
-          () async {
-            executionOrder.add('action');
-            return 'with-sequence-log';
-          },
-        );
-
-        expect(result, 'with-sequence-log');
-        expect(executionOrder, ['action']);
-      },
-    );
-  });
-
   // Note: Sequence log integration tests for the sync processor are covered
   // by sync_sequence_log_service_test.dart which tests recordReceivedEntry
   // behavior including gap detection and status transitions.
@@ -3802,7 +3740,7 @@ void main() {
     },
   );
 
-  group('_decodeSyncEventPayload (compute worker entry point)', () {
+  group('decodeSyncEventPayload (compute worker entry point)', () {
     glados.Glados(
       glados.any.jsonScenario,
       glados.ExploreConfig(numRuns: 120),
@@ -3814,7 +3752,7 @@ void main() {
         // Matrix event body is base64(utf8(json(...))).
         final encoded = base64.encode(utf8.encode(json.encode(original)));
 
-        final decoded = decodeSyncEventPayloadForTesting(encoded);
+        final decoded = decodeSyncEventPayload(encoded);
 
         expect(decoded, equals(original), reason: '$scenario');
       },

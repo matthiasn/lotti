@@ -1487,7 +1487,7 @@ void main() {
     );
     expect(
       TextChunker.estimateTokens(fullFacts),
-      lessThanOrEqualTo(goalFactsTargetTokenBudget),
+      lessThanOrEqualTo(6000),
       reason: 'raw evidence must leave room for the system prompt and tools',
     );
   });

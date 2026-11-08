@@ -75,9 +75,3 @@ abstract class GoalData with _$GoalData {
   factory GoalData.fromJson(Map<String, dynamic> json) =>
       _$GoalDataFromJson(json);
 }
-
-extension GoalDataExtension on GoalData {
-  /// Whether this row is an immutable record of a past or present definition
-  /// rather than the goal itself. Snapshots are never listed as goals.
-  bool get isSpecSnapshot => snapshotOf != null;
-}

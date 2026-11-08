@@ -10,6 +10,7 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../helpers/config_flags_on_flags_page.dart';
 import '../mocks/mocks.dart';
 import 'test_utils.dart';
 
