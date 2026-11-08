@@ -436,6 +436,7 @@ void main() {
                   manualLanguageControllerProvider.overrideWith(
                     _GermanManualLanguageController.new,
                   ),
+                  appVersionProvider.overrideWith((ref) async => '1.1.93'),
                 ],
               ),
               child: MyBeamerApp(navService: mockNavService),
@@ -463,10 +464,12 @@ void main() {
           expect(wrapper.onOpenManual, isNotNull);
 
           wrapper.onOpenManual!();
+          // Opening awaits the running version before it launches.
+          await tester.pump();
           await tester.pump();
           verify(
             () => manualLauncher.launchUrl(
-              'https://matthiasn.github.io/lotti/manual/development/de/',
+              'https://matthiasn.github.io/lotti/manual/1.1.93/de/',
               any(),
             ),
           ).called(1);

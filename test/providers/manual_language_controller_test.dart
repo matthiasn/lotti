@@ -6,8 +6,12 @@ import 'package:lotti/providers/manual_language_controller.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../helpers/package_info.dart';
 import '../helpers/service_overrides.dart';
 import '../widget_test_utils.dart';
+
+const _appVersion = '1.1.93+4483';
+const _manualBase = '${lottiManualRootUrl}1.1.93/';
 
 void main() {
   group('ManualLanguage', () {
@@ -87,64 +91,141 @@ void main() {
     });
   });
 
+  group('manualVersionFor', () {
+    test('a release links the manual of its own marketing version', () {
+      expect(manualVersionFor('1.1.93'), '1.1.93');
+      // Windows reports the build number inline; the manual is per version.
+      expect(manualVersionFor('1.1.93+4483'), '1.1.93');
+      expect(manualVersionFor(' 2.0.10 '), '2.0.10');
+    });
+
+    test('anything that is not a plain release links development', () {
+      // No tag ever publishes these paths, so linking them would only ever
+      // reach the 404 page.
+      expect(manualVersionFor(''), 'development');
+      expect(manualVersionFor('1.1.93-beta.1'), 'development');
+      expect(manualVersionFor('1.1'), 'development');
+      expect(manualVersionFor('development'), 'development');
+    });
+  });
+
+  group('runningAppVersion', () {
+    test('reports the platform version of the running build', () async {
+      mockPackageInfo(version: '1.2.3');
+      expect(await runningAppVersion(), '1.2.3');
+    });
+  });
+
   group('manualUriFor', () {
+    test('opens the manual of the running version', () {
+      expect(
+        manualUriFor(
+          appVersion: '1.1.90',
+          systemLocale: const Locale('en'),
+        ).toString(),
+        '${lottiManualRootUrl}1.1.90/',
+      );
+      expect(
+        manualUriFor(
+          appVersion: '',
+          systemLocale: const Locale('de'),
+          path: 'sync-and-data/first-device',
+        ).toString(),
+        '${lottiManualRootUrl}development/de/sync-and-data/first-device',
+      );
+    });
+
     test('follows the matching system language', () {
       expect(
-        manualUriFor(systemLocale: const Locale('de')).toString(),
-        '${lottiManualBaseUrl}de/',
+        manualUriFor(
+          appVersion: _appVersion,
+          systemLocale: const Locale('de'),
+        ).toString(),
+        '${_manualBase}de/',
       );
       expect(
-        manualUriFor(systemLocale: const Locale('cs')).toString(),
-        '${lottiManualBaseUrl}cs/',
+        manualUriFor(
+          appVersion: _appVersion,
+          systemLocale: const Locale('cs'),
+        ).toString(),
+        '${_manualBase}cs/',
       );
       expect(
-        manualUriFor(systemLocale: const Locale('fr')).toString(),
-        '${lottiManualBaseUrl}fr/',
+        manualUriFor(
+          appVersion: _appVersion,
+          systemLocale: const Locale('fr'),
+        ).toString(),
+        '${_manualBase}fr/',
       );
       expect(
-        manualUriFor(systemLocale: const Locale('it')).toString(),
-        '${lottiManualBaseUrl}it/',
+        manualUriFor(
+          appVersion: _appVersion,
+          systemLocale: const Locale('it'),
+        ).toString(),
+        '${_manualBase}it/',
       );
       expect(
-        manualUriFor(systemLocale: const Locale('es')).toString(),
-        '${lottiManualBaseUrl}es/',
+        manualUriFor(
+          appVersion: _appVersion,
+          systemLocale: const Locale('es'),
+        ).toString(),
+        '${_manualBase}es/',
       );
       expect(
-        manualUriFor(systemLocale: const Locale('ro')).toString(),
-        '${lottiManualBaseUrl}ro/',
+        manualUriFor(
+          appVersion: _appVersion,
+          systemLocale: const Locale('ro'),
+        ).toString(),
+        '${_manualBase}ro/',
       );
       expect(
-        manualUriFor(systemLocale: const Locale('nl')).toString(),
-        '${lottiManualBaseUrl}nl/',
+        manualUriFor(
+          appVersion: _appVersion,
+          systemLocale: const Locale('nl'),
+        ).toString(),
+        '${_manualBase}nl/',
       );
       expect(
-        manualUriFor(systemLocale: const Locale('pt')).toString(),
-        '${lottiManualBaseUrl}pt/',
+        manualUriFor(
+          appVersion: _appVersion,
+          systemLocale: const Locale('pt'),
+        ).toString(),
+        '${_manualBase}pt/',
       );
       expect(
-        manualUriFor(systemLocale: const Locale('da')).toString(),
-        '${lottiManualBaseUrl}da/',
+        manualUriFor(
+          appVersion: _appVersion,
+          systemLocale: const Locale('da'),
+        ).toString(),
+        '${_manualBase}da/',
       );
       expect(
-        manualUriFor(systemLocale: const Locale('sv')).toString(),
-        '${lottiManualBaseUrl}sv/',
+        manualUriFor(
+          appVersion: _appVersion,
+          systemLocale: const Locale('sv'),
+        ).toString(),
+        '${_manualBase}sv/',
       );
     });
 
     test('uses English for unsupported system languages', () {
       expect(
-        manualUriFor(systemLocale: const Locale('fi')).toString(),
-        lottiManualBaseUrl,
+        manualUriFor(
+          appVersion: _appVersion,
+          systemLocale: const Locale('fi'),
+        ).toString(),
+        _manualBase,
       );
     });
 
     test('honors an override over the system language', () {
       expect(
         manualUriFor(
+          appVersion: _appVersion,
           systemLocale: const Locale('de'),
           override: ManualLanguage.czech,
         ).toString(),
-        '${lottiManualBaseUrl}cs/',
+        '${_manualBase}cs/',
       );
     });
 
@@ -154,17 +235,19 @@ void main() {
       // choose between "right language" and "right page".
       expect(
         manualUriFor(
+          appVersion: _appVersion,
           systemLocale: const Locale('de'),
           path: 'sync-and-data/first-device',
         ).toString(),
-        '${lottiManualBaseUrl}de/sync-and-data/first-device',
+        '${_manualBase}de/sync-and-data/first-device',
       );
       expect(
         manualUriFor(
+          appVersion: _appVersion,
           systemLocale: const Locale('en'),
           path: 'sync-and-data/first-device',
         ).toString(),
-        '${lottiManualBaseUrl}sync-and-data/first-device',
+        '${_manualBase}sync-and-data/first-device',
       );
     });
   });

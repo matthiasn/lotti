@@ -176,10 +176,11 @@ class _MyBeamerAppState extends ConsumerState<MyBeamerApp> {
                     );
                   },
                   child: DesktopMenuWrapper(
-                    onOpenManual: () => openManualInBrowser(
+                    onOpenManual: () async => openManualInBrowser(
                       systemLocale:
                           WidgetsBinding.instance.platformDispatcher.locale,
                       override: languageOverride,
+                      appVersion: await ref.read(appVersionProvider.future),
                     ),
                     onZoomIn: zoomController.zoomIn,
                     onZoomOut: zoomController.zoomOut,
