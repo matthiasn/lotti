@@ -37,6 +37,7 @@ import 'package:lotti/features/front_agent/state/front_agent_providers.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_contract.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_model_resolution.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_workflow.dart';
+import 'package:lotti/features/github/state/github_providers.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
 import 'package:lotti/get_it.dart';
@@ -467,6 +468,8 @@ void main() {
 
   group('wiring', () {
     test('every provider of the feature builds from its leaves', () async {
+      final tokens = MockGitHubTokenStorage();
+      when(tokens.readLogin).thenAnswer((_) async => 'pingu');
       final wired = ProviderContainer(
         overrides: [
           agentRepositoryProvider.overrideWithValue(repository),
@@ -500,6 +503,7 @@ void main() {
           ),
           // A Sunday-first region.
           firstDayOfWeekIndexProvider.overrideWith((ref) => 0),
+          gitHubTokenStorageProvider.overrideWithValue(tokens),
         ],
       );
       addTearDown(wired.dispose);
@@ -509,6 +513,9 @@ void main() {
       final builder = wired.read(frontRoutingIndexBuilderProvider);
       expect(builder.fts5Db, isNull);
       expect(await builder.firstDayOfWeekIndex!(), 0);
+      // Pull request counts are the user's own: the login the token was
+      // checked against.
+      expect(await builder.githubLogin!(), 'pingu');
       expect(wired.read(frontAgentWorkflowProvider), isA<FrontAgentWorkflow>());
       expect(wired.read(frontAgentServiceProvider), isA<FrontAgentService>());
       expect(wired.read(frontChatServiceProvider), isA<FrontChatService>());

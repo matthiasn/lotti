@@ -29,6 +29,7 @@ import 'package:lotti/features/front_agent/ui/front_conversation_list.dart';
 import 'package:lotti/features/front_agent/ui/front_door_card.dart';
 import 'package:lotti/features/front_agent/ui/front_door_wizards.dart';
 import 'package:lotti/features/front_agent/ui/front_logged_time_chart_card.dart';
+import 'package:lotti/features/front_agent/ui/front_pull_request_chart_card.dart';
 import 'package:lotti/features/front_agent/ui/front_task_list.dart';
 import 'package:lotti/features/front_agent/ui/front_turn_cost_line.dart';
 import 'package:lotti/features/tasks/util/task_navigation.dart';
@@ -375,8 +376,9 @@ class FrontChatThreadView extends ConsumerWidget {
       ),
       onLinkTap: (_, url, title) => openLink(url, title),
       // A list of tasks in her words is drawn as task rows, her words
-      // around it as she wrote them, and an answer about logged time gets
-      // its chart under her words; any other reply is drawn as usual.
+      // around it as she wrote them, and an answer about logged time or
+      // pull requests gets its chart under her words; any other reply is
+      // drawn as usual.
       replyBodyBuilder: (context, message, prose) {
         // Cut from her words as written, before their dates became the
         // device's: a list line may end in when it was due, in ISO.
@@ -386,7 +388,10 @@ class FrontChatThreadView extends ConsumerWidget {
             ?.text;
         final parts = frontReplyParts(written ?? message.text);
         final chart = thread?.loggedTimeByMessageId[message.id];
-        if (chart == null && !parts.any((part) => part is FrontReplyTasks)) {
+        final pullRequests = thread?.pullRequestsByMessageId[message.id];
+        if (chart == null &&
+            pullRequests == null &&
+            !parts.any((part) => part is FrontReplyTasks)) {
           return null;
         }
         final tokens = context.designTokens;
@@ -409,6 +414,11 @@ class FrontChatThreadView extends ConsumerWidget {
               FrontLoggedTimeChartCard(
                 key: ValueKey('front-logged-time-${message.id}'),
                 chart: chart,
+              ),
+            if (pullRequests != null)
+              FrontPullRequestChartCard(
+                key: ValueKey('front-pull-requests-${message.id}'),
+                chart: pullRequests,
               ),
           ],
         );

@@ -6,6 +6,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/pull_request_data.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/database/database.dart';
@@ -86,6 +87,8 @@ void main() {
     required String id,
     required DateTime at,
     String? categoryId,
+    bool private = false,
+    bool deleted = false,
   }) {
     return JournalEntity.task(
       meta: Metadata(
@@ -95,6 +98,8 @@ void main() {
         dateFrom: at,
         dateTo: at,
         categoryId: categoryId,
+        private: private,
+        deletedAt: deleted ? at : null,
       ),
       data: TaskData(
         status: TaskStatus.open(
@@ -652,6 +657,126 @@ void main() {
           'Edited launch copy',
           reason:
               'older entries fall back to semantically available plain text',
+        );
+      },
+    );
+  });
+
+  group('pullRequestStatRows', () {
+    final at = DateTime(2026, 11, 2);
+
+    PullRequestEntry pullRequest(
+      String id, {
+      int number = 1,
+      PullRequestSnapshot? snapshot,
+      bool deleted = false,
+    }) => PullRequestEntry(
+      meta: Metadata(
+        id: id,
+        createdAt: at,
+        updatedAt: at,
+        dateFrom: at,
+        dateTo: at,
+        deletedAt: deleted ? at : null,
+      ),
+      data: PullRequestData(
+        owner: 'penguin',
+        repo: 'colony',
+        number: number,
+        snapshot: snapshot,
+      ),
+    );
+
+    PullRequestSnapshot snapshot({DateTime? mergedAt}) => PullRequestSnapshot(
+      observedAt: DateTime.utc(2026, 11, 3),
+      createdAt: DateTime.utc(2026, 11, 2, 9),
+      mergedAt: mergedAt,
+      title: 'Fish ledger',
+      status: mergedAt == null
+          ? PullRequestStatus.open
+          : PullRequestStatus.merged,
+      htmlUrl: 'https://github.com/penguin/colony/pull/1',
+      headSha: 'abc',
+      headRef: 'feat/fish',
+      baseRef: 'main',
+      authorLogin: 'pingu',
+      additions: 120,
+      deletions: 30,
+    );
+
+    test(
+      'reads the slim snapshot fields once per live holding task',
+      () async {
+        await db.updateJournalEntity(
+          buildTask(id: 'task-a', at: at, categoryId: 'colony'),
+        );
+        await db.updateJournalEntity(buildTask(id: 'task-b', at: at));
+        await db.updateJournalEntity(
+          buildTask(id: 'task-gone', at: at, deleted: true),
+        );
+        await db.updateJournalEntity(
+          pullRequest(
+            'pr-1',
+            snapshot: snapshot(mergedAt: DateTime.utc(2026, 11, 3, 15)),
+          ),
+        );
+        // Never refreshed: no snapshot yet.
+        await db.updateJournalEntity(pullRequest('pr-2', number: 2));
+        // Unlinked: deleted.
+        await db.updateJournalEntity(
+          pullRequest('pr-3', number: 3, snapshot: snapshot(), deleted: true),
+        );
+        // Held by no task.
+        await db.updateJournalEntity(
+          pullRequest('pr-4', number: 4, snapshot: snapshot()),
+        );
+        await link(fromId: 'task-a', toId: 'pr-1');
+        await link(fromId: 'task-b', toId: 'pr-1');
+        await link(fromId: 'task-gone', toId: 'pr-1');
+        await link(fromId: 'task-a', toId: 'pr-2');
+        await link(fromId: 'task-a', toId: 'pr-3');
+
+        final rows = await db.pullRequestStatRows();
+
+        expect(
+          rows.map((row) => (row.entryId, row.taskCategoryId)),
+          unorderedEquals([
+            ('pr-1', 'colony'),
+            ('pr-1', null),
+            ('pr-2', 'colony'),
+          ]),
+        );
+        final merged = rows.firstWhere((row) => row.entryId == 'pr-1');
+        expect(merged.key, 'penguin/colony#1');
+        expect(merged.title, 'Fish ledger');
+        expect(merged.authorLogin, 'pingu');
+        expect(merged.createdAt, DateTime.utc(2026, 11, 2, 9));
+        expect(merged.mergedAt, DateTime.utc(2026, 11, 3, 15));
+        expect((merged.additions, merged.deletions), (120, 30));
+        final undated = rows.firstWhere((row) => row.entryId == 'pr-2');
+        expect(undated.createdAt, isNull);
+        expect(undated.title, isNull);
+        expect((undated.additions, undated.deletions), (0, 0));
+      },
+    );
+
+    test(
+      'a private task holds its pull requests out while private entries '
+      'are hidden',
+      () async {
+        await db.updateJournalEntity(
+          buildTask(id: 'task-secret', at: at, private: true),
+        );
+        await db.updateJournalEntity(pullRequest('pr-1', snapshot: snapshot()));
+        await link(fromId: 'task-secret', toId: 'pr-1');
+
+        await setPrivateFlag(status: false);
+        expect(await db.pullRequestStatRows(), isEmpty);
+
+        await setPrivateFlag(status: true);
+        expect(
+          (await db.pullRequestStatRows()).map((row) => row.entryId),
+          ['pr-1'],
         );
       },
     );

@@ -2,11 +2,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/features/companion/model/companion_reaction.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
+import 'package:lotti/features/front_agent/model/front_pull_requests.dart';
 import 'package:lotti/features/front_agent/model/front_routing_index.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_contract.dart';
 
 void main() {
-  test('eight tools, never one, in a fixed order', () {
+  test('nine tools, never one, in a fixed order', () {
     // A single tool makes DeepSeek rewrite tool_choice; the list is fixed
     // so the request prefix stays byte-stable across turns.
     expect(frontAgentTools.map((t) => t.name), [
@@ -16,6 +17,7 @@ void main() {
       FrontAgentToolNames.listDueTasks,
       FrontAgentToolNames.summarizeLoggedTime,
       FrontAgentToolNames.listClosedTasks,
+      FrontAgentToolNames.summarizePullRequests,
       FrontAgentToolNames.askUser,
       FrontAgentToolNames.replyToUser,
     ]);
@@ -133,7 +135,7 @@ void main() {
       ((readTldr.parameters['properties'] as Map)['ids'] as Map)['maxItems'],
       frontTldrIdsPerRead,
     );
-    final askUser = frontAgentTools[6];
+    final askUser = frontAgentTools[7];
     expect(
       ((askUser.parameters['properties'] as Map)['options'] as Map)['maxItems'],
       frontAskUserMaxOptions,
@@ -147,6 +149,26 @@ void main() {
       contains('$frontCorpusMatchesPerTurn used'),
     );
     expect(frontDueListExhaustedAnswer, contains('$frontDueListsPerTurn used'));
+    expect(
+      frontPullRequestSummaryExhaustedAnswer,
+      contains('$frontPullRequestSummariesPerTurn used'),
+    );
+  });
+
+  test('summarize_pull_requests offers the periods, the past N days up to '
+      'the cap, and a first and last day, none of them required', () {
+    final tool = frontAgentTools.singleWhere(
+      (t) => t.name == FrontAgentToolNames.summarizePullRequests,
+    );
+    final properties = tool.parameters['properties'] as Map;
+    expect((properties['period'] as Map)['enum'], [
+      for (final period in FrontTimePeriod.values) period.wireName,
+    ]);
+    expect((properties['pastDays'] as Map)['maximum'], frontPullRequestMaxDays);
+    expect(properties.keys, containsAll(['from', 'through']));
+    expect(tool.parameters.containsKey('required'), isFalse);
+    expect(frontAgentSystemPrompt, contains('call `summarize_pull_requests`'));
+    expect(frontAgentSystemPrompt, contains('at most 31 days'));
   });
 
   test('a question about what is due is hers, answered from the due list, '

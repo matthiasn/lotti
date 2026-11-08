@@ -508,6 +508,21 @@ void main() {
     });
   });
 
+  group('impactTickInterval', () {
+    test('a count never ticks between two whole numbers; a measured amount '
+        'and the share axis keep their fine steps', () {
+      // A 2 ceiling steps by 0.5 — fine for kWh, a repeated label for PRs.
+      expect(impactTickInterval(2, ConsumptionMetric.requests), 1);
+      expect(impactTickInterval(1, ConsumptionMetric.tokens), 1);
+      expect(impactTickInterval(50, ConsumptionMetric.requests), 10);
+      expect(impactTickInterval(2, ConsumptionMetric.energy), 0.5);
+      expect(
+        impactTickInterval(1, ConsumptionMetric.requests, shareMode: true),
+        closeTo(0.2, 1e-12),
+      );
+    });
+  });
+
   group('impactNiceInterval', () {
     test('divides a nice ceiling into round-number ticks', () {
       // 5× ceiling → step 1× (5 ticks): 0.1/0.2/0.3/0.4/0.5, 10…50, 100…500.

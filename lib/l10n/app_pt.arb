@@ -3342,6 +3342,8 @@
   "frontDoorUnfiled": "Retirado de {owner}. Arquivar outra vez?",
   "frontDoorWalking": "A perguntar a {owner}…",
   "frontLoggedTimeExpand": "Ampliar gráfico",
+  "frontPullRequestsLinesAdded": "Linhas adicionadas",
+  "frontPullRequestsLinesDeleted": "Linhas removidas",
   "frontStageReleaseToCancel": "Solta para cancelar",
   "frontStageReleaseToSend": "Solta para enviar",
   "frontStageTalkHint": "Toca ou mantém premido para falar",

@@ -205,6 +205,10 @@ class FrontAgentWorkflow with AgentErrorLogging {
           now: now,
         ),
         closedTaskLister: _indexBuilder.closedTaskLister(scope, now: now),
+        pullRequestSummarizer: _indexBuilder.pullRequestSummarizer(
+          scope,
+          now: now,
+        ),
       );
       final tools = [
         for (final tool in frontAgentTools) tool.toChatCompletionTool(),
@@ -537,6 +541,8 @@ class FrontAgentWorkflow with AgentErrorLogging {
             'text': reply,
             if (strategy.loggedTimeChart case final chart?)
               'loggedTime': chart.toJson(),
+            if (strategy.pullRequestChart case final chart?)
+              'pullRequests': chart.toJson(),
           },
         );
       }

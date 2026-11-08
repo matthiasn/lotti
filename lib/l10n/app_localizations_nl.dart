@@ -7434,6 +7434,12 @@ class AppLocalizationsNl extends AppLocalizations {
   String get frontLoggedTimeExpand => 'Grafiek vergroten';
 
   @override
+  String get frontPullRequestsLinesAdded => 'Toegevoegde regels';
+
+  @override
+  String get frontPullRequestsLinesDeleted => 'Verwijderde regels';
+
+  @override
   String get frontStageReleaseToCancel => 'Laat los om te annuleren';
 
   @override

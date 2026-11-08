@@ -1,7 +1,7 @@
 ---
 type: Feature Module
 title: Front agent
-description: The one agent the user talks to in one place — how a durable user turn becomes a routing wake, what the routing index holds, how the dispatch contract is validated in code, the capped lookups and the repair round, the deterministic records a turn leaves behind, how the door walker takes each segment to its owner and mirrors the answer, how a statement becomes a proposal the user's one tap files, how a dictated task is filled from her reading of the words and made on the tap, how "that one" finds the task a follow-up follows, what the inbox is, how an unanswered turn is recovered on any device, how turns form conversations, how she answers what is due, how much time was logged, with a chart under her words, and what was completed or rejected, and names tasks as links, what the chat surface renders, and what she hears and says.
+description: The one agent the user talks to in one place — how a durable user turn becomes a routing wake, what the routing index holds, how the dispatch contract is validated in code, the capped lookups and the repair round, the deterministic records a turn leaves behind, how the door walker takes each segment to its owner and mirrors the answer, how a statement becomes a proposal the user's one tap files, how a dictated task is filled from her reading of the words and made on the tap, how "that one" finds the task a follow-up follows, what the inbox is, how an unanswered turn is recovered on any device, how turns form conversations, how she answers what is due, how much time was logged, with a chart under her words, what was completed or rejected, and how many pull requests the user opened and shipped, with charts under her words, and names tasks as links, what the chat surface renders, and what she hears and says.
 resource: ../../lib/features/front_agent
 tags: [agents, front-agent, routing, dispatch, doors, filing, inbox, companion, chat]
 status: draft
@@ -155,6 +155,18 @@ sources:
   - id: logged-time-reader
     resource: ../../lib/features/front_agent/service/front_logged_time_reader.dart
     title: readFrontLoggedTime — the Insights read inside her scope, private categories hidden
+    last_modified: 2026-11-08
+  - id: pull-request-stats
+    resource: ../../lib/features/front_agent/model/front_pull_requests.dart
+    title: FrontPullRequests — the window, the per-day sums and what the model reads of the user's pull requests
+    last_modified: 2026-11-08
+  - id: pull-request-reader
+    resource: ../../lib/features/front_agent/service/front_pull_request_reader.dart
+    title: readFrontPullRequests — stored pull requests through the tasks her scope sees, the user's own only
+    last_modified: 2026-11-08
+  - id: pull-request-chart
+    resource: ../../lib/features/front_agent/ui/front_pull_request_chart_card.dart
+    title: FrontPullRequestChartCard — per-day and running-total charts of pull requests and their lines
     last_modified: 2026-11-08
   - id: voice-switch
     resource: ../../lib/features/front_agent/ui/front_voice_switch.dart
@@ -332,7 +344,7 @@ follow-up's `followsUpTaskId` and as an `ask_user` option.
 
 # The contract
 
-Eight tools, never fewer (a single tool makes DeepSeek rewrite
+Nine tools, never fewer (a single tool makes DeepSeek rewrite
 `tool_choice`), in a fixed order:
 
 | Tool | Ends the turn | Cap | Over the cap |
@@ -343,6 +355,7 @@ Eight tools, never fewer (a single tool makes DeepSeek rewrite
 | `list_due_tasks(which, daysAhead 0–7, categoryIds)` | no | 1 per turn | `frontDueListExhaustedAnswer`; unavailable when no lister is wired |
 | `summarize_logged_time(period, categoryIds?)` | no | 1 per turn | `frontTimeSummaryExhaustedAnswer`; unavailable when no summarizer is wired |
 | `list_closed_tasks(period, categoryIds?)` | no | 1 per turn | `frontClosedListExhaustedAnswer`; unavailable when no lister is wired |
+| `summarize_pull_requests(period \| pastDays \| from+through)` | no | 1 per turn | `frontPullRequestSummaryExhaustedAnswer`; unavailable when no summarizer is wired |
 | `ask_user(question, options ≤ 3)` | yes | once | refused |
 | `reply_to_user(text)` | yes | once | refused |
 
@@ -564,6 +577,56 @@ each task as `task:<id> | title | completed|rejected YYYY-MM-DD |
 category`, oldest first, at most `frontClosedTaskLimit` — or a plain
 *None*. No chart: the answer is text, and its rows are linked by title like
 any lookup's.
+
+**How many pull requests the user opened, and what they shipped** — *how
+many PRs did I create in the past 14 days?*, *what did I ship in the last
+two weeks?* — is hers too. Rule 14 sends it to `summarize_pull_requests`
+and then `reply_to_user` alone. Its window is exactly one of a
+`FrontTimePeriod`, `pastDays` (the past N days ending today) or `from` and
+`through` (`YYYY-MM-DD`, both included — how "this weekend" is asked), at
+most `frontPullRequestMaxDays` (31) days so every bar stays one day;
+`frontPullRequestQuery` refuses anything else. The answer is read from the
+pull request entries the device already stores
+([GitHub pull requests](github.md)) — GitHub is never asked at question
+time, so it works offline and leaves nothing on the wire.
+`JournalDb.pullRequestStatRows` reads, once per live task holding each live
+entry, only the snapshot fields counted — `createdAt`, `mergedAt`,
+`additions`, `deletions`, `authorLogin`, the title — never the description,
+with a private task's entries held out while private entries are hidden.
+`readFrontPullRequests` then counts a pull request once, by key, when one
+of its holders is inside her scope and not in a hidden private category;
+when the device holds the user's GitHub login (`GitHubTokenStorage`), only
+the pull requests they opened count, and one not yet refreshed (no author)
+counts too. One never refreshed has no opening date and is reported apart
+as *undated*, not guessed.
+
+*Opened* is by `createdAt`, its lines with it on that day; *shipped* is
+merged inside the window by `mergedAt`, whenever opened. `FrontPullRequests.render`
+is what the model reads: the window, the opened and merged counts with their
+lines, then each pull request (`owner/repo#n | title | opened | merged |
++a -d`), newest opened first, at most `frontPullRequestListLimit`.
+
+When some were opened, the strategy keeps the `FrontPullRequestChart` — the
+days, the scope and the login, never the figures — and the workflow stores
+it on her `reply_to_user` payload as `pullRequests`; the thread builder
+reads it into `FrontChatThread.pullRequestsByMessageId`.
+`frontPullRequestChartProvider` reads the same rows again when drawn, on
+the pull request, task, link and private-toggle notifications, and
+`frontPullRequestDays` sums them per local day.
+
+```mermaid
+flowchart LR
+  Tool["summarize_pull_requests"] --> Query["frontPullRequestQuery: one window"]
+  Query --> Read["readFrontPullRequests over pullRequestStatRows"]
+  Read --> Text["FrontPullRequests.render: text the model reads"]
+  Read --> Spec["FrontPullRequestChart: days + scope + login"]
+  Spec --> Payload["reply_to_user payload: pullRequests"]
+  Payload --> Thread["FrontChatThread.pullRequestsByMessageId"]
+  Thread --> Card["FrontPullRequestChartCard"]
+  Card --> Read
+  Card --> Days["frontPullRequestDays"]
+  Days --> Bars["ImpactStackedBars / ImpactStackedArea"]
+```
 
 Her own words name a task or a project as a Markdown link titled as listed:
 `[title](lotti://task/<id>)`, `lotti://project/<id>` (`frontReferenceUrl`).
@@ -1118,6 +1181,16 @@ series, never a second one. That slice takes none of the category slots
 (six named categories keep six series), sits last on the stack as the
 rollup does, and its `+N` rollup count counts only real categories folded
 in, so the legend gives no count of what the slice holds.
+
+**Her answer about pull requests is a chart under her words.** A reply in
+`pullRequestsByMessageId` gets `FrontPullRequestChartCard` under her words:
+a toggle between pull requests opened, lines added and lines deleted, the
+AI consumption dashboard's `ImpactStackedBars` — one bar per day — and,
+once two days have begun, a *Per day* / *Running total* toggle that swaps in
+its `ImpactStackedArea` of the running sum. One series per metric, keyed by
+its label so a tapped bar reads it out, each in its own palette colour; no
+legend. The card holds its height while it reads and draws nothing once no
+pull request it counted is left.
 
 A link in her bubble or in a card's answer goes through the pane's one
 handler, as *Open* and a cited source do. A task (`/tasks/<id>`) opens **on

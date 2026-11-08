@@ -67,7 +67,7 @@ and a proposal she got wrong goes to the inbox rather than being retyped.
 
 - `model/` — the fixed identity (`front_agent`), the dispatch shape and its
   thresholds, the routing index and its caps, what a due-task list, a
-  logged-time summary and a closed-task list hold,
+  logged-time summary, a closed-task list and a pull request count hold,
   the links her words name tasks and projects with
   (`front_reference_links.dart`), the door record, the thread
   projection the chat surface renders, and what a conversation is.
@@ -78,7 +78,10 @@ and a proposal she got wrong goes to the inbox rather than being retyped.
 - `service/` — the index builder over existing reads (and the due-task
   lister behind `list_due_tasks`, the logged-time summarizer behind
   `summarize_logged_time`, whose read her reply's chart of logged time
-  shares, and the closed-task lister behind `list_closed_tasks`), the
+  shares, the closed-task lister behind `list_closed_tasks`, and the pull
+  request counter behind `summarize_pull_requests`, which reads only the
+  pull requests the device stores and whose read her reply's charts of
+  them share), the
   singleton's lazy
   creation, the chat service that makes a user turn durable with a recovery
   record and runs the wake, the door walker, the owner titles, the thread

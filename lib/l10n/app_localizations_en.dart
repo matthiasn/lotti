@@ -7376,6 +7376,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get frontLoggedTimeExpand => 'Expand chart';
 
   @override
+  String get frontPullRequestsLinesAdded => 'Lines added';
+
+  @override
+  String get frontPullRequestsLinesDeleted => 'Lines deleted';
+
+  @override
   String get frontStageReleaseToCancel => 'Release to cancel';
 
   @override

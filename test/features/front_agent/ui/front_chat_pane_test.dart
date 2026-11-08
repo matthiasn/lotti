@@ -25,6 +25,7 @@ import 'package:lotti/features/front_agent/model/front_conversation.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
 import 'package:lotti/features/front_agent/model/front_logged_time_chart.dart';
+import 'package:lotti/features/front_agent/model/front_pull_requests.dart';
 import 'package:lotti/features/front_agent/service/front_chat_service.dart';
 import 'package:lotti/features/front_agent/state/front_agent_providers.dart';
 import 'package:lotti/features/front_agent/state/front_chat_thread_provider.dart';
@@ -40,6 +41,7 @@ import 'package:lotti/features/front_agent/ui/front_conversation_list.dart';
 import 'package:lotti/features/front_agent/ui/front_door_card.dart';
 import 'package:lotti/features/front_agent/ui/front_door_wizards.dart';
 import 'package:lotti/features/front_agent/ui/front_logged_time_chart_card.dart';
+import 'package:lotti/features/front_agent/ui/front_pull_request_chart_card.dart';
 import 'package:lotti/features/front_agent/ui/front_task_list.dart';
 import 'package:lotti/features/front_agent/ui/front_turn_cost_line.dart';
 import 'package:lotti/features/insights/model/insights_models.dart';
@@ -1041,6 +1043,45 @@ void main() {
         tester
             .getTopLeft(
               find.textContaining('12h this week.', findRichText: true),
+            )
+            .dy,
+      ),
+    );
+    expect(
+      tester.getTopLeft(card).dy,
+      lessThan(
+        tester.getTopLeft(find.textContaining('Thanks', findRichText: true)).dy,
+      ),
+    );
+  });
+
+  testWidgets('an answer about pull requests draws its charts under her '
+      'words; a reply without one draws none', (tester) async {
+    const chart = FrontPullRequestChart(
+      range: InsightsRange(startDay: 20396, endDayExclusive: 20410),
+      categoryIds: {},
+    );
+    await pumpPane(
+      tester,
+      thread: () async => FrontChatThread(
+        messages: [
+          message('u1', AgentChatRole.user, 'PRs in two weeks?', now),
+          message('a1', AgentChatRole.agent, 'You created 12 PRs.', now),
+          message('u2', AgentChatRole.user, 'Thanks', now),
+          message('a2', AgentChatRole.agent, 'Any time.', now),
+        ],
+        pullRequestsByMessageId: const {'a1': chart},
+      ),
+    );
+
+    final card = find.byType(FrontPullRequestChartCard);
+    expect(tester.widget<FrontPullRequestChartCard>(card).chart, chart);
+    expect(
+      tester.getTopLeft(card).dy,
+      greaterThan(
+        tester
+            .getTopLeft(
+              find.textContaining('You created 12 PRs.', findRichText: true),
             )
             .dy,
       ),

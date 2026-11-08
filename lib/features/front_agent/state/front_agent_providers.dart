@@ -32,6 +32,7 @@ import 'package:lotti/features/front_agent/service/front_owner_titles.dart';
 import 'package:lotti/features/front_agent/service/front_routing_index_builder.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_model_resolution.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_workflow.dart';
+import 'package:lotti/features/github/state/github_providers.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/journal/create/create_entry.dart';
 import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
@@ -52,6 +53,7 @@ final frontRoutingIndexBuilderProvider = Provider<FrontRoutingIndexBuilder>(
     // A host without a full-text index simply has no corpus match.
     fts5Db: ref.watch(fts5DbProvider),
     firstDayOfWeekIndex: () => ref.read(firstDayOfWeekIndexProvider.future),
+    githubLogin: () => ref.read(gitHubTokenStorageProvider).readLogin(),
   ),
   name: 'frontRoutingIndexBuilderProvider',
 );

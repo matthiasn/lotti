@@ -2998,6 +2998,8 @@
   "frontDoorUnfiled": "Aus {owner} herausgenommen. Noch einmal ablegen?",
   "frontDoorWalking": "Fragt {owner}…",
   "frontLoggedTimeExpand": "Diagramm vergrößern",
+  "frontPullRequestsLinesAdded": "Hinzugefügte Zeilen",
+  "frontPullRequestsLinesDeleted": "Gelöschte Zeilen",
   "frontStageReleaseToCancel": "Loslassen zum Abbrechen",
   "frontStageReleaseToSend": "Loslassen zum Senden",
   "frontStageTalkHint": "Tippen oder halten zum Sprechen",

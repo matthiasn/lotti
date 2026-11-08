@@ -7513,6 +7513,12 @@ class AppLocalizationsFr extends AppLocalizations {
   String get frontLoggedTimeExpand => 'Agrandir le graphique';
 
   @override
+  String get frontPullRequestsLinesAdded => 'Lignes ajoutées';
+
+  @override
+  String get frontPullRequestsLinesDeleted => 'Lignes supprimées';
+
+  @override
   String get frontStageReleaseToCancel => 'Relâche pour annuler';
 
   @override

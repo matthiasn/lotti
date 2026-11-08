@@ -7457,6 +7457,12 @@ class AppLocalizationsDe extends AppLocalizations {
   String get frontLoggedTimeExpand => 'Diagramm vergrößern';
 
   @override
+  String get frontPullRequestsLinesAdded => 'Hinzugefügte Zeilen';
+
+  @override
+  String get frontPullRequestsLinesDeleted => 'Gelöschte Zeilen';
+
+  @override
   String get frontStageReleaseToCancel => 'Loslassen zum Abbrechen';
 
   @override

@@ -8,6 +8,7 @@ import 'package:lotti/features/front_agent/model/front_chat_thread.dart';
 import 'package:lotti/features/front_agent/model/front_conversation.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
 import 'package:lotti/features/front_agent/model/front_logged_time_chart.dart';
+import 'package:lotti/features/front_agent/model/front_pull_requests.dart';
 import 'package:lotti/features/front_agent/service/front_chat_history_service.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_contract.dart';
 
@@ -71,6 +72,7 @@ class FrontChatThreadBuilder {
     final messages = <AgentChatMessage>[];
     final options = <String, List<FrontAskOption>>{};
     final charts = <String, FrontLoggedTimeChart>{};
+    final pullRequestCharts = <String, FrontPullRequestChart>{};
     final doorRecords = <String, List<(String, FrontDoorRecord)>>{};
 
     for (final row in rows) {
@@ -92,6 +94,12 @@ class FrontChatThreadBuilder {
               payload!.content['loggedTime'],
             );
             if (chart != null) charts[row.id] = chart;
+            final pullRequests = FrontPullRequestChart.fromJson(
+              payload.content['pullRequests'],
+            );
+            if (pullRequests != null) {
+              pullRequestCharts[row.id] = pullRequests;
+            }
           case FrontAgentToolNames.askUser:
             final payload = await _payload(row.contentEntryId);
             final question = payload?.content['question'];
@@ -168,6 +176,10 @@ class FrontChatThreadBuilder {
       specialistAgentIds: specialists,
       loggedTimeByMessageId: {
         for (final entry in charts.entries)
+          if (visibleIds.contains(entry.key)) entry.key: entry.value,
+      },
+      pullRequestsByMessageId: {
+        for (final entry in pullRequestCharts.entries)
           if (visibleIds.contains(entry.key)) entry.key: entry.value,
       },
     );

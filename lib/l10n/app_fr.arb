@@ -2998,6 +2998,8 @@
   "frontDoorUnfiled": "Retiré de {owner}. Classer à nouveau ?",
   "frontDoorWalking": "Question à {owner}…",
   "frontLoggedTimeExpand": "Agrandir le graphique",
+  "frontPullRequestsLinesAdded": "Lignes ajoutées",
+  "frontPullRequestsLinesDeleted": "Lignes supprimées",
   "frontStageReleaseToCancel": "Relâche pour annuler",
   "frontStageReleaseToSend": "Relâche pour envoyer",
   "frontStageTalkHint": "Touche ou maintiens pour parler",

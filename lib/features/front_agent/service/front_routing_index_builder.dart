@@ -12,8 +12,10 @@ import 'package:lotti/features/agents/service/open_task_corpus.dart';
 import 'package:lotti/features/front_agent/model/front_conversation.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_logged_time_chart.dart';
+import 'package:lotti/features/front_agent/model/front_pull_requests.dart';
 import 'package:lotti/features/front_agent/model/front_routing_index.dart';
 import 'package:lotti/features/front_agent/service/front_logged_time_reader.dart';
+import 'package:lotti/features/front_agent/service/front_pull_request_reader.dart';
 import 'package:lotti/features/insights/logic/period_navigation.dart';
 import 'package:lotti/features/insights/logic/time_bucketing.dart';
 import 'package:lotti/features/insights/model/insights_models.dart';
@@ -55,6 +57,7 @@ class FrontRoutingIndexBuilder {
     required this.agentRepository,
     this.fts5Db,
     this.firstDayOfWeekIndex,
+    this.githubLogin,
   });
 
   final JournalDb journalDb;
@@ -67,6 +70,11 @@ class FrontRoutingIndexBuilder {
   /// The device region's first weekday (`0 = Sunday` … `6 = Saturday`) that
   /// `this_week` starts on; Monday when null.
   final Future<int> Function()? firstDayOfWeekIndex;
+
+  /// The user's GitHub login, read from the device keystore: pull request
+  /// statistics count only the pull requests they opened. Null, or one
+  /// answering null, counts every pull request their tasks hold.
+  final Future<String?> Function()? githubLogin;
 
   Future<FrontRoutingIndex> build({
     required FrontRoutingScope scope,
@@ -357,6 +365,37 @@ class FrontRoutingIndexBuilder {
           categoryIds: categoryIds,
           namedCategoryIds: named,
         ),
+      );
+    };
+  }
+
+  /// The pull requests the user opened or merged in one window of [now]'s
+  /// local days, through the tasks [scope] lets her see, as
+  /// [readFrontPullRequests] reads them from the device.
+  Future<FrontPullRequests> Function(FrontPullRequestQuery query)
+  pullRequestSummarizer(FrontRoutingScope scope, {required DateTime now}) {
+    return (query) async {
+      final range =
+          query.range ??
+          query.period!.rangeOn(
+            now,
+            firstDayOfWeekIndex:
+                await firstDayOfWeekIndex?.call() ?? defaultFirstDayOfWeekIndex,
+          );
+      final chart = FrontPullRequestChart(
+        range: range,
+        categoryIds: scope.categoryIds,
+        authorLogin: await githubLogin?.call(),
+      );
+      final (:pullRequests, :undated) = await readFrontPullRequests(
+        journalDb,
+        chart,
+      );
+      return FrontPullRequests(
+        period: query.range == null ? query.period : null,
+        chart: chart,
+        pullRequests: pullRequests,
+        undated: undated,
       );
     };
   }

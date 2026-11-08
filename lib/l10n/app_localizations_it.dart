@@ -7486,6 +7486,12 @@ class AppLocalizationsIt extends AppLocalizations {
   String get frontLoggedTimeExpand => 'Ingrandisci il grafico';
 
   @override
+  String get frontPullRequestsLinesAdded => 'Righe aggiunte';
+
+  @override
+  String get frontPullRequestsLinesDeleted => 'Righe eliminate';
+
+  @override
   String get frontStageReleaseToCancel => 'Rilascia per annullare';
 
   @override

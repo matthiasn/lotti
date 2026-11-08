@@ -363,6 +363,20 @@ double impactNiceInterval(double ceiling) {
   return magnitude / 5; // 1× → step 0.2× → 5 ticks
 }
 
+/// The tick step for an axis up to [ceiling] in [metric]'s unit:
+/// [impactNiceInterval], but never below one for a metric that
+/// [ConsumptionMetricLens.countsWholeUnits] — a 2 ceiling would otherwise
+/// tick at 0.5 and label 1, 1, 2, 2. [shareMode]'s 0–100% axis keeps its
+/// fractional steps.
+double impactTickInterval(
+  double ceiling,
+  ConsumptionMetric metric, {
+  bool shareMode = false,
+}) {
+  final step = impactNiceInterval(ceiling);
+  return !shareMode && metric.countsWholeUnits ? math.max(1, step) : step;
+}
+
 /// Displayed integer share percentages for [values], apportioned with the
 /// largest-remainder (Hamilton) method so they sum to **exactly 100** instead
 /// of the 101%/99% a column of independently-rounded shares drifts to.

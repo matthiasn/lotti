@@ -10,6 +10,7 @@ import 'package:lotti/features/front_agent/model/front_conversation.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
 import 'package:lotti/features/front_agent/model/front_logged_time_chart.dart';
+import 'package:lotti/features/front_agent/model/front_pull_requests.dart';
 import 'package:lotti/features/front_agent/service/front_chat_thread_builder.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_contract.dart';
 import 'package:lotti/features/insights/model/insights_models.dart';
@@ -265,6 +266,50 @@ void main() {
         categoryIds: {'work'},
       ),
     });
+  });
+
+  test('a reply that charts pull requests carries its chart; one this build '
+      'cannot read carries none', () async {
+    userTurn('u1', 'PRs in two weeks?', at: DateTime(2026, 11, 8, 9));
+    row(
+      id: 'reply-1',
+      kind: AgentMessageKind.action,
+      toolName: FrontAgentToolNames.replyToUser,
+      operationId: 'u1',
+      content: {
+        'text': 'You created 12 PRs.',
+        'pullRequests': {
+          'startDay': 20396,
+          'endDayExclusive': 20410,
+          'categoryIds': ['work'],
+          'authorLogin': 'pingu',
+        },
+      },
+      createdAt: DateTime(2026, 11, 8, 9, 1),
+    );
+    userTurn('u2', 'And this weekend?', at: DateTime(2026, 11, 8, 10));
+    row(
+      id: 'reply-2',
+      kind: AgentMessageKind.action,
+      toolName: FrontAgentToolNames.replyToUser,
+      operationId: 'u2',
+      content: {
+        'text': 'None.',
+        'pullRequests': {'startDay': 'soon'},
+      },
+      createdAt: DateTime(2026, 11, 8, 10, 1),
+    );
+
+    final thread = await builder.build();
+
+    expect(thread.pullRequestsByMessageId, {
+      'reply-1': const FrontPullRequestChart(
+        range: InsightsRange(startDay: 20396, endDayExclusive: 20410),
+        categoryIds: {'work'},
+        authorLogin: 'pingu',
+      ),
+    });
+    expect(thread.loggedTimeByMessageId, isEmpty);
   });
 
   test('a row without a payload, or with an empty text, is left out', () async {

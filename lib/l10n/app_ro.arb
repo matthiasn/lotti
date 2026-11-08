@@ -2998,6 +2998,8 @@
   "frontDoorUnfiled": "Scos din {owner}. Înregistrați din nou?",
   "frontDoorWalking": "Întreabă {owner}…",
   "frontLoggedTimeExpand": "Măriți graficul",
+  "frontPullRequestsLinesAdded": "Linii adăugate",
+  "frontPullRequestsLinesDeleted": "Linii șterse",
   "frontStageReleaseToCancel": "Eliberați pentru a anula",
   "frontStageReleaseToSend": "Eliberați pentru a trimite",
   "frontStageTalkHint": "Atingeți sau țineți apăsat pentru a vorbi",
