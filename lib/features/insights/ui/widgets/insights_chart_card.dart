@@ -12,8 +12,6 @@ import 'package:material_ui/material_ui.dart';
 /// Chart mode: per-bucket values or running cumulative totals.
 enum InsightsChartMode { daily, cumulative }
 
-const double _chartHeight = 260;
-
 /// The main visualization: stacked bars per bucket (daily mode) or a
 /// stacked cumulative area (cumulative mode).
 ///
@@ -168,7 +166,7 @@ class _InsightsChartCardState extends State<InsightsChartCard> {
             header,
             SizedBox(height: tokens.spacing.step5),
             SizedBox(
-              height: _chartHeight,
+              height: ChartSizes.card,
               child: widget.chartData.isEmpty
                   ? EmptyChart(message: messages.insightsEmptyChart)
                   : showBars

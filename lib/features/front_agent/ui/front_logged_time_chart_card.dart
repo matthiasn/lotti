@@ -14,9 +14,6 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// Low enough to keep her reply a reply; the expanded view has room.
-const double _inlineChartHeight = 140;
-
 /// The chart under her answer to a time question: the Insights page's
 /// stacked bars — one per day, or per hour for a single day — each split
 /// into the categories' colours, a tap on a bar reading out every category
@@ -34,7 +31,7 @@ class FrontLoggedTimeChartCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final data = ref.watch(frontLoggedTimeChartProvider(chart)).value;
-    if (data == null) return const SizedBox(height: _inlineChartHeight);
+    if (data == null) return const SizedBox(height: ChartSizes.inline);
     if (data.isEmpty) return const SizedBox.shrink();
     final tokens = context.designTokens;
     final resolver = _resolver(context, ref);
@@ -42,7 +39,7 @@ class FrontLoggedTimeChartCard extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         SizedBox(
-          height: _inlineChartHeight,
+          height: ChartSizes.inline,
           child: StackedBarChart(chartData: data, resolver: resolver),
         ),
         SizedBox(height: tokens.spacing.step3),

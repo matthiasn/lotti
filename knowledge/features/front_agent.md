@@ -424,8 +424,11 @@ thread builder reads it back into `FrontChatThread.loggedTimeByMessageId`,
 and the chart reads the numbers again when drawn
 (`frontLoggedTimeChartProvider`, through the same `readFrontLoggedTime`
 and the Insights page's `buildChartData`), so time in a private category
-shows only while private entries do, at any age of the reply. It reads once
-per mount, not on journal notifications.
+shows only while private entries do, at any age of the reply. While shown
+it reads again on the notifications the Insights page refetches on — an
+entry, a task or a link changing, and `privateToggleNotification` —
+unthrottled, so hiding private entries takes their time off a chart
+already on screen at once.
 
 ```mermaid
 flowchart LR
