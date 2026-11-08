@@ -8,6 +8,9 @@
 - **The ⋯ menus on chats, goals and people highlight their first and last
   row cleanly.** Hovering the top or bottom entry no longer leaves a strip
   of empty padding above or below the highlight.
+- **Searching your chats works while something waits in the inbox.** The
+  first letter you typed vanished and the search field lost focus whenever
+  the inbox had an item. The field now keeps what you type.
 
 ### Added
 - **The companion tells you which tasks your time went to.** Ask "what did
