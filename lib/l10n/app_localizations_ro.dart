@@ -7443,6 +7443,9 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get frontLoggedTimeExpand => 'Măriți graficul';
+
+  @override
   String get frontStageReleaseToCancel => 'Eliberați pentru a anula';
 
   @override

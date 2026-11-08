@@ -7434,6 +7434,9 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get frontLoggedTimeExpand => 'Agrandir le graphique';
+
+  @override
   String get frontStageReleaseToCancel => 'Relâche pour annuler';
 
   @override

@@ -3318,6 +3318,7 @@
   "frontDoorUndo": "Desfazer",
   "frontDoorUnfiled": "Retirado de {owner}. Arquivar outra vez?",
   "frontDoorWalking": "A perguntar a {owner}…",
+  "frontLoggedTimeExpand": "Ampliar gráfico",
   "frontStageReleaseToCancel": "Solta para cancelar",
   "frontStageReleaseToSend": "Solta para enviar",
   "frontStageTalkHint": "Toca ou mantém premido para falar",

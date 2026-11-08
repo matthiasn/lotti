@@ -7335,6 +7335,9 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String get frontLoggedTimeExpand => 'Förstora diagrammet';
+
+  @override
   String get frontStageReleaseToCancel => 'Släpp för att avbryta';
 
   @override

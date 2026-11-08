@@ -7400,6 +7400,9 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get frontLoggedTimeExpand => 'Zvětšit graf';
+
+  @override
   String get frontStageReleaseToCancel => 'Pusť a zruš';
 
   @override

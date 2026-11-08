@@ -11,10 +11,11 @@ import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/features/agents/service/open_task_corpus.dart';
 import 'package:lotti/features/front_agent/model/front_conversation.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
+import 'package:lotti/features/front_agent/model/front_logged_time_chart.dart';
 import 'package:lotti/features/front_agent/model/front_routing_index.dart';
+import 'package:lotti/features/front_agent/service/front_logged_time_reader.dart';
 import 'package:lotti/features/insights/logic/period_navigation.dart';
 import 'package:lotti/features/insights/logic/time_bucketing.dart';
-import 'package:lotti/features/insights/repository/insights_repository.dart';
 import 'package:lotti/utils/day_agent_capture_helpers.dart';
 
 /// What the front agent may see (the owner's decision 4: narrow by default).
@@ -192,13 +193,7 @@ class FrontRoutingIndexBuilder {
   }
 
   /// Sums the time logged inside [scope] in one period of [now]'s local
-  /// days, per category, largest first. The Insights page's read and
-  /// bucketing, so she answers with the numbers that page shows: private
-  /// entries only while they are shown, a task's time in the task's
-  /// category, overlapping entries in one category counted once. Time in
-  /// a private category is left out while private entries are hidden — an
-  /// entry need not be private itself to sit in one — and time in no
-  /// category whenever the scope is narrowed.
+  /// days, per category, largest first, as [readFrontLoggedTime] reads it.
   Future<FrontLoggedTime> Function(FrontTimePeriod period) loggedTimeSummarizer(
     FrontRoutingScope scope, {
     required DateTime now,
@@ -209,28 +204,11 @@ class FrontRoutingIndexBuilder {
         firstDayOfWeekIndex:
             await firstDayOfWeekIndex?.call() ?? defaultFirstDayOfWeekIndex,
       );
-      final rows = await InsightsRepository(journalDb).fetchTimeRows(
-        start: dayStart(range.startDay),
-        end: dayStart(range.endDayExclusive),
-      );
-      // Private categories are dropped from this read while hidden.
-      final names = {
-        for (final category in await journalDb.getAllCategories())
-          category.id: category.name,
-      };
-      final hidden = {
-        for (final category
-            in await journalDb.getAllCategoriesIncludingPrivate())
-          if (!names.containsKey(category.id)) category.id,
-      };
-      final buckets = bucketize(
-        [
-          for (final row in rows)
-            if (categoryAllowed(row.categoryId, scope.categoryIds) &&
-                !hidden.contains(row.categoryId))
-              row,
-        ],
-        windowStartDay: range.startDay,
+      final categoryIds = scope.categoryIds;
+      final (:buckets, :names) = await readFrontLoggedTime(
+        journalDb,
+        range,
+        categoryIds,
       );
       return FrontLoggedTime(
         period: period,
@@ -245,6 +223,7 @@ class FrontRoutingIndexBuilder {
               seconds: seconds,
             ),
         ],
+        chart: FrontLoggedTimeChart(range: range, categoryIds: categoryIds),
       );
     };
   }

@@ -7377,6 +7377,9 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get frontLoggedTimeExpand => 'Diagramm vergrößern';
+
+  @override
   String get frontStageReleaseToCancel => 'Loslassen zum Abbrechen';
 
   @override

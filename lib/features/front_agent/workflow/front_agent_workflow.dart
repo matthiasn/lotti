@@ -508,7 +508,11 @@ class FrontAgentWorkflow with AgentErrorLogging {
           messageId: frontAgentReplyMessageId(agentId, runKey),
           payloadId: _replyPayloadId(agentId, runKey),
           toolName: FrontAgentToolNames.replyToUser,
-          content: {'text': reply},
+          content: {
+            'text': reply,
+            if (strategy.loggedTimeChart case final chart?)
+              'loggedTime': chart.toJson(),
+          },
         );
       }
     });

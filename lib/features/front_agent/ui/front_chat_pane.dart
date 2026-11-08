@@ -27,6 +27,7 @@ import 'package:lotti/features/front_agent/ui/front_chat_voice.dart';
 import 'package:lotti/features/front_agent/ui/front_conversation_list.dart';
 import 'package:lotti/features/front_agent/ui/front_door_card.dart';
 import 'package:lotti/features/front_agent/ui/front_door_wizards.dart';
+import 'package:lotti/features/front_agent/ui/front_logged_time_chart_card.dart';
 import 'package:lotti/features/front_agent/ui/front_task_list.dart';
 import 'package:lotti/features/front_agent/ui/front_turn_cost_line.dart';
 import 'package:lotti/features/tasks/util/task_navigation.dart';
@@ -364,7 +365,8 @@ class FrontChatThreadView extends ConsumerWidget {
       ),
       onLinkTap: (_, url, title) => openLink(url, title),
       // A list of tasks in her words is drawn as task rows, her words
-      // around it as she wrote them; a reply without one is drawn as usual.
+      // around it as she wrote them, and an answer about logged time gets
+      // its chart under her words; any other reply is drawn as usual.
       replyBodyBuilder: (context, message, prose) {
         // Cut from her words as written, before their dates became the
         // device's: a list line may end in when it was due, in ISO.
@@ -373,7 +375,10 @@ class FrontChatThreadView extends ConsumerWidget {
             .firstOrNull
             ?.text;
         final parts = frontReplyParts(written ?? message.text);
-        if (!parts.any((part) => part is FrontReplyTasks)) return null;
+        final chart = thread?.loggedTimeByMessageId[message.id];
+        if (chart == null && !parts.any((part) => part is FrontReplyTasks)) {
+          return null;
+        }
         final tokens = context.designTokens;
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -390,6 +395,11 @@ class FrontChatThreadView extends ConsumerWidget {
                   ),
                 ),
               },
+            if (chart != null)
+              FrontLoggedTimeChartCard(
+                key: ValueKey('front-logged-time-${message.id}'),
+                chart: chart,
+              ),
           ],
         );
       },

@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
+import 'package:lotti/features/front_agent/model/front_logged_time_chart.dart';
 import 'package:lotti/features/front_agent/model/front_routing_index.dart';
 import 'package:lotti/features/insights/logic/time_bucketing.dart';
 import 'package:lotti/features/insights/model/insights_models.dart';
@@ -302,6 +303,7 @@ void main() {
             (name: '  Penguin\ncolony ', seconds: 3600),
             (name: null, seconds: 2700),
           ],
+          chart: _chart,
         ).render(),
         'Time logged past 7 days (2026-11-01 through 2026-11-07): 4h 20m in '
         'total, by category:\n'
@@ -318,9 +320,15 @@ void main() {
           from: DateTime(2026, 11, 6),
           through: DateTime(2026, 11, 6),
           byCategory: const [],
+          chart: _chart,
         ).render(),
         'None: no time logged yesterday (2026-11-06).',
       );
     });
   });
 }
+
+const _chart = FrontLoggedTimeChart(
+  range: InsightsRange(startDay: 20398, endDayExclusive: 20405),
+  categoryIds: {},
+);

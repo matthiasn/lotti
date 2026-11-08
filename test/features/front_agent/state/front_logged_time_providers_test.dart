@@ -1,0 +1,115 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/front_agent/model/front_logged_time_chart.dart';
+import 'package:lotti/features/front_agent/state/front_logged_time_providers.dart';
+import 'package:lotti/features/insights/logic/time_bucketing.dart';
+import 'package:lotti/features/insights/model/insights_models.dart';
+import 'package:lotti/providers/service_providers.dart';
+import 'package:mocktail/mocktail.dart';
+
+import '../../../mocks/mocks.dart';
+import '../../categories/test_utils.dart';
+
+void main() {
+  late MockJournalDb journalDb;
+  late ProviderContainer container;
+
+  // Monday 2026-10-26 through Wednesday 2026-10-28.
+  final monday = epochDay(DateTime(2026, 10, 26));
+  final range = InsightsRange(startDay: monday, endDayExclusive: monday + 3);
+
+  ({String entryId, DateTime dateFrom, DateTime dateTo, String? categoryId})
+  row(String? categoryId, int day, int fromHour, int toHour) {
+    final date = dayStart(monday + day);
+    return (
+      entryId: '$categoryId-$day-$fromHour',
+      dateFrom: date.add(Duration(hours: fromHour)),
+      dateTo: date.add(Duration(hours: toHour)),
+      categoryId: categoryId,
+    );
+  }
+
+  setUp(() {
+    journalDb = MockJournalDb();
+    when(
+      () => journalDb.insightsTimeRows(
+        start: any(named: 'start'),
+        end: any(named: 'end'),
+      ),
+    ).thenAnswer(
+      (_) async => [
+        row('colony', 0, 9, 11),
+        // Overlaps the one before it: the shared hour counts once.
+        row('colony', 0, 10, 12),
+        row('fishing', 2, 8, 9),
+        row(null, 2, 13, 14),
+        // A private category while private entries are hidden.
+        row('secret', 1, 9, 17),
+      ],
+    );
+    when(() => journalDb.getAllCategories()).thenAnswer(
+      (_) async => [
+        CategoryTestUtils.createTestCategory(id: 'colony', name: 'Colony'),
+        CategoryTestUtils.createTestCategory(id: 'fishing', name: 'Fishing'),
+      ],
+    );
+    when(() => journalDb.getAllCategoriesIncludingPrivate()).thenAnswer(
+      (_) async => [
+        CategoryTestUtils.createTestCategory(id: 'colony', name: 'Colony'),
+        CategoryTestUtils.createTestCategory(id: 'fishing', name: 'Fishing'),
+        CategoryTestUtils.createTestCategory(
+          id: 'secret',
+          name: 'Secret',
+          private: true,
+        ),
+      ],
+    );
+    container = ProviderContainer(
+      overrides: [journalDbProvider.overrideWithValue(journalDb)],
+    );
+  });
+
+  tearDown(() => container.dispose());
+
+  Future<InsightsChartData> read(Set<String> categoryIds) => container.read(
+    frontLoggedTimeChartProvider(
+      FrontLoggedTimeChart(range: range, categoryIds: categoryIds),
+    ).future,
+  );
+
+  test('reads the days charted, one bucket per day, each category apart, '
+      'overlaps once and a hidden private category never', () async {
+    final data = await read(const {});
+
+    verify(
+      () => journalDb.insightsTimeRows(
+        start: DateTime(2026, 10, 26),
+        end: DateTime(2026, 10, 29),
+      ),
+    ).called(1);
+    expect(data.granularity, InsightsGranularity.day);
+    expect(data.bucketStarts, [
+      DateTime(2026, 10, 26),
+      DateTime(2026, 10, 27),
+      DateTime(2026, 10, 28),
+    ]);
+    expect(data.seriesKeys, ['colony', 'fishing', null]);
+    expect(data.values, [
+      [3 * 3600, 0, 0],
+      [0, 0, 3600],
+      [0, 0, 3600],
+    ]);
+  });
+
+  test(
+    'a narrowed scope charts only its categories, never time in none',
+    () async {
+      final data = await read(const {'fishing'});
+
+      expect(data.seriesKeys, ['fishing']);
+      expect(data.values, [
+        [0, 0, 3600],
+      ]);
+    },
+  );
+}

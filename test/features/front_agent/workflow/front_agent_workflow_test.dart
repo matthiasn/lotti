@@ -23,6 +23,7 @@ import 'package:lotti/features/front_agent/service/front_routing_index_builder.d
 import 'package:lotti/features/front_agent/workflow/front_agent_contract.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_strategy.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_workflow.dart';
+import 'package:lotti/features/insights/logic/time_bucketing.dart';
 import 'package:lotti/get_it.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
@@ -811,6 +812,8 @@ void main() {
           reply.content['text'],
           'Due today: [Garden](lotti://task/garden).',
         );
+        // No time was summed: nothing to chart.
+        expect(reply.content.containsKey('loggedTime'), isFalse);
       },
     );
 
@@ -947,6 +950,18 @@ void main() {
         (m) => m.id == frontAgentReplyMessageId(frontAgentId, runKey),
       );
       expect(reply.metadata.toolName, AgentConversationToolNames.replyToUser);
+      // Her reply stores what to chart — the day summed, inside the chips —
+      // never the figures.
+      final payload = upserts
+          .whereType<AgentMessagePayloadEntity>()
+          .singleWhere(
+            (p) => p.content.containsKey('text') && p.agentId == frontAgentId,
+          );
+      expect(payload.content['loggedTime'], {
+        'startDay': epochDay(DateTime(2026, 11)),
+        'endDayExclusive': epochDay(DateTime(2026, 11, 2)),
+        'categoryIds': ['home'],
+      });
       expect(
         upserts.whereType<AgentMessageEntity>().where(
           (m) => m.id == frontAgentDispatchMessageId(frontAgentId, runKey),

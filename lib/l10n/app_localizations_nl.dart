@@ -7355,6 +7355,9 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String get frontLoggedTimeExpand => 'Grafiek vergroten';
+
+  @override
   String get frontStageReleaseToCancel => 'Laat los om te annuleren';
 
   @override

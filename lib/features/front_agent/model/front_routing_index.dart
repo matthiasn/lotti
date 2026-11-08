@@ -1,4 +1,5 @@
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
+import 'package:lotti/features/front_agent/model/front_logged_time_chart.dart';
 import 'package:lotti/features/insights/logic/period_navigation.dart';
 import 'package:lotti/features/insights/logic/time_bucketing.dart';
 import 'package:lotti/features/insights/model/insights_models.dart';
@@ -190,9 +191,13 @@ class FrontLoggedTime {
     required this.from,
     required this.through,
     required this.byCategory,
+    required this.chart,
   });
 
   final FrontTimePeriod period;
+
+  /// The days summed and the turn's category scope, for her reply's chart.
+  final FrontLoggedTimeChart chart;
 
   /// Local midnights of the first and the last day summed.
   final DateTime from;
