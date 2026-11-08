@@ -84,13 +84,16 @@ le schede del manuale aperte.
 
 ## Pubblica un rilascio
 
-La sorgente del manuale non viene copiata per ogni versione dell'app. Il tag di
-rilascio dell'app conserva già la sua sorgente esatta. La pubblicazione è
-un'esecuzione manuale del workflow con la versione di marketing e il deploy
-abilitato: la CI risolve il tag dell'app più recente di quella versione,
-costruisce il sito e il suo catalogo di screenshot dal tag, carica entrambi in
-uno storage versionato immutabile e ridistribuisce il sito con tutte le
-versioni fianco a fianco. Gli snapshot di rilascio non vengono mai
-sovrascritti. Il dropdown delle versioni legge un catalogo live scritto a ogni
-deploy, quindi anche i manuali più vecchi elencano i rilasci arrivati dopo di
-loro.
+Il sorgente del manuale non viene copiato per ogni versione dell'app. Il tag di
+rilascio dell'app ne conserva già lo stato esatto. Ogni tag di rilascio
+pubblica automaticamente il manuale della sua versione: se pagine, test degli
+screenshot o dati demo del manuale sono cambiati dal rilascio precedente, la
+CI costruisce il sito e cattura gli screenshot dal tag; altrimenti la nuova
+versione riutilizza l'istantanea del rilascio precedente. Le istantanee dei
+rilasci non vengono mai sovrascritte. L'app apre il manuale della propria
+versione. Le dieci istantanee più recenti restano online, e un link a
+qualsiasi altra versione porta al rilascio più recente. Un manuale di
+rilascio si può anche pubblicare a mano con un'esecuzione del workflow che
+indica la versione commerciale. Il selettore di versione legge un catalogo
+aggiornato a ogni deploy, così anche i manuali più vecchi elencano i rilasci
+arrivati dopo.

@@ -76,10 +76,14 @@ otevřenými kartami příručky.
 
 ## Publikuj vydání
 
-Zdroj příručky se nekopíruje pro každou verzi aplikace. Tag vydání už uchovává
-přesný zdroj. Publikace je ruční spuštění workflow s marketingovou verzí a
-zapnutým nasazením: CI najde nejnovější tag aplikace dané verze, sestaví z něj
-web i jeho katalog snímků obrazovky, nahraje obojí do neměnného verzovaného
-úložiště a znovu nasadí web se všemi verzemi vedle sebe. Snapshoty vydání se
-nikdy nepřepisují. Výběr verzí čte živý katalog zapisovaný při každém nasazení,
-takže i starší příručky uvádějí vydání, která přišla po nich.
+Zdroj příručky se nekopíruje pro každou verzi aplikace. Přesný stav už
+uchovává vydávací tag aplikace. Každý vydávací tag automaticky zveřejní
+příručku své verze: pokud se od předchozího vydání změnily stránky, testy
+snímků obrazovky nebo ukázková data příručky, CI sestaví web a pořídí snímky
+z tagu; jinak nová verze převezme snímek předchozího vydání. Snímky vydání se
+nikdy nepřepisují. Aplikace otevírá příručku své vlastní verze. Deset
+nejnovějších snímků vydání zůstává online a odkaz na jakoukoli jinou verzi
+vede na nejnovější vydání. Příručku vydání můžeš zveřejnit i ručně během
+workflow s uvedenou marketingovou verzí. Výběr verze čte živý katalog
+zapisovaný při každém nasazení, takže i starší příručky uvádějí pozdější
+vydání.

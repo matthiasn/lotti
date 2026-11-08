@@ -64,31 +64,21 @@ terminology rules are in
 
 ## GitHub Pages
 
-The published development manual lives at:
+Each release has its own manual at
+`https://matthiasn.github.io/lotti/manual/<x.y.z>/`, and the app opens the one
+matching its own version; `https://matthiasn.github.io/lotti/manual/development/`
+is the preview of `main`. The repository root and `/lotti/manual/` redirect to
+the latest published release, or to `development` before the first one.
 
-`https://matthiasn.github.io/lotti/manual/development/`
-
-The repository root and `/lotti/manual/` redirect to the latest published
-release, or to `development` before the first one. On every matching push to
-`main`, GitHub Actions validates and builds the site, uploads the built tree
-to the R2 site-snapshot store (`manual-site/<version>/`), mirrors the whole
-store into one repo-prefixed Pages tree, and deploys it. Generated Docusaurus
-output is never committed: it exists only in the Actions runner, the R2
-store, and the Pages deployment artifact.
-
-Publishing a release manual is a `workflow_dispatch` of the Manual workflow
-with `manual_version: X.Y.Z` and `deploy: true`, leaving `publish_media` and
-`capture_screenshots` at their default of on: the run resolves the newest
-app tag of that marketing version, builds the site and screenshot catalog
-from that tag, uploads both to their immutable R2 prefixes (existing release
-snapshots are never overwritten, and a release site never deploys without a
-screenshot catalog captured from the same commit), and redeploys Pages with
-every version side by side. The capture targets live in the resolved tag's own
-Makefile, next to the screenshot tests they invoke, so a release manual can
-only be published from a tag that contains the sharded pipeline; the run says
-so immediately rather than failing once capture is under way. Each deploy also writes a live `manual/releases.json` next to the
-version directories; the version dropdown fetches it at runtime, so even old
-immutable snapshots list releases published after them.
+On every matching push to `main`, GitHub Actions validates and builds the
+site, uploads it to the R2 site-snapshot store (`manual-site/development/`) and
+redeploys Pages. Every release tag publishes `manual-site/<x.y.z>/` — rebuilt
+and recaptured when the manual's sources changed, otherwise reusing the
+previous release's snapshot — and Pages keeps the newest ten release
+snapshots. Generated Docusaurus output is never committed: it exists only in
+the Actions runner, the R2 store, and the Pages deployment artifact. The
+publishing lane, its reuse rule and the 404 fallback are described in
+[`knowledge/architecture/platform-and-release.md`](../knowledge/architecture/platform-and-release.md).
 
 Run the same production build locally with:
 

@@ -68,8 +68,9 @@ class ContactSupportRow extends ConsumerWidget {
           // The Manual's URL is locale-aware and owned by the manual-language
           // controller — the same resolver the Settings tree row uses — but it
           // opens through this row's guarded launcher like its three siblings.
-          onPressed: () =>
-              unawaited(_launchSupportUri(manualUriForCurrentLocale(ref))),
+          onPressed: () => unawaited(
+            manualUriForCurrentLocale(ref).then(_launchSupportUri),
+          ),
         ),
         DesignSystemContactAction(
           icon: const _BrandGlyph(asset: githubIconAsset),

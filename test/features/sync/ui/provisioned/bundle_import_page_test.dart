@@ -23,6 +23,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 
 import '../../../../helpers/fallbacks.dart';
+import '../../../../helpers/package_info.dart';
 import '../../../../helpers/service_overrides.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_utils/screenshot_harness.dart' show loadAppFonts;
@@ -1050,7 +1051,10 @@ void main() {
       await tester.ensureVisible(
         find.byKey(const Key('bundle_import_open_manual')),
       );
+      mockPackageInfo(version: '1.1.93');
       await tester.tap(find.byKey(const Key('bundle_import_open_manual')));
+      // Opening awaits the running version before it launches.
+      await tester.pump();
       await tester.pump();
 
       final url =
@@ -1058,7 +1062,7 @@ void main() {
                 () => mockUrlLauncher.launchUrl(captureAny(), any()),
               ).captured.single
               as String;
-      expect(url, endsWith('sync-and-data/first-device'));
+      expect(url, endsWith('/1.1.93/sync-and-data/first-device'));
     });
 
     test('the viewfinder painter compares its look fields for a new '

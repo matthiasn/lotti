@@ -86,12 +86,15 @@ over pagina's en geopende handleidingstabbladen heen.
 
 ## Publiceer een release
 
-De bron van de handleiding wordt niet voor elke app-versie gekopieerd. De
-app-releasetag behoudt de exacte bron al. Publiceren is een handmatig gestarte
-workflow-run met de marketingversie en deploy ingeschakeld: CI zoekt de nieuwste
-app-tag van die versie op, bouwt de site en de bijbehorende screenshotcatalogus
-vanaf de tag, uploadt beide naar onveranderlijke geversioneerde opslag en
-deployt de site opnieuw met alle versies naast elkaar. Release-snapshots worden
-nooit overschreven. De versiedropdown leest een live catalogus die bij elke
-deploy wordt geschreven, dus oudere handleidingen tonen ook de releases die na
-hen verschenen.
+De bron van de handleiding wordt niet voor elke appversie gekopieerd. De
+releasetag van de app bewaart de exacte stand al. Elke releasetag publiceert
+automatisch de handleiding van zijn versie: als pagina's, screenshottests of
+demogegevens van de handleiding sinds de vorige release zijn veranderd, bouwt
+CI de site en maakt de screenshots vanuit de tag; anders hergebruikt de
+nieuwe versie de snapshot van de vorige release. Releasesnapshots worden
+nooit overschreven. De app opent de handleiding van zijn eigen versie. De tien
+nieuwste releasesnapshots blijven online, en een link naar elke andere versie
+komt uit bij de nieuwste release. Je kunt een releasehandleiding ook met de
+hand publiceren met een workflowrun die de marketingversie noemt. De
+versiekeuze leest een live catalogus die bij elke deploy wordt geschreven,
+zodat ook oudere handleidingen de latere releases tonen.

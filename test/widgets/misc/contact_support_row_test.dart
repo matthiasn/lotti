@@ -11,6 +11,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 
+import '../../helpers/package_info.dart';
 import '../../mocks/mocks.dart';
 import '../../widget_test_utils.dart';
 
@@ -25,12 +26,16 @@ class _FixedManualLanguageController extends ManualLanguageController {
   ManualLanguage? build() => _override;
 }
 
+const _appVersion = '1.1.93';
+const _manualBase = '${lottiManualRootUrl}1.1.93/';
+
 void main() {
   setUpAll(() => registerFallbackValue(FakeLaunchOptions()));
 
   late MockUrlLauncher launcher;
 
   setUp(() {
+    mockPackageInfo(version: _appVersion);
     final original = UrlLauncherPlatform.instance;
     launcher = MockUrlLauncher();
     UrlLauncherPlatform.instance = launcher;
@@ -141,9 +146,9 @@ void main() {
       await pumpRow(tester);
 
       await tester.tap(find.byKey(contactSupportManualKey));
-      await tester.pump();
+      await tester.pumpAndSettle();
 
-      expect(launchedUrl(), '${lottiManualBaseUrl}it/');
+      expect(launchedUrl(), '${_manualBase}it/');
     });
 
     testWidgets('falls back to English for a locale the Manual lacks', (
@@ -157,9 +162,9 @@ void main() {
       await pumpRow(tester);
 
       await tester.tap(find.byKey(contactSupportManualKey));
-      await tester.pump();
+      await tester.pumpAndSettle();
 
-      expect(launchedUrl(), lottiManualBaseUrl);
+      expect(launchedUrl(), _manualBase);
     });
 
     testWidgets('lets a stored override win over the system locale', (
@@ -173,25 +178,25 @@ void main() {
       await pumpRow(tester, manualOverride: ManualLanguage.french);
 
       await tester.tap(find.byKey(contactSupportManualKey));
-      await tester.pump();
+      await tester.pumpAndSettle();
 
-      expect(launchedUrl(), '${lottiManualBaseUrl}fr/');
+      expect(launchedUrl(), '${_manualBase}fr/');
     });
 
     testWidgets('honours a stored language override', (tester) async {
       await pumpRow(tester, manualOverride: ManualLanguage.french);
 
       await tester.tap(find.byKey(contactSupportManualKey));
-      await tester.pump();
+      await tester.pumpAndSettle();
 
-      expect(launchedUrl(), '${lottiManualBaseUrl}fr/');
+      expect(launchedUrl(), '${_manualBase}fr/');
     });
 
     testWidgets('resolves the same URL the Settings row would', (tester) async {
       await pumpRow(tester, manualOverride: ManualLanguage.german);
 
       await tester.tap(find.byKey(contactSupportManualKey));
-      await tester.pump();
+      await tester.pumpAndSettle();
 
       // Both surfaces go through `openManualForCurrentLocale`; this is the
       // assertion that fails if one of them grows its own resolution.
@@ -199,6 +204,7 @@ void main() {
         launchedUrl(),
         manualUriFor(
           systemLocale: const Locale('en'),
+          appVersion: _appVersion,
           override: ManualLanguage.german,
         ).toString(),
       );
@@ -283,7 +289,7 @@ void main() {
 
       await pumpRow(tester);
       await tester.tap(find.byKey(contactSupportManualKey));
-      await tester.pump();
+      await tester.pumpAndSettle();
 
       expect(tester.takeException(), isNull);
     });

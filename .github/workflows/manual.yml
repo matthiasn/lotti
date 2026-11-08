@@ -21,6 +21,9 @@ on:
       - 'test/pages/create/create_measurement_dialog_screenshots_test.dart'
   push:
     branches: [main]
+    # Every release tag publishes the manual of its version (x.y.z+build).
+    tags:
+      - '[0-9]+.[0-9]+.[0-9]+*'
     paths:
       - '.github/workflows/manual.yml'
       - 'docs-site/**'
@@ -80,14 +83,32 @@ jobs:
       version: ${{ steps.version.outputs.version }}
       commit: ${{ steps.commit.outputs.sha }}
       locales: ${{ steps.locales.outputs.locales }}
+      # Tag pushes only: skip | alias | full (see "Decide how this release
+      # publishes"). Empty for every other trigger.
+      mode: ${{ steps.mode.outputs.mode }}
+      alias_of: ${{ steps.mode.outputs.alias_of }}
     steps:
       - name: Validate requested version
         id: version
         env:
           REQUESTED_VERSION: ${{ inputs.manual_version }}
           REPOSITORY_URL: ${{ github.server_url }}/${{ github.repository }}
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
         run: |
           set -euo pipefail
+          # A release tag publishes the manual of exactly that tag; the
+          # marketing version drops the +build suffix.
+          if [[ "$REF_TYPE" == "tag" ]]; then
+            VERSION="${REF_NAME%%+*}"
+            if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              echo "Tag ${REF_NAME} is not a release tag (x.y.z+build)" >&2
+              exit 1
+            fi
+            echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+            echo "ref=refs/tags/${REF_NAME}" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           VERSION="${REQUESTED_VERSION:-development}"
           if [[ "$VERSION" != "development" ]] && \
              ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]; then
@@ -118,6 +139,8 @@ jobs:
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
           ref: ${{ steps.version.outputs.ref }}
+          # A release compares its tree with the previous release's commit.
+          fetch-depth: ${{ (github.ref_type == 'tag' || (github.event_name == 'workflow_dispatch' && inputs.manual_version != 'development')) && '0' || '1' }}
 
       # Every downstream job checks out this exact commit rather than the ref,
       # so one run's site, screenshots and snapshot marker can never describe
@@ -147,6 +170,100 @@ jobs:
             exit 1
           fi
 
+      # Releases ship almost daily and most change no manual source, so a tag
+      # whose manual inputs are unchanged since the snapshot the previous
+      # release is served by publishes an alias of it — a marker, no build,
+      # no capture. A version already published (a second build tag of the
+      # same marketing version) is skipped: snapshots are immutable.
+      #
+      # A dispatch naming a release version runs the same decision but only
+      # reports it — its mode stays empty and it builds in full — which is how
+      # to rehearse a tag's run without pushing a tag (every release workflow
+      # fires on any tag).
+      - name: Decide how this release publishes
+        id: mode
+        if: >-
+          github.ref_type == 'tag' ||
+          steps.version.outputs.version != 'development'
+        env:
+          REF_TYPE: ${{ github.ref_type }}
+          MANUAL_VERSION: ${{ steps.version.outputs.version }}
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+        run: |
+          set -euo pipefail
+          if [[ "$REF_TYPE" != "tag" ]]; then
+            echo "Rehearsal: reporting what a tag push of ${MANUAL_VERSION} would do."
+            GITHUB_OUTPUT=/dev/null
+          fi
+          if [[ -z "$R2_ACCOUNT_ID" || -z "$R2_BUCKET_NAME" || \
+                -z "$AWS_ACCESS_KEY_ID" || -z "$AWS_SECRET_ACCESS_KEY" ]]; then
+            echo "::warning::R2 credentials are not configured; building the" \
+              "release manual in full without publishing it."
+            echo "mode=full" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          ENDPOINT="https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
+          marker() {
+            aws s3 cp "s3://${R2_BUCKET_NAME}/manual-site/$1/.snapshot.json" - \
+              --endpoint-url "$ENDPOINT" 2>/dev/null
+          }
+          if marker "$MANUAL_VERSION" >/dev/null; then
+            echo "Manual ${MANUAL_VERSION} is already published; nothing to do."
+            echo "mode=skip" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # Earlier releases, newest first. A prefix whose upload died before
+          # its marker (uploaded last) is incomplete: skip it, never fail on it.
+          EARLIER=$( { aws s3 ls "s3://${R2_BUCKET_NAME}/manual-site/" \
+                --endpoint-url "$ENDPOINT" \
+              | awk '$1 == "PRE" {sub("/$", "", $2); print $2}' \
+              | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' || true; \
+              echo "$MANUAL_VERSION"; } \
+            | sort -uV | sed "/^${MANUAL_VERSION//./\\.}\$/,\$d" | tac)
+          PREVIOUS=""
+          PREVIOUS_MARKER=""
+          while IFS= read -r candidate; do
+            [[ -n "$candidate" ]] || continue
+            if PREVIOUS_MARKER=$(marker "$candidate"); then
+              PREVIOUS="$candidate"
+              break
+            fi
+            echo "Skipping ${candidate}: no snapshot marker (incomplete upload)."
+          done <<< "$EARLIER"
+          if [[ -z "$PREVIOUS" ]]; then
+            echo "No earlier release manual; building ${MANUAL_VERSION} in full."
+            echo "mode=full" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          SERVED_BY=$(jq -r '.aliasOf // empty' <<< "$PREVIOUS_MARKER")
+          SERVED_BY="${SERVED_BY:-$PREVIOUS}"
+          # An unreadable marker leaves BASE_COMMIT empty: build in full.
+          BASE_COMMIT=$( { marker "$SERVED_BY" || true; } \
+            | jq -r '.appCommit // empty' 2>/dev/null || true)
+          # The manual's sources: its pages and site, the screenshot tests and
+          # the demo world they render. App UI outside these does not trigger
+          # a rebuild; a reused version shows its snapshot's screenshots.
+          if [[ -n "$BASE_COMMIT" ]] && git cat-file -e "${BASE_COMMIT}^{commit}" \
+              && git diff --quiet "$BASE_COMMIT" HEAD -- \
+                docs-site \
+                ':(glob)test/**/*screenshots_test.dart' \
+                test/helpers/manual_demo_world.dart \
+                test/helpers/manual_screenshot_locale.dart \
+                test/features/daily_os_next/screenshot_harness.dart \
+                lib/features/demo/seed; then
+            echo "Manual sources unchanged since ${SERVED_BY} (${BASE_COMMIT});" \
+              "${MANUAL_VERSION} reuses its snapshot."
+            echo "mode=alias" >> "$GITHUB_OUTPUT"
+            echo "alias_of=${SERVED_BY}" >> "$GITHUB_OUTPUT"
+          else
+            echo "Manual sources changed since ${SERVED_BY}; building in full."
+            echo "mode=full" >> "$GITHUB_OUTPUT"
+          fi
+
       # The capture matrix comes from the registry, so adding a manual locale
       # cannot silently leave that locale uncaptured.
       - name: Resolve the capture locales
@@ -164,6 +281,9 @@ jobs:
   build:
     name: Validate and build
     needs: metadata
+    if: >-
+      needs.metadata.outputs.mode != 'skip' &&
+      needs.metadata.outputs.mode != 'alias'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -259,7 +379,8 @@ jobs:
     if: >-
       always() &&
       needs.build.result == 'success' &&
-      github.event_name == 'workflow_dispatch' && inputs.deploy &&
+      ((github.event_name == 'workflow_dispatch' && inputs.deploy) ||
+       (github.ref_type == 'tag' && needs.metadata.outputs.mode == 'full')) &&
       needs.metadata.outputs.version != 'development' &&
       (needs.screenshot_catalog.result == 'success' ||
        needs.screenshot_catalog.result == 'skipped')
@@ -349,7 +470,8 @@ jobs:
     needs: metadata
     if: >-
       github.event_name == 'schedule' ||
-      (github.event_name == 'workflow_dispatch' && inputs.capture_screenshots)
+      (github.event_name == 'workflow_dispatch' && inputs.capture_screenshots) ||
+      (github.ref_type == 'tag' && needs.metadata.outputs.mode == 'full')
     runs-on: ubuntu-latest
     timeout-minutes: 45
     strategy:
@@ -488,7 +610,8 @@ jobs:
       - name: Publish media to R2
         if: >-
           github.event_name == 'schedule' ||
-          (github.event_name == 'workflow_dispatch' && inputs.publish_media)
+          (github.event_name == 'workflow_dispatch' && inputs.publish_media) ||
+          github.ref_type == 'tag'
         env:
           MANUAL_VERSION: ${{ needs.metadata.outputs.version }}
           R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
@@ -536,7 +659,7 @@ jobs:
     needs: [metadata, build]
     if: >-
       needs.build.result == 'success' &&
-      (github.event_name == 'push' ||
+      ((github.event_name == 'push' && github.ref_type == 'branch') ||
        (github.event_name == 'workflow_dispatch' && inputs.deploy &&
         needs.metadata.outputs.version == 'development'))
     runs-on: ubuntu-latest
@@ -584,9 +707,9 @@ jobs:
             exit 0
           fi
           ENDPOINT="https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
-          aws s3 sync "s3://${R2_BUCKET_NAME}/manual-site" \
-            "${RUNNER_TEMP}/lotti-manual-pages/manual" \
-            --endpoint-url "$ENDPOINT" --no-progress
+          # Markers first, then only the snapshots Pages keeps.
+          lotti/docs-site/scripts/mirror-pages-snapshots.sh \
+            "$R2_BUCKET_NAME" "$ENDPOINT" "${RUNNER_TEMP}/lotti-manual-pages"
           echo "ready=true" >> "$GITHUB_OUTPUT"
 
       - name: Finalize Pages tree
@@ -610,13 +733,45 @@ jobs:
         id: deployment
         uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4
 
+  # A release whose manual sources match the snapshot that serves the
+  # previous release publishes only a marker naming that snapshot; the Pages
+  # deploy turns it into redirects (assemble-pages-site.mjs).
+  publish_alias:
+    name: Publish release alias
+    needs: metadata
+    if: github.ref_type == 'tag' && needs.metadata.outputs.mode == 'alias'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Publish the alias marker to R2
+        env:
+          MANUAL_VERSION: ${{ needs.metadata.outputs.version }}
+          ALIAS_OF: ${{ needs.metadata.outputs.alias_of }}
+          LOTTI_COMMIT: ${{ needs.metadata.outputs.commit }}
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+        run: |
+          set -euo pipefail
+          ENDPOINT="https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
+          printf '{"version":"%s","aliasOf":"%s","appCommit":"%s","generatedAt":"%s"}\n' \
+            "$MANUAL_VERSION" "$ALIAS_OF" "$LOTTI_COMMIT" \
+            "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "${RUNNER_TEMP}/.snapshot.json"
+          aws s3 cp "${RUNNER_TEMP}/.snapshot.json" \
+            "s3://${R2_BUCKET_NAME}/manual-site/${MANUAL_VERSION}/.snapshot.json" \
+            --endpoint-url "$ENDPOINT"
+
   deploy_release:
     name: Publish GitHub Pages (release)
-    needs: [metadata, publish_site]
+    needs: [metadata, publish_site, publish_alias]
     if: >-
       always() &&
-      needs.publish_site.result == 'success' &&
-      github.event_name == 'workflow_dispatch' && inputs.deploy &&
+      (needs.publish_site.result == 'success' ||
+       needs.publish_alias.result == 'success') &&
+      ((github.event_name == 'workflow_dispatch' && inputs.deploy) ||
+       github.ref_type == 'tag') &&
       needs.metadata.outputs.version != 'development'
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -658,9 +813,9 @@ jobs:
             exit 0
           fi
           ENDPOINT="https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
-          aws s3 sync "s3://${R2_BUCKET_NAME}/manual-site" \
-            "${RUNNER_TEMP}/lotti-manual-pages/manual" \
-            --endpoint-url "$ENDPOINT" --no-progress
+          # Markers first, then only the snapshots Pages keeps.
+          lotti/docs-site/scripts/mirror-pages-snapshots.sh \
+            "$R2_BUCKET_NAME" "$ENDPOINT" "${RUNNER_TEMP}/lotti-manual-pages"
           echo "ready=true" >> "$GITHUB_OUTPUT"
 
       - name: Finalize Pages tree

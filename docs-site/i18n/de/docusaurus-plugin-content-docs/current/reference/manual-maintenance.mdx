@@ -81,12 +81,16 @@ hinweg erhalten.
 
 ## Ein Release veröffentlichen
 
-Der Quelltext wird nicht für jede App-Version kopiert. Das App-Release-Tag
-bewahrt bereits den exakten Stand. Veröffentlicht wird über einen manuell
-gestarteten Workflow-Lauf mit der Marketing-Version und aktiviertem Deploy:
-CI ermittelt das neueste App-Tag dieser Version, baut die Seite und ihren
-Screenshot-Katalog aus dem Tag, lädt beides in unveränderlichen versionierten
-Speicher hoch und deployt die Seite mit allen Versionen nebeneinander neu.
-Release-Snapshots werden nie überschrieben. Das Versionsmenü liest einen
-Live-Katalog, der bei jedem Deploy geschrieben wird, sodass ältere Handbücher
-auch die Releases auflisten, die nach ihnen erschienen sind.
+Der Quelltext des Handbuchs wird nicht für jede App-Version kopiert. Der
+Release-Tag der App bewahrt den genauen Stand bereits. Jeder Release-Tag
+veröffentlicht automatisch das Handbuch seiner Version: Haben sich Seiten,
+Screenshot-Tests oder Demodaten des Handbuchs seit dem vorigen Release
+geändert, baut die CI die Seite und nimmt die Screenshots aus dem Tag auf;
+sonst übernimmt die neue Version den Stand des vorigen Releases.
+Release-Stände werden nie überschrieben. Die App öffnet das Handbuch ihrer
+eigenen Version. Die zehn neuesten Release-Stände bleiben online, und ein Link
+auf jede andere Version landet beim neuesten Release. Ein Release-Handbuch
+lässt sich auch von Hand mit einem Workflow-Lauf für die Marketing-Version
+veröffentlichen. Die Versionsauswahl liest einen Live-Katalog, der bei jedem
+Deployment geschrieben wird, sodass auch ältere Handbücher die späteren
+Releases auflisten.

@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// SettingsDb key for the optional app and external-manual language override.
@@ -46,9 +47,36 @@ enum ManualLanguage {
   }
 }
 
-/// The published development manual's root URL.
-const lottiManualBaseUrl =
-    'https://matthiasn.github.io/lotti/manual/development/';
+/// The published manual's root; each version lives in a directory below it.
+const lottiManualRootUrl = 'https://matthiasn.github.io/lotti/manual/';
+
+/// The manual version a build links to: its marketing version `x.y.z` (a
+/// `+build` suffix dropped), or `development` for anything else — a dev build,
+/// a pre-release suffix, or a platform that reported no version.
+///
+/// Every release tag publishes `/manual/x.y.z/`. A version whose manual is
+/// missing (a failed publish, or one pruned from Pages) is redirected by the
+/// site's 404 page to the newest published release, so the link never dead-ends.
+String manualVersionFor(String appVersion) =>
+    RegExp(r'^(\d+\.\d+\.\d+)(\+\S*)?$').firstMatch(appVersion.trim())?[1] ??
+    'development';
+
+/// The running build's version as the platform reports it, or an empty string
+/// when it cannot — which [manualVersionFor] maps to `development`.
+Future<String> runningAppVersion() async {
+  try {
+    return (await PackageInfo.fromPlatform()).version;
+  } on Object {
+    return '';
+  }
+}
+
+/// [runningAppVersion], read once per run; the manual link reads it from here
+/// so a test can pin the version instead of the platform's static.
+final appVersionProvider = FutureProvider<String>(
+  (ref) => runningAppVersion(),
+  name: 'appVersionProvider',
+);
 
 /// Resolves [systemLocale] to a published manual language, falling back to
 /// English whenever the manual does not offer that language yet.
@@ -61,15 +89,19 @@ ManualLanguage manualLanguageForSystemLocale(Locale systemLocale) {
   return ManualLanguage.english;
 }
 
-/// Builds the external manual URL for an optional user [override].
+/// Builds the external manual URL for the build [appVersion] and an optional
+/// user [override].
 ///
-/// A `null` override follows [systemLocale]. English intentionally remains on
-/// the default route; translated manuals add their locale segment. [path] is
-/// a slash-free-prefix page path such as `sync-and-data/first-device`; it
-/// lands after the locale segment, so deep links stay locale-aware (untranslated
-/// pages fall back to English content on the localized route).
+/// The version segment comes from [manualVersionFor], so a released build
+/// opens the manual of exactly its own version. A `null` override follows
+/// [systemLocale]. English intentionally remains on the default route;
+/// translated manuals add their locale segment. [path] is a slash-free-prefix
+/// page path such as `sync-and-data/first-device`; it lands after the locale
+/// segment, so deep links stay locale-aware (untranslated pages fall back to
+/// English content on the localized route).
 Uri manualUriFor({
   required Locale systemLocale,
+  required String appVersion,
   ManualLanguage? override,
   String path = '',
 }) {
@@ -77,18 +109,27 @@ Uri manualUriFor({
   final localeSegment = language == ManualLanguage.english
       ? ''
       : '${language.languageCode}/';
-  return Uri.parse('$lottiManualBaseUrl$localeSegment$path');
+  return Uri.parse(
+    '$lottiManualRootUrl${manualVersionFor(appVersion)}/$localeSegment$path',
+  );
 }
 
-/// Opens the locale-aware Lotti Manual in the system browser, at [path] when
-/// given, at the manual root otherwise.
+/// Opens the locale-aware Lotti Manual of [appVersion] (the running build's,
+/// from [appVersionProvider]) in the system browser, at [path] when given, at
+/// the manual root otherwise.
 Future<void> openManualInBrowser({
   required Locale systemLocale,
+  required String appVersion,
   ManualLanguage? override,
   String path = '',
 }) async {
   await launchUrl(
-    manualUriFor(systemLocale: systemLocale, override: override, path: path),
+    manualUriFor(
+      systemLocale: systemLocale,
+      appVersion: appVersion,
+      override: override,
+      path: path,
+    ),
     mode: LaunchMode.externalApplication,
   );
 }
@@ -102,16 +143,21 @@ Future<void> openManualInBrowser({
 /// so a caller that wants its own launch behaviour (the Contact Us footer
 /// guards against a platform with no handler) does not have to duplicate it.
 ///
-/// Resolves the Manual root. A caller that deep-links to a page builds its own
-/// URI through [manualUriFor], which takes a `path`.
-Uri manualUriForCurrentLocale(WidgetRef ref) => manualUriFor(
-  systemLocale: WidgetsBinding.instance.platformDispatcher.locale,
-  override: ref.read(manualLanguageControllerProvider).value,
-);
+/// Resolves the Manual root of the running version. A caller that deep-links
+/// to a page builds its own URI through [manualUriFor], which takes a `path`.
+Future<Uri> manualUriForCurrentLocale(WidgetRef ref) async {
+  // Read before the await: the widget behind [ref] may be gone after it.
+  final override = ref.read(manualLanguageControllerProvider).value;
+  return manualUriFor(
+    systemLocale: WidgetsBinding.instance.platformDispatcher.locale,
+    appVersion: await ref.read(appVersionProvider.future),
+    override: override,
+  );
+}
 
 /// Opens [manualUriForCurrentLocale] in the system browser.
-Future<void> openManualForCurrentLocale(WidgetRef ref) => launchUrl(
-  manualUriForCurrentLocale(ref),
+Future<void> openManualForCurrentLocale(WidgetRef ref) async => launchUrl(
+  await manualUriForCurrentLocale(ref),
   mode: LaunchMode.externalApplication,
 );
 

@@ -447,13 +447,13 @@ class _FirstDeviceCard extends ConsumerWidget {
                 label: messages.syncPairOpenManual,
                 variant: DesignSystemButtonVariant.outlined,
                 leadingIcon: LottiIcons.book,
-                onPressed: () => unawaited(
-                  openManualInBrowser(
-                    systemLocale:
-                        WidgetsBinding.instance.platformDispatcher.locale,
-                    override: ref.read(manualLanguageControllerProvider).value,
-                    path: _kFirstDeviceGuidePath,
-                  ),
+                onPressed: () async => openManualInBrowser(
+                  systemLocale:
+                      WidgetsBinding.instance.platformDispatcher.locale,
+                  // Read before the await: the widget may be gone after it.
+                  override: ref.read(manualLanguageControllerProvider).value,
+                  appVersion: await ref.read(appVersionProvider.future),
+                  path: _kFirstDeviceGuidePath,
                 ),
               ),
             ],

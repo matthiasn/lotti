@@ -13,6 +13,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 
 import '../../../../helpers/fallbacks.dart';
+import '../../../../helpers/package_info.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 
@@ -193,13 +194,16 @@ void main() {
         () => launcher.launchUrl(any(), any()),
       ).thenAnswer((_) async => true);
 
+      mockPackageInfo(version: '1.1.93');
       await _pumpNode(tester, node: _manualAction());
       await tester.tap(find.byType(SettingsTreeRow));
+      // Opening awaits the running version before it launches.
+      await tester.pump();
       await tester.pump();
 
       verify(
         () => launcher.launchUrl(
-          'https://matthiasn.github.io/lotti/manual/development/',
+          'https://matthiasn.github.io/lotti/manual/1.1.93/',
           any(),
         ),
       ).called(1);

@@ -217,8 +217,12 @@ by hand with the exact `version+build` string if the target reports it missing.
 
 The tag is what ships. Pushing it triggers, in parallel: macOS and iOS
 TestFlight, the Android release, the Linux GitHub release, the macOS signed
-`.dmg`, and the Flathub submission PR against `flathub/com.matthiasn.lotti` —
-which is why the metainfo has to be right *before* the tag, not after.
+`.dmg`, the Flathub submission PR against `flathub/com.matthiasn.lotti` —
+which is why the metainfo has to be right *before* the tag, not after — and
+the manual of that version (`/manual/<x.y.z>/`, the one the app links to).
+A tag whose manual sources are unchanged publishes in a minute by reusing the
+previous release's snapshot; otherwise the manual run recaptures all eleven
+locales and takes about an hour.
 
 On Google Play the release tag stops at internal testing. Moving that build on
 is a separate tag from the same commit, once the internal upload has finished:

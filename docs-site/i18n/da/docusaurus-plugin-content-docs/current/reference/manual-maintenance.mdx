@@ -79,11 +79,14 @@ skærmbilleder straks, og valget bevares på tværs af sider og åbne manualfane
 
 ## Udgiv en version
 
-Manualkilden kopieres ikke for hver appversion. Appens udgivelsestag bevarer
-allerede den præcise kilde. Udgivelse sker som en manuelt startet
-workflow-kørsel med marketingversionen og deploy slået til: CI finder det
-nyeste app-tag for den version, bygger sitet og dets screenshot-katalog fra
-tagget, uploader begge dele til uforanderligt versioneret lager og gendeployer
-sitet med alle versioner side om side. Udgivelsessnapshots overskrives aldrig.
-Versionsdropdownen læser et live-katalog, der skrives ved hvert deploy, så
-ældre manualer også viser de udgivelser, der kom efter dem.
+Manualens kilde kopieres ikke for hver appversion. Appens release-tag bevarer
+allerede den præcise tilstand. Hvert release-tag udgiver automatisk manualen
+for sin version: Hvis manualens sider, skærmbilledtests eller demodata er
+ændret siden forrige release, bygger CI siden og tager skærmbillederne fra
+tagget; ellers genbruger den nye version forrige releases snapshot.
+Release-snapshots overskrives aldrig. Appen åbner manualen for sin egen
+version. De ti nyeste release-snapshots forbliver online, og et link til
+enhver anden version lander på den nyeste release. Du kan også udgive en
+release-manual i hånden med en workflow-kørsel, der angiver
+marketingversionen. Versionsvælgeren læser et livekatalog, der skrives ved
+hver udrulning, så også ældre manualer viser de senere releases.

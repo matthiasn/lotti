@@ -85,13 +85,16 @@ pages et les onglets de manuel ouverts.
 
 ## Publier une version
 
-La source du manuel n’est pas copiée pour chaque version de l’application. Le
-tag de version conserve déjà sa source exacte. La publication est un lancement
-manuel du workflow avec la version marketing et le déploiement activé :
-l’intégration continue résout le tag d’application le plus récent de cette
-version, construit le site et son catalogue de captures à partir du tag,
-téléverse les deux vers un stockage versionné immuable, puis redéploie le site
-avec toutes les versions côte à côte. Les instantanés de version ne sont jamais
-écrasés. Le menu des versions lit un catalogue en direct écrit à chaque
-déploiement, si bien que les anciens manuels listent aussi les versions parues
-après eux.
+La source du manuel n’est pas copiée pour chaque version de l’app. Le tag de
+version de l’app en conserve déjà l’état exact. Chaque tag de version publie
+automatiquement le manuel de sa version : si les pages, les tests de captures
+d’écran ou les données de démonstration du manuel ont changé depuis la
+version précédente, la CI construit le site et réalise ses captures à partir
+du tag ; sinon, la nouvelle version reprend l’instantané de la version
+précédente. Les instantanés de version ne sont jamais écrasés. L’app ouvre le
+manuel de sa propre version. Les dix instantanés de version les plus récents
+restent en ligne, et un lien vers toute autre version mène à la version la
+plus récente. Un manuel de version peut aussi être publié à la main par une
+exécution du workflow indiquant la version marketing. Le sélecteur de version
+lit un catalogue en direct écrit à chaque déploiement, si bien que les anciens
+manuels listent aussi les versions parues après eux.

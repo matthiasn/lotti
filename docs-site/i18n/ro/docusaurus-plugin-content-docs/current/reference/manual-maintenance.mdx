@@ -46,4 +46,16 @@ Fiecare caz automatizat trebuie să ofere variante mobil-luminos, mobil-întunec
 
 ## Publicați o lansare
 
-Sursa manualului nu este copiată pentru fiecare versiune a aplicației. Eticheta de lansare a aplicației păstrează deja sursa exactă. Publicarea este o rulare manuală a fluxului de lucru, cu versiunea de marketing și cu implementarea activată: CI determină cea mai recentă etichetă de aplicație a acelei versiuni, construiește site-ul și catalogul său de capturi de ecran din etichetă, încarcă ambele într-un spațiu de stocare versionat imuabil și reimplementează site-ul cu toate versiunile una lângă alta. Instantaneele de lansare nu sunt niciodată suprascrise. Selectorul de versiuni citește un catalog live scris la fiecare implementare, astfel încât manualele mai vechi listează și lansările apărute după ele.
+Sursa manualului nu este copiată pentru fiecare versiune a aplicației. Tagul de
+lansare al aplicației păstrează deja starea exactă. Fiecare tag de lansare
+publică automat manualul versiunii sale: dacă paginile, testele de capturi de
+ecran sau datele demonstrative ale manualului s-au schimbat de la lansarea
+anterioară, CI construiește site-ul și realizează capturile din tag; altfel,
+noua versiune reutilizează instantaneul lansării anterioare. Instantaneele
+lansărilor nu sunt niciodată suprascrise. Aplicația deschide manualul propriei
+versiuni. Cele mai noi zece instantanee rămân online, iar un link către orice
+altă versiune ajunge la cea mai nouă lansare. Puteți publica și manual un
+manual de lansare, cu o rulare a workflow-ului care indică versiunea
+comercială. Selectorul de versiuni citește un catalog actualizat la fiecare
+implementare, astfel încât și manualele mai vechi listează lansările
+ulterioare.
