@@ -4,6 +4,61 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.91]
+
+### Added
+
+- **The companion tells you which tasks your time went to.** Ask "what did I
+  work on in the past seven days?" and she lists the tasks you logged time on
+  in that window as task rows, along with the totals and the chart. For a
+  week, she also says in one sentence which category took most of your time.
+- **Task rows in the companion's answers show each task's priority.** Due,
+  overdue and other task lists in her replies carry the P0–P3 glyph and label
+  the tasks list uses, so the urgent ones stand out.
+- **The companion tells you what you completed.** Ask "what did I complete
+  today?" or "what did I finish or reject in the past week?" and she lists the
+  tasks you marked done or rejected in that window, saying which was which. A
+  task counts on the day you finished it, even when you created it months ago,
+  and one you reopened and finished again counts on its latest completion.
+  Name a category to hear only that one.
+- **The companion says when your task is made.** After you tap *Make it a
+  task* on something you told her, she confirms it out loud ("Hey, dear, I
+  created that task."), in her own voice. Muting her voice keeps her quiet.
+
+### Changed
+
+- **The companion picks a task's category from the conversation.** Ask for a
+  task without naming a category, and when everything you have been talking
+  about, or all the time you logged today, sits in one category, the new task
+  goes there. She says which category she chose, so you can change it before
+  you confirm. When it could be either, she still leaves it for you.
+
+### Fixed
+
+- **Asking the companion about time in one category no longer shows all your
+  other categories.** "What did I work on in Work this week?" used to draw a
+  chart, and give an answer, that broke out every category you logged time in.
+  Now only the category you named appears by name, and everything else is a
+  single "Other" slice in both her words and the chart.
+- **The ⋯ menus on chats, goals and people highlight every row cleanly.**
+  Hovering the top or bottom entry, or one next to a divider, no longer leaves
+  a strip of empty padding between the highlight and the edge or the divider.
+- **Searching your chats works while something waits in the inbox.** The first
+  letter you typed vanished and the search field lost focus whenever the inbox
+  had an item. The field now keeps what you type.
+- **A follow-up you ask the companion for lands in its task's project.**
+  "Create a follow-up to that one" linked the new task to the one it follows
+  but left it out of every project, so it was missing from that project's task
+  list until you filed it by hand. It now joins the same project, and stays in
+  none when the task it follows has none.
+- **The companion chat's header shows the whole conversation title on a
+  phone.** The way to your other chats is now a menu icon (its name shows on
+  hover and to screen readers), so a title like "What is due today" is no
+  longer cut to "What is due t…".
+- **Her full-screen stage on a phone lets you read the conversation.** A
+  conversation button next to the close button opens the chat she is speaking
+  in as a sheet. On a desktop it already stands beside her.
+
 ## [1.1.90]
 
 ### Added
