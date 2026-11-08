@@ -40,6 +40,13 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="1.1.93" date="2026-11-08">
+      <description>
+        <p>Added: ask the companion about your pull requests. "How many PRs did I create in the past 14 days?" or "What did I ship this weekend?" gets an answer such as "You created 12 PRs adding 1,450 lines and deleting 320 lines", with charts under it: pull requests, lines added and lines deleted per day, or as a running total. Any window up to a month works - the past 7, 14 or 30 days, this week, last month, or two dates you name. The numbers come from the pull requests already linked to your tasks on this device, so nothing is fetched from GitHub to answer, and with your GitHub account connected only the pull requests you opened count.</p>
+        <p>Changed: saying a task is done now gets you a "Done" suggestion to confirm. When you dictate or write "let's close this" or "mark it done", the task agent no longer answers that it can't close the task. It suggests setting it to Done, shown with a large check mark so it stands out, and the task closes when you confirm. The agent still never closes a task on its own, and only you can mark one Rejected.</p>
+        <p>Fixed: the pull request menu on a task now matches the app's other menus. It opens on the same darker surface behind the same dimmed backdrop as the menus on goals, people and the companion chat, and a pressed row now fills the menu to its top and bottom edges instead of stopping a few pixels short.</p>
+      </description>
+    </release>
     <release version="1.1.92" date="2026-11-08">
       <description>
         <p>Changed: the conversation gets more room beside the companion's full-screen stage, and you can move the line between them. On a desktop window she used to take three fifths of the width, though she stands portrait and needs far less. The conversation now takes three fifths by default, and the divider between them drags like the app's own columns - with the mouse or the arrow keys - and the app remembers where you left it.</p>
