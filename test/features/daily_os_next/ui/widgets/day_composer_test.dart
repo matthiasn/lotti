@@ -1,9 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/agents/ui/chat/chat_recording_pill.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_composer.dart';
+import 'package:lotti/features/design_system/components/chat_input/design_system_chat_input.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -107,8 +107,20 @@ void main() {
     capture.emit(phase(CapturePhase.listening));
     await tester.pump();
 
-    expect(find.byType(ChatRecordingPill), findsOneWidget);
-    expect(find.byType(TextField), findsNothing);
+    expect(
+      tester
+          .widget<DesignSystemChatInput>(find.byType(DesignSystemChatInput))
+          .phase,
+      DesignSystemChatInputPhase.recording,
+    );
+    // The voice runs across the input's row, at the recorder's cadence.
+    expect(find.byKey(DesignSystemChatInputKeys.waveform), findsOneWidget);
+    expect(
+      tester
+          .widget<DesignSystemChatInput>(find.byType(DesignSystemChatInput))
+          .sampleInterval,
+      const Duration(milliseconds: 20),
+    );
   });
 
   testWidgets('a finished transcript lands in the field for review, with '
@@ -128,7 +140,12 @@ void main() {
       );
     await tester.pump();
 
-    expect(find.byType(ChatRecordingPill), findsNothing);
+    expect(
+      tester
+          .widget<DesignSystemChatInput>(find.byType(DesignSystemChatInput))
+          .phase,
+      DesignSystemChatInputPhase.compose,
+    );
     expect(find.text('Finish the launch deck'), findsOneWidget);
     // The recorder is back at rest, ready for another take.
     expect(capture.resets, 1);
@@ -137,6 +154,28 @@ void main() {
     await tester.pump();
 
     expect(submitted, [(words: 'Finish the launch deck', audioId: 'audio-1')]);
+  });
+
+  testWidgets('a take adds to what is already typed, and the mic stays '
+      'beside send', (tester) async {
+    await pump(tester);
+    await tester.enterText(find.byType(TextField), 'Gym first.');
+    await tester.pump();
+    expect(find.byKey(DesignSystemChatInputKeys.mic), findsOneWidget);
+
+    await startTake(tester);
+    capture
+      ..emit(phase(CapturePhase.listening))
+      ..emit(
+        phase(
+          CapturePhase.captured,
+          transcript: 'Then the launch deck',
+          audioId: 'audio-2',
+        ),
+      );
+    await tester.pump();
+
+    expect(find.text('Gym first. Then the launch deck'), findsOneWidget);
   });
 
   testWidgets('typed words alone carry no recording', (tester) async {
@@ -205,7 +244,7 @@ void main() {
     expect(tester.widget<TextField>(find.byType(TextField)).enabled, isTrue);
   });
 
-  testWidgets('stop on the recording pill finishes the take for the day', (
+  testWidgets('Done finishes the take for the day', (
     tester,
   ) async {
     await pump(tester);
@@ -213,14 +252,14 @@ void main() {
     capture.emit(phase(CapturePhase.listening));
     await tester.pump();
 
-    await tester.tap(find.byKey(ChatRecordingPillKeys.stop));
+    await tester.tap(find.byKey(DesignSystemChatInputKeys.done));
     await tester.pump();
 
     // One toggle started the take, the second ends it.
     expect(capture.toggles, [day, day]);
   });
 
-  testWidgets('cancel on the recording pill puts the recorder back to rest', (
+  testWidgets('cancel puts the recorder back to rest', (
     tester,
   ) async {
     await pump(tester);
@@ -228,15 +267,19 @@ void main() {
     capture.emit(phase(CapturePhase.listening));
     await tester.pump();
 
-    await tester.tap(find.byKey(ChatRecordingPillKeys.cancel));
+    await tester.tap(find.byKey(DesignSystemChatInputKeys.cancel));
     await tester.pump();
 
     expect(capture.resets, 1);
-    expect(find.byType(ChatRecordingPill), findsNothing);
-    expect(find.byType(TextField), findsOneWidget);
+    expect(
+      tester
+          .widget<DesignSystemChatInput>(find.byType(DesignSystemChatInput))
+          .phase,
+      DesignSystemChatInputPhase.compose,
+    );
   });
 
-  testWidgets('while transcribing the pill shows it is working, with no stop', (
+  testWidgets('while transcribing the input shows it is working, with no Done', (
     tester,
   ) async {
     await pump(tester);
@@ -246,10 +289,10 @@ void main() {
       ..emit(phase(CapturePhase.transcribing));
     await tester.pump();
 
-    expect(find.byKey(ChatRecordingPillKeys.transcribing), findsOneWidget);
-    expect(find.byKey(ChatRecordingPillKeys.stop), findsNothing);
+    expect(find.byKey(DesignSystemChatInputKeys.transcribing), findsOneWidget);
+    expect(find.byKey(DesignSystemChatInputKeys.done), findsNothing);
     // Its way out stays: cancel discards the in-flight transcription.
-    await tester.tap(find.byKey(ChatRecordingPillKeys.cancel));
+    await tester.tap(find.byKey(DesignSystemChatInputKeys.cancel));
     await tester.pump();
     expect(capture.resets, 1);
   });
@@ -277,7 +320,12 @@ void main() {
 
     final messages = tester.element(find.byType(DayComposer)).messages;
     expect(capture.resets, 0);
-    expect(find.byType(ChatRecordingPill), findsNothing);
+    expect(
+      tester
+          .widget<DesignSystemChatInput>(find.byType(DesignSystemChatInput))
+          .phase,
+      DesignSystemChatInputPhase.compose,
+    );
     expect(find.text('For the sheet'), findsNothing);
     expect(
       find.text(messages.dailyOsNextCaptureErrorMicrophonePermissionDenied),

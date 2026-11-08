@@ -1,14 +1,15 @@
 import 'dart:math' as math;
 
 import 'package:flutter/rendering.dart';
-import 'package:lotti/features/agents/ui/chat/chat_composer_field.dart';
+import 'package:lotti/features/design_system/components/chat_input/design_system_chat_input.dart';
 import 'package:lotti/features/design_system/components/glass_strip.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// Talks to the day's agent from the bottom of the Day surface: one docked
-/// field that is the mic while it is empty and the send arrow once there are
-/// words — the same field every Lotti chat uses ([ChatComposerField]).
+/// Talks to the day's agent from the bottom of the Day surface, in the one
+/// input every Lotti conversation uses ([DesignSystemChatInput]): the mic
+/// and, once there are words, send beside it; while a take records, the
+/// voice across the whole row, then Done.
 ///
 /// The bar owns only the layout and, unless the host passes a [controller],
 /// the draft. What a spoken or a typed message *does* is the host's call:
@@ -17,9 +18,9 @@ import 'package:material_ui/material_ui.dart';
 /// the host opens a flow over the day, and words a user typed should still
 /// be here if they back out of it.
 ///
-/// While a recording runs, the host passes [replacement] (the recording
-/// pill) and the bar shows it in the field's place, so speaking and typing
-/// happen in the same spot. [errorText] reads under the field.
+/// While a take runs the host passes its [phase] and levels; Done
+/// ([onFinishRecording]) ends it and the host puts the words in the field
+/// to be read before sending. [errorText] reads above the field.
 ///
 /// Sized to the Day surface's reading column on wide screens, full width on a
 /// phone, on the same glass strip as the other Day footers.
@@ -29,7 +30,12 @@ class DayComposerBar extends StatefulWidget {
     required this.onStartVoice,
     required this.onSubmitText,
     this.controller,
-    this.replacement,
+    this.phase = DesignSystemChatInputPhase.compose,
+    this.levels = const [],
+    this.sampleInterval = DesignSystemVoiceWaveform.defaultSampleInterval,
+    this.elapsed = Duration.zero,
+    this.onCancelRecording,
+    this.onFinishRecording,
     this.errorText,
     this.header,
     this.trailing,
@@ -38,8 +44,8 @@ class DayComposerBar extends StatefulWidget {
   });
 
   /// Shown above the field, inside the bar's reading column — quick
-  /// refinements on a planned day. Hidden while [replacement] shows, so
-  /// nothing opens a flow over a take that is still recording.
+  /// refinements on a planned day. Hidden while a take runs, so nothing
+  /// opens a flow over a take that is still recording.
   final Widget? header;
 
   /// Beside the field, in thumb reach, while the field is empty and nothing
@@ -60,8 +66,15 @@ class DayComposerBar extends StatefulWidget {
   /// transcript lands here for review. The bar owns one otherwise.
   final TextEditingController? controller;
 
-  /// Shown in the field's place while non-null.
-  final Widget? replacement;
+  /// What the take is doing; composing between takes.
+  final DesignSystemChatInputPhase phase;
+
+  /// The take's loudness, `0..1`, one per [sampleInterval].
+  final List<double> levels;
+  final Duration sampleInterval;
+  final Duration elapsed;
+  final VoidCallback? onCancelRecording;
+  final VoidCallback? onFinishRecording;
 
   final String? errorText;
 
@@ -101,9 +114,11 @@ class _DayComposerBarState extends State<DayComposerBar> {
     super.dispose();
   }
 
-  /// The draft follows the controller, so text a host sets (a transcript)
-  /// turns the mic into send just as typing does.
+  /// The next step beside the field follows the draft, so text a host sets
+  /// (a transcript) gives the field the width just as typing does.
   void _onText() => setState(() {});
+
+  bool get _composing => widget.phase == DesignSystemChatInputPhase.compose;
 
   void _send() {
     final words = _controller.text.trim();
@@ -114,7 +129,7 @@ class _DayComposerBarState extends State<DayComposerBar> {
   Widget _withTrailing(BuildContext context, Widget field) {
     final trailing = widget.trailing;
     if (trailing == null) return field;
-    final show = _controller.text.trim().isEmpty;
+    final show = _composing && _controller.text.trim().isEmpty;
     // Same widget at the same index either way, so the field keeps its
     // state and focus while the next step comes and goes.
     return _FieldWithTrailing(
@@ -126,7 +141,6 @@ class _DayComposerBarState extends State<DayComposerBar> {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final errorText = widget.errorText;
     return DesignSystemGlassStrip(
       child: Padding(
         // step5: the page's content rail, shared with the header and the
@@ -144,34 +158,27 @@ class _DayComposerBarState extends State<DayComposerBar> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                if (widget.header case final header?
-                    when widget.replacement == null) ...[
+                if (widget.header case final header? when _composing) ...[
                   header,
                   SizedBox(height: tokens.spacing.step3),
                 ],
-                widget.replacement ??
-                    _withTrailing(
-                      context,
-                      ChatComposerField(
-                        controller: _controller,
-                        hintText: widget.hintText,
-                        draft: _controller.text,
-                        // The controller listener tracks the draft.
-                        onDraftChanged: (_) {},
-                        onSend: _send,
-                        onStartRecording: widget.onStartVoice,
-                        enabled: widget.enabled,
-                      ),
-                    ),
-                if (errorText != null) ...[
-                  SizedBox(height: tokens.spacing.step2),
-                  Text(
-                    errorText,
-                    style: tokens.typography.styles.body.bodySmall.copyWith(
-                      color: tokens.colors.alert.error.defaultColor,
-                    ),
+                _withTrailing(
+                  context,
+                  DesignSystemChatInput(
+                    controller: _controller,
+                    hintText: widget.hintText,
+                    enabled: widget.enabled,
+                    errorText: widget.errorText,
+                    phase: widget.phase,
+                    levels: widget.levels,
+                    sampleInterval: widget.sampleInterval,
+                    elapsed: widget.elapsed,
+                    onSend: _send,
+                    onStartRecording: widget.onStartVoice,
+                    onCancelRecording: widget.onCancelRecording,
+                    onFinishRecording: widget.onFinishRecording,
                   ),
-                ],
+                ),
               ],
             ),
           ),

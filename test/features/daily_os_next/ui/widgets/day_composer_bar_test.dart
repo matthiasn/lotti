@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/agents/ui/chat/chat_composer_field.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_composer_bar.dart';
+import 'package:lotti/features/design_system/components/chat_input/design_system_chat_input.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -46,7 +46,7 @@ void main() {
   testWidgets('shows the hint in the shared chat field', (tester) async {
     await pump(tester);
 
-    expect(find.byType(ChatComposerField), findsOneWidget);
+    expect(find.byType(DesignSystemChatInput), findsOneWidget);
     expect(find.text('Talk or type a check-in'), findsOneWidget);
   });
 
@@ -81,7 +81,7 @@ void main() {
   testWidgets('keeps to the reading column on a wide window', (tester) async {
     await pump(tester, size: const Size(1600, 900));
 
-    final width = tester.getSize(find.byType(ChatComposerField)).width;
+    final width = tester.getSize(find.byType(DesignSystemChatInput)).width;
     expect(width, lessThanOrEqualTo(DayComposerBar.maxWidth));
   });
 
@@ -93,12 +93,12 @@ void main() {
     addTearDown(tester.view.reset);
     await pump(tester, size: phone);
 
-    final field = tester.getRect(find.byType(ChatComposerField));
+    final field = tester.getRect(find.byType(DesignSystemChatInput));
     expect(field.width, lessThan(phone.width));
     expect(field.width, greaterThan(phone.width * 0.8));
   });
 
-  testWidgets('text a host sets turns the mic into send', (tester) async {
+  testWidgets('text a host sets brings send beside the mic', (tester) async {
     final controller = TextEditingController();
     addTearDown(controller.dispose);
     await tester.pumpWidget(
@@ -123,17 +123,23 @@ void main() {
     expect(texts, ['Finished transcript']);
   });
 
-  testWidgets("a replacement takes the field's place and the header's; "
-      'errors read below', (
-    tester,
-  ) async {
+  testWidgets('while a take records, the input shows it and the header '
+      'steps aside; Done and cancel go to the host; errors read above the '
+      'field', (tester) async {
+    var dones = 0;
+    var cancels = 0;
     await tester.pumpWidget(
       makeTestableWidget2(
         Material(
           child: DayComposerBar(
             hintText: 'Talk or type a check-in',
             header: const Text('Quick refinements'),
-            replacement: const Text('Recording…'),
+            phase: DesignSystemChatInputPhase.recording,
+            levels: const [0.3, 0.6],
+            sampleInterval: const Duration(milliseconds: 20),
+            elapsed: const Duration(seconds: 12),
+            onFinishRecording: () => dones++,
+            onCancelRecording: () => cancels++,
             errorText: 'The microphone is off',
             onStartVoice: () => voices.add(1),
             onSubmitText: texts.add,
@@ -143,11 +149,20 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.text('Recording…'), findsOneWidget);
-    expect(find.byType(ChatComposerField), findsNothing);
+    final input = tester.widget<DesignSystemChatInput>(
+      find.byType(DesignSystemChatInput),
+    );
+    expect(input.phase, DesignSystemChatInputPhase.recording);
+    expect(input.levels, const [0.3, 0.6]);
+    expect(input.sampleInterval, const Duration(milliseconds: 20));
+    expect(find.text('0:12'), findsOne);
     // No chip may open a flow over a take that is still recording.
     expect(find.text('Quick refinements'), findsNothing);
     expect(find.text('The microphone is off'), findsOneWidget);
+
+    await tester.tap(find.byKey(DesignSystemChatInputKeys.done));
+    await tester.tap(find.byKey(DesignSystemChatInputKeys.cancel));
+    expect((dones, cancels), (1, 1));
   });
 
   testWidgets('a host swapping its controller keeps the field following it', (
@@ -211,7 +226,7 @@ void main() {
         'the field half the bar', (tester) async {
       await pumpWithTrailing(tester, 402);
 
-      final field = tester.getRect(find.byType(ChatComposerField));
+      final field = tester.getRect(find.byType(DesignSystemChatInput));
       final stage = tester.getRect(find.byKey(stageKey));
       expect(stage.left, greaterThan(field.right));
       expect(stage.center.dy, closeTo(field.center.dy, 0.5));
@@ -224,7 +239,7 @@ void main() {
       // 200 wide less the bar's padding leaves the field under half.
       await pumpWithTrailing(tester, 240);
 
-      final field = tester.getRect(find.byType(ChatComposerField));
+      final field = tester.getRect(find.byType(DesignSystemChatInput));
       final stage = tester.getRect(find.byKey(stageKey));
       expect(stage.top, greaterThan(field.bottom));
       expect(stage.width, field.width);
@@ -235,7 +250,7 @@ void main() {
       tester,
     ) async {
       await pumpWithTrailing(tester, 402);
-      final besideWidth = tester.getSize(find.byType(ChatComposerField)).width;
+      final besideWidth = tester.getSize(find.byType(DesignSystemChatInput)).width;
       await tester.showKeyboard(find.byType(TextField));
       final editable = tester.state<EditableTextState>(
         find.byType(EditableText),
@@ -244,7 +259,7 @@ void main() {
       tester.testTextInput.enterText('less meetings');
       await tester.pump();
       expect(
-        tester.getSize(find.byType(ChatComposerField)).width,
+        tester.getSize(find.byType(DesignSystemChatInput)).width,
         greaterThan(besideWidth),
       );
       tester.testTextInput.enterText('');
