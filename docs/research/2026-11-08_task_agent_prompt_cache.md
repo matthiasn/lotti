@@ -20,9 +20,11 @@ opening-request rate of H6 is not built either; the SQL below measures it.
 - **Hypothesis: 64 % is roughly the hit rate a wake gets from its own later
   turns alone.** The totals fit a first request that misses almost entirely,
   including the ~15K-token system prompt and tool list that never change,
-  with later turns re-using the request before them. Totals cannot show which
-  requests hit or which wakes were bursts, so this stays an inference until
-  the per-request query in [Measurement](#measurement) confirms or refutes it.
+  with later turns re-using the request before them. The same total also fits
+  every request hitting its prefix while each of a wake's several turns adds
+  fresh tool results and replies. Totals cannot show which requests hit or
+  which wakes were bursts, so this stays an inference until the per-request
+  query in [Measurement](#measurement) splits the two.
 - **Mistral publishes no cache lifetime.** The one independent measurement, of
   Mistral models reached through OpenRouter, was cold within 5 minutes. The same
   DeepSeek weights stay warm for 12+ hours on DeepSeek's own API and go cold in
@@ -98,16 +100,28 @@ seeded Laura directives and this model id:
 - 29 tool definitions serialized the way the Mistral repository sends them:
   **35,494 characters** (≈ 10K tokens).
 
-So about **15K tokens** precede the user message, unchanged on every wake. If
-only those 15K tokens had hit on each wake's first request, the cached total
-would be about 8 × 15K = 120K higher, roughly **82 %**. The observed 29K uncached
-tokens per wake is about the size of a whole opening prompt (header plus a young
-task's log and tail). That is what you would see if the first request misses
-completely and later turns re-use the request before them.
+So about **15K tokens** precede the user message, unchanged on every wake.
 
-This is an inference from the totals. The data to confirm it is already on the
-device (see [Measurement](#measurement)): each provider call is stored with its
-`wake_run_key`, `turn_index` and `cached_input_tokens`.
+A wake is several requests: every turn re-sends the whole conversation so far,
+and the usage row adds them all up. At ~20–25K per opening prompt, 80K input
+means roughly 3–4 requests per wake. The 29K uncached per wake fits **two
+readings that the totals cannot tell apart**:
+
+1. **The opening request misses.** Nearly the whole first prompt (header, log
+   and tail) is uncached, and later turns re-use the request before them. Had
+   only the 15K header hit on each opening request, the cached total would be
+   about 8 × 15K = 120K higher, roughly **82 %**. H1 and H2 address this.
+2. **Every request hits its prefix, and the misses are fresh tokens per turn.**
+   Each turn appends what was never sent before: the previous assistant
+   message, tool results (a pull request refresh, a task report read, search
+   hits) and, on the opening request, the volatile tail. About 6–7K per request
+   across 4–5 requests is the same 29K with no prefix break at all. Then the
+   levers are fewer turns and smaller tool results, not prompt order.
+
+Probably some of each. The first query in [Measurement](#measurement) settles
+it: it splits each wake's opening request from its later turns and reports
+uncached tokens for both, from the `consumption_events` rows already on the
+device.
 
 ## 2. Prompt cache lifetime and what invalidates it
 
@@ -523,6 +537,7 @@ SELECT CASE WHEN call_no = 1 THEN 'opening' ELSE 'later' END AS kind,
        COUNT(*) AS calls,
        SUM(input_tokens) AS input,
        SUM(cached_input_tokens) AS cached,
+       SUM(input_tokens - cached_input_tokens) AS uncached,
        ROUND(1.0 * SUM(cached_input_tokens) / SUM(input_tokens), 3) AS hit_rate,
        ROUND(AVG(duration_ms)) AS avg_ms
 FROM calls
@@ -562,7 +577,8 @@ What to read from them:
 
 | Result | Meaning |
 |---|---|
-| Opening ≈ 0 even at gaps under a minute | Routing or a prefix break: test H1 first, then H2/H3 |
+| Opening ≈ 0 even at gaps under a minute | Reading 1: routing or a prefix break. Test H1 first, then H2/H3 |
+| Opening high, but later turns carry most of the uncached tokens | Reading 2: fresh tool results and replies per turn. Trim large tool results and turns per wake; prompt order will not help |
 | Opening high under a few minutes, ≈ 0 beyond | Consistent with a lifetime in that bracket, but not proof: a long-gap wake may also have changed its prefix (check the fingerprint) or reached another replica. Measure the lifetime with repeated requests on a fixed prefix and key |
 | Later turns well below (n−1)/n of their input | Breaks within the wake: the forced retry (H3) |
 | `duration_ms` falls as the cached share rises | The latency gain, measured |
