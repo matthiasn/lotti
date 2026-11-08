@@ -32,8 +32,9 @@ month: she sums it per category, with the numbers the Insights page shows,
 and says it as text. She knows the categories by name: one
 named in the question narrows the answer — there is nothing to pick. Two
 tasks or more come back as a card of task rows — status, category, when it
-is due — rather than a run of links. Every task
-or project she names is a link that closes her and opens it, and every
+is due — rather than a run of links, an overdue list as much as today's. A
+task she names opens on top of her, and back returns to the conversation; a
+project she names closes her and opens it. Every
 answer is shown as the Markdown it was written in. A statement under a task or a project is a **proposal**: one tap
 files the user's words verbatim as an entry under it, and only the tap
 writes. A change to today ("move the count to the afternoon") is one too:

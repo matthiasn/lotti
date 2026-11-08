@@ -182,4 +182,61 @@ void main() {
       verify(() => mockNavService.pushDesktopTaskDetail('task-9')).called(1);
     });
   });
+
+  group('pushTaskDetailPage', () {
+    testWidgets('rootNavigator pushes above a nested navigator — as above a '
+        'dialog — and records the visit by id', (tester) async {
+      final recorder = MockHistoryRecorder();
+      when(() => recorder.recordVisit(any())).thenAnswer((_) async {});
+      final root = _PushTrackingObserver();
+      final nested = _PushTrackingObserver();
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [historyRecorderProvider.overrideWithValue(recorder)],
+          child: MaterialApp(
+            builder: LegacyMaterialBridge.builder,
+            navigatorObservers: [root],
+            home: Navigator(
+              observers: [nested],
+              onGenerateRoute: (_) => MaterialPageRoute<void>(
+                builder: (context) => TextButton(
+                  onPressed: () => pushTaskDetailPage(
+                    context,
+                    'task-9',
+                    rootNavigator: true,
+                  ),
+                  child: const Text('open'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      root.pushedRoutes.clear();
+      nested.pushedRoutes.clear();
+
+      await tester.tap(find.text('open'));
+
+      expect(nested.pushedRoutes, isEmpty);
+      final route = root.pushedRoutes
+          .whereType<MaterialPageRoute<void>>()
+          .single;
+      expect(
+        route.builder(tester.element(find.text('open'))),
+        isA<TaskDetailsPage>().having((p) => p.taskId, 'taskId', 'task-9'),
+      );
+      verify(
+        () => recorder.recordVisit(
+          const HistoryTarget(
+            kind: HistoryEntityKind.task,
+            entityId: 'task-9',
+            route: '/tasks/task-9',
+          ),
+        ),
+      ).called(1);
+      // Popped before it builds: TaskDetailsPage needs the whole app.
+      route.navigator!.pop();
+      await tester.pump();
+    });
+  });
 }

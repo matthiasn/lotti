@@ -128,6 +128,64 @@ void main() {
       verify(mockNavService.beamBack).called(1);
     });
 
+    testWidgets('on a pushed page, tapping pops back to what pushed it '
+        'instead of beaming the tab back', (tester) async {
+      final mockNavService = MockNavService();
+      getIt.registerSingleton<NavService>(mockNavService);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          Builder(
+            builder: (context) => TextButton(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const Scaffold(body: BackWidget()),
+                ),
+              ),
+              child: const Text('origin'),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('origin'));
+      await tester.pumpAndSettle();
+      expect(find.text('origin'), findsNothing);
+
+      await tester.tap(find.byType(IconButton));
+      await tester.pumpAndSettle();
+
+      expect(find.text('origin'), findsOne);
+      expect(find.byType(BackWidget), findsNothing);
+      verifyNever(mockNavService.beamBack);
+    });
+
+    testWidgets('a page Beamer placed — a Page route — beams back', (
+      tester,
+    ) async {
+      final mockNavService = MockNavService();
+      getIt.registerSingleton<NavService>(mockNavService);
+      final navigator = GlobalKey<NavigatorState>();
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          Navigator(
+            key: navigator,
+            pages: const [
+              MaterialPage<void>(child: Text('list')),
+              MaterialPage<void>(child: Scaffold(body: BackWidget())),
+            ],
+            onDidRemovePage: (_) {},
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(IconButton));
+      await tester.pump();
+
+      verify(mockNavService.beamBack).called(1);
+    });
+
     testWidgets('tapping calls onPressed override instead of NavService', (
       tester,
     ) async {

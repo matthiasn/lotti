@@ -40,6 +40,18 @@ void openLinkedTaskDetail({
     getIt<NavService>().pushDesktopTaskDetail(taskId);
     return;
   }
+  pushTaskDetailPage(context, taskId);
+}
+
+/// Opens [taskId]'s details as a page pushed onto the navigator, on top of
+/// whatever is showing — on [rootNavigator] above a dialog such as the
+/// companion's chat — so back pops it and lands where the user came from,
+/// rather than on the task list.
+void pushTaskDetailPage(
+  BuildContext context,
+  String taskId, {
+  bool rootNavigator = false,
+}) {
   // The push leaves the URL alone, so the history recorder — which follows
   // routes and the desktop selection — is told the task's id directly.
   ProviderScope.containerOf(context, listen: false)
@@ -51,7 +63,7 @@ void openLinkedTaskDetail({
           route: '/tasks/$taskId',
         ),
       );
-  Navigator.of(context).push(
+  Navigator.of(context, rootNavigator: rootNavigator).push(
     MaterialPageRoute<void>(
       builder: (context) => TaskDetailsPage(taskId: taskId),
     ),

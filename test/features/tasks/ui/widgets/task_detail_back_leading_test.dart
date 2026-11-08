@@ -93,6 +93,47 @@ void main() {
       verify(() => mockNavService.popDesktopTaskDetail()).called(1);
     });
 
+    testWidgets('on a page pushed over another surface, shows the button '
+        'with nothing stacked, and pops back to that surface', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          Builder(
+            builder: (context) => TextButton(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (context) => Scaffold(
+                    body: Builder(
+                      builder: (context) => SizedBox(
+                        width: TaskDetailDesktopLeading.widthFor(context),
+                        child: const TaskDetailDesktopLeading(),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              child: const Text('origin'),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('origin'));
+      await tester.pumpAndSettle();
+
+      // Sized for the arrow, though the split's stack is empty.
+      expect(find.byType(GlassBackButton), findsOneWidget);
+      expect(
+        tester.getSize(find.byType(TaskDetailDesktopLeading)).width,
+        greaterThan(kMinInteractiveDimension + 8),
+      );
+
+      await tester.tap(find.byType(GlassBackButton));
+      await tester.pumpAndSettle();
+
+      expect(find.text('origin'), findsOne);
+      expect(find.byType(TaskDetailDesktopLeading), findsNothing);
+      verifyNever(() => mockNavService.popDesktopTaskDetail());
+    });
+
     testWidgets('reacts to stack pushes and pops', (tester) async {
       stack.value = const ['base-task'];
       await pumpLeading(tester);

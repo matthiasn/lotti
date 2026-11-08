@@ -66,8 +66,18 @@ class FrontReplyTasks extends FrontReplyPart {
 /// A Markdown list line that is one task link and nothing else:
 /// `- [title](lotti://task/<id>)` — `*` or `+` bullets, or `1.`, and the
 /// plural `tasks` path the app also opens.
+///
+/// The link may be emphasised (`**[title](…)**`) and followed by when it was
+/// due — a few words around a `YYYY-MM-DD` date, or the lookup's
+/// `(overdue)` mark — as she tends to write an overdue list: the row shows
+/// the due date itself, so nothing she said is lost. Any other words after
+/// the link are hers, and keep the line out of the list.
 final RegExp _taskLine = RegExp(
-  r'^\s*(?:[-*+]|\d+[.)])\s+\[([^\]\n]+)\]\(lotti://tasks?/([^)\s/]+)\)\s*$',
+  r'^\s*(?:[-*+]|\d+[.)])\s+(\*\*|\*|__|_)?'
+  r'\[([^\]\n]+)\]\(lotti://tasks?/([^)\s/]+)\)\1'
+  r'(?:[\s,;:—–-]*\(?[\p{L}\s]{0,24}\d{4}-\d{2}-\d{2}\)?|\s*\(overdue\))?'
+  r'\s*$',
+  unicode: true,
 );
 
 /// The fewest task lines that make a list worth drawing as one: a single
@@ -77,9 +87,10 @@ const int frontTaskListMinimum = 2;
 /// [markdown] cut into her words and the lists of tasks in them, in order.
 ///
 /// A list is consecutive list lines naming [frontTaskListMinimum] or more
-/// distinct tasks, each line one task link and nothing else — what the
-/// prompt asks her to write when she names tasks. Everything else, a line that says more than the link
-/// included, stays her words. A reply with no such list is one
+/// distinct tasks, each line one task link and at most when it is due
+/// ([_taskLine]) — what the prompt asks her to write when she names tasks,
+/// due today or overdue alike. Everything else, a line that says more than
+/// the link included, stays her words. A reply with no such list is one
 /// [FrontReplyText].
 List<FrontReplyPart> frontReplyParts(String markdown) {
   final lines = markdown.split('\n');
@@ -115,8 +126,8 @@ List<FrontReplyPart> frontReplyParts(String markdown) {
       run.add((
         line: line,
         task: FrontTaskMention(
-          id: match.group(2)!,
-          title: match.group(1)!.trim(),
+          id: match.group(3)!,
+          title: match.group(2)!.trim(),
         ),
       ));
       continue;

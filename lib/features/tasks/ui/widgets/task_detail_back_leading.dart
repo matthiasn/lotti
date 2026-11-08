@@ -8,16 +8,19 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/app_bar/glass_action_button.dart';
 import 'package:lotti/widgets/app_bar/glass_back_button.dart';
+import 'package:lotti/widgets/app_bar/title_app_bar.dart' show isPushedPage;
 import 'package:material_ui/material_ui.dart';
 
 /// The desktop task detail's leading controls, in the app bar's icon row.
 ///
 /// Carries up to two glass actions, left to right:
 ///
-/// 1. **Back** — only while more than one task sits on the
+/// 1. **Back** — while more than one task sits on the
 ///    `NavService.desktopTaskDetailStack`, i.e. a linked task is layered on
-///    top of the base task selected from the list pane. The base task hides
-///    the arrow on desktop because the list pane already exposes siblings.
+///    top of the base task selected from the list pane, or when the page was
+///    pushed over another surface ([isPushedPage]), which it pops back to.
+///    The base task hides the arrow on desktop because the list pane already
+///    exposes siblings.
 /// 2. **Hide list** — the split's focus-mode toggle, whenever a task is
 ///    selected and the list is still showing.
 ///
@@ -71,6 +74,7 @@ class TaskDetailDesktopLeading extends StatelessWidget {
     final tokens = context.designTokens;
     final hideSize = glass ? _glassHideSize : _plainHideSize;
     final showBack =
+        isPushedPage(context) ||
         getIt<NavService>().desktopTaskDetailStack.value.length > 1;
     if (!showBack) return _leftInset(tokens) + hideSize;
     return _leftInset(tokens) + _backSize + _gap(tokens) + hideSize;
@@ -82,7 +86,10 @@ class TaskDetailDesktopLeading extends StatelessWidget {
     return ValueListenableBuilder<List<String>>(
       valueListenable: getIt<NavService>().desktopTaskDetailStack,
       builder: (context, stack, _) {
-        final showBack = stack.length > 1;
+        // A page pushed over another surface — the companion's chat, the
+        // plaza — goes back to it; the split's own pane walks its stack.
+        final pushed = isPushedPage(context);
+        final showBack = pushed || stack.length > 1;
         return Padding(
           padding: EdgeInsets.only(left: _leftInset(tokens)),
           child: Row(
@@ -90,7 +97,9 @@ class TaskDetailDesktopLeading extends StatelessWidget {
             children: [
               if (showBack) ...[
                 GlassBackButton(
-                  onPressed: () => getIt<NavService>().popDesktopTaskDetail(),
+                  onPressed: pushed
+                      ? () => Navigator.of(context).pop()
+                      : () => getIt<NavService>().popDesktopTaskDetail(),
                 ),
                 SizedBox(width: _gap(tokens)),
               ],

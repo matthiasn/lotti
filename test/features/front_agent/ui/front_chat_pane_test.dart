@@ -39,6 +39,7 @@ import 'package:lotti/features/front_agent/ui/front_task_list.dart';
 import 'package:lotti/features/front_agent/ui/front_turn_cost_line.dart';
 import 'package:lotti/features/projects/ui/widgets/project_create_modal.dart';
 import 'package:lotti/features/tasks/state/task_live_data_provider.dart';
+import 'package:lotti/features/tasks/ui/pages/task_details_page.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -81,6 +82,35 @@ void main() {
     runKey: runKey,
   );
 
+  /// Taps [target] and expects [taskId]'s page pushed on top of her, nothing
+  /// beamed, and back — a pop — landing on her conversation again.
+  Future<void> expectTaskOpensOverPane(
+    WidgetTester tester,
+    _PushObserver observer,
+    Finder target,
+    String taskId,
+    List<String> beamed,
+  ) async {
+    observer.pushed.clear();
+    await tester.tap(target);
+
+    final route = observer.pushed.whereType<MaterialPageRoute<void>>().single;
+    // The builder, not the built page: TaskDetailsPage needs the whole app.
+    expect(
+      route.builder(tester.element(find.byType(FrontChatPane))),
+      isA<TaskDetailsPage>().having((p) => p.taskId, 'taskId', taskId),
+    );
+    expect(beamed, isEmpty);
+    // She stays under the page, so back has somewhere to land.
+    expect(find.byType(FrontChatPane), findsOne);
+
+    // Popped before it ever builds; back is that pop.
+    route.navigator!.pop();
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+    expect(find.byType(FrontChatPane), findsOne);
+  }
+
   Future<void> pumpPane(
     WidgetTester tester, {
     Future<FrontChatThread> Function()? thread,
@@ -92,6 +122,7 @@ void main() {
     FrontNewProject? newProject,
     Future<ResolvedInferenceProvider> Function()? dictationTarget,
     bool pushed = false,
+    List<NavigatorObserver> navigatorObservers = const [],
   }) async {
     // The project creation resolves categories through the locator.
     final cache = MockEntitiesCacheService();
@@ -123,6 +154,7 @@ void main() {
         makeTestableWidgetNoScroll(
           pushed ? const SizedBox.shrink() : pane,
           navigatorKey: navigator,
+          navigatorObservers: navigatorObservers,
           mediaQueryData: const MediaQueryData(size: window),
           overrides: [
             frontChatThreadProvider.overrideWith(
@@ -568,15 +600,17 @@ void main() {
       await tester.pump();
     }
 
-    testWidgets('a task linked in an answer leaves her from the inbox too, '
-        'rather than only clearing the inbox', (tester) async {
+    testWidgets('a task linked in an answer opens on top of her from the '
+        'inbox too, and back returns to the inbox', (tester) async {
       final paths = <String>[];
       beamToNamedOverride = paths.add;
       addTearDown(() => beamToNamedOverride = null);
+      final observer = _PushObserver();
       final base = waiting();
       await pumpPane(
         tester,
         pushed: true,
+        navigatorObservers: [observer],
         thread: () async => FrontChatThread(
           messages: base.messages,
           doorsByMessageId: {
@@ -609,7 +643,9 @@ void main() {
       );
       expect(container.read(frontInboxFilterProvider), isTrue);
 
-      await tester.tap(
+      await expectTaskOpensOverPane(
+        tester,
+        observer,
         find
             .descendant(
               of: find.byKey(const ValueKey('front-door-text-1')),
@@ -619,12 +655,10 @@ void main() {
               ),
             )
             .last,
+        't-9',
+        paths,
       );
-      await tester.pump();
-      await tester.pump(const Duration(seconds: 1));
-
-      expect(paths, ['/tasks/t-9']);
-      expect(find.byType(FrontChatPane), findsNothing);
+      expect(container.read(frontInboxFilterProvider), isTrue);
     });
 
     testWidgets("the list's inbox filters the thread to the turns that wait, "
@@ -849,14 +883,16 @@ void main() {
     });
   });
 
-  testWidgets('a task she names as a link leaves her surface and opens the '
-      'task', (tester) async {
+  testWidgets('a task she names as a link opens on top of her, and back '
+      'returns to her', (tester) async {
     final paths = <String>[];
     beamToNamedOverride = paths.add;
     addTearDown(() => beamToNamedOverride = null);
+    final observer = _PushObserver();
     await pumpPane(
       tester,
       pushed: true,
+      navigatorObservers: [observer],
       thread: () async => FrontChatThread(
         messages: [
           message('u1', AgentChatRole.user, 'What is due today?', now),
@@ -871,27 +907,27 @@ void main() {
     );
     expect(find.byType(FrontChatPane), findsOneWidget);
 
-    await tester.tap(
+    await expectTaskOpensOverPane(
+      tester,
+      observer,
       find.textContaining('Feed the penguins', findRichText: true).last,
+      't-9',
+      paths,
     );
-    await tester.pump();
-    // Her route animates out before it leaves the tree.
-    await tester.pump(const Duration(seconds: 1));
-
-    expect(paths, ['/tasks/t-9']);
-    expect(find.byType(FrontChatPane), findsNothing);
   });
 
   testWidgets('a list of tasks in her words is drawn as task rows, her words '
-      'around it kept; a row leaves her surface and opens its task', (
+      'around it kept; a row opens its task on top of her', (
     tester,
   ) async {
     final paths = <String>[];
     beamToNamedOverride = paths.add;
     addTearDown(() => beamToNamedOverride = null);
+    final observer = _PushObserver();
     await pumpPane(
       tester,
       pushed: true,
+      navigatorObservers: [observer],
       thread: () async => FrontChatThread(
         messages: [
           message('u1', AgentChatRole.user, 'What is due today?', now),
@@ -920,12 +956,50 @@ void main() {
     expect(words.dy, lessThan(card.top));
     expect(after.dy, greaterThan(card.bottom));
 
-    await tester.tap(find.byKey(FrontTaskListKeys.row('t-8')));
-    await tester.pump();
-    await tester.pump(const Duration(seconds: 1));
+    await expectTaskOpensOverPane(
+      tester,
+      observer,
+      find.byKey(FrontTaskListKeys.row('t-8')),
+      't-8',
+      paths,
+    );
+  });
 
-    expect(paths, ['/tasks/t-8']);
-    expect(find.byType(FrontChatPane), findsNothing);
+  testWidgets('an overdue list, emphasised and dated, is task rows too, and '
+      'a row opens its task on top of her', (tester) async {
+    final paths = <String>[];
+    beamToNamedOverride = paths.add;
+    addTearDown(() => beamToNamedOverride = null);
+    final observer = _PushObserver();
+    await pumpPane(
+      tester,
+      pushed: true,
+      navigatorObservers: [observer],
+      thread: () async => FrontChatThread(
+        messages: [
+          message('u1', AgentChatRole.user, 'Anything overdue?', now),
+          message(
+            'a1',
+            AgentChatRole.agent,
+            'Overdue:\n'
+                '- **[Feed the penguins](lotti://task/t-9)**, due 2026-10-20\n'
+                '- [Count the eggs](lotti://task/t-8) (overdue)',
+            now,
+          ),
+        ],
+      ),
+    );
+
+    final list = tester.widget<FrontTaskList>(find.byType(FrontTaskList));
+    expect(list.tasks.map((t) => t.id), ['t-9', 't-8']);
+
+    await expectTaskOpensOverPane(
+      tester,
+      observer,
+      find.byKey(FrontTaskListKeys.row('t-9')),
+      't-9',
+      paths,
+    );
   });
 
   testWidgets('a reply with no list of tasks has no task rows', (tester) async {
@@ -1001,14 +1075,16 @@ void main() {
     expect(find.byType(FrontChatPane), findsOneWidget);
   });
 
-  testWidgets("a task named in an owner's answer leaves her surface and "
-      'opens the task', (tester) async {
+  testWidgets("a task named in an owner's answer opens on top of her, and "
+      'back returns to her', (tester) async {
     final paths = <String>[];
     beamToNamedOverride = paths.add;
     addTearDown(() => beamToNamedOverride = null);
+    final observer = _PushObserver();
     await pumpPane(
       tester,
       pushed: true,
+      navigatorObservers: [observer],
       thread: () async => FrontChatThread(
         messages: [
           message('u1', AgentChatRole.user, 'What is left?', now),
@@ -1037,7 +1113,9 @@ void main() {
       ),
     );
 
-    await tester.tap(
+    await expectTaskOpensOverPane(
+      tester,
+      observer,
       find
           .descendant(
             of: find.byKey(const ValueKey('front-door-text-0')),
@@ -1047,12 +1125,9 @@ void main() {
             ),
           )
           .last,
+      't-9',
+      paths,
     );
-    await tester.pump();
-    await tester.pump(const Duration(seconds: 1));
-
-    expect(paths, ['/tasks/t-9']);
-    expect(find.byType(FrontChatPane), findsNothing);
   });
 
   testWidgets('dictation goes to the Settings default transcription slot, '
@@ -1068,11 +1143,12 @@ void main() {
     expect(view.correctTranscript, isNull);
   });
 
-  testWidgets('a source her journal answer cites leaves the sheet and opens '
-      'its own page', (tester) async {
+  testWidgets('a source her journal answer cites opens its own page, a task '
+      'on top of her', (tester) async {
     final paths = <String>[];
     beamToNamedOverride = paths.add;
     addTearDown(() => beamToNamedOverride = null);
+    final observer = _PushObserver();
     final category = categoryMindfulness;
     final cited = [
       for (final (id, kind) in [
@@ -1100,6 +1176,7 @@ void main() {
     ];
     await pumpPane(
       tester,
+      navigatorObservers: [observer],
       journalAccess: QueryAccessSnapshot(
         showPrivate: false,
         categories: {category.id: category},
@@ -1143,12 +1220,21 @@ void main() {
       ),
     );
 
-    for (var i = 0; i < cited.length; i++) {
+    // A task opens on top of her, as every task she names does...
+    await expectTaskOpensOverPane(
+      tester,
+      observer,
+      find.byKey(const ValueKey('front-door-source-0-0')),
+      't-1',
+      paths,
+    );
+    // ...any other source leaves her for its own page.
+    for (var i = 1; i < cited.length; i++) {
       await tester.tap(find.byKey(ValueKey('front-door-source-0-$i')));
       await tester.pump();
     }
 
-    expect(paths, ['/tasks/t-1', '/projects/p-1', '/journal/e-1']);
+    expect(paths, ['/projects/p-1', '/journal/e-1']);
   });
 
   group('the wizard chips', () {
@@ -1338,4 +1424,14 @@ class _Recording extends ChatRecorderController {
     cancels++;
     state = const ChatRecorderState.initial();
   }
+}
+
+/// Records the routes pushed, so a test can read a page's route without
+/// building the page.
+class _PushObserver extends NavigatorObserver {
+  final List<Route<dynamic>> pushed = [];
+
+  @override
+  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) =>
+      pushed.add(route);
 }

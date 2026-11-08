@@ -884,23 +884,37 @@ tasks or more as a Markdown list, one task link per line. The pane hands
 `AgentChatView.replyBodyBuilder` a body for any reply that holds such a list:
 `frontReplyParts` cuts the reply into her words and the runs of
 `frontTaskListMinimum` (2) or more consecutive list lines that are one task
-link and nothing else, and each run is drawn as `FrontTaskList` — one card of
+link and at most when it is due — the link may be emphasised
+(`**[title](…)**`) and followed by a few words around a `YYYY-MM-DD` day or
+the lookup's `(overdue)` mark, the shape an overdue list takes, since the row
+shows the due date itself — and each run is drawn as `FrontTaskList` — one card of
 `FrontTaskRow`s, between her words as she wrote them (rendered by the view's
 own Markdown, so links and style are unchanged). A row reads the task live
 (`taskLiveDataProvider`, through `.value`, so a reload keeps the row): its
 `StatusGlyph`, its title, its status and category, and — while it is not done
 or rejected — the tasks list's own `DueDateText`; until it loads, or if it is
 gone, the title she gave it stands alone. A tap opens the task through the
-pane's link handler, closing her surface first. A single task, or a line that
-says more than the link, stays a link in her words.
+pane's link handler, on top of her (below). A single task, or a line that
+says more than the link and its due date, stays a link in her words. The
+parts are cut from her reply as written, before `replaceIsoDays` turns its
+days into the device's format — a dated line is only known by its ISO day —
+and her words between the lists get the device's dates after the cut.
 
 A link in her bubble or in a card's answer goes through the pane's one
-handler: a route in the app (`internalRouteFromMarkdownUrl`) closes her
-surface and then goes there, as *Open* does; anything else is the shared
-`handleMarkdownLinkTap`. Every way out to a page — a link, *Open*, a cited
-source, *Start a goal…* — closes her through the surface's own close (the
-pane's `onClose`, a `pop`), never through back (`maybePop`): while the list
-or the inbox is open, back is theirs, so the page would open behind her.
+handler, as *Open* and a cited source do. A task (`/tasks/<id>`) opens **on
+top of her**: `pushTaskDetailPage` pushes `TaskDetailsPage` onto the root
+navigator above her dialog, so its back — `BackWidget` on a phone, the
+`TaskDetailDesktopLeading` arrow on a desktop, both popping a pushed page
+(`isPushedPage`) — returns to the conversation the user left, list or inbox
+as it was. That is a deliberate exception to [opening a task by
+beaming](../architecture/navigation.md#a-pageless-push-is-invisible-to-the-router):
+a beam would have to close her first. Any other route in the app
+(`internalRouteFromMarkdownUrl`) closes her surface and then goes there;
+anything else is the shared `handleMarkdownLinkTap`. Every way out to a page
+other than a task — a project, a journal source, *Start a goal…* — closes her
+through the surface's own close (the pane's `onClose`, a `pop`), never
+through back (`maybePop`): while the list or the inbox is open, back is
+theirs, so the page would open behind her.
 
 **What she hears.** Dictation into her composer is transcribed on the
 Settings default profile's transcription slot
