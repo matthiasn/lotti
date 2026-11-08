@@ -333,7 +333,7 @@ route — and beam back otherwise.
 The notification bell was the case that proved it. Its task rows went through
 `openLinkedTaskDetail`, whose mobile branch is exactly that push, and a task
 opened from the bell on a phone could not be left. **A global entry point
-opens a task by beaming to `/tasks/<id>`** — the list, the logbook cards, the
+opens a task by beaming to `/tasks/<id>`** — the logbook cards, the
 Daily OS lanes and the bell all do — so the route is the router's on every
 form factor: on a phone `TasksLocation` stacks `TaskDetailsPage` above the tab
 root with a history entry behind it, on desktop it returns the root page alone
@@ -342,8 +342,8 @@ stacks on whatever the Tasks tab already held, like every other beam into a
 tab: a Tasks tab parked on `/tasks/A` while the bell is tapped elsewhere walks
 back through A before reaching the list. That is deliberate — a notification
 tap must not discard the tab's history — and `beamBack` always has a step to
-take. To show one task **by id** as the only task in view — the history page
-does — `NavService.openTask` resets the desktop detail stack to that id and
+take. To show one task **by id** as the only task in view — the task list,
+the history page and the palette do — `NavService.openTask` resets the desktop detail stack to that id and
 then beams, so a linked task pushed above an earlier visit does not survive
 the unchanged-base guard. `openLinkedTaskDetail` remains what its name says: a linked task layered
 on top of an *open* task detail, where the base task's own history still gives

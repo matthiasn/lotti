@@ -519,7 +519,7 @@ void main() {
     tester.widget<InkWell>(rowTapTarget.first).onTap?.call();
     await tester.pump();
     verify(
-      () => mockNavService.beamToNamed('/tasks/task-1', data: null),
+      () => mockNavService.openTask('task-1'),
     ).called(1);
   });
 
@@ -558,8 +558,35 @@ void main() {
       await tester.pump();
 
       verify(
-        () => mockNavService.beamToNamed('/tasks/task-2', data: null),
+        () => mockNavService.openTask('task-2'),
       ).called(1);
+    },
+  );
+
+  testWidgets(
+    'on desktop, tapping the task a linked task was opened from reopens it '
+    'rather than beaming to the URL already shown',
+    (tester) async {
+      // The pane shows a linked task stacked over 'task-1'; the URL is still
+      // '/tasks/task-1', so a beam there would leave the linked task in view.
+      await tester.pumpWidget(buildSubject(state: state(), desktop: true));
+      when(
+        () => mockNavService.desktopSelectedTaskId,
+      ).thenReturn(ValueNotifier<String?>('linked-task'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      final baseRow = find.ancestor(
+        of: find.text('Write migration'),
+        matching: find.byType(InkWell),
+      );
+      tester.widget<InkWell>(baseRow.first).onTap?.call();
+      await tester.pump();
+
+      verify(() => mockNavService.openTask('task-1')).called(1);
+      verifyNever(
+        () => mockNavService.beamToNamed(any(), data: any(named: 'data')),
+      );
     },
   );
 
