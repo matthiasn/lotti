@@ -100,6 +100,11 @@ void main() {
         '- [Count](lotti://project/census-2026)\n'
         '- [Bare]($feedUrl)',
       );
+      // A bracketed title is one link, its brackets made parentheses.
+      expect(
+        linkFrontReferences('- [Colony [census]](project:census-2026)', rows),
+        '- [Colony (census)](lotti://project/census-2026)',
+      );
       // Unknown ids, the wrong kind and real urls stay as written.
       final kept =
           '[a](task:unknown) [b](project:${feed.id}) '

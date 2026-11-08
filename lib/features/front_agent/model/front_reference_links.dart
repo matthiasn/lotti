@@ -49,8 +49,9 @@ String _linkIds(String text, Iterable<FrontIndexRow> rows) {
   // Longest first, so an id that prefixes another never wins the match.
   final ids = byId.keys.toList()..sort((a, b) => b.length.compareTo(a.length));
   final pattern = RegExp(
-    // An existing markdown link: kept whole.
-    r'\[(?<label>[^\]\n]*)\]\((?<url>[^)\n]*)\)'
+    // An existing markdown link, its label holding one level of brackets:
+    // kept whole.
+    r'\[(?<label>(?:[^\[\]\n]|\[[^\[\]\n]*\])*)\]\((?<url>[^)\n]*)\)'
     '|'
     r'(?<open>\(\s*)?(?<tick>`)?(?<![\w-])(?<kind>(?:task|project):)?'
     '(?<id>${ids.map(RegExp.escape).join('|')})'
@@ -66,7 +67,7 @@ String _linkIds(String text, Iterable<FrontIndexRow> rows) {
       out
         ..write(text.substring(last, match.start))
         ..write(
-          '[${match.namedGroup('label')}]'
+          '[${_label(match.namedGroup('label')!)}]'
           '(${frontReferenceUrl(row.kind, row.id)})',
         );
       last = match.end;
