@@ -160,18 +160,6 @@ class FrontTaskRow extends ConsumerWidget {
               color: tokens.colors.aiCard.accent,
             ),
           ),
-        // Its priority, only while it is still to do — leading the line, so
-        // a long one-liner or category wraps away the tail, never it.
-        if (!settled) ...[
-          WidgetSpan(
-            alignment: PlaceholderAlignment.middle,
-            child: TaskShowcasePriorityGlyph(
-              priority: task.data.priority,
-              size: IconSizes.xs,
-            ),
-          ),
-          TextSpan(text: ' ${task.data.priority.short} · '),
-        ],
         TextSpan(
           text: category == null ? statusLabel : '$statusLabel · $category',
         ),
@@ -186,7 +174,29 @@ class FrontTaskRow extends ConsumerWidget {
       ],
       subtitleMaxLines: oneLiner == null ? 2 : 3,
       subtitleEmphasis: tokens.colors.text.lowEmphasis,
-      trailingExtra: chevron,
+      // Its priority, only while it is still to do, beside the chevron: out
+      // of the subtitle, so however long the one-liner, truncation never
+      // takes it.
+      trailingExtra: settled
+          ? chevron
+          : Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TaskShowcasePriorityGlyph(
+                  priority: task.data.priority,
+                  size: IconSizes.xs,
+                ),
+                SizedBox(width: tokens.spacing.step1),
+                Text(
+                  task.data.priority.short,
+                  style: tokens.typography.styles.others.caption.copyWith(
+                    color: tokens.colors.text.lowEmphasis,
+                  ),
+                ),
+                SizedBox(width: tokens.spacing.step2),
+                chevron,
+              ],
+            ),
     );
   }
 

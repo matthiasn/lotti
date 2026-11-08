@@ -1020,7 +1020,7 @@ one task each, is rows under each heading. Each run is drawn as
 `.value`, so a reload keeps the row; it refreshes on every notification
 naming the task): its `StatusGlyph`, its title, its agent's one-liner (caption, in the `aiCard.accent` ink the tasks list gives it), its
 status and category, and — while it is not done or rejected — its
-priority as the tasks list shows it, leading the status line so truncation never takes it (`TaskShowcasePriorityGlyph` and `P0`–`P3`,
+priority as the tasks list shows it, beside the chevron and out of the subtitle so no truncation takes it (`TaskShowcasePriorityGlyph` and `P0`–`P3`,
 also in the row's semantics label) and the tasks list's own `DueDateText`. Until it loads, or if it is gone, the title she
 gave it stands alone. A project is a row of its title and a folder glyph.
 A tap opens either through the pane's link handler — a task on top of her

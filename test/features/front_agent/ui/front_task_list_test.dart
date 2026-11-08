@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -84,6 +85,7 @@ void main() {
   Future<void> pump(
     WidgetTester tester, {
     Future<Task?> Function(String id)? load,
+    String oneLiner = countingOneLiner,
   }) async {
     opened = [];
     openedKinds = [];
@@ -112,7 +114,7 @@ void main() {
             if (task == null) return null;
             return TaskPreview(
               task: task,
-              oneLiner: id == 't1' ? countingOneLiner : null,
+              oneLiner: id == 't1' ? oneLiner : null,
               tldr: 'Not shown in the row',
             );
           }),
@@ -172,13 +174,7 @@ void main() {
           .priority,
       TaskPriority.p1High,
     );
-    expect(
-      inRow(
-        't1',
-        find.textContaining('P1 · In Progress · Colony', findRichText: true),
-      ),
-      findsOne,
-    );
+    expect(inRow('t1', find.text('P1')), findsOne);
     expect(
       tester
           .widget<DesignSystemListItem>(
@@ -192,6 +188,36 @@ void main() {
       inRow('t2', find.textContaining('P2', findRichText: true)),
       findsNothing,
     );
+  });
+
+  testWidgets('on a narrow screen a one-liner long enough to be cut never '
+      'takes the priority with it', (tester) async {
+    tester.view
+      ..physicalSize = const Size(320, 800)
+      ..devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await pump(tester, oneLiner: 'Counting ' * 40);
+
+    // The subtitle is cut at its line limit…
+    final subtitle = inRow(
+      't1',
+      find.textContaining('Counting', findRichText: true),
+    );
+    final paragraph = tester.renderObject<RenderParagraph>(subtitle);
+    expect(paragraph.didExceedMaxLines, isTrue);
+    // …while the priority stands whole inside the row.
+    final row = tester.getRect(find.byKey(FrontTaskListKeys.row('t1')));
+    for (final part in [
+      inRow('t1', find.byType(TaskShowcasePriorityGlyph)),
+      inRow('t1', find.text('P1')),
+    ]) {
+      final rect = tester.getRect(part);
+      expect(
+        row.contains(rect.topLeft) && row.contains(rect.bottomRight),
+        isTrue,
+      );
+      expect(rect.right, lessThanOrEqualTo(320));
+    }
   });
 
   testWidgets('a settled task says no due date, and a task with no category '
@@ -248,7 +274,7 @@ void main() {
     expect(subtitle, findsOne);
     expect(
       tester.widget<RichText>(subtitle).text.toPlainText(),
-      startsWith('$countingOneLiner\n\u{FFFC} P1 · In Progress · Colony'),
+      startsWith('$countingOneLiner\nIn Progress · Colony'),
     );
     // In the AI ink the tasks list gives a one-liner.
     TextSpan? oneLinerSpan;
