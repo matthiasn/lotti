@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
+import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
 import 'package:lotti/features/design_system/components/timeline/design_system_timeline_row.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/events/ui/model/event_view_data.dart';
@@ -732,6 +733,14 @@ void main() {
 
       await tester.tap(find.byIcon(LottiIcons.more));
       await tester.pumpAndSettle();
+      // The unified menu every agent surface opens, not a Material popup.
+      expect(
+        find.ancestor(
+          of: find.text('Delete event'),
+          matching: find.byType(DesignSystemContextMenu),
+        ),
+        findsOneWidget,
+      );
       await tester.tap(find.text('Delete event'));
       await tester.pumpAndSettle();
 

@@ -1,5 +1,6 @@
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
 import 'package:lotti/features/insights/logic/period_navigation.dart';
 import 'package:lotti/features/insights/model/insights_models.dart';
 import 'package:lotti/features/insights/ui/widgets/insights_period_stepper.dart';
@@ -242,6 +243,14 @@ void main() {
     await tester.tap(find.text('Week')); // opens the dropdown
     await tester.pump(); // open the menu route
     await tester.pump(const Duration(milliseconds: 300)); // settle its anim
+    // The unified menu, the current unit its selected row.
+    final menu = tester.widget<DesignSystemContextMenu>(
+      find.byType(DesignSystemContextMenu),
+    );
+    expect(
+      menu.items.where((item) => item.isSelected).map((item) => item.label),
+      ['Week'],
+    );
     await tester.tap(find.text('Month'));
     await tester.pump();
     expect(selected, InsightsPeriodUnit.month);

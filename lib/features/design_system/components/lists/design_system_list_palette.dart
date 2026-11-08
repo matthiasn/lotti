@@ -18,4 +18,13 @@ abstract final class DesignSystemListPalette {
   /// Computed default fill used when a list row is activated/selected.
   static Color activatedFill(DsTokens tokens) =>
       tokens.colors.interactive.enabled.withValues(alpha: activatedFillAlpha);
+
+  /// Hover on a pickable row — a menu row, a status option: the primary hue
+  /// at its faintest, a step under the selected band (`surface.selected`).
+  static Color hoverFill(DsTokens tokens) =>
+      tokens.colors.interactive.enabled.withValues(alpha: SurfaceAlphas.tint);
+
+  /// Press on a pickable row: the primary hue a step over the selected band,
+  /// so hover, selected and pressed read as one rising ladder.
+  static Color pressedFill(DsTokens tokens) => tokens.colors.surface.active;
 }

@@ -1,7 +1,9 @@
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/ui/listing/agent_list_data.dart';
 import 'package:lotti/features/agents/ui/listing/agent_list_filter_state.dart';
 import 'package:lotti/features/agents/ui/listing/widgets/agent_list_toolbar.dart';
+import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -251,7 +253,15 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 200));
 
-      // Menu lists both axes; pick the non-current one.
+      // The unified menu lists both axes, the current one selected; pick
+      // the other.
+      final menu = tester.widget<DesignSystemContextMenu>(
+        find.byType(DesignSystemContextMenu),
+      );
+      expect(
+        menu.items.where((item) => item.isSelected).map((item) => item.label),
+        hasLength(1),
+      );
       await tester.tap(find.text('Status').last);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 200));
@@ -261,6 +271,22 @@ void main() {
         find.textContaining(messages.agentInstancesToolbarGroupBy),
         findsOneWidget,
       );
+    });
+
+    testWidgets('dismissing the sort menu leaves the axis as it was', (
+      tester,
+    ) async {
+      final host = await pumpToolbar(tester);
+      final before = host.state.sortAxisId;
+
+      await tester.tap(find.text('Recent'));
+      await tester.pumpAndSettle();
+      expect(find.byType(DesignSystemContextMenu), findsOneWidget);
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(DesignSystemContextMenu), findsNothing);
+      expect(host.state.sortAxisId, before);
     });
 
     testWidgets('sort popover switches the sort axis and the button label', (

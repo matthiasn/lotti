@@ -37,6 +37,7 @@ class DesignSystemContextMenuAnchor extends StatefulWidget {
     this.header,
     this.semanticsLabel,
     this.size = DesignSystemContextMenuSize.medium,
+    this.fitContent = false,
     super.key,
   });
 
@@ -59,6 +60,10 @@ class DesignSystemContextMenuAnchor extends StatefulWidget {
 
   /// Row height variant of the menu surface.
   final DesignSystemContextMenuSize size;
+
+  /// Sizes the menu to its widest row — for a short picker whose labels
+  /// would leave most of the default width empty.
+  final bool fitContent;
 
   @override
   State<DesignSystemContextMenuAnchor> createState() =>
@@ -98,6 +103,7 @@ class _DesignSystemContextMenuAnchorState
           semanticsLabel: widget.semanticsLabel,
           header: widget.header,
           size: widget.size,
+          fitContent: widget.fitContent,
           items: [
             for (final item in widget.items)
               DesignSystemContextMenuItem(
@@ -107,6 +113,8 @@ class _DesignSystemContextMenuAnchorState
                 iconColor: item.iconColor,
                 isDestructive: item.isDestructive,
                 isSelected: item.isSelected,
+                checked: item.checked,
+                startsGroup: item.startsGroup,
                 // A null callback is a disabled row and must stay one; only
                 // a real callback gets the close-then-fire wrapper.
                 onTap: item.onTap == null

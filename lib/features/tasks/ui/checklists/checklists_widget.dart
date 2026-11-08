@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/agents/ui/agent_surface_menu.dart';
+import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
 import 'package:lotti/features/design_system/components/motion/size_fade_entrance.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
@@ -253,45 +255,24 @@ class _ChecklistsSectionHeader extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
-        Theme(
-          data: Theme.of(context).copyWith(
-            popupMenuTheme: PopupMenuThemeData(
-              color: context.colorScheme.surfaceContainerHighest,
-              elevation: 8,
-              surfaceTintColor: Colors.transparent,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-                side: BorderSide(
-                  color: context.colorScheme.outlineVariant.withValues(
-                    alpha: 0.3,
-                  ),
-                  width: 0.8,
-                ),
-              ),
+        AgentSurfaceMenuButton(
+          key: const Key('checklists-menu'),
+          semanticsLabel: context.messages.checklistMoreTooltip,
+          items: [
+            DesignSystemContextMenuItem(
+              icon: LottiIcons.sort,
+              label: context.messages.checklistsReorder,
+              onTap: onSortChecklists,
             ),
-          ),
-          child: PopupMenuButton<String>(
-            key: const Key('checklists-menu'),
+          ],
+          triggerBuilder: (context, open) => IconButton(
             tooltip: context.messages.checklistMoreTooltip,
-            icon: Icon(LottiIcons.moreVertical, color: color, size: 20),
-            position: PopupMenuPosition.under,
-            onSelected: (value) {
-              if (value == 'sort') {
-                onSortChecklists?.call();
-              }
-            },
-            itemBuilder: (context) => [
-              PopupMenuItem(
-                value: 'sort',
-                child: Row(
-                  children: [
-                    const Icon(LottiIcons.sort, size: 18),
-                    const SizedBox(width: 8),
-                    Text(context.messages.checklistsReorder),
-                  ],
-                ),
-              ),
-            ],
+            onPressed: open,
+            icon: Icon(
+              LottiIcons.moreVertical,
+              color: color,
+              size: context.designTokens.spacing.step5,
+            ),
           ),
         ),
       ],

@@ -521,7 +521,6 @@ class _HeroMenuButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = context.colorScheme;
     final spacing = context.designTokens.spacing.step2;
     return Padding(
       padding: EdgeInsets.all(spacing),
@@ -529,40 +528,28 @@ class _HeroMenuButton extends StatelessWidget {
         color: Colors.black.withValues(alpha: 0.35),
         shape: const CircleBorder(),
         clipBehavior: Clip.antiAlias,
-        child: PopupMenuButton<String>(
-          icon: const Icon(LottiIcons.more, color: Colors.white),
-          onSelected: (value) {
-            if (value == 'change_cover') onChangeCover?.call();
-            if (value == 'delete') onDelete?.call();
-          },
-          itemBuilder: (context) => [
+        child: AgentSurfaceMenuButton(
+          items: [
             if (onChangeCover != null)
-              PopupMenuItem<String>(
-                value: 'change_cover',
-                child: Row(
-                  children: [
-                    Icon(
-                      LottiIcons.image,
-                      size: 18,
-                      color: cs.onSurfaceVariant,
-                    ),
-                    SizedBox(width: spacing),
-                    Text(context.messages.eventsChangeCover),
-                  ],
-                ),
+              DesignSystemContextMenuItem(
+                icon: LottiIcons.image,
+                label: context.messages.eventsChangeCover,
+                onTap: onChangeCover,
               ),
             if (onDelete != null)
-              PopupMenuItem<String>(
-                value: 'delete',
-                child: Row(
-                  children: [
-                    Icon(LottiIcons.delete, size: 18, color: cs.error),
-                    SizedBox(width: spacing),
-                    Text(context.messages.eventsDeleteEvent),
-                  ],
-                ),
+              DesignSystemContextMenuItem(
+                icon: LottiIcons.delete,
+                label: context.messages.eventsDeleteEvent,
+                isDestructive: true,
+                startsGroup: true,
+                onTap: onDelete,
               ),
           ],
+          triggerBuilder: (context, open) => IconButton(
+            tooltip: MaterialLocalizations.of(context).showMenuTooltip,
+            onPressed: open,
+            icon: const Icon(LottiIcons.more, color: Colors.white),
+          ),
         ),
       ),
     );

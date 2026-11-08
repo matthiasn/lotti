@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/checkboxes/design_system_checkbox.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
+import 'package:lotti/features/design_system/components/lists/design_system_list_palette.dart';
 import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -211,6 +212,36 @@ void main() {
     await tester.tap(find.byKey(const Key('iconless-action')));
     expect(taps, 1);
   });
+
+  testWidgets(
+    'a pickable row lights in the primary hue: faint on hover, deeper '
+    'while pressed',
+    (tester) async {
+      await _pump(
+        tester,
+        DesignSystemSelectionRow(
+          title: 'Open',
+          type: DesignSystemSelectionRowType.singleSelect,
+          onTap: () {},
+        ),
+      );
+      Color? fill() =>
+          (tester.widget<Ink>(find.byType(Ink)).decoration! as BoxDecoration)
+              .color;
+
+      final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      addTearDown(mouse.removePointer);
+      await mouse.addPointer(location: Offset.zero);
+      await mouse.moveTo(tester.getCenter(find.text('Open')));
+      await tester.pump();
+      expect(fill(), DesignSystemListPalette.hoverFill(dsTokensLight));
+
+      await mouse.down(tester.getCenter(find.text('Open')));
+      await tester.pump();
+      expect(fill(), DesignSystemListPalette.pressedFill(dsTokensLight));
+      await mouse.up();
+    },
+  );
 
   testWidgets('keyboard focus uses the token focus fill and outline', (
     tester,
@@ -552,7 +583,8 @@ void main() {
         of: find.byKey(actionKey),
         matching: find.byWidgetPredicate(
           (w) =>
-              w is ColoredBox && w.color == dsTokensLight.colors.surface.hover,
+              w is ColoredBox &&
+              w.color == DesignSystemListPalette.hoverFill(dsTokensLight),
         ),
       );
 

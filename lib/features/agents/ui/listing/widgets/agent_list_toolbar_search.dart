@@ -1,6 +1,8 @@
+import 'package:lotti/features/agents/ui/agent_surface_menu.dart';
 import 'package:lotti/features/agents/ui/listing/agent_list_data.dart';
 import 'package:lotti/features/agents/ui/listing/agent_list_filter_state.dart';
 import 'package:lotti/features/agents/ui/listing/widgets/agent_list_toolbar_popover.dart';
+import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
@@ -145,50 +147,28 @@ class _SearchFieldState extends State<SearchField> {
 
 // ── Popovers ────────────────────────────────────────────────────────────────
 
-/// Anchored single-select popover used by Group by / Sort. Returns the
-/// selected option id (string) or null if dismissed.
+/// Anchored single-select menu used by Group by / Sort: the menu every
+/// agent surface opens, the [current] option its selected row. Returns the
+/// picked option, or null if dismissed.
 Future<T?> showSingleSelectPopover<T>({
   required BuildContext context,
   required T current,
   required List<(T, String)> options,
-  required double width,
 }) async {
-  final box = context.findRenderObject() as RenderBox?;
-  if (box == null) return null;
-  final overlay = Overlay.of(context).context.findRenderObject() as RenderBox?;
-  if (overlay == null) return null;
-  final position = box.localToGlobal(Offset.zero, ancestor: overlay);
-  final size = box.size;
-  final tokens = context.designTokens;
-
-  return showMenu<T>(
-    context: context,
-    position: RelativeRect.fromRect(
-      Rect.fromLTWH(
-        position.dx,
-        position.dy + size.height + 6,
-        width,
-        0,
-      ),
-      Offset.zero & overlay.size,
-    ),
-    color: tokens.colors.background.level02,
-    elevation: 8,
-    constraints: BoxConstraints.tightFor(width: width),
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(10),
-      side: BorderSide(color: tokens.colors.decorative.level01),
-    ),
+  T? picked;
+  // A row pops the menu and then fires, both before this await resumes.
+  await showAgentSurfaceMenu(
+    context,
     items: [
       for (final (value, label) in options)
-        PopupMenuItem<T>(
-          value: value,
-          padding: EdgeInsets.zero,
-          height: 32,
-          child: PopRow(label: label, selected: value == current),
+        DesignSystemContextMenuItem(
+          label: label,
+          isSelected: value == current,
+          onTap: () => picked = value,
         ),
     ],
   );
+  return picked;
 }
 
 /// Anchored multi-select popover used by Filters. One section per

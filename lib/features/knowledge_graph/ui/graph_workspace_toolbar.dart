@@ -1,4 +1,6 @@
 import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
+import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
+import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu_anchor.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/knowledge_graph/domain/graph_models.dart';
 import 'package:lotti/features/knowledge_graph/domain/graph_projection.dart';
@@ -58,24 +60,24 @@ class GraphWorkspaceToolbar extends StatelessWidget {
               selected: state.mode == GraphViewMode.connections,
               onPressed: () => onModeChanged(GraphViewMode.connections),
             ),
-            PopupMenuButton<GraphDensity>(
+            DesignSystemContextMenuAnchor(
               key: const ValueKey('knowledge-graph-density-menu'),
-              tooltip: context.messages.knowledgeGraphDensity,
-              onSelected: onDensityChanged,
-              itemBuilder: (context) => [
+              semanticsLabel: context.messages.knowledgeGraphDensity,
+              fitContent: true,
+              items: [
                 for (final density in GraphDensity.values)
-                  PopupMenuItem(
-                    value: density,
-                    child: Text(graphDensityLabel(context.messages, density)),
+                  DesignSystemContextMenuItem(
+                    label: graphDensityLabel(context.messages, density),
+                    isSelected: density == state.density,
+                    onTap: () => onDensityChanged(density),
                   ),
               ],
-              child: IgnorePointer(
-                child: DesignSystemChip(
-                  label: graphDensityLabel(context.messages, state.density),
-                  leadingIcon: LottiIcons.blur,
-                  onPressed: () {}, // coverage:ignore-line
-                ),
-              ),
+              builder: (context, {required toggle, required isOpen}) =>
+                  DesignSystemChip(
+                    label: graphDensityLabel(context.messages, state.density),
+                    leadingIcon: LottiIcons.blur,
+                    onPressed: toggle,
+                  ),
             ),
             DesignSystemChip(
               key: const ValueKey('knowledge-graph-hop-filter'),

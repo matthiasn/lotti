@@ -266,7 +266,6 @@ class _GroupByButton extends StatelessWidget {
           context: context,
           current: current.id,
           options: [for (final a in axes) (a.id, a.label)],
-          width: 150,
         );
         if (next != null) onChanged(state.copyWith(groupAxisId: next));
       },
@@ -309,7 +308,6 @@ class _SortButton extends StatelessWidget {
           context: context,
           current: current.id,
           options: [for (final a in axes) (a.id, a.label)],
-          width: 150,
         );
         if (next != null) onChanged(state.copyWith(sortAxisId: next));
       },

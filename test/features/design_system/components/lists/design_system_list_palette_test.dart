@@ -27,5 +27,24 @@ void main() {
         }
       },
     );
+
+    test(
+      'a pickable row climbs one primary ladder: hover under the selected '
+      'band, pressed over it, in both token sets',
+      () {
+        for (final tokens in const [dsTokensLight, dsTokensDark]) {
+          final primary = tokens.colors.interactive.enabled;
+          final hover = DesignSystemListPalette.hoverFill(tokens);
+          final selected = tokens.colors.surface.selected;
+          final pressed = DesignSystemListPalette.pressedFill(tokens);
+
+          for (final fill in [hover, selected, pressed]) {
+            expect(fill.withValues(alpha: primary.a), primary);
+          }
+          expect(hover.a, lessThan(selected.a));
+          expect(selected.a, lessThan(pressed.a));
+        }
+      },
+    );
   });
 }

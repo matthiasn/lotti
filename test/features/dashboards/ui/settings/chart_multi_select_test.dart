@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/dashboards/ui/settings/chart_multi_select.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:multi_select_flutter/multi_select_flutter.dart';
@@ -368,6 +369,16 @@ void main() {
 
       await tester.tap(find.text('Daily sum').first);
       await tester.pumpAndSettle();
+      // The unified menu, the current choice its one selected row.
+      expect(
+        tester
+            .widget<DesignSystemContextMenu>(
+              find.byType(DesignSystemContextMenu),
+            )
+            .items
+            .where((item) => item.isSelected),
+        hasLength(1),
+      );
       await tester.tap(find.text('Daily maximum').last);
       await tester.pumpAndSettle();
       expect(find.text('Daily maximum'), findsOneWidget);

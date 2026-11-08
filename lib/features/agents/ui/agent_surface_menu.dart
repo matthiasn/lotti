@@ -157,7 +157,6 @@ class _AgentSurfaceMenuRoute extends PopupRoute<void> {
       surfaceColor: dsCardSurface(context),
       // The first and last row's hover fill meets the rounded edge instead
       // of leaving a strip of padding above and below it.
-      edgeToEdge: true,
       items: [
         for (final item in items)
           DesignSystemContextMenuItem(

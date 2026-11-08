@@ -1,12 +1,13 @@
 import 'package:clock/clock.dart';
 import 'package:intl/intl.dart';
+import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
+import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu_anchor.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/insights/logic/period_navigation.dart';
 import 'package:lotti/features/insights/logic/time_bucketing.dart';
 import 'package:lotti/features/insights/model/insights_models.dart';
 import 'package:lotti/features/insights/ui/widgets/insights_pill_button.dart';
-import 'package:lotti/features/insights/ui/widgets/insights_surfaces.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -321,63 +322,46 @@ class _UnitDropdown extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
 
-    return PopupMenuButton<InsightsPeriodUnit>(
-      initialValue: unit,
-      tooltip: '',
-      position: PopupMenuPosition.under,
-      onSelected: onSelectUnit,
-      // Match the dashboard's card surface + rounded corners instead of the
-      // default Material popup look.
-      color: insightsCardSurface(context),
-      surfaceTintColor: Colors.transparent,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(tokens.radii.m),
-        side: BorderSide(color: tokens.colors.decorative.level01),
-      ),
-      itemBuilder: (context) => [
+    return DesignSystemContextMenuAnchor(
+      fitContent: true,
+      size: DesignSystemContextMenuSize.small,
+      items: [
         for (final value in InsightsPeriodUnit.values)
-          PopupMenuItem<InsightsPeriodUnit>(
-            value: value,
-            // The current unit reads as selected (teal, semibold).
-            child: Text(
-              _unitLabel(context, value),
-              style: tokens.typography.styles.body.bodySmall.copyWith(
-                color: value == unit
-                    ? tokens.colors.interactive.enabled
-                    : tokens.colors.text.highEmphasis,
-                fontWeight: value == unit
-                    ? tokens.typography.weight.semiBold
-                    : null,
-              ),
-            ),
+          DesignSystemContextMenuItem(
+            label: _unitLabel(context, value),
+            isSelected: value == unit,
+            onTap: () => onSelectUnit(value),
           ),
       ],
-      // Center (widthFactor 1) keeps the label mid-height when the cluster row
-      // is stretched, so it lines up with the chevrons.
-      child: Center(
-        widthFactor: 1,
-        child: Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: tokens.spacing.step3,
-            vertical: tokens.spacing.step2,
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                _unitLabel(context, unit),
-                style: tokens.typography.styles.body.bodySmall.copyWith(
-                  color: tokens.colors.text.highEmphasis,
-                  fontWeight: tokens.typography.weight.semiBold,
+      builder: (context, {required toggle, required isOpen}) => InkWell(
+        onTap: toggle,
+        // Center (widthFactor 1) keeps the label mid-height when the cluster row
+        // is stretched, so it lines up with the chevrons.
+        child: Center(
+          widthFactor: 1,
+          child: Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: tokens.spacing.step3,
+              vertical: tokens.spacing.step2,
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  _unitLabel(context, unit),
+                  style: tokens.typography.styles.body.bodySmall.copyWith(
+                    color: tokens.colors.text.highEmphasis,
+                    fontWeight: tokens.typography.weight.semiBold,
+                  ),
                 ),
-              ),
-              SizedBox(width: tokens.spacing.step1),
-              Icon(
-                LottiIcons.expand,
-                size: tokens.spacing.step5,
-                color: tokens.colors.text.mediumEmphasis,
-              ),
-            ],
+                SizedBox(width: tokens.spacing.step1),
+                Icon(
+                  LottiIcons.expand,
+                  size: tokens.spacing.step5,
+                  color: tokens.colors.text.mediumEmphasis,
+                ),
+              ],
+            ),
           ),
         ),
       ),

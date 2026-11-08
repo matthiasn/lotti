@@ -1,5 +1,7 @@
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
+import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu_anchor.dart';
 import 'package:lotti/features/design_system/components/search/design_system_search.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -463,77 +465,29 @@ class _ChartModeSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final spacing = tokens.spacing;
-    final colors = tokens.colors;
     final selectedLabel = aggregationTypeLabel(
       context.messages,
       selectedAggregation,
     );
 
-    return MenuAnchor(
-      style: MenuStyle(
-        backgroundColor: WidgetStatePropertyAll(colors.background.level01),
-        surfaceTintColor: const WidgetStatePropertyAll(Colors.transparent),
-        elevation: const WidgetStatePropertyAll(0),
-        padding: const WidgetStatePropertyAll(EdgeInsets.zero),
-        shape: WidgetStatePropertyAll(
-          RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(tokens.radii.s),
-            side: BorderSide(color: colors.decorative.level02),
-          ),
-        ),
-      ),
-      menuChildren: [
+    return DesignSystemContextMenuAnchor(
+      fitContent: true,
+      size: DesignSystemContextMenuSize.small,
+      items: [
         for (final aggregationType in AggregationType.values)
-          MenuItemButton(
-            onPressed: () => onAggregationChanged(aggregationType),
-            leadingIcon: aggregationType == selectedAggregation
-                ? Icon(
-                    LottiIcons.confirm,
-                    color: colors.interactive.enabled,
-                    size: spacing.step5,
-                  )
-                : SizedBox.square(dimension: spacing.step5),
-            style: ButtonStyle(
-              foregroundColor: WidgetStatePropertyAll(
-                colors.text.highEmphasis,
-              ),
-              textStyle: WidgetStatePropertyAll(
-                tokens.typography.styles.body.bodySmall,
-              ),
-              padding: WidgetStatePropertyAll(
-                EdgeInsetsDirectional.symmetric(
-                  horizontal: spacing.step3,
-                  vertical: spacing.step2,
-                ),
-              ),
-              minimumSize: WidgetStatePropertyAll(
-                Size.fromHeight(
-                  tokens.typography.lineHeight.bodySmall + spacing.step4,
-                ),
-              ),
-            ),
-            child: Text(
-              aggregationTypeLabel(context.messages, aggregationType),
-            ),
+          DesignSystemContextMenuItem(
+            label: aggregationTypeLabel(context.messages, aggregationType),
+            isSelected: aggregationType == selectedAggregation,
+            onTap: () => onAggregationChanged(aggregationType),
           ),
       ],
-      builder: (context, controller, child) {
-        return _ChartModePill(
-          label: selectedLabel,
-          semanticsLabel: label,
-          semanticsValue: selectedLabel,
-          expanded: controller.isOpen,
-          onTap: () {
-            if (controller.isOpen) {
-              controller.close();
-            } else {
-              controller.open();
-            }
-          },
-        );
-      },
+      builder: (context, {required toggle, required isOpen}) => _ChartModePill(
+        label: selectedLabel,
+        semanticsLabel: label,
+        semanticsValue: selectedLabel,
+        expanded: isOpen,
+        onTap: toggle,
+      ),
     );
   }
 }
