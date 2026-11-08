@@ -13,6 +13,7 @@ import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
+import 'package:lotti/features/front_agent/model/front_reference_links.dart';
 import 'package:lotti/features/front_agent/model/front_reply_parts.dart';
 import 'package:lotti/features/front_agent/state/front_chat_controller.dart';
 import 'package:lotti/features/front_agent/state/front_chat_thread_provider.dart';
@@ -383,7 +384,10 @@ class FrontChatThreadView extends ConsumerWidget {
                 FrontReplyText(:final markdown) => prose(deviceDays(markdown)),
                 FrontReplyTasks(:final tasks) => FrontTaskList(
                   tasks: tasks,
-                  onOpen: (id) => openLink('lotti://task/$id', ''),
+                  onOpen: (mention) => openLink(
+                    frontReferenceUrl(mention.kind, mention.id),
+                    '',
+                  ),
                 ),
               },
           ],

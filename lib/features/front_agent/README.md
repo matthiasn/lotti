@@ -31,8 +31,9 @@ today, yesterday, this week, the past 7 or 30 days, this month or last
 month: she sums it per category, with the numbers the Insights page shows,
 and says it as text. She knows the categories by name: one
 named in the question narrows the answer — there is nothing to pick. Two
-tasks or more come back as a card of task rows — status, category, when it
-is due — rather than a run of links, an overdue list as much as today's. A
+tasks or more — due, overdue, both, or what a search found, projects among
+them — come back as a card of rows — status, the agent's one-liner,
+category, when it is due — rather than a run of links. A
 task she names opens on top of her, and back returns to the conversation; a
 project she names closes her and opens it. Every
 answer is shown as the Markdown it was written in. A statement under a task or a project is a **proposal**: one tap

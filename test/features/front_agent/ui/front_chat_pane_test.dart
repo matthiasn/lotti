@@ -38,7 +38,7 @@ import 'package:lotti/features/front_agent/ui/front_door_wizards.dart';
 import 'package:lotti/features/front_agent/ui/front_task_list.dart';
 import 'package:lotti/features/front_agent/ui/front_turn_cost_line.dart';
 import 'package:lotti/features/projects/ui/widgets/project_create_modal.dart';
-import 'package:lotti/features/tasks/state/task_live_data_provider.dart';
+import 'package:lotti/features/tasks/state/task_preview_provider.dart';
 import 'package:lotti/features/tasks/ui/pages/task_details_page.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -188,7 +188,7 @@ void main() {
             configFlagProvider.overrideWith((ref, _) => Stream.value(false)),
             // The tasks her lists name: none loads, so each row keeps the
             // title she gave it.
-            taskLiveDataProvider.overrideWith((ref, id) async => null),
+            taskPreviewProvider.overrideWith((ref, id) async => null),
             agentConsumptionTotalsProvider(
               frontAgentId,
             ).overrideWith((ref) => const Stream<ConsumptionTotals>.empty()),
