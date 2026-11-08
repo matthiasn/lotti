@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:lotti/classes/agents/query_chat_models.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
+import 'package:lotti/features/front_agent/model/front_task_draft.dart';
 
 /// The tool name under which a walked door is recorded in the front
 /// thread: an `action` row per dispatch segment, keyed to the dispatch, so
@@ -443,6 +444,7 @@ class FrontDoorRecord {
     this.destinationId,
     this.ownerTitle,
     this.outcome,
+    this.task,
   });
 
   final int segmentIndex;
@@ -460,6 +462,9 @@ class FrontDoorRecord {
   final DateTime claimedAt;
   final FrontDoorOutcome? outcome;
 
+  /// The segment's task draft: what a task made of it is filled with.
+  final FrontTaskDraft? task;
+
   /// Whether another walker may take this segment: never when done, and
   /// only after [frontDoorClaimGrace] when claimed.
   bool isStaleClaimAt(DateTime now) =>
@@ -475,6 +480,7 @@ class FrontDoorRecord {
     status: FrontDoorStatus.done,
     claimedAt: claimedAt,
     outcome: outcome,
+    task: task,
   );
 
   Map<String, Object?> toJson() => {
@@ -486,6 +492,7 @@ class FrontDoorRecord {
     'status': status.name,
     'claimedAt': claimedAt.toUtc().toIso8601String(),
     if (outcome != null) 'outcome': outcome!.toJson(),
+    if (task != null) 'task': task!.toJson(),
   };
 
   /// Reads a stored record; null when it is not one this build wrote.
@@ -520,6 +527,7 @@ class FrontDoorRecord {
       status: status,
       claimedAt: claimedAt,
       outcome: FrontDoorOutcome.fromJson(json['outcome']),
+      task: FrontTaskDraft.fromJson(json['task']),
     );
   }
 }

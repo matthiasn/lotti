@@ -3,6 +3,7 @@ import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/companion/model/companion_reaction.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_routing_index.dart';
+import 'package:lotti/features/front_agent/model/front_task_draft.dart';
 
 /// The front agent's tool names.
 abstract final class FrontAgentToolNames {
@@ -136,6 +137,8 @@ You are the front agent of a personal journal and task app. The user talks to yo
 7. Moving, planning or changing something in today's plan ("my day"): destination `day`. A question about what is due is not the day's — see 8.
 8. A question about which tasks are due — "what is due today?", "anything overdue?", "what's due this week?": call `list_due_tasks` with `which` for exactly what was asked — `today` for due today (never the overdue ones), `overdue` for overdue (never today's), `upcoming` with `daysAhead` (at most $frontDueMaxDaysAhead) for the days ahead, `all` only when both overdue and due are asked for — then end the turn with `reply_to_user` alone. When the user names a category listed under Categories ("overdue in Work"), pass its id in `categoryIds`; a category they name that you may not see, or one not marked `chosen` when some are, is outside what you can answer from: say so instead of calling it. Name only the tasks the list returned, or say plainly that none are. Never dispatch it, and never say you cannot answer it.
 9. A question about how much time was logged or where the time went — "how much did I log yesterday?", "what did I log this week?", "time in the past 30 days?": call `summarize_logged_time` with the `period` asked about — "last month" is `last_month`, the previous calendar month; "the past month" is `past_30_days` — then end the turn with `reply_to_user` alone: the total, then each category with its time, largest first, only as the summary gives them, or say plainly that nothing was logged. For a period it does not offer, say which periods you can sum. Never dispatch it, and never say you cannot answer it.
+10. The user asks for a new task or mentions one to do — "create a task to…", "remind me to…", "I'm starting on…", "I need to…" — and no listed open task is the same work: dispatch it as one segment, `new` with newKind `task`, and a `task` object read from their words: a short `title`; `instructions`, what to do and how, leaving out whatever they said about other things; `categoryId`, the category they name ("this is a work task"), else the one listed under Categories the work plainly belongs to, left out when unsure; `priority`, `due` and `estimateMinutes` only when they say them; `startedMinutesAgo` only when they say it is in progress, started, or want a timer running — `0` for now, else the minutes back from <current_local_time> to when they say it began ("ten minutes ago", "since 9:15"). The task is made only when the user confirms it with a tap. Accompany the dispatch with `reply_to_user`, one short line saying the task is ready for them to confirm and what you read — its title in plain words, never as a link, and the timer when one will start; never say you created it.
+11. Before proposing a task, compare it with the open tasks listed; call `match_to_corpus` only when the index says more tasks exist than it shows. When one looks like the same work, do not create a second: call `ask_user` with those tasks as the options.
 
 ## Naming things
 
@@ -230,6 +233,49 @@ final List<AgentToolDefinition> frontAgentTools = [
                 'type': 'string',
                 'description':
                     'One short line you say about this segment, optional.',
+              },
+              'task': {
+                'type': 'object',
+                'description':
+                    'For kind "new" with newKind "task": the task read from '
+                    'the words. Leave out what was not said.',
+                'properties': {
+                  'title': {'type': 'string'},
+                  'instructions': {
+                    'type': 'string',
+                    'description': 'What to do and how, from the words.',
+                  },
+                  'categoryId': {
+                    'type': 'string',
+                    'description':
+                        'An id from ## Categories: the one named, else the '
+                        'one the work plainly belongs to.',
+                  },
+                  'priority': {
+                    'type': 'string',
+                    'enum': ['P0', 'P1', 'P2', 'P3'],
+                    'description': 'P0 urgent, P1 high, P2 medium, P3 low.',
+                  },
+                  'due': {
+                    'type': 'string',
+                    'description': 'The due day, YYYY-MM-DD.',
+                  },
+                  'estimateMinutes': {
+                    'type': 'integer',
+                    'minimum': 1,
+                    'maximum': frontTaskMaxEstimateMinutes,
+                  },
+                  'startedMinutesAgo': {
+                    'type': 'integer',
+                    'minimum': 0,
+                    'maximum': frontTaskMaxStartedMinutesAgo,
+                    'description':
+                        'Only when the work is in progress or a timer should '
+                        'run: minutes before <current_local_time> it began, '
+                        '0 for now.',
+                  },
+                },
+                'required': ['title'],
               },
             },
             'required': [

@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
+import 'package:lotti/features/front_agent/model/front_task_draft.dart';
 
 void main() {
   const routed = FrontDispatchSegment(
@@ -65,6 +66,25 @@ void main() {
     expect(routed.hasDestination, isTrue);
     expect(newThing.hasDestination, isFalse);
     expect(unrouted.hasDestination, isFalse);
+  });
+
+  test("a new task segment's draft round-trips with it", () {
+    final segment = FrontDispatch.fromJson({
+      'segments': [
+        const FrontDispatchSegment(
+          start: 0,
+          end: 12,
+          text: 'Fix the gate',
+          intent: FrontSegmentIntent.instruction,
+          kind: FrontDestinationKind.newThing,
+          newKind: FrontNewKind.task,
+          confidence: 0.9,
+          task: FrontTaskDraft(title: 'Fix the gate'),
+        ).toJson(),
+      ],
+    }).segments.single;
+    expect(segment.task?.title, 'Fix the gate');
+    expect(segment.newKind, FrontNewKind.task);
   });
 
   test('a dispatch round-trips through JSON, segment by segment', () {

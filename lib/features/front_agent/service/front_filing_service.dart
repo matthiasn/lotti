@@ -6,6 +6,7 @@ import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
+import 'package:lotti/features/front_agent/model/front_task_draft.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:uuid/uuid.dart';
 
@@ -21,10 +22,15 @@ typedef FrontTextEntryWriter =
       String? categoryId,
     });
 
-/// Makes a task titled with the user's words under [id]. Returns it — the
-/// one created, or the one already there — or null when nothing is stored.
+/// Makes the task [draft] describes under [id], the user's [words] kept as
+/// its source. Returns it — the one created, or the one already there — or
+/// null when nothing is stored.
 typedef FrontTaskMaker =
-    Future<Task?> Function(String title, {required String id});
+    Future<Task?> Function(
+      FrontTaskDraft draft, {
+      required String id,
+      required String words,
+    });
 
 /// Deletes an entry; true when it existed and is gone.
 typedef FrontEntryDeleter = Future<bool> Function(String entryId);
@@ -241,14 +247,17 @@ class FrontFilingService {
     );
   }
 
-  /// Makes a task of an inbox segment, titled with the user's words. The
-  /// tap is the approval.
+  /// Makes a task of an inbox segment: the fields the router read from the
+  /// words when it read any, else titled with the words. The tap is the
+  /// approval.
   Future<void> makeTask(String doorId) async {
     final (record, payload) = await _waiting<FrontDoorInbox>(doorId);
     final inbox = record.outcome! as FrontDoorInbox;
+    final words = record.text.trim();
     final task = await _makeTask(
-      record.text.trim(),
+      record.task ?? FrontTaskDraft(title: words),
       id: frontDoorTaskId(doorId, generation: inbox.generation),
+      words: words,
     );
     if (task == null) throw StateError('The task was not created.');
     await _rewrite(
@@ -319,6 +328,12 @@ String frontDoorNoteId(String doorId, {int generation = 0}) =>
 /// keeps the id tasks were made under before generations were counted.
 String frontDoorTaskId(String doorId, {int generation = 0}) =>
     _writtenId(generation == 0 ? '$doorId/task' : '$doorId/task/$generation');
+
+/// The id of the entry that keeps the user's words under a task made from
+/// them, and of the timer entry a dictated start runs on: derived from the
+/// task, so a retried make finds them already there.
+String frontTaskWordsId(String taskId) => _writtenId('task/$taskId/words');
+String frontTaskTimerId(String taskId) => _writtenId('task/$taskId/timer');
 
 String _writtenId(String path) =>
     const Uuid().v5(Namespace.url.value, 'lotti://front-door/$path');

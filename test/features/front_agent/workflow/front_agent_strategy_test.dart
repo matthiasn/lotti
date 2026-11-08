@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
@@ -75,6 +76,7 @@ void main() {
     runKey: 'run-1',
     input: input,
     index: routingIndex ?? index,
+    now: DateTime(2026, 11, 2, 9),
     corpusMatcher: matcher,
     dueTaskLister: dueLister,
     loggedTimeSummarizer: timeSummarizer,
@@ -128,6 +130,85 @@ void main() {
   });
 
   group('dispatch', () {
+    test("a dictated start counts back from the turn's clock, not from "
+        'when a slow dispatch lands', () async {
+      final turnNow = DateTime(2026, 11, 2, 10);
+      final s = FrontAgentStrategy(
+        syncService: syncService,
+        domainLogger: domainLogger,
+        agentId: 'front_agent',
+        threadId: 'thread-1',
+        runKey: 'run-1',
+        input: input,
+        index: index,
+        now: turnNow,
+      );
+      // The prompt said 10:00; inference took two minutes.
+      await withClock(
+        Clock.fixed(turnNow.add(const Duration(minutes: 2))),
+        () => s.processToolCalls(
+          toolCalls: [
+            _call('dispatch', {
+              'segments': [
+                {
+                  ...segment(start: 0, end: input.length, id: null),
+                  'destination': {'kind': 'new', 'newKind': 'task'},
+                  'task': {'title': 'Fix the gate', 'startedMinutesAgo': 45},
+                },
+              ],
+            }),
+          ],
+          manager: manager,
+        ),
+      );
+      expect(
+        s.dispatch!.segments.single.task!.startedAt,
+        DateTime(2026, 11, 2, 9, 15),
+      );
+    });
+
+    test("a new task's category stands when listed, and only among the "
+        'chosen ones when the conversation is narrowed', () async {
+      Future<String?> categoryOf(
+        String categoryId, {
+        required bool narrowed,
+      }) async {
+        final s = strategy(
+          routingIndex: FrontRoutingIndex(
+            categories: [
+              FrontCategory(id: 'work', name: 'Work', chosen: narrowed),
+              const FrontCategory(id: 'home', name: 'Home'),
+            ],
+          ),
+        );
+        await s.processToolCalls(
+          toolCalls: [
+            _call('dispatch', {
+              'segments': [
+                {
+                  ...segment(
+                    start: 0,
+                    end: input.length,
+                    kind: 'new',
+                    id: null,
+                  ),
+                  'destination': {'kind': 'new', 'newKind': 'task'},
+                  'task': {'title': 'Fix the gate', 'categoryId': categoryId},
+                },
+              ],
+            }),
+          ],
+          manager: manager,
+        );
+        return s.dispatch!.segments.single.task!.categoryId;
+      }
+
+      expect(await categoryOf('home', narrowed: false), 'home');
+      expect(await categoryOf('home', narrowed: true), isNull);
+      expect(await categoryOf('work', narrowed: true), 'work');
+      expect(await categoryOf('nope', narrowed: false), isNull);
+    });
+
     test('a valid dispatch is accumulated and ends the turn', () async {
       final s = strategy();
       final action = await s.processToolCalls(

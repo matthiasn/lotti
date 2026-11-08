@@ -1,4 +1,6 @@
+import 'package:clock/clock.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
+import 'package:lotti/features/front_agent/model/front_task_draft.dart';
 
 /// Whether a destination the model named exists in the index or in a
 /// lookup result this turn.
@@ -19,8 +21,12 @@ typedef FrontDispatchValidation = ({FrontDispatch? dispatch, String? error});
 /// miscount, the `text` found verbatim after the previous segment places
 /// the span instead; a destination id only where
 /// [destinationExists] says so; a `new` segment names what it would become;
-/// a routed destination at or above [frontLowConfidence]. The spans and the
-/// gaps between them partition the input, and any gap holding at least
+/// a routed destination at or above [frontLowConfidence]. A `new` task's
+/// `task` object is read leniently ([FrontTaskDraft.fromModel]): a field the
+/// model got wrong, or a category [categoryExists] does not know, is left
+/// out, never fatal; its start counts back from [now], the routing turn's
+/// clock the model saw. The spans and the gaps between them partition the
+/// input, and any gap holding at least
 /// [frontUnroutedGapShare] of its non-whitespace characters becomes an
 /// `unrouted` segment of its own, so the words the model left out are kept
 /// and shown, never dropped.
@@ -28,6 +34,8 @@ FrontDispatchValidation validateFrontDispatch({
   required Map<String, dynamic> args,
   required String input,
   required FrontDestinationCheck destinationExists,
+  bool Function(String categoryId)? categoryExists,
+  DateTime? now,
 }) {
   final raw = args['segments'];
   if (raw is! List || raw.isEmpty) {
@@ -165,6 +173,7 @@ FrontDispatchValidation validateFrontDispatch({
       }
     }
     final note = segment['note'];
+    final task = segment['task'];
     segments.add(
       FrontDispatchSegment(
         start: start,
@@ -176,6 +185,13 @@ FrontDispatchValidation validateFrontDispatch({
         destinationId: id,
         newKind: newKind,
         note: note is String && note.trim().isNotEmpty ? note.trim() : null,
+        task: newKind == FrontNewKind.task && task is Map
+            ? FrontTaskDraft.fromModel(
+                Map<String, dynamic>.from(task),
+                categoryExists: categoryExists ?? (_) => false,
+                now: now ?? clock.now(),
+              )
+            : null,
       ),
     );
     cursor = end;

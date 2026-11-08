@@ -106,7 +106,7 @@ void main() {
     final tools = [
       for (final tool in frontAgentTools) tool.toChatCompletionTool(),
     ];
-    final now = DateTime(2026, 10, 23, 9, 30);
+    final now = frontEvalNow;
 
     final rows = <Map<String, Object?>>[];
     var passed = 0;
@@ -119,6 +119,7 @@ void main() {
         runKey: 'run-${scenario.id}',
         input: scenario.input,
         index: frontEvalIndex,
+        now: now,
         // The closed task is not in the corpus either: a match finds nothing.
         corpusMatcher: (_) async => const [],
       );
@@ -248,6 +249,19 @@ List<String> _judge(FrontEvalScenario scenario, FrontAgentStrategy strategy) {
       if (dispatch?.routed.isNotEmpty ?? false) {
         failed.add('dispatched to an existing owner');
       }
+  }
+  if (scenario.checkTask case final check?) {
+    failed.addAll(
+      check(
+        dispatch?.segments
+            .where(
+              (s) =>
+                  s.kind == FrontDestinationKind.newThing &&
+                  s.newKind == FrontNewKind.task,
+            )
+            .firstOrNull,
+      ),
+    );
   }
   for (final id in scenario.forbiddenDestinationIds) {
     if (destinationIds.contains(id)) failed.add('forbidden destination $id');

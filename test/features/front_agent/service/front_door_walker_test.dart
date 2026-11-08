@@ -5,6 +5,7 @@ import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/agents/query_chat_models.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/query/query_answer_builder.dart';
 import 'package:lotti/features/agents/query/query_chat_projection.dart';
 import 'package:lotti/features/agents/query/query_chat_providers.dart';
@@ -13,6 +14,7 @@ import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
 import 'package:lotti/features/front_agent/model/front_conversation.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
+import 'package:lotti/features/front_agent/model/front_task_draft.dart';
 import 'package:lotti/features/front_agent/service/front_door_walker.dart';
 import 'package:lotti/features/front_agent/service/front_owner_titles.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_contract.dart';
@@ -85,7 +87,9 @@ void main() {
     String? id,
     FrontSegmentIntent intent = FrontSegmentIntent.question,
     FrontNewKind? newKind,
+    FrontTaskDraft? task,
   }) => FrontDispatchSegment(
+    task: task,
     start: start,
     end: end,
     text: input.substring(start, end),
@@ -846,6 +850,42 @@ void main() {
       expect(doors()[1]!.outcome, isA<FrontDoorDay>());
     },
   );
+
+  test('a new task, asked for or only mentioned, waits in the inbox for '
+      'the tap, its draft kept on the record for it', () async {
+    final draft = FrontTaskDraft(
+      title: 'Buy a hose',
+      priority: TaskPriority.p1High,
+      startedAt: DateTime(2026, 10, 24, 8, 50),
+    );
+    for (final intent in [
+      FrontSegmentIntent.instruction,
+      FrontSegmentIntent.statement,
+    ]) {
+      upserts.clear();
+      seedDispatch([
+        segment(
+          start: 30,
+          end: 39,
+          kind: FrontDestinationKind.newThing,
+          intent: intent,
+          newKind: FrontNewKind.task,
+          task: draft,
+        ),
+      ]);
+
+      await walker.walk(messageId);
+
+      final door = doors()[0]!;
+      expect(
+        (door.outcome! as FrontDoorInbox).newKind,
+        FrontNewKind.task,
+        reason: intent.name,
+      );
+      expect(door.task?.title, 'Buy a hose');
+      expect(door.task?.startedAt, DateTime(2026, 10, 24, 8, 50));
+    }
+  });
 
   test('a question about today, or a change to it while the Daily OS is '
       'off, has no door', () async {

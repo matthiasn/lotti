@@ -53,14 +53,15 @@ void main() {
     expect(frontEvalScenarios.every((s) => s.note.isNotEmpty), isTrue);
   });
 
-  test('an ask scenario names at least two candidates; a dispatch scenario '
-      'names at least one segment', () {
+  test('an ask scenario names at least one candidate — two near ones, or the '
+      'one a new task would duplicate; a dispatch scenario names at least '
+      'one segment', () {
     for (final scenario in frontEvalScenarios) {
       switch (scenario.outcome) {
         case FrontEvalOutcome.ask:
           expect(
             scenario.askCandidates.length,
-            greaterThan(1),
+            greaterThan(0),
             reason: scenario.id,
           );
         case FrontEvalOutcome.dispatch:

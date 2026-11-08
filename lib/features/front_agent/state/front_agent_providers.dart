@@ -19,6 +19,7 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/state/ai_runtime_settings_controller.dart';
 import 'package:lotti/features/companion/state/companion_customization_controller.dart';
+import 'package:lotti/features/front_agent/model/front_task_draft.dart';
 import 'package:lotti/features/front_agent/runtime/front_runtime_maintenance.dart';
 import 'package:lotti/features/front_agent/service/front_agent_service.dart';
 import 'package:lotti/features/front_agent/service/front_chat_history_service.dart';
@@ -30,6 +31,7 @@ import 'package:lotti/features/front_agent/service/front_routing_index_builder.d
 import 'package:lotti/features/front_agent/workflow/front_agent_model_resolution.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_workflow.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
+import 'package:lotti/features/journal/create/create_entry.dart';
 import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart';
@@ -176,13 +178,19 @@ final frontFilingServiceProvider = Provider<FrontFilingService>(
           linkedId: linkedId,
           categoryId: categoryId,
         ),
-    makeTask: (title, {required id}) => makeFrontTask(
-      ref.read(persistenceLogicProvider),
-      ref.read(journalDbProvider),
-      title,
-      id: id,
-    ),
-    deleteEntry: ref.watch(journalRepositoryProvider).deleteJournalEntity,
+    makeTask: ref.watch(frontTaskMakerProvider),
+    deleteEntry: (entryId) async {
+      // A task taken back stops the timer a dictated start ran on it, and
+      // takes its copy of the words along, so a re-make files no second
+      // one. Its timer entry stays: logged time outlives the task, as on
+      // any task deleted. For a note or a filed entry no such copy exists.
+      final time = ref.read(timeServiceProvider);
+      if (time.linkedFrom?.meta.id == entryId) await time.stop();
+      final journal = ref.read(journalRepositoryProvider);
+      final deleted = await journal.deleteJournalEntity(entryId);
+      if (deleted) await journal.deleteJournalEntity(frontTaskWordsId(entryId));
+      return deleted;
+    },
   ),
   name: 'frontFilingServiceProvider',
 );
@@ -205,12 +213,13 @@ Future<JournalEntity?> writeFrontTextEntry(
   required String id,
   String? linkedId,
   String? categoryId,
+  DateTime? started,
 }) async {
   final now = clock.now();
   final entry = JournalEntity.journalEntry(
     meta: await persistence.createMetadata(
       id: id,
-      dateFrom: now,
+      dateFrom: started ?? now,
       dateTo: now,
       categoryId: categoryId,
     ),
@@ -231,32 +240,95 @@ Future<bool> _linked(JournalDb journalDb, String fromId, String toId) async =>
       toId,
     )).any((link) => link.deletedAt == null);
 
-/// A task titled [title], open, with no category, under [id]. The creation
-/// path answers null for a rejected write, which for a deterministic id
-/// means the task is already there — the retry case — so that task is
-/// returned when it is, and null when nothing is stored.
+/// How a task made from the user's words is written: [makeFrontTask] over
+/// the app's persistence, timer and task-agent service.
+final frontTaskMakerProvider = Provider<FrontTaskMaker>(
+  (ref) =>
+      (draft, {required id, required words}) => makeFrontTask(
+        ref.read(persistenceLogicProvider),
+        ref.read(journalDbProvider),
+        draft,
+        id: id,
+        words: words,
+        startTimer: ref.read(timeServiceProvider).start,
+        assignAgent: (task) => autoAssignCategoryAgentWith(
+          ref.read(taskAgentServiceProvider),
+          task,
+          domainLogger: ref.read(domainLoggerProvider),
+        ),
+      ),
+  name: 'frontTaskMakerProvider',
+);
+
+/// The task [draft] describes, under [id]: its title, instructions as the
+/// body, category, priority, due day and estimate — what the agent fills
+/// from the words; the rest is the user's on the task page.
+///
+/// Once written, the user's [words] are filed under it as a linked text
+/// entry — where the task came from, and what its agent reads — a draft
+/// that says the work began puts it in progress with a timer running from
+/// that moment ([startTimer], on a linked entry starting then), and
+/// [assignAgent] hands it the category's default agent.
+///
+/// The creation path answers null for a rejected write, which for a
+/// deterministic id means the task is already there — the retry case — so
+/// that task is returned as it is, nothing added twice, and null when
+/// nothing is stored.
 Future<Task?> makeFrontTask(
   PersistenceLogic persistence,
   JournalDb journalDb,
-  String title, {
+  FrontTaskDraft draft, {
   required String id,
+  required String words,
+  required Future<void> Function(JournalEntity timer, JournalEntity task)
+  startTimer,
+  required Future<void> Function(Task task) assignAgent,
 }) async {
   final now = clock.now();
+  final started = draft.startedAt;
   final task = await persistence.createTaskEntry(
     data: TaskData(
-      status: taskStatusFromString(''),
-      title: title,
+      status: taskStatusFromString(started == null ? '' : 'IN PROGRESS'),
+      title: draft.title,
       statusHistory: [],
       dateTo: now,
       dateFrom: now,
-      estimate: Duration.zero,
+      estimate: draft.estimate ?? Duration.zero,
+      priority: draft.priority ?? TaskPriority.p2Medium,
+      due: draft.due,
     ),
-    entryText: const EntryText(plainText: ''),
+    entryText: EntryText(plainText: draft.instructions ?? ''),
+    categoryId: draft.categoryId,
     id: id,
   );
-  if (task != null) return task;
-  final existing = await _existing(journalDb, id);
-  return existing is Task ? existing : null;
+  if (task == null) {
+    final existing = await _existing(journalDb, id);
+    return existing is Task ? existing : null;
+  }
+  // shortcut: a crash between the task and these leaves a bare task the
+  // user fills on its page; making them retryable needs per-step records.
+  await writeFrontTextEntry(
+    persistence,
+    journalDb,
+    words,
+    id: frontTaskWordsId(id),
+    linkedId: id,
+    categoryId: draft.categoryId,
+  );
+  if (started != null) {
+    final timer = await writeFrontTextEntry(
+      persistence,
+      journalDb,
+      '',
+      id: frontTaskTimerId(id),
+      linkedId: id,
+      categoryId: draft.categoryId,
+      started: started.isAfter(now) ? now : started,
+    );
+    if (timer != null) await startTimer(timer, task);
+  }
+  await assignAgent(task);
+  return task;
 }
 
 /// The row under [id] when it is there and not deleted.
