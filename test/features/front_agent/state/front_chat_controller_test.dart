@@ -88,6 +88,26 @@ void main() {
       container.read(frontChatControllerProvider.notifier);
   FrontChatComposerState state() => container.read(frontChatControllerProvider);
 
+  test('a spoken draft stays spoken through edits, and an emptied or sent '
+      'draft is no longer spoken', () async {
+    controller()
+      ..updateDraft('Krill?')
+      ..markDraftSpoken()
+      ..updateDraft('Krill today?');
+    expect(state().draftSpoken, isTrue);
+
+    controller().updateDraft('');
+    expect(state().draftSpoken, isFalse);
+
+    controller()
+      ..updateDraft('Krill?')
+      ..markDraftSpoken();
+    await controller().sendSpoken();
+    // Sent — here it fails and the words come back — the next send is
+    // typed unless something is said again.
+    expect(state().draftSpoken, isFalse);
+  });
+
   test('a draft is kept and clears a previous failure', () async {
     when(
       () => chatService.sendMessage(text: 'Hello', conversationId: 'c-1'),

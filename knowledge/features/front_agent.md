@@ -1408,8 +1408,12 @@ through a start and a stop.
 The pane under the stage stays mounted, its own composer included. A
 finished recording reaches only the composer on the current route
 (`AgentChatView` checks `ModalRoute.isCurrentOf`), so what is said on the
-stage lands once, in the stage's field, and is sent from there as a spoken
-turn — her answer is then spoken on the stage.
+stage lands once, in the stage's field; one that finishes while a page
+covers both lands in whichever is in front when the user comes back. The
+draft's spoken provenance is the composer state's (`draftSpoken`, cleared
+with an empty draft), not either view's, so a draft said in one view and
+sent from the other still goes out as a spoken turn, and her answer is
+spoken.
 
 ```mermaid
 flowchart LR

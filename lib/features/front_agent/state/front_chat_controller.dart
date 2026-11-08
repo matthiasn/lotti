@@ -13,6 +13,7 @@ import 'package:lotti/features/front_agent/state/front_voice_providers.dart';
 class FrontChatComposerState {
   const FrontChatComposerState({
     this.draft = '',
+    this.draftSpoken = false,
     this.isSending = false,
     this.failedMessage,
     this.failedMessageId,
@@ -22,6 +23,10 @@ class FrontChatComposerState {
   });
 
   final String draft;
+
+  /// Whether [draft] came from what was said, so it goes out as a spoken
+  /// turn from whichever view sends it — her chat or her stage.
+  final bool draftSpoken;
   final bool isSending;
 
   /// Doors whose action — filing, declining, a chip — is in flight.
@@ -44,13 +49,19 @@ class FrontChatComposerState {
   /// A copy never carries the send failure: an edit to the draft and the
   /// start of a send both clear it, and a failure is only ever set whole.
   /// The doors' state rides along untouched.
+  ///
+  /// An empty draft is never spoken: emptying the field, or a send, clears
+  /// [draftSpoken] with it.
   FrontChatComposerState copyWith({
     String? draft,
+    bool? draftSpoken,
     bool? isSending,
     Set<String>? busyDoorIds,
     Set<String>? failedDoorIds,
   }) => FrontChatComposerState(
     draft: draft ?? this.draft,
+    draftSpoken:
+        (draft ?? this.draft).isNotEmpty && (draftSpoken ?? this.draftSpoken),
     isSending: isSending ?? this.isSending,
     busyDoorIds: busyDoorIds ?? this.busyDoorIds,
     failedDoorIds: failedDoorIds ?? this.failedDoorIds,
@@ -87,6 +98,11 @@ class FrontChatController extends Notifier<FrontChatComposerState> {
 
   void updateDraft(String value) {
     state = state.copyWith(draft: value);
+  }
+
+  /// What was said landed in the draft: it goes out as a spoken turn.
+  void markDraftSpoken() {
+    state = state.copyWith(draftSpoken: true);
   }
 
   /// Sends the draft.

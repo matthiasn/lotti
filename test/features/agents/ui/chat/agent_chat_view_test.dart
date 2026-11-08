@@ -1472,8 +1472,8 @@ void main() {
       expect(find.byKey(DesignSystemChatInputKeys.send), findsOneWidget);
     });
 
-    testWidgets('a view covered by another route leaves the transcript to '
-        'the one in front', (tester) async {
+    testWidgets('a view covered by another route leaves the transcript '
+        'pending, and takes it once it is in front again', (tester) async {
       var draft = '';
       late TranscriptEmittingController controller;
       await tester.pumpWidget(
@@ -1513,6 +1513,13 @@ void main() {
       await tester.pump();
 
       expect(draft, isEmpty);
+
+      // Back from the page: the words that finished meanwhile land here.
+      Navigator.of(tester.element(find.byType(SizedBox).last)).pop();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(draft, 'I walked this morning.');
+      expect(controller.state.transcript, isNull, reason: 'taken once');
     });
 
     testWidgets('shows partial transcript while processing', (tester) async {

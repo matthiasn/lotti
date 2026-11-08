@@ -355,8 +355,11 @@ class FrontChatThreadView extends ConsumerWidget {
       hasFailedTurn: composer.failedMessage != null,
       onDraftChanged: controller.updateDraft,
       onSend: controller.send,
-      // A spoken question gets a spoken answer.
+      // A spoken question gets a spoken answer, whichever of her views —
+      // chat or stage — it was said in and is sent from.
       onSendSpoken: controller.sendSpoken,
+      draftSpoken: composer.draftSpoken,
+      onDraftSpoken: controller.markDraftSpoken,
       // Her ears are the Settings default's transcription slot, the words
       // as heard: never a discovered on-device engine, never a correction
       // pass that keeps the question waiting.

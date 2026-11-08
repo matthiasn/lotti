@@ -75,11 +75,17 @@ front agent passes `kProseMeasureWidth`, other hosts take the full width.
 `prose` function that renders a stretch of Markdown as the view renders
 replies; a null return keeps the usual collapsible Markdown. The front agent
 uses it to draw her lists of tasks as task rows.
-A view with `composerEnabled` off, or under a route that covers it
-(`ModalRoute.isCurrentOf` false), ignores the shared recorder's results — no
-error toast, no draft: when two views of one conversation are mounted (the
-front agent's stage over its pane), only the one in front acts on a finished
-recording, so what was said lands once.
+A view with `composerEnabled` off ignores the shared recorder's results — no
+error toast, no draft. A view under a route that covers it
+(`ModalRoute.isCurrentOf` false) leaves a finished result pending: when two
+views of one conversation are mounted (the front agent's stage over its
+pane) the one in front takes it, and a view covered by a page opened
+mid-transcription takes it once it is in front again (`didChangeDependencies`,
+after the frame). Taking it clears it, so what was said lands once.
+Whether the draft was spoken lives in the view, unless the host keeps it
+(`draftSpoken`, told by `onDraftSpoken`): the front agent does, in
+`FrontChatComposerState.draftSpoken`, so a draft said on her stage and sent
+from her chat — or the reverse — still goes out as a spoken turn.
 `replyTextStyle` lets the host select its answer typography from design tokens;
 scoped queries use `bodySmall`, while other hosts retain `bodyMedium`.
 Hosts can supply `onLinkTap` to resolve each link against its containing message.

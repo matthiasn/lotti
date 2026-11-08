@@ -41,9 +41,10 @@ class _AgentChatViewState extends ConsumerState<AgentChatView> {
     if (text != widget.draft) widget.onDraftChanged(text);
   }
 
-  /// Sends the draft: as a spoken turn when it came from what was said.
+  /// Sends the draft: as a spoken turn when it came from what was said —
+  /// here, or by the host's record ([AgentChatView.draftSpoken]).
   void _send() {
-    final spoken = _draftSpoken;
+    final spoken = widget.draftSpoken ?? _draftSpoken;
     _draftSpoken = false;
     final sendSpoken = widget.onSendSpoken;
     if (spoken && sendSpoken != null) {
@@ -89,54 +90,75 @@ class _AgentChatViewState extends ConsumerState<AgentChatView> {
     _recorderSubscription = ref.listenManual<ChatRecorderState>(
       chatRecorderControllerProvider,
       (previous, next) {
-        // Without a composer, or under a route that covers it (the
-        // companion's stage over her chat), this view is not where anything
-        // was said: the view in front owns the recording's result, and
-        // acting here too would land the words twice.
-        if (!widget.composerEnabled ||
-            !mounted ||
-            !(ModalRoute.isCurrentOf(context) ?? true)) {
-          return;
-        }
-        final error = next.error?.trim();
-        if (error != null &&
-            error.isNotEmpty &&
-            error != previous?.error &&
-            mounted) {
-          context.showToast(
-            tone: DesignSystemToastTone.error,
-            title: context.messages.commonError,
-            description: chatRecorderErrorMessage(context, next.errorKind),
-            duration: const Duration(seconds: 8),
-            replaceCurrent: true,
-          );
-          Future.microtask(() {
-            if (mounted) {
-              ref.read(chatRecorderControllerProvider.notifier).clearResult();
-            }
-          });
-          return;
-        }
-        if (next.transcript != null &&
-            next.transcript != previous?.transcript) {
-          if (!mounted) return;
-          final transcript = next.transcript!.trim();
-          if (transcript.isNotEmpty) {
-            // What was said lands in the field, after anything already
-            // there, to be read and corrected before Send — nothing goes
-            // out by itself.
-            final before = _controller.text.trimRight();
-            final text = before.isEmpty ? transcript : '$before $transcript';
-            _controller.value = TextEditingValue(
-              text: text,
-              selection: TextSelection.collapsed(offset: text.length),
-            );
-            _draftSpoken = true;
-          }
-          ref.read(chatRecorderControllerProvider.notifier).clearResult();
-        }
+        // Under a route that covers it (the companion's stage over her
+        // chat, a task opened from it) the result is left pending: the view
+        // in front takes it, or this one does once it is in front again
+        // ([didChangeDependencies]) — never both, which would land the
+        // words twice.
+        if (!mounted || !_inFront) return;
+        _takeRecorderResult(previous, next);
       },
     );
+  }
+
+  /// Whether this view is where anything is said: it has a composer, and
+  /// no route covers it.
+  bool get _inFront =>
+      widget.composerEnabled && (ModalRoute.isCurrentOf(context) ?? true);
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Back in front: a recording that finished while a route covered this
+    // view lands now. After the frame — taking it writes the field and the
+    // recorder, which a build must not.
+    if (!_inFront) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _inFront) {
+        _takeRecorderResult(null, ref.read(chatRecorderControllerProvider));
+      }
+    });
+  }
+
+  /// Acts on the shared recorder's finished result: an error as a toast, a
+  /// transcript into the field. Either is then cleared, so it is taken once.
+  void _takeRecorderResult(
+    ChatRecorderState? previous,
+    ChatRecorderState next,
+  ) {
+    final error = next.error?.trim();
+    if (error != null && error.isNotEmpty && error != previous?.error) {
+      context.showToast(
+        tone: DesignSystemToastTone.error,
+        title: context.messages.commonError,
+        description: chatRecorderErrorMessage(context, next.errorKind),
+        duration: const Duration(seconds: 8),
+        replaceCurrent: true,
+      );
+      Future.microtask(() {
+        if (mounted) {
+          ref.read(chatRecorderControllerProvider.notifier).clearResult();
+        }
+      });
+      return;
+    }
+    if (next.transcript != null && next.transcript != previous?.transcript) {
+      final transcript = next.transcript!.trim();
+      if (transcript.isNotEmpty) {
+        // What was said lands in the field, after anything already
+        // there, to be read and corrected before Send — nothing goes
+        // out by itself.
+        final before = _controller.text.trimRight();
+        final text = before.isEmpty ? transcript : '$before $transcript';
+        _controller.value = TextEditingValue(
+          text: text,
+          selection: TextSelection.collapsed(offset: text.length),
+        );
+        _draftSpoken = true;
+        widget.onDraftSpoken?.call();
+      }
+      ref.read(chatRecorderControllerProvider.notifier).clearResult();
+    }
   }
 
   @override
