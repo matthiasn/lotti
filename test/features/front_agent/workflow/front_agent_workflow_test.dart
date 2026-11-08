@@ -20,6 +20,7 @@ import 'package:lotti/features/companion/model/companion_reaction.dart';
 import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
 import 'package:lotti/features/front_agent/model/front_conversation.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
+import 'package:lotti/features/front_agent/model/front_routing_index.dart';
 import 'package:lotti/features/front_agent/service/front_routing_index_builder.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_contract.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_strategy.dart';
@@ -1047,7 +1048,7 @@ void main() {
           data: dishes.data.copyWith(title: 'Report'),
         );
         when(
-          () => journalDb.getTasksClosedSince(any()),
+          () => journalDb.getTasksUpdatedSince(any()),
         ).thenAnswer((_) async => [dishes, report]);
         seedMessage(chips: ['home']);
         String? listed;
@@ -1082,18 +1083,32 @@ void main() {
 
         expect(result.success, isTrue);
         verify(
-          () => journalDb.getTasksClosedSince(DateTime(2026, 11)),
+          () => journalDb.getTasksUpdatedSince(DateTime(2026, 11)),
         ).called(1);
         expect(
           listed,
-          'Tasks completed or rejected yesterday (2026-11-01) (1), oldest '
-          'first:\n'
+          'Tasks completed or rejected yesterday (2026-11-01): 1 '
+          '(1 completed, 0 rejected), oldest first:\n'
           '- task:dishes | Dishes | completed 2026-11-01 | Home',
         );
         final reply = upserts.whereType<AgentMessageEntity>().singleWhere(
           (m) => m.id == frontAgentReplyMessageId(frontAgentId, runKey),
         );
         expect(reply.metadata.toolName, AgentConversationToolNames.replyToUser);
+        // Her reply stores every task found, drawn as cards under her words.
+        final payload = upserts
+            .whereType<AgentMessagePayloadEntity>()
+            .singleWhere(
+              (p) => p.content.containsKey('text') && p.agentId == frontAgentId,
+            );
+        expect(payload.content['closedTasks'], [
+          {
+            'id': 'dishes',
+            'title': 'Dishes',
+            'closedAt': DateTime(2026, 11, 1, 16).toUtc().toIso8601String(),
+            'categoryId': 'home',
+          },
+        ]);
         expect(
           upserts.whereType<AgentMessageEntity>().where(
             (m) => m.id == frontAgentDispatchMessageId(frontAgentId, runKey),
@@ -1555,6 +1570,21 @@ void main() {
         expect(result.success, isFalse);
         expect(result.error, contains('StateError'));
       },
+    );
+  });
+
+  test('the turn names the weekday beside the clock, so "this weekend" is '
+      'read off it rather than worked out', () {
+    expect(
+      renderFrontTurn(
+        index: FrontRoutingIndex(),
+        recent: const [],
+        input: 'what was closed in @Lotti this weekend',
+        now: DateTime(2026, 11, 8, 18),
+      ),
+      contains(
+        '<current_local_time>2026-11-08T18:00:00.000 (Sunday)</current_local_time>',
+      ),
     );
   });
 }

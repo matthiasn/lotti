@@ -1095,7 +1095,7 @@ void main() {
     });
 
     void closedSince(List<Task> tasks) => when(
-      () => journalDb.getTasksClosedSince(any()),
+      () => journalDb.getTasksUpdatedSince(any()),
     ).thenAnswer((_) async => tasks);
 
     Future<FrontClosedTasks> list(
@@ -1104,8 +1104,26 @@ void main() {
       FrontRoutingScope scope = const FrontRoutingScope(),
     }) => builder().closedTaskLister(scope, now: _now)((
       period: period,
-      categoryIds: categoryIds,
-    ));
+      range: null,
+    ), categoryIds);
+
+    // Days the call spelled out, both included.
+    Future<FrontClosedTasks> listDays(
+      DateTime first,
+      DateTime last, {
+      DateTime? now,
+      Set<String> categoryIds = const {},
+    }) =>
+        builder().closedTaskLister(const FrontRoutingScope(), now: now ?? _now)(
+          (
+            period: null,
+            range: InsightsRange(
+              startDay: epochDay(first),
+              endDayExclusive: epochDay(last) + 1,
+            ),
+          ),
+          categoryIds,
+        );
 
     List<(String, String, DateTime)> closings(FrontClosedTasks closed) => [
       for (final (:row, :closed) in closed.tasks)
@@ -1122,7 +1140,7 @@ void main() {
       final closed = await list(FrontTimePeriod.today);
 
       verify(
-        () => journalDb.getTasksClosedSince(DateTime(2026, 10, 23)),
+        () => journalDb.getTasksUpdatedSince(DateTime(2026, 10, 23)),
       ).called(1);
       expect(closings(closed), [('today', 'DONE', oct(23, 8))]);
       expect(closed.from, DateTime(2026, 10, 23));
@@ -1141,7 +1159,7 @@ void main() {
       final closed = await list(FrontTimePeriod.past7Days);
 
       verify(
-        () => journalDb.getTasksClosedSince(DateTime(2026, 10, 17)),
+        () => journalDb.getTasksUpdatedSince(DateTime(2026, 10, 17)),
       ).called(1);
       expect(closings(closed), [
         ('sat', 'DONE', oct(17, 0)),
@@ -1209,9 +1227,10 @@ void main() {
       ]);
     });
 
-    test('a window reports the close it ended on: completed and reopened '
-        'inside it is none, a close after it belongs to its own day', () async {
+    test('any close inside the window counts, even one reopened since, and '
+        'each window reports its own latest close', () async {
       closedSince([
+        // Completed yesterday, reopened, rejected today.
         _historyTask('reopened', [
           ('open', oct(1)),
           ('done', oct(22, 9)),
@@ -1225,15 +1244,206 @@ void main() {
           ('open', oct(23, 7)),
           ('done', oct(23, 8)),
         ]),
+        // Completed yesterday, reopened today and still open.
+        _historyTask('undone', [
+          ('open', oct(1)),
+          ('done', oct(22, 15)),
+          ('open', oct(23, 7)),
+        ]),
       ]);
 
-      expect(closings(await list(FrontTimePeriod.yesterday)), [
+      final yesterday = await list(FrontTimePeriod.yesterday);
+      expect(closings(yesterday), [
+        ('reopened', 'DONE', oct(22, 9)),
         ('both', 'DONE', oct(22, 11)),
+        ('undone', 'DONE', oct(22, 15)),
       ]);
+      // Open now: the card and the tool's line say it was reopened since.
+      expect(
+        {for (final card in yesterday.cards) card.id: card.reopened},
+        {'reopened': false, 'both': false, 'undone': true},
+      );
+      expect(
+        yesterday.render(),
+        contains(
+          'task:undone | Task undone | completed 2026-10-22 | '
+          'reopened since | Work',
+        ),
+      );
       expect(closings(await list(FrontTimePeriod.today)), [
         ('both', 'DONE', oct(23, 8)),
         ('reopened', 'REJECTED', oct(23, 8)),
       ]);
+    });
+
+    test(
+      'a reopened task with no close inside the window is not listed',
+      () async {
+        closedSince([
+          // Completed last month, reopened yesterday and still open.
+          _historyTask('stale', [
+            ('open', oct(1)),
+            ('done', oct(2)),
+            ('open', oct(22)),
+          ]),
+        ]);
+
+        final closed = await list(FrontTimePeriod.past7Days);
+
+        expect(closed.tasks, isEmpty);
+        expect(
+          closed.render(),
+          'None: no task completed or rejected past 7 days '
+          '(2026-10-17 through 2026-10-23).',
+        );
+      },
+    );
+
+    test('the window runs from its first local midnight, included, to the '
+        'midnight after its last day, excluded', () async {
+      closedSince([
+        _historyTask('first', [('open', oct(1)), ('done', oct(22, 0))]),
+        _historyTask('last', [
+          ('open', oct(1)),
+          ('done', DateTime(2026, 10, 22, 23, 59, 59, 999)),
+        ]),
+        _historyTask('before', [
+          ('open', oct(1)),
+          ('done', DateTime(2026, 10, 21, 23, 59, 59, 999)),
+        ]),
+        _historyTask('after', [('open', oct(1)), ('done', oct(23, 0))]),
+        // Stored in UTC, as a synced status may be: compared as an instant.
+        _historyTask('utc', [
+          ('open', oct(1)),
+          ('done', DateTime(2026, 10, 22, 12).toUtc()),
+        ]),
+      ]);
+
+      final closed = await list(FrontTimePeriod.yesterday);
+
+      expect(closed.tasks.map((t) => t.row.id), ['first', 'utc', 'last']);
+    });
+
+    test('this weekend, asked on its Sunday, lists every task completed or '
+        'rejected on the Saturday and the Sunday — none missing', () async {
+      // Sunday 2026-11-08, 18:00: the bug report's question.
+      final sunday = DateTime(2026, 11, 8, 18);
+      DateTime nov(int day, [int hour = 12]) => DateTime(2026, 11, day, hour);
+      closedSince([
+        _historyTask('sat-morning', [('open', oct(1)), ('done', nov(7, 9))]),
+        _historyTask('sat-night', [
+          ('open', oct(1)),
+          ('done', DateTime(2026, 11, 7, 23, 58)),
+        ]),
+        _historyTask('sun-early', [('open', oct(1)), ('done', nov(8, 0))]),
+        _historyTask('sun-dropped', [
+          ('open', oct(1)),
+          ('rejected', nov(8, 10)),
+        ]),
+        // Created in May, completed on Saturday.
+        _historyTask(
+          'old',
+          [('open', DateTime(2026, 5, 2)), ('done', nov(7, 15))],
+          createdAt: DateTime(2026, 5, 2),
+        ),
+        // Completed on Saturday, reopened on Sunday.
+        _historyTask('reopened', [
+          ('open', oct(1)),
+          ('done', nov(7, 16)),
+          ('open', nov(8, 9)),
+        ]),
+        // Completed twice over the weekend: the latest counts.
+        _historyTask('twice', [
+          ('open', oct(1)),
+          ('done', nov(7, 11)),
+          ('open', nov(7)),
+          ('done', nov(8, 14)),
+        ]),
+        // Friday evening: outside.
+        _historyTask('friday', [
+          ('open', oct(1)),
+          ('done', DateTime(2026, 11, 6, 23, 59)),
+        ]),
+        // Many more on Saturday afternoon than the answer names.
+        for (var i = 0; i < frontClosedTaskLimit; i++)
+          _historyTask('bulk-$i', [('open', oct(1)), ('done', nov(7, 13))]),
+      ]);
+
+      final closed = await listDays(nov(7), nov(8), now: sunday);
+
+      verify(
+        () => journalDb.getTasksUpdatedSince(DateTime(2026, 11, 7)),
+      ).called(1);
+      final ids = closed.tasks.map((t) => t.row.id).toList();
+      expect(ids, hasLength(7 + frontClosedTaskLimit));
+      expect(ids, isNot(contains('friday')));
+      expect(ids.take(5), [
+        'sat-morning',
+        'bulk-0',
+        'bulk-1',
+        'bulk-10',
+        'bulk-11',
+      ]);
+      expect(ids.skip(ids.length - 6), [
+        'old',
+        'reopened',
+        'sat-night',
+        'sun-early',
+        'sun-dropped',
+        'twice',
+      ]);
+      expect(closed.cards, hasLength(closed.tasks.length));
+      expect(closed.period, isNull);
+      expect(closed.from, DateTime(2026, 11, 7));
+      expect(closed.through, DateTime(2026, 11, 8));
+      // Her words get the count and the first rows; the cards get all.
+      final render = closed.render();
+      expect(
+        render,
+        startsWith(
+          'Tasks completed or rejected 2026-11-07 through 2026-11-08: 37 '
+          '(36 completed, 1 rejected; 7 more not shown here, all on the '
+          'cards), oldest first:\n',
+        ),
+      );
+      expect(
+        '- task:'.allMatches(render),
+        hasLength(frontClosedTaskLimit),
+      );
+    });
+
+    test('a weekend narrowed to a named category lists every task of it '
+        'closed then, and none of another', () async {
+      DateTime nov(int day, [int hour = 12]) => DateTime(2026, 11, day, hour);
+      closedSince([
+        _historyTask('lotti-1', [('open', oct(1)), ('done', nov(7))]),
+        _historyTask('lotti-2', [('open', oct(1)), ('rejected', nov(8))]),
+        _historyTask(
+          'chores',
+          [('open', oct(1)), ('done', nov(8))],
+          categoryId: 'home',
+        ),
+      ]);
+
+      final closed = await listDays(
+        nov(7),
+        nov(8),
+        now: nov(8, 18),
+        categoryIds: {'work'},
+      );
+
+      expect(closings(closed), [
+        ('lotti-1', 'DONE', nov(7)),
+        ('lotti-2', 'REJECTED', nov(8)),
+      ]);
+      expect(closed.narrowedTo, ['Work']);
+      expect(
+        closed.render(),
+        startsWith(
+          'Tasks completed or rejected 2026-11-07 through 2026-11-08 in '
+          'Work: 2 (1 completed, 1 rejected), oldest first:',
+        ),
+      );
     });
 
     test('completed and rejected come back in one list, each with what '
@@ -1313,7 +1523,8 @@ void main() {
       expect(outside.narrowedTo, isEmpty);
     });
 
-    test('caps the list and counts what it left out', () async {
+    test('keeps every task for the cards and caps only the lines her '
+        'answer reads', () async {
       closedSince([
         for (var i = 0; i < frontClosedTaskLimit + 2; i++)
           _historyTask('t$i', [('open', oct(1)), ('done', oct(22))]),
@@ -1321,8 +1532,13 @@ void main() {
 
       final closed = await list(FrontTimePeriod.yesterday);
 
-      expect(closed.tasks, hasLength(frontClosedTaskLimit));
-      expect(closed.omitted, 2);
+      expect(closed.tasks, hasLength(frontClosedTaskLimit + 2));
+      expect(closed.cards, hasLength(frontClosedTaskLimit + 2));
+      expect(
+        '- task:'.allMatches(closed.render()),
+        hasLength(frontClosedTaskLimit),
+      );
+      expect(closed.render(), contains('2 more not shown here'));
     });
   });
 

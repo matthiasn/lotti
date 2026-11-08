@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:lotti/features/agents/state/agent_chat_projection.dart';
+import 'package:lotti/features/front_agent/model/front_closed_task_card.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
 import 'package:lotti/features/front_agent/model/front_logged_time_chart.dart';
@@ -68,6 +69,7 @@ class FrontChatThread {
     this.specialistAgentIds = const {},
     this.loggedTimeByMessageId = const {},
     this.pullRequestsByMessageId = const {},
+    this.closedTasksByMessageId = const {},
   });
 
   static const empty = FrontChatThread(messages: []);
@@ -95,6 +97,10 @@ class FrontChatThread {
   /// The charts of pull requests a reply draws under her words, by the
   /// reply's id.
   final Map<String, FrontPullRequestChart> pullRequestsByMessageId;
+
+  /// The tasks a reply about what was completed or rejected draws as cards
+  /// under her words, by the reply's id.
+  final Map<String, List<FrontClosedTaskCard>> closedTasksByMessageId;
 
   /// The message that carries a user turn's doors on the surface: her
   /// reply right after it, when there is one — the doors are her answer,

@@ -21,6 +21,7 @@ import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
 import 'package:lotti/features/front_agent/model/front_chat_thread.dart';
+import 'package:lotti/features/front_agent/model/front_closed_task_card.dart';
 import 'package:lotti/features/front_agent/model/front_conversation.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
@@ -1012,6 +1013,81 @@ void main() {
       observer,
       find.byKey(FrontTaskListKeys.row('t-9')),
       't-9',
+      paths,
+    );
+  });
+
+  testWidgets('an answer about what was closed draws every task it found as '
+      'cards under her words, none twice, and a card opens its task on top '
+      'of her', (tester) async {
+    final paths = <String>[];
+    beamToNamedOverride = paths.add;
+    addTearDown(() => beamToNamedOverride = null);
+    final observer = _PushObserver();
+    final cards = [
+      FrontClosedTaskCard(
+        id: 't-9',
+        title: 'Feed the penguins',
+        closedAt: DateTime(2026, 11, 7, 10),
+      ),
+      FrontClosedTaskCard(
+        id: 't-8',
+        title: 'Count the eggs',
+        closedAt: DateTime(2026, 11, 8, 11),
+        rejected: true,
+      ),
+      FrontClosedTaskCard(
+        id: 't-7',
+        title: 'Sweep the ice',
+        closedAt: DateTime(2026, 11, 8, 12),
+      ),
+    ];
+    await pumpPane(
+      tester,
+      pushed: true,
+      navigatorObservers: [observer],
+      thread: () async => FrontChatThread(
+        messages: [
+          message(
+            'u1',
+            AgentChatRole.user,
+            'What was closed this weekend?',
+            now,
+          ),
+          // Her words still list two of them, as the bug report's reply did.
+          message(
+            'a1',
+            AgentChatRole.agent,
+            'Two completed, one rejected:\n\n'
+                '- [Feed the penguins](lotti://task/t-9)\n'
+                '- [Sweep the ice](lotti://task/t-7)\n\n'
+                'Nothing else.',
+            now,
+          ),
+        ],
+        closedTasksByMessageId: {'a1': cards},
+      ),
+    );
+
+    final list = tester.widget<FrontClosedTaskList>(
+      find.byType(FrontClosedTaskList),
+    );
+    expect(list.tasks, cards);
+    // The two her words listed are not drawn again as task rows.
+    expect(find.byType(FrontTaskList), findsNothing);
+    final words = tester.getTopLeft(
+      find.textContaining('Two completed', findRichText: true),
+    );
+    expect(
+      words.dy,
+      lessThan(tester.getRect(find.byKey(FrontTaskListKeys.closedCard)).top),
+    );
+
+    await expectTaskOpensOverPane(
+      tester,
+      observer,
+      find.byKey(FrontTaskListKeys.closedRow('t-8')),
+      't-8',
       paths,
     );
   });

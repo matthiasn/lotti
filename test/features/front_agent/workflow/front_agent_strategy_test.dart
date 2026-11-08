@@ -6,6 +6,7 @@ import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
+import 'package:lotti/features/front_agent/model/front_closed_task_card.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_logged_time_chart.dart';
 import 'package:lotti/features/front_agent/model/front_pull_requests.dart';
@@ -879,8 +880,8 @@ hologram:x: not listed''');
       status: 'REJECTED',
       categoryId: 'home',
     );
-    FrontClosedTasks closed(FrontTimeQuery query) => FrontClosedTasks(
-      period: query.period,
+    FrontClosedTasks closed(FrontPullRequestQuery window) => FrontClosedTasks(
+      period: window.period,
       from: DateTime(2026, 11),
       through: DateTime(2026, 11),
       tasks: [
@@ -909,14 +910,14 @@ hologram:x: not listed''');
       'answers with what was completed and rejected in the period and '
       'category asked; she names them by title and they are linked',
       () async {
-        final asked = <FrontTimeQuery>[];
+        final asked = <(FrontPullRequestQuery, Set<String>)>[];
         final s = strategy(
           routingIndex: FrontRoutingIndex(
             categories: const [FrontCategory(id: 'home', name: 'Home')],
           ),
-          closedLister: (query) async {
-            asked.add(query);
-            return closed(query);
+          closedLister: (window, categoryIds) async {
+            asked.add((window, categoryIds));
+            return closed(window);
           },
         );
         await s.processToolCalls(
@@ -928,15 +929,35 @@ hologram:x: not listed''');
           ],
           manager: manager,
         );
-        expect(asked.single.period, FrontTimePeriod.yesterday);
-        expect(asked.single.categoryIds, {'home'});
+        expect(asked.single.$1, (
+          period: FrontTimePeriod.yesterday,
+          range: null,
+        ));
+        expect(asked.single.$2, {'home'});
         expect(
           responses().single,
-          'Tasks completed or rejected yesterday (2026-11-01) in Home (2), '
-          'oldest first:\n'
+          'Tasks completed or rejected yesterday (2026-11-01) in Home: 2 '
+          '(1 completed, 1 rejected), oldest first:\n'
           '- task:roses | Prune the roses | completed 2026-11-01 | Home\n'
           '- task:shed | Paint the shed | rejected 2026-11-01 | Home',
         );
+        // Every task it found rides her reply as a card, each saying how
+        // it closed.
+        expect(s.closedTaskCards, [
+          FrontClosedTaskCard(
+            id: 'roses',
+            title: 'Prune the roses',
+            closedAt: DateTime(2026, 11, 1, 10),
+            categoryId: 'home',
+          ),
+          FrontClosedTaskCard(
+            id: 'shed',
+            title: 'Paint the shed',
+            closedAt: DateTime(2026, 11, 1, 11),
+            rejected: true,
+            categoryId: 'home',
+          ),
+        ]);
         expect(s.lookupCalls, 1);
         expect(s.hasTerminalOutput, isFalse);
 
@@ -960,13 +981,58 @@ hologram:x: not listed''');
       },
     );
 
+    test('a weekend is read as the days the call spelled out', () async {
+      final asked = <FrontPullRequestQuery>[];
+      final s = strategy(
+        closedLister: (window, _) async {
+          asked.add(window);
+          return closed(window);
+        },
+      );
+      await s.processToolCalls(
+        toolCalls: [
+          _call('list_closed_tasks', {
+            'from': '2026-10-31',
+            'through': '2026-11-01',
+          }),
+        ],
+        manager: manager,
+      );
+      expect(asked.single, (
+        period: null,
+        range: InsightsRange(
+          startDay: epochDay(DateTime(2026, 10, 31)),
+          endDayExclusive: epochDay(DateTime(2026, 11, 2)),
+        ),
+      ));
+    });
+
+    test('a list that found nothing leaves her reply without cards', () async {
+      final s = strategy(
+        closedLister: (window, _) async => FrontClosedTasks(
+          period: window.period,
+          from: DateTime(2026, 11, 2),
+          through: DateTime(2026, 11, 2),
+          tasks: const [],
+        ),
+      );
+      await s.processToolCalls(
+        toolCalls: [
+          _call('list_closed_tasks', {'period': 'today'}),
+        ],
+        manager: manager,
+      );
+      expect(responses().single, startsWith('None: no task completed'));
+      expect(s.closedTaskCards, isNull);
+    });
+
     test('refuses a missing or unknown period, a category it may not name '
         'and a second list, and reports an unwired lister', () async {
-      final asked = <FrontTimePeriod>[];
+      final asked = <FrontTimePeriod?>[];
       final s = strategy(
-        closedLister: (query) async {
-          asked.add(query.period);
-          return closed(query);
+        closedLister: (window, _) async {
+          asked.add(window.period);
+          return closed(window);
         },
       );
       await s.processToolCalls(
@@ -985,10 +1051,11 @@ hologram:x: not listed''');
       expect(asked, [FrontTimePeriod.past7Days]);
       expect(responses(), [
         contains(
-          'list_closed_tasks needs period: one of today, yesterday, '
-          'this_week, past_7_days, past_30_days, this_month, last_month',
+          'list_closed_tasks needs exactly one of: period (one of today, '
+          'yesterday, this_week, past_7_days, past_30_days, this_month, '
+          'last_month), pastDays',
         ),
-        contains('needs period'),
+        contains('needs exactly one of'),
         contains('nope is not a category id listed under ## Categories'),
         startsWith('Tasks completed or rejected past 7 days'),
         frontClosedListExhaustedAnswer,

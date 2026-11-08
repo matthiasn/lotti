@@ -146,8 +146,12 @@ sources:
     last_modified: 2026-11-07
   - id: task-list
     resource: ../../lib/features/front_agent/ui/front_task_list.dart
-    title: FrontTaskList — her lists of tasks and projects as a card of rows
-    last_modified: 2026-11-07
+    title: FrontTaskList and FrontClosedTaskList — her lists of tasks and projects, and the tasks a closed-task answer found, as cards of rows
+    last_modified: 2026-11-08
+  - id: closed-task-card
+    resource: ../../lib/features/front_agent/model/front_closed_task_card.dart
+    title: FrontClosedTaskCard — one closed task her reply stores and draws as a card
+    last_modified: 2026-11-08
   - id: logged-time-chart
     resource: ../../lib/features/front_agent/ui/front_logged_time_chart_card.dart
     title: FrontLoggedTimeChartCard — her answer about logged time as the Insights chart
@@ -354,7 +358,7 @@ Nine tools, never fewer (a single tool makes DeepSeek rewrite
 | `match_to_corpus(phrase)` | no | 1 per turn | `frontCorpusMatchExhaustedAnswer`; unavailable when no FTS index is wired |
 | `list_due_tasks(which, daysAhead 0–7, categoryIds)` | no | 1 per turn | `frontDueListExhaustedAnswer`; unavailable when no lister is wired |
 | `summarize_logged_time(period, categoryIds?)` | no | 1 per turn | `frontTimeSummaryExhaustedAnswer`; unavailable when no summarizer is wired |
-| `list_closed_tasks(period, categoryIds?)` | no | 1 per turn | `frontClosedListExhaustedAnswer`; unavailable when no lister is wired |
+| `list_closed_tasks(period \| pastDays \| from+through, categoryIds?)` | no | 1 per turn | `frontClosedListExhaustedAnswer`; unavailable when no lister is wired |
 | `summarize_pull_requests(period \| pastDays \| from+through)` | no | 1 per turn | `frontPullRequestSummaryExhaustedAnswer`; unavailable when no summarizer is wired |
 | `ask_user(question, options ≤ 3)` | yes | once | refused |
 | `reply_to_user(text)` | yes | once | refused |
@@ -534,13 +538,17 @@ flowchart LR
 ```
 
 **What was completed or rejected** — *what did I complete today?*, *what
-did I finish or reject in the past week?* — is hers as well. Rule 13 sends
-it to `list_closed_tasks` and then `reply_to_user` alone, never a door. Its
-`period` is the same `FrontTimePeriod` as `summarize_logged_time`, resolved
-in code against the local day of the question, and it narrows by a named
-category as `list_due_tasks` does. A task is *closed* when it is DONE or
-REJECTED (`isClosedTask`); Lotti has no separate CLOSED status, so the
-prompt reads "closed" as asking for both.
+was closed in @Lotti this weekend?* — is hers as well. Rule 13 sends it to
+`list_closed_tasks` and then `reply_to_user` alone, never a door. Its window
+is exactly one of a `FrontTimePeriod`, `pastDays` or `from` and `through`
+(both included, at most `frontPullRequestMaxDays`), read by the same
+`frontPullRequestQuery` as `summarize_pull_requests`: a weekend names no
+period, so the prompt has her spell out its Saturday and Sunday, read off
+the weekday the turn's `<current_local_time>` names beside the date
+(`renderFrontTurn`). It narrows by a named category as `list_due_tasks`
+does. A task is *closed* when it is DONE or REJECTED (`isClosedTask`);
+Lotti has no separate CLOSED status, so the prompt reads "closed" as asking
+for both.
 
 When a task closed is read from its **status history**, never from its
 creation date, and not from its current status alone. `TaskData.status`'s
@@ -550,33 +558,41 @@ again since would lose that completion. Every status write appends to
 `statusHistory` (`withStatus`) and a conflict joins both sides' histories in
 time order (`withHistoryOf`), so the history is the authority; the current
 status is joined in by id only for a task from before the history was kept.
-`FrontRoutingIndexBuilder.closedTaskLister` takes the last status set before
-the window ends — the rule Daily OS Shutdown reads a day by:
+`FrontRoutingIndexBuilder.closedTaskLister` counts **any** DONE or REJECTED
+set inside the window — from its first local midnight, included, to the
+midnight after its last day, excluded, compared as instants — and reports
+the latest such:
 
 ```mermaid
 flowchart LR
-  Read["getTasksClosedSince(window start)"] --> Scope["drop hidden private categories + out-of-scope"]
-  Scope --> Last["last status set before window end"]
-  Last -->|"DONE or REJECTED, set inside the window"| Row["listed with that status and its day"]
-  Last -->|"anything else"| Skip["not listed"]
+  Read["getTasksUpdatedSince(window start)"] --> Scope["drop hidden private categories + out-of-scope"]
+  Scope --> Latest["latest DONE or REJECTED set inside the window"]
+  Latest -->|"one exists"| Row["listed with that status and its day; 'reopened since' when open now"]
+  Latest -->|"none"| Skip["not listed"]
 ```
 
 So a task reopened and completed again reports its latest completion in the
-window; one completed and reopened inside the window is open work and is not
-listed; one completed yesterday and again today counts on each day for that
-day's question. The candidates come from `JournalDb.getTasksClosedSince`,
-the read Shutdown uses: tasks DONE or REJECTED now whose row changed since
-the window began (a status change moves `updated_at`, which only moves
-forward), private entries only while shown, through
-`idx_journal_task_status_private`. A task reopened and still open is
-therefore never listed. The read walks every closed task's index entry and
-checks `updated_at` on the row; with 14k closed tasks that measured ~4 ms,
-once per turn, so it has no index of its own. `FrontClosedTasks.render` is
-what the model reads — the window, any category it was narrowed to, then
-each task as `task:<id> | title | completed|rejected YYYY-MM-DD |
-category`, oldest first, at most `frontClosedTaskLimit` — or a plain
-*None*. No chart: the answer is text, and its rows are linked by title like
-any lookup's.
+window; one completed and reopened since is still listed — the user did
+complete it then — marked *reopened since* on its line and its card; one
+completed yesterday and again today counts on each day for that day's
+question. This departs from Daily OS Shutdown, which reads a day by the
+last status set before it ends (`getTasksClosedSince`): a recap of what was
+finished must not lose a completion to a later reopen. The candidates come
+from `JournalDb.getTasksUpdatedSince`: tasks of any status whose row changed
+since the window began (a status change moves `updated_at`, which only
+moves forward), private entries only while shown, through
+`idx_journal_task_status_private`. `FrontClosedTasks` keeps **every** task
+found — nothing is truncated. `render` is what the model reads: the window,
+any category it was narrowed to, how many were completed and how many
+rejected, then each task as `task:<id> | title | completed|rejected
+YYYY-MM-DD | [reopened since |] category`, oldest first, at most
+`frontClosedTaskLimit` lines with the rest counted — or a plain *None*.
+`FrontClosedTasks.cards` is every task as a `FrontClosedTaskCard`, which the
+workflow stores on her `reply_to_user` payload as `closedTasks`; the thread
+builder reads it into `FrontChatThread.closedTasksByMessageId`, and the
+surface draws them as cards under her words (below), so the list never
+hinges on how she phrased it. The prompt therefore has her say only how
+many were completed and rejected, never list or link the tasks herself.
 
 **How many pull requests the user opened, and what they shipped** — *how
 many PRs did I create in the past 14 days?*, *what did I ship in the last
@@ -1162,6 +1178,15 @@ A tap opens either through the pane's link handler — a task on top of her
 task leaves it a link in her words. The parts are cut from her reply as
 written, before `replaceIsoDays` turns its days into the device's format,
 and her words between the lists get the device's dates after the cut.
+
+**Her answer about what was closed is cards under her words.** A reply in
+`closedTasksByMessageId` gets `FrontClosedTaskList` under her words: one
+card, a `FrontClosedTaskRow` per task found — all of them — with the Done
+or Rejected `StatusGlyph` and label it closed with and the day, then its
+category's colour swatch (`ColorIcon`) and name; a task reopened since
+reads `Done → In Progress`, its status now from `taskPreviewProvider`. A
+tap opens the task on top of her. A task her words also listed as task rows
+is drawn once, on the cards.
 
 **Her answer about logged time is a chart under her words.** A reply in
 `loggedTimeByMessageId` gets the same `replyBodyBuilder` body, her words

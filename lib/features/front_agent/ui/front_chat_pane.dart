@@ -12,6 +12,7 @@ import 'package:lotti/features/design_system/components/dividers/design_system_d
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
+import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
 import 'package:lotti/features/front_agent/model/front_reference_links.dart';
 import 'package:lotti/features/front_agent/model/front_reply_parts.dart';
@@ -376,9 +377,10 @@ class FrontChatThreadView extends ConsumerWidget {
       ),
       onLinkTap: (_, url, title) => openLink(url, title),
       // A list of tasks in her words is drawn as task rows, her words
-      // around it as she wrote them, and an answer about logged time or
-      // pull requests gets its chart under her words; any other reply is
-      // drawn as usual.
+      // around it as she wrote them; an answer about what was completed
+      // gets every task it found as cards, and one about logged time or
+      // pull requests its chart, under her words. Any other reply is drawn
+      // as usual.
       replyBodyBuilder: (context, message, prose) {
         // Cut from her words as written, before their dates became the
         // device's: a list line may end in when it was due, in ISO.
@@ -386,11 +388,25 @@ class FrontChatThreadView extends ConsumerWidget {
             .where((m) => m.id == message.id)
             .firstOrNull
             ?.text;
-        final parts = frontReplyParts(written ?? message.text);
+        final closedTasks = thread?.closedTasksByMessageId[message.id];
+        final carded = {...?closedTasks?.map((task) => task.id)};
+        // A task the cards show is not drawn twice from her words.
+        final parts = [
+          for (final part in frontReplyParts(written ?? message.text))
+            switch (part) {
+              FrontReplyTasks(:final tasks) when carded.isNotEmpty =>
+                FrontReplyTasks([
+                  for (final task in tasks)
+                    if (!carded.contains(task.id)) task,
+                ]),
+              _ => part,
+            },
+        ]..removeWhere((part) => part is FrontReplyTasks && part.tasks.isEmpty);
         final chart = thread?.loggedTimeByMessageId[message.id];
         final pullRequests = thread?.pullRequestsByMessageId[message.id];
         if (chart == null &&
             pullRequests == null &&
+            closedTasks == null &&
             !parts.any((part) => part is FrontReplyTasks)) {
           return null;
         }
@@ -410,6 +426,15 @@ class FrontChatThreadView extends ConsumerWidget {
                   ),
                 ),
               },
+            if (closedTasks != null)
+              FrontClosedTaskList(
+                key: ValueKey('front-closed-tasks-${message.id}'),
+                tasks: closedTasks,
+                onOpen: (id) => openLink(
+                  frontReferenceUrl(FrontDestinationKind.task, id),
+                  '',
+                ),
+              ),
             if (chart != null)
               FrontLoggedTimeChartCard(
                 key: ValueKey('front-logged-time-${message.id}'),

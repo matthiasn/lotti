@@ -78,7 +78,8 @@ and a proposal she got wrong goes to the inbox rather than being retyped.
 - `service/` — the index builder over existing reads (and the due-task
   lister behind `list_due_tasks`, the logged-time summarizer behind
   `summarize_logged_time`, whose read her reply's chart of logged time
-  shares, the closed-task lister behind `list_closed_tasks`, and the pull
+  shares, the closed-task lister behind `list_closed_tasks`, whose every
+  task her reply draws as a card, and the pull
   request counter behind `summarize_pull_requests`, which reads only the
   pull requests the device stores and whose read her reply's charts of
   them share), the

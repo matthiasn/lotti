@@ -543,6 +543,8 @@ class FrontAgentWorkflow with AgentErrorLogging {
               'loggedTime': chart.toJson(),
             if (strategy.pullRequestChart case final chart?)
               'pullRequests': chart.toJson(),
+            if (strategy.closedTaskCards case final cards?)
+              'closedTasks': [for (final card in cards) card.toJson()],
           },
         );
       }
@@ -582,8 +584,10 @@ String renderFrontTurn({
   buffer
     ..writeln('</conversation_tasks>')
     ..writeln()
+    // The weekday spelled out: "this weekend" is days she must not count.
     ..writeln(
-      '<current_local_time>${now.toIso8601String()}</current_local_time>',
+      '<current_local_time>${now.toIso8601String()} '
+      '(${_weekdays[now.weekday - 1]})</current_local_time>',
     )
     ..writeln()
     ..writeln(frontPendingUserMessageHeader)
@@ -591,6 +595,16 @@ String renderFrontTurn({
     ..write(frontPendingUserMessageFooter);
   return buffer.toString();
 }
+
+const _weekdays = [
+  'Monday',
+  'Tuesday',
+  'Wednesday',
+  'Thursday',
+  'Friday',
+  'Saturday',
+  'Sunday',
+];
 
 /// Reads a stored dispatch record's payload back.
 FrontDispatch? frontDispatchFromPayload(AgentMessagePayloadEntity payload) {
