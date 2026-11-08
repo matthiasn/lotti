@@ -355,7 +355,10 @@ could never return to the conversation. `pushTaskDetailPage(rootNavigator:
 true)` puts `TaskDetailsPage` on the root navigator above the dialog. That
 page covers the shell, bottom bar and tabs included, so neither of the traps
 above can be reached, and its back pops it to the chat (see the
-[front agent](../features/front_agent.md)).
+[front agent](../features/front_agent.md)). A linked task opened on such a
+page is pushed on top of it, on a desktop window too: `openLinkedTaskDetail`
+only walks the split's detail stack from a task the router placed, since a
+pushed page hides the split it would change.
 
 ## Background tabs must not steal the foreground
 
