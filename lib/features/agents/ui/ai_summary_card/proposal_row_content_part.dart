@@ -74,6 +74,7 @@ class ProposalRowContent extends StatelessWidget {
     required this.onReject,
     required this.onConfirm,
     this.resolving = false,
+    this.closesTask = false,
     this.linkedTitle,
     this.onOpenLinkedTitle,
     super.key,
@@ -89,6 +90,10 @@ class ProposalRowContent extends StatelessWidget {
   /// True while the row is acknowledging a commit: the trailing ✓/✕ buttons
   /// (and busy spinner) are hidden because the resolve badge is the indicator.
   final bool resolving;
+
+  /// True for a proposal to set the task DONE: the one terminal suggestion,
+  /// led by a large check and set bold so it never reads as routine.
+  final bool closesTask;
 
   final Future<void> Function() onReject;
   final Future<void> Function() onConfirm;
@@ -130,7 +135,8 @@ class ProposalRowContent extends StatelessWidget {
     // confirm, left = dismiss) — the buttons are an additional, visible
     // affordance so the action isn't swipe-only-and-hidden.
     final bodyStyle = tokens.typography.styles.body.bodySmall.copyWith(
-      color: ai.bodyText,
+      color: closesTask ? ai.accent : ai.bodyText,
+      fontWeight: closesTask ? tokens.typography.weight.bold : null,
       decoration: lineThrough ? TextDecoration.lineThrough : null,
     );
     final textWidget = _SummaryText(
@@ -151,6 +157,14 @@ class ProposalRowContent extends StatelessWidget {
 
     return Row(
       children: [
+        if (closesTask) ...[
+          Icon(
+            LottiIcons.confirmCircled,
+            size: IconSizes.l,
+            color: ai.accent,
+          ),
+          SizedBox(width: tokens.spacing.step2),
+        ],
         Expanded(child: textWidget),
         SizedBox(width: tokens.spacing.step2),
         _trailing(context),

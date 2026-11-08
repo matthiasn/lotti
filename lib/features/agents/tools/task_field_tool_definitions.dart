@@ -150,16 +150,25 @@ const taskFieldTools = <AgentToolDefinition>[
         'Only call when you want to CHANGE the status to a DIFFERENT value. '
         'Do NOT call if the task is already at the target status — check the '
         'current status in the task context first. '
-        'Valid statuses: OPEN, IN PROGRESS, GROOMED, BLOCKED, ON HOLD. '
+        'Valid statuses: OPEN, IN PROGRESS, GROOMED, BLOCKED, ON HOLD, DONE. '
         'BLOCKED and ON HOLD require a reason. '
-        'DONE and REJECTED are user-only and cannot be set by the agent. '
+        'Propose DONE when the user says the task is done, finished or closed '
+        '— their statement is the decision; they confirm the proposal. '
+        'REJECTED is user-only and cannot be set by the agent. '
         'Only change status when there is clear evidence in the task context.',
     parameters: {
       'type': 'object',
       'properties': {
         'status': {
           'type': 'string',
-          'enum': ['OPEN', 'IN PROGRESS', 'GROOMED', 'BLOCKED', 'ON HOLD'],
+          'enum': [
+            'OPEN',
+            'IN PROGRESS',
+            'GROOMED',
+            'BLOCKED',
+            'ON HOLD',
+            'DONE',
+          ],
           'description': 'The target task status.',
         },
         'reason': {

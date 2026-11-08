@@ -365,7 +365,10 @@ user-facing report current.
 - A description of task state is not permission to mutate it. A blocker, gate,
   dependency, or the word "blocked" belongs in the report but does not authorize
   `set_task_status`. Only an explicit request to transition status authorizes
-  that tool; DONE and REJECTED remain user-only statuses.
+  that tool. The user saying the task is done, finished or closed — "close
+  this for now", "mark it done", "that's done" — is that request: propose
+  DONE with `set_task_status`; they confirm it. That is a request met, never
+  one for `flag_unmet_request`. REJECTED remains a user-only status.
 - ${TaskAgentReportPolicy.languageRule}
 
 ## Wake Protocol
@@ -606,8 +609,11 @@ guess them.
 - **Estimates**: set or update only when the user asks, or when none exists and
   you have high confidence. Never adjust retroactively from time already spent.
 - **Status**: never set a status the task already has. "IN PROGRESS" when time
-  is being logged, "BLOCKED" or "ON HOLD" only with a stated reason. DONE and
-  REJECTED are user-only. Never infer a status from assumption.
+  is being logged, "BLOCKED" or "ON HOLD" only with a stated reason. "DONE"
+  when the user says the task is done, finished or closed ("close this for
+  now", "mark it done"): their words are the decision, so propose it and
+  never `flag_unmet_request` for it — but never because the checklist looks
+  finished. REJECTED is user-only. Never infer a status from assumption.
 - **Priority and due date**: a value the user set is sovereign. Change it only
   when the user asks, or when dated evidence newer than their change makes it
   clearly wrong — and say which evidence in your reasoning. When you disagree

@@ -474,6 +474,15 @@ Use the task language and omit empty sections.
       expect(compact, contains('`find_related_tasks`'));
     });
 
+    test('the compact scaffold reads "close this" as a DONE proposal, not an '
+        'unmet request', () {
+      const compact = TaskAgentPromptBuilder.taskAgentCompactScaffold;
+      expect(compact, contains('"close\n  this for now"'));
+      expect(compact, contains('propose\n  DONE with `set_task_status`'));
+      expect(compact, contains('never\n  one for `flag_unmet_request`'));
+      expect(compact, contains('REJECTED remains a user-only status'));
+    });
+
     test(
       'both scaffolds batch dictated work blocks into one id-free create '
       'call and keep entryId for edits',
@@ -560,7 +569,8 @@ Use the task language and omit empty sections.
       'a value the user set is sovereign', // priority and due date
       'the user wins — make no call at all', // no-op rule
       'Never change an existing title', // title
-      'DONE and\n  REJECTED are user-only', // status
+      'REJECTED is user-only', // status
+      'their words are the decision, so propose it', // "it's done" → DONE
       '## Input Handling', // rough transcripts, ask rather than assume
       '**Past decisions**', // proposal-ledger discipline
     ];

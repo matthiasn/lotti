@@ -879,6 +879,12 @@ Two run immediately but route through `AgentToolExecutor` → `TaskToolDispatche
 `link_task`, `set_task_project`, `create_task_project`, `link_pull_request`,
 `migrate_checklist_items`, `create_time_entry`, `update_time_entry`.
 
+`set_task_status` may propose DONE — the user saying the task is done or closed
+is their decision, so the agent proposes it instead of flagging an unmet
+request — and the proposal row leads with a large check in bold accent text,
+since closing is the one terminal suggestion. It still applies only on the
+user's confirm. REJECTED stays user-only (`TaskStatusHandler.userOnlyStatuses`).
+
 The one-call-per-wake rule stops a small model burning its turns on one tool.
 `AgentToolRegistry.repeatableDeferredTools` is its carve-out, and the strategy
 and its "consider using" hint both read that one set: the batch tools,

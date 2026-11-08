@@ -75,6 +75,85 @@ void main() {
     );
   });
 
+  group('AiSummaryCard – DONE proposal', () {
+    Text summaryOf(WidgetTester tester) => tester.widget<Text>(
+      find.descendant(
+        of: find.byType(ProposalRowContent),
+        matching: find.byWidgetPredicate(
+          (w) => w is Text && w.textSpan != null,
+        ),
+      ),
+    );
+
+    Future<MockChangeSetConfirmationService> pumpStatusRow(
+      WidgetTester tester,
+      String status,
+    ) async {
+      final service = MockChangeSetConfirmationService();
+      when(() => service.confirmItem(any(), any())).thenAnswer(
+        (_) async => const ToolExecutionResult(success: true, output: 'ok'),
+      );
+      final bench = AgentTestBench(
+        confirmationService: service,
+        updateNotifications: MockUpdateNotifications(),
+        suggestions: UnifiedSuggestionList(
+          open: [
+            makePending(
+              id: 'p1',
+              toolName: 'set_task_status',
+              args: {'status': status},
+              humanSummary: 'Set status to $status',
+            ),
+          ],
+          activity: const [],
+        ),
+      );
+      await tester.pumpWidget(bench.build());
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      return service;
+    }
+
+    testWidgets('leads with a large check and reads bold in the accent', (
+      tester,
+    ) async {
+      await pumpStatusRow(tester, 'DONE');
+
+      final context = tester.element(find.byType(ProposalRowContent));
+      final tokens = context.designTokens;
+      final check = tester.widget<Icon>(find.byIcon(LottiIcons.confirmCircled));
+      expect(check.size, IconSizes.l);
+      expect(check.color, tokens.colors.aiCard.accent);
+      final style = summaryOf(tester).style!;
+      expect(style.fontWeight, tokens.typography.weight.bold);
+      expect(style.color, tokens.colors.aiCard.accent);
+    });
+
+    testWidgets('any other status stays a routine row', (tester) async {
+      await pumpStatusRow(tester, 'GROOMED');
+
+      expect(find.byIcon(LottiIcons.confirmCircled), findsNothing);
+      final context = tester.element(find.byType(ProposalRowContent));
+      final style = summaryOf(tester).style!;
+      expect(
+        style.fontWeight,
+        isNot(context.designTokens.typography.weight.bold),
+      );
+    });
+
+    testWidgets('changes nothing until the user confirms it', (tester) async {
+      final service = await pumpStatusRow(tester, 'DONE');
+
+      verifyNever(() => service.confirmItem(any(), any()));
+
+      await tester.tap(find.byIcon(LottiIcons.confirm));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      verify(() => service.confirmItem(any(), 0)).called(1);
+    });
+  });
+
   group('AiSummaryCard – backfill rows', () {
     Future<void> pumpRow(
       WidgetTester tester, {

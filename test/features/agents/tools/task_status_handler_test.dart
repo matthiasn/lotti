@@ -26,7 +26,7 @@ enum _GeneratedReasonShape {
   plain,
 }
 
-enum _GeneratedInvalidStatusKind { terminal, unknown }
+enum _GeneratedInvalidStatusKind { userOnly, unknown }
 
 class _GeneratedAllowedStatusScenario {
   const _GeneratedAllowedStatusScenario({
@@ -94,7 +94,7 @@ class _GeneratedInvalidStatusScenario {
 
   String get normalizedStatus {
     return switch (kind) {
-      _GeneratedInvalidStatusKind.terminal => seed.isEven ? 'DONE' : 'REJECTED',
+      _GeneratedInvalidStatusKind.userOnly => 'REJECTED',
       _GeneratedInvalidStatusKind.unknown => 'UNKNOWN STATUS $seed',
     };
   }
@@ -108,7 +108,7 @@ class _GeneratedInvalidStatusScenario {
     };
   }
 
-  bool get isTerminal => kind == _GeneratedInvalidStatusKind.terminal;
+  bool get isUserOnly => kind == _GeneratedInvalidStatusKind.userOnly;
 
   @override
   String toString() {
@@ -195,6 +195,11 @@ void main() {
   TaskStatus statusFor(String status) {
     final now = DateTime(2024, 3, 15);
     return switch (status) {
+      'DONE' => TaskStatus.done(
+        id: 'status-done',
+        createdAt: now,
+        utcOffset: 60,
+      ),
       'IN PROGRESS' => TaskStatus.inProgress(
         id: 'status-in-progress',
         createdAt: now,
@@ -373,21 +378,30 @@ void main() {
         expect(handler.task.data.status.toDbString, 'IN PROGRESS');
       });
 
-      test('rejects DONE status (user-only)', () async {
+      test('sets DONE once the user confirmed the proposal', () async {
+        stubTaskRow(mockJournalRepo, task);
+
         final handler = TaskStatusHandler(
           domainLogger: MockDomainLogger(),
           task: task,
           journalRepository: mockJournalRepo,
         );
 
-        final result = await handler.handle('DONE');
+        final result = await withClock(
+          Clock.fixed(DateTime(2024, 3, 16, 9)),
+          () => handler.handle('done'),
+        );
 
-        expect(result.success, isFalse);
-        expect(result.didWrite, isFalse);
-        expect(result.error, contains('user-only'));
-        expect(result.error, contains('DONE'));
-
-        verifyNever(() => mockJournalRepo.updateTask(any(), any()));
+        expect(result.success, isTrue);
+        expect(result.didWrite, isTrue);
+        expect(result.message, contains('from "OPEN" to "DONE"'));
+        final status = handler.task.data.status;
+        expect(status, isA<TaskDone>());
+        expect(status.createdAt, DateTime(2024, 3, 16, 9));
+        expect(
+          handler.task.data.statusHistory.map((s) => s.toDbString),
+          ['OPEN', 'DONE'],
+        );
       });
 
       test('rejects REJECTED status (user-only)', () async {
@@ -728,7 +742,7 @@ void main() {
         glados.any.invalidStatusScenario,
         glados.ExploreConfig(numRuns: 120),
       ).test(
-        'rejects generated terminal and unknown statuses without writes',
+        'rejects generated user-only and unknown statuses without writes',
         (scenario) async {
           final repo = MockJournalRepository();
           final handler = TaskStatusHandler(
@@ -744,7 +758,7 @@ void main() {
           expect(handler.task, task, reason: '$scenario');
           expect(
             result.error,
-            scenario.isTerminal ? contains('user-only') : contains('Unknown'),
+            scenario.isUserOnly ? contains('user-only') : contains('Unknown'),
             reason: '$scenario',
           );
           verifyNever(() => repo.updateTask(any(), any()));
@@ -813,26 +827,17 @@ void main() {
       });
     });
 
-    group('allowedStatuses and terminalStatuses', () {
-      test('allowedStatuses contains expected values', () {
-        expect(
-          TaskStatusHandler.allowedStatuses,
-          containsAll(['OPEN', 'IN PROGRESS', 'GROOMED', 'BLOCKED', 'ON HOLD']),
-        );
-      });
-
-      test('terminalStatuses contains DONE and REJECTED', () {
-        expect(
-          TaskStatusHandler.terminalStatuses,
-          containsAll(['DONE', 'REJECTED']),
-        );
-      });
-
-      test('no overlap between allowed and terminal', () {
-        final intersection = TaskStatusHandler.allowedStatuses.intersection(
-          TaskStatusHandler.terminalStatuses,
-        );
-        expect(intersection, isEmpty);
+    group('allowedStatuses and userOnlyStatuses', () {
+      test('the agent may propose DONE but never REJECTED', () {
+        expect(TaskStatusHandler.allowedStatuses, {
+          'OPEN',
+          'IN PROGRESS',
+          'GROOMED',
+          'BLOCKED',
+          'ON HOLD',
+          'DONE',
+        });
+        expect(TaskStatusHandler.userOnlyStatuses, {'REJECTED'});
       });
     });
   });

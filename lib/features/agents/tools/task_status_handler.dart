@@ -24,8 +24,9 @@ class TaskStatusResult {
 
 /// Handler for transitioning the status of a task.
 ///
-/// Validates the requested status string, enforces agent-accessible statuses
-/// (DONE and REJECTED are user-only), requires a reason for BLOCKED and
+/// Runs only once the user confirmed the proposal (`set_task_status` is a
+/// deferred tool). Validates the requested status string, keeps REJECTED
+/// user-only, requires a reason for BLOCKED and
 /// ON HOLD, detects no-op transitions, and persists the update via
 /// [JournalRepository].
 ///
@@ -53,10 +54,11 @@ class TaskStatusHandler {
     'GROOMED',
     'BLOCKED',
     'ON HOLD',
+    'DONE',
   };
 
   /// Status strings reserved for user-only transitions.
-  static const terminalStatuses = {'DONE', 'REJECTED'};
+  static const userOnlyStatuses = {'REJECTED'};
 
   /// Transitions the task to [statusString].
   ///
@@ -73,14 +75,12 @@ class TaskStatusHandler {
       subDomain: 'TaskStatusHandler',
     );
 
-    // Reject terminal statuses.
-    if (terminalStatuses.contains(normalized)) {
+    if (userOnlyStatuses.contains(normalized)) {
       final message =
-          'Cannot set status to "$normalized": '
-          'DONE and REJECTED are user-only statuses.';
+          'Cannot set status to "$normalized": REJECTED is a user-only status.';
       _domainLogger.log(
         LogDomain.agentWorkflow,
-        'Rejected terminal status',
+        'Rejected user-only status',
         subDomain: 'TaskStatusHandler',
         level: InsightLevel.warn,
       );
@@ -232,6 +232,11 @@ class TaskStatusHandler {
     final utcOffset = now.timeZoneOffset.inMinutes;
 
     return switch (status) {
+      'DONE' => TaskStatus.done(
+        id: id,
+        createdAt: now,
+        utcOffset: utcOffset,
+      ),
       'IN PROGRESS' => TaskStatus.inProgress(
         id: id,
         createdAt: now,

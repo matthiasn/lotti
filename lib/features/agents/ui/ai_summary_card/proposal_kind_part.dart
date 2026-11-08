@@ -84,6 +84,11 @@ ProposalKind resolveKind(String toolName, Map<String, dynamic> args) {
   }
 }
 
+/// Whether [toolName] with [args] proposes closing the task as DONE.
+bool isDoneProposal(String toolName, Map<String, dynamic> args) =>
+    toolName == TaskAgentToolNames.setTaskStatus &&
+    args['status'].toString().trim().toUpperCase() == 'DONE';
+
 /// Resolves the localized taxonomy label for [kind].
 KindMeta kindMeta(BuildContext context, ProposalKind kind) {
   final messages = context.messages;
