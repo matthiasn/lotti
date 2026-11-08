@@ -28,12 +28,16 @@ import 'package:lotti/features/front_agent/ui/front_door_card.dart';
 import 'package:lotti/features/front_agent/ui/front_door_wizards.dart';
 import 'package:lotti/features/front_agent/ui/front_task_list.dart';
 import 'package:lotti/features/front_agent/ui/front_turn_cost_line.dart';
+import 'package:lotti/features/tasks/util/task_navigation.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/device_datetime.dart';
 import 'package:lotti/utils/goal_routes.dart';
 import 'package:lotti/widgets/markdown_link_utils.dart';
 import 'package:material_ui/material_ui.dart';
+
+/// A task's page, as [internalRouteFromMarkdownUrl] gives it: `/tasks/<id>`.
+final RegExp _taskRoute = RegExp(r'^/tasks/([^/?]+)$');
 
 /// The companion's chat: one of the user's conversations with her, under
 /// her header, in the shared [AgentChatView] — or, while the header's list
@@ -153,6 +157,7 @@ class FrontChatThreadView extends ConsumerWidget {
   /// Closes her surface. Everything that leaves her for a page goes through
   /// this, never `maybePop`: while the list or the inbox is open, back is
   /// theirs ([PopScope] clears them), and the page would open behind her.
+  /// A task is the exception: it opens on top of her, and back returns here.
   final VoidCallback onClose;
 
   @override
@@ -162,24 +167,23 @@ class FrontChatThreadView extends ConsumerWidget {
     // Read through `.value`: a reload keeps the shown thread on screen
     // (stay while reload); only a first load with nothing yet shows a shell.
     final thread = threadAsync.value;
+    // She copies dates as her tools give them (ISO); on screen each is in
+    // the device's own format, as a due date is everywhere else.
+    String deviceDays(String text) =>
+        replaceIsoDays(text, (day) => deviceDateLabel(context, day));
     final history = switch (thread) {
       null when threadAsync.hasError => AsyncError<List<AgentChatMessage>>(
         threadAsync.error!,
         threadAsync.stackTrace ?? StackTrace.empty,
       ),
       null => const AsyncLoading<List<AgentChatMessage>>(),
-      // She copies dates as her tools give them (ISO); on screen each is in
-      // the device's own format, as a due date is everywhere else.
       final t => AsyncData([
         for (final m in t.messages)
           if (m.role == AgentChatRole.agent)
             AgentChatMessage(
               id: m.id,
               role: m.role,
-              text: replaceIsoDays(
-                m.text,
-                (day) => deviceDateLabel(context, day),
-              ),
+              text: deviceDays(m.text),
               createdAt: m.createdAt,
               runKey: m.runKey,
             )
@@ -207,13 +211,18 @@ class FrontChatThreadView extends ConsumerWidget {
             ],
           )
         : history;
-    // A link in her words or in an answer: a page in the app — a task she
-    // names — closes her and goes there; anything else is opened the way
-    // every agent's links are.
+    // A link in her words or in an answer: a task she names opens on top of
+    // her, so back comes back to this conversation; another page in the app
+    // closes her and goes there; anything else is opened the way every
+    // agent's links are.
     void openLink(String url, String title) {
       final route = internalRouteFromMarkdownUrl(url);
       if (route == null) {
         handleMarkdownLinkTap(url, title).ignore();
+        return;
+      }
+      if (_taskRoute.firstMatch(route)?.group(1) case final taskId?) {
+        pushTaskDetailPage(context, taskId, rootNavigator: true);
         return;
       }
       onClose();
@@ -270,12 +279,11 @@ class FrontChatThreadView extends ConsumerWidget {
       // A source a journal answer cites opens on its own page.
       onOpenEvidence: (evidence) {
         final id = evidence.source.id;
-        onClose();
-        beamToNamed(switch (evidence.kind) {
+        openLink(switch (evidence.kind) {
           QuerySourceKind.task => '/tasks/$id',
           QuerySourceKind.project => '/projects/$id',
           _ => '/journal/$id',
-        });
+        }, '');
       },
     );
 
@@ -357,7 +365,13 @@ class FrontChatThreadView extends ConsumerWidget {
       // A list of tasks in her words is drawn as task rows, her words
       // around it as she wrote them; a reply without one is drawn as usual.
       replyBodyBuilder: (context, message, prose) {
-        final parts = frontReplyParts(message.text);
+        // Cut from her words as written, before their dates became the
+        // device's: a list line may end in when it was due, in ISO.
+        final written = thread?.messages
+            .where((m) => m.id == message.id)
+            .firstOrNull
+            ?.text;
+        final parts = frontReplyParts(written ?? message.text);
         if (!parts.any((part) => part is FrontReplyTasks)) return null;
         final tokens = context.designTokens;
         return Column(
@@ -366,7 +380,7 @@ class FrontChatThreadView extends ConsumerWidget {
           children: [
             for (final part in parts)
               switch (part) {
-                FrontReplyText(:final markdown) => prose(markdown),
+                FrontReplyText(:final markdown) => prose(deviceDays(markdown)),
                 FrontReplyTasks(:final tasks) => FrontTaskList(
                   tasks: tasks,
                   onOpen: (id) => openLink('lotti://task/$id', ''),

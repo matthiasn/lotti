@@ -68,6 +68,37 @@ Start with the cameras.''';
     expect(frontReplyParts(reply), const [FrontReplyText(reply)]);
   });
 
+  test('an overdue list is a list too: an emphasised link, and when it was '
+      'due after it — the row shows that itself', () {
+    const reply = '''
+Overdue:
+- **[Count the hatchlings](lotti://task/t1)**, due 2026-10-30
+- *[Check the nest cameras](lotti://task/t2)* (due 2026-10-28)
+- [Feed the chicks](lotti://task/t3) — fällig 2026-10-27
+- [Clean the burrow](lotti://task/t4) (overdue)''';
+    expect(frontReplyParts(reply), const [
+      FrontReplyText('Overdue:'),
+      FrontReplyTasks([
+        hatchlings,
+        cameras,
+        FrontTaskMention(id: 't3', title: 'Feed the chicks'),
+        FrontTaskMention(id: 't4', title: 'Clean the burrow'),
+      ]),
+    ]);
+  });
+
+  test('emphasis that does not close, or words beside a date, keep the line '
+      'hers', () {
+    const unbalanced = '''
+- **[Count the hatchlings](lotti://task/t1)
+- [Check the nest cameras](lotti://task/t2)''';
+    expect(frontReplyParts(unbalanced), const [FrontReplyText(unbalanced)]);
+    const said = '''
+- [Count the hatchlings](lotti://task/t1), due 2026-10-30, ask the keeper
+- [Check the nest cameras](lotti://task/t2)''';
+    expect(frontReplyParts(said), const [FrontReplyText(said)]);
+  });
+
   test('a project link is not a task', () {
     const reply = '''
 - [Census](lotti://project/p1)

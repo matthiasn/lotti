@@ -42,8 +42,9 @@ Future<void> openFrontStage(BuildContext context, String conversationId) =>
 
 /// The conversation beside her on her stage: its thread, read only, on the
 /// conversation's own ground. Whatever leaves her for a
-/// page — a task she names, a source — closes the stage and her surface
-/// both, so the page opens on top rather than behind them.
+/// page — a source, a project — closes the stage and her surface
+/// both, so the page opens on top rather than behind them; a task she names
+/// opens on top of the stage, and back returns to it.
 class FrontStageTranscript extends StatelessWidget {
   const FrontStageTranscript({super.key});
 

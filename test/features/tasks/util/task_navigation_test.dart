@@ -182,4 +182,103 @@ void main() {
       verify(() => mockNavService.pushDesktopTaskDetail('task-9')).called(1);
     });
   });
+
+  group('pushTaskDetailPage', () {
+    testWidgets('rootNavigator pushes above a nested navigator — as above a '
+        'dialog — and records the visit by id', (tester) async {
+      final recorder = MockHistoryRecorder();
+      when(() => recorder.recordVisit(any())).thenAnswer((_) async {});
+      final root = _PushTrackingObserver();
+      final nested = _PushTrackingObserver();
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          Navigator(
+            observers: [nested],
+            onGenerateRoute: (_) => MaterialPageRoute<void>(
+              builder: (context) => TextButton(
+                onPressed: () => pushTaskDetailPage(
+                  context,
+                  'task-9',
+                  rootNavigator: true,
+                ),
+                child: const Text('open'),
+              ),
+            ),
+          ),
+          navigatorObservers: [root],
+          overrides: [historyRecorderProvider.overrideWithValue(recorder)],
+        ),
+      );
+      root.pushedRoutes.clear();
+      nested.pushedRoutes.clear();
+
+      await tester.tap(find.text('open'));
+
+      expect(nested.pushedRoutes, isEmpty);
+      final route = root.pushedRoutes
+          .whereType<MaterialPageRoute<void>>()
+          .single;
+      expect(
+        route.builder(tester.element(find.text('open'))),
+        isA<TaskDetailsPage>().having((p) => p.taskId, 'taskId', 'task-9'),
+      );
+      verify(
+        () => recorder.recordVisit(
+          const HistoryTarget(
+            kind: HistoryEntityKind.task,
+            entityId: 'task-9',
+            route: '/tasks/task-9',
+          ),
+        ),
+      ).called(1);
+      // Popped before it builds: TaskDetailsPage needs the whole app.
+      route.navigator!.pop();
+      await tester.pump();
+    });
+  });
+
+  group('openLinkedTaskDetail from a pushed task page', () {
+    testWidgets('a desktop width layers the linked task on the pushed page, '
+        'never on the split pane hidden beneath it', (tester) async {
+      final observer = _PushTrackingObserver();
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          Builder(
+            builder: (context) => TextButton(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (context) => TextButton(
+                    onPressed: () => openLinkedTaskDetail(
+                      context: context,
+                      taskId: 'task-9',
+                    ),
+                    child: const Text('linked'),
+                  ),
+                ),
+              ),
+              child: const Text('origin'),
+            ),
+          ),
+          navigatorObservers: [observer],
+          mediaQueryData: const MediaQueryData(size: Size(1280, 800)),
+        ),
+      );
+      await tester.tap(find.text('origin'));
+      await tester.pumpAndSettle();
+      observer.pushedRoutes.clear();
+
+      await tester.tap(find.text('linked'));
+
+      verifyNever(() => mockNavService.pushDesktopTaskDetail(any()));
+      final route = observer.pushedRoutes
+          .whereType<MaterialPageRoute<void>>()
+          .single;
+      expect(
+        route.builder(tester.element(find.text('linked'))),
+        isA<TaskDetailsPage>().having((p) => p.taskId, 'taskId', 'task-9'),
+      );
+      route.navigator!.pop();
+      await tester.pump();
+    });
+  });
 }

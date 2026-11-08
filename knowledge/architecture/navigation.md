@@ -324,8 +324,11 @@ fallback compares `routeForTab` with the tab root — both see a tab standing at
 its root and do nothing. `tapIndex` on the already-active tab re-beams that
 root, a no-op for a delegate already there. The mobile bottom bar shows or
 hides on `TasksLocation`'s path parameters, which never changed. So a pageless
-page has a dead back chevron, survives a tap on its own tab, and keeps the
-bottom bar docked underneath it.
+page survives a tap on its own tab and keeps the bottom bar docked underneath
+it. Its back chevron is live only because the back controls ask first:
+`BackWidget` and `TaskDetailDesktopLeading` pop a page `isPushedPage` reports
+— a `PageRoute` that is not a Beamer `Page` and not its navigator's first
+route — and beam back otherwise.
 
 The notification bell was the case that proved it. Its task rows went through
 `openLinkedTaskDetail`, whose mobile branch is exactly that push, and a task
@@ -345,6 +348,17 @@ then beams, so a linked task pushed above an earlier visit does not survive
 the unchanged-base guard. `openLinkedTaskDetail` remains what its name says: a linked task layered
 on top of an *open* task detail, where the base task's own history still gives
 `beamBack` something to pop.
+
+The companion's chat is the one global entry point that pushes instead. It is
+a dialog on the root navigator, and a beam would have to close it, so back
+could never return to the conversation. `pushTaskDetailPage(rootNavigator:
+true)` puts `TaskDetailsPage` on the root navigator above the dialog. That
+page covers the shell, bottom bar and tabs included, so neither of the traps
+above can be reached, and its back pops it to the chat (see the
+[front agent](../features/front_agent.md)). A linked task opened on such a
+page is pushed on top of it, on a desktop window too: `openLinkedTaskDetail`
+only walks the split's detail stack from a task the router placed, since a
+pushed page hides the split it would change.
 
 ## Background tabs must not steal the foreground
 

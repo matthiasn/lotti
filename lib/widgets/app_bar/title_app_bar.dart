@@ -67,6 +67,15 @@ class TitleWidgetAppBar extends StatelessWidget implements PreferredSizeWidget {
   }
 }
 
+/// Whether the page around [context] was pushed with [Navigator.push] rather
+/// than placed by Beamer — so its back is a pop, back to whatever pushed it,
+/// not a beam back through the tab's history. A navigator's first route has
+/// nothing under it to pop back to, so it never counts.
+bool isPushedPage(BuildContext context) {
+  final route = ModalRoute.of(context);
+  return route is PageRoute && route.settings is! Page && !route.isFirst;
+}
+
 class BackWidget extends ConsumerWidget {
   const BackWidget({
     super.key,
@@ -74,8 +83,9 @@ class BackWidget extends ConsumerWidget {
     this.enabled = true,
   });
 
-  /// Optional override for the back action. Defaults to
-  /// `NavService.beamBack()`.
+  /// Optional override for the back action. Defaults to a pop for a pushed
+  /// page ([isPushedPage]) and to `NavService.beamBack()` for one Beamer
+  /// placed.
   final VoidCallback? onPressed;
 
   /// Whether the arrow responds. A page holds it off while a write it must
@@ -85,7 +95,10 @@ class BackWidget extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final action = enabled
-        ? onPressed ?? () => ref.read(navServiceProvider).beamBack()
+        ? onPressed ??
+              (isPushedPage(context)
+                  ? () => Navigator.of(context).pop()
+                  : () => ref.read(navServiceProvider).beamBack())
         : null;
     final tooltip = MaterialLocalizations.of(context).backButtonTooltip;
 
