@@ -48,6 +48,14 @@ sources:
     resource: ../../../lib/widgets/nav_bar/design_system_bottom_navigation_bar.dart
     title: Bottom navigation shell
     last_modified: 2026-09-15
+  - id: chat-input
+    resource: ../../../lib/features/design_system/components/chat_input/design_system_chat_input.dart
+    title: DesignSystemChatInput — the one input for typing and talking
+    last_modified: 2026-11-08
+  - id: voice-waveform
+    resource: ../../../lib/features/design_system/components/chat_input/design_system_voice_waveform.dart
+    title: DesignSystemVoiceWaveform — a take's voice across any width
+    last_modified: 2026-11-08
   - id: measurement-capture
     resource: ../../../lib/features/dashboards/ui/create_measurement/create_measurement_dialog.dart
     title: Measurement capture sheet — the hero value field and the box that focuses it
@@ -1061,6 +1069,53 @@ scroll view, mounted on a visible tab counts as on screen.
 Its users: the Goals list's goal cards (the companion's per-frame idle
 animation) and the nudge banners. The pattern is pinned in
 `on_screen_ticker_mode_test.dart`.
+
+# One chat input for typing and talking
+
+`DesignSystemChatInput` is the one input every conversation is asked through —
+every agent chat (through `AgentChatView`) and the Daily OS composer — so a
+user meets one set of rules wherever they type or talk. It is one card in every
+state, on the field surface above (`surface.enabled`, the shared
+`designSystemFieldBorderColor` hairline, `radii.l`), and only its contents
+change:
+
+- **The words take the whole width.** The field is multi-line, grows a line at
+  a time to `maxLines` (6) and then scrolls inside, over one bottom row of the
+  host's helper and the controls. A long dictation is never one clipped line
+  running under a button — the bug this replaced, where the composer was a
+  single-line `DesignSystemTextInput` with the mic or send as its trailing
+  icon.
+- **Voice is never taken away.** The mic is always in the row: the teal
+  control while the field is empty, a quiet one beside the teal send once
+  there are words. One teal control at a time.
+- **Done, then read, then Send.** Recording changes only the bottom row —
+  cancel, the live dot and the time, the voice across all the width left
+  (`DesignSystemVoiceWaveform`), and Done (✓). Done hands the take back to the
+  host, which puts its words in the field after anything already written;
+  nothing is sent until Send. Escape cancels a take.
+- **The helper says only what is true.** The host's `helperText` (the
+  companion: "Type @ to name a category") and, on a desktop platform, how
+  Enter (send) and Shift+Enter (new line) work. `@` offers the host's
+  `mentionOptions` above the card (`DesignSystemChatInputMentionAnchor`, an
+  `OverlayPortal`), filtered as the word goes on, those starting with it
+  first; arrows and Enter or Tab pick, Escape closes and keeps the text. A
+  host with no options offers none.
+- **States are props, not swapped widgets.** `phase` (compose, recording,
+  transcribing), `busyText` (her answer on its way: the field says so and
+  nothing can be sent or said) and `errorText` (above the card, the words
+  kept, Try again when `onRetry` is given). The host owns the recorder; the
+  input owns none.
+
+`DesignSystemVoiceWaveform` shows the last `window` (4 s) of a take however
+wide it is: one bar and gap per `spacing.step1` pair, each bar its slice of
+the window read between the samples around it, nothing drawn for time before
+the take. So a wide row is full a few seconds in — the old waveform drew one
+bar per sample from a 200-sample history and padded the rest with dots, which
+left most of a wide Daily OS row empty. A recorder must keep at least one
+window of levels (the Daily OS capture keeps 200 at its 20 ms cadence).
+`design_system_chat_input_test.dart` and
+`design_system_voice_waveform_test.dart` pin both; the widgetbook's *Chat
+input* overview shows every state.
 
 # Boundaries
 

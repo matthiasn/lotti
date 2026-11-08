@@ -5,10 +5,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/ui/chat/chat_recorder_controller.dart';
 import 'package:lotti/features/agents/ui/chat/chat_recorder_error_message.dart';
-import 'package:lotti/features/agents/ui/chat/waveform_bars.dart';
 import 'package:lotti/features/design_system/components/action_modal/ds_action_modal.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_modal_action_bar.dart';
+import 'package:lotti/features/design_system/components/chat_input/design_system_voice_waveform.dart';
 import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/design_system/components/textareas/design_system_textarea.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -372,8 +372,8 @@ class GoalCharterDictation extends ConsumerWidget {
             ),
             SizedBox(width: tokens.spacing.step3),
             Expanded(
-              child: WaveformBars(
-                amplitudesNormalized: recorder.getNormalizedAmplitudeHistory(),
+              child: DesignSystemVoiceWaveform(
+                levels: recorder.getNormalizedAmplitudeHistory(),
               ),
             ),
             SizedBox(width: tokens.spacing.step3),

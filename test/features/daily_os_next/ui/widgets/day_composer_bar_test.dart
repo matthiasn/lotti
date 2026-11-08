@@ -250,7 +250,9 @@ void main() {
       tester,
     ) async {
       await pumpWithTrailing(tester, 402);
-      final besideWidth = tester.getSize(find.byType(DesignSystemChatInput)).width;
+      final besideWidth = tester
+          .getSize(find.byType(DesignSystemChatInput))
+          .width;
       await tester.showKeyboard(find.byType(TextField));
       final editable = tester.state<EditableTextState>(
         find.byType(EditableText),

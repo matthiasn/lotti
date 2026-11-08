@@ -8,7 +8,6 @@ import 'package:lotti/features/agents/query/query_source_access.dart';
 import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
 import 'package:lotti/features/agents/ui/chat/chat_recorder_controller.dart';
-import 'package:lotti/features/agents/ui/chat/chat_recording_pill.dart';
 import 'package:lotti/features/ai/state/subject_dictation_providers.dart';
 import 'package:lotti/features/ai/util/inference_provider_resolver.dart';
 import 'package:lotti/features/companion/model/companion_customization.dart';
@@ -184,15 +183,21 @@ void main() {
     );
     await tester.pump();
     expect(recorder.targets, [same(ears)]);
-    // The pill rises over the disc, which stays under the finger.
-    expect(find.byType(ChatRecordingPill), findsOneWidget);
+    // The take rises over the disc, which stays under the finger.
+    expect(find.byType(FrontStageTake), findsOneWidget);
     expect(find.byKey(FrontStageControlKeys.talk), findsOneWidget);
 
     await tester.pump(kLongPressTimeout);
     expect(caption(tester), 'Release to send');
     expect(find.byIcon(LottiIcons.arrowUp), findsOneWidget);
-    // The disc is the one send on screen: the pill carries none.
-    expect(find.byKey(ChatRecordingPillKeys.stop), findsNothing);
+    // The disc is the one send on screen: the take carries none.
+    expect(
+      find.descendant(
+        of: find.byType(FrontStageTake),
+        matching: find.byIcon(LottiIcons.arrowUp),
+      ),
+      findsNothing,
+    );
     expect(recorder.stops, 0);
 
     await finger.up();
@@ -211,7 +216,13 @@ void main() {
     expect(recorder.targets, hasLength(1));
     expect(recorder.stops, 0, reason: 'a tap is not a hold: nothing is sent');
     expect(caption(tester), 'Tap to send');
-    expect(find.byKey(ChatRecordingPillKeys.stop), findsNothing);
+    expect(
+      find.descendant(
+        of: find.byType(FrontStageTake),
+        matching: find.byIcon(LottiIcons.arrowUp),
+      ),
+      findsNothing,
+    );
 
     await tester.tap(find.byKey(FrontStageControlKeys.talk));
     await tester.pump();
@@ -224,7 +235,7 @@ void main() {
     await tester.tap(find.byKey(FrontStageControlKeys.talk));
     await tester.pump();
 
-    await tester.tap(find.byKey(ChatRecordingPillKeys.cancel));
+    await tester.tap(find.byKey(FrontStageControlKeys.takeCancel));
     await tester.pump();
 
     expect(recorder.cancels, 1);
@@ -409,7 +420,7 @@ void main() {
     await tester.pump();
 
     expect(recorder.targets, hasLength(1));
-    expect(find.byType(ChatRecordingPill), findsOneWidget);
+    expect(find.byType(FrontStageTake), findsOneWidget);
     semantics.dispose();
   });
 

@@ -4,8 +4,9 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/ui/chat/chat_recorder_controller.dart';
-import 'package:lotti/features/agents/ui/chat/chat_recording_pill.dart';
 import 'package:lotti/features/ai/state/subject_dictation_providers.dart';
+import 'package:lotti/features/design_system/components/chat_input/design_system_chat_input.dart';
+import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
 import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -17,6 +18,8 @@ import 'package:material_ui/material_ui.dart';
 
 /// Stable keys for the stage's controls.
 abstract final class FrontStageControlKeys {
+  static const Key take = Key('front-stage-take');
+  static const Key takeCancel = Key('front-stage-take-cancel');
   static const Key talk = Key('front-stage-talk');
   static const Key caption = Key('front-stage-talk-caption');
 }
@@ -32,9 +35,9 @@ abstract final class FrontStageControlKeys {
 /// screen reader's tap, Space or Enter — starts her listening hands free,
 /// and the disc, now the send arrow, sends on the next tap; a hold the
 /// system takes away (a pointer cancel) carries on hands free, so nothing
-/// said is lost to it. While she listens, the chats' own recording pill
-/// ([ChatRecordingPill], without its own send) shows the time and the voice
-/// above the disc, × letting it go; while the words are written down and
+/// said is lost to it. While she listens, the take ([FrontStageTake], on
+/// the chat input's surface but without a send of its own) shows the time
+/// and the voice above the disc, × letting it go; while the words are written down and
 /// while she answers, the disc waits. The band keeps its height in every
 /// state, so nothing moves under a finger.
 ///
@@ -310,14 +313,11 @@ class _FrontStageControlsState extends ConsumerState<FrontStageControls> {
           SizedBox(
             height: tokens.spacing.step9,
             child: listening || transcribing
-                ? ChatRecordingPill(
-                    processing: transcribing,
-                    amplitudes: _recorder.getNormalizedAmplitudeHistory(),
+                ? FrontStageTake(
+                    transcribing: transcribing,
+                    levels: _recorder.getNormalizedAmplitudeHistory(),
                     elapsed: recorder.elapsed,
-                    // The disc sends: one send on screen.
-                    showEndControl: false,
                     onCancel: _cancelTake,
-                    onStop: _send,
                   )
                 : null,
           ),
@@ -360,6 +360,96 @@ class _FrontStageControlsState extends ConsumerState<FrontStageControls> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// A take on her stage, above the disc that sends it: cancel, the live dot
+/// and the time, and the voice across all the width left — or, while it is
+/// transcribed, that it is. No end control: the disc is the one send on
+/// screen. On the field's surface, so it reads as the same input.
+@visibleForTesting
+class FrontStageTake extends StatelessWidget {
+  const FrontStageTake({
+    required this.transcribing,
+    required this.levels,
+    required this.elapsed,
+    required this.onCancel,
+    super.key,
+  });
+
+  final bool transcribing;
+  final List<double> levels;
+  final Duration elapsed;
+  final VoidCallback onCancel;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final messages = context.messages;
+    final ink = tokens.typography.styles.body.bodySmall;
+    return CallbackShortcuts(
+      bindings: {const SingleActivator(LogicalKeyboardKey.escape): onCancel},
+      child: Semantics(
+        container: true,
+        liveRegion: true,
+        label: transcribing
+            ? messages.timelineTranscribing
+            : messages.chatInputListening,
+        child: Container(
+          key: FrontStageControlKeys.take,
+          padding: EdgeInsetsDirectional.only(end: tokens.spacing.step5),
+          decoration: BoxDecoration(
+            color: tokens.colors.surface.enabled,
+            borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
+            border: Border.all(color: designSystemFieldBorderColor(tokens)),
+          ),
+          child: Row(
+            spacing: tokens.spacing.step3,
+            children: [
+              DesignSystemChatInputDisc(
+                key: FrontStageControlKeys.takeCancel,
+                icon: LottiIcons.close,
+                tooltip: messages.chatInputCancelRecording,
+                onPressed: onCancel,
+              ),
+              if (transcribing) ...[
+                Expanded(
+                  child: Text(
+                    messages.timelineTranscribing,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: ink.copyWith(
+                      color: tokens.colors.text.mediumEmphasis,
+                    ),
+                  ),
+                ),
+                DesignSystemSpinner(
+                  style: DesignSystemSpinnerStyle.plain,
+                  size: IconSizes.m,
+                  color: tokens.colors.text.mediumEmphasis,
+                ),
+              ] else ...[
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: tokens.colors.alert.error.defaultColor,
+                    shape: BoxShape.circle,
+                  ),
+                  child: SizedBox.square(dimension: tokens.spacing.step3),
+                ),
+                Text(
+                  '${elapsed.inMinutes}:${(elapsed.inSeconds % 60).toString().padLeft(2, '0')}',
+                  style: ink.copyWith(
+                    color: tokens.colors.text.highEmphasis,
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
+                ),
+                Expanded(child: DesignSystemVoiceWaveform(levels: levels)),
+              ],
+            ],
+          ),
+        ),
       ),
     );
   }

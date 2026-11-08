@@ -1716,13 +1716,16 @@ handler would retract it; that wiring is a follow-up.
   goal's transcription profile: `goalDictationProvider` hands the composer the
   goal entry's `subjectDictationProvider` route and its dictionary correction,
   so spoken words never go to a discovered model. The charter sheet's Dictate
-  uses the same pair. Voice input shows a mic
-  trailing icon, waveform with cancel/stop, streaming partial transcript, and
-  auto-fill on completion. The waveform (`WaveformBars`) is drawn the way a
-  phone's voice composer draws one: unframed in the composer's row, thin
-  round-capped capsules in the high-emphasis text colour, newest on the
-  right and scrolling left, full width from the start — quiet is a dot and
-  speech stands up. Bars and gaps are both `spacing.step1` wide, the waveform
+  uses the same pair. Voice input is the shared chat input
+  (`DesignSystemChatInput`, see
+  [chat input](agents/chat-input-and-reasoning.md)): the mic always, the
+  voice across the row while it records, a streaming partial transcript,
+  and on Done the words in the field to be read before sending. The
+  waveform (`DesignSystemVoiceWaveform`, which the charter sheet's Dictate
+  row uses too) shows the last four seconds of the take across all the
+  width it has: thin round-capped bars in quiet ink, newest on the right,
+  centred, nothing drawn before the take — quiet is a dot and speech stands
+  up. Bars and gaps are both `spacing.step1` wide, the waveform
   `spacing.step7` tall. The dBFS range starts at −55 (`chatAmplitudeMinDbfs`), so
   room noise reads as silence rather than half-height bars. The recorder watch lives inside `_ChatComposer`
   (a `ConsumerWidget`) so the 10 Hz amplitude stream rebuilds only the

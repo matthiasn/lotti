@@ -1,8 +1,8 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/ui/chat/chat_recorder_controller.dart';
-import 'package:lotti/features/agents/ui/chat/waveform_bars.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_cancel_stop_buttons.dart';
+import 'package:lotti/features/design_system/components/chat_input/design_system_voice_waveform.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -34,9 +34,9 @@ class EvolutionVoiceControls extends ConsumerWidget {
         child: Row(
           children: [
             Expanded(
-              child: WaveformBars(
+              child: DesignSystemVoiceWaveform(
                 key: const ValueKey('evolution_waveform'),
-                amplitudesNormalized: ref
+                levels: ref
                     .read(chatRecorderControllerProvider.notifier)
                     .getNormalizedAmplitudeHistory(),
               ),

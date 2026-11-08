@@ -1324,10 +1324,11 @@ to the send arrow (*Release to send*), and letting go sends. Dragged more
 than `spacing.step6` off the disc it turns red with a × (*Release to
 cancel*), and letting go there discards; back on, it sends again. A quick
 tap — and a screen reader's tap, Space or Enter — leaves her listening hands
-free, the disc the send arrow (*Tap to send*). While she listens the chats'
-own recording pill (`ChatRecordingPill`, `showEndControl: false`, so the
-disc stays the one send) shows the time and the voice above it, its × letting
-it go; the band keeps the pill's height whether it shows or not, so nothing
+free, the disc the send arrow (*Tap to send*). While she listens the take
+(`FrontStageTake`, on the chat input's surface with its cancel disc and
+`DesignSystemVoiceWaveform`, but no send of its own, so the disc stays the
+one send) shows the time and the voice above it, its × letting it go; the
+band keeps the take's height whether it shows or not, so nothing
 moves under a finger. While the words are written down, and while her answer
 is on its way (a send in flight or a spoken reply owed), the disc is a quiet
 spinner captioned *Transcribing…* or her *Finding who knows…*, and presses do

@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/chat_input/design_system_chat_input.dart';
 import 'package:lotti/features/design_system/components/chat_input/design_system_chat_input_mentions.dart';
-import 'package:lotti/features/design_system/components/chat_input/design_system_voice_waveform.dart';
 import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:material_ui/material_ui.dart';
@@ -496,5 +495,46 @@ void main() {
       plain,
     );
     mentions.dispose();
+  });
+
+  testWidgets('a host swapping its controller and focus node keeps the '
+      'input following the new ones, @ list included', (tester) async {
+    final first = TextEditingController();
+    final second = TextEditingController();
+    final focusA = FocusNode();
+    final focusB = FocusNode();
+    addTearDown(() {
+      first.dispose();
+      second.dispose();
+      focusA.dispose();
+      focusB.dispose();
+    });
+    Widget input(TextEditingController c, FocusNode f) =>
+        makeTestableWidgetWithScaffold(
+          DesignSystemChatInput(
+            controller: c,
+            focusNode: f,
+            hintText: 'Ask',
+            mentionOptions: categories,
+            onSend: () {},
+            onStartRecording: () {},
+          ),
+        );
+    await tester.pumpWidget(input(first, focusA));
+    await tester.pumpWidget(input(second, focusB));
+    focusB.requestFocus();
+    second.value = const TextEditingValue(
+      text: '@shop',
+      selection: TextSelection.collapsed(offset: 5),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    // A word inside a label matches too, after those starting with it.
+    expect(
+      find.byKey(DesignSystemChatInputMentionKeys.option('Workshop prep')),
+      findsOne,
+    );
+    expect(find.byKey(DesignSystemChatInputKeys.send), findsOne);
   });
 }

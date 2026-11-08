@@ -33,5 +33,9 @@ void main() {
     expect(find.byKey(DesignSystemChatInputMentionKeys.list), findsOne);
     expect(find.byKey(DesignSystemChatInputKeys.error), findsOne);
     expect(DesignSystemChatInputWidgetbook.sampleLevels, hasLength(400));
+    // Its controls are live, and do nothing.
+    await tester.tap(find.byKey(DesignSystemChatInputKeys.mic).first);
+    await tester.pump();
+    expect(tester.takeException(), isNull);
   });
 }

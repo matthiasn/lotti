@@ -593,8 +593,9 @@ class _RecordingRow extends StatelessWidget {
 }
 
 /// A round control of the chat input: teal with dark ink when [primary],
-/// else the field's quiet overlay. A 40 disc inside a 44 target.
-@visibleForTesting
+/// else the field's quiet overlay. A 40 disc inside a 44 target. Public for
+/// a voice-only surface that shows a take the same way (the companion's
+/// stage).
 class DesignSystemChatInputDisc extends StatelessWidget {
   const DesignSystemChatInputDisc({
     required this.icon,

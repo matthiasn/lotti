@@ -1200,56 +1200,59 @@ void main() {
       expect(find.byKey(DesignSystemChatInputKeys.send), findsNothing);
     });
 
-    testWidgets('shows send beside the mic when text is present, and the mic alone when cleared', (
-      tester,
-    ) async {
-      var draft = '';
-      await tester.pumpWidget(
-        makeTestableWidgetNoScroll(
-          StatefulBuilder(
-            builder: (context, setState) => Scaffold(
-              body: AgentChatView(
-                agentId: 'goal-1',
-                agentName: 'Juno',
-                draft: draft,
-                isSending: false,
-                onDraftChanged: (v) => setState(() => draft = v),
-                onSend: () {},
-                onRetry: () {},
+    testWidgets(
+      'shows send beside the mic when text is present, and the mic alone when cleared',
+      (
+        tester,
+      ) async {
+        var draft = '';
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            StatefulBuilder(
+              builder: (context, setState) => Scaffold(
+                body: AgentChatView(
+                  agentId: 'goal-1',
+                  agentName: 'Juno',
+                  draft: draft,
+                  isSending: false,
+                  onDraftChanged: (v) => setState(() => draft = v),
+                  onSend: () {},
+                  onRetry: () {},
+                ),
               ),
             ),
+            overrides: [
+              agentChatProjectionProvider(
+                'goal-1',
+              ).overrideWith((ref) async => const []),
+              chatRecorderControllerProvider.overrideWith(
+                ChatRecorderController.new,
+              ),
+            ],
           ),
-          overrides: [
-            agentChatProjectionProvider(
-              'goal-1',
-            ).overrideWith((ref) async => const []),
-            chatRecorderControllerProvider.overrideWith(
-              ChatRecorderController.new,
-            ),
-          ],
-        ),
-      );
-      // The waiting dots pulse for as long as she answers, so the
-      // frame is pumped, not settled.
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
+        );
+        // The waiting dots pulse for as long as she answers, so the
+        // frame is pumped, not settled.
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
-      expect(find.byKey(DesignSystemChatInputKeys.mic), findsOneWidget);
-      expect(find.byKey(DesignSystemChatInputKeys.send), findsNothing);
+        expect(find.byKey(DesignSystemChatInputKeys.mic), findsOneWidget);
+        expect(find.byKey(DesignSystemChatInputKeys.send), findsNothing);
 
-      await tester.enterText(find.byType(TextField), 'Hello');
-      await tester.pump();
+        await tester.enterText(find.byType(TextField), 'Hello');
+        await tester.pump();
 
-      expect(find.byKey(DesignSystemChatInputKeys.send), findsOneWidget);
-      // Voice is never taken away: the mic stays, beside send.
-      expect(find.byKey(DesignSystemChatInputKeys.mic), findsOneWidget);
+        expect(find.byKey(DesignSystemChatInputKeys.send), findsOneWidget);
+        // Voice is never taken away: the mic stays, beside send.
+        expect(find.byKey(DesignSystemChatInputKeys.mic), findsOneWidget);
 
-      await tester.enterText(find.byType(TextField), '');
-      await tester.pump();
+        await tester.enterText(find.byType(TextField), '');
+        await tester.pump();
 
-      expect(find.byKey(DesignSystemChatInputKeys.mic), findsOneWidget);
-      expect(find.byKey(DesignSystemChatInputKeys.send), findsNothing);
-    });
+        expect(find.byKey(DesignSystemChatInputKeys.mic), findsOneWidget);
+        expect(find.byKey(DesignSystemChatInputKeys.send), findsNothing);
+      },
+    );
 
     testWidgets('tapping the mic starts recording', (tester) async {
       var startCalled = false;

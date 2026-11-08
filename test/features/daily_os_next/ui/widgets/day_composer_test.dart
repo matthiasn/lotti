@@ -279,23 +279,29 @@ void main() {
     );
   });
 
-  testWidgets('while transcribing the input shows it is working, with no Done', (
-    tester,
-  ) async {
-    await pump(tester);
-    await startTake(tester);
-    capture
-      ..emit(phase(CapturePhase.listening))
-      ..emit(phase(CapturePhase.transcribing));
-    await tester.pump();
+  testWidgets(
+    'while transcribing the input shows it is working, with no Done',
+    (
+      tester,
+    ) async {
+      await pump(tester);
+      await startTake(tester);
+      capture
+        ..emit(phase(CapturePhase.listening))
+        ..emit(phase(CapturePhase.transcribing));
+      await tester.pump();
 
-    expect(find.byKey(DesignSystemChatInputKeys.transcribing), findsOneWidget);
-    expect(find.byKey(DesignSystemChatInputKeys.done), findsNothing);
-    // Its way out stays: cancel discards the in-flight transcription.
-    await tester.tap(find.byKey(DesignSystemChatInputKeys.cancel));
-    await tester.pump();
-    expect(capture.resets, 1);
-  });
+      expect(
+        find.byKey(DesignSystemChatInputKeys.transcribing),
+        findsOneWidget,
+      );
+      expect(find.byKey(DesignSystemChatInputKeys.done), findsNothing);
+      // Its way out stays: cancel discards the in-flight transcription.
+      await tester.tap(find.byKey(DesignSystemChatInputKeys.cancel));
+      await tester.pump();
+      expect(capture.resets, 1);
+    },
+  );
 
   testWidgets('a capture this composer did not start is left alone', (
     tester,
