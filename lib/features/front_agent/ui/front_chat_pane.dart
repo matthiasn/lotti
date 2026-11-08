@@ -144,21 +144,10 @@ class FrontChatPane extends ConsumerWidget {
 
 /// One conversation's thread and the field under it — or, while the inbox is
 /// on, every turn still waiting on the user. In the pane under her header,
-/// and beside her on her full-screen stage on a desktop window.
-///
-/// Without [composerEnabled] the thread is read only, and leaves what is said
-/// aloud to the view that has the field: two views acting on one finished
-/// recording would send it twice.
+/// and with her on her full-screen stage: beside her on a desktop window,
+/// under her on a phone.
 class FrontChatThreadView extends ConsumerWidget {
-  const FrontChatThreadView({
-    required this.onClose,
-    this.composerEnabled = true,
-    super.key,
-  });
-
-  /// Whether the field sits under the thread; off beside her on her stage,
-  /// whose own control at her feet is the way to answer her there.
-  final bool composerEnabled;
+  const FrontChatThreadView({required this.onClose, super.key});
 
   /// Closes her surface. Everything that leaves her for a page goes through
   /// this, never `maybePop`: while the list or the inbox is open, back is
@@ -309,7 +298,6 @@ class FrontChatThreadView extends ConsumerWidget {
       // One reading column for the thread and the field under it, so the
       // field's edges line up with the messages on a wide window.
       contentMaxWidth: kProseMeasureWidth,
-      composerEnabled: composerEnabled,
       voiceFirst: true,
       // `@` names a category she may see; naming one narrows her answer.
       composerHelper: mentions.isEmpty ? null : messages.frontChatMentionHint,

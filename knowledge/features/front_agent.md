@@ -178,15 +178,11 @@ sources:
     last_modified: 2026-11-07
   - id: voice-controls
     resource: ../../lib/features/front_agent/ui/front_voice_controls.dart
-    title: Her voice's stop / say-it-again control, her full-screen stage and the conversation beside her there
-    last_modified: 2026-11-07
+    title: Her voice's stop / say-it-again control, her full-screen stage and the conversation with her there
+    last_modified: 2026-11-08
   - id: stage-pointing
     resource: ../../lib/features/front_agent/state/front_stage_pointing.dart
     title: frontStagePointsProvider — she points at the tasks she lists, on her stage
-    last_modified: 2026-11-07
-  - id: stage-controls
-    resource: ../../lib/features/front_agent/ui/front_stage_controls.dart
-    title: FrontStageControls — hold to talk to her on her stage, and her answer said again
     last_modified: 2026-11-07
   - id: conversation-actions
     resource: ../../lib/features/front_agent/ui/front_conversation_actions.dart
@@ -195,7 +191,7 @@ sources:
   - id: stage
     resource: ../../lib/features/agents/ui/ai_summary_card/companion_stage_page.dart
     title: CompanionStagePage — the shared full-screen stage
-    last_modified: 2026-11-07
+    last_modified: 2026-11-08
   - id: profile-choice
     resource: ../../lib/features/front_agent/ui/front_profile_choice.dart
     title: FrontProfileChoice — her AI profile, and with it her voice
@@ -1385,80 +1381,46 @@ access is being read, and before that answer has landed.
 The header's stage control — or its overflow entry, and a tap on her
 face — opens `openFrontStage`: the shared full-screen `CompanionStagePage`,
 head to toe, on a phone and on a desktop window alike, still speaking on
-her source, with `FrontStageControls` at her feet in place of a summary's
-read-aloud control (the page's `controls`). On a desktop window
-(`isDesktopLayout`) the page's `sidePanel` stands beside her, behind the
-shared `ResizableDivider`: she takes `PaneWidths.companionStageShare` of the
-width (three fifths go to the panel by default, dragged between a quarter and
-three fifths for her, saved by `PaneWidthController` like the app's columns):
-`FrontStageTranscript`, the conversation's thread (`FrontChatThreadView`,
-the same one the pane shows), read only — `composerEnabled: false` — since
-the disc at her feet is the way to answer her there; the pane under the
-stage, which stays mounted, is the one view that sends what was said. Its
-ways out to a page close the stage and her surface both. While her voice
-plays in the conversation and her latest reply lists tasks or charts logged
-time (`frontStagePointsProvider` over `frontLatestReplyHasVisual`, in
-`state/front_stage_pointing.dart`), the page's `pointsAtSidePanel` has her
-hold `GestureName.pointRight` at the panel — at the task rows or the chart
-as she says them — and let her arm down when she stops. On a phone she keeps the
-screen, and never points; a `DsAiDiscButton` (`LottiIcons.chat`) beside the
-stage's close opens the same `FrontStageTranscript` in
-`ModalUtils.showSinglePageModal`, titled with the host's `sidePanelLabel`
-(*Conversation*), `CompanionStagePage.sidePanelSheetHeightFactor` of the
-screen tall. It is read only there too, and its ways out pop to the first
-route, which closes the sheet with the stage. The bust keeps one tree whatever she does,
-so her animator lives through a start and a stop.
+her source, with `FrontVoiceButton` at her feet in place of a summary's
+read-aloud control (the page's `controls`). **The stage is her chat with her
+where its list would be**: the page's `sidePanel` is `FrontStageTranscript`,
+the conversation's own `FrontChatThreadView` — the same thread and the same
+`DesignSystemChatInput` the pane shows, so typing, `@` mentions, the
+microphone and Enter to send work there exactly as outside the stage, and a
+send never leaves it. Both form factors split by
+`PaneWidths.companionStageShare` (her share; three fifths go to the
+conversation by default, between a quarter and three fifths for her, saved
+by `PaneWidthController` like the app's columns). On a desktop window
+(`isDesktopLayout`) the conversation stands beside her, to the right, behind
+the shared `ResizableDivider` that drags and saves the share; on a phone it
+stands under her at that share of the height, the field at the foot of the
+screen, each half keeping clear of only the system bar it meets
+(`MediaQuery.removePadding`). Its ways out to a page close the stage and her
+surface both. While her voice plays in the conversation and her latest reply
+lists tasks or charts logged time (`frontStagePointsProvider` over
+`frontLatestReplyHasVisual`, in `state/front_stage_pointing.dart`), the
+page's `pointsAtSidePanel` has her hold `GestureName.pointRight` at the
+panel beside her — at the task rows or the chart as she says them — and let
+her arm down when she stops; on a phone, the panel under her, she never
+points. The bust keeps one tree whatever she does, so her animator lives
+through a start and a stop.
 
-**Her stage is never a dead end.** Whatever has been said, `FrontStageControls`
-offers a way to answer her, in a band of its own below her figure (the
-stage page lays her out above its `controls`, on her stage's floor colour,
-so nothing is drawn on her). One teal disc (`spacing.step10` across) is the
-stage's one control to talk with, in every state, its caption saying what it
-does — at rest *Tap or hold to talk*, teaching both ways; an instruction for
-the moment (*Release to send*, *Tap to send*) at full strength, the hint and
-the waits quieter; the disc keeps its full teal while held, and a ring shows
-when it has the keyboard; `FrontVoiceButton` stands beside it once there is an answer to say
-again. Pressing the disc starts the shared recorder on the Settings
-default's transcription slot, the same ears as the conversation's composer.
-Held past `kLongPressTimeout` — a hold counts once the recorder is really
-listening, however late the microphone opened (a first permission prompt, a
-slow device), and a refused one never promises a send — its glyph turns
-to the send arrow (*Release to send*), and letting go sends. Dragged more
-than `spacing.step6` off the disc it turns red with a × (*Release to
-cancel*), and letting go there discards; back on, it sends again. A quick
-tap — and a screen reader's tap, Space or Enter — leaves her listening hands
-free, the disc the send arrow (*Tap to send*). While she listens the take
-(`FrontStageTake`, on the chat input's surface with its cancel disc and
-`DesignSystemVoiceWaveform`, but no send of its own, so the disc stays the
-one send) shows the time and the voice above it, its × letting it go; the
-band keeps the take's height whether it shows or not, so nothing
-moves under a finger. While the words are written down, and while her answer
-is on its way (a send in flight or a spoken reply owed), the disc is a quiet
-spinner captioned *Transcribing…* or her *Finding who knows…*, and presses do
-nothing. A press the system takes away (a pointer cancel) carries on hands
-free, so nothing said is lost to it. The stage sends nothing itself: the conversation's
-`AgentChatView`, which the stage only covers, receives the transcript from
-the shared recorder and sends it as a spoken turn, so her answer is spoken
-on the stage.
+The pane under the stage stays mounted, its own composer included. A
+finished recording reaches only the composer on the current route
+(`AgentChatView` checks `ModalRoute.isCurrentOf`), so what is said on the
+stage lands once, in the stage's field, and is sent from there as a spoken
+turn — her answer is then spoken on the stage.
 
 ```mermaid
-stateDiagram-v2
-    [*] --> Idle
-    Idle --> Pressed: press the disc (recorder starts)
-    Idle --> HandsFree: screen-reader tap, Space or Enter
-    Pressed --> Held: still pressed after kLongPressTimeout, recorder listening
-    Pressed --> HandsFree: released on the disc before it (a tap)
-    Pressed --> Idle: released off the disc (cancelled)
-    Held --> Cancelling: dragged off the disc
-    Cancelling --> Held: back on the disc
-    Held --> Transcribing: released (stopAndTranscribe)
-    Cancelling --> Idle: released (cancelled)
-    Held --> HandsFree: pointer cancelled by the system
-    HandsFree --> Transcribing: a tap on the disc, Space or Enter
-    HandsFree --> Idle: the pill's × or Escape (cancelled)
-    Transcribing --> Waiting: transcript sent as a spoken turn
-    Transcribing --> Idle: cancelled
-    Waiting --> Idle: her answer lands
+flowchart LR
+  subgraph Desktop["Desktop window"]
+    direction LR
+    F1["Her figure<br/>FrontVoiceButton at her feet"] --- D["ResizableDivider<br/>companionStageShare"] --- C1["FrontChatThreadView<br/>thread + DesignSystemChatInput"]
+  end
+  subgraph Phone["Phone"]
+    direction TB
+    F2["Her figure<br/>companionStageShare of the height"] --- C2["FrontChatThreadView<br/>thread + DesignSystemChatInput"]
+  end
 ```
 
 # Where it plugs in

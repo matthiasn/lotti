@@ -1472,6 +1472,49 @@ void main() {
       expect(find.byKey(DesignSystemChatInputKeys.send), findsOneWidget);
     });
 
+    testWidgets('a view covered by another route leaves the transcript to '
+        'the one in front', (tester) async {
+      var draft = '';
+      late TranscriptEmittingController controller;
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          StatefulBuilder(
+            builder: (context, setState) => Scaffold(
+              body: AgentChatView(
+                agentId: 'goal-1',
+                agentName: 'Juno',
+                draft: draft,
+                isSending: false,
+                onDraftChanged: (v) => setState(() => draft = v),
+                onSend: () {},
+                onRetry: () {},
+              ),
+            ),
+          ),
+          overrides: [
+            agentChatProjectionProvider(
+              'goal-1',
+            ).overrideWith((ref) async => const []),
+            chatRecorderControllerProvider.overrideWith(
+              () => controller = TranscriptEmittingController(),
+            ),
+          ],
+        ),
+      );
+      await tester.pump();
+      // A page over the chat, as the companion's stage covers hers.
+      Navigator.of(tester.element(find.byType(AgentChatView))).push(
+        MaterialPageRoute<void>(builder: (_) => const SizedBox.expand()),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+
+      controller.emitTranscript('I walked this morning.');
+      await tester.pump();
+
+      expect(draft, isEmpty);
+    });
+
     testWidgets('shows partial transcript while processing', (tester) async {
       await tester.pumpWidget(
         makeTestableWidgetNoScroll(

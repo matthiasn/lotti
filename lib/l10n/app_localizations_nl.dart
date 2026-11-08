@@ -7273,9 +7273,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get frontChatSearchChats => 'Chats doorzoeken';
 
   @override
-  String get frontChatStageConversation => 'Gesprek';
-
-  @override
   String get frontChatTitle => 'Metgezel';
 
   @override
@@ -7438,18 +7435,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get frontPullRequestsLinesDeleted => 'Verwijderde regels';
-
-  @override
-  String get frontStageReleaseToCancel => 'Laat los om te annuleren';
-
-  @override
-  String get frontStageReleaseToSend => 'Laat los om te versturen';
-
-  @override
-  String get frontStageTalkHint => 'Tik of houd ingedrukt om te praten';
-
-  @override
-  String get frontStageTapToSend => 'Tik om te versturen';
 
   @override
   String get frontTaskCreatedSpoken =>

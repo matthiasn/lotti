@@ -7239,9 +7239,6 @@ class AppLocalizationsDa extends AppLocalizations {
   String get frontChatSearchChats => 'Søg i chats';
 
   @override
-  String get frontChatStageConversation => 'Samtale';
-
-  @override
   String get frontChatTitle => 'Ledsager';
 
   @override
@@ -7404,18 +7401,6 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get frontPullRequestsLinesDeleted => 'Slettede linjer';
-
-  @override
-  String get frontStageReleaseToCancel => 'Slip for at annullere';
-
-  @override
-  String get frontStageReleaseToSend => 'Slip for at sende';
-
-  @override
-  String get frontStageTalkHint => 'Tryk eller hold inde for at tale';
-
-  @override
-  String get frontStageTapToSend => 'Tryk for at sende';
 
   @override
   String get frontTaskCreatedSpoken => 'Sådan, skat, jeg har oprettet opgaven.';
