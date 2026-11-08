@@ -1043,8 +1043,10 @@ its height while it reads, and draws nothing once the time it charted is
 gone. A chart of named categories draws them and one `Other` bar segment
 (the resolver's `insightsOtherCategories` label): `buildChartData` counts
 time a caller already keyed `kInsightsOtherCategoryKey` into its Other
-series, never a second one, and its `+N` rollup count leaves that key out,
-so the legend gives no count of what the slice holds.
+series, never a second one. That slice takes none of the category slots
+(six named categories keep six series), sits last on the stack as the
+rollup does, and its `+N` rollup count counts only real categories folded
+in, so the legend gives no count of what the slice holds.
 
 A link in her bubble or in a card's answer goes through the pane's one
 handler, as *Open* and a cited source do. A task (`/tasks/<id>`) opens **on

@@ -119,10 +119,11 @@ void main() {
       'every other category and time in none', () async {
     final data = await read(const {}, named: {'fishing'});
 
-    expect(data.seriesKeys, [kInsightsOtherCategoryKey, 'fishing']);
+    // The named one at the base, Other on top however large it is.
+    expect(data.seriesKeys, ['fishing', kInsightsOtherCategoryKey]);
     expect(data.values, [
-      [3 * 3600, 0, 3600],
       [0, 0, 3600],
+      [3 * 3600, 0, 3600],
     ]);
     // Nothing rolled up beyond the slice, so no count of what is in it.
     expect(data.rolledUpCount, 0);
