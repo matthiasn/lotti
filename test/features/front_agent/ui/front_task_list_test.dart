@@ -173,7 +173,10 @@ void main() {
       TaskPriority.p1High,
     );
     expect(
-      inRow('t1', find.textContaining('P1', findRichText: true)),
+      inRow(
+        't1',
+        find.textContaining('P1 · In Progress · Colony', findRichText: true),
+      ),
       findsOne,
     );
     expect(
@@ -245,7 +248,7 @@ void main() {
     expect(subtitle, findsOne);
     expect(
       tester.widget<RichText>(subtitle).text.toPlainText(),
-      startsWith('$countingOneLiner\nIn Progress · Colony'),
+      startsWith('$countingOneLiner\n\u{FFFC} P1 · In Progress · Colony'),
     );
     // In the AI ink the tasks list gives a one-liner.
     TextSpan? oneLinerSpan;

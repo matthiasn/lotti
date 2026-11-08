@@ -160,12 +160,9 @@ class FrontTaskRow extends ConsumerWidget {
               color: tokens.colors.aiCard.accent,
             ),
           ),
-        TextSpan(
-          text: category == null ? statusLabel : '$statusLabel · $category',
-        ),
-        // Its priority and when it is due, only while it is still to do.
+        // Its priority, only while it is still to do — leading the line, so
+        // a long one-liner or category wraps away the tail, never it.
         if (!settled) ...[
-          const TextSpan(text: '   '),
           WidgetSpan(
             alignment: PlaceholderAlignment.middle,
             child: TaskShowcasePriorityGlyph(
@@ -173,8 +170,12 @@ class FrontTaskRow extends ConsumerWidget {
               size: IconSizes.xs,
             ),
           ),
-          TextSpan(text: ' ${task.data.priority.short}'),
+          TextSpan(text: ' ${task.data.priority.short} · '),
         ],
+        TextSpan(
+          text: category == null ? statusLabel : '$statusLabel · $category',
+        ),
+        // When it is due, only while it is still to do.
         if (due != null && !settled) ...[
           const TextSpan(text: '   '),
           WidgetSpan(

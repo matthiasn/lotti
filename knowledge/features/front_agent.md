@@ -463,8 +463,11 @@ named categories only, when some are — reads their links
 (`JournalDb.basicLinksForEntryIds`, hidden and deleted links dropped) and
 the linking tasks (`getJournalEntitiesForIdsUnordered`, which leaves out
 deleted tasks and private ones while private entries are hidden), and
-credits an entry linked to several tasks to the latest started, as the
-Insights query attributes its category. Re-keyed by task id, the entries
+credits an entry linked to several tasks to the one the Insights query
+takes its category from — the latest started of those with a category, then
+the lower id — so the task listed is the one whose category the time is
+summed in; only when none has a category, the latest started. Re-keyed by
+task id, the entries
 go through the same `bucketize` and `rankedCategoryTotals`, so a task's time
 is clipped to the days and merged like a category's. At most
 `frontLoggedTaskLimit` (30) are listed, the rest counted; each becomes a
@@ -1017,7 +1020,7 @@ one task each, is rows under each heading. Each run is drawn as
 `.value`, so a reload keeps the row; it refreshes on every notification
 naming the task): its `StatusGlyph`, its title, its agent's one-liner (caption, in the `aiCard.accent` ink the tasks list gives it), its
 status and category, and — while it is not done or rejected — its
-priority as the tasks list shows it (`TaskShowcasePriorityGlyph` and `P0`–`P3`,
+priority as the tasks list shows it, leading the status line so truncation never takes it (`TaskShowcasePriorityGlyph` and `P0`–`P3`,
 also in the row's semantics label) and the tasks list's own `DueDateText`. Until it loads, or if it is gone, the title she
 gave it stands alone. A project is a row of its title and a folder glyph.
 A tap opens either through the pane's link handler — a task on top of her

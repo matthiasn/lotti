@@ -287,9 +287,11 @@ class FrontRoutingIndexBuilder {
 
   /// The tasks [entries] are linked to, each with the time logged on them
   /// inside [range], largest first. An entry linked to several tasks counts
-  /// for the one the Insights read attributes it to — the latest started —
-  /// and its time is clipped and merged as the chart's is. A task hidden
-  /// with private entries, or deleted, is never read.
+  /// for the one the Insights read takes its category from — the latest
+  /// started of those with a category — so the task listed is the one whose
+  /// category the time is summed in; only when none has a category, the
+  /// latest started. Its time is clipped and merged as the chart's is. A
+  /// task hidden with private entries, or deleted, is never read.
   Future<List<({FrontIndexRow row, int seconds})>> _loggedTasks(
     List<({String entryId, InsightsTimeRow row})> entries,
     InsightsRange range,
@@ -311,10 +313,7 @@ class FrontRoutingIndexBuilder {
       final task = tasksById[link.fromId];
       if (task == null) continue;
       final current = taskByEntry[link.toId];
-      final later = current == null
-          ? 1
-          : task.meta.dateFrom.compareTo(current.meta.dateFrom);
-      if (later > 0 || (later == 0 && task.id.compareTo(current!.id) < 0)) {
+      if (current == null || _creditedBefore(task, current)) {
         taskByEntry[link.toId] = task;
       }
     }
@@ -334,6 +333,16 @@ class FrontRoutingIndexBuilder {
       ))
         (row: _taskRow(tasksById[id]!, null), seconds: seconds),
     ];
+  }
+
+  /// Whether [task] is credited with a linked entry's time before [other]:
+  /// one with a category first, then the later started, then the lower id —
+  /// the order `_insightsResolvedCategorySql` picks a linked task in.
+  static bool _creditedBefore(Task task, Task other) {
+    bool categorized(Task t) => t.meta.categoryId?.isNotEmpty ?? false;
+    if (categorized(task) != categorized(other)) return categorized(task);
+    final byStart = task.meta.dateFrom.compareTo(other.meta.dateFrom);
+    return byStart != 0 ? byStart > 0 : task.id.compareTo(other.id) < 0;
   }
 
   /// The active categories her allow-list lets her see, by name, those the

@@ -882,6 +882,43 @@ void main() {
       },
     );
 
+    test(
+      'an entry is credited to the task Insights takes its category from: '
+      'one with a category before a later-started one without; with none '
+      'categorized, the uncategorized one',
+      () async {
+        final loose = _task('loose', categoryId: null);
+        when(() => journalDb.basicLinksForEntryIds(any())).thenAnswer(
+          (_) async => [
+            link('filed', workMorning),
+            link('loose', workMorning),
+            link('loose', homeEvening),
+          ],
+        );
+        when(
+          () => journalDb.getJournalEntitiesForIdsUnordered(any()),
+        ).thenAnswer(
+          (_) async => [
+            _task('filed'),
+            // Started later, but without a category Insights skips it.
+            loose.copyWith(
+              meta: loose.meta.copyWith(dateFrom: DateTime(2026, 10, 5)),
+            ),
+          ],
+        );
+
+        final logged = await builder().loggedTimeSummarizer(
+          const FrontRoutingScope(),
+          now: _now,
+        )((period: FrontTimePeriod.yesterday, categoryIds: const {}));
+
+        expect(
+          [for (final task in logged.tasks) (task.row.id, task.seconds)],
+          [('filed', 2 * 3600), ('loose', 3600)],
+        );
+      },
+    );
+
     test('caps the tasks it lists and counts the rest', () async {
       final ids = [for (var i = 0; i <= frontLoggedTaskLimit; i++) 't$i'];
       when(
