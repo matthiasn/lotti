@@ -14,12 +14,14 @@ import 'package:uuid/uuid.dart';
 /// which models send regardless.
 Map<String, Object?> recordObservationsParameters({
   required String textDescription,
+  int? maxItems,
 }) => {
   'type': 'object',
   'properties': {
     'observations': {
       'type': 'array',
       'minItems': 1,
+      'maxItems': ?maxItems,
       'items': {
         'type': 'object',
         'properties': {

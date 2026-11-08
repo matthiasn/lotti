@@ -181,6 +181,7 @@ ChatCompletionMessageToolCall _toolCall({
   TaskAgentStagedToolExposure? stagedToolExposure,
   DomainLogger? domainLogger,
   ResolveCategoryId? resolveCategoryId,
+  List<String> priorObservationTexts = const [],
 }) {
   const agentId = 'agent-001';
   const taskId = 'task-001';
@@ -228,6 +229,7 @@ ChatCompletionMessageToolCall _toolCall({
     refreshLinkedPullRequests: refreshLinkedPullRequests,
     flushChangeSet: flushChangeSet,
     stagedToolExposure: stagedToolExposure,
+    priorObservationTexts: priorObservationTexts,
   );
 
   return (strategy: strategy, builder: csBuilder);
@@ -984,6 +986,73 @@ void main() {
           () => mockManager.addToolResponse(
             toolCallId: 'call-obs',
             response: 'Recorded 2 observation(s).',
+          ),
+        ).called(1);
+      });
+
+      ChatCompletionMessageToolCall observationCall(List<String> notes) =>
+          ChatCompletionMessageToolCall(
+            id: 'call-obs',
+            type: ChatCompletionMessageToolCallType.function,
+            function: ChatCompletionMessageFunctionCall(
+              name: 'record_observations',
+              arguments: jsonEncode({'observations': notes}),
+            ),
+          );
+
+      test("skips a repeat of an earlier wake's note and says so", () async {
+        final strategy = _createStrategy(
+          executor: mockExecutor,
+          syncService: mockSyncService,
+          priorObservationTexts: const ['The ice floe survey is settled.'],
+        ).strategy;
+
+        await strategy.processToolCalls(
+          toolCalls: [
+            observationCall([
+              'the ice floe survey is settled',
+              'The fish count moved to Friday.',
+            ]),
+          ],
+          manager: mockManager,
+        );
+
+        expect(
+          strategy.extractObservations().map((o) => o.text),
+          ['The fish count moved to Friday.'],
+        );
+        verify(
+          () => mockManager.addToolResponse(
+            toolCallId: 'call-obs',
+            response:
+                'Recorded 1 observation(s); skipped 1: "the ice floe survey '
+                'is settled" is already recorded.',
+          ),
+        ).called(1);
+      });
+
+      test('a call with only repeats records nothing and answers with an '
+          'error', () async {
+        await strategy.processToolCalls(
+          toolCalls: [
+            observationCall(['Ice is thin.']),
+          ],
+          manager: mockManager,
+        );
+        await strategy.processToolCalls(
+          toolCalls: [
+            observationCall(['ICE is thin']),
+          ],
+          manager: mockManager,
+        );
+
+        expect(strategy.extractObservations(), hasLength(1));
+        verify(
+          () => mockManager.addToolResponse(
+            toolCallId: 'call-obs',
+            response:
+                'Error: nothing recorded — "ICE is thin" is already '
+                'recorded. Record nothing when nothing is new.',
           ),
         ).called(1);
       });

@@ -222,6 +222,7 @@ class CloudInferenceRepository {
     GeminiThinkingMode? geminiThinkingMode,
     ReasoningEffort? reasoningEffort,
     InferenceImpactCollector? impactCollector,
+    String? promptCacheKey,
   }) => _generateMore.generateWithMessages(
     messages: messages,
     model: model,
@@ -236,6 +237,7 @@ class CloudInferenceRepository {
     geminiThinkingMode: geminiThinkingMode,
     reasoningEffort: reasoningEffort,
     impactCollector: impactCollector,
+    promptCacheKey: promptCacheKey,
   );
 
   /// Install a model in Ollama with progress tracking

@@ -206,6 +206,7 @@ extension _TaskAgentExecuteSetup on TaskAgentWorkflow {
     required ProposalLedger ledger,
     required SuggestionRetractionService retractionService,
     RelatedTaskLookup? relatedTasks,
+    List<String> priorObservationTexts = const [],
   }) {
     final pendingSets = ledger.pendingSets;
     final toolDispatcher = TaskToolDispatcher(
@@ -229,6 +230,7 @@ extension _TaskAgentExecuteSetup on TaskAgentWorkflow {
 
     return TaskAgentStrategy(
       domainLogger: domainLogger,
+      priorObservationTexts: priorObservationTexts,
       // Withhold `update_report` from the opening turn so the wake does the
       // work before it reports on it. Null when the flag is off, which
       // leaves one fixed tool list for the conversation as before.

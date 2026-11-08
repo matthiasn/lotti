@@ -494,20 +494,21 @@ class TaskAgentContextBuilder {
   }) async {
     final buffer = StringBuffer();
 
-    // Ordering is by volatility, least-volatile first, so provider prefix
-    // caches survive consecutive wakes. The stable header is label / correction
-    // context (rare-change, user-gated), the category knowledge brief (typed
-    // by the user, rarer still) and then the compacted task log (append-only
-    // between folds), which ends the prefix. Everything that
-    // changes more often than the log lives in the volatile tail below:
-    // the task-state JSON (ticking timeSpent), the parent-project and
-    // linked-task summaries (which embed OTHER agents' reports and so change
-    // out-of-band with this task's wakes — see ADR 0027), timer, ledger,
-    // attention, observations, and trigger tokens. One flipped byte voids the
-    // cache for every byte after it, so nothing that changes more often than
-    // the log may precede it. (This matches the project agent's ordering.)
+    // Ordering keeps provider prefix caches alive across consecutive wakes.
+    // The stable header is the category knowledge brief (typed by the user)
+    // and then the compacted task log (append-only between folds), which ends
+    // the prefix. A block that is REWRITTEN rather than appended to lives in
+    // the volatile tail below, however rarely it changes: one flipped byte
+    // voids the cache for every byte after it. That covers the task-state
+    // JSON (ticking timeSpent), the parent-project and linked-task summaries
+    // (which embed OTHER agents' reports — see ADR 0027), the label lists
+    // (rewritten whenever a label is assigned or suppressed), the category's
+    // correction examples (newest first, so every correction shifts them),
+    // timer, ledger, attention and trigger tokens. Observations append to the
+    // log, so they stay in it. (This matches the project agent's ordering.)
 
-    // Inject label context and correction examples.
+    // Label context and correction examples, written into the tail below.
+    final labelAndCorrectionContext = StringBuffer();
     try {
       final taskEntity = task ?? await journalDb.journalEntityById(taskId);
       if (taskEntity is Task) {
@@ -517,7 +518,7 @@ class TaskAgentContextBuilder {
           journalDb: journalDb,
         );
         if (labelContext.isNotEmpty) {
-          buffer.write(labelContext);
+          labelAndCorrectionContext.write(labelContext);
         }
 
         // Correction examples for checklist item title accuracy.
@@ -526,7 +527,7 @@ class TaskAgentContextBuilder {
           journalDb: journalDb,
         );
         if (correctionContext.isNotEmpty) {
-          buffer.write(correctionContext);
+          labelAndCorrectionContext.write(correctionContext);
         }
       }
     } catch (e, s) {
@@ -540,7 +541,7 @@ class TaskAgentContextBuilder {
 
     // The category brief is shared by every task in the category, so an edit
     // voids each task's cached prefix once — the price of text a person
-    // changes by hand, and why it sits above the log rather than below it.
+    // changes by hand, and why it opens the message above the log.
     final trimmedKnowledge = categoryKnowledge?.trim();
     if (trimmedKnowledge != null && trimmedKnowledge.isNotEmpty) {
       buffer
@@ -641,6 +642,8 @@ class TaskAgentContextBuilder {
         ..writeln();
     }
 
+    buffer.write(labelAndCorrectionContext);
+
     final activeTimerSection = await _buildActiveTimerSection(
       timeService,
       taskId,
@@ -684,8 +687,15 @@ class TaskAgentContextBuilder {
 
     if (journalObservations.isNotEmpty) {
       // Inject prior critical observations first so the agent addresses
-      // grievances and excellence notes before routine work.
-      _writePriorCriticalObservations(buffer, journalObservations);
+      // grievances and excellence notes before routine work. A note still in
+      // the compacted log's tail is already in front of the model, so only
+      // the ones folded into its summary are repeated here.
+      _writePriorCriticalObservations(buffer, [
+        for (final obs in journalObservations)
+          if (!useCompactedLog ||
+              !compactedTaskLog.contains('(id: ${obs.id}, '))
+            obs,
+      ]);
 
       // With compaction on, observations live in the `## Task Log` event tail
       // (interleaved as observation-tagged lines, folded into summaries by

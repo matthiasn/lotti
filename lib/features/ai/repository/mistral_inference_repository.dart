@@ -460,6 +460,8 @@ class MistralInferenceRepository {
   ///
   /// This method supports multi-turn conversations with Mistral's API and
   /// the same tool-selection override and reasoning effort as [generateText].
+  /// [promptCacheKey] is sent as `prompt_cache_key`, which Mistral documents
+  /// as raising the chance that requests sharing a prefix hit its cache.
   Stream<CreateChatCompletionStreamResponse> generateTextWithMessages({
     required List<ChatCompletionMessage> messages,
     required String model,
@@ -471,6 +473,7 @@ class MistralInferenceRepository {
     ChatCompletionToolChoiceOption? toolChoice,
     ReasoningEffort? reasoningEffort,
     GeminiThinkingMode? thinkingMode,
+    String? promptCacheKey,
   }) async* {
     yield* _generate(
       messages: convertMessages(messages),
@@ -486,6 +489,7 @@ class MistralInferenceRepository {
         requested: reasoningEffort,
         thinkingMode: thinkingMode,
       ),
+      promptCacheKey: promptCacheKey,
     );
   }
 
@@ -681,6 +685,7 @@ class MistralInferenceRepository {
     List<ChatCompletionTool>? tools,
     ChatCompletionToolChoiceOption? toolChoice,
     String? reasoningEffort,
+    String? promptCacheKey,
   }) async* {
     final requestBody = <String, dynamic>{
       'model': model,
@@ -689,6 +694,7 @@ class MistralInferenceRepository {
       'temperature': ?mistralRequestTemperature(model, temperature),
       'max_tokens': ?maxCompletionTokens,
       'reasoning_effort': ?reasoningEffort,
+      'prompt_cache_key': ?promptCacheKey,
     };
 
     // Add tools if provided

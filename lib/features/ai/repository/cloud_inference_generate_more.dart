@@ -363,6 +363,7 @@ class CloudInferenceGenerateMore {
     GeminiThinkingMode? geminiThinkingMode,
     ReasoningEffort? reasoningEffort,
     InferenceImpactCollector? impactCollector,
+    String? promptCacheKey,
   }) {
     if (provider.inferenceProviderType == InferenceProviderType.sherpa) {
       throw UnsupportedError('sherpa-onnx supports audio transcription only');
@@ -393,6 +394,7 @@ class CloudInferenceGenerateMore {
         geminiThinkingMode: geminiThinkingMode,
         reasoningEffort: reasoningEffort,
         impactCollector: impactCollector,
+        promptCacheKey: promptCacheKey,
       ),
       provider,
     );
@@ -439,6 +441,7 @@ class CloudInferenceGenerateMore {
     GeminiThinkingMode? geminiThinkingMode,
     ReasoningEffort? reasoningEffort,
     InferenceImpactCollector? impactCollector,
+    String? promptCacheKey,
   }) {
     // For Gemini, use the native multi-turn API with signature support
     if (provider.inferenceProviderType == InferenceProviderType.gemini) {
@@ -492,6 +495,7 @@ class CloudInferenceGenerateMore {
         toolChoice: toolChoice,
         reasoningEffort: reasoningEffort,
         thinkingMode: geminiThinkingMode,
+        promptCacheKey: promptCacheKey,
       );
     }
 

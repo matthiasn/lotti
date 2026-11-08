@@ -7,8 +7,13 @@ cache hit rate where 80 %+ was expected; what the provider cache can and cannot
 keep; which prompt blocks break the cached prefix; why observations read as long
 and repetitive; and a ranked plan with a way to check each step.
 
-This is a proposal. It changes no code. Every claim about the code cites the file
-it was read from on `main` at `0a29d0112c`.
+Every claim about the code cites the file it was read from on `main` at
+`0a29d0112c`, before any of the changes below.
+
+**Status:** H1, H2, H4 and the per-wake fingerprint of H6 ship in the same pull
+request as this document. H3 waits for a DeepSeek eval and a report-only
+execution guard. H5 is a product decision and is not built. The Stats-tab
+opening-request rate of H6 is not built either; the SQL below measures it.
 
 ## Summary
 

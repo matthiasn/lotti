@@ -1863,6 +1863,30 @@ void main() {
         expect(developerContent['value'], equals('Follow these rules'));
         expect(developerContent['runtimeType'], equals('text'));
       });
+
+      test('sends prompt_cache_key only when a key is given', () async {
+        final keyed = await sentBody(
+          () => repository.generateTextWithMessages(
+            messages: userHello,
+            model: model,
+            baseUrl: baseUrl,
+            apiKey: apiKey,
+            promptCacheKey: 'agent-1',
+          ),
+        );
+        expect(keyed['prompt_cache_key'], 'agent-1');
+
+        final unkeyed = await sentBody(
+          () => repository.generateTextWithMessages(
+            messages: userHello,
+            model: model,
+            baseUrl: baseUrl,
+            apiKey: apiKey,
+          ),
+        );
+        // Absent, not null: a strict server may reject an unknown null field.
+        expect(unkeyed.containsKey('prompt_cache_key'), isFalse);
+      });
     });
 
     group('content extraction', () {

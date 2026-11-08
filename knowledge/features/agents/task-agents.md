@@ -498,9 +498,9 @@ These context details are load-bearing:
   category carries a `knowledgeBrief`, the user message opens with a
   `## Category Knowledge` section holding it verbatim, read through the one
   seam every prompt injector shares (`AiInputRepository.buildCategoryKnowledge`).
-  It sits after the label/correction context and *ahead* of the task log: it is
-  typed by a person and changes rarer than the append-only log, so it belongs in
-  the cached header, at the price of voiding every task's prefix once per edit.
+  It opens the message, *ahead* of the task log: it is typed by a person and
+  changes rarer than the append-only log, so it belongs in the cached header, at
+  the price of voiding every task's prefix once per edit.
   The scaffold (`taskAgentScaffoldCategoryKnowledge`) tells the agent the brief
   is the user's own words, outranks inference about the domain, is applied
   silently and is never something to restate or propose changes to. Blank or
@@ -548,6 +548,33 @@ These context details are load-bearing:
   language and decision-section wording. The executor uses the same policy
   to exclude label/language-only housekeeping from forced publication, and to
   force publication after a status change since the last report.
+- **Label lists and correction examples sit in the volatile tail**, after the
+  task state. Both are rewritten rather than appended to: `## Available Labels`
+  drops a label once it is assigned (`TaskLabelHandler.buildLabelContext`), and
+  the category's correction examples are newest first and capped. In the head
+  they voided the cached log after every label decision.
+- **Requests to Mistral carry the agent id as `prompt_cache_key`**
+  (`CloudInferenceWrapper.promptCacheKey`), the routing hint Mistral documents
+  for requests that share a prefix. The id is a random UUID, so it carries no
+  content; other providers are sent nothing.
+- **Every wake logs a prompt fingerprint** (`promptFingerprint`, subdomain
+  `cache`): truncated hashes of the tool list, the system prompt and the
+  message head before the log, plus the log's length and the active fold
+  summary. When a wake's opening request misses the cache, the first field
+  that differs from the previous wake names the block that changed; no prompt
+  text is logged. The per-request token counts it is read against are the
+  `consumption_events` rows (`wake_run_key`, `turn_index`,
+  `cached_input_tokens`).
+- **Observations follow one contract** (`task_observation_contract.dart`):
+  `taskObservationRule` is interpolated into both scaffolds, and the
+  `record_observations` handler applies `applyTaskObservationContract` against
+  the wake's recalled observations and its own earlier calls. A routine or
+  notable note over 280 characters, a repeat (after normalising case, spacing
+  and punctuation) and a fourth non-critical note in one call are skipped, and
+  the reply names each; critical notes are only ever skipped as repeats, since
+  they feed template evolution. In compacted mode `## Prior Critical
+  Observations` lists only the critical notes no longer in the log's visible
+  tail, so none is shown twice.
 - **Parent project context** carries only the project agent's latest `oneLiner`
   and `tldr` — the full report body is omitted to keep wake prefill small.
 - **Linked-task context carries one-liners only, within a budget.** Each

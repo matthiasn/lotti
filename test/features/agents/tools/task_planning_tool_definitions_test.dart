@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/workflow/agent_observations.dart';
+import 'package:lotti/features/agents/workflow/task_observation_contract.dart';
 
 void main() {
   group('task planning, attention & reporting tool definitions', () {
@@ -244,12 +245,25 @@ void main() {
 
         expect(
           tool.parameters,
-          recordObservationsParameters(textDescription: textDescription),
+          recordObservationsParameters(
+            textDescription: textDescription,
+            maxItems: taskObservationMaxItems,
+          ),
+        );
+        expect(
+          (properties['observations'] as Map)['maxItems'],
+          taskObservationMaxItems,
         );
         expect(
           textDescription,
-          contains('For critical priority, write a full paragraph'),
+          contains('at most $taskObservationMaxChars characters'),
         );
+      });
+
+      test('steers away from restating state and repeating notes', () {
+        expect(tool.description, contains('Never restate task'));
+        expect(tool.description, contains('[[supersedes:'));
+        expect(tool.description, isNot(contains('full paragraph')));
       });
     });
 

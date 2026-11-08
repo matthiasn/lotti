@@ -379,6 +379,19 @@ extension TaskAgentExecute on TaskAgentWorkflow {
               hasLinkedTasks: linkedTasks.taskIds.isNotEmpty,
             );
       final tools = _contextBuilder.buildToolDefinitions(facts: wakeFacts);
+      // Names the block that changed when a wake's opening request misses
+      // the provider's prompt cache; hashes only, no prompt text.
+      logInfo(
+        promptFingerprint(
+          systemPrompt: systemPrompt,
+          tools: tools,
+          userMessage: userMessage,
+          logStart: builtMessage.logStart,
+          logEnd: builtMessage.logEnd,
+          activeSummaryId: memoryView.activeSummaryId,
+        ),
+        subDomain: 'cache',
+      );
 
       final strategy = _buildStrategy(
         tools: tools,
@@ -391,11 +404,17 @@ extension TaskAgentExecute on TaskAgentWorkflow {
         ledger: ledger,
         retractionService: retractionService,
         relatedTasks: relatedTasks,
+        priorObservationTexts: [
+          for (final observation in journalObservations) observation.text,
+        ],
       );
 
       final inferenceRepo = CloudInferenceWrapper(
         cloudRepository: this.cloudInferenceRepository,
         geminiThinkingMode: resolvedProfile.thinkingModel?.geminiThinkingMode,
+        // Every wake of this agent shares a prompt prefix; the agent id is a
+        // random UUID, so it routes requests together without carrying content.
+        promptCacheKey: agentId,
       );
 
       // Record template + soul provenance and the resolved model on the wake

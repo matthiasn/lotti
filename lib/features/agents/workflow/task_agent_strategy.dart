@@ -23,6 +23,7 @@ import 'package:lotti/features/agents/workflow/change_proposal_filter.dart';
 import 'package:lotti/features/agents/workflow/change_set_builder.dart';
 import 'package:lotti/features/agents/workflow/related_task_lookup.dart';
 import 'package:lotti/features/agents/workflow/task_agent_report_editor.dart';
+import 'package:lotti/features/agents/workflow/task_observation_contract.dart';
 import 'package:lotti/features/agents/workflow/task_project_options.dart';
 import 'package:lotti/features/agents/workflow/task_pull_request_candidates.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
@@ -104,7 +105,12 @@ class TaskAgentStrategy extends ConversationStrategy {
     this.refreshLinkedPullRequests,
     this.flushChangeSet,
     this.stagedToolExposure,
+    this.priorObservationTexts = const [],
   });
+
+  /// The texts of the agent's recent observations, which a new note may not
+  /// repeat (see `applyTaskObservationContract`).
+  final List<String> priorObservationTexts;
 
   /// The [AgentToolExecutor] that wraps handler calls with enforcement and
   /// audit logging.
