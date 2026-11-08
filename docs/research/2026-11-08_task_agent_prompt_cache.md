@@ -100,7 +100,10 @@ seeded Laura directives and this model id:
 - 29 tool definitions serialized the way the Mistral repository sends them:
   **35,494 characters** (≈ 10K tokens).
 
-So about **15K tokens** precede the user message, unchanged on every wake.
+So about **15K tokens** precede the user message. That is a snapshot of the
+full tool list, not a constant: the tool gates can change it between wakes
+(linking a pull request adds `refresh_pull_requests`), so check the `tools`
+field of the fingerprint before assuming two wakes shared the header.
 
 A wake is several requests: every turn re-sends the whole conversation so far,
 and the usage row adds them all up. At ~20–25K per opening prompt, 80K input
@@ -388,9 +391,11 @@ alone:
    Critical notes are only ever skipped as repeats: they feed template
    evolution, so the 600-character aim stays guidance. Reworded repeats still
    get through; only exact matches after normalising are caught.
-3. Critical observations render once. In compacted mode,
-   `## Prior Critical Observations` lists only those no longer in the visible
-   tail, meaning they were folded into the summary.
+3. In compacted mode, `## Prior Critical Observations` lists only critical
+   notes no longer in the visible tail, so a note in the tail is not shown a
+   second time there. Two duplications remain: a folded summary may still
+   restate a grievance the section lists, and the legacy fallback still shows
+   critical notes both in that section and in `## Agent Journal`.
 
 **Retention:**
 
@@ -578,7 +583,7 @@ What to read from them:
 | Result | Meaning |
 |---|---|
 | Opening ≈ 0 even at gaps under a minute | Reading 1: routing or a prefix break. Test H1 first, then H2/H3 |
-| Opening high, but later turns carry most of the uncached tokens | Reading 2: fresh tool results and replies per turn. Trim large tool results and turns per wake; prompt order will not help |
+| Opening high, but later turns carry most of the uncached tokens | Reading 2, or the forced report retry: its narrowed tool list voids the whole conversation (H3). Check the wakes that logged `retrying with forced update_report` first; if the misses are elsewhere, trim large tool results and turns per wake |
 | Opening high under a few minutes, ≈ 0 beyond | Consistent with a lifetime in that bracket, but not proof: a long-gap wake may also have changed its prefix (check the fingerprint) or reached another replica. Measure the lifetime with repeated requests on a fixed prefix and key |
 | Later turns well below (n−1)/n of their input | Breaks within the wake: the forced retry (H3) |
 | `duration_ms` falls as the cached share rises | The latency gain, measured |
