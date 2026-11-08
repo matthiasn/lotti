@@ -7321,9 +7321,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get frontChatTitle => 'Společník';
 
   @override
-  String get frontChatVoiceLabel => 'Hlas';
-
-  @override
   String get frontChatYesterday => 'Včera';
 
   @override

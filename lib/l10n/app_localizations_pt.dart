@@ -7317,9 +7317,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get frontChatTitle => 'Acompanhante';
 
   @override
-  String get frontChatVoiceLabel => 'Voz';
-
-  @override
   String get frontChatYesterday => 'Ontem';
 
   @override

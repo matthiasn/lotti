@@ -8,6 +8,7 @@ import 'package:lotti/features/ai/state/ai_runtime_settings_controller.dart';
 import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
+import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
 import 'package:lotti/features/front_agent/state/front_chat_controller.dart';
@@ -16,6 +17,7 @@ import 'package:lotti/features/front_agent/state/front_conversation_providers.da
 import 'package:lotti/features/front_agent/state/front_inbox_filter.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_hero.dart';
 import 'package:lotti/features/front_agent/ui/front_conversation_actions.dart';
+import 'package:lotti/features/front_agent/ui/front_conversation_list.dart';
 import 'package:lotti/features/front_agent/ui/front_profile_choice.dart';
 import 'package:lotti/features/front_agent/ui/front_voice_controls.dart';
 import 'package:lotti/features/front_agent/ui/front_voice_switch.dart';
@@ -116,6 +118,9 @@ class FrontChatHeader extends ConsumerWidget {
             ),
           ),
         ),
+        // The list's own actions, on its page's band — the band the list
+        // carries itself beside the conversation.
+        ...FrontConversationListActions.of(context, ref),
         close,
       ];
     } else {
@@ -181,10 +186,10 @@ class FrontChatHeader extends ConsumerWidget {
         Expanded(
           child: _Identity(name: messages.frontChatTitle),
         ),
+        // Her voice, as one pair of discs: say it again, and her mute.
         if (voiceId != null) ...[
           FrontVoiceButton(conversationId: voiceId),
           if (listBeside) ...[
-            SizedBox(width: tokens.spacing.step2),
             const FrontVoiceSwitch(),
             SizedBox(width: tokens.spacing.step2),
             DesignSystemIconAction(
@@ -253,6 +258,16 @@ class FrontChatHeader extends ConsumerWidget {
               ).menuItems(conversation, startsGroup: true),
           ],
         ),
+        // Beside the list there is room to set the sheet's close apart from
+        // the conversation's controls.
+        if (listBeside) ...[
+          SizedBox(width: tokens.spacing.step2),
+          DesignSystemDivider(
+            orientation: DesignSystemDividerOrientation.vertical,
+            length: tokens.spacing.step6,
+          ),
+          SizedBox(width: tokens.spacing.step2),
+        ],
         close,
       ];
     }
@@ -267,11 +282,9 @@ class FrontChatHeader extends ConsumerWidget {
       child: Padding(
         // The side gutter the bubbles and the list keep: the header's
         // leading and trailing controls sit on the same edges as the
-        // content below them.
-        padding: EdgeInsets.symmetric(
-          horizontal: tokens.spacing.step5,
-          vertical: tokens.spacing.step3,
-        ),
+        // content below them. Its height — a tap target and this inset —
+        // is the list's band's too, so beside it their hairlines meet.
+        padding: frontBandPadding(tokens),
         child: Row(children: row),
       ),
     );
@@ -299,7 +312,7 @@ class _Identity extends ConsumerWidget {
           : FrontChatHeaderKeys.name,
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
-      style: tokens.typography.styles.subtitle.subtitle1.copyWith(
+      style: tokens.typography.styles.subtitle.subtitle2.copyWith(
         color: tokens.colors.text.highEmphasis,
       ),
     );
@@ -330,7 +343,7 @@ class _Identity extends ConsumerWidget {
                   softWrap: false,
                   overflow: TextOverflow.ellipsis,
                   style: tokens.typography.styles.others.caption.copyWith(
-                    color: tokens.colors.text.mediumEmphasis,
+                    color: tokens.colors.text.lowEmphasis,
                   ),
                 ),
               ),

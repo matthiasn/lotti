@@ -12359,12 +12359,6 @@ abstract class AppLocalizations {
   /// **'Companion'**
   String get frontChatTitle;
 
-  /// No description provided for @frontChatVoiceLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Voice'**
-  String get frontChatVoiceLabel;
-
   /// No description provided for @frontChatYesterday.
   ///
   /// In en, this message translates to:

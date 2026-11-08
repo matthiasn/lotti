@@ -85,6 +85,26 @@ class FrontConversationListOpen extends Notifier<bool> {
   void close() => state = false;
 }
 
+/// Whether the conversation list's search field is open. The list's band —
+/// its own beside the conversation, the page header's on a phone — opens it,
+/// and the list shows the field; disposed with the list, so a list opened
+/// again starts without it.
+final NotifierProvider<FrontConversationSearchOpen, bool>
+frontConversationSearchOpenProvider =
+    NotifierProvider.autoDispose<FrontConversationSearchOpen, bool>(
+      FrontConversationSearchOpen.new,
+      name: 'frontConversationSearchOpenProvider',
+    );
+
+class FrontConversationSearchOpen extends Notifier<bool> {
+  @override
+  bool build() => false;
+
+  void open() => state = true;
+
+  void close() => state = false;
+}
+
 /// The id a first conversation takes when nothing was ever said: minted
 /// once per session, so the empty surface and the first send agree on it,
 /// and minted again once a conversation that took it is deleted.

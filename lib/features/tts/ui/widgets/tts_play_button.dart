@@ -23,8 +23,13 @@ class TtsPlayButton extends StatelessWidget {
     required this.onStop,
     this.progress,
     this.playLabel,
+    this.idleIcon,
     super.key,
   });
+
+  /// The idle glyph; the speaker when null. A rail that already has a
+  /// speaker for something else (her mute) says "again" with its own glyph.
+  final IconData? idleIcon;
 
   /// What the idle control says it plays; a summary when null.
   final String? playLabel;
@@ -61,7 +66,7 @@ class TtsPlayButton extends StatelessWidget {
     final glyph = switch (mode) {
       TtsButtonMode.playing => LottiIcons.stop,
       TtsButtonMode.preparing => LottiIcons.pending,
-      TtsButtonMode.idle => LottiIcons.volume,
+      TtsButtonMode.idle => idleIcon ?? LottiIcons.volume,
     };
 
     return DsAiDiscButton(

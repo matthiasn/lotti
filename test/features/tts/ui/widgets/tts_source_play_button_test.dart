@@ -1,8 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tts/model/tts_playback_state.dart';
 import 'package:lotti/features/tts/state/tts_playback_controller.dart';
 import 'package:lotti/features/tts/ui/widgets/tts_play_button.dart';
 import 'package:lotti/features/tts/ui/widgets/tts_source_play_button.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../../widget_test_utils.dart';
 
@@ -27,6 +29,7 @@ void main() {
     WidgetTester tester,
     TtsPlaybackState state, {
     String? playLabel,
+    IconData? idleIcon,
   }) async {
     played = [];
     await tester.pumpWidget(
@@ -35,6 +38,7 @@ void main() {
           sourceId: 'mine',
           onPlay: played.add,
           playLabel: playLabel,
+          idleIcon: idleIcon,
         ),
         overrides: [
           ttsPlaybackControllerProvider.overrideWith(
@@ -63,6 +67,15 @@ void main() {
       playLabel: 'Say it again',
     );
     expect(button.playLabel, 'Say it again');
+  });
+
+  testWidgets("passes the host's idle glyph on", (tester) async {
+    final button = await pump(
+      tester,
+      const TtsPlaybackState(),
+      idleIcon: LottiIcons.replay,
+    );
+    expect(button.idleIcon, LottiIcons.replay);
   });
 
   testWidgets('its own utterance shows progress and a tap stops it', (

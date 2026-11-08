@@ -65,6 +65,7 @@ class FrontChatPane extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final tokens = context.designTokens;
     final beside = listWidth != null;
     // Beside the conversation the list is always there: it never opens
     // over it.
@@ -111,9 +112,14 @@ class FrontChatPane extends ConsumerWidget {
           ? Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                SizedBox(
-                  width: listWidth,
-                  child: const FrontConversationList(beside: true),
+                // A step off the conversation's ground: the list is the
+                // sheet's sidebar, not more of the thread.
+                ColoredBox(
+                  color: tokens.colors.background.level02,
+                  child: SizedBox(
+                    width: listWidth,
+                    child: const FrontConversationList(beside: true),
+                  ),
                 ),
                 const DesignSystemDivider(
                   orientation: DesignSystemDividerOrientation.vertical,

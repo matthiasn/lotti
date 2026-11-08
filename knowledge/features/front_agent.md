@@ -1011,21 +1011,29 @@ conversation is another subject.
 
 The header's *Chats* control — a menu glyph named by its tooltip, so the
 conversation's title keeps its room on a phone — opens the list (`frontConversationListOpenProvider`),
-a page over the conversation with its own back, *Chats* and close.
-`FrontConversationList` leads with *New chat*, *Inbox* while something waits,
-and *Search chats*, which opens in place; then the history grouped by
-recency — *Today*, *Yesterday*, *Previous 7 days*, *Older* — flat: each
-group's day a caption in the accent, snug over its dense rows, no card and no
-hairlines. The accent splits the days while the rows stay neutral, so the open
-row's rounded fill is still the one strong surface in the list.
-A row is the title (two lines before it is cut) over one line of her last
-answer on the row's whole width (`FrontConversation.preview`, the first line
-of her latest `reply_to_user` or `ask_user` in it, read by
-`FrontConversationService`), fading out at its end — left out when there is
-none. A row says no time of its own: its recency section (Today, Yesterday,
-Previous 7 days, Older) says when, as the Claude and ChatGPT lists have it,
-and the title has its line to itself. On the open row's fill the second line
-is as bright as the title. A row's rename, archive and delete (its ⋯ at the
+a page over the conversation with its own back, *Chats*, the list's search
+and new-conversation glyphs (`FrontConversationListActions`) and close.
+Beside the conversation the list carries the same *Chats* title and glyphs on
+a band of its own, inset as her header is (`frontBandPadding`), so the two
+bands are one height and their hairlines run across the sheet as one; the list
+sits there on `background.level02`, a step off the conversation's ground. The
+search glyph opens the field in place (`frontConversationSearchOpenProvider`,
+disposed with the list); the new-conversation glyph wears the accent, the
+page's one action. `FrontConversationList` leads with *Inbox* while
+something waits; then the history grouped by recency — *Today*,
+*Yesterday*, *Previous 7 days*, *Older* — flat: each group's day a neutral
+low-emphasis caption, snug over its dense rows, no card and no hairlines. The
+accent means "press", so a day never wears it; the open row's rounded fill
+(`surface.hover`, a step brighter than a hovered row's `surface.enabled`)
+is the one strong surface in the list.
+A row is one line of title over one line of her last answer on the row's
+whole width (`FrontConversation.preview`, the first line of her latest
+`reply_to_user` or `ask_user` in it, read by `FrontConversationService`),
+each cut with an ellipsis, so every row is the same height and the list
+scans — the answer left out when there is none. A row says no time of its
+own: its recency section (Today, Yesterday, Previous 7 days, Older) says
+when, as the Claude and ChatGPT lists have it. On the open row's fill the
+second line is a step brighter, medium emphasis rather than low. A row's rename, archive and delete (its ⋯ at the
 end of the title's first line, in room every title leaves it so nothing
 reflows when it shows, its whole tap target inside the row) show on hover
 and focus, at rest on the open row too unless
@@ -1104,14 +1112,19 @@ about, in one row: her face at `ControlSizes.avatarCompact` — the spark when
 `enable_companion` is off — her name, and under it the open conversation's
 title (the inbox's name while that view is on; her name alone for a
 conversation not begun), an archived conversation marked before its title.
-Then her voice while the companion is on: `FrontVoiceButton`, the
-`FrontVoiceSwitch` that mutes her, and her stage; then an overflow and close.
+Then her voice while the companion is on, as one pair of AI discs:
+`FrontVoiceButton`, whose idle glyph is "again" rather than a speaker, and the
+`FrontVoiceSwitch` that mutes her — a speaker, struck through while muted, its
+state in the glyph's shape since the disc's accent means busy — then her
+stage, an overflow and close. The row is a tap target tall plus
+`frontBandPadding`.
 Where the list is a page over the conversation (a phone, a narrow window) the
 row opens with the *Chats* glyph and the inbox count, and the overflow
 leads with a new conversation, her stage and the switch that mutes her as a
 checked row (`frontVoiceMenuItem`), so the row fits a 360 dp phone with every
-control showing. Beside the list the switch sits on the row under the word
-*Voice* and the stage has its own control. The overflow then
+control showing. Beside the list the switch sits on the row beside her replay,
+the stage has its own control, and a short vertical rule sets close apart from
+the conversation's controls. The overflow then
 holds her AI profile once she exists, her internals, where the thread's cost
 is accounted, and this conversation's rename, archive and delete as a group
 of their own — the same `FrontMenuButton` the list's rows have. A

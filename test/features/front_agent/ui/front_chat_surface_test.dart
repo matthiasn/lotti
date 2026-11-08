@@ -4,6 +4,7 @@ import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/ai_consumption/model/consumption_aggregation_models.dart';
 import 'package:lotti/features/ai_consumption/state/consumption_providers.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
 import 'package:lotti/features/front_agent/model/front_chat_thread.dart';
 import 'package:lotti/features/front_agent/model/front_conversation.dart';
@@ -77,6 +78,27 @@ void main() {
     // The list carries the way to it and a new conversation.
     expect(find.byKey(FrontChatHeaderKeys.chats), findsNothing);
     expect(find.byKey(FrontChatHeaderKeys.newChat), findsNothing);
+    expect(find.byKey(FrontConversationListKeys.newChat), findsOne);
+
+    // The list is the sheet's sidebar, a step off the conversation's ground.
+    final tokens = tester.element(find.byType(FrontChatPane)).designTokens;
+    final ground = tester.widget<ColoredBox>(
+      find
+          .ancestor(
+            of: find.byType(FrontConversationList),
+            matching: find.byType(ColoredBox),
+          )
+          .first,
+    );
+    expect(ground.color, tokens.colors.background.level02);
+    // Its band and her header end on one line: one hairline across.
+    final band = find
+        .ancestor(of: find.text('Chats'), matching: find.byType(DecoratedBox))
+        .first;
+    expect(
+      tester.getRect(band).bottom,
+      tester.getRect(find.byType(FrontChatHeader)).bottom,
+    );
   });
 
   testWidgets('between a phone and a desktop she is a panel with the list a '

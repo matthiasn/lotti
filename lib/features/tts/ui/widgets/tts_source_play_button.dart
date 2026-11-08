@@ -16,10 +16,15 @@ class TtsSourcePlayButton extends ConsumerWidget {
     required this.sourceId,
     required this.onPlay,
     this.playLabel,
+    this.idleIcon,
     super.key,
   });
 
   final String sourceId;
+
+  /// The idle glyph, when the speaker would be mistaken for a control
+  /// beside it; see [TtsPlayButton.idleIcon].
+  final IconData? idleIcon;
 
   /// What the idle control says it plays; a summary when null.
   final String? playLabel;
@@ -48,6 +53,7 @@ class TtsSourcePlayButton extends ConsumerWidget {
       mode: mode,
       progress: progress,
       playLabel: playLabel,
+      idleIcon: idleIcon,
       onPlay: () => onPlay(controller),
       onStop: controller.stop,
     );

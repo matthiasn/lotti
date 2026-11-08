@@ -7253,9 +7253,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get frontChatTitle => 'Följeslagare';
 
   @override
-  String get frontChatVoiceLabel => 'Röst';
-
-  @override
   String get frontChatYesterday => 'Igår';
 
   @override

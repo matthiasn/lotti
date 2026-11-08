@@ -3,8 +3,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/companion/model/companion_customization.dart';
 import 'package:lotti/features/companion/state/companion_customization_controller.dart';
+import 'package:lotti/features/design_system/components/buttons/ds_ai_disc_button.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
-import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/front_agent/ui/front_voice_switch.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:material_ui/material_ui.dart';
@@ -73,17 +74,29 @@ void main() {
   }
 
   group('the switch', () {
-    DesignSystemToggle toggle(WidgetTester tester) => tester
-        .widget<DesignSystemToggle>(find.byKey(FrontVoiceSwitchKeys.toggle));
+    DsAiDiscButton disc(WidgetTester tester) =>
+        tester.widget<DsAiDiscButton>(find.byKey(FrontVoiceSwitchKeys.toggle));
 
-    testWidgets('shows whether she answers aloud, under the word "Voice"', (
-      tester,
-    ) async {
+    testWidgets('is a disc like her replay that says by its glyph whether '
+        'she answers aloud, and is announced as a toggle', (tester) async {
+      final semantics = tester.ensureSemantics();
       await pump(tester, const FrontVoiceSwitch());
 
-      expect(toggle(tester).value, isTrue);
-      expect(toggle(tester).label, 'Voice');
-      expect(toggle(tester).semanticsLabel, 'Answer spoken questions aloud');
+      expect(disc(tester).icon, LottiIcons.volume);
+      expect(disc(tester).label, 'Answer spoken questions aloud');
+      // Its accent means busy, never "on": the state is the glyph's shape.
+      expect(disc(tester).active, isFalse);
+      expect(
+        tester.getSemantics(find.byKey(FrontVoiceSwitchKeys.toggle)),
+        isSemantics(
+          label: 'Answer spoken questions aloud',
+          isButton: true,
+          hasToggledState: true,
+          isToggled: true,
+          hasTapAction: true,
+        ),
+      );
+      semantics.dispose();
     });
 
     testWidgets('switched off, she is muted — the same setting as the '
@@ -94,7 +107,8 @@ void main() {
       await tester.pump();
 
       expect(custom.saved.single.speaksReplies, isFalse);
-      expect(toggle(tester).value, isFalse);
+      // Muted, the speaker is struck through.
+      expect(disc(tester).icon, LottiIcons.volumeOff);
     });
 
     testWidgets('switched on again, she speaks again', (tester) async {

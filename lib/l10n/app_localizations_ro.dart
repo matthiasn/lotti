@@ -7365,9 +7365,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get frontChatTitle => 'Însoțitor';
 
   @override
-  String get frontChatVoiceLabel => 'Voce';
-
-  @override
   String get frontChatYesterday => 'Ieri';
 
   @override

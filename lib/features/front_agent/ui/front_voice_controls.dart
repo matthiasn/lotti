@@ -111,6 +111,8 @@ class FrontVoiceButton extends ConsumerWidget {
       key: FrontVoiceControlKeys.replay,
       sourceId: sourceId,
       playLabel: context.messages.frontChatReplayAnswer,
+      // "Again", not a speaker: the mute beside it is the speaker.
+      idleIcon: LottiIcons.replay,
       onPlay: (_) =>
           FrontVoice.speak(ref, context, conversationId, answer).ignore(),
     );

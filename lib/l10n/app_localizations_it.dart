@@ -7328,9 +7328,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get frontChatTitle => 'Compagno';
 
   @override
-  String get frontChatVoiceLabel => 'Voce';
-
-  @override
   String get frontChatYesterday => 'Ieri';
 
   @override

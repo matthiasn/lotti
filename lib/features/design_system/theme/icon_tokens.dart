@@ -389,6 +389,9 @@ abstract final class LottiIcons {
   /// Audio output level.
   static const IconData volume = LucideIcons.volume2;
 
+  /// Audio output silenced: a voice that will not speak.
+  static const IconData volumeOff = LucideIcons.volumeX;
+
   /// An audio signal.
   static const IconData waveform = LucideIcons.audioWaveform;
 

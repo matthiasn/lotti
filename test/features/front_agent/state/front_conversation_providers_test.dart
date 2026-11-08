@@ -212,4 +212,26 @@ void main() {
       expect(await c.read(frontActiveConversationProvider.future), 'c-1');
     }),
   );
+
+  test(
+    'the search opens and closes, and starts closed for each list',
+    () async {
+      final c = ProviderContainer();
+      addTearDown(c.dispose);
+      final sub = c.listen(frontConversationSearchOpenProvider, (_, _) {});
+
+      expect(sub.read(), isFalse);
+      c.read(frontConversationSearchOpenProvider.notifier).open();
+      expect(sub.read(), isTrue);
+      c.read(frontConversationSearchOpenProvider.notifier).close();
+      expect(sub.read(), isFalse);
+
+      // Gone with the list that watched it: the next list starts without it.
+      c.read(frontConversationSearchOpenProvider.notifier).open();
+      sub.close();
+      // Auto-dispose runs once the container settles.
+      await c.pump();
+      expect(c.read(frontConversationSearchOpenProvider), isFalse);
+    },
+  );
 }
