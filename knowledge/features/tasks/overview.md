@@ -88,6 +88,7 @@ stateDiagram-v2
   Base --> Linked: tap linked-task row → pushDesktopTaskDetail(otherId)
   Linked --> Linked: tap linked-task row → push another
   Linked --> Base: back arrow → popDesktopTaskDetail()
+  Linked --> Base: tap a list row → openTask(rowId)
 ```
 
 - `TasksLocation` calls `resetDesktopTaskDetail(taskId)` on URL change, seeding
@@ -98,6 +99,10 @@ stateDiagram-v2
   navigation stack are the same thing.
 - The back arrow renders on desktop only when the stack is deeper than one — the
   base task hides it, since the list pane already returns to a sibling.
+- A list-row tap calls `NavService.openTask`, which replaces the stack with
+  that one task. A plain beam would not: the URL still names the base task a
+  linked task was opened from, and `resetDesktopTaskDetail` keeps the pushes
+  above an unchanged base — so tapping that base in the list did nothing.
 - `desktopSelectedTaskId` stays in sync with `stack.last`, so existing
   list-pane highlight listeners keep working unchanged.
 

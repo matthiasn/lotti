@@ -767,11 +767,13 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
                                             selectedTaskId: activeTaskId,
                                             hoveredTaskIdNotifier:
                                                 _hoveredTaskIdNotifier,
+                                            // openTask, not a beam: the
+                                            // desktop URL keeps the task a
+                                            // linked task was opened from, so
+                                            // beaming to it is a no-op.
                                             onTap: () => ref
                                                 .read(navServiceProvider)
-                                                .beamToNamed(
-                                                  '/tasks/${item.meta.id}',
-                                                ),
+                                                .openTask(item.meta.id),
                                           ),
                                         ),
                                       );
