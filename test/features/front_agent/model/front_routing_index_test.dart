@@ -71,6 +71,37 @@ void main() {
     expect(index.render(), isNot(contains('Never rendered')));
   });
 
+  test('a row carries its category only when asked — as '
+      '<conversation_tasks> asks, never the index', () {
+    const row = FrontIndexRow(
+      kind: FrontDestinationKind.task,
+      id: 't1',
+      title: 'Task t1',
+      status: 'OPEN',
+      categoryId: 'lotti',
+    );
+    expect(
+      FrontRoutingIndex.renderRow(row, withCategory: true),
+      '- task:t1 | Task t1 | OPEN | category:lotti',
+    );
+    expect(FrontRoutingIndex.renderRow(row), '- task:t1 | Task t1 | OPEN');
+    expect(
+      FrontRoutingIndex(tasks: const [row]).render(),
+      isNot(contains('category:lotti')),
+    );
+    expect(
+      FrontRoutingIndex.renderRow(
+        const FrontIndexRow(
+          kind: FrontDestinationKind.task,
+          id: 't2',
+          title: 'Task t2',
+        ),
+        withCategory: true,
+      ),
+      '- task:t2 | Task t2',
+    );
+  });
+
   test('truncation is announced per kind, exact where the count is known', () {
     final index = FrontRoutingIndex(
       tasks: [task('t')],

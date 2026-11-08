@@ -302,8 +302,11 @@ pay across turns. One-liners are rendered; TL;DRs are held on the row for
 tokens.
 
 **The tasks the conversation named** follow `<recent_turns>` as a
-`<conversation_tasks>` block in the same row format, most recently named
-first — what "that one", "it" or "the previous task" means. It sits after
+`<conversation_tasks>` block in the same row format plus each task's
+`category:id` (`renderRow(withCategory: true)`), most recently named
+first — what "that one", "it" or "the previous task" means, and which
+category the conversation has been working in. The index rows leave the
+category out: a few tokens on every row of every wake. It sits after
 the turns, not inside the index, because it changes with every turn and the
 index must not. `frontConversationTaskIds` scans the whole visible
 conversation, newest message first, not just the six-turn tail and its
@@ -650,7 +653,7 @@ flowchart LR
 |-------|--------------|------|
 | title | agent | the words, short |
 | body | agent | `instructions`: what to do and how, without the turn's other topics |
-| category | agent | the category the user names, else the listed one the work plainly belongs to; dropped unless listed (and chosen, when the conversation is narrowed) |
+| category | agent | the category the user names, else her judgment from the work, the categories of `<conversation_tasks>` and what `<recent_turns>` were about — a task asked for in a conversation spent on one category's work, or its logged time, goes there, and her reply names it; left out only when the evidence points two ways or nowhere; dropped unless listed (and chosen, when the conversation is narrowed). Live eval scenarios `category_from_conversation` / `category_nowhere` |
 | priority, due day, estimate | agent, only when said | `P0`–`P3`, `YYYY-MM-DD`, minutes (≤ `frontTaskMaxEstimateMinutes`) |
 | status and timer | agent, only when said | `startedMinutesAgo` (0–`frontTaskMaxStartedMinutesAgo`): *in progress*, and a timer entry linked under the task from that instant, running |
 | follows up on | agent, only for a follow-up | `followsUpTaskId`: a task in the index, a lookup this turn or `<conversation_tasks>`; anything else is dropped. Linked `followsUp` from the new task to it, and filed under its project |

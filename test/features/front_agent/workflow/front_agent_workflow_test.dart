@@ -645,7 +645,8 @@ void main() {
       expect(result.success, isTrue);
       final recentAt = sent!.indexOf('<recent_turns>');
       final namedAt = sent!.indexOf(
-        '<conversation_tasks>\n- task:roses | Prune the roses | DONE\n'
+        '<conversation_tasks>\n- task:roses | Prune the roses | DONE | '
+        'category:work\n'
         '</conversation_tasks>',
       );
       final clockAt = sent!.indexOf('<current_local_time>');

@@ -134,9 +134,10 @@ void main() {
           conversationId: conversationId,
           message: renderFrontTurn(
             index: frontEvalIndex,
-            recent: const [],
+            recent: scenario.recent,
             input: scenario.input,
             now: now,
+            conversationTasks: scenario.conversationTasks,
           ),
           model: modelId,
           provider: provider,

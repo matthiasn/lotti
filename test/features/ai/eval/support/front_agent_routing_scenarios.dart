@@ -101,6 +101,8 @@ class FrontEvalScenario {
     this.forbiddenDestinationIds = const {},
     this.maxLookups = 2,
     this.checkTask,
+    this.recent = const [],
+    this.conversationTasks = const [],
     this.note = '',
   });
 
@@ -126,6 +128,12 @@ class FrontEvalScenario {
   /// ([FrontDispatchSegment.task] and its intent), none when it is right;
   /// called with null when there is no such segment.
   final List<String> Function(FrontDispatchSegment? segment)? checkTask;
+
+  /// The conversation so far, as `<recent_turns>` carries it.
+  final List<({String role, String text})> recent;
+
+  /// The tasks the conversation named, as `<conversation_tasks>` lists them.
+  final List<FrontIndexRow> conversationTasks;
 
   /// Why the scenario exists; shown in the report.
   final String note;
@@ -175,6 +183,54 @@ final List<FrontEvalScenario> frontEvalScenarios = [
     note:
         'A task only mentioned is drafted too, with no timer nobody asked '
         'for.',
+  ),
+  const FrontEvalScenario(
+    id: 'category_from_conversation',
+    input: "Make a task to write up today's notes.",
+    outcome: FrontEvalOutcome.dispatch,
+    expectedSegments: [(kind: FrontDestinationKind.newThing, id: null)],
+    maxLookups: 1,
+    recent: [
+      (role: 'user', text: 'What did I work on today?'),
+      (
+        role: 'assistant',
+        text:
+            'Today you logged 3h 10m, all in Station maintenance:\n'
+            '- [Walk the Bay C seam](lotti://task/task-bay-c-seam)\n'
+            '- [Replace the Bay C lighting](lotti://task/task-bay-c-lighting)',
+      ),
+    ],
+    conversationTasks: [
+      FrontIndexRow(
+        kind: FrontDestinationKind.task,
+        id: 'task-bay-c-seam',
+        title: 'Walk the Bay C seam for the leak',
+        status: 'IN PROGRESS',
+        categoryId: 'cat-maintenance',
+      ),
+      FrontIndexRow(
+        kind: FrontDestinationKind.task,
+        id: 'task-bay-c-lighting',
+        title: 'Replace the Bay C corridor lighting',
+        status: 'OPEN',
+        categoryId: 'cat-maintenance',
+      ),
+    ],
+    checkTask: _maintenanceNotesTask,
+    note:
+        'No category said, but the whole conversation and all of today is '
+        'one category: she files it there.',
+  ),
+  const FrontEvalScenario(
+    id: 'category_nowhere',
+    input: "Make a task to write up today's notes.",
+    outcome: FrontEvalOutcome.dispatch,
+    expectedSegments: [(kind: FrontDestinationKind.newThing, id: null)],
+    maxLookups: 1,
+    checkTask: _uncategorizedTask,
+    note:
+        'The same words with no conversation behind them point nowhere: '
+        'no category guessed.',
   ),
   const FrontEvalScenario(
     id: 'asked_task_duplicate',
@@ -316,6 +372,24 @@ List<String> _signsTask(FrontDispatchSegment? segment) {
       'the swim leaked into the task',
     if (segment.text.toLowerCase().contains('swam'))
       'the span took in the swim',
+  ];
+}
+
+List<String> _maintenanceNotesTask(FrontDispatchSegment? segment) {
+  final shape = _taskShape(segment);
+  if (shape.isNotEmpty) return shape;
+  final categoryId = segment!.task!.categoryId;
+  return [
+    if (categoryId != 'cat-maintenance')
+      'category $categoryId, not the conversation one',
+  ];
+}
+
+List<String> _uncategorizedTask(FrontDispatchSegment? segment) {
+  final shape = _taskShape(segment);
+  if (shape.isNotEmpty) return shape;
+  return [
+    if (segment!.task!.categoryId case final id?) 'guessed category $id',
   ];
 }
 

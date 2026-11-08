@@ -140,6 +140,32 @@ void main() {
     expect(frontAgentSystemPrompt, contains('Never write a bare id'));
   });
 
+  test('a new task the user put in no category gets the one the work and '
+      'the conversation point to, named in her reply', () {
+    expect(
+      frontAgentSystemPrompt,
+      contains(
+        'the categories of <conversation_tasks> and what '
+        '<recent_turns> were about',
+      ),
+    );
+    expect(
+      frontAgentSystemPrompt,
+      contains('left out only when the evidence points two ways or nowhere'),
+    );
+    expect(
+      frontAgentSystemPrompt,
+      contains(
+        'the category by name when you chose it without the user '
+        'naming it',
+      ),
+    );
+    expect(
+      frontAgentSystemPrompt,
+      isNot(contains('left out when unsure')),
+    );
+  });
+
   test('dates are written as the tools give them, and a misheard name '
       'as listed', () {
     expect(frontAgentSystemPrompt, contains('`YYYY-MM-DD`'));
