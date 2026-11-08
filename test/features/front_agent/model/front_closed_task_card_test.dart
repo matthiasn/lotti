@@ -49,6 +49,28 @@ void main() {
     expect(read, card);
   });
 
+  test('equal cards hash alike whatever the zone of their moment, and a '
+      'card says how it closed', () {
+    final same = FrontClosedTaskCard(
+      id: 't1',
+      title: 'Count the eggs',
+      closedAt: DateTime.utc(2026, 11, 7, 10).toLocal(),
+      categoryId: 'colony',
+    );
+
+    expect(same, completed);
+    expect(same.hashCode, completed.hashCode);
+    expect({completed, same, rejectedReopened}, hasLength(2));
+    expect(
+      completed.toString(),
+      'FrontClosedTaskCard(t1, completed 2026-11-07T10:00:00.000Z)',
+    );
+    expect(
+      rejectedReopened.toString(),
+      'FrontClosedTaskCard(t2, rejected 2026-11-08T11:00:00.000Z, reopened)',
+    );
+  });
+
   test('a card or list this build cannot read is dropped, never thrown', () {
     expect(FrontClosedTaskCard.fromJson(null), isNull);
     expect(FrontClosedTaskCard.fromJson({'id': 't', 'title': 'T'}), isNull);
