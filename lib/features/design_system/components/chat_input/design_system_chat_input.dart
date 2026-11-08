@@ -85,6 +85,7 @@ class DesignSystemChatInput extends StatefulWidget {
     this.onFinishRecording,
     this.partialTranscript,
     this.helperText,
+    this.leading,
     this.showKeyboardHint,
     this.busyText,
     this.errorText,
@@ -122,6 +123,11 @@ class DesignSystemChatInput extends StatefulWidget {
 
   /// What the host wants said under the field — only what it supports.
   final String? helperText;
+
+  /// The host's own next step, at the start of the controls row in the
+  /// helper's place, while composing — a page's sign-off beside the mic
+  /// instead of a second row next to the input.
+  final Widget? leading;
 
   /// Whether to add how Enter and Shift+Enter work; by default only on a
   /// desktop platform, where there is a keyboard to press them on.
@@ -243,10 +249,13 @@ class _DesignSystemChatInputState extends State<DesignSystemChatInput> {
         return KeyEventResult.handled;
       }
     }
+    // Enter mid-composition commits the IME's candidate, not the message.
+    final composing = widget.controller.value.composing;
     if (event is KeyDownEvent &&
         (key == LogicalKeyboardKey.enter ||
             key == LogicalKeyboardKey.numpadEnter) &&
-        !HardwareKeyboard.instance.isShiftPressed) {
+        !HardwareKeyboard.instance.isShiftPressed &&
+        !(composing.isValid && !composing.isCollapsed)) {
       _send();
       return KeyEventResult.handled;
     }
@@ -316,6 +325,7 @@ class _DesignSystemChatInputState extends State<DesignSystemChatInput> {
                     )
                   : _ControlsRow(
                       key: const ValueKey('controls'),
+                      leading: transcribing ? null : widget.leading,
                       helper: transcribing
                           ? messages.timelineTranscribing
                           : [
@@ -397,11 +407,15 @@ class _DesignSystemChatInputState extends State<DesignSystemChatInput> {
       final partial = widget.partialTranscript?.trim() ?? '';
       final draft = widget.controller.text.trim();
       final shown = [draft, partial].where((s) => s.isNotEmpty).join(' ');
-      return Text(
-        shown.isEmpty ? context.messages.timelineTranscribing : shown,
-        maxLines: widget.maxLines,
-        overflow: TextOverflow.ellipsis,
-        style: style.copyWith(color: tokens.colors.text.mediumEmphasis),
+      // Holds focus while the field is gone, so Escape still cancels.
+      return Focus(
+        autofocus: true,
+        child: Text(
+          shown.isEmpty ? context.messages.timelineTranscribing : shown,
+          maxLines: widget.maxLines,
+          overflow: TextOverflow.ellipsis,
+          style: style.copyWith(color: tokens.colors.text.mediumEmphasis),
+        ),
       );
     }
     final busy = widget.busyText;
@@ -431,6 +445,9 @@ class _DesignSystemChatInputState extends State<DesignSystemChatInput> {
                     ? context.messages.chatInputListening
                     : widget.hintText),
             hintStyle: style.copyWith(color: tokens.colors.text.lowEmphasis),
+            // A prompt never grows the card; at large text it would wrap
+            // into several empty-looking lines on a phone.
+            hintMaxLines: 1,
           ),
         ),
       ),
@@ -443,6 +460,7 @@ class _DesignSystemChatInputState extends State<DesignSystemChatInput> {
 /// transcribing, cancel and a spinner in their place.
 class _ControlsRow extends StatelessWidget {
   const _ControlsRow({
+    required this.leading,
     required this.helper,
     required this.transcribing,
     required this.hasWords,
@@ -452,6 +470,7 @@ class _ControlsRow extends StatelessWidget {
     super.key,
   });
 
+  final Widget? leading;
   final String helper;
   final bool transcribing;
   final bool hasWords;
@@ -467,15 +486,21 @@ class _ControlsRow extends StatelessWidget {
       spacing: tokens.spacing.step2,
       children: [
         Expanded(
-          child: Text(
-            helper,
-            key: DesignSystemChatInputKeys.helper,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: tokens.typography.styles.others.caption.copyWith(
-              color: tokens.colors.text.lowEmphasis,
+          child: switch (leading) {
+            final leading? => Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: leading,
             ),
-          ),
+            null => Text(
+              helper,
+              key: DesignSystemChatInputKeys.helper,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: tokens.typography.styles.others.caption.copyWith(
+                color: tokens.colors.text.lowEmphasis,
+              ),
+            ),
+          },
         ),
         if (transcribing) ...[
           DesignSystemChatInputDisc(

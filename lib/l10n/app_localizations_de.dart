@@ -6417,19 +6417,20 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get designSystemChatInputMentionDraftSample =>
-      'Was ist überfällig in @Wo';
+      'Was ist überfällig in @Ar';
 
   @override
   String get designSystemChatInputMentionLabel => 'Eine Kategorie mit @ nennen';
 
   @override
-  String get designSystemChatInputMentionWoodworking => 'Woodworking';
+  String get designSystemChatInputMentionWoodworking => 'Holzarbeiten';
 
   @override
-  String get designSystemChatInputMentionWork => 'Work';
+  String get designSystemChatInputMentionWork => 'Arbeit';
 
   @override
-  String get designSystemChatInputMentionWorkshop => 'Workshop prep';
+  String get designSystemChatInputMentionWorkshop =>
+      'Arbeitstreffen vorbereiten';
 
   @override
   String get designSystemChatInputPartialSample =>

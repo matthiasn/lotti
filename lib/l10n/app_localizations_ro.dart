@@ -6477,19 +6477,20 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get designSystemChatInputMentionDraftSample =>
-      'Ce este întârziat în @Wo';
+      'Ce este întârziat în @Lu';
 
   @override
   String get designSystemChatInputMentionLabel => 'Numirea unei categorii cu @';
 
   @override
-  String get designSystemChatInputMentionWoodworking => 'Woodworking';
+  String get designSystemChatInputMentionWoodworking => 'Lucru în lemn';
 
   @override
-  String get designSystemChatInputMentionWork => 'Work';
+  String get designSystemChatInputMentionWork => 'Lucru';
 
   @override
-  String get designSystemChatInputMentionWorkshop => 'Workshop prep';
+  String get designSystemChatInputMentionWorkshop =>
+      'Lucrări de atelier de pregătit';
 
   @override
   String get designSystemChatInputPartialSample =>

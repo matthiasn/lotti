@@ -160,6 +160,23 @@ void main() {
       expect(sends, 1);
     });
 
+    testWidgets("Enter while an IME composes is the IME's, not a send", (
+      tester,
+    ) async {
+      await pump(tester);
+      await tester.tap(find.byType(TextField));
+      await tester.pump();
+      controller.value = const TextEditingValue(
+        text: 'にほん',
+        selection: TextSelection.collapsed(offset: 3),
+        composing: TextRange(start: 0, end: 3),
+      );
+      await tester.pump();
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      expect(sends, 0);
+    });
+
     testWidgets('Enter on an empty field sends nothing', (tester) async {
       await pump(tester);
       await tester.tap(find.byType(TextField));
@@ -271,6 +288,20 @@ void main() {
       await pump(tester, phase: DesignSystemChatInputPhase.recording);
       await tester.pumpAndSettle();
       await tester.tap(find.byType(TextField));
+      await tester.pump();
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      expect(cancels, 1);
+    });
+
+    testWidgets('Escape still cancels once the field gives way to the '
+        'transcript', (tester) async {
+      await pump(tester);
+      await tester.tap(find.byType(TextField));
+      await tester.pump();
+
+      // A take that hits its limit goes straight to transcribing, from
+      // focus in the field.
+      await pump(tester, phase: DesignSystemChatInputPhase.transcribing);
       await tester.pump();
       await tester.sendKeyEvent(LogicalKeyboardKey.escape);
       expect(cancels, 1);
@@ -419,6 +450,11 @@ void main() {
       await tester.pump();
       expect(find.byKey(DesignSystemChatInputMentionKeys.list), findsNothing);
       expect(controller.text, 'In @lo');
+
+      // A host rebuild does not bring back what Escape closed.
+      await pump(tester, text: 'In @lo', mentions: categories);
+      await tester.pump();
+      expect(find.byKey(DesignSystemChatInputMentionKeys.list), findsNothing);
 
       await type(tester, 'In @L');
       await tester.sendKeyEvent(LogicalKeyboardKey.tab);

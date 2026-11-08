@@ -6366,19 +6366,19 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get designSystemChatInputMentionDraftSample =>
-      'Hvad er forfaldent i @Wo';
+      'Hvad er forfaldent i @Ar';
 
   @override
   String get designSystemChatInputMentionLabel => 'Navngiv en kategori med @';
 
   @override
-  String get designSystemChatInputMentionWoodworking => 'Woodworking';
+  String get designSystemChatInputMentionWoodworking => 'Træarbejde';
 
   @override
-  String get designSystemChatInputMentionWork => 'Work';
+  String get designSystemChatInputMentionWork => 'Arbejde';
 
   @override
-  String get designSystemChatInputMentionWorkshop => 'Workshop prep';
+  String get designSystemChatInputMentionWorkshop => 'Arbejdsmøde at forberede';
 
   @override
   String get designSystemChatInputPartialSample =>
@@ -7190,7 +7190,7 @@ class AppLocalizationsDa extends AppLocalizations {
   String get frontChatInboxTitle => 'Indbakke';
 
   @override
-  String get frontChatMentionHint => 'Skriv @ for at navngive en kategori';
+  String get frontChatMentionHint => 'Skriv @ for at nævne en kategori';
 
   @override
   String get frontChatNoChats =>

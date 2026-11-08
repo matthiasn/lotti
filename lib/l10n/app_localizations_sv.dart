@@ -6374,19 +6374,19 @@ class AppLocalizationsSv extends AppLocalizations {
   String get designSystemChatInputIdleLabel => 'Tomt';
 
   @override
-  String get designSystemChatInputMentionDraftSample => 'Vad är försenat i @Wo';
+  String get designSystemChatInputMentionDraftSample => 'Vad är försenat i @Ar';
 
   @override
   String get designSystemChatInputMentionLabel => 'Nämn en kategori med @';
 
   @override
-  String get designSystemChatInputMentionWoodworking => 'Woodworking';
+  String get designSystemChatInputMentionWoodworking => 'Träarbete';
 
   @override
-  String get designSystemChatInputMentionWork => 'Work';
+  String get designSystemChatInputMentionWork => 'Arbete';
 
   @override
-  String get designSystemChatInputMentionWorkshop => 'Workshop prep';
+  String get designSystemChatInputMentionWorkshop => 'Arbetsmöte att förbereda';
 
   @override
   String get designSystemChatInputPartialSample =>

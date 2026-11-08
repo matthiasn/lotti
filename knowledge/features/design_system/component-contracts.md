@@ -1092,14 +1092,22 @@ change:
   cancel, the live dot and the time, the voice across all the width left
   (`DesignSystemVoiceWaveform`), and Done (✓). Done hands the take back to the
   host, which puts its words in the field after anything already written;
-  nothing is sent until Send. Escape cancels a take.
+  nothing is sent until Send. Escape cancels a take, while transcribing too:
+  the transcript line holds focus once the field gives way to it.
 - **The helper says only what is true.** The host's `helperText` (the
   companion: "Type @ to name a category") and, on a desktop platform, how
   Enter (send) and Shift+Enter (new line) work. `@` offers the host's
   `mentionOptions` above the card (`DesignSystemChatInputMentionAnchor`, an
   `OverlayPortal`), filtered as the word goes on, those starting with it
-  first; arrows and Enter or Tab pick, Escape closes and keeps the text. A
-  host with no options offers none.
+  first; arrows and Enter or Tab pick, Escape closes and keeps the text — and
+  keeps the list closed for that word through host rebuilds. A host with no
+  options offers none. The hint is one line, so it never grows the card at
+  large text. Enter while an IME is composing commits the candidate, not the
+  message.
+- **A host's next step joins the row, not the page.** `leading` takes the
+  helper's place at the start of the bottom row while composing — the Daily OS
+  footer's *Looks good* / *Wrap up* beside the mic — instead of a second row
+  next to or under the card.
 - **States are props, not swapped widgets.** `phase` (compose, recording,
   transcribing), `busyText` (her answer on its way: the field says so and
   nothing can be sent or said) and `errorText` (above the card, the words

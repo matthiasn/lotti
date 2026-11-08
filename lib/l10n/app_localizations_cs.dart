@@ -6435,20 +6435,21 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get designSystemChatInputMentionDraftSample =>
-      'Co je po termínu v @Wo';
+      'Co je po termínu v @Pr';
 
   @override
   String get designSystemChatInputMentionLabel =>
       'Pojmenování kategorie přes @';
 
   @override
-  String get designSystemChatInputMentionWoodworking => 'Woodworking';
+  String get designSystemChatInputMentionWoodworking => 'Práce se dřevem';
 
   @override
-  String get designSystemChatInputMentionWork => 'Work';
+  String get designSystemChatInputMentionWork => 'Práce';
 
   @override
-  String get designSystemChatInputMentionWorkshop => 'Workshop prep';
+  String get designSystemChatInputMentionWorkshop =>
+      'Pracovní dílna – příprava';
 
   @override
   String get designSystemChatInputPartialSample =>

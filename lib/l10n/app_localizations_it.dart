@@ -6442,20 +6442,20 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get designSystemChatInputMentionDraftSample =>
-      'Cosa è in ritardo in @Wo';
+      'Cosa è in ritardo in @La';
 
   @override
   String get designSystemChatInputMentionLabel =>
       'Nominare una categoria con @';
 
   @override
-  String get designSystemChatInputMentionWoodworking => 'Woodworking';
+  String get designSystemChatInputMentionWoodworking => 'Lavorazione del legno';
 
   @override
-  String get designSystemChatInputMentionWork => 'Work';
+  String get designSystemChatInputMentionWork => 'Lavoro';
 
   @override
-  String get designSystemChatInputMentionWorkshop => 'Workshop prep';
+  String get designSystemChatInputMentionWorkshop => 'Laboratorio da preparare';
 
   @override
   String get designSystemChatInputPartialSample =>

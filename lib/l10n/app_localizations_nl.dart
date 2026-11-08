@@ -6392,19 +6392,19 @@ class AppLocalizationsNl extends AppLocalizations {
   String get designSystemChatInputIdleLabel => 'Leeg';
 
   @override
-  String get designSystemChatInputMentionDraftSample => 'Wat is te laat in @Wo';
+  String get designSystemChatInputMentionDraftSample => 'Wat is te laat in @We';
 
   @override
   String get designSystemChatInputMentionLabel => 'Een categorie noemen met @';
 
   @override
-  String get designSystemChatInputMentionWoodworking => 'Woodworking';
+  String get designSystemChatInputMentionWoodworking => 'Houtbewerking';
 
   @override
-  String get designSystemChatInputMentionWork => 'Work';
+  String get designSystemChatInputMentionWork => 'Werk';
 
   @override
-  String get designSystemChatInputMentionWorkshop => 'Workshop prep';
+  String get designSystemChatInputMentionWorkshop => 'Werkplaats voorbereiden';
 
   @override
   String get designSystemChatInputPartialSample =>

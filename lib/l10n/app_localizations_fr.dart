@@ -6466,19 +6466,20 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get designSystemChatInputMentionDraftSample =>
-      'Qu’est-ce qui est en retard dans @Wo';
+      'Qu’est-ce qui est en retard dans @Tra';
 
   @override
   String get designSystemChatInputMentionLabel => 'Nommer une catégorie avec @';
 
   @override
-  String get designSystemChatInputMentionWoodworking => 'Woodworking';
+  String get designSystemChatInputMentionWoodworking => 'Travail du bois';
 
   @override
-  String get designSystemChatInputMentionWork => 'Work';
+  String get designSystemChatInputMentionWork => 'Travail';
 
   @override
-  String get designSystemChatInputMentionWorkshop => 'Workshop prep';
+  String get designSystemChatInputMentionWorkshop =>
+      'Travaux d’atelier à préparer';
 
   @override
   String get designSystemChatInputPartialSample =>

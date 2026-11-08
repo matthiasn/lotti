@@ -99,7 +99,7 @@ events stay visible on the Day timeline — the default projection, plan or not 
 without creating a plan first. Empty mode says so honestly — the header
 briefing reads "There's no plan for this day yet…" and the Agenda view's
 capacity strip reads "No plan yet" — swaps the with-plan footer (the "What should change?"
-composer, its quick refinements and the stage action beside it — Looks good /
+composer, its quick refinements and the stage action beside its mic — Looks good /
 Wrap up) for the check-in `DayComposer`, and hides
 the delete-plan menu entry. **The composer is the capture.** It is the
 design system's chat input (`DesignSystemChatInput` inside `DayComposerBar`):

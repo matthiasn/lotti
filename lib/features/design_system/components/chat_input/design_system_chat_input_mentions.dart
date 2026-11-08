@@ -44,6 +44,7 @@ class DesignSystemChatInputMentionController extends ChangeNotifier {
   List<DesignSystemChatInputMention> _shown = const [];
   int _highlighted = 0;
   int? _tokenStart;
+  String? _query;
   String? _dismissedAt;
 
   /// What it offers now; empty while closed.
@@ -60,7 +61,7 @@ class DesignSystemChatInputMentionController extends ChangeNotifier {
     final match = _token.firstMatch(value.text.substring(0, caret));
     if (match == null) return null;
     _tokenStart = caret - match.group(1)!.length - 1;
-    return match.group(1);
+    return _query = match.group(1);
   }
 
   /// Follows [value]: opens on `@` with what [options] match the word after
@@ -106,7 +107,7 @@ class DesignSystemChatInputMentionController extends ChangeNotifier {
   /// Closes until the word under the caret changes.
   void dismiss() {
     if (!isOpen) return;
-    _dismissedAt = _tokenStart == null ? null : '$_tokenStart:';
+    _dismissedAt = _tokenStart == null ? null : '$_tokenStart:$_query';
     _shown = const [];
     notifyListeners();
   }

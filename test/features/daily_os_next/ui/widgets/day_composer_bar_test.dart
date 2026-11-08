@@ -197,10 +197,14 @@ void main() {
     expect(texts, ['Fresh words']);
   });
 
-  group('trailing', () {
+  group('next step', () {
     const stageKey = Key('stage');
 
-    Future<void> pumpWithTrailing(WidgetTester tester, double width) async {
+    Future<void> pumpWithNextStep(
+      WidgetTester tester, {
+      double width = 402,
+      DesignSystemChatInputPhase phase = DesignSystemChatInputPhase.compose,
+    }) async {
       final size = Size(width, 800);
       setTestSurfaceSize(tester, size);
       await tester.pumpWidget(
@@ -212,7 +216,8 @@ void main() {
                 hintText: 'What should change?',
                 onStartVoice: () {},
                 onSubmitText: texts.add,
-                trailing: const SizedBox(key: stageKey, width: 120, height: 48),
+                phase: phase,
+                nextStep: const SizedBox(key: stageKey, width: 120, height: 48),
               ),
             ),
           ),
@@ -222,37 +227,27 @@ void main() {
       await tester.pump();
     }
 
-    testWidgets('sits beside the field, on its centre line, while it leaves '
-        'the field half the bar', (tester) async {
-      await pumpWithTrailing(tester, 402);
+    testWidgets("sits in the input, on the mic's row, and leaves the field "
+        'the whole width', (tester) async {
+      await pumpWithNextStep(tester, width: 240);
 
-      final field = tester.getRect(find.byType(DesignSystemChatInput));
+      final input = tester.getRect(find.byType(DesignSystemChatInput));
+      final field = tester.getRect(find.byType(TextField));
       final stage = tester.getRect(find.byKey(stageKey));
-      expect(stage.left, greaterThan(field.right));
-      expect(stage.center.dy, closeTo(field.center.dy, 0.5));
-      expect(tester.takeException(), isNull);
-    });
-
-    testWidgets('moves under the field, full width, once it needs more', (
-      tester,
-    ) async {
-      // 200 wide less the bar's padding leaves the field under half.
-      await pumpWithTrailing(tester, 240);
-
-      final field = tester.getRect(find.byType(DesignSystemChatInput));
-      final stage = tester.getRect(find.byKey(stageKey));
-      expect(stage.top, greaterThan(field.bottom));
-      expect(stage.width, field.width);
+      final mic = tester.getRect(find.byKey(DesignSystemChatInputKeys.mic));
+      expect(input.contains(stage.center), isTrue);
+      expect(stage.top, greaterThanOrEqualTo(field.bottom));
+      expect(stage.right, lessThanOrEqualTo(mic.left));
+      expect(stage.center.dy, closeTo(mic.center.dy, 0.5));
+      expect(find.byKey(DesignSystemChatInputKeys.helper), findsNothing);
       expect(tester.takeException(), isNull);
     });
 
     testWidgets('typing and clearing keep the same field, focused', (
       tester,
     ) async {
-      await pumpWithTrailing(tester, 402);
-      final besideWidth = tester
-          .getSize(find.byType(DesignSystemChatInput))
-          .width;
+      await pumpWithNextStep(tester);
+      final fieldWidth = tester.getSize(find.byType(TextField)).width;
       await tester.showKeyboard(find.byType(TextField));
       final editable = tester.state<EditableTextState>(
         find.byType(EditableText),
@@ -260,10 +255,8 @@ void main() {
 
       tester.testTextInput.enterText('less meetings');
       await tester.pump();
-      expect(
-        tester.getSize(find.byType(DesignSystemChatInput)).width,
-        greaterThan(besideWidth),
-      );
+      expect(find.byKey(stageKey), findsNothing);
+      expect(tester.getSize(find.byType(TextField)).width, fieldWidth);
       tester.testTextInput.enterText('');
       await tester.pump();
 
@@ -274,16 +267,16 @@ void main() {
       expect(find.byKey(stageKey), findsOneWidget);
     });
 
-    testWidgets('gives the field the whole width once there are words', (
+    testWidgets('steps aside while a take records or transcribes', (
       tester,
     ) async {
-      await pumpWithTrailing(tester, 402);
-
-      await tester.enterText(find.byType(TextField), 'less meetings');
-      await tester.pump();
-
-      expect(find.byKey(stageKey), findsNothing);
-      expect(tester.takeException(), isNull);
+      for (final phase in [
+        DesignSystemChatInputPhase.recording,
+        DesignSystemChatInputPhase.transcribing,
+      ]) {
+        await pumpWithNextStep(tester, phase: phase);
+        expect(find.byKey(stageKey), findsNothing, reason: '$phase');
+      }
     });
   });
 }
