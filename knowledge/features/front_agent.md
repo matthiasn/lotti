@@ -316,7 +316,9 @@ from the tap (`FrontDoorTaskCreated.at`): the door record keeps the time it
 was walked, and an old inbox item tapped now is the newest thing named. At
 most `frontConversationTasksMax` (8), each once. `FrontRoutingIndexBuilder.conversationTasks` resolves them through
 `getJournalEntitiesForIds` — so the privacy toggle holds — and drops a
-deleted task, a non-task and one outside the scope; a **closed** task stays,
+deleted task, a non-task, one in a private category while private entries
+are hidden (the logged-time reader's rule) and one outside the scope; a
+**closed** task stays,
 because a follow-up is most often to finished work. It is not a destination
 for that: the strategy accepts a listed conversation task only as a
 follow-up's `followsUpTaskId` and as an `ask_user` option.

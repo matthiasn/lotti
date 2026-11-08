@@ -439,6 +439,31 @@ void main() {
       expect(rows.first.oneLiner, 'Pruned.');
     });
 
+    test('leaves out a task in a private category while private entries '
+        'are hidden, though the task itself is not private', () async {
+      when(() => journalDb.getAllCategories()).thenAnswer(
+        (_) async => [CategoryTestUtils.createTestCategory(id: 'work')],
+      );
+      when(() => journalDb.getAllCategoriesIncludingPrivate()).thenAnswer(
+        (_) async => [
+          CategoryTestUtils.createTestCategory(id: 'work'),
+          CategoryTestUtils.createTestCategory(id: 'diary', private: true),
+        ],
+      );
+      when(
+        () => journalDb.getJournalEntitiesForIds({'open', 'inPrivate'}),
+      ).thenAnswer(
+        (_) async => [_task('open'), _task('inPrivate', categoryId: 'diary')],
+      );
+
+      final rows = await builder().conversationTasks(
+        ['inPrivate', 'open'],
+        const FrontRoutingScope(),
+      );
+
+      expect(rows.map((r) => r.id), ['open']);
+    });
+
     test('reads nothing when nothing was named', () async {
       expect(
         await builder().conversationTasks(const [], const FrontRoutingScope()),
