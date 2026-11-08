@@ -62,7 +62,9 @@ void main() {
       makeTestableWidgetNoScroll(
         Scaffold(body: FrontLoggedTimeChartCard(chart: chart)),
         overrides: [
-          frontLoggedTimeChartProvider.overrideWith((ref, _) => load()),
+          frontLoggedTimeChartProvider.overrideWith(
+            (ref, _) => Stream.fromFuture(load()),
+          ),
           categoriesStreamProvider.overrideWith(
             (ref) => Stream.value([colony, fishing]),
           ),

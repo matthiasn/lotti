@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/front_agent/model/front_logged_time_chart.dart';
@@ -5,6 +7,8 @@ import 'package:lotti/features/front_agent/state/front_logged_time_providers.dar
 import 'package:lotti/features/insights/logic/time_bucketing.dart';
 import 'package:lotti/features/insights/model/insights_models.dart';
 import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/providers/update_notifications_providers.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -71,11 +75,14 @@ void main() {
 
   tearDown(() => container.dispose());
 
-  Future<InsightsChartData> read(Set<String> categoryIds) => container.read(
-    frontLoggedTimeChartProvider(
+  Future<InsightsChartData> read(Set<String> categoryIds) {
+    final provider = frontLoggedTimeChartProvider(
       FrontLoggedTimeChart(range: range, categoryIds: categoryIds),
-    ).future,
-  );
+    );
+    // Shown while read: an unwatched chart is disposed.
+    container.listen(provider, (_, _) {});
+    return container.read(provider.future);
+  }
 
   test('reads the days charted, one bucket per day, each category apart, '
       'overlaps once and a hidden private category never', () async {
@@ -112,4 +119,56 @@ void main() {
       ]);
     },
   );
+
+  test('hiding private entries takes their time off a shown chart at once, '
+      'and the chart stops reading when no longer shown', () async {
+    final updates = StreamController<Set<String>>.broadcast();
+    addTearDown(updates.close);
+    final notifications = MockUpdateNotifications();
+    when(() => notifications.updateStream).thenAnswer((_) => updates.stream);
+    // Private entries shown: the private category is in the visible read.
+    final visible = [
+      CategoryTestUtils.createTestCategory(id: 'colony', name: 'Colony'),
+      CategoryTestUtils.createTestCategory(id: 'fishing', name: 'Fishing'),
+      CategoryTestUtils.createTestCategory(
+        id: 'secret',
+        name: 'Secret',
+        private: true,
+      ),
+    ];
+    when(() => journalDb.getAllCategories()).thenAnswer((_) async => visible);
+    final live = ProviderContainer(
+      overrides: [
+        journalDbProvider.overrideWithValue(journalDb),
+        maybeUpdateNotificationsProvider.overrideWithValue(notifications),
+      ],
+    );
+    addTearDown(live.dispose);
+    final provider = frontLoggedTimeChartProvider(
+      FrontLoggedTimeChart(range: range, categoryIds: const {}),
+    );
+    final seen = <List<String?>>[];
+    final hidden = Completer<void>();
+    final subscription = live.listen(provider, (_, next) {
+      final keys = next.value?.seriesKeys;
+      if (keys == null) return;
+      seen.add(keys);
+      if (!keys.contains('secret') && !hidden.isCompleted) hidden.complete();
+    }, fireImmediately: true);
+    await live.read(provider.future);
+    expect(seen.single, contains('secret'));
+
+    visible.removeLast();
+    updates.add({privateToggleNotification});
+    await hidden.future;
+    expect(seen.last, ['colony', 'fishing', null]);
+
+    subscription.close();
+    // An unwatched chart is disposed on the next tick.
+    await pumpEventQueue();
+    clearInteractions(journalDb);
+    updates.add({privateToggleNotification});
+    await pumpEventQueue();
+    verifyNever(() => journalDb.getAllCategories());
+  });
 }
