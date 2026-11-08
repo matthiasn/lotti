@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_reference_links.dart';
+import 'package:lotti/features/front_agent/model/front_reply_parts.dart';
 import 'package:lotti/features/front_agent/model/front_routing_index.dart';
 
 void main() {
@@ -20,6 +21,7 @@ void main() {
     title: 'Swim daily',
   );
   const rows = [feed, census, goal];
+  const feedUrl = 'lotti://task/0b6f3c1e-7d5a-4f1e-9a51-1c2d3e4f5a6b';
   const feedLink =
       '[Feed the penguins](lotti://task/0b6f3c1e-7d5a-4f1e-9a51-1c2d3e4f5a6b)';
 
@@ -84,6 +86,48 @@ void main() {
       const text =
           'See $feedLink and [the census](lotti://project/census-2026)';
       expect(linkFrontReferences(text, rows), text);
+    });
+
+    test('gives a link written with the id as its url the row url', () {
+      expect(
+        linkFrontReferences(
+          '- [Feed them](task:${feed.id})\n'
+          '- [Count](project:census-2026)\n'
+          '- [Bare](${feed.id})',
+          rows,
+        ),
+        '- [Feed them]($feedUrl)\n'
+        '- [Count](lotti://project/census-2026)\n'
+        '- [Bare]($feedUrl)',
+      );
+      // Unknown ids, the wrong kind and real urls stay as written.
+      final kept =
+          '[a](task:unknown) [b](project:${feed.id}) '
+          '[c](https://example.com/task:census-2026)';
+      expect(linkFrontReferences(kept, rows), kept);
+    });
+
+    test('a due list whose later lines link by task:<id> is all rows', () {
+      final due = [
+        for (var i = 1; i <= 5; i++)
+          FrontIndexRow(
+            kind: FrontDestinationKind.task,
+            id: 'aaaaaaaa-0000-4000-8000-00000000000$i',
+            title: 'Penguin chore $i',
+          ),
+      ];
+      final reply = [
+        for (final row in due.take(3)) '- ${frontReferenceLink(row)}',
+        for (final row in due.skip(3)) '- [${row.title}](task:${row.id})',
+      ].join('\n');
+
+      final parts = frontReplyParts(linkFrontReferences(reply, due));
+
+      expect(parts, [
+        FrontReplyTasks([
+          for (final row in due) FrontTaskMention(id: row.id, title: row.title),
+        ]),
+      ]);
     });
 
     test('links nothing the turn could not see, nor a goal', () {
