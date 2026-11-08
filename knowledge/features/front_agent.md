@@ -130,11 +130,11 @@ sources:
     last_modified: 2026-11-07
   - id: reply-parts
     resource: ../../lib/features/front_agent/model/front_reply_parts.dart
-    title: frontReplyParts — her words and the lists of tasks in them
+    title: frontReplyParts — her words and the lists of tasks and projects in them
     last_modified: 2026-11-07
   - id: task-list
     resource: ../../lib/features/front_agent/ui/front_task_list.dart
-    title: FrontTaskList — her lists of tasks as a card of task rows
+    title: FrontTaskList — her lists of tasks and projects as a card of rows
     last_modified: 2026-11-07
   - id: voice-switch
     resource: ../../lib/features/front_agent/ui/front_voice_switch.dart
@@ -880,24 +880,31 @@ are the scope, and ones that fall outside the allow-list leave it as it is,
 since an empty scope would be the whole journal. New turns carry none.
 
 **Her lists of tasks are task rows.** The prompt asks her to write two
-tasks or more as a Markdown list, one task link per line. The pane hands
-`AgentChatView.replyBodyBuilder` a body for any reply that holds such a list:
-`frontReplyParts` cuts the reply into her words and the runs of
-`frontTaskListMinimum` (2) or more consecutive list lines that are one task
-link and at most when it is due — the link may be emphasised
-(`**[title](…)**`) and followed by a few words around a `YYYY-MM-DD` day or
-the lookup's `(overdue)` mark, the shape an overdue list takes, since the row
-shows the due date itself — and each run is drawn as `FrontTaskList` — one card of
-`FrontTaskRow`s, between her words as she wrote them (rendered by the view's
-own Markdown, so links and style are unchanged). A row reads the task live
-(`taskLiveDataProvider`, through `.value`, so a reload keeps the row): its
-`StatusGlyph`, its title, its status and category, and — while it is not done
-or rejected — the tasks list's own `DueDateText`; until it loads, or if it is
-gone, the title she gave it stands alone. A tap opens the task through the
-pane's link handler, on top of her (below). A single task, or a line that
-says more than the link and its due date, stays a link in her words. The
-parts are cut from her reply as written, before `replaceIsoDays` turns its
-days into the device's format — a dated line is only known by its ISO day —
+tasks or projects or more — due tasks, what a search found, overdue and due
+together as one list — as a Markdown list, one link per line. How she
+phrases a line still varies from turn to turn, so the list does not hinge on
+it. The pane hands `AgentChatView.replyBodyBuilder` a body for any reply
+that holds such a list: `frontReplyParts` cuts the reply into her words and
+the runs of consecutive list lines that **lead** with a task or project link
+(`lotti://task/` or `lotti://project/`, plural paths too, emphasised or
+not); blank lines between them stay inside the run, and whatever follows the
+link on the line — a due date, `(overdue)`, a status, a few words — is
+dropped, since the row shows the task as it is now. The runs are drawn once
+the reply's list lines name `frontTaskListMinimum` (2) distinct records
+between them, so an answer split under *Overdue* and *Due today* headings,
+one task each, is rows under each heading. Each run is drawn as
+`FrontTaskList` — one card of rows, between her words as she wrote them
+(rendered by the view's own Markdown, so links and style are unchanged). A
+`FrontTaskRow` reads the task through `taskPreviewProvider` (through
+`.value`, so a reload keeps the row; it refreshes on every notification
+naming the task): its `StatusGlyph`, its title, its agent's one-liner, its
+status and category, and — while it is not done or rejected — the tasks
+list's own `DueDateText`. Until it loads, or if it is gone, the title she
+gave it stands alone. A project is a row of its title and a folder glyph.
+A tap opens either through the pane's link handler — a task on top of her
+(below), where its TL;DR is; a project closes her. A reply naming a single
+task leaves it a link in her words. The parts are cut from her reply as
+written, before `replaceIsoDays` turns its days into the device's format,
 and her words between the lists get the device's dates after the cut.
 
 A link in her bubble or in a card's answer goes through the pane's one

@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_reply_parts.dart';
 
 void main() {
@@ -60,11 +61,35 @@ Start with the cameras.''';
     expect(frontReplyParts(reply), const [FrontReplyText(reply)]);
   });
 
-  test('a line that says more than the link is her words, and breaks the '
-      'list', () {
+  test('whatever she writes after the link, the line is a row: how she '
+      'phrases it varies, the list must not', () {
     const reply = '''
 - [Count the hatchlings](lotti://task/t1), before noon
+- **[Check the nest cameras](lotti://task/t2)** — in progress, Colony''';
+    expect(frontReplyParts(reply), const [
+      FrontReplyTasks([hatchlings, cameras]),
+    ]);
+  });
+
+  test('blank lines between the items keep them one list, and words after '
+      'the list are hers', () {
+    const reply = '''
+- [Count the hatchlings](lotti://task/t1)
+
+- [Check the nest cameras](lotti://task/t2)
+
+Start with the cameras.''';
+    expect(frontReplyParts(reply), const [
+      FrontReplyTasks([hatchlings, cameras]),
+      FrontReplyText('Start with the cameras.'),
+    ]);
+  });
+
+  test('a line with words before the link is hers', () {
+    const reply = '''
+- First [Count the hatchlings](lotti://task/t1)
 - [Check the nest cameras](lotti://task/t2)''';
+    // Only one task leads a line, so nothing is drawn as rows.
     expect(frontReplyParts(reply), const [FrontReplyText(reply)]);
   });
 
@@ -87,23 +112,54 @@ Overdue:
     ]);
   });
 
-  test('emphasis that does not close, or words beside a date, keep the line '
-      'hers', () {
+  test('emphasis that does not close keeps the line hers', () {
     const unbalanced = '''
 - **[Count the hatchlings](lotti://task/t1)
 - [Check the nest cameras](lotti://task/t2)''';
     expect(frontReplyParts(unbalanced), const [FrontReplyText(unbalanced)]);
-    const said = '''
-- [Count the hatchlings](lotti://task/t1), due 2026-10-30, ask the keeper
-- [Check the nest cameras](lotti://task/t2)''';
-    expect(frontReplyParts(said), const [FrontReplyText(said)]);
   });
 
-  test('a project link is not a task', () {
+  test('what a search found is a list too, projects beside tasks, each '
+      'opening as what it is', () {
     const reply = '''
 - [Census](lotti://project/p1)
-- [Survey](lotti://project/p2)''';
-    expect(frontReplyParts(reply), const [FrontReplyText(reply)]);
+- [Count the hatchlings](lotti://task/t1)''';
+    expect(frontReplyParts(reply), const [
+      FrontReplyTasks([
+        FrontTaskMention(
+          id: 'p1',
+          title: 'Census',
+          kind: FrontDestinationKind.project,
+        ),
+        hatchlings,
+      ]),
+    ]);
+  });
+
+  test('an overdue-and-due list echoing the lookup — a date and the '
+      'overdue mark both — is a list', () {
+    const reply = '''
+- [Count the hatchlings](lotti://task/t1) — due 2026-10-30 (overdue)
+- [Check the nest cameras](lotti://task/t2), due 2026-11-08''';
+    expect(frontReplyParts(reply), const [
+      FrontReplyTasks([hatchlings, cameras]),
+    ]);
+  });
+
+  test('overdue and due split under two headings, one task each, are rows '
+      'under each, since the reply names two tasks', () {
+    const reply = '''
+Overdue:
+- [Count the hatchlings](lotti://task/t1)
+
+Due today:
+- [Check the nest cameras](lotti://task/t2)''';
+    expect(frontReplyParts(reply), const [
+      FrontReplyText('Overdue:'),
+      FrontReplyTasks([hatchlings]),
+      FrontReplyText('Due today:'),
+      FrontReplyTasks([cameras]),
+    ]);
   });
 
   test('two lists apart are two lists', () {
@@ -139,7 +195,10 @@ And overdue:
       const FrontReplyTasks([hatchlings]).hashCode,
       const FrontReplyTasks([hatchlings]).hashCode,
     );
-    expect(hatchlings.hashCode, Object.hash('t1', 'Count the hatchlings'));
+    expect(
+      hatchlings.hashCode,
+      Object.hash('t1', 'Count the hatchlings', FrontDestinationKind.task),
+    );
     expect(hatchlings.toString(), contains('t1'));
     expect(const FrontReplyText('a').toString(), contains('a'));
     expect(const FrontReplyTasks([hatchlings]).toString(), contains('t1'));

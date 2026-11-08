@@ -4,9 +4,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/design_system/theme/icon_tokens.dart';
+import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_reply_parts.dart';
 import 'package:lotti/features/front_agent/ui/front_task_list.dart';
-import 'package:lotti/features/tasks/state/task_live_data_provider.dart';
+import 'package:lotti/features/tasks/state/task_preview_provider.dart';
 import 'package:lotti/features/tasks/ui/due_date_text.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/linked_task_row.dart';
 import 'package:lotti/providers/service_providers.dart';
@@ -59,15 +61,23 @@ void main() {
     FrontTaskMention(id: 't1', title: 'Count the hatchlings (as she said)'),
     FrontTaskMention(id: 't2', title: 'Check the nest cameras'),
     FrontTaskMention(id: 'gone', title: 'Feed the chicks'),
+    FrontTaskMention(
+      id: 'p1',
+      title: 'Colony census',
+      kind: FrontDestinationKind.project,
+    ),
   ];
+  const countingOneLiner = 'Halfway through the north beach';
 
   late List<String> opened;
+  late List<FrontDestinationKind> openedKinds;
 
   Future<void> pump(
     WidgetTester tester, {
     Future<Task?> Function(String id)? load,
   }) async {
     opened = [];
+    openedKinds = [];
     final cache = MockEntitiesCacheService();
     when(() => cache.getCategoryById(any())).thenReturn(null);
     when(() => cache.getCategoryById('colony')).thenReturn(colony);
@@ -75,16 +85,28 @@ void main() {
       makeTestableWidgetNoScroll(
         Scaffold(
           body: SingleChildScrollView(
-            child: FrontTaskList(tasks: mentions, onOpen: opened.add),
+            child: FrontTaskList(
+              tasks: mentions,
+              onOpen: (m) {
+                opened.add(m.id);
+                openedKinds.add(m.kind);
+              },
+            ),
           ),
         ),
         overrides: [
           entitiesCacheServiceProvider.overrideWithValue(cache),
-          taskLiveDataProvider.overrideWith(
-            (ref, id) =>
-                load?.call(id) ??
-                Future.value({'t1': counting, 't2': done}[id]),
-          ),
+          taskPreviewProvider.overrideWith((ref, id) async {
+            final task =
+                await (load?.call(id) ??
+                    Future.value({'t1': counting, 't2': done}[id]));
+            if (task == null) return null;
+            return TaskPreview(
+              task: task,
+              oneLiner: id == 't1' ? countingOneLiner : null,
+              tldr: 'Not shown in the row',
+            );
+          }),
         ],
       ),
     );
@@ -170,5 +192,33 @@ void main() {
     await tester.tap(find.byKey(FrontTaskListKeys.row('t1')));
 
     expect(opened, ['t2', 't1']);
+  });
+
+  testWidgets("a task's one-liner shows in its row, above its status; its "
+      'TL;DR does not, it is a tap away', (tester) async {
+    await pump(tester);
+
+    final subtitle = inRow(
+      't1',
+      find.textContaining(countingOneLiner, findRichText: true),
+    );
+    expect(subtitle, findsOne);
+    expect(
+      tester.widget<RichText>(subtitle).text.toPlainText(),
+      startsWith('$countingOneLiner\nIn Progress · Colony'),
+    );
+    expect(find.textContaining('Not shown in the row'), findsNothing);
+  });
+
+  testWidgets('a project in the list is a row of its own that opens the '
+      'project', (tester) async {
+    await pump(tester);
+
+    expect(inRow('p1', find.text('Colony census')), findsOne);
+    expect(inRow('p1', find.byIcon(LottiIcons.folder)), findsOne);
+
+    await tester.tap(find.byKey(FrontTaskListKeys.row('p1')));
+    expect(opened, ['p1']);
+    expect(openedKinds, [FrontDestinationKind.project]);
   });
 }
