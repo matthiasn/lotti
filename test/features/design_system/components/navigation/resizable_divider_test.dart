@@ -238,6 +238,92 @@ void main() {
     });
   });
 
+  group('ResizableDivider between rows', () {
+    Widget rows(ValueChanged<double> onDrag, {bool reverse = false}) =>
+        makeTestableWidgetNoScroll(
+          Column(
+            children: [
+              const Expanded(child: SizedBox()),
+              ResizableDivider(
+                onDrag: onDrag,
+                axis: Axis.vertical,
+                hitTargetWidth: 24,
+                reverse: reverse,
+              ),
+              const Expanded(child: SizedBox()),
+            ],
+          ),
+          mediaQueryData: const MediaQueryData(size: Size(400, 800)),
+        );
+
+    testWidgets('takes its whole band of height, all of it a target a '
+        'finger can grab', (tester) async {
+      final deltas = <double>[];
+      await tester.pumpWidget(rows(deltas.add));
+
+      final band = tester.getRect(find.byType(ResizableDivider));
+      expect(band.height, 24);
+      expect(band.width, 400);
+
+      // Grabbed near the band's edge, not at its centre line.
+      await tester.timedDragFrom(
+        band.topLeft + const Offset(20, 2),
+        const Offset(0, 60),
+        const Duration(milliseconds: 200),
+      );
+      expect(deltas.fold<double>(0, (sum, d) => sum + d), greaterThan(0));
+    });
+
+    testWidgets('reports vertical movement only, reversed on request', (
+      tester,
+    ) async {
+      final deltas = <double>[];
+      await tester.pumpWidget(rows(deltas.add, reverse: true));
+      final center = tester.getCenter(find.byType(ResizableDivider));
+
+      await tester.timedDragFrom(
+        center,
+        const Offset(0, -60),
+        const Duration(milliseconds: 200),
+      );
+      expect(deltas.fold<double>(0, (sum, d) => sum + d), greaterThan(0));
+
+      deltas.clear();
+      await tester.timedDragFrom(
+        center,
+        const Offset(60, 0),
+        const Duration(milliseconds: 200),
+      );
+      expect(deltas.fold<double>(0, (sum, d) => sum + d), 0);
+    });
+
+    testWidgets('↑ and ↓ resize from the keyboard; ← and → do not', (
+      tester,
+    ) async {
+      final deltas = <double>[];
+      await tester.pumpWidget(rows(deltas.add));
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+
+      expect(deltas, hasLength(2));
+      expect((deltas.first > 0, deltas.last < 0), (true, true));
+    });
+
+    testWidgets('shows the row-resize cursor', (tester) async {
+      await tester.pumpWidget(rows((_) {}));
+      final region = tester.widget<MouseRegion>(
+        find.descendant(
+          of: find.byType(ResizableDivider),
+          matching: find.byType(MouseRegion),
+        ),
+      );
+      expect(region.cursor, SystemMouseCursors.resizeRow);
+    });
+  });
+
   group('ResizableDivider keyboard interaction', () {
     testWidgets('arrow keys resize and Shift uses a larger step', (
       tester,

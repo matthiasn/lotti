@@ -1387,15 +1387,17 @@ where its list would be**: the page's `sidePanel` is `FrontStageTranscript`,
 the conversation's own `FrontChatThreadView` — the same thread and the same
 `DesignSystemChatInput` the pane shows, so typing, `@` mentions, the
 microphone and Enter to send work there exactly as outside the stage, and a
-send never leaves it. Both form factors split by
-`PaneWidths.companionStageShare` (her share; three fifths go to the
-conversation by default, between a quarter and three fifths for her, saved
-by `PaneWidthController` like the app's columns). On a desktop window
-(`isDesktopLayout`) the conversation stands beside her, to the right, behind
-the shared `ResizableDivider` that drags and saves the share; on a phone it
-stands under her at that share of the height, the field at the foot of the
-screen, each half keeping clear of only the system bar it meets
-(`MediaQuery.removePadding`). Its ways out to a page close the stage and her
+send never leaves it. Both form factors split at her share, behind the
+shared `ResizableDivider` that drags it and saves it through
+`PaneWidthController` like the app's columns (three fifths go to the
+conversation by default, between a quarter and three fifths for her). On a
+desktop window (`isDesktopLayout`) the conversation stands beside her, to the
+right, at `PaneWidths.companionStageShare` of the width; on a phone it stands
+under her at `PaneWidths.companionStageHeightShare` of the height — saved on
+its own, so a phone's split never moves a desktop's — split by the divider's
+`Axis.vertical` band (`spacing.step6` tall, a grip at its centre, all of it a
+target for a finger), the field at the foot of the screen, each half keeping
+clear of only the system bar it meets (`MediaQuery.removePadding`). Its ways out to a page close the stage and her
 surface both. While her voice plays in the conversation and her latest reply
 lists tasks or charts logged time (`frontStagePointsProvider` over
 `frontLatestReplyHasVisual`, in `state/front_stage_pointing.dart`), the
@@ -1423,7 +1425,7 @@ flowchart LR
   end
   subgraph Phone["Phone"]
     direction TB
-    F2["Her figure<br/>companionStageShare of the height"] --- C2["FrontChatThreadView<br/>thread + DesignSystemChatInput"]
+    F2["Her figure<br/>companionStageHeightShare of the height"] --- B["ResizableDivider<br/>Axis.vertical band"] --- C2["FrontChatThreadView<br/>thread + DesignSystemChatInput"]
   end
 ```
 

@@ -108,7 +108,8 @@ class CompanionStagePage extends ConsumerWidget {
   /// conversation lists as she says them.
   final ProviderListenable<bool>? pointsAtSidePanel;
 
-  /// The divider between her and [sidePanel] on a desktop window.
+  /// The divider between her and [sidePanel]: beside her on a desktop
+  /// window, under her on a phone.
   @visibleForTesting
   static const Key sidePanelDividerKey = Key('companionStageSideDivider');
 
@@ -253,31 +254,47 @@ class CompanionStagePage extends ConsumerWidget {
   }
 
   /// [stage] alone, or with the host's [sidePanel] at the user's saved share
-  /// of the stage (`PaneWidths.companionStageShare`): beside her when
-  /// [beside] — on a desktop window — split by a [ResizableDivider] as the
-  /// app's own columns are; under her on a phone, the panel's field at the
-  /// foot of the screen.
+  /// of the stage, split by a [ResizableDivider] that drags and saves it:
+  /// beside her when [beside] — on a desktop window — as the app's own
+  /// columns are (`PaneWidths.companionStageShare`); under her on a phone,
+  /// the panel's field at the foot of the screen, a band between them that a
+  /// finger drags up and down (`PaneWidths.companionStageHeightShare`).
   Widget _withSidePanel(bool beside, Widget stage) {
     final panel = sidePanel;
     if (panel == null) return stage;
     return Consumer(
       builder: (context, ref, _) {
         final share = ref.watch(
-          paneWidthControllerProvider.select((w) => w.companionStageShare),
+          paneWidthControllerProvider.select(
+            (w) => beside ? w.companionStageShare : w.companionStageHeightShare,
+          ),
         );
         return LayoutBuilder(
           builder: (context, constraints) {
             if (!beside) {
+              final band = context.designTokens.spacing.step6;
+              final span = constraints.maxHeight - band;
               // Each half keeps clear of only the system bar it meets.
               return Column(
                 children: [
                   SizedBox(
-                    height: constraints.maxHeight * share,
+                    height: span * share,
                     child: MediaQuery.removePadding(
                       context: context,
                       removeBottom: true,
                       child: stage,
                     ),
+                  ),
+                  ResizableDivider(
+                    key: sidePanelDividerKey,
+                    axis: Axis.vertical,
+                    hitTargetWidth: band,
+                    onDrag: (delta) => ref
+                        .read(paneWidthControllerProvider.notifier)
+                        .updateCompanionStageHeightShare(delta / span),
+                    currentValue: span * share,
+                    minValue: span * minCompanionStageShare,
+                    maxValue: span * maxCompanionStageShare,
                   ),
                   Expanded(
                     child: MediaQuery.removePadding(
