@@ -3386,6 +3386,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get chatInputConfigureModel => 'Konfigurér model';
 
   @override
+  String get chatInputFinishRecording => 'Færdig — læs det, før du sender';
+
+  @override
   String get chatInputHintDefault =>
       'Spørg ind til dine opgaver og produktivitet...';
 
@@ -3394,7 +3397,14 @@ class AppLocalizationsDa extends AppLocalizations {
       'Vælg en model til at begynde at chatte';
 
   @override
+  String get chatInputKeyboardHint =>
+      'Enter sender · Shift+Enter giver ny linje';
+
+  @override
   String get chatInputListening => 'Lytter...';
+
+  @override
+  String get chatInputMentionsLabel => 'Forslag';
 
   @override
   String get chatInputNoAudioRecorded =>
@@ -6326,6 +6336,65 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get designSystemCaptionWithoutActionsLabel => 'Uden handlinger';
+
+  @override
+  String get designSystemChatInputBusyLabel => 'Venter på et svar';
+
+  @override
+  String get designSystemChatInputBusySample => 'Svarer…';
+
+  @override
+  String get designSystemChatInputDraftSample =>
+      'I eftermiddag fra to til fem vil jeg tage toget til Berlin og gøre mandagens slides færdige undervejs. Planlæg det, så selvangivelsen er klar, før jeg tager af sted.';
+
+  @override
+  String get designSystemChatInputErrorLabel => 'Gik ikke igennem';
+
+  @override
+  String get designSystemChatInputErrorSample =>
+      'Det gik ikke igennem. Dine ord er her stadig.';
+
+  @override
+  String get designSystemChatInputHelperSample =>
+      'Skriv @ for at navngive en kategori';
+
+  @override
+  String get designSystemChatInputHintSample => 'Spørg om hvad som helst…';
+
+  @override
+  String get designSystemChatInputIdleLabel => 'Inaktiv';
+
+  @override
+  String get designSystemChatInputMentionDraftSample =>
+      'Hvad er forfaldent i @Wo';
+
+  @override
+  String get designSystemChatInputMentionLabel => 'Navngiv en kategori med @';
+
+  @override
+  String get designSystemChatInputMentionWoodworking => 'Woodworking';
+
+  @override
+  String get designSystemChatInputMentionWork => 'Work';
+
+  @override
+  String get designSystemChatInputMentionWorkshop => 'Workshop prep';
+
+  @override
+  String get designSystemChatInputPartialSample =>
+      'I eftermiddag fra to til fem vil jeg';
+
+  @override
+  String get designSystemChatInputProofreadLabel => 'Sagt — læs det, og send';
+
+  @override
+  String get designSystemChatInputRecordingLabel => 'Optager';
+
+  @override
+  String get designSystemChatInputStatesTitle => 'Tilstande for chatfeltet';
+
+  @override
+  String get designSystemChatInputTranscribingLabel => 'Transskriberer';
 
   @override
   String get designSystemCheckboxLabel => 'Afkrydsningsboks';

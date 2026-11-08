@@ -10,6 +10,7 @@ import '../../../widget_test_utils.dart';
 /// Sorted catalogue membership — additions/removals show up as a one-line
 /// diff here instead of a churn through thirty singleWhere blocks.
 const _expectedComponentNames = [
+  'Chat input',
   'Action modal',
   'Avatars',
   'Badges',
