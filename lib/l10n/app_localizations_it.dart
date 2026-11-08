@@ -7325,9 +7325,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get frontChatSearchChats => 'Cerca nelle chat';
 
   @override
-  String get frontChatStageConversation => 'Conversazione';
-
-  @override
   String get frontChatTitle => 'Compagno';
 
   @override
@@ -7490,18 +7487,6 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get frontPullRequestsLinesDeleted => 'Righe eliminate';
-
-  @override
-  String get frontStageReleaseToCancel => 'Rilascia per annullare';
-
-  @override
-  String get frontStageReleaseToSend => 'Rilascia per inviare';
-
-  @override
-  String get frontStageTalkHint => 'Tocca o tieni premuto per parlare';
-
-  @override
-  String get frontStageTapToSend => 'Tocca per inviare';
 
   @override
   String get frontTaskCreatedSpoken =>

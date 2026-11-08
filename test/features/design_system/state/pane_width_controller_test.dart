@@ -705,6 +705,63 @@ void main() {
     });
   });
 
+  group('PaneWidthController companion stage height share', () {
+    test('hydrates apart from the width share, clamped into the same '
+        'window', () async {
+      container.dispose();
+      container = await hCreateContainerWithPersistedWidths(
+        companionStageShare: '0.5',
+        companionStageHeightShare: '0.3',
+      );
+      final hydrated = await hAwaitHydration(container);
+      expect(
+        (hydrated.companionStageShare, hydrated.companionStageHeightShare),
+        (0.5, 0.3),
+      );
+
+      container.dispose();
+      container = await hCreateContainerWithPersistedWidths(
+        companionStageHeightShare: '0.1',
+      );
+      expect(
+        (await hAwaitHydration(container)).companionStageHeightShare,
+        minCompanionStageShare,
+      );
+    });
+
+    test('a phone drag moves and saves only the height share, coalesced', () {
+      fakeAsync((async) {
+        final notifier = container.read(paneWidthControllerProvider.notifier)
+          ..updateCompanionStageHeightShare(0.05)
+          ..updateCompanionStageHeightShare(0.05);
+        final state = container.read(paneWidthControllerProvider);
+        expect(state.companionStageHeightShare, closeTo(0.5, 1e-9));
+        expect(state.companionStageShare, defaultCompanionStageShare);
+
+        async.elapse(persistDebounce);
+        verify(
+          () => getIt<SettingsDb>().saveSettingsItem(
+            companionStageHeightShareKey,
+            '0.500',
+          ),
+        ).called(1);
+        verifyNever(
+          () => getIt<SettingsDb>().saveSettingsItem(
+            companionStageShareKey,
+            any(),
+          ),
+        );
+
+        notifier.updateCompanionStageHeightShare(1);
+        expect(
+          container.read(paneWidthControllerProvider).companionStageHeightShare,
+          maxCompanionStageShare,
+        );
+        async.elapse(persistDebounce);
+      });
+    });
+  });
+
   group('PaneWidthController day view panel', () {
     test('hydrates the persisted width and hidden flag', () async {
       container.dispose();

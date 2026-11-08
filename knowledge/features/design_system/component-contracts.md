@@ -213,6 +213,11 @@ calculations; its wider pointer hit target overflows without consuming space.
 `ResizableDivider.reverse` controls a pane on the divider's right: dragging or
 pressing Left grows that pane, while the semantic Increase action always grows
 the announced width. Pointer direction and value direction are separate.
+`ResizableDivider.axis` is `Axis.horizontal` between columns; `Axis.vertical`
+splits rows for a finger — a band `hitTargetWidth` tall that it really lays
+out (the overflowing target would be the 3 px it occupies, since a widget is
+only hit-tested inside its own size), a `spacing.step8` grip at its centre,
+the row-resize cursor and Up/Down from the keyboard.
 
 The same rule applies to structural and operational surfaces:
 `DesignSystemProgressBar` owns determinate progress and its visible value,

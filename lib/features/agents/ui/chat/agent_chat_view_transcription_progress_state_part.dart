@@ -33,6 +33,8 @@ class AgentChatView extends ConsumerStatefulWidget {
     required this.onSend,
     required this.onRetry,
     this.onSendSpoken,
+    this.draftSpoken,
+    this.onDraftSpoken,
     this.hasFailedTurn = false,
     this.attachmentBuilder,
     this.dividerBuilder,
@@ -100,6 +102,15 @@ class AgentChatView extends ConsumerStatefulWidget {
   /// Sends a draft that came from what was said (read, perhaps corrected),
   /// so the host knows the turn was spoken; [onSend] when not given.
   final VoidCallback? onSendSpoken;
+
+  /// The host's record of whether [draft] came from what was said, when the
+  /// host keeps one — two views editing one draft (the companion's stage
+  /// over her chat) then send it the same way. Null keeps it in the view.
+  final bool? draftSpoken;
+
+  /// Told when what was said lands in the field, for a host that keeps
+  /// [draftSpoken].
+  final VoidCallback? onDraftSpoken;
   final AgentChatMessageAttachmentBuilder? attachmentBuilder;
 
   /// Builds what a bubble's footer line carries after the author and the

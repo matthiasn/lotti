@@ -3,16 +3,23 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// A draggable vertical divider that allows resizing adjacent panes.
+/// A draggable divider that allows resizing adjacent panes.
 ///
-/// Displays a thin visual line with a wider hit target area. Shows a
-/// horizontal resize cursor on hover and while dragging. When [enabled] is
-/// false the divider still paints its 1 px hairline — so the layout does not
-/// shift when the parent disables it — but no drag gestures, hover feedback
-/// or resize cursor are attached.
+/// Along [Axis.horizontal] (the default) it is a vertical line between
+/// columns: a thin visual line with a wider hit target area, a horizontal
+/// resize cursor on hover and while dragging, ←/→ from the keyboard. When
+/// [enabled] is false it still paints its 1 px hairline — so the layout does
+/// not shift when the parent disables it — but no drag gestures, hover
+/// feedback or resize cursor are attached.
+///
+/// Along [Axis.vertical] it is a band between rows, dragged up and down —
+/// a phone's split, worked by a finger: the band takes [hitTargetWidth] of
+/// real height, so all of it can be grabbed, and shows a grip at its centre
+/// where a column divider shows its line; ↑/↓ from the keyboard.
 class ResizableDivider extends StatefulWidget {
   const ResizableDivider({
     required this.onDrag,
+    this.axis = Axis.horizontal,
     this.hitTargetWidth = 8,
     this.enabled = true,
     this.reverse = false,
@@ -29,15 +36,22 @@ class ResizableDivider extends StatefulWidget {
   /// Reserved row width, independent of the overflowing pointer hit target.
   static const layoutWidth = 3.0;
 
-  /// Called with the change in pane width. Pointer and arrow-key deltas are
-  /// reversed when [reverse] is true; semantic increase always grows the pane.
-  /// Ignored while [enabled] is false.
+  /// Called with the change in pane width — or height, along
+  /// [Axis.vertical]. Pointer and arrow-key deltas are reversed when [reverse]
+  /// is true; semantic increase always grows the pane. Ignored while
+  /// [enabled] is false.
   final ValueChanged<double> onDrag;
 
-  /// Whether the controlled pane sits to the right of the divider.
+  /// The direction the divider drags: [Axis.horizontal] between columns,
+  /// [Axis.vertical] between rows.
+  final Axis axis;
+
+  /// Whether the controlled pane sits to the right of (or below) the
+  /// divider.
   final bool reverse;
 
-  /// Width of the invisible hit target area for easier grabbing.
+  /// Width of the invisible hit target area for easier grabbing; along
+  /// [Axis.vertical], the band's laid-out height.
   final double hitTargetWidth;
 
   /// Whether the divider accepts drag input and renders hover feedback.
@@ -86,25 +100,45 @@ class _ResizableDividerState extends State<ResizableDivider> {
     final lineColor = isActive
         ? tokens.colors.interactive.enabled
         : tokens.colors.decorative.level01;
+    final vertical = widget.axis == Axis.vertical;
 
     // The divider reserves a constant 3 px of width in the row layout so
     // adjacent panes never shift while the pointer crosses it. The visible
     // line inside animates between a thin 1 px hairline (idle) and the full
     // 3 px width (hover/drag), while a wider invisible [OverflowBox] on top
     // preserves the full hitTargetWidth drag/hover area.
-    final visual = SizedBox(
-      width: ResizableDivider.layoutWidth,
-      child: OverflowBox(
-        maxWidth: widget.hitTargetWidth,
-        child: Center(
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 150),
-            width: isActive ? ResizableDivider.layoutWidth : 1,
-            color: lineColor,
-          ),
-        ),
-      ),
-    );
+    final visual = vertical
+        // A band a finger can find: its whole height is the target, a grip
+        // at its centre the sign that it moves.
+        ? SizedBox(
+            height: widget.hitTargetWidth,
+            child: Center(
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 150),
+                width: tokens.spacing.step8,
+                height: tokens.spacing.step2,
+                decoration: BoxDecoration(
+                  color: isActive
+                      ? tokens.colors.interactive.enabled
+                      : tokens.colors.decorative.level02,
+                  borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
+                ),
+              ),
+            ),
+          )
+        : SizedBox(
+            width: ResizableDivider.layoutWidth,
+            child: OverflowBox(
+              maxWidth: widget.hitTargetWidth,
+              child: Center(
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  width: isActive ? ResizableDivider.layoutWidth : 1,
+                  color: lineColor,
+                ),
+              ),
+            ),
+          );
 
     if (!widget.enabled) {
       return visual;
@@ -147,29 +181,51 @@ class _ResizableDividerState extends State<ResizableDivider> {
           if (event is! KeyDownEvent && event is! KeyRepeatEvent) {
             return KeyEventResult.ignored;
           }
-          if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
+          final (less, more) = vertical
+              ? (LogicalKeyboardKey.arrowUp, LogicalKeyboardKey.arrowDown)
+              : (LogicalKeyboardKey.arrowLeft, LogicalKeyboardKey.arrowRight);
+          if (event.logicalKey == less) {
             widget.onDrag(widget.reverse ? keyboardStep() : -keyboardStep());
             return KeyEventResult.handled;
           }
-          if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
+          if (event.logicalKey == more) {
             widget.onDrag(widget.reverse ? -keyboardStep() : keyboardStep());
             return KeyEventResult.handled;
           }
           return KeyEventResult.ignored;
         },
         child: MouseRegion(
-          cursor: SystemMouseCursors.resizeColumn,
+          cursor: vertical
+              ? SystemMouseCursors.resizeRow
+              : SystemMouseCursors.resizeColumn,
           onEnter: (_) => setState(() => _isHovering = true),
           onExit: (_) => setState(() => _isHovering = false),
-          child: GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onHorizontalDragStart: (_) => setState(() => _isDragging = true),
-            onHorizontalDragUpdate: (details) =>
-                widget.onDrag(details.delta.dx * (widget.reverse ? -1 : 1)),
-            onHorizontalDragCancel: () => setState(() => _isDragging = false),
-            onHorizontalDragEnd: (_) => setState(() => _isDragging = false),
-            child: visual,
-          ),
+          child: vertical
+              ? GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onVerticalDragStart: (_) =>
+                      setState(() => _isDragging = true),
+                  onVerticalDragUpdate: (details) => widget.onDrag(
+                    details.delta.dy * (widget.reverse ? -1 : 1),
+                  ),
+                  onVerticalDragCancel: () =>
+                      setState(() => _isDragging = false),
+                  onVerticalDragEnd: (_) => setState(() => _isDragging = false),
+                  child: visual,
+                )
+              : GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onHorizontalDragStart: (_) =>
+                      setState(() => _isDragging = true),
+                  onHorizontalDragUpdate: (details) => widget.onDrag(
+                    details.delta.dx * (widget.reverse ? -1 : 1),
+                  ),
+                  onHorizontalDragCancel: () =>
+                      setState(() => _isDragging = false),
+                  onHorizontalDragEnd: (_) =>
+                      setState(() => _isDragging = false),
+                  child: visual,
+                ),
         ),
       ),
     );

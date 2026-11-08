@@ -38,6 +38,7 @@ Future<ProviderContainer> hCreateContainerWithPersistedWidths({
   String? listPaneCollapsed,
   String? dayViewPanelHidden,
   String? companionStageShare,
+  String? companionStageHeightShare,
 }) async {
   await tearDownTestGetIt();
   final mocks = await setUpTestGetIt();
@@ -53,6 +54,7 @@ Future<ProviderContainer> hCreateContainerWithPersistedWidths({
       listPaneCollapsedKey: listPaneCollapsed,
       dayViewPanelHiddenKey: dayViewPanelHidden,
       companionStageShareKey: companionStageShare,
+      companionStageHeightShareKey: companionStageHeightShare,
     },
   );
   return ProviderContainer(overrides: getItServiceOverrides());

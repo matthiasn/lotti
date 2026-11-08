@@ -36,7 +36,6 @@ import 'package:lotti/features/front_agent/ui/front_chat_header.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_hero.dart';
 import 'package:lotti/features/front_agent/ui/front_conversation_actions.dart';
 import 'package:lotti/features/front_agent/ui/front_profile_choice.dart';
-import 'package:lotti/features/front_agent/ui/front_stage_controls.dart';
 import 'package:lotti/features/front_agent/ui/front_voice_controls.dart';
 import 'package:lotti/features/front_agent/ui/front_voice_switch.dart';
 import 'package:lotti/features/tts/model/tts_playback_state.dart';
@@ -591,13 +590,12 @@ void main() {
       expect(stage.sourceId, 'front-chat:c-1');
       // In the outfit her bust wore.
       expect(stage.dressedFor, frontCompanionDressedFor);
-      // Her own controls at her feet — a way to answer her, and her voice —
-      // not the summary's.
+      // Her voice's control at her feet, not the summary's.
       expect(
-        (stage.controls! as FrontStageControls).conversationId,
+        (stage.controls! as FrontVoiceButton).conversationId,
         'c-1',
       );
-      // The conversation beside her, where there is room for it.
+      // The conversation with her, its field included.
       expect(stage.sidePanel, isA<FrontStageTranscript>());
       expect(voice.stoppedSources, isEmpty, reason: 'she speaks on');
     });

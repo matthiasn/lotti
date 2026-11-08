@@ -11,7 +11,6 @@ import 'package:lotti/features/front_agent/state/front_stage_pointing.dart';
 import 'package:lotti/features/front_agent/state/front_voice_providers.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_pane.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_voice.dart';
-import 'package:lotti/features/front_agent/ui/front_stage_controls.dart';
 import 'package:lotti/features/tts/state/tts_playback_controller.dart';
 import 'package:lotti/features/tts/ui/widgets/tts_source_play_button.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -25,24 +24,25 @@ abstract final class FrontVoiceControlKeys {
 }
 
 /// Opens her full screen, head to toe on her stage — on a desktop window as
-/// on a phone — still speaking in [conversationId], with a way to answer
-/// her and her voice's control at her feet ([FrontStageControls]), and the
-/// conversation ([FrontStageTranscript]): beside her on a desktop window,
+/// on a phone — still speaking in [conversationId], her voice's control at
+/// her feet ([FrontVoiceButton]), and the conversation as it is outside the
+/// stage, its field included ([FrontStageTranscript]): beside her on a
+/// desktop window, where the list of conversations stands outside it,
 /// pointing at it while she says the tasks it lists
-/// ([frontStagePointsProvider]); in a sheet from her top bar on a phone.
+/// ([frontStagePointsProvider]); under her on a phone.
 Future<void> openFrontStage(BuildContext context, String conversationId) =>
     openCompanionStage(
       context,
       sourceId: frontVoiceSourceId(conversationId),
       dressedFor: frontCompanionDressedFor,
-      controls: FrontStageControls(conversationId: conversationId),
+      controls: FrontVoiceButton(conversationId: conversationId),
       sidePanel: const FrontStageTranscript(),
-      sidePanelLabel: context.messages.frontChatStageConversation,
       pointsAtSidePanel: frontStagePointsProvider(conversationId),
     );
 
-/// The conversation beside her on her stage: its thread, read only, on the
-/// conversation's own ground. Whatever leaves her for a
+/// The conversation on her stage: its thread and the field under it, on the
+/// conversation's own ground — the same chat as outside the stage, so
+/// whatever is typed or said is sent from here. Whatever leaves her for a
 /// page — a source, a project — closes the stage and her surface
 /// both, so the page opens on top rather than behind them; a task she names
 /// opens on top of the stage, and back returns to it.
@@ -52,20 +52,12 @@ class FrontStageTranscript extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    return DecoratedBox(
+    return ColoredBox(
       key: FrontVoiceControlKeys.transcript,
-      decoration: BoxDecoration(
-        color: tokens.colors.background.level01,
-        border: Border(
-          left: BorderSide(color: tokens.colors.decorative.level01),
-        ),
-      ),
+      color: tokens.colors.background.level01,
       child: SafeArea(
         left: false,
-        // Read only: the disc at her feet is the way to answer her here,
-        // and the pane under the stage sends what is said.
         child: FrontChatThreadView(
-          composerEnabled: false,
           onClose: () => Navigator.of(
             context,
             rootNavigator: true,

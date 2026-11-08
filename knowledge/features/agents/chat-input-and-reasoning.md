@@ -76,9 +76,16 @@ front agent passes `kProseMeasureWidth`, other hosts take the full width.
 replies; a null return keeps the usual collapsible Markdown. The front agent
 uses it to draw her lists of tasks as task rows.
 A view with `composerEnabled` off ignores the shared recorder's results — no
-error toast, no draft, no send: when two views of one conversation are
-mounted (the front agent's stage over its pane), only the one with the
-composer acts on a finished recording, so a spoken turn is sent once.
+error toast, no draft. A view under a route that covers it
+(`ModalRoute.isCurrentOf` false) leaves a finished result pending: when two
+views of one conversation are mounted (the front agent's stage over its
+pane) the one in front takes it, and a view covered by a page opened
+mid-transcription takes it once it is in front again (`didChangeDependencies`,
+after the frame). Taking it clears it, so what was said lands once.
+Whether the draft was spoken lives in the view, unless the host keeps it
+(`draftSpoken`, told by `onDraftSpoken`): the front agent does, in
+`FrontChatComposerState.draftSpoken`, so a draft said on her stage and sent
+from her chat — or the reverse — still goes out as a spoken turn.
 `replyTextStyle` lets the host select its answer typography from design tokens;
 scoped queries use `bodySmall`, while other hosts retain `bodyMedium`.
 Hosts can supply `onLinkTap` to resolve each link against its containing message.
@@ -94,9 +101,8 @@ recorder's status, its levels from `getNormalizedAmplitudeHistory`, Done to
 `stopAndTranscribe`, cancel to `cancel`. Recording changes only the input's
 bottom row, so nothing jumps as it starts, and the voice runs across all the
 width the row has (`DesignSystemVoiceWaveform`, the last four seconds of the
-take). The companion's stage has no field — its talk disc sends — so it shows
-a take in `FrontStageTake`: the same surface, cancel, dot, time and bars,
-without a send of its own. There is no per-host recording layout.
+take). The companion's stage carries the conversation's own composer, so it
+records the same way. There is no per-host recording layout.
 
 Its composer and the agent improvement input widgets use
 the same voice-input primitives under `agents/ui/chat/`:

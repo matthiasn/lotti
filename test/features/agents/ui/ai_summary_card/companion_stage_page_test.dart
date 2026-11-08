@@ -58,7 +58,6 @@ void main() {
     Stream<bool>? readAloudFlag,
     Widget? hostControl,
     Widget? sidePanel,
-    String? sidePanelLabel,
     ProviderListenable<bool>? pointsAtSidePanel,
     String? dressedFor,
     bool surprise = false,
@@ -74,7 +73,6 @@ void main() {
                     spokenText: 'Two items left.',
                     controls: hostControl,
                     sidePanel: sidePanel,
-                    sidePanelLabel: sidePanelLabel,
                     pointsAtSidePanel: pointsAtSidePanel,
                     dressedFor: dressedFor,
                   )
@@ -418,91 +416,107 @@ void main() {
       ).called(1);
     });
 
-    testWidgets('is left out on a phone, where she takes the screen', (
+    testWidgets('stands under her on a phone, at the default share, '
+        'each half keeping clear of only the system bar it meets', (
       tester,
     ) async {
+      tester.view
+        ..physicalSize = const Size(390, 844)
+        ..devicePixelRatio = 1
+        ..padding = const FakeViewPadding(top: 47, bottom: 34);
+      addTearDown(tester.view.reset);
+      await openStage(tester, sidePanel: panel);
+
+      final side = tester.getRect(find.byKey(const Key('host-panel')));
+      final band = tester.getRect(
+        find.byKey(CompanionStagePage.sidePanelDividerKey),
+      );
+      // Her share of what the band leaves, the band, then the panel.
+      expect(band.top, closeTo((844 - 24) * defaultCompanionStageShare, 0.5));
+      expect((band.height, band.width), (24.0, 390.0));
+      expect(side.top, band.bottom);
+      expect((side.width, side.bottom), (390.0, 844.0));
+
+      final panelInsets = MediaQuery.paddingOf(
+        tester.element(find.byKey(const Key('host-panel'))),
+      );
+      final stageInsets = MediaQuery.paddingOf(
+        tester.element(find.byKey(const ValueKey('companionStageFigure'))),
+      );
+      expect((panelInsets.top, panelInsets.bottom), (0.0, 34.0));
+      expect((stageInsets.top, stageInsets.bottom), (47.0, 0.0));
+    });
+
+    testWidgets('on a phone opens at the height share saved for a phone, '
+        'not the width share a desktop saved', (tester) async {
+      when(() => mocks.settingsDb.itemsByKeys(any())).thenAnswer(
+        (_) async => {
+          companionStageShareKey: '0.6',
+          companionStageHeightShareKey: '0.3',
+        },
+      );
       tester.view
         ..physicalSize = const Size(390, 844)
         ..devicePixelRatio = 1;
       addTearDown(tester.view.reset);
       await openStage(tester, sidePanel: panel);
 
-      expect(find.byKey(const Key('host-panel')), findsNothing);
       expect(
-        tester
-            .getRect(find.byKey(const ValueKey('companionStageFigure')))
-            .width,
-        390,
+        tester.getRect(find.byKey(CompanionStagePage.sidePanelDividerKey)).top,
+        closeTo((844 - 24) * 0.3, 0.5),
       );
     });
 
-    testWidgets('on a phone a control in her top bar opens it in a sheet '
-        'under its label', (tester) async {
+    testWidgets('on a phone the band between them drags her height with the '
+        'finger and saves it for a phone', (tester) async {
       tester.view
         ..physicalSize = const Size(390, 844)
         ..devicePixelRatio = 1;
       addTearDown(tester.view.reset);
-      await openStage(
-        tester,
-        sidePanel: panel,
-        sidePanelLabel: 'Conversation',
-      );
-      final button = find.byKey(CompanionStagePage.sidePanelButtonKey);
-      // Beside the close control, in her top bar.
-      expect(
-        tester.getRect(button).right,
-        lessThanOrEqualTo(tester.getRect(find.byTooltip('Close')).left),
-      );
-      expect(find.byKey(const Key('host-panel')), findsNothing);
+      await openStage(tester, sidePanel: panel);
+      final divider = find.byKey(CompanionStagePage.sidePanelDividerKey);
 
-      await tester.tap(find.byTooltip('Conversation'));
-      await _pumpFrames(tester);
-      await tester.pump(const Duration(milliseconds: 400));
+      final gesture = await tester.startGesture(tester.getCenter(divider));
+      // Past the drag slop, so the next move is applied whole.
+      await gesture.moveBy(const Offset(0, 40));
+      await tester.pump();
+      final before = tester.getRect(divider).top;
+      await gesture.moveBy(const Offset(0, 82));
+      await tester.pump();
+      await gesture.up();
+      final after = tester.getRect(divider).top;
 
-      final sheetPanel = find.byKey(const Key('host-panel'));
-      expect(sheetPanel, findsOne);
-      expect(find.text('Conversation'), findsOne);
-      expect(
-        tester.getSize(sheetPanel).height,
-        closeTo(844 * CompanionStagePage.sidePanelSheetHeightFactor, 1),
+      expect(after - before, closeTo(82, 0.5));
+      await tester.pump(persistDebounce);
+      verify(
+        () => mocks.settingsDb.saveSettingsItem(
+          companionStageHeightShareKey,
+          (after / (844 - 24)).toStringAsFixed(3),
+        ),
+      ).called(1);
+      verifyNever(
+        () => mocks.settingsDb.saveSettingsItem(companionStageShareKey, any()),
       );
     });
 
-    for (final (why, withPanel, label) in [
-      ('no panel', false, 'Conversation'),
-      ('no label', true, null),
-    ]) {
-      testWidgets('a phone offers no control with $why', (tester) async {
-        tester.view
-          ..physicalSize = const Size(390, 844)
-          ..devicePixelRatio = 1;
-        addTearDown(tester.view.reset);
-        await openStage(
-          tester,
-          sidePanel: withPanel ? panel : null,
-          sidePanelLabel: label,
-        );
-        expect(find.byType(CompanionStagePage), findsOne);
-        expect(
-          find.byKey(CompanionStagePage.sidePanelButtonKey),
-          findsNothing,
-        );
-      });
-    }
-
-    testWidgets('a desktop window offers no control: the panel is already '
-        'beside her', (tester) async {
-      tester.view
-        ..physicalSize = const Size(1600, 1000)
-        ..devicePixelRatio = 1;
-      addTearDown(tester.view.reset);
-      await openStage(
-        tester,
-        sidePanel: panel,
-        sidePanelLabel: 'Conversation',
+    testWidgets('on a phone, at her smallest share with the keyboard up, '
+        'nothing overflows', (tester) async {
+      when(() => mocks.settingsDb.itemsByKeys(any())).thenAnswer(
+        (_) async => {companionStageHeightShareKey: '0.25'},
       );
-      expect(find.byKey(CompanionStagePage.sidePanelButtonKey), findsNothing);
-      expect(find.byKey(const Key('host-panel')), findsOne);
+      tester.view
+        ..physicalSize = const Size(390, 844)
+        ..devicePixelRatio = 1
+        ..padding = const FakeViewPadding(top: 47, bottom: 34)
+        ..viewInsets = const FakeViewPadding(bottom: 336);
+      addTearDown(tester.view.reset);
+      await openStage(tester, sidePanel: panel);
+
+      expect(tester.takeException(), isNull);
+      expect(
+        tester.getRect(find.byKey(const Key('host-panel'))).bottom,
+        844 - 336,
+      );
     });
 
     GestureName? held(WidgetTester tester) => tester
@@ -532,7 +546,7 @@ void main() {
       expect(held(tester), isNull);
     });
 
-    testWidgets('on a phone, with no panel beside her, she never points', (
+    testWidgets('on a phone, with the panel under her, she never points', (
       tester,
     ) async {
       tester.view

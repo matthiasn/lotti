@@ -7250,9 +7250,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get frontChatSearchChats => 'Sök i chattar';
 
   @override
-  String get frontChatStageConversation => 'Samtal';
-
-  @override
   String get frontChatTitle => 'Följeslagare';
 
   @override
@@ -7415,18 +7412,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get frontPullRequestsLinesDeleted => 'Borttagna rader';
-
-  @override
-  String get frontStageReleaseToCancel => 'Släpp för att avbryta';
-
-  @override
-  String get frontStageReleaseToSend => 'Släpp för att skicka';
-
-  @override
-  String get frontStageTalkHint => 'Tryck eller håll in för att prata';
-
-  @override
-  String get frontStageTapToSend => 'Tryck för att skicka';
 
   @override
   String get frontTaskCreatedSpoken =>

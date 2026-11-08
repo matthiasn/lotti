@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/navigation/resizable_divider.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../widget_test_utils.dart';
@@ -235,6 +236,129 @@ void main() {
       // Vertical drags produce zero horizontal deltas
       final totalDelta = deltas.fold<double>(0, (sum, d) => sum + d);
       expect(totalDelta, 0);
+    });
+  });
+
+  group('ResizableDivider between rows', () {
+    Widget rows(ValueChanged<double> onDrag, {bool reverse = false}) =>
+        makeTestableWidgetNoScroll(
+          Column(
+            children: [
+              const Expanded(child: SizedBox()),
+              ResizableDivider(
+                onDrag: onDrag,
+                axis: Axis.vertical,
+                hitTargetWidth: 24,
+                reverse: reverse,
+              ),
+              const Expanded(child: SizedBox()),
+            ],
+          ),
+          mediaQueryData: const MediaQueryData(size: Size(400, 800)),
+        );
+
+    testWidgets('takes its whole band of height, all of it a target a '
+        'finger can grab', (tester) async {
+      final deltas = <double>[];
+      await tester.pumpWidget(rows(deltas.add));
+
+      final band = tester.getRect(find.byType(ResizableDivider));
+      expect(band.height, 24);
+      expect(band.width, 400);
+
+      // Grabbed near the band's edge, not at its centre line.
+      await tester.timedDragFrom(
+        band.topLeft + const Offset(20, 2),
+        const Offset(0, 60),
+        const Duration(milliseconds: 200),
+      );
+      expect(deltas.fold<double>(0, (sum, d) => sum + d), greaterThan(0));
+    });
+
+    testWidgets('reports vertical movement only, reversed on request', (
+      tester,
+    ) async {
+      final deltas = <double>[];
+      await tester.pumpWidget(rows(deltas.add, reverse: true));
+      final center = tester.getCenter(find.byType(ResizableDivider));
+
+      await tester.timedDragFrom(
+        center,
+        const Offset(0, -60),
+        const Duration(milliseconds: 200),
+      );
+      expect(deltas.fold<double>(0, (sum, d) => sum + d), greaterThan(0));
+
+      deltas.clear();
+      await tester.timedDragFrom(
+        center,
+        const Offset(60, 0),
+        const Duration(milliseconds: 200),
+      );
+      expect(deltas.fold<double>(0, (sum, d) => sum + d), 0);
+    });
+
+    testWidgets('↑ and ↓ resize from the keyboard; ← and → do not', (
+      tester,
+    ) async {
+      final deltas = <double>[];
+      await tester.pumpWidget(rows(deltas.add));
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+
+      expect(deltas, hasLength(2));
+      expect((deltas.first > 0, deltas.last < 0), (true, true));
+    });
+
+    testWidgets('lights its grip while dragged, and lets it go quiet when '
+        'the drag is cancelled', (tester) async {
+      await tester.pumpWidget(rows((_) {}));
+      final tokens = tester.element(find.byType(ResizableDivider)).designTokens;
+      Color? grip() =>
+          (tester
+                      .widget<AnimatedContainer>(
+                        find.descendant(
+                          of: find.byType(ResizableDivider),
+                          matching: find.byType(AnimatedContainer),
+                        ),
+                      )
+                      .decoration
+                  as BoxDecoration?)
+              ?.color;
+
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.byType(ResizableDivider)),
+      );
+      await gesture.moveBy(const Offset(0, 30));
+      await tester.pump();
+      expect(grip(), tokens.colors.interactive.enabled);
+
+      tester
+          .widget<GestureDetector>(
+            find.descendant(
+              of: find.byType(ResizableDivider),
+              matching: find.byType(GestureDetector),
+            ),
+          )
+          .onVerticalDragCancel!();
+      await tester.pump();
+
+      expect(grip(), tokens.colors.decorative.level02);
+      await gesture.up();
+    });
+
+    testWidgets('shows the row-resize cursor', (tester) async {
+      await tester.pumpWidget(rows((_) {}));
+      final region = tester.widget<MouseRegion>(
+        find.descendant(
+          of: find.byType(ResizableDivider),
+          matching: find.byType(MouseRegion),
+        ),
+      );
+      expect(region.cursor, SystemMouseCursors.resizeRow);
     });
   });
 

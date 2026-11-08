@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/query/query_source_access.dart';
@@ -94,8 +95,17 @@ class _Composer extends FrontChatController {
 
   final bool sending;
 
+  /// What was sent, as it was sent.
+  final sent = <String>[];
+
   @override
   FrontChatComposerState build() => FrontChatComposerState(isSending: sending);
+
+  @override
+  Future<void> sendText(String text, {bool spoken = false}) async {
+    sent.add(text);
+    updateDraft('');
+  }
 }
 
 /// A spoken reply still owed, or none.
@@ -137,6 +147,7 @@ void main() {
   );
 
   late _Voice voice;
+  late _Composer composer;
 
   Future<void> pump(
     WidgetTester tester, {
@@ -182,7 +193,7 @@ void main() {
             (ref) async => active,
           ),
           frontChatControllerProvider.overrideWith(
-            () => _Composer(sending: sending),
+            () => composer = _Composer(sending: sending),
           ),
           frontSpokenTurnProvider.overrideWith(
             () => _Spoken(owed: spokenOwed),
@@ -354,82 +365,82 @@ void main() {
     expect(voice.spoken.single.sourceId, source);
   });
 
-  testWidgets('on a desktop window her stage keeps the conversation beside '
-      'her; on a phone she has the screen', (tester) async {
+  Future<void> openStage(WidgetTester tester, Size size) async {
     tester.view
-      ..physicalSize = const Size(1600, 1000)
+      ..physicalSize = size
       ..devicePixelRatio = 1;
     addTearDown(tester.view.reset);
     await pump(tester, child: const _OpenStage());
-
     await tester.tap(find.byType(_OpenStage));
     for (var i = 0; i < 10; i++) {
       await tester.pump(const Duration(milliseconds: 50));
     }
+  }
 
-    final transcript = find.byKey(FrontVoiceControlKeys.transcript);
-    expect(transcript, findsOne);
-    expect(
-      find.descendant(
-        of: transcript,
-        matching: find.byType(FrontChatThreadView),
-      ),
-      findsOne,
-    );
+  Finder stageField() => find.descendant(
+    of: find.byKey(FrontVoiceControlKeys.transcript),
+    matching: find.byType(TextField),
+  );
+
+  for (final (form, size) in [
+    ('desktop window', const Size(1600, 1000)),
+    ('phone', const Size(390, 844)),
+  ]) {
+    testWidgets('on a $form what is typed on her stage is sent from it with '
+        'Enter, and the stage stays open', (tester) async {
+      await openStage(tester, size);
+
+      expect(stageField(), findsOne);
+      await tester.enterText(stageField(), 'Anything overdue?');
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pump();
+
+      expect(composer.sent, ['Anything overdue?']);
+      expect(find.byType(CompanionStagePage), findsOne);
+    });
+  }
+
+  testWidgets('on a desktop window the conversation and its field stand '
+      'beside her, never under her', (tester) async {
+    await openStage(tester, const Size(1600, 1000));
+
     final figure = tester.getRect(
       find.byKey(const ValueKey('companionStageFigure')),
     );
-    expect(tester.getRect(transcript).left, greaterThanOrEqualTo(figure.right));
-    // Read only: the disc at her feet is the way to answer her here, so a
-    // finished recording is sent once, by the pane under the stage.
-    final thread = tester.widget<FrontChatThreadView>(
-      find.descendant(
-        of: transcript,
-        matching: find.byType(FrontChatThreadView),
-      ),
+    expect(
+      tester.getRect(stageField()).left,
+      greaterThanOrEqualTo(figure.right),
     );
-    expect(thread.composerEnabled, isFalse);
+    // One field on the stage: the chat's own.
+    expect(
+      find.descendant(
+        of: find.byType(CompanionStagePage),
+        matching: find.byType(TextField),
+      ),
+      findsOne,
+    );
 
     // A way out to a page closes the stage and everything under it.
-    thread.onClose();
+    tester
+        .widget<FrontChatThreadView>(find.byType(FrontChatThreadView))
+        .onClose();
     await tester.pumpAndSettle();
     expect(find.byType(CompanionStagePage), findsNothing);
   });
 
-  testWidgets('on a phone her stage offers the conversation in a sheet, '
-      'read only, and a way out of it closes the stage too', (tester) async {
-    tester.view
-      ..physicalSize = const Size(390, 844)
-      ..devicePixelRatio = 1;
-    addTearDown(tester.view.reset);
-    await pump(tester, child: const _OpenStage());
+  testWidgets('on a phone the conversation and its field stand under her, '
+      'the field at the foot of the screen', (tester) async {
+    await openStage(tester, const Size(390, 844));
 
-    await tester.tap(find.byType(_OpenStage));
-    for (var i = 0; i < 10; i++) {
-      await tester.pump(const Duration(milliseconds: 50));
-    }
-    final transcript = find.byKey(FrontVoiceControlKeys.transcript);
-    expect(transcript, findsNothing);
-
-    await tester.tap(find.byTooltip('Conversation'));
-    for (var i = 0; i < 10; i++) {
-      await tester.pump(const Duration(milliseconds: 50));
-    }
-    expect(find.byType(FrontStageTranscript), findsOne);
-    expect(find.text('Conversation'), findsOne);
-    final thread = tester.widget<FrontChatThreadView>(
-      find.descendant(
-        of: transcript,
-        matching: find.byType(FrontChatThreadView),
-      ),
+    final figure = tester.getRect(
+      find.byKey(const ValueKey('companionStageFigure')),
     );
-    // Read only: the pane under the stage stays the one sender.
-    expect(thread.composerEnabled, isFalse);
-
-    thread.onClose();
-    await tester.pumpAndSettle();
-    expect(find.byType(FrontStageTranscript), findsNothing);
-    expect(find.byType(CompanionStagePage), findsNothing);
+    final transcript = tester.getRect(
+      find.byKey(FrontVoiceControlKeys.transcript),
+    );
+    expect(transcript.top, greaterThanOrEqualTo(figure.bottom));
+    expect(transcript.bottom, 844);
+    expect(tester.getRect(stageField()).bottom, lessThanOrEqualTo(844));
   });
 
   testWidgets('on a desktop window she points at the conversation while she '

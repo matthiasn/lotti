@@ -91,6 +91,8 @@ void main() {
     Widget? Function(BuildContext, AgentChatMessage)? footerTrailing,
     bool reducedMotion = false,
     VoidCallback? onSendSpoken,
+    bool? draftSpoken,
+    VoidCallback? onDraftSpoken,
     double? contentMaxWidth,
     bool composerEnabled = true,
     AgentReplyBodyBuilder? replyBodyBuilder,
@@ -117,6 +119,8 @@ void main() {
                 voiceFirst: voiceFirst,
                 footerTrailingBuilder: footerTrailing,
                 onSendSpoken: onSendSpoken,
+                draftSpoken: draftSpoken,
+                onDraftSpoken: onDraftSpoken,
                 contentMaxWidth: contentMaxWidth,
                 composerEnabled: composerEnabled,
                 replyBodyBuilder: replyBodyBuilder,
@@ -421,6 +425,42 @@ void main() {
 
       expect(spoken, 1);
       expect(sends, 0, reason: 'a spoken send is not a typed one');
+    });
+
+    testWidgets('a draft the host records as spoken — said in its other '
+        'view — goes out as a spoken turn from this one', (tester) async {
+      var spoken = 0;
+      draft = 'Count the eggs';
+      await pumpView(
+        tester,
+        draftSpoken: true,
+        onSendSpoken: () => spoken++,
+      );
+
+      await tester.tap(find.byKey(DesignSystemChatInputKeys.send));
+
+      expect((sends, spoken), (0, 1));
+    });
+
+    testWidgets('a host that keeps the spoken record is told when what was '
+        'said lands, and its typed record wins at send', (tester) async {
+      var told = 0;
+      var spoken = 0;
+      final recorder = await pumpView(
+        tester,
+        draftSpoken: false,
+        onDraftSpoken: () => told++,
+        onSendSpoken: () => spoken++,
+      );
+
+      recorder.hear('And the tagging?');
+      await tester.pump();
+      expect(told, 1);
+
+      // The host has not recorded it as spoken (say, it was cleared in the
+      // other view): its record decides.
+      await tester.tap(find.byKey(DesignSystemChatInputKeys.send));
+      expect((sends, spoken), (1, 0));
     });
 
     testWidgets('a typed draft, or one cleared and typed again, goes out as '

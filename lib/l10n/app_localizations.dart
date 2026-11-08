@@ -12353,12 +12353,6 @@ abstract class AppLocalizations {
   /// **'Search chats'**
   String get frontChatSearchChats;
 
-  /// On a phone, the companion's full-screen stage: the control in her top bar that opens the conversation she is speaking in, and that sheet's title.
-  ///
-  /// In en, this message translates to:
-  /// **'Conversation'**
-  String get frontChatStageConversation;
-
   /// No description provided for @frontChatTitle.
   ///
   /// In en, this message translates to:
@@ -12646,30 +12640,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Lines deleted'**
   String get frontPullRequestsLinesDeleted;
-
-  /// Caption under the talk button while a held finger has slid off it: letting go discards what was said.
-  ///
-  /// In en, this message translates to:
-  /// **'Release to cancel'**
-  String get frontStageReleaseToCancel;
-
-  /// Caption under the talk button while it is held: letting go sends what was said.
-  ///
-  /// In en, this message translates to:
-  /// **'Release to send'**
-  String get frontStageReleaseToSend;
-
-  /// Caption under the talk button on the companion's full-screen stage: tap it to talk hands free, or press and hold it and let go to send.
-  ///
-  /// In en, this message translates to:
-  /// **'Tap or hold to talk'**
-  String get frontStageTalkHint;
-
-  /// Caption under the talk button on the companion's stage while she listens hands free: the next tap sends.
-  ///
-  /// In en, this message translates to:
-  /// **'Tap to send'**
-  String get frontStageTapToSend;
 
   /// Said aloud by the companion, in her voice, right after the user's tap made a task from an inbox item
   ///
