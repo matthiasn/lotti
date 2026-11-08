@@ -569,7 +569,9 @@ String renderFrontTurn({
     ..writeln('</recent_turns>')
     ..writeln()
     ..writeln('<conversation_tasks>');
-  conversationTasks.map(FrontRoutingIndex.renderRow).forEach(buffer.writeln);
+  for (final row in conversationTasks) {
+    buffer.writeln(FrontRoutingIndex.renderRow(row, withCategory: true));
+  }
   buffer
     ..writeln('</conversation_tasks>')
     ..writeln()

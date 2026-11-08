@@ -302,8 +302,11 @@ pay across turns. One-liners are rendered; TL;DRs are held on the row for
 tokens.
 
 **The tasks the conversation named** follow `<recent_turns>` as a
-`<conversation_tasks>` block in the same row format, most recently named
-first — what "that one", "it" or "the previous task" means. It sits after
+`<conversation_tasks>` block in the same row format plus each task's
+`category:id` (`renderRow(withCategory: true)`), most recently named
+first — what "that one", "it" or "the previous task" means, and which
+category the conversation has been working in. The index rows leave the
+category out: a few tokens on every row of every wake. It sits after
 the turns, not inside the index, because it changes with every turn and the
 index must not. `frontConversationTaskIds` scans the whole visible
 conversation, newest message first, not just the six-turn tail and its
@@ -640,7 +643,7 @@ flowchart LR
   M --> T[(task, in its category)]
   M --> E[(the words, a text entry linked under it)]
   M -->|draft has a start| C[(timer entry from that instant,<br/>TimeService.start)]
-  M -->|draft follows a task| L[(followsUp link to it;<br/>its category when none was read)]
+  M -->|draft follows a task| L[(followsUp link to it;<br/>its category when none was read;<br/>its project, when it has one)]
   M --> A[category default agent<br/>autoAssignCategoryAgentWith, last]
   A -->|creation wake: the title is content| G[the agent's first run]
   R -->|reply_to_user, one line| S[spoken on a spoken turn]
@@ -650,13 +653,13 @@ flowchart LR
 |-------|--------------|------|
 | title | agent | the words, short |
 | body | agent | `instructions`: what to do and how, without the turn's other topics |
-| category | agent | the category the user names, else the listed one the work plainly belongs to; dropped unless listed (and chosen, when the conversation is narrowed) |
+| category | agent | the category the user names, else her judgment from the work, the categories of `<conversation_tasks>` and what `<recent_turns>` were about — a task asked for in a conversation spent on one category's work, or its logged time, goes there, and her reply names it; left out only when the evidence points two ways or nowhere; dropped unless listed (and chosen, when the conversation is narrowed). Live eval scenarios `category_from_conversation` / `category_nowhere` |
 | priority, due day, estimate | agent, only when said | `P0`–`P3`, `YYYY-MM-DD`, minutes (≤ `frontTaskMaxEstimateMinutes`) |
 | status and timer | agent, only when said | `startedMinutesAgo` (0–`frontTaskMaxStartedMinutesAgo`): *in progress*, and a timer entry linked under the task from that instant, running |
-| follows up on | agent, only for a follow-up | `followsUpTaskId`: a task in the index, a lookup this turn or `<conversation_tasks>`; anything else is dropped. Linked `followsUp` from the new task to it |
+| follows up on | agent, only for a follow-up | `followsUpTaskId`: a task in the index, a lookup this turn or `<conversation_tasks>`; anything else is dropped. Linked `followsUp` from the new task to it, and filed under its project |
 | task agent | category default | the category's `defaultTemplateId`; none without one |
 | provenance | always | the segment's verbatim words, a text entry linked under the task (`frontTaskWordsId`) |
-| project, checklist, labels, anything else | user | the task page, or the agent's proposals there |
+| project (but a follow-up's), checklist, labels, anything else | user | the task page, or the agent's proposals there |
 
 The draft is read leniently (`FrontTaskDraft.fromModel`): no title, no
 draft; any other field that does not parse is left out, so a misheard date
@@ -685,10 +688,16 @@ two fit or none does. Rule 11's duplicate check does not hold against the
 task it follows. Without a category of its own the follow-up takes its
 task's at the tap, so its category's agent is the one assigned. The link is
 the ADR 0042 `followsUp` edge (`ensureLink`, the agent tool's path), so the
-task page's relationship sections show it as on any linked pair. It is
-written **before** the agent: `createTaskAgent` enqueues the creation wake
+task page's relationship sections show it as on any linked pair. Right
+after the link the follow-up is filed under its task's project
+(`ProjectRepository.inheritProjectFromTask`, as `createTask` and the agent's
+follow-up tool do): none when that task has none, and none when a category
+the words named differs from the project's, which the project link rejects.
+It is a separate write — the project link reserves its own vector clock and
+transaction — and best effort: a failure is logged and the task stands
+without one. Both are written **before** the agent: `createTaskAgent` enqueues the creation wake
 at once, and the content gate lets it run — a non-empty title counts as
-content — so the first run sees the link, the words and the timer.
+content — so the first run sees the link, the project, the words and the timer.
 
 **What she says** is her `reply_to_user` line with the dispatch, spoken
 as every reply to a spoken turn is ([her voice](#her-voice)): the task is

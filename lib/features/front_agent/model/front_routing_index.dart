@@ -463,8 +463,11 @@ class FrontRoutingIndex {
   }
 
   /// One row as the index lists it: `kind:id | title | status | due |
-  /// one-liner`, the parts it lacks left out.
-  static String renderRow(FrontIndexRow row) {
+  /// one-liner`, the parts it lacks left out. [withCategory] appends
+  /// `category:id` — what `<conversation_tasks>` carries, so the category a
+  /// conversation has been working in informs a new task's; the index leaves
+  /// it out, a few tokens on every row of every wake.
+  static String renderRow(FrontIndexRow row, {bool withCategory = false}) {
     final buffer = StringBuffer()
       ..write('- ')
       ..write(row.kind.wireName)
@@ -478,6 +481,10 @@ class FrontRoutingIndex {
     }
     if (row.oneLiner case final oneLiner? when oneLiner.trim().isNotEmpty) {
       buffer.write(' | ${_oneLine(oneLiner)}');
+    }
+    final categoryId = row.categoryId;
+    if (withCategory && categoryId != null && categoryId.isNotEmpty) {
+      buffer.write(' | category:$categoryId');
     }
     return buffer.toString();
   }

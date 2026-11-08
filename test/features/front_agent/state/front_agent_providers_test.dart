@@ -41,9 +41,11 @@ import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart';
+import 'package:lotti/logic/repositories/project_repository.dart';
 import 'package:lotti/providers/agent_repository_providers.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/providers/update_notifications_providers.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/utils/device_region.dart';
 import 'package:mocktail/mocktail.dart';
@@ -521,6 +523,7 @@ void main() {
     late MockPersistenceLogic persistence;
     late MockJournalRepository journalRepository;
     late MockJournalDb journalDb;
+    late MockProjectRepository projects;
     late ProviderContainer wired;
 
     FrontDoorRecord record(FrontDoorOutcome outcome) => FrontDoorRecord(
@@ -547,6 +550,13 @@ void main() {
       persistence = MockPersistenceLogic();
       journalRepository = MockJournalRepository();
       journalDb = MockJournalDb();
+      projects = MockProjectRepository();
+      when(
+        () => projects.inheritProjectFromTask(
+          sourceTaskId: any(named: 'sourceTaskId'),
+          newTaskId: any(named: 'newTaskId'),
+        ),
+      ).thenAnswer((_) async => true);
       when(
         () => journalDb.journalEntityById(any()),
       ).thenAnswer((_) async => null);
@@ -574,6 +584,7 @@ void main() {
           persistenceLogicProvider.overrideWithValue(persistence),
           timeServiceProvider.overrideWithValue(timeService),
           taskAgentServiceProvider.overrideWithValue(MockTaskAgentService()),
+          projectRepositoryProvider.overrideWithValue(projects),
         ],
       );
       addTearDown(wired.dispose);
@@ -790,7 +801,7 @@ void main() {
     });
 
     test('the tap on a dictated follow-up makes the task in its category, '
-        'links it to the task it follows, runs the backdated timer and '
+        'links it to the task it follows and its project, runs the backdated timer and '
         "hands it the category's agent", () async {
       final now = DateTime(2026, 11, 8, 14, 30);
       final started = now.subtract(const Duration(minutes: 5));
@@ -920,6 +931,12 @@ void main() {
           linkType: EntryLinkType.followsUp,
         ),
       ).called(1);
+      verify(
+        () => projects.inheritProjectFromTask(
+          sourceTaskId: 'roses',
+          newTaskId: taskId,
+        ),
+      ).called(1);
       final timer =
           verify(
                 () => timeService.start(captureAny(), any()),
@@ -1037,6 +1054,8 @@ void main() {
     late MockJournalDb journalDb;
     late List<(JournalEntity, JournalEntity)> timers;
     late List<Task> assigned;
+    late MockProjectRepository projects;
+    late MockDomainLogger domainLogger;
 
     Task made(TaskData data) =>
         JournalEntity.task(
@@ -1057,6 +1076,8 @@ void main() {
       journalDb = MockJournalDb();
       timers = [];
       assigned = [];
+      projects = MockProjectRepository();
+      domainLogger = MockDomainLogger();
       when(
         () => persistence.createMetadata(
           id: any(named: 'id'),
@@ -1099,6 +1120,8 @@ void main() {
         id: taskId,
         words: 'Fix the login bug, high priority, started ten minutes ago.',
         startTimer: (timer, task) async => timers.add((timer, task)),
+        inheritProject: projects.inheritProjectFromTask,
+        domainLogger: domainLogger,
         assignAgent: (task) async => assigned.add(task),
       ),
     );
@@ -1217,7 +1240,7 @@ void main() {
         });
       });
 
-      Future<void> makeFollowUp(FrontTaskDraft draft) => withClock(
+      Future<Task?> makeFollowUp(FrontTaskDraft draft) => withClock(
         Clock.fixed(now),
         () => makeFrontTask(
           persistence,
@@ -1226,31 +1249,48 @@ void main() {
           id: taskId,
           words: 'Create a follow-up to that one.',
           startTimer: (_, _) async {},
+          inheritProject: projects.inheritProjectFromTask,
+          domainLogger: domainLogger,
           assignAgent: (_) async => events.add('agent'),
         ),
       );
 
+      void stubFollowedTask() =>
+          when(() => journalDb.journalEntityById(followedId)).thenAnswer(
+            (_) async => JournalEntity.task(
+              meta: Metadata(
+                id: followedId,
+                createdAt: now,
+                updatedAt: now,
+                dateFrom: now,
+                dateTo: now,
+                categoryId: 'garden',
+              ),
+              data: TaskData(
+                status: TaskStatus.done(id: 's', createdAt: now, utcOffset: 0),
+                statusHistory: const [],
+                dateFrom: now,
+                dateTo: now,
+                title: 'Prune the roses',
+              ),
+            ),
+          );
+
+      void stubInheritance(Future<bool> Function() answer) =>
+          when(
+            () => projects.inheritProjectFromTask(
+              sourceTaskId: any(named: 'sourceTaskId'),
+              newTaskId: any(named: 'newTaskId'),
+            ),
+          ).thenAnswer((_) {
+            events.add('project');
+            return answer();
+          });
+
       test('is linked followsUp to the task it follows, takes its category '
-          'and gets its agent only after the link', () async {
-        when(() => journalDb.journalEntityById(followedId)).thenAnswer(
-          (_) async => JournalEntity.task(
-            meta: Metadata(
-              id: followedId,
-              createdAt: now,
-              updatedAt: now,
-              dateFrom: now,
-              dateTo: now,
-              categoryId: 'garden',
-            ),
-            data: TaskData(
-              status: TaskStatus.done(id: 's', createdAt: now, utcOffset: 0),
-              statusHistory: const [],
-              dateFrom: now,
-              dateTo: now,
-              title: 'Prune the roses',
-            ),
-          ),
-        );
+          'and its project, and gets its agent only after both', () async {
+        stubFollowedTask();
+        stubInheritance(() async => true);
 
         await makeFollowUp(
           const FrontTaskDraft(
@@ -1274,7 +1314,61 @@ void main() {
             linkType: EntryLinkType.followsUp,
           ),
         ).called(1);
-        expect(events, ['link', 'agent']);
+        verify(
+          () => projects.inheritProjectFromTask(
+            sourceTaskId: followedId,
+            newTaskId: taskId,
+          ),
+        ).called(1);
+        expect(events, ['link', 'project', 'agent']);
+      });
+
+      test('a followed task in no project leaves the follow-up in none, '
+          'and it is still made and handed its agent', () async {
+        stubFollowedTask();
+        stubInheritance(() async => false);
+
+        await makeFollowUp(
+          const FrontTaskDraft(
+            title: 'Mulch the roses',
+            followsUpTaskId: followedId,
+          ),
+        );
+
+        expect(events, ['link', 'project', 'agent']);
+        verifyNever(
+          () => domainLogger.error(
+            any(),
+            any<Object>(),
+            stackTrace: any(named: 'stackTrace'),
+            subDomain: any(named: 'subDomain'),
+            message: any(named: 'message'),
+          ),
+        );
+      });
+
+      test('a failed project link is logged, never fatal: the follow-up '
+          'stands and gets its agent', () async {
+        stubFollowedTask();
+        stubInheritance(() async => throw StateError('db closed'));
+
+        await makeFollowUp(
+          const FrontTaskDraft(
+            title: 'Mulch the roses',
+            followsUpTaskId: followedId,
+          ),
+        );
+
+        expect(events, ['link', 'project', 'agent']);
+        verify(
+          () => domainLogger.error(
+            LogDomain.agentWorkflow,
+            any<Object>(that: isA<StateError>()),
+            stackTrace: any(named: 'stackTrace'),
+            subDomain: 'makeFrontTask',
+            message: any(named: 'message'),
+          ),
+        ).called(1);
       });
 
       test('a category the words named wins over the followed one, and a '
@@ -1309,6 +1403,25 @@ void main() {
           ),
         ).called(1);
         expect(events, ['agent']);
+        verifyZeroInteractions(projects);
+      });
+
+      test('a followed task that cannot be loaded makes the task without a '
+          'link or a project', () async {
+        when(
+          () => journalDb.journalEntityById(followedId),
+        ).thenAnswer((_) async => null);
+
+        final task = await makeFollowUp(
+          const FrontTaskDraft(
+            title: 'Mulch the roses',
+            followsUpTaskId: followedId,
+          ),
+        );
+
+        expect(task?.meta.id, taskId);
+        expect(events, ['agent']);
+        verifyZeroInteractions(projects);
       });
     });
 
