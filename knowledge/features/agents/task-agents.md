@@ -558,9 +558,10 @@ These context details are load-bearing:
   for requests that share a prefix. The id is a random UUID, so it carries no
   content; other providers are sent nothing.
 - **Every wake logs a prompt fingerprint** (`promptFingerprint`, subdomain
-  `cache`): truncated hashes of the tool list, the system prompt and the
-  message head before the log, plus the log's length and the active fold
-  summary. When a wake's opening request misses the cache, the first field
+  `cache`): truncated hashes of the tool list, the system prompt, the
+  message head before the log and the log itself, plus the log's length and
+  the active fold summary. The log grows between wakes, so a changed log hash
+  at an unchanged length is a rewrite. When a wake's opening request misses the cache, the first field
   that differs from the previous wake names the block that changed; no prompt
   text is logged. The per-request token counts it is read against are the
   `consumption_events` rows (`wake_run_key`, `turn_index`,

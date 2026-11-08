@@ -17,10 +17,12 @@ opening-request rate of H6 is not built either; the SQL below measures it.
 
 ## Summary
 
-- **64 % is roughly the hit rate a wake gets from its own later turns alone.**
-  Each wake's first request appears to miss almost entirely, including the
-  ~15K-token system prompt and tool list that never change. The cache
-  survives between turns of one wake, but nothing carries from one wake to the next.
+- **Hypothesis: 64 % is roughly the hit rate a wake gets from its own later
+  turns alone.** The totals fit a first request that misses almost entirely,
+  including the ~15K-token system prompt and tool list that never change,
+  with later turns re-using the request before them. Totals cannot show which
+  requests hit or which wakes were bursts, so this stays an inference until
+  the per-request query in [Measurement](#measurement) confirms or refutes it.
 - **Mistral publishes no cache lifetime.** The one independent measurement, of
   Mistral models reached through OpenRouter, was cold within 5 minutes. The same
   DeepSeek weights stay warm for 12+ hours on DeepSeek's own API and go cold in
@@ -339,10 +341,12 @@ own tools.
 **Shape:**
 
 - one fact per item, no headings and no lists inside an item;
-- `routine` and `notable`: at most **280 characters**;
-- `critical`: at most **600 characters**, as three short sentences: what
+- `routine` and `notable`: at most **280 characters** (enforced);
+- `critical`: aim for **600 characters** (prompt guidance only), as three
+  short sentences: what
   happened, why it matters, what should change;
-- at most **3 items per call**;
+- at most **3 non-critical items per call** (enforced; critical notes are
+  not capped);
 - **zero is a normal outcome.** A wake with nothing new records nothing.
 
 Examples, from the penguin demo world:
@@ -354,18 +358,24 @@ Examples, from the penguin demo world:
 | "Project Waddle thread is fully closed; the user confirmed the name; do not re-litigate the spelling …" (twice) | Once: "The project name 'Waddle' is settled and its spelling is intended; do not propose renaming it." |
 | "Task DONE; PR #12 merged (+120/−40, 9 files); checklist 5/5; used update_checklist_items and set_task_status …" | nothing: status, PR and checklist are in context |
 
-**Enforcement in code**, so the contract does not rest on the prompt alone:
+**Enforcement as shipped**, so the contract does not rest on the prompt
+alone:
 
-1. `recordObservationsParameters`: `maxItems: 3`, and a `maxLength` on `text`
-   per priority described in the text description (JSON Schema cannot tie
-   `maxLength` to `priority`, so the parser enforces the split).
-2. `parseRecordObservations` rejects an item over its limit, or one whose
-   normalized text equals one of the agent's recent observations. It answers
-   with an error the model can act on: "already recorded as `<id>`; if it
-   changed, record only the change with `[[supersedes:<id>]]`." The error path
-   already exists for unusable items.
-3. Render critical observations once. In compacted mode, list under
-   `## Prior Critical Observations` only those that are no longer in the visible
+1. `recordObservationsParameters` takes `maxItems`; the task tool passes 3.
+   The text description states the 280-character limit, since JSON Schema
+   cannot tie a `maxLength` to `priority`.
+2. The shared `parseRecordObservations` is unchanged; the task handler then
+   applies `applyTaskObservationContract`
+   (`lib/features/agents/workflow/task_observation_contract.dart`) against the
+   wake's recalled observations and its own earlier calls. It skips a routine
+   or notable note over 280 characters, a note whose normalised text (case,
+   spacing, punctuation) equals an earlier one, and non-critical notes past
+   the third; the reply names each, and a call with nothing left is an error.
+   Critical notes are only ever skipped as repeats: they feed template
+   evolution, so the 600-character aim stays guidance. Reworded repeats still
+   get through; only exact matches after normalising are caught.
+3. Critical observations render once. In compacted mode,
+   `## Prior Critical Observations` lists only those no longer in the visible
    tail, meaning they were folded into the summary.
 
 **Retention:**
@@ -553,7 +563,7 @@ What to read from them:
 | Result | Meaning |
 |---|---|
 | Opening ≈ 0 even at gaps under a minute | Routing or a prefix break: test H1 first, then H2/H3 |
-| Opening high under a few minutes, ≈ 0 beyond | Lifetime: the bracket is the Mistral TTL for this traffic |
+| Opening high under a few minutes, ≈ 0 beyond | Consistent with a lifetime in that bracket, but not proof: a long-gap wake may also have changed its prefix (check the fingerprint) or reached another replica. Measure the lifetime with repeated requests on a fixed prefix and key |
 | Later turns well below (n−1)/n of their input | Breaks within the wake: the forced retry (H3) |
 | `duration_ms` falls as the cached share rises | The latency gain, measured |
 

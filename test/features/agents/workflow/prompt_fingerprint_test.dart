@@ -74,6 +74,20 @@ void main() {
     expect(grown['head'], base['head']);
     expect(grown['logChars'], '${longer.length}');
     expect(base['logChars'], '${log.length}');
+    expect(grown['log'], isNot(base['log']));
+  });
+
+  test('a log rewritten at the same length changes only the log hash', () {
+    final rewritten = log.replaceFirst('Counted', 'Watched');
+    final other = fields(userMessage: message.replaceFirst(log, rewritten));
+    final base = fields();
+    expect(
+      {
+        for (final key in base.keys)
+          if (base[key] != other[key]) key,
+      },
+      {'log'},
+    );
   });
 
   test('a message without a compacted log hashes an empty head', () {
