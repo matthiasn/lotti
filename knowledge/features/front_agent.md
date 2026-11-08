@@ -1,7 +1,7 @@
 ---
 type: Feature Module
 title: Front agent
-description: The one agent the user talks to in one place — how a durable user turn becomes a routing wake, what the routing index holds, how the dispatch contract is validated in code, the capped lookups and the repair round, the deterministic records a turn leaves behind, how the door walker takes each segment to its owner and mirrors the answer, how a statement becomes a proposal the user's one tap files, how a task asked for aloud is made at once from her reading of the words, what the inbox is, how an unanswered turn is recovered on any device, how turns form conversations, how she answers what is due and how much time was logged and names tasks as links, what the chat surface renders, and what she hears and says.
+description: The one agent the user talks to in one place — how a durable user turn becomes a routing wake, what the routing index holds, how the dispatch contract is validated in code, the capped lookups and the repair round, the deterministic records a turn leaves behind, how the door walker takes each segment to its owner and mirrors the answer, how a statement becomes a proposal the user's one tap files, how a dictated task is filled from her reading of the words and made on the tap, what the inbox is, how an unanswered turn is recovered on any device, how turns form conversations, how she answers what is due and how much time was logged and names tasks as links, what the chat surface renders, and what she hears and says.
 resource: ../../lib/features/front_agent
 tags: [agents, front-agent, routing, dispatch, doors, filing, inbox, companion, chat]
 status: draft
@@ -81,8 +81,8 @@ sources:
     title: FrontTaskDraft — the task the router read from the words
     last_modified: 2026-11-08
   - id: adr-0160
-    resource: ../../docs/adr/0160-a-task-asked-for-aloud-is-made-at-once.md
-    title: ADR 0160 — a task asked for aloud is made at once
+    resource: ../../docs/adr/0160-a-dictated-task-is-filled-from-the-words.md
+    title: ADR 0160 — a dictated task is filled from the words
     last_modified: 2026-11-08
   - id: inbox-filter
     resource: ../../lib/features/front_agent/state/front_inbox_filter.dart
@@ -494,8 +494,7 @@ walker died. Outcomes:
 | `goal` / `person`, question or statement, with an active agent | that agent's own chat: `appendMessage` then `enqueueMessage`, **never awaited** | `FrontDoorChatTurn(specialistAgentId, specialistMessageId)`; the reply lands in the specialist's thread with the turn as its `operationId` |
 | `task` or `project` statement or instruction | none — the walker writes nothing | `FrontDoorProposal(ownerId)`: waits for the user's tap |
 | `journal` question | the journal answer engine, headless: `QueryAnswerBuilder.build` over `QueryScope.journalIn(allowedCategoryIds)` narrowed by any categories the turn's payload carries (`frontNarrowedCategories`) (empty = every visible category), agent id `front_agent`, the Settings default profile | `FrontDoorAnswer(fromJournal: true, evidence, dependencies, private)` — her own answer, with the passages it cites |
-| `new` task instruction with a `task` draft | `makeFrontTask` under `frontDoorTaskId(doorId)` — see [a task from her words](#a-task-from-her-words) | `FrontDoorTaskCreated` — a make that stores nothing or throws is `FrontDoorInbox(task)` instead |
-| `new` otherwise, `journal` statement, `unrouted` | none | `FrontDoorInbox(newKind?)` — what the router thought it would become leads the chips; a task draft rides the record for the tap |
+| `new`, `journal` statement, `unrouted` | none | `FrontDoorInbox(newKind?)` — what the router thought it would become leads the chips; a `new` task's draft rides the record for the tap ([a task from her words](#a-task-from-her-words)) |
 | `day` statement or instruction, while `enable_daily_os_page` is on | none — the walker writes nothing | `FrontDoorDay()`: waits for the user's tap |
 | `day` question, or anything about the day while the Daily OS is off | — | `FrontDoorSkipped(noDoor)` |
 | no agent, or a retired one | — | `FrontDoorSkipped(noAgent)` |
@@ -523,15 +522,16 @@ would deadlock inside the front wake, so the walker uses their
 
 # A task from her words
 
-ADR 0160. When the user asks her for a task, the task is made from what she
-read in the words, and the user only confirms on the task page.
+ADR 0160. When the user dictates a task, she reads its fields from the
+words; the user's *Make it a task* tap — the confirmation, as for every
+write — makes it filled in, and started only when they said so.
 
 ```mermaid
 flowchart LR
   W[spoken turn<br/>transcribed, clip deleted] --> R[routing: segment new / task<br/>+ task object]
   R -->|FrontTaskDraft.fromModel| V[draft on the segment,<br/>then on the door record]
-  V -->|intent instruction| M[makeFrontTask, at once]
-  V -->|intent statement| I[inbox — Make it a task<br/>runs makeFrontTask]
+  V --> I[inbox item, waiting]
+  I -->|Make it a task| M[makeFrontTask under frontDoorTaskId]
   M --> T[(task, in its category)]
   M --> E[(the words, a text entry linked under it)]
   M -->|draft has a start| C[(timer entry from that instant,<br/>TimeService.start)]
@@ -553,14 +553,15 @@ flowchart LR
 The draft is read leniently (`FrontTaskDraft.fromModel`): no title, no
 draft; any other field that does not parse is left out, so a misheard date
 never loses the task. The start is an instant resolved when the dispatch is
-validated, against the clock the turn's `<current_local_time>` showed, so a
-tap hours later still starts the timer when the user said the work began; a
-start after now runs from now. **Only an instruction is made without a
-tap** — "make a task…", "I'm starting on…": the request is the approval.
-A task only mentioned waits in the inbox with its draft, and its *Make it a
-task* makes the same filled task. Both are written under
-`frontDoorTaskId`, so the card, *Open* and *Undo* are the ones a tap gives;
-*Undo* deletes the task and stops the timer running on it.
+validated, against the clock the turn's `<current_local_time>` showed — the
+workflow's `now`, handed to the strategy — so neither a slow inference nor a
+tap hours later moves when the user said the work began; a start after now
+runs from now. **Nothing is made without the tap**, asked for or only
+mentioned: the item waits in the inbox with its draft, and *Make it a task*
+makes the filled task under `frontDoorTaskId`. Without a stated start the
+task is open and no timer runs. *Undo* deletes the task and the copy of the
+words under it, and stops the timer running on it; the timer entry stays,
+as logged time does on any deleted task.
 
 **Duplicates.** Rule 11 of the prompt has her compare a new task with the
 listed open tasks — `match_to_corpus` only when the index says more exist
@@ -568,12 +569,12 @@ than it shows, so a new task costs no extra round-trip — and one that
 looks like the same work is an `ask_user` with those tasks as the
 options, not a second task.
 
-**Her confirmation** is her `reply_to_user` line with the dispatch, spoken
-as every reply to a spoken turn is ([her voice](#her-voice)); it names the
-task by its title, never as a link — the task has no id when she writes it
-(the live eval caught her linking an invented `lotti://task/task-new`). It is written
-before the walk: a make that fails leaves the item in the inbox, which the
-card shows.
+**What she says** is her `reply_to_user` line with the dispatch, spoken
+as every reply to a spoken turn is ([her voice](#her-voice)): the task is
+ready to confirm, and the timer when one will start. It names the task by
+its title, never as a link — the task has no id yet (the live eval caught
+her linking an invented `lotti://task/task-new`) — and never says it was
+created; the card's *Made into a task* is the receipt.
 
 **No audio is linked.** Her recorder transcribes and deletes the clip
 (`chat_recorder_controller.dart`); the verbatim words under the task are
@@ -603,7 +604,6 @@ stateDiagram-v2
   Day --> Inbox: Somewhere else — the words go to the inbox
   [*] --> Inbox: new / journal / unrouted walked
   Inbox --> SavedNote: Save as a note — text entry, owned by nothing
-  [*] --> TaskCreated: a new task asked for — made from its draft, no tap
   Inbox --> TaskCreated: Make it a task — from its draft, else titled with the words
   Inbox --> Left: Leave it — nothing written, nothing waits
   Left --> Proposal: Undo — when it came from a proposal

@@ -146,8 +146,8 @@ final List<FrontEvalScenario> frontEvalScenarios = [
     maxLookups: 1,
     checkTask: _startedHeaterTask,
     note:
-        'A task asked for with every field said aloud: made at once, '
-        'in progress, its timer from ten minutes back.',
+        'A task asked for with every field said aloud: drafted for the '
+        'tap, in progress, its timer from ten minutes back.',
   ),
   const FrontEvalScenario(
     id: 'asked_task_among_topics',
@@ -173,8 +173,8 @@ final List<FrontEvalScenario> frontEvalScenarios = [
     maxLookups: 1,
     checkTask: _mentionedTask,
     note:
-        'A task only mentioned is a statement: it waits for the tap, with '
-        'its draft.',
+        'A task only mentioned is drafted too, with no timer nobody asked '
+        'for.',
   ),
   const FrontEvalScenario(
     id: 'asked_task_duplicate',
@@ -279,18 +279,13 @@ int? _minutesBack(FrontDispatchSegment segment) {
   return started == null ? null : frontEvalNow.difference(started).inMinutes;
 }
 
-List<String> _taskShape(
-  FrontDispatchSegment? segment, {
-  required FrontSegmentIntent intent,
-}) => [
+List<String> _taskShape(FrontDispatchSegment? segment) => [
   if (segment == null) 'no new task segment',
-  if (segment != null && segment.intent != intent)
-    'intent ${segment.intent.name}, expected ${intent.name}',
   if (segment != null && segment.task == null) 'no task object',
 ];
 
 List<String> _startedHeaterTask(FrontDispatchSegment? segment) {
-  final shape = _taskShape(segment, intent: FrontSegmentIntent.instruction);
+  final shape = _taskShape(segment);
   if (shape.isNotEmpty) return shape;
   final task = segment!.task!;
   final back = _minutesBack(segment);
@@ -306,7 +301,7 @@ List<String> _startedHeaterTask(FrontDispatchSegment? segment) {
 }
 
 List<String> _signsTask(FrontDispatchSegment? segment) {
-  final shape = _taskShape(segment, intent: FrontSegmentIntent.instruction);
+  final shape = _taskShape(segment);
   if (shape.isNotEmpty) return shape;
   final task = segment!.task!;
   final back = _minutesBack(segment);
@@ -325,7 +320,7 @@ List<String> _signsTask(FrontDispatchSegment? segment) {
 }
 
 List<String> _mentionedTask(FrontDispatchSegment? segment) {
-  final shape = _taskShape(segment, intent: FrontSegmentIntent.statement);
+  final shape = _taskShape(segment);
   if (shape.isNotEmpty) return shape;
   return [
     if (segment!.task!.startedAt != null) 'a timer nobody asked for',
