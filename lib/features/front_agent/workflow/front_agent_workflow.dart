@@ -204,6 +204,7 @@ class FrontAgentWorkflow with AgentErrorLogging {
           scope,
           now: now,
         ),
+        closedTaskLister: _indexBuilder.closedTaskLister(scope, now: now),
       );
       final tools = [
         for (final tool in frontAgentTools) tool.toChatCompletionTool(),

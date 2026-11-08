@@ -6,7 +6,7 @@ import 'package:lotti/features/front_agent/model/front_routing_index.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_contract.dart';
 
 void main() {
-  test('seven tools, never one, in a fixed order', () {
+  test('eight tools, never one, in a fixed order', () {
     // A single tool makes DeepSeek rewrite tool_choice; the list is fixed
     // so the request prefix stays byte-stable across turns.
     expect(frontAgentTools.map((t) => t.name), [
@@ -15,6 +15,7 @@ void main() {
       FrontAgentToolNames.matchToCorpus,
       FrontAgentToolNames.listDueTasks,
       FrontAgentToolNames.summarizeLoggedTime,
+      FrontAgentToolNames.listClosedTasks,
       FrontAgentToolNames.askUser,
       FrontAgentToolNames.replyToUser,
     ]);
@@ -90,6 +91,30 @@ void main() {
     );
   });
 
+  test('list_closed_tasks asks for one period by the names the strategy '
+      'reads, and the prompt sends a what-did-I-complete question there, '
+      'by when the task closed', () {
+    final list = frontAgentTools[5];
+    final properties = list.parameters['properties'] as Map;
+    expect(
+      (properties['period'] as Map)['enum'],
+      [for (final period in FrontTimePeriod.values) period.wireName],
+    );
+    expect((properties['categoryIds'] as Map)['type'], 'array');
+    expect(list.parameters['required'], ['period']);
+    expect(frontAgentSystemPrompt, contains('call `list_closed_tasks`'));
+    expect(frontAgentSystemPrompt, contains('"closed" asks for both'));
+    expect(
+      frontAgentSystemPrompt,
+      contains('never the day it was created'),
+    );
+    expect(frontClosedListsPerTurn, 1);
+    expect(
+      frontClosedListExhaustedAnswer,
+      contains('$frontClosedListsPerTurn used'),
+    );
+  });
+
   test("lookup caps and the per-turn budget are the plan's", () {
     expect(frontProviderCallsPerTurn, 3);
     expect(frontTldrReadsPerTurn, 1);
@@ -108,7 +133,7 @@ void main() {
       ((readTldr.parameters['properties'] as Map)['ids'] as Map)['maxItems'],
       frontTldrIdsPerRead,
     );
-    final askUser = frontAgentTools[5];
+    final askUser = frontAgentTools[6];
     expect(
       ((askUser.parameters['properties'] as Map)['options'] as Map)['maxItems'],
       frontAskUserMaxOptions,

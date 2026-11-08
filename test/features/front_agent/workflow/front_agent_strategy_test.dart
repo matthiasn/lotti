@@ -4,6 +4,7 @@ import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_logged_time_chart.dart';
@@ -69,6 +70,7 @@ void main() {
     FrontCorpusMatcher? matcher,
     FrontDueTaskLister? dueLister,
     FrontLoggedTimeSummarizer? timeSummarizer,
+    FrontClosedTaskLister? closedLister,
     FrontRoutingIndex? routingIndex,
     List<FrontIndexRow> conversationTasks = const [],
   }) => FrontAgentStrategy(
@@ -83,6 +85,7 @@ void main() {
     corpusMatcher: matcher,
     dueTaskLister: dueLister,
     loggedTimeSummarizer: timeSummarizer,
+    closedTaskLister: closedLister,
     conversationTasks: conversationTasks,
   );
 
@@ -854,6 +857,147 @@ hologram:x: not listed''');
         manager: manager,
       );
       expect(responses().last, contains('Logged time is unavailable'));
+    });
+  });
+
+  group('list_closed_tasks', () {
+    const roses = FrontIndexRow(
+      kind: FrontDestinationKind.task,
+      id: 'roses',
+      title: 'Prune the roses',
+      status: 'DONE',
+      categoryId: 'home',
+    );
+    const shed = FrontIndexRow(
+      kind: FrontDestinationKind.task,
+      id: 'shed',
+      title: 'Paint the shed',
+      status: 'REJECTED',
+      categoryId: 'home',
+    );
+    FrontClosedTasks closed(FrontTimeQuery query) => FrontClosedTasks(
+      period: query.period,
+      from: DateTime(2026, 11),
+      through: DateTime(2026, 11),
+      tasks: [
+        (
+          row: roses,
+          closed: TaskStatus.done(
+            id: 's-roses',
+            createdAt: DateTime(2026, 11, 1, 10),
+            utcOffset: 0,
+          ),
+        ),
+        (
+          row: shed,
+          closed: TaskStatus.rejected(
+            id: 's-shed',
+            createdAt: DateTime(2026, 11, 1, 11),
+            utcOffset: 0,
+          ),
+        ),
+      ],
+      categoryNames: const {'home': 'Home'},
+      narrowedTo: const ['Home'],
+    );
+
+    test(
+      'answers with what was completed and rejected in the period and '
+      'category asked; she names them by title and they are linked',
+      () async {
+        final asked = <FrontTimeQuery>[];
+        final s = strategy(
+          routingIndex: FrontRoutingIndex(
+            categories: const [FrontCategory(id: 'home', name: 'Home')],
+          ),
+          closedLister: (query) async {
+            asked.add(query);
+            return closed(query);
+          },
+        );
+        await s.processToolCalls(
+          toolCalls: [
+            _call('list_closed_tasks', {
+              'period': 'yesterday',
+              'categoryIds': ['home'],
+            }),
+          ],
+          manager: manager,
+        );
+        expect(asked.single.period, FrontTimePeriod.yesterday);
+        expect(asked.single.categoryIds, {'home'});
+        expect(
+          responses().single,
+          'Tasks completed or rejected yesterday (2026-11-01) in Home (2), '
+          'oldest first:\n'
+          '- task:roses | Prune the roses | completed 2026-11-01 | Home\n'
+          '- task:shed | Paint the shed | rejected 2026-11-01 | Home',
+        );
+        expect(s.lookupCalls, 1);
+        expect(s.hasTerminalOutput, isFalse);
+
+        final action = await s.processToolCalls(
+          toolCalls: [
+            _call('reply_to_user', {
+              'message':
+                  'Yesterday you completed:\n- Prune the roses\n'
+                  'and rejected:\n- Paint the shed',
+            }, id: 'call-2'),
+          ],
+          manager: manager,
+        );
+        expect(action, ConversationAction.complete);
+        expect(
+          s.replyToUser,
+          'Yesterday you completed:\n- [Prune the roses](lotti://task/roses)\n'
+          'and rejected:\n- [Paint the shed](lotti://task/shed)',
+        );
+        expect(s.dispatch, isNull);
+      },
+    );
+
+    test('refuses a missing or unknown period, a category it may not name '
+        'and a second list, and reports an unwired lister', () async {
+      final asked = <FrontTimePeriod>[];
+      final s = strategy(
+        closedLister: (query) async {
+          asked.add(query.period);
+          return closed(query);
+        },
+      );
+      await s.processToolCalls(
+        toolCalls: [
+          _call('list_closed_tasks', const <String, dynamic>{}),
+          _call('list_closed_tasks', {'period': 'last_week'}, id: 'call-2'),
+          _call('list_closed_tasks', {
+            'period': 'today',
+            'categoryIds': ['nope'],
+          }, id: 'call-3'),
+          _call('list_closed_tasks', {'period': 'past_7_days'}, id: 'call-4'),
+          _call('list_closed_tasks', {'period': 'today'}, id: 'call-5'),
+        ],
+        manager: manager,
+      );
+      expect(asked, [FrontTimePeriod.past7Days]);
+      expect(responses(), [
+        contains(
+          'list_closed_tasks needs period: one of today, yesterday, '
+          'this_week, past_7_days, past_30_days, this_month, last_month',
+        ),
+        contains('needs period'),
+        contains('nope is not a category id listed under ## Categories'),
+        startsWith('Tasks completed or rejected past 7 days'),
+        frontClosedListExhaustedAnswer,
+      ]);
+      expect(s.lookupCalls, 1);
+
+      await strategy().processToolCalls(
+        toolCalls: [
+          _call('list_closed_tasks', {'period': 'today'}),
+        ],
+        manager: manager,
+      );
+      expect(responses().last, contains('Closed tasks are unavailable'));
     });
   });
 

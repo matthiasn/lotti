@@ -372,6 +372,7 @@ void main() {
                 'match_to_corpus',
                 'list_due_tasks',
                 'summarize_logged_time',
+                'list_closed_tasks',
                 'ask_user',
                 'reply_to_user',
               ]);
@@ -1017,6 +1018,88 @@ void main() {
         '- task:dishes | Dishes | OPEN | due 2026-11-01 | Home',
       );
     });
+
+    test(
+      'a what-did-I-complete question lists the tasks closed in the '
+      'window by when they closed, inside the chips, never dispatched',
+      () async {
+        final garden = makeGardenTask();
+        final open = garden.data.status;
+        // Created in October, completed yesterday: listed for yesterday.
+        final done = TaskStatus.done(
+          id: 'done',
+          createdAt: DateTime(2026, 11, 1, 16),
+          utcOffset: 0,
+        );
+        final dishes = garden.copyWith(
+          meta: garden.meta.copyWith(id: 'dishes', categoryId: 'home'),
+          data: garden.data.copyWith(
+            title: 'Dishes',
+            status: done,
+            statusHistory: [open, done],
+          ),
+        );
+        // Completed yesterday too, but outside the chips.
+        final report = dishes.copyWith(
+          meta: dishes.meta.copyWith(id: 'report', categoryId: 'work'),
+          data: dishes.data.copyWith(title: 'Report'),
+        );
+        when(
+          () => journalDb.getTasksClosedSince(any()),
+        ).thenAnswer((_) async => [dishes, report]);
+        seedMessage(chips: ['home']);
+        String? listed;
+        stubModel(
+          (_) => [
+            call('list_closed_tasks', {'period': 'yesterday'}),
+            call('reply_to_user', {
+              'message': 'Yesterday you completed:\n- Dishes',
+            }),
+          ],
+        );
+        when(
+          () => manager.addToolResponse(
+            toolCallId: 'call-list_closed_tasks',
+            response: any(named: 'response'),
+          ),
+        ).thenAnswer((invocation) {
+          listed = invocation.namedArguments[#response] as String;
+        });
+
+        final result = await withClock(
+          Clock.fixed(DateTime(2026, 11, 2, 9)),
+          () => run(
+            agentIdentity: makeTestIdentity(
+              id: frontAgentId,
+              agentId: frontAgentId,
+              kind: AgentKinds.frontAgent,
+              allowedCategoryIds: {'work', 'home'},
+            ),
+          ),
+        );
+
+        expect(result.success, isTrue);
+        verify(
+          () => journalDb.getTasksClosedSince(DateTime(2026, 11)),
+        ).called(1);
+        expect(
+          listed,
+          'Tasks completed or rejected yesterday (2026-11-01) (1), oldest '
+          'first:\n'
+          '- task:dishes | Dishes | completed 2026-11-01 | Home',
+        );
+        final reply = upserts.whereType<AgentMessageEntity>().singleWhere(
+          (m) => m.id == frontAgentReplyMessageId(frontAgentId, runKey),
+        );
+        expect(reply.metadata.toolName, AgentConversationToolNames.replyToUser);
+        expect(
+          upserts.whereType<AgentMessageEntity>().where(
+            (m) => m.id == frontAgentDispatchMessageId(frontAgentId, runKey),
+          ),
+          isEmpty,
+        );
+      },
+    );
 
     test("a time question is summed from the journal over yesterday's local "
         'day inside the chips and answered in her words', () async {

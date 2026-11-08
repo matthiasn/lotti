@@ -1,7 +1,7 @@
 ---
 type: Feature Module
 title: Front agent
-description: The one agent the user talks to in one place — how a durable user turn becomes a routing wake, what the routing index holds, how the dispatch contract is validated in code, the capped lookups and the repair round, the deterministic records a turn leaves behind, how the door walker takes each segment to its owner and mirrors the answer, how a statement becomes a proposal the user's one tap files, how a dictated task is filled from her reading of the words and made on the tap, how "that one" finds the task a follow-up follows, what the inbox is, how an unanswered turn is recovered on any device, how turns form conversations, how she answers what is due and how much time was logged, with a chart under her words, and names tasks as links, what the chat surface renders, and what she hears and says.
+description: The one agent the user talks to in one place — how a durable user turn becomes a routing wake, what the routing index holds, how the dispatch contract is validated in code, the capped lookups and the repair round, the deterministic records a turn leaves behind, how the door walker takes each segment to its owner and mirrors the answer, how a statement becomes a proposal the user's one tap files, how a dictated task is filled from her reading of the words and made on the tap, how "that one" finds the task a follow-up follows, what the inbox is, how an unanswered turn is recovered on any device, how turns form conversations, how she answers what is due, how much time was logged, with a chart under her words, and what was completed or rejected, and names tasks as links, what the chat surface renders, and what she hears and says.
 resource: ../../lib/features/front_agent
 tags: [agents, front-agent, routing, dispatch, doors, filing, inbox, companion, chat]
 status: draft
@@ -325,7 +325,7 @@ follow-up's `followsUpTaskId` and as an `ask_user` option.
 
 # The contract
 
-Seven tools, never fewer (a single tool makes DeepSeek rewrite
+Eight tools, never fewer (a single tool makes DeepSeek rewrite
 `tool_choice`), in a fixed order:
 
 | Tool | Ends the turn | Cap | Over the cap |
@@ -335,12 +335,14 @@ Seven tools, never fewer (a single tool makes DeepSeek rewrite
 | `match_to_corpus(phrase)` | no | 1 per turn | `frontCorpusMatchExhaustedAnswer`; unavailable when no FTS index is wired |
 | `list_due_tasks(which, daysAhead 0–7, categoryIds)` | no | 1 per turn | `frontDueListExhaustedAnswer`; unavailable when no lister is wired |
 | `summarize_logged_time(period, categoryIds?)` | no | 1 per turn | `frontTimeSummaryExhaustedAnswer`; unavailable when no summarizer is wired |
+| `list_closed_tasks(period, categoryIds?)` | no | 1 per turn | `frontClosedListExhaustedAnswer`; unavailable when no lister is wired |
 | `ask_user(question, options ≤ 3)` | yes | once | refused |
 | `reply_to_user(text)` | yes | once | refused |
 
 Lookups are capped by **count-and-refuse**, not by removing the tool:
 removing it changes the request prefix and voids the cache. Rows a
-`match_to_corpus` or a `list_due_tasks` returns become valid destinations
+`match_to_corpus`, `list_due_tasks`, `summarize_logged_time` or
+`list_closed_tasks` returns become valid destinations
 for the rest of the turn — and names her words may link.
 
 `ask_user` and `dispatch` refuse each other, and so do `ask_user` and
@@ -377,7 +379,7 @@ Her **manner** follows the contract in the system prompt:
 shapes only her own words (`reply_to_user`, `ask_user`), never routing, ids
 or an owner's answer, and asks for short spoken-friendly sentences. Appended
 after the contract, so a sass change leaves the cached prefix as it is.
-## Her own answers: what is due, logged time, and naming things
+## Her own answers: what is due, logged time, what was closed, and naming things
 
 A question about which tasks are due — *what is due today?*, *anything
 overdue?*, *what's due this week?* — no single owner holds, so it is hers,
@@ -510,6 +512,51 @@ flowchart LR
   Card --> Read
   Card --> Bars["Insights StackedBarChart + ChartLegend"]
 ```
+
+**What was completed or rejected** — *what did I complete today?*, *what
+did I finish or reject in the past week?* — is hers as well. Rule 13 sends
+it to `list_closed_tasks` and then `reply_to_user` alone, never a door. Its
+`period` is the same `FrontTimePeriod` as `summarize_logged_time`, resolved
+in code against the local day of the question, and it narrows by a named
+category as `list_due_tasks` does. A task is *closed* when it is DONE or
+REJECTED (`isClosedTask`); Lotti has no separate CLOSED status, so the
+prompt reads "closed" as asking for both.
+
+When a task closed is read from its **status history**, never from its
+creation date, and not from its current status alone. `TaskData.status`'s
+`createdAt` — what the task agent is shown as `statusSince` — is only the
+history's last entry, so a task completed inside the window and touched
+again since would lose that completion. Every status write appends to
+`statusHistory` (`withStatus`) and a conflict joins both sides' histories in
+time order (`withHistoryOf`), so the history is the authority; the current
+status is joined in by id only for a task from before the history was kept.
+`FrontRoutingIndexBuilder.closedTaskLister` takes the last status set before
+the window ends — the rule Daily OS Shutdown reads a day by:
+
+```mermaid
+flowchart LR
+  Read["getTasksClosedSince(window start)"] --> Scope["drop hidden private categories + out-of-scope"]
+  Scope --> Last["last status set before window end"]
+  Last -->|"DONE or REJECTED, set inside the window"| Row["listed with that status and its day"]
+  Last -->|"anything else"| Skip["not listed"]
+```
+
+So a task reopened and completed again reports its latest completion in the
+window; one completed and reopened inside the window is open work and is not
+listed; one completed yesterday and again today counts on each day for that
+day's question. The candidates come from `JournalDb.getTasksClosedSince`,
+the read Shutdown uses: tasks DONE or REJECTED now whose row changed since
+the window began (a status change moves `updated_at`, which only moves
+forward), private entries only while shown, through
+`idx_journal_task_status_private`. A task reopened and still open is
+therefore never listed. The read walks every closed task's index entry and
+checks `updated_at` on the row; with 14k closed tasks that measured ~4 ms,
+once per turn, so it has no index of its own. `FrontClosedTasks.render` is
+what the model reads — the window, any category it was narrowed to, then
+each task as `task:<id> | title | completed|rejected YYYY-MM-DD |
+category`, oldest first, at most `frontClosedTaskLimit` — or a plain
+*None*. No chart: the answer is text, and its rows are linked by title like
+any lookup's.
 
 Her own words name a task or a project as a Markdown link titled as listed:
 `[title](lotti://task/<id>)`, `lotti://project/<id>` (`frontReferenceUrl`).

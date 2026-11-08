@@ -55,6 +55,49 @@ Task _task(String id, {String? categoryId = 'work', DateTime? due}) {
       as Task;
 }
 
+/// A task with the status history [history] — each status's kind and when
+/// it was set, in order — its current status the last of them, created on
+/// [createdAt].
+Task _historyTask(
+  String id,
+  List<(String, DateTime)> history, {
+  String? categoryId = 'work',
+  DateTime? createdAt,
+  bool keepHistory = true,
+}) {
+  final statuses = [
+    for (final (i, (kind, at)) in history.indexed)
+      switch (kind) {
+        'done' => TaskStatus.done(id: '$id-$i', createdAt: at, utcOffset: 0),
+        'rejected' => TaskStatus.rejected(
+          id: '$id-$i',
+          createdAt: at,
+          utcOffset: 0,
+        ),
+        _ => TaskStatus.open(id: '$id-$i', createdAt: at, utcOffset: 0),
+      },
+  ];
+  final created = createdAt ?? _stamp;
+  return JournalEntity.task(
+        meta: Metadata(
+          id: id,
+          createdAt: created,
+          updatedAt: history.last.$2,
+          dateFrom: created,
+          dateTo: created,
+          categoryId: categoryId,
+        ),
+        data: TaskData(
+          status: statuses.last,
+          statusHistory: keepHistory ? statuses : const [],
+          dateFrom: created,
+          dateTo: created,
+          title: 'Task $id',
+        ),
+      )
+      as Task;
+}
+
 ProjectEntry _project(
   String id, {
   String? categoryId = 'work',
@@ -1031,6 +1074,252 @@ void main() {
         now: _now,
       )((period: FrontTimePeriod.thisWeek, categoryIds: const {}));
       expect(monday.from, DateTime(2026, 10, 19));
+    });
+  });
+
+  group('closedTaskLister', () {
+    // Today is Friday 2026-10-23, 09:00; yesterday is the 22nd and the past
+    // seven days run from the 17th.
+    DateTime oct(int day, [int hour = 12]) => DateTime(2026, 10, day, hour);
+
+    setUp(() {
+      when(() => journalDb.getAllCategories()).thenAnswer(
+        (_) async => [
+          CategoryTestUtils.createTestCategory(id: 'work', name: 'Work'),
+          CategoryTestUtils.createTestCategory(id: 'home', name: 'Home'),
+        ],
+      );
+    });
+
+    void closedSince(List<Task> tasks) => when(
+      () => journalDb.getTasksClosedSince(any()),
+    ).thenAnswer((_) async => tasks);
+
+    Future<FrontClosedTasks> list(
+      FrontTimePeriod period, {
+      Set<String> categoryIds = const {},
+      FrontRoutingScope scope = const FrontRoutingScope(),
+    }) => builder().closedTaskLister(scope, now: _now)((
+      period: period,
+      categoryIds: categoryIds,
+    ));
+
+    List<(String, String, DateTime)> closings(FrontClosedTasks closed) => [
+      for (final (:row, :closed) in closed.tasks)
+        (row.id, closed.toDbString, closed.createdAt),
+    ];
+
+    test('today lists what was completed today, not yesterday, and reads '
+        'from the start of the window', () async {
+      closedSince([
+        _historyTask('today', [('open', oct(1)), ('done', oct(23, 8))]),
+        _historyTask('yesterday', [('open', oct(1)), ('done', oct(22, 17))]),
+      ]);
+
+      final closed = await list(FrontTimePeriod.today);
+
+      verify(
+        () => journalDb.getTasksClosedSince(DateTime(2026, 10, 23)),
+      ).called(1);
+      expect(closings(closed), [('today', 'DONE', oct(23, 8))]);
+      expect(closed.from, DateTime(2026, 10, 23));
+      expect(closed.through, DateTime(2026, 10, 23));
+      expect(closed.tasks.single.row.kind, FrontDestinationKind.task);
+    });
+
+    test('the past seven days reach back to the 17th and no further, '
+        'oldest first', () async {
+      closedSince([
+        _historyTask('wed', [('open', oct(1)), ('done', oct(21))]),
+        _historyTask('sat', [('open', oct(1)), ('done', oct(17, 0))]),
+        _historyTask('fri', [('open', oct(1)), ('done', oct(16, 23))]),
+      ]);
+
+      final closed = await list(FrontTimePeriod.past7Days);
+
+      verify(
+        () => journalDb.getTasksClosedSince(DateTime(2026, 10, 17)),
+      ).called(1);
+      expect(closings(closed), [
+        ('sat', 'DONE', oct(17, 0)),
+        ('wed', 'DONE', oct(21)),
+      ]);
+      expect(closed.from, DateTime(2026, 10, 17));
+      expect(closed.through, DateTime(2026, 10, 23));
+    });
+
+    test(
+      'a task created months ago counts on the day it was completed',
+      () async {
+        closedSince([
+          _historyTask(
+            'old',
+            [('open', DateTime(2026, 5, 2)), ('done', oct(22, 10))],
+            createdAt: DateTime(2026, 5, 2),
+          ),
+          // Created yesterday, completed long before: never in the window.
+          _historyTask(
+            'new',
+            [('open', DateTime(2026, 4, 2)), ('done', DateTime(2026, 4, 3))],
+            createdAt: oct(22),
+          ),
+        ]);
+
+        final closed = await list(FrontTimePeriod.yesterday);
+
+        expect(closings(closed), [('old', 'DONE', oct(22, 10))]);
+      },
+    );
+
+    test('a task reopened and completed again reports its latest '
+        'completion in the window', () async {
+      closedSince([
+        // Completed, reopened, completed again: both inside the week.
+        _historyTask('twice', [
+          ('open', oct(1)),
+          ('done', oct(18)),
+          ('open', oct(19)),
+          ('done', oct(21)),
+        ]),
+        // Completed before the week, reopened and completed inside it.
+        _historyTask('again', [
+          ('open', oct(1)),
+          ('done', oct(10)),
+          ('open', oct(18)),
+          ('done', oct(20)),
+        ]),
+        // Rejected, reopened and completed: it was completed.
+        _historyTask('changed', [
+          ('open', oct(1)),
+          ('rejected', oct(18)),
+          ('open', oct(19)),
+          ('done', oct(19, 15)),
+        ]),
+      ]);
+
+      final closed = await list(FrontTimePeriod.past7Days);
+
+      expect(closings(closed), [
+        ('changed', 'DONE', oct(19, 15)),
+        ('again', 'DONE', oct(20)),
+        ('twice', 'DONE', oct(21)),
+      ]);
+    });
+
+    test('a window reports the close it ended on: completed and reopened '
+        'inside it is none, a close after it belongs to its own day', () async {
+      closedSince([
+        _historyTask('reopened', [
+          ('open', oct(1)),
+          ('done', oct(22, 9)),
+          ('open', oct(22, 10)),
+          ('rejected', oct(23, 8)),
+        ]),
+        // Completed yesterday and again today: yesterday keeps its close.
+        _historyTask('both', [
+          ('open', oct(1)),
+          ('done', oct(22, 11)),
+          ('open', oct(23, 7)),
+          ('done', oct(23, 8)),
+        ]),
+      ]);
+
+      expect(closings(await list(FrontTimePeriod.yesterday)), [
+        ('both', 'DONE', oct(22, 11)),
+      ]);
+      expect(closings(await list(FrontTimePeriod.today)), [
+        ('both', 'DONE', oct(23, 8)),
+        ('reopened', 'REJECTED', oct(23, 8)),
+      ]);
+    });
+
+    test('completed and rejected come back in one list, each with what '
+        'happened to it', () async {
+      closedSince([
+        _historyTask('shipped', [('open', oct(1)), ('done', oct(20))]),
+        _historyTask('dropped', [('open', oct(1)), ('rejected', oct(21))]),
+        _historyTask(
+          'chores',
+          [('open', oct(1)), ('done', oct(22))],
+          categoryId: 'home',
+        ),
+      ]);
+
+      final closed = await list(FrontTimePeriod.past7Days);
+
+      expect(closings(closed), [
+        ('shipped', 'DONE', oct(20)),
+        ('dropped', 'REJECTED', oct(21)),
+        ('chores', 'DONE', oct(22)),
+      ]);
+      expect(closed.categoryNames, {'work': 'Work', 'home': 'Home'});
+    });
+
+    test(
+      'a task whose history was never kept closes at its current status',
+      () async {
+        closedSince([
+          _historyTask('legacy', [('done', oct(22))], keepHistory: false),
+        ]);
+
+        expect(closings(await list(FrontTimePeriod.yesterday)), [
+          ('legacy', 'DONE', oct(22)),
+        ]);
+      },
+    );
+
+    test('a named category narrows it, never widens the scope, and a '
+        'private category stays hidden', () async {
+      when(() => journalDb.getAllCategoriesIncludingPrivate()).thenAnswer(
+        (_) async => [
+          CategoryTestUtils.createTestCategory(id: 'work'),
+          CategoryTestUtils.createTestCategory(id: 'home'),
+          CategoryTestUtils.createTestCategory(id: 'diary', private: true),
+        ],
+      );
+      closedSince([
+        _historyTask('work', [('open', oct(1)), ('done', oct(20))]),
+        _historyTask(
+          'home',
+          [('open', oct(1)), ('done', oct(21))],
+          categoryId: 'home',
+        ),
+        _historyTask(
+          'diary',
+          [('open', oct(1)), ('done', oct(21))],
+          categoryId: 'diary',
+        ),
+      ]);
+
+      final all = await list(FrontTimePeriod.past7Days);
+      expect(all.tasks.map((t) => t.row.id), ['work', 'home']);
+
+      final named = await list(
+        FrontTimePeriod.past7Days,
+        categoryIds: {'home'},
+      );
+      expect(named.tasks.map((t) => t.row.id), ['home']);
+      expect(named.narrowedTo, ['Home']);
+
+      final outside = await list(
+        FrontTimePeriod.past7Days,
+        scope: const FrontRoutingScope(allowedCategoryIds: {'work'}),
+        categoryIds: {'home'},
+      );
+      expect(outside.tasks.map((t) => t.row.id), ['work']);
+      expect(outside.narrowedTo, isEmpty);
+    });
+
+    test('caps the list and counts what it left out', () async {
+      closedSince([
+        for (var i = 0; i < frontClosedTaskLimit + 2; i++)
+          _historyTask('t$i', [('open', oct(1)), ('done', oct(22))]),
+      ]);
+
+      final closed = await list(FrontTimePeriod.yesterday);
+
+      expect(closed.tasks, hasLength(frontClosedTaskLimit));
+      expect(closed.omitted, 2);
     });
   });
 }
