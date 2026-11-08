@@ -1391,14 +1391,16 @@ send never leaves it. Both form factors split at her share, behind the
 shared `ResizableDivider` that drags it and saves it through
 `PaneWidthController` like the app's columns (three fifths go to the
 conversation by default, between a quarter and three fifths for her). On a
-desktop window (`isDesktopLayout`) the conversation stands beside her, to the
-right, at `PaneWidths.companionStageShare` of the width; on a phone it stands
-under her at `PaneWidths.companionStageHeightShare` of the height — saved on
-its own, so a phone's split never moves a desktop's — split by the divider's
+desktop window (`isDesktopLayout`) she takes `PaneWidths.companionStageShare`
+of the width and the conversation stands beside her, to the right, in the
+rest; on a phone she takes `PaneWidths.companionStageHeightShare` of the
+height and the conversation stands under her in the rest — saved on its own,
+so a phone's split never moves a desktop's — split by the divider's
 `Axis.vertical` band (`spacing.step6` tall, a grip at its centre, all of it a
 target for a finger), the field at the foot of the screen, each half keeping
-clear of only the system bar it meets (`MediaQuery.removePadding`). Its ways out to a page close the stage and her
-surface both. While her voice plays in the conversation and her latest reply
+clear of only the system bar it meets (`MediaQuery.removePadding`). A task
+it links opens on top of the stage, and back returns to it; its other ways out
+to a page close the stage and her surface both. While her voice plays in the conversation and her latest reply
 lists tasks or charts logged time (`frontStagePointsProvider` over
 `frontLatestReplyHasVisual`, in `state/front_stage_pointing.dart`), the
 page's `pointsAtSidePanel` has her hold `GestureName.pointRight` at the
