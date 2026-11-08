@@ -4,6 +4,58 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.90]
+
+### Added
+
+- **A task you dictate to the companion comes ready to confirm, filled in.**
+  Say "make a task to fix the gate, high priority, due Friday, this is for
+  home, I started ten minutes ago". She reads the title, what to do, category,
+  priority, due day and estimate from your words and tells you what she
+  understood. One tap on *Make it a task* creates it with all of that. It is
+  in progress with its timer running from the time you gave only if you said
+  the work had started. Otherwise it stays open. Your words are kept on the
+  task and the category's agent is assigned. When an open task already looks
+  like the same work, she asks which one you mean instead of proposing a
+  second.
+- **Ask the companion how much time you logged and you get a chart too.**
+  Under her answer sits a bar per day in your categories' colours — per hour
+  for a single day — and a tap on a bar shows each category and its time.
+  Expand it to see the full chart, per day or as a running total. Private time
+  shows only while private entries are shown, as on the Insights page.
+- **Ask the companion for a follow-up to a task you just talked about.** After
+  she lists or names a task, say "create a follow-up to that one, high
+  priority, due today, I started five minutes ago", or "add a follow-up to the
+  task about the budget". She works out which task you mean from the
+  conversation, finished tasks included, and asks when two could fit. One tap
+  on *Make it a task* creates the follow-up in the same category, filled in,
+  with its timer running from the time you gave. The new task shows *Follows
+  up on* the old one, which shows *Has follow-up*, and the category's agent
+  starts on it right away.
+
+### Changed
+
+- **Each task row in the companion's lists shows its agent's one-liner** under
+  the title, above its status, category and due date.
+
+### Fixed
+
+- **Overdue tasks in the companion's answers can be tapped like today's.**
+  Asked what is overdue, she lists each task with the date it was due, and
+  those lines stayed plain bullets. They are now the same task rows as a list
+  of tasks due today, with status, category and due date, and a tap opens the
+  task.
+- **Back from a task opened in the companion's chat returns to the chat.**
+  Opening a task from her answer used to close the conversation and land on
+  the task list when you went back. The task now opens on top of the chat, and
+  back returns to the conversation you were in, on a phone and a desktop
+  alike.
+- **The companion's lists of tasks are tappable rows every time.** Asked what
+  is due today, what is overdue, or both, or when she lists what a search
+  found, her answer sometimes came back as plain bullets depending on how she
+  worded each line. Every such list is now a card of rows, projects included,
+  and a tap opens the task or project.
+
 ## [1.1.89]
 
 ### Added
