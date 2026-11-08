@@ -7,6 +7,7 @@ import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/agents/attention_negotiation.dart';
 import 'package:lotti/classes/agents/proposal_ledger.dart';
 import 'package:lotti/classes/ai_input.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -21,6 +22,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 import '../../../mocks/mocks.dart';
+import '../../categories/test_utils.dart';
 import '../test_utils.dart';
 
 void main() {
@@ -630,6 +632,58 @@ void main() {
       expect(heading, lessThan(result.logStart!));
     });
 
+    test('keeps the label lists and correction examples out of the cached '
+        'prefix, so assigning a label leaves it byte-identical', () async {
+      LabelDefinition label(String id, String name) => LabelDefinition(
+        id: id,
+        createdAt: DateTime(2024),
+        updatedAt: DateTime(2024),
+        name: name,
+        color: '#000000',
+        vectorClock: null,
+      );
+      when(() => journalDb.getAllLabelDefinitions()).thenAnswer(
+        (_) async => [label('lbl-fish', 'Fish'), label('lbl-ice', 'Ice')],
+      );
+      when(() => journalDb.getCategoryById('cat-1')).thenAnswer(
+        (_) async => CategoryTestUtils.createTestCategory(
+          id: 'cat-1',
+          correctionExamples: [
+            ChecklistCorrectionExample(
+              before: 'water',
+              after: 'Waddle',
+              capturedAt: DateTime(2024, 5, 2),
+            ),
+          ],
+        ),
+      );
+      const log = 'event A\nevent B';
+      final unlabelled = taskEntity();
+      final labelled = unlabelled.copyWith(
+        meta: unlabelled.meta.copyWith(labelIds: const ['lbl-fish']),
+      );
+
+      final before = await build(compactedTaskLog: log, task: unlabelled);
+      final after = await build(compactedTaskLog: log, task: labelled);
+
+      final prefix = before.text.substring(0, before.logEnd);
+      expect(after.text.substring(0, after.logEnd), prefix);
+      expect(prefix, isNot(contains('## Available Labels')));
+      expect(prefix, isNot(contains('## Correction Examples')));
+      // Both still reach the model, after the task state.
+      for (final result in [before, after]) {
+        final state = result.text.indexOf('## Current Task Context');
+        expect(result.text.indexOf('## Available Labels'), greaterThan(state));
+        expect(
+          result.text.indexOf('## Correction Examples'),
+          greaterThan(state),
+        );
+      }
+      // The assigned label left the list: the rewrite the move contains.
+      expect(before.text, contains('Fish'));
+      expect(after.text, isNot(contains('"Fish"')));
+    });
+
     test(
       'puts the pull requests in the volatile tail: after the compacted log, '
       'never in the cached prefix',
@@ -907,6 +961,42 @@ void main() {
           '- [2026-09-02T00:00:00.000] User was frustrated by the delay.\n'
           '- [2026-09-03T00:00:00.000] User praised the summary.\n',
         ),
+      );
+    });
+
+    test('with a compacted log, repeats only the critical observations folded '
+        'out of its tail', () async {
+      final result = await build(
+        compactedTaskLog:
+            '### Recent entries\n'
+            '- [2026-09-02T00:00:00.000] (id: o-tail, observation) '
+            'User was frustrated by the delay.',
+        journalObservations: [
+          makeTestRecalledObservation(
+            'User was frustrated by the delay.',
+            id: 'o-tail',
+            at: DateTime(2026, 9, 2),
+            priority: ObservationPriority.critical,
+            category: ObservationCategory.grievance,
+          ),
+          makeTestRecalledObservation(
+            'User disliked the duplicate checklist.',
+            id: 'o-folded',
+            at: DateTime(2026, 8, 2),
+            priority: ObservationPriority.critical,
+            category: ObservationCategory.grievance,
+          ),
+        ],
+      );
+
+      expect(
+        _countOccurrences(result.text, 'User was frustrated by the delay.'),
+        1,
+      );
+      final section = result.text.indexOf('## Prior Critical Observations');
+      expect(
+        result.text.indexOf('User disliked the duplicate checklist.'),
+        greaterThan(section),
       );
     });
 

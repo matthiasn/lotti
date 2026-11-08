@@ -602,8 +602,8 @@ void main() {
   });
 
   group('generateWithMessages routing', () {
-    test('routes reasoning effort and thinking mode to the Mistral '
-        'repository', () async {
+    test('routes reasoning effort, thinking mode and the prompt cache key '
+        'to the Mistral repository', () async {
       final fakeMistralRepository = _FakeMistralInferenceRepository();
       addTearDown(fakeMistralRepository.close);
       final mistralGenerateMore = createGenerateMore(
@@ -624,6 +624,7 @@ void main() {
             provider: mistralProvider,
             reasoningEffort: ReasoningEffort.high,
             geminiThinkingMode: GeminiThinkingMode.medium,
+            promptCacheKey: 'agent-1',
           )
           .toList();
 
@@ -637,6 +638,10 @@ void main() {
       expect(
         fakeMistralRepository.messageCalls.single.thinkingMode,
         GeminiThinkingMode.medium,
+      );
+      expect(
+        fakeMistralRepository.messageCalls.single.promptCacheKey,
+        'agent-1',
       );
     });
 
@@ -900,6 +905,7 @@ class _FakeMistralInferenceRepository extends MistralInferenceRepository {
           List<ChatCompletionMessage> messages,
           ReasoningEffort? reasoningEffort,
           GeminiThinkingMode? thinkingMode,
+          String? promptCacheKey,
         })
       >[];
 
@@ -942,11 +948,13 @@ class _FakeMistralInferenceRepository extends MistralInferenceRepository {
     ChatCompletionToolChoiceOption? toolChoice,
     ReasoningEffort? reasoningEffort,
     GeminiThinkingMode? thinkingMode,
+    String? promptCacheKey,
   }) {
     messageCalls.add((
       messages: messages,
       reasoningEffort: reasoningEffort,
       thinkingMode: thinkingMode,
+      promptCacheKey: promptCacheKey,
     ));
     return Stream.value(
       _FakeMeliousInferenceRepository._chunk(

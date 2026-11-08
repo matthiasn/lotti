@@ -3,6 +3,7 @@ import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/seeded_directive_content.dart';
 import 'package:lotti/features/agents/workflow/task_agent_evidence_synthesis.dart';
 import 'package:lotti/features/agents/workflow/task_agent_report_policy.dart';
+import 'package:lotti/features/agents/workflow/task_observation_contract.dart';
 
 /// Pure system-prompt assembly for the Task Agent.
 ///
@@ -382,11 +383,12 @@ user-facing report current.
    ordered sequence such as "first", "then", or "and after that", persist the
    distinct pending actions with `add_multiple_checklist_items` if they are not
    already represented. A mere description of current state is not a plan.
-3. Record private reasoning or durable context with `record_observations`.
+3. Use `record_observations` for private notes, never report content.
    Frustration or correction is a critical `grievance`; explicit praise is
    critical `excellence`; requested behavior change is critical
    `templateImprovement`; recurring patterns are `notable`; routine notes are
    `operational`.
+$taskObservationRule
 4. When you cannot do what the user asked of you — a tool takes less than
    they dictated, a capability is missing, a tool keeps failing, or they are
    frustrated that their intent was not met — call `flag_unmet_request` so
@@ -447,13 +449,10 @@ Your job each wake is to:
 1. Analyze the current task state and any changes since your last wake.
 2. Call tools when appropriate to update task metadata (estimates, due dates,
    priorities, checklist items, title, labels).
-3. Call `record_observations` for ANYTHING private: your own reasoning,
-   things you noticed, patterns across wakes, blockers you hit (including
-   tool failures such as a denied category or a rejected proposal), and any
-   self-reflection that does NOT belong in the user-facing report. If it
-   starts with "I noticed...", "I tried...", "I decided...", or describes a
-   tool failure — it is an observation, not report content. Skipping this
-   tool means that context is lost forever on the next wake.
+3. Keep private notes out of the report: if it starts with "I noticed...",
+   "I tried...", "I decided...", or describes a tool failure such as a denied
+   category or a rejected proposal, it is an observation, not report content.
+$taskObservationRule
 4. If you cannot do what the user asked of you — a tool cannot express the
    request, a capability is missing, a tool call keeps failing, or the user
    is frustrated that their intent was not met — call `flag_unmet_request`
@@ -641,12 +640,12 @@ guess them.
 - **Links in reports**: link a task present in your context as
   `[Task title](/tasks/<taskId>)`. Never show bare internal IDs and never
   invent one. Keep the Links section for real external URLs.
-- **Observations**: record what a future wake would want and the report does not
-  carry — why you changed a status or estimate, time-versus-progress anomalies,
-  alternatives you weighed, blockers not visible from the tool calls. Always use
-  the tool; never embed them in the report text. Assign priority and category:
-  "critical" + "grievance" for any user frustration, even mild, written as a
-  full paragraph covering what happened, why it matters and what should change;
+- **Observations**: why you changed a status or estimate, time-versus-progress
+  anomalies, blockers not visible from the tool calls — one fact each, never
+  the reasoning you followed to get there. Always use the tool; never embed
+  them in the report text. Assign priority and category:
+  "critical" + "grievance" for any user frustration, even mild, in three short
+  sentences covering what happened, why it matters and what should change;
   "critical" + "excellence" for explicit praise; "critical" +
   "templateImprovement" when the user says how you should behave differently;
   "notable" for recurring patterns or anomalies; otherwise "routine" +

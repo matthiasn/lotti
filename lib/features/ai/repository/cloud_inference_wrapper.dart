@@ -19,11 +19,17 @@ class CloudInferenceWrapper implements InferenceRepositoryInterface {
     required this.cloudRepository,
     this.geminiThinkingMode,
     this.reasoningEffort,
+    this.promptCacheKey,
   });
 
   final CloudInferenceRepository cloudRepository;
   final GeminiThinkingMode? geminiThinkingMode;
   final ReasoningEffort? reasoningEffort;
+
+  /// A stable, content-free id for requests that share a prompt prefix (an
+  /// agent id), sent to providers that document a cache routing key. Null
+  /// sends nothing.
+  final String? promptCacheKey;
 
   @override
   Stream<CreateChatCompletionStreamResponse> generateText({
@@ -85,6 +91,7 @@ class CloudInferenceWrapper implements InferenceRepositoryInterface {
       geminiThinkingMode: geminiThinkingMode,
       reasoningEffort: reasoningEffort,
       impactCollector: impactCollector,
+      promptCacheKey: promptCacheKey,
     );
   }
 }

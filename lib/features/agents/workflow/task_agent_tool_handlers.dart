@@ -88,13 +88,29 @@ extension TaskAgentToolHandlers on TaskAgentStrategy {
   /// Parsed by the shared [parseRecordObservations]: bare strings and
   /// structured `{text, priority?, category?}` items are both accepted, and a
   /// call with nothing usable in it is refused with an error the model can
-  /// act on rather than acknowledged as "Recorded 0".
+  /// act on rather than acknowledged as "Recorded 0". The task contract
+  /// ([applyTaskObservationContract]) then drops repeats, over-long notes and
+  /// notes past the count, and the reply says which and why.
   Future<void> _handleRecordObservations(
     Map<String, dynamic> args,
     String callId,
     ConversationManager manager,
   ) async {
-    final (:records, :error) = parseRecordObservations(args);
+    final parsed = parseRecordObservations(args);
+    final (:kept, :skipped) = applyTaskObservationContract(
+      parsed.records,
+      earlier: [
+        ...priorObservationTexts,
+        for (final observation in _observations) observation.text,
+      ],
+    );
+    final records = kept;
+    final error =
+        parsed.error ??
+        (records.isEmpty
+            ? 'Error: nothing recorded — ${skipped.join('; ')}. Record '
+                  'nothing when nothing is new.'
+            : null);
     if (error != null) {
       manager.addToolResponse(toolCallId: callId, response: error);
       await _recordToolResultMessage(
@@ -107,13 +123,16 @@ extension TaskAgentToolHandlers on TaskAgentStrategy {
 
     _domainLogger.log(
       LogDomain.agentWorkflow,
-      'Recorded ${records.length} observations',
+      'Recorded ${records.length} observations, skipped ${skipped.length}',
       subDomain: 'TaskAgentStrategy',
     );
 
     manager.addToolResponse(
       toolCallId: callId,
-      response: 'Recorded ${records.length} observation(s).',
+      response: skipped.isEmpty
+          ? 'Recorded ${records.length} observation(s).'
+          : 'Recorded ${records.length} observation(s); skipped '
+                '${skipped.length}: ${skipped.join('; ')}.',
     );
 
     await _recordToolResultMessage(

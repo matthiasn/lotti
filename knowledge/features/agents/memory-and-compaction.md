@@ -275,18 +275,25 @@ This is machine-checked by the append-only property tests in
 `input_events_test.dart` and the end-to-end prefix tests in the compactor and
 workflow tests.
 
-Ordering is **strictly by volatility**:
+Ordering is by **whether a block is appended to or rewritten**, not by how
+often it changes:
 
-1. System prompt and rare-change context blocks
+1. Tools, system prompt and the category knowledge brief
 2. The summary (changes once per fold)
-3. The append-only event tail
+3. The append-only event tail, observations included
 4. *Only below that*, the volatile tail: the compact markdown task **state**
    (`buildTaskStateMarkdown` — title, status, time, labels, checklist with item
-   ids), timer, ledger, trigger tokens
+   ids), the label lists and correction examples, timer, ledger, trigger tokens
 
 The task state must sit below the log because its time fields tick on every
 working wake. **One flipped byte upstream voids the provider prefix cache for
-every byte after it.**
+every byte after it.** The label lists and correction examples change far less
+often than the log, but they are *rewritten* — assigning or suppressing a label
+removes it from `## Available Labels`, a new correction shifts the newest-first
+examples — so in the head they voided the whole log after every label decision.
+Observations are the opposite case: they append to the log, so moving them to
+the volatile tail would re-send every retained one uncached on each wake that
+captured anything new.
 
 ## The report is a projection, not memory
 

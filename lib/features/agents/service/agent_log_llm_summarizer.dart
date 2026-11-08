@@ -58,7 +58,10 @@ class AgentLogLlmSummarizer {
       'assistant. Fold the new log entries into the running summary. Preserve '
       'durable facts: decisions, progress and outcomes, time spent and dates, '
       "names, numbers, open questions, and the user's stated preferences. "
-      'Drop filler and transient detail. Write in the dominant language of '
+      'Drop filler and transient detail. Entries tagged observation are '
+      "the assistant's own notes: keep each decision, preference or open "
+      'grievance once, and drop notes that only restate other entries or '
+      'that a later note supersedes. Write in the dominant language of '
       'the entries. Be as short as possible but as long as necessary — never '
       'pad, but never drop a durable fact to save space; a long history '
       'deserves a longer summary (up to roughly 800 words). Respond with ONLY '

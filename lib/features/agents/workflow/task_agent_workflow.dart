@@ -36,6 +36,7 @@ import 'package:lotti/features/agents/workflow/agent_wake_memory.dart';
 import 'package:lotti/features/agents/workflow/change_proposal_filter.dart';
 import 'package:lotti/features/agents/workflow/change_set_builder.dart';
 import 'package:lotti/features/agents/workflow/linked_task_directory.dart';
+import 'package:lotti/features/agents/workflow/prompt_fingerprint.dart';
 import 'package:lotti/features/agents/workflow/prompt_record.dart';
 import 'package:lotti/features/agents/workflow/related_task_lookup.dart';
 import 'package:lotti/features/agents/workflow/task_agent_context_builder.dart';

@@ -234,6 +234,41 @@ void main() {
         ).called(1);
       });
 
+      test('forwards its prompt cache key on every request', () async {
+        wrapper = CloudInferenceWrapper(
+          cloudRepository: mockCloudRepository,
+          promptCacheKey: 'agent-1',
+        );
+        when(
+          () => mockCloudRepository.generateWithMessages(
+            messages: any(named: 'messages'),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            provider: any(named: 'provider'),
+            promptCacheKey: any(named: 'promptCacheKey'),
+          ),
+        ).thenAnswer((_) => const Stream.empty());
+
+        await wrapper
+            .generateTextWithMessages(
+              messages: const [],
+              model: 'deepseek-v4-1-flash-1017',
+              temperature: 0,
+              provider: provider,
+            )
+            .toList();
+
+        verify(
+          () => mockCloudRepository.generateWithMessages(
+            messages: const [],
+            model: 'deepseek-v4-1-flash-1017',
+            temperature: 0,
+            provider: provider,
+            promptCacheKey: 'agent-1',
+          ),
+        ).called(1);
+      });
+
       test('handles messages with tool and function responses', () async {
         final messages = [
           const ChatCompletionMessage.user(

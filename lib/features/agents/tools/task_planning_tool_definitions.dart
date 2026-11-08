@@ -1,6 +1,7 @@
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/workflow/agent_observations.dart';
 import 'package:lotti/features/agents/workflow/task_agent_report_policy.dart';
+import 'package:lotti/features/agents/workflow/task_observation_contract.dart';
 
 /// Tools for planning, attention negotiation, reporting, and observations:
 /// the related-task search, the drill-down into a linked or found task
@@ -311,16 +312,21 @@ final taskPlanningTools = <AgentToolDefinition>[
   AgentToolDefinition(
     name: TaskAgentToolNames.recordObservations,
     description:
-        'Record private observations for future wakes. Use this to note '
-        'patterns, insights, failure notes, or anything worth remembering. '
-        'For grievances and excellence notes, set priority to "critical" '
-        'and include a full paragraph of context explaining the situation. '
+        'Record private notes for later wakes: only what they need and '
+        'cannot read from the task log, task state, proposal ledger or pull '
+        'requests — the reason for a non-obvious decision, a preference or '
+        'settled question, an anomaly, a tool failure. Never restate task '
+        "state, never copy the user's words (cite the entry id) and never "
+        'repeat an earlier observation: if it changed, record the change '
+        'with [[supersedes:<observationId>]]. Recording nothing is normal. '
+        'For grievances and excellence notes, set priority to "critical". '
         'Give "notable" and "critical" observations a category.',
     parameters: recordObservationsParameters(
       textDescription:
-          'The observation text. For critical priority, write a full '
-          'paragraph explaining the situation, what went wrong (or right), '
-          'and why it matters.',
+          'One fact, at most $taskObservationMaxChars characters. For '
+          'critical priority, three short sentences: what happened, why it '
+          'matters, what should change.',
+      maxItems: taskObservationMaxItems,
     ),
   ),
   const AgentToolDefinition(
