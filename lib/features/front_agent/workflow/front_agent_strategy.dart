@@ -26,9 +26,11 @@ typedef FrontDueTaskLister =
     Future<FrontDueTasks> Function(FrontDueQuery query);
 
 /// Sums the time logged in one period, per category, inside the turn's
-/// scope.
+/// scope — the categories the query names by name, the rest as one — and
+/// lists the tasks it went to, which become valid destinations for the rest
+/// of the turn.
 typedef FrontLoggedTimeSummarizer =
-    Future<FrontLoggedTime> Function(FrontTimePeriod period);
+    Future<FrontLoggedTime> Function(FrontTimeQuery query);
 
 /// One candidate offered by `ask_user`.
 typedef FrontAskOption = ({FrontDestinationKind kind, String id, String label});
@@ -398,38 +400,8 @@ class FrontAgentStrategy extends ConversationStrategy
       );
       return;
     }
-    final categoryIds = <String>{};
-    final rawCategories = args['categoryIds'] ?? const <Object?>[];
-    if (rawCategories is! List) {
-      await _reject(
-        call,
-        manager,
-        'Error: categoryIds is a list of ids from ## Categories.',
-      );
-      return;
-    }
-    for (final id in rawCategories) {
-      final category = id is String ? index.category(id) : null;
-      if (category == null) {
-        await _reject(
-          call,
-          manager,
-          'Error: $id is not a category id listed under ## Categories; '
-          'leave categoryIds out when no listed category is named.',
-        );
-        return;
-      }
-      if (index.categories.any((c) => c.chosen) && !category.chosen) {
-        await _reject(
-          call,
-          manager,
-          '${category.name} is outside the categories this conversation is '
-          'narrowed to; say so in reply_to_user.',
-        );
-        return;
-      }
-      categoryIds.add(category.id);
-    }
+    final categoryIds = await _namedCategories(call, args, manager);
+    if (categoryIds == null) return;
     final lister = dueTaskLister;
     if (lister == null) {
       await _reject(
@@ -468,6 +440,8 @@ class FrontAgentStrategy extends ConversationStrategy
       );
       return;
     }
+    final categoryIds = await _namedCategories(call, args, manager);
+    if (categoryIds == null) return;
     final summarizer = loggedTimeSummarizer;
     if (summarizer == null) {
       await _reject(
@@ -478,9 +452,56 @@ class FrontAgentStrategy extends ConversationStrategy
       return;
     }
     _timeSummaries++;
-    final logged = await summarizer(period);
+    final logged = await summarizer((
+      period: period,
+      categoryIds: categoryIds,
+    ));
+    _lookupRows.addAll([for (final task in logged.tasks) task.row]);
     if (logged.byCategory.isNotEmpty) _loggedTimeChart = logged.chart;
     await _accept(call, manager, logged.render());
+  }
+
+  /// The categories a tool call's `categoryIds` names — those the user named
+  /// in the question — or null once the call is rejected: an id not listed
+  /// under ## Categories, or one outside the conversation's chips.
+  Future<Set<String>?> _namedCategories(
+    ChatCompletionMessageToolCall call,
+    Map<String, dynamic> args,
+    ConversationManager manager,
+  ) async {
+    final categoryIds = <String>{};
+    final rawCategories = args['categoryIds'] ?? const <Object?>[];
+    if (rawCategories is! List) {
+      await _reject(
+        call,
+        manager,
+        'Error: categoryIds is a list of ids from ## Categories.',
+      );
+      return null;
+    }
+    for (final id in rawCategories) {
+      final category = id is String ? index.category(id) : null;
+      if (category == null) {
+        await _reject(
+          call,
+          manager,
+          'Error: $id is not a category id listed under ## Categories; '
+          'leave categoryIds out when no listed category is named.',
+        );
+        return null;
+      }
+      if (index.categories.any((c) => c.chosen) && !category.chosen) {
+        await _reject(
+          call,
+          manager,
+          '${category.name} is outside the categories this conversation is '
+          'narrowed to; say so in reply_to_user.',
+        );
+        return null;
+      }
+      categoryIds.add(category.id);
+    }
+    return categoryIds;
   }
 
   /// Her words with every task or project they name by id made a link —

@@ -9,7 +9,11 @@ import 'package:lotti/features/design_system/components/lists/design_system_list
 import 'package:lotti/features/design_system/components/search/design_system_search.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
+import 'package:lotti/features/front_agent/model/front_chat_thread.dart';
 import 'package:lotti/features/front_agent/model/front_conversation.dart';
+import 'package:lotti/features/front_agent/model/front_dispatch.dart';
+import 'package:lotti/features/front_agent/model/front_door.dart';
+import 'package:lotti/features/front_agent/state/front_chat_thread_provider.dart';
 import 'package:lotti/features/front_agent/state/front_conversation_providers.dart';
 import 'package:lotti/features/front_agent/ui/front_conversation_actions.dart';
 import 'package:lotti/features/front_agent/ui/front_conversation_list.dart';
@@ -67,6 +71,7 @@ void main() {
     WidgetTester tester, {
     FrontConversationIndex? index,
     bool beside = false,
+    FrontChatThread? allChats,
   }) async {
     await setUpTestGetIt();
     addTearDown(tearDownTestGetIt);
@@ -82,6 +87,8 @@ void main() {
               (ref) async => index ?? colony,
             ),
             frontConversationServiceProvider.overrideWithValue(service),
+            if (allChats != null)
+              frontAllChatsThreadProvider.overrideWith((ref) async => allChats),
           ],
         ),
       );
@@ -231,6 +238,46 @@ void main() {
       expect(find.byType(TextField), findsNothing);
       expect(titles(tester), contains('Search chats'));
       expect(find.text('Today'), findsOne);
+    });
+  });
+
+  testWidgets('with something in the inbox, the first letter typed stays in '
+      'the search, and the field keeps focus', (tester) async {
+    await withClock(Clock.fixed(now), () async {
+      await pumpList(
+        tester,
+        allChats: FrontChatThread(
+          messages: const [],
+          doorsByMessageId: {
+            'u1': [
+              FrontDoorEntry(
+                doorId: 'd:door:0',
+                record: FrontDoorRecord(
+                  segmentIndex: 0,
+                  text: 'A loose thought',
+                  kind: FrontDestinationKind.unrouted,
+                  status: FrontDoorStatus.done,
+                  claimedAt: DateTime.utc(2026, 10, 26),
+                  outcome: const FrontDoorInbox(),
+                ),
+              ),
+            ],
+          },
+        ),
+      );
+      expect(find.byKey(FrontConversationListKeys.inbox), findsOne);
+
+      await tester.tap(find.byKey(FrontConversationListKeys.search));
+      await tester.pump();
+      await tester.enterText(find.byType(TextField), 'c');
+      await tester.pump();
+
+      // Searching hides the inbox row above the field; the field stays.
+      expect(find.byKey(FrontConversationListKeys.inbox), findsNothing);
+      final field = tester.widget<TextField>(find.byType(TextField));
+      expect(field.controller!.text, 'c');
+      expect(field.focusNode!.hasFocus, isTrue);
+      expect(titles(tester), contains('Plan the census'));
     });
   });
 

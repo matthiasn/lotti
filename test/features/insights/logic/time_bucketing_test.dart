@@ -248,6 +248,71 @@ void main() {
       expect(chartTotal, 36 * 3600);
     });
 
+    test('time already keyed Other is its own last series, takes no '
+        "category's place, and is one with the overflow", () {
+      final day = DateTime(2024, 3);
+      InsightsTimeRow row(String id, int hour, int hours) => InsightsTimeRow(
+        dateFrom: DateTime(2024, 3, 1, hour),
+        dateTo: DateTime(2024, 3, 1, hour + hours),
+        categoryId: id,
+      );
+      final range = InsightsRange(
+        startDay: epochDay(day),
+        endDayExclusive: epochDay(day) + 7,
+      );
+      InsightsChartData chartOf(List<InsightsTimeRow> rows) => buildChartData(
+        bucketize(rows, windowStartDay: epochDay(day)),
+        range,
+      );
+
+      // Alone with one category: the Other slice keeps its own time.
+      final folded = chartOf([
+        row(kInsightsOtherCategoryKey, 0, 3),
+        row('named', 3, 1),
+      ]);
+      // Larger than the category, still last, keeping its own time.
+      expect(folded.seriesKeys, ['named', kInsightsOtherCategoryKey]);
+      expect(folded.values.last[0], 3 * 3600);
+      expect(folded.rolledUpCount, 0);
+
+      // As many categories as the cap: every one keeps its series, though
+      // Other outweighs them all.
+      final full = chartOf([
+        row(kInsightsOtherCategoryKey, 0, 9),
+        for (var c = 0; c < kInsightsMaxChartSeries; c++)
+          row('cat-$c', 9 + c, 1),
+      ]);
+      expect(full.seriesKeys, hasLength(kInsightsMaxChartSeries + 1));
+      expect(full.seriesKeys.toSet(), {
+        for (var c = 0; c < kInsightsMaxChartSeries; c++) 'cat-$c',
+        kInsightsOtherCategoryKey,
+      });
+      expect(full.seriesKeys.last, kInsightsOtherCategoryKey);
+      expect(full.values.last[0], 9 * 3600);
+      expect(full.rolledUpCount, 0);
+
+      // One past the cap: the overflow joins it, in one series, its own
+      // time counted once.
+      final crowded = chartOf([
+        row(kInsightsOtherCategoryKey, 0, 9),
+        for (var c = 0; c <= kInsightsMaxChartSeries; c++)
+          row('cat-$c', 9 + c, 1),
+      ]);
+      expect(
+        crowded.seriesKeys.where((k) => k == kInsightsOtherCategoryKey),
+        hasLength(1),
+      );
+      expect(crowded.seriesKeys, hasLength(kInsightsMaxChartSeries + 1));
+      expect(crowded.seriesKeys.last, kInsightsOtherCategoryKey);
+      // 9h of its own and the one category beyond the cap.
+      expect(crowded.values.last[0], 10 * 3600);
+      expect(crowded.rolledUpCount, 1);
+      final total = crowded.values
+          .expand((r) => r)
+          .fold<int>(0, (a, b) => a + b);
+      expect(total, (10 + kInsightsMaxChartSeries) * 3600);
+    });
+
     test('single-day range produces 24 hourly buckets', () {
       final day = DateTime(2024, 3);
       final buckets = bucketize(

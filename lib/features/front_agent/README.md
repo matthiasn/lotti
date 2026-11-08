@@ -29,11 +29,14 @@ hers too: she reads only what was asked (due today is never mixed with
 overdue) and answers in her own words. So is how much time was logged —
 today, yesterday, this week, the past 7 or 30 days, this month or last
 month: she sums it per category, with the numbers the Insights page shows,
-and says it as text. She knows the categories by name: one
+and says it as text, with the tasks the time went to when asked what was
+worked on, and for a week the category most of it went to. A category named
+in the question is the only one named, in her words and in the chart; every
+other one is a single "other" slice. She knows the categories by name: one
 named in the question narrows the answer — there is nothing to pick. Two
 tasks or more — due, overdue, both, or what a search found, projects among
 them — come back as a card of rows — status, the agent's one-liner,
-category, when it is due — rather than a run of links. A
+category, priority, when it is due — rather than a run of links. A
 task she names opens on top of her, and back returns to the conversation; a
 project she names closes her and opens it. Every
 answer is shown as the Markdown it was written in. A statement under a task or a project is a **proposal**: one tap

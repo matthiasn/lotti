@@ -663,9 +663,9 @@ hologram:x: not listed''');
         'ends the turn', () async {
       final asked = <FrontTimePeriod>[];
       final s = strategy(
-        timeSummarizer: (period) async {
-          asked.add(period);
-          return logged(period);
+        timeSummarizer: (query) async {
+          asked.add(query.period);
+          return logged(query.period);
         },
       );
       await s.processToolCalls(
@@ -677,7 +677,8 @@ hologram:x: not listed''');
       expect(asked, [FrontTimePeriod.yesterday]);
       expect(
         responses().single,
-        'Time logged yesterday (2026-11-06): 3h 30m in total, by category:\n'
+        'Time logged yesterday (2026-11-06): 3h 30m in total, by category, '
+        'largest first:\n'
         '- Work: 2h\n'
         '- Health: 1h 30m',
       );
@@ -699,9 +700,109 @@ hologram:x: not listed''');
       expect(s.loggedTimeChart, chart);
     });
 
+    test(
+      'a named category reaches the summary, and a task it lists is linked '
+      'when she names it by title alone',
+      () async {
+        const roses = FrontIndexRow(
+          kind: FrontDestinationKind.task,
+          id: 'roses',
+          title: 'Prune the roses',
+          status: 'OPEN',
+        );
+        final asked = <Set<String>>[];
+        final s = strategy(
+          routingIndex: FrontRoutingIndex(
+            categories: const [
+              FrontCategory(id: 'work', name: 'Work'),
+              FrontCategory(id: 'home', name: 'Home'),
+            ],
+          ),
+          timeSummarizer: (query) async {
+            asked.add(query.categoryIds);
+            return FrontLoggedTime(
+              period: query.period,
+              from: DateTime(2026, 11, 2),
+              through: DateTime(2026, 11, 8),
+              byCategory: const [
+                (name: FrontLoggedTime.otherCategories, seconds: 7200),
+                (name: 'Home', seconds: 3600),
+              ],
+              named: const ['Home'],
+              tasks: const [(row: roses, seconds: 3600)],
+              chart: chart,
+            );
+          },
+        );
+        await s.processToolCalls(
+          toolCalls: [
+            _call('summarize_logged_time', {
+              'period': 'past_7_days',
+              'categoryIds': ['home'],
+            }),
+          ],
+          manager: manager,
+        );
+        expect(asked, [
+          {'home'},
+        ]);
+        expect(
+          responses().single,
+          'Time logged past 7 days (2026-11-02 through 2026-11-08): 3h in '
+          'total, by category, largest first (Home named; every other '
+          'category is "Other categories", never to be broken down):\n'
+          '- Other categories: 2h\n'
+          '- Home: 1h\n'
+          'Tasks the time went to in Home (1), largest first:\n'
+          '- task:roses | Prune the roses | OPEN | 1h',
+        );
+
+        await s.processToolCalls(
+          toolCalls: [
+            _call('reply_to_user', {
+              'message': 'In Home:\n- Prune the roses',
+            }, id: 'call-2'),
+          ],
+          manager: manager,
+        );
+        expect(
+          s.replyToUser,
+          'In Home:\n- [Prune the roses](lotti://task/roses)',
+        );
+      },
+    );
+
+    test(
+      'refuses a category it may not name, the same as list_due_tasks',
+      () async {
+        var calls = 0;
+        final s = strategy(
+          timeSummarizer: (query) async {
+            calls++;
+            return logged(query.period);
+          },
+        );
+        await s.processToolCalls(
+          toolCalls: [
+            _call('summarize_logged_time', {
+              'period': 'today',
+              'categoryIds': ['nope'],
+            }),
+          ],
+          manager: manager,
+        );
+        expect(calls, 0);
+        expect(
+          responses().single,
+          contains('nope is not a category id listed under ## Categories'),
+        );
+      },
+    );
+
     test('a period with nothing logged gets no chart', () async {
       final s = strategy(
-        timeSummarizer: (period) async => logged(period, byCategory: const []),
+        timeSummarizer: (query) async =>
+            logged(query.period, byCategory: const []),
       );
       expect(s.loggedTimeChart, isNull);
       await s.processToolCalls(
@@ -718,9 +819,9 @@ hologram:x: not listed''');
         'reports an unwired summarizer', () async {
       final asked = <FrontTimePeriod>[];
       final s = strategy(
-        timeSummarizer: (period) async {
-          asked.add(period);
-          return logged(period);
+        timeSummarizer: (query) async {
+          asked.add(query.period);
+          return logged(query.period);
         },
       );
       await s.processToolCalls(

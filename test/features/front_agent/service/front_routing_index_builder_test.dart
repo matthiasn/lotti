@@ -3,6 +3,7 @@ import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/agents/agent_link.dart';
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_window.dart';
@@ -767,6 +768,190 @@ void main() {
           ),
         ],
       );
+      when(() => journalDb.basicLinksForEntryIds(any())).thenAnswer(
+        (_) async => const [],
+      );
+      when(() => journalDb.getJournalEntitiesForIdsUnordered(any())).thenAnswer(
+        (_) async => const [],
+      );
+    });
+
+    EntryLink link(String taskId, String entryId, {bool hidden = false}) =>
+        EntryLink.basic(
+          id: '$taskId>$entryId',
+          fromId: taskId,
+          toId: entryId,
+          createdAt: _stamp,
+          updatedAt: _stamp,
+          vectorClock: null,
+          hidden: hidden,
+        );
+
+    final workMorning = 'work@${DateTime(2026, 10, 22, 9)}';
+    final workOverlap = 'work@${DateTime(2026, 10, 22, 10)}';
+    final homeEvening = 'home@${DateTime(2026, 10, 22, 20)}';
+
+    void stubTasks() {
+      final older = _task('older');
+      final newer = _task('newer');
+      when(() => journalDb.basicLinksForEntryIds(any())).thenAnswer(
+        (_) async => [
+          link('older', workMorning),
+          link('older', workOverlap),
+          // Also linked to the later-started task: the time is the newer's,
+          // as the Insights read attributes it.
+          link('newer', workOverlap),
+          link('home-task', homeEvening),
+          // A hidden link attributes nothing.
+          link('hidden-task', workMorning, hidden: true),
+        ],
+      );
+      when(() => journalDb.getJournalEntitiesForIdsUnordered(any())).thenAnswer(
+        (_) async => [
+          older,
+          newer.copyWith(
+            meta: newer.meta.copyWith(dateFrom: DateTime(2026, 10, 5)),
+          ),
+          _task('home-task', categoryId: 'home'),
+          _task('hidden-task'),
+        ],
+      );
+    }
+
+    test(
+      'lists the tasks the time went to, largest first, an entry linked to '
+      'two counted for the later started, a hidden link for none',
+      () async {
+        stubTasks();
+        final logged = await builder().loggedTimeSummarizer(
+          const FrontRoutingScope(),
+          now: _now,
+        )((period: FrontTimePeriod.yesterday, categoryIds: const {}));
+
+        expect(
+          [for (final task in logged.tasks) (task.row.id, task.seconds)],
+          [('older', 2 * 3600), ('newer', 90 * 60), ('home-task', 3600)],
+        );
+        expect(logged.omittedTasks, 0);
+        expect(
+          logged.render(),
+          contains(
+            'Tasks the time went to (3), largest first:\n'
+            '- task:older | Task older | OPEN | 2h\n'
+            '- task:newer | Task newer | OPEN | 1h 30m\n'
+            '- task:home-task | Task home-task | OPEN | 1h',
+          ),
+        );
+      },
+    );
+
+    test(
+      'a named category keeps its name, every other category and time in '
+      'none is one unnamed slice, and only its tasks are listed',
+      () async {
+        stubTasks();
+        final logged = await builder().loggedTimeSummarizer(
+          const FrontRoutingScope(),
+          now: _now,
+        )((period: FrontTimePeriod.yesterday, categoryIds: {'work'}));
+
+        expect(logged.byCategory, [
+          (name: 'Work', seconds: 3 * 3600),
+          // Home 1h, no category 15m and the deleted one's 10m — never the
+          // hidden private category's.
+          (name: FrontLoggedTime.otherCategories, seconds: 85 * 60),
+        ]);
+        expect(logged.named, ['Work']);
+        expect(
+          [for (final task in logged.tasks) task.row.id],
+          [
+            'older',
+            'newer',
+          ],
+        );
+        expect(logged.chart.namedCategoryIds, {'work'});
+        final rendered = logged.render();
+        expect(
+          rendered,
+          contains(
+            '(Work named; every other category is "Other categories", '
+            'never to be broken down)',
+          ),
+        );
+        expect(rendered, isNot(contains('Home')));
+      },
+    );
+
+    test(
+      'an entry is credited to the task Insights takes its category from: '
+      'one with a category before a later-started one without; with none '
+      'categorized, the uncategorized one',
+      () async {
+        final loose = _task('loose', categoryId: null);
+        when(() => journalDb.basicLinksForEntryIds(any())).thenAnswer(
+          (_) async => [
+            link('filed', workMorning),
+            link('loose', workMorning),
+            link('loose', homeEvening),
+          ],
+        );
+        when(
+          () => journalDb.getJournalEntitiesForIdsUnordered(any()),
+        ).thenAnswer(
+          (_) async => [
+            _task('filed'),
+            // Started later, but without a category Insights skips it.
+            loose.copyWith(
+              meta: loose.meta.copyWith(dateFrom: DateTime(2026, 10, 5)),
+            ),
+          ],
+        );
+
+        final logged = await builder().loggedTimeSummarizer(
+          const FrontRoutingScope(),
+          now: _now,
+        )((period: FrontTimePeriod.yesterday, categoryIds: const {}));
+
+        expect(
+          [for (final task in logged.tasks) (task.row.id, task.seconds)],
+          [('filed', 2 * 3600), ('loose', 3600)],
+        );
+      },
+    );
+
+    test('caps the tasks it lists and counts the rest', () async {
+      final ids = [for (var i = 0; i <= frontLoggedTaskLimit; i++) 't$i'];
+      when(
+        () => journalDb.insightsTimeRows(
+          start: any(named: 'start'),
+          end: any(named: 'end'),
+        ),
+      ).thenAnswer(
+        (_) async => [
+          for (final (i, id) in ids.indexed)
+            (
+              entryId: 'e-$id',
+              dateFrom: DateTime(2026, 10, 22, 0, i),
+              dateTo: DateTime(2026, 10, 22, 0, i + 1),
+              categoryId: 'work',
+            ),
+        ],
+      );
+      when(() => journalDb.basicLinksForEntryIds(any())).thenAnswer(
+        (_) async => [for (final id in ids) link(id, 'e-$id')],
+      );
+      when(() => journalDb.getJournalEntitiesForIdsUnordered(any())).thenAnswer(
+        (_) async => [for (final id in ids) _task(id)],
+      );
+
+      final logged = await builder().loggedTimeSummarizer(
+        const FrontRoutingScope(),
+        now: _now,
+      )((period: FrontTimePeriod.yesterday, categoryIds: const {}));
+
+      expect(logged.tasks, hasLength(frontLoggedTaskLimit));
+      expect(logged.omittedTasks, 1);
+      expect(logged.render(), contains('(30, +1 not shown)'));
     });
 
     test(
@@ -776,7 +961,7 @@ void main() {
         final logged = await builder().loggedTimeSummarizer(
           const FrontRoutingScope(),
           now: _now,
-        )(FrontTimePeriod.yesterday);
+        )((period: FrontTimePeriod.yesterday, categoryIds: const {}));
 
         verify(
           () => journalDb.insightsTimeRows(
@@ -816,7 +1001,7 @@ void main() {
         final logged = await builder().loggedTimeSummarizer(
           scope,
           now: _now,
-        )(FrontTimePeriod.yesterday);
+        )((period: FrontTimePeriod.yesterday, categoryIds: const {}));
         expect(logged.byCategory, [(name: 'Work', seconds: 3 * 3600)]);
         expect(logged.chart.categoryIds, {'work'});
       }
@@ -827,9 +1012,10 @@ void main() {
       final sunday =
           await builder(
             firstDayOfWeekIndex: () async => 0,
-          ).loggedTimeSummarizer(const FrontRoutingScope(), now: _now)(
-            FrontTimePeriod.thisWeek,
-          );
+          ).loggedTimeSummarizer(const FrontRoutingScope(), now: _now)((
+            period: FrontTimePeriod.thisWeek,
+            categoryIds: const {},
+          ));
       verify(
         () => journalDb.insightsTimeRows(
           start: DateTime(2026, 10, 18),
@@ -843,7 +1029,7 @@ void main() {
       final monday = await builder().loggedTimeSummarizer(
         const FrontRoutingScope(),
         now: _now,
-      )(FrontTimePeriod.thisWeek);
+      )((period: FrontTimePeriod.thisWeek, categoryIds: const {}));
       expect(monday.from, DateTime(2026, 10, 19));
     });
   });

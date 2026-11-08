@@ -29,6 +29,7 @@ abstract final class FrontConversationListKeys {
   static Key row(String id) => Key('front-conversation-$id');
   static Key menu(String id) => Key('front-conversation-menu-$id');
   static const Key search = Key('front-conversations-search');
+  static const Key searchField = Key('front-conversations-search-field');
   static const Key inbox = Key('front-conversations-inbox');
 }
 
@@ -268,6 +269,10 @@ class _FrontConversationListState extends ConsumerState<FrontConversationList> {
         if (hasAny && _searchOpen) ...[
           SizedBox(height: tokens.spacing.step2),
           DesignSystemSearch(
+            // Keyed: the first letter hides the Inbox row above it, and
+            // unkeyed the field would be rebuilt at its new index — its
+            // text and focus lost.
+            key: FrontConversationListKeys.searchField,
             hintText: messages.frontChatSearchChats,
             size: DesignSystemSearchSize.small,
             focusNode: _searchFocus,

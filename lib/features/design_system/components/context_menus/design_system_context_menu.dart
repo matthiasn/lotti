@@ -85,7 +85,8 @@ class DesignSystemContextMenu extends StatelessWidget {
   final Key? headerKey;
 
   /// Removes the normal outer row padding so the first and last interaction
-  /// fills meet — and are clipped by — the menu's rounded outline.
+  /// fills meet — and are clipped by — the menu's rounded outline, and the
+  /// padding around a group's rule, so the rows on either side meet it.
   final bool edgeToEdge;
 
   /// Sizes the menu to its widest row instead of [width], which then only
@@ -206,8 +207,12 @@ class DesignSystemContextMenu extends StatelessWidget {
     );
   }
 
+  /// Edge to edge, the rows' hover fills meet the rule, as they meet the
+  /// outline; otherwise it keeps the rows' breathing room.
   Widget _groupRule(DsTokens tokens, _ContextMenuSpec spec) => Padding(
-    padding: EdgeInsets.symmetric(vertical: spec.verticalPadding),
+    padding: EdgeInsets.symmetric(
+      vertical: edgeToEdge ? 0 : spec.verticalPadding,
+    ),
     child: Divider(
       height: spec.dividerWidth,
       thickness: spec.dividerWidth,

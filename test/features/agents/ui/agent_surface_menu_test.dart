@@ -111,6 +111,34 @@ void main() {
     },
   );
 
+  testWidgets(
+    "the first and last row's hover fill meets the menu's edge, no strip "
+    'of padding above or below it',
+    (tester) async {
+      await pump(tester);
+      await open(tester);
+
+      final menu = find.byType(DesignSystemContextMenu);
+      final rows = find.descendant(of: menu, matching: find.byType(InkWell));
+      expect(rows, findsAtLeast(2));
+      final bounds = tester.getRect(menu);
+      expect(tester.getRect(rows.first).top, bounds.top);
+      expect(tester.getRect(rows.last).bottom, bounds.bottom);
+      // Around each group's rule too: the rows on either side meet it.
+      final rules = find.descendant(of: menu, matching: find.byType(Divider));
+      expect(rules, findsNWidgets(2));
+      final rowRects = [
+        for (final element in rows.evaluate())
+          tester.getRect(find.byElementPredicate((e) => e == element)),
+      ];
+      for (final rule in rules.evaluate()) {
+        final line = tester.getRect(find.byElementPredicate((e) => e == rule));
+        expect(rowRects.map((r) => r.bottom), contains(line.top));
+        expect(rowRects.map((r) => r.top), contains(line.bottom));
+      }
+    },
+  );
+
   testWidgets('hangs under its trigger, trailing edges aligned', (
     tester,
   ) async {

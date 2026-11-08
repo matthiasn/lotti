@@ -75,9 +75,16 @@ void main() {
 
   tearDown(() => container.dispose());
 
-  Future<InsightsChartData> read(Set<String> categoryIds) {
+  Future<InsightsChartData> read(
+    Set<String> categoryIds, {
+    Set<String> named = const {},
+  }) {
     final provider = frontLoggedTimeChartProvider(
-      FrontLoggedTimeChart(range: range, categoryIds: categoryIds),
+      FrontLoggedTimeChart(
+        range: range,
+        categoryIds: categoryIds,
+        namedCategoryIds: named,
+      ),
     );
     // Shown while read: an unwatched chart is disposed.
     container.listen(provider, (_, _) {});
@@ -106,6 +113,20 @@ void main() {
       [0, 0, 3600],
       [0, 0, 3600],
     ]);
+  });
+
+  test('a named category is charted alone against one unnamed slice of '
+      'every other category and time in none', () async {
+    final data = await read(const {}, named: {'fishing'});
+
+    // The named one at the base, Other on top however large it is.
+    expect(data.seriesKeys, ['fishing', kInsightsOtherCategoryKey]);
+    expect(data.values, [
+      [0, 0, 3600],
+      [3 * 3600, 0, 3600],
+    ]);
+    // Nothing rolled up beyond the slice, so no count of what is in it.
+    expect(data.rolledUpCount, 0);
   });
 
   test(

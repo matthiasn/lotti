@@ -321,12 +321,21 @@ InsightsChartData buildChartData(
 
   final ranked = rankedCategoryTotals(perBucket);
   final maxSeries = maxChartSeriesFor(granularity);
-  final visible = ranked.take(maxSeries).map((e) => e.key);
-  final rolledUp = ranked.skip(maxSeries).map((e) => e.key).toSet();
+  // Buckets may already carry time under the "Other" key (a caller folding
+  // categories it must not name): that slice takes no category's place, and
+  // it and the rollup are one series, last as the rollup always is.
+  final hasOther = ranked.any((e) => e.key == kInsightsOtherCategoryKey);
+  final categories = [
+    for (final entry in ranked)
+      if (entry.key != kInsightsOtherCategoryKey) entry.key,
+  ];
+  final visible = categories.take(maxSeries);
+  final rolledUp = categories.skip(maxSeries).toSet();
+  final intoOther = {...rolledUp, kInsightsOtherCategoryKey};
 
   final seriesKeys = <String?>[
     ...visible,
-    if (rolledUp.isNotEmpty) kInsightsOtherCategoryKey,
+    if (rolledUp.isNotEmpty || hasOther) kInsightsOtherCategoryKey,
   ];
 
   final values = [
@@ -334,7 +343,7 @@ InsightsChartData buildChartData(
       [
         for (final bucket in perBucket)
           if (key == kInsightsOtherCategoryKey)
-            rolledUp.fold<int>(0, (sum, id) => sum + (bucket[id] ?? 0))
+            intoOther.fold<int>(0, (sum, id) => sum + (bucket[id] ?? 0))
           else
             bucket[key] ?? 0,
       ],

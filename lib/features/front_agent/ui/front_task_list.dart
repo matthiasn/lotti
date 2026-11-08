@@ -11,6 +11,8 @@ import 'package:lotti/features/tasks/ui/due_date_text.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/linked_task_row.dart'
     show StatusGlyph;
 import 'package:lotti/features/tasks/ui/utils.dart';
+import 'package:lotti/features/tasks/ui/widgets/task_showcase_chips.dart'
+    show TaskShowcasePriorityGlyph;
 import 'package:lotti/providers/service_providers.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -144,6 +146,7 @@ class FrontTaskRow extends ConsumerWidget {
         ?oneLiner,
         statusLabel,
         ?category,
+        if (!settled) task.data.priority.short,
       ].join(', '),
       leading: StatusGlyph(status: status, tooltip: statusLabel),
       // The one-liner, then status and category and when it is due —
@@ -171,7 +174,29 @@ class FrontTaskRow extends ConsumerWidget {
       ],
       subtitleMaxLines: oneLiner == null ? 2 : 3,
       subtitleEmphasis: tokens.colors.text.lowEmphasis,
-      trailingExtra: chevron,
+      // Its priority, only while it is still to do, beside the chevron: out
+      // of the subtitle, so however long the one-liner, truncation never
+      // takes it.
+      trailingExtra: settled
+          ? chevron
+          : Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TaskShowcasePriorityGlyph(
+                  priority: task.data.priority,
+                  size: IconSizes.xs,
+                ),
+                SizedBox(width: tokens.spacing.step1),
+                Text(
+                  task.data.priority.short,
+                  style: tokens.typography.styles.others.caption.copyWith(
+                    color: tokens.colors.text.lowEmphasis,
+                  ),
+                ),
+                SizedBox(width: tokens.spacing.step2),
+                chevron,
+              ],
+            ),
     );
   }
 

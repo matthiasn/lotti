@@ -20,6 +20,9 @@ const int frontCorpusMatchLimit = 8;
 /// How many tasks one `list_due_tasks` may return.
 const int frontDueTaskLimit = 30;
 
+/// How many tasks with logged time one `summarize_logged_time` may return.
+const int frontLoggedTaskLimit = 30;
+
 /// Which due tasks one `list_due_tasks` asks for, split at local midnight
 /// as the task list's *Due today* and *Overdue* views split them: a
 /// question about one of them is answered with that one alone.
@@ -183,8 +186,12 @@ enum FrontTimePeriod {
   }
 }
 
+/// One `summarize_logged_time` call, validated: the `period` and the
+/// categories the user named — empty when they named none.
+typedef FrontTimeQuery = ({FrontTimePeriod period, Set<String> categoryIds});
+
 /// What one `summarize_logged_time` found: the time logged in [period],
-/// per category, largest first.
+/// per category, largest first, and the tasks that time went to.
 class FrontLoggedTime {
   const FrontLoggedTime({
     required this.period,
@@ -192,6 +199,9 @@ class FrontLoggedTime {
     required this.through,
     required this.byCategory,
     required this.chart,
+    this.named = const [],
+    this.tasks = const [],
+    this.omittedTasks = 0,
   });
 
   final FrontTimePeriod period;
@@ -204,27 +214,58 @@ class FrontLoggedTime {
   final DateTime through;
 
   /// Each category's name — null for time in no category — and its seconds,
-  /// largest first, none of them zero.
+  /// largest first, none of them zero. When the user [named] categories,
+  /// only those are by name; the rest is one entry, [otherCategories].
   final List<({String? name, int seconds})> byCategory;
 
-  /// The tool's answer: a heading naming the period, its days and the
-  /// total, then one line per category.
+  /// The names of the categories the user named; empty when none.
+  final List<String> named;
+
+  /// The tasks the time went to and each one's seconds, largest first, at
+  /// most [frontLoggedTaskLimit] — in the named categories when some are.
+  final List<({FrontIndexRow row, int seconds})> tasks;
+
+  /// How many more tasks had time than [frontLoggedTaskLimit] let through.
+  final int omittedTasks;
+
+  /// The [byCategory] name of every category the user did not name.
+  static const otherCategories = 'Other categories';
+
+  /// The tool's answer: a heading naming the period, its days, any named
+  /// category and the total, one line per category, then one per task.
   String render() {
     const day = FrontRoutingIndex._isoDay;
+    const oneLine = FrontRoutingIndex._oneLine;
     final days = from == through
         ? day(from)
         : '${day(from)} through ${day(through)}';
     final what = '${period.wireName.replaceAll('_', ' ')} ($days)';
     if (byCategory.isEmpty) return 'None: no time logged $what.';
     final total = byCategory.fold(0, (sum, entry) => sum + entry.seconds);
+    final against = named.isEmpty
+        ? ''
+        : ' (${named.map(oneLine).join(', ')} named; every other category '
+              'is "$otherCategories", never to be broken down)';
     final buffer = StringBuffer(
-      'Time logged $what: ${_hoursMinutes(total)} in total, by category:\n',
+      'Time logged $what: ${_hoursMinutes(total)} in total, by category, '
+      'largest first$against:\n',
     );
     for (final (:name, :seconds) in byCategory) {
-      final label = name == null
-          ? 'No category'
-          : FrontRoutingIndex._oneLine(name);
+      final label = name == null ? 'No category' : oneLine(name);
       buffer.writeln('- $label: ${_hoursMinutes(seconds)}');
+    }
+    if (tasks.isNotEmpty) {
+      buffer.writeln(
+        'Tasks the time went to${named.isEmpty ? '' : ' in ${named.join(', ')}'}'
+        ' (${tasks.length}'
+        '${omittedTasks > 0 ? ', +$omittedTasks not shown' : ''}), '
+        'largest first:',
+      );
+      for (final (:row, :seconds) in tasks) {
+        buffer.write('- task:${row.id} | ${oneLine(row.title)}');
+        if (row.status != null) buffer.write(' | ${row.status}');
+        buffer.writeln(' | ${_hoursMinutes(seconds)}');
+      }
     }
     return buffer.toString().trimRight();
   }
