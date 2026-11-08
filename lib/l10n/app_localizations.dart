@@ -12263,6 +12263,12 @@ abstract class AppLocalizations {
   /// **'Inbox'**
   String get frontChatInboxTitle;
 
+  /// No description provided for @frontChatMentionHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Type @ to name a category'**
+  String get frontChatMentionHint;
+
   /// No description provided for @frontChatNoChats.
   ///
   /// In en, this message translates to:

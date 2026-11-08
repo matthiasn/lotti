@@ -4406,6 +4406,7 @@
   },
   "frontChatInboxEmpty": "Nothing is waiting for you.",
   "frontChatInboxTitle": "Inbox",
+  "frontChatMentionHint": "Type @ to name a category",
   "frontChatNoChats": "No chats yet. Ask something to start one.",
   "frontChatNoMatchingChats": "No chat title matches.",
   "frontChatOlder": "Older",

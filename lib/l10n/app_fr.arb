@@ -2936,6 +2936,7 @@
   "frontChatInboxChip": "Boîte de réception {count}",
   "frontChatInboxEmpty": "Rien ne t’attend.",
   "frontChatInboxTitle": "Boîte de réception",
+  "frontChatMentionHint": "Tape @ pour nommer une catégorie",
   "frontChatNoChats": "Pas encore de chat. Pose une question pour en commencer un.",
   "frontChatNoMatchingChats": "Aucun titre de chat ne correspond.",
   "frontChatOlder": "Plus anciens",

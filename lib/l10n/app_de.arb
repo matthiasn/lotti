@@ -2936,6 +2936,7 @@
   "frontChatInboxChip": "Eingang {count}",
   "frontChatInboxEmpty": "Hier wartet nichts auf dich.",
   "frontChatInboxTitle": "Eingang",
+  "frontChatMentionHint": "Tippe @, um eine Kategorie zu nennen",
   "frontChatNoChats": "Noch keine Chats. Frag etwas, um einen zu beginnen.",
   "frontChatNoMatchingChats": "Kein Chattitel passt.",
   "frontChatOlder": "Älter",

@@ -7190,6 +7190,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get frontChatInboxTitle => 'Indbakke';
 
   @override
+  String get frontChatMentionHint => 'Skriv @ for at navngive en kategori';
+
+  @override
   String get frontChatNoChats =>
       'Ingen chats endnu. Spørg om noget for at starte en.';
 

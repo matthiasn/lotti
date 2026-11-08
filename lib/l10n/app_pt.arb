@@ -3280,6 +3280,7 @@
   "frontChatInboxChip": "Caixa de entrada {count}",
   "frontChatInboxEmpty": "Nada espera por ti.",
   "frontChatInboxTitle": "Caixa de entrada",
+  "frontChatMentionHint": "Escreve @ para nomear uma categoria",
   "frontChatNoChats": "Ainda não há chats. Pergunta algo para começar um.",
   "frontChatNoMatchingChats": "Nenhum título de chat corresponde.",
   "frontChatOlder": "Mais antigos",

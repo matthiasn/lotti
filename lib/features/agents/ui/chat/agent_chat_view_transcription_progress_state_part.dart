@@ -50,7 +50,8 @@ class AgentChatView extends ConsumerStatefulWidget {
     this.conversationId,
     this.groupAttachmentsWithReply = false,
     this.footerTrailingBuilder,
-    this.composerShape = DesignSystemTextInputShape.rounded,
+    this.composerHelper,
+    this.mentionOptions = const [],
     this.replyTextStyle,
     this.onLinkTap,
     this.resolveTranscriptionTarget,
@@ -69,11 +70,10 @@ class AgentChatView extends ConsumerStatefulWidget {
   /// [footerTrailingBuilder] adds.
   final bool conversational;
 
-  /// What was said goes out as recording stops — no second tap on send —
-  /// through [onSendSpoken] when given; the stop control then reads as
-  /// send, transcribing can always be cancelled, and on a desktop the field
-  /// takes the keyboard at once. The composer is the same one field, mic at
-  /// its end, as any chat's.
+  /// Talking leads: on a desktop the field takes the keyboard at once, and
+  /// what was said — read and corrected in the field first, then sent — goes
+  /// out through [onSendSpoken] when given, so the host knows the turn was
+  /// spoken.
   final bool voiceFirst;
 
   /// The width of one reading column, centred, that the thread and the
@@ -97,8 +97,8 @@ class AgentChatView extends ConsumerStatefulWidget {
   final VoidCallback onSend;
   final VoidCallback onRetry;
 
-  /// Sends a transcript a [voiceFirst] chat sends by itself, so the host
-  /// knows the turn was spoken; [onSend] when not given.
+  /// Sends a draft that came from what was said (read, perhaps corrected),
+  /// so the host knows the turn was spoken; [onSend] when not given.
   final VoidCallback? onSendSpoken;
   final AgentChatMessageAttachmentBuilder? attachmentBuilder;
 
@@ -143,7 +143,13 @@ class AgentChatView extends ConsumerStatefulWidget {
 
   /// Keeps supporting evidence inside the reply's surface and reading width.
   final bool groupAttachmentsWithReply;
-  final DesignSystemTextInputShape composerShape;
+
+  /// What the composer says under its field — only what this chat
+  /// supports (that `@` names a category, say).
+  final String? composerHelper;
+
+  /// What `@` offers in the composer; none, no `@`.
+  final List<DesignSystemChatInputMention> mentionOptions;
 
   /// Consumer typography for assistant replies; other conversations use the
   /// standard body style when omitted.
@@ -168,28 +174,24 @@ class AgentChatView extends ConsumerStatefulWidget {
   ConsumerState<AgentChatView> createState() => _AgentChatViewState();
 }
 
-/// Voice-enabled composer for the agent chat. Reuses the shared
+/// The agent chat's composer: the one [DesignSystemChatInput] every
+/// conversation is asked through, driven by the shared
 /// [chatRecorderControllerProvider] — the same recorder the evolution chat
-/// uses — so transcription, error toasts, and the waveform are shared
-/// infrastructure. Idle shows a text field with a mic/send trailing icon;
-/// recording and transcribing show the one [ChatRecordingPill] every chat
-/// and the companion's stage share, the streaming partial transcript above
-/// it while transcribing.
+/// and the companion's stage use — so transcription, error toasts and the
+/// voice's levels are shared infrastructure.
 ///
-/// Watches [chatRecorderControllerProvider] internally so the 10 Hz amplitude
-/// stream rebuilds only this subtree, not the full message list above.
+/// Watches the recorder itself, so its 10 Hz levels rebuild only this
+/// subtree, not the thread above.
 class _ChatComposer extends ConsumerWidget {
   const _ChatComposer({
-    required this.availableHeight,
     required this.controller,
     required this.hintText,
     required this.isSending,
     required this.allowDraftWhileSending,
     required this.sendingLabel,
-    required this.draft,
-    required this.onDraftChanged,
     required this.onSend,
-    required this.shape,
+    this.helperText,
+    this.mentionOptions = const [],
     this.voiceFirst = false,
     this.contentMaxWidth,
     this.resolveTranscriptionTarget,
@@ -199,41 +201,58 @@ class _ChatComposer extends ConsumerWidget {
 
   final bool voiceFirst;
 
-  /// The reading column the controls keep to, centred; null for the full
+  /// The reading column the input keeps to, centred; null for the full
   /// width.
   final double? contentMaxWidth;
-  final double availableHeight;
   final TextEditingController controller;
   final String hintText;
+  final String? helperText;
+  final List<DesignSystemChatInputMention> mentionOptions;
   final bool isSending;
   final bool allowDraftWhileSending;
   final String sendingLabel;
-  final String draft;
-  final ValueChanged<String> onDraftChanged;
   final VoidCallback onSend;
-  final DesignSystemTextInputShape shape;
   final ChatTranscriptionTargetResolver? resolveTranscriptionTarget;
   final ChatTranscriptCorrector? correctTranscript;
   final ChatDictionaryCategoryResolver? resolveDictionaryCategory;
-
-  /// [controls] in the reading column, when there is one.
-  Widget _inColumn(Widget controls) {
-    final maxWidth = contentMaxWidth;
-    if (maxWidth == null) return controls;
-    return Center(
-      child: ConstrainedBox(
-        constraints: BoxConstraints(maxWidth: maxWidth),
-        child: controls,
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
     final recorderState = ref.watch(chatRecorderControllerProvider);
-    final status = recorderState.status;
-
+    final recorder = ref.read(chatRecorderControllerProvider.notifier);
+    // Sending blocks the next draft unless the host lets it be prepared;
+    // then only Send waits.
+    final blocked = isSending && !allowDraftWhileSending;
+    final input = DesignSystemChatInput(
+      controller: controller,
+      hintText: hintText,
+      helperText: helperText,
+      mentionOptions: mentionOptions,
+      busyText: blocked ? sendingLabel : null,
+      phase: switch (recorderState.status) {
+        ChatRecorderStatus.recording => DesignSystemChatInputPhase.recording,
+        ChatRecorderStatus.processing =>
+          DesignSystemChatInputPhase.transcribing,
+        _ => DesignSystemChatInputPhase.compose,
+      },
+      levels: recorder.getNormalizedAmplitudeHistory(),
+      elapsed: recorderState.elapsed,
+      partialTranscript: recorderState.partialTranscript,
+      onSend: isSending ? null : onSend,
+      onStartRecording: () => recorder.start(
+        resolveTranscriptionTarget: resolveTranscriptionTarget,
+        correctTranscript: correctTranscript,
+        resolveDictionaryCategory: resolveDictionaryCategory,
+      ),
+      // Done hands the take back: its words land in the field to be read.
+      onFinishRecording: recorder.stopAndTranscribe,
+      onCancelRecording: recorder.cancel,
+      // Where there is a keyboard, it types at once; a phone keeps its
+      // keyboard down until the field is tapped, so talking stays one tap.
+      autofocus: voiceFirst && isDesktopLayout(context),
+    );
+    final maxWidth = contentMaxWidth;
     return DecoratedBox(
       decoration: BoxDecoration(
         color: tokens.colors.background.level01,
@@ -243,185 +262,15 @@ class _ChatComposer extends ConsumerWidget {
       ),
       child: Padding(
         padding: EdgeInsets.all(tokens.spacing.step4),
-        child: _inColumn(switch (status) {
-          ChatRecorderStatus.recording => ChatRecordingPill(
-            processing: false,
-            elapsed: recorderState.elapsed,
-            // Voice first, what was said goes out as it stops: the stop
-            // control reads as the send it is.
-            sendsOnStop: voiceFirst,
-            amplitudes: ref
-                .read(chatRecorderControllerProvider.notifier)
-                .getNormalizedAmplitudeHistory(),
-            onCancel: () =>
-                ref.read(chatRecorderControllerProvider.notifier).cancel(),
-            onStop: () => ref
-                .read(chatRecorderControllerProvider.notifier)
-                .stopAndTranscribe(),
-          ),
-          ChatRecorderStatus.processing => _TranscriptionProgress(
-            availableHeight: availableHeight,
-            partialTranscript: recorderState.partialTranscript ?? '',
-            // A stalled transcription always has its way out.
-            onCancel: () =>
-                ref.read(chatRecorderControllerProvider.notifier).cancel(),
-          ),
-          _ => () {
-            void startRecording() => ref
-                .read(chatRecorderControllerProvider.notifier)
-                .start(
-                  resolveTranscriptionTarget: resolveTranscriptionTarget,
-                  correctTranscript: correctTranscript,
-                  resolveDictionaryCategory: resolveDictionaryCategory,
-                );
-            return ChatComposerField(
-              controller: controller,
-              hintText: hintText,
-              isSending: isSending,
-              allowDraftWhileSending: allowDraftWhileSending,
-              sendingLabel: sendingLabel,
-              draft: draft,
-              onDraftChanged: onDraftChanged,
-              onSend: onSend,
-              shape: shape,
-              onStartRecording: startRecording,
-              // Where there is a keyboard, it types at once; a phone keeps
-              // its keyboard down until the field is tapped, so talking
-              // stays one tap.
-              autofocus: voiceFirst && isDesktopLayout(context),
-            );
-          }(),
-        }),
+        child: maxWidth == null
+            ? input
+            : Center(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(maxWidth: maxWidth),
+                  child: input,
+                ),
+              ),
       ),
-    );
-  }
-}
-
-/// The recording pill while transcribing, with the streaming words above
-/// it — kept inspectable without letting them push the pill, and its
-/// Cancel, out of the composer. The host height already accounts for its
-/// header and keyboard.
-class _TranscriptionProgress extends StatefulWidget {
-  const _TranscriptionProgress({
-    required this.availableHeight,
-    required this.partialTranscript,
-    required this.onCancel,
-  });
-
-  final double availableHeight;
-  final String partialTranscript;
-  final VoidCallback onCancel;
-
-  @override
-  State<_TranscriptionProgress> createState() => _TranscriptionProgressState();
-}
-
-class _TranscriptionProgressState extends State<_TranscriptionProgress> {
-  final _scrollController = ScrollController();
-  bool _expanded = false;
-
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final style = tokens.typography.styles.body.bodySmall.copyWith(
-      color: tokens.colors.text.mediumEmphasis,
-    );
-    final hasPartial = widget.partialTranscript.trim().isNotEmpty;
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final textWidth = (constraints.maxWidth - tokens.spacing.step4 * 2)
-            .clamp(0.0, double.infinity);
-        final painter = TextPainter(
-          text: TextSpan(text: widget.partialTranscript, style: style),
-          textDirection: Directionality.of(context),
-          textScaler: MediaQuery.textScalerOf(context),
-          locale: Localizations.localeOf(context),
-        );
-        final lineHeight = painter.preferredLineHeight;
-        // Up to six lines, using at most a quarter of the actual chat height.
-        // On a short viewport expansion can keep the same height while making
-        // the full text scrollable, rather than squeezing out the controls.
-        final previewHeight = (widget.availableHeight / 4).clamp(
-          lineHeight,
-          lineHeight * 6,
-        );
-        final collapsedLines = (previewHeight / lineHeight).floor().clamp(1, 3);
-        painter
-          ..maxLines = collapsedLines
-          ..layout(maxWidth: textWidth);
-        final overflows = painter.didExceedMaxLines;
-        painter.dispose();
-
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            if (hasPartial) ...[
-              Container(
-                padding: EdgeInsets.symmetric(
-                  horizontal: tokens.spacing.step4,
-                  vertical: tokens.spacing.step3,
-                ),
-                decoration: BoxDecoration(
-                  color: tokens.colors.background.level02,
-                  borderRadius: BorderRadius.circular(tokens.radii.l),
-                ),
-                child: _expanded && overflows
-                    ? ConstrainedBox(
-                        constraints: BoxConstraints(maxHeight: previewHeight),
-                        child: Scrollbar(
-                          controller: _scrollController,
-                          child: SingleChildScrollView(
-                            key: const ValueKey('chat-transcription-preview'),
-                            controller: _scrollController,
-                            primary: false,
-                            child: Text(widget.partialTranscript, style: style),
-                          ),
-                        ),
-                      )
-                    : Text(
-                        widget.partialTranscript,
-                        style: style,
-                        maxLines: collapsedLines,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-              ),
-              SizedBox(height: tokens.spacing.step1),
-            ],
-            if (hasPartial && overflows)
-              Align(
-                alignment: AlignmentDirectional.centerEnd,
-                child: MergeSemantics(
-                  child: Semantics(
-                    expanded: _expanded,
-                    child: DesignSystemButton(
-                      label: _expanded
-                          ? context.messages.aiResponseShowLess
-                          : context.messages.aiResponseShowMore,
-                      onPressed: () => setState(() => _expanded = !_expanded),
-                      variant: DesignSystemButtonVariant.tertiary,
-                      size: DesignSystemButtonSize.dense,
-                      tapTargetSize: MaterialTapTargetSize.padded,
-                    ),
-                  ),
-                ),
-              ),
-            if (hasPartial) SizedBox(height: tokens.spacing.step1),
-            ChatRecordingPill(
-              processing: true,
-              amplitudes: const [],
-              elapsed: Duration.zero,
-              onCancel: widget.onCancel,
-            ),
-          ],
-        );
-      },
     );
   }
 }

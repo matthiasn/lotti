@@ -7279,6 +7279,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get frontChatInboxTitle => 'Bandeja';
 
   @override
+  String get frontChatMentionHint => 'Escribe @ para nombrar una categoría';
+
+  @override
   String get frontChatNoChats =>
       'Aún no hay chats. Pregunta algo para empezar uno.';
 

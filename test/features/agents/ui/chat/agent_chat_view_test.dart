@@ -2,6 +2,7 @@ import 'dart:ui' show Tristate;
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/semantics.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
@@ -9,10 +10,9 @@ import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/agents/ui/chat/agent_chat_view.dart';
 import 'package:lotti/features/agents/ui/chat/agent_typing_indicator.dart';
 import 'package:lotti/features/agents/ui/chat/chat_recorder_controller.dart';
-import 'package:lotti/features/agents/ui/chat/chat_recording_pill.dart';
 import 'package:lotti/features/ai/util/inference_provider_resolver.dart';
+import 'package:lotti/features/design_system/components/chat_input/design_system_chat_input.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/markdown/agent_markdown_view.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -288,175 +288,6 @@ void main() {
   });
 
   testWidgets(
-    'partial transcription expands within a narrow keyboard viewport and cancels',
-    (tester) async {
-      final semantics = tester.ensureSemantics();
-      try {
-        const size = Size(320, 760);
-        const keyboard = 240.0;
-        setTestSurfaceSize(tester, size);
-        final partial = List.generate(
-          12,
-          (index) =>
-              'Penguin feeder discussion $index keeps the smaller hopper '
-              'available for the next habitat trial.',
-        ).join(' ');
-        var cancelled = 0;
-        var sent = 0;
-        final drafts = <String>[];
-        await tester.pumpWidget(
-          makeTestableWidgetNoScroll(
-            Scaffold(
-              body: Builder(
-                builder: (context) => AgentChatView(
-                  agentId: 'agent',
-                  agentName: 'Habitat Watcher',
-                  draft: '',
-                  isSending: false,
-                  onDraftChanged: drafts.add,
-                  onSend: () => sent++,
-                  onRetry: () {},
-                  history: const AsyncData([]),
-                  footer: Padding(
-                    padding: EdgeInsets.all(context.designTokens.spacing.step4),
-                    child: Text(
-                      context.messages.queryTranscribing,
-                      style:
-                          context.designTokens.typography.styles.others.caption,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            mediaQueryData: const MediaQueryData(
-              size: size,
-              textScaler: TextScaler.linear(1.5),
-              viewInsets: EdgeInsets.only(bottom: keyboard),
-            ),
-            overrides: [
-              chatRecorderControllerProvider.overrideWith(
-                () => ProcessingTestController(
-                  partialTranscript: partial,
-                  onCancelCalled: () => cancelled++,
-                ),
-              ),
-            ],
-          ),
-        );
-        await tester.pump();
-        final previewText = find.text(partial);
-        expect(
-          MediaQuery.textScalerOf(tester.element(previewText)).scale(10),
-          15,
-        );
-        final collapsed = tester.widget<Text>(previewText);
-        expect(collapsed.maxLines, inInclusiveRange(1, 3));
-        expect(collapsed.overflow, TextOverflow.ellipsis);
-        expect(tester.takeException(), isNull);
-        expect(
-          tester
-              .getSemantics(find.bySemanticsLabel('Show more'))
-              .flagsCollection
-              .isExpanded,
-          Tristate.isFalse,
-        );
-        await tester.tap(find.text('Show more'));
-        await tester.pump();
-        expect(
-          tester
-              .getSemantics(find.bySemanticsLabel('Show less'))
-              .flagsCollection
-              .isExpanded,
-          Tristate.isTrue,
-        );
-        final scroll = find.byKey(const ValueKey('chat-transcription-preview'));
-        final viewport = tester.getRect(scroll);
-        final chat = tester.getRect(find.byType(AgentChatView));
-        expect(viewport.height, lessThanOrEqualTo(chat.height / 4));
-        final cancel = find.byKey(ChatRecordingPillKeys.cancel);
-        final cancelRect = tester.getRect(cancel);
-        expect(cancelRect.height, greaterThanOrEqualTo(TapTargets.minimum));
-        expect(cancelRect.top, greaterThanOrEqualTo(viewport.bottom));
-        expect(cancelRect.bottom, lessThanOrEqualTo(size.height - keyboard));
-        expect(cancelRect.right, lessThanOrEqualTo(size.width));
-        final scrollController = tester
-            .widget<SingleChildScrollView>(scroll)
-            .controller!;
-        expect(scrollController.position.maxScrollExtent, greaterThan(0));
-        await tester.drag(scroll, const Offset(0, -120));
-        await tester.pump();
-        expect(scrollController.offset, greaterThan(0));
-        expect(tester.getRect(cancel), cancelRect);
-        await tester.tap(find.text('Show less'));
-        await tester.pump();
-        expect(tester.widget<Text>(previewText).maxLines, collapsed.maxLines);
-        await tester.tap(find.text('Show more'));
-        await tester.pump();
-        await tester.tap(find.byKey(ChatRecordingPillKeys.cancel));
-        await tester.pump();
-        expect(cancelled, 1);
-        expect(drafts, isEmpty);
-        expect(sent, 0);
-        expect(find.text(partial), findsNothing);
-        expect(
-          tester.widget<TextField>(find.byType(TextField)).controller!.text,
-          '',
-        );
-        expect(tester.takeException(), isNull);
-        await tester.pumpWidget(const SizedBox.shrink());
-      } finally {
-        await tester.pumpWidget(const SizedBox.shrink());
-        semantics.dispose();
-      }
-    },
-  );
-
-  for (final partial in <String?>[null, 'The smaller hopper stays.']) {
-    testWidgets('short or empty transcription remains compact: $partial', (
-      tester,
-    ) async {
-      var cancelled = false;
-      await tester.pumpWidget(
-        makeTestableWidgetNoScroll(
-          Scaffold(
-            body: AgentChatView(
-              agentId: 'agent',
-              agentName: 'Habitat Watcher',
-              draft: '',
-              isSending: false,
-              onDraftChanged: (_) {},
-              onSend: () {},
-              onRetry: () {},
-              history: const AsyncData([]),
-            ),
-          ),
-          overrides: [
-            chatRecorderControllerProvider.overrideWith(
-              () => ProcessingTestController(
-                partialTranscript: partial,
-                onCancelCalled: () => cancelled = true,
-              ),
-            ),
-          ],
-        ),
-      );
-      expect(find.text(partial ?? 'Transcribing…'), findsOneWidget);
-      expect(find.text('Show more'), findsNothing);
-      expect(find.text('Show less'), findsNothing);
-      final cancel = find.byKey(ChatRecordingPillKeys.cancel);
-      expect(
-        tester.getSize(cancel).height,
-        greaterThanOrEqualTo(TapTargets.minimum),
-      );
-      await tester.tap(find.byKey(ChatRecordingPillKeys.cancel));
-      await tester.pump();
-      expect(cancelled, isTrue);
-      expect(find.byType(CircularProgressIndicator), findsNothing);
-      await tester.pumpWidget(const SizedBox.shrink());
-    });
-  }
-
-  testWidgets(
     'supporting evidence belongs to its reply surface and reading width',
     (tester) async {
       final message = AgentChatMessage(
@@ -640,7 +471,7 @@ void main() {
     await tester.enterText(find.byType(TextField), 'Keep me honest.');
     await tester.pump();
     expect(draft, 'Keep me honest.');
-    await tester.tap(find.byIcon(LottiIcons.send));
+    await tester.tap(find.byKey(DesignSystemChatInputKeys.send));
     expect(sent, isTrue);
   });
 
@@ -898,10 +729,9 @@ void main() {
       'Recovered draft',
     );
 
-    tester
-        .widget<TextField>(find.byType(TextField))
-        .onSubmitted
-        ?.call('Recovered draft');
+    await tester.tap(find.byType(TextField));
+    await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
     await tester.pump();
     expect(sent, isTrue);
   });
@@ -1366,11 +1196,11 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      expect(find.byIcon(LottiIcons.mic), findsOneWidget);
-      expect(find.byIcon(LottiIcons.send), findsNothing);
+      expect(find.byKey(DesignSystemChatInputKeys.mic), findsOneWidget);
+      expect(find.byKey(DesignSystemChatInputKeys.send), findsNothing);
     });
 
-    testWidgets('shows send when text is present and mic when cleared', (
+    testWidgets('shows send beside the mic when text is present, and the mic alone when cleared', (
       tester,
     ) async {
       var draft = '';
@@ -1404,20 +1234,21 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      expect(find.byIcon(LottiIcons.mic), findsOneWidget);
-      expect(find.byIcon(LottiIcons.send), findsNothing);
+      expect(find.byKey(DesignSystemChatInputKeys.mic), findsOneWidget);
+      expect(find.byKey(DesignSystemChatInputKeys.send), findsNothing);
 
       await tester.enterText(find.byType(TextField), 'Hello');
       await tester.pump();
 
-      expect(find.byIcon(LottiIcons.send), findsOneWidget);
-      expect(find.byIcon(LottiIcons.mic), findsNothing);
+      expect(find.byKey(DesignSystemChatInputKeys.send), findsOneWidget);
+      // Voice is never taken away: the mic stays, beside send.
+      expect(find.byKey(DesignSystemChatInputKeys.mic), findsOneWidget);
 
       await tester.enterText(find.byType(TextField), '');
       await tester.pump();
 
-      expect(find.byIcon(LottiIcons.mic), findsOneWidget);
-      expect(find.byIcon(LottiIcons.send), findsNothing);
+      expect(find.byKey(DesignSystemChatInputKeys.mic), findsOneWidget);
+      expect(find.byKey(DesignSystemChatInputKeys.send), findsNothing);
     });
 
     testWidgets('tapping the mic starts recording', (tester) async {
@@ -1461,7 +1292,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      await tester.tap(find.byIcon(LottiIcons.mic));
+      await tester.tap(find.byKey(DesignSystemChatInputKeys.mic));
       await tester.pump();
 
       expect(startCalled, isTrue);
@@ -1471,7 +1302,7 @@ void main() {
       expect(recorder.lastDictionaryCategoryResolver, same(category));
     });
 
-    testWidgets('shows waveform and cancel/stop while recording', (
+    testWidgets('shows waveform, cancel and Done while recording', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -1502,10 +1333,12 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      expect(find.byKey(ChatRecordingPillKeys.waveform), findsOneWidget);
+      expect(find.byKey(DesignSystemChatInputKeys.waveform), findsOneWidget);
       expect(find.byIcon(LottiIcons.close), findsOneWidget);
-      expect(find.byIcon(LottiIcons.stop), findsOneWidget);
-      expect(find.byType(TextField), findsNothing);
+      // Done, not send: the take's words land in the field to be read.
+      expect(find.byIcon(LottiIcons.confirm), findsOneWidget);
+      // The words already written stay in view, not editable while talking.
+      expect(tester.widget<TextField>(find.byType(TextField)).readOnly, isTrue);
     });
 
     testWidgets('cancel button calls the recorder', (tester) async {
@@ -1549,7 +1382,7 @@ void main() {
       // frame is pumped, not settled.
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
-      expect(find.byIcon(LottiIcons.mic), findsOneWidget);
+      expect(find.byKey(DesignSystemChatInputKeys.mic), findsOneWidget);
     });
 
     testWidgets('stop button calls the recorder', (tester) async {
@@ -1584,7 +1417,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      await tester.tap(find.byIcon(LottiIcons.stop));
+      await tester.tap(find.byKey(DesignSystemChatInputKeys.done));
       await tester.pump();
       expect(stopCalled, isTrue);
     });
@@ -1633,7 +1466,7 @@ void main() {
         'I walked this morning.',
       );
       expect(draft, 'I walked this morning.');
-      expect(find.byIcon(LottiIcons.send), findsOneWidget);
+      expect(find.byKey(DesignSystemChatInputKeys.send), findsOneWidget);
     });
 
     testWidgets('shows partial transcript while processing', (tester) async {
@@ -1667,9 +1500,12 @@ void main() {
       expect(find.text('Transcribing audio…'), findsOneWidget);
       // The pill holds its place: the spinner where the send arrow was,
       // the way out still at its start.
-      expect(find.byKey(ChatRecordingPillKeys.transcribing), findsOneWidget);
-      expect(find.byKey(ChatRecordingPillKeys.stop), findsNothing);
-      expect(find.byKey(ChatRecordingPillKeys.cancel), findsOneWidget);
+      expect(
+        find.byKey(DesignSystemChatInputKeys.transcribing),
+        findsOneWidget,
+      );
+      expect(find.byKey(DesignSystemChatInputKeys.done), findsNothing);
+      expect(find.byKey(DesignSystemChatInputKeys.cancel), findsOneWidget);
       expect(find.byType(TextField), findsNothing);
     });
 
@@ -1703,9 +1539,12 @@ void main() {
 
       // The pill holds its place: the spinner where the send arrow was,
       // the way out still at its start.
-      expect(find.byKey(ChatRecordingPillKeys.transcribing), findsOneWidget);
-      expect(find.byKey(ChatRecordingPillKeys.stop), findsNothing);
-      expect(find.byKey(ChatRecordingPillKeys.cancel), findsOneWidget);
+      expect(
+        find.byKey(DesignSystemChatInputKeys.transcribing),
+        findsOneWidget,
+      );
+      expect(find.byKey(DesignSystemChatInputKeys.done), findsNothing);
+      expect(find.byKey(DesignSystemChatInputKeys.cancel), findsOneWidget);
       expect(find.byType(TextField), findsNothing);
     });
 
@@ -1856,10 +1695,10 @@ void main() {
 
       expect(draft, '');
       expect(controller.clearResultCalls, greaterThan(0));
-      expect(find.byIcon(LottiIcons.mic), findsOneWidget);
+      expect(find.byKey(DesignSystemChatInputKeys.mic), findsOneWidget);
     });
 
-    testWidgets('mic button is hidden while sending', (tester) async {
+    testWidgets('the mic is off while sending', (tester) async {
       await tester.pumpWidget(
         makeTestableWidgetNoScroll(
           Scaffold(
@@ -1888,8 +1727,19 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      expect(find.byIcon(LottiIcons.mic), findsNothing);
-      expect(find.byIcon(LottiIcons.send), findsNothing);
+      // The mic stays in its place, off until the answer is in.
+      expect(
+        tester
+            .widget<IconButton>(
+              find.descendant(
+                of: find.byKey(DesignSystemChatInputKeys.mic),
+                matching: find.byType(IconButton),
+              ),
+            )
+            .onPressed,
+        isNull,
+      );
+      expect(find.byKey(DesignSystemChatInputKeys.send), findsNothing);
     });
   });
 
@@ -1996,7 +1846,7 @@ void main() {
     },
   );
   testWidgets(
-    'the recording clock crosses a minute without moving the stop control',
+    'the recording clock crosses a minute without moving the Done control',
     (tester) async {
       var stopped = 0;
       final recorder = RecordingCallbackController(
@@ -2023,12 +1873,15 @@ void main() {
         ),
       );
       final clock = tester.getRect(find.text('0:59'));
-      final stop = tester.getRect(find.byKey(ChatRecordingPillKeys.stop));
+      final stop = tester.getRect(find.byKey(DesignSystemChatInputKeys.done));
       recorder.updateElapsed(const Duration(minutes: 1));
       await tester.pump();
       expect(tester.getRect(find.text('1:00')), clock);
-      expect(tester.getRect(find.byKey(ChatRecordingPillKeys.stop)), stop);
-      await tester.tap(find.byKey(ChatRecordingPillKeys.stop));
+      expect(tester.getRect(find.byKey(DesignSystemChatInputKeys.done)), stop);
+      await tester.tap(find.byKey(DesignSystemChatInputKeys.done));
+      // The recording row gives way to the controls as it ends.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
       await tester.pump();
       expect(stopped, 1);
       expect(find.text('1:00'), findsNothing);
@@ -2065,7 +1918,7 @@ void main() {
         ),
       );
       expect(find.text('Feeder cali'), findsOneWidget);
-      await tester.tap(find.byKey(ChatRecordingPillKeys.cancel));
+      await tester.tap(find.byKey(DesignSystemChatInputKeys.cancel));
       await tester.pump();
       expect(cancelled, 1);
       expect(sent, 0);

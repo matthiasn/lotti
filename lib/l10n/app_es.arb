@@ -2936,6 +2936,7 @@
   "frontChatInboxChip": "Bandeja {count}",
   "frontChatInboxEmpty": "Nada espera por ti.",
   "frontChatInboxTitle": "Bandeja",
+  "frontChatMentionHint": "Escribe @ para nombrar una categoría",
   "frontChatNoChats": "Aún no hay chats. Pregunta algo para empezar uno.",
   "frontChatNoMatchingChats": "Ningún título de chat coincide.",
   "frontChatOlder": "Anteriores",

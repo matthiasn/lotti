@@ -4,12 +4,10 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/agents/ui/chat/agent_typing_indicator.dart';
-import 'package:lotti/features/agents/ui/chat/chat_composer_field.dart';
 import 'package:lotti/features/agents/ui/chat/chat_recorder_controller.dart';
 import 'package:lotti/features/agents/ui/chat/chat_recorder_error_message.dart';
-import 'package:lotti/features/agents/ui/chat/chat_recording_pill.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
-import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
+import 'package:lotti/features/design_system/components/chat_input/design_system_chat_input.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
@@ -29,6 +27,31 @@ class _AgentChatViewState extends ConsumerState<AgentChatView> {
   late final ProviderSubscription<ChatRecorderState> _recorderSubscription;
   String? _lastMessageId;
   bool _wasSending = false;
+
+  /// Whether the draft came from what was said: sent, it goes out as a
+  /// spoken turn ([AgentChatView.onSendSpoken]). Cleared once the field is
+  /// emptied or the draft is sent.
+  bool _draftSpoken = false;
+
+  /// The field's words to the host, as they change — typed, dictated or
+  /// completed by `@`.
+  void _onTyped() {
+    final text = _controller.text;
+    if (text.isEmpty) _draftSpoken = false;
+    if (text != widget.draft) widget.onDraftChanged(text);
+  }
+
+  /// Sends the draft: as a spoken turn when it came from what was said.
+  void _send() {
+    final spoken = _draftSpoken;
+    _draftSpoken = false;
+    final sendSpoken = widget.onSendSpoken;
+    if (spoken && sendSpoken != null) {
+      sendSpoken();
+    } else {
+      widget.onSend();
+    }
+  }
 
   /// Whether the thread keeps to its latest message as it grows: set by
   /// every scroll to the latest, cleared once the user scrolls away from
@@ -54,7 +77,8 @@ class _AgentChatViewState extends ConsumerState<AgentChatView> {
   @override
   void initState() {
     super.initState();
-    _controller = TextEditingController(text: widget.draft);
+    _controller = TextEditingController(text: widget.draft)
+      ..addListener(_onTyped);
     _wasSending = widget.isSending;
     if (widget.conversationId != null) {
       _lastMessageId = widget.history?.value?.lastOrNull?.id;
@@ -93,14 +117,16 @@ class _AgentChatViewState extends ConsumerState<AgentChatView> {
           if (!mounted) return;
           final transcript = next.transcript!.trim();
           if (transcript.isNotEmpty) {
-            _controller.text = transcript;
-            _controller.selection = TextSelection.collapsed(
-              offset: _controller.text.length,
+            // What was said lands in the field, after anything already
+            // there, to be read and corrected before Send — nothing goes
+            // out by itself.
+            final before = _controller.text.trimRight();
+            final text = before.isEmpty ? transcript : '$before $transcript';
+            _controller.value = TextEditingValue(
+              text: text,
+              selection: TextSelection.collapsed(offset: text.length),
             );
-            widget.onDraftChanged(transcript);
-            // Tap to talk, tap to send: what was said goes out as is, and
-            // the host hears that it was said, not typed.
-            if (widget.voiceFirst) (widget.onSendSpoken ?? widget.onSend)();
+            _draftSpoken = true;
           }
           ref.read(chatRecorderControllerProvider.notifier).clearResult();
         }
@@ -374,8 +400,9 @@ class _AgentChatViewState extends ConsumerState<AgentChatView> {
             if (widget.composerEnabled)
               _ChatComposer(
                 contentMaxWidth: maxWidth,
-                availableHeight: constraints.maxHeight,
                 controller: _controller,
+                helperText: widget.composerHelper,
+                mentionOptions: widget.mentionOptions,
                 hintText:
                     widget.composerHint ??
                     context.messages.goalChatPlaceholder(widget.agentName),
@@ -384,10 +411,7 @@ class _AgentChatViewState extends ConsumerState<AgentChatView> {
                 sendingLabel:
                     widget.sendingLabel ??
                     context.messages.goalChatResponding(widget.agentName),
-                draft: widget.draft,
-                onDraftChanged: widget.onDraftChanged,
-                onSend: widget.onSend,
-                shape: widget.composerShape,
+                onSend: _send,
                 voiceFirst: widget.voiceFirst,
                 resolveTranscriptionTarget: widget.resolveTranscriptionTarget,
                 correctTranscript: widget.correctTranscript,
