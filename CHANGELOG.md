@@ -4,6 +4,69 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.94]
+
+### Added
+
+- **On a phone, drag the bar between the companion and the chat to resize
+  her.** The full-screen view remembers the height you choose, separately from
+  the width you set on a desktop.
+
+### Changed
+
+- **Menus and pickers now light up in the app's accent colour.** Hovering a
+  row in a ••• menu or in a picker such as task or project status tints it a
+  faint teal, and pressing it deepens the teal, instead of the flat grey they
+  used before. The row you have currently picked keeps its own teal band
+  between the two.
+- **The companion's chat window has a cleaner header and chat list.** The
+  header and the chat list now share one top bar with a single line under it.
+  The list has its own heading with search and new-chat buttons, and sits on a
+  slightly lighter background than the conversation. Every chat takes one line
+  of title and one line of her last answer, so the list is even and easy to
+  scan, and the open chat is marked by a quiet highlight instead of a heavy
+  grey block. Her replay and mute buttons sit together as a matching pair, and
+  close stands apart from the rest.
+- **Task agents write shorter observations and repeat themselves less.** An
+  agent used to restate the task's status, time entries and pull requests,
+  copy dictated sentences word for word, and record the same guidance on
+  several updates. It is now asked to record only what a later update cannot
+  read from the task itself, one fact per note. Routine notes over 280
+  characters and word-for-word repeats of an earlier note are turned away.
+- **Task agent updates on Mistral re-use more of their cached prompt.** The
+  label and correction lists no longer sit at the top of the prompt, where
+  assigning a label made the agent re-read the whole task log at full price,
+  and requests now ask Mistral to keep one agent's updates together in its
+  cache. Quick back-to-back updates — after stopping a timer, dictating a note
+  or closing a task — can cost less and answer faster when Mistral serves them
+  from its cache.
+
+### Fixed
+
+- **Every remaining menu now matches the app's standard menu.** The ⋮ menus on
+  linked tasks, checklists, an event's cover and the Day page, the Group by
+  and Sort pickers in the agent list, the Insights period picker, the
+  knowledge graph's density picker and a chart's aggregation picker all open
+  the same menu as the rest of the app, and a pressed row now reaches the
+  menu's top and bottom edges in all of them.
+- **Asking the companion what you completed now lists every task, as cards.**
+  "What was closed this weekend?" covers both the Saturday and the Sunday, a
+  task you completed and later reopened still counts on the day you completed
+  it, and a long list is no longer cut short. Each task appears as a card
+  under her answer, showing whether it was completed or rejected, the day, and
+  its category's colour — tap a card to open the task.
+- **You can type and send to the companion from her full-screen view.** The
+  full-screen view now shows the same chat as the normal one, its input
+  included: beside her on the right on a desktop window, with the divider
+  still setting how much room she takes, and under her on a phone. Typing, `@`
+  mentions, dictation and sending all work there, and sending no longer means
+  leaving the full-screen view. The separate talk button under her is gone;
+  the chat's own microphone does the same job.
+- **The task list opens a task again after you open a linked one on desktop.**
+  With a linked task open in the details pane, tapping the task you opened it
+  from in the list did nothing; it now opens that task. The back arrow on a
+  linked task still returns you to the task you came from.
+
 ## [1.1.93]
 
 ### Added
