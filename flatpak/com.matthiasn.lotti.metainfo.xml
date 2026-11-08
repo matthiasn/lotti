@@ -40,6 +40,17 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="1.1.92" date="2026-11-08">
+      <description>
+        <p>Changed: the conversation gets more room beside the companion's full-screen stage, and you can move the line between them. On a desktop window she used to take three fifths of the width, though she stands portrait and needs far less. The conversation now takes three fifths by default, and the divider between them drags like the app's own columns - with the mouse or the arrow keys - and the app remembers where you left it.</p>
+        <p>Changed: one input for typing and talking, everywhere. Every chat - the companion, an agent's chat, a goal's or a person's - and the Daily OS composer now share one input. Your words use its full width and wrap onto new lines, so a long dictation is never cut off under a button.</p>
+        <p>Changed: read it before it goes. When you finish talking, tap ✓: your words appear in the field, after anything you already typed, so you can read and correct them before sending. Nothing is sent until you press send.</p>
+        <p>Changed: the mic stays. The mic is always there, even once you have typed something, so you can switch between typing and talking at any time.</p>
+        <p>Changed: name a category with @. In the companion chat, typing @ suggests your categories; pick one to narrow the answer to it.</p>
+        <p>Fixed: every task in the companion's due list is a row you can tap. A task she linked by its id showed as a link that opened nothing; it is now a task row like the rest of the list.</p>
+        <p>Fixed: the recording bars filled only half of a wide input. While you talk, the bars now run across the whole input within a few seconds, on a phone and on the widest window.</p>
+      </description>
+    </release>
     <release version="1.1.91" date="2026-11-08">
       <description>
         <p>Added: the companion tells you which tasks your time went to. Ask "what did I work on in the past seven days?" and she lists the tasks you logged time on in that window as task rows, along with the totals and the chart. For a week, she also says in one sentence which category took most of your time.</p>
