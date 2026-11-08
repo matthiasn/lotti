@@ -897,7 +897,7 @@ one task each, is rows under each heading. Each run is drawn as
 (rendered by the view's own Markdown, so links and style are unchanged). A
 `FrontTaskRow` reads the task through `taskPreviewProvider` (through
 `.value`, so a reload keeps the row; it refreshes on every notification
-naming the task): its `StatusGlyph`, its title, its agent's one-liner, its
+naming the task): its `StatusGlyph`, its title, its agent's one-liner (caption, in the `aiCard.accent` ink the tasks list gives it), its
 status and category, and — while it is not done or rejected — the tasks
 list's own `DueDateText`. Until it loads, or if it is gone, the title she
 gave it stands alone. A project is a row of its title and a folder glyph.

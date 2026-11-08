@@ -4,7 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
-import 'package:lotti/features/design_system/theme/icon_tokens.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_reply_parts.dart';
 import 'package:lotti/features/front_agent/ui/front_task_list.dart';
@@ -206,6 +206,18 @@ void main() {
     expect(
       tester.widget<RichText>(subtitle).text.toPlainText(),
       startsWith('$countingOneLiner\nIn Progress · Colony'),
+    );
+    // In the AI ink the tasks list gives a one-liner.
+    TextSpan? oneLinerSpan;
+    tester.widget<RichText>(subtitle).text.visitChildren((span) {
+      if (span is TextSpan && span.text == '$countingOneLiner\n') {
+        oneLinerSpan = span;
+      }
+      return oneLinerSpan == null;
+    });
+    expect(
+      oneLinerSpan?.style?.color,
+      tester.element(subtitle).designTokens.colors.aiCard.accent,
     );
     expect(find.textContaining('Not shown in the row'), findsNothing);
   });

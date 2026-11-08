@@ -149,7 +149,14 @@ class FrontTaskRow extends ConsumerWidget {
       // The one-liner, then status and category and when it is due —
       // under the title, so the title keeps the row's width on a phone.
       subtitleSpans: [
-        if (oneLiner != null) TextSpan(text: '$oneLiner\n'),
+        // In the AI ink the tasks list gives a one-liner.
+        if (oneLiner != null)
+          TextSpan(
+            text: '$oneLiner\n',
+            style: tokens.typography.styles.others.caption.copyWith(
+              color: tokens.colors.aiCard.accent,
+            ),
+          ),
         TextSpan(
           text: category == null ? statusLabel : '$statusLabel · $category',
         ),
