@@ -24,6 +24,22 @@ typedef GoalLabelTimeRowRecord = ({
   String? markdown,
 });
 
+/// One pull request entry as statistics read it, once per live task holding
+/// it: the slim fields of its last snapshot and the holder's category. A
+/// pull request never refreshed has no `createdAt`. Times are UTC, as
+/// stored.
+typedef PullRequestStatRowRecord = ({
+  String entryId,
+  String key,
+  String? taskCategoryId,
+  String? title,
+  String? authorLogin,
+  DateTime? createdAt,
+  DateTime? mergedAt,
+  int additions,
+  int deletions,
+});
+
 const _insightsResolvedCategorySql = '''
   COALESCE(
     (
@@ -43,7 +59,8 @@ const _insightsResolvedCategorySql = '''
   )
 ''';
 
-/// Insights query surface for [JournalDb]: lean duration aggregation rows.
+/// Insights query surface for [JournalDb]: lean duration aggregation rows,
+/// and the slim pull request rows the front agent's statistics read.
 mixin _JournalDbInsightsQueries on _$JournalDb {
   /// Returns the time spans of all non-deleted `JournalEntry` rows
   /// overlapping `[start, end)`, with one row per entry and the category
@@ -211,5 +228,67 @@ mixin _JournalDbInsightsQueries on _$JournalDb {
       readsFrom: {journal, linkedEntries, configFlags},
     ).get();
     return rows.isEmpty ? null : rows.single.read<String?>('category_id');
+  }
+
+  /// Every live pull request entry, once per live task holding it — the
+  /// holders a task's Pull requests section shows. A private task holds its
+  /// pull requests out of this read while private entries are hidden, as
+  /// [insightsTimeRows] gates a private entry. Only the snapshot fields
+  /// statistics need are extracted, so a long description is never read.
+  Future<List<PullRequestStatRowRecord>> pullRequestStatRows() async {
+    final rows = await customSelect(
+      r'''
+        WITH private_flag AS (
+          SELECT COALESCE(
+            (SELECT status FROM config_flags WHERE name = 'private'),
+            FALSE
+          ) AS visible
+        )
+        SELECT
+          pr.id AS entry_id,
+          pr.subtype AS pr_key,
+          NULLIF(task.category, '') AS task_category,
+          json_extract(pr.serialized, '$.data.snapshot.title') AS title,
+          json_extract(pr.serialized, '$.data.snapshot.authorLogin')
+            AS author_login,
+          json_extract(pr.serialized, '$.data.snapshot.createdAt')
+            AS created_at,
+          json_extract(pr.serialized, '$.data.snapshot.mergedAt')
+            AS merged_at,
+          COALESCE(json_extract(pr.serialized, '$.data.snapshot.additions'), 0)
+            AS additions,
+          COALESCE(json_extract(pr.serialized, '$.data.snapshot.deletions'), 0)
+            AS deletions
+        FROM journal AS pr
+        INNER JOIN linked_entries ON linked_entries.to_id = pr.id
+        INNER JOIN journal AS task ON task.id = linked_entries.from_id
+        CROSS JOIN private_flag pf
+        WHERE pr.type = 'PullRequest'
+          AND pr.deleted = FALSE
+          AND json_extract(linked_entries.serialized, '$.deletedAt') IS NULL
+          AND task.deleted = FALSE
+          AND task.type = 'Task'
+          AND task.task = TRUE
+          AND COALESCE(task.private, FALSE) IN (FALSE, pf.visible)
+        ORDER BY pr.id
+      ''',
+      readsFrom: {journal, linkedEntries, configFlags},
+    ).get();
+    DateTime? at(String? iso) => iso == null ? null : DateTime.tryParse(iso);
+    return [
+      for (final row in rows)
+        if (row.read<String?>('pr_key') case final key?)
+          (
+            entryId: row.read<String>('entry_id'),
+            key: key,
+            taskCategoryId: row.read<String?>('task_category'),
+            title: row.read<String?>('title'),
+            authorLogin: row.read<String?>('author_login'),
+            createdAt: at(row.read<String?>('created_at')),
+            mergedAt: at(row.read<String?>('merged_at')),
+            additions: row.read<int>('additions'),
+            deletions: row.read<int>('deletions'),
+          ),
+    ];
   }
 }

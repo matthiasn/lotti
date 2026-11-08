@@ -14,6 +14,7 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_logged_time_chart.dart';
+import 'package:lotti/features/front_agent/model/front_pull_requests.dart';
 import 'package:lotti/features/front_agent/model/front_routing_index.dart';
 import 'package:lotti/features/front_agent/service/front_routing_index_builder.dart';
 import 'package:lotti/features/insights/logic/time_bucketing.dart';
@@ -182,11 +183,13 @@ void main() {
   FrontRoutingIndexBuilder builder({
     bool withFts = true,
     Future<int> Function()? firstDayOfWeekIndex,
+    Future<String?> Function()? githubLogin,
   }) => FrontRoutingIndexBuilder(
     journalDb: journalDb,
     agentRepository: agentRepository,
     fts5Db: withFts ? fts5Db : null,
     firstDayOfWeekIndex: firstDayOfWeekIndex,
+    githubLogin: githubLogin,
   );
 
   setUp(() {
@@ -1320,6 +1323,90 @@ void main() {
 
       expect(closed.tasks, hasLength(frontClosedTaskLimit));
       expect(closed.omitted, 2);
+    });
+  });
+
+  group('pullRequestSummarizer', () {
+    PullRequestStatRowRecord row(
+      String key,
+      DateTime createdAt, {
+      String? author = 'pingu',
+      String? category = 'work',
+    }) => (
+      entryId: 'entry-$key',
+      key: key,
+      taskCategoryId: category,
+      title: 'Title $key',
+      authorLogin: author,
+      createdAt: createdAt,
+      mergedAt: null,
+      additions: 10,
+      deletions: 2,
+    );
+
+    setUp(() {
+      when(() => journalDb.getAllCategories()).thenAnswer(
+        (_) async => [
+          CategoryTestUtils.createTestCategory(id: 'work', name: 'Work'),
+          CategoryTestUtils.createTestCategory(id: 'home', name: 'Home'),
+        ],
+      );
+      when(() => journalDb.pullRequestStatRows()).thenAnswer(
+        (_) async => [
+          // Sunday the 18th, Monday the 19th, and Monday the 19th at home.
+          row('p/c#1', DateTime(2026, 10, 18, 10)),
+          row('p/c#2', DateTime(2026, 10, 19, 10)),
+          row('p/c#3', DateTime(2026, 10, 19, 11), category: 'home'),
+          row('p/c#4', DateTime(2026, 10, 20, 10), author: 'robby'),
+        ],
+      );
+    });
+
+    test('a named period starts on the first weekday, reads the scope and '
+        "counts the user's own pull requests", () async {
+      final summary =
+          await builder(
+            firstDayOfWeekIndex: () async => 0,
+            githubLogin: () async => 'pingu',
+          ).pullRequestSummarizer(
+            const FrontRoutingScope(allowedCategoryIds: {'work'}),
+            now: _now,
+          )((period: FrontTimePeriod.thisWeek, range: null));
+
+      expect(summary.period, FrontTimePeriod.thisWeek);
+      expect(
+        summary.chart,
+        FrontPullRequestChart(
+          range: InsightsRange(
+            startDay: epochDay(DateTime(2026, 10, 18)),
+            endDayExclusive: epochDay(DateTime(2026, 10, 24)),
+          ),
+          categoryIds: const {'work'},
+          authorLogin: 'pingu',
+        ),
+      );
+      expect(summary.pullRequests.map((pr) => pr.key), ['p/c#2', 'p/c#1']);
+    });
+
+    test('days the call spelled out are read as given, every author counted '
+        'while no login is known', () async {
+      final range = InsightsRange(
+        startDay: epochDay(DateTime(2026, 10, 19)),
+        endDayExclusive: epochDay(DateTime(2026, 10, 21)),
+      );
+      final summary = await builder().pullRequestSummarizer(
+        const FrontRoutingScope(),
+        now: _now,
+      )((period: null, range: range));
+
+      expect(summary.period, isNull);
+      expect(summary.chart.range, range);
+      expect(summary.chart.authorLogin, isNull);
+      expect(summary.pullRequests.map((pr) => pr.key), [
+        'p/c#4',
+        'p/c#3',
+        'p/c#2',
+      ]);
     });
   });
 }

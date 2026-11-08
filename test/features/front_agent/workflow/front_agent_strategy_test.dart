@@ -8,9 +8,11 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_logged_time_chart.dart';
+import 'package:lotti/features/front_agent/model/front_pull_requests.dart';
 import 'package:lotti/features/front_agent/model/front_routing_index.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_contract.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_strategy.dart';
+import 'package:lotti/features/insights/logic/time_bucketing.dart';
 import 'package:lotti/features/insights/model/insights_models.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
@@ -71,6 +73,7 @@ void main() {
     FrontDueTaskLister? dueLister,
     FrontLoggedTimeSummarizer? timeSummarizer,
     FrontClosedTaskLister? closedLister,
+    FrontPullRequestSummarizer? pullRequestSummarizer,
     FrontRoutingIndex? routingIndex,
     List<FrontIndexRow> conversationTasks = const [],
   }) => FrontAgentStrategy(
@@ -86,6 +89,7 @@ void main() {
     dueTaskLister: dueLister,
     loggedTimeSummarizer: timeSummarizer,
     closedTaskLister: closedLister,
+    pullRequestSummarizer: pullRequestSummarizer,
     conversationTasks: conversationTasks,
   );
 
@@ -998,6 +1002,123 @@ hologram:x: not listed''');
         manager: manager,
       );
       expect(responses().last, contains('Closed tasks are unavailable'));
+    });
+  });
+
+  group('summarize_pull_requests', () {
+    // The turn's day: Monday 2026-11-02.
+    final today = epochDay(DateTime(2026, 11, 2));
+
+    FrontPullRequests summary(
+      FrontPullRequestQuery query, {
+      bool opened = true,
+    }) => FrontPullRequests(
+      period: query.period,
+      chart: FrontPullRequestChart(
+        range:
+            query.range ??
+            InsightsRange(startDay: today - 6, endDayExclusive: today + 1),
+        categoryIds: const {},
+      ),
+      pullRequests: [
+        FrontPullRequest(
+          key: 'penguin/colony#7',
+          title: 'Fish ledger',
+          createdAt: opened ? DateTime(2026, 11, 1, 10) : DateTime(2026, 9),
+          mergedAt: DateTime(2026, 11, 2, 8),
+          additions: 120,
+          deletions: 30,
+        ),
+      ],
+    );
+
+    test('reads the past N days and keeps the chart for her reply when '
+        'pull requests were opened', () async {
+      final asked = <FrontPullRequestQuery>[];
+      final s = strategy(
+        pullRequestSummarizer: (query) async {
+          asked.add(query);
+          return summary(query);
+        },
+      );
+      await s.processToolCalls(
+        toolCalls: [
+          _call('summarize_pull_requests', {'pastDays': 14}),
+        ],
+        manager: manager,
+      );
+
+      final range = InsightsRange(
+        startDay: today - 13,
+        endDayExclusive: today + 1,
+      );
+      expect(asked.single, (period: null, range: range));
+      final answer = responses().single;
+      expect(answer, startsWith('Pull requests 2026-10-20 '));
+      expect(answer, contains('- opened: 1, +120 -30 lines'));
+      expect(s.pullRequestChart?.range, range);
+      expect(s.lookupCalls, 1);
+      expect(s.hasTerminalOutput, isFalse);
+    });
+
+    test('keeps no chart when nothing was opened in the days', () async {
+      final s = strategy(
+        pullRequestSummarizer: (query) async => summary(query, opened: false),
+      );
+      await s.processToolCalls(
+        toolCalls: [
+          _call('summarize_pull_requests', {'period': 'past_7_days'}),
+        ],
+        manager: manager,
+      );
+      expect(responses().single, contains('- merged: 1, +120 -30 lines'));
+      expect(s.pullRequestChart, isNull);
+    });
+
+    test('refuses an unreadable window and a second summary, and reports an '
+        'unwired summarizer', () async {
+      final asked = <FrontPullRequestQuery>[];
+      final s = strategy(
+        pullRequestSummarizer: (query) async {
+          asked.add(query);
+          return summary(query);
+        },
+      );
+      await s.processToolCalls(
+        toolCalls: [
+          _call('summarize_pull_requests', const <String, dynamic>{}),
+          _call('summarize_pull_requests', {
+            'period': 'today',
+            'pastDays': 3,
+          }, id: 'call-2'),
+          _call('summarize_pull_requests', {
+            'from': '2026-10-31',
+            'through': '2026-11-01',
+          }, id: 'call-3'),
+          _call('summarize_pull_requests', {'period': 'today'}, id: 'call-4'),
+        ],
+        manager: manager,
+      );
+      expect(asked.single.range?.startDay, epochDay(DateTime(2026, 10, 31)));
+      expect(responses(), [
+        contains(
+          'summarize_pull_requests needs exactly one of: period (one of '
+          'today, yesterday, this_week, past_7_days, past_30_days, '
+          'this_month, last_month), pastDays (1 to 31), or from and through',
+        ),
+        contains('needs exactly one of'),
+        startsWith('Pull requests 2026-10-31 through 2026-11-01'),
+        frontPullRequestSummaryExhaustedAnswer,
+      ]);
+      expect(s.lookupCalls, 1);
+
+      await strategy().processToolCalls(
+        toolCalls: [
+          _call('summarize_pull_requests', {'period': 'today'}),
+        ],
+        manager: manager,
+      );
+      expect(responses().last, contains('Pull requests are unavailable'));
     });
   });
 

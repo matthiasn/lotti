@@ -7523,6 +7523,12 @@ class AppLocalizationsRo extends AppLocalizations {
   String get frontLoggedTimeExpand => 'Măriți graficul';
 
   @override
+  String get frontPullRequestsLinesAdded => 'Linii adăugate';
+
+  @override
+  String get frontPullRequestsLinesDeleted => 'Linii șterse';
+
+  @override
   String get frontStageReleaseToCancel => 'Eliberați pentru a anula';
 
   @override

@@ -7479,6 +7479,12 @@ class AppLocalizationsCs extends AppLocalizations {
   String get frontLoggedTimeExpand => 'Zvětšit graf';
 
   @override
+  String get frontPullRequestsLinesAdded => 'Přidané řádky';
+
+  @override
+  String get frontPullRequestsLinesDeleted => 'Smazané řádky';
+
+  @override
   String get frontStageReleaseToCancel => 'Pusť a zruš';
 
   @override

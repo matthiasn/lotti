@@ -7475,6 +7475,12 @@ class AppLocalizationsPt extends AppLocalizations {
   String get frontLoggedTimeExpand => 'Ampliar gráfico';
 
   @override
+  String get frontPullRequestsLinesAdded => 'Linhas adicionadas';
+
+  @override
+  String get frontPullRequestsLinesDeleted => 'Linhas removidas';
+
+  @override
   String get frontStageReleaseToCancel => 'Solta para cancelar';
 
   @override

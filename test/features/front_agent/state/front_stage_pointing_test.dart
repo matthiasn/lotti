@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/front_agent/model/front_chat_thread.dart';
 import 'package:lotti/features/front_agent/model/front_logged_time_chart.dart';
+import 'package:lotti/features/front_agent/model/front_pull_requests.dart';
 import 'package:lotti/features/front_agent/state/front_chat_thread_provider.dart';
 import 'package:lotti/features/front_agent/state/front_stage_pointing.dart';
 import 'package:lotti/features/front_agent/state/front_voice_providers.dart';
@@ -82,6 +83,27 @@ Two are due today:
         ),
         isFalse,
       );
+    });
+
+    test('her reply to the latest turn charts pull requests', () {
+      const chart = FrontPullRequestChart(
+        range: InsightsRange(startDay: 20396, endDayExclusive: 20410),
+        categoryIds: {},
+      );
+      final turns = [
+        message('u1', AgentChatRole.user, 'PRs in two weeks?'),
+        message('a1', AgentChatRole.agent, 'You created 12.', second: 1),
+      ];
+      expect(
+        frontLatestReplyHasVisual(
+          FrontChatThread(
+            messages: turns,
+            pullRequestsByMessageId: const {'a1': chart},
+          ),
+        ),
+        isTrue,
+      );
+      expect(frontLatestReplyHasVisual(thread(turns)), isFalse);
     });
 
     test('a single task link is not a list', () {

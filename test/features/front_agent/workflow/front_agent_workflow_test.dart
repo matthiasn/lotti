@@ -373,6 +373,7 @@ void main() {
                 'list_due_tasks',
                 'summarize_logged_time',
                 'list_closed_tasks',
+                'summarize_pull_requests',
                 'ask_user',
                 'reply_to_user',
               ]);
@@ -1212,6 +1213,69 @@ void main() {
         ),
         isEmpty,
       );
+    });
+
+    test('a pull request question is counted from what the device stores '
+        'and her reply keeps what to chart, never the figures', () async {
+      when(() => journalDb.pullRequestStatRows()).thenAnswer(
+        (_) async => [
+          (
+            entryId: 'pr-entry',
+            key: 'penguin/colony#7',
+            taskCategoryId: 'home',
+            title: 'Fish ledger',
+            authorLogin: 'pingu',
+            createdAt: DateTime.utc(2026, 11, 1, 10),
+            mergedAt: null,
+            additions: 120,
+            deletions: 30,
+          ),
+        ],
+      );
+      seedMessage(chips: ['home']);
+      String? counted;
+      stubModel(
+        (_) => [
+          call('summarize_pull_requests', {'pastDays': 14}),
+          call('reply_to_user', {
+            'message': 'You created 1 PR adding 120 lines and deleting 30.',
+          }),
+        ],
+      );
+      when(
+        () => manager.addToolResponse(
+          toolCallId: 'call-summarize_pull_requests',
+          response: any(named: 'response'),
+        ),
+      ).thenAnswer((invocation) {
+        counted = invocation.namedArguments[#response] as String;
+      });
+
+      final result = await withClock(
+        Clock.fixed(DateTime(2026, 11, 2, 9)),
+        () => run(
+          agentIdentity: makeTestIdentity(
+            id: frontAgentId,
+            agentId: frontAgentId,
+            kind: AgentKinds.frontAgent,
+            allowedCategoryIds: {'work', 'home'},
+          ),
+        ),
+      );
+
+      expect(result.success, isTrue);
+      expect(counted, contains('- opened: 1, +120 -30 lines'));
+      final payload = upserts
+          .whereType<AgentMessagePayloadEntity>()
+          .singleWhere(
+            (p) => p.content.containsKey('text') && p.agentId == frontAgentId,
+          );
+      expect(payload.content['pullRequests'], {
+        'startDay': epochDay(DateTime(2026, 10, 20)),
+        'endDayExclusive': epochDay(DateTime(2026, 11, 3)),
+        'categoryIds': ['home'],
+      });
+      expect(payload.content.containsKey('loggedTime'), isFalse);
     });
   });
 

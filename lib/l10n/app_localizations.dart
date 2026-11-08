@@ -12635,6 +12635,18 @@ abstract class AppLocalizations {
   /// **'Expand chart'**
   String get frontLoggedTimeExpand;
 
+  /// Chart toggle and series name under the companion's answer about pull requests: lines the pull requests opened that day added.
+  ///
+  /// In en, this message translates to:
+  /// **'Lines added'**
+  String get frontPullRequestsLinesAdded;
+
+  /// Chart toggle and series name under the companion's answer about pull requests: lines the pull requests opened that day deleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Lines deleted'**
+  String get frontPullRequestsLinesDeleted;
+
   /// Caption under the talk button while a held finger has slid off it: letting go discards what was said.
   ///
   /// In en, this message translates to:

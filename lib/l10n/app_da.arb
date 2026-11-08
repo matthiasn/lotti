@@ -3343,6 +3343,8 @@
   "frontDoorUnfiled": "Taget ud af {owner}. Gem igen?",
   "frontDoorWalking": "Spørger {owner}…",
   "frontLoggedTimeExpand": "Forstør diagram",
+  "frontPullRequestsLinesAdded": "Tilføjede linjer",
+  "frontPullRequestsLinesDeleted": "Slettede linjer",
   "frontStageReleaseToCancel": "Slip for at annullere",
   "frontStageReleaseToSend": "Slip for at sende",
   "frontStageTalkHint": "Tryk eller hold inde for at tale",

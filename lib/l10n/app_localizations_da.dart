@@ -7400,6 +7400,12 @@ class AppLocalizationsDa extends AppLocalizations {
   String get frontLoggedTimeExpand => 'Forstør diagram';
 
   @override
+  String get frontPullRequestsLinesAdded => 'Tilføjede linjer';
+
+  @override
+  String get frontPullRequestsLinesDeleted => 'Slettede linjer';
+
+  @override
   String get frontStageReleaseToCancel => 'Slip for at annullere';
 
   @override

@@ -3343,6 +3343,8 @@
   "frontDoorUnfiled": "Borttaget ur {owner}. Spara igen?",
   "frontDoorWalking": "Frågar {owner}…",
   "frontLoggedTimeExpand": "Förstora diagrammet",
+  "frontPullRequestsLinesAdded": "Tillagda rader",
+  "frontPullRequestsLinesDeleted": "Borttagna rader",
   "frontStageReleaseToCancel": "Släpp för att avbryta",
   "frontStageReleaseToSend": "Släpp för att skicka",
   "frontStageTalkHint": "Tryck eller håll in för att prata",

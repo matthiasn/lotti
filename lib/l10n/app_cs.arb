@@ -3005,6 +3005,8 @@
   "frontDoorUnfiled": "Vyňato z: {owner}. Uložit znovu?",
   "frontDoorWalking": "Ptá se: {owner}…",
   "frontLoggedTimeExpand": "Zvětšit graf",
+  "frontPullRequestsLinesAdded": "Přidané řádky",
+  "frontPullRequestsLinesDeleted": "Smazané řádky",
   "frontStageReleaseToCancel": "Pusť a zruš",
   "frontStageReleaseToSend": "Pusť a odešli",
   "frontStageTalkHint": "Klepni nebo podrž a mluv",

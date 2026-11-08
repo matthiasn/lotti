@@ -4566,6 +4566,14 @@
     }
   },
   "frontLoggedTimeExpand": "Expand chart",
+  "frontPullRequestsLinesAdded": "Lines added",
+  "@frontPullRequestsLinesAdded": {
+    "description": "Chart toggle and series name under the companion's answer about pull requests: lines the pull requests opened that day added."
+  },
+  "frontPullRequestsLinesDeleted": "Lines deleted",
+  "@frontPullRequestsLinesDeleted": {
+    "description": "Chart toggle and series name under the companion's answer about pull requests: lines the pull requests opened that day deleted."
+  },
   "frontStageReleaseToCancel": "Release to cancel",
   "@frontStageReleaseToCancel": {
     "description": "Caption under the talk button while a held finger has slid off it: letting go discards what was said."

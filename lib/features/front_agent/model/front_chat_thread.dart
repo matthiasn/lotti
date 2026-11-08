@@ -3,6 +3,7 @@ import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
 import 'package:lotti/features/front_agent/model/front_logged_time_chart.dart';
+import 'package:lotti/features/front_agent/model/front_pull_requests.dart';
 
 /// One choice the front agent offered with a clarifying question: an owner
 /// the segment could belong to, by kind and id, labelled as the model
@@ -66,6 +67,7 @@ class FrontChatThread {
     this.doorsByMessageId = const {},
     this.specialistAgentIds = const {},
     this.loggedTimeByMessageId = const {},
+    this.pullRequestsByMessageId = const {},
   });
 
   static const empty = FrontChatThread(messages: []);
@@ -89,6 +91,10 @@ class FrontChatThread {
   /// The chart of logged time a reply draws under her words, by the
   /// reply's id.
   final Map<String, FrontLoggedTimeChart> loggedTimeByMessageId;
+
+  /// The charts of pull requests a reply draws under her words, by the
+  /// reply's id.
+  final Map<String, FrontPullRequestChart> pullRequestsByMessageId;
 
   /// The message that carries a user turn's doors on the surface: her
   /// reply right after it, when there is one — the doors are her answer,

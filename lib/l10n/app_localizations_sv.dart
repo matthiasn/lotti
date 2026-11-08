@@ -7411,6 +7411,12 @@ class AppLocalizationsSv extends AppLocalizations {
   String get frontLoggedTimeExpand => 'Förstora diagrammet';
 
   @override
+  String get frontPullRequestsLinesAdded => 'Tillagda rader';
+
+  @override
+  String get frontPullRequestsLinesDeleted => 'Borttagna rader';
+
+  @override
   String get frontStageReleaseToCancel => 'Släpp för att avbryta';
 
   @override

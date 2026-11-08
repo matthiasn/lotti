@@ -7,6 +7,7 @@ import 'package:lotti/features/agents/workflow/agent_tool_arg_parsing.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_logged_time_chart.dart';
+import 'package:lotti/features/front_agent/model/front_pull_requests.dart';
 import 'package:lotti/features/front_agent/model/front_reference_links.dart';
 import 'package:lotti/features/front_agent/model/front_routing_index.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_contract.dart';
@@ -38,6 +39,11 @@ typedef FrontLoggedTimeSummarizer =
 typedef FrontClosedTaskLister =
     Future<FrontClosedTasks> Function(FrontTimeQuery query);
 
+/// Counts the pull requests opened and merged in one window of days
+/// through the tasks inside the turn's scope, from what the device stores.
+typedef FrontPullRequestSummarizer =
+    Future<FrontPullRequests> Function(FrontPullRequestQuery query);
+
 /// One candidate offered by `ask_user`.
 typedef FrontAskOption = ({FrontDestinationKind kind, String id, String label});
 
@@ -68,6 +74,7 @@ class FrontAgentStrategy extends ConversationStrategy
     this.dueTaskLister,
     this.loggedTimeSummarizer,
     this.closedTaskLister,
+    this.pullRequestSummarizer,
     this.conversationTasks = const [],
   });
 
@@ -111,6 +118,10 @@ class FrontAgentStrategy extends ConversationStrategy
   /// that it is unavailable.
   final FrontClosedTaskLister? closedTaskLister;
 
+  /// Null when no journal is wired (tests, evals): the tool then answers
+  /// that it is unavailable.
+  final FrontPullRequestSummarizer? pullRequestSummarizer;
+
   FrontDispatch? _dispatch;
   FrontAskUser? _askUser;
   String? _replyToUser;
@@ -119,9 +130,11 @@ class FrontAgentStrategy extends ConversationStrategy
   int _dueLists = 0;
   int _timeSummaries = 0;
   int _closedLists = 0;
+  int _pullRequestSummaries = 0;
   int _rejectedDispatches = 0;
   final _lookupRows = <FrontIndexRow>[];
   FrontLoggedTimeChart? _loggedTimeChart;
+  FrontPullRequestChart? _pullRequestChart;
 
   FrontDispatch? get dispatch => _dispatch;
   FrontAskUser? get askUser => _askUser;
@@ -130,6 +143,11 @@ class FrontAgentStrategy extends ConversationStrategy
   /// What her reply charts: the days a `summarize_logged_time` this turn
   /// found time in, and the scope it summed; null when none did.
   FrontLoggedTimeChart? get loggedTimeChart => _loggedTimeChart;
+
+  /// What her reply charts of pull requests: the days a
+  /// `summarize_pull_requests` this turn found some opened in; null when
+  /// none did.
+  FrontPullRequestChart? get pullRequestChart => _pullRequestChart;
 
   /// Whether the model ended the turn with one of the three terminal calls.
   bool get hasTerminalOutput =>
@@ -140,7 +158,12 @@ class FrontAgentStrategy extends ConversationStrategy
 
   /// How many lookup calls ran (refused ones excluded).
   int get lookupCalls =>
-      _tldrReads + _corpusMatches + _dueLists + _timeSummaries + _closedLists;
+      _tldrReads +
+      _corpusMatches +
+      _dueLists +
+      _timeSummaries +
+      _closedLists +
+      _pullRequestSummaries;
 
   @override
   Future<ConversationAction> processToolCalls({
@@ -188,6 +211,8 @@ class FrontAgentStrategy extends ConversationStrategy
           await _handleSummarizeLoggedTime(call, args, manager);
         case FrontAgentToolNames.listClosedTasks:
           await _handleListClosedTasks(call, args, manager);
+        case FrontAgentToolNames.summarizePullRequests:
+          await _handleSummarizePullRequests(call, args, manager);
         case FrontAgentToolNames.askUser:
           await _handleAskUser(call, args, manager);
         case FrontAgentToolNames.replyToUser:
@@ -509,6 +534,42 @@ class FrontAgentStrategy extends ConversationStrategy
     final closed = await lister((period: period, categoryIds: categoryIds));
     _lookupRows.addAll([for (final task in closed.tasks) task.row]);
     await _accept(call, manager, closed.render());
+  }
+
+  Future<void> _handleSummarizePullRequests(
+    ChatCompletionMessageToolCall call,
+    Map<String, dynamic> args,
+    ConversationManager manager,
+  ) async {
+    if (_pullRequestSummaries >= frontPullRequestSummariesPerTurn) {
+      await _reject(call, manager, frontPullRequestSummaryExhaustedAnswer);
+      return;
+    }
+    final query = frontPullRequestQuery(args, now);
+    if (query == null) {
+      await _reject(
+        call,
+        manager,
+        'Error: summarize_pull_requests needs exactly one of: period (one of '
+        '${FrontTimePeriod.values.map((p) => p.wireName).join(', ')}), '
+        'pastDays (1 to $frontPullRequestMaxDays), or from and through '
+        '(YYYY-MM-DD, at most $frontPullRequestMaxDays days).',
+      );
+      return;
+    }
+    final summarizer = pullRequestSummarizer;
+    if (summarizer == null) {
+      await _reject(
+        call,
+        manager,
+        'Pull requests are unavailable this turn; say so in reply_to_user.',
+      );
+      return;
+    }
+    _pullRequestSummaries++;
+    final summary = await summarizer(query);
+    if (summary.hasChart) _pullRequestChart = summary.chart;
+    await _accept(call, manager, summary.render());
   }
 
   /// The categories a tool call's `categoryIds` names — those the user named
