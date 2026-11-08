@@ -575,7 +575,9 @@ These context details are load-bearing:
   the reply names each; critical notes are only ever skipped as repeats, since
   they feed template evolution. In compacted mode `## Prior Critical
   Observations` lists only the critical notes no longer in the log's visible
-  tail, so none is shown twice.
+  tail, so a note in the tail is not repeated there; a fold summary may still
+  restate one, and the legacy fallback still shows them in both
+  `## Prior Critical Observations` and `## Agent Journal`.
 - **Parent project context** carries only the project agent's latest `oneLiner`
   and `tldr` — the full report body is omitted to keep wake prefill small.
 - **Linked-task context carries one-liners only, within a budget.** Each
