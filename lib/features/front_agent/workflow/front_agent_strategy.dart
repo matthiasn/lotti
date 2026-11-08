@@ -5,6 +5,7 @@ import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/workflow/agent_message_recording.dart';
 import 'package:lotti/features/agents/workflow/agent_tool_arg_parsing.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
+import 'package:lotti/features/front_agent/model/front_closed_task_card.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_logged_time_chart.dart';
 import 'package:lotti/features/front_agent/model/front_pull_requests.dart';
@@ -33,11 +34,14 @@ typedef FrontDueTaskLister =
 typedef FrontLoggedTimeSummarizer =
     Future<FrontLoggedTime> Function(FrontTimeQuery query);
 
-/// Lists the tasks completed or rejected in one period inside the turn's
-/// scope, narrowed to the categories the query names; the rows become valid
+/// Lists every task completed or rejected in one window of days inside the
+/// turn's scope, narrowed to the categories named; the rows become valid
 /// destinations for the rest of the turn.
 typedef FrontClosedTaskLister =
-    Future<FrontClosedTasks> Function(FrontTimeQuery query);
+    Future<FrontClosedTasks> Function(
+      FrontPullRequestQuery window,
+      Set<String> categoryIds,
+    );
 
 /// Counts the pull requests opened and merged in one window of days
 /// through the tasks inside the turn's scope, from what the device stores.
@@ -135,6 +139,7 @@ class FrontAgentStrategy extends ConversationStrategy
   final _lookupRows = <FrontIndexRow>[];
   FrontLoggedTimeChart? _loggedTimeChart;
   FrontPullRequestChart? _pullRequestChart;
+  List<FrontClosedTaskCard>? _closedTaskCards;
 
   FrontDispatch? get dispatch => _dispatch;
   FrontAskUser? get askUser => _askUser;
@@ -148,6 +153,10 @@ class FrontAgentStrategy extends ConversationStrategy
   /// `summarize_pull_requests` this turn found some opened in; null when
   /// none did.
   FrontPullRequestChart? get pullRequestChart => _pullRequestChart;
+
+  /// The cards her reply draws: every task a `list_closed_tasks` this turn
+  /// found, whatever her words name; null when it found none.
+  List<FrontClosedTaskCard>? get closedTaskCards => _closedTaskCards;
 
   /// Whether the model ended the turn with one of the three terminal calls.
   bool get hasTerminalOutput =>
@@ -509,13 +518,15 @@ class FrontAgentStrategy extends ConversationStrategy
       await _reject(call, manager, frontClosedListExhaustedAnswer);
       return;
     }
-    final period = FrontTimePeriod.fromWire(args['period']);
-    if (period == null) {
+    final window = frontPullRequestQuery(args, now);
+    if (window == null) {
       await _reject(
         call,
         manager,
-        'Error: list_closed_tasks needs period: one of '
-        '${FrontTimePeriod.values.map((p) => p.wireName).join(', ')}.',
+        'Error: list_closed_tasks needs exactly one of: period (one of '
+        '${FrontTimePeriod.values.map((p) => p.wireName).join(', ')}), '
+        'pastDays (1 to $frontPullRequestMaxDays), or from and through '
+        '(YYYY-MM-DD, at most $frontPullRequestMaxDays days).',
       );
       return;
     }
@@ -531,8 +542,9 @@ class FrontAgentStrategy extends ConversationStrategy
       return;
     }
     _closedLists++;
-    final closed = await lister((period: period, categoryIds: categoryIds));
+    final closed = await lister(window, categoryIds);
     _lookupRows.addAll([for (final task in closed.tasks) task.row]);
+    if (closed.tasks.isNotEmpty) _closedTaskCards = closed.cards;
     await _accept(call, manager, closed.render());
   }
 

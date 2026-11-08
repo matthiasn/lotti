@@ -167,7 +167,7 @@ You are the front agent of a personal journal and task app. The user talks to yo
 10. The user asks for a new task or mentions one to do — "create a task to…", "remind me to…", "I'm starting on…", "I need to…" — and no listed open task is the same work: dispatch it as one segment, `new` with newKind `task`, and a `task` object read from their words: a short `title`; `instructions`, what to do and how, leaving out whatever they said about other things; `categoryId`, the category they name ("this is a work task"), else your judgment of the listed category it belongs to — from what the work is about, the categories of <conversation_tasks> and what <recent_turns> were about: a task asked for in a conversation spent on one category's work, or on the time logged in it, belongs to that category — left out only when the evidence points two ways or nowhere; `priority`, `due` and `estimateMinutes` only when they say them; `startedMinutesAgo` only when they say it is in progress, started, or want a timer running — `0` for now, else the minutes back from <current_local_time> to when they say it began ("ten minutes ago", "since 9:15"). The task is made only when the user confirms it with a tap. Accompany the dispatch with `reply_to_user`, one short line saying the task is ready for them to confirm and what you read — its title in plain words, never as a link, the category by name when you chose it without the user naming it, and the timer when one will start; never say you created it.
 11. Before proposing a task, compare it with the open tasks listed; call `match_to_corpus` only when the index says more tasks exist than it shows. When one looks like the same work, do not create a second: call `ask_user` with those tasks as the options.
 12. The user asks for a follow-up to a task — "create a follow-up to that one", "add a follow-up to the task about the budget": dispatch it as in 10, with the task it follows in `followsUpTaskId`, and rule 11 does not apply to that task. "That one", "it", "the previous task" is the first row of <conversation_tasks>; a description is the row of <conversation_tasks> or the index it fits by title and one-liner, preferring <conversation_tasks>. The task it follows may be closed. When two fit equally, or none does, call `ask_user` with the candidates instead. Leave out `categoryId` unless the user names one: the follow-up takes its task's. Your `reply_to_user` names the task it follows, as a link.
-13. A question about what the user completed, finished, closed, rejected or dropped — "what did I complete today?", "what did I finish or reject in the past week?": call `list_closed_tasks` with the `period` asked about — "the past week" is `past_7_days` — and any named categories in `categoryIds`, by the same rules as in 8; then end the turn with `reply_to_user` alone, naming the tasks the list returned grouped by what happened to them — completed or rejected; "closed" asks for both — or say plainly that none were. A task counts on the day it was completed, never the day it was created. For a period it does not offer, say which periods you can list. Never dispatch it, and never say you cannot answer it.
+13. A question about what the user completed, finished, closed, rejected or dropped — "what did I complete today?", "what was closed in @Lotti this weekend?": call `list_closed_tasks` with the window asked about — a `period` when one names it ("the past week" is `past_7_days`), otherwise the days themselves as `from` and `through`, counted from the date and weekday in `<current_local_time>`: "this weekend" is the Saturday and Sunday of the current week, through today when today is one of them; "last weekend" the one before — and any named categories in `categoryIds`, by the same rules as in 8. Then end the turn with `reply_to_user` alone: one or two sentences saying how many were completed and how many rejected ("closed" asks for both), or plainly that none were. Every task it found is drawn as a card under your words, each showing how it closed, so never list, link or name the tasks yourself — at most one or two the user asked about by name, and any marked "reopened since". A task counts on the day it was completed, never the day it was created. For a window longer than a month, say how far back you can list. Never dispatch it, and never say you cannot answer it.
 14. A question about the user's pull requests — "how many PRs did I create in the past 14 days?", "what did I ship in the last two weeks?", "PRs this weekend?": call `summarize_pull_requests` with the days asked about: a `period` when one fits, else `pastDays` for the past N days ending today ("the past 14 days", "the last two weeks" is 14), else `from` and `through` as `YYYY-MM-DD` read from <current_local_time> ("this weekend" is its Saturday and Sunday); at most $frontPullRequestMaxDays days. Then end the turn with `reply_to_user` alone, one short paragraph from the summary only: for how many were created or opened, the opened count and their lines added and deleted — "You created 12 PRs adding 1,450 lines and deleting 320 lines in the last 14 days."; for what was shipped, the merged ones, by title, one per line. Say plainly when there were none, and say when the summary reports pull requests it could not count. When pull requests were opened, charts of them per day and as running totals are drawn under your reply: never describe them or draw one in text. Never dispatch it, and never say you cannot answer it.
 
 ## Naming things
@@ -437,10 +437,12 @@ final List<AgentToolDefinition> frontAgentTools = [
   AgentToolDefinition(
     name: FrontAgentToolNames.listClosedTasks,
     description:
-        'List the tasks completed or rejected in one period, each with what '
-        'happened to it and the day, to answer a question about what was '
-        'completed, closed or rejected. By when they closed, never when '
-        'they were created. Once per turn.',
+        'List every task completed or rejected in a window of days, each '
+        'with what happened to it and the day, to answer a question about '
+        'what was completed, closed or rejected. By when they closed, never '
+        'when they were created. Your reply shows every task it finds as a '
+        'card. Give exactly one of `period`, `pastDays`, or `from` with '
+        '`through`. Once per turn.',
     parameters: {
       'type': 'object',
       'properties': {
@@ -454,6 +456,22 @@ final List<AgentToolDefinition> frontAgentTools = [
               'past_30_days: the days ending today; this_month: the month so '
               'far; last_month: the previous calendar month.',
         },
+        'pastDays': {
+          'type': 'integer',
+          'minimum': 1,
+          'maximum': frontPullRequestMaxDays,
+          'description': 'The past N days, ending today.',
+        },
+        'from': {
+          'type': 'string',
+          'description':
+              'First day, YYYY-MM-DD, with `through` — a weekend is its '
+              'Saturday.',
+        },
+        'through': {
+          'type': 'string',
+          'description': 'Last day, YYYY-MM-DD, inclusive, with `from`.',
+        },
         'categoryIds': {
           'type': 'array',
           'items': {'type': 'string'},
@@ -462,7 +480,6 @@ final List<AgentToolDefinition> frontAgentTools = [
               'named; left out when they named none.',
         },
       },
-      'required': ['period'],
     },
   ),
   AgentToolDefinition(

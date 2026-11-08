@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/front_agent/model/front_closed_task_card.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_logged_time_chart.dart';
 import 'package:lotti/features/front_agent/model/front_routing_index.dart';
@@ -393,15 +394,52 @@ void main() {
               ),
             ),
           ],
-          omitted: 4,
           categoryNames: const {'work': 'Work'},
           narrowedTo: const ['Work'],
         ).render(),
         'Tasks completed or rejected past 7 days (2026-11-01 through '
-        '2026-11-07) in Work (2, +4 not shown), oldest first:\n'
+        '2026-11-07) in Work: 2 (1 completed, 1 rejected), oldest first:\n'
         '- task:a | Task a | completed 2026-11-02 | Work\n'
         '- task:b | Task b | rejected 2026-11-06',
       );
+    });
+
+    test('days the call spelled out are named as days; a task open again '
+        'says it was reopened, on its line and its card', () {
+      final closed = FrontClosedTasks(
+        period: null,
+        from: DateTime(2026, 11, 7),
+        through: DateTime(2026, 11, 8),
+        tasks: [
+          (
+            row: const FrontIndexRow(
+              kind: FrontDestinationKind.task,
+              id: 'r',
+              title: 'Again',
+              status: 'IN PROGRESS',
+            ),
+            closed: TaskStatus.done(
+              id: 's-r',
+              createdAt: DateTime(2026, 11, 7, 10),
+              utcOffset: 0,
+            ),
+          ),
+        ],
+      );
+      expect(
+        closed.render(),
+        'Tasks completed or rejected 2026-11-07 through 2026-11-08: 1 '
+        '(1 completed, 0 rejected), oldest first:\n'
+        '- task:r | Again | completed 2026-11-07 | reopened since',
+      );
+      expect(closed.cards, [
+        FrontClosedTaskCard(
+          id: 'r',
+          title: 'Again',
+          closedAt: DateTime(2026, 11, 7, 10),
+          reopened: true,
+        ),
+      ]);
     });
 
     test('one day is named once; nothing closed says so', () {

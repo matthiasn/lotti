@@ -299,6 +299,61 @@ void main() {
         },
       );
 
+      test(
+        'getTasksUpdatedSince returns tasks of any status changed since a '
+        'moment, still honouring the private gate',
+        () async {
+          final day = DateTime(2024, 7, 5);
+          TaskStatus open(String id, DateTime at) =>
+              TaskStatus.open(id: id, createdAt: at, utcOffset: 0);
+          final entries = [
+            // Completed this morning, reopened since: still a candidate.
+            buildTaskEntry(
+              id: 'reopened-today',
+              timestamp: day.add(const Duration(hours: 10)),
+              status: open('s1', day.add(const Duration(hours: 10))),
+            ),
+            buildTaskEntry(
+              id: 'done-today',
+              timestamp: day.add(const Duration(hours: 11)),
+              status: TaskStatus.done(
+                id: 's2',
+                createdAt: day.add(const Duration(hours: 11)),
+                utcOffset: 0,
+              ),
+            ),
+            buildTaskEntry(
+              id: 'open-yesterday',
+              timestamp: day.subtract(const Duration(hours: 2)),
+              status: open('s3', day.subtract(const Duration(hours: 2))),
+            ),
+            buildTaskEntry(
+              id: 'open-private',
+              timestamp: day.add(const Duration(hours: 13)),
+              status: open('s4', day.add(const Duration(hours: 13))),
+              privateFlag: true,
+            ),
+          ];
+          for (final entry in entries) {
+            await db!.upsertJournalDbEntity(toDbEntity(entry));
+          }
+          await db!.upsertConfigFlag(
+            const ConfigFlag(
+              name: 'private',
+              description: 'Show private entries?',
+              status: false,
+            ),
+          );
+
+          final changed = await db!.getTasksUpdatedSince(day);
+
+          expect(
+            changed.map((task) => task.meta.id).toSet(),
+            {'reopened-today', 'done-today'},
+          );
+        },
+      );
+
       test('getInProgressTasks filters category and honors limit', () async {
         final base = DateTime(2024, 7, 4, 9);
         final older = buildTaskEntry(

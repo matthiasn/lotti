@@ -6,6 +6,7 @@ import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
 import 'package:lotti/features/front_agent/model/front_chat_thread.dart';
+import 'package:lotti/features/front_agent/model/front_closed_task_card.dart';
 import 'package:lotti/features/front_agent/model/front_conversation.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
@@ -267,6 +268,73 @@ void main() {
       ),
     });
   });
+
+  test(
+    'a reply about what was closed carries every task it found as cards; '
+    'one without, or with cards this build cannot read, carries none',
+    () async {
+      userTurn(
+        'u1',
+        'What was closed this weekend?',
+        at: DateTime(2026, 11, 8, 9),
+      );
+      row(
+        id: 'reply-1',
+        kind: AgentMessageKind.action,
+        toolName: FrontAgentToolNames.replyToUser,
+        operationId: 'u1',
+        content: {
+          'text': 'You completed one and rejected one.',
+          'closedTasks': [
+            {
+              'id': 't1',
+              'title': 'Paint the shed',
+              'closedAt': '2026-11-07T10:00:00.000Z',
+              'categoryId': 'home',
+            },
+            {
+              'id': 't2',
+              'title': 'Prune the roses',
+              'closedAt': '2026-11-08T11:00:00.000Z',
+              'rejected': true,
+              'reopened': true,
+            },
+            {'id': 't3'},
+          ],
+        },
+        createdAt: DateTime(2026, 11, 8, 9, 1),
+      );
+      userTurn('u2', 'And today?', at: DateTime(2026, 11, 8, 10));
+      row(
+        id: 'reply-2',
+        kind: AgentMessageKind.action,
+        toolName: FrontAgentToolNames.replyToUser,
+        operationId: 'u2',
+        content: {'text': 'Nothing.', 'closedTasks': 'soon'},
+        createdAt: DateTime(2026, 11, 8, 10, 1),
+      );
+
+      final thread = await builder.build();
+
+      expect(thread.closedTasksByMessageId, {
+        'reply-1': [
+          FrontClosedTaskCard(
+            id: 't1',
+            title: 'Paint the shed',
+            closedAt: DateTime.utc(2026, 11, 7, 10),
+            categoryId: 'home',
+          ),
+          FrontClosedTaskCard(
+            id: 't2',
+            title: 'Prune the roses',
+            closedAt: DateTime.utc(2026, 11, 8, 11),
+            rejected: true,
+            reopened: true,
+          ),
+        ],
+      });
+    },
+  );
 
   test('a reply that charts pull requests carries its chart; one this build '
       'cannot read carries none', () async {

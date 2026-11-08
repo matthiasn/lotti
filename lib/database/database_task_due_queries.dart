@@ -83,16 +83,28 @@ mixin _JournalDbTaskDueQueries on _$JournalDb, _JournalDbConfigFlags {
   /// through `idx_journal_task_status_private`, so it touches closed tasks
   /// alone. A task closed that day and edited after it still qualifies,
   /// because `updated_at` only moves forward.
-  Future<List<Task>> getTasksClosedSince(DateTime since) async {
+  Future<List<Task>> getTasksClosedSince(DateTime since) =>
+      _tasksUpdatedSince(since, closedOnly: true);
+
+  /// Tasks of any status whose row changed at or after [since] — the
+  /// candidates for "closed in a window" when a task closed inside it may
+  /// have been reopened since: its status history, not this read, decides.
+  Future<List<Task>> getTasksUpdatedSince(DateTime since) =>
+      _tasksUpdatedSince(since, closedOnly: false);
+
+  Future<List<Task>> _tasksUpdatedSince(
+    DateTime since, {
+    required bool closedOnly,
+  }) async {
     final privateStatuses = await _visiblePrivateStatuses();
     final variables = <Variable<Object>>[Variable<DateTime>(since)];
     final buffer = StringBuffer()
       ..write('SELECT * FROM journal ')
       ..write("WHERE type = 'Task' ")
       ..write('AND task = 1 ')
-      ..write('AND deleted = FALSE ')
-      ..write("AND task_status IN ('DONE', 'REJECTED') ")
-      ..write('AND updated_at >= ?1 ');
+      ..write('AND deleted = FALSE ');
+    if (closedOnly) buffer.write("AND task_status IN ('DONE', 'REJECTED') ");
+    buffer.write('AND updated_at >= ?1 ');
     if (!_matchesAllPrivateStates(privateStatuses)) {
       buffer.write('AND private IN (');
       for (var i = 0; i < privateStatuses.length; i++) {

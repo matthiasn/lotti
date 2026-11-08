@@ -93,9 +93,10 @@ void main() {
     );
   });
 
-  test('list_closed_tasks asks for one period by the names the strategy '
-      'reads, and the prompt sends a what-did-I-complete question there, '
-      'by when the task closed', () {
+  test('list_closed_tasks asks for a period by the names the strategy reads '
+      'or the days themselves, and the prompt sends a what-did-I-complete '
+      'question there, by when the task closed, its tasks left to the '
+      'cards', () {
     final list = frontAgentTools[5];
     final properties = list.parameters['properties'] as Map;
     expect(
@@ -103,9 +104,21 @@ void main() {
       [for (final period in FrontTimePeriod.values) period.wireName],
     );
     expect((properties['categoryIds'] as Map)['type'], 'array');
-    expect(list.parameters['required'], ['period']);
+    expect((properties['pastDays'] as Map)['type'], 'integer');
+    expect((properties['from'] as Map)['type'], 'string');
+    expect((properties['through'] as Map)['type'], 'string');
+    // Exactly one window form, checked by the strategy, so none required.
+    expect(list.parameters.containsKey('required'), isFalse);
     expect(frontAgentSystemPrompt, contains('call `list_closed_tasks`'));
     expect(frontAgentSystemPrompt, contains('"closed" asks for both'));
+    expect(
+      frontAgentSystemPrompt,
+      contains('"this weekend" is the Saturday and Sunday of the current week'),
+    );
+    expect(
+      frontAgentSystemPrompt,
+      contains('never list, link or name the tasks yourself'),
+    );
     expect(
       frontAgentSystemPrompt,
       contains('never the day it was created'),

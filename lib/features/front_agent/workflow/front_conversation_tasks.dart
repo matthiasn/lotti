@@ -1,5 +1,6 @@
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
+import 'package:lotti/features/front_agent/model/front_closed_task_card.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_contract.dart';
@@ -14,7 +15,8 @@ final RegExp _taskLink = RegExp('lotti://task/([A-Za-z0-9-]+)');
 /// task" or "the one about X" resolves against.
 ///
 /// [turns] are the conversation's visible messages with their payloads, in
-/// any order. A task counts as named when her words link it, a question
+/// any order. A task counts as named when her words link it or her reply
+/// shows it as a closed-task card, a question
 /// offered it, a dispatch routed to it, or a tap made or filed into it —
 /// the made task has no link anywhere else, and "a follow-up to that" right
 /// after the tap means it. A mention is dated by its message, a made task by
@@ -61,6 +63,12 @@ Iterable<(String, DateTime?)> _taskIdsOf(
   switch (message.metadata.toolName) {
     case FrontAgentToolNames.replyToUser:
       yield* linked(content['text']);
+      // The tasks her cards show, which her words no longer link: latest
+      // closed first, so the cap keeps the ones closed last.
+      final cards = FrontClosedTaskCard.listFromJson(content['closedTasks']);
+      for (final card in cards.reversed) {
+        yield (card.id, null);
+      }
     case FrontAgentToolNames.askUser:
       yield* linked(content['question']);
       if (content['options'] case final List<Object?> options) {

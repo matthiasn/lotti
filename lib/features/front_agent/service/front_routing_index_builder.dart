@@ -226,44 +226,47 @@ class FrontRoutingIndexBuilder {
     };
   }
 
-  /// Lists the tasks inside [scope] completed or rejected in one period of
-  /// [now]'s local days, each with the status it closed with, oldest first,
-  /// then by title, at most [frontClosedTaskLimit]. A query naming
-  /// categories narrows the scope further, never widens it.
+  /// Lists every task inside [scope] completed or rejected in one window
+  /// of [now]'s local days — a named period, or days the call spelled out —
+  /// each with the status it closed with, oldest first, then by title. A
+  /// query naming categories narrows the scope further, never widens it.
   ///
   /// When a task closed comes from its status history, never its creation
-  /// date: see [_closedWithin]. The candidates are the tasks closed now
-  /// whose row changed since the window began — the read Daily OS Shutdown
-  /// takes its closed tasks from — so a task reopened and still open is
-  /// not one, and private entries are read only while they are shown. A
-  /// task in a private category while those are hidden is left out too.
-  Future<FrontClosedTasks> Function(FrontTimeQuery query) closedTaskLister(
-    FrontRoutingScope scope, {
-    required DateTime now,
-  }) {
-    return (query) async {
-      final range = query.period.rangeOn(
-        now,
-        firstDayOfWeekIndex:
-            await firstDayOfWeekIndex?.call() ?? defaultFirstDayOfWeekIndex,
-      );
+  /// date: see [_closedWithin]. The candidates are the tasks of any status
+  /// whose row changed since the window began — a task closed inside it
+  /// and reopened since is one — and private entries are read only while
+  /// they are shown. A task in a private category while those are hidden
+  /// is left out too.
+  Future<FrontClosedTasks> Function(
+    FrontPullRequestQuery window,
+    Set<String> categoryIds,
+  )
+  closedTaskLister(FrontRoutingScope scope, {required DateTime now}) {
+    return (window, categoryIds) async {
+      final range =
+          window.range ??
+          window.period!.rangeOn(
+            now,
+            firstDayOfWeekIndex:
+                await firstDayOfWeekIndex?.call() ?? defaultFirstDayOfWeekIndex,
+          );
       final start = dayStart(range.startDay);
       final end = dayStart(range.endDayExclusive);
-      final (:narrowed, :within) = _narrowedBy(scope, query.categoryIds);
+      final (:narrowed, :within) = _narrowedBy(scope, categoryIds);
       final hidden = await _hiddenCategoryIds();
       final closed =
           [
-            for (final task in await journalDb.getTasksClosedSince(start))
+            for (final task in await journalDb.getTasksUpdatedSince(start))
               if (!hidden.contains(task.meta.categoryId) &&
                   categoryAllowed(task.meta.categoryId, within))
                 if (_closedWithin(task.data, start, end) case final status?)
-                  (task: task, closed: status),
+                  (row: _taskRow(task, null), closed: status),
           ]..sort((a, b) {
             final byTime = a.closed.createdAt.compareTo(b.closed.createdAt);
             return byTime != 0
                 ? byTime
-                : a.task.data.title.toLowerCase().compareTo(
-                    b.task.data.title.toLowerCase(),
+                : a.row.title.toLowerCase().compareTo(
+                    b.row.title.toLowerCase(),
                   );
           });
       final names = {
@@ -271,31 +274,25 @@ class FrontRoutingIndexBuilder {
           category.id: category.name,
       };
       return FrontClosedTasks(
-        period: query.period,
+        period: window.range == null ? window.period : null,
         from: start,
         through: dayStart(range.endDayExclusive - 1),
-        tasks: [
-          for (final (:task, :closed) in closed.take(frontClosedTaskLimit))
-            (row: _taskRow(task, null), closed: closed),
-        ],
-        omitted: _omitted(closed.length, frontClosedTaskLimit),
+        tasks: closed,
         categoryNames: names,
         narrowedTo: [for (final id in narrowed) ?names[id]]..sort(),
       );
     };
   }
 
-  /// The status [data] closed with in `[start, end)`, or null. The status
-  /// history is the record of every status the task was set to, each at
-  /// the moment it was; the current status — the `statusSince` the task
-  /// agent sees — is only its last entry, so it loses a close inside the
-  /// window once the task is touched again. Joined with the current status
-  /// (a task from before the history was kept may lack it) and in time
-  /// order, the last status set before [end] is the one the window ended
-  /// on, as Daily OS Shutdown reads a day: DONE or REJECTED and set inside
-  /// the window, it is the close reported — a task reopened and completed
-  /// again reports the latest completion, one finished and reopened inside
-  /// the window none.
+  /// The latest status [data] closed with in `[start, end)`, or null. The
+  /// status history is the record of every status the task was set to, each
+  /// at the moment it was; the current status is only its last entry, so it
+  /// loses a close inside the window once the task is touched again. Joined
+  /// with the current status (a task from before the history was kept may
+  /// lack it), any DONE or REJECTED set inside the window counts — the user
+  /// did complete it then, even if it was reopened since — and the latest
+  /// such is the one reported: a task reopened and completed again reports
+  /// its latest completion inside the window.
   static TaskStatus? _closedWithin(
     TaskData data,
     DateTime start,
@@ -305,13 +302,12 @@ class FrontRoutingIndexBuilder {
       for (final status in [...data.statusHistory, data.status])
         status.id: status,
     }.values.sortedBy((status) => status.createdAt);
-    final last = statuses.lastWhereOrNull(
-      (status) => status.createdAt.isBefore(end),
+    return statuses.lastWhereOrNull(
+      (status) =>
+          (status is TaskDone || status is TaskRejected) &&
+          !status.createdAt.isBefore(start) &&
+          status.createdAt.isBefore(end),
     );
-    return (last is TaskDone || last is TaskRejected) &&
-            !last!.createdAt.isBefore(start)
-        ? last
-        : null;
   }
 
   /// Sums the time logged inside [scope] in one period of [now]'s local

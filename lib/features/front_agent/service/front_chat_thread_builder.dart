@@ -5,6 +5,7 @@ import 'package:lotti/database/agents/agent_repository.dart';
 import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
 import 'package:lotti/features/front_agent/model/front_chat_thread.dart';
+import 'package:lotti/features/front_agent/model/front_closed_task_card.dart';
 import 'package:lotti/features/front_agent/model/front_conversation.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
 import 'package:lotti/features/front_agent/model/front_logged_time_chart.dart';
@@ -73,6 +74,7 @@ class FrontChatThreadBuilder {
     final options = <String, List<FrontAskOption>>{};
     final charts = <String, FrontLoggedTimeChart>{};
     final pullRequestCharts = <String, FrontPullRequestChart>{};
+    final closedTasks = <String, List<FrontClosedTaskCard>>{};
     final doorRecords = <String, List<(String, FrontDoorRecord)>>{};
 
     for (final row in rows) {
@@ -100,6 +102,10 @@ class FrontChatThreadBuilder {
             if (pullRequests != null) {
               pullRequestCharts[row.id] = pullRequests;
             }
+            final cards = FrontClosedTaskCard.listFromJson(
+              payload.content['closedTasks'],
+            );
+            if (cards.isNotEmpty) closedTasks[row.id] = cards;
           case FrontAgentToolNames.askUser:
             final payload = await _payload(row.contentEntryId);
             final question = payload?.content['question'];
@@ -180,6 +186,10 @@ class FrontChatThreadBuilder {
       },
       pullRequestsByMessageId: {
         for (final entry in pullRequestCharts.entries)
+          if (visibleIds.contains(entry.key)) entry.key: entry.value,
+      },
+      closedTasksByMessageId: {
+        for (final entry in closedTasks.entries)
           if (visibleIds.contains(entry.key)) entry.key: entry.value,
       },
     );
