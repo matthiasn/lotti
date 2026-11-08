@@ -48,6 +48,29 @@ void main() {
     ]);
   });
 
+  test('the tasks a closed-task answer showed as cards are named, the one '
+      'closed last first, after any her words linked', () {
+    final conversation = [
+      reply('Due today: [Prune the roses](lotti://task/roses)'),
+      turn({
+        'text':
+            'You completed 2 and rejected 1, with [Paint](lotti://task/paint).',
+        'closedTasks': [
+          {'id': 'shed', 'title': 'Shed', 'closedAt': '2026-11-07T10:00:00Z'},
+          {'id': 'eggs', 'title': 'Eggs', 'closedAt': '2026-11-08T09:00:00Z'},
+          {'id': 'broken'},
+        ],
+      }, toolName: FrontAgentToolNames.replyToUser),
+    ];
+
+    expect(frontConversationTaskIds(conversation.reversed), [
+      'paint',
+      'eggs',
+      'shed',
+      'roses',
+    ]);
+  });
+
   test('a task the tap made counts as named at the tap, ahead of what '
       'was said after its inbox item was walked', () {
     Map<String, Object?> door({DateTime? tappedAt}) =>
