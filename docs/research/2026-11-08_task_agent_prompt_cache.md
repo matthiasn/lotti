@@ -422,6 +422,12 @@ Examples, from the penguin demo world:
   (`forced_tool_choice.dart`). Before switching, measure the retry's
   `update_report` rate on a fixture set with the full list. Ship only if it
   stays at parity; otherwise keep the narrowed list for DeepSeek only.
+- **Guard:** the narrowed list is also what keeps the retry from mutating.
+  With the full list advertised, `TaskAgentStrategy` would execute any other
+  tool the model returns, alongside `update_report` or instead of it, and a
+  report-rate eval would not notice. So advertising the full list needs a
+  report-only execution mode for the retry turn: every other call is answered
+  with an error result and never runs.
 - **Expected:** the retry re-uses the whole wake conversation (often 30K+
   tokens) instead of re-reading it.
 - **Check:** how often `no report published — retrying with forced
@@ -486,7 +492,9 @@ Opening request versus later turns:
 
 ```sql
 WITH calls AS (
-  SELECT wake_run_key, created_at, input_tokens, cached_input_tokens,
+  SELECT wake_run_key, created_at, input_tokens,
+         -- Mistral may omit cached_tokens on a miss; that is a miss, not unknown.
+         COALESCE(cached_input_tokens, 0) AS cached_input_tokens,
          duration_ms,
          ROW_NUMBER() OVER (
            PARTITION BY wake_run_key ORDER BY created_at, turn_index
@@ -510,7 +518,8 @@ The opening request's hit rate, by gap since the previous wake:
 
 ```sql
 WITH calls AS (
-  SELECT wake_run_key, created_at, input_tokens, cached_input_tokens,
+  SELECT wake_run_key, created_at, input_tokens,
+         COALESCE(cached_input_tokens, 0) AS cached_input_tokens,
          duration_ms,
          ROW_NUMBER() OVER (
            PARTITION BY wake_run_key ORDER BY created_at, turn_index
