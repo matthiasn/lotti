@@ -101,14 +101,7 @@ class FrontRoutingIndexBuilder {
     FrontRoutingScope scope,
   ) async {
     if (ids.isEmpty) return const [];
-    // Private categories are dropped from this read while hidden.
-    final visible = {
-      for (final category in await journalDb.getAllCategories()) category.id,
-    };
-    final hidden = {
-      for (final category in await journalDb.getAllCategoriesIncludingPrivate())
-        if (!visible.contains(category.id)) category.id,
-    };
+    final hidden = await _hiddenCategoryIds();
     final byId = <String, Task>{
       for (final entity in await journalDb.getJournalEntitiesForIds(
         ids.toSet(),
@@ -177,12 +170,7 @@ class FrontRoutingIndexBuilder {
           today.day + query.daysAhead,
         ),
       };
-      final allowed = scope.categoryIds;
-      final narrowed = {
-        for (final id in query.categoryIds)
-          if (categoryAllowed(id, allowed)) id,
-      };
-      final within = narrowed.isEmpty ? allowed : narrowed;
+      final (:narrowed, :within) = _narrowedBy(scope, query.categoryIds);
       // Both ends checked here, whatever bound the read applied.
       final until = DateTime(through.year, through.month, through.day + 1);
       bool inWindow(DateTime due) =>
@@ -228,6 +216,94 @@ class FrontRoutingIndexBuilder {
         ]..sort(),
       );
     };
+  }
+
+  /// Lists the tasks inside [scope] completed or rejected in one period of
+  /// [now]'s local days, each with the status it closed with, oldest first,
+  /// then by title, at most [frontClosedTaskLimit]. A query naming
+  /// categories narrows the scope further, never widens it.
+  ///
+  /// When a task closed comes from its status history, never its creation
+  /// date: see [_closedWithin]. The candidates are the tasks closed now
+  /// whose row changed since the window began — the read Daily OS Shutdown
+  /// takes its closed tasks from — so a task reopened and still open is
+  /// not one, and private entries are read only while they are shown. A
+  /// task in a private category while those are hidden is left out too.
+  Future<FrontClosedTasks> Function(FrontTimeQuery query) closedTaskLister(
+    FrontRoutingScope scope, {
+    required DateTime now,
+  }) {
+    return (query) async {
+      final range = query.period.rangeOn(
+        now,
+        firstDayOfWeekIndex:
+            await firstDayOfWeekIndex?.call() ?? defaultFirstDayOfWeekIndex,
+      );
+      final start = dayStart(range.startDay);
+      final end = dayStart(range.endDayExclusive);
+      final (:narrowed, :within) = _narrowedBy(scope, query.categoryIds);
+      final hidden = await _hiddenCategoryIds();
+      final closed =
+          [
+            for (final task in await journalDb.getTasksClosedSince(start))
+              if (!hidden.contains(task.meta.categoryId) &&
+                  categoryAllowed(task.meta.categoryId, within))
+                if (_closedWithin(task.data, start, end) case final status?)
+                  (task: task, closed: status),
+          ]..sort((a, b) {
+            final byTime = a.closed.createdAt.compareTo(b.closed.createdAt);
+            return byTime != 0
+                ? byTime
+                : a.task.data.title.toLowerCase().compareTo(
+                    b.task.data.title.toLowerCase(),
+                  );
+          });
+      final names = {
+        for (final category in await _categories(scope))
+          category.id: category.name,
+      };
+      return FrontClosedTasks(
+        period: query.period,
+        from: start,
+        through: dayStart(range.endDayExclusive - 1),
+        tasks: [
+          for (final (:task, :closed) in closed.take(frontClosedTaskLimit))
+            (row: _taskRow(task, null), closed: closed),
+        ],
+        omitted: _omitted(closed.length, frontClosedTaskLimit),
+        categoryNames: names,
+        narrowedTo: [for (final id in narrowed) ?names[id]]..sort(),
+      );
+    };
+  }
+
+  /// The status [data] closed with in `[start, end)`, or null. The status
+  /// history is the record of every status the task was set to, each at
+  /// the moment it was; the current status — the `statusSince` the task
+  /// agent sees — is only its last entry, so it loses a close inside the
+  /// window once the task is touched again. Joined with the current status
+  /// (a task from before the history was kept may lack it) and in time
+  /// order, the last status set before [end] is the one the window ended
+  /// on, as Daily OS Shutdown reads a day: DONE or REJECTED and set inside
+  /// the window, it is the close reported — a task reopened and completed
+  /// again reports the latest completion, one finished and reopened inside
+  /// the window none.
+  static TaskStatus? _closedWithin(
+    TaskData data,
+    DateTime start,
+    DateTime end,
+  ) {
+    final statuses = {
+      for (final status in [...data.statusHistory, data.status])
+        status.id: status,
+    }.values.sortedBy((status) => status.createdAt);
+    final last = statuses.lastWhereOrNull(
+      (status) => status.createdAt.isBefore(end),
+    );
+    return (last is TaskDone || last is TaskRejected) &&
+            !last!.createdAt.isBefore(start)
+        ? last
+        : null;
   }
 
   /// Sums the time logged inside [scope] in one period of [now]'s local
@@ -368,6 +444,34 @@ class FrontRoutingIndexBuilder {
   }
 
   static int _omitted(int total, int cap) => total > cap ? total - cap : 0;
+
+  /// The categories a query naming [categoryIds] reads inside [scope]: the
+  /// `narrowed` ones it may see, or the whole scope when it names none of
+  /// them — a named category narrows, never widens.
+  static ({Set<String> narrowed, Set<String> within}) _narrowedBy(
+    FrontRoutingScope scope,
+    Set<String> categoryIds,
+  ) {
+    final allowed = scope.categoryIds;
+    final narrowed = {
+      for (final id in categoryIds)
+        if (categoryAllowed(id, allowed)) id,
+    };
+    return (narrowed: narrowed, within: narrowed.isEmpty ? allowed : narrowed);
+  }
+
+  /// The private categories while private entries are hidden: the read of
+  /// the visible categories drops them, the one including private keeps
+  /// them. A task need not be private itself to sit in one.
+  Future<Set<String>> _hiddenCategoryIds() async {
+    final visible = {
+      for (final category in await journalDb.getAllCategories()) category.id,
+    };
+    return {
+      for (final category in await journalDb.getAllCategoriesIncludingPrivate())
+        if (!visible.contains(category.id)) category.id,
+    };
+  }
 
   Future<List<FrontIndexRow>> _tasks(
     FrontRoutingScope scope,

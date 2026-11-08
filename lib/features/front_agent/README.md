@@ -32,7 +32,11 @@ month: she sums it per category, with the numbers the Insights page shows,
 and says it as text, with the tasks the time went to when asked what was
 worked on, and for a week the category most of it went to. A category named
 in the question is the only one named, in her words and in the chart; every
-other one is a single "other" slice. She knows the categories by name: one
+other one is a single "other" slice. So is what was completed or
+rejected — today, this week, the past 7 days and the other periods she can
+sum: each task counts on the day it was completed or rejected, never the
+day it was created, and a task reopened and finished again on its latest
+completion. She knows the categories by name: one
 named in the question narrows the answer — there is nothing to pick. Two
 tasks or more — due, overdue, both, or what a search found, projects among
 them — come back as a card of rows — status, the agent's one-liner,
@@ -62,8 +66,8 @@ and a proposal she got wrong goes to the inbox rather than being retyped.
 ## What it owns
 
 - `model/` — the fixed identity (`front_agent`), the dispatch shape and its
-  thresholds, the routing index and its caps, what a due-task list and a
-  logged-time summary hold,
+  thresholds, the routing index and its caps, what a due-task list, a
+  logged-time summary and a closed-task list hold,
   the links her words name tasks and projects with
   (`front_reference_links.dart`), the door record, the thread
   projection the chat surface renders, and what a conversation is.
@@ -72,9 +76,10 @@ and a proposal she got wrong goes to the inbox rather than being retyped.
   terminal calls, her words linked), the model resolution (its own setup, never a category's)
   and the wake workflow that persists the dispatch record.
 - `service/` — the index builder over existing reads (and the due-task
-  lister behind `list_due_tasks` and the logged-time summarizer behind
+  lister behind `list_due_tasks`, the logged-time summarizer behind
   `summarize_logged_time`, whose read her reply's chart of logged time
-  shares), the singleton's lazy
+  shares, and the closed-task lister behind `list_closed_tasks`), the
+  singleton's lazy
   creation, the chat service that makes a user turn durable with a recovery
   record and runs the wake, the door walker, the owner titles, the thread
   builder that mirrors specialists' replies, the conversation service, and

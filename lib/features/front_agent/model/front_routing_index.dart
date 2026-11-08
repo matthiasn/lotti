@@ -1,3 +1,4 @@
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_logged_time_chart.dart';
 import 'package:lotti/features/insights/logic/period_navigation.dart';
@@ -22,6 +23,9 @@ const int frontDueTaskLimit = 30;
 
 /// How many tasks with logged time one `summarize_logged_time` may return.
 const int frontLoggedTaskLimit = 30;
+
+/// How many tasks one `list_closed_tasks` may return.
+const int frontClosedTaskLimit = 30;
 
 /// Which due tasks one `list_due_tasks` asks for, split at local midnight
 /// as the task list's *Due today* and *Overdue* views split them: a
@@ -278,6 +282,73 @@ class FrontLoggedTime {
     final rest = minutes % 60;
     if (hours == 0) return '${rest}m';
     return rest == 0 ? '${hours}h' : '${hours}h ${rest}m';
+  }
+}
+
+/// What one `list_closed_tasks` found: the tasks completed or rejected in
+/// [period], each at the moment it was, oldest first.
+class FrontClosedTasks {
+  const FrontClosedTasks({
+    required this.period,
+    required this.from,
+    required this.through,
+    required this.tasks,
+    this.omitted = 0,
+    this.categoryNames = const {},
+    this.narrowedTo = const [],
+  });
+
+  final FrontTimePeriod period;
+
+  /// Local midnights of the first and the last day the window covers.
+  final DateTime from;
+  final DateTime through;
+
+  /// Each task with the status it was closed with — [TaskDone] or
+  /// [TaskRejected] — whose `createdAt` is when, at most
+  /// [frontClosedTaskLimit].
+  final List<({FrontIndexRow row, TaskStatus closed})> tasks;
+
+  /// How many more were closed in the window than [frontClosedTaskLimit]
+  /// let through.
+  final int omitted;
+
+  /// Each row's category by id, so a row says where it belongs.
+  final Map<String, String> categoryNames;
+
+  /// The names of the categories the call was narrowed to by a category
+  /// named in the question; empty when it was not.
+  final List<String> narrowedTo;
+
+  /// The tool's answer: a heading naming the window and any category it was
+  /// narrowed to, then one row per task with what happened to it and when.
+  String render() {
+    const day = FrontRoutingIndex._isoDay;
+    const oneLine = FrontRoutingIndex._oneLine;
+    final days = from == through
+        ? day(from)
+        : '${day(from)} through ${day(through)}';
+    final what = '${period.wireName.replaceAll('_', ' ')} ($days)';
+    final within = narrowedTo.isEmpty ? '' : ' in ${narrowedTo.join(', ')}';
+    if (tasks.isEmpty) {
+      return 'None: no task completed or rejected $what$within.';
+    }
+    final buffer = StringBuffer(
+      'Tasks completed or rejected $what$within (${tasks.length}'
+      '${omitted > 0 ? ', +$omitted not shown' : ''}), oldest first:\n',
+    );
+    for (final (:row, :closed) in tasks) {
+      final how = closed is TaskRejected ? 'rejected' : 'completed';
+      buffer.write(
+        '- task:${row.id} | ${oneLine(row.title)} | '
+        '$how ${day(closed.createdAt.toLocal())}',
+      );
+      if (categoryNames[row.categoryId] case final name?) {
+        buffer.write(' | ${oneLine(name)}');
+      }
+      buffer.writeln();
+    }
+    return buffer.toString().trimRight();
   }
 }
 

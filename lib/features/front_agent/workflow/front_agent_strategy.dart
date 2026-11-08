@@ -32,6 +32,12 @@ typedef FrontDueTaskLister =
 typedef FrontLoggedTimeSummarizer =
     Future<FrontLoggedTime> Function(FrontTimeQuery query);
 
+/// Lists the tasks completed or rejected in one period inside the turn's
+/// scope, narrowed to the categories the query names; the rows become valid
+/// destinations for the rest of the turn.
+typedef FrontClosedTaskLister =
+    Future<FrontClosedTasks> Function(FrontTimeQuery query);
+
 /// One candidate offered by `ask_user`.
 typedef FrontAskOption = ({FrontDestinationKind kind, String id, String label});
 
@@ -44,7 +50,7 @@ typedef FrontAskUser = ({String question, List<FrontAskOption> options});
 /// writes the outputs in one transaction.
 ///
 /// Three calls end the turn — `dispatch`, `ask_user`, `reply_to_user` — and
-/// the four lookups are capped by count, not by removing them from the list:
+/// the five lookups are capped by count, not by removing them from the list:
 /// a shrinking tool list changes the request prefix and voids the provider's
 /// cache, which a routing turn exists to keep warm.
 class FrontAgentStrategy extends ConversationStrategy
@@ -61,6 +67,7 @@ class FrontAgentStrategy extends ConversationStrategy
     this.corpusMatcher,
     this.dueTaskLister,
     this.loggedTimeSummarizer,
+    this.closedTaskLister,
     this.conversationTasks = const [],
   });
 
@@ -100,6 +107,10 @@ class FrontAgentStrategy extends ConversationStrategy
   /// that it is unavailable.
   final FrontLoggedTimeSummarizer? loggedTimeSummarizer;
 
+  /// Null when no journal is wired (tests, evals): the tool then answers
+  /// that it is unavailable.
+  final FrontClosedTaskLister? closedTaskLister;
+
   FrontDispatch? _dispatch;
   FrontAskUser? _askUser;
   String? _replyToUser;
@@ -107,6 +118,7 @@ class FrontAgentStrategy extends ConversationStrategy
   int _corpusMatches = 0;
   int _dueLists = 0;
   int _timeSummaries = 0;
+  int _closedLists = 0;
   int _rejectedDispatches = 0;
   final _lookupRows = <FrontIndexRow>[];
   FrontLoggedTimeChart? _loggedTimeChart;
@@ -128,7 +140,7 @@ class FrontAgentStrategy extends ConversationStrategy
 
   /// How many lookup calls ran (refused ones excluded).
   int get lookupCalls =>
-      _tldrReads + _corpusMatches + _dueLists + _timeSummaries;
+      _tldrReads + _corpusMatches + _dueLists + _timeSummaries + _closedLists;
 
   @override
   Future<ConversationAction> processToolCalls({
@@ -174,6 +186,8 @@ class FrontAgentStrategy extends ConversationStrategy
           await _handleListDueTasks(call, args, manager);
         case FrontAgentToolNames.summarizeLoggedTime:
           await _handleSummarizeLoggedTime(call, args, manager);
+        case FrontAgentToolNames.listClosedTasks:
+          await _handleListClosedTasks(call, args, manager);
         case FrontAgentToolNames.askUser:
           await _handleAskUser(call, args, manager);
         case FrontAgentToolNames.replyToUser:
@@ -459,6 +473,42 @@ class FrontAgentStrategy extends ConversationStrategy
     _lookupRows.addAll([for (final task in logged.tasks) task.row]);
     if (logged.byCategory.isNotEmpty) _loggedTimeChart = logged.chart;
     await _accept(call, manager, logged.render());
+  }
+
+  Future<void> _handleListClosedTasks(
+    ChatCompletionMessageToolCall call,
+    Map<String, dynamic> args,
+    ConversationManager manager,
+  ) async {
+    if (_closedLists >= frontClosedListsPerTurn) {
+      await _reject(call, manager, frontClosedListExhaustedAnswer);
+      return;
+    }
+    final period = FrontTimePeriod.fromWire(args['period']);
+    if (period == null) {
+      await _reject(
+        call,
+        manager,
+        'Error: list_closed_tasks needs period: one of '
+        '${FrontTimePeriod.values.map((p) => p.wireName).join(', ')}.',
+      );
+      return;
+    }
+    final categoryIds = await _namedCategories(call, args, manager);
+    if (categoryIds == null) return;
+    final lister = closedTaskLister;
+    if (lister == null) {
+      await _reject(
+        call,
+        manager,
+        'Closed tasks are unavailable this turn; say so in reply_to_user.',
+      );
+      return;
+    }
+    _closedLists++;
+    final closed = await lister((period: period, categoryIds: categoryIds));
+    _lookupRows.addAll([for (final task in closed.tasks) task.row]);
+    await _accept(call, manager, closed.render());
   }
 
   /// The categories a tool call's `categoryIds` names — those the user named

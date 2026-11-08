@@ -23,6 +23,10 @@ abstract final class FrontAgentToolNames {
   /// how-much-time question from.
   static const summarizeLoggedTime = 'summarize_logged_time';
 
+  /// The tasks completed or rejected in one period, by when they were:
+  /// what she answers a what-did-I-complete question from.
+  static const listClosedTasks = 'list_closed_tasks';
+
   /// One short clarifying question with up to three candidates; terminal.
   static const askUser = 'ask_user';
 
@@ -53,6 +57,9 @@ const int frontDueMaxDaysAhead = 7;
 /// How many `summarize_logged_time` calls a turn may make.
 const int frontTimeSummariesPerTurn = 1;
 
+/// How many `list_closed_tasks` calls a turn may make.
+const int frontClosedListsPerTurn = 1;
+
 /// How many candidates `ask_user` may offer.
 const int frontAskUserMaxOptions = 3;
 
@@ -77,6 +84,11 @@ const String frontDueListExhaustedAnswer =
 const String frontTimeSummaryExhaustedAnswer =
     'No more time summaries this turn ($frontTimeSummariesPerTurn used); '
     'answer from the summary you have.';
+
+/// The answer once a turn has listed its closed tasks.
+const String frontClosedListExhaustedAnswer =
+    'No more closed-task lists this turn ($frontClosedListsPerTurn used); '
+    'answer from the list you have.';
 
 /// The instruction after an invalid `dispatch`, or a turn that ended
 /// without a terminal call: the one repair the budget allows.
@@ -118,7 +130,7 @@ This shapes only your own words — the text of `reply_to_user` and the question
 /// manner ([frontAgentPersonality]) follows it.
 const String frontAgentSystemPrompt =
     '''
-You are the front agent of a personal journal and task app. The user talks to you in one place; you decide where each part of what they said belongs and dispatch it. A question about one task, project, goal or person is its owner's to answer; a question about the user's records that no single row owns — what happened, what was decided, where something was noted, across their journal — is yours, and you answer it from the journal by dispatching it to `journal`. A question about which tasks are due — today, overdue, this week — is yours as well: you answer it from `list_due_tasks`. So is a question about how much time the user logged: you answer it from `summarize_logged_time`. You never answer an owner's question yourself and you never change the record yourself.
+You are the front agent of a personal journal and task app. The user talks to you in one place; you decide where each part of what they said belongs and dispatch it. A question about one task, project, goal or person is its owner's to answer; a question about the user's records that no single row owns — what happened, what was decided, where something was noted, across their journal — is yours, and you answer it from the journal by dispatching it to `journal`. A question about which tasks are due — today, overdue, this week — is yours as well: you answer it from `list_due_tasks`. So is a question about how much time the user logged: you answer it from `summarize_logged_time`; and one about what the user completed or rejected: you answer it from `list_closed_tasks`. You never answer an owner's question yourself and you never change the record yourself.
 
 ## What you see
 
@@ -141,6 +153,7 @@ You are the front agent of a personal journal and task app. The user talks to yo
 10. The user asks for a new task or mentions one to do — "create a task to…", "remind me to…", "I'm starting on…", "I need to…" — and no listed open task is the same work: dispatch it as one segment, `new` with newKind `task`, and a `task` object read from their words: a short `title`; `instructions`, what to do and how, leaving out whatever they said about other things; `categoryId`, the category they name ("this is a work task"), else your judgment of the listed category it belongs to — from what the work is about, the categories of <conversation_tasks> and what <recent_turns> were about: a task asked for in a conversation spent on one category's work, or on the time logged in it, belongs to that category — left out only when the evidence points two ways or nowhere; `priority`, `due` and `estimateMinutes` only when they say them; `startedMinutesAgo` only when they say it is in progress, started, or want a timer running — `0` for now, else the minutes back from <current_local_time> to when they say it began ("ten minutes ago", "since 9:15"). The task is made only when the user confirms it with a tap. Accompany the dispatch with `reply_to_user`, one short line saying the task is ready for them to confirm and what you read — its title in plain words, never as a link, the category by name when you chose it without the user naming it, and the timer when one will start; never say you created it.
 11. Before proposing a task, compare it with the open tasks listed; call `match_to_corpus` only when the index says more tasks exist than it shows. When one looks like the same work, do not create a second: call `ask_user` with those tasks as the options.
 12. The user asks for a follow-up to a task — "create a follow-up to that one", "add a follow-up to the task about the budget": dispatch it as in 10, with the task it follows in `followsUpTaskId`, and rule 11 does not apply to that task. "That one", "it", "the previous task" is the first row of <conversation_tasks>; a description is the row of <conversation_tasks> or the index it fits by title and one-liner, preferring <conversation_tasks>. The task it follows may be closed. When two fit equally, or none does, call `ask_user` with the candidates instead. Leave out `categoryId` unless the user names one: the follow-up takes its task's. Your `reply_to_user` names the task it follows, as a link.
+13. A question about what the user completed, finished, closed, rejected or dropped — "what did I complete today?", "what did I finish or reject in the past week?": call `list_closed_tasks` with the `period` asked about — "the past week" is `past_7_days` — and any named categories in `categoryIds`, by the same rules as in 8; then end the turn with `reply_to_user` alone, naming the tasks the list returned grouped by what happened to them — completed or rejected; "closed" asks for both — or say plainly that none were. A task counts on the day it was completed, never the day it was created. For a period it does not offer, say which periods you can list. Never dispatch it, and never say you cannot answer it.
 
 ## Naming things
 
@@ -156,7 +169,7 @@ Split the message into segments only where the destinations differ. Each segment
 
 ## Discipline
 
-- One `read_tldr`, one `match_to_corpus`, one `list_due_tasks` and one `summarize_logged_time` per turn at most; a turn that needs more is fishing. Decide from the index first.
+- One `read_tldr`, one `match_to_corpus`, one `list_due_tasks`, one `summarize_logged_time` and one `list_closed_tasks` per turn at most; a turn that needs more is fishing. Decide from the index first.
 - `dispatch`, `ask_user` and `reply_to_user` end the turn. Call exactly one of them, except that `reply_to_user` may accompany `dispatch` with one line about where things went.
 - Keep every visible sentence short and in the user's language.
 ''';
@@ -406,6 +419,37 @@ final List<AgentToolDefinition> frontAgentTools = [
       'required': ['period'],
     },
   ),
+  AgentToolDefinition(
+    name: FrontAgentToolNames.listClosedTasks,
+    description:
+        'List the tasks completed or rejected in one period, each with what '
+        'happened to it and the day, to answer a question about what was '
+        'completed, closed or rejected. By when they closed, never when '
+        'they were created. Once per turn.',
+    parameters: {
+      'type': 'object',
+      'properties': {
+        'period': {
+          'type': 'string',
+          'enum': [
+            for (final period in FrontTimePeriod.values) period.wireName,
+          ],
+          'description':
+              'today; yesterday; this_week: the week so far; past_7_days and '
+              'past_30_days: the days ending today; this_month: the month so '
+              'far; last_month: the previous calendar month.',
+        },
+        'categoryIds': {
+          'type': 'array',
+          'items': {'type': 'string'},
+          'description':
+              'The ids, from ## Categories, of the categories the user '
+              'named; left out when they named none.',
+        },
+      },
+      'required': ['period'],
+    },
+  ),
   const AgentToolDefinition(
     name: FrontAgentToolNames.askUser,
     description:
@@ -439,7 +483,8 @@ final List<AgentToolDefinition> frontAgentTools = [
     name: FrontAgentToolNames.replyToUser,
     description:
         'Say something in your own words: where things went, the answer to '
-        'a question about what is due or about logged time, or that nothing '
+        'a question about what is due, logged time or what was completed, or '
+        'that nothing '
         'could be placed. '
         'Tasks and projects as markdown links, never bare ids. At most once '
         'per turn.',

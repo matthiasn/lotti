@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_logged_time_chart.dart';
 import 'package:lotti/features/front_agent/model/front_routing_index.dart';
@@ -354,6 +355,64 @@ void main() {
           chart: _chart,
         ).render(),
         'None: no time logged yesterday (2026-11-06).',
+      );
+    });
+  });
+
+  group('FrontClosedTasks.render', () {
+    FrontIndexRow row(String id, String categoryId) => FrontIndexRow(
+      kind: FrontDestinationKind.task,
+      id: id,
+      title: '  Task\n$id ',
+      status: 'DONE',
+      categoryId: categoryId,
+    );
+
+    test('the window and any category it was narrowed to, then each task '
+        'with what happened to it and the day, its category named', () {
+      expect(
+        FrontClosedTasks(
+          period: FrontTimePeriod.past7Days,
+          from: DateTime(2026, 11),
+          through: DateTime(2026, 11, 7),
+          tasks: [
+            (
+              row: row('a', 'work'),
+              closed: TaskStatus.done(
+                id: 's-a',
+                createdAt: DateTime(2026, 11, 2, 23, 30),
+                utcOffset: 0,
+              ),
+            ),
+            (
+              row: row('b', 'gone'),
+              closed: TaskStatus.rejected(
+                id: 's-b',
+                createdAt: DateTime(2026, 11, 6),
+                utcOffset: 0,
+              ),
+            ),
+          ],
+          omitted: 4,
+          categoryNames: const {'work': 'Work'},
+          narrowedTo: const ['Work'],
+        ).render(),
+        'Tasks completed or rejected past 7 days (2026-11-01 through '
+        '2026-11-07) in Work (2, +4 not shown), oldest first:\n'
+        '- task:a | Task a | completed 2026-11-02 | Work\n'
+        '- task:b | Task b | rejected 2026-11-06',
+      );
+    });
+
+    test('one day is named once; nothing closed says so', () {
+      expect(
+        FrontClosedTasks(
+          period: FrontTimePeriod.today,
+          from: DateTime(2026, 11, 7),
+          through: DateTime(2026, 11, 7),
+          tasks: const [],
+        ).render(),
+        'None: no task completed or rejected today (2026-11-07).',
       );
     });
   });
