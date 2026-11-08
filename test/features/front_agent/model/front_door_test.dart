@@ -94,6 +94,10 @@ void main() {
         newKind: FrontNewKind.task,
         generation: 3,
       ),
+      FrontDoorTaskCreated(
+        taskId: 'task-3',
+        at: DateTime.utc(2026, 11, 8, 9, 20),
+      ),
       const FrontDoorDay(),
       FrontDoorDayPlanned(day: DateTime(2026, 11)),
       const FrontDoorProjectCreated(projectId: 'p-1'),

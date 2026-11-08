@@ -453,7 +453,7 @@ class FrontAgentWorkflow with AgentErrorLogging {
       recent: turns.length <= frontRecentTurns
           ? turns
           : turns.sublist(turns.length - frontRecentTurns),
-      taskIds: frontConversationTaskIds(withPayloads.reversed),
+      taskIds: frontConversationTaskIds(withPayloads),
     );
   }
 

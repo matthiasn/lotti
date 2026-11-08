@@ -13,30 +13,45 @@ final RegExp _taskLink = RegExp('lotti://task/([A-Za-z0-9-]+)');
 /// [frontConversationTasksMax], each once: what "that one", "the previous
 /// task" or "the one about X" resolves against.
 ///
-/// [turns] are the conversation's visible messages with their payloads,
-/// newest first. A task counts as named when her words link it, a
-/// question offered it, a dispatch routed to it, or a tap made or filed
-/// into it — the made task has no link anywhere else, and "a follow-up to
-/// that" right after the tap means it.
+/// [turns] are the conversation's visible messages with their payloads, in
+/// any order. A task counts as named when her words link it, a question
+/// offered it, a dispatch routed to it, or a tap made or filed into it —
+/// the made task has no link anywhere else, and "a follow-up to that" right
+/// after the tap means it. A mention is dated by its message, a made task by
+/// the tap: a door record keeps the time it was walked, and an old inbox
+/// item tapped now is the newest thing named.
 List<String> frontConversationTaskIds(
   Iterable<(AgentMessageEntity, AgentMessagePayloadEntity)> turns,
 ) {
+  final mentions = [
+    for (final (message, payload) in turns)
+      for (final (id, at) in _taskIdsOf(message, payload.content))
+        (id: id, at: at ?? message.createdAt),
+  ];
+  // List.sort is not stable: the index keeps a message's own order.
+  final ordered =
+      [
+        for (final (i, mention) in mentions.indexed) (i, mention),
+      ]..sort((a, b) {
+        final byTime = b.$2.at.compareTo(a.$2.at);
+        return byTime != 0 ? byTime : a.$1.compareTo(b.$1);
+      });
   final ids = <String>{};
-  for (final (message, payload) in turns) {
-    for (final id in _taskIdsOf(message, payload.content)) {
-      if (ids.length >= frontConversationTasksMax) return ids.toList();
-      ids.add(id);
-    }
+  for (final (_, mention) in ordered) {
+    if (ids.length >= frontConversationTasksMax) break;
+    ids.add(mention.id);
   }
   return ids.toList();
 }
 
-Iterable<String> _taskIdsOf(
+/// The tasks one message names, each with the time it was named when that
+/// is not the message's own.
+Iterable<(String, DateTime?)> _taskIdsOf(
   AgentMessageEntity message,
   Map<String, Object?> content,
 ) sync* {
-  Iterable<String> linked(Object? text) => text is String
-      ? _taskLink.allMatches(text).map((match) => match.group(1)!)
+  Iterable<(String, DateTime?)> linked(Object? text) => text is String
+      ? _taskLink.allMatches(text).map((match) => (match.group(1)!, null))
       : const [];
 
   if (message.kind == AgentMessageKind.user) {
@@ -54,7 +69,7 @@ Iterable<String> _taskIdsOf(
             'kind': 'task',
             'id': final String id,
           } when id.isNotEmpty) {
-            yield id;
+            yield (id, null);
           }
         }
       }
@@ -63,19 +78,19 @@ Iterable<String> _taskIdsOf(
       for (final segment in FrontDispatch.fromJson(content).segments) {
         if (segment.destinationId case final id?
             when segment.kind == FrontDestinationKind.task) {
-          yield id;
+          yield (id, null);
         }
-        if (segment.task?.followsUpTaskId case final id?) yield id;
+        if (segment.task?.followsUpTaskId case final id?) yield (id, null);
       }
     case frontDoorToolName:
       final record = FrontDoorRecord.fromJson(content);
       if (record == null) return;
-      if (record.outcome case FrontDoorTaskCreated(:final taskId)) {
-        yield taskId;
+      if (record.outcome case FrontDoorTaskCreated(:final taskId, :final at)) {
+        yield (taskId, at);
       }
       if (record.destinationId case final id?
           when record.kind == FrontDestinationKind.task) {
-        yield id;
+        yield (id, null);
       }
   }
 }

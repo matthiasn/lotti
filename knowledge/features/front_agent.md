@@ -311,8 +311,10 @@ conversation, newest message first, not just the six-turn tail and its
 user's words, a `task` option she offered, a dispatch routed to a task or
 naming the task a follow-up follows, and the door records — a segment filed
 into a task, and a task the user's tap made (`FrontDoorTaskCreated`), which
-no link names anywhere else. At most `frontConversationTasksMax` (8), each
-once. `FrontRoutingIndexBuilder.conversationTasks` resolves them through
+no link names anywhere else. A mention dates from its message, a made task
+from the tap (`FrontDoorTaskCreated.at`): the door record keeps the time it
+was walked, and an old inbox item tapped now is the newest thing named. At
+most `frontConversationTasksMax` (8), each once. `FrontRoutingIndexBuilder.conversationTasks` resolves them through
 `getJournalEntitiesForIds` — so the privacy toggle holds — and drops a
 deleted task, a non-task and one outside the scope; a **closed** task stays,
 because a follow-up is most often to finished work. It is not a destination

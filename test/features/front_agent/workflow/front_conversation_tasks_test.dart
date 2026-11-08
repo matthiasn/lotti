@@ -13,16 +13,20 @@ void main() {
   (AgentMessageEntity, AgentMessagePayloadEntity) turn(
     Map<String, Object?> content, {
     String? toolName,
+    DateTime? at,
   }) => (
     makeTestMessage(
+      createdAt: at,
       kind: toolName == null ? AgentMessageKind.user : AgentMessageKind.action,
       toolName: toolName,
     ),
     makeTestMessagePayload(content: content),
   );
 
-  (AgentMessageEntity, AgentMessagePayloadEntity) reply(String text) =>
-      turn({'text': text}, toolName: FrontAgentToolNames.replyToUser);
+  (AgentMessageEntity, AgentMessagePayloadEntity) reply(
+    String text, {
+    DateTime? at,
+  }) => turn({'text': text}, toolName: FrontAgentToolNames.replyToUser, at: at);
 
   final now = DateTime(2026, 11, 8, 14, 30);
 
@@ -44,29 +48,42 @@ void main() {
     ]);
   });
 
-  test('a task the tap just made counts as named, ahead of what came '
-      'before it', () {
-    final made =
+  test('a task the tap made counts as named at the tap, ahead of what '
+      'was said after its inbox item was walked', () {
+    Map<String, Object?> door({DateTime? tappedAt}) =>
         FrontDoorRecord(
-          segmentIndex: 0,
-          text: 'make a task to order seeds',
-          kind: FrontDestinationKind.newThing,
-          status: FrontDoorStatus.claimed,
-          claimedAt: now,
-          task: const FrontTaskDraft(title: 'Order seeds'),
-        ).done(
-          const FrontDoorTaskCreated(
-            taskId: 'seeds',
-            newKind: FrontNewKind.task,
-          ),
-        );
+              segmentIndex: 0,
+              text: 'make a task to order seeds',
+              kind: FrontDestinationKind.newThing,
+              status: FrontDoorStatus.claimed,
+              claimedAt: now,
+              task: const FrontTaskDraft(title: 'Order seeds'),
+            )
+            .done(
+              FrontDoorTaskCreated(
+                taskId: 'seeds',
+                newKind: FrontNewKind.task,
+                at: tappedAt,
+              ),
+            )
+            .toJson();
+    List<String> named({DateTime? tappedAt}) => frontConversationTaskIds([
+      turn(
+        door(tappedAt: tappedAt),
+        toolName: frontDoorToolName,
+        at: DateTime(2026, 11, 8, 9),
+      ),
+      reply(
+        '[Prune the roses](lotti://task/roses)',
+        at: DateTime(2026, 11, 8, 9, 10),
+      ),
+    ]);
 
+    expect(named(tappedAt: DateTime(2026, 11, 8, 9, 20)), ['seeds', 'roses']);
     expect(
-      frontConversationTaskIds([
-        turn(made.toJson(), toolName: frontDoorToolName),
-        reply('[Prune the roses](lotti://task/roses)'),
-      ]),
-      ['seeds', 'roses'],
+      named(),
+      ['roses', 'seeds'],
+      reason: 'a record from before the tap time was kept dates by the door',
     );
   });
 

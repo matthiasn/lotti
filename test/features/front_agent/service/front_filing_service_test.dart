@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/entry_text.dart';
@@ -555,23 +556,21 @@ void main() {
       expect(made.generation, 2);
     });
 
-    test(
-      'makeTask titles a task with the trimmed words and records it',
-      () async {
-        seed(
-          const FrontDoorInbox(newKind: FrontNewKind.task),
-          kind: FrontDestinationKind.newThing,
-          destinationId: null,
-          text: '  Buy a hose. ',
-        );
-        await service.makeTask(doorId);
-        expect(madeTasks, [('Buy a hose.', frontDoorTaskId(doorId))]);
-        expect(
-          (rewritten().outcome! as FrontDoorTaskCreated).taskId,
-          'task-new',
-        );
-      },
-    );
+    test('makeTask titles a task with the trimmed words and records it, '
+        'with when the tap made it', () async {
+      seed(
+        const FrontDoorInbox(newKind: FrontNewKind.task),
+        kind: FrontDestinationKind.newThing,
+        destinationId: null,
+        text: '  Buy a hose. ',
+      );
+      final tapped = DateTime.utc(2026, 11, 8, 9, 20);
+      await withClock(Clock.fixed(tapped), () => service.makeTask(doorId));
+      expect(madeTasks, [('Buy a hose.', frontDoorTaskId(doorId))]);
+      final made = rewritten().outcome! as FrontDoorTaskCreated;
+      expect(made.taskId, 'task-new');
+      expect(made.at, tapped);
+    });
 
     test(
       "makeTask fills the task from the router's draft and keeps the words",
