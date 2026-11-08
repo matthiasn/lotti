@@ -7311,6 +7311,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get frontChatInboxTitle => 'Primite';
 
   @override
+  String get frontChatMentionHint => 'Tastați @ pentru a numi o categorie';
+
+  @override
   String get frontChatNoChats =>
       'Încă nu există conversații. Puneți o întrebare pentru a începe una.';
 

@@ -3281,6 +3281,7 @@
   "frontChatInboxChip": "Indbakke {count}",
   "frontChatInboxEmpty": "Intet venter på dig.",
   "frontChatInboxTitle": "Indbakke",
+  "frontChatMentionHint": "Skriv @ for at navngive en kategori",
   "frontChatNoChats": "Ingen chats endnu. Spørg om noget for at starte en.",
   "frontChatNoMatchingChats": "Ingen chattitel passer.",
   "frontChatOlder": "Ældre",

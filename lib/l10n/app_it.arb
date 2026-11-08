@@ -3281,6 +3281,7 @@
   "frontChatInboxChip": "In arrivo {count}",
   "frontChatInboxEmpty": "Niente ti aspetta.",
   "frontChatInboxTitle": "In arrivo",
+  "frontChatMentionHint": "Scrivi @ per nominare una categoria",
   "frontChatNoChats": "Ancora nessuna chat. Fai una domanda per iniziarne una.",
   "frontChatNoMatchingChats": "Nessun titolo di chat corrisponde.",
   "frontChatOlder": "Meno recenti",

@@ -486,7 +486,6 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
                       resolveTranscriptionTarget: ref.watch(
                         queryTranscriptionTargetResolverProvider(widget.scope),
                       ),
-                      composerShape: DesignSystemTextInputShape.pill,
                       composerEnabled: chat?.archived != true && !_creating,
                       emptyState: _empty(
                         context,

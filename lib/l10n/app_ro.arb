@@ -2936,6 +2936,7 @@
   "frontChatInboxChip": "Primite {count}",
   "frontChatInboxEmpty": "Nimic nu vă așteaptă.",
   "frontChatInboxTitle": "Primite",
+  "frontChatMentionHint": "Tastați @ pentru a numi o categorie",
   "frontChatNoChats": "Încă nu există conversații. Puneți o întrebare pentru a începe una.",
   "frontChatNoMatchingChats": "Niciun titlu de conversație nu se potrivește.",
   "frontChatOlder": "Mai vechi",

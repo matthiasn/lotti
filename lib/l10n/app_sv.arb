@@ -3281,6 +3281,7 @@
   "frontChatInboxChip": "Inkorg {count}",
   "frontChatInboxEmpty": "Inget väntar på dig.",
   "frontChatInboxTitle": "Inkorg",
+  "frontChatMentionHint": "Skriv @ för att nämna en kategori",
   "frontChatNoChats": "Inga chattar än. Fråga något för att starta en.",
   "frontChatNoMatchingChats": "Ingen chattitel matchar.",
   "frontChatOlder": "Äldre",

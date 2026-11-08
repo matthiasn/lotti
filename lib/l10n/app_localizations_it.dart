@@ -7276,6 +7276,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get frontChatInboxTitle => 'In arrivo';
 
   @override
+  String get frontChatMentionHint => 'Scrivi @ per nominare una categoria';
+
+  @override
   String get frontChatNoChats =>
       'Ancora nessuna chat. Fai una domanda per iniziarne una.';
 

@@ -2943,6 +2943,7 @@
   "frontChatInboxChip": "Příchozí {count}",
   "frontChatInboxEmpty": "Nic na tebe nečeká.",
   "frontChatInboxTitle": "Příchozí",
+  "frontChatMentionHint": "Napiš @ a pojmenuj kategorii",
   "frontChatNoChats": "Zatím žádné chaty. Na něco se zeptej a jeden začne.",
   "frontChatNoMatchingChats": "Žádný název chatu neodpovídá.",
   "frontChatOlder": "Starší",

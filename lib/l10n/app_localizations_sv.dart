@@ -7201,6 +7201,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get frontChatInboxTitle => 'Inkorg';
 
   @override
+  String get frontChatMentionHint => 'Skriv @ för att nämna en kategori';
+
+  @override
   String get frontChatNoChats =>
       'Inga chattar än. Fråga något för att starta en.';
 

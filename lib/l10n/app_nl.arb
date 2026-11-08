@@ -3280,6 +3280,7 @@
   "frontChatInboxChip": "Inbox {count}",
   "frontChatInboxEmpty": "Er wacht niets op je.",
   "frontChatInboxTitle": "Inbox",
+  "frontChatMentionHint": "Typ @ om een categorie te noemen",
   "frontChatNoChats": "Nog geen chats. Stel een vraag om er een te beginnen.",
   "frontChatNoMatchingChats": "Geen chattitel komt overeen.",
   "frontChatOlder": "Ouder",

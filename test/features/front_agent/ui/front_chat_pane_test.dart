@@ -4,6 +4,7 @@ import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/query_chat_models.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/query/query_source_access.dart';
 import 'package:lotti/features/agents/state/agent_chat_projection.dart';
@@ -14,6 +15,7 @@ import 'package:lotti/features/ai/util/inference_provider_resolver.dart';
 import 'package:lotti/features/ai_consumption/model/consumption_aggregation_models.dart';
 import 'package:lotti/features/ai_consumption/state/consumption_providers.dart';
 import 'package:lotti/features/daily_os_next/state/selected_date_provider.dart';
+import 'package:lotti/features/design_system/components/chat_input/design_system_chat_input.dart';
 import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -29,6 +31,7 @@ import 'package:lotti/features/front_agent/state/front_chat_thread_provider.dart
 import 'package:lotti/features/front_agent/state/front_conversation_providers.dart';
 import 'package:lotti/features/front_agent/state/front_inbox_filter.dart';
 import 'package:lotti/features/front_agent/state/front_journal_access_provider.dart';
+import 'package:lotti/features/front_agent/state/front_mention_categories.dart';
 import 'package:lotti/features/front_agent/ui/front_ask_options_row.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_header.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_hero.dart';
@@ -55,6 +58,7 @@ import '../../../test_data/test_data.dart';
 import '../../../widget_test_utils.dart';
 import '../../agents/test_data/entity_factories.dart';
 import '../../ai_consumption/test_utils.dart';
+import '../../categories/test_utils.dart';
 
 void main() {
   final now = DateTime(2026, 10, 24, 10);
@@ -126,6 +130,7 @@ void main() {
     Future<ResolvedInferenceProvider> Function()? dictationTarget,
     bool pushed = false,
     List<NavigatorObserver> navigatorObservers = const [],
+    List<CategoryDefinition>? mentionCategories,
   }) async {
     // The project creation resolves categories through the locator.
     final cache = MockEntitiesCacheService();
@@ -189,6 +194,10 @@ void main() {
                 (ref) => Stream.value(journalAccess),
               ),
             configFlagProvider.overrideWith((ref, _) => Stream.value(false)),
+            if (mentionCategories != null)
+              frontMentionCategoriesProvider.overrideWithValue(
+                mentionCategories,
+              ),
             // The tasks her lists name: none loads, so each row keeps the
             // title she gave it.
             taskPreviewProvider.overrideWith((ref, id) async => null),
@@ -498,7 +507,7 @@ void main() {
       ),
     );
 
-    final field = tester.getRect(find.byType(TextField));
+    final field = tester.getRect(find.byKey(DesignSystemChatInputKeys.card));
     final view = tester.widget<AgentChatView>(find.byType(AgentChatView));
     expect(view.contentMaxWidth, kProseMeasureWidth);
     expect(field.width, lessThanOrEqualTo(kProseMeasureWidth));
@@ -1042,6 +1051,33 @@ void main() {
         tester.getTopLeft(find.textContaining('Thanks', findRichText: true)).dy,
       ),
     );
+  });
+
+  testWidgets('@ offers the categories she may see, and the field says so; '
+      'with none, it says nothing about @', (tester) async {
+    await pumpPane(
+      tester,
+      mentionCategories: [
+        CategoryTestUtils.createTestCategory(
+          id: 'colony',
+          name: 'Colony',
+          color: '#4CAF93',
+        ),
+      ],
+    );
+    var input = tester.widget<DesignSystemChatInput>(
+      find.byType(DesignSystemChatInput),
+    );
+    expect(input.mentionOptions.single.label, 'Colony');
+    expect(input.mentionOptions.single.color, const Color(0xFF4CAF93));
+    expect(input.helperText, 'Type @ to name a category');
+
+    await pumpPane(tester, mentionCategories: const <CategoryDefinition>[]);
+    input = tester.widget<DesignSystemChatInput>(
+      find.byType(DesignSystemChatInput),
+    );
+    expect(input.mentionOptions, isEmpty);
+    expect(input.helperText, isNull);
   });
 
   testWidgets('a reply with no list of tasks has no task rows', (tester) async {

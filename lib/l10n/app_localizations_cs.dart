@@ -7268,6 +7268,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get frontChatInboxTitle => 'Příchozí';
 
   @override
+  String get frontChatMentionHint => 'Napiš @ a pojmenuj kategorii';
+
+  @override
   String get frontChatNoChats =>
       'Zatím žádné chaty. Na něco se zeptej a jeden začne.';
 
