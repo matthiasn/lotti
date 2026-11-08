@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:lotti/classes/github/pull_request_ref.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/pull_request_data.dart';
+import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
 import 'package:lotti/features/github/api/github_client.dart';
 import 'package:lotti/features/github/domain/open_pull_request.dart';
 import 'package:lotti/features/github/domain/pull_request_summary.dart';
@@ -498,13 +499,14 @@ void main() {
           await tester.tap(menu);
           await tester.pump();
           await tester.pump(const Duration(seconds: 1));
-          final refreshItem = tester.widget<PopupMenuItem<String>>(
+          // The row is inert meanwhile.
+          final refreshRow = tester.widget<InkWell>(
             find.ancestor(
               of: find.text('Refresh pull request'),
-              matching: find.byType(PopupMenuItem<String>),
+              matching: find.byType(InkWell),
             ),
           );
-          expect(refreshItem.enabled, isFalse);
+          expect(refreshRow.onTap, isNull);
 
           pending.complete(PullRequestRefreshed(entry.data.snapshot!));
           await tester.tapAt(Offset.zero);
@@ -697,7 +699,14 @@ void main() {
         // The menu ignores taps until it has finished opening.
         await tester.pump();
         await tester.pump(const Duration(seconds: 1));
-        expect(find.text('Unlink pull request'), findsOneWidget);
+        // The unified menu every agent surface opens, not a Material popup.
+        expect(
+          find.ancestor(
+            of: find.text('Unlink pull request'),
+            matching: find.byType(DesignSystemContextMenu),
+          ),
+          findsOneWidget,
+        );
         await tester.tap(find.text('Unlink pull request'));
         // onSelected runs once the menu's close animation has finished.
         await tester.pump();

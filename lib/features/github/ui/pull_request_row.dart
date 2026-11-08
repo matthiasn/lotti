@@ -4,6 +4,8 @@ import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/pull_request_data.dart';
+import 'package:lotti/features/agents/ui/agent_surface_menu.dart';
+import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
@@ -467,36 +469,31 @@ class _PullRequestMenu extends StatelessWidget {
     final tokens = context.designTokens;
     final messages = context.messages;
 
-    PopupMenuItem<String> item(
-      String value,
-      IconData icon,
-      String label, {
-      bool enabled = true,
-    }) => PopupMenuItem<String>(
-      value: value,
-      enabled: enabled,
-      child: Row(
-        children: [
-          Icon(icon, size: IconSizes.m),
-          SizedBox(width: tokens.spacing.step3),
-          Flexible(child: Text(label)),
-        ],
-      ),
-    );
-
-    return Theme(
-      data: Theme.of(context).copyWith(
-        popupMenuTheme: PopupMenuThemeData(
-          color: tokens.colors.background.level03,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(tokens.radii.m),
-            side: BorderSide(color: tokens.colors.decorative.level01),
-          ),
+    // The menu every agent surface opens — the companion's rows included —
+    // so its rows, surface and pressed state match theirs edge to edge.
+    return AgentSurfaceMenuButton(
+      key: ValueKey('pull-request-menu-$entryId'),
+      semanticsLabel: messages.githubPullRequestActions,
+      items: [
+        DesignSystemContextMenuItem(
+          icon: LottiIcons.refresh,
+          label: messages.githubRefreshPullRequest,
+          onTap: refreshing ? null : onRefresh,
         ),
-      ),
-      child: PopupMenuButton<String>(
-        key: ValueKey('pull-request-menu-$entryId'),
+        DesignSystemContextMenuItem(
+          icon: LottiIcons.openExternal,
+          label: messages.githubOpenOnGitHub,
+          onTap: onOpen,
+        ),
+        DesignSystemContextMenuItem(
+          icon: LottiIcons.linkOff,
+          label: messages.githubUnlinkPullRequest,
+          onTap: () => unawaited(onUnlink()),
+        ),
+      ],
+      triggerBuilder: (context, open) => IconButton(
         tooltip: messages.githubPullRequestActions,
+        onPressed: open,
         icon: refreshing
             ? DesignSystemSpinner(
                 key: const Key('pull-request-refreshing'),
@@ -508,27 +505,6 @@ class _PullRequestMenu extends StatelessWidget {
                 color: tokens.colors.text.mediumEmphasis,
                 size: IconSizes.m,
               ),
-        position: PopupMenuPosition.under,
-        onSelected: (value) {
-          switch (value) {
-            case 'refresh':
-              onRefresh();
-            case 'open':
-              onOpen();
-            case 'unlink':
-              unawaited(onUnlink());
-          }
-        },
-        itemBuilder: (context) => [
-          item(
-            'refresh',
-            LottiIcons.refresh,
-            messages.githubRefreshPullRequest,
-            enabled: !refreshing,
-          ),
-          item('open', LottiIcons.openExternal, messages.githubOpenOnGitHub),
-          item('unlink', LottiIcons.linkOff, messages.githubUnlinkPullRequest),
-        ],
       ),
     );
   }
