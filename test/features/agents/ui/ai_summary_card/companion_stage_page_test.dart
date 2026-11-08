@@ -18,9 +18,11 @@ import 'package:lotti/features/companion/state/companion_look_controller.dart';
 import 'package:lotti/features/companion/state/spoken_track.dart';
 import 'package:lotti/features/companion/ui/companion_speaker.dart';
 import 'package:lotti/features/companion/ui/companion_view.dart';
+import 'package:lotti/features/design_system/state/pane_width_controller.dart';
 import 'package:lotti/features/tts/state/tts_engine_provider.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:mocktail/mocktail.dart';
 
 import '../../../../widget_test_utils.dart';
 import '../../../companion/companion_overrides.dart';
@@ -342,9 +344,17 @@ void main() {
 
   group("a host's side panel", () {
     const panel = SizedBox.expand(key: Key('host-panel'));
+    late TestGetItMocks mocks;
 
-    testWidgets('stands beside her on a desktop window, she keeping the '
-        'larger share', (tester) async {
+    setUp(() async => mocks = await setUpTestGetIt());
+    tearDown(tearDownTestGetIt);
+
+    double figureWidth(WidgetTester tester) => tester
+        .getRect(find.byKey(const ValueKey('companionStageFigure')))
+        .width;
+
+    testWidgets('stands beside her on a desktop window, the conversation '
+        'keeping the larger share', (tester) async {
       tester.view
         ..physicalSize = const Size(1600, 1000)
         ..devicePixelRatio = 1;
@@ -358,13 +368,54 @@ void main() {
       expect(side.left, greaterThanOrEqualTo(figure.right));
       expect(
         side.width / (side.width + figure.width),
-        closeTo(
-          CompanionStagePage.sidePanelFlex /
-              (CompanionStagePage.sidePanelFlex +
-                  CompanionStagePage.figureFlex),
-          0.01,
-        ),
+        closeTo(1 - defaultCompanionStageShare, 0.01),
       );
+    });
+
+    testWidgets('opens at the share the user saved', (tester) async {
+      when(() => mocks.settingsDb.itemsByKeys(any())).thenAnswer(
+        (_) async => {companionStageShareKey: '0.5'},
+      );
+      tester.view
+        ..physicalSize = const Size(1600, 1000)
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await openStage(tester, sidePanel: panel);
+
+      expect(
+        figureWidth(tester),
+        closeTo((1600 - 3) * 0.5, 0.5),
+      );
+    });
+
+    testWidgets('the divider between them drags her share with the pointer '
+        'and saves it', (tester) async {
+      tester.view
+        ..physicalSize = const Size(1600, 1000)
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await openStage(tester, sidePanel: panel);
+
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.byKey(CompanionStagePage.sidePanelDividerKey)),
+      );
+      // Past the drag slop, so the next move is applied whole.
+      await gesture.moveBy(const Offset(40, 0));
+      await tester.pump();
+      final before = figureWidth(tester);
+      await gesture.moveBy(const Offset(160, 0));
+      await tester.pump();
+      await gesture.up();
+      final after = figureWidth(tester);
+
+      expect(after - before, closeTo(160, 0.5));
+      await tester.pump(persistDebounce);
+      verify(
+        () => mocks.settingsDb.saveSettingsItem(
+          companionStageShareKey,
+          (after / (1600 - 3)).toStringAsFixed(3),
+        ),
+      ).called(1);
     });
 
     testWidgets('is left out on a phone, where she takes the screen', (
