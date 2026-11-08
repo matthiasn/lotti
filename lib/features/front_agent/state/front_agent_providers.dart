@@ -37,9 +37,11 @@ import 'package:lotti/features/journal/create/create_entry.dart';
 import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart';
+import 'package:lotti/logic/repositories/project_repository.dart';
 import 'package:lotti/providers/agent_repository_providers.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/providers/update_notifications_providers.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/device_region.dart';
 
 /// The routing index over the journal and the agent store.
@@ -253,6 +255,14 @@ final frontTaskMakerProvider = Provider<FrontTaskMaker>(
         id: id,
         words: words,
         startTimer: ref.read(timeServiceProvider).start,
+        // Read on use: only a follow-up needs the project repository.
+        inheritProject: ({required sourceTaskId, required newTaskId}) => ref
+            .read(projectRepositoryProvider)
+            .inheritProjectFromTask(
+              sourceTaskId: sourceTaskId,
+              newTaskId: newTaskId,
+            ),
+        domainLogger: ref.read(domainLoggerProvider),
         assignAgent: (task) => autoAssignCategoryAgentWith(
           ref.read(taskAgentServiceProvider),
           task,
@@ -268,7 +278,10 @@ final frontTaskMakerProvider = Provider<FrontTaskMaker>(
 ///
 /// A follow-up — a draft naming the task it follows — takes that task's
 /// category when the words named none, so its category's agent is the one
-/// assigned.
+/// assigned, and is filed under that task's project by [inheritProject]
+/// (none when the task has none, or when a named category differs from the
+/// project's). A failed project link is reported to [domainLogger] and the
+/// task stands without one.
 ///
 /// Once written, the user's [words] are filed under it as a linked text
 /// entry — where the task came from, and what its agent reads — a follow-up
@@ -289,6 +302,12 @@ Future<Task?> makeFrontTask(
   required String words,
   required Future<void> Function(JournalEntity timer, JournalEntity task)
   startTimer,
+  required Future<bool> Function({
+    required String sourceTaskId,
+    required String newTaskId,
+  })
+  inheritProject,
+  required DomainLogger domainLogger,
   required Future<void> Function(Task task) assignAgent,
 }) async {
   final now = clock.now();
@@ -338,6 +357,20 @@ Future<Task?> makeFrontTask(
       toId: followed.meta.id,
       linkType: EntryLinkType.followsUp,
     );
+    try {
+      await inheritProject(sourceTaskId: followed.meta.id, newTaskId: id);
+    } catch (error, stackTrace) {
+      domainLogger.error(
+        LogDomain.agentWorkflow,
+        error,
+        stackTrace: stackTrace,
+        subDomain: 'makeFrontTask',
+        message:
+            'Failed to inherit project from '
+            '${DomainLogger.sanitizeId(followed.meta.id)} for '
+            '${DomainLogger.sanitizeId(id)}',
+      );
+    }
   }
   if (started != null) {
     final timer = await writeFrontTextEntry(
