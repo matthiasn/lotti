@@ -101,7 +101,7 @@ class ImpactStackedBars extends StatelessWidget {
     // unit (e.g. 10/20/30/40/50, never 13/25/38/50). Share keeps the 0–100%
     // scale even when isolating a single band.
     final maxY = shareMode ? 1.0 : impactNiceCeiling(maxValue);
-    final interval = impactNiceInterval(maxY);
+    final interval = impactTickInterval(maxY, metric, shareMode: shareMode);
     // Label every bar when there's room (≤7); thin out for longer ranges.
     final labelEvery = drawCount <= 7
         ? 1
@@ -417,7 +417,7 @@ class ImpactStackedArea extends StatelessWidget {
     }
     final niceCeiling = impactNiceCeiling(maxTop * 1.08);
     final maxY = shareMode ? 1.0 : (niceCeiling <= 0 ? 1.0 : niceCeiling);
-    final interval = impactNiceInterval(maxY);
+    final interval = impactTickInterval(maxY, metric, shareMode: shareMode);
     final labelEvery = lastDrawnBucket <= 7
         ? 1
         : (lastDrawnBucket / 6).ceil().clamp(1, lastDrawnBucket);

@@ -48,6 +48,13 @@ extension ConsumptionMetricLens on ConsumptionMetric {
   /// by cloud providers that return billing/impact data (cost/energy/carbon)
   /// or usage (tokens). Drives the "measured for cloud models only" coverage
   /// note.
+  /// Whether the metric counts whole things — tokens, requests — so an axis
+  /// tick between two counts would print one count twice.
+  bool get countsWholeUnits => switch (this) {
+    ConsumptionMetric.tokens || ConsumptionMetric.requests => true,
+    _ => false,
+  };
+
   bool get isCloudOnly => switch (this) {
     ConsumptionMetric.requests => false,
     _ => true,
