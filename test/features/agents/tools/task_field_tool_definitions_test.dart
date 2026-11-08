@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
+import 'package:lotti/features/agents/tools/task_status_handler.dart';
 
 void main() {
   group('task field tool definitions', () {
@@ -170,7 +171,8 @@ void main() {
         expect(tool.name, equals('set_task_status'));
         expect(tool.description, contains('status'));
         expect(tool.description, contains('DONE'));
-        expect(tool.description, contains('user-only'));
+        expect(tool.description, contains('Propose DONE when the user says'));
+        expect(tool.description, contains('REJECTED is user-only'));
         expect(tool.description, contains('clear evidence'));
         expect(tool.description, contains('BLOCKED and ON HOLD require'));
       });
@@ -180,17 +182,8 @@ void main() {
         final statusProp = properties['status'] as Map;
         expect(statusProp['type'], equals('string'));
         final allowedEnum = statusProp['enum'] as List;
-        expect(
-          allowedEnum,
-          containsAll([
-            'OPEN',
-            'IN PROGRESS',
-            'GROOMED',
-            'BLOCKED',
-            'ON HOLD',
-          ]),
-        );
-        expect(allowedEnum, isNot(contains('DONE')));
+        // The schema offers exactly what the handler applies on confirm.
+        expect(allowedEnum.toSet(), TaskStatusHandler.allowedStatuses);
         expect(allowedEnum, isNot(contains('REJECTED')));
         expect(tool.parameters['required'], contains('status'));
       });

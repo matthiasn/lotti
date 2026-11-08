@@ -59,7 +59,7 @@ is:
 | Idiom | Where |
 |-------|-------|
 | The five live labels as a list | `tasks/ui/utils.dart` `openTaskStatuses` — what the linking UI filters on |
-| A `{'DONE', 'REJECTED'}` set | `day_agent_capture_helpers.dart` (`isClosedTask`), `agents/tools/task_status_handler.dart` |
+| A `{'DONE', 'REJECTED'}` set | `day_agent_capture_helpers.dart` (`isClosedTask`) |
 | Raw SQL `NOT IN ('DONE', 'REJECTED')` | `database.dart`, `database.drift`, `database_task_due_queries.dart`, `database_migration.dart` |
 | A sealed-type test, `is TaskDone \|\| is TaskRejected` | `wake_run_chart_providers.dart` (`_findResolution`), `task_resolution_time_series.dart`, `task_blockers_controller.dart`, `desktop_task_header_connector.dart` |
 | Prompt and tool contracts | `task_field_tool_definitions.dart`, `task_agent_prompt_builder.dart` |

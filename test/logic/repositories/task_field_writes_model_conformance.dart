@@ -138,8 +138,8 @@ extension _AnyFieldTrace on glados.Any {
       .map((codes) => [for (final code in codes) _FieldStep.decode(code)]);
 }
 
-/// The statuses the screen sets, and the agent's (DONE is the user's
-/// alone): none needs a reason.
+/// Statuses the screen sets, and some the agent applies on the user's
+/// confirm: none needs a reason.
 const _statuses = ['OPEN', 'IN PROGRESS', 'DONE'];
 const _agentStatuses = ['OPEN', 'IN PROGRESS', 'GROOMED'];
 const _titles = ['Write the report', 'Send the report', 'File the report'];

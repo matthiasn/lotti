@@ -854,6 +854,7 @@ class _ProposalRowState extends ConsumerState<ProposalRow>
                         // While resolving, the badge below is the indicator — hide
                         // the trailing buttons/spinner so they don't peek behind it.
                         resolving: resolveKindLocal != null,
+                        closesTask: isDoneProposal(_toolName, _args),
                         onReject: _reject,
                         onConfirm: _confirm,
                       ),
