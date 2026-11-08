@@ -4446,7 +4446,6 @@
     "description": "On a phone, the companion's full-screen stage: the control in her top bar that opens the conversation she is speaking in, and that sheet's title."
   },
   "frontChatTitle": "Companion",
-  "frontChatVoiceLabel": "Voice",
   "frontChatYesterday": "Yesterday",
   "frontDoorActionFailed": "That did not go through.",
   "frontDoorAnswerHidden": "Hidden: it draws on something you can no longer see.",

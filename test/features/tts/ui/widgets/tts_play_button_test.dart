@@ -14,6 +14,7 @@ void main() {
     VoidCallback? onPlay,
     VoidCallback? onStop,
     String? playLabel,
+    IconData? idleIcon,
   }) {
     return tester.pumpWidget(
       makeTestableWidget(
@@ -22,6 +23,7 @@ void main() {
             mode: mode,
             progress: progress,
             playLabel: playLabel,
+            idleIcon: idleIcon,
             onPlay: onPlay ?? () {},
             onStop: onStop ?? () {},
           ),
@@ -55,6 +57,26 @@ void main() {
     await tester.tap(find.byType(TtsPlayButton));
     expect(played, 1);
     expect(stopped, 0);
+  });
+
+  testWidgets("a host's idle glyph replaces the speaker while idle only, so "
+      'playing still says stop', (tester) async {
+    await pumpButton(
+      tester,
+      mode: TtsButtonMode.idle,
+      idleIcon: LottiIcons.replay,
+    );
+    expect(find.byIcon(LottiIcons.replay), findsOneWidget);
+    expect(find.byIcon(LottiIcons.volume), findsNothing);
+
+    await pumpButton(
+      tester,
+      mode: TtsButtonMode.playing,
+      progress: 0.5,
+      idleIcon: LottiIcons.replay,
+    );
+    expect(find.byIcon(LottiIcons.stop), findsOneWidget);
+    expect(find.byIcon(LottiIcons.replay), findsNothing);
   });
 
   testWidgets('playing shows a stop square, a determinate arc, stops on tap', (

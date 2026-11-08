@@ -7302,9 +7302,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get frontChatTitle => 'Begleitung';
 
   @override
-  String get frontChatVoiceLabel => 'Stimme';
-
-  @override
   String get frontChatYesterday => 'Gestern';
 
   @override

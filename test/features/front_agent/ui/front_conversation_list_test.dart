@@ -3,6 +3,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_grouped_list.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
@@ -134,18 +135,66 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('with nothing said yet, a new chat and the invitation only', (
-    tester,
-  ) async {
-    await pumpList(tester, index: FrontConversationIndex.empty);
+  testWidgets('with nothing said yet, the band offers a new chat and no '
+      'search, and the list only invites', (tester) async {
+    await pumpList(tester, index: FrontConversationIndex.empty, beside: true);
 
-    expect(titles(tester), ['New chat']);
+    expect(titles(tester), isEmpty);
     expect(find.text('No chats yet. Ask something to start one.'), findsOne);
+    expect(find.byKey(FrontConversationListKeys.newChat), findsOne);
+    expect(find.byKey(FrontConversationListKeys.search), findsNothing);
     expect(find.byType(DesignSystemSearch), findsNothing);
   });
 
-  testWidgets('a new chat first, then the live ones newest first under '
-      'recency sections with the open one marked, the archived folded away', (
+  testWidgets('beside the conversation the list has a band of its own: '
+      "Chats, its search and a new chat, as tall as her header's", (
+    tester,
+  ) async {
+    await pumpList(tester, beside: true);
+
+    expect(find.text('Chats'), findsOne);
+    final band = find.ancestor(
+      of: find.text('Chats'),
+      matching: find.byType(DecoratedBox),
+    );
+    final search = tester.getRect(find.byKey(FrontConversationListKeys.search));
+    final newChat = tester.getRect(
+      find.byKey(FrontConversationListKeys.newChat),
+    );
+    // One row: the title, then the search, then the new chat at the end.
+    expect(search.center.dy, newChat.center.dy);
+    expect(search.right, lessThanOrEqualTo(newChat.left));
+    // A tap target and the band's inset above and below it.
+    final tokens = tester
+        .element(find.byType(FrontConversationList))
+        .designTokens;
+    expect(
+      tester.getRect(band.first).height,
+      TapTargets.minimum + 2 * tokens.spacing.step2,
+    );
+    // The page's one action wears the accent.
+    expect(
+      tester
+          .widget<DesignSystemIconAction>(
+            find.byKey(FrontConversationListKeys.newChat),
+          )
+          .tone,
+      tokens.colors.interactive.enabled,
+    );
+  });
+
+  testWidgets('as a page, the list leaves its actions to the page header', (
+    tester,
+  ) async {
+    await pumpList(tester);
+
+    expect(find.text('Chats'), findsNothing);
+    expect(find.byKey(FrontConversationListKeys.newChat), findsNothing);
+    expect(find.byKey(FrontConversationListKeys.search), findsNothing);
+  });
+
+  testWidgets('the live ones newest first under recency sections with the '
+      'open one marked, the archived folded away', (
     tester,
   ) async {
     // Every frame of this test reads the fixed day.
@@ -153,8 +202,6 @@ void main() {
       await pumpList(tester);
 
       expect(titles(tester), [
-        'New chat',
-        'Search chats',
         'Count the hatchlings',
         'Plan the census',
         'Archived chats · 1',
@@ -207,36 +254,33 @@ void main() {
     });
   });
 
-  testWidgets('search looks through the archived ones too, keeps the new '
-      'chat, drops the sections, and says when nothing matches', (
-    tester,
-  ) async {
+  testWidgets('search looks through the archived ones too, drops the '
+      'sections, and says when nothing matches', (tester) async {
     await withClock(Clock.fixed(now), () async {
-      await pumpList(tester);
+      await pumpList(tester, beside: true);
 
-      // The search opens in place from its row.
+      // The search opens in place from the band's glyph.
       expect(find.byType(TextField), findsNothing);
       await tester.tap(find.byKey(FrontConversationListKeys.search));
       await tester.pump();
       await tester.enterText(find.byType(TextField), 'CENSUS');
       await tester.pump();
-      expect(titles(tester), ['New chat', 'Plan the census']);
+      expect(titles(tester), ['Plan the census']);
       expect(find.text('Today'), findsNothing);
 
       await tester.enterText(find.byType(TextField), 'rota');
       await tester.pump();
-      expect(titles(tester), ['New chat', 'Feeding rota']);
+      expect(titles(tester), ['Feeding rota']);
 
       await tester.enterText(find.byType(TextField), 'krill');
       await tester.pump();
-      expect(titles(tester), ['New chat']);
+      expect(titles(tester), isEmpty);
       expect(find.text('No chat title matches.'), findsOne);
 
       // Clearing closes it again, and the list is back as it was.
       await tester.tap(find.byIcon(LottiIcons.closeCircled));
       await tester.pump();
       expect(find.byType(TextField), findsNothing);
-      expect(titles(tester), contains('Search chats'));
       expect(find.text('Today'), findsOne);
     });
   });
@@ -246,6 +290,7 @@ void main() {
     await withClock(Clock.fixed(now), () async {
       await pumpList(
         tester,
+        beside: true,
         allChats: FrontChatThread(
           messages: const [],
           doorsByMessageId: {
@@ -336,8 +381,8 @@ void main() {
     expect(rotaTexts.first, 'Feeding rota');
   });
 
-  testWidgets('the groups are flat: a label in the accent over its rows, no '
-      'card and no hairlines, each row dense and rounded for its own fill', (
+  testWidgets('the groups are flat: a neutral label over its rows, no card '
+      'and no hairlines, each row dense and rounded for its own fill', (
     tester,
   ) async {
     await pumpList(tester);
@@ -352,23 +397,24 @@ void main() {
     expect(rows.single.borderRadius, isNotNull);
     expect(rows.single.size, DesignSystemListItemSize.small);
 
-    // The day is said in the accent, so the days split at a glance.
-    final accent = tester
+    // The day is said quietly: the accent means "press", and a day is not
+    // pressed.
+    final quiet = tester
         .element(find.byType(FrontConversationList))
         .designTokens
         .colors
-        .interactive
-        .enabled;
+        .text
+        .lowEmphasis;
     final days = tester.widgetList<Text>(
       find.textContaining(RegExp(r'^(Today|Yesterday|Previous 7 days|Older)$')),
     );
     expect(days, isNotEmpty);
-    expect(days.map((t) => t.style!.color), everyElement(accent));
+    expect(days.map((t) => t.style!.color), everyElement(quiet));
   });
 
   testWidgets('a row says no time of its own — its section says when — and '
-      "her answer runs the row's width; the open row says it as brightly as "
-      'its title', (tester) async {
+      "her answer runs the row's width on one line; the open row says it a "
+      'step brighter', (tester) async {
     // Every frame of this test reads the fixed day: "today at 11:58" is
     // today only while the clock says it is that day.
     await withClock(Clock.fixed(now), () async {
@@ -408,15 +454,21 @@ void main() {
           tester.getRect(inRow(id, find.text('Chat $id')));
       expect(previewBox('c-1').right, previewBox('c-2').right);
       expect(previewBox('c-1').left, titleBox('c-1').left);
-      expect(preview('c-1').overflow, TextOverflow.fade);
+      expect(preview('c-1').overflow, TextOverflow.ellipsis);
+      expect(preview('c-1').maxLines, 1);
 
       final colors = tester
           .element(find.byKey(FrontConversationListKeys.row('c-1')))
           .designTokens
           .colors
           .text;
-      expect(preview('c-1').style!.color, colors.highEmphasis);
-      expect(preview('c-2').style!.color, colors.mediumEmphasis);
+      expect(preview('c-1').style!.color, colors.mediumEmphasis);
+      expect(preview('c-2').style!.color, colors.lowEmphasis);
+      // The title takes one line too, so every row is the same height.
+      expect(
+        tester.widget<Text>(inRow('c-1', find.text('Chat c-1'))).maxLines,
+        1,
+      );
     });
   });
 
@@ -503,7 +555,7 @@ void main() {
   });
 
   testWidgets('an empty search closes when focus leaves it', (tester) async {
-    await pumpList(tester);
+    await pumpList(tester, beside: true);
 
     await tester.tap(find.byKey(FrontConversationListKeys.search));
     await tester.pump();
@@ -513,7 +565,6 @@ void main() {
     await tester.pump();
 
     expect(find.byType(TextField), findsNothing);
-    expect(titles(tester), contains('Search chats'));
   });
 
   testWidgets("a row's menu sits on its title's first line, at its end — a "
@@ -663,7 +714,7 @@ void main() {
 
   testWidgets('a tap opens that conversation and closes the list; a new '
       'chat opens an empty one', (tester) async {
-    final container = await pumpList(tester);
+    final container = await pumpList(tester, beside: true);
 
     await tester.tap(find.text('Count the hatchlings'));
     await tester.pump();

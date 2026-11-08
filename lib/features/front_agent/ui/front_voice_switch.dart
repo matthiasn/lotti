@@ -2,8 +2,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/companion/model/companion_customization.dart';
 import 'package:lotti/features/companion/state/companion_customization_controller.dart';
+import 'package:lotti/features/design_system/components/buttons/ds_ai_disc_button.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
-import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:material_ui/material_ui.dart';
@@ -36,8 +37,10 @@ void _setSpeaks(WidgetRef ref, CompanionCustomization current, bool speaks) =>
         .read(companionCustomizationProvider.notifier)
         .set(current.copyWith(speaksReplies: speaks));
 
-/// Whether she answers a spoken question aloud, switched where she speaks,
-/// under the word "Voice" — for a header with room for it.
+/// Whether she answers a spoken question aloud, switched where she speaks:
+/// the disc her replay wears, beside it, so her voice reads as one pair. The
+/// glyph says the state by shape — a speaker, or a speaker struck through —
+/// never by colour, since the disc's accent means "busy", not "on".
 class FrontVoiceSwitch extends ConsumerWidget {
   const FrontVoiceSwitch({super.key});
 
@@ -45,13 +48,15 @@ class FrontVoiceSwitch extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final customization = _mutable(ref);
     if (customization == null) return const SizedBox.shrink();
-    final messages = context.messages;
-    return DesignSystemToggle(
-      key: FrontVoiceSwitchKeys.toggle,
-      value: customization.speaksReplies,
-      label: messages.frontChatVoiceLabel,
-      semanticsLabel: messages.companionSettingsSpeakRepliesTitle,
-      onChanged: (speaks) => _setSpeaks(ref, customization, speaks),
+    final speaks = customization.speaksReplies;
+    return Semantics(
+      toggled: speaks,
+      child: DsAiDiscButton(
+        key: FrontVoiceSwitchKeys.toggle,
+        icon: speaks ? LottiIcons.volume : LottiIcons.volumeOff,
+        label: context.messages.companionSettingsSpeakRepliesTitle,
+        onPressed: () => _setSpeaks(ref, customization, !speaks),
+      ),
     );
   }
 }

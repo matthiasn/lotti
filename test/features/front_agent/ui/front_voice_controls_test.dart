@@ -8,6 +8,7 @@ import 'package:lotti/features/companion/model/companion_customization.dart';
 import 'package:lotti/features/companion/model/companion_gesture.dart';
 import 'package:lotti/features/companion/state/companion_customization_controller.dart';
 import 'package:lotti/features/companion/ui/companion_speaker.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/front_agent/model/front_chat_thread.dart';
 import 'package:lotti/features/front_agent/state/front_chat_controller.dart';
 import 'package:lotti/features/front_agent/state/front_chat_thread_provider.dart';
@@ -202,6 +203,15 @@ void main() {
     testWidgets('says her latest answer again, from the start, as she says '
         'it aloud', (tester) async {
       await pump(tester);
+
+      // "Again", not a speaker: her mute beside it is the speaker.
+      expect(
+        find.descendant(
+          of: find.byKey(FrontVoiceControlKeys.replay),
+          matching: find.byIcon(LottiIcons.replay),
+        ),
+        findsOne,
+      );
 
       await tester.tap(find.byTooltip('Say it again'));
       await tester.pump();

@@ -21,6 +21,7 @@ import 'package:lotti/features/companion/ui/companion_speaker.dart';
 import 'package:lotti/features/companion/ui/companion_view.dart';
 import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
+import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
 import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
@@ -35,6 +36,7 @@ import 'package:lotti/features/front_agent/state/front_voice_providers.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_header.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_hero.dart';
 import 'package:lotti/features/front_agent/ui/front_conversation_actions.dart';
+import 'package:lotti/features/front_agent/ui/front_conversation_list.dart';
 import 'package:lotti/features/front_agent/ui/front_profile_choice.dart';
 import 'package:lotti/features/front_agent/ui/front_stage_controls.dart';
 import 'package:lotti/features/front_agent/ui/front_voice_controls.dart';
@@ -210,6 +212,68 @@ void main() {
       await tester.pump();
       expect(listOpen.read(), isFalse);
       expect(titleOf(tester), 'Plan the census');
+    });
+
+    testWidgets("the list's page header carries the list's search and a new "
+        'chat, which starts one and leaves the list', (tester) async {
+      await pumpHeader(tester, conversations: census);
+      final container = containerOf(tester);
+      final listOpen = container.listen(
+        frontConversationListOpenProvider,
+        (_, _) {},
+      );
+      addTearDown(listOpen.close);
+      final searchOpen = container.listen(
+        frontConversationSearchOpenProvider,
+        (_, _) {},
+      );
+      addTearDown(searchOpen.close);
+      await tester.tap(find.byKey(FrontChatHeaderKeys.chats));
+      await tester.pump();
+
+      // Back, Chats, the search, a new chat, close — in that order.
+      final back = tester.getCenter(find.byKey(FrontChatHeaderKeys.back));
+      final search = tester.getCenter(
+        find.byKey(FrontConversationListKeys.search),
+      );
+      final newChat = tester.getCenter(
+        find.byKey(FrontConversationListKeys.newChat),
+      );
+      final close = tester.getCenter(find.byKey(FrontChatHeaderKeys.close));
+      expect(back.dx, lessThan(search.dx));
+      expect(search.dx, lessThan(newChat.dx));
+      expect(newChat.dx, lessThan(close.dx));
+
+      await tester.tap(find.byKey(FrontConversationListKeys.search));
+      await tester.pump();
+      expect(searchOpen.read(), isTrue);
+
+      await tester.tap(find.byKey(FrontConversationListKeys.newChat));
+      await tester.pump();
+      expect(listOpen.read(), isFalse);
+      expect(container.read(frontPickedConversationProvider), isNot('c-1'));
+    });
+
+    testWidgets('her header is a tap target and the band inset tall, the '
+        "list's band's height", (tester) async {
+      await pumpHeader(tester, conversations: census);
+      final tokens = tester.element(find.byType(FrontChatHeader)).designTokens;
+      expect(
+        tester.getSize(find.byType(FrontChatHeader)).height,
+        TapTargets.minimum + 2 * tokens.spacing.step2,
+      );
+      // Her name in the list's title size, the conversation quietly under it.
+      expect(
+        tester
+            .widget<Text>(find.byKey(FrontChatHeaderKeys.name))
+            .style!
+            .fontSize,
+        tokens.typography.styles.subtitle.subtitle2.fontSize,
+      );
+      expect(
+        tester.widget<Text>(find.byKey(FrontChatHeaderKeys.title)).style!.color,
+        tokens.colors.text.lowEmphasis,
+      );
     });
 
     testWidgets('the overflow leads with a new chat, then her internals, '
@@ -780,8 +844,9 @@ void main() {
       );
     });
 
-    testWidgets('beside the list, with room, the switch says "Voice" on the '
-        'row and the stage has a control of its own that stands her up', (
+    testWidgets('beside the list, with room, her mute rides the row beside '
+        'her replay, close stands apart behind a rule, and the stage has a '
+        'control of its own that stands her up', (
       tester,
     ) async {
       await pumpHeader(
@@ -797,6 +862,23 @@ void main() {
       expect(
         overflowOf(tester).map((item) => item.key),
         isNot(contains(FrontVoiceSwitchKeys.menuItem)),
+      );
+      final rule = find.descendant(
+        of: find.byType(FrontChatHeader),
+        matching: find.byWidgetPredicate(
+          (w) =>
+              w is DesignSystemDivider &&
+              w.orientation == DesignSystemDividerOrientation.vertical,
+        ),
+      );
+      expect(rule, findsOne);
+      expect(
+        tester.getCenter(find.byKey(FrontChatHeaderKeys.more)).dx,
+        lessThan(tester.getCenter(rule).dx),
+      );
+      expect(
+        tester.getCenter(rule).dx,
+        lessThan(tester.getCenter(find.byKey(FrontChatHeaderKeys.close)).dx),
       );
       final stage = find.descendant(
         of: find.byType(FrontChatHeader),
