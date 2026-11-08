@@ -81,10 +81,13 @@ tabs.
 ## Publish a release
 
 Manual source is not copied for every app version. The app release tag already
-preserves its exact source. Publishing is a manual workflow run with the
-marketing version and deploy enabled: CI resolves the newest app tag of that
-version, builds the site and its screenshot catalog from the tag, uploads
-both to immutable versioned storage, and redeploys the site with every
-version side by side. Release snapshots are never overwritten. The version
-dropdown reads a live catalog written on every deploy, so older manuals also
-list the releases that came after them.
+preserves its exact source. Every release tag publishes the manual of its
+version automatically: when the manual's pages, screenshot tests or demo data
+changed since the previous release, CI builds the site and captures its
+screenshots from the tag; otherwise the new version reuses the previous
+release's snapshot. Release snapshots are never overwritten. The app opens the
+manual of its own version. The newest ten release snapshots stay online, and a
+link to any other version lands on the newest release. A release manual can
+also be published by hand with a workflow run naming the marketing version.
+The version dropdown reads a live catalog written on every deploy, so older
+manuals also list the releases that came after them.

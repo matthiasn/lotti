@@ -170,7 +170,7 @@
     "lib/features/sync/ui/backfill_settings_page.dart": 1,
     "lib/features/sync/ui/matrix_stats/matrix_metrics_panel.dart": 3,
     "lib/features/sync/ui/provisioned/add_device_page.dart": 10,
-    "lib/features/sync/ui/provisioned/bundle_import_page.dart": 2,
+    "lib/features/sync/ui/provisioned/bundle_import_page.dart": 1,
     "lib/features/sync/ui/provisioned/manual_credentials_page.dart": 2,
     "lib/features/sync/ui/provisioned/qr_scanner.dart": 5,
     "lib/features/sync/ui/re_sync_modal.dart": 4,

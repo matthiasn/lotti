@@ -84,13 +84,16 @@ páginas y pestañas abiertas del manual.
 
 ## Publica una versión
 
-El código fuente del manual no se copia para cada versión de la aplicación. La
-etiqueta de versión de la aplicación ya conserva su código exacto. Publicar es
-una ejecución manual del workflow con la versión de marketing y el despliegue
-activado: CI resuelve la etiqueta de aplicación más reciente de esa versión,
-compila el sitio y su catálogo de capturas a partir de la etiqueta, sube ambos
-a un almacenamiento versionado inmutable y vuelve a desplegar el sitio con
-todas las versiones lado a lado. Las instantáneas de versión nunca se
-sobrescriben. El menú desplegable de versiones lee un catálogo en vivo que se
-escribe en cada despliegue, así que los manuales antiguos también listan las
-versiones que llegaron después.
+El código fuente del manual no se copia para cada versión de la app. La
+etiqueta de versión de la app ya conserva su estado exacto. Cada etiqueta de
+versión publica automáticamente el manual de su versión: si las páginas, las
+pruebas de capturas o los datos de demostración del manual cambiaron desde la
+versión anterior, la CI construye el sitio y toma sus capturas desde la
+etiqueta; si no, la nueva versión reutiliza la instantánea de la versión
+anterior. Las instantáneas de versión nunca se sobrescriben. La app abre el
+manual de su propia versión. Las diez instantáneas más recientes siguen en
+línea, y un enlace a cualquier otra versión lleva a la versión más reciente.
+También puedes publicar un manual de versión a mano con una ejecución del
+workflow que indique la versión comercial. El selector de versión lee un
+catálogo en vivo que se escribe en cada despliegue, así que los manuales
+antiguos también muestran las versiones posteriores.

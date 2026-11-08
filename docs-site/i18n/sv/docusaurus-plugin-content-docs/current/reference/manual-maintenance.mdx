@@ -81,11 +81,14 @@ alla skärmdumpar direkt, och valet bevaras mellan sidor och öppna manualflikar
 
 ## Publicera en utgåva
 
-Manualkällan kopieras inte för varje appversion. Appens utgåvetagg bevarar
-redan exakt källa. Publicering är en manuellt startad workflow-körning med
-marknadsföringsversionen och deploy aktiverat: CI tar fram den senaste
-apptaggen för den versionen, bygger sajten och dess skärmdumpskatalog från
-taggen, laddar upp båda till oföränderlig versionerad lagring och deployar om
-sajten med alla versioner sida vid sida. Utgåvesnapshots skrivs aldrig över.
-Utgåverullistan läser en livekatalog som skrivs vid varje deploy, så äldre
-manualer listar även de utgåvor som kom efter dem.
+Manualens källa kopieras inte för varje appversion. Appens release-tagg
+bevarar redan det exakta läget. Varje release-tagg publicerar automatiskt
+manualen för sin version: om manualens sidor, skärmbildstester eller demodata
+har ändrats sedan förra releasen bygger CI webbplatsen och tar skärmbilderna
+från taggen; annars återanvänder den nya versionen förra releasens snapshot.
+Release-snapshots skrivs aldrig över. Appen öppnar manualen för sin egen
+version. De tio senaste release-snapshotsen ligger kvar online, och en länk
+till vilken annan version som helst hamnar på den senaste releasen. Du kan
+också publicera en release-manual för hand med en workflow-körning som anger
+marknadsversionen. Versionsväljaren läser en livekatalog som skrivs vid varje
+driftsättning, så även äldre manualer listar de releaser som kom efter dem.

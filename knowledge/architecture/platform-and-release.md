@@ -163,24 +163,58 @@ Cloudflare R2 bucket rather than git or Pages alone. Screenshots publish to
 `manual-site/<version>/`; `development` prefixes are mutable (synced with
 deletion), release prefixes are immutable — publishing refuses to overwrite an
 existing manifest or `.snapshot.json` marker, and markers upload last so a
-half-uploaded snapshot is never publishable. Every Pages deploy mirrors the
-whole `manual-site/` store into one tree, writes a live `manual/releases.json`
-derived from what is actually published, and redirects the root to the latest
-release (or `development` before the first). Publishing a release manual is a
-`workflow_dispatch` with the marketing version and `deploy` enabled: the run
-resolves the newest app tag of that version, captures and builds **from that
-tag**, and refuses to advertise a release whose screenshot catalog is not in
-the bucket. Pull requests only validate; nothing publishes without the `R2_*`
-repository secrets.
+half-uploaded snapshot is never publishable.
+
+**Every release tag publishes the manual of its version.** A `x.y.z+build`
+tag push triggers `manual.yml`, whose `metadata` job decides how:
+
+```mermaid
+flowchart TD
+  tag["tag x.y.z+build pushed"] --> exists{"manual-site/x.y.z/<br/>already published?"}
+  exists -->|yes: a second build tag| skip["skip — snapshots are immutable"]
+  exists -->|no| prev{"previous release<br/>in R2?"}
+  prev -->|no| full["full: build + capture 11 locales<br/>from the tag, publish snapshot"]
+  prev -->|yes| diff{"manual sources changed since the<br/>snapshot serving that release?"}
+  diff -->|yes| full
+  diff -->|no| alias["alias: marker only,<br/>aliasOf = that snapshot"]
+  full --> deploy["release Pages deploy"]
+  alias --> deploy
+```
+
+"Manual sources" are `docs-site/`, the `*screenshots_test.dart` harnesses, the
+manual demo-world helpers and `lib/features/demo/seed`; app UI outside them
+does not trigger a rebuild, so a reused version shows its snapshot's
+screenshots. A release manual can still be published by `workflow_dispatch`
+with the marketing version and `deploy` enabled, which resolves the newest app
+tag of that version and always builds in full; its `metadata` job also logs
+the decision a tag push of that version would make, without acting on it —
+the safe rehearsal, since any pushed tag fires every release workflow. Either
+way the run captures and
+builds **from the tag** and refuses to advertise a release whose screenshot
+catalog is not in the bucket.
+
+Every Pages deploy (`assemble-pages-site.mjs`) mirrors the snapshot markers,
+keeps `development` and the newest `RETAINED_RELEASES` (10) full snapshots —
+one is ~55 MB of HTML, scripts and search indexes, and a Pages site may not
+exceed 1 GB — and downloads only those (`mirror-pages-snapshots.sh`). An alias
+whose snapshot is kept becomes a redirect; `manual/releases.json` lists the
+kept snapshots plus an `aliases` map; a site-root `404.html` sends any other
+`/manual/<version>/<page>` — alias, pruned, never published — to the same page
+of the snapshot that serves it, else of the newest release. The root redirects
+to the newest release (or `development` before the first). Older snapshots stay
+in R2. The app links its own version through `manualUriFor`
+(`lib/providers/manual_language_controller.dart`): `/manual/x.y.z/` for a
+release build, `/manual/development/` for anything else. Pull requests only
+validate; nothing publishes without the `R2_*` repository secrets.
 
 The capture itself is **sharded one job per manual locale**, with the matrix
 read from the screenshot registry so a newly registered locale cannot go
 uncaptured. A locale takes roughly twelve minutes, so the eleven-locale
 catalog needs over two hours in sequence — as a single job it was killed at
-its timeout every night and published nothing. Capture runs **nightly and on
-dispatch, never on push**, at `max-parallel: 4`: eleven runners is too large a
-share of the pool to spend per merge when almost nothing that lands changes a
-screenshot. The site itself still builds and deploys per push, so the two
+its timeout every night and published nothing. Capture runs **nightly, on
+dispatch and on a release tag whose manual sources changed — never on a branch
+push**, at `max-parallel: 4`: eleven runners is too large a share of the pool
+to spend per merge when almost nothing that lands changes a screenshot. The site itself still builds and deploys per push, so the two
 cadences differ — prose is immediate, media is at most a day behind. Each shard converts only its
 own locale to WebP (`make manual_screenshots_shard`); a following
 `screenshot_catalog` job merges the slices, writes the manifest across all of

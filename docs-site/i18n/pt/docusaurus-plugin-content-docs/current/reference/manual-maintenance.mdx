@@ -86,12 +86,16 @@ entre páginas e abas abertas do manual.
 
 ## Publicar um lançamento
 
-O código-fonte do manual não é copiado para cada versão do aplicativo. A tag
-de lançamento do aplicativo já preserva sua origem exata. A publicação é uma
-execução manual do workflow com a versão de marketing e o deploy habilitado: o
-CI resolve a tag de aplicativo mais recente daquela versão, compila o site e
-seu catálogo de capturas de tela a partir da tag, envia ambos para um
-armazenamento versionado imutável e reimplanta o site com todas as versões
-lado a lado. Os snapshots de lançamento nunca são sobrescritos. O menu
-suspenso de versões lê um catálogo ao vivo gravado a cada deploy, então
-manuais mais antigos também listam os lançamentos que vieram depois deles.
+A fonte do manual não é copiada para cada versão da app. A tag de lançamento
+da app já preserva o estado exato. Cada tag de lançamento publica
+automaticamente o manual da sua versão: se as páginas, os testes de capturas
+de ecrã ou os dados de demonstração do manual mudaram desde o lançamento
+anterior, a CI constrói o site e tira as capturas a partir da tag; caso
+contrário, a nova versão reutiliza o instantâneo do lançamento anterior. Os
+instantâneos de lançamento nunca são substituídos. A app abre o manual da sua
+própria versão. Os dez instantâneos mais recentes ficam online, e uma ligação
+para qualquer outra versão leva ao lançamento mais recente. Também podes
+publicar um manual de lançamento à mão, com uma execução do workflow que
+indica a versão comercial. O seletor de versões lê um catálogo em direto
+escrito em cada implementação, por isso os manuais mais antigos também listam
+os lançamentos posteriores.
