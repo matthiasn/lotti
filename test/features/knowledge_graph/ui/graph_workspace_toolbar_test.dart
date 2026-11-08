@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/knowledge_graph/domain/graph_models.dart';
 import 'package:lotti/features/knowledge_graph/domain/graph_projection.dart';
@@ -124,6 +125,14 @@ void main() {
       find.byKey(const ValueKey('knowledge-graph-density-menu')),
     );
     await tester.pumpAndSettle();
+    // The unified menu, the current choice its one selected row.
+    expect(
+      tester
+          .widget<DesignSystemContextMenu>(find.byType(DesignSystemContextMenu))
+          .items
+          .where((item) => item.isSelected),
+      hasLength(1),
+    );
     await tester.tap(find.text('Calm').last);
     await tester.pumpAndSettle();
 

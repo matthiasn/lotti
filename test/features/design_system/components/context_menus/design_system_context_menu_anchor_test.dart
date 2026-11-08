@@ -48,6 +48,51 @@ void main() {
       expect(lastOpen, isFalse);
     });
 
+    testWidgets(
+      'groups, toggles and a fitted width reach the menu it opens',
+      (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            DesignSystemContextMenuAnchor(
+              fitContent: true,
+              items: [
+                DesignSystemContextMenuItem(
+                  label: 'Show done',
+                  checked: true,
+                  onTap: () {},
+                ),
+                DesignSystemContextMenuItem(
+                  label: 'Delete',
+                  isDestructive: true,
+                  startsGroup: true,
+                  onTap: () {},
+                ),
+              ],
+              builder: (context, {required toggle, required isOpen}) =>
+                  TextButton(onPressed: toggle, child: const Text('Open')),
+            ),
+          ),
+        );
+        await tester.tap(find.text('Open'));
+        await tester.pumpAndSettle();
+
+        final menu = tester.widget<DesignSystemContextMenu>(
+          find.byType(DesignSystemContextMenu),
+        );
+        expect(menu.fitContent, isTrue);
+        expect(menu.items.first.checked, isTrue);
+        expect(menu.items.last.startsGroup, isTrue);
+        expect(menu.items.last.isDestructive, isTrue);
+        expect(
+          find.descendant(
+            of: find.byType(DesignSystemContextMenu),
+            matching: find.byType(Divider),
+          ),
+          findsOneWidget,
+        );
+      },
+    );
+
     testWidgets('tapping the trigger again closes an open menu', (
       tester,
     ) async {

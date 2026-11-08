@@ -1,3 +1,4 @@
+import 'package:lotti/features/design_system/components/lists/design_system_list_palette.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -62,7 +63,6 @@ class DesignSystemContextMenu extends StatelessWidget {
     this.semanticsLabel,
     this.header,
     this.headerKey,
-    this.edgeToEdge = false,
     this.fitContent = false,
     this.surfaceColor,
     super.key,
@@ -84,11 +84,6 @@ class DesignSystemContextMenu extends StatelessWidget {
   /// heading names the concrete object or date being acted on.
   final Key? headerKey;
 
-  /// Removes the normal outer row padding so the first and last interaction
-  /// fills meet — and are clipped by — the menu's rounded outline, and the
-  /// padding around a group's rule, so the rows on either side meet it.
-  final bool edgeToEdge;
-
   /// Sizes the menu to its widest row instead of [width], which then only
   /// caps it — for a short menu whose labels leave most of a fixed width
   /// empty. Ignored once the rows scroll, where a lazy list has no
@@ -104,12 +99,9 @@ class DesignSystemContextMenu extends StatelessWidget {
     final tokens = context.designTokens;
     final spec = _ContextMenuSpec.fromTokens(tokens, size);
     final needsScroll = items.length > _kMaxVisibleItems;
-    final verticalPadding = edgeToEdge ? 0.0 : spec.verticalPadding;
     final headerHeight = header == null ? 0.0 : spec.headerHeight;
     final maxHeight = needsScroll
-        ? spec.itemHeight * _kMaxVisibleItems +
-              verticalPadding * 2 +
-              headerHeight
+        ? spec.itemHeight * _kMaxVisibleItems + headerHeight
         : null;
 
     final itemList = needsScroll
@@ -193,10 +185,9 @@ class DesignSystemContextMenu extends StatelessWidget {
                               ),
                         ),
                       ),
-                    Padding(
-                      padding: EdgeInsets.symmetric(vertical: verticalPadding),
-                      child: itemList,
-                    ),
+                    // No inset: the first and last rows' fills meet — and are
+                    // clipped by — the rounded outline.
+                    itemList,
                   ],
                 ),
               ),
@@ -207,17 +198,11 @@ class DesignSystemContextMenu extends StatelessWidget {
     );
   }
 
-  /// Edge to edge, the rows' hover fills meet the rule, as they meet the
-  /// outline; otherwise it keeps the rows' breathing room.
-  Widget _groupRule(DsTokens tokens, _ContextMenuSpec spec) => Padding(
-    padding: EdgeInsets.symmetric(
-      vertical: edgeToEdge ? 0 : spec.verticalPadding,
-    ),
-    child: Divider(
-      height: spec.dividerWidth,
-      thickness: spec.dividerWidth,
-      color: tokens.colors.decorative.level01,
-    ),
+  /// The rows' fills meet the rule, as they meet the outline.
+  Widget _groupRule(DsTokens tokens, _ContextMenuSpec spec) => Divider(
+    height: spec.dividerWidth,
+    thickness: spec.dividerWidth,
+    color: tokens.colors.decorative.level01,
   );
 
   Widget _buildItem(
@@ -243,6 +228,13 @@ class DesignSystemContextMenu extends StatelessWidget {
       child: ExcludeSemantics(
         child: InkWell(
           onTap: item.onTap,
+          // The pickable-row ladder in the primary hue, flat — no splash.
+          hoverColor: DesignSystemListPalette.hoverFill(tokens),
+          highlightColor: DesignSystemListPalette.pressedFill(tokens),
+          // Focus has no outline here, so it takes the stronger focus fill
+          // selection rows use rather than the faint hover tint.
+          focusColor: tokens.colors.surface.focusPressed,
+          splashFactory: NoSplash.splashFactory,
           child: Ink(
             color: item.isSelected
                 ? tokens.colors.surface.selected
@@ -289,7 +281,6 @@ class DesignSystemContextMenu extends StatelessWidget {
 class _ContextMenuSpec {
   const _ContextMenuSpec({
     required this.borderRadius,
-    required this.verticalPadding,
     required this.horizontalPadding,
     required this.headerHeight,
     required this.dividerWidth,
@@ -307,7 +298,6 @@ class _ContextMenuSpec {
 
     return _ContextMenuSpec(
       borderRadius: tokens.radii.s,
-      verticalPadding: tokens.spacing.step2,
       horizontalPadding: tokens.spacing.step5,
       headerHeight: tokens.spacing.step8,
       dividerWidth: BorderWidths.hairline,
@@ -323,7 +313,6 @@ class _ContextMenuSpec {
   }
 
   final double borderRadius;
-  final double verticalPadding;
   final double horizontalPadding;
   final double headerHeight;
   final double dividerWidth;

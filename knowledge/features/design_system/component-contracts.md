@@ -265,11 +265,38 @@ the interior edge of the curve, but neither can overpaint the outline and create
 a doubled or discontinuous corner.
 
 `DesignSystemContextMenu` follows the same single-outline rule. An optional
-quiet header can name the concrete date or object being acted on, item identity
-and selected semantics travel with each row, and `edgeToEdge` removes the
-ordinary outer row padding. The hover ink is painted by an inner Material and
-then clipped by the menu outline, so the final action reaches the rounded bottom
-edge instead of leaving an unhighlighted strip above the border.
+quiet header can name the concrete date or object being acted on, and item
+identity, selected, toggle (`checked`) and group (`startsGroup`) semantics
+travel with each row. The rows carry no outer inset: the hover and press ink is
+painted by an inner Material and clipped by the menu outline, so the first and
+last rows reach the rounded top and bottom edges instead of leaving an
+unhighlighted strip inside the border. There is no padded variant to opt into —
+a padded menu is exactly the defect a pull request row's menu once shipped.
+
+Every ⋯/⋮ menu and every dropdown picker is this surface, under one of two
+hosts. A page's or a row's overflow menu opens through `AgentSurfaceMenuButton`
+(`lib/features/agents/ui/agent_surface_menu.dart`), raised over the shared
+modal scrim — features ranked below `agents` cannot import it and use the anchor
+instead; `showAgentSurfaceMenu` is its imperative form, which the agent list's
+Group by and Sort pickers await. A picker that opens under its own label — the
+Insights period unit, the knowledge-graph density, a chart's aggregation —
+opens through `DesignSystemContextMenuAnchor`, with `fitContent` so a short
+list does not take the default width, and the current choice as its one
+`isSelected` row. The anchor re-wraps each item to close before it fires, and
+carries every item field across, groups and toggles included.
+
+**Pickable rows climb one primary ladder.** A context-menu row and a
+single-select `DesignSystemSelectionRow` — the task and project status pickers
+and every other single-select modal — hover in
+`DesignSystemListPalette.hoverFill` (`interactive.enabled` at
+`SurfaceAlphas.tint`, 8 %), wear `surface.selected` (about 16 %) when selected,
+and press in `DesignSystemListPalette.pressedFill` (`surface.active`, about
+24 %), all in the primary hue, with no splash. The order is the contract — hover
+under selected, pressed over it — and `design_system_list_palette_test.dart`
+holds it in both themes. Keyboard focus on a menu row, which has no outline,
+takes the stronger neutral `surface.focusPressed` so it never reads as a mere
+hover. A plain `DesignSystemListItem` keeps the neutral
+`surface.hover` / `surface.focusPressed`: a navigation row is not a choice.
 
 `DesignSystemContextMenuAnchor` opens that surface beneath a caller-built
 trigger, whose `toggle` is the ordinary way in. A trigger that must open the

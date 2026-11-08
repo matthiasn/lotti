@@ -1,5 +1,6 @@
 import 'package:lotti/features/design_system/components/checkboxes/design_system_checkbox.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
+import 'package:lotti/features/design_system/components/lists/design_system_list_palette.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -200,7 +201,10 @@ class DesignSystemSelectionRow extends StatelessWidget {
               : tokens.colors.surface.selected,
           hoverBackgroundColor: isMulti || secondaryAction != null
               ? Colors.transparent
-              : null,
+              : DesignSystemListPalette.hoverFill(tokens),
+          pressedBackgroundColor: isMulti
+              ? null
+              : DesignSystemListPalette.pressedFill(tokens),
           onTap: onTap,
           focusNode: focusNode,
           onHoverChanged: onHoverChanged,
@@ -313,7 +317,7 @@ class _SplitRowState extends State<_SplitRow> {
     final fill = widget.banded
         ? tokens.colors.surface.selected
         : widget.hoverable && _hovered
-        ? tokens.colors.surface.hover
+        ? DesignSystemListPalette.hoverFill(tokens)
         : Colors.transparent;
     return MouseRegion(
       onEnter: (_) => _setHovered(true),

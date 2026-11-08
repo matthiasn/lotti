@@ -493,7 +493,11 @@ void main() {
         find.descendant(
           of: find.byType(KnowledgeGraphView),
           matching: find.byWidgetPredicate(
-            (widget) => widget is Focus && widget.onKeyEvent != null,
+            (widget) =>
+                widget is Focus &&
+                widget.onKeyEvent != null &&
+                // The canvas focus, not the density menu's own.
+                widget.child is GestureDetector,
           ),
         ),
       );
@@ -2187,7 +2191,11 @@ void main() {
         find.descendant(
           of: find.byType(KnowledgeGraphView),
           matching: find.byWidgetPredicate(
-            (widget) => widget is Focus && widget.onKeyEvent != null,
+            (widget) =>
+                widget is Focus &&
+                widget.onKeyEvent != null &&
+                // The canvas focus, not the density menu's own.
+                widget.child is GestureDetector,
           ),
         ),
       );
@@ -2250,7 +2258,11 @@ void main() {
         find.descendant(
           of: find.byType(KnowledgeGraphView),
           matching: find.byWidgetPredicate(
-            (widget) => widget is Focus && widget.onKeyEvent != null,
+            (widget) =>
+                widget is Focus &&
+                widget.onKeyEvent != null &&
+                // The canvas focus, not the density menu's own.
+                widget.child is GestureDetector,
           ),
         ),
       );

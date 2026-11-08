@@ -2,7 +2,9 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entry_link.dart';
+import 'package:lotti/features/agents/ui/agent_surface_menu.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
 import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
 import 'package:lotti/features/design_system/components/ds_quiet_ink.dart';
 import 'package:lotti/features/design_system/components/glass_strip.dart';
@@ -448,98 +450,46 @@ class _LinkedTasksHeader extends ConsumerWidget {
                 // loudest mark on the screen that has to teach the feature.
                 if (hasLinkedTasks) SizedBox(width: tokens.spacing.step3),
                 if (hasLinkedTasks)
-                  Theme(
-                    data: Theme.of(context).copyWith(
-                      // Tokens rather than Material scheme colours and raw radii,
-                      // so the menu belongs to the same surface family as the card
-                      // it opens from instead of being a themed island inside it.
-                      popupMenuTheme: PopupMenuThemeData(
-                        color: tokens.colors.background.level03,
-                        surfaceTintColor: Colors.transparent,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(tokens.radii.m),
-                          side: BorderSide(
-                            color: tokens.colors.decorative.level01,
-                          ),
+                  // The menu every agent surface opens, so it presses and
+                  // reads like the pull request rows beside it.
+                  AgentSurfaceMenuButton(
+                    semanticsLabel: context.messages.linkedTasksMenuTooltip,
+                    items: [
+                      // Manage mode replaces the header's Link button with
+                      // Done, which left no way to add a link while curating
+                      // them — the one state where the user is most likely to
+                      // want one.
+                      if (manageMode)
+                        DesignSystemContextMenuItem(
+                          icon: LottiIcons.link,
+                          label: context.messages.linkExistingTask,
+                          onTap: () => _showLinkTaskModal(context, ref, taskId),
                         ),
+                      DesignSystemContextMenuItem(
+                        icon: LottiIcons.add,
+                        label: context.messages.createNewLinkedTask,
+                        onTap: () => _createNewLinkedTask(context, ref, taskId),
                       ),
-                    ),
-                    child: PopupMenuButton<String>(
+                      // Only offered as a way *in*: manage mode now carries
+                      // its own inline exit in the header, so a second "Done"
+                      // here would be two controls for one state.
+                      if (hasLinkedTasks && !manageMode)
+                        DesignSystemContextMenuItem(
+                          icon: LottiIcons.edit,
+                          label: context.messages.manageLinks,
+                          onTap: notifier.toggleManageMode,
+                        ),
+                    ],
+                    triggerBuilder: (context, open) => IconButton(
                       tooltip: context.messages.linkedTasksMenuTooltip,
+                      onPressed: open,
                       icon: Icon(
                         LottiIcons.moreVertical,
-                        // The overflow is the least important control in the header;
-                        // it was also the heaviest mark in it.
+                        // The overflow is the least important control in the
+                        // header; it was also the heaviest mark in it.
                         color: tokens.colors.text.mediumEmphasis,
                         size: tokens.spacing.step5,
                       ),
-                      position: PopupMenuPosition.under,
-                      onSelected: (value) async {
-                        switch (value) {
-                          case 'link_existing':
-                            await _showLinkTaskModal(context, ref, taskId);
-                          case 'create_new':
-                            await _createNewLinkedTask(context, ref, taskId);
-                          case 'manage':
-                            notifier.toggleManageMode();
-                        }
-                      },
-                      itemBuilder: (context) => [
-                        // Manage mode replaces the header's Link button with Done,
-                        // which left no way to add a link while curating them —
-                        // the one state where the user is most likely to want one.
-                        if (manageMode)
-                          PopupMenuItem(
-                            value: 'link_existing',
-                            child: Row(
-                              children: [
-                                Icon(
-                                  LottiIcons.link,
-                                  size: tokens.spacing.step5,
-                                ),
-                                SizedBox(width: tokens.spacing.step3),
-                                Flexible(
-                                  child: Text(
-                                    context.messages.linkExistingTask,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        PopupMenuItem(
-                          value: 'create_new',
-                          child: Row(
-                            children: [
-                              Icon(LottiIcons.add, size: tokens.spacing.step5),
-                              SizedBox(width: tokens.spacing.step3),
-                              Flexible(
-                                child: Text(
-                                  context.messages.createNewLinkedTask,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        // Only offered as a way *in*: manage mode now carries its
-                        // own inline exit in the header, so a second "Done" here
-                        // would be two controls for one state.
-                        if (hasLinkedTasks && !manageMode)
-                          PopupMenuItem(
-                            value: 'manage',
-                            child: Row(
-                              children: [
-                                Icon(
-                                  LottiIcons.edit,
-                                  size: tokens.spacing.step5,
-                                ),
-                                SizedBox(width: tokens.spacing.step3),
-                                Flexible(
-                                  child: Text(context.messages.manageLinks),
-                                ),
-                              ],
-                            ),
-                          ),
-                      ],
                     ),
                   ),
               ],

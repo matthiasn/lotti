@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/design_system/components/celebration/completion_burst.dart';
 import 'package:lotti/features/design_system/components/celebration/completion_glow.dart';
+import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
 import 'package:lotti/features/design_system/components/ds_quiet_ink.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_card.dart';
@@ -650,6 +651,14 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Delete checklist?'), findsOneWidget);
+      // The unified menu every agent surface opens, not a Material popup.
+      expect(
+        find.ancestor(
+          of: find.text('Delete checklist?'),
+          matching: find.byType(DesignSystemContextMenu),
+        ),
+        findsOneWidget,
+      );
 
       await tester.tap(find.text('Delete checklist?'));
       await tester.pumpAndSettle();

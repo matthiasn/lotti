@@ -15,6 +15,7 @@ import 'package:lotti/features/daily_os_next/ui/pages/day_page.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_agent_status_chip.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/plan_view_toggle.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/processing_category_filter_button.dart';
+import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tts/state/tts_engine_provider.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -291,6 +292,14 @@ void main() {
 
       await tester.tap(find.byIcon(LottiIcons.moreVertical));
       await tester.pumpAndSettle();
+      // The unified menu every agent surface opens, not a Material popup.
+      expect(
+        find.ancestor(
+          of: find.text(messages.agentKnowledgeTitle),
+          matching: find.byType(DesignSystemContextMenu),
+        ),
+        findsOneWidget,
+      );
       await tester.tap(find.text(messages.agentKnowledgeTitle));
       await tester.pumpAndSettle();
 

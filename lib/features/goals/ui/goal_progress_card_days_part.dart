@@ -587,7 +587,6 @@ class _HabitDayOutcomeMenuState extends State<_HabitDayOutcomeMenu> {
           key: const ValueKey('goal-habit-day-menu'),
           header: widget.menuDate,
           headerKey: widget.headerKey,
-          edgeToEdge: true,
           size: DesignSystemContextMenuSize.small,
           width: tokens.spacing.step13,
           semanticsLabel: widget.semanticLabel,

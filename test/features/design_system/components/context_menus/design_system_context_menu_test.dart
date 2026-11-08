@@ -1,6 +1,7 @@
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
+import 'package:lotti/features/design_system/components/lists/design_system_list_palette.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:material_ui/material_ui.dart';
@@ -229,6 +230,36 @@ void main() {
       expect(y, lessThan(tester.getCenter(find.text('Row 2')).dy));
     });
 
+    testWidgets(
+      'rows hover and press in the primary hue, flat, like the pickers',
+      (tester) async {
+        await _pumpContextMenu(
+          tester,
+          DesignSystemContextMenu(
+            items: [DesignSystemContextMenuItem(label: 'Action', onTap: () {})],
+          ),
+        );
+
+        final ink = tester.widget<InkWell>(
+          find.ancestor(
+            of: find.text('Action'),
+            matching: find.byType(InkWell),
+          ),
+        );
+        expect(
+          ink.hoverColor,
+          DesignSystemListPalette.hoverFill(dsTokensLight),
+        );
+        expect(
+          ink.highlightColor,
+          DesignSystemListPalette.pressedFill(dsTokensLight),
+        );
+        expect(ink.splashFactory, NoSplash.splashFactory);
+        // No focus outline on a menu row, so focus must out-weigh hover.
+        expect(ink.focusColor, dsTokensLight.colors.surface.focusPressed);
+      },
+    );
+
     testWidgets('calls onTap when item is tapped', (tester) async {
       var tapped = false;
 
@@ -356,7 +387,6 @@ void main() {
           const DesignSystemContextMenu(
             key: menuKey,
             header: 'Tue, Aug 11',
-            edgeToEdge: true,
             items: [
               DesignSystemContextMenuItem(label: 'Success'),
               DesignSystemContextMenuItem(

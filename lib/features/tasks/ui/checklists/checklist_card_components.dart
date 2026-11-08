@@ -1,3 +1,5 @@
+import 'package:lotti/features/agents/ui/agent_surface_menu.dart';
+import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
 import 'package:lotti/features/design_system/components/ds_quiet_ink.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/ui/checklists/consts.dart';
@@ -451,104 +453,46 @@ class _HeaderMenu extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    return Theme(
-      data: Theme.of(context).copyWith(
-        popupMenuTheme: PopupMenuThemeData(
-          color: context.colorScheme.surfaceContainerHighest,
-          elevation: 8,
-          surfaceTintColor: Colors.transparent,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-            side: BorderSide(
-              color: context.colorScheme.outlineVariant.withValues(alpha: 0.3),
-              width: 0.8,
-            ),
+    return AgentSurfaceMenuButton(
+      semanticsLabel: context.messages.checklistMoreTooltip,
+      items: [
+        // Copy, not share: this item writes markdown to the clipboard, while
+        // the item below hands it to the OS share sheet — two actions, two
+        // glyphs.
+        if (onExportMarkdown != null)
+          DesignSystemContextMenuItem(
+            icon: LottiIcons.copy,
+            label: context.messages.checklistExportAsMarkdown,
+            onTap: onExportMarkdown,
           ),
-        ),
-      ),
-      child: PopupMenuButton<String>(
+        if (onShareMarkdown != null)
+          DesignSystemContextMenuItem(
+            icon: LottiIcons.share,
+            label: context.messages.checklistShare,
+            onTap: onShareMarkdown,
+          ),
+        if (onDelete != null)
+          DesignSystemContextMenuItem(
+            icon: LottiIcons.delete,
+            label: context.messages.checklistDelete,
+            isDestructive: true,
+            startsGroup: true,
+            onTap: () async {
+              final confirmed = await showConfirmationModal(
+                context: context,
+                title: context.messages.checklistDelete,
+                message: context.messages.checklistItemDeleteWarning,
+                cancelLabel: context.messages.checklistItemDeleteCancel,
+                confirmLabel: context.messages.checklistItemDeleteConfirm,
+              );
+              if (confirmed) onDelete?.call();
+            },
+          ),
+      ],
+      triggerBuilder: (context, open) => IconButton(
         tooltip: context.messages.checklistMoreTooltip,
-        icon: const Icon(LottiIcons.moreVertical, size: 20),
-        position: PopupMenuPosition.under,
-        onSelected: (value) async {
-          Future<void> deleteAction() async {
-            final confirmed = await showConfirmationModal(
-              context: context,
-              title: context.messages.checklistDelete,
-              message: context.messages.checklistItemDeleteWarning,
-              cancelLabel: context.messages.checklistItemDeleteCancel,
-              confirmLabel: context.messages.checklistItemDeleteConfirm,
-            );
-            if (confirmed) onDelete?.call();
-          }
-
-          if (value == 'export') {
-            onExportMarkdown?.call();
-          } else if (value == 'share') {
-            onShareMarkdown?.call();
-          } else if (value == 'delete') {
-            await deleteAction();
-          }
-        },
-        itemBuilder: (context) => [
-          if (onExportMarkdown != null)
-            PopupMenuItem(
-              value: 'export',
-              child: Row(
-                children: [
-                  // Copy, not share: this item writes markdown to the
-                  // clipboard, while the item below hands it to the OS share
-                  // sheet. Material spelled them `mdi:exportVariant` and
-                  // `ios_share`, which Lucide expresses with one glyph — so
-                  // after the migration the menu offered the same picture
-                  // twice for two different actions.
-                  const Icon(LottiIcons.copy, size: 18),
-                  SizedBox(width: tokens.spacing.step3),
-                  Flexible(
-                    child: Text(
-                      context.messages.checklistExportAsMarkdown,
-                      overflow: TextOverflow.ellipsis,
-                      softWrap: false,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          if (onShareMarkdown != null)
-            PopupMenuItem(
-              value: 'share',
-              child: Row(
-                children: [
-                  const Icon(LottiIcons.share, size: 18),
-                  SizedBox(width: tokens.spacing.step3),
-                  Flexible(
-                    child: Text(
-                      context.messages.checklistShare,
-                      overflow: TextOverflow.ellipsis,
-                      softWrap: false,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          if (onDelete != null)
-            PopupMenuItem(
-              value: 'delete',
-              child: Row(
-                children: [
-                  const Icon(LottiIcons.delete, size: 18),
-                  SizedBox(width: tokens.spacing.step3),
-                  Flexible(
-                    child: Text(
-                      context.messages.checklistDelete,
-                      overflow: TextOverflow.ellipsis,
-                      softWrap: false,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-        ],
+        onPressed: open,
+        icon: Icon(LottiIcons.moreVertical, size: tokens.spacing.step5),
       ),
     );
   }

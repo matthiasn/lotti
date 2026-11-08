@@ -6,16 +6,16 @@ import 'dart:math' as math;
 
 import 'package:flutter/rendering.dart';
 import 'package:intl/intl.dart';
+import 'package:lotti/features/agents/ui/agent_surface_menu.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_agent_status_chip.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/knowledge_nudge.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/plan_view_toggle.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/processing_category_filter_button.dart';
+import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
-
-enum _DayMenuAction { settings, inspectAgent, knowledge, deletePlan }
 
 class DayHeader extends StatelessWidget {
   const DayHeader({
@@ -98,65 +98,39 @@ class DayHeader extends StatelessWidget {
               ),
             ),
             const ProcessingCategoryFilterButton(),
-            PopupMenuButton<_DayMenuAction>(
-              icon: const Icon(LottiIcons.moreVertical),
-              tooltip: context.messages.dailyOsNextDayMoreTooltip,
-              onSelected: (action) {
-                switch (action) {
-                  case _DayMenuAction.settings:
-                    onSettings?.call();
-                  case _DayMenuAction.inspectAgent:
-                    onInspectAgent();
-                  case _DayMenuAction.knowledge:
-                    unawaited(showKnowledgePanelModal(context));
-                  case _DayMenuAction.deletePlan:
-                    onDeletePlan();
-                }
-              },
-              itemBuilder: (popupContext) => [
+            AgentSurfaceMenuButton(
+              semanticsLabel: context.messages.dailyOsNextDayMoreTooltip,
+              items: [
                 if (onSettings != null)
-                  PopupMenuItem<_DayMenuAction>(
-                    value: _DayMenuAction.settings,
-                    child: ListTile(
-                      leading: const Icon(LottiIcons.settings),
-                      title: Text(
-                        popupContext.messages.dailyOsNextDayMenuSettings,
-                      ),
-                      contentPadding: EdgeInsets.zero,
-                    ),
+                  DesignSystemContextMenuItem(
+                    icon: LottiIcons.settings,
+                    label: context.messages.dailyOsNextDayMenuSettings,
+                    onTap: onSettings,
                   ),
-                PopupMenuItem<_DayMenuAction>(
-                  value: _DayMenuAction.inspectAgent,
-                  child: ListTile(
-                    leading: const Icon(LottiIcons.reasoning),
-                    title: Text(
-                      popupContext.messages.dailyOsNextDayMenuInspectAgent,
-                    ),
-                    contentPadding: EdgeInsets.zero,
-                  ),
+                DesignSystemContextMenuItem(
+                  icon: LottiIcons.reasoning,
+                  label: context.messages.dailyOsNextDayMenuInspectAgent,
+                  onTap: onInspectAgent,
                 ),
-                PopupMenuItem<_DayMenuAction>(
-                  value: _DayMenuAction.knowledge,
-                  child: ListTile(
-                    leading: const Icon(LottiIcons.aiSpark),
-                    title: Text(
-                      popupContext.messages.agentKnowledgeTitle,
-                    ),
-                    contentPadding: EdgeInsets.zero,
-                  ),
+                DesignSystemContextMenuItem(
+                  icon: LottiIcons.aiSpark,
+                  label: context.messages.agentKnowledgeTitle,
+                  onTap: () => unawaited(showKnowledgePanelModal(context)),
                 ),
                 if (hasPlan)
-                  PopupMenuItem<_DayMenuAction>(
-                    value: _DayMenuAction.deletePlan,
-                    child: ListTile(
-                      leading: const Icon(LottiIcons.delete),
-                      title: Text(
-                        popupContext.messages.dailyOsNextDayMenuDeletePlan,
-                      ),
-                      contentPadding: EdgeInsets.zero,
-                    ),
+                  DesignSystemContextMenuItem(
+                    icon: LottiIcons.delete,
+                    label: context.messages.dailyOsNextDayMenuDeletePlan,
+                    isDestructive: true,
+                    startsGroup: true,
+                    onTap: onDeletePlan,
                   ),
               ],
+              triggerBuilder: (context, open) => IconButton(
+                tooltip: context.messages.dailyOsNextDayMoreTooltip,
+                onPressed: open,
+                icon: const Icon(LottiIcons.moreVertical),
+              ),
             ),
           ],
         ),
