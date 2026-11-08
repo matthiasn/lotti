@@ -331,7 +331,9 @@ the turns, not inside the index, because it changes with every turn and the
 index must not. `frontConversationTaskIds` scans the whole visible
 conversation, newest message first, not just the six-turn tail and its
 400-character clip: a `lotti://task/<id>` link in her reply, question or the
-user's words, a `task` option she offered, a dispatch routed to a task or
+user's words, every task her reply's closed-task cards show (`closedTasks`,
+the one closed last first, since her words no longer link them), a `task`
+option she offered, a dispatch routed to a task or
 naming the task a follow-up follows, and the door records — a segment filed
 into a task, and a task the user's tap made (`FrontDoorTaskCreated`), which
 no link names anywhere else. A mention dates from its message, a made task
