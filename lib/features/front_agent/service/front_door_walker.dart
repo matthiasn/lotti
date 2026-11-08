@@ -14,6 +14,8 @@ import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
 import 'package:lotti/features/front_agent/model/front_conversation.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
+import 'package:lotti/features/front_agent/model/front_task_draft.dart';
+import 'package:lotti/features/front_agent/service/front_filing_service.dart';
 import 'package:lotti/features/front_agent/service/front_owner_titles.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_contract.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_workflow.dart';
@@ -37,8 +39,11 @@ typedef FrontOwnerAgentLookup =
 /// by the query pipeline, headless; so is a journal question, which the
 /// front agent answers herself from the journal within her allow-list.
 /// A statement for a task or project, or a change to today, waits as a
-/// proposal for the user's tap; what nothing owns waits in the inbox.
-/// Nothing here writes to the journal.
+/// proposal for the user's tap; what nothing owns waits in the inbox. The
+/// one journal write is a task the user asked for in so many words — a
+/// `new` task segment whose intent is an instruction: the request is the
+/// approval, made under the id the inbox's *Make it a task* would use, so
+/// the card's Undo takes it back the same way.
 ///
 /// Each segment is claimed under its deterministic record id before its
 /// door is invoked (the `ChangeDispatchIntents` discipline), so a retry or
@@ -55,6 +60,7 @@ class FrontDoorWalker {
     required RelationshipChatService personChat,
     required FrontOwnerTitles ownerTitles,
     required Future<bool> Function(String flagName) configFlag,
+    required FrontTaskMaker makeTask,
     required DomainLogger domainLogger,
   }) : this._(
          repository,
@@ -66,6 +72,7 @@ class FrontDoorWalker {
          personChat,
          ownerTitles,
          configFlag,
+         makeTask,
          domainLogger,
        );
 
@@ -79,6 +86,7 @@ class FrontDoorWalker {
     this._personChat,
     this._ownerTitles,
     this._configFlag,
+    this._makeTask,
     this._domainLogger,
   );
 
@@ -94,6 +102,7 @@ class FrontDoorWalker {
   /// Reads a config flag: whether the Daily OS is on, so a change to today
   /// has somewhere to go.
   final Future<bool> Function(String flagName) _configFlag;
+  final FrontTaskMaker _makeTask;
   final DomainLogger _domainLogger;
 
   /// Walks every unwalked segment of the dispatch that answered
@@ -120,7 +129,11 @@ class FrontDoorWalker {
       if (claim == null) continue;
       FrontDoorOutcome outcome;
       try {
-        outcome = await _walkSegment(segment, sourceMessageId: messageId);
+        outcome = await _walkSegment(
+          segment,
+          sourceMessageId: messageId,
+          doorId: claim.id,
+        );
       } catch (error, stackTrace) {
         // A door's failure is its own: recorded by type, never by text, and
         // never a reason to stop the other segments.
@@ -187,6 +200,7 @@ class FrontDoorWalker {
         ownerTitle: title,
         status: FrontDoorStatus.claimed,
         claimedAt: now.toUtc(),
+        task: segment.task,
       );
       await _write(id, claimed!, dispatchRecord, now);
     });
@@ -241,6 +255,7 @@ class FrontDoorWalker {
   Future<FrontDoorOutcome> _walkSegment(
     FrontDispatchSegment segment, {
     required String sourceMessageId,
+    required String doorId,
   }) async {
     final id = segment.destinationId;
     final question = segment.intent == FrontSegmentIntent.question;
@@ -288,6 +303,12 @@ class FrontDoorWalker {
           specialistMessageId: messageId,
         );
       case FrontDestinationKind.newThing:
+        final draft = segment.task;
+        if (segment.newKind == FrontNewKind.task &&
+            segment.intent == FrontSegmentIntent.instruction &&
+            draft != null) {
+          return _makeAskedTask(draft, segment.text, doorId);
+        }
         return FrontDoorInbox(newKind: segment.newKind);
       case FrontDestinationKind.journal:
         // A question about the record that no single owner holds is hers
@@ -307,6 +328,38 @@ class FrontDoorWalker {
         }
         return const FrontDoorDay();
     }
+  }
+
+  /// The task the user asked for, made from its [draft] with their [words]
+  /// as its source. A make that fails leaves the words in the inbox, where
+  /// the tap tries again — never lost to a failed door.
+  Future<FrontDoorOutcome> _makeAskedTask(
+    FrontTaskDraft draft,
+    String words,
+    String doorId,
+  ) async {
+    try {
+      final task = await _makeTask(
+        draft,
+        id: frontDoorTaskId(doorId),
+        words: words,
+      );
+      if (task != null) {
+        return FrontDoorTaskCreated(
+          taskId: task.meta.id,
+          newKind: FrontNewKind.task,
+        );
+      }
+    } catch (error, stackTrace) {
+      _domainLogger.error(
+        LogDomain.agentWorkflow,
+        error,
+        stackTrace: stackTrace,
+        subDomain: 'FrontDoorWalker',
+        message: 'asked-for task not made',
+      );
+    }
+    return const FrontDoorInbox(newKind: FrontNewKind.task);
   }
 
   /// The query pipeline, headless: the owner's agent answers from its

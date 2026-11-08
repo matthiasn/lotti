@@ -128,6 +128,48 @@ void main() {
   });
 
   group('dispatch', () {
+    test("a new task's category stands when listed, and only among the "
+        'chosen ones when the conversation is narrowed', () async {
+      Future<String?> categoryOf(
+        String categoryId, {
+        required bool narrowed,
+      }) async {
+        final s = strategy(
+          routingIndex: FrontRoutingIndex(
+            categories: [
+              FrontCategory(id: 'work', name: 'Work', chosen: narrowed),
+              const FrontCategory(id: 'home', name: 'Home'),
+            ],
+          ),
+        );
+        await s.processToolCalls(
+          toolCalls: [
+            _call('dispatch', {
+              'segments': [
+                {
+                  ...segment(
+                    start: 0,
+                    end: input.length,
+                    kind: 'new',
+                    id: null,
+                  ),
+                  'destination': {'kind': 'new', 'newKind': 'task'},
+                  'task': {'title': 'Fix the gate', 'categoryId': categoryId},
+                },
+              ],
+            }),
+          ],
+          manager: manager,
+        );
+        return s.dispatch!.segments.single.task!.categoryId;
+      }
+
+      expect(await categoryOf('home', narrowed: false), 'home');
+      expect(await categoryOf('home', narrowed: true), isNull);
+      expect(await categoryOf('work', narrowed: true), 'work');
+      expect(await categoryOf('nope', narrowed: false), isNull);
+    });
+
     test('a valid dispatch is accumulated and ends the turn', () async {
       final s = strategy();
       final action = await s.processToolCalls(

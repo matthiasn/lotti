@@ -6,6 +6,7 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
+import 'package:lotti/features/front_agent/model/front_task_draft.dart';
 import 'package:lotti/features/front_agent/service/front_filing_service.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:mocktail/mocktail.dart';
@@ -28,6 +29,7 @@ void main() {
   late List<AgentDomainEntity> upserts;
   late List<(String, String, String?, String?)> written;
   late List<(String, String)> madeTasks;
+  late List<(FrontTaskDraft, String)> madeDrafts;
   late List<String> deleted;
   late bool deleteResult;
   late JournalEntity? Function(String text) entryFor;
@@ -69,8 +71,10 @@ void main() {
     String text = 'The hinge arrived.',
     FrontDestinationKind kind = FrontDestinationKind.task,
     String? destinationId = 'garden',
+    FrontTaskDraft? task,
   }) {
     final record = FrontDoorRecord(
+      task: task,
       segmentIndex: 0,
       text: text,
       kind: kind,
@@ -106,6 +110,7 @@ void main() {
     upserts = [];
     written = [];
     madeTasks = [];
+    madeDrafts = [];
     deleted = [];
     deleteResult = true;
     entryFor = (text) => textEntry('entry-1', text);
@@ -127,9 +132,10 @@ void main() {
         written.add((text, id, linkedId, categoryId));
         return entryFor(text);
       },
-      makeTask: (title, {required id}) async {
-        madeTasks.add((title, id));
-        return taskFor(title);
+      makeTask: (draft, {required id, required words}) async {
+        madeTasks.add((draft.title, id));
+        madeDrafts.add((draft, words));
+        return taskFor(draft.title);
       },
       deleteEntry: (id) async {
         deleted.add(id);
@@ -564,6 +570,34 @@ void main() {
           (rewritten().outcome! as FrontDoorTaskCreated).taskId,
           'task-new',
         );
+      },
+    );
+
+    test(
+      "makeTask fills the task from the router's draft and keeps the words",
+      () async {
+        final draft = FrontTaskDraft(
+          title: 'Buy a hose',
+          categoryId: 'cat-1',
+          priority: TaskPriority.p1High,
+          due: DateTime(2026, 11, 9),
+        );
+        seed(
+          const FrontDoorInbox(newKind: FrontNewKind.task),
+          kind: FrontDestinationKind.newThing,
+          destinationId: null,
+          text: ' I need to buy a hose by tomorrow, high priority. ',
+          task: draft,
+        );
+        await service.makeTask(doorId);
+        final (made, words) = madeDrafts.single;
+        // Stored and read back with the record, field for field.
+        expect(made.title, draft.title);
+        expect(made.categoryId, 'cat-1');
+        expect(made.priority, TaskPriority.p1High);
+        expect(made.due, DateTime(2026, 11, 9));
+        expect(words, 'I need to buy a hose by tomorrow, high priority.');
+        expect(madeTasks.single.$2, frontDoorTaskId(doorId));
       },
     );
 

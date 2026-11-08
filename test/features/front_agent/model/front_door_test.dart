@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/query_chat_models.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
+import 'package:lotti/features/front_agent/model/front_task_draft.dart';
 
 void main() {
   final claimedAt = DateTime.utc(2026, 10, 24, 9);
@@ -18,6 +19,24 @@ void main() {
     claimedAt: claimedAt,
     outcome: outcome,
   );
+
+  test('a task draft rides the record through done() and JSON', () {
+    final claim = FrontDoorRecord(
+      segmentIndex: 0,
+      text: 'Make a task to fix the gate.',
+      kind: FrontDestinationKind.newThing,
+      status: FrontDoorStatus.claimed,
+      claimedAt: claimedAt,
+      task: const FrontTaskDraft(title: 'Fix the gate', categoryId: 'home'),
+    );
+    final done = claim.done(const FrontDoorTaskCreated(taskId: 't'));
+    final read = FrontDoorRecord.fromJson(
+      jsonDecode(jsonEncode(done.toJson())) as Map<String, Object?>,
+    )!;
+    expect(read.task?.title, 'Fix the gate');
+    expect(read.task?.categoryId, 'home');
+    expect(record().toJson().containsKey('task'), isFalse);
+  });
 
   test('the record id is the dispatch record plus the segment index', () {
     expect(frontDoorRecordId('dispatch-1', 2), 'dispatch-1:door:2');

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_config.dart';
@@ -26,6 +27,7 @@ import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
+import 'package:lotti/features/front_agent/model/front_task_draft.dart';
 import 'package:lotti/features/front_agent/service/front_agent_service.dart';
 import 'package:lotti/features/front_agent/service/front_chat_service.dart';
 import 'package:lotti/features/front_agent/service/front_door_walker.dart';
@@ -510,6 +512,7 @@ void main() {
   });
 
   group("the filing service's adapters", () {
+    late MockTimeService timeService;
     const doorId = 'd:door:0';
     late MockPersistenceLogic persistence;
     late MockJournalRepository journalRepository;
@@ -526,17 +529,6 @@ void main() {
       outcome: outcome,
     );
 
-    EntryLink link(String fromId, String toId, {DateTime? deletedAt}) =>
-        EntryLink.basic(
-          id: 'link-$fromId-$toId',
-          fromId: fromId,
-          toId: toId,
-          createdAt: DateTime(2026),
-          updatedAt: DateTime(2026),
-          vectorClock: null,
-          deletedAt: deletedAt,
-        );
-
     Metadata meta(String id, {DateTime? deletedAt}) => Metadata(
       id: id,
       createdAt: DateTime(2026),
@@ -547,6 +539,7 @@ void main() {
     );
 
     setUp(() {
+      timeService = MockTimeService();
       persistence = MockPersistenceLogic();
       journalRepository = MockJournalRepository();
       journalDb = MockJournalDb();
@@ -575,9 +568,13 @@ void main() {
           domainLoggerProvider.overrideWithValue(MockDomainLogger()),
           journalRepositoryProvider.overrideWithValue(journalRepository),
           persistenceLogicProvider.overrideWithValue(persistence),
+          timeServiceProvider.overrideWithValue(timeService),
+          taskAgentServiceProvider.overrideWithValue(MockTaskAgentService()),
         ],
       );
       addTearDown(wired.dispose);
+      when(() => timeService.linkedFrom).thenReturn(null);
+      when(() => timeService.stop()).thenAnswer((_) async {});
       when(
         () => persistence.createMetadata(
           id: any(named: 'id'),
@@ -757,6 +754,7 @@ void main() {
         () => persistence.createTaskEntry(
           data: any(named: 'data'),
           entryText: any(named: 'entryText'),
+          categoryId: any(named: 'categoryId'),
           id: any(named: 'id'),
         ),
       ).thenAnswer(
@@ -766,6 +764,7 @@ void main() {
         ),
       );
 
+      writeAnswers(verdict: true);
       await wired.read(frontFilingServiceProvider).makeTask(doorId);
 
       final data =
@@ -773,6 +772,7 @@ void main() {
                 () => persistence.createTaskEntry(
                   data: captureAny(named: 'data'),
                   entryText: any(named: 'entryText'),
+                  categoryId: any(named: 'categoryId'),
                   id: frontDoorTaskId(doorId),
                 ),
               ).captured.single
@@ -789,6 +789,7 @@ void main() {
         () => persistence.createTaskEntry(
           data: any(named: 'data'),
           entryText: any(named: 'entryText'),
+          categoryId: any(named: 'categoryId'),
           id: any(named: 'id'),
         ),
       ).thenAnswer((_) async => null);
@@ -818,6 +819,23 @@ void main() {
       );
     });
 
+    test('taking back a task stops the timer running on it, and only '
+        'that timer', () async {
+      seed(const FrontDoorTaskCreated(taskId: 'task-1'));
+      when(
+        () => journalRepository.deleteJournalEntity('task-1'),
+      ).thenAnswer((_) async => true);
+      when(() => timeService.linkedFrom).thenReturn(task('task-1', 'Hose'));
+
+      await wired.read(frontFilingServiceProvider).takeBack(doorId);
+      verify(() => timeService.stop()).called(1);
+
+      seed(const FrontDoorTaskCreated(taskId: 'task-1'));
+      when(() => timeService.linkedFrom).thenReturn(task('other', 'Nest'));
+      await wired.read(frontFilingServiceProvider).takeBack(doorId);
+      verifyNever(() => timeService.stop());
+    });
+
     test(
       'taking back deletes the entry through the journal repository',
       () async {
@@ -834,8 +852,222 @@ void main() {
       },
     );
   });
+
+  group('makeFrontTask', () {
+    final now = DateTime(2026, 11, 8, 14, 30);
+    const taskId = 'task-made';
+    late MockPersistenceLogic persistence;
+    late MockJournalDb journalDb;
+    late List<(JournalEntity, JournalEntity)> timers;
+    late List<Task> assigned;
+
+    Task made(TaskData data) =>
+        JournalEntity.task(
+              meta: Metadata(
+                id: taskId,
+                createdAt: now,
+                updatedAt: now,
+                dateFrom: now,
+                dateTo: now,
+                categoryId: 'work',
+              ),
+              data: data,
+            )
+            as Task;
+
+    setUp(() {
+      persistence = MockPersistenceLogic();
+      journalDb = MockJournalDb();
+      timers = [];
+      assigned = [];
+      when(
+        () => persistence.createMetadata(
+          id: any(named: 'id'),
+          dateFrom: any(named: 'dateFrom'),
+          dateTo: any(named: 'dateTo'),
+          categoryId: any(named: 'categoryId'),
+        ),
+      ).thenAnswer(
+        (invocation) async => Metadata(
+          id: invocation.namedArguments[#id] as String,
+          createdAt: now,
+          updatedAt: now,
+          dateFrom: invocation.namedArguments[#dateFrom] as DateTime,
+          dateTo: invocation.namedArguments[#dateTo] as DateTime,
+          categoryId: invocation.namedArguments[#categoryId] as String?,
+        ),
+      );
+      when(
+        () => persistence.createDbEntity(
+          any(),
+          linkedId: any(named: 'linkedId'),
+        ),
+      ).thenAnswer((_) async => true);
+      when(() => journalDb.linksBetween(any(), any())).thenAnswer(
+        (invocation) async => [
+          link(
+            invocation.positionalArguments[0] as String,
+            invocation.positionalArguments[1] as String,
+          ),
+        ],
+      );
+    });
+
+    Future<Task?> make(FrontTaskDraft draft) => withClock(
+      Clock.fixed(now),
+      () => makeFrontTask(
+        persistence,
+        journalDb,
+        draft,
+        id: taskId,
+        words: 'Fix the login bug, high priority, started ten minutes ago.',
+        startTimer: (timer, task) async => timers.add((timer, task)),
+        assignAgent: (task) async => assigned.add(task),
+      ),
+    );
+
+    void stubCreation({required bool written}) =>
+        when(
+          () => persistence.createTaskEntry(
+            data: any(named: 'data'),
+            entryText: any(named: 'entryText'),
+            categoryId: any(named: 'categoryId'),
+            id: any(named: 'id'),
+          ),
+        ).thenAnswer(
+          (invocation) async => written
+              ? made(invocation.namedArguments[#data] as TaskData)
+              : null,
+        );
+
+    test('fills the task from the draft, files the words under it, runs '
+        'a timer from the dictated start and hands it its agent', () async {
+      stubCreation(written: true);
+      final started = now.subtract(const Duration(minutes: 10));
+
+      final task = await make(
+        FrontTaskDraft(
+          title: 'Fix the login bug',
+          instructions: 'Reproduce on Android first.',
+          categoryId: 'work',
+          priority: TaskPriority.p1High,
+          due: DateTime(2026, 11, 10),
+          estimate: const Duration(minutes: 90),
+          startedAt: started,
+        ),
+      );
+
+      final captured = verify(
+        () => persistence.createTaskEntry(
+          data: captureAny(named: 'data'),
+          entryText: captureAny(named: 'entryText'),
+          categoryId: 'work',
+          id: taskId,
+        ),
+      ).captured;
+      final data = captured[0] as TaskData;
+      expect(data.title, 'Fix the login bug');
+      expect(data.status, isA<TaskInProgress>());
+      expect(data.priority, TaskPriority.p1High);
+      expect(data.due, DateTime(2026, 11, 10));
+      expect(data.estimate, const Duration(minutes: 90));
+      expect(
+        (captured[1] as EntryText).plainText,
+        'Reproduce on Android first.',
+      );
+
+      final entries = verify(
+        () => persistence.createDbEntity(captureAny(), linkedId: taskId),
+      ).captured.cast<JournalEntity>();
+      expect(entries.map((e) => e.meta.id), [
+        frontTaskWordsId(taskId),
+        frontTaskTimerId(taskId),
+      ]);
+      expect(
+        entries.first.entryText?.plainText,
+        'Fix the login bug, high priority, started ten minutes ago.',
+      );
+      final (timer, timedTask) = timers.single;
+      expect(timer.meta.dateFrom, started);
+      expect(timedTask.meta.id, taskId);
+      expect(assigned.single.meta.id, taskId);
+      expect(task?.meta.id, taskId);
+    });
+
+    test('a draft without a start is open, untimed, at medium priority — '
+        'and a start in the future runs from now', () async {
+      stubCreation(written: true);
+      await make(const FrontTaskDraft(title: 'Call the vet'));
+      final data =
+          verify(
+                () => persistence.createTaskEntry(
+                  data: captureAny(named: 'data'),
+                  entryText: any(named: 'entryText'),
+                  categoryId: any(named: 'categoryId'),
+                  id: taskId,
+                ),
+              ).captured.single
+              as TaskData;
+      expect(data.status, isA<TaskOpen>());
+      expect(data.priority, TaskPriority.p2Medium);
+      expect(timers, isEmpty);
+
+      await make(
+        FrontTaskDraft(
+          title: 'Call the vet',
+          startedAt: now.add(const Duration(minutes: 5)),
+        ),
+      );
+      expect(timers.single.$1.meta.dateFrom, now);
+    });
+
+    test(
+      'the retry finds the task already there and adds nothing twice',
+      () async {
+        stubCreation(written: false);
+        final existing = made(
+          TaskData(
+            status: TaskStatus.open(id: 's', createdAt: now, utcOffset: 0),
+            statusHistory: const [],
+            dateFrom: now,
+            dateTo: now,
+            title: 'Fix the login bug',
+          ),
+        );
+        when(
+          () => journalDb.journalEntityById(taskId),
+        ).thenAnswer((_) async => existing);
+
+        final task = await make(
+          FrontTaskDraft(title: 'Fix the login bug', startedAt: now),
+        );
+
+        expect(task, same(existing));
+        verifyNever(
+          () => persistence.createDbEntity(
+            any(),
+            linkedId: any(named: 'linkedId'),
+          ),
+        );
+        expect(timers, isEmpty);
+        expect(assigned, isEmpty);
+      },
+    );
+  });
 }
 
 /// Exercises the resolver through a provider, the way the registry calls it.
+/// A link from [fromId] to [toId], live unless [deletedAt] is given.
+EntryLink link(String fromId, String toId, {DateTime? deletedAt}) =>
+    EntryLink.basic(
+      id: 'link-$fromId-$toId',
+      fromId: fromId,
+      toId: toId,
+      createdAt: DateTime(2026),
+      updatedAt: DateTime(2026),
+      vectorClock: null,
+      deletedAt: deletedAt,
+    );
+
 FutureProvider<Object?> _setupProvider(String agentId) =>
     FutureProvider<Object?>((ref) => resolveFrontAgentSetup(ref, agentId));

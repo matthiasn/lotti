@@ -10,6 +10,8 @@
 /// proposes it.
 library;
 
+import 'package:lotti/features/front_agent/model/front_task_draft.dart';
+
 /// A match this confident is routed without asking (the day agent's rule,
 /// `seeded_directive_content.dart`: `>= 0.75` strong).
 const double frontStrongConfidence = 0.75;
@@ -94,6 +96,7 @@ class FrontDispatchSegment {
     this.destinationId,
     this.newKind,
     this.note,
+    this.task,
   });
 
   /// Offsets into the input; `text` is exactly `input.substring(start, end)`.
@@ -116,6 +119,9 @@ class FrontDispatchSegment {
   /// One line the companion says about this segment, if any.
   final String? note;
 
+  /// For a `new` task: the fields read from the user's words.
+  final FrontTaskDraft? task;
+
   /// Whether this segment is routed to one existing thing.
   bool get hasDestination => kind.needsId && destinationId != null;
 
@@ -131,6 +137,7 @@ class FrontDispatchSegment {
     },
     'confidence': confidence,
     if (note != null) 'note': note,
+    if (task != null) 'task': task!.toJson(),
   };
 
   /// Reads a segment the record stored; null when the shape is not one
@@ -171,6 +178,7 @@ class FrontDispatchSegment {
         final String note => note,
         _ => null,
       },
+      task: FrontTaskDraft.fromJson(json['task']),
     );
   }
 }

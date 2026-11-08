@@ -52,6 +52,47 @@ void main() {
     expect(segments[1].intent, FrontSegmentIntent.question);
   });
 
+  group('a new task', () {
+    Map<String, dynamic> newTask(String newKind) => {
+      ...segment(span: gardenSpan, kind: 'new', id: null, newKind: newKind),
+      'task': {
+        'title': 'Buy the hose',
+        'categoryId': 'home',
+        'priority': 'P1',
+      },
+    };
+
+    test('keeps the task the words describe, its category only when the '
+        'check knows it', () {
+      final known = validateFrontDispatch(
+        args: {
+          'segments': [newTask('task')],
+        },
+        input: input.substring(0, 28),
+        destinationExists: exists,
+        categoryExists: (id) => id == 'home',
+      ).dispatch!.segments.single.task!;
+      expect(known.title, 'Buy the hose');
+      expect(known.categoryId, 'home');
+
+      final unchecked = validate([
+        newTask('task'),
+        segment(span: pipSpan, intent: 'question', kind: 'person', id: 'pip'),
+      ]).dispatch!.segments.first.task!;
+      expect(unchecked.categoryId, isNull);
+      expect(unchecked.title, 'Buy the hose');
+    });
+
+    test('reads a task object only for a new task', () {
+      final segments = validate([
+        newTask('goal'),
+        segment(span: pipSpan, intent: 'question', kind: 'person', id: 'pip'),
+      ]).dispatch!.segments;
+      expect(segments.first.newKind, FrontNewKind.goal);
+      expect(segments.first.task, isNull);
+    });
+  });
+
   group('shape', () {
     test('rejects a missing or empty segments array', () {
       expect(validate([]).error, contains('non-empty segments'));

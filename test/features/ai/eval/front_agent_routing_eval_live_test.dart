@@ -249,6 +249,19 @@ List<String> _judge(FrontEvalScenario scenario, FrontAgentStrategy strategy) {
         failed.add('dispatched to an existing owner');
       }
   }
+  if (scenario.checkTask case final check?) {
+    failed.addAll(
+      check(
+        dispatch?.segments
+            .where(
+              (s) =>
+                  s.kind == FrontDestinationKind.newThing &&
+                  s.newKind == FrontNewKind.task,
+            )
+            .firstOrNull,
+      ),
+    );
+  }
   for (final id in scenario.forbiddenDestinationIds) {
     if (destinationIds.contains(id)) failed.add('forbidden destination $id');
   }

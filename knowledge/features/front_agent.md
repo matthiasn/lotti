@@ -1,7 +1,7 @@
 ---
 type: Feature Module
 title: Front agent
-description: The one agent the user talks to in one place — how a durable user turn becomes a routing wake, what the routing index holds, how the dispatch contract is validated in code, the capped lookups and the repair round, the deterministic records a turn leaves behind, how the door walker takes each segment to its owner and mirrors the answer, how a statement becomes a proposal the user's one tap files, what the inbox is, how an unanswered turn is recovered on any device, how turns form conversations, how she answers what is due and how much time was logged and names tasks as links, what the chat surface renders, and what she hears and says.
+description: The one agent the user talks to in one place — how a durable user turn becomes a routing wake, what the routing index holds, how the dispatch contract is validated in code, the capped lookups and the repair round, the deterministic records a turn leaves behind, how the door walker takes each segment to its owner and mirrors the answer, how a statement becomes a proposal the user's one tap files, how a task asked for aloud is made at once from her reading of the words, what the inbox is, how an unanswered turn is recovered on any device, how turns form conversations, how she answers what is due and how much time was logged and names tasks as links, what the chat surface renders, and what she hears and says.
 resource: ../../lib/features/front_agent
 tags: [agents, front-agent, routing, dispatch, doors, filing, inbox, companion, chat]
 status: draft
@@ -75,7 +75,15 @@ sources:
   - id: filing
     resource: ../../lib/features/front_agent/service/front_filing_service.dart
     title: FrontFilingService — what the tap under a door writes
-    last_modified: 2026-11-01
+    last_modified: 2026-11-08
+  - id: task-draft
+    resource: ../../lib/features/front_agent/model/front_task_draft.dart
+    title: FrontTaskDraft — the task the router read from the words
+    last_modified: 2026-11-08
+  - id: adr-0160
+    resource: ../../docs/adr/0160-a-task-asked-for-aloud-is-made-at-once.md
+    title: ADR 0160 — a task asked for aloud is made at once
+    last_modified: 2026-11-08
   - id: inbox-filter
     resource: ../../lib/features/front_agent/state/front_inbox_filter.dart
     title: The inbox is every conversation filtered
@@ -314,7 +322,9 @@ counts characters — Mistral Large 4 put a 63-character message at
 `[0, 54)`, then at `[0, 64)`, and every turn failed). Offsets that agree with
 the words are kept, so a phrase said twice is the one the model meant; a `task` / `project` / `goal` / `person` destination needs an id
 the index or a lookup listed, at confidence ≥ `frontLowConfidence` (0.5);
-`new` needs a `newKind`; `day`, `journal` and `unrouted` need neither. The
+`new` needs a `newKind`, and a `new` task may carry a `task` object, read
+leniently ([a task from her words](#a-task-from-her-words)); `day`,
+`journal` and `unrouted` need neither. The
 spans and the gaps between them partition the input and the gaps are never
 dropped: a gap holding ≥20 % of the input's non-whitespace characters
 becomes an `unrouted` segment, and when the gaps together hold ≥20 % every
@@ -484,7 +494,8 @@ walker died. Outcomes:
 | `goal` / `person`, question or statement, with an active agent | that agent's own chat: `appendMessage` then `enqueueMessage`, **never awaited** | `FrontDoorChatTurn(specialistAgentId, specialistMessageId)`; the reply lands in the specialist's thread with the turn as its `operationId` |
 | `task` or `project` statement or instruction | none — the walker writes nothing | `FrontDoorProposal(ownerId)`: waits for the user's tap |
 | `journal` question | the journal answer engine, headless: `QueryAnswerBuilder.build` over `QueryScope.journalIn(allowedCategoryIds)` narrowed by any categories the turn's payload carries (`frontNarrowedCategories`) (empty = every visible category), agent id `front_agent`, the Settings default profile | `FrontDoorAnswer(fromJournal: true, evidence, dependencies, private)` — her own answer, with the passages it cites |
-| `new`, `journal` statement, `unrouted` | none | `FrontDoorInbox(newKind?)` — what the router thought it would become leads the chips |
+| `new` task instruction with a `task` draft | `makeFrontTask` under `frontDoorTaskId(doorId)` — see [a task from her words](#a-task-from-her-words) | `FrontDoorTaskCreated` — a make that stores nothing or throws is `FrontDoorInbox(task)` instead |
+| `new` otherwise, `journal` statement, `unrouted` | none | `FrontDoorInbox(newKind?)` — what the router thought it would become leads the chips; a task draft rides the record for the tap |
 | `day` statement or instruction, while `enable_daily_os_page` is on | none — the walker writes nothing | `FrontDoorDay()`: waits for the user's tap |
 | `day` question, or anything about the day while the Daily OS is off | — | `FrontDoorSkipped(noDoor)` |
 | no agent, or a retired one | — | `FrontDoorSkipped(noAgent)` |
@@ -510,6 +521,66 @@ services' `sendMessage` awaits its own completion and at concurrency 1 that
 would deadlock inside the front wake, so the walker uses their
 `appendMessage` / `enqueueMessage` split and the reply arrives later.
 
+# A task from her words
+
+ADR 0160. When the user asks her for a task, the task is made from what she
+read in the words, and the user only confirms on the task page.
+
+```mermaid
+flowchart LR
+  W[spoken turn<br/>transcribed, clip deleted] --> R[routing: segment new / task<br/>+ task object]
+  R -->|FrontTaskDraft.fromModel| V[draft on the segment,<br/>then on the door record]
+  V -->|intent instruction| M[makeFrontTask, at once]
+  V -->|intent statement| I[inbox — Make it a task<br/>runs makeFrontTask]
+  M --> T[(task, in its category)]
+  M --> E[(the words, a text entry linked under it)]
+  M -->|draft has a start| C[(timer entry from that instant,<br/>TimeService.start)]
+  M --> A[category default agent<br/>autoAssignCategoryAgentWith]
+  R -->|reply_to_user, one line| S[spoken on a spoken turn]
+```
+
+| Field | Who fills it | From |
+|-------|--------------|------|
+| title | agent | the words, short |
+| body | agent | `instructions`: what to do and how, without the turn's other topics |
+| category | agent | the category the user names, else the listed one the work plainly belongs to; dropped unless listed (and chosen, when the conversation is narrowed) |
+| priority, due day, estimate | agent, only when said | `P0`–`P3`, `YYYY-MM-DD`, minutes (≤ `frontTaskMaxEstimateMinutes`) |
+| status and timer | agent, only when said | `startedMinutesAgo` (0–`frontTaskMaxStartedMinutesAgo`): *in progress*, and a timer entry linked under the task from that instant, running |
+| task agent | category default | the category's `defaultTemplateId`; none without one |
+| provenance | always | the segment's verbatim words, a text entry linked under the task (`frontTaskWordsId`) |
+| project, checklist, labels, anything else | user | the task page, or the agent's proposals there |
+
+The draft is read leniently (`FrontTaskDraft.fromModel`): no title, no
+draft; any other field that does not parse is left out, so a misheard date
+never loses the task. The start is an instant resolved when the dispatch is
+validated, against the clock the turn's `<current_local_time>` showed, so a
+tap hours later still starts the timer when the user said the work began; a
+start after now runs from now. **Only an instruction is made without a
+tap** — "make a task…", "I'm starting on…": the request is the approval.
+A task only mentioned waits in the inbox with its draft, and its *Make it a
+task* makes the same filled task. Both are written under
+`frontDoorTaskId`, so the card, *Open* and *Undo* are the ones a tap gives;
+*Undo* deletes the task and stops the timer running on it.
+
+**Duplicates.** Rule 11 of the prompt has her compare a new task with the
+listed open tasks — `match_to_corpus` only when the index says more exist
+than it shows, so a new task costs no extra round-trip — and one that
+looks like the same work is an `ask_user` with those tasks as the
+options, not a second task.
+
+**Her confirmation** is her `reply_to_user` line with the dispatch, spoken
+as every reply to a spoken turn is ([her voice](#her-voice)); it names the
+task by its title, never as a link — the task has no id when she writes it
+(the live eval caught her linking an invented `lotti://task/task-new`). It is written
+before the walk: a make that fails leaves the item in the inbox, which the
+card shows.
+
+**No audio is linked.** Her recorder transcribes and deletes the clip
+(`chat_recorder_controller.dart`); the verbatim words under the task are
+the provenance. The extras after the task run only when the task is first
+written: a retry that finds the task adds nothing twice, and a crash between
+them leaves a task without them.
+
 # The tap: filing and the inbox
 
 `FrontFilingService` is the one place the front agent's surface changes the
@@ -532,7 +603,8 @@ stateDiagram-v2
   Day --> Inbox: Somewhere else — the words go to the inbox
   [*] --> Inbox: new / journal / unrouted walked
   Inbox --> SavedNote: Save as a note — text entry, owned by nothing
-  Inbox --> TaskCreated: Make it a task — titled with the words
+  [*] --> TaskCreated: a new task asked for — made from its draft, no tap
+  Inbox --> TaskCreated: Make it a task — from its draft, else titled with the words
   Inbox --> Left: Leave it — nothing written, nothing waits
   Left --> Proposal: Undo — when it came from a proposal
   Left --> Inbox: Undo — otherwise, same guess, same generation

@@ -5,6 +5,8 @@ import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/agents/query_chat_models.dart';
+import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/query/query_answer_builder.dart';
 import 'package:lotti/features/agents/query/query_chat_projection.dart';
 import 'package:lotti/features/agents/query/query_chat_providers.dart';
@@ -13,7 +15,9 @@ import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
 import 'package:lotti/features/front_agent/model/front_conversation.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
+import 'package:lotti/features/front_agent/model/front_task_draft.dart';
 import 'package:lotti/features/front_agent/service/front_door_walker.dart';
+import 'package:lotti/features/front_agent/service/front_filing_service.dart';
 import 'package:lotti/features/front_agent/service/front_owner_titles.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_contract.dart';
 import 'package:lotti/utils/consts.dart';
@@ -22,6 +26,7 @@ import 'package:mocktail/mocktail.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../agents/test_data/entity_factories.dart';
+import '../../projects/test_utils.dart';
 
 class _MockTitles extends Mock implements FrontOwnerTitles {}
 
@@ -77,6 +82,8 @@ void main() {
   late Map<String, AgentIdentityEntity?> taskAgents;
   late Map<String, AgentIdentityEntity?> projectAgents;
   late FrontDoorWalker walker;
+  late List<(FrontTaskDraft, String, String)> madeTasks;
+  late Future<Task?> Function(String id) makeTaskResult;
 
   FrontDispatchSegment segment({
     required int start,
@@ -85,7 +92,9 @@ void main() {
     String? id,
     FrontSegmentIntent intent = FrontSegmentIntent.question,
     FrontNewKind? newKind,
+    FrontTaskDraft? task,
   }) => FrontDispatchSegment(
+    task: task,
     start: start,
     end: end,
     text: input.substring(start, end),
@@ -148,6 +157,8 @@ void main() {
     factoryCalls = [];
     factoryError = null;
     dayPlanning = true;
+    madeTasks = [];
+    makeTaskResult = (id) async => makeTestTask(id: id, title: 'Buy a hose');
     taskAgents = {};
     projectAgents = {};
     when(() => syncService.upsertEntity(any())).thenAnswer((invocation) async {
@@ -174,6 +185,10 @@ void main() {
       personChat: personChat,
       ownerTitles: titles,
       configFlag: (name) async => name == enableDailyOsPageFlag && dayPlanning,
+      makeTask: (draft, {required id, required words}) {
+        madeTasks.add((draft, id, words));
+        return makeTaskResult(id);
+      },
       domainLogger: MockDomainLogger(),
     );
   });
@@ -846,6 +861,94 @@ void main() {
       expect(doors()[1]!.outcome, isA<FrontDoorDay>());
     },
   );
+
+  group('a new task', () {
+    final draft = FrontTaskDraft(
+      title: 'Buy a hose',
+      priority: TaskPriority.p1High,
+      startedAt: DateTime(2026, 10, 24, 8, 50),
+    );
+    final doorId = frontDoorRecordId(dispatchId, 0);
+
+    test('the user asked for is made at once from its draft, under the id '
+        "the inbox's tap would use, the words kept as its source", () async {
+      seedDispatch([
+        segment(
+          start: 30,
+          end: 39,
+          kind: FrontDestinationKind.newThing,
+          intent: FrontSegmentIntent.instruction,
+          newKind: FrontNewKind.task,
+          task: draft,
+        ),
+      ]);
+
+      await walker.walk(messageId);
+
+      final (made, id, words) = madeTasks.single;
+      expect(made.title, 'Buy a hose');
+      expect(made.priority, TaskPriority.p1High);
+      expect(made.startedAt, DateTime(2026, 10, 24, 8, 50));
+      expect(id, frontDoorTaskId(doorId));
+      expect(words, 'Buy hose.');
+      final created = doors()[0]!.outcome! as FrontDoorTaskCreated;
+      expect(created.taskId, frontDoorTaskId(doorId));
+      expect(created.newKind, FrontNewKind.task);
+      // The record keeps the draft, so an Undo and a re-make fill it again.
+      expect(doors()[0]!.task?.title, 'Buy a hose');
+    });
+
+    test('the user only mentioned waits in the inbox with its draft — the '
+        'tap is the approval', () async {
+      seedDispatch([
+        segment(
+          start: 30,
+          end: 39,
+          kind: FrontDestinationKind.newThing,
+          intent: FrontSegmentIntent.statement,
+          newKind: FrontNewKind.task,
+          task: draft,
+        ),
+      ]);
+
+      await walker.walk(messageId);
+
+      expect(madeTasks, isEmpty);
+      expect(
+        (doors()[0]!.outcome! as FrontDoorInbox).newKind,
+        FrontNewKind.task,
+      );
+      expect(doors()[0]!.task?.priority, TaskPriority.p1High);
+    });
+
+    test('a make that stores nothing, or throws, leaves the words in the '
+        'inbox rather than a failed door', () async {
+      for (final result in <Future<Task?> Function(String)>[
+        (_) async => null,
+        (_) async => throw StateError('disk full'),
+      ]) {
+        makeTaskResult = result;
+        upserts.clear();
+        seedDispatch([
+          segment(
+            start: 30,
+            end: 39,
+            kind: FrontDestinationKind.newThing,
+            intent: FrontSegmentIntent.instruction,
+            newKind: FrontNewKind.task,
+            task: draft,
+          ),
+        ]);
+
+        await walker.walk(messageId);
+
+        expect(
+          (doors()[0]!.outcome! as FrontDoorInbox).newKind,
+          FrontNewKind.task,
+        );
+      }
+    });
+  });
 
   test('a question about today, or a change to it while the Daily OS is '
       'off, has no door', () async {

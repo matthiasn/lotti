@@ -192,6 +192,14 @@ class FrontAgentStrategy extends ConversationStrategy
       index.contains(kind, id) ||
       _lookupRows.any((row) => row.kind == kind && row.id == id);
 
+  /// A category a new task may be put in: listed, and chosen when the
+  /// conversation is narrowed — the chips narrow, never widen.
+  bool _categoryExists(String id) {
+    final category = index.category(id);
+    return category != null &&
+        (category.chosen || !index.categories.any((c) => c.chosen));
+  }
+
   Future<void> _handleDispatch(
     ChatCompletionMessageToolCall call,
     Map<String, dynamic> args,
@@ -218,6 +226,7 @@ class FrontAgentStrategy extends ConversationStrategy
       args: args,
       input: input,
       destinationExists: _destinationExists,
+      categoryExists: _categoryExists,
     );
     if (dispatch == null) {
       _rejectedDispatches++;

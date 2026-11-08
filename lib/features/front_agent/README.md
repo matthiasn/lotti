@@ -37,7 +37,13 @@ or project she names is a link that closes her and opens it, and every
 answer is shown as the Markdown it was written in. A statement under a task or a project is a **proposal**: one tap
 files the user's words verbatim as an entry under it, and only the tap
 writes. A change to today ("move the count to the afternoon") is one too:
-its tap takes the words into the Daily OS planning for today. The user keeps many **conversations** with her, as in a ChatGPT
+its tap takes the words into the Daily OS planning for today. A task the
+user asks for ("make a task to fix the gate, high priority, I started ten
+minutes ago") is the exception: she reads its title, instructions,
+category, priority, due day, estimate and start from the words, and it is
+made at once, started when they said so, with the words linked under it and
+the category's agent assigned; she says she made it, and *Undo* takes it
+back. The user keeps many **conversations** with her, as in a ChatGPT
 or Claude window: each a subject of its own, titled by its first question,
 listed newest first by recency behind the header's *Chats* button (beside
 the conversation on a desktop window), renamed, archived or deleted there. What nothing owns waits in the **inbox** — every conversation,

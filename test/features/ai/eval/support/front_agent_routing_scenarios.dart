@@ -1,3 +1,5 @@
+import 'package:clock/clock.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_routing_index.dart';
 
@@ -10,6 +12,10 @@ import 'package:lotti/features/front_agent/model/front_routing_index.dart';
 /// closed sensor task is deliberately NOT listed: closed tasks are not
 /// destinations, and a model that names one must say so, not invent an id.
 final FrontRoutingIndex frontEvalIndex = FrontRoutingIndex(
+  categories: const [
+    FrontCategory(id: 'cat-colony', name: 'Colony care'),
+    FrontCategory(id: 'cat-maintenance', name: 'Station maintenance'),
+  ],
   tasks: const [
     FrontIndexRow(
       kind: FrontDestinationKind.task,
@@ -95,6 +101,7 @@ class FrontEvalScenario {
     this.askCandidates = const {},
     this.forbiddenDestinationIds = const {},
     this.maxLookups = 2,
+    this.checkTask,
     this.note = '',
   });
 
@@ -116,6 +123,11 @@ class FrontEvalScenario {
   /// How many lookup calls a correct turn needs at most.
   final int maxLookups;
 
+  /// For a turn that makes a task: the failures of the `new` task segment
+  /// ([FrontDispatchSegment.task] and its intent), none when it is right;
+  /// called with null when there is no such segment.
+  final List<String> Function(FrontDispatchSegment? segment)? checkTask;
+
   /// Why the scenario exists; shown in the report.
   final String note;
 }
@@ -123,6 +135,58 @@ class FrontEvalScenario {
 /// The catalogue the slice-0 plan names, plus the owner's regression case
 /// slot (decision 6) once its input is known.
 final List<FrontEvalScenario> frontEvalScenarios = [
+  const FrontEvalScenario(
+    id: 'asked_task_started',
+    input:
+        'Make a task to recalibrate the hatchery heaters, it is a station '
+        'maintenance job, high priority, due 2026-10-27, about two hours. '
+        'Start the timer, I began ten minutes ago. Check the north heater '
+        'first, it drifts the most.',
+    outcome: FrontEvalOutcome.dispatch,
+    expectedSegments: [(kind: FrontDestinationKind.newThing, id: null)],
+    maxLookups: 1,
+    checkTask: _startedHeaterTask,
+    note:
+        'A task asked for with every field said aloud: made at once, '
+        'in progress, its timer from ten minutes back.',
+  ),
+  const FrontEvalScenario(
+    id: 'asked_task_among_topics',
+    input:
+        'Swam 3 km this morning. Also create a task to repaint the signs '
+        'at the feeding station, no rush, I started on it at 9:15.',
+    outcome: FrontEvalOutcome.dispatch,
+    expectedSegments: [
+      (kind: FrontDestinationKind.goal, id: 'goal-swim'),
+      (kind: FrontDestinationKind.newThing, id: null),
+    ],
+    maxLookups: 1,
+    checkTask: _signsTask,
+    note:
+        'Two topics in one voice note: only the task part is the task, its '
+        'category is inferred, and a clock time is a start too.',
+  ),
+  const FrontEvalScenario(
+    id: 'mentioned_task',
+    input: 'I need to check the snow fences before the storm on Friday.',
+    outcome: FrontEvalOutcome.dispatch,
+    expectedSegments: [(kind: FrontDestinationKind.newThing, id: null)],
+    maxLookups: 1,
+    checkTask: _mentionedTask,
+    note:
+        'A task only mentioned is a statement: it waits for the tap, with '
+        'its draft.',
+  ),
+  const FrontEvalScenario(
+    id: 'asked_task_duplicate',
+    input: "Create a task to order next month's fish for the colony.",
+    outcome: FrontEvalOutcome.ask,
+    askCandidates: {'task-fish-order'},
+    maxLookups: 1,
+    note:
+        'An open task is already this work: she asks rather than making '
+        'a second.',
+  ),
   const FrontEvalScenario(
     id: 'single_strong',
     input: 'The fish supplier sent the quote, it is 12% up on last month.',
@@ -206,3 +270,62 @@ final List<FrontEvalScenario> frontEvalScenarios = [
         '(the project door); no single task owns it.',
   ),
 ];
+
+/// How far back from now a draft's start lies, in whole minutes.
+int? _minutesBack(FrontDispatchSegment segment) {
+  final started = segment.task?.startedAt;
+  return started == null ? null : clock.now().difference(started).inMinutes;
+}
+
+List<String> _taskShape(
+  FrontDispatchSegment? segment, {
+  required FrontSegmentIntent intent,
+}) => [
+  if (segment == null) 'no new task segment',
+  if (segment != null && segment.intent != intent)
+    'intent ${segment.intent.name}, expected ${intent.name}',
+  if (segment != null && segment.task == null) 'no task object',
+];
+
+List<String> _startedHeaterTask(FrontDispatchSegment? segment) {
+  final shape = _taskShape(segment, intent: FrontSegmentIntent.instruction);
+  if (shape.isNotEmpty) return shape;
+  final task = segment!.task!;
+  final back = _minutesBack(segment);
+  return [
+    if (task.categoryId != 'cat-maintenance') 'category ${task.categoryId}',
+    if (task.priority != TaskPriority.p1High) 'priority ${task.priority}',
+    if (task.due != DateTime(2026, 10, 27)) 'due ${task.due}',
+    if (task.estimate != const Duration(hours: 2)) 'estimate ${task.estimate}',
+    if (back == null || (back - 10).abs() > 1) 'started $back minutes back',
+    if (!(task.instructions ?? '').toLowerCase().contains('north'))
+      'instructions lost the north heater',
+  ];
+}
+
+List<String> _signsTask(FrontDispatchSegment? segment) {
+  final shape = _taskShape(segment, intent: FrontSegmentIntent.instruction);
+  if (shape.isNotEmpty) return shape;
+  final task = segment!.task!;
+  final back = _minutesBack(segment);
+  return [
+    if (task.categoryId != 'cat-colony' && task.categoryId != 'cat-maintenance')
+      'no category inferred',
+    // 9:15 against the turn's 09:30.
+    if (back == null || (back - 15).abs() > 1) 'started $back minutes back',
+    if ('${task.title} ${task.instructions ?? ''}'.toLowerCase().contains(
+      'swam',
+    ))
+      'the swim leaked into the task',
+    if (segment.text.toLowerCase().contains('swam'))
+      'the span took in the swim',
+  ];
+}
+
+List<String> _mentionedTask(FrontDispatchSegment? segment) {
+  final shape = _taskShape(segment, intent: FrontSegmentIntent.statement);
+  if (shape.isNotEmpty) return shape;
+  return [
+    if (segment!.task!.startedAt != null) 'a timer nobody asked for',
+  ];
+}
