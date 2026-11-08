@@ -763,7 +763,25 @@ void main() {
           home: const EventsOverviewPage(),
           overrides: overviewOverrides(),
         );
-        await tester.enterText(find.byType(TextField), _t('gala', 'gala'));
+        // A substring of the gala's own localized title: Czech and Danish
+        // titles contain no "gala", and a lone "Slavnostní" also matches the
+        // summit's description.
+        await tester.enterText(
+          find.byType(TextField),
+          manualScreenshotText(
+            en: 'gala',
+            de: 'gala',
+            fr: 'Gala',
+            it: 'gala',
+            es: 'Gala',
+            cs: 'Slavnostní spuštění',
+            nl: 'gala',
+            ro: 'Gala',
+            pt: 'Gala',
+            da: 'galla',
+            sv: 'gala',
+          ),
+        );
         await settleFrames(tester, 6);
         expect(
           find.text(
