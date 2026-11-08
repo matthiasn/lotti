@@ -480,9 +480,10 @@ void main() {
             find.text(_t('Habitat Local Lab', 'Lokales Habitat-Labor')),
             findsOneWidget,
           );
-          expect(
+          // Longer translations (French) push this row below a phone's fold.
+          await _expectReachableThenTop(
+            tester,
             find.text(_t('Orbital Vision', 'Orbitaler Blick')),
-            findsOneWidget,
           );
           await _expectReachableThenTop(
             tester,
