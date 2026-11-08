@@ -94,7 +94,7 @@ class FrontPullRequest {
   const FrontPullRequest({
     required this.key,
     required this.title,
-    required this.createdAt,
+    this.createdAt,
     this.mergedAt,
     this.additions = 0,
     this.deletions = 0,
@@ -103,7 +103,10 @@ class FrontPullRequest {
   /// `owner/repo#number`.
   final String key;
   final String title;
-  final DateTime createdAt;
+
+  /// Null for a snapshot stored before it carried the opening: such a pull
+  /// request can count as merged, never as opened on a day.
+  final DateTime? createdAt;
   final DateTime? mergedAt;
   final int additions;
   final int deletions;
@@ -143,7 +146,9 @@ FrontPullRequestDays frontPullRequestDays(
   final additions = List.filled(length, 0);
   final deletions = List.filled(length, 0);
   for (final pr in pullRequests) {
-    final index = epochDay(pr.createdAt.toLocal()) - range.startDay;
+    final createdAt = pr.createdAt;
+    if (createdAt == null) continue;
+    final index = epochDay(createdAt.toLocal()) - range.startDay;
     if (index < 0 || index >= length) continue;
     opened[index]++;
     additions[index] += pr.additions;
@@ -310,8 +315,8 @@ class FrontPullRequests {
       );
       for (final pr in listed) {
         buffer.write(
-          '- ${pr.key} | ${_oneLine(pr.title)} | '
-          'opened ${_isoDay(pr.createdAt.toLocal())}',
+          '- ${pr.key} | ${_oneLine(pr.title)} | opened '
+          '${pr.createdAt == null ? 'unknown' : _isoDay(pr.createdAt!.toLocal())}',
         );
         if (pr.mergedAt case final mergedAt?) {
           buffer.write(' | merged ${_isoDay(mergedAt.toLocal())}');

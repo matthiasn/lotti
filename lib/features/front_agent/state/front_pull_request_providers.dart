@@ -12,7 +12,8 @@ import 'package:lotti/services/notification_stream.dart';
 /// private entries do.
 ///
 /// Read again when a pull request is refreshed, linked or unlinked, a task
-/// changes its category or privacy, or private entries are shown or hidden.
+/// changes its category or privacy, a category becomes private or public,
+/// or private entries are shown or hidden.
 final StreamProviderFamily<FrontPullRequestDays, FrontPullRequestChart>
 frontPullRequestChartProvider = StreamProvider.autoDispose
     .family<FrontPullRequestDays, FrontPullRequestChart>((ref, chart) {
@@ -32,6 +33,7 @@ frontPullRequestChartProvider = StreamProvider.autoDispose
           taskNotification,
           linkNotification,
           privateToggleNotification,
+          categoriesNotification,
         },
         fetcher: fetch,
       ).where((data) => data != null).cast<FrontPullRequestDays>();

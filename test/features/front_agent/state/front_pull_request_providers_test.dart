@@ -97,6 +97,12 @@ void main() {
     await redrawn.future;
     expect(seen.last, [1, 1, 1]);
 
+    // A category turned private: the chart reads again.
+    clearInteractions(journalDb);
+    updates.add({categoriesNotification});
+    await pumpEventQueue();
+    verify(() => journalDb.getAllCategories()).called(1);
+
     subscription.close();
     await pumpEventQueue();
     clearInteractions(journalDb);

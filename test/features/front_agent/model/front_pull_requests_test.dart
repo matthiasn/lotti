@@ -11,7 +11,7 @@ void main() {
 
   FrontPullRequest pr(
     String key, {
-    required DateTime createdAt,
+    required DateTime? createdAt,
     DateTime? mergedAt,
     int additions = 0,
     int deletions = 0,
@@ -109,6 +109,8 @@ void main() {
           deletions: 1,
         ),
         pr('a#3', createdAt: DateTime(2026, 11, 8, 8), additions: 7),
+        // Opening never stored: no day can count it.
+        pr('a#5', createdAt: null, mergedAt: DateTime(2026, 11, 7)),
         // Opened before the days: merged inside them counts for nothing here.
         pr(
           'a#4',
@@ -197,6 +199,14 @@ void main() {
             additions: 250,
             deletions: 20,
           ),
+          // Opening never stored, merged inside the days: shipped.
+          pr(
+            'penguin/ice#1',
+            createdAt: null,
+            mergedAt: DateTime(2026, 11, 4),
+            additions: 2,
+            deletions: 1,
+          ),
           // Opened before the days, merged inside them: shipped, not opened.
           pr(
             'penguin/ice#3',
@@ -214,6 +224,7 @@ void main() {
       ]);
       expect(summary.merged.map((p) => p.key), [
         'penguin/colony#12',
+        'penguin/ice#1',
         'penguin/ice#3',
       ]);
       expect(summary.hasChart, isTrue);
@@ -221,12 +232,14 @@ void main() {
         summary.render(),
         'Pull requests 2026-10-26 through 2026-11-08:\n'
         '- opened: 2, +1450 -320 lines\n'
-        '- merged: 2, +1240 -304 lines\n'
+        '- merged: 3, +1242 -305 lines\n'
         'Each, newest opened first:\n'
         '- penguin/colony#12 | Title of penguin/colony#12 | opened '
         '2026-11-07 | merged 2026-11-08 | +1200 -300\n'
         '- penguin/colony#11 | Title of penguin/colony#11 | opened '
         '2026-11-02 | +250 -20\n'
+        '- penguin/ice#1 | Title of penguin/ice#1 | opened unknown | '
+        'merged 2026-11-04 | +2 -1\n'
         '- penguin/ice#3 | Title of penguin/ice#3 | opened 2026-10-01 | '
         'merged 2026-11-03 | +40 -4',
       );

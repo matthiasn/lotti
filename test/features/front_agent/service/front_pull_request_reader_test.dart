@@ -161,4 +161,18 @@ void main() {
       'p/c#2',
     ]);
   });
+
+  test('a pull request whose opening was never stored still counts as '
+      'shipped when its merge falls in the days, after the dated ones; '
+      'otherwise it is undated', () async {
+    final result = await read([
+      row('p/c#1', mergedAt: DateTime(2026, 11, 5)),
+      row('p/c#2', mergedAt: DateTime(2026, 10)),
+      row('p/c#3', createdAt: DateTime(2026, 11, 3)),
+    ]);
+
+    expect(result.pullRequests.map((pr) => pr.key), ['p/c#3', 'p/c#1']);
+    expect(result.pullRequests.last.createdAt, isNull);
+    expect(result.undated, 1);
+  });
 }

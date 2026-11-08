@@ -13,7 +13,8 @@ import 'package:lotti/utils/day_agent_capture_helpers.dart';
 /// be private itself to sit in one — and in the scope's categories. When
 /// the chart names the user's login, a pull request someone else opened
 /// does not count; one not refreshed since it was linked has no author yet
-/// and does.
+/// and does. One whose opening is not stored counts when it was merged in
+/// the days, and is otherwise `undated`.
 Future<({List<FrontPullRequest> pullRequests, int undated})>
 readFrontPullRequests(JournalDb journalDb, FrontPullRequestChart chart) async {
   final visible = {
@@ -46,11 +47,12 @@ readFrontPullRequests(JournalDb journalDb, FrontPullRequestChart chart) async {
     if (login != null && author != null && author != login) continue;
     seen.add(row.key);
     final createdAt = row.createdAt;
-    if (createdAt == null) {
-      undated++;
+    if (!inRange(createdAt) && !inRange(row.mergedAt)) {
+      // Stored before the snapshot carried its opening: no day can count
+      // it as opened. A merge inside the days still counts as shipped.
+      if (createdAt == null) undated++;
       continue;
     }
-    if (!inRange(createdAt) && !inRange(row.mergedAt)) continue;
     pullRequests.add(
       FrontPullRequest(
         key: row.key,
@@ -62,6 +64,14 @@ readFrontPullRequests(JournalDb journalDb, FrontPullRequestChart chart) async {
       ),
     );
   }
-  pullRequests.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+  // Newest opened first; one whose opening is not known last.
+  pullRequests.sort((a, b) {
+    final aAt = a.createdAt;
+    final bAt = b.createdAt;
+    if (aAt == null || bAt == null) {
+      return (aAt == null ? 1 : 0) - (bAt == null ? 1 : 0);
+    }
+    return bAt.compareTo(aAt);
+  });
   return (pullRequests: pullRequests, undated: undated);
 }
