@@ -1,4 +1,3 @@
-import 'package:clock/clock.dart';
 import 'package:lotti/classes/task.dart';
 
 /// The longest title a draft keeps.
@@ -19,8 +18,9 @@ const int frontTaskMaxStartedMinutesAgo = 24 * 60;
 /// for the user to set on the task page.
 ///
 /// [startedAt] is absolute: a dictated "started ten minutes ago" is
-/// resolved against the routing turn's clock, so a tap hours later still
-/// starts the timer when the user said the work began.
+/// resolved against the routing turn's clock — the `<current_local_time>`
+/// the model counted back from — so neither a slow inference nor a tap
+/// hours later moves when the user said the work began.
 class FrontTaskDraft {
   const FrontTaskDraft({
     required this.title,
@@ -50,10 +50,11 @@ class FrontTaskDraft {
   /// Reads the model's `task` object. Null without a title; any other field
   /// the model got wrong is left out rather than failing the dispatch — a
   /// misheard due date must not lose the task. [categoryExists] decides
-  /// which category ids stand.
+  /// which category ids stand; [now] is the routing turn's clock.
   static FrontTaskDraft? fromModel(
     Map<String, dynamic> args, {
     required bool Function(String id) categoryExists,
+    required DateTime now,
   }) {
     final title = _text(args['title'], frontTaskTitleMaxLength);
     if (title == null) return null;
@@ -79,7 +80,7 @@ class FrontTaskDraft {
       estimate: estimate == null ? null : Duration(minutes: estimate),
       startedAt: minutesAgo == null
           ? null
-          : clock.now().subtract(Duration(minutes: minutesAgo)),
+          : now.subtract(Duration(minutes: minutesAgo)),
     );
   }
 

@@ -1,4 +1,3 @@
-import 'package:clock/clock.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_routing_index.dart';
@@ -271,10 +270,13 @@ final List<FrontEvalScenario> frontEvalScenarios = [
   ),
 ];
 
-/// How far back from now a draft's start lies, in whole minutes.
+/// The clock every scenario's turn shows the model (`<current_local_time>`).
+final DateTime frontEvalNow = DateTime(2026, 10, 23, 9, 30);
+
+/// How far back from the turn's clock a draft's start lies, in minutes.
 int? _minutesBack(FrontDispatchSegment segment) {
   final started = segment.task?.startedAt;
-  return started == null ? null : clock.now().difference(started).inMinutes;
+  return started == null ? null : frontEvalNow.difference(started).inMinutes;
 }
 
 List<String> _taskShape(

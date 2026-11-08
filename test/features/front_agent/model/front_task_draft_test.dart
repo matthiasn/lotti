@@ -1,4 +1,3 @@
-import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/front_agent/model/front_task_draft.dart';
@@ -6,12 +5,10 @@ import 'package:lotti/features/front_agent/model/front_task_draft.dart';
 void main() {
   final now = DateTime(2026, 11, 8, 14, 30);
 
-  FrontTaskDraft? read(Map<String, dynamic> args) => withClock(
-    Clock.fixed(now),
-    () => FrontTaskDraft.fromModel(
-      args,
-      categoryExists: (id) => id == 'work',
-    ),
+  FrontTaskDraft? read(Map<String, dynamic> args) => FrontTaskDraft.fromModel(
+    args,
+    categoryExists: (id) => id == 'work',
+    now: now,
   );
 
   group('fromModel', () {

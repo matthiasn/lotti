@@ -54,6 +54,7 @@ class FrontAgentStrategy extends ConversationStrategy
     required this.runKey,
     required this.input,
     required this.index,
+    required this.now,
     this.corpusMatcher,
     this.dueTaskLister,
     this.loggedTimeSummarizer,
@@ -72,6 +73,10 @@ class FrontAgentStrategy extends ConversationStrategy
 
   /// The pending user message, exactly as the spans index into it.
   final String input;
+
+  /// The turn's clock, as `<current_local_time>` showed it to the model: a
+  /// dictated start counts back from here, not from when the dispatch lands.
+  final DateTime now;
   final FrontRoutingIndex index;
 
   /// Null when no FTS is wired (tests, evals without a journal): the tool
@@ -227,6 +232,7 @@ class FrontAgentStrategy extends ConversationStrategy
       input: input,
       destinationExists: _destinationExists,
       categoryExists: _categoryExists,
+      now: now,
     );
     if (dispatch == null) {
       _rejectedDispatches++;

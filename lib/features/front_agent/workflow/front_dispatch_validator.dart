@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_task_draft.dart';
 
@@ -23,7 +24,8 @@ typedef FrontDispatchValidation = ({FrontDispatch? dispatch, String? error});
 /// a routed destination at or above [frontLowConfidence]. A `new` task's
 /// `task` object is read leniently ([FrontTaskDraft.fromModel]): a field the
 /// model got wrong, or a category [categoryExists] does not know, is left
-/// out, never fatal. The spans and the gaps between them partition the
+/// out, never fatal; its start counts back from [now], the routing turn's
+/// clock the model saw. The spans and the gaps between them partition the
 /// input, and any gap holding at least
 /// [frontUnroutedGapShare] of its non-whitespace characters becomes an
 /// `unrouted` segment of its own, so the words the model left out are kept
@@ -33,6 +35,7 @@ FrontDispatchValidation validateFrontDispatch({
   required String input,
   required FrontDestinationCheck destinationExists,
   bool Function(String categoryId)? categoryExists,
+  DateTime? now,
 }) {
   final raw = args['segments'];
   if (raw is! List || raw.isEmpty) {
@@ -186,6 +189,7 @@ FrontDispatchValidation validateFrontDispatch({
             ? FrontTaskDraft.fromModel(
                 Map<String, dynamic>.from(task),
                 categoryExists: categoryExists ?? (_) => false,
+                now: now ?? clock.now(),
               )
             : null,
       ),

@@ -187,6 +187,7 @@ class FrontAgentWorkflow with AgentErrorLogging {
         runKey: runKey,
         input: input,
         index: index,
+        now: now,
         corpusMatcher: _indexBuilder.corpusMatcher(scope),
         dueTaskLister: _indexBuilder.dueTaskLister(scope, now: now),
         loggedTimeSummarizer: _indexBuilder.loggedTimeSummarizer(
