@@ -40,6 +40,21 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="1.1.91" date="2026-11-08">
+      <description>
+        <p>Added: the companion tells you which tasks your time went to. Ask "what did I work on in the past seven days?" and she lists the tasks you logged time on in that window as task rows, along with the totals and the chart. For a week, she also says in one sentence which category took most of your time.</p>
+        <p>Added: task rows in the companion's answers show each task's priority. Due, overdue and other task lists in her replies carry the P0-P3 glyph and label the tasks list uses, so the urgent ones stand out.</p>
+        <p>Added: the companion tells you what you completed. Ask "what did I complete today?" or "what did I finish or reject in the past week?" and she lists the tasks you marked done or rejected in that window, saying which was which. A task counts on the day you finished it, even when you created it months ago, and one you reopened and finished again counts on its latest completion. Name a category to hear only that one.</p>
+        <p>Added: the companion says when your task is made. After you tap "Make it a task" on something you told her, she confirms it out loud ("Hey, dear, I created that task."), in her own voice. Muting her voice keeps her quiet.</p>
+        <p>Changed: the companion picks a task's category from the conversation. Ask for a task without naming a category, and when everything you have been talking about, or all the time you logged today, sits in one category, the new task goes there. She says which category she chose, so you can change it before you confirm. When it could be either, she still leaves it for you.</p>
+        <p>Fixed: asking the companion about time in one category no longer shows all your other categories. "What did I work on in Work this week?" used to draw a chart, and give an answer, that broke out every category you logged time in. Now only the category you named appears by name, and everything else is a single "Other" slice in both her words and the chart.</p>
+        <p>Fixed: the "..." menus on chats, goals and people highlight every row cleanly. Hovering the top or bottom entry, or one next to a divider, no longer leaves a strip of empty padding between the highlight and the edge or the divider.</p>
+        <p>Fixed: searching your chats works while something waits in the inbox. The first letter you typed vanished and the search field lost focus whenever the inbox had an item. The field now keeps what you type.</p>
+        <p>Fixed: a follow-up you ask the companion for lands in its task's project. "Create a follow-up to that one" linked the new task to the one it follows but left it out of every project, so it was missing from that project's task list until you filed it by hand. It now joins the same project, and stays in none when the task it follows has none.</p>
+        <p>Fixed: the companion chat's header shows the whole conversation title on a phone. The way to your other chats is now a menu icon (its name shows on hover and to screen readers), so a title like "What is due today" is no longer cut to "What is due t...".</p>
+        <p>Fixed: her full-screen stage on a phone lets you read the conversation. A conversation button next to the close button opens the chat she is speaking in as a sheet. On a desktop it already stands beside her.</p>
+      </description>
+    </release>
     <release version="1.1.90" date="2026-11-08">
       <description>
         <p>Added: a task you dictate to the companion comes ready to confirm, filled in. Say "make a task to fix the gate, high priority, due Friday, this is for home, I started ten minutes ago". She reads the title, what to do, category, priority, due day and estimate from your words and tells you what she understood. One tap on "Make it a task" creates it with all of that. It is in progress with its timer running from the time you gave only if you said the work had started. Otherwise it stays open. Your words are kept on the task and the category's agent is assigned. When an open task already looks like the same work, she asks which one you mean instead of proposing a second.</p>
