@@ -1,0 +1,182 @@
+---
+title: Mluv se svým společníkem
+description: Zeptej se společníka, co je splatné, kam ti utekl čas nebo jak je na tom úkol, projekt či cíl, a řekni mu, co se stalo. Uloží to, až když klepneš.
+---
+
+# Mluv se svým společníkem
+
+Společník je místo, kde začínáš. Místo abys nejdřív hledal správnou stránku,
+zeptáš se jeho – písemně nebo nahlas – a on najde odpověď: co je dnes
+splatné, kolik času jsi tento týden zaznamenal, jak se daří projektu. Když mu
+něco řekneš, zjistí, jestli to patří k úkolu, projektu, cíli nebo dnešnímu
+plánu, a navrhne to tam uložit. Nic se nezapíše, dokud neklepneš.
+
+Stránky s detaily zůstávají, kde jsou. Chat je místo, kde věci začínají;
+úkoly, projekty, cíle a Daily OS jsou místa, kde doladíš, co se začalo –
+odhady, checklisty, priority, bloky na časové ose.
+
+:::note[Experimentální]
+
+Chat se společníkem je nový a pořád roste. Ve výchozím stavu je vypnutý a to,
+co umí, se mění verzi od verze. Tato stránka popisuje, co funguje dnes;
+[Co přijde](#what-is-coming) uvádí, co je v plánu.
+
+:::
+
+## Zapni ho
+
+Otevři **Nastavení → Pokročilá nastavení → Konfigurační příznaky**. Ve skupině
+**Pokročilé a experimentální** zapni:
+
+| Přepínač | Co dělá |
+| --- | --- |
+| **Chat se společníkem** | Samotný chat. Povinné. |
+| **Společník** | Jeho animovaná postava v chatu, vedle AI souhrnů a v záhlaví dne, a k tomu **Nastavení → Předvolby → Společník**, kde ho můžeš obléknout. Volitelné. |
+| **Přehrávání AI souhrnů** (ve skupině Předvolby) | Jeho hlas. Spolu se **Společníkem** potřebný k tomu, aby odpovídal nahlas. |
+
+Chat potřebuje funkčního poskytovatele AI. Používá AI profil **Výchozí z
+Nastavení**, pokud mu nevybereš jiný, a když máš nastaveného poskytovatele
+Melious nebo Mistral, sáhne po malém hostovaném modelu od nich. Viz
+[Připojení poskytovatele AI](../ai-and-automation/provider-setup.mdx).
+
+## Otevři chat
+
+- **Počítač:** vyber **Zeptat se společníka** v postranním panelu, nebo
+  odkudkoli stiskni **Cmd+L** (macOS) / **Ctrl+L** (Linux a Windows).
+- **Telefon:** klepni na **Zeptat se společníka** vedle tlačítka nabídky
+  v navigační liště.
+
+Dokud je aplikace uzamčená na jednu kategorii, je skrytý, protože jeho
+konverzace zahrnují všechny kategorie.
+
+## Ptej se ho
+
+Napiš do **Zeptej se na cokoli…** a odešli. Otázky, na které dnes odpovídá:
+
+- **Co je splatné.** „Co je dnes splatné?“, „Co je po termínu?“, „Co je
+  splatné tento týden?“ Dnešek a zpoždění drží odděleně, pokud se nezeptáš
+  na obojí.
+- **Kam ti utekl čas.** „Kolik času jsem tento týden zaznamenal?“ funguje pro
+  dnešek, včerejšek, tento týden, posledních 7 nebo 30 dní, tento a minulý
+  měsíc. Sečte čas po kategoriích se stejnými čísly jako
+  [analýza času](../organize-and-reflect/time-analysis.mdx), ukáže graf a když se
+  zeptáš, na čem jsi pracoval, vyjmenuje úkoly, do kterých čas šel.
+- **Co jsi dokončil.** „Co jsem tento týden dokončil?“ počítá každý úkol
+  v den, kdy byl dokončen nebo zamítnut, ne v den, kdy vznikl.
+- **Konkrétní úkol nebo projekt.** „Jak je na tom přestavba habitatu?“ Předá
+  otázku agentovi toho úkolu či projektu a ukáže jeho odpověď pod jeho
+  jménem – **Od: …** – bez přeformulování.
+- **Cíl.** Otázka nebo novinka k některému z tvých cílů se stane zprávou
+  v chatu agenta toho cíle a jeho odpověď se objeví v tvém. Cíle jsou
+  volitelná sekce: zapni **Cíle** v **Nastavení → Sekce**.
+- **Tvůj deník.** „Co jsme rozhodli o dodavateli sardinek?“ Když odpověď nemá
+  žádný jednotlivý úkol ani projekt, prohledá tvůj deník a odpoví **Z tvého
+  deníku** se záznamy, o které se opírá. Každý otevře svůj zdroj.
+- **Tvoje pull requesty.** „Kolik pull requestů jsem tento týden mergnul?“
+  funguje, když je GitHub připojený v **Nastavení → Pokročilá nastavení →
+  GitHub**. Počítá jen pull requesty, které už jsou uložené v tomto zařízení.
+
+Dva a více úkolů se vrátí jako karta s řádky – stav, jednořádkové shrnutí od
+agenta, kategorie, priorita a termín. Klepnutím na úkol ho otevřeš nad
+chatem; zpět tě vrátí do konverzace.
+
+Napiš **@**, abys pojmenoval kategorii a zúžil odpověď na ni. Vidí vždy jen
+kategorie, které vidět smí.
+
+Když si není jistý, co myslíš, položí krátkou otázku s nejvýš třemi
+možnostmi.
+
+## Řekni mu, co se stalo
+
+Když mu něco řekneš místo otázky, navrhne, kam to patří. Návrh je karta
+s tlačítky; nic se neuloží, dokud neklepneš.
+
+| Řekneš | Navrhne |
+| --- | --- |
+| Novinku k úkolu nebo projektu | **Uložit** – tvá přesná slova se stanou záznamem pod ním. |
+| „Udělej úkol opravit branku, vysoká priorita“ | **Udělat z toho úkol** – z toho, co jsi řekl, vyplní název, kategorii, prioritu, termín, odhad a čas začátku a řekne ti, co z toho vyčetl. Přiřadí se agent kategorie. |
+| „Navazující úkol k tomu“ | **Udělat z toho úkol**, propojený jako navazující na úkol zmíněný dříve v konverzaci. |
+| „Přesuň sčítání na odpoledne“ | **Změnit dnešek** – otevře plánování v [Daily OS](../plan-and-capture/daily-os.mdx) s tvými slovy. |
+| Něco nového a většího | **Nový projekt…** nebo **Založit cíl…**, které otevřou formulář s tvými slovy. |
+| Cokoli jiného | **Uložit jako poznámku** nebo **Nechat být**. |
+
+Když se trefil vedle, vyber **Někam jinam**. Co nepatří ničemu, čeká
+v **Příchozích**, které otevřeš jejich čipem v záhlaví chatu nebo v seznamu
+konverzací. Všechno, co klepnutí zapsalo, jde otevřít nebo vrátit zpět.
+
+## Veď víc konverzací
+
+Jako v okně ChatGPT nebo Claude může mít každé téma vlastní konverzaci –
+začni ji tlačítkem **Nový chat**. Konverzace mají jako název svou první
+otázku a jsou seřazené od nejnovější za tlačítkem **Chaty** v záhlaví (na
+širokém okně počítače vedle konverzace). Pomocí **Hledat v chatech** nějakou
+najdeš a nabídkou každého řádku ji přejmenuješ, archivuješ nebo smažeš.
+Smazání konverzaci skryje na všech zařízeních; co jsi z ní uložil, zůstane,
+kde je.
+
+## Mluv s ním
+
+Zeptej se nahlas a odpoví nahlas, rty v rytmu svého hlasu. Napsaná otázka
+dostane vždy napsanou odpověď. Klepni pro mluvení a znovu pro odeslání, nebo
+podrž pro mluvení a pusť pro odeslání.
+
+Aby mluvil, musí být zapnutý **Společník** a **Přehrávání AI souhrnů** a musí
+mít hlas: buď model pro předčítání ze svého AI profilu, nebo hlas zařízení,
+kde ho tvoje platforma podporuje. V záhlaví ho můžeš ztlumit, nechat ho
+zopakovat tlačítkem **Řekni to znovu** nebo zvolit **Zobrazit společníka na
+celé obrazovce**. Na širokém okně počítače je konverzace vedle něj a on
+ukazuje na každý úkol, který vyjmenovává, ve chvíli, kdy ho říká.
+
+AI profil, se kterým přemýšlí, vybereš v nabídce záhlaví pod **AI profil**.
+**Výchozí z Nastavení** ho vrátí k tvému výchozímu.
+
+## Přizpůsob si ho
+
+Se zapnutým **Společníkem** otevři **Nastavení → Předvolby → Společník**:
+
+- **Postava:** Lotti (babička), Děda, Teta nebo Strejda.
+- **Odstín pleti, Barva vlasů, Účes, Barva očí** a **Oblečení** – nebo nové
+  oblečení pokaždé, když otevřeš aplikaci.
+- **Drzost:** Vřelost, Šibalství nebo Drzost – jak reaguje na to, co
+  předčítá.
+- **Hlas:** **Odpovídat nahlas na mluvené otázky** zapíná a vypíná jeho
+  mluvené odpovědi.
+
+Mimo chat stojí vedle AI souhrnu úkolu a přečte ho, když stiskneš jeho
+ovládání předčítání, sedí v záhlaví stránky dne a po klepnutí ti představí
+den a přivítá tě při úvodním nastavení.
+
+## Nejdřív chat, stránky s detaily na detaily
+
+| Začni v chatu | Dolaď na stránce |
+| --- | --- |
+| „Co je dnes splatné?“ | [Úkoly](../organize-and-reflect/tasks.mdx) – stav, priorita, termín, checklisty |
+| „Udělej úkol…“ | Nový úkol – odhad, štítky, checklist, propojené záznamy |
+| „Kolik času tento týden?“ | [Analýza času](../organize-and-reflect/time-analysis.mdx) – libovolné období, libovolná kategorie |
+| „Přesuň X na odpoledne“ | [Daily OS](../plan-and-capture/daily-os.mdx) – bloky na časové ose |
+| Novinka k projektu | [Projekty](../organize-and-reflect/projects.mdx) – zpráva a úkoly projektu |
+
+## Co přijde \{#what-is-coming\}
+
+Všechno níže je směr, ne vydaná funkce; rozsah a pořadí se mohou změnit.
+
+- **Lidé.** Ptát se na lidi ve svém životě a vyprávět mu o nich, s předáním
+  agentovi každého člověka, jako se to už děje u cílů.
+- **Události.** Ptát se na událost a ukládat k ní z chatu fotky a poznámky.
+- **Nastavení a přizpůsobení na požádání.** Měnit, jak se Lotti chová – nebo
+  jak společník vypadá – prostě tím, že to řekneš, místo hledání správné
+  stránky nastavení.
+- **Ukládání bez klepnutí,** volitelně, pro druhy novinek, které stejně vždy
+  potvrzuješ.
+- **Víc společníka.** Nálady, které odrážejí tvůj deník, jemná připomenutí a
+  tvář pro každého agenta.
+
+## Soukromí
+
+Čte jen to, co už je ve tvém zařízení, v rámci kategorií, které smí vidět.
+Jedna otázka může použít víc AI profilů: jeho vlastní profil rozhodne, kam
+otázka půjde, na otázku k úkolu, projektu nebo cíli odpoví profil toho
+agenta a odpověď z tvého deníku použije profil **Výchozí z Nastavení**. Tvoje
+otázka a části deníku, které každá odpověď potřebuje, jdou k poskytovateli
+použitého profilu. Aby všechno zůstalo ve tvém zařízení, dej všem lokální
+model. Nikdy sám od sebe nemění tvá data: každý zápis je klepnutí.

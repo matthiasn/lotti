@@ -2,6 +2,13 @@
   "schemaVersion": 1,
   "features": [
     {
+      "id": "companion",
+      "title": "Companion chat",
+      "page": "getting-started/companion",
+      "status": "draft",
+      "screenshotCases": []
+    },
+    {
       "id": "daily-os",
       "title": "Daily OS",
       "page": "plan-and-capture/daily-os",

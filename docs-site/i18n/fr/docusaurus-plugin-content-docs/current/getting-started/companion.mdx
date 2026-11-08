@@ -1,0 +1,207 @@
+---
+title: Parle à ton compagnon
+description: Demande au compagnon ce qui est dû, où est passé ton temps ou où en est une tâche, un projet ou un objectif, et raconte-lui ce qui s’est passé. Rien n’est classé avant que tu touches.
+---
+
+# Parle à ton compagnon
+
+Le compagnon est l’endroit où tout commence. Au lieu de chercher d’abord la
+bonne page, tu lui poses la question – par écrit ou à voix haute – et il
+trouve la réponse : ce qui est dû aujourd’hui, combien de temps tu as
+enregistré cette semaine, où en est un projet. Quand tu lui racontes quelque
+chose, il détermine si cela concerne une tâche, un projet, un objectif ou le
+plan du jour, et propose de le classer là. Rien n’est écrit avant que tu
+touches.
+
+Les pages de détail restent à leur place. Le chat est là où les choses
+commencent ; les tâches, les projets, les objectifs et le Daily OS sont là où
+tu affines ce qui a été lancé – estimations, checklists, priorités, blocs sur
+la chronologie.
+
+:::note[Expérimental]
+
+Le chat avec le compagnon est nouveau et continue de grandir. Il est désactivé
+par défaut, et ce qu’il sait faire change d’une version à l’autre. Cette page
+décrit ce qui fonctionne aujourd’hui ; [À venir](#what-is-coming) liste ce
+qui est prévu.
+
+:::
+
+## Active-le
+
+Ouvre **Paramètres → Paramètres avancés → Flags**. Dans le groupe **Avancé et
+expérimental**, active :
+
+| Interrupteur | Ce qu’il fait |
+| --- | --- |
+| **Chat avec le compagnon** | Le chat lui-même. Obligatoire. |
+| **Compagnon** | Sa silhouette animée dans le chat, à côté des résumés IA et dans l’en-tête du jour, plus **Paramètres → Préférences → Compagnon** pour l’habiller. Facultatif. |
+| **Lecture des résumés IA** (dans le groupe Préférences) | Sa voix. Nécessaire, avec **Compagnon**, pour qu’il réponde à voix haute. |
+
+Le chat a besoin d’un fournisseur d’IA fonctionnel. Il utilise le profil IA
+**Par défaut des Paramètres**, sauf si tu lui en choisis un autre, et se
+rabat sur un petit modèle hébergé de Melious ou Mistral si tu as configuré
+l’un de ces fournisseurs. Voir
+[Connecter un fournisseur d’IA](../ai-and-automation/provider-setup.mdx).
+
+## Ouvre le chat
+
+- **Ordinateur :** choisis **Demander au compagnon** dans la barre latérale,
+  ou appuie sur **Cmd+L** (macOS) / **Ctrl+L** (Linux et Windows) depuis
+  n’importe où.
+- **Téléphone :** touche **Demander au compagnon** à côté du bouton de menu
+  dans la barre de navigation.
+
+Tant que l’app est verrouillée sur une seule catégorie, il est masqué, car
+ses conversations couvrent toutes les catégories.
+
+## Pose-lui des questions
+
+Écris dans **Demande ce que tu veux…** et envoie. Les questions auxquelles il
+répond aujourd’hui :
+
+- **Ce qui est dû.** « Qu’est-ce qui est dû aujourd’hui ? », « Qu’est-ce qui
+  est en retard ? », « Qu’est-ce qui est dû cette semaine ? » Il sépare
+  aujourd’hui et le retard, sauf si tu demandes les deux.
+- **Où est passé ton temps.** « Combien de temps ai-je enregistré cette
+  semaine ? » fonctionne pour aujourd’hui, hier, cette semaine, les 7 ou 30
+  derniers jours, ce mois-ci et le mois dernier. Il additionne le temps par
+  catégorie avec les mêmes chiffres que
+  l’[analyse du temps](../organize-and-reflect/time-analysis.mdx), affiche un
+  graphique et nomme les tâches concernées quand tu demandes sur quoi tu as
+  travaillé.
+- **Ce que tu as terminé.** « Qu’ai-je terminé cette semaine ? » compte
+  chaque tâche le jour où elle a été terminée ou rejetée, pas le jour de sa
+  création.
+- **Une tâche ou un projet précis.** « Où en est le réaménagement de
+  l’habitat ? » Il transmet la question à l’agent de cette tâche ou de ce
+  projet et montre sa réponse sous son nom – **De …** – sans la reformuler.
+- **Un objectif.** Une question ou une mise à jour sur l’un de tes objectifs
+  devient un message dans le chat de l’agent de cet objectif, et sa réponse
+  apparaît dans le tien. Les objectifs sont une section facultative : active
+  **Objectifs** dans **Paramètres → Sections**.
+- **Ton journal.** « Qu’avons-nous décidé pour le fournisseur de sardines ? »
+  Quand aucune tâche ni aucun projet ne détient la réponse, il cherche dans
+  ton journal et répond **Tiré de ton journal**, avec les entrées sur
+  lesquelles il s’appuie. Chacune ouvre sa source.
+- **Tes pull requests.** « Combien de pull requests ai-je fusionnées cette
+  semaine ? » fonctionne quand GitHub est connecté dans **Paramètres →
+  Paramètres avancés → GitHub**. Il ne compte que les pull requests déjà
+  enregistrées sur cet appareil.
+
+Deux tâches ou plus reviennent sous forme de carte à lignes – statut, résumé
+en une ligne de l’agent, catégorie, priorité et échéance. Touche une tâche
+pour l’ouvrir par-dessus le chat ; le retour te ramène à la conversation.
+
+Tape **@** pour nommer une catégorie et limiter la réponse à celle-ci. Il ne
+voit jamais que les catégories qu’il a le droit de voir.
+
+S’il n’est pas sûr de ce que tu veux dire, il pose une courte question avec
+jusqu’à trois choix.
+
+## Raconte-lui ce qui s’est passé
+
+Quand tu lui racontes quelque chose au lieu de poser une question, il propose
+où le ranger. Une proposition est une carte avec des boutons ; rien n’est
+classé avant que tu touches.
+
+| Tu dis | Il propose |
+| --- | --- |
+| Une mise à jour sur une tâche ou un projet | **Classer** – tes mots exacts deviennent une entrée sous celle-ci. |
+| « Crée une tâche pour réparer le portail, priorité haute » | **En faire une tâche** – il remplit le titre, la catégorie, la priorité, l’échéance, l’estimation et l’heure de début à partir de ce que tu as dit et te dit ce qu’il a compris. L’agent de la catégorie est attribué. |
+| « Une suite à celle-là » | **En faire une tâche**, reliée comme suite à la tâche nommée plus tôt dans la conversation. |
+| « Déplace le comptage à l’après-midi » | **Modifier aujourd'hui** – ouvre la planification du [Daily OS](../plan-and-capture/daily-os.mdx) avec tes mots. |
+| Quelque chose de nouveau et de plus grand | **Nouveau projet…** ou **Lancer un objectif…**, qui ouvrent le formulaire avec tes mots dedans. |
+| Tout le reste | **Enregistrer comme note** ou **Laisser**. |
+
+S’il s’est trompé de destination, choisis **Ailleurs**. Ce qui n’appartient à
+rien attend dans la **Boîte de réception**, ouverte depuis sa puce dans
+l’en-tête du chat ou dans la liste des conversations. Tout ce qu’un toucher a
+écrit peut être ouvert ou annulé.
+
+## Garde plusieurs conversations
+
+Comme dans une fenêtre ChatGPT ou Claude, chaque sujet peut avoir sa propre
+conversation – lance-en une avec **Nouveau chat**. Les conversations portent
+leur première question comme titre et sont listées de la plus récente à la
+plus ancienne derrière le bouton **Chats** de l’en-tête (à côté de la
+conversation sur une large fenêtre d’ordinateur). Utilise **Rechercher dans
+les chats** pour en retrouver une, et le menu de chaque ligne pour la
+renommer, l’archiver ou la supprimer. Supprimer masque une conversation sur
+tous tes appareils ; ce que tu en as classé reste à sa place.
+
+## Parle-lui
+
+Pose une question à voix haute et il répond à voix haute, les lèvres
+suivant sa voix. Une question tapée reçoit toujours une réponse écrite.
+Touche pour parler puis touche à nouveau pour envoyer, ou maintiens pour
+parler et relâche pour envoyer.
+
+Pour qu’il parle, **Compagnon** et **Lecture des résumés IA** doivent être
+activés, et il lui faut une voix : soit le modèle de lecture de son profil
+IA, soit la voix de l’appareil quand ta plateforme la prend en charge. Dans
+l’en-tête, tu peux le rendre muet, lui faire répéter avec **Redis-le**, ou
+choisir **Afficher le compagnon en plein écran** pour le voir en grand. Sur
+une large fenêtre d’ordinateur, la conversation se trouve alors à côté de
+lui, et il désigne chaque tâche qu’il énumère au moment où il la nomme.
+
+Pour choisir le profil IA avec lequel il réfléchit, ouvre **Profil d'IA**
+dans le menu de l’en-tête. **Par défaut des Paramètres** lui fait de nouveau
+suivre ton réglage par défaut.
+
+## Personnalise-le
+
+Avec **Compagnon** activé, ouvre **Paramètres → Préférences → Compagnon** :
+
+- **Personnage :** Lotti (une grand-mère), Papi, Tata ou Tonton.
+- **Teint, Couleur des cheveux, Coiffure, Couleur des yeux** et **Tenue** – ou
+  une nouvelle tenue à chaque ouverture de l’app.
+- **Répartie :** Chaleur, Espièglerie ou Insolence – sa façon de réagir à ce
+  qu’il lit à voix haute.
+- **Voix :** **Répondre à voix haute aux questions posées à l’oral** active
+  ou désactive ses réponses parlées.
+
+En dehors du chat, il se tient à côté du résumé IA d’une tâche et le lit
+quand tu appuies sur sa commande de lecture, s’installe dans l’en-tête de la
+page du jour et te présente la journée quand tu le touches, et il t’accueille
+pendant l’onboarding.
+
+## Le chat d’abord, les pages de détail pour les détails
+
+| Commence dans le chat | Affine sur la page |
+| --- | --- |
+| « Qu’est-ce qui est dû aujourd’hui ? » | [Tâches](../organize-and-reflect/tasks.mdx) – statut, priorité, échéance, checklists |
+| « Crée une tâche pour… » | La nouvelle tâche – estimation, labels, checklist, entrées liées |
+| « Combien de temps cette semaine ? » | [Analyse du temps](../organize-and-reflect/time-analysis.mdx) – n’importe quelle période, n’importe quelle catégorie |
+| « Déplace X à l’après-midi » | [Daily OS](../plan-and-capture/daily-os.mdx) – blocs sur la chronologie |
+| Une mise à jour sur un projet | [Projets](../organize-and-reflect/projects.mdx) – le rapport et les tâches du projet |
+
+## À venir \{#what-is-coming\}
+
+Tout ce qui suit est une direction, pas une fonctionnalité livrée ; le
+périmètre et l’ordre peuvent changer.
+
+- **Les personnes.** Poser des questions sur les personnes de ta vie et lui
+  en parler, transmis à l’agent de chaque personne comme c’est déjà le cas
+  pour les objectifs.
+- **Les événements.** Poser des questions sur un événement et y classer des
+  photos et des notes depuis le chat.
+- **Paramètres et personnalisation en le demandant.** Changer le
+  comportement de Lotti – ou l’apparence du compagnon – simplement en le
+  disant, au lieu de chercher la bonne page de paramètres.
+- **Classer sans toucher,** sur option, pour les types de mises à jour que tu
+  confirmes toujours.
+- **Encore plus de lui.** Des humeurs qui reflètent ton journal, de petits
+  rappels bienveillants et un visage pour chaque agent.
+
+## Confidentialité
+
+Il ne lit que ce qui se trouve déjà sur ton appareil, dans les catégories
+qu’il a le droit de voir. Une question peut utiliser plusieurs profils IA :
+son propre profil décide où va la question, une question sur une tâche, un
+projet ou un objectif reçoit sa réponse avec le profil de cet agent, et une
+réponse tirée de ton journal utilise le profil **Par défaut des Paramètres**.
+Ta question et les parties de ton journal dont chaque réponse a besoin vont au
+fournisseur du profil utilisé. Pour que tout reste sur ton appareil, donne un
+modèle local à chacun d’eux. Il ne modifie jamais tes données de lui-même :
+chaque écriture est un toucher.

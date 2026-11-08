@@ -1,0 +1,198 @@
+---
+title: Tal med din ledsager
+description: Spørg ledsageren, hvad der forfalder, hvor din tid blev af, eller hvordan en opgave, et projekt eller et mål står, og fortæl, hvad der er sket. Den gemmer først noget, når du trykker.
+---
+
+# Tal med din ledsager
+
+Ledsageren er der, hvor du starter. I stedet for først at finde den rigtige
+side spørger du den – skriftligt eller højt – og den finder svaret: hvad der
+forfalder i dag, hvor meget tid du har registreret i denne uge, hvordan et
+projekt går. Når du fortæller den noget, finder den ud af, om det hører til
+en opgave, et projekt, et mål eller dagens plan, og foreslår at gemme det
+der. Intet bliver skrevet, før du trykker.
+
+Detaljesiderne bliver, hvor de er. Chatten er der, hvor tingene starter;
+opgaver, projekter, mål og Daily OS er der, hvor du finpudser det, der blev
+startet – estimater, tjeklister, prioriteter, blokke på tidslinjen.
+
+:::note[Eksperimentel]
+
+Chatten med ledsageren er ny og vokser stadig. Den leveres slået fra, og hvad
+den kan, ændrer sig fra version til version. Denne side beskriver, hvad der
+virker i dag; [Hvad der kommer](#what-is-coming) viser, hvad der er planlagt.
+
+:::
+
+## Slå den til
+
+Åbn **Indstillinger → Avancerede indstillinger → Konfigurationsflag**. Slå i
+gruppen **Avanceret og eksperimentelt** følgende til:
+
+| Kontakt | Hvad den gør |
+| --- | --- |
+| **Ledsager-chat** | Selve chatten. Påkrævet. |
+| **Følgesvend** | Dens animerede figur i chatten, ved siden af AI-opsummeringer og i dagens overskrift, plus **Indstillinger → Præferencer → Følgesvend**, hvor du kan klæde den på. Valgfri. |
+| **AI-opsummering afspilning** (i gruppen Præferencer) | Dens stemme. Nødvendig sammen med **Følgesvend**, for at den kan svare højt. |
+
+Chatten kræver en fungerende AI-udbyder. Den bruger AI-profilen **Standard fra
+Indstillinger**, medmindre du vælger en anden til den, og falder tilbage på
+en lille hostet model fra Melious eller Mistral, hvis du har sat en af de
+udbydere op. Se
+[Forbind en AI-udbyder](../ai-and-automation/provider-setup.mdx).
+
+## Åbn chatten
+
+- **Computer:** vælg **Spørg ledsageren** i sidebjælken, eller tryk
+  **Cmd+L** (macOS) / **Ctrl+L** (Linux og Windows) hvor som helst.
+- **Telefon:** tryk på **Spørg ledsageren** ved siden af menuknappen i
+  navigationslinjen.
+
+Så længe appen er låst til én kategori, er den skjult, fordi dens samtaler
+spænder over alle kategorier.
+
+## Spørg den
+
+Skriv i **Spørg om hvad som helst…**, og send. Spørgsmål, den svarer på i
+dag:
+
+- **Hvad der forfalder.** "Hvad forfalder i dag?", "Hvad er overskredet?",
+  "Hvad forfalder i denne uge?" Den holder i dag og overskredet adskilt,
+  medmindre du spørger om begge.
+- **Hvor din tid blev af.** "Hvor meget tid har jeg registreret i denne uge?"
+  virker for i dag, i går, denne uge, de seneste 7 eller 30 dage, denne måned
+  og sidste måned. Den lægger tiden sammen pr. kategori med de samme tal som
+  [tidsanalysen](../organize-and-reflect/time-analysis.mdx), viser et diagram og
+  nævner de opgaver, tiden gik til, når du spørger, hvad du har arbejdet på.
+- **Hvad du har afsluttet.** "Hvad har jeg afsluttet i denne uge?" tæller hver
+  opgave på den dag, den blev afsluttet eller afvist, ikke den dag, den blev
+  oprettet.
+- **En bestemt opgave eller et projekt.** "Hvordan står det til med
+  ombygningen af habitatet?" Den giver spørgsmålet videre til agenten for den
+  opgave eller det projekt og viser svaret under agentens navn – **Fra …** –
+  uden at omformulere det.
+- **Et mål.** Et spørgsmål eller en opdatering om et af dine mål bliver en tur
+  i det måls agents egen chat, og svaret vises i din. Mål er en valgfri
+  sektion: slå **Mål** til under **Indstillinger → Sektioner**.
+- **Din journal.** "Hvad besluttede vi om sardinleverandøren?" Når ingen
+  enkelt opgave eller projekt har svaret, søger den i din journal og svarer
+  **Fra din journal** med de poster, den bygger på. Hver enkelt åbner sin
+  kilde.
+- **Dine pull requests.** "Hvor mange pull requests har jeg merget i denne
+  uge?" virker, når GitHub er forbundet under **Indstillinger → Avancerede
+  indstillinger → GitHub**. Den tæller kun de pull requests, der allerede er
+  gemt på denne enhed.
+
+To eller flere opgaver kommer tilbage som et kort med rækker – status,
+agentens opsummering på én linje, kategori, prioritet og forfaldsdato. Tryk
+på en opgave for at åbne den oven på chatten; tilbage fører dig til samtalen
+igen.
+
+Skriv **@** for at nævne en kategori og afgrænse svaret til den. Den ser
+altid kun de kategorier, den må se.
+
+Hvis den ikke er sikker på, hvad du mener, stiller den ét kort spørgsmål med
+op til tre valg.
+
+## Fortæl den, hvad der er sket
+
+Når du fortæller den noget i stedet for at spørge, foreslår den, hvor det
+hører hjemme. Et forslag er et kort med knapper; intet gemmes, før du
+trykker.
+
+| Du siger | Den foreslår |
+| --- | --- |
+| En opdatering om en opgave eller et projekt | **Gem** – dine præcise ord bliver en post under den. |
+| "Lav en opgave om at reparere lågen, høj prioritet" | **Lav det til en opgave** – den udfylder titel, kategori, prioritet, forfaldsdag, estimat og starttid ud fra det, du sagde, og fortæller, hvad den forstod. Kategoriens agent tildeles. |
+| "En opfølgning på den" | **Lav det til en opgave**, forbundet som opfølgning på den opgave, der blev nævnt tidligere i samtalen. |
+| "Flyt optællingen til eftermiddagen" | **Ændr dagen** – åbner planlægningen i [Daily OS](../plan-and-capture/daily-os.mdx) med dine ord. |
+| Noget nyt og større | **Nyt projekt…** eller **Start et mål…**, som åbner formularen med dine ord i. |
+| Alt andet | **Gem som note** eller **Lad det være**. |
+
+Hvis den ramte forkert, så vælg **Et andet sted**. Det, der ikke hører til
+noget, venter i **Indbakke**, som du åbner fra dens chip i chattens
+overskrift eller i listen over samtaler. Alt, hvad et tryk har skrevet, kan
+åbnes eller fortrydes.
+
+## Hav flere samtaler
+
+Ligesom i et ChatGPT- eller Claude-vindue kan hvert emne have sin egen
+samtale – start en med **Ny chat**. Samtaler får deres første spørgsmål som
+titel og står nyeste først bag knappen **Chats** i overskriften (ved siden af
+samtalen i et bredt computervindue). Brug **Søg i chats** til at finde en, og
+hver rækkes menu til at omdøbe, arkivere eller slette den. Sletning skjuler
+en samtale på alle dine enheder; det, du har gemt fra den, bliver, hvor det
+er.
+
+## Tal med den
+
+Stil et spørgsmål højt, og den svarer højt, med læberne i takt med stemmen.
+Et skrevet spørgsmål får altid et skrevet svar. Tryk for at tale og tryk igen
+for at sende, eller hold nede for at tale og slip for at sende.
+
+For at tale skal **Følgesvend** og **AI-opsummering afspilning** være slået
+til, og den skal have en stemme: oplæsningsmodellen i dens AI-profil eller
+enhedens stemme, hvor din platform understøtter den. I overskriften kan du
+gøre den tavs, få den til at gentage med **Sig det igen** eller vælge **Vis
+følgesvend i fuld skærm** for at se den i fuld størrelse. I et bredt
+computervindue står samtalen ved siden af den, og den peger på hver opgave,
+den opremser, mens den nævner den.
+
+Vælg den AI-profil, den tænker med, under **AI-profil** i overskriftens menu.
+**Standard fra Indstillinger** får den til at følge din standard igen.
+
+## Gør den til din
+
+Med **Følgesvend** slået til åbner du **Indstillinger → Præferencer →
+Følgesvend**:
+
+- **Karakter:** Lotti (en bedstemor), Bedstefar, Tante eller Onkel.
+- **Hudfarve, Hårfarve, Frisure, Øjenfarve** og **Tøj** – eller nyt tøj, hver
+  gang du åbner appen.
+- **Frækhed:** Varm, Drilsk eller Fræk – hvordan den reagerer på det, den
+  læser op.
+- **Stemme:** **Svar højt på talte spørgsmål** slår dens talte svar til eller
+  fra.
+
+Uden for chatten står den ved siden af en opgaves AI-opsummering og læser den
+op, når du trykker på oplæsningsknappen, sidder i dagsidens overskrift og
+præsenterer dagen, når du trykker på den, og byder dig velkommen under
+onboardingen.
+
+## Chatten først, detaljesiderne til detaljerne
+
+| Start i chatten | Finpuds på siden |
+| --- | --- |
+| "Hvad forfalder i dag?" | [Opgaver](../organize-and-reflect/tasks.mdx) – status, prioritet, forfaldsdato, tjeklister |
+| "Lav en opgave om…" | Den nye opgave – estimat, etiketter, tjekliste, forbundne poster |
+| "Hvor meget tid i denne uge?" | [Tidsanalyse](../organize-and-reflect/time-analysis.mdx) – enhver periode, enhver kategori |
+| "Flyt X til eftermiddagen" | [Daily OS](../plan-and-capture/daily-os.mdx) – blokke på tidslinjen |
+| En opdatering om et projekt | [Projekter](../organize-and-reflect/projects.mdx) – projektets rapport og opgaver |
+
+## Hvad der kommer \{#what-is-coming\}
+
+Alt nedenfor er en retning, ikke en udgivet funktion; omfang og rækkefølge
+kan ændre sig.
+
+- **Mennesker.** Spørge til menneskerne i dit liv og fortælle om dem, givet
+  videre til hver persons agent, sådan som det allerede sker med mål.
+- **Begivenheder.** Spørge til en begivenhed og gemme fotos og noter til den
+  fra chatten.
+- **Indstillinger og tilpasning ved at spørge.** Ændre, hvordan Lotti
+  opfører sig – eller hvordan ledsageren ser ud – ved at sige det, i stedet
+  for at finde den rigtige indstillingsside.
+- **Gemme uden tryk,** som et tilvalg, for de slags opdateringer, du altid
+  bekræfter alligevel.
+- **Mere af den.** Humør, der afspejler din journal, blide skub og et ansigt
+  til hver agent.
+
+## Privatliv
+
+Den læser kun det, der allerede er på din enhed, inden for de kategorier, den
+må se. Ét spørgsmål kan bruge mere end én AI-profil: dens egen profil afgør,
+hvor spørgsmålet skal hen, et spørgsmål om en opgave, et projekt eller et mål
+besvares med den agents profil, og et svar fra din journal bruger profilen
+**Standard fra Indstillinger**. Dit spørgsmål og de dele af din journal, som
+hvert svar skal bruge, går til udbyderen af den profil, der bruges. Giv dem
+alle en lokal model for at holde alt på din enhed. Den ændrer aldrig dine data
+af sig selv: hver skrivning er et tryk.

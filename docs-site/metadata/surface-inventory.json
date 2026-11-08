@@ -888,6 +888,16 @@
       "status": "verified"
     },
     {
+      "id": "workflow-companion-chat",
+      "title": "Companion chat",
+      "kind": "workflow",
+      "source": "lib/features/front_agent/ui/front_chat_surface.dart",
+      "sourcePattern": "class FrontChatSurface",
+      "locator": "Ask the companion (sidebar, phone navigation bar, Cmd/Ctrl+L)",
+      "page": "getting-started/companion",
+      "status": "documented"
+    },
+    {
       "id": "settings-companion",
       "title": "Companion",
       "kind": "settings-page",
@@ -897,8 +907,8 @@
       "routes": [
         "/settings/companion"
       ],
-      "page": "reference/companion",
-      "status": "planned"
+      "page": "getting-started/companion",
+      "status": "documented"
     },
     {
       "id": "settings-animations",

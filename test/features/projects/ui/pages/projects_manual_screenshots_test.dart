@@ -589,6 +589,7 @@ void main() {
       ),
     ],
     projectDetailNowProvider.overrideWithValue(() => manualDemoNow),
+    quietProjectRecorder,
     agentIsRunningProvider.overrideWith(
       (ref, agentId) => const Stream<bool>.empty(),
     ),

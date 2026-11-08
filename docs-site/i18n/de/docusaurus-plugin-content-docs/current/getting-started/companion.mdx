@@ -1,0 +1,205 @@
+---
+title: Mit deiner Begleitung sprechen
+description: Frag die Begleitung, was fällig ist, wohin deine Zeit gegangen ist oder wie es um eine Aufgabe, ein Projekt oder ein Ziel steht, und erzähl ihr, was passiert ist. Abgelegt wird erst, wenn du tippst.
+---
+
+# Mit deiner Begleitung sprechen
+
+Die Begleitung ist der Ort, an dem du anfängst. Statt erst die richtige Seite
+zu suchen, fragst du sie – schriftlich oder laut – und sie findet die
+Antwort: was heute fällig ist, wie viel Zeit du diese Woche erfasst hast, wie
+ein Projekt läuft. Wenn du ihr etwas erzählst, erkennt sie, ob es zu einer
+Aufgabe, einem Projekt, einem Ziel oder zur Planung von heute gehört, und
+schlägt vor, es dort abzulegen. Geschrieben wird erst, wenn du tippst.
+
+Die Detailseiten bleiben, wo sie sind. Im Chat fängt etwas an; Aufgaben,
+Projekte, Ziele und Daily OS sind der Ort, an dem du das Begonnene
+verfeinerst – Schätzungen, Checklisten, Prioritäten, Blöcke auf der Zeitleiste.
+
+:::note[Experimentell]
+
+Der Chat mit der Begleitung ist neu und wächst noch. Er ist ab Werk
+ausgeschaltet, und was sie kann, ändert sich von Version zu Version. Diese
+Seite beschreibt, was heute funktioniert; [Was kommt](#what-is-coming) zeigt,
+was geplant ist.
+
+:::
+
+## Schalte sie ein
+
+Öffne **Einstellungen → Erweiterte Einstellungen → Konfigurationsflags**. Schalte
+in der Gruppe **Erweitert & experimentell** ein:
+
+| Schalter | Was er bewirkt |
+| --- | --- |
+| **Chat mit der Begleitung** | Der Chat selbst. Erforderlich. |
+| **Begleitung** | Ihre animierte Figur im Chat, neben KI-Zusammenfassungen und im Kopf der Tagesseite, dazu **Einstellungen → Persönliche Einstellungen → Begleitung**, um sie einzukleiden. Optional. |
+| **AI-Zusammenfassung vorlesen** (in der Gruppe Persönliche Einstellungen) | Ihre Stimme. Zusammen mit **Begleitung** nötig, damit sie laut antwortet. |
+
+Der Chat braucht einen funktionierenden KI-Anbieter. Sie nutzt das KI-Profil
+**Standard aus den Einstellungen**, solange du ihr kein anderes gibst, und
+greift auf ein kleines gehostetes Modell von Melious oder Mistral zurück, wenn
+du einen dieser Anbieter eingerichtet hast. Siehe
+[KI-Anbieter verbinden](../ai-and-automation/provider-setup.mdx).
+
+## Den Chat öffnen
+
+- **Desktop:** Wähle **Begleitung fragen** in der Seitenleiste, oder drücke
+  überall **Cmd+L** (macOS) bzw. **Strg+L** (Linux und Windows).
+- **Smartphone:** Tippe auf **Begleitung fragen** neben der Menütaste in der
+  Navigationsleiste.
+
+Solange die App auf eine einzige Kategorie beschränkt ist, ist sie
+ausgeblendet, denn ihre Unterhaltungen umfassen alle Kategorien.
+
+## Frag sie
+
+Schreib in **Frag irgendwas…** und sende. Diese Fragen beantwortet sie heute:
+
+- **Was fällig ist.** „Was ist heute fällig?“, „Was ist überfällig?“, „Was ist
+  diese Woche fällig?“ Heute und überfällig hält sie auseinander, außer du
+  fragst nach beidem.
+- **Wohin deine Zeit gegangen ist.** „Wie viel Zeit habe ich diese Woche
+  erfasst?“ geht für heute, gestern, diese Woche, die letzten 7 oder 30 Tage,
+  diesen und letzten Monat. Sie summiert die Zeit pro Kategorie mit denselben
+  Zahlen wie die [Zeitanalyse](../organize-and-reflect/time-analysis.mdx), zeigt
+  ein Diagramm und nennt die Aufgaben, in die die Zeit geflossen ist, wenn du
+  fragst, woran du gearbeitet hast.
+- **Was du erledigt hast.** „Was habe ich diese Woche abgeschlossen?“ zählt
+  jede Aufgabe an dem Tag, an dem sie abgeschlossen oder abgelehnt wurde,
+  nicht an dem Tag, an dem sie angelegt wurde.
+- **Eine bestimmte Aufgabe oder ein Projekt.** „Wie steht es um den Umbau des
+  Habitats?“ Sie gibt die Frage an den Agenten dieser Aufgabe oder dieses
+  Projekts weiter und zeigt seine Antwort unter seinem Namen – **Von …** –,
+  ohne sie umzuformulieren.
+- **Ein Ziel.** Eine Frage oder ein Update zu einem deiner Ziele wird zu einem
+  Beitrag im eigenen Chat dieses Ziel-Agenten, und seine Antwort erscheint in
+  deinem. Ziele sind ein optionaler Bereich: Schalte **Ziele** unter
+  **Einstellungen → Bereiche** ein.
+- **Dein Journal.** „Was haben wir zum Sardinenlieferanten entschieden?“ Wenn
+  keine einzelne Aufgabe und kein Projekt die Antwort hat, durchsucht sie dein
+  Journal und antwortet **Aus deinem Journal**, mit den Einträgen, auf die sie
+  sich stützt. Jeder öffnet seine Quelle.
+- **Deine Pull Requests.** „Wie viele Pull Requests habe ich diese Woche
+  gemergt?“ geht, wenn GitHub unter **Einstellungen → Erweiterte Einstellungen
+  → GitHub** verbunden ist. Sie zählt nur die Pull Requests, die schon auf
+  diesem Gerät gespeichert sind.
+
+Zwei oder mehr Aufgaben kommen als Karte mit Zeilen zurück – Status, die
+Ein-Satz-Zusammenfassung des Agenten, Kategorie, Priorität und Fälligkeit.
+Tippe auf eine Aufgabe, um sie über dem Chat zu öffnen; zurück bringt dich
+wieder in die Unterhaltung.
+
+Tippe **@**, um eine Kategorie zu nennen und die Antwort darauf einzugrenzen.
+Sie sieht immer nur die Kategorien, die sie sehen darf.
+
+Wenn sie nicht sicher ist, was du meinst, stellt sie eine kurze Rückfrage mit
+bis zu drei Antworten zur Auswahl.
+
+## Erzähl ihr, was passiert ist
+
+Wenn du ihr etwas erzählst, statt zu fragen, schlägt sie vor, wohin es gehört.
+Ein Vorschlag ist eine Karte mit Schaltflächen; abgelegt wird erst, wenn du
+tippst.
+
+| Du sagst | Sie schlägt vor |
+| --- | --- |
+| Ein Update zu einer Aufgabe oder einem Projekt | **Ablegen** – deine Worte werden wörtlich ein Eintrag darunter. |
+| „Leg eine Aufgabe an: Tor reparieren, hohe Priorität“ | **Zur Aufgabe machen** – sie füllt Titel, Kategorie, Priorität, Fälligkeit, Schätzung und Startzeit aus dem Gesagten aus und sagt dir, was sie verstanden hat. Der Agent der Kategorie wird zugewiesen. |
+| „Eine Folgeaufgabe dazu“ | **Zur Aufgabe machen**, als Folgeaufgabe der Aufgabe verknüpft, die vorher in der Unterhaltung genannt wurde. |
+| „Schieb die Zählung auf den Nachmittag“ | **Heute ändern** – öffnet die Planung in [Daily OS](../plan-and-capture/daily-os.mdx) mit deinen Worten. |
+| Etwas Neues, Größeres | **Neues Projekt…** oder **Ziel starten…**, das Formular öffnet sich mit deinen Worten darin. |
+| Alles andere | **Als Notiz speichern** oder **So lassen**. |
+
+Hat sie den falschen Ort erwischt, wähle **Woandershin**. Was niemandem
+gehört, wartet im **Eingang**, den du über seinen Chip im Kopf des Chats oder
+in der Liste der Unterhaltungen öffnest. Alles, was ein Tippen geschrieben
+hat, lässt sich öffnen oder rückgängig machen.
+
+## Mehrere Unterhaltungen führen
+
+Wie in einem ChatGPT- oder Claude-Fenster kann jedes Thema seine eigene
+Unterhaltung haben – starte eine mit **Neuer Chat**. Unterhaltungen tragen
+ihre erste Frage als Titel und stehen, neueste zuerst, hinter der Schaltfläche
+**Chats** im Kopf (auf einem breiten Desktop-Fenster neben der Unterhaltung).
+Mit **Chats durchsuchen** findest du eine wieder, und über das Menü jeder
+Zeile kannst du sie umbenennen, archivieren oder löschen. Löschen blendet eine
+Unterhaltung auf allen Geräten aus; was du daraus abgelegt hast, bleibt, wo es
+ist.
+
+## Sprich mit ihr
+
+Stell eine Frage laut, und sie antwortet laut, die Lippen im Takt ihrer
+Stimme. Eine getippte Frage bekommt immer eine geschriebene Antwort. Tippe
+zum Sprechen und noch einmal zum Senden, oder halte gedrückt und lass zum
+Senden los.
+
+Damit sie spricht, müssen **Begleitung** und **AI-Zusammenfassung vorlesen**
+eingeschaltet sein, und sie braucht eine Stimme: entweder das Vorlesemodell
+ihres KI-Profils oder die Stimme auf dem Gerät, wo deine Plattform sie
+unterstützt. Im Kopf kannst du sie stummschalten, sie mit **Sag es noch mal**
+wiederholen lassen oder mit **Begleitung im Vollbild ansehen** in voller Größe
+sehen. Auf einem breiten Desktop-Fenster steht die Unterhaltung dort neben
+ihr, und sie zeigt auf jede Aufgabe, die sie aufzählt, während sie sie nennt.
+
+Um das KI-Profil zu wählen, mit dem sie denkt, öffne **KI-Profil** im Menü des
+Kopfs. **Standard aus den Einstellungen** lässt sie wieder deinem Standard
+folgen.
+
+## Mach sie zu deiner
+
+Mit eingeschalteter **Begleitung** öffne **Einstellungen → Persönliche
+Einstellungen → Begleitung**:
+
+- **Figur:** Lotti (eine Großmutter), Opa, Tante oder Onkel.
+- **Hautton, Haarfarbe, Frisur, Augenfarbe** und **Outfit** – oder jedes Mal,
+  wenn du die App öffnest, ein neues Outfit.
+- **Frechheit:** Herzlich, Frech oder Schnippisch – wie sie auf das reagiert,
+  was sie vorliest.
+- **Stimme:** **Gesprochene Fragen laut beantworten** schaltet ihre
+  gesprochenen Antworten ein oder aus.
+
+Außerhalb des Chats steht sie neben der KI-Zusammenfassung einer Aufgabe und
+liest sie vor, wenn du deren Vorlese-Schaltfläche drückst, sitzt im Kopf der
+Tagesseite und stellt dir auf Tippen den Tag vor, und sie begrüßt dich beim
+Onboarding.
+
+## Erst der Chat, dann die Detailseiten für die Details
+
+| Im Chat anfangen | Auf der Seite verfeinern |
+| --- | --- |
+| „Was ist heute fällig?“ | [Aufgaben](../organize-and-reflect/tasks.mdx) – Status, Priorität, Fälligkeit, Checklisten |
+| „Leg eine Aufgabe an …“ | Die neue Aufgabe – Schätzung, Labels, Checkliste, verknüpfte Einträge |
+| „Wie viel Zeit diese Woche?“ | [Zeitanalyse](../organize-and-reflect/time-analysis.mdx) – jeder Zeitraum, jede Kategorie |
+| „Schieb X auf den Nachmittag“ | [Daily OS](../plan-and-capture/daily-os.mdx) – Blöcke auf der Zeitleiste |
+| Ein Update zu einem Projekt | [Projekte](../organize-and-reflect/projects.mdx) – Bericht und Aufgaben des Projekts |
+
+## Was kommt \{#what-is-coming\}
+
+Alles hier ist eine Richtung, keine ausgelieferte Funktion; Umfang und
+Reihenfolge können sich ändern.
+
+- **Menschen.** Nach den Menschen in deinem Leben fragen und ihr von ihnen
+  erzählen, weitergegeben an den Agenten der jeweiligen Person, so wie es bei
+  Zielen schon geschieht.
+- **Ereignisse.** Nach einem Ereignis fragen und Fotos und Notizen aus dem
+  Chat dazu ablegen.
+- **Einstellungen und Anpassung per Frage.** Ändern, wie sich Lotti verhält –
+  oder wie sie aussieht –, indem du es sagst, statt die richtige
+  Einstellungsseite zu suchen.
+- **Ablegen ohne Tippen,** zum Einschalten, für die Arten von Updates, die du
+  sowieso immer bestätigst.
+- **Mehr von ihr.** Stimmungen, die dein Journal widerspiegeln, sanfte
+  Anstöße und ein Gesicht für jeden Agenten.
+
+## Datenschutz
+
+Sie liest nur, was schon auf deinem Gerät ist, innerhalb der Kategorien, die
+sie sehen darf. Eine Frage kann mehr als ein KI-Profil nutzen: Ihr eigenes
+Profil entscheidet, wohin die Frage geht, eine Frage zu einer Aufgabe, einem
+Projekt oder einem Ziel beantwortet das Profil dieses Agenten, und eine
+Antwort aus deinem Journal nutzt das Profil **Standard aus den
+Einstellungen**. Deine Frage und die Teile deines Journals, die eine Antwort
+braucht, gehen an den Anbieter des jeweils genutzten Profils. Damit alles auf
+deinem Gerät bleibt, gib allen ein lokales Modell. Sie ändert nie von sich aus
+etwas an deinen Daten: Jedes Schreiben ist ein Tippen.
