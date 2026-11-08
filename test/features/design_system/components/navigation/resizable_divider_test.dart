@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/navigation/resizable_divider.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../widget_test_utils.dart';
@@ -310,6 +311,43 @@ void main() {
 
       expect(deltas, hasLength(2));
       expect((deltas.first > 0, deltas.last < 0), (true, true));
+    });
+
+    testWidgets('lights its grip while dragged, and lets it go quiet when '
+        'the drag is cancelled', (tester) async {
+      await tester.pumpWidget(rows((_) {}));
+      final tokens = tester.element(find.byType(ResizableDivider)).designTokens;
+      Color? grip() =>
+          (tester
+                      .widget<AnimatedContainer>(
+                        find.descendant(
+                          of: find.byType(ResizableDivider),
+                          matching: find.byType(AnimatedContainer),
+                        ),
+                      )
+                      .decoration
+                  as BoxDecoration?)
+              ?.color;
+
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.byType(ResizableDivider)),
+      );
+      await gesture.moveBy(const Offset(0, 30));
+      await tester.pump();
+      expect(grip(), tokens.colors.interactive.enabled);
+
+      tester
+          .widget<GestureDetector>(
+            find.descendant(
+              of: find.byType(ResizableDivider),
+              matching: find.byType(GestureDetector),
+            ),
+          )
+          .onVerticalDragCancel!();
+      await tester.pump();
+
+      expect(grip(), tokens.colors.decorative.level02);
+      await gesture.up();
     });
 
     testWidgets('shows the row-resize cursor', (tester) async {
