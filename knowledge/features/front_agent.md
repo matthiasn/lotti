@@ -1,7 +1,7 @@
 ---
 type: Feature Module
 title: Front agent
-description: The one agent the user talks to in one place — how a durable user turn becomes a routing wake, what the routing index holds, how the dispatch contract is validated in code, the capped lookups and the repair round, the deterministic records a turn leaves behind, how the door walker takes each segment to its owner and mirrors the answer, how a statement becomes a proposal the user's one tap files, how a dictated task is filled from her reading of the words and made on the tap, what the inbox is, how an unanswered turn is recovered on any device, how turns form conversations, how she answers what is due and how much time was logged, with a chart under her words, and names tasks as links, what the chat surface renders, and what she hears and says.
+description: The one agent the user talks to in one place — how a durable user turn becomes a routing wake, what the routing index holds, how the dispatch contract is validated in code, the capped lookups and the repair round, the deterministic records a turn leaves behind, how the door walker takes each segment to its owner and mirrors the answer, how a statement becomes a proposal the user's one tap files, how a dictated task is filled from her reading of the words and made on the tap, how "that one" finds the task a follow-up follows, what the inbox is, how an unanswered turn is recovered on any device, how turns form conversations, how she answers what is due and how much time was logged, with a chart under her words, and names tasks as links, what the chat surface renders, and what she hears and says.
 resource: ../../lib/features/front_agent
 tags: [agents, front-agent, routing, dispatch, doors, filing, inbox, companion, chat]
 status: draft
@@ -11,23 +11,23 @@ sources:
   - id: workflow
     resource: ../../lib/features/front_agent/workflow/front_agent_workflow.dart
     title: FrontAgentWorkflow — one routing turn per wake
-    last_modified: 2026-11-07
+    last_modified: 2026-11-08
   - id: strategy
     resource: ../../lib/features/front_agent/workflow/front_agent_strategy.dart
     title: FrontAgentStrategy — accumulating, count-capped tool handling, her words linked
-    last_modified: 2026-11-07
+    last_modified: 2026-11-08
   - id: contract
     resource: ../../lib/features/front_agent/workflow/front_agent_contract.dart
     title: The tool contract, caps and system prompt
-    last_modified: 2026-11-07
+    last_modified: 2026-11-08
   - id: validator
     resource: ../../lib/features/front_agent/workflow/front_dispatch_validator.dart
     title: validateFrontDispatch — the dispatch rules in code
-    last_modified: 2026-10-23
+    last_modified: 2026-11-08
   - id: index
     resource: ../../lib/features/front_agent/model/front_routing_index.dart
     title: FrontRoutingIndex — the bounded, byte-stable catalogue
-    last_modified: 2026-11-07
+    last_modified: 2026-11-08
   - id: insights-bucketing
     resource: ../../lib/features/insights/logic/time_bucketing.dart
     title: The Insights bucketing a logged-time summary reuses
@@ -35,7 +35,7 @@ sources:
   - id: index-builder
     resource: ../../lib/features/front_agent/service/front_routing_index_builder.dart
     title: FrontRoutingIndexBuilder — the index from existing reads
-    last_modified: 2026-11-07
+    last_modified: 2026-11-08
   - id: corpus
     resource: ../../lib/features/agents/service/open_task_corpus.dart
     title: The open-task corpus shared with the day agent
@@ -80,6 +80,14 @@ sources:
     resource: ../../lib/features/front_agent/model/front_task_draft.dart
     title: FrontTaskDraft — the task the router read from the words
     last_modified: 2026-11-08
+  - id: conversation-tasks
+    resource: ../../lib/features/front_agent/workflow/front_conversation_tasks.dart
+    title: frontConversationTaskIds — the tasks a conversation named, newest first
+    last_modified: 2026-11-08
+  - id: adr-0161
+    resource: ../../docs/adr/0161-a-follow-up-names-the-task-it-follows.md
+    title: ADR 0161 — a follow-up names the task it follows
+    last_modified: 2026-11-08
   - id: adr-0160
     resource: ../../docs/adr/0160-a-dictated-task-is-filled-from-the-words.md
     title: ADR 0160 — a dictated task is filled from the words
@@ -123,7 +131,7 @@ sources:
   - id: providers
     resource: ../../lib/features/front_agent/state/front_agent_providers.dart
     title: The registry contributions, the wake runner that routes then walks, and the setup resolver
-    last_modified: 2026-11-01
+    last_modified: 2026-11-08
   - id: voice
     resource: ../../lib/features/front_agent/ui/front_chat_voice.dart
     title: FrontVoice — her spoken reply, its gating, her pose, the voice an answer said again keeps
@@ -212,6 +220,7 @@ flowchart TD
   X --> M[resolveFrontAgentModel<br/>ProfileResolver.resolveStandalone]
   X --> I[FrontRoutingIndexBuilder.build]
   X --> T[recent turns: last 6 user / dispatch / ask / reply rows<br/>of the pending turn's conversation, with content]
+  T --> N[conversation tasks: ≤8 tasks the conversation named,<br/>newest first, open or closed — conversationTasks]
   X --> C[ConversationRepository.sendMessage<br/>turnBudget 3, temperature 0]
   C --> S[FrontAgentStrategy]
   S -->|dispatch / ask_user / reply_to_user| E{terminal?}
@@ -291,6 +300,28 @@ kind announced in its heading. That is what lets a provider's prefix cache
 pay across turns. One-liners are rendered; TL;DRs are held on the row for
 `read_tldr` and never rendered. At every cap the block is roughly 7.5k
 tokens.
+
+**The tasks the conversation named** follow `<recent_turns>` as a
+`<conversation_tasks>` block in the same row format, most recently named
+first — what "that one", "it" or "the previous task" means. It sits after
+the turns, not inside the index, because it changes with every turn and the
+index must not. `frontConversationTaskIds` scans the whole visible
+conversation, newest message first, not just the six-turn tail and its
+400-character clip: a `lotti://task/<id>` link in her reply, question or the
+user's words, a `task` option she offered, a dispatch routed to a task or
+naming the task a follow-up follows, and the door records — a segment filed
+into a task, and a task the user's tap made (`FrontDoorTaskCreated`), which
+no link names anywhere else. A mention dates from its message, a made task
+from the tap (`FrontDoorTaskCreated.at`): the door record keeps the time it
+was walked, and an old inbox item tapped now is the newest thing named. At
+most `frontConversationTasksMax` (8), each once. `FrontRoutingIndexBuilder.conversationTasks` resolves them through
+`getJournalEntitiesForIds` — so the privacy toggle holds — and drops a
+deleted task, a non-task, one in a private category while private entries
+are hidden (the logged-time reader's rule) and one outside the scope; a
+**closed** task stays,
+because a follow-up is most often to finished work. It is not a destination
+for that: the strategy accepts a listed conversation task only as a
+follow-up's `followsUpTaskId` and as an `ask_user` option.
 
 # The contract
 
@@ -571,7 +602,9 @@ flowchart LR
   M --> T[(task, in its category)]
   M --> E[(the words, a text entry linked under it)]
   M -->|draft has a start| C[(timer entry from that instant,<br/>TimeService.start)]
-  M --> A[category default agent<br/>autoAssignCategoryAgentWith]
+  M -->|draft follows a task| L[(followsUp link to it;<br/>its category when none was read)]
+  M --> A[category default agent<br/>autoAssignCategoryAgentWith, last]
+  A -->|creation wake: the title is content| G[the agent's first run]
   R -->|reply_to_user, one line| S[spoken on a spoken turn]
 ```
 
@@ -582,6 +615,7 @@ flowchart LR
 | category | agent | the category the user names, else the listed one the work plainly belongs to; dropped unless listed (and chosen, when the conversation is narrowed) |
 | priority, due day, estimate | agent, only when said | `P0`–`P3`, `YYYY-MM-DD`, minutes (≤ `frontTaskMaxEstimateMinutes`) |
 | status and timer | agent, only when said | `startedMinutesAgo` (0–`frontTaskMaxStartedMinutesAgo`): *in progress*, and a timer entry linked under the task from that instant, running |
+| follows up on | agent, only for a follow-up | `followsUpTaskId`: a task in the index, a lookup this turn or `<conversation_tasks>`; anything else is dropped. Linked `followsUp` from the new task to it |
 | task agent | category default | the category's `defaultTemplateId`; none without one |
 | provenance | always | the segment's verbatim words, a text entry linked under the task (`frontTaskWordsId`) |
 | project, checklist, labels, anything else | user | the task page, or the agent's proposals there |
@@ -604,6 +638,19 @@ listed open tasks — `match_to_corpus` only when the index says more exist
 than it shows, so a new task costs no extra round-trip — and one that
 looks like the same work is an `ask_user` with those tasks as the
 options, not a second task.
+
+**Follow-ups.** ADR 0161. "Create a follow-up to that one" is rule 12: a
+`new` task whose draft carries `followsUpTaskId`, read against
+`<conversation_tasks>` — "that one" is its first row, a description the row
+of it or the index that fits — and an `ask_user` with the candidates when
+two fit or none does. Rule 11's duplicate check does not hold against the
+task it follows. Without a category of its own the follow-up takes its
+task's at the tap, so its category's agent is the one assigned. The link is
+the ADR 0042 `followsUp` edge (`ensureLink`, the agent tool's path), so the
+task page's relationship sections show it as on any linked pair. It is
+written **before** the agent: `createTaskAgent` enqueues the creation wake
+at once, and the content gate lets it run — a non-empty title counts as
+content — so the first run sees the link, the words and the timer.
 
 **What she says** is her `reply_to_user` line with the dispatch, spoken
 as every reply to a spoken turn is ([her voice](#her-voice)): the task is

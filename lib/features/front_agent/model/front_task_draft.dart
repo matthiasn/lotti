@@ -30,6 +30,7 @@ class FrontTaskDraft {
     this.due,
     this.estimate,
     this.startedAt,
+    this.followsUpTaskId,
   });
 
   final String title;
@@ -47,14 +48,19 @@ class FrontTaskDraft {
   /// from here.
   final DateTime? startedAt;
 
+  /// The task this one follows up on: linked `followsUp` when it is made.
+  final String? followsUpTaskId;
+
   /// Reads the model's `task` object. Null without a title; any other field
   /// the model got wrong is left out rather than failing the dispatch — a
   /// misheard due date must not lose the task. [categoryExists] decides
-  /// which category ids stand; [now] is the routing turn's clock.
+  /// which category ids stand, [followUpExists] which task ids a follow-up
+  /// may name; [now] is the routing turn's clock.
   static FrontTaskDraft? fromModel(
     Map<String, dynamic> args, {
     required bool Function(String id) categoryExists,
     required DateTime now,
+    bool Function(String taskId)? followUpExists,
   }) {
     final title = _text(args['title'], frontTaskTitleMaxLength);
     if (title == null) return null;
@@ -64,6 +70,7 @@ class FrontTaskDraft {
       0,
       frontTaskMaxStartedMinutesAgo,
     );
+    final followsUp = _text(args['followsUpTaskId'], 200);
     final estimate = _intIn(
       args['estimateMinutes'],
       1,
@@ -81,6 +88,10 @@ class FrontTaskDraft {
       startedAt: minutesAgo == null
           ? null
           : now.subtract(Duration(minutes: minutesAgo)),
+      followsUpTaskId:
+          followsUp != null && (followUpExists?.call(followsUp) ?? false)
+          ? followsUp
+          : null,
     );
   }
 
@@ -92,6 +103,7 @@ class FrontTaskDraft {
     if (due != null) 'due': _isoDay(due!),
     if (estimate != null) 'estimateMinutes': estimate!.inMinutes,
     if (startedAt != null) 'startedAt': startedAt!.toUtc().toIso8601String(),
+    if (followsUpTaskId != null) 'followsUpTaskId': followsUpTaskId,
   };
 
   /// Reads a stored draft; null when it is not one [toJson] wrote.
@@ -111,6 +123,7 @@ class FrontTaskDraft {
         final String iso => DateTime.tryParse(iso)?.toLocal(),
         _ => null,
       },
+      followsUpTaskId: _string(json['followsUpTaskId']),
     );
   }
 }

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/front_chat_tokens.dart';
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
@@ -12,6 +13,7 @@ import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/agent_runtime_registry.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
+import 'package:lotti/features/agents/tools/ensure_link.dart';
 import 'package:lotti/features/agents/workflow/wake_result.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
@@ -264,11 +266,16 @@ final frontTaskMakerProvider = Provider<FrontTaskMaker>(
 /// body, category, priority, due day and estimate — what the agent fills
 /// from the words; the rest is the user's on the task page.
 ///
+/// A follow-up — a draft naming the task it follows — takes that task's
+/// category when the words named none, so its category's agent is the one
+/// assigned.
+///
 /// Once written, the user's [words] are filed under it as a linked text
-/// entry — where the task came from, and what its agent reads — a draft
-/// that says the work began puts it in progress with a timer running from
-/// that moment ([startTimer], on a linked entry starting then), and
-/// [assignAgent] hands it the category's default agent.
+/// entry — where the task came from, and what its agent reads — a follow-up
+/// is linked `followsUp` to its task, a draft that says the work began puts
+/// it in progress with a timer running from that moment ([startTimer], on a
+/// linked entry starting then), and [assignAgent] hands it the category's
+/// default agent, last, so the agent's first wake sees all of it.
 ///
 /// The creation path answers null for a rejected write, which for a
 /// deterministic id means the task is already there — the retry case — so
@@ -286,6 +293,14 @@ Future<Task?> makeFrontTask(
 }) async {
   final now = clock.now();
   final started = draft.startedAt;
+  final followed = switch (draft.followsUpTaskId) {
+    final id? => switch (await _existing(journalDb, id)) {
+      final Task task => task,
+      _ => null,
+    },
+    null => null,
+  };
+  final categoryId = draft.categoryId ?? followed?.meta.categoryId;
   final task = await persistence.createTaskEntry(
     data: TaskData(
       status: taskStatusFromString(started == null ? '' : 'IN PROGRESS'),
@@ -298,7 +313,7 @@ Future<Task?> makeFrontTask(
       due: draft.due,
     ),
     entryText: EntryText(plainText: draft.instructions ?? ''),
-    categoryId: draft.categoryId,
+    categoryId: categoryId,
     id: id,
   );
   if (task == null) {
@@ -313,8 +328,17 @@ Future<Task?> makeFrontTask(
     words,
     id: frontTaskWordsId(id),
     linkedId: id,
-    categoryId: draft.categoryId,
+    categoryId: categoryId,
   );
+  if (followed != null) {
+    await ensureLink(
+      persistenceLogic: persistence,
+      journalDb: journalDb,
+      fromId: id,
+      toId: followed.meta.id,
+      linkType: EntryLinkType.followsUp,
+    );
+  }
   if (started != null) {
     final timer = await writeFrontTextEntry(
       persistence,
@@ -322,7 +346,7 @@ Future<Task?> makeFrontTask(
       '',
       id: frontTaskTimerId(id),
       linkedId: id,
-      categoryId: draft.categoryId,
+      categoryId: categoryId,
       started: started.isAfter(now) ? now : started,
     );
     if (timer != null) await startTimer(timer, task);

@@ -393,6 +393,86 @@ void main() {
     });
   });
 
+  group('conversationTasks', () {
+    test('rows for the named tasks in the order named, closed ones too, '
+        'without what the scope hides or what is gone', () async {
+      final done = TaskStatus.done(
+        id: 's-done',
+        createdAt: _stamp,
+        utcOffset: 0,
+      );
+      final closed = _task('closed');
+      final deleted = _task('deleted');
+      when(
+        () => journalDb.getJournalEntitiesForIds({
+          'closed',
+          'open',
+          'secret',
+          'deleted',
+          'entry',
+        }),
+      ).thenAnswer(
+        (_) async => [
+          _task('open'),
+          closed.copyWith(data: closed.data.copyWith(status: done)),
+          _task('secret', categoryId: 'secret'),
+          deleted.copyWith(
+            meta: deleted.meta.copyWith(deletedAt: _stamp),
+          ),
+          JournalEntity.journalEntry(meta: _meta('entry')),
+        ],
+      );
+      when(
+        () =>
+            agentRepository.getLatestTaskReportsForTaskIds(['open', 'closed']),
+      ).thenAnswer(
+        (_) async => {'closed': makeTestReport(oneLiner: 'Pruned.')},
+      );
+
+      final rows = await builder().conversationTasks(
+        ['closed', 'open', 'secret', 'deleted', 'entry'],
+        const FrontRoutingScope(allowedCategoryIds: {'work'}),
+      );
+
+      expect(rows.map((r) => r.id), ['closed', 'open']);
+      expect(rows.first.status, 'DONE');
+      expect(rows.first.oneLiner, 'Pruned.');
+    });
+
+    test('leaves out a task in a private category while private entries '
+        'are hidden, though the task itself is not private', () async {
+      when(() => journalDb.getAllCategories()).thenAnswer(
+        (_) async => [CategoryTestUtils.createTestCategory(id: 'work')],
+      );
+      when(() => journalDb.getAllCategoriesIncludingPrivate()).thenAnswer(
+        (_) async => [
+          CategoryTestUtils.createTestCategory(id: 'work'),
+          CategoryTestUtils.createTestCategory(id: 'diary', private: true),
+        ],
+      );
+      when(
+        () => journalDb.getJournalEntitiesForIds({'open', 'inPrivate'}),
+      ).thenAnswer(
+        (_) async => [_task('open'), _task('inPrivate', categoryId: 'diary')],
+      );
+
+      final rows = await builder().conversationTasks(
+        ['inPrivate', 'open'],
+        const FrontRoutingScope(),
+      );
+
+      expect(rows.map((r) => r.id), ['open']);
+    });
+
+    test('reads nothing when nothing was named', () async {
+      expect(
+        await builder().conversationTasks(const [], const FrontRoutingScope()),
+        isEmpty,
+      );
+      verifyNever(() => journalDb.getJournalEntitiesForIds(any()));
+    });
+  });
+
   group('corpusMatcher', () {
     test('is null without a full-text index', () {
       expect(

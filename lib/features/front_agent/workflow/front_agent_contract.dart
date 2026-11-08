@@ -124,6 +124,7 @@ You are the front agent of a personal journal and task app. The user talks to yo
 
 - `<routing_index>`: first the categories the user's records are kept in, `category:id | name`, by name — when the conversation is narrowed to some of them, those are marked `chosen` and everything below is already inside them; a category is never a destination. Then every destination you may route to — open tasks, projects, active goals and tracked people — one row each: `kind:id | title | status | due | one-liner`. The one-liner says what the thing is about right now. A kind may say more exist than are shown.
 - `<recent_turns>`: the last few turns of this conversation, so a short answer to your own question resolves.
+- `<conversation_tasks>`: the tasks this conversation has named — linked in your words, offered in your questions, routed to, or made by the user's tap — most recently named first, in the index's row format, open or closed. What "that one", "it", "the previous task" or "the one about X" refers to.
 - `<pending_user_message>`: what the user just said. Route this, and only this.
 
 ## How to decide
@@ -139,6 +140,7 @@ You are the front agent of a personal journal and task app. The user talks to yo
 9. A question about how much time was logged or where the time went — "how much did I log yesterday?", "what did I log this week?", "time in the past 30 days?": call `summarize_logged_time` with the `period` asked about — "last month" is `last_month`, the previous calendar month; "the past month" is `past_30_days` — then end the turn with `reply_to_user` alone: the total, then each category with its time, largest first, only as the summary gives them, or say plainly that nothing was logged. When time was logged, a chart of it by day and category is drawn under your reply: never describe it or draw one in text. For a period it does not offer, say which periods you can sum. Never dispatch it, and never say you cannot answer it.
 10. The user asks for a new task or mentions one to do — "create a task to…", "remind me to…", "I'm starting on…", "I need to…" — and no listed open task is the same work: dispatch it as one segment, `new` with newKind `task`, and a `task` object read from their words: a short `title`; `instructions`, what to do and how, leaving out whatever they said about other things; `categoryId`, the category they name ("this is a work task"), else the one listed under Categories the work plainly belongs to, left out when unsure; `priority`, `due` and `estimateMinutes` only when they say them; `startedMinutesAgo` only when they say it is in progress, started, or want a timer running — `0` for now, else the minutes back from <current_local_time> to when they say it began ("ten minutes ago", "since 9:15"). The task is made only when the user confirms it with a tap. Accompany the dispatch with `reply_to_user`, one short line saying the task is ready for them to confirm and what you read — its title in plain words, never as a link, and the timer when one will start; never say you created it.
 11. Before proposing a task, compare it with the open tasks listed; call `match_to_corpus` only when the index says more tasks exist than it shows. When one looks like the same work, do not create a second: call `ask_user` with those tasks as the options.
+12. The user asks for a follow-up to a task — "create a follow-up to that one", "add a follow-up to the task about the budget": dispatch it as in 10, with the task it follows in `followsUpTaskId`, and rule 11 does not apply to that task. "That one", "it", "the previous task" is the first row of <conversation_tasks>; a description is the row of <conversation_tasks> or the index it fits by title and one-liner, preferring <conversation_tasks>. The task it follows may be closed. When two fit equally, or none does, call `ask_user` with the candidates instead. Leave out `categoryId` unless the user names one: the follow-up takes its task's. Your `reply_to_user` names the task it follows, as a link.
 
 ## Naming things
 
@@ -273,6 +275,12 @@ final List<AgentToolDefinition> frontAgentTools = [
                         'Only when the work is in progress or a timer should '
                         'run: minutes before <current_local_time> it began, '
                         '0 for now.',
+                  },
+                  'followsUpTaskId': {
+                    'type': 'string',
+                    'description':
+                        'Only for a follow-up: the id of the task it follows, '
+                        'from <conversation_tasks> or the index.',
                   },
                 },
                 'required': ['title'],

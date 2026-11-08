@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/agents/agent_repository.dart';
@@ -267,6 +268,7 @@ class FrontFilingService {
           taskId: task.meta.id,
           newKind: inbox.newKind,
           generation: inbox.generation,
+          at: clock.now().toUtc(),
         ),
       ),
     );

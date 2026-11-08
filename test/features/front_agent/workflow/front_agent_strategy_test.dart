@@ -70,6 +70,7 @@ void main() {
     FrontDueTaskLister? dueLister,
     FrontLoggedTimeSummarizer? timeSummarizer,
     FrontRoutingIndex? routingIndex,
+    List<FrontIndexRow> conversationTasks = const [],
   }) => FrontAgentStrategy(
     syncService: syncService,
     domainLogger: domainLogger,
@@ -82,6 +83,7 @@ void main() {
     corpusMatcher: matcher,
     dueTaskLister: dueLister,
     loggedTimeSummarizer: timeSummarizer,
+    conversationTasks: conversationTasks,
   );
 
   Map<String, dynamic> segment({
@@ -209,6 +211,46 @@ void main() {
       expect(await categoryOf('home', narrowed: true), isNull);
       expect(await categoryOf('work', narrowed: true), 'work');
       expect(await categoryOf('nope', narrowed: false), isNull);
+    });
+
+    test('a follow-up may follow a listed task or a closed one the '
+        'conversation named, never an invented one', () async {
+      Future<String?> followedBy(String id) async {
+        final s = strategy(
+          conversationTasks: const [
+            FrontIndexRow(
+              kind: FrontDestinationKind.task,
+              id: 'roses',
+              title: 'Prune the roses',
+              status: 'DONE',
+            ),
+          ],
+        );
+        await s.processToolCalls(
+          toolCalls: [
+            _call('dispatch', {
+              'segments': [
+                {
+                  ...segment(
+                    start: 0,
+                    end: input.length,
+                    kind: 'new',
+                    id: null,
+                  ),
+                  'destination': {'kind': 'new', 'newKind': 'task'},
+                  'task': {'title': 'Mulch the roses', 'followsUpTaskId': id},
+                },
+              ],
+            }),
+          ],
+          manager: manager,
+        );
+        return s.dispatch!.segments.single.task!.followsUpTaskId;
+      }
+
+      expect(await followedBy('roses'), 'roses');
+      expect(await followedBy('garden'), 'garden');
+      expect(await followedBy('invented'), isNull);
     });
 
     test('a valid dispatch is accumulated and ends the turn', () async {
@@ -746,6 +788,33 @@ hologram:x: not listed''');
       expect(action, ConversationAction.complete);
       expect(s.askUser!.question, 'Which one?');
       expect(s.askUser!.options.map((o) => o.id), ['garden', 'pip']);
+    });
+
+    test('may offer a closed task the conversation named, as no '
+        'destination it could route to', () async {
+      final s = strategy(
+        conversationTasks: const [
+          FrontIndexRow(
+            kind: FrontDestinationKind.task,
+            id: 'roses',
+            title: 'Prune the roses',
+            status: 'DONE',
+          ),
+        ],
+      );
+      await s.processToolCalls(
+        toolCalls: [
+          _call('ask_user', {
+            'question': 'A follow-up to which?',
+            'options': [
+              {'kind': 'task', 'id': 'roses', 'label': 'Prune the roses'},
+              {'kind': 'task', 'id': 'garden', 'label': 'Garden'},
+            ],
+          }),
+        ],
+        manager: manager,
+      );
+      expect(s.askUser!.options.map((o) => o.id), ['roses', 'garden']);
     });
 
     test('a second question in one turn is refused', () async {

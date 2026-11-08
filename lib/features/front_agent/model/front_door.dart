@@ -145,6 +145,10 @@ sealed class FrontDoorOutcome {
           taskId: taskId,
           newKind: FrontNewKind.fromName(map['newKind']),
           generation: generation is int ? generation : 0,
+          at: switch (map['at']) {
+            final String iso => DateTime.tryParse(iso),
+            _ => null,
+          },
         );
       default:
         return null;
@@ -249,16 +253,20 @@ class FrontDoorInbox extends FrontDoorOutcome {
 
 /// The user made a task of the segment; its title is the user's words.
 /// [newKind] and [generation] are the inbox item's, kept for a take-back.
+/// [at] is when the tap made it — later than the door record, which keeps
+/// the time it was walked; null on records written before it was kept.
 class FrontDoorTaskCreated extends FrontDoorOutcome {
   const FrontDoorTaskCreated({
     required this.taskId,
     this.newKind,
     this.generation = 0,
+    this.at,
   });
 
   final String taskId;
   final FrontNewKind? newKind;
   final int generation;
+  final DateTime? at;
 
   @override
   Map<String, Object?> toJson() => {
@@ -266,6 +274,7 @@ class FrontDoorTaskCreated extends FrontDoorOutcome {
     'taskId': taskId,
     if (newKind != null) 'newKind': newKind!.name,
     if (generation > 0) 'generation': generation,
+    if (at != null) 'at': at!.toUtc().toIso8601String(),
   };
 }
 
