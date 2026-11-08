@@ -24,7 +24,8 @@ typedef FrontDispatchValidation = ({FrontDispatch? dispatch, String? error});
 /// a routed destination at or above [frontLowConfidence]. A `new` task's
 /// `task` object is read leniently ([FrontTaskDraft.fromModel]): a field the
 /// model got wrong, or a category [categoryExists] does not know, is left
-/// out, never fatal; its start counts back from [now], the routing turn's
+/// out, never fatal, and so is a `followsUpTaskId` [followUpExists] does not
+/// know; its start counts back from [now], the routing turn's
 /// clock the model saw. The spans and the gaps between them partition the
 /// input, and any gap holding at least
 /// [frontUnroutedGapShare] of its non-whitespace characters becomes an
@@ -35,6 +36,7 @@ FrontDispatchValidation validateFrontDispatch({
   required String input,
   required FrontDestinationCheck destinationExists,
   bool Function(String categoryId)? categoryExists,
+  bool Function(String taskId)? followUpExists,
   DateTime? now,
 }) {
   final raw = args['segments'];
@@ -189,6 +191,7 @@ FrontDispatchValidation validateFrontDispatch({
             ? FrontTaskDraft.fromModel(
                 Map<String, dynamic>.from(task),
                 categoryExists: categoryExists ?? (_) => false,
+                followUpExists: followUpExists,
                 now: now ?? clock.now(),
               )
             : null,

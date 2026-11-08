@@ -59,11 +59,12 @@ void main() {
         'title': 'Buy the hose',
         'categoryId': 'home',
         'priority': 'P1',
+        'followsUpTaskId': 'roses',
       },
     };
 
-    test('keeps the task the words describe, its category only when the '
-        'check knows it', () {
+    test('keeps the task the words describe, its category and the task it '
+        'follows only when the checks know them', () {
       final known = validateFrontDispatch(
         args: {
           'segments': [newTask('task')],
@@ -71,15 +72,18 @@ void main() {
         input: input.substring(0, 28),
         destinationExists: exists,
         categoryExists: (id) => id == 'home',
+        followUpExists: (id) => id == 'roses',
       ).dispatch!.segments.single.task!;
       expect(known.title, 'Buy the hose');
       expect(known.categoryId, 'home');
+      expect(known.followsUpTaskId, 'roses');
 
       final unchecked = validate([
         newTask('task'),
         segment(span: pipSpan, intent: 'question', kind: 'person', id: 'pip'),
       ]).dispatch!.segments.first.task!;
       expect(unchecked.categoryId, isNull);
+      expect(unchecked.followsUpTaskId, isNull);
       expect(unchecked.title, 'Buy the hose');
     });
 

@@ -8,6 +8,7 @@ void main() {
   FrontTaskDraft? read(Map<String, dynamic> args) => FrontTaskDraft.fromModel(
     args,
     categoryExists: (id) => id == 'work',
+    followUpExists: (id) => id == 'task-roses',
     now: now,
   );
 
@@ -68,6 +69,32 @@ void main() {
       );
     });
 
+    test('a follow-up stands only on a task the turn may name', () {
+      expect(
+        read({
+          'title': 'x',
+          'followsUpTaskId': ' task-roses ',
+        })!.followsUpTaskId,
+        'task-roses',
+      );
+      expect(
+        read({
+          'title': 'x',
+          'followsUpTaskId': 'task-invented',
+        })!.followsUpTaskId,
+        isNull,
+      );
+      expect(
+        FrontTaskDraft.fromModel(
+          {'title': 'x', 'followsUpTaskId': 'task-roses'},
+          categoryExists: (_) => true,
+          now: now,
+        )!.followsUpTaskId,
+        isNull,
+        reason: 'without a check, no follow-up id stands',
+      );
+    });
+
     test('caps an overlong title', () {
       final draft = read({'title': 'a' * (frontTaskTitleMaxLength + 50)})!;
       expect(draft.title.length, frontTaskTitleMaxLength);
@@ -83,6 +110,7 @@ void main() {
       due: DateTime(2026, 11, 10),
       estimate: const Duration(minutes: 45),
       startedAt: DateTime(2026, 11, 8, 14, 20),
+      followsUpTaskId: 'task-roses',
     );
     final json = draft.toJson();
     expect(json['priority'], 'P0');
@@ -96,6 +124,7 @@ void main() {
     expect(read.due, draft.due);
     expect(read.estimate, draft.estimate);
     expect(read.startedAt, draft.startedAt);
+    expect(read.followsUpTaskId, 'task-roses');
     expect(FrontTaskDraft.fromJson({'title': ''}), isNull);
     expect(FrontTaskDraft.fromJson('nope'), isNull);
   });

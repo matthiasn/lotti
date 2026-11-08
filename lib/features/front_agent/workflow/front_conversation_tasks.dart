@@ -1,0 +1,81 @@
+import 'package:lotti/classes/agents/agent_domain_entity.dart';
+import 'package:lotti/classes/agents/agent_enums.dart';
+import 'package:lotti/features/front_agent/model/front_dispatch.dart';
+import 'package:lotti/features/front_agent/model/front_door.dart';
+import 'package:lotti/features/front_agent/workflow/front_agent_contract.dart';
+
+/// How many tasks named in the conversation the prompt carries.
+const int frontConversationTasksMax = 8;
+
+final RegExp _taskLink = RegExp('lotti://task/([A-Za-z0-9-]+)');
+
+/// The tasks this conversation named, most recently named first, at most
+/// [frontConversationTasksMax], each once: what "that one", "the previous
+/// task" or "the one about X" resolves against.
+///
+/// [turns] are the conversation's visible messages with their payloads,
+/// newest first. A task counts as named when her words link it, a
+/// question offered it, a dispatch routed to it, or a tap made or filed
+/// into it — the made task has no link anywhere else, and "a follow-up to
+/// that" right after the tap means it.
+List<String> frontConversationTaskIds(
+  Iterable<(AgentMessageEntity, AgentMessagePayloadEntity)> turns,
+) {
+  final ids = <String>{};
+  for (final (message, payload) in turns) {
+    for (final id in _taskIdsOf(message, payload.content)) {
+      if (ids.length >= frontConversationTasksMax) return ids.toList();
+      ids.add(id);
+    }
+  }
+  return ids.toList();
+}
+
+Iterable<String> _taskIdsOf(
+  AgentMessageEntity message,
+  Map<String, Object?> content,
+) sync* {
+  Iterable<String> linked(Object? text) => text is String
+      ? _taskLink.allMatches(text).map((match) => match.group(1)!)
+      : const [];
+
+  if (message.kind == AgentMessageKind.user) {
+    yield* linked(content['text']);
+    return;
+  }
+  switch (message.metadata.toolName) {
+    case FrontAgentToolNames.replyToUser:
+      yield* linked(content['text']);
+    case FrontAgentToolNames.askUser:
+      yield* linked(content['question']);
+      if (content['options'] case final List<Object?> options) {
+        for (final option in options) {
+          if (option case {
+            'kind': 'task',
+            'id': final String id,
+          } when id.isNotEmpty) {
+            yield id;
+          }
+        }
+      }
+    case FrontAgentToolNames.dispatch:
+      if (content['segments'] is! List) return;
+      for (final segment in FrontDispatch.fromJson(content).segments) {
+        if (segment.destinationId case final id?
+            when segment.kind == FrontDestinationKind.task) {
+          yield id;
+        }
+        if (segment.task?.followsUpTaskId case final id?) yield id;
+      }
+    case frontDoorToolName:
+      final record = FrontDoorRecord.fromJson(content);
+      if (record == null) return;
+      if (record.outcome case FrontDoorTaskCreated(:final taskId)) {
+        yield taskId;
+      }
+      if (record.destinationId case final id?
+          when record.kind == FrontDestinationKind.task) {
+        yield id;
+      }
+  }
+}

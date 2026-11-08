@@ -59,6 +59,7 @@ class FrontAgentStrategy extends ConversationStrategy
     this.corpusMatcher,
     this.dueTaskLister,
     this.loggedTimeSummarizer,
+    this.conversationTasks = const [],
   });
 
   @override
@@ -79,6 +80,11 @@ class FrontAgentStrategy extends ConversationStrategy
   /// dictated start counts back from here, not from when the dispatch lands.
   final DateTime now;
   final FrontRoutingIndex index;
+
+  /// The tasks this conversation named, open or closed, as
+  /// `<conversation_tasks>` listed them: what a follow-up may follow up on
+  /// and a question may offer, though a closed one is never a destination.
+  final List<FrontIndexRow> conversationTasks;
 
   /// Null when no FTS is wired (tests, evals without a journal): the tool
   /// then answers that it is unavailable.
@@ -203,6 +209,12 @@ class FrontAgentStrategy extends ConversationStrategy
       index.contains(kind, id) ||
       _lookupRows.any((row) => row.kind == kind && row.id == id);
 
+  /// A task a new task may follow up on: one she may route to, or one the
+  /// conversation named.
+  bool _followUpExists(String id) =>
+      _destinationExists(FrontDestinationKind.task, id) ||
+      conversationTasks.any((row) => row.id == id);
+
   /// A category a new task may be put in: listed, and chosen when the
   /// conversation is narrowed — the chips narrow, never widen.
   bool _categoryExists(String id) {
@@ -238,6 +250,7 @@ class FrontAgentStrategy extends ConversationStrategy
       input: input,
       destinationExists: _destinationExists,
       categoryExists: _categoryExists,
+      followUpExists: _followUpExists,
       now: now,
     );
     if (dispatch == null) {
@@ -533,12 +546,13 @@ class FrontAgentStrategy extends ConversationStrategy
           );
           return;
         }
-        if (!_destinationExists(kind, id)) {
+        if (!_destinationExists(kind, id) &&
+            !(kind == FrontDestinationKind.task && _followUpExists(id))) {
           await _reject(
             call,
             manager,
-            'Error: option ${kind.wireName}:$id is not in <routing_index> or '
-            'a lookup result this turn.',
+            'Error: option ${kind.wireName}:$id is not in <routing_index>, '
+            '<conversation_tasks> or a lookup result this turn.',
           );
           return;
         }

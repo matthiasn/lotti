@@ -90,6 +90,33 @@ class FrontRoutingIndexBuilder {
     );
   }
 
+  /// The tasks [ids] name, in their order, that [scope] lets her see — open
+  /// or closed, since a follow-up is often to finished work. A deleted task,
+  /// a private one while private entries are hidden, and one outside the
+  /// scope are left out.
+  Future<List<FrontIndexRow>> conversationTasks(
+    List<String> ids,
+    FrontRoutingScope scope,
+  ) async {
+    if (ids.isEmpty) return const [];
+    final byId = <String, Task>{
+      for (final entity in await journalDb.getJournalEntitiesForIds(
+        ids.toSet(),
+      ))
+        if (entity is Task &&
+            entity.meta.deletedAt == null &&
+            categoryAllowed(entity.meta.categoryId, scope.categoryIds))
+          entity.id: entity,
+    };
+    final reports = await agentRepository.getLatestTaskReportsForTaskIds([
+      ...byId.keys,
+    ]);
+    return [
+      for (final id in ids)
+        if (byId[id] case final task?) _taskRow(task, reports[id]),
+    ];
+  }
+
   /// A matcher over the open tasks inside [scope]: the phrase in, the index
   /// rows the turn may now route to out. Null when no full-text index is
   /// wired.

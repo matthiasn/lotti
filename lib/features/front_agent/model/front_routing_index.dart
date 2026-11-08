@@ -417,22 +417,28 @@ class FrontRoutingIndex {
         : '';
     buffer.writeln('## $heading (${rows.length} shown$suffix)');
     for (final row in rows) {
-      buffer
-        ..write('- ')
-        ..write(row.kind.wireName)
-        ..write(':')
-        ..write(row.id)
-        ..write(' | ')
-        ..write(_oneLine(row.title));
-      if (row.status != null) buffer.write(' | ${row.status}');
-      if (row.due case final due?) {
-        buffer.write(' | due ${_isoDay(due)}');
-      }
-      if (row.oneLiner case final oneLiner? when oneLiner.trim().isNotEmpty) {
-        buffer.write(' | ${_oneLine(oneLiner)}');
-      }
-      buffer.writeln();
+      buffer.writeln(renderRow(row));
     }
+  }
+
+  /// One row as the index lists it: `kind:id | title | status | due |
+  /// one-liner`, the parts it lacks left out.
+  static String renderRow(FrontIndexRow row) {
+    final buffer = StringBuffer()
+      ..write('- ')
+      ..write(row.kind.wireName)
+      ..write(':')
+      ..write(row.id)
+      ..write(' | ')
+      ..write(_oneLine(row.title));
+    if (row.status != null) buffer.write(' | ${row.status}');
+    if (row.due case final due?) {
+      buffer.write(' | due ${_isoDay(due)}');
+    }
+    if (row.oneLiner case final oneLiner? when oneLiner.trim().isNotEmpty) {
+      buffer.write(' | ${_oneLine(oneLiner)}');
+    }
+    return buffer.toString();
   }
 
   static String _oneLine(String text) =>

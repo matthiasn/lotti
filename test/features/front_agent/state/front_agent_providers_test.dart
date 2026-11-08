@@ -39,17 +39,21 @@ import 'package:lotti/features/front_agent/workflow/front_agent_model_resolution
 import 'package:lotti/features/front_agent/workflow/front_agent_workflow.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart';
 import 'package:lotti/providers/agent_repository_providers.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/providers/update_notifications_providers.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/utils/device_region.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
+import '../../../helpers/test_get_it.dart';
 import '../../../mocks/mocks.dart';
 import '../../agents/test_data/entity_factories.dart';
 import '../../agents/workflow/task_agent_workflow_test_helpers.dart';
+import '../../categories/test_utils.dart';
 
 /// A workflow that records what the runner asked of it instead of routing.
 class _RecordingWorkflow extends FrontAgentWorkflow {
@@ -785,6 +789,158 @@ void main() {
       expect(data.status, isA<TaskOpen>());
     });
 
+    test('the tap on a dictated follow-up makes the task in its category, '
+        'links it to the task it follows, runs the backdated timer and '
+        "hands it the category's agent", () async {
+      final now = DateTime(2026, 11, 8, 14, 30);
+      final started = now.subtract(const Duration(minutes: 5));
+      final cache = MockEntitiesCacheService();
+      when(() => cache.getCategoryById('garden')).thenReturn(
+        CategoryTestUtils.createTestCategory(
+          id: 'garden',
+          defaultTemplateId: 'template-garden',
+        ),
+      );
+      await setUpTestGetIt(
+        additionalSetup: () =>
+            getIt.registerSingleton<EntitiesCacheService>(cache),
+      );
+      addTearDown(tearDownTestGetIt);
+      when(() => repository.getEntity('$doorId:payload')).thenAnswer(
+        (_) async => makeTestMessagePayload(
+          id: '$doorId:payload',
+          agentId: frontAgentId,
+          content: FrontDoorRecord(
+            segmentIndex: 0,
+            text: 'A follow-up to that one, started five minutes ago.',
+            kind: FrontDestinationKind.newThing,
+            status: FrontDoorStatus.done,
+            claimedAt: DateTime.utc(2026, 11, 8),
+            outcome: const FrontDoorInbox(newKind: FrontNewKind.task),
+            task: FrontTaskDraft(
+              title: 'Mulch the roses',
+              priority: TaskPriority.p1High,
+              due: DateTime(2026, 11, 8),
+              startedAt: started,
+              followsUpTaskId: 'roses',
+            ),
+          ).toJson(),
+        ),
+      );
+      when(() => journalDb.journalEntityById('roses')).thenAnswer(
+        (_) async => JournalEntity.task(
+          meta: meta('roses').copyWith(categoryId: 'garden'),
+          data: TaskData(
+            status: TaskStatus.done(id: 's', createdAt: now, utcOffset: 0),
+            statusHistory: const [],
+            dateFrom: now,
+            dateTo: now,
+            title: 'Prune the roses',
+          ),
+        ),
+      );
+      final taskId = frontDoorTaskId(doorId);
+      when(
+        () => persistence.createTaskEntry(
+          data: any(named: 'data'),
+          entryText: any(named: 'entryText'),
+          categoryId: any(named: 'categoryId'),
+          id: any(named: 'id'),
+        ),
+      ).thenAnswer(
+        (invocation) async =>
+            JournalEntity.task(
+                  meta: meta(taskId).copyWith(
+                    categoryId:
+                        invocation.namedArguments[#categoryId] as String?,
+                  ),
+                  data: invocation.namedArguments[#data] as TaskData,
+                )
+                as Task,
+      );
+      when(
+        () => persistence.createLink(
+          fromId: any(named: 'fromId'),
+          toId: any(named: 'toId'),
+          linkType: any(named: 'linkType'),
+        ),
+      ).thenAnswer((_) async => true);
+      when(() => timeService.start(any(), any())).thenAnswer((_) async {});
+      // The timer entry must carry the start it was given.
+      when(
+        () => persistence.createMetadata(
+          id: any(named: 'id'),
+          dateFrom: any(named: 'dateFrom'),
+          dateTo: any(named: 'dateTo'),
+          categoryId: any(named: 'categoryId'),
+        ),
+      ).thenAnswer(
+        (invocation) async => meta(
+          invocation.namedArguments[#id] as String,
+        ).copyWith(dateFrom: invocation.namedArguments[#dateFrom] as DateTime),
+      );
+      final agents = wired.read(taskAgentServiceProvider);
+      when(
+        () => agents.createTaskAgent(
+          taskId: any(named: 'taskId'),
+          allowedCategoryIds: any(named: 'allowedCategoryIds'),
+          templateId: any(named: 'templateId'),
+          profileId: any(named: 'profileId'),
+          setupOrigin: any(named: 'setupOrigin'),
+          setupOriginEntityId: any(named: 'setupOriginEntityId'),
+          awaitContent: any(named: 'awaitContent'),
+          automaticUpdatesEnabled: any(named: 'automaticUpdatesEnabled'),
+        ),
+      ).thenAnswer((_) async => makeTestIdentity());
+      writeAnswers(verdict: true);
+
+      await withClock(
+        Clock.fixed(now),
+        () => wired.read(frontFilingServiceProvider).makeTask(doorId),
+      );
+
+      final data =
+          verify(
+                () => persistence.createTaskEntry(
+                  data: captureAny(named: 'data'),
+                  entryText: any(named: 'entryText'),
+                  categoryId: 'garden',
+                  id: taskId,
+                ),
+              ).captured.single
+              as TaskData;
+      expect(data.title, 'Mulch the roses');
+      expect(data.priority, TaskPriority.p1High);
+      expect(data.due, DateTime(2026, 11, 8));
+      expect(data.status, isA<TaskInProgress>());
+      verify(
+        () => persistence.createLink(
+          fromId: taskId,
+          toId: 'roses',
+          linkType: EntryLinkType.followsUp,
+        ),
+      ).called(1);
+      final timer =
+          verify(
+                () => timeService.start(captureAny(), any()),
+              ).captured.single
+              as JournalEntity;
+      expect(timer.meta.id, frontTaskTimerId(taskId));
+      expect(timer.meta.dateFrom, started);
+      verify(
+        () => agents.createTaskAgent(
+          taskId: taskId,
+          allowedCategoryIds: {'garden'},
+          templateId: 'template-garden',
+          profileId: any(named: 'profileId'),
+          setupOrigin: any(named: 'setupOrigin'),
+          setupOriginEntityId: 'garden',
+          awaitContent: any(named: 'awaitContent'),
+          automaticUpdatesEnabled: any(named: 'automaticUpdatesEnabled'),
+        ),
+      ).called(1);
+    });
+
     test('a task the creation path refused because it is already there is '
         'the one recorded; one that is not there is nothing', () async {
       seed(const FrontDoorInbox());
@@ -1040,6 +1196,120 @@ void main() {
         ),
       );
       expect(timers.single.$1.meta.dateFrom, now);
+    });
+
+    group('a follow-up', () {
+      const followedId = 'task-followed';
+      late List<String> events;
+
+      setUp(() {
+        events = [];
+        stubCreation(written: true);
+        when(
+          () => persistence.createLink(
+            fromId: any(named: 'fromId'),
+            toId: any(named: 'toId'),
+            linkType: any(named: 'linkType'),
+          ),
+        ).thenAnswer((_) async {
+          events.add('link');
+          return true;
+        });
+      });
+
+      Future<void> makeFollowUp(FrontTaskDraft draft) => withClock(
+        Clock.fixed(now),
+        () => makeFrontTask(
+          persistence,
+          journalDb,
+          draft,
+          id: taskId,
+          words: 'Create a follow-up to that one.',
+          startTimer: (_, _) async {},
+          assignAgent: (_) async => events.add('agent'),
+        ),
+      );
+
+      test('is linked followsUp to the task it follows, takes its category '
+          'and gets its agent only after the link', () async {
+        when(() => journalDb.journalEntityById(followedId)).thenAnswer(
+          (_) async => JournalEntity.task(
+            meta: Metadata(
+              id: followedId,
+              createdAt: now,
+              updatedAt: now,
+              dateFrom: now,
+              dateTo: now,
+              categoryId: 'garden',
+            ),
+            data: TaskData(
+              status: TaskStatus.done(id: 's', createdAt: now, utcOffset: 0),
+              statusHistory: const [],
+              dateFrom: now,
+              dateTo: now,
+              title: 'Prune the roses',
+            ),
+          ),
+        );
+
+        await makeFollowUp(
+          const FrontTaskDraft(
+            title: 'Mulch the roses',
+            followsUpTaskId: followedId,
+          ),
+        );
+
+        verify(
+          () => persistence.createTaskEntry(
+            data: any(named: 'data'),
+            entryText: any(named: 'entryText'),
+            categoryId: 'garden',
+            id: taskId,
+          ),
+        ).called(1);
+        verify(
+          () => persistence.createLink(
+            fromId: taskId,
+            toId: followedId,
+            linkType: EntryLinkType.followsUp,
+          ),
+        ).called(1);
+        expect(events, ['link', 'agent']);
+      });
+
+      test('a category the words named wins over the followed one, and a '
+          'followed id that is no task links nothing', () async {
+        when(() => journalDb.journalEntityById(followedId)).thenAnswer(
+          (_) async => JournalEntity.journalEntry(
+            meta: Metadata(
+              id: followedId,
+              createdAt: now,
+              updatedAt: now,
+              dateFrom: now,
+              dateTo: now,
+              categoryId: 'garden',
+            ),
+          ),
+        );
+
+        await makeFollowUp(
+          const FrontTaskDraft(
+            title: 'Mulch the roses',
+            categoryId: 'work',
+            followsUpTaskId: followedId,
+          ),
+        );
+
+        verify(
+          () => persistence.createTaskEntry(
+            data: any(named: 'data'),
+            entryText: any(named: 'entryText'),
+            categoryId: 'work',
+            id: taskId,
+          ),
+        ).called(1);
+        expect(events, ['agent']);
+      });
     });
 
     test(

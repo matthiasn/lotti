@@ -530,6 +530,141 @@ void main() {
     );
   });
 
+  group('a follow-up to a task the conversation named', () {
+    test('the closed task her earlier reply linked reaches the prompt '
+        'after the recent turns, and one sentence becomes a follow-up '
+        'draft with its priority, due day and backdated start', () async {
+      seedMessage();
+      final now = DateTime(2026, 11, 2, 9, 30);
+      final stamp = DateTime(2026, 10);
+      final done = TaskStatus.done(id: 's', createdAt: stamp, utcOffset: 0);
+      when(() => repository.getAgentMessages(frontAgentId)).thenAnswer(
+        (_) async => [
+          makeTestMessage(
+            id: 'msg-1',
+            agentId: frontAgentId,
+            kind: AgentMessageKind.user,
+            contentEntryId: 'payload-1',
+          ),
+          makeTestMessage(
+            id: 'old-user',
+            agentId: frontAgentId,
+            kind: AgentMessageKind.user,
+            contentEntryId: 'old-user-payload',
+            createdAt: DateTime(2026, 11, 2, 9),
+          ),
+          makeTestMessage(
+            id: 'old-reply',
+            agentId: frontAgentId,
+            kind: AgentMessageKind.action,
+            metadata: const AgentMessageMetadata(
+              toolName: 'reply_to_user',
+              runKey: 'run-0',
+              operationId: 'old-user',
+            ),
+            contentEntryId: 'old-reply-payload',
+            createdAt: DateTime(2026, 11, 2, 9, 1),
+          ),
+        ],
+      );
+      final payloads = {
+        'payload-1': makeTestMessagePayload(
+          id: 'payload-1',
+          agentId: frontAgentId,
+          content: {'text': input},
+        ),
+        'old-user-payload': makeTestMessagePayload(
+          id: 'old-user-payload',
+          agentId: frontAgentId,
+          content: const {'text': 'What did I finish yesterday?'},
+        ),
+        'old-reply-payload': makeTestMessagePayload(
+          id: 'old-reply-payload',
+          agentId: frontAgentId,
+          content: const {
+            'text': 'You finished [Prune the roses](lotti://task/roses).',
+          },
+        ),
+      };
+      when(() => repository.getEntitiesByIds(any())).thenAnswer(
+        (invocation) async => {
+          for (final id in invocation.positionalArguments.first as Set<String>)
+            id: ?payloads[id],
+        },
+      );
+      when(() => journalDb.getJournalEntitiesForIds({'roses'})).thenAnswer(
+        (_) async => [
+          JournalEntity.task(
+            meta: Metadata(
+              id: 'roses',
+              createdAt: stamp,
+              updatedAt: stamp,
+              dateFrom: stamp,
+              dateTo: stamp,
+              categoryId: 'work',
+            ),
+            data: TaskData(
+              status: done,
+              statusHistory: [done],
+              dateFrom: stamp,
+              dateTo: stamp,
+              title: 'Prune the roses',
+            ),
+          ),
+        ],
+      );
+      String? sent;
+      stubModel(
+        onMessage: (message) => sent = message,
+        (_) => [
+          call('dispatch', {
+            'segments': [
+              {
+                'start': 0,
+                'end': input.length,
+                'text': input,
+                'intent': 'instruction',
+                'destination': {'kind': 'new', 'newKind': 'task'},
+                'confidence': 0.9,
+                'task': {
+                  'title': 'Mulch the roses',
+                  'followsUpTaskId': 'roses',
+                  'priority': 'P1',
+                  'due': '2026-11-02',
+                  'startedMinutesAgo': 5,
+                },
+              },
+            ],
+          }),
+        ],
+      );
+
+      final result = await withClock(Clock.fixed(now), run);
+
+      expect(result.success, isTrue);
+      final recentAt = sent!.indexOf('<recent_turns>');
+      final namedAt = sent!.indexOf(
+        '<conversation_tasks>\n- task:roses | Prune the roses | DONE\n'
+        '</conversation_tasks>',
+      );
+      final clockAt = sent!.indexOf('<current_local_time>');
+      expect(namedAt, greaterThan(recentAt));
+      expect(clockAt, greaterThan(namedAt));
+
+      final payload = upserts
+          .whereType<AgentMessagePayloadEntity>()
+          .singleWhere(
+            (p) => p.content['segments'] is List,
+          );
+      final draft = frontDispatchFromPayload(payload)!.segments.single.task!;
+      expect(draft.title, 'Mulch the roses');
+      expect(draft.followsUpTaskId, 'roses');
+      expect(draft.priority, TaskPriority.p1High);
+      expect(draft.due, DateTime(2026, 11, 2));
+      expect(draft.startedAt, DateTime(2026, 11, 2, 9, 25));
+    });
+  });
+
   group('the repair round', () {
     test('a turn that ends without a terminal call gets the repair '
         'instruction once, within the remaining budget', () async {

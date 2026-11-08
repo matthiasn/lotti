@@ -45,7 +45,9 @@ minutes ago") waits for its tap too, but filled in: she reads its title,
 instructions, category, priority, due day, estimate and start from the
 words and says what she read, and *Make it a task* makes it with them —
 started only when they said so — with the words linked under it and the
-category's agent assigned. The user keeps many **conversations** with her, as in a ChatGPT
+category's agent assigned. A follow-up ("a follow-up to that one") names
+the task it follows — any task the conversation named, finished ones too —
+and the tap links the two as *follows up on*. The user keeps many **conversations** with her, as in a ChatGPT
 or Claude window: each a subject of its own, titled by its first question,
 listed newest first by recency behind the header's *Chats* button (beside
 the conversation on a desktop window), renamed, archived or deleted there. What nothing owns waits in the **inbox** — every conversation,
