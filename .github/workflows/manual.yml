@@ -216,20 +216,34 @@ jobs:
             echo "mode=skip" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          PREVIOUS=$( { aws s3 ls "s3://${R2_BUCKET_NAME}/manual-site/" \
+          # Earlier releases, newest first. A prefix whose upload died before
+          # its marker (uploaded last) is incomplete: skip it, never fail on it.
+          EARLIER=$( { aws s3 ls "s3://${R2_BUCKET_NAME}/manual-site/" \
                 --endpoint-url "$ENDPOINT" \
               | awk '$1 == "PRE" {sub("/$", "", $2); print $2}' \
               | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' || true; \
               echo "$MANUAL_VERSION"; } \
-            | sort -uV | grep -B1 -xF "$MANUAL_VERSION" | head -n -1)
+            | sort -uV | sed "/^${MANUAL_VERSION//./\\.}\$/,\$d" | tac)
+          PREVIOUS=""
+          PREVIOUS_MARKER=""
+          while IFS= read -r candidate; do
+            [[ -n "$candidate" ]] || continue
+            if PREVIOUS_MARKER=$(marker "$candidate"); then
+              PREVIOUS="$candidate"
+              break
+            fi
+            echo "Skipping ${candidate}: no snapshot marker (incomplete upload)."
+          done <<< "$EARLIER"
           if [[ -z "$PREVIOUS" ]]; then
             echo "No earlier release manual; building ${MANUAL_VERSION} in full."
             echo "mode=full" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          SERVED_BY=$(marker "$PREVIOUS" | jq -r '.aliasOf // empty')
+          SERVED_BY=$(jq -r '.aliasOf // empty' <<< "$PREVIOUS_MARKER")
           SERVED_BY="${SERVED_BY:-$PREVIOUS}"
-          BASE_COMMIT=$(marker "$SERVED_BY" | jq -r '.appCommit // empty')
+          # An unreadable marker leaves BASE_COMMIT empty: build in full.
+          BASE_COMMIT=$( { marker "$SERVED_BY" || true; } \
+            | jq -r '.appCommit // empty' 2>/dev/null || true)
           # The manual's sources: its pages and site, the screenshot tests and
           # the demo world they render. App UI outside these does not trigger
           # a rebuild; a reused version shows its snapshot's screenshots.
