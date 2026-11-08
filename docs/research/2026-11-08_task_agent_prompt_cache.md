@@ -476,7 +476,11 @@ prefix stability. Two additions, both local and content-free:
 Every provider call is already stored in the on-device `ai_consumption.sqlite`
 (`lib/features/ai_consumption/database/consumption_database.drift`,
 `consumption_events`). Nothing leaves the device. Replace `:agentId` with the
-agent's id. `created_at` is epoch seconds.
+agent's id. `created_at` is the request's *start*, in epoch seconds; its end is
+`created_at + duration_ms / 1000`. The model name is in `provider_model_id`:
+`model_id` holds a model-config id, which agent conversations do not set
+(`AiInteractionCapture._finish`,
+`lib/features/ai_consumption/service/ai_interaction_capture.dart`).
 
 Opening request versus later turns:
 
@@ -489,7 +493,7 @@ WITH calls AS (
          ) AS call_no
   FROM consumption_events
   WHERE agent_id = :agentId
-    AND model_id = 'deepseek-v4-1-flash-1017'
+    AND provider_model_id = 'deepseek-v4-1-flash-1017'
     AND wake_run_key IS NOT NULL
 )
 SELECT CASE WHEN call_no = 1 THEN 'opening' ELSE 'later' END AS kind,
@@ -511,10 +515,11 @@ WITH calls AS (
          ROW_NUMBER() OVER (
            PARTITION BY wake_run_key ORDER BY created_at, turn_index
          ) AS call_no,
-         MAX(created_at) OVER (PARTITION BY wake_run_key) AS ended
+         MAX(created_at + duration_ms / 1000.0)
+           OVER (PARTITION BY wake_run_key) AS ended
   FROM consumption_events
   WHERE agent_id = :agentId
-    AND model_id = 'deepseek-v4-1-flash-1017'
+    AND provider_model_id = 'deepseek-v4-1-flash-1017'
     AND wake_run_key IS NOT NULL
 ),
 openings AS (
