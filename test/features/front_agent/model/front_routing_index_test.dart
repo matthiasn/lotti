@@ -306,7 +306,7 @@ void main() {
           chart: _chart,
         ).render(),
         'Time logged past 7 days (2026-11-01 through 2026-11-07): 4h 20m in '
-        'total, by category:\n'
+        'total, by category, largest first:\n'
         '- Work: 2h 35m\n'
         '- Penguin colony: 1h\n'
         '- No category: 45m',

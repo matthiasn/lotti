@@ -334,7 +334,7 @@ Seven tools, never fewer (a single tool makes DeepSeek rewrite
 | `read_tldr(ids ≤ 5)` | no | 1 per turn | `frontTldrExhaustedAnswer` — the tool stays listed |
 | `match_to_corpus(phrase)` | no | 1 per turn | `frontCorpusMatchExhaustedAnswer`; unavailable when no FTS index is wired |
 | `list_due_tasks(which, daysAhead 0–7, categoryIds)` | no | 1 per turn | `frontDueListExhaustedAnswer`; unavailable when no lister is wired |
-| `summarize_logged_time(period)` | no | 1 per turn | `frontTimeSummaryExhaustedAnswer`; unavailable when no summarizer is wired |
+| `summarize_logged_time(period, categoryIds?)` | no | 1 per turn | `frontTimeSummaryExhaustedAnswer`; unavailable when no summarizer is wired |
 | `ask_user(question, options ≤ 3)` | yes | once | refused |
 | `reply_to_user(text)` | yes | once | refused |
 
@@ -412,8 +412,9 @@ reads: the window and any named category in its heading, one row per task in
 the index's shape plus its category's name, an overdue one marked only in
 `all`, or a plain *None*.
 
-**How much time was logged** — *how much did I log yesterday?*, *this
-week?*, *the past 30 days?* — is hers too. Rule 9 sends it to
+**How much time was logged** — *how much did I log yesterday?*, *what did
+I work on in the past seven days?*, *time in Work this week?* — is hers too.
+Rule 9 sends it to
 `summarize_logged_time` and then `reply_to_user` alone; it is never
 dispatched. `period` names one `FrontTimePeriod`, resolved in code against
 the local day the question was asked on (`FrontTimePeriod.rangeOn`), never
@@ -431,8 +432,8 @@ The prompt maps "last month" to `last_month` and "the past month" to
 `past_30_days`; a period the enum lacks is answered by naming the ones she
 can sum. `FrontRoutingIndexBuilder.loggedTimeSummarizer` sums what
 `readFrontLoggedTime` (`service/front_logged_time_reader.dart`) reads — the
-Insights page's own query (`JournalDb.insightsTimeRows` through
-`InsightsRepository`), bucketed with its `bucketize` — ranked with its
+Insights page's own query (`JournalDb.insightsTimeRows`, read directly so
+each row keeps its entry id), bucketed with its `bucketize` — ranked with its
 `rankedCategoryTotals`, so her numbers are that page's: private entries only
 while they are shown, a task's time in the task's category, overlapping
 entries in one category counted once, an entry across midnight split. Rows
@@ -441,15 +442,49 @@ category is left out whenever the scope is narrowed. So is time in a
 private category while private entries are hidden — a category
 `getAllCategoriesIncludingPrivate` lists but `getAllCategories` does not —
 since an entry need not be private itself to sit in one; time in a deleted
-category stays, unnamed. `FrontLoggedTime.render`
-is what the model reads — the period, its `YYYY-MM-DD` days and the total,
-then each category's hours and minutes, largest first — or a plain *None*.
+category stays, unnamed.
+
+**A named category is the only one named.** When the user names categories
+listed under ## Categories, the model passes their ids as `categoryIds`,
+validated exactly as `list_due_tasks` validates its own (one shared
+`_namedCategories` in the strategy: listed, and among the chips when some
+are chosen). Unlike the due list, naming does not narrow the sum:
+`readFrontLoggedTime` keys every other category's time — and time in none —
+`kInsightsOtherCategoryKey`, per entry before bucketing, so the summary
+reads the named categories by name and the rest as one
+`FrontLoggedTime.otherCategories` line, and the heading tells her never to
+break it down. Overlapping entries in two unnamed categories count once in
+that slice, as they would in one category. The prompt has her call it
+"other categories"; nothing she reads holds another category's name.
+
+**The tasks the time went to.** The same call lists them, so *what did I
+work on* is one lookup. `_loggedTasks` takes the summed entries — in the
+named categories only, when some are — reads their links
+(`JournalDb.basicLinksForEntryIds`, hidden and deleted links dropped) and
+the linking tasks (`getJournalEntitiesForIdsUnordered`, which leaves out
+deleted tasks and private ones while private entries are hidden), and
+credits an entry linked to several tasks to the latest started, as the
+Insights query attributes its category. Re-keyed by task id, the entries
+go through the same `bucketize` and `rankedCategoryTotals`, so a task's time
+is clipped to the days and merged like a category's. At most
+`frontLoggedTaskLimit` (30) are listed, the rest counted; each becomes a
+lookup row, so her reply may link one by title alone and a list of them is
+drawn as task rows. Rule 9 asks her to list every one when the question is
+what was worked on, and, for `this_week` or `past_7_days`, to close with
+one sentence naming the category most of the time went to.
+
+`FrontLoggedTime.render` is what the model reads — the period, its
+`YYYY-MM-DD` days and the total, any named categories, each category's hours
+and minutes, largest first, then the tasks with their status and time — or a
+plain *None*.
 
 **Her answer carries a chart.** The model still reads only that text, and
 her words stay the answer; the prompt and the tool description tell her a
 chart is drawn under her reply, so she never describes one. When a summary
 found time, the strategy keeps its `FrontLoggedTimeChart` — the days summed
-(`InsightsRange`) and the turn's category scope, never the figures — and
+(`InsightsRange`), the turn's category scope and the categories the user
+named (`namedCategoryIds`, absent from older replies, read back as none),
+never the figures — and
 the workflow stores it on her `reply_to_user` payload as `loggedTime`. The
 thread builder reads it back into `FrontChatThread.loggedTimeByMessageId`,
 and the chart reads the numbers again when drawn
@@ -465,7 +500,7 @@ already on screen at once.
 flowchart LR
   Tool["summarize_logged_time"] --> Read["readFrontLoggedTime"]
   Read --> Text["FrontLoggedTime.render: text the model reads"]
-  Tool --> Spec["FrontLoggedTimeChart: days + scope"]
+  Tool --> Spec["FrontLoggedTimeChart: days + scope + named"]
   Spec --> Payload["reply_to_user payload: loggedTime"]
   Payload --> Thread["FrontChatThread.loggedTimeByMessageId"]
   Thread --> Card["FrontLoggedTimeChartCard"]
@@ -981,8 +1016,9 @@ one task each, is rows under each heading. Each run is drawn as
 `FrontTaskRow` reads the task through `taskPreviewProvider` (through
 `.value`, so a reload keeps the row; it refreshes on every notification
 naming the task): its `StatusGlyph`, its title, its agent's one-liner (caption, in the `aiCard.accent` ink the tasks list gives it), its
-status and category, and — while it is not done or rejected — the tasks
-list's own `DueDateText`. Until it loads, or if it is gone, the title she
+status and category, and — while it is not done or rejected — its
+priority as the tasks list shows it (`TaskShowcasePriorityGlyph` and `P0`–`P3`,
+also in the row's semantics label) and the tasks list's own `DueDateText`. Until it loads, or if it is gone, the title she
 gave it stands alone. A project is a row of its title and a folder glyph.
 A tap opens either through the pane's link handler — a task on top of her
 (below), where its TL;DR is; a project closes her. A reply naming a single
@@ -1001,7 +1037,11 @@ expand action (`DesignSystemIconAction`) opening the Insights
 `InsightsChartCard`, with its per-day and running-total views, in the
 shared modal over the conversation, titled with the days. The card holds
 its height while it reads, and draws nothing once the time it charted is
-gone.
+gone. A chart of named categories draws them and one `Other` bar segment
+(the resolver's `insightsOtherCategories` label): `buildChartData` counts
+time a caller already keyed `kInsightsOtherCategoryKey` into its Other
+series, never a second one, and its `+N` rollup count leaves that key out,
+so the legend gives no count of what the slice holds.
 
 A link in her bubble or in a card's answer goes through the pane's one
 handler, as *Open* and a cited source do. A task (`/tasks/<id>`) opens **on

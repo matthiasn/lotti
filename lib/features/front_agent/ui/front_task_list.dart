@@ -11,6 +11,8 @@ import 'package:lotti/features/tasks/ui/due_date_text.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/linked_task_row.dart'
     show StatusGlyph;
 import 'package:lotti/features/tasks/ui/utils.dart';
+import 'package:lotti/features/tasks/ui/widgets/task_showcase_chips.dart'
+    show TaskShowcasePriorityGlyph;
 import 'package:lotti/providers/service_providers.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -144,6 +146,7 @@ class FrontTaskRow extends ConsumerWidget {
         ?oneLiner,
         statusLabel,
         ?category,
+        if (!settled) task.data.priority.short,
       ].join(', '),
       leading: StatusGlyph(status: status, tooltip: statusLabel),
       // The one-liner, then status and category and when it is due —
@@ -160,7 +163,18 @@ class FrontTaskRow extends ConsumerWidget {
         TextSpan(
           text: category == null ? statusLabel : '$statusLabel · $category',
         ),
-        // When it is due, only while it is still to do.
+        // Its priority and when it is due, only while it is still to do.
+        if (!settled) ...[
+          const TextSpan(text: '   '),
+          WidgetSpan(
+            alignment: PlaceholderAlignment.middle,
+            child: TaskShowcasePriorityGlyph(
+              priority: task.data.priority,
+              size: IconSizes.xs,
+            ),
+          ),
+          TextSpan(text: ' ${task.data.priority.short}'),
+        ],
         if (due != null && !settled) ...[
           const TextSpan(text: '   '),
           WidgetSpan(

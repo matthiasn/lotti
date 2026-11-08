@@ -28,6 +28,7 @@ frontLoggedTimeChartProvider = StreamProvider.autoDispose
           journalDb,
           chart.range,
           chart.categoryIds,
+          namedCategoryIds: chart.namedCategoryIds,
         );
         return buildChartData(read.buckets, chart.range);
       }

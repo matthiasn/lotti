@@ -16,6 +16,7 @@ import 'package:lotti/features/front_agent/model/front_routing_index.dart';
 import 'package:lotti/features/front_agent/service/front_logged_time_reader.dart';
 import 'package:lotti/features/insights/logic/period_navigation.dart';
 import 'package:lotti/features/insights/logic/time_bucketing.dart';
+import 'package:lotti/features/insights/model/insights_models.dart';
 import 'package:lotti/utils/day_agent_capture_helpers.dart';
 
 /// What the front agent may see (the owner's decision 4: narrow by default).
@@ -230,25 +231,33 @@ class FrontRoutingIndexBuilder {
   }
 
   /// Sums the time logged inside [scope] in one period of [now]'s local
-  /// days, per category, largest first, as [readFrontLoggedTime] reads it.
-  Future<FrontLoggedTime> Function(FrontTimePeriod period) loggedTimeSummarizer(
+  /// days, per category, largest first, as [readFrontLoggedTime] reads it,
+  /// and the tasks it went to. A query naming categories keeps those by
+  /// name and sums every other category as one; its tasks are theirs alone.
+  Future<FrontLoggedTime> Function(FrontTimeQuery query) loggedTimeSummarizer(
     FrontRoutingScope scope, {
     required DateTime now,
   }) {
-    return (period) async {
-      final range = period.rangeOn(
+    return (query) async {
+      final range = query.period.rangeOn(
         now,
         firstDayOfWeekIndex:
             await firstDayOfWeekIndex?.call() ?? defaultFirstDayOfWeekIndex,
       );
       final categoryIds = scope.categoryIds;
-      final (:buckets, :names) = await readFrontLoggedTime(
+      final named = query.categoryIds;
+      final (:buckets, :names, :entries) = await readFrontLoggedTime(
         journalDb,
         range,
         categoryIds,
+        namedCategoryIds: named,
       );
+      final tasks = await _loggedTasks([
+        for (final entry in entries)
+          if (entry.row.categoryId != kInsightsOtherCategoryKey) entry,
+      ], range);
       return FrontLoggedTime(
-        period: period,
+        period: query.period,
         from: dayStart(range.startDay),
         through: dayStart(range.endDayExclusive - 1),
         byCategory: [
@@ -256,13 +265,75 @@ class FrontRoutingIndexBuilder {
             dailyTotals(buckets, range),
           ))
             (
-              name: id == null ? null : names[id] ?? 'Unnamed',
+              name: switch (id) {
+                null => null,
+                kInsightsOtherCategoryKey => FrontLoggedTime.otherCategories,
+                _ => names[id] ?? 'Unnamed',
+              },
               seconds: seconds,
             ),
         ],
-        chart: FrontLoggedTimeChart(range: range, categoryIds: categoryIds),
+        named: [for (final id in named) ?names[id]]..sort(),
+        tasks: tasks.take(frontLoggedTaskLimit).toList(),
+        omittedTasks: _omitted(tasks.length, frontLoggedTaskLimit),
+        chart: FrontLoggedTimeChart(
+          range: range,
+          categoryIds: categoryIds,
+          namedCategoryIds: named,
+        ),
       );
     };
+  }
+
+  /// The tasks [entries] are linked to, each with the time logged on them
+  /// inside [range], largest first. An entry linked to several tasks counts
+  /// for the one the Insights read attributes it to — the latest started —
+  /// and its time is clipped and merged as the chart's is. A task hidden
+  /// with private entries, or deleted, is never read.
+  Future<List<({FrontIndexRow row, int seconds})>> _loggedTasks(
+    List<({String entryId, InsightsTimeRow row})> entries,
+    InsightsRange range,
+  ) async {
+    final links = [
+      for (final link in await journalDb.basicLinksForEntryIds({
+        for (final entry in entries) entry.entryId,
+      }))
+        if (link.hidden != true && link.deletedAt == null) link,
+    ];
+    final tasksById = {
+      for (final entity in await journalDb.getJournalEntitiesForIdsUnordered({
+        for (final link in links) link.fromId,
+      }))
+        if (entity is Task) entity.id: entity,
+    };
+    final taskByEntry = <String, Task>{};
+    for (final link in links) {
+      final task = tasksById[link.fromId];
+      if (task == null) continue;
+      final current = taskByEntry[link.toId];
+      final later = current == null
+          ? 1
+          : task.meta.dateFrom.compareTo(current.meta.dateFrom);
+      if (later > 0 || (later == 0 && task.id.compareTo(current!.id) < 0)) {
+        taskByEntry[link.toId] = task;
+      }
+    }
+    // Keyed by task id, the bucketing that sums categories sums tasks.
+    final buckets = bucketize([
+      for (final entry in entries)
+        if (taskByEntry[entry.entryId] case final task?)
+          InsightsTimeRow(
+            dateFrom: entry.row.dateFrom,
+            dateTo: entry.row.dateTo,
+            categoryId: task.id,
+          ),
+    ], windowStartDay: range.startDay);
+    return [
+      for (final MapEntry(key: id, value: seconds) in rankedCategoryTotals(
+        dailyTotals(buckets, range),
+      ))
+        (row: _taskRow(tasksById[id]!, null), seconds: seconds),
+    ];
   }
 
   /// The active categories her allow-list lets her see, by name, those the

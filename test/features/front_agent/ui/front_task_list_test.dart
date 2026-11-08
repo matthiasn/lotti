@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_reply_parts.dart';
@@ -11,6 +12,7 @@ import 'package:lotti/features/front_agent/ui/front_task_list.dart';
 import 'package:lotti/features/tasks/state/task_preview_provider.dart';
 import 'package:lotti/features/tasks/ui/due_date_text.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/linked_task_row.dart';
+import 'package:lotti/features/tasks/ui/widgets/task_showcase_chips.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
@@ -38,8 +40,14 @@ void main() {
     TaskStatus status, {
     DateTime? due,
     String? categoryId = 'colony',
+    TaskPriority priority = TaskPriority.p2Medium,
   }) => testTask.copyWith(
-    data: testTask.data.copyWith(title: title, status: status, due: due),
+    data: testTask.data.copyWith(
+      title: title,
+      status: status,
+      due: due,
+      priority: priority,
+    ),
     meta: testTask.meta.copyWith(id: id, categoryId: categoryId),
   );
 
@@ -48,6 +56,7 @@ void main() {
     'Count the hatchlings',
     TaskStatus.inProgress(id: 's1', createdAt: at, utcOffset: 60),
     due: at,
+    priority: TaskPriority.p1High,
   );
   final done = task(
     't2',
@@ -148,6 +157,37 @@ void main() {
     expect(
       tester.widget<DueDateText>(inRow('t1', find.byType(DueDateText))).dueDate,
       at,
+    );
+  });
+
+  testWidgets("a task still to do shows its priority's glyph and name; a "
+      'settled one neither', (tester) async {
+    await pump(tester);
+
+    expect(
+      tester
+          .widget<TaskShowcasePriorityGlyph>(
+            inRow('t1', find.byType(TaskShowcasePriorityGlyph)),
+          )
+          .priority,
+      TaskPriority.p1High,
+    );
+    expect(
+      inRow('t1', find.textContaining('P1', findRichText: true)),
+      findsOne,
+    );
+    expect(
+      tester
+          .widget<DesignSystemListItem>(
+            inRow('t1', find.byType(DesignSystemListItem)),
+          )
+          .semanticsLabel,
+      endsWith('In Progress, Colony, P1'),
+    );
+    expect(inRow('t2', find.byType(TaskShowcasePriorityGlyph)), findsNothing);
+    expect(
+      inRow('t2', find.textContaining('P2', findRichText: true)),
+      findsNothing,
     );
   });
 

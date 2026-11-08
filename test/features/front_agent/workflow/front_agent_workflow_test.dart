@@ -9,6 +9,7 @@ import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/agents/front_chat_tokens.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/classes/ai_attribution.dart';
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
@@ -1040,6 +1041,27 @@ void main() {
           ),
         ],
       );
+      // The home entry was logged on a task: it is listed with its time.
+      final garden = makeGardenTask();
+      final dishes = garden.copyWith(
+        meta: garden.meta.copyWith(id: 'dishes', categoryId: 'home'),
+        data: garden.data.copyWith(title: 'Dishes'),
+      );
+      when(() => journalDb.basicLinksForEntryIds({'e1'})).thenAnswer(
+        (_) async => [
+          EntryLink.basic(
+            id: 'dishes>e1',
+            fromId: 'dishes',
+            toId: 'e1',
+            createdAt: DateTime(2026, 11),
+            updatedAt: DateTime(2026, 11),
+            vectorClock: null,
+          ),
+        ],
+      );
+      when(
+        () => journalDb.getJournalEntitiesForIdsUnordered({'dishes'}),
+      ).thenAnswer((_) async => [dishes]);
       seedMessage(chips: ['home']);
       String? summed;
       stubModel(
@@ -1078,8 +1100,11 @@ void main() {
       ).called(1);
       expect(
         summed,
-        'Time logged yesterday (2026-11-01): 1h 30m in total, by category:\n'
-        '- Home: 1h 30m',
+        'Time logged yesterday (2026-11-01): 1h 30m in total, by category, '
+        'largest first:\n'
+        '- Home: 1h 30m\n'
+        'Tasks the time went to (1), largest first:\n'
+        '- task:dishes | Dishes | OPEN | 1h 30m',
       );
       final reply = upserts.whereType<AgentMessageEntity>().singleWhere(
         (m) => m.id == frontAgentReplyMessageId(frontAgentId, runKey),

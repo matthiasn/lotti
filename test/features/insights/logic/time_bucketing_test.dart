@@ -248,6 +248,53 @@ void main() {
       expect(chartTotal, 36 * 3600);
     });
 
+    test('time already keyed Other is its series, one with the overflow, '
+        'never a second Other', () {
+      final day = DateTime(2024, 3);
+      InsightsTimeRow row(String id, int hour, int hours) => InsightsTimeRow(
+        dateFrom: DateTime(2024, 3, 1, hour),
+        dateTo: DateTime(2024, 3, 1, hour + hours),
+        categoryId: id,
+      );
+      final range = InsightsRange(
+        startDay: epochDay(day),
+        endDayExclusive: epochDay(day) + 7,
+      );
+      InsightsChartData chartOf(List<InsightsTimeRow> rows) => buildChartData(
+        bucketize(rows, windowStartDay: epochDay(day)),
+        range,
+      );
+
+      // Alone with one category: the Other slice keeps its own time.
+      final folded = chartOf([
+        row(kInsightsOtherCategoryKey, 0, 3),
+        row('named', 3, 1),
+      ]);
+      expect(folded.seriesKeys, [kInsightsOtherCategoryKey, 'named']);
+      expect(folded.values.first[0], 3 * 3600);
+      expect(folded.rolledUpCount, 0);
+
+      // Ranked among the visible series with overflow beyond them: the
+      // overflow joins it, in one series, its own time counted once.
+      final crowded = chartOf([
+        row(kInsightsOtherCategoryKey, 0, 9),
+        for (var c = 0; c < kInsightsMaxChartSeries; c++)
+          row('cat-$c', 9 + c, 1),
+      ]);
+      expect(
+        crowded.seriesKeys.where((k) => k == kInsightsOtherCategoryKey),
+        hasLength(1),
+      );
+      expect(crowded.seriesKeys.first, kInsightsOtherCategoryKey);
+      // 9h of its own and the one category beyond the cap.
+      expect(crowded.values.first[0], 10 * 3600);
+      expect(crowded.rolledUpCount, 1);
+      final total = crowded.values
+          .expand((r) => r)
+          .fold<int>(0, (a, b) => a + b);
+      expect(total, (9 + kInsightsMaxChartSeries) * 3600);
+    });
+
     test('single-day range produces 24 hourly buckets', () {
       final day = DateTime(2024, 3);
       final buckets = bucketize(
