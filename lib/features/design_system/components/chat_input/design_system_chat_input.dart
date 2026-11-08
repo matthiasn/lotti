@@ -11,6 +11,7 @@ import 'package:material_ui/material_ui.dart';
 
 export 'design_system_chat_input_mentions.dart'
     show DesignSystemChatInputMention;
+export 'design_system_voice_waveform.dart' show DesignSystemVoiceWaveform;
 
 /// What the chat input is doing.
 enum DesignSystemChatInputPhase {
