@@ -6,7 +6,6 @@ import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
 import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
 import 'package:lotti/features/ai/state/ai_runtime_settings_controller.dart';
 import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
-import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -53,8 +52,9 @@ abstract final class FrontChatHeaderKeys {
 /// conversation's own actions) and the sheet's close.
 ///
 /// Where the list is a page over the conversation, the row opens with the
-/// way to it — in the slot the list's back arrow takes, so both pages share
-/// one leading rail — with the inbox count after it, and a new conversation
+/// way to it — a menu glyph named "Chats" by its tooltip, in the slot the
+/// list's back arrow takes, so both pages share one leading rail and the
+/// title keeps its room — with the inbox count after it, and a new conversation
 /// joins the overflow, as do the stage and the switch that mutes her (a
 /// checked row), so the row fits a 360 dp phone. Beside
 /// the list, the list carries those.
@@ -153,18 +153,16 @@ class FrontChatHeader extends ConsumerWidget {
           : null;
       row = [
         if (!listBeside) ...[
-          // Said in a word as well as the glyph: three lines alone do not
-          // tell anyone that their other chats live there.
-          DesignSystemButton(
+          // The glyph alone, named by its tooltip: a word here would cost
+          // the conversation's title the room it needs on a phone.
+          DesignSystemIconAction(
             key: FrontChatHeaderKeys.chats,
-            label: messages.queryChats,
-            variant: DesignSystemButtonVariant.quiet,
-            leadingIcon: LottiIcons.menu,
-            alignsLabelToLeadingEdge: true,
+            tooltip: messages.queryChats,
+            icon: LottiIcons.menu,
             onPressed: openList,
           ),
-          // After the word, never over it: "Chats ②" reads as one thing,
-          // and a tap on the count opens the list as well.
+          // After the glyph, never over it: the two read as one thing, and a
+          // tap on the count opens the list as well.
           if (inboxCount > 0)
             GestureDetector(
               onTap: openList,

@@ -7167,6 +7167,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get frontChatSearchChats => 'Søg i chats';
 
   @override
+  String get frontChatStageConversation => 'Samtale';
+
+  @override
   String get frontChatTitle => 'Ledsager';
 
   @override

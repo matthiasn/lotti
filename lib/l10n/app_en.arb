@@ -4419,6 +4419,10 @@
   "frontChatResponding": "Finding who knows…",
   "frontChatRowMenuHint": "Chat actions",
   "frontChatSearchChats": "Search chats",
+  "frontChatStageConversation": "Conversation",
+  "@frontChatStageConversation": {
+    "description": "On a phone, the companion's full-screen stage: the control in her top bar that opens the conversation she is speaking in, and that sheet's title."
+  },
   "frontChatTitle": "Companion",
   "frontChatVoiceLabel": "Voice",
   "frontChatYesterday": "Yesterday",

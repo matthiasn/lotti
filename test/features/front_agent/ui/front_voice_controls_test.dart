@@ -396,6 +396,42 @@ void main() {
     expect(find.byType(CompanionStagePage), findsNothing);
   });
 
+  testWidgets('on a phone her stage offers the conversation in a sheet, '
+      'read only, and a way out of it closes the stage too', (tester) async {
+    tester.view
+      ..physicalSize = const Size(390, 844)
+      ..devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await pump(tester, child: const _OpenStage());
+
+    await tester.tap(find.byType(_OpenStage));
+    for (var i = 0; i < 10; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+    final transcript = find.byKey(FrontVoiceControlKeys.transcript);
+    expect(transcript, findsNothing);
+
+    await tester.tap(find.byTooltip('Conversation'));
+    for (var i = 0; i < 10; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+    expect(find.byType(FrontStageTranscript), findsOne);
+    expect(find.text('Conversation'), findsOne);
+    final thread = tester.widget<FrontChatThreadView>(
+      find.descendant(
+        of: transcript,
+        matching: find.byType(FrontChatThreadView),
+      ),
+    );
+    // Read only: the pane under the stage stays the one sender.
+    expect(thread.composerEnabled, isFalse);
+
+    thread.onClose();
+    await tester.pumpAndSettle();
+    expect(find.byType(FrontStageTranscript), findsNothing);
+    expect(find.byType(CompanionStagePage), findsNothing);
+  });
+
   testWidgets('on a desktop window she points at the conversation while she '
       'says the tasks her answer lists', (tester) async {
     tester.view

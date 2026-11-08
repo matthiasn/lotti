@@ -814,8 +814,8 @@ turn with a door whose outcome is a `FrontDoorProposal` or a
 `frontInboxFilterProvider` the switch the list's *Inbox* row turns on — an
 auto-disposed notifier, so the filter is off every time the sheet opens, and
 Back (or Escape) leaves it before closing the sheet. While something waits,
-a warning-tone badge counts it right after the word on the header's *Chats*
-button (a tap on either opens the list) and the *Inbox* row counts it with a
+a warning-tone badge counts it right after the header's *Chats* glyph (a
+tap on either opens the list) and the *Inbox* row counts it with a
 badge of the same tone.
 The count and the filtered view come from `frontAllChatsThreadProvider`,
 the thread of every conversation not deleted, so what waits in one
@@ -870,8 +870,8 @@ it. The routing prompt's recent turns come from the
 pending turn's conversation only (`FrontAgentWorkflow._recentTurns`): another
 conversation is another subject.
 
-The header's *Chats* button — the word as well as the glyph, with a new
-conversation beside it — opens the list (`frontConversationListOpenProvider`),
+The header's *Chats* control — a menu glyph named by its tooltip, so the
+conversation's title keeps its room on a phone — opens the list (`frontConversationListOpenProvider`),
 a page over the conversation with its own back, *Chats* and close.
 `FrontConversationList` leads with *New chat*, *Inbox* while something waits,
 and *Search chats*, which opens in place; then the history grouped by
@@ -968,7 +968,7 @@ conversation not begun), an archived conversation marked before its title.
 Then her voice while the companion is on: `FrontVoiceButton`, the
 `FrontVoiceSwitch` that mutes her, and her stage; then an overflow and close.
 Where the list is a page over the conversation (a phone, a narrow window) the
-row opens with the *Chats* button and the inbox count, and the overflow
+row opens with the *Chats* glyph and the inbox count, and the overflow
 leads with a new conversation, her stage and the switch that mutes her as a
 checked row (`frontVoiceMenuItem`), so the row fits a 360 dp phone with every
 control showing. Beside the list the switch sits on the row under the word
@@ -1232,7 +1232,12 @@ time (`frontStagePointsProvider` over `frontLatestReplyHasVisual`, in
 `state/front_stage_pointing.dart`), the page's `pointsAtSidePanel` has her
 hold `GestureName.pointRight` at the panel — at the task rows or the chart
 as she says them — and let her arm down when she stops. On a phone she keeps the
-screen, and never points. The bust keeps one tree whatever she does,
+screen, and never points; a `DsAiDiscButton` (`LottiIcons.chat`) beside the
+stage's close opens the same `FrontStageTranscript` in
+`ModalUtils.showSinglePageModal`, titled with the host's `sidePanelLabel`
+(*Conversation*), `CompanionStagePage.sidePanelSheetHeightFactor` of the
+screen tall. It is read only there too, and its ways out pop to the first
+route, which closes the sheet with the stage. The bust keeps one tree whatever she does,
 so her animator lives through a start and a stop.
 
 **Her stage is never a dead end.** Whatever has been said, `FrontStageControls`

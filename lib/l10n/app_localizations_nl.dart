@@ -7200,6 +7200,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get frontChatSearchChats => 'Chats doorzoeken';
 
   @override
+  String get frontChatStageConversation => 'Gesprek';
+
+  @override
   String get frontChatTitle => 'Metgezel';
 
   @override

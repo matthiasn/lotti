@@ -7245,6 +7245,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get frontChatSearchChats => 'Hledat v chatech';
 
   @override
+  String get frontChatStageConversation => 'Konverzace';
+
+  @override
   String get frontChatTitle => 'Společník';
 
   @override

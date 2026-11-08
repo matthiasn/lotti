@@ -7180,6 +7180,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get frontChatSearchChats => 'Sök i chattar';
 
   @override
+  String get frontChatStageConversation => 'Samtal';
+
+  @override
   String get frontChatTitle => 'Följeslagare';
 
   @override

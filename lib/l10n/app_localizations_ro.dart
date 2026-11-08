@@ -7288,6 +7288,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get frontChatSearchChats => 'Căutați în conversații';
 
   @override
+  String get frontChatStageConversation => 'Conversație';
+
+  @override
   String get frontChatTitle => 'Însoțitor';
 
   @override

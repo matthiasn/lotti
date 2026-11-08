@@ -7255,6 +7255,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get frontChatSearchChats => 'Buscar chats';
 
   @override
+  String get frontChatStageConversation => 'Conversación';
+
+  @override
   String get frontChatTitle => 'Acompañante';
 
   @override

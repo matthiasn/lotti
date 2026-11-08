@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:clock/clock.dart';
+import 'package:flutter/rendering.dart' show RenderParagraph;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -45,11 +46,16 @@ import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
+import '../../../test_utils/screenshot_harness.dart';
 import '../../../widget_test_utils.dart';
 import '../../agents/test_data/ai_config_factories.dart';
 import '../../agents/test_data/entity_factories.dart';
 
 void main() {
+  // The title's room on a phone is asserted in real glyphs: the test font
+  // draws every one an em wide.
+  setUpAll(loadAppFonts);
+
   Future<void> pumpHeader(
     WidgetTester tester, {
     VoidCallback? onClose,
@@ -694,6 +700,66 @@ void main() {
       );
     });
 
+    testWidgets('on a 390 dp phone the way to the list is a glyph named by '
+        'its tooltip, so the title shows whole', (tester) async {
+      // The full phone row: her voice speaking rides it too.
+      final voice = _Voice(const TtsPlaybackState());
+      await pumpHeader(
+        tester,
+        companion: true,
+        width: 390,
+        voice: () => voice,
+        extra: [known],
+        conversations: FrontConversationIndex(
+          conversations: [
+            FrontConversation(
+              id: 'c-1',
+              title: 'What is due today',
+              lastActivity: DateTime(2026, 10, 31, 9),
+              archived: false,
+            ),
+          ],
+        ),
+      );
+
+      voice.play('front-chat:c-1');
+      await tester.pump();
+      expect(find.byType(FrontVoiceButton), findsOne);
+
+      final title = find.byKey(FrontChatHeaderKeys.title);
+      expect(tester.widget<Text>(title).data, 'What is due today');
+      // The room her name and the title share, not the text's own width.
+      final room = find
+          .ancestor(of: title, matching: find.byType(Expanded))
+          .first;
+      expect(tester.getSize(room).width, greaterThanOrEqualTo(100));
+      // Laid out whole: the paragraph does not overflow its box, so no
+      // ellipsis is drawn.
+      final paragraph = tester.renderObject<RenderParagraph>(
+        find.descendant(of: title, matching: find.byType(RichText)),
+      );
+      expect(paragraph.didExceedMaxLines, isFalse);
+      expect(
+        find.descendant(
+          of: find.byKey(FrontChatHeaderKeys.chats),
+          matching: find.text('Chats'),
+        ),
+        findsNothing,
+      );
+
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(FrontChatHeader)),
+      );
+      final listOpen = container.listen(
+        frontConversationListOpenProvider,
+        (_, _) {},
+      );
+      addTearDown(listOpen.close);
+      await tester.tap(find.byTooltip('Chats'));
+      await tester.pump();
+      expect(listOpen.read(), isTrue);
+    });
+
     testWidgets("the overflow's stage row stands her up full screen", (
       tester,
     ) async {
@@ -792,18 +858,11 @@ void main() {
     ) async {
       await pumpHeader(tester, thread: waiting(2));
 
-      // After the word, never over it, on its line.
+      // After the glyph, never over it, on its line.
       final dot = tester.getRect(find.byKey(FrontChatHeaderKeys.inbox));
       final list = tester.getRect(find.byKey(FrontChatHeaderKeys.chats));
       expect(dot.left, greaterThanOrEqualTo(list.right));
       expect(dot.center.dy, closeTo(list.center.dy, 1));
-      expect(
-        find.descendant(
-          of: find.byKey(FrontChatHeaderKeys.chats),
-          matching: find.text('Chats'),
-        ),
-        findsOne,
-      );
       expect(
         tester
             .widget<DesignSystemBadge>(find.byKey(FrontChatHeaderKeys.inbox))

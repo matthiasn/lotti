@@ -26,10 +26,10 @@ abstract final class FrontVoiceControlKeys {
 
 /// Opens her full screen, head to toe on her stage — on a desktop window as
 /// on a phone — still speaking in [conversationId], with a way to answer
-/// her and her voice's control at her feet ([FrontStageControls]), and, on a
-/// desktop window, the conversation beside her ([FrontStageTranscript]),
+/// her and her voice's control at her feet ([FrontStageControls]), and the
+/// conversation ([FrontStageTranscript]): beside her on a desktop window,
 /// pointing at it while she says the tasks it lists
-/// ([frontStagePointsProvider]).
+/// ([frontStagePointsProvider]); in a sheet from her top bar on a phone.
 Future<void> openFrontStage(BuildContext context, String conversationId) =>
     openCompanionStage(
       context,
@@ -37,6 +37,7 @@ Future<void> openFrontStage(BuildContext context, String conversationId) =>
       dressedFor: frontCompanionDressedFor,
       controls: FrontStageControls(conversationId: conversationId),
       sidePanel: const FrontStageTranscript(),
+      sidePanelLabel: context.messages.frontChatStageConversation,
       pointsAtSidePanel: frontStagePointsProvider(conversationId),
     );
 
