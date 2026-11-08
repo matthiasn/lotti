@@ -410,11 +410,9 @@ class PaneWidthController extends Notifier<PaneWidths> {
     _companionStageDebounce?.cancel();
     _companionStageDebounce = Timer(
       persistDebounce,
-      () => unawaited(
-        _persistString(
-          companionStageShareKey,
-          state.companionStageShare.toStringAsFixed(3),
-        ),
+      () async => _persistString(
+        companionStageShareKey,
+        state.companionStageShare.toStringAsFixed(3),
       ),
     );
   }
