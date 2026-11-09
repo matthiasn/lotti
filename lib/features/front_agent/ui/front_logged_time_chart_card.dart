@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -102,10 +103,17 @@ InsightsCategoryResolver _resolver(BuildContext context, WidgetRef ref) {
   );
 }
 
-/// `Nov 2 – Nov 8`, or the one day, in the device's locale.
+/// `Nov 2 – Nov 8`, or the one day, in the device's locale — with the year
+/// (`Dec 29, 2025 – Jan 4, 2026`) unless every day is in this one.
 String _rangeLabel(BuildContext context, FrontLoggedTimeChart chart) {
-  final format = DateFormat.MMMd(Localizations.localeOf(context).toString());
-  final from = format.format(dayStart(chart.range.startDay));
-  final through = format.format(dayStart(chart.range.endDayExclusive - 1));
+  final locale = Localizations.localeOf(context).toString();
+  final first = dayStart(chart.range.startDay);
+  final last = dayStart(chart.range.endDayExclusive - 1);
+  final thisYear = clock.now().year;
+  final format = first.year == thisYear && last.year == thisYear
+      ? DateFormat.MMMd(locale)
+      : DateFormat.yMMMd(locale);
+  final from = format.format(first);
+  final through = format.format(last);
   return from == through ? from : '$from – $through';
 }

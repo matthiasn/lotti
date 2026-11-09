@@ -654,7 +654,7 @@ hologram:x: not listed''');
       categoryIds: {'work'},
     );
     FrontLoggedTime logged(
-      FrontTimePeriod period, {
+      FrontTimePeriod? period, {
       List<({String? name, int seconds})> byCategory = const [
         (name: 'Work', seconds: 7200),
         (name: 'Health', seconds: 5400),
@@ -669,7 +669,7 @@ hologram:x: not listed''');
 
     test('answers with the summary for the period asked; the reply then '
         'ends the turn', () async {
-      final asked = <FrontTimePeriod>[];
+      final asked = <FrontTimePeriod?>[];
       final s = strategy(
         timeSummarizer: (query) async {
           asked.add(query.period);
@@ -823,9 +823,71 @@ hologram:x: not listed''');
       expect(s.loggedTimeChart, isNull);
     });
 
+    test('sums the past N days or the first through the last day asked, '
+        'and refuses a window that runs backwards, is too long or is '
+        'given twice', () async {
+      Future<List<(FrontTimePeriod?, InsightsRange?)>> asked(
+        Map<String, dynamic> args,
+      ) async {
+        final queries = <(FrontTimePeriod?, InsightsRange?)>[];
+        await strategy(
+          timeSummarizer: (query) async {
+            queries.add((query.period, query.range));
+            return logged(query.period);
+          },
+        ).processToolCalls(
+          toolCalls: [_call('summarize_logged_time', args)],
+          manager: manager,
+        );
+        return queries;
+      }
+
+      // The strategy's day is 2026-11-02.
+      final today = epochDay(DateTime(2026, 11, 2));
+      expect((await asked({'pastDays': 14})).single, (
+        null,
+        InsightsRange(startDay: today - 13, endDayExclusive: today + 1),
+      ));
+      expect(
+        (await asked({'from': '2026-06-01', 'through': '2026-06-05'})).single,
+        (
+          null,
+          InsightsRange(
+            startDay: epochDay(DateTime(2026, 6)),
+            endDayExclusive: epochDay(DateTime(2026, 6, 6)),
+          ),
+        ),
+      );
+      // A whole leap year is the longest window.
+      expect(
+        (await asked({
+          'from': '2024-01-01',
+          'through': '2024-12-31',
+        })).single.$2?.dayCount,
+        frontLoggedTimeMaxDays,
+      );
+
+      for (final args in <Map<String, dynamic>>[
+        {'from': '2026-06-05', 'through': '2026-06-01'},
+        {'from': '2024-01-01', 'through': '2025-01-01'},
+        {'pastDays': frontLoggedTimeMaxDays + 1},
+        {'pastDays': 0},
+        {'from': '2026-02-29', 'through': '2026-03-01'},
+        {'period': 'today', 'pastDays': 14},
+        {'from': '2026-06-01'},
+      ]) {
+        expect(await asked(args), isEmpty, reason: '$args');
+        expect(
+          responses().last,
+          contains('summarize_logged_time needs exactly one of'),
+          reason: '$args',
+        );
+      }
+    });
+
     test('refuses a missing or unknown period and a second summary, and '
         'reports an unwired summarizer', () async {
-      final asked = <FrontTimePeriod>[];
+      final asked = <FrontTimePeriod?>[];
       final s = strategy(
         timeSummarizer: (query) async {
           asked.add(query.period);
@@ -846,10 +908,11 @@ hologram:x: not listed''');
       expect(asked, [FrontTimePeriod.past7Days]);
       expect(responses(), [
         contains(
-          'needs period: one of today, yesterday, this_week, past_7_days, '
-          'past_30_days, this_month, last_month',
+          'needs exactly one of: period (one of today, yesterday, '
+          'this_week, past_7_days, past_30_days, this_month, last_month), '
+          'pastDays (1 to $frontLoggedTimeMaxDays)',
         ),
-        contains('needs period'),
+        contains('needs exactly one of'),
         startsWith('Time logged past 7 days'),
         frontTimeSummaryExhaustedAnswer,
       ]);

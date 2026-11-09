@@ -310,8 +310,8 @@ class FrontRoutingIndexBuilder {
     );
   }
 
-  /// Sums the time logged inside [scope] in one period of [now]'s local
-  /// days, per category, largest first, as [readFrontLoggedTime] reads it,
+  /// Sums the time logged inside [scope] in one window of [now]'s local
+  /// days — a named period, or the days the query spelled out — per category, largest first, as [readFrontLoggedTime] reads it,
   /// and the tasks it went to. A query naming categories keeps those by
   /// name and sums every other category as one; its tasks are theirs alone.
   Future<FrontLoggedTime> Function(FrontTimeQuery query) loggedTimeSummarizer(
@@ -319,11 +319,13 @@ class FrontRoutingIndexBuilder {
     required DateTime now,
   }) {
     return (query) async {
-      final range = query.period.rangeOn(
-        now,
-        firstDayOfWeekIndex:
-            await firstDayOfWeekIndex?.call() ?? defaultFirstDayOfWeekIndex,
-      );
+      final range =
+          query.range ??
+          query.period!.rangeOn(
+            now,
+            firstDayOfWeekIndex:
+                await firstDayOfWeekIndex?.call() ?? defaultFirstDayOfWeekIndex,
+          );
       final categoryIds = scope.categoryIds;
       final named = query.categoryIds;
       final (:buckets, :names, :entries) = await readFrontLoggedTime(
@@ -337,7 +339,7 @@ class FrontRoutingIndexBuilder {
           if (entry.row.categoryId != kInsightsOtherCategoryKey) entry,
       ], range);
       return FrontLoggedTime(
-        period: query.period,
+        period: query.range == null ? query.period : null,
         from: dayStart(range.startDay),
         through: dayStart(range.endDayExclusive - 1),
         byCategory: [

@@ -72,16 +72,26 @@ void main() {
     expect(frontAgentSystemPrompt, contains('pass its id in `categoryIds`'));
   });
 
-  test('summarize_logged_time asks for one period by the names the strategy '
-      'reads, and the prompt sends a time question there, never to a door', () {
+  test('summarize_logged_time asks for a period by the names the strategy '
+      'reads, the past N days up to the cap, or a first and last day, and the '
+      'prompt sends a time question there, never to a door', () {
     final summarize = frontAgentTools[4];
     final properties = summarize.parameters['properties'] as Map;
     expect(
       (properties['period'] as Map)['enum'],
       [for (final period in FrontTimePeriod.values) period.wireName],
     );
-    expect(summarize.parameters['required'], ['period']);
+    expect((properties['pastDays'] as Map)['maximum'], frontLoggedTimeMaxDays);
+    expect((properties['from'] as Map)['type'], 'string');
+    expect((properties['through'] as Map)['type'], 'string');
+    // Exactly one window form, checked by the strategy, so none required.
+    expect(summarize.parameters.containsKey('required'), isFalse);
     expect(frontAgentSystemPrompt, contains('call `summarize_logged_time`'));
+    expect(frontAgentSystemPrompt, contains('at most 366 days'));
+    expect(
+      frontAgentSystemPrompt,
+      isNot(contains('say which periods you can sum')),
+    );
     expect(
       frontAgentSystemPrompt,
       contains('"the past month" is `past_30_days`'),

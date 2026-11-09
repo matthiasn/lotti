@@ -1,11 +1,13 @@
 import 'dart:async';
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/front_agent/model/front_logged_time_chart.dart';
 import 'package:lotti/features/front_agent/state/front_logged_time_providers.dart';
 import 'package:lotti/features/insights/logic/time_bucketing.dart';
 import 'package:lotti/features/insights/model/insights_models.dart';
+import 'package:lotti/features/insights/state/insights_providers.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/providers/update_notifications_providers.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -191,5 +193,67 @@ void main() {
     updates.add({privateToggleNotification});
     await pumpEventQueue();
     verifyNever(() => journalDb.getAllCategories());
+  });
+
+  test('a chart longer than a month re-reads on the Insights throttle; a '
+      'month re-reads at once', () {
+    fakeAsync((async) {
+      /// The reads within a second of a change, and once the throttle ended.
+      (int, int) readsAfterChange(int days) {
+        var reads = 0;
+        when(
+          () => journalDb.insightsTimeRows(
+            start: any(named: 'start'),
+            end: any(named: 'end'),
+          ),
+        ).thenAnswer((_) async {
+          reads++;
+          return const [];
+        });
+        final updates = StreamController<Set<String>>.broadcast();
+        final notifications = MockUpdateNotifications();
+        when(
+          () => notifications.updateStream,
+        ).thenAnswer((_) => updates.stream);
+        final live = ProviderContainer(
+          overrides: [
+            journalDbProvider.overrideWithValue(journalDb),
+            maybeUpdateNotificationsProvider.overrideWithValue(notifications),
+            insightsRefetchThrottleProvider.overrideWithValue(
+              const Duration(seconds: 5),
+            ),
+          ],
+        );
+        final chart = FrontLoggedTimeChart(
+          range: InsightsRange(
+            startDay: monday,
+            endDayExclusive: monday + days,
+          ),
+          categoryIds: const {},
+        );
+        live.listen(frontLoggedTimeChartProvider(chart), (_, _) {});
+        async.flushMicrotasks();
+        expect(reads, 1, reason: 'the first read');
+
+        updates.add({textEntryNotification});
+        async
+          ..elapse(const Duration(seconds: 1))
+          ..flushMicrotasks();
+        final soon = reads - 1;
+        async
+          ..elapse(const Duration(seconds: 5))
+          ..flushMicrotasks();
+        final later = reads - 1;
+
+        live.dispose();
+        updates.close();
+        async.flushMicrotasks();
+        return (soon, later);
+      }
+
+      expect(readsAfterChange(31), (1, 1));
+      // The last change of a burst still lands, once the throttle ends.
+      expect(readsAfterChange(32), (0, 1));
+    });
   });
 }
