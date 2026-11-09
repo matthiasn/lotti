@@ -757,6 +757,20 @@ void main() {
         FrontTurnFailure.fromWakeError(result.error),
         FrontTurnFailure.noAnswer,
       );
+      // The full log says what went wrong, not just the type.
+      final logged = verify(
+        () => domainLogger.error(
+          LogDomain.agentWorkflow,
+          captureAny(),
+          subDomain: 'frontAgent',
+          message: 'front agent turn failed',
+          stackTrace: any(named: 'stackTrace'),
+        ),
+      ).captured.single;
+      expect(
+        logged.toString(),
+        'front turn produced no dispatch, question or reply',
+      );
       expect(conversationRepository.turnBudgets, hasLength(1));
       expect(upserts.whereType<AgentMessageEntity>(), isEmpty);
       expect(conversationRepository.deletedConversationIds, ['test-conv-id']);
@@ -1654,6 +1668,16 @@ void main() {
           (guard.delegate as CloudInferenceWrapper).promptCacheKey,
           frontAgentId,
         );
+
+        // A resend is logged, so a stall shows up beside the timings.
+        guard.onRetry!();
+        verify(
+          () => domainLogger.log(
+            LogDomain.agentWorkflow,
+            'front turn provider call stalled; sending it again',
+            subDomain: 'frontAgent',
+          ),
+        ).called(1);
       },
     );
 

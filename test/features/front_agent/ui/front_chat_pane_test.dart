@@ -457,6 +457,28 @@ void main() {
       "The companion didn't finish an answer. Try again, or put it another "
           'way.',
     ),
+    (
+      FrontTurnFailure.timeout,
+      'Your AI provider took too long to answer. Try again.',
+    ),
+    (
+      FrontTurnFailure.network,
+      "Couldn't reach your AI provider. Check your connection, then try "
+          'again.',
+    ),
+    (
+      FrontTurnFailure.authentication,
+      'Your AI provider refused its API key. Check it in Settings.',
+    ),
+    (
+      FrontTurnFailure.provider,
+      'Your AI provider answered with an error. Try again in a moment.',
+    ),
+    (
+      FrontTurnFailure.noModel,
+      'No AI model is set up for the companion. Choose one in Settings.',
+    ),
+    (FrontTurnFailure.unknown, "That didn't send."),
   ]) {
     testWidgets('a turn that failed for $failure says why beside the retry, '
         'instead of a bare "that did not send"', (tester) async {
@@ -473,7 +495,11 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text(line), findsOneWidget);
-      expect(find.text("That didn't send."), findsNothing);
+      // Only a cause nobody can act on falls back to the bare line.
+      expect(
+        find.text("That didn't send."),
+        failure == FrontTurnFailure.unknown ? findsOneWidget : findsNothing,
+      );
       expect(find.text('Try Again'), findsOneWidget);
     });
   }
