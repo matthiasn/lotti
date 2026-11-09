@@ -4,6 +4,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.96]
+
+### Changed
+
+- **Tapping the companion's face now shows its card right in the chat.** It
+  used to open a separate full-screen view; now the glass card fades in over
+  your conversation, with the chat, its header and the input staying where
+  they are, and a tap on the card puts it away again. The face in the chat
+  header is a little larger, in a rounded tile, and steps aside while the card
+  is out; the conversation's title gets the full width under the controls.
+
+### Fixed
+
+- **The companion says why an answer did not come.** A failed question used to
+  show only "That didn't send." Now the line beside *Try again* names the
+  cause: your AI provider is limiting requests, took too long, cannot be
+  reached, refused its API key or answered with an error, no model is set up
+  for the companion, or it could not finish an answer.
+- **The companion answers faster, and a stuck answer no longer hangs.** Her
+  requests share one prompt cache with the AI provider, which roughly halves
+  the wait once it is warm. A request that sends nothing for 15 seconds is
+  sent once more instead of waiting minutes.
+- **"Last weekend" means the weekend just past.** Asked on a Monday, questions
+  about last weekend's pull requests, logged time or completed tasks were
+  sometimes answered for the weekend before.
+
 ## [1.1.95]
 
 ### Changed
