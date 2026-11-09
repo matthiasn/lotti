@@ -329,11 +329,10 @@ class CompanionStagePage extends ConsumerWidget {
                 removeTop: true,
                 child: conversation(
                   card: card,
-                  // Room for her only while she sits in the lower half,
-                  // where the thread's end runs into her.
-                  bottomInset: placement.inLowerHalf
-                      ? placement.height + tokens.spacing.step5
-                      : 0,
+                  // Room for her wherever she sits: an inset that came and
+                  // went with her position would shift the thread under a
+                  // drag.
+                  bottomInset: placement.height + tokens.spacing.step5,
                 ),
               ),
             ),

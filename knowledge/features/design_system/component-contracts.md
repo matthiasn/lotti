@@ -870,7 +870,11 @@ their integration with the app shell, docked and slid away. The contract:
   — the floating-surface shadow, the clip, and for a translucent chip the
   `BackdropFilter` *inside* that clip, never around the row, so the
   transparent gap between chips stays unblurred. An opaque chip passes
-  `blurred: false` and skips the filter it could not show through.
+  `blurred: false` and skips the filter it could not show through. The
+  blur is the glass bars' `DesignSystemGlassStrip.blurSigma` unless a
+  caller passes `blurSigma`: the companion's floating card takes the
+  lighter `DsGlassChipSurface.cardBlurSigma` and `dsGlassCardFill`, so the
+  conversation under it reads as frosted text rather than a flat panel.
 - `MobileActivityIsland`
   ([mobile_activity_island.dart](../../../lib/beamer/chrome/mobile_activity_island.dart))
   sits in the launcher row's `centerBand` while a timer or a recording runs.

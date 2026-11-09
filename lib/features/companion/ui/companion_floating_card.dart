@@ -171,10 +171,11 @@ class _CompanionFloatingCardState extends ConsumerState<CompanionFloatingCard> {
     final glass = DsGlassChipSurface(
       radius: radius,
       blurred: true,
+      blurSigma: DsGlassChipSurface.cardBlurSigma,
       child: DecoratedBox(
         decoration: BoxDecoration(
           borderRadius: radius,
-          color: dsGlassChipFill(tokens),
+          color: dsGlassCardFill(tokens),
           border: Border.all(
             color: widget.speaking
                 ? colors.interactive.enabled.withValues(

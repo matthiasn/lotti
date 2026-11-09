@@ -70,8 +70,8 @@ class CompanionCardPlacement {
   final double y;
   final double height;
 
-  /// Whether the card sits in the lower half, where the end of the thread
-  /// must scroll clear of it.
+  /// Whether the card sits in the lower half, so its resize grip goes on
+  /// the top corner.
   bool get inLowerHalf => y >= 0.5;
 
   @override

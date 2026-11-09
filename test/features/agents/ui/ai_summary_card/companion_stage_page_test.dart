@@ -413,8 +413,8 @@ void main() {
       expect(inset, CompanionCardForm.phone.smallHeight + 16);
     });
 
-    testWidgets('opens where the user left her on a phone, leaving the '
-        "thread's end alone when she is up top", (tester) async {
+    testWidgets('opens where the user left her on a phone, the room after '
+        "the thread's end kept up top too", (tester) async {
       phone(tester);
       stored(CompanionCardForm.phone, {'x': 0, 'y': 0, 'h': 300});
       stored(CompanionCardForm.desktop, {'x': 1, 'y': 1, 'h': 500});
@@ -424,7 +424,25 @@ void main() {
       final cardRect = tester.getRect(card);
       expect(cardRect.height, 300);
       expect(cardRect.topLeft, page.topLeft + const Offset(16, 16));
-      expect(inset, 0);
+      expect(inset, 300 + 16);
+    });
+
+    testWidgets('moving her across the middle leaves the room after the '
+        "thread's end as it was, so nothing behind her shifts", (tester) async {
+      phone(tester);
+      await openStage(tester, conversation: conversation);
+      final before = inset;
+      final start = tester.getRect(card);
+
+      final drag = await tester.startGesture(start.center);
+      await drag.moveBy(const Offset(0, -30));
+      await drag.moveBy(const Offset(0, -400));
+      await tester.pump();
+      await drag.up();
+      await tester.pump(companionCardPersistDebounce);
+
+      expect(tester.getRect(card).top, lessThan(start.top - 300));
+      expect(inset, before);
     });
 
     testWidgets('on a desktop window keeps the desktop placement', (

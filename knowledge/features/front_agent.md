@@ -1428,8 +1428,9 @@ wears the app's theme, not the stage's dark.
 
 She stands head to toe in a `CompanionFloatingCard`
 (`companion/ui/companion_floating_card.dart`): a glass card
-(`DsGlassChipSurface`'s blur and shadow over the shared glass-chip fill,
-`dsGlassChipFill`), handed to `AgentChatView` as its `threadOverlay`, so it
+(`DsGlassChipSurface`'s shadow with its lighter `cardBlurSigma`, over
+`dsGlassCardFill` — far more see-through than a chip's fill, so the text
+scrolling under her shows through as frosted shapes), handed to `AgentChatView` as its `threadOverlay`, so it
 floats over the thread's area only — never over the top row, the notch or
 the field — and takes touches only where it paints; the thread scrolls
 everywhere else, and a plain mouse wheel over the card still scrolls the
@@ -1441,10 +1442,11 @@ anywhere between, and a long press — a right-click on a desktop — opens its
 menu (Small, Large, Demo size, Restyle, Reset position and size). A desktop
 adds a grip on the corner facing the open screen, on hover, and Ctrl/⌘ +
 scroll. Wherever it sits, the card stays a margin (`spacing.step5`) inside
-the thread's area, and never taller or wider than that area allows. While it
-sits in the lower half the thread gets `threadBottomInset` — the card's
-height and the margin — after its last message, so the end of an answer
-scrolls clear of her. `AgentChatView` caps that inset at half the thread's
+the thread's area, and never taller or wider than that area allows. The
+thread gets `threadBottomInset` — the card's height and the margin — after
+its last message, so the end of an answer scrolls clear of her. It is kept
+wherever the card sits: room that came and went with the card's half would
+shift the thread under a drag. `AgentChatView` caps that inset at half the thread's
 height, so a card capped by a small window or a phone keyboard never pushes
 the last message out of view. The cap trades clearance for that: a card
 taller than half the thread (a Large card over a short one) can still cover

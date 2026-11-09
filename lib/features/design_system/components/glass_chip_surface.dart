@@ -22,6 +22,7 @@ class DsGlassChipSurface extends StatelessWidget {
     required this.radius,
     required this.blurred,
     required this.child,
+    this.blurSigma = DesignSystemGlassStrip.blurSigma,
     super.key,
   });
 
@@ -29,6 +30,14 @@ class DsGlassChipSurface extends StatelessWidget {
 
   /// Whether the child is translucent and needs the page blurred behind it.
   final bool blurred;
+
+  /// How strongly the page behind is blurred: the glass bars' blur by
+  /// default; a card over text the user reads blurs less
+  /// ([cardBlurSigma]), so the text still shows through as frosted shapes.
+  final double blurSigma;
+
+  /// The blur of a glass card over a conversation (the companion's card).
+  static const double cardBlurSigma = 6;
 
   final Widget child;
 
@@ -44,8 +53,8 @@ class DsGlassChipSurface extends StatelessWidget {
         child: blurred
             ? BackdropFilter(
                 filter: ui.ImageFilter.blur(
-                  sigmaX: DesignSystemGlassStrip.blurSigma,
-                  sigmaY: DesignSystemGlassStrip.blurSigma,
+                  sigmaX: blurSigma,
+                  sigmaY: blurSigma,
                 ),
                 child: child,
               )

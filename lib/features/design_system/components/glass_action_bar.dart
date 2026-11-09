@@ -46,6 +46,22 @@ const double kDsGlassDisabledFillFactor = 0.45;
 Color dsGlassChipFill(DsTokens tokens) =>
     tokens.colors.background.level03.withValues(alpha: kDsGlassFillAlpha);
 
+/// Alphas of [dsGlassCardFill] in the dark and the light theme, from the
+/// approved companion-card design.
+const double kDsGlassCardFillAlphaDark = 0.42;
+const double kDsGlassCardFillAlphaLight = 0.46;
+
+/// Fill of a glass card that floats over content the user reads and holds
+/// no text of its own (the companion's card): light enough that what
+/// scrolls under it shows through the blur, where [dsGlassChipFill] stays
+/// near-opaque to keep a chip's label legible.
+Color dsGlassCardFill(DsTokens tokens) {
+  final dark = tokens.colors.background.level01.computeLuminance() < 0.5;
+  return tokens.colors.background.level02.withValues(
+    alpha: dark ? kDsGlassCardFillAlphaDark : kDsGlassCardFillAlphaLight,
+  );
+}
+
 /// Hairline outline drawn over a translucent glass chip.
 Border dsGlassChipBorder(DsTokens tokens) => Border.all(
   color: tokens.colors.decorative.level01.withValues(

@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/companion/state/companion_card_controller.dart';
 import 'package:lotti/features/companion/ui/companion_floating_card.dart';
 import 'package:lotti/features/design_system/components/glass_action_bar.dart';
+import 'package:lotti/features/design_system/components/glass_chip_surface.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
@@ -329,7 +330,7 @@ void main() {
     semantics.dispose();
   });
 
-  testWidgets('its glass is the shared glass-chip fill, and its edge takes '
+  testWidgets('its glass is the see-through card fill, and its edge takes '
       'the interactive accent while she speaks', (tester) async {
     BoxDecoration glass() =>
         tester
@@ -348,7 +349,18 @@ void main() {
 
     await pumpCard(tester);
     final tokens = tester.element(card).designTokens;
-    expect(glass().color, dsGlassChipFill(tokens));
+    expect(glass().color, dsGlassCardFill(tokens));
+    expect(
+      tester
+          .widget<DsGlassChipSurface>(
+            find.descendant(
+              of: card,
+              matching: find.byType(DsGlassChipSurface),
+            ),
+          )
+          .blurSigma,
+      DsGlassChipSurface.cardBlurSigma,
+    );
     expect(edge(), tokens.colors.decorative.level02);
 
     await pumpCard(tester, speaking: true);
