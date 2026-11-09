@@ -733,7 +733,11 @@ about half as long as without the key, whose cache hits were luck.
 inference repository: a call that sends no chunk for
 `frontInferenceStallTimeout` (15 s) is cancelled and sent again — safe,
 since nothing of it was read. A second stall, or a gap after the first chunk,
-fails the turn with a `TimeoutException`; the wake's ten-minute run cap is
+fails the turn with a `TimeoutException`. Dropping the stalled call waits at
+most `frontInferenceCancelBound` (1 s): a provider generator suspended in its
+HTTP send cannot be cancelled until the send returns, so the abandoned
+request may finish in the background, its answer discarded. The wake's
+ten-minute run cap is
 the only bound otherwise, and the Mistral repository sets no timeout of its
 own on a chat stream.
 
