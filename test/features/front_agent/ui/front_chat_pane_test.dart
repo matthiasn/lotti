@@ -28,6 +28,7 @@ import 'package:lotti/features/front_agent/model/front_closed_task_card.dart';
 import 'package:lotti/features/front_agent/model/front_conversation.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
+import 'package:lotti/features/front_agent/model/front_entity_preview.dart';
 import 'package:lotti/features/front_agent/model/front_logged_time_chart.dart';
 import 'package:lotti/features/front_agent/model/front_pull_requests.dart';
 import 'package:lotti/features/front_agent/model/front_turn_failure.dart';
@@ -45,6 +46,7 @@ import 'package:lotti/features/front_agent/ui/front_chat_pane.dart';
 import 'package:lotti/features/front_agent/ui/front_conversation_list.dart';
 import 'package:lotti/features/front_agent/ui/front_door_card.dart';
 import 'package:lotti/features/front_agent/ui/front_door_wizards.dart';
+import 'package:lotti/features/front_agent/ui/front_entity_preview_card.dart';
 import 'package:lotti/features/front_agent/ui/front_logged_time_chart_card.dart';
 import 'package:lotti/features/front_agent/ui/front_pull_request_chart_card.dart';
 import 'package:lotti/features/front_agent/ui/front_task_list.dart';
@@ -1157,6 +1159,174 @@ void main() {
       't-8',
       paths,
     );
+  });
+
+  group('entity previews', () {
+    const iceRef = FrontEntityReference(
+      kind: FrontDestinationKind.task,
+      id: 't-9',
+      title: 'Check the ice-pad weather window',
+    );
+    const coldRef = FrontEntityReference(
+      kind: FrontDestinationKind.task,
+      id: 't-8',
+      title: 'Audit the cold-chain freezer logs',
+    );
+
+    FrontDoorEntry madeTask(int index, String taskId, String words) =>
+        FrontDoorEntry(
+          doorId: 'd:door:$index',
+          record: FrontDoorRecord(
+            segmentIndex: index,
+            text: words,
+            kind: FrontDestinationKind.newThing,
+            status: FrontDoorStatus.done,
+            claimedAt: now.toUtc(),
+            outcome: FrontDoorTaskCreated(taskId: taskId),
+          ),
+        );
+
+    testWidgets('a reply whose turn made tasks draws each as a preview card '
+        'under her words, above her doors, and a card opens its task on top '
+        'of her', (tester) async {
+      final paths = <String>[];
+      beamToNamedOverride = paths.add;
+      addTearDown(() => beamToNamedOverride = null);
+      final observer = _PushObserver();
+      await pumpPane(
+        tester,
+        pushed: true,
+        navigatorObservers: [observer],
+        thread: () async => FrontChatThread(
+          messages: [
+            message('u1', AgentChatRole.user, 'Ice pad, freezers.', now),
+            message('a1', AgentChatRole.agent, 'Made them tasks.', now),
+          ],
+          doorsByMessageId: {
+            'u1': [
+              madeTask(0, 't-9', iceRef.title),
+              madeTask(1, 't-8', coldRef.title),
+            ],
+          },
+          entityPreviewsByMessageId: const {
+            'a1': [iceRef, coldRef],
+          },
+        ),
+      );
+
+      final list = tester.widget<FrontEntityPreviewList>(
+        find.byKey(const ValueKey('front-entity-previews-a1')),
+      );
+      expect(list.references, [iceRef, coldRef]);
+      final words = tester.getTopLeft(
+        find.textContaining('Made them tasks.', findRichText: true),
+      );
+      final cards = tester.getRect(find.byKey(FrontEntityPreviewKeys.list));
+      final doors = tester.getRect(
+        find.byKey(const ValueKey('front-doors-a1')),
+      );
+      expect(words.dy, lessThan(cards.top));
+      expect(cards.bottom, lessThanOrEqualTo(doors.top));
+
+      await expectTaskOpensOverPane(
+        tester,
+        observer,
+        find.byKey(FrontEntityPreviewKeys.card('t-8')),
+        't-8',
+        paths,
+      );
+    });
+
+    testWidgets('a task the cards show is not drawn again as a row of her '
+        'list; the rest of the list stays', (tester) async {
+      await pumpPane(
+        tester,
+        thread: () async => FrontChatThread(
+          messages: [
+            message('u1', AgentChatRole.user, 'Ice pad.', now),
+            message(
+              'a1',
+              AgentChatRole.agent,
+              'Made it a task. Also due:\n\n'
+                  '- [Check the ice-pad weather window](lotti://task/t-9)\n'
+                  '- [Feed the penguins](lotti://task/t-7)',
+              now,
+            ),
+          ],
+          entityPreviewsByMessageId: const {
+            'a1': [iceRef],
+          },
+        ),
+      );
+
+      final list = tester.widget<FrontTaskList>(find.byType(FrontTaskList));
+      expect(list.tasks.map((t) => t.id), ['t-7']);
+      expect(find.byKey(FrontEntityPreviewKeys.card('t-9')), findsOneWidget);
+      expect(find.byKey(FrontTaskListKeys.row('t-9')), findsNothing);
+    });
+
+    testWidgets('a list the cards cover entirely is not drawn at all', (
+      tester,
+    ) async {
+      await pumpPane(
+        tester,
+        thread: () async => FrontChatThread(
+          messages: [
+            message('u1', AgentChatRole.user, 'Ice pad.', now),
+            message(
+              'a1',
+              AgentChatRole.agent,
+              'Made them tasks:\n\n'
+                  '- [Check the ice-pad weather window](lotti://task/t-9)\n'
+                  '- [Audit the cold-chain freezer logs](lotti://task/t-8)',
+              now,
+            ),
+          ],
+          entityPreviewsByMessageId: const {
+            'a1': [iceRef, coldRef],
+          },
+        ),
+      );
+
+      // Two lines name tasks, so her words are a list — and the cards
+      // carry both of them.
+      expect(find.byType(FrontTaskList), findsNothing);
+      expect(find.byKey(FrontEntityPreviewKeys.card('t-9')), findsOneWidget);
+      expect(find.byKey(FrontEntityPreviewKeys.card('t-8')), findsOneWidget);
+      expect(
+        find.textContaining('Made them tasks:', findRichText: true),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('only the reply the cards belong to draws them', (
+      tester,
+    ) async {
+      await pumpPane(
+        tester,
+        thread: () async => FrontChatThread(
+          messages: [
+            message('u1', AgentChatRole.user, 'Ice pad.', now),
+            message('a1', AgentChatRole.agent, 'Made it a task.', now),
+            message('u2', AgentChatRole.user, 'Thanks.', now),
+            message('a2', AgentChatRole.agent, 'Any time.', now),
+          ],
+          entityPreviewsByMessageId: const {
+            'a1': [iceRef],
+          },
+        ),
+      );
+
+      expect(
+        find.byKey(const ValueKey('front-entity-previews-a1')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('front-entity-previews-a2')),
+        findsNothing,
+      );
+      expect(find.byType(FrontEntityPreviewList), findsOneWidget);
+    });
   });
 
   testWidgets('an answer about logged time draws its chart under her words; '

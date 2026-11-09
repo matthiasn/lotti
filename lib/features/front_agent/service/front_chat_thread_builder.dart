@@ -7,7 +7,9 @@ import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
 import 'package:lotti/features/front_agent/model/front_chat_thread.dart';
 import 'package:lotti/features/front_agent/model/front_closed_task_card.dart';
 import 'package:lotti/features/front_agent/model/front_conversation.dart';
+import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
+import 'package:lotti/features/front_agent/model/front_entity_preview.dart';
 import 'package:lotti/features/front_agent/model/front_logged_time_chart.dart';
 import 'package:lotti/features/front_agent/model/front_pull_requests.dart';
 import 'package:lotti/features/front_agent/service/front_chat_history_service.dart';
@@ -192,7 +194,39 @@ class FrontChatThreadBuilder {
         for (final entry in closedTasks.entries)
           if (visibleIds.contains(entry.key)) entry.key: entry.value,
       },
+      entityPreviewsByMessageId: _entityPreviews(visible, doors),
     );
+  }
+
+  /// What the doors made, as preview cards on the reply that carries them —
+  /// each entity once, in segment order. A turn no reply followed carries
+  /// its doors itself, and a user turn draws no cards: its doors say what
+  /// was made until she has answered.
+  static Map<String, List<FrontEntityReference>> _entityPreviews(
+    List<AgentChatMessage> visible,
+    Map<String, List<FrontDoorEntry>> doors,
+  ) {
+    final carrying = FrontChatThread(messages: visible);
+    final previews = <String, List<FrontEntityReference>>{};
+    for (final MapEntry(key: turnId, value: entries) in doors.entries) {
+      final carrier = carrying.carrierOf(turnId);
+      if (carrier == turnId) continue;
+      for (final door in entries) {
+        if (door.record.outcome case FrontDoorTaskCreated(:final taskId)) {
+          final cards = previews.putIfAbsent(carrier, () => []);
+          if (cards.any((card) => card.id == taskId)) continue;
+          cards.add(
+            FrontEntityReference(
+              kind: FrontDestinationKind.task,
+              id: taskId,
+              // The task was made with the user's words as its title.
+              title: door.record.text,
+            ),
+          );
+        }
+      }
+    }
+    return previews;
   }
 
   /// The reply a goal or person agent wrote for the turn [record] handed

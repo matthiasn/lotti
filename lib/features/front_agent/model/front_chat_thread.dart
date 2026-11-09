@@ -3,6 +3,7 @@ import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/front_agent/model/front_closed_task_card.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
+import 'package:lotti/features/front_agent/model/front_entity_preview.dart';
 import 'package:lotti/features/front_agent/model/front_logged_time_chart.dart';
 import 'package:lotti/features/front_agent/model/front_pull_requests.dart';
 
@@ -70,6 +71,7 @@ class FrontChatThread {
     this.loggedTimeByMessageId = const {},
     this.pullRequestsByMessageId = const {},
     this.closedTasksByMessageId = const {},
+    this.entityPreviewsByMessageId = const {},
   });
 
   static const empty = FrontChatThread(messages: []);
@@ -101,6 +103,12 @@ class FrontChatThread {
   /// The tasks a reply about what was completed or rejected draws as cards
   /// under her words, by the reply's id.
   final Map<String, List<FrontClosedTaskCard>> closedTasksByMessageId;
+
+  /// The entities a reply draws as preview cards under her words, by the
+  /// reply's id: what the doors it carries made — a task made of a segment
+  /// — in segment order. Only which they are; each card reads its entity as
+  /// it is now.
+  final Map<String, List<FrontEntityReference>> entityPreviewsByMessageId;
 
   /// The message that carries a user turn's doors on the surface: her
   /// reply right after it, when there is one — the doors are her answer,

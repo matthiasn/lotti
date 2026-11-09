@@ -10,6 +10,7 @@ import 'package:lotti/features/front_agent/model/front_closed_task_card.dart';
 import 'package:lotti/features/front_agent/model/front_conversation.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
+import 'package:lotti/features/front_agent/model/front_entity_preview.dart';
 import 'package:lotti/features/front_agent/model/front_logged_time_chart.dart';
 import 'package:lotti/features/front_agent/model/front_pull_requests.dart';
 import 'package:lotti/features/front_agent/service/front_chat_thread_builder.dart';
@@ -646,6 +647,154 @@ void main() {
         expect(thread.specialistAgentIds, isEmpty);
       },
     );
+
+    group('entity previews', () {
+      void replyTo(String id, String turnId, {DateTime? at}) => row(
+        id: id,
+        kind: AgentMessageKind.action,
+        toolName: FrontAgentToolNames.replyToUser,
+        operationId: turnId,
+        content: {'text': 'Made it a task.'},
+        createdAt: at,
+      );
+
+      FrontEntityReference task(String id, String title) =>
+          FrontEntityReference(
+            kind: FrontDestinationKind.task,
+            id: id,
+            title: title,
+          );
+
+      test('a task a door made rides the reply that carries the door, '
+          'titled with the words it was made of, in segment order', () async {
+        userTurn('u1', 'Ice pad? Freezers?', at: DateTime(2026, 11, 9, 9));
+        replyTo('r1', 'u1', at: DateTime(2026, 11, 9, 9, 1));
+        doorRow(
+          'd:door:1',
+          'u1',
+          door(1, const FrontDoorTaskCreated(taskId: 'cold-chain')),
+        );
+        doorRow(
+          'd:door:0',
+          'u1',
+          door(0, const FrontDoorTaskCreated(taskId: 'ice-pad')),
+        );
+
+        final thread = await builder.build();
+
+        expect(thread.entityPreviewsByMessageId, {
+          'r1': [task('ice-pad', 'segment 0'), task('cold-chain', 'segment 1')],
+        });
+      });
+
+      test('a door that made no task draws no card', () async {
+        userTurn('u1', 'Garden?', at: DateTime(2026, 11, 9, 9));
+        replyTo('r1', 'u1', at: DateTime(2026, 11, 9, 9, 1));
+        doorRow('d:door:0', 'u1', door(0, const FrontDoorInbox()));
+        doorRow('d:door:1', 'u1', door(1, const FrontDoorFiled(entryId: 'e')));
+        doorRow(
+          'd:door:2',
+          'u1',
+          door(2, const FrontDoorProjectCreated(projectId: 'p')),
+        );
+        doorRow('d:door:3', 'u1', door(3, null));
+
+        final thread = await builder.build();
+
+        expect(thread.doorsByMessageId['u1'], hasLength(4));
+        expect(thread.entityPreviewsByMessageId, isEmpty);
+      });
+
+      test('a turn she has not answered draws no card: its door says what '
+          'was made until she has', () async {
+        userTurn('u1', 'Ice pad?', at: DateTime(2026, 11, 9, 9));
+        doorRow(
+          'd:door:0',
+          'u1',
+          door(0, const FrontDoorTaskCreated(taskId: 'ice-pad')),
+        );
+        // The next turn is the user's, not her reply.
+        userTurn('u2', 'And the freezers?', at: DateTime(2026, 11, 9, 9, 5));
+
+        final thread = await builder.build();
+
+        expect(thread.carrierOf('u1'), 'u1');
+        expect(thread.entityPreviewsByMessageId, isEmpty);
+      });
+
+      test('a task two doors both made is drawn once', () async {
+        userTurn('u1', 'Ice pad, twice', at: DateTime(2026, 11, 9, 9));
+        replyTo('r1', 'u1', at: DateTime(2026, 11, 9, 9, 1));
+        doorRow(
+          'd:door:0',
+          'u1',
+          door(0, const FrontDoorTaskCreated(taskId: 'ice-pad')),
+        );
+        doorRow(
+          'd:door:1',
+          'u1',
+          door(1, const FrontDoorTaskCreated(taskId: 'ice-pad')),
+        );
+
+        final thread = await builder.build();
+
+        expect(thread.entityPreviewsByMessageId, {
+          'r1': [task('ice-pad', 'segment 0')],
+        });
+      });
+
+      test('each reply carries only the tasks of its own turn', () async {
+        userTurn('u1', 'Ice pad', at: DateTime(2026, 11, 9, 9));
+        replyTo('r1', 'u1', at: DateTime(2026, 11, 9, 9, 1));
+        userTurn('u2', 'Freezers', at: DateTime(2026, 11, 9, 10));
+        replyTo('r2', 'u2', at: DateTime(2026, 11, 9, 10, 1));
+        doorRow(
+          'd1:door:0',
+          'u1',
+          door(0, const FrontDoorTaskCreated(taskId: 'ice-pad')),
+        );
+        doorRow(
+          'd2:door:0',
+          'u2',
+          door(0, const FrontDoorTaskCreated(taskId: 'cold-chain')),
+        );
+
+        final thread = await builder.build();
+
+        expect(thread.entityPreviewsByMessageId, {
+          'r1': [task('ice-pad', 'segment 0')],
+          'r2': [task('cold-chain', 'segment 0')],
+        });
+      });
+
+      test('a turn of another conversation draws nothing here', () async {
+        userTurn(
+          'u1',
+          'Ice pad',
+          at: DateTime(2026, 11, 9, 9),
+          conversation: 'c-1',
+        );
+        replyTo('r1', 'u1', at: DateTime(2026, 11, 9, 9, 1));
+        doorRow(
+          'd:door:0',
+          'u1',
+          door(0, const FrontDoorTaskCreated(taskId: 'ice-pad')),
+        );
+
+        expect(
+          (await builder.build(
+            conversationId: 'c-2',
+          )).entityPreviewsByMessageId,
+          isEmpty,
+        );
+        expect(
+          (await builder.build(
+            conversationId: 'c-1',
+          )).entityPreviewsByMessageId.keys,
+          ['r1'],
+        );
+      });
+    });
   });
 }
 

@@ -126,8 +126,8 @@ sources:
     last_modified: 2026-10-31
   - id: thread
     resource: ../../lib/features/front_agent/service/front_chat_thread_builder.dart
-    title: FrontChatThreadBuilder — the thread with doors, options and mirrored replies
-    last_modified: 2026-10-24
+    title: FrontChatThreadBuilder — the thread with doors, options, mirrored replies and the preview cards a reply carries
+    last_modified: 2026-11-09
   - id: controller
     resource: ../../lib/features/front_agent/state/front_chat_controller.dart
     title: FrontChatController — the composer
@@ -156,6 +156,18 @@ sources:
     resource: ../../lib/features/front_agent/ui/front_task_list.dart
     title: FrontTaskList and FrontClosedTaskList — her lists of tasks and projects, and the tasks a closed-task answer found, as cards of rows
     last_modified: 2026-11-08
+  - id: entity-preview
+    resource: ../../lib/features/front_agent/model/front_entity_preview.dart
+    title: FrontEntityReference and FrontEntityPreview — which entity a preview card is of, and what it shows
+    last_modified: 2026-11-09
+  - id: entity-preview-provider
+    resource: ../../lib/features/front_agent/state/front_entity_preview_provider.dart
+    title: frontEntityPreviewProvider — the live preview a card reads
+    last_modified: 2026-11-09
+  - id: entity-preview-card
+    resource: ../../lib/features/front_agent/ui/front_entity_preview_card.dart
+    title: FrontEntityPreviewList and FrontEntityPreviewCompactCard — what her turn made, as compact cards
+    last_modified: 2026-11-09
   - id: closed-task-card
     resource: ../../lib/features/front_agent/model/front_closed_task_card.dart
     title: FrontClosedTaskCard — one closed task her reply stores and draws as a card
@@ -1306,6 +1318,29 @@ category's colour swatch (`ColorIcon`) and name; a task reopened since
 reads `Done → In Progress`, its status now from `taskPreviewProvider`. A
 tap opens the task on top of her. A task her words also listed as task rows
 is drawn once, on the cards.
+
+**What her turn made is a preview card under her words.** When a door's
+outcome is `FrontDoorTaskCreated`, the thread builder adds a
+`FrontEntityReference` — kind, id, and the user's words the task was made
+of as its title — to `entityPreviewsByMessageId` under the reply that
+carries the door (`carrierOf`), once per task, in segment order. A turn
+she has not answered draws no card: its door card already says *Made into
+a task*. The thread stores only the reference, never the preview: each
+`FrontEntityPreviewCompactCard` reads `frontEntityPreviewProvider` — keyed
+by `(kind, id)`, a task's built on `taskPreviewProvider`, every other kind
+null for now — through `.value`, so a status set after the turn shows on
+the card and a reload keeps the card as it was until the new preview
+lands. The card is one `DesignSystemListItem` on the card surface
+(`dsCardSurface`, `radii.m`, a 0.5 hairline in `decorative.level01`): the
+task's cover (`CoverArtThumbnail`, `ControlSizes.iconChip`) or else its
+`StatusGlyph`, its live title, the one-liner in the AI ink, then status,
+category swatch and name, `DueDateText` and the estimate
+(`formatRangeDuration`, a timer glyph) — neither of those two once it is
+done or rejected. Until it loads, or once it is gone, the title it was
+made with stands alone and still opens. `FrontEntityPreviewList` stacks
+the cards between her words and her door cards, and a tap opens the task
+on top of her. A task a card shows is taken out of her words' task rows,
+as the closed-task cards are, and a list left empty is not drawn.
 
 **Her answer about logged time is a chart under her words.** A reply in
 `loggedTimeByMessageId` gets the same `replyBodyBuilder` body, her words

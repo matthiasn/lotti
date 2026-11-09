@@ -32,6 +32,7 @@ import 'package:lotti/features/front_agent/ui/front_chat_voice.dart';
 import 'package:lotti/features/front_agent/ui/front_conversation_list.dart';
 import 'package:lotti/features/front_agent/ui/front_door_card.dart';
 import 'package:lotti/features/front_agent/ui/front_door_wizards.dart';
+import 'package:lotti/features/front_agent/ui/front_entity_preview_card.dart';
 import 'package:lotti/features/front_agent/ui/front_logged_time_chart_card.dart';
 import 'package:lotti/features/front_agent/ui/front_pull_request_chart_card.dart';
 import 'package:lotti/features/front_agent/ui/front_task_list.dart';
@@ -420,8 +421,8 @@ class FrontChatThreadView extends ConsumerWidget {
       // A list of tasks in her words is drawn as task rows, her words
       // around it as she wrote them; an answer about what was completed
       // gets every task it found as cards, and one about logged time or
-      // pull requests its chart, under her words. Any other reply is drawn
-      // as usual.
+      // pull requests its chart, under her words; what her turn's doors
+      // made, as preview cards. Any other reply is drawn as usual.
       replyBodyBuilder: (context, message, prose) {
         // Cut from her words as written, before their dates became the
         // device's: a list line may end in when it was due, in ISO.
@@ -430,7 +431,11 @@ class FrontChatThreadView extends ConsumerWidget {
             .firstOrNull
             ?.text;
         final closedTasks = thread?.closedTasksByMessageId[message.id];
-        final carded = {...?closedTasks?.map((task) => task.id)};
+        final previews = thread?.entityPreviewsByMessageId[message.id];
+        final carded = {
+          ...?closedTasks?.map((task) => task.id),
+          ...?previews?.map((preview) => preview.id),
+        };
         // A task the cards show is not drawn twice from her words.
         final parts = [
           for (final part in frontReplyParts(written ?? message.text))
@@ -448,6 +453,7 @@ class FrontChatThreadView extends ConsumerWidget {
         if (chart == null &&
             pullRequests == null &&
             closedTasks == null &&
+            previews == null &&
             !parts.any((part) => part is FrontReplyTasks)) {
           return null;
         }
@@ -467,6 +473,13 @@ class FrontChatThreadView extends ConsumerWidget {
                   ),
                 ),
               },
+            if (previews != null)
+              FrontEntityPreviewList(
+                key: ValueKey('front-entity-previews-${message.id}'),
+                references: previews,
+                onOpen: (preview) =>
+                    openLink(frontReferenceUrl(preview.kind, preview.id), ''),
+              ),
             if (closedTasks != null)
               FrontClosedTaskList(
                 key: ValueKey('front-closed-tasks-${message.id}'),
