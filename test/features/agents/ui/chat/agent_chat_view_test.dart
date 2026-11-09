@@ -190,6 +190,89 @@ void main() {
     expect(find.text('Monday?').hitTestable(), findsOneWidget);
   });
 
+  testWidgets('a wheel over the overlay scrolls the thread unless the overlay '
+      'claims it, and an inset taller than the thread is capped at half of '
+      'it', (tester) async {
+    var claim = false;
+    var claimed = 0;
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        Scaffold(
+          body: AgentChatView(
+            agentId: 'agent',
+            agentName: 'Habitat Watcher',
+            draft: '',
+            isSending: false,
+            onDraftChanged: (_) {},
+            onSend: () {},
+            onRetry: () {},
+            history: AsyncData([
+              for (var i = 0; i < 40; i++)
+                AgentChatMessage(
+                  id: 'm$i',
+                  role: AgentChatRole.user,
+                  text: 'Message $i',
+                  createdAt: DateTime(2026, 9, 14),
+                ),
+            ]),
+            // Covers the whole thread, as a card at Demo size does.
+            threadOverlay: Listener(
+              behavior: HitTestBehavior.opaque,
+              onPointerSignal: (event) {
+                if (!claim) return;
+                GestureBinding.instance.pointerSignalResolver.register(
+                  event,
+                  (_) => claimed++,
+                );
+              },
+              child: const SizedBox.expand(key: Key('overlay')),
+            ),
+            threadBottomInset: 5000,
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    final list = find.byType(ListView);
+    final tokens = tester.element(list).designTokens;
+    expect(
+      (tester.widget<ListView>(list).padding! as EdgeInsets).bottom,
+      tokens.spacing.step5 + tester.getSize(list).height / 2,
+    );
+
+    final position = tester
+        .state<ScrollableState>(
+          find.descendant(of: list, matching: find.byType(Scrollable)).first,
+        )
+        .position;
+    // Following the thread: its end, still in view above the capped inset.
+    expect(position.pixels, position.maxScrollExtent);
+    final viewport = tester.getRect(list);
+    final last = tester.getRect(find.text('Message 39'));
+    expect(last.top, greaterThanOrEqualTo(viewport.top));
+    expect(last.bottom, lessThanOrEqualTo(viewport.center.dy));
+
+    Future<void> wheel() async {
+      await tester.sendEventToBinding(
+        PointerScrollEvent(
+          position: tester.getCenter(find.byKey(const Key('overlay'))),
+          scrollDelta: const Offset(0, -120),
+        ),
+      );
+      await tester.pump();
+    }
+
+    final end = position.pixels;
+    await wheel();
+    expect(position.pixels, end - 120);
+
+    claim = true;
+    await wheel();
+    expect(claimed, 1);
+    expect(position.pixels, end - 120);
+  });
+
   testWidgets('question recovery stays outside the user bubble', (
     tester,
   ) async {

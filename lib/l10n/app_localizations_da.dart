@@ -3854,7 +3854,7 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get companionCardLabel =>
-      'Følgesvend. Træk for at flytte, tryk to gange for at ændre størrelsen.';
+      'Følgesvend. Træk for at flytte; skift størrelse under indstillingerne.';
 
   @override
   String get companionCardLarge => 'Stor';

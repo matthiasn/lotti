@@ -1850,7 +1850,7 @@
   "commonLoading": "Laddar...",
   "commonUnknown": "Okänt",
   "companionCardDemo": "Demostorlek",
-  "companionCardLabel": "Följeslagaren. Dra för att flytta, dubbeltryck för att ändra storlek.",
+  "companionCardLabel": "Följeslagaren. Dra för att flytta; ändra storlek under alternativen.",
   "companionCardLarge": "Stor",
   "companionCardOptions": "Alternativ för följeslagaren",
   "companionCardReset": "Återställ placering och storlek",

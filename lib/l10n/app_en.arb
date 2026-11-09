@@ -2541,7 +2541,7 @@
   "@companionCardDemo": {
     "description": "Menu row: the companion card fills the conversation area until dismissed, for demos"
   },
-  "companionCardLabel": "Companion. Drag to move, double-tap to change size.",
+  "companionCardLabel": "Companion. Drag to move; change the size from its options.",
   "@companionCardLabel": {
     "description": "Screen-reader label of the companion's floating glass card over a conversation"
   },

@@ -8,6 +8,7 @@ import 'package:lotti/features/companion/state/companion_card_controller.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu_anchor.dart';
+import 'package:lotti/features/design_system/components/glass_action_bar.dart';
 import 'package:lotti/features/design_system/components/glass_chip_surface.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -65,13 +66,6 @@ class CompanionFloatingCard extends ConsumerStatefulWidget {
   /// The card's shape: her full framing, so she fills it with no margin.
   static final double aspectRatio = CompanionFraming.full.aspectRatio;
 
-  /// The share of the backdrop showing through the glass is set by these
-  /// fills over `background.level02`; lighter than the sticky bars'
-  /// `DesignSystemGlassStrip` scrim, since the card floats over content
-  /// the user is reading rather than closing off an edge.
-  static const darkFillAlpha = 0.45;
-  static const lightFillAlpha = 0.5;
-
   /// How fast Ctrl/⌘ + scroll grows the card: a share of its height per
   /// logical pixel scrolled.
   static const scrollScale = 0.0025;
@@ -90,6 +84,10 @@ class _CompanionFloatingCardState extends ConsumerState<CompanionFloatingCard> {
   // which also sees that pointer, must not move the card meanwhile.
   bool _resizing = false;
   double _pinchStart = 0;
+
+  // The height the grip resizes from: the shown one, which a small room may
+  // cap below the saved one.
+  double _gripHeight = 0;
 
   CompanionCardController get _controller =>
       ref.read(companionCardControllerProvider(widget.form).notifier);
@@ -167,7 +165,6 @@ class _CompanionFloatingCardState extends ConsumerState<CompanionFloatingCard> {
     final small = !_demo && placement.height <= form.smallHeight;
     final large = !_demo && placement.height >= form.largeHeight;
     final colors = tokens.colors;
-    final dark = colors.background.level01.computeLuminance() < 0.5;
     final radius = BorderRadius.circular(tokens.radii.xl);
     final grip = form == CompanionCardForm.desktop && _hovered && !_demo;
 
@@ -177,11 +174,7 @@ class _CompanionFloatingCardState extends ConsumerState<CompanionFloatingCard> {
       child: DecoratedBox(
         decoration: BoxDecoration(
           borderRadius: radius,
-          color: colors.background.level02.withValues(
-            alpha: dark
-                ? CompanionFloatingCard.darkFillAlpha
-                : CompanionFloatingCard.lightFillAlpha,
-          ),
+          color: dsGlassChipFill(tokens),
           border: Border.all(
             color: widget.speaking
                 ? colors.interactive.enabled.withValues(
@@ -230,7 +223,7 @@ class _CompanionFloatingCardState extends ConsumerState<CompanionFloatingCard> {
                   ),
                 ),
               ),
-            if (grip) _resizeGrip(context, placement),
+            if (grip) _resizeGrip(context, placement, height),
           ],
         ),
       ),
@@ -326,7 +319,7 @@ class _CompanionFloatingCardState extends ConsumerState<CompanionFloatingCard> {
   }
 
   /// Ctrl/⌘ + scroll over the card scales it; a plain scroll is left to the
-  /// thread.
+  /// thread, which `AgentChatView` forwards it to.
   void _scaleOnScroll(PointerSignalEvent event, double height) {
     if (_demo || event is! PointerScrollEvent) return;
     final keyboard = HardwareKeyboard.instance;
@@ -341,8 +334,13 @@ class _CompanionFloatingCardState extends ConsumerState<CompanionFloatingCard> {
 
   /// The desktop's resize grip, on the corner that faces the open screen —
   /// the one away from the edges the card is nearest — so growing it never
-  /// pushes the card into a wall. Dragging away from the card grows it.
-  Widget _resizeGrip(BuildContext context, CompanionCardPlacement placement) {
+  /// pushes the card into a wall. Dragging away from the card grows it,
+  /// from the [height] it is shown at.
+  Widget _resizeGrip(
+    BuildContext context,
+    CompanionCardPlacement placement,
+    double height,
+  ) {
     final tokens = context.designTokens;
     final top = placement.inLowerHalf;
     final left = placement.x >= 0.5;
@@ -358,15 +356,15 @@ class _CompanionFloatingCardState extends ConsumerState<CompanionFloatingCard> {
           // would win the gesture arena from a pan on its own child.
           child: Listener(
             key: CompanionFloatingCardKeys.resizeGrip,
-            onPointerDown: (_) => _resizing = true,
+            onPointerDown: (_) {
+              _resizing = true;
+              _gripHeight = height;
+            },
             onPointerUp: (_) => _resizing = false,
             onPointerCancel: (_) => _resizing = false,
             onPointerMove: (event) {
-              final grow = top ? -event.delta.dy : event.delta.dy;
-              _controller.resizeTo(
-                ref.read(companionCardControllerProvider(widget.form)).height +
-                    grow,
-              );
+              _gripHeight += top ? -event.delta.dy : event.delta.dy;
+              _controller.resizeTo(_gripHeight);
             },
             child: Tooltip(
               message: context.messages.companionCardResize,

@@ -458,6 +458,25 @@ void main() {
       expect(worn(), companionOutfits[1].id);
     });
 
+    testWidgets("the top row's outfit control restyles her, and its close "
+        'control takes the page away', (tester) async {
+      phone(tester);
+      await openStage(tester, conversation: conversation);
+      String worn() =>
+          tester.widget<CompanionView>(find.byType(CompanionView)).look.id;
+
+      await tester.tap(find.byKey(const ValueKey('companionStageOutfit')));
+      await tester.pump();
+      expect(worn(), companionOutfits[1].id);
+
+      await tester.tap(find.byTooltip('Close'));
+      await _pumpFrames(tester);
+      await tester.pump(const Duration(milliseconds: 400));
+
+      expect(host, findsNothing);
+      expect(find.text('open'), findsOneWidget);
+    });
+
     GestureName? held(WidgetTester tester) =>
         tester.widget<CompanionSpeaker>(figure).holding;
 

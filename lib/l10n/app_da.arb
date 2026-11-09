@@ -1850,7 +1850,7 @@
   "commonLoading": "Indlæser...",
   "commonUnknown": "Ukendt",
   "companionCardDemo": "Demostørrelse",
-  "companionCardLabel": "Følgesvend. Træk for at flytte, tryk to gange for at ændre størrelsen.",
+  "companionCardLabel": "Følgesvend. Træk for at flytte; skift størrelse under indstillingerne.",
   "companionCardLarge": "Stor",
   "companionCardOptions": "Indstillinger for følgesvend",
   "companionCardReset": "Nulstil placering og størrelse",

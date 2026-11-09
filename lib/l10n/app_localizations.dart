@@ -6513,7 +6513,7 @@ abstract class AppLocalizations {
   /// Screen-reader label of the companion's floating glass card over a conversation
   ///
   /// In en, this message translates to:
-  /// **'Companion. Drag to move, double-tap to change size.'**
+  /// **'Companion. Drag to move; change the size from its options.'**
   String get companionCardLabel;
 
   /// Menu row: shows the companion card large

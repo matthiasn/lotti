@@ -1428,11 +1428,13 @@ wears the app's theme, not the stage's dark.
 
 She stands head to toe in a `CompanionFloatingCard`
 (`companion/ui/companion_floating_card.dart`): a glass card
-(`DsGlassChipSurface`'s blur and shadow, a translucent `background.level02`
-fill, darker in the dark theme), handed to `AgentChatView` as its
-`threadOverlay`, so it floats over the thread's area only — never over the
-top row, the notch or the field — and takes touches only where it paints;
-the thread scrolls everywhere else. Its edge takes the interactive accent
+(`DsGlassChipSurface`'s blur and shadow over the shared glass-chip fill,
+`dsGlassChipFill`), handed to `AgentChatView` as its `threadOverlay`, so it
+floats over the thread's area only — never over the top row, the notch or
+the field — and takes touches only where it paints; the thread scrolls
+everywhere else, and a plain mouse wheel over the card still scrolls the
+thread (`AgentChatView` forwards any wheel event the overlay leaves
+unclaimed). Its edge takes the interactive accent
 while she speaks. It opens small in the bottom-right corner; a drag that
 starts on it moves it, a double tap switches Small ⇄ Large, a pinch sizes it
 anywhere between, and a long press — a right-click on a desktop — opens its
@@ -1442,7 +1444,9 @@ scroll. Wherever it sits, the card stays a margin (`spacing.step5`) inside
 the thread's area, and never taller or wider than that area allows. While it
 sits in the lower half the thread gets `threadBottomInset` — the card's
 height and the margin — after its last message, so the end of an answer
-scrolls clear of her.
+scrolls clear of her. `AgentChatView` caps that inset at half the thread's
+height, so a card capped by a small window or a phone keyboard never pushes
+the last message out of view.
 
 Where the user leaves it is kept per form factor
 (`CompanionCardForm.phone` / `.desktop`) by `companionCardControllerProvider`

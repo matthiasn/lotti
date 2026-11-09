@@ -74,7 +74,9 @@ class AgentChatView extends ConsumerStatefulWidget {
   final Widget? threadOverlay;
 
   /// Extra room after the last message, so it can scroll out from under
-  /// whatever [threadOverlay] keeps at the bottom of the thread.
+  /// whatever [threadOverlay] keeps at the bottom of the thread. Capped at
+  /// half the thread's height, so the last message never scrolls out of
+  /// view when the overlay is shown smaller than asked or fills the area.
   final double threadBottomInset;
 
   /// Her replies as unboxed prose and the user's words in a soft bubble,

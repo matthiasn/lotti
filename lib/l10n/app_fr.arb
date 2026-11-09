@@ -1628,7 +1628,7 @@
   "commonLoading": "Chargement...",
   "commonUnknown": "Inconnu",
   "companionCardDemo": "Taille démo",
-  "companionCardLabel": "Compagnon. Fais glisser pour déplacer, touche deux fois pour changer la taille.",
+  "companionCardLabel": "Compagnon. Fais glisser pour déplacer ; change la taille dans ses options.",
   "companionCardLarge": "Grand",
   "companionCardOptions": "Options du compagnon",
   "companionCardReset": "Réinitialiser la position et la taille",

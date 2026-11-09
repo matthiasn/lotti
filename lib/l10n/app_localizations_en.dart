@@ -3839,7 +3839,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get companionCardLabel =>
-      'Companion. Drag to move, double-tap to change size.';
+      'Companion. Drag to move; change the size from its options.';
 
   @override
   String get companionCardLarge => 'Large';

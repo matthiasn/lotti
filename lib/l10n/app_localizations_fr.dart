@@ -3914,7 +3914,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get companionCardLabel =>
-      'Compagnon. Fais glisser pour déplacer, touche deux fois pour changer la taille.';
+      'Compagnon. Fais glisser pour déplacer ; change la taille dans ses options.';
 
   @override
   String get companionCardLarge => 'Grand';

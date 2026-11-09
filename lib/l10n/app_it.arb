@@ -1850,7 +1850,7 @@
   "commonLoading": "Caricamento...",
   "commonUnknown": "Sconosciuto",
   "companionCardDemo": "Dimensione demo",
-  "companionCardLabel": "Compagno. Trascina per spostare, tocca due volte per cambiare dimensione.",
+  "companionCardLabel": "Compagno. Trascina per spostare; cambia la dimensione dalle sue opzioni.",
   "companionCardLarge": "Grande",
   "companionCardOptions": "Opzioni del compagno",
   "companionCardReset": "Ripristina posizione e dimensione",

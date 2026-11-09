@@ -3896,7 +3896,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get companionCardLabel =>
-      'Acompanhante. Arraste para mover, toque duas vezes para mudar o tamanho.';
+      'Acompanhante. Arrasta para mover; muda o tamanho nas opções.';
 
   @override
   String get companionCardLarge => 'Grande';

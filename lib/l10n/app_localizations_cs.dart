@@ -3902,7 +3902,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get companionCardLabel =>
-      'Společník. Přetažením přesuneš, dvojím klepnutím změníš velikost.';
+      'Společník. Přetažením přesuneš, velikost změníš v jeho možnostech.';
 
   @override
   String get companionCardLarge => 'Velký';

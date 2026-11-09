@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/companion/state/companion_card_controller.dart';
 import 'package:lotti/features/companion/ui/companion_floating_card.dart';
+import 'package:lotti/features/design_system/components/glass_action_bar.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
@@ -310,20 +311,44 @@ void main() {
     });
   });
 
-  testWidgets('its edge takes the interactive accent while she speaks', (
+  testWidgets('a screen reader opens its menu with the long-press action', (
     tester,
   ) async {
-    Color edge() {
-      final box = tester
-          .widgetList<DecoratedBox>(
-            find.descendant(of: card, matching: find.byType(DecoratedBox)),
-          )
-          .firstWhere((b) => (b.decoration as BoxDecoration?)?.border != null);
-      return ((box.decoration as BoxDecoration).border! as Border).top.color;
-    }
+    final semantics = tester.ensureSemantics();
+    await pumpCard(tester);
+    expect(find.text('Demo size'), findsNothing);
+
+    tester.semantics.longPress(
+      find.semantics.byLabel(
+        'Companion. Drag to move; change the size from its options.',
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('Demo size'), findsOneWidget);
+    semantics.dispose();
+  });
+
+  testWidgets('its glass is the shared glass-chip fill, and its edge takes '
+      'the interactive accent while she speaks', (tester) async {
+    BoxDecoration glass() =>
+        tester
+                .widgetList<DecoratedBox>(
+                  find.descendant(
+                    of: card,
+                    matching: find.byType(DecoratedBox),
+                  ),
+                )
+                .firstWhere(
+                  (b) => (b.decoration as BoxDecoration?)?.border != null,
+                )
+                .decoration
+            as BoxDecoration;
+    Color edge() => (glass().border! as Border).top.color;
 
     await pumpCard(tester);
     final tokens = tester.element(card).designTokens;
+    expect(glass().color, dsGlassChipFill(tokens));
     expect(edge(), tokens.colors.decorative.level02);
 
     await pumpCard(tester, speaking: true);
@@ -379,6 +404,60 @@ void main() {
 
       expect(cardRect(tester).height - start, closeTo(60, 1e-6));
       expect(cardRect(tester).bottomRight, before.bottomRight);
+      await tester.pump(companionCardPersistDebounce);
+    });
+
+    testWidgets('the grip hides again once the pointer leaves the card', (
+      tester,
+    ) async {
+      await pumpCard(tester, form: CompanionCardForm.desktop);
+      final mouse = await hover(tester);
+      expect(grip, findsOneWidget);
+
+      await mouse.moveTo(const Offset(1, 1));
+      await tester.pump();
+
+      expect(grip, findsNothing);
+    });
+
+    testWidgets('a card capped by a small window shrinks from the size it '
+        'is shown at, not the larger saved one', (tester) async {
+      when(
+        () => mocks.settingsDb.itemByKey(
+          CompanionCardForm.desktop.settingsKey,
+        ),
+      ).thenAnswer((_) async => jsonEncode({'x': 1, 'y': 1, 'h': 1500}));
+      await pumpCard(tester, form: CompanionCardForm.desktop);
+      await hover(tester);
+      final shown = cardRect(tester).height;
+      expect(shown, lessThan(1500));
+
+      // The grip sits top-left; dragging it down and in shrinks the card.
+      final drag = await tester.startGesture(tester.getCenter(grip));
+      await drag.moveBy(const Offset(0, 40));
+      await tester.pump();
+      await drag.up();
+
+      expect(cardRect(tester).height, closeTo(shown - 40, 1e-6));
+      await tester.pump(companionCardPersistDebounce);
+    });
+
+    testWidgets('a cancelled press on the grip lets the card be dragged '
+        'again', (tester) async {
+      await pumpCard(tester, form: CompanionCardForm.desktop);
+      await hover(tester);
+      final press = await tester.startGesture(tester.getCenter(grip));
+      await press.cancel();
+      await tester.pump();
+
+      final before = cardRect(tester);
+      final drag = await tester.startGesture(before.center);
+      await drag.moveBy(const Offset(-30, 0));
+      await drag.moveBy(const Offset(-50, 0));
+      await tester.pump();
+      await drag.up();
+
+      expect(cardRect(tester).left, lessThan(before.left));
       await tester.pump(companionCardPersistDebounce);
     });
 

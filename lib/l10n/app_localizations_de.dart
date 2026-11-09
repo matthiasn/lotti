@@ -3888,7 +3888,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get companionCardLabel =>
-      'Begleitung. Zum Verschieben ziehen, doppeltippen ändert die Größe.';
+      'Begleitung. Zum Verschieben ziehen; die Größe änderst du in den Optionen.';
 
   @override
   String get companionCardLarge => 'Groß';

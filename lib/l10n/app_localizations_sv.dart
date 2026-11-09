@@ -3861,7 +3861,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get companionCardLabel =>
-      'Följeslagaren. Dra för att flytta, dubbeltryck för att ändra storlek.';
+      'Följeslagaren. Dra för att flytta; ändra storlek under alternativen.';
 
   @override
   String get companionCardLarge => 'Stor';

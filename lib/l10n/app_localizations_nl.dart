@@ -3877,7 +3877,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get companionCardLabel =>
-      'Metgezel. Sleep om te verplaatsen, tik twee keer om de grootte te wijzigen.';
+      'Metgezel. Sleep om te verplaatsen; wijzig de grootte via de opties.';
 
   @override
   String get companionCardLarge => 'Groot';

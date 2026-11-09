@@ -3921,7 +3921,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get companionCardLabel =>
-      'Însoțitor. Trageți pentru a muta, atingeți de două ori pentru a schimba dimensiunea.';
+      'Însoțitor. Trageți pentru a muta; schimbați dimensiunea din opțiuni.';
 
   @override
   String get companionCardLarge => 'Mare';

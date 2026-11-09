@@ -1628,7 +1628,7 @@
   "commonLoading": "Cargando...",
   "commonUnknown": "Desconocido",
   "companionCardDemo": "Tamaño de demostración",
-  "companionCardLabel": "Acompañante. Arrastra para mover, toca dos veces para cambiar el tamaño.",
+  "companionCardLabel": "Acompañante. Arrastra para mover; cambia el tamaño en sus opciones.",
   "companionCardLarge": "Grande",
   "companionCardOptions": "Opciones del acompañante",
   "companionCardReset": "Restablecer posición y tamaño",

@@ -45,6 +45,16 @@ void main() {
     () => mocks.settingsDb.itemByKey(form.settingsKey),
   ).thenAnswer((_) async => value);
 
+  test('a placement is a value: equal fields compare and hash alike, and '
+      'it prints them', () {
+    const a = CompanionCardPlacement(x: 0.25, y: 1, height: 300);
+    const b = CompanionCardPlacement(x: 0.25, y: 1, height: 300);
+    expect(a, b);
+    expect(a.hashCode, b.hashCode);
+    expect(a, isNot(const CompanionCardPlacement(x: 0.25, y: 1, height: 301)));
+    expect(a.toString(), 'CompanionCardPlacement(0.25, 1.0, 300.0)');
+  });
+
   group('loading', () {
     test('first run: small, in the bottom-right corner', () async {
       expect(

@@ -3906,7 +3906,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get companionCardLabel =>
-      'Compagno. Trascina per spostare, tocca due volte per cambiare dimensione.';
+      'Compagno. Trascina per spostare; cambia la dimensione dalle sue opzioni.';
 
   @override
   String get companionCardLarge => 'Grande';

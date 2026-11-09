@@ -1635,7 +1635,7 @@
   "commonLoading": "Načítání...",
   "commonUnknown": "Neznámé",
   "companionCardDemo": "Velikost pro ukázku",
-  "companionCardLabel": "Společník. Přetažením přesuneš, dvojím klepnutím změníš velikost.",
+  "companionCardLabel": "Společník. Přetažením přesuneš, velikost změníš v jeho možnostech.",
   "companionCardLarge": "Velký",
   "companionCardOptions": "Možnosti společníka",
   "companionCardReset": "Obnovit polohu a velikost",
