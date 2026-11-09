@@ -2537,6 +2537,42 @@
   "commonError": "Error",
   "commonLoading": "Loading...",
   "commonUnknown": "Unknown",
+  "companionCardDemo": "Demo size",
+  "@companionCardDemo": {
+    "description": "Menu row: the companion card fills the conversation area until dismissed, for demos"
+  },
+  "companionCardLabel": "Companion. Drag to move; change the size from its options.",
+  "@companionCardLabel": {
+    "description": "Screen-reader label of the companion's floating glass card over a conversation"
+  },
+  "companionCardLarge": "Large",
+  "@companionCardLarge": {
+    "description": "Menu row: shows the companion card large"
+  },
+  "companionCardOptions": "Companion options",
+  "@companionCardOptions": {
+    "description": "Label of the floating companion card's menu (opened by long press or right-click)"
+  },
+  "companionCardReset": "Reset position and size",
+  "@companionCardReset": {
+    "description": "Menu row: puts the companion card back in its first place and size"
+  },
+  "companionCardResize": "Resize",
+  "@companionCardResize": {
+    "description": "Tooltip of the desktop resize grip on the companion card"
+  },
+  "companionCardRestyle": "Restyle",
+  "@companionCardRestyle": {
+    "description": "Menu row: changes the companion's look (outfit)"
+  },
+  "companionCardSmall": "Small",
+  "@companionCardSmall": {
+    "description": "Menu row: shows the companion card small"
+  },
+  "companionCardUsualSize": "Usual size",
+  "@companionCardUsualSize": {
+    "description": "Button on the demo-sized companion card returning it to its saved size"
+  },
   "companionSettingsCharacterAunt": "Aunt",
   "@companionSettingsCharacterAunt": {
     "description": "Name of the aunt character, a woman of about forty, shown on her chip."

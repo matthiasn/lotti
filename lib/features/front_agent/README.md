@@ -102,10 +102,10 @@ and a proposal she got wrong goes to the inbox rather than being retyped.
   `model/front_reply_parts.dart`), her voice (`front_chat_voice.dart`: the spoken reply, when
   she may speak, the pose she holds), her voice's control and her stage
   (`front_voice_controls.dart`: stop her, or have her say her latest answer
-  again from the start, in the voice she said it in; stand her up full
-  screen on any form factor, the conversation and its field with her —
-  beside her on a desktop window, where she points at the tasks she lists as
-  she says them (`state/front_stage_pointing.dart`), under her on a phone),
+  again from the start, in the voice she said it in; open the conversation
+  full screen on any form factor with her in a glass card floating over it,
+  moved and resized by the user, pointing at the tasks she lists as she says
+  them (`state/front_stage_pointing.dart`)),
   the
   list of conversations with each one's ⋯ on the agent pages' shared menu
   (`front_conversation_actions.dart`), her AI profile choice (`front_profile_choice.dart`: the

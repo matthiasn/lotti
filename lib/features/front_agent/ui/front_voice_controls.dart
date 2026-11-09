@@ -23,21 +23,21 @@ abstract final class FrontVoiceControlKeys {
   static const Key transcript = Key('front-chat-stage-transcript');
 }
 
-/// Opens her full screen, head to toe on her stage — on a desktop window as
-/// on a phone — still speaking in [conversationId], her voice's control at
-/// her feet ([FrontVoiceButton]), and the conversation as it is outside the
-/// stage, its field included ([FrontStageTranscript]): beside her on a
-/// desktop window, where the list of conversations stands outside it,
-/// pointing at it while she says the tasks it lists
-/// ([frontStagePointsProvider]); under her on a phone.
+/// Opens her conversation full screen, her in a glass card floating over
+/// it ([CompanionStagePage]) — on a desktop window as on a phone — still
+/// speaking in [conversationId], her voice's control in the top row
+/// ([FrontVoiceButton]), and the conversation as it is outside, its field
+/// included ([FrontStageTranscript]), pointed at while she says the tasks it
+/// lists ([frontStagePointsProvider]).
 Future<void> openFrontStage(BuildContext context, String conversationId) =>
     openCompanionStage(
       context,
       sourceId: frontVoiceSourceId(conversationId),
       dressedFor: frontCompanionDressedFor,
       controls: FrontVoiceButton(conversationId: conversationId),
-      sidePanel: const FrontStageTranscript(),
-      pointsAtSidePanel: frontStagePointsProvider(conversationId),
+      conversation: ({required card, required bottomInset}) =>
+          FrontStageTranscript(card: card, bottomInset: bottomInset),
+      pointsAtConversation: frontStagePointsProvider(conversationId),
     );
 
 /// The conversation on her stage: its thread and the field under it, on the
@@ -45,9 +45,17 @@ Future<void> openFrontStage(BuildContext context, String conversationId) =>
 /// whatever is typed or said is sent from here. Whatever leaves her for a
 /// page — a source, a project — closes the stage and her surface
 /// both, so the page opens on top rather than behind them; a task she names
-/// opens on top of the stage, and back returns to it.
+/// opens on top of the stage, and back returns to it. Her [card] floats over
+/// the thread, which keeps [bottomInset] of room after its last message.
 class FrontStageTranscript extends StatelessWidget {
-  const FrontStageTranscript({super.key});
+  const FrontStageTranscript({
+    required this.card,
+    required this.bottomInset,
+    super.key,
+  });
+
+  final Widget card;
+  final double bottomInset;
 
   @override
   Widget build(BuildContext context) {
@@ -58,6 +66,8 @@ class FrontStageTranscript extends StatelessWidget {
       child: SafeArea(
         left: false,
         child: FrontChatThreadView(
+          threadOverlay: card,
+          threadBottomInset: bottomInset,
           onClose: () => Navigator.of(
             context,
             rootNavigator: true,

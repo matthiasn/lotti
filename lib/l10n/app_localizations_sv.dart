@@ -3857,6 +3857,34 @@ class AppLocalizationsSv extends AppLocalizations {
   String get commonUnknown => 'Okänt';
 
   @override
+  String get companionCardDemo => 'Demostorlek';
+
+  @override
+  String get companionCardLabel =>
+      'Följeslagaren. Dra för att flytta; ändra storlek under alternativen.';
+
+  @override
+  String get companionCardLarge => 'Stor';
+
+  @override
+  String get companionCardOptions => 'Alternativ för följeslagaren';
+
+  @override
+  String get companionCardReset => 'Återställ placering och storlek';
+
+  @override
+  String get companionCardResize => 'Ändra storlek';
+
+  @override
+  String get companionCardRestyle => 'Byt stil';
+
+  @override
+  String get companionCardSmall => 'Liten';
+
+  @override
+  String get companionCardUsualSize => 'Vanlig storlek';
+
+  @override
   String get companionSettingsCharacterAunt => 'Moster';
 
   @override

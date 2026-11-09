@@ -657,4 +657,23 @@ void main() {
       },
     );
   });
+
+  group('dsGlassCardFill', () {
+    for (final (name, theme, alpha) in [
+      ('dark', DesignSystemTheme.dark(), kDsGlassCardFillAlphaDark),
+      ('light', DesignSystemTheme.light(), kDsGlassCardFillAlphaLight),
+    ]) {
+      testWidgets('in the $name theme lets far more show through than a '
+          "chip's fill", (tester) async {
+        await _pump(tester, const SizedBox(key: Key('probe')), theme: theme);
+        final tokens = tester
+            .element(find.byKey(const Key('probe')))
+            .designTokens;
+
+        final fill = dsGlassCardFill(tokens);
+        expect(fill, tokens.colors.background.level02.withValues(alpha: alpha));
+        expect(fill.a, lessThan(dsGlassChipFill(tokens).a / 1.5));
+      });
+    }
+  });
 }

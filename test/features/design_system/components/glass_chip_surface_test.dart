@@ -11,15 +11,26 @@ void main() {
   const radius = BorderRadius.all(Radius.circular(24));
   const content = SizedBox(key: ValueKey('content'), width: 120, height: 40);
 
-  Future<void> pump(WidgetTester tester, {required bool blurred}) {
+  Future<void> pump(
+    WidgetTester tester, {
+    required bool blurred,
+    double? blurSigma,
+  }) {
     return tester.pumpWidget(
       makeTestableWidgetWithScaffold(
         Center(
-          child: DsGlassChipSurface(
-            radius: radius,
-            blurred: blurred,
-            child: content,
-          ),
+          child: blurSigma == null
+              ? DsGlassChipSurface(
+                  radius: radius,
+                  blurred: blurred,
+                  child: content,
+                )
+              : DsGlassChipSurface(
+                  radius: radius,
+                  blurred: blurred,
+                  blurSigma: blurSigma,
+                  child: content,
+                ),
         ),
         theme: DesignSystemTheme.dark(),
       ),
@@ -57,6 +68,26 @@ void main() {
       ),
       findsOneWidget,
       reason: 'the child renders on top of the blurred page',
+    );
+  });
+
+  testWidgets('a card over text blurs less, so the text shows through', (
+    tester,
+  ) async {
+    await pump(
+      tester,
+      blurred: true,
+      blurSigma: DsGlassChipSurface.cardBlurSigma,
+    );
+
+    final filter = tester.widget<BackdropFilter>(find.byType(BackdropFilter));
+    expect(
+      filter.filter.toString(),
+      contains('${DsGlassChipSurface.cardBlurSigma}'),
+    );
+    expect(
+      DsGlassChipSurface.cardBlurSigma,
+      lessThan(DesignSystemGlassStrip.blurSigma),
     );
   });
 

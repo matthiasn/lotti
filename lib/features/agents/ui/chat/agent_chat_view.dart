@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/state/agent_chat_projection.dart';
@@ -183,6 +184,19 @@ class _AgentChatViewState extends ConsumerState<AgentChatView> {
     super.dispose();
   }
 
+  /// Scrolls the thread by a wheel event that landed on
+  /// [AgentChatView.threadOverlay], unless the overlay claimed it first
+  /// (Ctrl/⌘ + scroll on the companion's card).
+  void _scrollThread(PointerSignalEvent event) {
+    if (event is! PointerScrollEvent || !_scrollController.hasClients) return;
+    GestureBinding.instance.pointerSignalResolver.register(
+      event,
+      (event) => _scrollController.position.pointerScroll(
+        (event as PointerScrollEvent).scrollDelta.dy,
+      ),
+    );
+  }
+
   /// Keeps the thread at its latest message while [_followLatest] holds,
   /// whenever the content grows. The thread's own list only (depth 0
   /// here), never a scroll nested inside a message or the composer.
@@ -259,142 +273,157 @@ class _AgentChatViewState extends ConsumerState<AgentChatView> {
                 tokens.spacing.step5,
                 (constraints.maxWidth - maxWidth) / 2,
               );
-        return Column(
-          children: [
-            Expanded(
-              child: switch (messages) {
-                null when historyAsync.hasError => Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(tokens.spacing.step5),
-                    child: Text(
-                      context.messages.goalChatHistoryError,
-                      style: tokens.typography.styles.body.bodyMedium.copyWith(
-                        color: tokens.colors.alert.error.ink,
+        final thread = switch (messages) {
+          null when historyAsync.hasError => Center(
+            child: Padding(
+              padding: EdgeInsets.all(tokens.spacing.step5),
+              child: Text(
+                context.messages.goalChatHistoryError,
+                style: tokens.typography.styles.body.bodyMedium.copyWith(
+                  color: tokens.colors.alert.error.ink,
+                ),
+              ),
+            ),
+          ),
+          null => const Center(child: CircularProgressIndicator()),
+          final history =>
+            history.isEmpty && !widget.isSending
+                ? widget.emptyState ??
+                      Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(tokens.spacing.step5),
+                          child: Text(
+                            widget.emptyMessage ??
+                                context.messages.goalChatEmpty(
+                                  widget.agentName,
+                                ),
+                            textAlign: TextAlign.center,
+                            style: tokens.typography.styles.body.bodyMedium
+                                .copyWith(
+                                  color: tokens.colors.text.mediumEmphasis,
+                                ),
+                          ),
+                        ),
+                      )
+                // Half the thread at most: however big the overlay, the end
+                // of the thread still stops in view.
+                : LayoutBuilder(
+                    builder: (context, area) => _followThread(
+                      nearBottom: tokens.spacing.step9,
+                      ListView.builder(
+                        key: widget.conversationId == null
+                            ? null
+                            : PageStorageKey(widget.conversationId),
+                        controller: _scrollController,
+                        padding: EdgeInsets.fromLTRB(
+                          gutter,
+                          tokens.spacing.step5,
+                          gutter,
+                          tokens.spacing.step5 +
+                              math.min(
+                                widget.threadBottomInset,
+                                area.maxHeight / 2,
+                              ),
+                        ),
+                        itemCount: history.length + (widget.isSending ? 1 : 0),
+                        itemBuilder: (context, index) {
+                          if (index == history.length) {
+                            return widget.activity ??
+                                _ThinkingBubble(
+                                  conversational: widget.conversational,
+                                  label:
+                                      widget.sendingLabel ??
+                                      context.messages.goalChatResponding(
+                                        widget.agentName,
+                                      ),
+                                );
+                          }
+                          final message = history[index];
+                          final groupAttachment =
+                              widget.groupAttachmentsWithReply &&
+                              message.role == AgentChatRole.agent;
+                          final attachment = widget.attachmentBuilder?.call(
+                            context,
+                            message,
+                          );
+                          final divider = widget.dividerBuilder?.call(
+                            context,
+                            message,
+                            index == 0 ? null : history[index - 1],
+                          );
+                          return Padding(
+                            padding: EdgeInsets.only(
+                              bottom: tokens.spacing.cardItemSpacing,
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                if (divider != null) ...[
+                                  KeyedSubtree(
+                                    key: ValueKey(
+                                      'goal-chat-divider-${message.id}',
+                                    ),
+                                    child: divider,
+                                  ),
+                                  SizedBox(height: tokens.spacing.step3),
+                                ],
+                                _MessageBubble(
+                                  key: ValueKey(
+                                    'goal-chat-message-${message.id}',
+                                  ),
+                                  message: message,
+                                  agentName: widget.agentName,
+                                  measuredHeights: _measuredHeights,
+                                  conversational: widget.conversational,
+                                  replyTextStyle: widget.replyTextStyle,
+                                  replyBodyBuilder: widget.replyBodyBuilder,
+                                  onLinkTap: widget.onLinkTap == null
+                                      ? null
+                                      : (url, title) => widget.onLinkTap!(
+                                          message,
+                                          url,
+                                          title,
+                                        ),
+                                  attachment: groupAttachment
+                                      ? attachment
+                                      : null,
+                                  footerTrailing: widget.footerTrailingBuilder
+                                      ?.call(context, message),
+                                ),
+                                if (attachment != null && !groupAttachment) ...[
+                                  SizedBox(height: tokens.spacing.step2),
+                                  KeyedSubtree(
+                                    key: ValueKey(
+                                      'goal-chat-attachment-${message.id}',
+                                    ),
+                                    child: attachment,
+                                  ),
+                                ],
+                              ],
+                            ),
+                          );
+                        },
                       ),
                     ),
                   ),
-                ),
-                null => const Center(child: CircularProgressIndicator()),
-                final history =>
-                  history.isEmpty && !widget.isSending
-                      ? widget.emptyState ??
-                            Center(
-                              child: Padding(
-                                padding: EdgeInsets.all(tokens.spacing.step5),
-                                child: Text(
-                                  widget.emptyMessage ??
-                                      context.messages.goalChatEmpty(
-                                        widget.agentName,
-                                      ),
-                                  textAlign: TextAlign.center,
-                                  style: tokens
-                                      .typography
-                                      .styles
-                                      .body
-                                      .bodyMedium
-                                      .copyWith(
-                                        color:
-                                            tokens.colors.text.mediumEmphasis,
-                                      ),
-                                ),
-                              ),
-                            )
-                      : _followThread(
-                          nearBottom: tokens.spacing.step9,
-                          ListView.builder(
-                            key: widget.conversationId == null
-                                ? null
-                                : PageStorageKey(widget.conversationId),
-                            controller: _scrollController,
-                            padding: EdgeInsets.symmetric(
-                              horizontal: gutter,
-                              vertical: tokens.spacing.step5,
-                            ),
-                            itemCount:
-                                history.length + (widget.isSending ? 1 : 0),
-                            itemBuilder: (context, index) {
-                              if (index == history.length) {
-                                return widget.activity ??
-                                    _ThinkingBubble(
-                                      conversational: widget.conversational,
-                                      label:
-                                          widget.sendingLabel ??
-                                          context.messages.goalChatResponding(
-                                            widget.agentName,
-                                          ),
-                                    );
-                              }
-                              final message = history[index];
-                              final groupAttachment =
-                                  widget.groupAttachmentsWithReply &&
-                                  message.role == AgentChatRole.agent;
-                              final attachment = widget.attachmentBuilder?.call(
-                                context,
-                                message,
-                              );
-                              final divider = widget.dividerBuilder?.call(
-                                context,
-                                message,
-                                index == 0 ? null : history[index - 1],
-                              );
-                              return Padding(
-                                padding: EdgeInsets.only(
-                                  bottom: tokens.spacing.cardItemSpacing,
-                                ),
-                                child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.stretch,
-                                  children: [
-                                    if (divider != null) ...[
-                                      KeyedSubtree(
-                                        key: ValueKey(
-                                          'goal-chat-divider-${message.id}',
-                                        ),
-                                        child: divider,
-                                      ),
-                                      SizedBox(height: tokens.spacing.step3),
-                                    ],
-                                    _MessageBubble(
-                                      key: ValueKey(
-                                        'goal-chat-message-${message.id}',
-                                      ),
-                                      message: message,
-                                      agentName: widget.agentName,
-                                      measuredHeights: _measuredHeights,
-                                      conversational: widget.conversational,
-                                      replyTextStyle: widget.replyTextStyle,
-                                      replyBodyBuilder: widget.replyBodyBuilder,
-                                      onLinkTap: widget.onLinkTap == null
-                                          ? null
-                                          : (url, title) => widget.onLinkTap!(
-                                              message,
-                                              url,
-                                              title,
-                                            ),
-                                      attachment: groupAttachment
-                                          ? attachment
-                                          : null,
-                                      footerTrailing: widget
-                                          .footerTrailingBuilder
-                                          ?.call(context, message),
-                                    ),
-                                    if (attachment != null &&
-                                        !groupAttachment) ...[
-                                      SizedBox(height: tokens.spacing.step2),
-                                      KeyedSubtree(
-                                        key: ValueKey(
-                                          'goal-chat-attachment-${message.id}',
-                                        ),
-                                        child: attachment,
-                                      ),
-                                    ],
-                                  ],
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-              },
+        };
+        return Column(
+          children: [
+            Expanded(
+              child: Stack(
+                children: [
+                  Positioned.fill(child: thread),
+                  if (widget.threadOverlay case final overlay?)
+                    Positioned.fill(
+                      // The overlay takes the pointer where it paints; a
+                      // plain wheel there still scrolls the thread.
+                      child: Listener(
+                        onPointerSignal: _scrollThread,
+                        child: overlay,
+                      ),
+                    ),
+                ],
+              ),
             ),
             if (widget.isSending && widget.pinnedActivity != null)
               widget.pinnedActivity!,

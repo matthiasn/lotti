@@ -63,8 +63,21 @@ class AgentChatView extends ConsumerStatefulWidget {
     this.voiceFirst = false,
     this.contentMaxWidth,
     this.replyBodyBuilder,
+    this.threadOverlay,
+    this.threadBottomInset = 0,
     super.key,
   });
+
+  /// Drawn over the thread's area — not over the composer — and taking
+  /// touches only where it paints: the companion's floating card. Pair it
+  /// with [threadBottomInset] so the end of the thread scrolls clear of it.
+  final Widget? threadOverlay;
+
+  /// Extra room after the last message, so it can scroll out from under
+  /// whatever [threadOverlay] keeps at the bottom of the thread. Capped at
+  /// half the thread's height, so the last message never scrolls out of
+  /// view when the overlay is shown smaller than asked or fills the area.
+  final double threadBottomInset;
 
   /// Her replies as unboxed prose and the user's words in a soft bubble,
   /// with no author-and-time line on each message — a conversation with

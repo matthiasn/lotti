@@ -1,4 +1,5 @@
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/query/query_source_access.dart';
@@ -7,7 +8,9 @@ import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/companion_stage_page.dart';
 import 'package:lotti/features/companion/model/companion_customization.dart';
 import 'package:lotti/features/companion/model/companion_gesture.dart';
+import 'package:lotti/features/companion/state/companion_card_controller.dart';
 import 'package:lotti/features/companion/state/companion_customization_controller.dart';
+import 'package:lotti/features/companion/ui/companion_floating_card.dart';
 import 'package:lotti/features/companion/ui/companion_speaker.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/front_agent/model/front_chat_thread.dart';
@@ -149,6 +152,10 @@ void main() {
 
   late _Voice voice;
   late _Composer composer;
+
+  // Her card's placement is read from SettingsDb.
+  setUp(setUpTestGetIt);
+  tearDown(tearDownTestGetIt);
 
   Future<void> pump(
     WidgetTester tester, {
@@ -356,8 +363,8 @@ void main() {
     });
   });
 
-  testWidgets('the stage control stands her up full screen in her '
-      'conversation, her voice control at her feet', (tester) async {
+  testWidgets('the stage control opens her conversation full screen, her '
+      'voice control in its top row', (tester) async {
     await pump(tester, child: const _OpenStage());
 
     await tester.tap(find.byType(_OpenStage));
@@ -410,17 +417,32 @@ void main() {
     });
   }
 
-  testWidgets('on a desktop window the conversation and its field stand '
-      'beside her, never under her', (tester) async {
+  for (final (form, size) in [
+    ('desktop window', const Size(1600, 1000)),
+    ('phone', const Size(390, 844)),
+  ]) {
+    testWidgets('on a $form her card floats over the thread, above its field '
+        'and with room kept after its end', (tester) async {
+      await openStage(tester, size);
+
+      final card = tester.getRect(find.byKey(CompanionFloatingCardKeys.card));
+      expect(
+        card.bottom,
+        lessThanOrEqualTo(tester.getRect(stageField()).top),
+      );
+      final thread = tester.widget<FrontChatThreadView>(
+        find.byType(FrontChatThreadView),
+      );
+      expect(thread.threadOverlay, isA<CompanionFloatingCard>());
+      expect(thread.threadBottomInset, card.height + 16);
+    });
+  }
+
+  testWidgets('the page has one field, and a way out closes it', (
+    tester,
+  ) async {
     await openStage(tester, const Size(1600, 1000));
 
-    final figure = tester.getRect(
-      find.byKey(const ValueKey('companionStageFigure')),
-    );
-    expect(
-      tester.getRect(stageField()).left,
-      greaterThanOrEqualTo(figure.right),
-    );
     // One field on the stage: the chat's own.
     expect(
       find.descendant(
@@ -438,23 +460,8 @@ void main() {
     expect(find.byType(CompanionStagePage), findsNothing);
   });
 
-  testWidgets('on a phone the conversation and its field stand under her, '
-      'the field at the foot of the screen', (tester) async {
-    await openStage(tester, const Size(390, 844));
-
-    final figure = tester.getRect(
-      find.byKey(const ValueKey('companionStageFigure')),
-    );
-    final transcript = tester.getRect(
-      find.byKey(FrontVoiceControlKeys.transcript),
-    );
-    expect(transcript.top, greaterThanOrEqualTo(figure.bottom));
-    expect(transcript.bottom, 844);
-    expect(tester.getRect(stageField()).bottom, lessThanOrEqualTo(844));
-  });
-
-  testWidgets('on a desktop window she points at the conversation while she '
-      'says the tasks her answer lists', (tester) async {
+  testWidgets('moved to the left half, she points at the conversation while '
+      'she says the tasks her answer lists', (tester) async {
     tester.view
       ..physicalSize = const Size(1600, 1000)
       ..devicePixelRatio = 1;
@@ -489,6 +496,15 @@ void main() {
           find.byKey(const ValueKey('companionStageFigure')),
         )
         .holding;
+    // In the corner she opens in, the conversation is to her left.
+    expect(held(), isNull);
+
+    ProviderScope.containerOf(tester.element(find.byType(CompanionSpeaker)))
+        .read(
+          companionCardControllerProvider(CompanionCardForm.desktop).notifier,
+        )
+        .moveBy(-1, 0);
+    await tester.pump();
     expect(held(), GestureName.pointRight);
 
     // Once she stops, her arm comes down.
