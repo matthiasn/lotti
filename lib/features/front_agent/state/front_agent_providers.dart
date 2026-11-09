@@ -99,6 +99,7 @@ final frontChatServiceProvider = Provider<FrontChatService>(
     orchestrator: ref.watch(wakeOrchestratorProvider),
     notifications: ref.watch(updateNotificationsProvider),
     historyService: ref.watch(frontChatHistoryServiceProvider),
+    domainLogger: ref.watch(domainLoggerProvider),
   ),
   name: 'frontChatServiceProvider',
 );

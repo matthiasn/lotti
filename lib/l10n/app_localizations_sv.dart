@@ -7218,6 +7218,34 @@ class AppLocalizationsSv extends AppLocalizations {
       'Fråga om en uppgift, ett mål, ett projekt eller en person, eller berätta vad som hänt. Rätt agent svarar, och inget arkiveras förrän du trycker.';
 
   @override
+  String get frontChatFailedAuthentication =>
+      'Din AI-leverantör avvisade API-nyckeln. Kontrollera den i Inställningar.';
+
+  @override
+  String get frontChatFailedNetwork =>
+      'Det gick inte att nå din AI-leverantör. Kontrollera din anslutning och försök sedan igen.';
+
+  @override
+  String get frontChatFailedNoAnswer =>
+      'Följeslagaren blev inte klar med svaret. Försök igen eller säg det på ett annat sätt.';
+
+  @override
+  String get frontChatFailedNoModel =>
+      'Ingen AI-modell är inställd för följeslagaren. Välj en i Inställningar.';
+
+  @override
+  String get frontChatFailedProvider =>
+      'Din AI-leverantör svarade med ett fel. Försök igen om en stund.';
+
+  @override
+  String get frontChatFailedRateLimit =>
+      'Din AI-leverantör begränsar förfrågningar just nu. Vänta en stund och försök sedan igen.';
+
+  @override
+  String get frontChatFailedTimeout =>
+      'Din AI-leverantör tog för lång tid på sig att svara. Försök igen.';
+
+  @override
   String frontChatInboxChip(int count) {
     return 'Inkorg $count';
   }

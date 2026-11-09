@@ -7293,6 +7293,34 @@ class AppLocalizationsIt extends AppLocalizations {
       'Chiedi di un’attività, un obiettivo, un progetto o una persona, o racconta cosa è successo. Risponde l’agente giusto, e nulla viene archiviato finché non tocchi.';
 
   @override
+  String get frontChatFailedAuthentication =>
+      'Il tuo provider di IA ha rifiutato la sua chiave API. Controllala nelle Impostazioni.';
+
+  @override
+  String get frontChatFailedNetwork =>
+      'Impossibile raggiungere il tuo provider di IA. Controlla la connessione, poi riprova.';
+
+  @override
+  String get frontChatFailedNoAnswer =>
+      'Il compagno non ha finito la risposta. Riprova, o dillo in un altro modo.';
+
+  @override
+  String get frontChatFailedNoModel =>
+      'Nessun modello di IA è configurato per il compagno. Scegline uno nelle Impostazioni.';
+
+  @override
+  String get frontChatFailedProvider =>
+      'Il tuo provider di IA ha risposto con un errore. Riprova tra un attimo.';
+
+  @override
+  String get frontChatFailedRateLimit =>
+      'Il tuo provider di IA sta limitando le richieste in questo momento. Aspetta un attimo, poi riprova.';
+
+  @override
+  String get frontChatFailedTimeout =>
+      'Il tuo provider di IA ci ha messo troppo a rispondere. Riprova.';
+
+  @override
   String frontChatInboxChip(int count) {
     return 'In arrivo $count';
   }

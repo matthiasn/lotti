@@ -8,11 +8,14 @@ import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/agents/front_chat_tokens.dart';
 import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
+import 'package:lotti/features/agents/workflow/wake_result.dart';
 import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
 import 'package:lotti/features/front_agent/model/front_conversation.dart';
+import 'package:lotti/features/front_agent/model/front_turn_failure.dart';
 import 'package:lotti/features/front_agent/service/front_chat_history_service.dart';
 import 'package:lotti/features/front_agent/service/front_chat_service.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -30,6 +33,7 @@ void main() {
   late MockWakeOrchestrator orchestrator;
   late MockUpdateNotifications notifications;
   late _MockHistory history;
+  late MockDomainLogger domainLogger;
   late StreamController<WakeRunCompletion> completions;
   late List<AgentDomainEntity> upserts;
   late FrontChatService service;
@@ -53,6 +57,7 @@ void main() {
     orchestrator = MockWakeOrchestrator();
     notifications = MockUpdateNotifications();
     history = _MockHistory();
+    domainLogger = MockDomainLogger();
     completions = StreamController<WakeRunCompletion>.broadcast();
     addTearDown(completions.close);
     upserts = [];
@@ -72,12 +77,18 @@ void main() {
       orchestrator: orchestrator,
       notifications: notifications,
       historyService: history,
+      domainLogger: domainLogger,
     );
   });
 
   /// Enqueues answer `run-1` and completes it with [status] once the
   /// service is listening.
-  void stubWake(WakeRunStatus status) {
+  void stubWake(
+    WakeRunStatus status, {
+    Object? error,
+    DateTime? startedAt,
+    DateTime? finishedAt,
+  }) {
     when(
       () => orchestrator.enqueueManualWake(
         agentId: any(named: 'agentId'),
@@ -94,7 +105,9 @@ void main() {
             agentId: frontAgentId,
             status: status,
             reason: WakeReason.userMessage.name,
-            error: status == WakeRunStatus.completed ? null : 'boom',
+            error: error ?? (status == WakeRunStatus.completed ? null : 'boom'),
+            startedAt: startedAt,
+            finishedAt: finishedAt,
           ),
         ),
       );
@@ -293,9 +306,55 @@ void main() {
         thrown,
         isA<FrontChatTurnException>()
             .having((e) => e.messageId, 'messageId', message.id)
-            .having((e) => e.toString(), 'detail', 'boom'),
+            .having((e) => e.toString(), 'detail', 'boom')
+            .having((e) => e.failure, 'failure', FrontTurnFailure.unknown),
       );
       expect(recoveryOf(message.id).status, ScheduledWakeStatus.pending);
+    });
+
+    test("a failed wake's cause rides the turn exception, for the chat to "
+        'say', () async {
+      stubWake(
+        WakeRunStatus.failed,
+        error: WakeFailedException(
+          kind: 'front',
+          reason: FrontTurnFailure.rateLimit.wakeError(),
+        ),
+      );
+
+      await expectLater(
+        service.retryMessage(messageId: 'm-1'),
+        throwsA(
+          isA<FrontChatTurnException>().having(
+            (e) => e.failure,
+            'failure',
+            FrontTurnFailure.rateLimit,
+          ),
+        ),
+      );
+    });
+
+    test('logs how long the turn queued for a wake slot and how long it '
+        'ran', () async {
+      final enqueuedAt = DateTime(2026, 11, 9, 10);
+      stubWake(
+        WakeRunStatus.completed,
+        startedAt: enqueuedAt.add(const Duration(seconds: 2)),
+        finishedAt: enqueuedAt.add(const Duration(seconds: 5)),
+      );
+
+      await withClock(
+        Clock.fixed(enqueuedAt),
+        () => service.retryMessage(messageId: 'm-1'),
+      );
+
+      verify(
+        () => domainLogger.log(
+          LogDomain.agentWorkflow,
+          'front turn completed: queued=2000ms run=3000ms total=5000ms',
+          subDomain: 'frontChat',
+        ),
+      ).called(1);
     });
 
     test('a runtime that stops before the turn completes fails the turn '

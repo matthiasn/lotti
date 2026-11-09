@@ -1,7 +1,7 @@
 ---
 type: Feature Module
 title: Front agent
-description: The one agent the user talks to in one place — how a durable user turn becomes a routing wake, what the routing index holds, how the dispatch contract is validated in code, the capped lookups and the repair round, the deterministic records a turn leaves behind, how the door walker takes each segment to its owner and mirrors the answer, how a statement becomes a proposal the user's one tap files, how a dictated task is filled from her reading of the words and made on the tap, how "that one" finds the task a follow-up follows, what the inbox is, how an unanswered turn is recovered on any device, how turns form conversations, how she answers what is due, how much time was logged, with a chart under her words, what was completed or rejected, and how many pull requests the user opened and shipped, with charts under her words, and names tasks as links, what the chat surface renders, and what she hears and says.
+description: The one agent the user talks to in one place — how a durable user turn becomes a routing wake, what the routing index holds, how the dispatch contract is validated in code, the capped lookups and the repair round, the deterministic records a turn leaves behind, how the door walker takes each segment to its owner and mirrors the answer, how a statement becomes a proposal the user's one tap files, how a dictated task is filled from her reading of the words and made on the tap, how "that one" finds the task a follow-up follows, what the inbox is, how an unanswered turn is recovered on any device, how turns form conversations, how she answers what is due, how much time was logged, with a chart under her words, what was completed or rejected, and how many pull requests the user opened and shipped, with charts under her words, and names tasks as links, what the chat surface renders, how a stalled or failed turn is bounded, timed and named, and what she hears and says.
 resource: ../../lib/features/front_agent
 tags: [agents, front-agent, routing, dispatch, doors, filing, inbox, companion, chat]
 status: draft
@@ -11,7 +11,15 @@ sources:
   - id: workflow
     resource: ../../lib/features/front_agent/workflow/front_agent_workflow.dart
     title: FrontAgentWorkflow — one routing turn per wake
-    last_modified: 2026-11-08
+    last_modified: 2026-11-09
+  - id: stall-guard
+    resource: ../../lib/features/front_agent/workflow/front_inference_stall_guard.dart
+    title: FrontInferenceStallGuard — a silent provider call is sent once more
+    last_modified: 2026-11-09
+  - id: turn-failure
+    resource: ../../lib/features/front_agent/model/front_turn_failure.dart
+    title: FrontTurnFailure — why a turn failed, across the wake boundary
+    last_modified: 2026-11-09
   - id: strategy
     resource: ../../lib/features/front_agent/workflow/front_agent_strategy.dart
     title: FrontAgentStrategy — accumulating, count-capped tool handling, her words linked
@@ -19,7 +27,7 @@ sources:
   - id: contract
     resource: ../../lib/features/front_agent/workflow/front_agent_contract.dart
     title: The tool contract, caps and system prompt
-    last_modified: 2026-11-08
+    last_modified: 2026-11-09
   - id: validator
     resource: ../../lib/features/front_agent/workflow/front_dispatch_validator.dart
     title: validateFrontDispatch — the dispatch rules in code
@@ -43,7 +51,7 @@ sources:
   - id: chat-service
     resource: ../../lib/features/front_agent/service/front_chat_service.dart
     title: FrontChatService — persist, arm recovery, wake, await, consume
-    last_modified: 2026-10-24
+    last_modified: 2026-11-09
   - id: history-service
     resource: ../../lib/features/front_agent/service/front_chat_history_service.dart
     title: FrontChatHistoryService — which turns are still unanswered
@@ -123,11 +131,11 @@ sources:
   - id: controller
     resource: ../../lib/features/front_agent/state/front_chat_controller.dart
     title: FrontChatController — the composer
-    last_modified: 2026-11-01
+    last_modified: 2026-11-09
   - id: pane
     resource: ../../lib/features/front_agent/ui/front_chat_pane.dart
     title: FrontChatPane — the thread on the shared AgentChatView
-    last_modified: 2026-11-06
+    last_modified: 2026-11-09
   - id: sheet
     resource: ../../lib/features/front_agent/ui/front_chat_surface.dart
     title: showFrontChat — her surface over the app
@@ -245,7 +253,7 @@ flowchart TD
   X --> I[FrontRoutingIndexBuilder.build]
   X --> T[recent turns: last 6 user / dispatch / ask / reply rows<br/>of the pending turn's conversation, with content]
   T --> N[conversation tasks: ≤8 tasks the conversation named,<br/>newest first, open or closed — conversationTasks]
-  X --> C[ConversationRepository.sendMessage<br/>turnBudget 3, temperature 0]
+  X --> C[ConversationRepository.sendMessage<br/>turnBudget 3, temperature 0,<br/>through FrontInferenceStallGuard]
   C --> S[FrontAgentStrategy]
   S -->|dispatch / ask_user / reply_to_user| E{terminal?}
   E -->|no, and a call is left| P[repair instruction once]
@@ -707,6 +715,68 @@ returns a failed `WakeResult` and persists **no agent output** — no
 dispatch, no question, no invented reply. What `FrontChatService` wrote
 before the wake — the user payload and the user message — stays durable,
 which is what makes the turn retryable rather than lost.
+
+# Latency and failures
+
+A lookup answer — pull requests, logged time, what was closed, what is due —
+is two provider calls: the lookup, then `reply_to_user` over its result.
+Live on Mistral (2026-11-09, DeepSeek V4.1 Flash, a 15.6k-token turn) each
+call took 0.6–4 s with no reasoning tokens, and now and then far longer: one
+call sat 19 s before its first chunk and took 44 s in all.
+
+**One cache key.** Her calls carry `promptCacheKey: agentId` through
+`CloudInferenceWrapper` — the system prompt, the tools and, until the record
+changes, the index are the same prefix every turn. Warm, the two calls took
+about half as long as without the key, whose cache hits were luck.
+
+**A stalled call is sent once more.** `FrontInferenceStallGuard` wraps her
+inference repository: a call that sends no chunk for
+`frontInferenceStallTimeout` (15 s) is cancelled and sent again — safe,
+since nothing of it was read. A second stall, or a gap after the first chunk,
+fails the turn with a `TimeoutException`; the wake's ten-minute run cap is
+the only bound otherwise, and the Mistral repository sets no timeout of its
+own on a chat stream.
+
+```mermaid
+stateDiagram-v2
+  [*] --> Waiting: send
+  Waiting --> Streaming: first chunk
+  Streaming --> Streaming: chunk within 15 s
+  Streaming --> [*]: stream ends
+  Waiting --> Resent: 15 s without a chunk, first attempt
+  Resent --> Streaming: first chunk
+  Resent --> TimedOut: 15 s without a chunk
+  Streaming --> TimedOut: 15 s gap after a chunk
+  TimedOut --> [*]: TimeoutException
+```
+
+**Why a turn failed crosses the wake as a code.** A wake reports an exception
+by type only (`WakeResult.failed`), so the chat could never tell a rate limit
+from a timeout. The workflow classifies its own failure into a
+`FrontTurnFailure` — `rateLimit`, `timeout`, `network`, `authentication`,
+`provider` (other 4xx/5xx), `noModel`, `noAnswer` (no terminal call in the
+budget), `unknown` — and returns `failure.wakeError(error)`
+(`front turn failed: rateLimit (MistralInferenceException)`: the cause and
+the exception's type, never its message). Only a failure while the provider
+is being called goes through `AiErrorUtils.categorizeError`; a database
+failure around it is `unknown`. `FrontChatService` reads the code back off
+the run's `WakeFailedException` (`FrontTurnFailure.fromWakeError`; the run
+cap's `TimeoutException('timeout')` is a timeout, a user's stop is not) onto
+`FrontChatTurnException.failure`, the composer keeps it with the failed
+turn, and `FrontChatPane` passes `AgentChatView.failedTurnLabel` — a
+`frontChatFailed*` line ("Your AI provider is limiting requests right now.
+Wait a moment, then try again.") beside *Try again*. `unknown` keeps the
+shared "That didn't send."
+
+**Two log lines time every turn.** The workflow logs, under `frontAgent`,
+the elapsed milliseconds at the end of each phase:
+`front turn timings: model=… index=… history=… inference(calls=N)=…
+persist=… total=…`, with `failed=<cause>` when it failed. The chat service
+logs, under `frontChat`, `front turn <status>: queued=… run=… total=…` —
+`queued` is the wait for a wake slot. The wake queue is FIFO under the
+global concurrency cap (`defaultAgentWakeConcurrency`, 3), with no
+preference for a user waiting on her: a large `queued` means her turn sat
+behind other agents' wakes.
 
 # What a turn leaves behind
 

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/front_agent/model/front_chat_thread.dart';
 import 'package:lotti/features/front_agent/model/front_conversation.dart';
+import 'package:lotti/features/front_agent/model/front_turn_failure.dart';
 import 'package:lotti/features/front_agent/service/front_chat_service.dart';
 import 'package:lotti/features/front_agent/service/front_chat_thread_builder.dart';
 import 'package:lotti/features/front_agent/state/front_agent_providers.dart';
@@ -115,6 +116,8 @@ void main() {
     controller().updateDraft('Hello');
     await controller().send();
     expect(state().failedMessage, 'Hello');
+    // Not the turn's failure: nothing more specific to say.
+    expect(state().failure, FrontTurnFailure.unknown);
 
     controller().updateDraft('Hel');
 
@@ -122,6 +125,7 @@ void main() {
     expect(state().isSending, isFalse);
     expect(state().failedMessage, isNull);
     expect(state().failedMessageId, isNull);
+    expect(state().failure, isNull);
   });
 
   group('conversations', () {
@@ -558,6 +562,42 @@ void main() {
   });
 
   group('retry', () {
+    test("a failed turn keeps its cause; a retry's own failure replaces it "
+        'and its success clears it', () async {
+      when(
+        () => chatService.sendMessage(text: 'Hello', conversationId: 'c-1'),
+      ).thenThrow(
+        const FrontChatTurnException(
+          'boom',
+          messageId: 'm-1',
+          failure: FrontTurnFailure.rateLimit,
+        ),
+      );
+      var retries = 0;
+      when(() => chatService.retryMessage(messageId: 'm-1')).thenAnswer((
+        _,
+      ) async {
+        if (retries++ == 0) {
+          throw const FrontChatTurnException(
+            'again',
+            messageId: 'm-1',
+            failure: FrontTurnFailure.timeout,
+          );
+        }
+      });
+      controller().updateDraft('Hello');
+
+      await controller().send();
+      expect(state().failure, FrontTurnFailure.rateLimit);
+
+      await controller().retry();
+      expect(state().failure, FrontTurnFailure.timeout);
+
+      await controller().retry();
+      expect(state().failure, isNull);
+      expect(state().failedMessage, isNull);
+    });
+
     test(
       'with a durable id re-wakes that turn rather than sending again',
       () async {

@@ -36,6 +36,7 @@ class AgentChatView extends ConsumerStatefulWidget {
     this.draftSpoken,
     this.onDraftSpoken,
     this.hasFailedTurn = false,
+    this.failedTurnLabel,
     this.attachmentBuilder,
     this.dividerBuilder,
     this.history,
@@ -108,6 +109,10 @@ class AgentChatView extends ConsumerStatefulWidget {
   final String draft;
   final bool isSending;
   final bool hasFailedTurn;
+
+  /// What the failed-turn line says, when the chat knows why the turn did
+  /// not go through; the generic "that didn't send" otherwise.
+  final String? failedTurnLabel;
   final ValueChanged<String> onDraftChanged;
   final VoidCallback onSend;
   final VoidCallback onRetry;

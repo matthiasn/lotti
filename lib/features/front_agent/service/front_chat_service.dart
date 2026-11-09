@@ -10,8 +10,10 @@ import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
 import 'package:lotti/features/front_agent/model/front_conversation.dart';
+import 'package:lotti/features/front_agent/model/front_turn_failure.dart';
 import 'package:lotti/features/front_agent/service/front_chat_history_service.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:uuid/uuid.dart';
 
 /// Persists one user-authored front-agent turn, then hands routing to the
@@ -32,12 +34,14 @@ class FrontChatService {
     required WakeOrchestrator orchestrator,
     required UpdateNotifications notifications,
     required FrontChatHistoryService historyService,
+    required DomainLogger domainLogger,
   }) : this._(
          repository,
          syncService,
          orchestrator,
          notifications,
          historyService,
+         domainLogger,
        );
 
   FrontChatService._(
@@ -46,6 +50,7 @@ class FrontChatService {
     this._orchestrator,
     this._notifications,
     this._historyService,
+    this._domainLogger,
   );
 
   final AgentRepository _repository;
@@ -53,6 +58,7 @@ class FrontChatService {
   final WakeOrchestrator _orchestrator;
   final UpdateNotifications _notifications;
   final FrontChatHistoryService _historyService;
+  final DomainLogger _domainLogger;
 
   static const _uuid = Uuid();
 
@@ -202,18 +208,36 @@ class FrontChatService {
       },
     );
     try {
+      final enqueuedAt = clock.now();
       runKey = enqueueMessage(messageId: messageId);
       final result = await completion.future;
+      _logTimings(result, enqueuedAt);
       if (result.status != WakeRunStatus.completed) {
         throw FrontChatTurnException(
           result.error?.toString(),
           messageId: messageId,
+          failure: FrontTurnFailure.fromWakeError(result.error),
         );
       }
     } finally {
       await subscription.cancel();
     }
     await _consumeRecovery(messageId);
+  }
+
+  /// How long the turn waited for a wake slot and how long its wake ran —
+  /// her own phases are in the workflow's `front turn timings` line.
+  void _logTimings(WakeRunCompletion result, DateTime enqueuedAt) {
+    final startedAt = result.startedAt;
+    final finishedAt = result.finishedAt ?? clock.now();
+    _domainLogger.log(
+      LogDomain.agentWorkflow,
+      'front turn ${result.status.name}: '
+      'queued=${startedAt == null ? '-' : '${startedAt.difference(enqueuedAt).inMilliseconds}ms'} '
+      'run=${startedAt == null ? '-' : '${finishedAt.difference(startedAt).inMilliseconds}ms'} '
+      'total=${finishedAt.difference(enqueuedAt).inMilliseconds}ms',
+      subDomain: 'frontChat',
+    );
   }
 
   /// Makes sure the oldest unanswered turn can still be routed: arms its
@@ -313,10 +337,17 @@ class FrontChatService {
 }
 
 class FrontChatTurnException implements Exception {
-  const FrontChatTurnException(this.detail, {this.messageId});
+  const FrontChatTurnException(
+    this.detail, {
+    this.messageId,
+    this.failure = FrontTurnFailure.unknown,
+  });
 
   final String? detail;
   final String? messageId;
+
+  /// Why the turn did not go through, for the chat to say.
+  final FrontTurnFailure failure;
 
   @override
   String toString() => detail ?? 'The front-agent turn failed.';

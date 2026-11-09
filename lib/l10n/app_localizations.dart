@@ -12299,6 +12299,48 @@ abstract class AppLocalizations {
   /// **'Ask about a task, a goal, a project or a person, or tell what happened. The right agent answers, and nothing is filed until you tap.'**
   String get frontChatEmpty;
 
+  /// Front-agent chat: why a turn did not go through, shown beside Try again.
+  ///
+  /// In en, this message translates to:
+  /// **'Your AI provider refused its API key. Check it in Settings.'**
+  String get frontChatFailedAuthentication;
+
+  /// Front-agent chat: why a turn did not go through, shown beside Try again.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t reach your AI provider. Check your connection, then try again.'**
+  String get frontChatFailedNetwork;
+
+  /// Front-agent chat: why a turn did not go through, shown beside Try again.
+  ///
+  /// In en, this message translates to:
+  /// **'The companion didn\'t finish an answer. Try again, or put it another way.'**
+  String get frontChatFailedNoAnswer;
+
+  /// Front-agent chat: why a turn did not go through, shown beside Try again.
+  ///
+  /// In en, this message translates to:
+  /// **'No AI model is set up for the companion. Choose one in Settings.'**
+  String get frontChatFailedNoModel;
+
+  /// Front-agent chat: why a turn did not go through, shown beside Try again.
+  ///
+  /// In en, this message translates to:
+  /// **'Your AI provider answered with an error. Try again in a moment.'**
+  String get frontChatFailedProvider;
+
+  /// Front-agent chat: why a turn did not go through, shown beside Try again.
+  ///
+  /// In en, this message translates to:
+  /// **'Your AI provider is limiting requests right now. Wait a moment, then try again.'**
+  String get frontChatFailedRateLimit;
+
+  /// Front-agent chat: why a turn did not go through, shown beside Try again.
+  ///
+  /// In en, this message translates to:
+  /// **'Your AI provider took too long to answer. Try again.'**
+  String get frontChatFailedTimeout;
+
   /// No description provided for @frontChatInboxChip.
   ///
   /// In en, this message translates to:

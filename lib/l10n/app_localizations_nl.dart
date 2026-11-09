@@ -7241,6 +7241,34 @@ class AppLocalizationsNl extends AppLocalizations {
       'Vraag naar een taak, een doel, een project of een persoon, of vertel wat er gebeurd is. De juiste agent antwoordt, en er wordt niets opgeborgen tot je tikt.';
 
   @override
+  String get frontChatFailedAuthentication =>
+      'Je AI-provider heeft de API-sleutel geweigerd. Controleer hem in Instellingen.';
+
+  @override
+  String get frontChatFailedNetwork =>
+      'Je AI-provider is niet bereikbaar. Controleer je verbinding en probeer het dan opnieuw.';
+
+  @override
+  String get frontChatFailedNoAnswer =>
+      'De metgezel heeft geen antwoord afgemaakt. Probeer het opnieuw of zeg het anders.';
+
+  @override
+  String get frontChatFailedNoModel =>
+      'Er is geen AI-model ingesteld voor de metgezel. Kies er een in Instellingen.';
+
+  @override
+  String get frontChatFailedProvider =>
+      'Je AI-provider antwoordde met een fout. Probeer het zo opnieuw.';
+
+  @override
+  String get frontChatFailedRateLimit =>
+      'Je AI-provider beperkt nu het aantal verzoeken. Wacht even en probeer het dan opnieuw.';
+
+  @override
+  String get frontChatFailedTimeout =>
+      'Je AI-provider deed te lang over het antwoord. Probeer het opnieuw.';
+
+  @override
   String frontChatInboxChip(int count) {
     return 'Inbox $count';
   }

@@ -7207,6 +7207,34 @@ class AppLocalizationsDa extends AppLocalizations {
       'Spørg om en opgave, et mål, et projekt eller en person, eller fortæl hvad der er sket. Den rette agent svarer, og intet arkiveres, før du trykker.';
 
   @override
+  String get frontChatFailedAuthentication =>
+      'Din AI-udbyder afviste API-nøglen. Tjek den i Indstillinger.';
+
+  @override
+  String get frontChatFailedNetwork =>
+      'Kunne ikke nå din AI-udbyder. Tjek din forbindelse, og prøv så igen.';
+
+  @override
+  String get frontChatFailedNoAnswer =>
+      'Ledsageren fik ikke svaret færdigt. Prøv igen, eller sig det på en anden måde.';
+
+  @override
+  String get frontChatFailedNoModel =>
+      'Der er ingen AI-model sat op til ledsageren. Vælg en i Indstillinger.';
+
+  @override
+  String get frontChatFailedProvider =>
+      'Din AI-udbyder svarede med en fejl. Prøv igen om et øjeblik.';
+
+  @override
+  String get frontChatFailedRateLimit =>
+      'Din AI-udbyder begrænser forespørgsler lige nu. Vent et øjeblik, og prøv så igen.';
+
+  @override
+  String get frontChatFailedTimeout =>
+      'Din AI-udbyder var for længe om at svare. Prøv igen.';
+
+  @override
   String frontChatInboxChip(int count) {
     return 'Indbakke $count';
   }

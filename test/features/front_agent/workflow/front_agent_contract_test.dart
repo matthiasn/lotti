@@ -123,10 +123,6 @@ void main() {
     expect(frontAgentSystemPrompt, contains('"closed" asks for both'));
     expect(
       frontAgentSystemPrompt,
-      contains('"this weekend" is the Saturday and Sunday of the current week'),
-    );
-    expect(
-      frontAgentSystemPrompt,
       contains('never list, link or name the tasks yourself'),
     );
     expect(
@@ -292,6 +288,28 @@ void main() {
     expect(frontAgentSystemPrompt, contains(frontPendingUserMessageHeader));
     for (final word in ['sass', 'cheeky', 'warm', 'grandma', 'personality']) {
       expect(frontAgentSystemPrompt.toLowerCase(), isNot(contains(word)));
+    }
+  });
+
+  test('every date-window rule reads "last weekend" the same way: asked on '
+      'a Monday, the two days just past', () {
+    const rule =
+        '"last weekend" is the latest Saturday and Sunday that are both '
+        'before today — asked on a Monday, the two days just past';
+    // Logged time, closed tasks and pull requests.
+    expect(rule.allMatches(frontAgentSystemPrompt), hasLength(3));
+    for (final tool in [
+      'summarize_logged_time',
+      'list_closed_tasks',
+      'summarize_pull_requests',
+    ]) {
+      final at = frontAgentSystemPrompt.indexOf('call `$tool`');
+      final ruleEnd = frontAgentSystemPrompt.indexOf('\n', at);
+      expect(
+        frontAgentSystemPrompt.substring(at, ruleEnd),
+        contains(rule),
+        reason: tool,
+      );
     }
   });
 }

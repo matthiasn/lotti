@@ -16,6 +16,7 @@ import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
 import 'package:lotti/features/front_agent/model/front_reference_links.dart';
 import 'package:lotti/features/front_agent/model/front_reply_parts.dart';
+import 'package:lotti/features/front_agent/model/front_turn_failure.dart';
 import 'package:lotti/features/front_agent/state/front_chat_controller.dart';
 import 'package:lotti/features/front_agent/state/front_chat_thread_provider.dart';
 import 'package:lotti/features/front_agent/state/front_conversation_providers.dart';
@@ -372,6 +373,17 @@ class FrontChatThreadView extends ConsumerWidget {
       draft: composer.draft,
       isSending: composer.isSending,
       hasFailedTurn: composer.failedMessage != null,
+      failedTurnLabel: switch (composer.failure) {
+        FrontTurnFailure.rateLimit => messages.frontChatFailedRateLimit,
+        FrontTurnFailure.timeout => messages.frontChatFailedTimeout,
+        FrontTurnFailure.network => messages.frontChatFailedNetwork,
+        FrontTurnFailure.authentication =>
+          messages.frontChatFailedAuthentication,
+        FrontTurnFailure.provider => messages.frontChatFailedProvider,
+        FrontTurnFailure.noModel => messages.frontChatFailedNoModel,
+        FrontTurnFailure.noAnswer => messages.frontChatFailedNoAnswer,
+        FrontTurnFailure.unknown || null => null,
+      },
       onDraftChanged: controller.updateDraft,
       onSend: controller.send,
       // A spoken question gets a spoken answer, whichever of her views —

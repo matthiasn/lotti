@@ -7286,6 +7286,34 @@ class AppLocalizationsCs extends AppLocalizations {
       'Zeptej se na úkol, cíl, projekt nebo osobu, nebo řekni, co se stalo. Odpoví správný agent a nic se neuloží, dokud neťukneš.';
 
   @override
+  String get frontChatFailedAuthentication =>
+      'Tvůj poskytovatel AI odmítl klíč API. Zkontroluj ho v Nastavení.';
+
+  @override
+  String get frontChatFailedNetwork =>
+      'Tvůj poskytovatel AI není dostupný. Zkontroluj připojení a pak to zkus znovu.';
+
+  @override
+  String get frontChatFailedNoAnswer =>
+      'Společník nedokončil odpověď. Zkus to znovu, nebo to řekni jinak.';
+
+  @override
+  String get frontChatFailedNoModel =>
+      'Pro společníka není nastavený žádný model AI. Vyber nějaký v Nastavení.';
+
+  @override
+  String get frontChatFailedProvider =>
+      'Tvůj poskytovatel AI odpověděl chybou. Zkus to za chvíli znovu.';
+
+  @override
+  String get frontChatFailedRateLimit =>
+      'Tvůj poskytovatel AI právě omezuje požadavky. Chvíli počkej a pak to zkus znovu.';
+
+  @override
+  String get frontChatFailedTimeout =>
+      'Tvému poskytovateli AI trvala odpověď příliš dlouho. Zkus to znovu.';
+
+  @override
   String frontChatInboxChip(int count) {
     return 'Příchozí $count';
   }

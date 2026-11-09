@@ -4432,6 +4432,34 @@
   "frontChatArchivedToast": "Chat archived.",
   "frontChatDeleteExplanation": "Delete this chat? Its messages are hidden on every device, not erased. Whatever you filed from it stays where it is.",
   "frontChatEmpty": "Ask about a task, a goal, a project or a person, or tell what happened. The right agent answers, and nothing is filed until you tap.",
+  "frontChatFailedAuthentication": "Your AI provider refused its API key. Check it in Settings.",
+  "@frontChatFailedAuthentication": {
+    "description": "Front-agent chat: why a turn did not go through, shown beside Try again."
+  },
+  "frontChatFailedNetwork": "Couldn't reach your AI provider. Check your connection, then try again.",
+  "@frontChatFailedNetwork": {
+    "description": "Front-agent chat: why a turn did not go through, shown beside Try again."
+  },
+  "frontChatFailedNoAnswer": "The companion didn't finish an answer. Try again, or put it another way.",
+  "@frontChatFailedNoAnswer": {
+    "description": "Front-agent chat: why a turn did not go through, shown beside Try again."
+  },
+  "frontChatFailedNoModel": "No AI model is set up for the companion. Choose one in Settings.",
+  "@frontChatFailedNoModel": {
+    "description": "Front-agent chat: why a turn did not go through, shown beside Try again."
+  },
+  "frontChatFailedProvider": "Your AI provider answered with an error. Try again in a moment.",
+  "@frontChatFailedProvider": {
+    "description": "Front-agent chat: why a turn did not go through, shown beside Try again."
+  },
+  "frontChatFailedRateLimit": "Your AI provider is limiting requests right now. Wait a moment, then try again.",
+  "@frontChatFailedRateLimit": {
+    "description": "Front-agent chat: why a turn did not go through, shown beside Try again."
+  },
+  "frontChatFailedTimeout": "Your AI provider took too long to answer. Try again.",
+  "@frontChatFailedTimeout": {
+    "description": "Front-agent chat: why a turn did not go through, shown beside Try again."
+  },
   "frontChatInboxChip": "Inbox {count}",
   "@frontChatInboxChip": {
     "placeholders": {

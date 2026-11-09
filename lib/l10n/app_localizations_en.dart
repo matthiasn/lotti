@@ -7184,6 +7184,34 @@ class AppLocalizationsEn extends AppLocalizations {
       'Ask about a task, a goal, a project or a person, or tell what happened. The right agent answers, and nothing is filed until you tap.';
 
   @override
+  String get frontChatFailedAuthentication =>
+      'Your AI provider refused its API key. Check it in Settings.';
+
+  @override
+  String get frontChatFailedNetwork =>
+      'Couldn\'t reach your AI provider. Check your connection, then try again.';
+
+  @override
+  String get frontChatFailedNoAnswer =>
+      'The companion didn\'t finish an answer. Try again, or put it another way.';
+
+  @override
+  String get frontChatFailedNoModel =>
+      'No AI model is set up for the companion. Choose one in Settings.';
+
+  @override
+  String get frontChatFailedProvider =>
+      'Your AI provider answered with an error. Try again in a moment.';
+
+  @override
+  String get frontChatFailedRateLimit =>
+      'Your AI provider is limiting requests right now. Wait a moment, then try again.';
+
+  @override
+  String get frontChatFailedTimeout =>
+      'Your AI provider took too long to answer. Try again.';
+
+  @override
   String frontChatInboxChip(int count) {
     return 'Inbox $count';
   }
