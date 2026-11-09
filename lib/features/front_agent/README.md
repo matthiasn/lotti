@@ -95,9 +95,9 @@ and a proposal she got wrong goes to the inbox rather than being retyped.
   (`front_voice_providers.dart`), and the wake-runner,
   maintenance and
   setup-resolver contributions merged in `app_bootstrap.dart`.
-- `ui/` — her header (her face, large, whose tap shows or hides her glass
-  card over the thread in place; her name and the conversation's title, her
-  voice's controls), the hero that greets a conversation not begun (her
+- `ui/` — her header (her face in a rounded tile, whose tap shows her glass
+  card over the thread in place and which steps aside while the card is out;
+  her name and the conversation's title, her voice's controls), the hero that greets a conversation not begun (her
   bust), the switch that mutes her (`front_voice_switch.dart`), the card her
   lists of tasks are drawn as (`front_task_list.dart`, over
   `model/front_reply_parts.dart`), her voice (`front_chat_voice.dart`: the spoken reply, when

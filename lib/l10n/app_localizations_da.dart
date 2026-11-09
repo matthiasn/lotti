@@ -3853,6 +3853,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get companionCardDemo => 'Demostørrelse';
 
   @override
+  String get companionCardHide => 'Skjul';
+
+  @override
   String get companionCardLabel =>
       'Følgesvend. Træk for at flytte; skift størrelse under indstillingerne.';
 
@@ -7199,6 +7202,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get frontChatArchivedToast => 'Chat arkiveret.';
 
   @override
+  String get frontChatCompanionShow => 'Vis ledsager';
+
+  @override
   String get frontChatDeleteExplanation =>
       'Slet denne chat? Dens beskeder skjules på alle enheder, men slettes ikke. Det, du har gemt fra chatten, bliver, hvor det er.';
 
@@ -7265,12 +7271,6 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get frontChatSearchChats => 'Søg i chats';
-
-  @override
-  String get frontChatCompanionHide => 'Skjul ledsager';
-
-  @override
-  String get frontChatCompanionShow => 'Vis ledsager';
 
   @override
   String get frontChatTitle => 'Ledsager';

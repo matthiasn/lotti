@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:clock/clock.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/query_chat_models.dart';
@@ -1455,8 +1456,8 @@ void main() {
 
     testWidgets('a tap on her face fades her card in over the thread, in '
         'place — no page is pushed — between the header and the field, the '
-        'thread keeping her height free after its end; another tap fades '
-        'her out', (tester) async {
+        'thread keeping her height free after its end; a tap on the card '
+        'fades her out and gives the header her face back', (tester) async {
       final observer = _PushObserver();
       await pumpPane(tester, companion: true, navigatorObservers: [observer]);
       final pushes = observer.pushed.length;
@@ -1500,10 +1501,14 @@ void main() {
         'c-1',
       );
 
-      await tester.tap(toggle);
+      // The face is gone while she is out: the card puts itself away.
+      expect(toggle, findsNothing);
+      await tester.tap(card);
+      await tester.pump(kDoubleTapTimeout);
       await frames(tester);
       expect(card, findsNothing);
       expect(inset(tester), 0);
+      expect(toggle, findsOne);
     });
 
     for (final (why, companion, inbox) in [

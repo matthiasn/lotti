@@ -25,6 +25,7 @@ abstract final class CompanionFloatingCardKeys {
   static const Key demo = Key('companion-floating-card-demo');
   static const Key restyle = Key('companion-floating-card-restyle');
   static const Key reset = Key('companion-floating-card-reset');
+  static const Key hide = Key('companion-floating-card-hide');
 }
 
 /// The companion over a conversation: [figure] in a glass card that floats
@@ -38,7 +39,8 @@ abstract final class CompanionFloatingCardKeys {
 ///
 /// Drag the card to move it; double-tap Small ⇄ Large; pinch it to any size
 /// in between; a long press (a right-click on a desktop) opens its menu —
-/// Small, Large, Demo size, restyle, reset. A desktop also resizes from a
+/// Small, Large, Demo size, restyle, reset, and Hide when the host gives
+/// [onHide], which a single tap calls too. A desktop also resizes from a
 /// grip on the card's corner that faces the open screen, shown on hover,
 /// and with Ctrl/⌘ + scroll. Demo size fills the area and is never saved:
 /// it ends from its own button, a double tap, or when the card goes away.
@@ -49,6 +51,7 @@ class CompanionFloatingCard extends ConsumerStatefulWidget {
     required this.form,
     required this.figure,
     required this.onRestyle,
+    this.onHide,
     this.speaking = false,
     super.key,
   });
@@ -60,6 +63,9 @@ class CompanionFloatingCard extends ConsumerStatefulWidget {
 
   /// Changes her look — the menu's restyle row.
   final VoidCallback onRestyle;
+
+  /// Puts the card away — a single tap, and the menu's last row.
+  final VoidCallback? onHide;
 
   final bool speaking;
 
@@ -276,12 +282,22 @@ class _CompanionFloatingCardState extends ConsumerState<CompanionFloatingCard> {
             _controller.reset();
           },
         ),
+        if (widget.onHide case final hide?)
+          DesignSystemContextMenuItem(
+            key: CompanionFloatingCardKeys.hide,
+            label: messages.companionCardHide,
+            icon: LottiIcons.close,
+            startsGroup: true,
+            onTap: hide,
+          ),
       ],
       builder: (context, {required toggle, required isOpen}) => Semantics(
         container: true,
         label: messages.companionCardLabel,
         onLongPressHint: messages.companionCardOptions,
         onLongPress: () => _showMenu(Offset.zero),
+        onTapHint: widget.onHide == null ? null : messages.companionCardHide,
+        onTap: widget.onHide,
         child: MouseRegion(
           cursor: _demo ? MouseCursor.defer : SystemMouseCursors.grab,
           onEnter: (_) => setState(() => _hovered = true),
@@ -290,6 +306,7 @@ class _CompanionFloatingCardState extends ConsumerState<CompanionFloatingCard> {
             onPointerSignal: (event) => _scaleOnScroll(event, height),
             child: GestureDetector(
               key: CompanionFloatingCardKeys.card,
+              onTap: widget.onHide,
               onDoubleTap: _toggleSize,
               onLongPressStart: (details) => _showMenu(details.localPosition),
               onSecondaryTapUp: (details) => _showMenu(details.localPosition),

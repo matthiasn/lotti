@@ -164,14 +164,16 @@ void main() {
     // One row: the title, then the search, then the new chat at the end.
     expect(search.center.dy, newChat.center.dy);
     expect(search.right, lessThanOrEqualTo(newChat.left));
-    // Her face's height in her header, and the band's inset above and
-    // below it.
+    // Her header's height: a tap target over a title line, and the band's
+    // inset above and below it.
     final tokens = tester
         .element(find.byType(FrontConversationList))
         .designTokens;
     expect(
       tester.getRect(band.first).height,
-      ControlSizes.avatarHero + 2 * tokens.spacing.step2,
+      TapTargets.minimum +
+          tokens.typography.lineHeight.bodySmall +
+          2 * tokens.spacing.step2,
     );
     // The page's one action wears the accent.
     expect(

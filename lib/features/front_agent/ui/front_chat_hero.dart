@@ -67,12 +67,20 @@ class FrontChatHero extends StatelessWidget {
   );
 }
 
-/// Her bust in the session's outfit at [size]; the spark every agent wears
-/// when the companion character is switched off.
+/// Her bust in the session's outfit at [size], in a circle or — [rounded] —
+/// a rounded tile; the spark every agent wears when the companion character
+/// is switched off.
 class FrontCompanionFigure extends ConsumerWidget {
-  const FrontCompanionFigure({required this.size, super.key});
+  const FrontCompanionFigure({
+    required this.size,
+    this.rounded = false,
+    super.key,
+  });
 
   final double size;
+
+  /// A rounded tile rather than a circle: her face in the header.
+  final bool rounded;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -88,7 +96,8 @@ class FrontCompanionFigure extends ConsumerWidget {
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: tokens.colors.aiCard.accentSoft,
-          shape: BoxShape.circle,
+          shape: rounded ? BoxShape.rectangle : BoxShape.circle,
+          borderRadius: rounded ? BorderRadius.circular(tokens.radii.m) : null,
           border: Border.all(color: tokens.colors.aiCard.border),
         ),
         child: companionOn
@@ -165,6 +174,8 @@ class FrontCompanionCard extends ConsumerWidget {
     return CompanionFloatingCard(
       form: form,
       speaking: speaking,
+      // Her face in the header shows the card; the card puts itself away.
+      onHide: ref.read(frontCompanionCardShownProvider.notifier).toggle,
       onRestyle: () => ref
           .read(companionOutfitProvider.notifier)
           .next(

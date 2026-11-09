@@ -255,14 +255,29 @@ void main() {
       expect(container.read(frontPickedConversationProvider), isNot('c-1'));
     });
 
-    testWidgets('her header is her face and the band inset tall, the '
-        "list's band's height", (tester) async {
+    for (final (what, index) in [
+      ('a conversation', census),
+      ('one not begun, no title under her name', FrontConversationIndex.empty),
+    ]) {
+      testWidgets('on $what her header is a tap target over a title line and '
+          "the band inset tall, the list's band's height", (tester) async {
+        await pumpHeader(tester, conversations: index);
+        final tokens = tester
+            .element(find.byType(FrontChatHeader))
+            .designTokens;
+        expect(
+          tester.getSize(find.byType(FrontChatHeader)).height,
+          TapTargets.minimum +
+              tokens.typography.lineHeight.bodySmall +
+              2 * tokens.spacing.step2,
+        );
+      });
+    }
+
+    testWidgets('her name in the list title size, the conversation quietly '
+        'under it', (tester) async {
       await pumpHeader(tester, conversations: census);
       final tokens = tester.element(find.byType(FrontChatHeader)).designTokens;
-      expect(
-        tester.getSize(find.byType(FrontChatHeader)).height,
-        ControlSizes.avatarHero + 2 * tokens.spacing.step2,
-      );
       // Her name in the list's title size, the conversation quietly under it.
       expect(
         tester
@@ -395,14 +410,23 @@ void main() {
       expect(order[i].left, greaterThanOrEqualTo(order[i - 1].right));
       expect(order[i].top, lessThan(order[0].bottom));
     }
-    // Her face, large, sits between the way to the list and her name, the
-    // controls hanging from its top.
+    // Her face, a rounded tile, sits between the way to the list and her
+    // name, on the controls' line.
     final face = tester.getRect(find.byKey(FrontChatHeaderKeys.figure));
     expect(face.left, greaterThanOrEqualTo(order[0].right));
     expect(face.right, lessThanOrEqualTo(order[1].left));
-    expect(face.width, ControlSizes.avatarHero);
-    expect(order[0].top, face.top);
-    expect(order[3].top, face.top);
+    expect(face.width, ControlSizes.avatar);
+    expect(face.center.dy, closeTo(order[0].center.dy, 0.5));
+    expect(face.center.dy, closeTo(order[3].center.dy, 0.5));
+    final tile = tester.widget<Container>(
+      find.descendant(
+        of: find.byKey(FrontChatHeaderKeys.figure),
+        matching: find.byType(Container),
+      ),
+    );
+    final shape = tile.decoration! as BoxDecoration;
+    expect(shape.shape, BoxShape.rectangle);
+    expect(shape.borderRadius, isNotNull);
 
     await tester.tap(find.byKey(FrontChatHeaderKeys.close));
     expect(closed, 1);
@@ -636,9 +660,9 @@ void main() {
       expect(figure(), same(before));
     });
 
-    testWidgets('a tap on her face shows her card in place and another hides '
-        'it: no page is pushed, her voice speaks on, and a screen reader '
-        'hears a toggle saying which', (tester) async {
+    testWidgets('a tap on her face shows her card in place: no page is '
+        'pushed, her voice speaks on, and the face slides away while the card '
+        'is out, the title taking its room', (tester) async {
       final semantics = tester.ensureSemantics();
       final observer = _PushObserver();
       final voice = _Voice(const TtsPlaybackState());
@@ -649,14 +673,21 @@ void main() {
         voice: () => voice,
         observers: [observer],
       );
-      final shown = ProviderScope.containerOf(
+      final container = ProviderScope.containerOf(
         tester.element(find.byType(FrontChatHeader)),
-      ).listen(frontCompanionCardShownProvider, (_, _) {});
+      );
+      final shown = container.listen(
+        frontCompanionCardShownProvider,
+        (_, _) {},
+      );
       addTearDown(shown.close);
       final toggle = find.byKey(FrontChatHeaderKeys.companion);
       voice.play('front-chat:c-1');
       await tester.pump();
       final pushesBefore = observer.pushed;
+      final titleLeft = tester
+          .getRect(find.byKey(FrontChatHeaderKeys.title))
+          .left;
 
       expect(shown.read(), isFalse);
       expect(
@@ -664,7 +695,6 @@ void main() {
         matchesSemantics(
           label: 'Show companion',
           isButton: true,
-          hasToggledState: true,
           hasTapAction: true,
         ),
       );
@@ -675,25 +705,28 @@ void main() {
       expect(observer.pushed, pushesBefore, reason: 'no page of her own');
       expect(find.byType(CompanionStagePage), findsNothing);
       expect(voice.stoppedSources, isEmpty, reason: 'she speaks on');
+
+      // Sliding away, not snapping: halfway, the face is still there.
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(find.byKey(FrontChatHeaderKeys.figure), findsOne);
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(find.byKey(FrontChatHeaderKeys.figure), findsNothing);
+      expect(toggle, findsNothing);
       expect(
-        tester.getSemantics(toggle),
-        matchesSemantics(
-          label: 'Hide companion',
-          isButton: true,
-          hasToggledState: true,
-          isToggled: true,
-          hasTapAction: true,
-        ),
+        tester.getRect(find.byKey(FrontChatHeaderKeys.title)).left,
+        lessThan(titleLeft - ControlSizes.avatar),
       );
 
-      await tester.tap(toggle);
+      // The card put away, the face comes back.
+      container.read(frontCompanionCardShownProvider.notifier).toggle();
       await tester.pump();
-      expect(shown.read(), isFalse);
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(toggle, findsOne);
       semantics.dispose();
     });
 
-    testWidgets("her face is large, and her name shares the controls' line "
-        'so the title under them has the width beside her', (tester) async {
+    testWidgets("her name shares the controls' line so the title under them "
+        'has the width beside her face, on one line', (tester) async {
       await pumpHeader(
         tester,
         companion: true,
@@ -712,7 +745,6 @@ void main() {
       );
 
       final face = tester.getRect(find.byKey(FrontChatHeaderKeys.figure));
-      expect(face.width, ControlSizes.avatarHero);
       final name = tester.getRect(find.byKey(FrontChatHeaderKeys.name));
       final more = tester.getRect(find.byKey(FrontChatHeaderKeys.more));
       final close = tester.getRect(find.byKey(FrontChatHeaderKeys.close));
@@ -726,12 +758,12 @@ void main() {
       expect(titleRect.left, name.left);
       expect(titleRect.right, greaterThan(more.left));
       expect(titleRect.right, lessThanOrEqualTo(close.right));
-      // A long title wraps to a second line before it is cut.
-      expect(tester.widget<Text>(title).maxLines, 2);
+      // One line, cut with an ellipsis, whole on hover.
+      expect(tester.widget<Text>(title).maxLines, 1);
       final paragraph = tester.renderObject<RenderParagraph>(
         find.descendant(of: title, matching: find.byType(RichText)),
       );
-      expect(paragraph.size.height, greaterThan(name.height));
+      expect(paragraph.didExceedMaxLines, isTrue);
     });
 
     testWidgets('in the inbox her face is no toggle: she has no card there', (

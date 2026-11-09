@@ -3860,6 +3860,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get companionCardDemo => 'Demostorlek';
 
   @override
+  String get companionCardHide => 'Dölj';
+
+  @override
   String get companionCardLabel =>
       'Följeslagaren. Dra för att flytta; ändra storlek under alternativen.';
 
@@ -7210,6 +7213,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get frontChatArchivedToast => 'Chatten arkiverad.';
 
   @override
+  String get frontChatCompanionShow => 'Visa följeslagare';
+
+  @override
   String get frontChatDeleteExplanation =>
       'Radera den här chatten? Dess meddelanden döljs på alla enheter men raderas inte. Det du har sparat från chatten stannar där det är.';
 
@@ -7276,12 +7282,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get frontChatSearchChats => 'Sök i chattar';
-
-  @override
-  String get frontChatCompanionHide => 'Dölj följeslagare';
-
-  @override
-  String get frontChatCompanionShow => 'Visa följeslagare';
 
   @override
   String get frontChatTitle => 'Följeslagare';

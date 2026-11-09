@@ -320,10 +320,9 @@ class _FrontConversationListState extends ConsumerState<FrontConversationList> {
           ),
           child: Padding(
             padding: frontBandPadding(tokens),
-            // Her face's height, the tallest thing in her header.
             child: ConstrainedBox(
-              constraints: const BoxConstraints(
-                minHeight: ControlSizes.avatarHero,
+              constraints: BoxConstraints(
+                minHeight: frontBandContentHeight(context),
               ),
               child: Row(
                 children: [
@@ -352,9 +351,20 @@ class _FrontConversationListState extends ConsumerState<FrontConversationList> {
   }
 }
 
+/// The height of one line of the conversation's title in her header, as the
+/// text scales.
+double frontTitleLineHeight(BuildContext context) => MediaQuery.textScalerOf(
+  context,
+).scale(context.designTokens.typography.lineHeight.bodySmall);
+
+/// The height inside the sheet's top band: her header's top line — a tap
+/// target — over the conversation's title, whatever the band holds.
+double frontBandContentHeight(BuildContext context) =>
+    TapTargets.minimum + frontTitleLineHeight(context);
+
 /// The inset of the sheet's top band — her header, and the list's own band
-/// beside it: with her face's height inside both, they come out the same
-/// height, so their hairlines meet.
+/// beside it: with [frontBandContentHeight] inside both, they come out the
+/// same height, so their hairlines meet.
 EdgeInsets frontBandPadding(DsTokens tokens) => EdgeInsets.symmetric(
   horizontal: tokens.spacing.step5,
   vertical: tokens.spacing.step2,

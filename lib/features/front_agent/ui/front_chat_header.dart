@@ -46,11 +46,11 @@ abstract final class FrontChatHeaderKeys {
 /// The front chat's one-row header, in two modes.
 ///
 /// On a conversation it says who you are talking to and about what: her
-/// face, large (while the companion is switched on; the spark every agent
-/// wears while it is off) — a tap on it shows her glass card over the thread
-/// and another hides it, in place — and beside it her name on the controls'
-/// line, the open conversation's title under them across the whole width,
-/// on up to two lines. The controls are her voice — the way to have her say
+/// face in a rounded tile (while the companion is switched on; the spark
+/// every agent wears while it is off) — a tap on it shows her glass card over
+/// the thread, in place, and the face slides away while the card is out —
+/// then her name on the controls' line, and the open conversation's title on
+/// one line under them, across the whole width. The controls are her voice — the way to have her say
 /// her latest answer again and the switch that mutes her — then one overflow
 /// for the rest (her AI profile, which is also her voice, once she exists;
 /// her internals, where what the thread has cost is accounted; the open
@@ -189,8 +189,7 @@ class FrontChatHeader extends ConsumerWidget {
           ),
           SizedBox(width: tokens.spacing.step3),
         ],
-        _CompanionToggle(enabled: voiceId != null),
-        SizedBox(width: tokens.spacing.step3),
+        _CompanionFace(enabled: voiceId != null),
         Expanded(
           child: _Identity(
             name: messages.frontChatTitle,
@@ -280,13 +279,20 @@ class FrontChatHeader extends ConsumerWidget {
         // content below them. Its height — a tap target and this inset —
         // is the list's band's too, so beside it their hairlines meet.
         padding: frontBandPadding(tokens),
-        // On a conversation the row hangs from its top line — the controls
-        // and her name — beside her face, the title running under them.
-        child: Row(
-          crossAxisAlignment: listOpen
-              ? CrossAxisAlignment.center
-              : CrossAxisAlignment.start,
-          children: row,
+        // One height whatever the row holds, the list's band's too
+        // ([frontBandContentHeight]). On a conversation the row hangs from
+        // its top line — her face, her name and the controls — the title
+        // running under them.
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            minHeight: frontBandContentHeight(context),
+          ),
+          child: Row(
+            crossAxisAlignment: listOpen
+                ? CrossAxisAlignment.center
+                : CrossAxisAlignment.start,
+            children: row,
+          ),
         ),
       ),
     );
@@ -334,81 +340,107 @@ class _Identity extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         nameRow,
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (open.archived) ...[
-              Icon(
-                LottiIcons.archive,
-                key: FrontChatHeaderKeys.archived,
-                size: IconSizes.xs,
-                color: tokens.colors.text.mediumEmphasis,
-              ),
-              SizedBox(width: tokens.spacing.step2),
-            ],
-            Flexible(
-              child: Tooltip(
-                message: subtitle,
-                child: Text(
-                  subtitle,
-                  key: FrontChatHeaderKeys.title,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: tokens.typography.styles.body.bodySmall.copyWith(
-                    color: tokens.colors.text.mediumEmphasis,
+        SizedBox(
+          height: frontTitleLineHeight(context),
+          child: Row(
+            children: [
+              if (open.archived) ...[
+                Icon(
+                  LottiIcons.archive,
+                  key: FrontChatHeaderKeys.archived,
+                  size: IconSizes.xs,
+                  color: tokens.colors.text.mediumEmphasis,
+                ),
+                SizedBox(width: tokens.spacing.step2),
+              ],
+              Flexible(
+                child: Tooltip(
+                  message: subtitle,
+                  child: Text(
+                    subtitle,
+                    key: FrontChatHeaderKeys.title,
+                    maxLines: 1,
+                    softWrap: false,
+                    overflow: TextOverflow.ellipsis,
+                    style: tokens.typography.styles.body.bodySmall.copyWith(
+                      color: tokens.colors.text.mediumEmphasis,
+                    ),
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ],
     );
   }
 }
 
-/// Her face, large, at the head of the conversation: a tap shows her glass
-/// card over the thread ([frontCompanionCardShownProvider]), another hides
-/// it — in place, never a page of its own. Only her face while she cannot
-/// float: with the character off, or in the inbox.
-class _CompanionToggle extends ConsumerWidget {
-  const _CompanionToggle({required this.enabled});
+/// Her face at the head of the conversation, a rounded tile: a tap floats
+/// her glass card over the thread ([frontCompanionCardShownProvider]), in
+/// place — never a page of its own — and the face slides away while the card
+/// is out, since she is already on screen; the card hides itself again.
+/// Only her face, never a control, while she cannot float: with the
+/// character off, or in the inbox.
+class _CompanionFace extends ConsumerWidget {
+  const _CompanionFace({required this.enabled});
 
   final bool enabled;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final tokens = context.designTokens;
+    final shown = enabled && ref.watch(frontCompanionCardShownProvider);
+    final label = context.messages.frontChatCompanionShow;
     const face = FrontCompanionFigure(
       key: FrontChatHeaderKeys.figure,
-      size: ControlSizes.avatarHero,
+      size: ControlSizes.avatar,
+      rounded: true,
     );
-    if (!enabled) return face;
-    final shown = ref.watch(frontCompanionCardShownProvider);
-    final label = shown
-        ? context.messages.frontChatCompanionHide
-        : context.messages.frontChatCompanionShow;
-    void toggle() =>
-        ref.read(frontCompanionCardShownProvider.notifier).toggle();
-    return Semantics(
-      key: FrontChatHeaderKeys.companion,
-      container: true,
-      button: true,
-      toggled: shown,
-      label: label,
-      onTap: toggle,
-      child: ExcludeSemantics(
-        child: Tooltip(
-          message: label,
-          child: MouseRegion(
-            cursor: SystemMouseCursors.click,
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: toggle,
-              child: face,
-            ),
-          ),
-        ),
+    // Fades as it narrows, so her name and title slide into its room.
+    return AnimatedSwitcher(
+      duration: MotionDurations.short4,
+      switchInCurve: MotionCurves.standard,
+      switchOutCurve: MotionCurves.standard,
+      transitionBuilder: (child, animation) => SizeTransition(
+        axis: Axis.horizontal,
+        alignment: AlignmentDirectional.centerStart,
+        sizeFactor: animation,
+        child: FadeTransition(opacity: animation, child: child),
       ),
+      child: shown
+          ? const SizedBox.shrink()
+          : Padding(
+              padding: EdgeInsetsDirectional.only(end: tokens.spacing.step3),
+              child: !enabled
+                  ? face
+                  : Semantics(
+                      key: FrontChatHeaderKeys.companion,
+                      container: true,
+                      button: true,
+                      label: label,
+                      onTap: ref
+                          .read(frontCompanionCardShownProvider.notifier)
+                          .toggle,
+                      child: ExcludeSemantics(
+                        child: Tooltip(
+                          message: label,
+                          child: MouseRegion(
+                            cursor: SystemMouseCursors.click,
+                            child: GestureDetector(
+                              behavior: HitTestBehavior.opaque,
+                              onTap: ref
+                                  .read(
+                                    frontCompanionCardShownProvider.notifier,
+                                  )
+                                  .toggle,
+                              child: face,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+            ),
     );
   }
 }

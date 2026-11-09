@@ -3838,6 +3838,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get companionCardDemo => 'Demo size';
 
   @override
+  String get companionCardHide => 'Hide';
+
+  @override
   String get companionCardLabel =>
       'Companion. Drag to move; change the size from its options.';
 
@@ -7176,6 +7179,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get frontChatArchivedToast => 'Chat archived.';
 
   @override
+  String get frontChatCompanionShow => 'Show companion';
+
+  @override
   String get frontChatDeleteExplanation =>
       'Delete this chat? Its messages are hidden on every device, not erased. Whatever you filed from it stays where it is.';
 
@@ -7241,12 +7247,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get frontChatSearchChats => 'Search chats';
-
-  @override
-  String get frontChatCompanionHide => 'Hide companion';
-
-  @override
-  String get frontChatCompanionShow => 'Show companion';
 
   @override
   String get frontChatTitle => 'Companion';

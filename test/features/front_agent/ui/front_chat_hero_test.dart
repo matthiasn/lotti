@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -13,6 +14,7 @@ import 'package:lotti/features/companion/state/spoken_track.dart';
 import 'package:lotti/features/companion/ui/companion_floating_card.dart';
 import 'package:lotti/features/companion/ui/companion_speaker.dart';
 import 'package:lotti/features/front_agent/state/front_chat_controller.dart';
+import 'package:lotti/features/front_agent/state/front_conversation_providers.dart';
 import 'package:lotti/features/front_agent/state/front_stage_pointing.dart';
 import 'package:lotti/features/front_agent/state/front_voice_providers.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_hero.dart';
@@ -130,6 +132,18 @@ void main() {
     await pumpCard(tester, form: CompanionCardForm.desktop);
     expect(tester.getSize(card).height, 200);
     expect(tester.getRect(card).bottom, area.height - 16);
+  });
+
+  testWidgets('a tap on the card puts it away: the header shows her face '
+      'again', (tester) async {
+    await pumpCard(tester);
+    final container = ProviderScope.containerOf(tester.element(card));
+    container.read(frontCompanionCardShownProvider.notifier).toggle();
+
+    await tester.tap(card);
+    await tester.pump(kDoubleTapTimeout);
+
+    expect(container.read(frontCompanionCardShownProvider), isFalse);
   });
 
   testWidgets('the card restyles her: the next outfit', (tester) async {

@@ -3920,6 +3920,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get companionCardDemo => 'Dimensiune pentru demonstrație';
 
   @override
+  String get companionCardHide => 'Ascundeți';
+
+  @override
   String get companionCardLabel =>
       'Însoțitor. Trageți pentru a muta; schimbați dimensiunea din opțiuni.';
 
@@ -7321,6 +7324,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get frontChatArchivedToast => 'Conversație arhivată.';
 
   @override
+  String get frontChatCompanionShow => 'Afișați însoțitorul';
+
+  @override
   String get frontChatDeleteExplanation =>
       'Ștergeți această conversație? Mesajele ei sunt ascunse pe toate dispozitivele, nu șterse definitiv. Ce ați salvat din această conversație rămâne unde este.';
 
@@ -7388,12 +7394,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get frontChatSearchChats => 'Căutați în conversații';
-
-  @override
-  String get frontChatCompanionHide => 'Ascundeți însoțitorul';
-
-  @override
-  String get frontChatCompanionShow => 'Afișați însoțitorul';
 
   @override
   String get frontChatTitle => 'Însoțitor';

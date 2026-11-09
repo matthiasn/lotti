@@ -3905,6 +3905,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get companionCardDemo => 'Dimensione demo';
 
   @override
+  String get companionCardHide => 'Nascondi';
+
+  @override
   String get companionCardLabel =>
       'Compagno. Trascina per spostare; cambia la dimensione dalle sue opzioni.';
 
@@ -7285,6 +7288,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get frontChatArchivedToast => 'Chat archiviata.';
 
   @override
+  String get frontChatCompanionShow => 'Mostra il compagno';
+
+  @override
   String get frontChatDeleteExplanation =>
       'Eliminare questa chat? I suoi messaggi vengono nascosti su tutti i dispositivi, non cancellati. Quello che hai salvato da questa chat resta dov\'è.';
 
@@ -7351,12 +7357,6 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get frontChatSearchChats => 'Cerca nelle chat';
-
-  @override
-  String get frontChatCompanionHide => 'Nascondi il compagno';
-
-  @override
-  String get frontChatCompanionShow => 'Mostra il compagno';
 
   @override
   String get frontChatTitle => 'Compagno';

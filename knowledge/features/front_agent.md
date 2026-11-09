@@ -1134,26 +1134,30 @@ the sheet for the entry's or the task's page. The inbox filter keeps a
 waiting turn's words and the reply that carries its cards together.
 
 The header (`FrontChatHeader`) says who the conversation is with and what
-about. Her face leads it at `ControlSizes.avatarHero` — the spark when
-`enable_companion` is off — and a tap on it shows her glass card over the
-thread or hides it again, in place (see [her voice](#her-voice)); to a screen
-reader it is a toggle button named *Show companion* or *Hide companion*.
-Beside her face the row hangs from its top line: her name, then the controls,
-and under them, across the whole width beside her face, the open
-conversation's title on up to two lines (the inbox's name while that view is
+about. Her face leads it in a rounded tile at `ControlSizes.avatar` — the
+spark when `enable_companion` is off — and a tap on it shows her glass card
+over the thread, in place (see [her voice](#her-voice)); to a screen reader
+it is a button named *Show companion*. While the card is out the face slides
+away (fading as it narrows), since she is already on screen, and her name and
+title take its room. The row hangs from its top line: her face, her name and
+the controls, and under them, across the whole width beside her face, the
+open conversation's title on one line (the inbox's name while that view is
 on; her name alone for a conversation not begun), an archived conversation
 marked before its title. The controls are her voice while the companion is
 on, as one pair of AI discs — `FrontVoiceButton`, whose idle glyph is "again"
 rather than a speaker, and the `FrontVoiceSwitch` that mutes her, a speaker
 struck through while muted, its state in the glyph's shape since the disc's
-accent means busy — then an overflow and close. The row is her face tall plus
-`frontBandPadding`.
+accent means busy — then an overflow and close. The band is one tap target
+over one title line tall (`frontBandContentHeight`, the title's line height
+as the text scales) plus `frontBandPadding`, whatever it holds, so it never
+jumps between a conversation and one not begun.
 Where the list is a page over the conversation (a phone, a narrow window) the
 row opens with the *Chats* glyph and the inbox count, and the overflow
 leads with a new conversation and the switch that mutes her as a checked row
 (`frontVoiceMenuItem`), so the row fits a 360 dp phone with every control
 showing. Beside the list the switch sits on the row beside her replay, the
-list's own band is as tall as her face so the two hairlines meet, and a short
+list's own band takes the same `frontBandContentHeight` so the two hairlines
+meet, and a short
 vertical rule sets close apart from the conversation's controls. The overflow then
 holds her AI profile once she exists, her internals, where the thread's cost
 is accounted, and this conversation's rename, archive and delete as a group
@@ -1428,15 +1432,17 @@ its own**: `frontCompanionCardShownProvider` flips, and the pane's own
 and out (`AnimatedSwitcher`, `MotionDurations.short4`), still speaking on her
 source. The thread, its field, the header and the list stay where they are,
 so typing, `@` mentions, the microphone and Enter to send go on as before.
+The card puts itself away: a single tap on it, or *Hide* last in its menu
+(`CompanionFloatingCard.onHide`), and the face comes back to the header.
 Whether she is shown is held for the app's session, not saved; she shows only
 while the companion is on, a conversation is open and the inbox is off.
 
 ```mermaid
 stateDiagram-v2
   [*] --> Hidden
-  Hidden --> Shown: tap her face
-  Shown --> Hidden: tap her face
-  note right of Shown: not drawn in the inbox or with the character off
+  Hidden --> Shown: tap her face in the header
+  Shown --> Hidden: tap the card, or Hide in its menu
+  note right of Shown: the header face steps aside, and no card in the inbox or with the character off
 ```
 
 She stands head to toe in a `CompanionFloatingCard`
@@ -1452,7 +1458,8 @@ unclaimed). Its edge takes the interactive accent
 while she speaks. It opens small in the bottom-right corner; a drag that
 starts on it moves it, a double tap switches Small ⇄ Large, a pinch sizes it
 anywhere between, and a long press — a right-click on a desktop — opens its
-menu (Small, Large, Demo size, Restyle, Reset position and size). A desktop
+menu (Small, Large, Demo size, Restyle, Reset position and size, and Hide
+when its host gives `onHide`, which a single tap calls too). A desktop
 adds a grip on the corner facing the open screen, on hover, and Ctrl/⌘ +
 scroll. Wherever it sits, the card stays a margin (`spacing.step5`) inside
 the thread's area, and never taller or wider than that area allows. The
