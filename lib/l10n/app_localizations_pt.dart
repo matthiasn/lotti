@@ -3892,6 +3892,34 @@ class AppLocalizationsPt extends AppLocalizations {
   String get commonUnknown => 'Desconhecido';
 
   @override
+  String get companionCardDemo => 'Tamanho de demonstração';
+
+  @override
+  String get companionCardLabel =>
+      'Acompanhante. Arraste para mover, toque duas vezes para mudar o tamanho.';
+
+  @override
+  String get companionCardLarge => 'Grande';
+
+  @override
+  String get companionCardOptions => 'Opções do acompanhante';
+
+  @override
+  String get companionCardReset => 'Redefinir posição e tamanho';
+
+  @override
+  String get companionCardResize => 'Redimensionar';
+
+  @override
+  String get companionCardRestyle => 'Mudar estilo';
+
+  @override
+  String get companionCardSmall => 'Pequeno';
+
+  @override
+  String get companionCardUsualSize => 'Tamanho habitual';
+
+  @override
   String get companionSettingsCharacterAunt => 'Tia';
 
   @override

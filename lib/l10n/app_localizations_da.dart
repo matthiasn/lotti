@@ -3850,6 +3850,34 @@ class AppLocalizationsDa extends AppLocalizations {
   String get commonUnknown => 'Ukendt';
 
   @override
+  String get companionCardDemo => 'Demostørrelse';
+
+  @override
+  String get companionCardLabel =>
+      'Følgesvend. Træk for at flytte, tryk to gange for at ændre størrelsen.';
+
+  @override
+  String get companionCardLarge => 'Stor';
+
+  @override
+  String get companionCardOptions => 'Indstillinger for følgesvend';
+
+  @override
+  String get companionCardReset => 'Nulstil placering og størrelse';
+
+  @override
+  String get companionCardResize => 'Ændr størrelse';
+
+  @override
+  String get companionCardRestyle => 'Skift stil';
+
+  @override
+  String get companionCardSmall => 'Lille';
+
+  @override
+  String get companionCardUsualSize => 'Normal størrelse';
+
+  @override
   String get companionSettingsCharacterAunt => 'Tante';
 
   @override

@@ -3835,6 +3835,34 @@ class AppLocalizationsEn extends AppLocalizations {
   String get commonUnknown => 'Unknown';
 
   @override
+  String get companionCardDemo => 'Demo size';
+
+  @override
+  String get companionCardLabel =>
+      'Companion. Drag to move, double-tap to change size.';
+
+  @override
+  String get companionCardLarge => 'Large';
+
+  @override
+  String get companionCardOptions => 'Companion options';
+
+  @override
+  String get companionCardReset => 'Reset position and size';
+
+  @override
+  String get companionCardResize => 'Resize';
+
+  @override
+  String get companionCardRestyle => 'Restyle';
+
+  @override
+  String get companionCardSmall => 'Small';
+
+  @override
+  String get companionCardUsualSize => 'Usual size';
+
+  @override
   String get companionSettingsCharacterAunt => 'Aunt';
 
   @override

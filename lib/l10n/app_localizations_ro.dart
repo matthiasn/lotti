@@ -3917,6 +3917,34 @@ class AppLocalizationsRo extends AppLocalizations {
   String get commonUnknown => 'Necunoscut';
 
   @override
+  String get companionCardDemo => 'Dimensiune pentru demonstrație';
+
+  @override
+  String get companionCardLabel =>
+      'Însoțitor. Trageți pentru a muta, atingeți de două ori pentru a schimba dimensiunea.';
+
+  @override
+  String get companionCardLarge => 'Mare';
+
+  @override
+  String get companionCardOptions => 'Opțiunile însoțitorului';
+
+  @override
+  String get companionCardReset => 'Resetați poziția și dimensiunea';
+
+  @override
+  String get companionCardResize => 'Redimensionați';
+
+  @override
+  String get companionCardRestyle => 'Schimbați stilul';
+
+  @override
+  String get companionCardSmall => 'Mic';
+
+  @override
+  String get companionCardUsualSize => 'Dimensiunea obișnuită';
+
+  @override
   String get companionSettingsCharacterAunt => 'Mătușa';
 
   @override

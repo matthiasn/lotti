@@ -131,6 +131,65 @@ void main() {
     );
   });
 
+  testWidgets('an overlay floats over the thread, never the composer, and '
+      'the thread keeps the inset free after its last message', (
+    tester,
+  ) async {
+    var overlayTaps = 0;
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        Scaffold(
+          body: AgentChatView(
+            agentId: 'agent',
+            agentName: 'Habitat Watcher',
+            draft: '',
+            isSending: false,
+            onDraftChanged: (_) {},
+            onSend: () {},
+            onRetry: () {},
+            history: AsyncData([
+              AgentChatMessage(
+                id: 'a',
+                role: AgentChatRole.user,
+                text: 'Monday?',
+                createdAt: DateTime(2026, 9, 14),
+              ),
+            ]),
+            threadOverlay: Align(
+              alignment: Alignment.bottomRight,
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => overlayTaps++,
+                child: const SizedBox(
+                  key: Key('overlay'),
+                  width: 100,
+                  height: 150,
+                ),
+              ),
+            ),
+            threadBottomInset: 166,
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    final overlay = tester.getRect(find.byKey(const Key('overlay')));
+    final composer = tester.getRect(find.byType(DesignSystemChatInput));
+    // At the thread's foot, right above the composer, not over it.
+    expect(overlay.bottom, lessThanOrEqualTo(composer.top));
+    await tester.tap(find.byKey(const Key('overlay')));
+    expect(overlayTaps, 1);
+    final list = tester.widget<ListView>(find.byType(ListView));
+    final tokens = tester.element(find.byType(ListView)).designTokens;
+    expect(
+      (list.padding! as EdgeInsets).bottom,
+      tokens.spacing.step5 + 166,
+    );
+    // Where it does not paint, the thread is reachable.
+    expect(find.text('Monday?').hitTestable(), findsOneWidget);
+  });
+
   testWidgets('question recovery stays outside the user bubble', (
     tester,
   ) async {

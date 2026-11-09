@@ -6504,6 +6504,60 @@ abstract class AppLocalizations {
   /// **'Unknown'**
   String get commonUnknown;
 
+  /// Menu row: the companion card fills the conversation area until dismissed, for demos
+  ///
+  /// In en, this message translates to:
+  /// **'Demo size'**
+  String get companionCardDemo;
+
+  /// Screen-reader label of the companion's floating glass card over a conversation
+  ///
+  /// In en, this message translates to:
+  /// **'Companion. Drag to move, double-tap to change size.'**
+  String get companionCardLabel;
+
+  /// Menu row: shows the companion card large
+  ///
+  /// In en, this message translates to:
+  /// **'Large'**
+  String get companionCardLarge;
+
+  /// Label of the floating companion card's menu (opened by long press or right-click)
+  ///
+  /// In en, this message translates to:
+  /// **'Companion options'**
+  String get companionCardOptions;
+
+  /// Menu row: puts the companion card back in its first place and size
+  ///
+  /// In en, this message translates to:
+  /// **'Reset position and size'**
+  String get companionCardReset;
+
+  /// Tooltip of the desktop resize grip on the companion card
+  ///
+  /// In en, this message translates to:
+  /// **'Resize'**
+  String get companionCardResize;
+
+  /// Menu row: changes the companion's look (outfit)
+  ///
+  /// In en, this message translates to:
+  /// **'Restyle'**
+  String get companionCardRestyle;
+
+  /// Menu row: shows the companion card small
+  ///
+  /// In en, this message translates to:
+  /// **'Small'**
+  String get companionCardSmall;
+
+  /// Button on the demo-sized companion card returning it to its saved size
+  ///
+  /// In en, this message translates to:
+  /// **'Usual size'**
+  String get companionCardUsualSize;
+
   /// Name of the aunt character, a woman of about forty, shown on her chip.
   ///
   /// In en, this message translates to:

@@ -178,20 +178,28 @@ sources:
     last_modified: 2026-11-07
   - id: voice-controls
     resource: ../../lib/features/front_agent/ui/front_voice_controls.dart
-    title: Her voice's stop / say-it-again control, her full-screen stage and the conversation with her there
-    last_modified: 2026-11-08
+    title: Her voice's stop / say-it-again control, her full-screen page and the conversation with her there
+    last_modified: 2026-11-09
   - id: stage-pointing
     resource: ../../lib/features/front_agent/state/front_stage_pointing.dart
-    title: frontStagePointsProvider — she points at the tasks she lists, on her stage
-    last_modified: 2026-11-07
+    title: frontStagePointsProvider — she points at the tasks she lists, on her page
+    last_modified: 2026-11-09
   - id: conversation-actions
     resource: ../../lib/features/front_agent/ui/front_conversation_actions.dart
     title: A conversation's rename, archive and delete, and her ⋯ on the agent-surface menu
     last_modified: 2026-11-07
   - id: stage
     resource: ../../lib/features/agents/ui/ai_summary_card/companion_stage_page.dart
-    title: CompanionStagePage — the shared full-screen stage
-    last_modified: 2026-11-08
+    title: CompanionStagePage — the shared full-screen stage, or a conversation with her floating over it
+    last_modified: 2026-11-09
+  - id: floating-card
+    resource: ../../lib/features/companion/ui/companion_floating_card.dart
+    title: CompanionFloatingCard — her glass card over a conversation, moved and resized by the user
+    last_modified: 2026-11-09
+  - id: card-placement
+    resource: ../../lib/features/companion/state/companion_card_controller.dart
+    title: companionCardControllerProvider — where the card sits and how tall, per form factor
+    last_modified: 2026-11-09
   - id: profile-choice
     resource: ../../lib/features/front_agent/ui/front_profile_choice.dart
     title: FrontProfileChoice — her AI profile, and with it her voice
@@ -1407,37 +1415,71 @@ the inbox, for a conversation other than the one on screen, while a send is
 in flight or a spoken reply is still owed, while the thread or its journal
 access is being read, and before that answer has landed.
 The header's stage control — or its overflow entry, and a tap on her
-face — opens `openFrontStage`: the shared full-screen `CompanionStagePage`,
-head to toe, on a phone and on a desktop window alike, still speaking on
-her source, with `FrontVoiceButton` at her feet in place of a summary's
-read-aloud control (the page's `controls`). **The stage is her chat with her
-where its list would be**: the page's `sidePanel` is `FrontStageTranscript`,
-the conversation's own `FrontChatThreadView` — the same thread and the same
-`DesignSystemChatInput` the pane shows, so typing, `@` mentions, the
-microphone and Enter to send work there exactly as outside the stage, and a
-send never leaves it. Both form factors split at her share, behind the
-shared `ResizableDivider` that drags it and saves it through
-`PaneWidthController` like the app's columns (three fifths go to the
-conversation by default, between a quarter and three fifths for her). On a
-desktop window (`isDesktopLayout`) she takes `PaneWidths.companionStageShare`
-of the width and the conversation stands beside her, to the right, in the
-rest; on a phone she takes `PaneWidths.companionStageHeightShare` of the
-height and the conversation stands under her in the rest — saved on its own,
-so a phone's split never moves a desktop's — split by the divider's
-`Axis.vertical` band (`spacing.step6` tall, a grip at its centre, all of it a
-target for a finger), the field at the foot of the screen, each half keeping
-clear of only the system bar it meets (`MediaQuery.removePadding`). A task
-it links opens on top of the stage, and back returns to it; its other ways out
-to a page close the stage and her surface both. While her voice plays in the conversation and her latest reply
-lists tasks or charts logged time (`frontStagePointsProvider` over
-`frontLatestReplyHasVisual`, in `state/front_stage_pointing.dart`), the
-page's `pointsAtSidePanel` has her hold `GestureName.pointRight` at the
-panel beside her — at the task rows or the chart as she says them — and let
-her arm down when she stops; on a phone, the panel under her, she never
-points. The bust keeps one tree whatever she does, so her animator lives
-through a start and a stop.
+face — opens `openFrontStage`: the shared full-screen `CompanionStagePage`
+on a phone and on a desktop window alike, still speaking on her source.
+**The page is her chat, with her floating over it**: its `conversation` is
+`FrontStageTranscript`, the conversation's own `FrontChatThreadView` — the
+same thread and the same `DesignSystemChatInput` the pane shows, so typing,
+`@` mentions, the microphone and Enter to send work there exactly as outside,
+and a send never leaves it. A row along the top, under the system bar and any
+notch (`SafeArea`), holds the outfit control, `FrontVoiceButton` (the page's
+`controls`, in place of a summary's read-aloud control) and close; the page
+wears the app's theme, not the stage's dark.
 
-The pane under the stage stays mounted, its own composer included. A
+She stands head to toe in a `CompanionFloatingCard`
+(`companion/ui/companion_floating_card.dart`): a glass card
+(`DsGlassChipSurface`'s blur and shadow, a translucent `background.level02`
+fill, darker in the dark theme), handed to `AgentChatView` as its
+`threadOverlay`, so it floats over the thread's area only — never over the
+top row, the notch or the field — and takes touches only where it paints;
+the thread scrolls everywhere else. Its edge takes the interactive accent
+while she speaks. It opens small in the bottom-right corner; a drag that
+starts on it moves it, a double tap switches Small ⇄ Large, a pinch sizes it
+anywhere between, and a long press — a right-click on a desktop — opens its
+menu (Small, Large, Demo size, Restyle, Reset position and size). A desktop
+adds a grip on the corner facing the open screen, on hover, and Ctrl/⌘ +
+scroll. Wherever it sits, the card stays a margin (`spacing.step5`) inside
+the thread's area, and never taller or wider than that area allows. While it
+sits in the lower half the thread gets `threadBottomInset` — the card's
+height and the margin — after its last message, so the end of an answer
+scrolls clear of her.
+
+Where the user leaves it is kept per form factor
+(`CompanionCardForm.phone` / `.desktop`) by `companionCardControllerProvider`
+in SettingsDb (`COMPANION_CARD_PHONE`, `COMPANION_CARD_DESKTOP`; device-local,
+not synced), as shares of the room it travels in plus a height, so a card in
+a corner stays in it when the window resizes or the phone turns. Demo size
+is never saved: it fills the area until its "Usual size" button, a double
+tap, or the page closes.
+
+```mermaid
+stateDiagram-v2
+  [*] --> Small: first run
+  Small --> Large: double tap, menu
+  Large --> Small: double tap, menu
+  Small --> Sized: pinch, grip, Ctrl/⌘ + scroll
+  Large --> Sized: pinch, grip, Ctrl/⌘ + scroll
+  Sized --> Small: double tap, menu, reset
+  Small --> Demo: menu
+  Large --> Demo: menu
+  Sized --> Demo: menu
+  Demo --> Saved: Usual size, double tap, page closed
+  Saved --> [*]
+  note right of Demo: fills the thread's area, never saved
+  note right of Saved: back to the saved size and place
+```
+
+A task it links opens on top of the page, and back returns to it; its other
+ways out to a page close the page and her surface both. While her voice plays
+in the conversation and her latest reply lists tasks or charts logged time
+(`frontStagePointsProvider` over `frontLatestReplyHasVisual`, in
+`state/front_stage_pointing.dart`), the page's `pointsAtConversation` has her
+hold `GestureName.pointRight` at the task rows or the chart as she says them
+— only while her card is in the left half, the conversation to her right —
+and let her arm down when she stops. The bust keeps one tree whatever she
+does, so her animator lives through a start and a stop.
+
+The pane under the page stays mounted, its own composer included. A
 finished recording reaches only the composer on the current route
 (`AgentChatView` checks `ModalRoute.isCurrentOf`), so what is said on the
 stage lands once, in the stage's field; one that finishes while a page
@@ -1447,17 +1489,6 @@ with an empty draft), not either view's, so a draft said in one view and
 sent from the other still goes out as a spoken turn, and her answer is
 spoken.
 
-```mermaid
-flowchart LR
-  subgraph Desktop["Desktop window"]
-    direction LR
-    F1["Her figure<br/>FrontVoiceButton at her feet"] --- D["ResizableDivider<br/>companionStageShare"] --- C1["FrontChatThreadView<br/>thread + DesignSystemChatInput"]
-  end
-  subgraph Phone["Phone"]
-    direction TB
-    F2["Her figure<br/>companionStageHeightShare of the height"] --- B["ResizableDivider<br/>Axis.vertical band"] --- C2["FrontChatThreadView<br/>thread + DesignSystemChatInput"]
-  end
-```
 
 # Where it plugs in
 

@@ -17,6 +17,7 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/companion/model/companion_customization.dart';
 import 'package:lotti/features/companion/state/companion_customization_controller.dart';
 import 'package:lotti/features/companion/state/companion_look_controller.dart';
+import 'package:lotti/features/companion/ui/companion_floating_card.dart';
 import 'package:lotti/features/companion/ui/companion_speaker.dart';
 import 'package:lotti/features/companion/ui/companion_view.dart';
 import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
@@ -654,13 +655,14 @@ void main() {
       expect(stage.sourceId, 'front-chat:c-1');
       // In the outfit her bust wore.
       expect(stage.dressedFor, frontCompanionDressedFor);
-      // Her voice's control at her feet, not the summary's.
+      // Her voice's control in the page's top row, not the summary's.
       expect(
         (stage.controls! as FrontVoiceButton).conversationId,
         'c-1',
       );
-      // The conversation with her, its field included.
-      expect(stage.sidePanel, isA<FrontStageTranscript>());
+      // The conversation with her, its field included, her card over it.
+      expect(find.byType(FrontStageTranscript), findsOneWidget);
+      expect(find.byType(CompanionFloatingCard), findsOneWidget);
       expect(voice.stoppedSources, isEmpty, reason: 'she speaks on');
     });
 

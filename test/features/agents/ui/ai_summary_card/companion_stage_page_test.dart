@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,12 +14,13 @@ import 'package:lotti/features/companion/model/companion_gesture.dart';
 import 'package:lotti/features/companion/model/companion_look.dart';
 import 'package:lotti/features/companion/model/companion_mood.dart';
 import 'package:lotti/features/companion/rig/companion_painter.dart';
+import 'package:lotti/features/companion/state/companion_card_controller.dart';
 import 'package:lotti/features/companion/state/companion_customization_controller.dart';
 import 'package:lotti/features/companion/state/companion_look_controller.dart';
 import 'package:lotti/features/companion/state/spoken_track.dart';
+import 'package:lotti/features/companion/ui/companion_floating_card.dart';
 import 'package:lotti/features/companion/ui/companion_speaker.dart';
 import 'package:lotti/features/companion/ui/companion_view.dart';
-import 'package:lotti/features/design_system/state/pane_width_controller.dart';
 import 'package:lotti/features/tts/state/tts_engine_provider.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:material_ui/material_ui.dart';
@@ -57,8 +59,8 @@ void main() {
     bool engineSupported = true,
     Stream<bool>? readAloudFlag,
     Widget? hostControl,
-    Widget? sidePanel,
-    ProviderListenable<bool>? pointsAtSidePanel,
+    CompanionConversationBuilder? conversation,
+    ProviderListenable<bool>? pointsAtConversation,
     String? dressedFor,
     bool surprise = false,
   }) async {
@@ -72,8 +74,8 @@ void main() {
                     sourceId: 'task-1',
                     spokenText: 'Two items left.',
                     controls: hostControl,
-                    sidePanel: sidePanel,
-                    pointsAtSidePanel: pointsAtSidePanel,
+                    conversation: conversation,
+                    pointsAtConversation: pointsAtConversation,
                     dressedFor: dressedFor,
                   )
                 : openCompanionStage(
@@ -340,203 +342,134 @@ void main() {
     expect(find.text('open'), findsOneWidget);
   });
 
-  group("a host's side panel", () {
-    const panel = SizedBox.expand(key: Key('host-panel'));
+  group("a host's conversation", () {
     late TestGetItMocks mocks;
+    late double inset;
 
     setUp(() async => mocks = await setUpTestGetIt());
     tearDown(tearDownTestGetIt);
 
-    double figureWidth(WidgetTester tester) => tester
-        .getRect(find.byKey(const ValueKey('companionStageFigure')))
-        .width;
-
-    testWidgets('stands beside her on a desktop window, the conversation '
-        'keeping the larger share', (tester) async {
-      tester.view
-        ..physicalSize = const Size(1600, 1000)
-        ..devicePixelRatio = 1;
-      addTearDown(tester.view.reset);
-      await openStage(tester, sidePanel: panel);
-
-      final side = tester.getRect(find.byKey(const Key('host-panel')));
-      final figure = tester.getRect(
-        find.byKey(const ValueKey('companionStageFigure')),
+    Widget conversation({required Widget card, required double bottomInset}) {
+      inset = bottomInset;
+      return Stack(
+        key: const Key('host-conversation'),
+        children: [Positioned.fill(child: card)],
       );
-      expect(side.left, greaterThanOrEqualTo(figure.right));
+    }
+
+    final figure = find.byKey(const ValueKey('companionStageFigure'));
+    final card = find.byKey(CompanionFloatingCardKeys.card);
+    final host = find.byKey(const Key('host-conversation'));
+
+    void phone(WidgetTester tester) {
+      tester.view
+        ..physicalSize = const Size(390, 844)
+        ..devicePixelRatio = 1
+        ..padding = const FakeViewPadding(top: 59, bottom: 34);
+      addTearDown(tester.view.reset);
+    }
+
+    void stored(CompanionCardForm form, Map<String, num> placement) => when(
+      () => mocks.settingsDb.itemByKey(form.settingsKey),
+    ).thenAnswer((_) async => jsonEncode(placement));
+
+    testWidgets('is the page, in the app theme, her small in a card in its '
+        'bottom-right corner, the top row under the notch', (tester) async {
+      phone(tester);
+      await openStage(
+        tester,
+        conversation: conversation,
+        hostControl: const SizedBox(key: Key('host-control')),
+      );
+
+      // No stage of her own: she is in the card, over the conversation.
+      expect(find.byType(CompanionView), findsOneWidget);
       expect(
-        side.width / (side.width + figure.width),
-        closeTo(1 - defaultCompanionStageShare, 0.01),
+        tester.widget<CompanionSpeaker>(figure).stage,
+        isFalse,
       );
-    });
-
-    testWidgets('opens at the share the user saved', (tester) async {
-      when(() => mocks.settingsDb.itemsByKeys(any())).thenAnswer(
-        (_) async => {companionStageShareKey: '0.5'},
+      expect(find.descendant(of: card, matching: figure), findsOneWidget);
+      final page = tester.getRect(host);
+      final cardRect = tester.getRect(card);
+      expect(cardRect.height, CompanionCardForm.phone.smallHeight);
+      expect(cardRect.right, 390 - 16);
+      expect(cardRect.bottom, page.bottom - 16);
+      // The row with the outfit, the host's control and close sits below
+      // the notch, and the conversation — her with it — below the row.
+      final outfit = tester.getRect(
+        find.byKey(const ValueKey('companionStageOutfit')),
       );
-      tester.view
-        ..physicalSize = const Size(1600, 1000)
-        ..devicePixelRatio = 1;
-      addTearDown(tester.view.reset);
-      await openStage(tester, sidePanel: panel);
-
+      expect(outfit.top, greaterThanOrEqualTo(59));
+      expect(page.top, greaterThanOrEqualTo(outfit.bottom));
       expect(
-        figureWidth(tester),
-        closeTo((1600 - 3) * 0.5, 0.5),
+        tester.getCenter(find.byKey(const Key('host-control'))).dy,
+        closeTo(outfit.center.dy, 0.5),
       );
+      expect(
+        MediaQuery.paddingOf(tester.element(host)).top,
+        0,
+      );
+      // The thread keeps her height and a margin free after its end.
+      expect(inset, CompanionCardForm.phone.smallHeight + 16);
     });
 
-    testWidgets('the divider between them drags her share with the pointer '
-        'and saves it', (tester) async {
-      tester.view
-        ..physicalSize = const Size(1600, 1000)
-        ..devicePixelRatio = 1;
-      addTearDown(tester.view.reset);
-      await openStage(tester, sidePanel: panel);
+    testWidgets('opens where the user left her on a phone, leaving the '
+        "thread's end alone when she is up top", (tester) async {
+      phone(tester);
+      stored(CompanionCardForm.phone, {'x': 0, 'y': 0, 'h': 300});
+      stored(CompanionCardForm.desktop, {'x': 1, 'y': 1, 'h': 500});
+      await openStage(tester, conversation: conversation);
 
-      final gesture = await tester.startGesture(
-        tester.getCenter(find.byKey(CompanionStagePage.sidePanelDividerKey)),
-      );
-      // Past the drag slop, so the next move is applied whole.
-      await gesture.moveBy(const Offset(40, 0));
-      await tester.pump();
-      final before = figureWidth(tester);
-      await gesture.moveBy(const Offset(160, 0));
-      await tester.pump();
-      await gesture.up();
-      final after = figureWidth(tester);
-
-      expect(after - before, closeTo(160, 0.5));
-      await tester.pump(persistDebounce);
-      verify(
-        () => mocks.settingsDb.saveSettingsItem(
-          companionStageShareKey,
-          (after / (1600 - 3)).toStringAsFixed(3),
-        ),
-      ).called(1);
+      final page = tester.getRect(host);
+      final cardRect = tester.getRect(card);
+      expect(cardRect.height, 300);
+      expect(cardRect.topLeft, page.topLeft + const Offset(16, 16));
+      expect(inset, 0);
     });
 
-    testWidgets('stands under her on a phone, at the default share, '
-        'each half keeping clear of only the system bar it meets', (
+    testWidgets('on a desktop window keeps the desktop placement', (
       tester,
     ) async {
       tester.view
-        ..physicalSize = const Size(390, 844)
-        ..devicePixelRatio = 1
-        ..padding = const FakeViewPadding(top: 47, bottom: 34);
-      addTearDown(tester.view.reset);
-      await openStage(tester, sidePanel: panel);
-
-      final side = tester.getRect(find.byKey(const Key('host-panel')));
-      final band = tester.getRect(
-        find.byKey(CompanionStagePage.sidePanelDividerKey),
-      );
-      // Her share of what the band leaves, the band, then the panel.
-      expect(band.top, closeTo((844 - 24) * defaultCompanionStageShare, 0.5));
-      expect((band.height, band.width), (24.0, 390.0));
-      expect(side.top, band.bottom);
-      expect((side.width, side.bottom), (390.0, 844.0));
-
-      final panelInsets = MediaQuery.paddingOf(
-        tester.element(find.byKey(const Key('host-panel'))),
-      );
-      final stageInsets = MediaQuery.paddingOf(
-        tester.element(find.byKey(const ValueKey('companionStageFigure'))),
-      );
-      expect((panelInsets.top, panelInsets.bottom), (0.0, 34.0));
-      expect((stageInsets.top, stageInsets.bottom), (47.0, 0.0));
-    });
-
-    testWidgets('on a phone opens at the height share saved for a phone, '
-        'not the width share a desktop saved', (tester) async {
-      when(() => mocks.settingsDb.itemsByKeys(any())).thenAnswer(
-        (_) async => {
-          companionStageShareKey: '0.6',
-          companionStageHeightShareKey: '0.3',
-        },
-      );
-      tester.view
-        ..physicalSize = const Size(390, 844)
-        ..devicePixelRatio = 1;
-      addTearDown(tester.view.reset);
-      await openStage(tester, sidePanel: panel);
-
-      expect(
-        tester.getRect(find.byKey(CompanionStagePage.sidePanelDividerKey)).top,
-        closeTo((844 - 24) * 0.3, 0.5),
-      );
-    });
-
-    testWidgets('on a phone the band between them drags her height with the '
-        'finger and saves it for a phone', (tester) async {
-      tester.view
-        ..physicalSize = const Size(390, 844)
-        ..devicePixelRatio = 1;
-      addTearDown(tester.view.reset);
-      await openStage(tester, sidePanel: panel);
-      final divider = find.byKey(CompanionStagePage.sidePanelDividerKey);
-
-      final gesture = await tester.startGesture(tester.getCenter(divider));
-      // Past the drag slop, so the next move is applied whole.
-      await gesture.moveBy(const Offset(0, 40));
-      await tester.pump();
-      final before = tester.getRect(divider).top;
-      await gesture.moveBy(const Offset(0, 82));
-      await tester.pump();
-      await gesture.up();
-      final after = tester.getRect(divider).top;
-
-      expect(after - before, closeTo(82, 0.5));
-      await tester.pump(persistDebounce);
-      verify(
-        () => mocks.settingsDb.saveSettingsItem(
-          companionStageHeightShareKey,
-          (after / (844 - 24)).toStringAsFixed(3),
-        ),
-      ).called(1);
-      verifyNever(
-        () => mocks.settingsDb.saveSettingsItem(companionStageShareKey, any()),
-      );
-    });
-
-    testWidgets('on a phone, at her smallest share with the keyboard up, '
-        'nothing overflows', (tester) async {
-      when(() => mocks.settingsDb.itemsByKeys(any())).thenAnswer(
-        (_) async => {companionStageHeightShareKey: '0.25'},
-      );
-      tester.view
-        ..physicalSize = const Size(390, 844)
-        ..devicePixelRatio = 1
-        ..padding = const FakeViewPadding(top: 47, bottom: 34)
-        ..viewInsets = const FakeViewPadding(bottom: 336);
-      addTearDown(tester.view.reset);
-      await openStage(tester, sidePanel: panel);
-
-      expect(tester.takeException(), isNull);
-      expect(
-        tester.getRect(find.byKey(const Key('host-panel'))).bottom,
-        844 - 336,
-      );
-    });
-
-    GestureName? held(WidgetTester tester) => tester
-        .widget<CompanionSpeaker>(
-          find.byKey(const ValueKey('companionStageFigure')),
-        )
-        .holding;
-
-    testWidgets('she points at it while the host says so, and lets her arm '
-        'down after', (tester) async {
-      tester.view
         ..physicalSize = const Size(1600, 1000)
         ..devicePixelRatio = 1;
       addTearDown(tester.view.reset);
+      stored(CompanionCardForm.phone, {'x': 0, 'y': 0, 'h': 300});
+      await openStage(tester, conversation: conversation);
+
+      expect(
+        tester.getRect(card).height,
+        CompanionCardForm.desktop.smallHeight,
+      );
+    });
+
+    testWidgets('the card restyles her: the next outfit', (tester) async {
+      phone(tester);
+      await openStage(tester, conversation: conversation);
+      String worn() =>
+          tester.widget<CompanionView>(find.byType(CompanionView)).look.id;
+      expect(worn(), companionOutfits.first.id);
+
+      await tester.longPress(card);
+      await tester.pump();
+      await tester.tap(find.byKey(CompanionFloatingCardKeys.restyle));
+      await _pumpFrames(tester);
+
+      expect(worn(), companionOutfits[1].id);
+    });
+
+    GestureName? held(WidgetTester tester) =>
+        tester.widget<CompanionSpeaker>(figure).holding;
+
+    testWidgets('with the conversation to her right she points at it while '
+        'the host says so, and lets her arm down after', (tester) async {
+      phone(tester);
+      stored(CompanionCardForm.phone, {'x': 0, 'y': 1, 'h': 172});
       await openStage(
         tester,
-        sidePanel: panel,
-        pointsAtSidePanel: _pointingProvider,
+        conversation: conversation,
+        pointsAtConversation: _pointingProvider,
       );
-      // The panel is on her right, the screen's right.
       expect(held(tester), GestureName.pointRight);
 
       ProviderScope.containerOf(
@@ -546,17 +479,13 @@ void main() {
       expect(held(tester), isNull);
     });
 
-    testWidgets('on a phone, with the panel under her, she never points', (
-      tester,
-    ) async {
-      tester.view
-        ..physicalSize = const Size(390, 844)
-        ..devicePixelRatio = 1;
-      addTearDown(tester.view.reset);
+    testWidgets('in the right half, the conversation to her left, she never '
+        'points', (tester) async {
+      phone(tester);
       await openStage(
         tester,
-        sidePanel: panel,
-        pointsAtSidePanel: _pointingProvider,
+        conversation: conversation,
+        pointsAtConversation: _pointingProvider,
       );
 
       expect(held(tester), isNull);

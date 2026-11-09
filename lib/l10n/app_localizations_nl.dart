@@ -3873,6 +3873,34 @@ class AppLocalizationsNl extends AppLocalizations {
   String get commonUnknown => 'Onbekend';
 
   @override
+  String get companionCardDemo => 'Demogrootte';
+
+  @override
+  String get companionCardLabel =>
+      'Metgezel. Sleep om te verplaatsen, tik twee keer om de grootte te wijzigen.';
+
+  @override
+  String get companionCardLarge => 'Groot';
+
+  @override
+  String get companionCardOptions => 'Opties van de metgezel';
+
+  @override
+  String get companionCardReset => 'Positie en grootte herstellen';
+
+  @override
+  String get companionCardResize => 'Formaat wijzigen';
+
+  @override
+  String get companionCardRestyle => 'Andere stijl';
+
+  @override
+  String get companionCardSmall => 'Klein';
+
+  @override
+  String get companionCardUsualSize => 'Normale grootte';
+
+  @override
   String get companionSettingsCharacterAunt => 'Tante';
 
   @override

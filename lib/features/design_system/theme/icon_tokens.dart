@@ -606,6 +606,9 @@ abstract final class LottiIcons {
   /// Grow to fill the available space.
   static const IconData expandFull = LucideIcons.maximize2;
 
+  /// Shrink back from filling the available space.
+  static const IconData shrinkFull = LucideIcons.minimize2;
+
   /// Reposition freely in two dimensions.
   static const IconData move = LucideIcons.move;
 

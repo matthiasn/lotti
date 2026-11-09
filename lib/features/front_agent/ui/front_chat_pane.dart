@@ -150,10 +150,21 @@ class FrontChatPane extends ConsumerWidget {
 
 /// One conversation's thread and the field under it — or, while the inbox is
 /// on, every turn still waiting on the user. In the pane under her header,
-/// and with her on her full-screen stage: beside her on a desktop window,
-/// under her on a phone.
+/// and on her full-screen page, with her floating over it.
 class FrontChatThreadView extends ConsumerWidget {
-  const FrontChatThreadView({required this.onClose, super.key});
+  const FrontChatThreadView({
+    required this.onClose,
+    this.threadOverlay,
+    this.threadBottomInset = 0,
+    super.key,
+  });
+
+  /// Floats over the thread: her card on her full-screen page
+  /// ([AgentChatView.threadOverlay]).
+  final Widget? threadOverlay;
+
+  /// Room after the last message for [threadOverlay].
+  final double threadBottomInset;
 
   /// Closes her surface. Everything that leaves her for a page goes through
   /// this, never `maybePop`: while the list or the inbox is open, back is
@@ -292,6 +303,8 @@ class FrontChatThreadView extends ConsumerWidget {
 
     return AgentChatView(
       agentId: frontAgentId,
+      threadOverlay: threadOverlay,
+      threadBottomInset: threadBottomInset,
       agentName: messages.frontChatTitle,
       // Each conversation keeps its own scroll position.
       conversationId: inboxOnly

@@ -3898,6 +3898,34 @@ class AppLocalizationsCs extends AppLocalizations {
   String get commonUnknown => 'Neznámé';
 
   @override
+  String get companionCardDemo => 'Velikost pro ukázku';
+
+  @override
+  String get companionCardLabel =>
+      'Společník. Přetažením přesuneš, dvojím klepnutím změníš velikost.';
+
+  @override
+  String get companionCardLarge => 'Velký';
+
+  @override
+  String get companionCardOptions => 'Možnosti společníka';
+
+  @override
+  String get companionCardReset => 'Obnovit polohu a velikost';
+
+  @override
+  String get companionCardResize => 'Změnit velikost';
+
+  @override
+  String get companionCardRestyle => 'Změnit styl';
+
+  @override
+  String get companionCardSmall => 'Malý';
+
+  @override
+  String get companionCardUsualSize => 'Obvyklá velikost';
+
+  @override
   String get companionSettingsCharacterAunt => 'Teta';
 
   @override
