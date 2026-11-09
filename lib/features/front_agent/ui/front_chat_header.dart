@@ -425,17 +425,15 @@ class _CompanionFace extends ConsumerWidget {
                       child: ExcludeSemantics(
                         child: Tooltip(
                           message: label,
-                          child: MouseRegion(
-                            cursor: SystemMouseCursors.click,
-                            child: GestureDetector(
-                              behavior: HitTestBehavior.opaque,
-                              onTap: ref
-                                  .read(
-                                    frontCompanionCardShownProvider.notifier,
-                                  )
-                                  .toggle,
-                              child: face,
+                          // Focusable, and Enter or Space shows her too.
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(
+                              tokens.radii.m,
                             ),
+                            onTap: ref
+                                .read(frontCompanionCardShownProvider.notifier)
+                                .toggle,
+                            child: face,
                           ),
                         ),
                       ),

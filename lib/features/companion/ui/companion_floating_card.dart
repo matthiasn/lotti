@@ -298,37 +298,47 @@ class _CompanionFloatingCardState extends ConsumerState<CompanionFloatingCard> {
         onLongPress: () => _showMenu(Offset.zero),
         onTapHint: widget.onHide == null ? null : messages.companionCardHide,
         onTap: widget.onHide,
-        child: MouseRegion(
-          cursor: _demo ? MouseCursor.defer : SystemMouseCursors.grab,
-          onEnter: (_) => setState(() => _hovered = true),
-          onExit: (_) => setState(() => _hovered = false),
-          child: Listener(
-            onPointerSignal: (event) => _scaleOnScroll(event, height),
-            child: GestureDetector(
-              key: CompanionFloatingCardKeys.card,
-              onTap: widget.onHide,
-              onDoubleTap: _toggleSize,
-              onLongPressStart: (details) => _showMenu(details.localPosition),
-              onSecondaryTapUp: (details) => _showMenu(details.localPosition),
-              onScaleStart: (_) => _pinchStart = height,
-              onScaleUpdate: _demo
-                  ? null
-                  : (details) {
-                      if (_resizing) return;
-                      if (details.pointerCount > 1) {
-                        _controller.resizeTo(_pinchStart * details.scale);
-                      } else {
-                        _controller.moveBy(
-                          travelX > 0
-                              ? details.focalPointDelta.dx / travelX
-                              : 0,
-                          travelY > 0
-                              ? details.focalPointDelta.dy / travelY
-                              : 0,
-                        );
-                      }
-                    },
-              child: glass,
+        // Focusable once the host can put it away: Enter or Space hides it,
+        // as a tap does, so a keyboard is never stuck with it.
+        child: FocusableActionDetector(
+          enabled: widget.onHide != null,
+          actions: {
+            ActivateIntent: CallbackAction<ActivateIntent>(
+              onInvoke: (_) => widget.onHide?.call(),
+            ),
+          },
+          child: MouseRegion(
+            cursor: _demo ? MouseCursor.defer : SystemMouseCursors.grab,
+            onEnter: (_) => setState(() => _hovered = true),
+            onExit: (_) => setState(() => _hovered = false),
+            child: Listener(
+              onPointerSignal: (event) => _scaleOnScroll(event, height),
+              child: GestureDetector(
+                key: CompanionFloatingCardKeys.card,
+                onTap: widget.onHide,
+                onDoubleTap: _toggleSize,
+                onLongPressStart: (details) => _showMenu(details.localPosition),
+                onSecondaryTapUp: (details) => _showMenu(details.localPosition),
+                onScaleStart: (_) => _pinchStart = height,
+                onScaleUpdate: _demo
+                    ? null
+                    : (details) {
+                        if (_resizing) return;
+                        if (details.pointerCount > 1) {
+                          _controller.resizeTo(_pinchStart * details.scale);
+                        } else {
+                          _controller.moveBy(
+                            travelX > 0
+                                ? details.focalPointDelta.dx / travelX
+                                : 0,
+                            travelY > 0
+                                ? details.focalPointDelta.dy / travelY
+                                : 0,
+                          );
+                        }
+                      },
+                child: glass,
+              ),
             ),
           ),
         ),

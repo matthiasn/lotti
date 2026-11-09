@@ -240,6 +240,19 @@ void main() {
       expect(behindTaps, 0);
     });
 
+    testWidgets('a keyboard hides it too: focused, Space puts it away', (
+      tester,
+    ) async {
+      await pumpCard(tester, hideable: true);
+      Focus.of(tester.element(find.byKey(const Key('figure')))).requestFocus();
+      await tester.pump();
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.space);
+      await tester.pump();
+
+      expect(hides, 1);
+    });
+
     testWidgets('has a Hide row last in its menu', (tester) async {
       await pumpCard(tester, hideable: true);
       await openMenu(tester);

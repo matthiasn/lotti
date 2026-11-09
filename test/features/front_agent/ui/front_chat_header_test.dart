@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:clock/clock.dart';
 import 'package:flutter/rendering.dart' show RenderParagraph;
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -723,6 +724,24 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
       expect(toggle, findsOne);
       semantics.dispose();
+    });
+
+    testWidgets('a keyboard shows her card from her face: focused, Enter', (
+      tester,
+    ) async {
+      await pumpHeader(tester, companion: true, conversations: census);
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(FrontChatHeader)),
+      );
+      Focus.of(
+        tester.element(find.byKey(FrontChatHeaderKeys.figure)),
+      ).requestFocus();
+      await tester.pump();
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pump();
+
+      expect(container.read(frontCompanionCardShownProvider), isTrue);
     });
 
     testWidgets("her name shares the controls' line so the title under them "
