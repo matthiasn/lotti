@@ -12,3 +12,13 @@
   cover, rating, category, date, status and summary, kept current — and a
   tap opens the event's page. *Undo* takes the event back out, and the item
   waits in the inbox again.
+- **The companion's lists of tasks are preview cards now, under a label
+  that says what they are.** When she answers what is due, each task she
+  names is the same card: its cover or status, one-line summary, category,
+  due date, estimate and priority, kept current. A quiet label over the list
+  says which window she read — *Due today*, *Overdue*, *Due through Fri,
+  Nov 13* — and a project she lists is a card that opens it.
+- **A day she helped you replan shows its plan.** After you take a change to
+  today into the Daily OS planning and accept it, her reply shows that day's
+  blocks — when each runs, what it is for, the done ones ticked — and a tap
+  opens the day.

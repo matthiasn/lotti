@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/daily_os_next/logic/day_agent_timeline_models.dart';
 import 'package:lotti/features/front_agent/model/front_entity_preview.dart';
 
 import '../../../test_data/test_data.dart';
@@ -65,6 +66,7 @@ void main() {
       String? categoryId = 'launch',
       String? coverArtId = 'cover-1',
       double coverArtCropX = 0.3,
+      TaskPriority priority = TaskPriority.p1High,
     }) => FrontTaskPreview(
       entityId: 't-1',
       title: 'Check the ice-pad weather window',
@@ -75,6 +77,7 @@ void main() {
       categoryId: categoryId,
       coverArtId: coverArtId,
       coverArtCropX: coverArtCropX,
+      priority: priority,
     );
 
     test('is a task preview, whatever else it carries', () {
@@ -97,6 +100,7 @@ void main() {
       expect(bare.categoryId, isNull);
       expect(bare.coverArtId, isNull);
       expect(bare.coverArtCropX, 0.5);
+      expect(bare.priority, TaskPriority.p2Medium);
     });
 
     for (final (name, status, settled) in [
@@ -143,6 +147,7 @@ void main() {
       ('category', () => preview(categoryId: 'colony')),
       ('cover', () => preview(coverArtId: 'cover-2')),
       ('cover crop', () => preview(coverArtCropX: 0.8)),
+      ('priority', () => preview(priority: TaskPriority.p3Low)),
       (
         'title',
         () => FrontTaskPreview(
@@ -155,6 +160,7 @@ void main() {
           categoryId: 'launch',
           coverArtId: 'cover-1',
           coverArtCropX: 0.3,
+          priority: TaskPriority.p1High,
         ),
       ),
       (
@@ -169,6 +175,7 @@ void main() {
           categoryId: 'launch',
           coverArtId: 'cover-1',
           coverArtCropX: 0.3,
+          priority: TaskPriority.p1High,
         ),
       ),
     ]) {
@@ -228,6 +235,72 @@ void main() {
         FrontEventPreview(testRehearsalEvent).toString(),
         'FrontEventPreview(${testRehearsalEvent.meta.id}, '
         'Launch-day rehearsal at the ice pad)',
+      );
+    });
+  });
+
+  test('a day plan is referred to by its date, whatever its time of day', () {
+    expect(frontDayPlanId(DateTime(2026, 11, 9)), '2026-11-09');
+    expect(frontDayPlanId(DateTime(2026, 11, 9, 23, 59)), '2026-11-09');
+  });
+
+  group('FrontDayPlanPreview', () {
+    FrontPlanBlock block(
+      String title, {
+      int hour = 9,
+      TimeBlockState state = TimeBlockState.committed,
+      String? taskId,
+    }) => FrontPlanBlock(
+      title: title,
+      start: DateTime(2026, 11, 9, hour),
+      end: DateTime(2026, 11, 9, hour + 1),
+      state: state,
+      taskId: taskId,
+    );
+
+    test('is a day plan preview named by its date', () {
+      final preview = FrontDayPlanPreview(
+        day: DateTime(2026, 11, 9),
+        blocks: [block('Audit')],
+      );
+
+      expect(preview.entityKind, FrontEntityKind.dayPlan);
+      expect(preview.entityId, '2026-11-09');
+      expect(preview.toString(), 'FrontDayPlanPreview(2026-11-09, 1)');
+    });
+
+    test('a block differs by each of its fields', () {
+      final base = block('Audit', taskId: 't');
+      expect(block('Audit', taskId: 't'), base);
+      expect(block('Audit', taskId: 't').hashCode, base.hashCode);
+      for (final other in [
+        block('Weather', taskId: 't'),
+        block('Audit', hour: 10, taskId: 't'),
+        FrontPlanBlock(
+          title: 'Audit',
+          start: DateTime(2026, 11, 9, 9),
+          end: DateTime(2026, 11, 9, 11),
+          state: TimeBlockState.committed,
+          taskId: 't',
+        ),
+        block('Audit', state: TimeBlockState.completed, taskId: 't'),
+        block('Audit'),
+      ]) {
+        expect(other, isNot(base));
+      }
+    });
+
+    test('is equal, and hashes alike, exactly when its day and blocks are', () {
+      FrontDayPlanPreview plan(List<FrontPlanBlock> blocks, {int day = 9}) =>
+          FrontDayPlanPreview(day: DateTime(2026, 11, day), blocks: blocks);
+
+      expect(plan([block('Audit')]), plan([block('Audit')]));
+      expect(plan([block('Audit')]).hashCode, plan([block('Audit')]).hashCode);
+      expect(plan([block('Audit')]), isNot(plan([block('Weather')])));
+      expect(plan([block('Audit')]), isNot(plan([block('Audit')], day: 10)));
+      expect(
+        plan([block('Audit')]),
+        isNot(plan([block('Audit'), block('Weather', hour: 11)])),
       );
     });
   });

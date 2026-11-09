@@ -9,7 +9,7 @@ import 'package:lotti/features/tts/model/tts_playback_state.dart';
 import 'package:lotti/features/tts/state/tts_playback_controller.dart';
 
 /// Whether her reply to the latest turn in [thread] draws something to
-/// point at: tasks named as a list ([FrontReplyTasks]), drawn as task rows,
+/// point at: tasks named as a list ([FrontReplyTasks]), drawn as task cards,
 /// or a chart of logged time or of pull requests. Her reply is her first after the turn, as her
 /// voice says it ([frontSpokenAnswer]).
 bool frontLatestReplyHasVisual(FrontChatThread thread) {
@@ -32,7 +32,7 @@ bool frontLatestReplyHasVisual(FrontChatThread thread) {
 
 /// Whether she points at the conversation she floats over on her page, for a
 /// conversation id: while her voice plays there and her latest reply lists
-/// tasks or charts her time or pull requests, so she points at the rows or the chart as she
+/// tasks or charts her time or pull requests, so she points at the cards or the chart as she
 /// says them, and lets her arm down once she has.
 final ProviderFamily<bool, String> frontStagePointsProvider =
     Provider.family<bool, String>((

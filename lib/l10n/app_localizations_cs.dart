@@ -7386,6 +7386,11 @@ class AppLocalizationsCs extends AppLocalizations {
   String get frontChatYesterday => 'Včera';
 
   @override
+  String frontDayPlanMore(int count) {
+    return '$count další';
+  }
+
+  @override
   String get frontDoorActionFailed => 'To se nepovedlo.';
 
   @override
@@ -7535,6 +7540,19 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String frontDoorWalking(String owner) {
     return 'Ptá se: $owner…';
+  }
+
+  @override
+  String frontDueSectionOverdueAndThrough(String date) {
+    return 'Po splatnosti a splatné do $date';
+  }
+
+  @override
+  String get frontDueSectionOverdueAndToday => 'Po splatnosti a dnes splatné';
+
+  @override
+  String frontDueSectionThrough(String date) {
+    return 'Splatné do $date';
   }
 
   @override

@@ -2971,6 +2971,14 @@
   "frontChatSearchChats": "Chats durchsuchen",
   "frontChatTitle": "Begleitung",
   "frontChatYesterday": "Gestern",
+  "frontDayPlanMore": "{count} weitere",
+  "@frontDayPlanMore": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "frontDoorActionFailed": "Das hat nicht geklappt.",
   "frontDoorAnswerHidden": "Ausgeblendet: Es stützt sich auf etwas, das du nicht mehr sehen kannst.",
   "frontDoorAttribution": "Von {owner}",
@@ -3015,6 +3023,23 @@
   "frontDoorUndo": "Rückgängig",
   "frontDoorUnfiled": "Aus {owner} herausgenommen. Noch einmal ablegen?",
   "frontDoorWalking": "Fragt {owner}…",
+  "frontDueSectionOverdueAndThrough": "Überfällig und fällig bis {date}",
+  "@frontDueSectionOverdueAndThrough": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "frontDueSectionOverdueAndToday": "Überfällig und heute fällig",
+  "frontDueSectionThrough": "Fällig bis {date}",
+  "@frontDueSectionThrough": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "frontLoggedTimeExpand": "Diagramm vergrößern",
   "frontPullRequestsLinesAdded": "Hinzugefügte Zeilen",
   "frontPullRequestsLinesDeleted": "Gelöschte Zeilen",

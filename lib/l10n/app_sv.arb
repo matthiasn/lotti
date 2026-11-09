@@ -3316,6 +3316,14 @@
   "frontChatSearchChats": "Sök i chattar",
   "frontChatTitle": "Följeslagare",
   "frontChatYesterday": "Igår",
+  "frontDayPlanMore": "{count} till",
+  "@frontDayPlanMore": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "frontDoorActionFailed": "Det gick inte igenom.",
   "frontDoorAnswerHidden": "Dolt: det bygger på något du inte längre kan se.",
   "frontDoorAttribution": "Från {owner}",
@@ -3360,6 +3368,23 @@
   "frontDoorUndo": "Ångra",
   "frontDoorUnfiled": "Borttaget ur {owner}. Spara igen?",
   "frontDoorWalking": "Frågar {owner}…",
+  "frontDueSectionOverdueAndThrough": "Försenade och förfaller senast {date}",
+  "@frontDueSectionOverdueAndThrough": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "frontDueSectionOverdueAndToday": "Försenade och förfaller i dag",
+  "frontDueSectionThrough": "Förfaller senast {date}",
+  "@frontDueSectionThrough": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "frontLoggedTimeExpand": "Förstora diagrammet",
   "frontPullRequestsLinesAdded": "Tillagda rader",
   "frontPullRequestsLinesDeleted": "Borttagna rader",

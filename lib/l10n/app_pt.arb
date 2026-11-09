@@ -3315,6 +3315,14 @@
   "frontChatSearchChats": "Procurar nos chats",
   "frontChatTitle": "Acompanhante",
   "frontChatYesterday": "Ontem",
+  "frontDayPlanMore": "Mais {count}",
+  "@frontDayPlanMore": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "frontDoorActionFailed": "Isso não foi concluído.",
   "frontDoorAnswerHidden": "Oculto: baseia-se em algo que já não podes ver.",
   "frontDoorAttribution": "De {owner}",
@@ -3359,6 +3367,23 @@
   "frontDoorUndo": "Desfazer",
   "frontDoorUnfiled": "Retirado de {owner}. Arquivar outra vez?",
   "frontDoorWalking": "A perguntar a {owner}…",
+  "frontDueSectionOverdueAndThrough": "Em atraso e a vencer até {date}",
+  "@frontDueSectionOverdueAndThrough": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "frontDueSectionOverdueAndToday": "Em atraso e a vencer hoje",
+  "frontDueSectionThrough": "Vencem até {date}",
+  "@frontDueSectionThrough": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "frontLoggedTimeExpand": "Ampliar gráfico",
   "frontPullRequestsLinesAdded": "Linhas adicionadas",
   "frontPullRequestsLinesDeleted": "Linhas removidas",

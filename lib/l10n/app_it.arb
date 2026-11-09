@@ -3316,6 +3316,14 @@
   "frontChatSearchChats": "Cerca nelle chat",
   "frontChatTitle": "Compagno",
   "frontChatYesterday": "Ieri",
+  "frontDayPlanMore": "Altri {count}",
+  "@frontDayPlanMore": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "frontDoorActionFailed": "Non è andato a buon fine.",
   "frontDoorAnswerHidden": "Nascosto: si basa su qualcosa che non puoi più vedere.",
   "frontDoorAttribution": "Da {owner}",
@@ -3360,6 +3368,23 @@
   "frontDoorUndo": "Annulla",
   "frontDoorUnfiled": "Tolto da {owner}. Archiviare di nuovo?",
   "frontDoorWalking": "Sta chiedendo a {owner}…",
+  "frontDueSectionOverdueAndThrough": "In ritardo e in scadenza entro {date}",
+  "@frontDueSectionOverdueAndThrough": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "frontDueSectionOverdueAndToday": "In ritardo e in scadenza oggi",
+  "frontDueSectionThrough": "Scadono entro {date}",
+  "@frontDueSectionThrough": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "frontLoggedTimeExpand": "Ingrandisci il grafico",
   "frontPullRequestsLinesAdded": "Righe aggiunte",
   "frontPullRequestsLinesDeleted": "Righe eliminate",

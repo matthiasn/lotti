@@ -2971,6 +2971,14 @@
   "frontChatSearchChats": "Căutați în conversații",
   "frontChatTitle": "Însoțitor",
   "frontChatYesterday": "Ieri",
+  "frontDayPlanMore": "Încă {count}",
+  "@frontDayPlanMore": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "frontDoorActionFailed": "Nu a reușit.",
   "frontDoorAnswerHidden": "Ascuns: se bazează pe ceva ce nu mai puteți vedea.",
   "frontDoorAttribution": "De la {owner}",
@@ -3015,6 +3023,23 @@
   "frontDoorUndo": "Anulați",
   "frontDoorUnfiled": "Scos din {owner}. Înregistrați din nou?",
   "frontDoorWalking": "Întreabă {owner}…",
+  "frontDueSectionOverdueAndThrough": "Restante și scadente până la {date}",
+  "@frontDueSectionOverdueAndThrough": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "frontDueSectionOverdueAndToday": "Restante și scadente astăzi",
+  "frontDueSectionThrough": "Scadente până la {date}",
+  "@frontDueSectionThrough": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "frontLoggedTimeExpand": "Măriți graficul",
   "frontPullRequestsLinesAdded": "Linii adăugate",
   "frontPullRequestsLinesDeleted": "Linii șterse",

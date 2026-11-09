@@ -10,9 +10,11 @@ import 'package:lotti/features/front_agent/model/front_closed_task_card.dart';
 import 'package:lotti/features/front_agent/model/front_conversation.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
+import 'package:lotti/features/front_agent/model/front_due_section.dart';
 import 'package:lotti/features/front_agent/model/front_entity_preview.dart';
 import 'package:lotti/features/front_agent/model/front_logged_time_chart.dart';
 import 'package:lotti/features/front_agent/model/front_pull_requests.dart';
+import 'package:lotti/features/front_agent/model/front_routing_index.dart';
 import 'package:lotti/features/front_agent/service/front_chat_thread_builder.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_contract.dart';
 import 'package:lotti/features/insights/model/insights_models.dart';
@@ -336,6 +338,83 @@ void main() {
       });
     },
   );
+
+  test('a reply about what is due carries the window its list was read '
+      'from; one this build cannot read carries none', () async {
+    userTurn('u1', 'Due this week?', at: DateTime(2026, 11, 9, 9));
+    row(
+      id: 'reply-1',
+      kind: AgentMessageKind.action,
+      toolName: FrontAgentToolNames.replyToUser,
+      operationId: 'u1',
+      content: {
+        'text': 'Two things.',
+        'dueTasks': {
+          'window': 'upcoming',
+          'today': '2026-11-09',
+          'through': '2026-11-13',
+        },
+      },
+      createdAt: DateTime(2026, 11, 9, 9, 1),
+    );
+    userTurn('u2', 'And overdue?', at: DateTime(2026, 11, 9, 10));
+    row(
+      id: 'reply-2',
+      kind: AgentMessageKind.action,
+      toolName: FrontAgentToolNames.replyToUser,
+      operationId: 'u2',
+      content: {
+        'text': 'Nothing.',
+        'dueTasks': {'window': 'soon'},
+      },
+      createdAt: DateTime(2026, 11, 9, 10, 1),
+    );
+
+    final thread = await builder.build();
+
+    expect(thread.dueSectionsByMessageId, {
+      'reply-1': FrontDueSection(
+        window: FrontDueWindow.upcoming,
+        today: DateTime(2026, 11, 9),
+        through: DateTime(2026, 11, 13),
+      ),
+    });
+  });
+
+  test('the window of a reply out of view goes with it', () async {
+    for (var i = 0; i < 60; i++) {
+      final at = DateTime(2026, 10).add(Duration(minutes: 2 * i));
+      final turn = 'u$i'.padLeft(4, '0');
+      userTurn(turn, 'turn $i', at: at);
+      row(
+        id: 'r$i'.padLeft(4, '0'),
+        kind: AgentMessageKind.action,
+        toolName: FrontAgentToolNames.replyToUser,
+        operationId: turn,
+        content: {
+          'text': 'reply $i',
+          'dueTasks': {
+            'window': 'today',
+            'today': '2026-10-01',
+            'through': '2026-10-01',
+          },
+        },
+        createdAt: at.add(const Duration(minutes: 1)),
+      );
+    }
+
+    final thread = await builder.build();
+
+    final shownReplies = {
+      for (final m in thread.messages)
+        if (m.role == AgentChatRole.agent) m.id,
+    };
+    expect(thread.dueSectionsByMessageId.keys.toSet(), shownReplies);
+    expect(
+      thread.dueSectionsByMessageId.containsKey('r0'.padLeft(4, '0')),
+      isFalse,
+    );
+  });
 
   test('a reply that charts pull requests carries its chart; one this build '
       'cannot read carries none', () async {
@@ -716,6 +795,29 @@ void main() {
         });
       });
 
+      test('a change to today the user planned rides the reply as that '
+          "day's plan, named by its date", () async {
+        userTurn('u1', 'Move the audit.', at: DateTime(2026, 11, 9, 9));
+        replyTo('r1', 'u1', at: DateTime(2026, 11, 9, 9, 1));
+        doorRow(
+          'd:door:0',
+          'u1',
+          door(0, FrontDoorDayPlanned(day: DateTime(2026, 11, 9))),
+        );
+
+        final thread = await builder.build();
+
+        expect(thread.entityPreviewsByMessageId, {
+          'r1': [
+            const FrontEntityReference(
+              kind: FrontEntityKind.dayPlan,
+              id: '2026-11-09',
+              title: 'segment 0',
+            ),
+          ],
+        });
+      });
+
       test('a door that made nothing draws no card', () async {
         userTurn('u1', 'Garden?', at: DateTime(2026, 11, 9, 9));
         replyTo('r1', 'u1', at: DateTime(2026, 11, 9, 9, 1));
@@ -726,11 +828,12 @@ void main() {
           'u1',
           door(2, const FrontDoorProjectCreated(projectId: 'p')),
         );
+        doorRow('d:door:4', 'u1', door(4, const FrontDoorDay()));
         doorRow('d:door:3', 'u1', door(3, null));
 
         final thread = await builder.build();
 
-        expect(thread.doorsByMessageId['u1'], hasLength(4));
+        expect(thread.doorsByMessageId['u1'], hasLength(5));
         expect(thread.entityPreviewsByMessageId, isEmpty);
       });
 

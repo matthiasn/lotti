@@ -4515,6 +4515,14 @@
   "frontChatSearchChats": "Search chats",
   "frontChatTitle": "Companion",
   "frontChatYesterday": "Yesterday",
+  "frontDayPlanMore": "{count} more",
+  "@frontDayPlanMore": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "frontDoorActionFailed": "That did not go through.",
   "frontDoorAnswerHidden": "Hidden: it draws on something you can no longer see.",
   "@frontDoorAnswerHidden": {
@@ -4630,6 +4638,23 @@
   "@frontDoorWalking": {
     "placeholders": {
       "owner": {
+        "type": "String"
+      }
+    }
+  },
+  "frontDueSectionOverdueAndThrough": "Overdue and due through {date}",
+  "@frontDueSectionOverdueAndThrough": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "frontDueSectionOverdueAndToday": "Overdue and due today",
+  "frontDueSectionThrough": "Due through {date}",
+  "@frontDueSectionThrough": {
+    "placeholders": {
+      "date": {
         "type": "String"
       }
     }

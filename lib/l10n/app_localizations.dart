@@ -12473,6 +12473,12 @@ abstract class AppLocalizations {
   /// **'Yesterday'**
   String get frontChatYesterday;
 
+  /// No description provided for @frontDayPlanMore.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} more'**
+  String frontDayPlanMore(int count);
+
   /// No description provided for @frontDoorActionFailed.
   ///
   /// In en, this message translates to:
@@ -12736,6 +12742,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Asking {owner}…'**
   String frontDoorWalking(String owner);
+
+  /// No description provided for @frontDueSectionOverdueAndThrough.
+  ///
+  /// In en, this message translates to:
+  /// **'Overdue and due through {date}'**
+  String frontDueSectionOverdueAndThrough(String date);
+
+  /// No description provided for @frontDueSectionOverdueAndToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Overdue and due today'**
+  String get frontDueSectionOverdueAndToday;
+
+  /// No description provided for @frontDueSectionThrough.
+  ///
+  /// In en, this message translates to:
+  /// **'Due through {date}'**
+  String frontDueSectionThrough(String date);
 
   /// No description provided for @frontLoggedTimeExpand.
   ///

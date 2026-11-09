@@ -7283,6 +7283,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get frontChatYesterday => 'Yesterday';
 
   @override
+  String frontDayPlanMore(int count) {
+    return '$count more';
+  }
+
+  @override
   String get frontDoorActionFailed => 'That did not go through.';
 
   @override
@@ -7432,6 +7437,19 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String frontDoorWalking(String owner) {
     return 'Asking $owner…';
+  }
+
+  @override
+  String frontDueSectionOverdueAndThrough(String date) {
+    return 'Overdue and due through $date';
+  }
+
+  @override
+  String get frontDueSectionOverdueAndToday => 'Overdue and due today';
+
+  @override
+  String frontDueSectionThrough(String date) {
+    return 'Due through $date';
   }
 
   @override

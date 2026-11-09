@@ -259,15 +259,32 @@ class FrontChatThreadView extends ConsumerWidget {
       beamToNamed(route);
     }
 
-    // What her turn made: a task opens on top of her, as any task she names
-    // does; an event's page is the app's, so she closes first.
+    // The Daily OS day surface, showing [day]: the planned one, not
+    // whichever was picked there last. A page of the app, so she closes
+    // first.
+    void openDay(DateTime day) {
+      ref.read(dailyOsNextSelectedDateProvider.notifier).select(day);
+      onClose();
+      beamToNamed('/calendar');
+    }
+
+    // A preview card's entity: a task opens on top of her and a project
+    // closes her, as when she names either; an event's page and a day's are
+    // the app's, so she closes first.
     void openMade(FrontEntityReference made) {
       switch (made.kind) {
         case FrontEntityKind.task:
           openLink(frontReferenceUrl(FrontDestinationKind.task, made.id), '');
+        case FrontEntityKind.project:
+          openLink(
+            frontReferenceUrl(FrontDestinationKind.project, made.id),
+            '',
+          );
         case FrontEntityKind.event:
           onClose();
           beamToNamed('/events/${made.id}');
+        case FrontEntityKind.dayPlan:
+          if (DateTime.tryParse(made.id) case final day?) openDay(day);
       }
     }
 
@@ -283,20 +300,18 @@ class FrontChatThreadView extends ConsumerWidget {
       onSaveNote: controller.saveAsNote,
       // What a door wrote lives on its own page: leave the sheet, then go.
       onOpen: (door) {
+        if (door.record.outcome case FrontDoorDayPlanned(:final day)) {
+          openDay(day);
+          return;
+        }
         final path = switch (door.record.outcome) {
           FrontDoorFiled(:final entryId) => '/journal/$entryId',
           FrontDoorTaskCreated(:final taskId) => '/tasks/$taskId',
           FrontDoorEventCreated(:final eventId) => '/events/$eventId',
           FrontDoorProjectCreated(:final projectId) => '/projects/$projectId',
-          FrontDoorDayPlanned() => '/calendar',
           _ => null,
         };
         if (path == null) return;
-        // The day surface shows the selected day: the planned one, not
-        // whichever was picked there last.
-        if (door.record.outcome case FrontDoorDayPlanned(:final day)) {
-          ref.read(dailyOsNextSelectedDateProvider.notifier).select(day);
-        }
         onClose();
         beamToNamed(path);
       },
@@ -433,8 +448,9 @@ class FrontChatThreadView extends ConsumerWidget {
         settingsDefaultDictationTargetProvider,
       ),
       onLinkTap: (_, url, title) => openLink(url, title),
-      // A list of tasks in her words is drawn as task rows, her words
-      // around it as she wrote them; an answer about what was completed
+      // A list of tasks in her words is drawn as preview cards — under the
+      // window an answer about what is due read — her words around it as
+      // she wrote them; an answer about what was completed
       // gets every task it found as cards, and one about logged time or
       // pull requests its chart, under her words; what her turn's doors
       // made, as preview cards. Any other reply is drawn as usual.
@@ -473,19 +489,38 @@ class FrontChatThreadView extends ConsumerWidget {
           return null;
         }
         final tokens = context.designTokens;
+        // An answer about what is due says which window its list is: over
+        // the first list of her words, the only one such an answer has.
+        final due = thread?.dueSectionsByMessageId[message.id];
+        final labelled = parts.indexWhere((part) => part is FrontReplyTasks);
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           spacing: tokens.spacing.step4,
           children: [
-            for (final part in parts)
+            for (final (index, part) in parts.indexed)
               switch (part) {
                 FrontReplyText(:final markdown) => prose(deviceDays(markdown)),
-                FrontReplyTasks(:final tasks) => FrontTaskList(
-                  tasks: tasks,
-                  onOpen: (mention) => openLink(
-                    frontReferenceUrl(mention.kind, mention.id),
-                    '',
-                  ),
+                FrontReplyTasks(:final tasks) => Column(
+                  key: ValueKey('front-reply-tasks-${message.id}-$index'),
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  spacing: tokens.spacing.step2,
+                  children: [
+                    if (due != null && index == labelled)
+                      FrontDueSectionLabel(section: due),
+                    FrontEntityPreviewList(
+                      references: [
+                        for (final mention in tasks)
+                          FrontEntityReference(
+                            kind: mention.kind == FrontDestinationKind.project
+                                ? FrontEntityKind.project
+                                : FrontEntityKind.task,
+                            id: mention.id,
+                            title: mention.title,
+                          ),
+                      ],
+                      onOpen: openMade,
+                    ),
+                  ],
                 ),
               },
             if (previews != null)

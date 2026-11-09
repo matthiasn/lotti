@@ -977,6 +977,12 @@ void main() {
         );
         // No time was summed: nothing to chart.
         expect(reply.content.containsKey('loggedTime'), isFalse);
+        // Which window the list was read from: the label over her list.
+        expect(reply.content['dueTasks'], {
+          'window': 'today',
+          'today': '2026-11-02',
+          'through': '2026-11-02',
+        });
       },
     );
 

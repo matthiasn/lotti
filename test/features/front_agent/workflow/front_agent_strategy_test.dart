@@ -8,6 +8,7 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/front_agent/model/front_closed_task_card.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
+import 'package:lotti/features/front_agent/model/front_due_section.dart';
 import 'package:lotti/features/front_agent/model/front_logged_time_chart.dart';
 import 'package:lotti/features/front_agent/model/front_pull_requests.dart';
 import 'package:lotti/features/front_agent/model/front_routing_index.dart';
@@ -511,6 +512,42 @@ hologram:x: not listed''');
         'Due today: [Paint the shed](lotti://task/shed) — and '
         '[Garden](lotti://task/garden).',
       );
+    });
+
+    test('keeps the window it found tasks in, for the label over her list; '
+        'a window with nothing in it keeps none', () async {
+      final through = DateTime(2026, 11, 5);
+      final found = strategy(
+        dueLister: (query) async => FrontDueTasks(
+          window: query.window,
+          today: today,
+          through: through,
+          rows: [shed],
+        ),
+      );
+      await found.processToolCalls(
+        toolCalls: [
+          _call('list_due_tasks', {'which': 'upcoming', 'daysAhead': 3}),
+        ],
+        manager: manager,
+      );
+      expect(
+        found.dueSection,
+        FrontDueSection(
+          window: FrontDueWindow.upcoming,
+          today: today,
+          through: through,
+        ),
+      );
+
+      final empty = strategy(dueLister: (query) async => none(query));
+      await empty.processToolCalls(
+        toolCalls: [
+          _call('list_due_tasks', {'which': 'today'}),
+        ],
+        manager: manager,
+      );
+      expect(empty.dueSection, isNull);
     });
 
     test('a task the list returned is linked when she names it by title '

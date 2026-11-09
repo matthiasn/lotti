@@ -8,6 +8,7 @@ import 'package:lotti/features/front_agent/model/front_chat_thread.dart';
 import 'package:lotti/features/front_agent/model/front_closed_task_card.dart';
 import 'package:lotti/features/front_agent/model/front_conversation.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
+import 'package:lotti/features/front_agent/model/front_due_section.dart';
 import 'package:lotti/features/front_agent/model/front_entity_preview.dart';
 import 'package:lotti/features/front_agent/model/front_logged_time_chart.dart';
 import 'package:lotti/features/front_agent/model/front_pull_requests.dart';
@@ -76,6 +77,7 @@ class FrontChatThreadBuilder {
     final charts = <String, FrontLoggedTimeChart>{};
     final pullRequestCharts = <String, FrontPullRequestChart>{};
     final closedTasks = <String, List<FrontClosedTaskCard>>{};
+    final dueSections = <String, FrontDueSection>{};
     final doorRecords = <String, List<(String, FrontDoorRecord)>>{};
 
     for (final row in rows) {
@@ -107,6 +109,8 @@ class FrontChatThreadBuilder {
               payload.content['closedTasks'],
             );
             if (cards.isNotEmpty) closedTasks[row.id] = cards;
+            final due = FrontDueSection.fromJson(payload.content['dueTasks']);
+            if (due != null) dueSections[row.id] = due;
           case FrontAgentToolNames.askUser:
             final payload = await _payload(row.contentEntryId);
             final question = payload?.content['question'];
@@ -194,13 +198,18 @@ class FrontChatThreadBuilder {
           if (visibleIds.contains(entry.key)) entry.key: entry.value,
       },
       entityPreviewsByMessageId: _entityPreviews(visible, doors),
+      dueSectionsByMessageId: {
+        for (final entry in dueSections.entries)
+          if (visibleIds.contains(entry.key)) entry.key: entry.value,
+      },
     );
   }
 
-  /// What the doors made — a task or an event — as preview cards on the
-  /// reply that carries them, each entity once, in segment order. A turn no
-  /// reply followed carries its doors itself, and a user turn draws no
-  /// cards: its doors say what was made until she has answered.
+  /// What the doors made — a task, an event, the plan of a day — as preview
+  /// cards on the reply that carries them, each entity once, in segment
+  /// order. A turn no reply followed carries its doors itself, and a user
+  /// turn draws no cards: its doors say what was made until she has
+  /// answered.
   static Map<String, List<FrontEntityReference>> _entityPreviews(
     List<AgentChatMessage> visible,
     Map<String, List<FrontDoorEntry>> doors,
@@ -216,6 +225,10 @@ class FrontChatThreadBuilder {
           FrontDoorEventCreated(:final eventId) => (
             FrontEntityKind.event,
             eventId,
+          ),
+          FrontDoorDayPlanned(:final day) => (
+            FrontEntityKind.dayPlan,
+            frontDayPlanId(day),
           ),
           _ => null,
         };

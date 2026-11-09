@@ -1,7 +1,7 @@
 # Entity preview cards in the front agent chat
 
 **Date:** 2026-11-09
-**Status:** Phases 1 and 2 implemented
+**Status:** Phases 1, 2 and 3 implemented
 
 ## Problem
 
@@ -227,6 +227,18 @@ it, as they are not on that card anywhere else. Router guessing of events
 - Preview cards under "what's on my plate?" answers, replacing plain
   task-list rows with richer previews
 - Calendar block previews from Daily OS integration
+
+As built: her prompt forbids headings — her words may be read aloud — and
+has a due answer be one list, so a label from her prose would never show.
+The label is taken from the data instead: the window the turn's
+`list_due_tasks` read (`FrontDueSection`, stored on her reply as
+`dueTasks`), drawn over her first list — *Due today*, *Overdue*, *Due
+through …*. Her lists are drawn as preview cards, not rows: the compact task
+card gained the priority the row showed, a project is a title card under
+the folder glyph until Phase 4, and `FrontTaskList` / `FrontTaskRow` are
+gone. The day door records only the day, never which blocks changed, so a
+planned day is previewed whole: its blocks from `currentDraftPlanProvider`,
+buffers and dropped ones left out, at most five and how many more.
 
 ### Phase 4 — Additional entity types
 - Project previews, person previews

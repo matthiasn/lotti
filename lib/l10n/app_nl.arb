@@ -3315,6 +3315,14 @@
   "frontChatSearchChats": "Chats doorzoeken",
   "frontChatTitle": "Metgezel",
   "frontChatYesterday": "Gisteren",
+  "frontDayPlanMore": "Nog {count}",
+  "@frontDayPlanMore": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "frontDoorActionFailed": "Dat is niet gelukt.",
   "frontDoorAnswerHidden": "Verborgen: het steunt op iets wat je niet meer kunt zien.",
   "frontDoorAttribution": "Van {owner}",
@@ -3359,6 +3367,23 @@
   "frontDoorUndo": "Ongedaan maken",
   "frontDoorUnfiled": "Uit {owner} gehaald. Opnieuw opbergen?",
   "frontDoorWalking": "Vraagt {owner}…",
+  "frontDueSectionOverdueAndThrough": "Te laat en vervalt uiterlijk {date}",
+  "@frontDueSectionOverdueAndThrough": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "frontDueSectionOverdueAndToday": "Te laat en vervalt vandaag",
+  "frontDueSectionThrough": "Vervalt uiterlijk {date}",
+  "@frontDueSectionThrough": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "frontLoggedTimeExpand": "Grafiek vergroten",
   "frontPullRequestsLinesAdded": "Toegevoegde regels",
   "frontPullRequestsLinesDeleted": "Verwijderde regels",

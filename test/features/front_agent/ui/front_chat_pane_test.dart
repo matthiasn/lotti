@@ -28,9 +28,11 @@ import 'package:lotti/features/front_agent/model/front_closed_task_card.dart';
 import 'package:lotti/features/front_agent/model/front_conversation.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
+import 'package:lotti/features/front_agent/model/front_due_section.dart';
 import 'package:lotti/features/front_agent/model/front_entity_preview.dart';
 import 'package:lotti/features/front_agent/model/front_logged_time_chart.dart';
 import 'package:lotti/features/front_agent/model/front_pull_requests.dart';
+import 'package:lotti/features/front_agent/model/front_routing_index.dart';
 import 'package:lotti/features/front_agent/model/front_turn_failure.dart';
 import 'package:lotti/features/front_agent/service/front_chat_service.dart';
 import 'package:lotti/features/front_agent/state/front_agent_providers.dart';
@@ -99,6 +101,28 @@ void main() {
     createdAt: at,
     runKey: runKey,
   );
+
+  /// Every list her words draw as cards, in any reply.
+  final herLists = find.byWidgetPredicate(
+    (widget) => switch (widget.key) {
+      ValueKey<String>(:final value) => value.startsWith('front-reply-tasks-'),
+      _ => false,
+    },
+  );
+
+  /// The ids of the cards the list her words draw at [part] of reply
+  /// [replyId] shows, in order.
+  List<String> listedIds(WidgetTester tester, String replyId, {int part = 1}) =>
+      tester
+          .widget<FrontEntityPreviewList>(
+            find.descendant(
+              of: find.byKey(ValueKey('front-reply-tasks-$replyId-$part')),
+              matching: find.byType(FrontEntityPreviewList),
+            ),
+          )
+          .references
+          .map((reference) => reference.id)
+          .toList();
 
   /// Taps [target] and expects [taskId]'s page pushed on top of her, nothing
   /// beamed, and back — a pop — landing on her conversation again.
@@ -1044,12 +1068,13 @@ void main() {
       ),
     );
 
-    final list = tester.widget<FrontTaskList>(find.byType(FrontTaskList));
-    expect(list.tasks.map((t) => t.id), ['t-9', 't-8']);
+    expect(listedIds(tester, 'a1'), ['t-9', 't-8']);
     final words = tester.getTopLeft(
       find.textContaining('Two things:', findRichText: true),
     );
-    final card = tester.getRect(find.byKey(FrontTaskListKeys.card));
+    final card = tester.getRect(
+      find.byKey(const ValueKey('front-reply-tasks-a1-1')),
+    );
     final after = tester.getTopLeft(
       find.textContaining('Eggs first.', findRichText: true),
     );
@@ -1059,10 +1084,132 @@ void main() {
     await expectTaskOpensOverPane(
       tester,
       observer,
-      find.byKey(FrontTaskListKeys.row('t-8')),
+      find.byKey(FrontEntityPreviewKeys.card('t-8')),
       't-8',
       paths,
     );
+  });
+
+  group('her lists', () {
+    FrontChatThread answer(
+      String words, {
+      FrontDueSection? due,
+    }) => FrontChatThread(
+      messages: [
+        message('u1', AgentChatRole.user, 'What is on my plate?', now),
+        message('a1', AgentChatRole.agent, words, now),
+      ],
+      dueSectionsByMessageId: {'a1': ?due},
+    );
+
+    final dueToday = FrontDueSection(
+      window: FrontDueWindow.today,
+      today: DateTime(2026, 10, 24),
+      through: DateTime(2026, 10, 24),
+    );
+
+    testWidgets('an answer about what is due says which window, quietly, '
+        'over its list', (tester) async {
+      await pumpPane(
+        tester,
+        thread: () async => answer(
+          'Two things:\n\n'
+          '- [Feed the penguins](lotti://task/t-9)\n'
+          '- [Count the eggs](lotti://task/t-8)',
+          due: dueToday,
+        ),
+      );
+
+      final list = find.byKey(const ValueKey('front-reply-tasks-a1-1'));
+      final label = find.descendant(
+        of: list,
+        matching: find.byType(FrontDueSectionLabel),
+      );
+      expect(tester.widget<FrontDueSectionLabel>(label).section, dueToday);
+      expect(find.text('Due today'), findsOneWidget);
+      expect(
+        tester.getRect(label).bottom,
+        lessThanOrEqualTo(
+          tester.getRect(find.byKey(FrontEntityPreviewKeys.card('t-9'))).top,
+        ),
+      );
+    });
+
+    testWidgets('the label goes over the first list only, and a list of no '
+        'due answer has none', (tester) async {
+      await pumpPane(
+        tester,
+        thread: () async => answer(
+          'Overdue:\n\n'
+          '- [Feed the penguins](lotti://task/t-9)\n\n'
+          'And today:\n\n'
+          '- [Count the eggs](lotti://task/t-8)',
+          due: dueToday,
+        ),
+      );
+
+      expect(listedIds(tester, 'a1'), ['t-9']);
+      expect(listedIds(tester, 'a1', part: 3), ['t-8']);
+      expect(find.byType(FrontDueSectionLabel), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('front-reply-tasks-a1-1')),
+          matching: find.byType(FrontDueSectionLabel),
+        ),
+        findsOneWidget,
+      );
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await pumpPane(
+        tester,
+        thread: () async => answer(
+          'Two things:\n\n'
+          '- [Feed the penguins](lotti://task/t-9)\n'
+          '- [Count the eggs](lotti://task/t-8)',
+        ),
+      );
+      expect(herLists, findsOneWidget);
+      expect(find.byType(FrontDueSectionLabel), findsNothing);
+    });
+
+    testWidgets('a due answer with nothing listed draws no label', (
+      tester,
+    ) async {
+      await pumpPane(
+        tester,
+        thread: () async => answer('Nothing is due today.', due: dueToday),
+      );
+
+      expect(find.byType(FrontDueSectionLabel), findsNothing);
+    });
+
+    testWidgets('a project in her list is a card of its title that closes '
+        'her and opens the project', (tester) async {
+      final paths = <String>[];
+      beamToNamedOverride = paths.add;
+      addTearDown(() => beamToNamedOverride = null);
+      var closed = 0;
+      await pumpPane(
+        tester,
+        onClose: () => closed++,
+        thread: () async => answer(
+          'Found these:\n\n'
+          '- [Colony census](lotti://project/p-1)\n'
+          '- [Count the eggs](lotti://task/t-8)',
+        ),
+      );
+
+      final card = find.byKey(FrontEntityPreviewKeys.card('p-1'));
+      expect(
+        find.descendant(of: card, matching: find.byIcon(LottiIcons.folder)),
+        findsOneWidget,
+      );
+      await tester.tap(card);
+      await tester.pump();
+
+      expect(closed, 1);
+      expect(paths, ['/projects/p-1']);
+    });
   });
 
   testWidgets('an overdue list, emphasised and dated, is task rows too, and '
@@ -1090,13 +1237,12 @@ void main() {
       ),
     );
 
-    final list = tester.widget<FrontTaskList>(find.byType(FrontTaskList));
-    expect(list.tasks.map((t) => t.id), ['t-9', 't-8']);
+    expect(listedIds(tester, 'a1'), ['t-9', 't-8']);
 
     await expectTaskOpensOverPane(
       tester,
       observer,
-      find.byKey(FrontTaskListKeys.row('t-9')),
+      find.byKey(FrontEntityPreviewKeys.card('t-9')),
       't-9',
       paths,
     );
@@ -1158,8 +1304,8 @@ void main() {
       find.byType(FrontClosedTaskList),
     );
     expect(list.tasks, cards);
-    // The two her words listed are not drawn again as task rows.
-    expect(find.byType(FrontTaskList), findsNothing);
+    // The two her words listed are not drawn again as cards.
+    expect(herLists, findsNothing);
     final words = tester.getTopLeft(
       find.textContaining('Two completed', findRichText: true),
     );
@@ -1237,7 +1383,9 @@ void main() {
       final words = tester.getTopLeft(
         find.textContaining('Made them tasks.', findRichText: true),
       );
-      final cards = tester.getRect(find.byKey(FrontEntityPreviewKeys.list));
+      final cards = tester.getRect(
+        find.byKey(const ValueKey('front-entity-previews-a1')),
+      );
       final doors = tester.getRect(
         find.byKey(const ValueKey('front-doors-a1')),
       );
@@ -1275,10 +1423,8 @@ void main() {
         ),
       );
 
-      final list = tester.widget<FrontTaskList>(find.byType(FrontTaskList));
-      expect(list.tasks.map((t) => t.id), ['t-7']);
+      expect(listedIds(tester, 'a1'), ['t-7']);
       expect(find.byKey(FrontEntityPreviewKeys.card('t-9')), findsOneWidget);
-      expect(find.byKey(FrontTaskListKeys.row('t-9')), findsNothing);
     });
 
     testWidgets('a list the cards cover entirely is not drawn at all', (
@@ -1306,7 +1452,7 @@ void main() {
 
       // Two lines name tasks, so her words are a list — and the cards
       // carry both of them.
-      expect(find.byType(FrontTaskList), findsNothing);
+      expect(herLists, findsNothing);
       expect(find.byKey(FrontEntityPreviewKeys.card('t-9')), findsOneWidget);
       expect(find.byKey(FrontEntityPreviewKeys.card('t-8')), findsOneWidget);
       expect(
@@ -1344,6 +1490,44 @@ void main() {
       await tester.pump();
 
       expect(order, ['closed', '/events/ev-1']);
+    });
+
+    testWidgets('a day her turn planned opens that day: she closes first, '
+        'then the day surface shows it', (tester) async {
+      final order = <String>[];
+      beamToNamedOverride = order.add;
+      addTearDown(() => beamToNamedOverride = null);
+      final planned = DateTime(2026, 10, 30);
+      final day = FrontEntityReference(
+        kind: FrontEntityKind.dayPlan,
+        id: frontDayPlanId(planned),
+        title: 'Move the audit to the afternoon',
+      );
+      await pumpPane(
+        tester,
+        onClose: () => order.add('closed'),
+        previews: (_) async => null,
+        thread: () async => FrontChatThread(
+          messages: [
+            message('u1', AgentChatRole.user, 'Move the audit.', now),
+            message('a1', AgentChatRole.agent, 'Moved it.', now),
+          ],
+          entityPreviewsByMessageId: {
+            'a1': [day],
+          },
+        ),
+      );
+
+      await tester.tap(find.byKey(FrontEntityPreviewKeys.card(day.id)));
+      await tester.pump();
+
+      expect(order, ['closed', '/calendar']);
+      expect(
+        ProviderScope.containerOf(
+          tester.element(find.byType(FrontChatPane)),
+        ).read(dailyOsNextSelectedDateProvider),
+        planned,
+      );
     });
 
     testWidgets('only the reply the cards belong to draws them', (
@@ -1491,7 +1675,7 @@ void main() {
       ),
     );
 
-    expect(find.byType(FrontTaskList), findsNothing);
+    expect(herLists, findsNothing);
     expect(
       find.textContaining('Nothing is due today.', findRichText: true),
       findsOne,

@@ -154,7 +154,7 @@ sources:
     last_modified: 2026-11-07
   - id: task-list
     resource: ../../lib/features/front_agent/ui/front_task_list.dart
-    title: FrontTaskList and FrontClosedTaskList — her lists of tasks and projects, and the tasks a closed-task answer found, as cards of rows
+    title: FrontClosedTaskList — the tasks a closed-task answer found, as a card of rows
     last_modified: 2026-11-08
   - id: entity-preview
     resource: ../../lib/features/front_agent/model/front_entity_preview.dart
@@ -166,7 +166,11 @@ sources:
     last_modified: 2026-11-09
   - id: entity-preview-card
     resource: ../../lib/features/front_agent/ui/front_entity_preview_card.dart
-    title: FrontEntityPreviewList, FrontEntityPreviewCompactCard and FrontEntityPreviewRichCard — what her turn made, as cards
+    title: FrontEntityPreviewList and its cards — her lists of tasks and what her turn made, as preview cards, and the label over a due list
+    last_modified: 2026-11-09
+  - id: due-section
+    resource: ../../lib/features/front_agent/model/front_due_section.dart
+    title: FrontDueSection — the window a due list was read from, kept on her reply
     last_modified: 2026-11-09
   - id: closed-task-card
     resource: ../../lib/features/front_agent/model/front_closed_task_card.dart
@@ -1285,7 +1289,7 @@ widening it (`frontNarrowedCategories`): with no allow-list those categories
 are the scope, and ones that fall outside the allow-list leave it as it is,
 since an empty scope would be the whole journal. New turns carry none.
 
-**Her lists of tasks are task rows.** The prompt asks her to write two
+**Her lists of tasks are preview cards.** The prompt asks her to write two
 tasks or projects or more — due tasks, what a search found, overdue and due
 together as one list — as a Markdown list, one link per line. How she
 phrases a line still varies from turn to turn, so the list does not hinge on
@@ -1295,24 +1299,30 @@ the runs of consecutive list lines that **lead** with a task or project link
 (`lotti://task/` or `lotti://project/`, plural paths too, emphasised or
 not); blank lines between them stay inside the run, and whatever follows the
 link on the line — a due date, `(overdue)`, a status, a few words — is
-dropped, since the row shows the task as it is now. The runs are drawn once
+dropped, since the card shows the task as it is now. The runs are drawn once
 the reply's list lines name `frontTaskListMinimum` (2) distinct records
-between them, so an answer split under *Overdue* and *Due today* headings,
-one task each, is rows under each heading. Each run is drawn as
-`FrontTaskList` — one card of rows, between her words as she wrote them
-(rendered by the view's own Markdown, so links and style are unchanged). A
-`FrontTaskRow` reads the task through `taskPreviewProvider` (through
-`.value`, so a reload keeps the row; it refreshes on every notification
-naming the task): its `StatusGlyph`, its title, its agent's one-liner (caption, in the `aiCard.accent` ink the tasks list gives it), its
-status and category, and — while it is not done or rejected — its
-priority as the tasks list shows it, beside the chevron and out of the subtitle so no truncation takes it (`TaskShowcasePriorityGlyph` and `P0`–`P3`,
-also in the row's semantics label) and the tasks list's own `DueDateText`. Until it loads, or if it is gone, the title she
-gave it stands alone. A project is a row of its title and a folder glyph.
-A tap opens either through the pane's link handler — a task on top of her
-(below), where its TL;DR is; a project closes her. A reply naming a single
-task leaves it a link in her words. The parts are cut from her reply as
-written, before `replaceIsoDays` turns its days into the device's format,
-and her words between the lists get the device's dates after the cut.
+between them, so an answer split in two, one task each, is cards under each
+part. Each run is drawn as a `FrontEntityPreviewList` between her words as
+she wrote them (rendered by the view's own Markdown, so links and style are
+unchanged): a task as `FrontEntityPreviewCompactCard` (below), a project —
+no preview of its own yet — as its title under the folder glyph. A tap opens
+either through the pane — a task on top of her, where its TL;DR is; a
+project closes her. A reply naming a single task leaves it a link in her
+words. The parts are cut from her reply as written, before
+`replaceIsoDays` turns its days into the device's format, and her words
+between the lists get the device's dates after the cut.
+
+**An answer about what is due says which window, quietly.** Her prompt has
+no headings — her words may be read aloud — so the label over a due list
+never comes from her prose. The strategy keeps the window a
+`list_due_tasks` that found tasks read (`FrontDueSection`: the window, the
+day it was asked, the last day it reaches); the workflow stores it on her
+reply as `dueTasks`, and the thread builder reads it into
+`dueSectionsByMessageId` (an unreadable one is dropped, one out of view goes
+with its reply). `FrontDueSectionLabel` draws it in the caption's low ink
+over her first list: *Due today* and *Overdue* (the Tasks due view's own
+labels), *Due through* a day for the days ahead, *Overdue and due through*
+a day — or *today* for a window that ends on the day it was asked.
 
 **Her answer about what was closed is cards under her words.** A reply in
 `closedTasksByMessageId` gets `FrontClosedTaskList` under her words: one
@@ -1324,10 +1334,12 @@ tap opens the task on top of her. A task her words also listed as task rows
 is drawn once, on the cards.
 
 **What her turn made is a preview card under her words.** When a door's
-outcome is `FrontDoorTaskCreated` or `FrontDoorEventCreated`, the thread
-builder adds a `FrontEntityReference` — its `FrontEntityKind` (task or
-event: a kind of its own, so an event never becomes a routing
-destination), its id, and the user's words it was made of as its title —
+outcome is `FrontDoorTaskCreated`, `FrontDoorEventCreated` or
+`FrontDoorDayPlanned`, the thread builder adds a `FrontEntityReference` —
+its `FrontEntityKind` (task, event, project or day plan: a set of its own,
+so an event never becomes a routing destination), its id (a day's is its
+date, `frontDayPlanId`), and the user's words it was made of as its
+title —
 to `entityPreviewsByMessageId` under the reply that carries the door
 (`carrierOf`), once per entity, in segment order. A turn she has not
 answered draws no card: its door card already says *Made into a task* or
@@ -1335,11 +1347,12 @@ answered draws no card: its door card already says *Made into a task* or
 preview: each card reads `frontEntityPreviewProvider` — keyed by
 `(kind, id)`; a task's built on `taskPreviewProvider`, an event's the
 `JournalEvent` as stored, both re-read when a notification names the
-entity — through `.value`, so a change after the turn shows on the card and
+entity, a day's its plan from `currentDraftPlanProvider` — through
+`.value`, so a change after the turn shows on the card and
 a reload keeps the card as it was until the new preview lands.
 `FrontEntityPreviewList` stacks the cards between her words and her door
 cards, a task as `FrontEntityPreviewCompactCard`, an event as
-`FrontEntityPreviewRichCard`.
+`FrontEntityPreviewRichCard`, a day as `FrontEntityPreviewDayCard`.
 
 The compact card is one `DesignSystemListItem` on the card surface
 (`dsCardSurface`, `radii.m`, a 0.5 hairline in `decorative.level01`): the
@@ -1347,7 +1360,10 @@ task's cover (`CoverArtThumbnail`, `ControlSizes.iconChip`) or else its
 `StatusGlyph`, its live title, the one-liner in the AI ink, then status,
 category swatch and name, `DueDateText` and the estimate
 (`formatRangeDuration`, a timer glyph) — neither of those two once it is
-done or rejected. A tap opens the task on top of her. A task a card shows
+done or rejected — and, while it is still to do, its priority beside the
+chevron, out of the subtitle so no truncation takes it
+(`TaskShowcasePriorityGlyph` and `P0`–`P3`, also in its semantics label).
+A tap opens the task on top of her. A task a card shows
 is taken out of her words' task rows, as the closed-task cards are, and a
 list left empty is not drawn. The rich card is `LinkedEventCard` — the
 `EventSummaryCard` the app draws wherever an event is linked, resolved
@@ -1355,8 +1371,14 @@ from the event and its links as its page resolves them: cover, title and
 rating, category and date, a status pill, the summary and the photo and
 task counts. Its `onTap` is the chat's: she closes, then the event's page
 opens, as *Open* on its door does — `/events` is not a root her links may
-reach. Either card, until it loads or once the entity is gone, is the
-title it was made with alone on the card surface, still opening it.
+reach. The day card says the day, then its blocks in the order they run —
+buffers and dropped blocks left out — each with when it starts and ends
+(tabular figures) and its title, a completed one ticked, at most
+`FrontEntityPreviewDayCard.maxBlocks` (5) and how many more; a tap opens
+the Daily OS day surface on that day, as *Open* on the day's door does.
+Every card, until it loads or once the entity is gone (a day with no plan
+left), is the title it was made with alone on the card surface under its
+kind's glyph, still opening it.
 
 **Her answer about logged time is a chart under her words.** A reply in
 `loggedTimeByMessageId` gets the same `replyBodyBuilder` body, her words

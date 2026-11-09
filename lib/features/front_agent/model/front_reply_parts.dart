@@ -55,7 +55,7 @@ class FrontReplyText extends FrontReplyPart {
   String toString() => 'FrontReplyText($markdown)';
 }
 
-/// A list of tasks (and projects), drawn as rows rather than as links.
+/// A list of tasks (and projects), drawn as cards rather than as links.
 class FrontReplyTasks extends FrontReplyPart {
   const FrontReplyTasks(this.tasks);
 
@@ -82,7 +82,7 @@ class FrontReplyTasks extends FrontReplyPart {
 /// emphasised or not (`**[title](…)**`).
 ///
 /// Whatever she writes after the link — when it is due, its status, a few
-/// words of why — is left out: the row shows the task as it is now, and its
+/// words of why — is left out: the card shows the task as it is now, and its
 /// one-liner, which is what those words would say. How she phrases a line
 /// varies from turn to turn, so the list must not hinge on it.
 final RegExp _taskLine = RegExp(
@@ -96,7 +96,7 @@ final RegExp _taskLine = RegExp(
 typedef _TaskLine = ({String line, FrontTaskMention task});
 
 /// The fewest distinct tasks or projects a reply's list lines must name before they are
-/// drawn as rows: a single one stays a link in her words.
+/// drawn as cards: a single one stays a link in her words.
 const int frontTaskListMinimum = 2;
 
 /// [markdown] cut into her words and the lists of tasks in them, in order.
@@ -104,10 +104,10 @@ const int frontTaskListMinimum = 2;
 /// A list is consecutive list lines that each lead with a task or project
 /// link ([_taskLine]), blank lines between them included — what the prompt
 /// asks her to write when she names tasks, due today or overdue alike, or
-/// what a search found. The lists are drawn as rows once the
+/// what a search found. The lists are drawn as cards once the
 /// reply's list lines name [frontTaskListMinimum] distinct records between
 /// them, so an overdue-and-due answer split under two headings, one task
-/// each, is rows too. Everything else stays her words. A reply with no such list is one
+/// each, is cards too. Everything else stays her words. A reply with no such list is one
 /// [FrontReplyText].
 List<FrontReplyPart> frontReplyParts(String markdown) {
   // Her words and runs of task lines, in order, before deciding what a run
@@ -168,7 +168,7 @@ List<FrontReplyPart> frontReplyParts(String markdown) {
       case final List<_TaskLine> lines when !asRows:
         words.addAll([for (final r in lines) r.line]);
       case final List<_TaskLine> lines:
-        // A task named twice in one list is one row: rows are keyed by id.
+        // A task named twice in one list is one card: cards are keyed by id.
         final seen = <(FrontDestinationKind, String)>{};
         flushWords();
         parts.add(

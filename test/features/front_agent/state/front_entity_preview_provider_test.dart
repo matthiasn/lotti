@@ -4,6 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/daily_os_next/logic/day_agent_capture_models.dart';
+import 'package:lotti/features/daily_os_next/logic/day_agent_plan_models.dart';
+import 'package:lotti/features/daily_os_next/logic/day_agent_timeline_models.dart';
+import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/front_agent/model/front_entity_preview.dart';
 import 'package:lotti/features/front_agent/state/front_entity_preview_provider.dart';
 import 'package:lotti/features/tasks/state/task_preview_provider.dart';
@@ -27,6 +31,7 @@ void main() {
       estimate: const Duration(minutes: 30),
       coverArtId: 'cover-1',
       coverArtCropX: 0.2,
+      priority: TaskPriority.p1High,
     ),
   );
 
@@ -35,8 +40,12 @@ void main() {
   late MockJournalDb journalDb;
   late StreamController<Set<String>> updates;
   late ProviderContainer container;
+  late Map<DateTime, DraftPlan?> plans;
+  late List<DateTime> planReads;
 
   setUp(() {
+    plans = {};
+    planReads = [];
     previews = {};
     taskReads = [];
     journalDb = MockJournalDb();
@@ -55,6 +64,10 @@ void main() {
         }),
         journalDbProvider.overrideWithValue(journalDb),
         updateNotificationsProvider.overrideWithValue(notifications),
+        currentDraftPlanProvider.overrideWith((ref, day) async {
+          planReads.add(day);
+          return plans[day];
+        }),
       ],
     );
     addTearDown(container.dispose);
@@ -91,6 +104,7 @@ void main() {
           categoryId: 'launch',
           coverArtId: 'cover-1',
           coverArtCropX: 0.2,
+          priority: TaskPriority.p1High,
         ),
       );
     });
@@ -153,6 +167,134 @@ void main() {
       await read(FrontEntityKind.task, 'ice-pad');
 
       verifyNever(() => journalDb.journalEntityById(any()));
+    });
+
+    test(
+      'a project has no preview of its own yet, and reads nothing',
+      () async {
+        expect(await read(FrontEntityKind.project, 'p-1'), isNull);
+        expect(taskReads, isEmpty);
+        expect(planReads, isEmpty);
+        verifyNever(() => journalDb.journalEntityById(any()));
+      },
+    );
+
+    group("a day's plan", () {
+      final day = DateTime(2026, 11, 9);
+      const launch = DayAgentCategory(
+        id: 'launch',
+        name: 'Launch Ops',
+        colorHex: '3B82F6',
+      );
+
+      TimeBlock block(
+        String title,
+        int hour, {
+        TimeBlockType type = TimeBlockType.ai,
+        TimeBlockState state = TimeBlockState.committed,
+        String? taskId,
+      }) => TimeBlock(
+        id: title,
+        title: title,
+        start: DateTime(2026, 11, 9, hour),
+        end: DateTime(2026, 11, 9, hour + 1),
+        type: type,
+        state: state,
+        category: launch,
+        taskId: taskId,
+      );
+
+      DraftPlan plan(List<TimeBlock> blocks) => DraftPlan(
+        dayDate: day,
+        blocks: blocks,
+        bands: const <EnergyBand>[],
+        capacityMinutes: 480,
+        scheduledMinutes: 0,
+      );
+
+      test('is its blocks in the order they run — not the buffers between, '
+          'nor what was dropped — each with its task', () async {
+        plans[day] = plan([
+          block('Audit', 14, taskId: 'cold-chain'),
+          block('Walk', 12, type: TimeBlockType.buffer),
+          block('Weather check', 9, state: TimeBlockState.completed),
+          block('Old idea', 16, state: TimeBlockState.dropped),
+          block('Standup', 10, type: TimeBlockType.cal),
+        ]);
+
+        final preview =
+            await read(FrontEntityKind.dayPlan, '2026-11-09')
+                as FrontDayPlanPreview?;
+
+        expect(planReads, [day]);
+        expect(preview?.day, day);
+        expect(preview?.blocks, [
+          FrontPlanBlock(
+            title: 'Weather check',
+            start: DateTime(2026, 11, 9, 9),
+            end: DateTime(2026, 11, 9, 10),
+            state: TimeBlockState.completed,
+          ),
+          FrontPlanBlock(
+            title: 'Standup',
+            start: DateTime(2026, 11, 9, 10),
+            end: DateTime(2026, 11, 9, 11),
+            state: TimeBlockState.committed,
+          ),
+          FrontPlanBlock(
+            title: 'Audit',
+            start: DateTime(2026, 11, 9, 14),
+            end: DateTime(2026, 11, 9, 15),
+            state: TimeBlockState.committed,
+            taskId: 'cold-chain',
+          ),
+        ]);
+      });
+
+      test('is null for a day with no plan, or none but buffers and dropped '
+          'blocks, and for a date it cannot read', () async {
+        expect(await read(FrontEntityKind.dayPlan, '2026-11-09'), isNull);
+
+        plans[day] = plan([
+          block('Walk', 12, type: TimeBlockType.buffer),
+          block('Old idea', 16, state: TimeBlockState.dropped),
+        ]);
+        container.invalidate(currentDraftPlanProvider(day));
+        expect(
+          await container.read(
+            frontEntityPreviewProvider((
+              FrontEntityKind.dayPlan,
+              '2026-11-09',
+            )).future,
+          ),
+          isNull,
+        );
+
+        planReads.clear();
+        expect(await read(FrontEntityKind.dayPlan, 'someday'), isNull);
+        expect(planReads, isEmpty);
+      });
+
+      test('follows the plan as it changes', () async {
+        plans[day] = plan([block('Audit', 14)]);
+        final first =
+            await read(FrontEntityKind.dayPlan, '2026-11-09')
+                as FrontDayPlanPreview?;
+        expect(first?.blocks.single.title, 'Audit');
+
+        plans[day] = plan([block('Audit, moved', 15)]);
+        container.invalidate(currentDraftPlanProvider(day));
+        final again =
+            await container.read(
+                  frontEntityPreviewProvider((
+                    FrontEntityKind.dayPlan,
+                    '2026-11-09',
+                  )).future,
+                )
+                as FrontDayPlanPreview?;
+
+        expect(again?.blocks.single.title, 'Audit, moved');
+      });
     });
 
     group('an event', () {

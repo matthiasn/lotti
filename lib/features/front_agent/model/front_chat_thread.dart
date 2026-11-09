@@ -3,6 +3,7 @@ import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/front_agent/model/front_closed_task_card.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
+import 'package:lotti/features/front_agent/model/front_due_section.dart';
 import 'package:lotti/features/front_agent/model/front_entity_preview.dart';
 import 'package:lotti/features/front_agent/model/front_logged_time_chart.dart';
 import 'package:lotti/features/front_agent/model/front_pull_requests.dart';
@@ -72,6 +73,7 @@ class FrontChatThread {
     this.pullRequestsByMessageId = const {},
     this.closedTasksByMessageId = const {},
     this.entityPreviewsByMessageId = const {},
+    this.dueSectionsByMessageId = const {},
   });
 
   static const empty = FrontChatThread(messages: []);
@@ -105,10 +107,15 @@ class FrontChatThread {
   final Map<String, List<FrontClosedTaskCard>> closedTasksByMessageId;
 
   /// The entities a reply draws as preview cards under her words, by the
-  /// reply's id: what the doors it carries made — a task made of a segment
-  /// — in segment order. Only which they are; each card reads its entity as
+  /// reply's id: what the doors it carries made — a task or an event made
+  /// of a segment, the day a change to today was planned on — in segment
+  /// order. Only which they are; each card reads its entity as
   /// it is now.
   final Map<String, List<FrontEntityReference>> entityPreviewsByMessageId;
+
+  /// The window a reply's list of due tasks was read from, by the reply's
+  /// id: the quiet label over that list.
+  final Map<String, FrontDueSection> dueSectionsByMessageId;
 
   /// The message that carries a user turn's doors on the surface: her
   /// reply right after it, when there is one — the doors are her answer,

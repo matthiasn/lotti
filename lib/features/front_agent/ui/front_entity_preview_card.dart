@@ -1,17 +1,23 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/categories/ui/widgets/category_color_icon.dart';
+import 'package:lotti/features/daily_os_next/logic/day_agent_timeline_models.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
 import 'package:lotti/features/events/ui/widgets/linked_event_card.dart';
+import 'package:lotti/features/front_agent/model/front_due_section.dart';
 import 'package:lotti/features/front_agent/model/front_entity_preview.dart';
+import 'package:lotti/features/front_agent/model/front_routing_index.dart';
 import 'package:lotti/features/front_agent/state/front_entity_preview_provider.dart';
 import 'package:lotti/features/tasks/ui/cover_art_thumbnail.dart';
 import 'package:lotti/features/tasks/ui/due_date_text.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/linked_task_row.dart'
     show StatusGlyph;
 import 'package:lotti/features/tasks/ui/utils.dart';
+import 'package:lotti/features/tasks/ui/widgets/task_showcase_chips.dart'
+    show TaskShowcasePriorityGlyph;
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/utils/color.dart';
@@ -21,15 +27,19 @@ import 'package:material_ui/material_ui.dart';
 /// Stable keys for her preview cards.
 @visibleForTesting
 abstract final class FrontEntityPreviewKeys {
-  static const Key list = Key('front-entity-preview-list');
   static Key card(String id) => Key('front-entity-preview-$id');
   static Key cover(String id) => Key('front-entity-preview-cover-$id');
   static Key estimate(String id) => Key('front-entity-preview-estimate-$id');
+  static Key priority(String id) => Key('front-entity-preview-priority-$id');
+  static Key block(String id, int index) =>
+      Key('front-entity-preview-block-$id-$index');
+  static Key more(String id) => Key('front-entity-preview-more-$id');
 }
 
-/// The entities a reply made, as a stack of preview cards under her words —
-/// a task as a compact card, an event as the app's event card. [onOpen] is
-/// given the reference of the card tapped.
+/// Entities as a stack of preview cards under her words — what a turn made,
+/// or what her words list: a task as a compact card, an event as the app's
+/// event card, a day's plan as its blocks, a project as its title. [onOpen]
+/// is given the reference of the card tapped.
 class FrontEntityPreviewList extends StatelessWidget {
   const FrontEntityPreviewList({
     required this.references,
@@ -42,7 +52,6 @@ class FrontEntityPreviewList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Column(
-    key: FrontEntityPreviewKeys.list,
     mainAxisSize: MainAxisSize.min,
     crossAxisAlignment: CrossAxisAlignment.stretch,
     spacing: context.designTokens.spacing.step2,
@@ -55,6 +64,17 @@ class FrontEntityPreviewList extends StatelessWidget {
             onTap: () => onOpen(reference),
           ),
           FrontEntityKind.event => FrontEntityPreviewRichCard(
+            key: FrontEntityPreviewKeys.card(reference.id),
+            reference: reference,
+            onTap: () => onOpen(reference),
+          ),
+          FrontEntityKind.dayPlan => FrontEntityPreviewDayCard(
+            key: FrontEntityPreviewKeys.card(reference.id),
+            reference: reference,
+            onTap: () => onOpen(reference),
+          ),
+          // No preview of its own yet: its title, under the folder glyph.
+          FrontEntityKind.project => _TitleOnly(
             key: FrontEntityPreviewKeys.card(reference.id),
             reference: reference,
             onTap: () => onOpen(reference),
@@ -89,7 +109,7 @@ class FrontEntityPreviewCompactCard extends ConsumerWidget {
       final FrontTaskPreview task => _PreviewSurface(
         child: _TaskPreviewContent(task: task, onTap: onTap),
       ),
-      FrontEventPreview() || null => _TitleOnly(
+      FrontEventPreview() || FrontDayPlanPreview() || null => _TitleOnly(
         reference: reference,
         onTap: onTap,
       ),
@@ -122,7 +142,7 @@ class FrontEntityPreviewRichCard extends ConsumerWidget {
         event: event,
         onTap: onTap,
       ),
-      FrontTaskPreview() || null => _TitleOnly(
+      FrontTaskPreview() || FrontDayPlanPreview() || null => _TitleOnly(
         reference: reference,
         onTap: onTap,
       ),
@@ -157,11 +177,11 @@ class _PreviewSurface extends StatelessWidget {
   }
 }
 
-/// The title an entity was made with, alone on a card, still opening it:
-/// what a card shows before its preview has loaded and after the entity is
-/// gone.
+/// The title an entity was made or named with, alone on a card under its
+/// kind's glyph, still opening it: what a card shows before its preview has
+/// loaded and after the entity is gone — and all a project shows yet.
 class _TitleOnly extends StatelessWidget {
-  const _TitleOnly({required this.reference, required this.onTap});
+  const _TitleOnly({required this.reference, required this.onTap, super.key});
 
   final FrontEntityReference reference;
   final VoidCallback onTap;
@@ -173,6 +193,16 @@ class _TitleOnly extends StatelessWidget {
       titleMaxLines: 2,
       size: DesignSystemListItemSize.small,
       onTap: onTap,
+      leading: Icon(
+        switch (reference.kind) {
+          FrontEntityKind.task => LottiIcons.checkboxChecked,
+          FrontEntityKind.project => LottiIcons.folder,
+          FrontEntityKind.event ||
+          FrontEntityKind.dayPlan => LottiIcons.calendar,
+        },
+        size: IconSizes.s,
+        color: context.designTokens.colors.text.mediumEmphasis,
+      ),
       trailingExtra: const _Chevron(),
     ),
   );
@@ -215,6 +245,7 @@ class _TaskPreviewContent extends ConsumerWidget {
         ?oneLiner,
         statusLabel,
         ?category?.name,
+        if (!task.settled) task.priority.short,
         if (estimateText != null)
           '${context.messages.taskEstimateLabel} $estimateText',
       ].join(', '),
@@ -282,7 +313,170 @@ class _TaskPreviewContent extends ConsumerWidget {
       // estimate off the end of the line under it.
       subtitleMaxLines: oneLiner == null ? 2 : 4,
       subtitleEmphasis: tokens.colors.text.lowEmphasis,
-      trailingExtra: const _Chevron(),
+      // Its priority while it is still to do, beside the chevron: out of
+      // the subtitle, so however long the one-liner, truncation never takes
+      // it.
+      trailingExtra: task.settled
+          ? const _Chevron()
+          : Row(
+              key: FrontEntityPreviewKeys.priority(task.entityId),
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TaskShowcasePriorityGlyph(
+                  priority: task.priority,
+                  size: IconSizes.xs,
+                ),
+                SizedBox(width: tokens.spacing.step1),
+                Text(task.priority.short, style: meta),
+                SizedBox(width: tokens.spacing.step2),
+                const _Chevron(),
+              ],
+            ),
+    );
+  }
+}
+
+/// A day's plan as a card: the day, then its blocks in the order they run —
+/// when each starts and ends, and what it is for, a done block ticked —
+/// at most [maxBlocks] of them, with how many more there are. Kept current
+/// as the plan changes. A tap opens the day. Until it has loaded, or once
+/// the day has no plan, the words that changed it stand alone.
+class FrontEntityPreviewDayCard extends ConsumerWidget {
+  const FrontEntityPreviewDayCard({
+    required this.reference,
+    required this.onTap,
+    super.key,
+  });
+
+  final FrontEntityReference reference;
+  final VoidCallback onTap;
+
+  /// How many blocks the card lists before it says how many more there are.
+  static const int maxBlocks = 5;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // `.value`: a reload keeps the card as it was until the new one lands.
+    final preview = ref
+        .watch(frontEntityPreviewProvider((reference.kind, reference.id)))
+        .value;
+    if (preview is! FrontDayPlanPreview) {
+      return _TitleOnly(reference: reference, onTap: onTap);
+    }
+    final tokens = context.designTokens;
+    final styles = tokens.typography.styles;
+    final low = tokens.colors.text.lowEmphasis;
+    final dayLabel = DateFormat.MMMEd(
+      Localizations.localeOf(context).toLanguageTag(),
+    ).format(preview.day);
+    String time(DateTime at) => TimeOfDay.fromDateTime(at).format(context);
+    final shown = preview.blocks.take(maxBlocks).toList();
+    final more = preview.blocks.length - shown.length;
+    return _PreviewSurface(
+      child: Material(
+        type: MaterialType.transparency,
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: EdgeInsets.all(tokens.spacing.step3),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              spacing: tokens.spacing.step2,
+              children: [
+                Row(
+                  spacing: tokens.spacing.step2,
+                  children: [
+                    Icon(
+                      LottiIcons.calendar,
+                      size: IconSizes.s,
+                      color: tokens.colors.text.mediumEmphasis,
+                    ),
+                    Expanded(
+                      child: Text(
+                        dayLabel,
+                        style: styles.body.bodyMedium.copyWith(
+                          color: tokens.colors.text.highEmphasis,
+                        ),
+                      ),
+                    ),
+                    const _Chevron(),
+                  ],
+                ),
+                for (final (index, block) in shown.indexed)
+                  Row(
+                    key: FrontEntityPreviewKeys.block(reference.id, index),
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    spacing: tokens.spacing.step3,
+                    children: [
+                      Text(
+                        '${time(block.start)}–${time(block.end)}',
+                        style: styles.others.caption.copyWith(
+                          color: low,
+                          fontFeatures: const [FontFeature.tabularFigures()],
+                        ),
+                      ),
+                      Expanded(
+                        child: Text(
+                          block.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: styles.others.caption.copyWith(
+                            color: tokens.colors.text.highEmphasis,
+                          ),
+                        ),
+                      ),
+                      if (block.state == TimeBlockState.completed)
+                        Icon(
+                          LottiIcons.confirmCircled,
+                          size: IconSizes.xs,
+                          color: tokens.colors.alert.success.ink,
+                        ),
+                    ],
+                  ),
+                if (more > 0)
+                  Text(
+                    context.messages.frontDayPlanMore(more),
+                    key: FrontEntityPreviewKeys.more(reference.id),
+                    style: styles.others.caption.copyWith(color: low),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The quiet label over a list of due tasks: the window her answer read —
+/// due today, overdue, or due through a later day.
+class FrontDueSectionLabel extends StatelessWidget {
+  const FrontDueSectionLabel({required this.section, super.key});
+
+  final FrontDueSection section;
+
+  @override
+  Widget build(BuildContext context) {
+    final messages = context.messages;
+    final tokens = context.designTokens;
+    final through = DateFormat.MMMEd(
+      Localizations.localeOf(context).toLanguageTag(),
+    ).format(section.through);
+    final label = switch (section.window) {
+      FrontDueWindow.today => messages.tasksDueViewDueToday,
+      FrontDueWindow.overdue => messages.tasksDueViewOverdue,
+      FrontDueWindow.upcoming when section.endsToday =>
+        messages.tasksDueViewDueToday,
+      FrontDueWindow.upcoming => messages.frontDueSectionThrough(through),
+      FrontDueWindow.all when section.endsToday =>
+        messages.frontDueSectionOverdueAndToday,
+      FrontDueWindow.all => messages.frontDueSectionOverdueAndThrough(through),
+    };
+    return Text(
+      label,
+      style: tokens.typography.styles.others.caption.copyWith(
+        color: tokens.colors.text.lowEmphasis,
+      ),
     );
   }
 }

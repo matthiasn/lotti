@@ -1,12 +1,29 @@
+import 'package:collection/collection.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/daily_os_next/logic/day_agent_timeline_models.dart';
+import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:meta/meta.dart';
 
 /// The kinds of entity her chat draws a preview card for.
 ///
 /// Its own set, not the router's destinations: an event is something a tap
-/// makes, never somewhere the router sends words.
-enum FrontEntityKind { task, event }
+/// makes, never somewhere the router sends words, and a day's plan is named
+/// by its date rather than an id.
+enum FrontEntityKind {
+  task,
+  event,
+
+  /// A project her words list; it has no preview of its own yet, so its
+  /// card is its title.
+  project,
+
+  /// The plan of one day, named by its date (`YYYY-MM-DD`).
+  dayPlan,
+}
+
+/// The id a day's plan is referred to by: its date, `YYYY-MM-DD`.
+String frontDayPlanId(DateTime day) => day.ymd;
 
 /// An entity a reply of hers shows as a preview card: which it is, and the
 /// title it had when the turn was walked — what the card says until the
@@ -66,6 +83,7 @@ class FrontTaskPreview extends FrontEntityPreview {
     this.categoryId,
     this.coverArtId,
     this.coverArtCropX = 0.5,
+    this.priority = TaskPriority.p2Medium,
   }) : super(entityKind: FrontEntityKind.task);
 
   final String title;
@@ -80,6 +98,9 @@ class FrontTaskPreview extends FrontEntityPreview {
 
   /// Horizontal crop of the cover (0 left, 0.5 centre, 1 right).
   final double coverArtCropX;
+
+  /// How urgent it is, shown while it is still to do.
+  final TaskPriority priority;
 
   /// Done or rejected: nothing about it is still to do, so neither when it
   /// is due nor how long it should take is worth showing.
@@ -96,7 +117,8 @@ class FrontTaskPreview extends FrontEntityPreview {
       other.estimate == estimate &&
       other.categoryId == categoryId &&
       other.coverArtId == coverArtId &&
-      other.coverArtCropX == coverArtCropX;
+      other.coverArtCropX == coverArtCropX &&
+      other.priority == priority;
 
   @override
   int get hashCode => Object.hash(
@@ -109,6 +131,7 @@ class FrontTaskPreview extends FrontEntityPreview {
     categoryId,
     coverArtId,
     coverArtCropX,
+    priority,
   );
 
   @override
@@ -134,4 +157,59 @@ class FrontEventPreview extends FrontEntityPreview {
 
   @override
   String toString() => 'FrontEventPreview($entityId, ${event.data.title})';
+}
+
+/// One block of a day's plan, as its card lists it.
+@immutable
+class FrontPlanBlock {
+  const FrontPlanBlock({
+    required this.title,
+    required this.start,
+    required this.end,
+    required this.state,
+    this.taskId,
+  });
+
+  final String title;
+  final DateTime start;
+  final DateTime end;
+  final TimeBlockState state;
+
+  /// The task the block is time for, when it is one.
+  final String? taskId;
+
+  @override
+  bool operator ==(Object other) =>
+      other is FrontPlanBlock &&
+      other.title == title &&
+      other.start == start &&
+      other.end == end &&
+      other.state == state &&
+      other.taskId == taskId;
+
+  @override
+  int get hashCode => Object.hash(title, start, end, state, taskId);
+}
+
+/// A day's plan as its preview card shows it: the day, and its blocks in the
+/// order they run.
+class FrontDayPlanPreview extends FrontEntityPreview {
+  FrontDayPlanPreview({required this.day, required this.blocks})
+    : super(entityId: frontDayPlanId(day), entityKind: FrontEntityKind.dayPlan);
+
+  /// The planned day, at local midnight.
+  final DateTime day;
+  final List<FrontPlanBlock> blocks;
+
+  @override
+  bool operator ==(Object other) =>
+      other is FrontDayPlanPreview &&
+      other.day == day &&
+      const ListEquality<FrontPlanBlock>().equals(other.blocks, blocks);
+
+  @override
+  int get hashCode => Object.hash(day, Object.hashAll(blocks));
+
+  @override
+  String toString() => 'FrontDayPlanPreview($entityId, ${blocks.length})';
 }

@@ -7,12 +7,18 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/categories/ui/widgets/category_color_icon.dart';
+import 'package:lotti/features/daily_os_next/logic/day_agent_capture_models.dart';
+import 'package:lotti/features/daily_os_next/logic/day_agent_plan_models.dart';
+import 'package:lotti/features/daily_os_next/logic/day_agent_timeline_models.dart';
+import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
 import 'package:lotti/features/events/ui/widgets/event_summary_card.dart';
 import 'package:lotti/features/events/ui/widgets/linked_event_card.dart';
+import 'package:lotti/features/front_agent/model/front_due_section.dart';
 import 'package:lotti/features/front_agent/model/front_entity_preview.dart';
+import 'package:lotti/features/front_agent/model/front_routing_index.dart';
 import 'package:lotti/features/front_agent/state/front_entity_preview_provider.dart';
 import 'package:lotti/features/front_agent/ui/front_entity_preview_card.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
@@ -20,6 +26,7 @@ import 'package:lotti/features/tasks/state/task_preview_provider.dart';
 import 'package:lotti/features/tasks/ui/cover_art_thumbnail.dart';
 import 'package:lotti/features/tasks/ui/due_date_text.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/linked_task_row.dart';
+import 'package:lotti/features/tasks/ui/widgets/task_showcase_chips.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/providers/update_notifications_providers.dart';
@@ -69,6 +76,7 @@ void main() {
     Duration? estimate = const Duration(minutes: 90),
     String? categoryId = 'launch',
     String? coverArtId,
+    TaskPriority priority = TaskPriority.p2Medium,
   }) => FrontTaskPreview(
     entityId: 'ice-pad',
     title: title,
@@ -79,6 +87,7 @@ void main() {
     categoryId: categoryId,
     coverArtId: coverArtId,
     coverArtCropX: 0.2,
+    priority: priority,
   );
 
   late List<FrontEntityReference> opened;
@@ -105,6 +114,7 @@ void main() {
     Future<FrontEntityPreview?> Function(FrontEntityKey key)? load,
     Future<TaskPreview?> Function(String id)? loadTask,
     Future<JournalEntity?> Function(String id)? loadEntity,
+    Future<DraftPlan?> Function(DateTime day)? loadPlan,
     CategoryDefinition? category,
   }) async {
     opened = [];
@@ -141,6 +151,10 @@ void main() {
             frontEntityPreviewProvider.overrideWith((ref, key) => load(key)),
           if (loadTask != null)
             taskPreviewProvider.overrideWith((ref, id) => loadTask(id)),
+          if (loadPlan != null)
+            currentDraftPlanProvider.overrideWith(
+              (ref, day) => loadPlan(day),
+            ),
           entitiesCacheServiceProvider.overrideWithValue(cache),
           // An event, for what follows the event as it changes.
           journalDbProvider.overrideWithValue(journalDb),
@@ -293,7 +307,7 @@ void main() {
       expect(
         item(tester, 'ice-pad').semanticsLabel,
         'Check the ice-pad weather window, Crosswind near the 18-knot limit, '
-        'In Progress, Launch Ops, Estimate: 1h 30m',
+        'In Progress, Launch Ops, P2, Estimate: 1h 30m',
       );
     });
 
@@ -328,7 +342,7 @@ void main() {
       );
       expect(
         item(tester, 'ice-pad').semanticsLabel,
-        'Check the ice-pad weather window, In Progress',
+        'Check the ice-pad weather window, In Progress, P2',
       );
     });
 
@@ -525,6 +539,7 @@ void main() {
         load: (key) async => switch (key.$1) {
           FrontEntityKind.event => ice(),
           FrontEntityKind.task => FrontEventPreview(testRehearsalEvent),
+          FrontEntityKind.project || FrontEntityKind.dayPlan => null,
         },
       );
 
@@ -564,5 +579,349 @@ void main() {
 
       expect(find.text('Rehearsal, moved'), findsOneWidget);
     });
+  });
+
+  group('a task card, priority', () {
+    testWidgets("a task still to do shows its priority's glyph and name "
+        'beside the chevron; a settled one neither', (tester) async {
+      await pump(
+        tester,
+        references: const [iceRef, coldRef],
+        load: (key) async => key.$2 == 'ice-pad'
+            ? ice(priority: TaskPriority.p1High)
+            : FrontTaskPreview(
+                entityId: 'cold-chain',
+                title: 'Audit the cold-chain freezer logs',
+                status: TaskStatus.done(id: 's', createdAt: at, utcOffset: 0),
+              ),
+      );
+
+      final priority = find.byKey(FrontEntityPreviewKeys.priority('ice-pad'));
+      expect(
+        tester
+            .widget<TaskShowcasePriorityGlyph>(
+              find.descendant(
+                of: priority,
+                matching: find.byType(TaskShowcasePriorityGlyph),
+              ),
+            )
+            .priority,
+        TaskPriority.p1High,
+      );
+      expect(
+        find.descendant(of: priority, matching: find.text('P1')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(FrontEntityPreviewKeys.priority('cold-chain')),
+        findsNothing,
+      );
+      expect(
+        item(tester, 'cold-chain').semanticsLabel,
+        isNot(contains('P2')),
+      );
+    });
+
+    testWidgets('on a narrow screen a one-liner long enough to be cut never '
+        'takes the priority with it', (tester) async {
+      tester.view
+        ..physicalSize = const Size(320, 800)
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await pump(
+        tester,
+        load: (_) async =>
+            ice(oneLiner: 'Crosswind ' * 40, priority: TaskPriority.p1High),
+      );
+
+      final card = tester.getRect(
+        find.byKey(FrontEntityPreviewKeys.card('ice-pad')),
+      );
+      final priority = tester.getRect(
+        find.byKey(FrontEntityPreviewKeys.priority('ice-pad')),
+      );
+      expect(
+        card.contains(priority.topLeft) && card.contains(priority.bottomRight),
+        isTrue,
+      );
+      expect(priority.right, lessThanOrEqualTo(320));
+    });
+  });
+
+  group('a title-only card', () {
+    const project = FrontEntityReference(
+      kind: FrontEntityKind.project,
+      id: 'p-1',
+      title: 'Colony census',
+    );
+
+    testWidgets('a project is its title under the folder glyph, and opens', (
+      tester,
+    ) async {
+      await pump(tester, references: const [project], load: (_) async => null);
+
+      final card = find.byKey(FrontEntityPreviewKeys.card('p-1'));
+      expect(
+        find.descendant(of: card, matching: find.text('Colony census')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: card, matching: find.byIcon(LottiIcons.folder)),
+        findsOneWidget,
+      );
+
+      await tester.tap(card);
+      expect(opened, [project]);
+    });
+
+    testWidgets('leads with the glyph of its kind', (tester) async {
+      final day = FrontEntityReference(
+        kind: FrontEntityKind.dayPlan,
+        id: frontDayPlanId(DateTime(2026, 11, 9)),
+        title: 'Move the freezer audit',
+      );
+      await pump(
+        tester,
+        references: [iceRef, rehearsalRef, day],
+        load: (_) async => null,
+      );
+
+      IconData glyphOf(String id) => tester
+          .widget<Icon>(
+            find
+                .descendant(
+                  of: find.byKey(FrontEntityPreviewKeys.card(id)),
+                  matching: find.byType(Icon),
+                )
+                .first,
+          )
+          .icon!;
+      expect(glyphOf('ice-pad'), LottiIcons.checkboxChecked);
+      expect(glyphOf(rehearsalRef.id), LottiIcons.calendar);
+      expect(glyphOf(day.id), LottiIcons.calendar);
+    });
+  });
+
+  group('FrontEntityPreviewDayCard', () {
+    final day = DateTime(2026, 11, 9);
+    final dayRef = FrontEntityReference(
+      kind: FrontEntityKind.dayPlan,
+      id: frontDayPlanId(day),
+      title: 'Move the freezer audit to the afternoon',
+    );
+
+    FrontPlanBlock block(
+      String title,
+      int startHour, {
+      TimeBlockState state = TimeBlockState.committed,
+    }) => FrontPlanBlock(
+      title: title,
+      start: DateTime(2026, 11, 9, startHour),
+      end: DateTime(2026, 11, 9, startHour, 45),
+      state: state,
+    );
+
+    String textOf(WidgetTester tester, Finder finder) =>
+        tester.widgetList<Text>(finder).map((t) => t.data).join(' | ');
+
+    testWidgets('says the day, then each block with when it runs, in order, '
+        'a done one ticked', (tester) async {
+      await pump(
+        tester,
+        references: [dayRef],
+        load: (_) async => FrontDayPlanPreview(
+          day: day,
+          blocks: [
+            block('Weather check', 9, state: TimeBlockState.completed),
+            block('Freezer audit', 14),
+          ],
+        ),
+      );
+
+      expect(find.text('Mon, Nov 9'), findsOneWidget);
+      final first = find.byKey(FrontEntityPreviewKeys.block(dayRef.id, 0));
+      final second = find.byKey(FrontEntityPreviewKeys.block(dayRef.id, 1));
+      expect(
+        textOf(tester, find.descendant(of: first, matching: find.byType(Text))),
+        '9:00 AM–9:45 AM | Weather check',
+      );
+      expect(
+        textOf(
+          tester,
+          find.descendant(of: second, matching: find.byType(Text)),
+        ),
+        '2:00 PM–2:45 PM | Freezer audit',
+      );
+      expect(
+        find.descendant(
+          of: first,
+          matching: find.byIcon(LottiIcons.confirmCircled),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: second,
+          matching: find.byIcon(LottiIcons.confirmCircled),
+        ),
+        findsNothing,
+      );
+      expect(find.byKey(FrontEntityPreviewKeys.more(dayRef.id)), findsNothing);
+      expect(find.text(dayRef.title), findsNothing);
+    });
+
+    testWidgets('lists at most five blocks and says how many more there are', (
+      tester,
+    ) async {
+      await pump(
+        tester,
+        references: [dayRef],
+        load: (_) async => FrontDayPlanPreview(
+          day: day,
+          blocks: [for (var h = 8; h < 15; h++) block('Block $h', h)],
+        ),
+      );
+
+      expect(
+        find.byKey(
+          FrontEntityPreviewKeys.block(
+            dayRef.id,
+            FrontEntityPreviewDayCard.maxBlocks - 1,
+          ),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(
+          FrontEntityPreviewKeys.block(
+            dayRef.id,
+            FrontEntityPreviewDayCard.maxBlocks,
+          ),
+        ),
+        findsNothing,
+      );
+      expect(
+        tester
+            .widget<Text>(find.byKey(FrontEntityPreviewKeys.more(dayRef.id)))
+            .data,
+        '2 more',
+      );
+    });
+
+    testWidgets('a tap anywhere on it opens the day', (tester) async {
+      await pump(
+        tester,
+        references: [dayRef],
+        load: (_) async =>
+            FrontDayPlanPreview(day: day, blocks: [block('Audit', 14)]),
+      );
+
+      await tester.tap(find.text('Audit'));
+      expect(opened, [dayRef]);
+    });
+
+    testWidgets('a day with no plan, or a preview of another kind, is the '
+        'words that changed it, still opening the day', (tester) async {
+      await pump(
+        tester,
+        references: [dayRef],
+        load: (_) async => ice(),
+      );
+
+      expect(find.text(dayRef.title), findsOneWidget);
+      expect(
+        find.byKey(FrontEntityPreviewKeys.block(dayRef.id, 0)),
+        findsNothing,
+      );
+
+      await tester.tap(find.text(dayRef.title));
+      expect(opened, [dayRef]);
+    });
+
+    testWidgets('stays on screen while the plan under it reloads, then '
+        'changes in place', (tester) async {
+      DraftPlan plan(String title) => DraftPlan(
+        dayDate: day,
+        blocks: [
+          TimeBlock(
+            id: 'b',
+            title: title,
+            start: DateTime(2026, 11, 9, 14),
+            end: DateTime(2026, 11, 9, 15),
+            type: TimeBlockType.ai,
+            state: TimeBlockState.committed,
+            category: const DayAgentCategory(
+              id: 'launch',
+              name: 'Launch Ops',
+              colorHex: '3B82F6',
+            ),
+          ),
+        ],
+        bands: const <EnergyBand>[],
+        capacityMinutes: 480,
+        scheduledMinutes: 60,
+      );
+      var reload = Completer<DraftPlan?>()..complete(plan('Freezer audit'));
+      await pump(
+        tester,
+        references: [dayRef],
+        loadPlan: (_) => reload.future,
+      );
+      expect(find.text('Freezer audit'), findsOneWidget);
+
+      reload = Completer<DraftPlan?>();
+      ProviderScope.containerOf(
+        tester.element(find.byType(FrontEntityPreviewList)),
+      ).invalidate(currentDraftPlanProvider(day));
+      await tester.pump();
+
+      expect(find.text('Freezer audit'), findsOneWidget);
+      expect(find.text(dayRef.title), findsNothing);
+
+      reload.complete(plan('Freezer audit, moved'));
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('Freezer audit, moved'), findsOneWidget);
+    });
+  });
+
+  group('FrontDueSectionLabel', () {
+    final today = DateTime(2026, 11, 9);
+    final friday = DateTime(2026, 11, 13);
+
+    for (final (window, through, label) in [
+      (FrontDueWindow.today, today, 'Due today'),
+      (FrontDueWindow.overdue, today, 'Overdue'),
+      (FrontDueWindow.upcoming, today, 'Due today'),
+      (FrontDueWindow.upcoming, friday, 'Due through Fri, Nov 13'),
+      (FrontDueWindow.all, today, 'Overdue and due today'),
+      (FrontDueWindow.all, friday, 'Overdue and due through Fri, Nov 13'),
+    ]) {
+      testWidgets('${window.name} through ${through.day} reads "$label"', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            FrontDueSectionLabel(
+              section: FrontDueSection(
+                window: window,
+                today: today,
+                through: through,
+              ),
+            ),
+          ),
+        );
+
+        expect(find.text(label), findsOneWidget);
+        final tokens = tester
+            .element(find.byType(FrontDueSectionLabel))
+            .designTokens;
+        expect(
+          tester.widget<Text>(find.text(label)).style?.color,
+          tokens.colors.text.lowEmphasis,
+        );
+      });
+    }
   });
 }

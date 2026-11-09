@@ -3316,6 +3316,14 @@
   "frontChatSearchChats": "Søg i chats",
   "frontChatTitle": "Ledsager",
   "frontChatYesterday": "I går",
+  "frontDayPlanMore": "{count} mere",
+  "@frontDayPlanMore": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "frontDoorActionFailed": "Det gik ikke igennem.",
   "frontDoorAnswerHidden": "Skjult: det bygger på noget, du ikke længere kan se.",
   "frontDoorAttribution": "Fra {owner}",
@@ -3360,6 +3368,23 @@
   "frontDoorUndo": "Fortryd",
   "frontDoorUnfiled": "Taget ud af {owner}. Gem igen?",
   "frontDoorWalking": "Spørger {owner}…",
+  "frontDueSectionOverdueAndThrough": "Forfaldne og forfalder senest {date}",
+  "@frontDueSectionOverdueAndThrough": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "frontDueSectionOverdueAndToday": "Forfaldne og forfalder i dag",
+  "frontDueSectionThrough": "Forfalder senest {date}",
+  "@frontDueSectionThrough": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "frontLoggedTimeExpand": "Forstør diagram",
   "frontPullRequestsLinesAdded": "Tilføjede linjer",
   "frontPullRequestsLinesDeleted": "Slettede linjer",
