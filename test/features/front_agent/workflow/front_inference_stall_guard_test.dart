@@ -157,6 +157,26 @@ void main() {
     expect(calls, 1);
   });
 
+  test('a stalled call whose cancel never completes — a provider stuck in '
+      'its HTTP send — still lets the resend go after the cancel bound', () {
+    attempts = [
+      () => StreamController<CreateChatCompletionStreamResponse>(
+        onCancel: () => Completer<void>().future,
+      ).stream,
+      () => answer(['retried']),
+    ];
+
+    final result = send(
+      frontInferenceStallTimeout +
+          frontInferenceCancelBound +
+          const Duration(milliseconds: 100),
+    );
+
+    expect(result.ids, ['retried']);
+    expect(result.done, isTrue);
+    expect(calls, 2);
+  });
+
   test('a second stall fails the turn with a timeout', () {
     attempts = [silent, silent];
 

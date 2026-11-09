@@ -16,6 +16,14 @@ import 'package:openai_dart/openai_dart.dart';
 /// ever routes her turns.
 const Duration frontInferenceStallTimeout = Duration(seconds: 15);
 
+/// How long dropping a stalled call may take before the guard moves on. A
+/// provider generator suspended in its HTTP send cannot be cancelled until
+/// the send returns, so waiting for it would hold the retry hostage.
+///
+/// shortcut: the abandoned request finishes in the background and its
+/// answer is discarded; make the provider's transport abortable to free it.
+const Duration frontInferenceCancelBound = Duration(seconds: 1);
+
 /// Bounds a stalled provider call on the user's interactive turn: a call
 /// that sends nothing for [stallTimeout] is dropped and sent once more —
 /// safe, since nothing of it was read — and a second stall, or one after
@@ -80,7 +88,12 @@ class FrontInferenceStallGuard extends InferenceRepositoryInterface {
       } finally {
         // Drops a request that did not end on its own: the stalled one, or
         // one whose reader went away.
-        if (!ended) await chunks.cancel();
+        if (!ended) {
+          await chunks.cancel().timeout(
+            frontInferenceCancelBound,
+            onTimeout: () {},
+          );
+        }
       }
     }
   }
