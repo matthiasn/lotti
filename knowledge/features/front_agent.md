@@ -1446,7 +1446,9 @@ sits in the lower half the thread gets `threadBottomInset` — the card's
 height and the margin — after its last message, so the end of an answer
 scrolls clear of her. `AgentChatView` caps that inset at half the thread's
 height, so a card capped by a small window or a phone keyboard never pushes
-the last message out of view.
+the last message out of view. The cap trades clearance for that: a card
+taller than half the thread (a Large card over a short one) can still cover
+the end of a reply, and moving it up or making it smaller uncovers it.
 
 Where the user leaves it is kept per form factor
 (`CompanionCardForm.phone` / `.desktop`) by `companionCardControllerProvider`
