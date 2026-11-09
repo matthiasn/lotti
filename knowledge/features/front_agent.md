@@ -166,7 +166,7 @@ sources:
     last_modified: 2026-11-09
   - id: entity-preview-card
     resource: ../../lib/features/front_agent/ui/front_entity_preview_card.dart
-    title: FrontEntityPreviewList and its cards — her lists of tasks and what her turn made, as preview cards, and the label over a due list
+    title: FrontEntityPreviewList and its cards — her lists of tasks and what her turn made, as preview cards, a task card's quick actions, and the label over a due list
     last_modified: 2026-11-09
   - id: due-section
     resource: ../../lib/features/front_agent/model/front_due_section.dart
@@ -1304,8 +1304,8 @@ the reply's list lines name `frontTaskListMinimum` (2) distinct records
 between them, so an answer split in two, one task each, is cards under each
 part. Each run is drawn as a `FrontEntityPreviewList` between her words as
 she wrote them (rendered by the view's own Markdown, so links and style are
-unchanged): a task as `FrontEntityPreviewCompactCard` (below), a project —
-no preview of its own yet — as its title under the folder glyph. A tap opens
+unchanged): a task as `FrontEntityPreviewCompactCard`, a project as
+`FrontEntityPreviewProjectCard` (both below). A tap opens
 either through the pane — a task on top of her, where its TL;DR is; a
 project closes her. A reply naming a single task leaves it a link in her
 words. The parts are cut from her reply as written, before
@@ -1334,25 +1334,32 @@ tap opens the task on top of her. A task her words also listed as task rows
 is drawn once, on the cards.
 
 **What her turn made is a preview card under her words.** When a door's
-outcome is `FrontDoorTaskCreated`, `FrontDoorEventCreated` or
-`FrontDoorDayPlanned`, the thread builder adds a `FrontEntityReference` —
-its `FrontEntityKind` (task, event, project or day plan: a set of its own,
-so an event never becomes a routing destination), its id (a day's is its
-date, `frontDayPlanId`), and the user's words it was made of as its
-title —
-to `entityPreviewsByMessageId` under the reply that carries the door
+outcome is `FrontDoorTaskCreated`, `FrontDoorEventCreated`,
+`FrontDoorProjectCreated` or `FrontDoorDayPlanned` — or it handed a person
+door's words to that person's agent (`FrontDoorChatTurn`, the person named
+by the door's `destinationId`) — the thread builder adds a
+`FrontEntityReference`: its `FrontEntityKind` (task, event, project, person
+or day plan: a set of its own, so an event never becomes a routing
+destination), its id (a day's is its date, `frontDayPlanId`), and as its
+title the user's words it was made of, or a person's name as the walker
+recorded it. It goes to `entityPreviewsByMessageId` under the reply that carries the door
 (`carrierOf`), once per entity, in segment order. A turn she has not
 answered draws no card: its door card already says *Made into a task* or
 *Made into an event*. The thread stores only the reference, never the
 preview: each card reads `frontEntityPreviewProvider` — keyed by
 `(kind, id)`; a task's built on `taskPreviewProvider`, an event's the
 `JournalEvent` as stored, both re-read when a notification names the
-entity, a day's its plan from `currentDraftPlanProvider` — through
+entity; a project's the project and its tasks' counts, re-read when it or
+any of its tasks is named; a person's the person and their newest check-in,
+re-read when they are named (a check-in names them); a day's its plan from
+`currentDraftPlanProvider` — through
 `.value`, so a change after the turn shows on the card and
 a reload keeps the card as it was until the new preview lands.
 `FrontEntityPreviewList` stacks the cards between her words and her door
 cards, a task as `FrontEntityPreviewCompactCard`, an event as
-`FrontEntityPreviewRichCard`, a day as `FrontEntityPreviewDayCard`.
+`FrontEntityPreviewRichCard`, a project as `FrontEntityPreviewProjectCard`,
+a person as `FrontEntityPreviewPersonCard`, a day as
+`FrontEntityPreviewDayCard`.
 
 The compact card is one `DesignSystemListItem` on the card surface
 (`dsCardSurface`, `radii.m`, a 0.5 hairline in `decorative.level01`): the
@@ -1363,7 +1370,13 @@ category swatch and name, `DueDateText` and the estimate
 done or rejected — and, while it is still to do, its priority beside the
 chevron, out of the subtitle so no truncation takes it
 (`TaskShowcasePriorityGlyph` and `P0`–`P3`, also in its semantics label).
-A tap opens the task on top of her. A task a card shows
+A tap opens the task on top of her; a long press — a secondary click on
+desktop, the long-press action to a screen reader — opens a
+`DesignSystemContextMenuAnchor` at the press with *Change status…*,
+*Reschedule…* and *Move to project…* (only for a task with a category, as on
+its page), each reading the task as stored now and opening the picker its
+own page opens (`TaskMetaPickers`), so an action here writes exactly what it
+would there. A task a card shows
 is taken out of her words' task rows, as the closed-task cards are, and a
 list left empty is not drawn. The rich card is `LinkedEventCard` — the
 `EventSummaryCard` the app draws wherever an event is linked, resolved
@@ -1376,6 +1389,11 @@ buffers and dropped blocks left out — each with when it starts and ends
 (tabular figures) and its title, a completed one ticked, at most
 `FrontEntityPreviewDayCard.maxBlocks` (5) and how many more; a tap opens
 the Daily OS day surface on that day, as *Open* on the day's door does.
+The project card is the Projects list's own `ProjectRow` — its title, its
+tasks' progress counted done-only as its page counts them, its status — and
+a tap opens the project, closing her. The person card is the People list's
+own `PeopleListRow` — their face, name and newest check-in — and a tap
+closes her and opens their page (`/people/<id>`).
 Every card, until it loads or once the entity is gone (a day with no plan
 left), is the title it was made with alone on the card surface under its
 kind's glyph, still opening it.

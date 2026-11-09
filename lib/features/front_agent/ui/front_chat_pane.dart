@@ -269,8 +269,8 @@ class FrontChatThreadView extends ConsumerWidget {
     }
 
     // A preview card's entity: a task opens on top of her and a project
-    // closes her, as when she names either; an event's page and a day's are
-    // the app's, so she closes first.
+    // closes her, as when she names either; an event's page, a person's and
+    // a day's are the app's, so she closes first.
     void openMade(FrontEntityReference made) {
       switch (made.kind) {
         case FrontEntityKind.task:
@@ -283,6 +283,9 @@ class FrontChatThreadView extends ConsumerWidget {
         case FrontEntityKind.event:
           onClose();
           beamToNamed('/events/${made.id}');
+        case FrontEntityKind.person:
+          onClose();
+          beamToNamed('/people/${made.id}');
         case FrontEntityKind.dayPlan:
           if (DateTime.tryParse(made.id) case final day?) openDay(day);
       }

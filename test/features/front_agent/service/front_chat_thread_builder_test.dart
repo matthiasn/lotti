@@ -818,22 +818,120 @@ void main() {
         });
       });
 
+      test('a project a door made rides the reply too, titled with the '
+          'words it was made of', () async {
+        userTurn('u1', 'Start the census.', at: DateTime(2026, 11, 9, 9));
+        replyTo('r1', 'u1', at: DateTime(2026, 11, 9, 9, 1));
+        doorRow(
+          'd:door:0',
+          'u1',
+          door(0, const FrontDoorProjectCreated(projectId: 'census')),
+        );
+
+        final thread = await builder.build();
+
+        expect(thread.entityPreviewsByMessageId, {
+          'r1': [
+            const FrontEntityReference(
+              kind: FrontEntityKind.project,
+              id: 'census',
+              title: 'segment 0',
+            ),
+          ],
+        });
+      });
+
+      test('a person a turn was handed to rides the reply under their name — '
+          'the words when the walker found none', () async {
+        userTurn('u1', 'Pip and Anna.', at: DateTime(2026, 11, 9, 9));
+        replyTo('r1', 'u1', at: DateTime(2026, 11, 9, 9, 1));
+        const turn = FrontDoorChatTurn(
+          specialistAgentId: 'relationship_agent:pip',
+          specialistMessageId: 'pm',
+        );
+        doorRow(
+          'd:door:0',
+          'u1',
+          door(
+            0,
+            turn,
+            kind: FrontDestinationKind.person,
+            destinationId: 'pip',
+          ),
+        );
+        doorRow(
+          'd:door:1',
+          'u1',
+          FrontDoorRecord(
+            segmentIndex: 1,
+            text: 'segment 1',
+            kind: FrontDestinationKind.person,
+            destinationId: 'anna',
+            status: FrontDoorStatus.done,
+            claimedAt: claimedAt,
+            outcome: turn,
+          ),
+        );
+        // Handed to a person, but with no one named: nothing to open.
+        doorRow(
+          'd:door:2',
+          'u1',
+          door(2, turn, kind: FrontDestinationKind.person, destinationId: null),
+        );
+
+        final thread = await builder.build();
+
+        expect(thread.entityPreviewsByMessageId, {
+          'r1': [
+            const FrontEntityReference(
+              kind: FrontEntityKind.person,
+              id: 'pip',
+              title: 'Owner 0',
+            ),
+            const FrontEntityReference(
+              kind: FrontEntityKind.person,
+              id: 'anna',
+              title: 'segment 1',
+            ),
+          ],
+        });
+      });
+
       test('a door that made nothing draws no card', () async {
         userTurn('u1', 'Garden?', at: DateTime(2026, 11, 9, 9));
         replyTo('r1', 'u1', at: DateTime(2026, 11, 9, 9, 1));
         doorRow('d:door:0', 'u1', door(0, const FrontDoorInbox()));
         doorRow('d:door:1', 'u1', door(1, const FrontDoorFiled(entryId: 'e')));
-        doorRow(
-          'd:door:2',
-          'u1',
-          door(2, const FrontDoorProjectCreated(projectId: 'p')),
-        );
+        doorRow('d:door:2', 'u1', door(2, const FrontDoorDeclined()));
         doorRow('d:door:4', 'u1', door(4, const FrontDoorDay()));
         doorRow('d:door:3', 'u1', door(3, null));
+        // A turn handed to a goal's agent: not a person.
+        doorRow(
+          'd:door:5',
+          'u1',
+          door(
+            5,
+            const FrontDoorChatTurn(
+              specialistAgentId: 'goal-swim',
+              specialistMessageId: 'gm',
+            ),
+            kind: FrontDestinationKind.goal,
+          ),
+        );
+        // A person whose agent could not take the turn.
+        doorRow(
+          'd:door:6',
+          'u1',
+          door(
+            6,
+            const FrontDoorSkipped(FrontDoorSkipReason.noAgent),
+            kind: FrontDestinationKind.person,
+          ),
+        );
 
         final thread = await builder.build();
 
-        expect(thread.doorsByMessageId['u1'], hasLength(5));
+        expect(thread.doorsByMessageId['u1'], hasLength(7));
         expect(thread.entityPreviewsByMessageId, isEmpty);
       });
 

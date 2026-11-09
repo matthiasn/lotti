@@ -1530,6 +1530,37 @@ void main() {
       );
     });
 
+    testWidgets('a person her turn was handed to opens their page: she '
+        'closes first, then it goes there', (tester) async {
+      final order = <String>[];
+      beamToNamedOverride = order.add;
+      addTearDown(() => beamToNamedOverride = null);
+      const anna = FrontEntityReference(
+        kind: FrontEntityKind.person,
+        id: 'anna',
+        title: 'Anna',
+      );
+      await pumpPane(
+        tester,
+        onClose: () => order.add('closed'),
+        previews: (_) async => null,
+        thread: () async => FrontChatThread(
+          messages: [
+            message('u1', AgentChatRole.user, 'Anna won a ribbon.', now),
+            message('a1', AgentChatRole.agent, 'Passed it on to Anna.', now),
+          ],
+          entityPreviewsByMessageId: const {
+            'a1': [anna],
+          },
+        ),
+      );
+
+      await tester.tap(find.byKey(FrontEntityPreviewKeys.card('anna')));
+      await tester.pump();
+
+      expect(order, ['closed', '/people/anna']);
+    });
+
     testWidgets('only the reply the cards belong to draws them', (
       tester,
     ) async {

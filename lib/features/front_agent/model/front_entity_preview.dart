@@ -14,9 +14,11 @@ enum FrontEntityKind {
   task,
   event,
 
-  /// A project her words list; it has no preview of its own yet, so its
-  /// card is its title.
+  /// A project her words list, or one a tap made.
   project,
+
+  /// A person a turn was handed to.
+  person,
 
   /// The plan of one day, named by its date (`YYYY-MM-DD`).
   dayPlan,
@@ -59,8 +61,8 @@ class FrontEntityReference {
 }
 
 /// What a glance at an entity shows in her chat, before opening it: what its
-/// card draws — a task's glance-level fields, an event as the app's own
-/// event card reads it.
+/// card draws — a task's glance-level fields; an event, a project or a
+/// person as the app's own card or row for it reads them.
 @immutable
 sealed class FrontEntityPreview {
   const FrontEntityPreview({required this.entityId, required this.entityKind});
@@ -212,4 +214,57 @@ class FrontDayPlanPreview extends FrontEntityPreview {
 
   @override
   String toString() => 'FrontDayPlanPreview($entityId, ${blocks.length})';
+}
+
+/// A project as its preview card shows it: the project, and how many of its
+/// tasks there are and how many are done — the row the Projects list draws
+/// for it.
+class FrontProjectPreview extends FrontEntityPreview {
+  FrontProjectPreview({
+    required this.project,
+    required this.totalTaskCount,
+    required this.completedTaskCount,
+  }) : super(entityId: project.meta.id, entityKind: FrontEntityKind.project);
+
+  final ProjectEntry project;
+  final int totalTaskCount;
+  final int completedTaskCount;
+
+  @override
+  bool operator ==(Object other) =>
+      other is FrontProjectPreview &&
+      other.project == project &&
+      other.totalTaskCount == totalTaskCount &&
+      other.completedTaskCount == completedTaskCount;
+
+  @override
+  int get hashCode => Object.hash(project, totalTaskCount, completedTaskCount);
+
+  @override
+  String toString() =>
+      'FrontProjectPreview($entityId, $completedTaskCount/$totalTaskCount)';
+}
+
+/// A person as their preview card shows them: the person, and their newest
+/// check-in — the row the People list draws for them.
+class FrontPersonPreview extends FrontEntityPreview {
+  FrontPersonPreview({required this.person, this.lastCheckIn})
+    : super(entityId: person.meta.id, entityKind: FrontEntityKind.person);
+
+  final RelationshipEntry person;
+
+  /// Null for a person with no check-in yet.
+  final CheckInEntry? lastCheckIn;
+
+  @override
+  bool operator ==(Object other) =>
+      other is FrontPersonPreview &&
+      other.person == person &&
+      other.lastCheckIn == lastCheckIn;
+
+  @override
+  int get hashCode => Object.hash(person, lastCheckIn);
+
+  @override
+  String toString() => 'FrontPersonPreview($entityId, ${person.data.title})';
 }

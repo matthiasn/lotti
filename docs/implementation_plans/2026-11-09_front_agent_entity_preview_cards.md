@@ -1,7 +1,7 @@
 # Entity preview cards in the front agent chat
 
 **Date:** 2026-11-09
-**Status:** Phases 1, 2 and 3 implemented
+**Status:** Phases 1–4 implemented
 
 ## Problem
 
@@ -243,6 +243,19 @@ buffers and dropped ones left out, at most five and how many more.
 ### Phase 4 — Additional entity types
 - Project previews, person previews
 - Long-press quick-action menu
+
+As built: a project's card is the Projects list's own `ProjectRow`, its
+progress counted from the project's tasks as its page counts them (done
+only), re-read when the project or any of its tasks changes; it shows for a
+project a tap made (`FrontDoorProjectCreated`) and for one her words list.
+A person's card is the People list's own `PeopleListRow` — their face, name
+and newest check-in — for a person a turn was handed to (`FrontDoorChatTurn`
+on a person door); the relationship status shows on their page, not on the
+row, as everywhere else they are listed. The long-press menu is on task
+cards only — the plan's three actions are a task's — and each item opens the
+picker the task's own page uses (`TaskMetaPickers`): *Change status…*,
+*Reschedule…* (its due date) and *Move to project…* (file it under a
+project, offered only when the task has a category, as on its page).
 
 ## Open questions
 

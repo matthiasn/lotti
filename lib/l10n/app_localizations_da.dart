@@ -7486,7 +7486,19 @@ class AppLocalizationsDa extends AppLocalizations {
   String get frontPullRequestsLinesDeleted => 'Slettede linjer';
 
   @override
+  String get frontTaskActions => 'Opgavehandlinger';
+
+  @override
+  String get frontTaskChangeStatus => 'Skift status…';
+
+  @override
   String get frontTaskCreatedSpoken => 'Sådan, skat, jeg har oprettet opgaven.';
+
+  @override
+  String get frontTaskMoveToProject => 'Flyt til projekt…';
+
+  @override
+  String get frontTaskReschedule => 'Flyt dato…';
 
   @override
   String get geminiThinkingModeHighDescription =>

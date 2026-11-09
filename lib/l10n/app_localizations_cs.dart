@@ -7565,8 +7565,20 @@ class AppLocalizationsCs extends AppLocalizations {
   String get frontPullRequestsLinesDeleted => 'Smazané řádky';
 
   @override
+  String get frontTaskActions => 'Akce úkolu';
+
+  @override
+  String get frontTaskChangeStatus => 'Změnit stav…';
+
+  @override
   String get frontTaskCreatedSpoken =>
       'Hotovo, zlatíčko, ten úkol jsem vytvořila.';
+
+  @override
+  String get frontTaskMoveToProject => 'Přesunout do projektu…';
+
+  @override
+  String get frontTaskReschedule => 'Přeplánovat…';
 
   @override
   String get geminiThinkingModeHighDescription =>

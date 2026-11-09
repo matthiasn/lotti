@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_capture_models.dart';
@@ -11,12 +12,14 @@ import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/front_agent/model/front_entity_preview.dart';
 import 'package:lotti/features/front_agent/state/front_entity_preview_provider.dart';
 import 'package:lotti/features/tasks/state/task_preview_provider.dart';
+import 'package:lotti/logic/repositories/project_repository.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/providers/update_notifications_providers.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
+import '../../projects/test_utils.dart';
 
 void main() {
   final at = DateTime(2026, 11, 9, 10);
@@ -42,8 +45,13 @@ void main() {
   late ProviderContainer container;
   late Map<DateTime, DraftPlan?> plans;
   late List<DateTime> planReads;
+  late MockProjectRepository projects;
 
   setUp(() {
+    projects = MockProjectRepository();
+    when(
+      () => projects.getTasksForProject(any()),
+    ).thenAnswer((_) async => const []);
     plans = {};
     planReads = [];
     previews = {};
@@ -64,6 +72,7 @@ void main() {
         }),
         journalDbProvider.overrideWithValue(journalDb),
         updateNotificationsProvider.overrideWithValue(notifications),
+        projectRepositoryProvider.overrideWithValue(projects),
         currentDraftPlanProvider.overrideWith((ref, day) async {
           planReads.add(day);
           return plans[day];
@@ -169,15 +178,192 @@ void main() {
       verifyNever(() => journalDb.journalEntityById(any()));
     });
 
-    test(
-      'a project has no preview of its own yet, and reads nothing',
-      () async {
-        expect(await read(FrontEntityKind.project, 'p-1'), isNull);
+    group('a project', () {
+      final census = makeTestProject(id: 'census', title: 'Colony census');
+      Task task(String id, TaskStatus status) => testTask.copyWith(
+        meta: testTask.meta.copyWith(id: id),
+        data: testTask.data.copyWith(status: status),
+      );
+
+      Future<FrontProjectPreview?> readCensus() async =>
+          await read(FrontEntityKind.project, 'census') as FrontProjectPreview?;
+      Future<FrontProjectPreview?> again() async =>
+          await container.read(
+                frontEntityPreviewProvider((
+                  FrontEntityKind.project,
+                  'census',
+                )).future,
+              )
+              as FrontProjectPreview?;
+
+      test('is the project with how many of its tasks are done, as its page '
+          'counts them, and reads no task preview', () async {
+        stubEntity('census', census);
+        when(() => projects.getTasksForProject('census')).thenAnswer(
+          (_) async => [
+            task('t1', TaskStatus.done(id: 's', createdAt: at, utcOffset: 0)),
+            task(
+              't2',
+              TaskStatus.rejected(id: 's', createdAt: at, utcOffset: 0),
+            ),
+            task('t3', TaskStatus.open(id: 's', createdAt: at, utcOffset: 0)),
+          ],
+        );
+
+        expect(
+          await readCensus(),
+          FrontProjectPreview(
+            project: census,
+            totalTaskCount: 3,
+            completedTaskCount: 1,
+          ),
+        );
         expect(taskReads, isEmpty);
-        expect(planReads, isEmpty);
-        verifyNever(() => journalDb.journalEntityById(any()));
-      },
-    );
+      });
+
+      test('is null once gone, deleted, or not a project at all', () async {
+        expect(await readCensus(), isNull);
+
+        stubEntity(
+          'census',
+          census.copyWith(
+            meta: census.meta.copyWith(deletedAt: DateTime(2026, 11, 10)),
+          ),
+        );
+        container.invalidate(frontEntityPreviewProvider);
+        expect(await again(), isNull);
+
+        stubEntity('census', testTask);
+        container.invalidate(frontEntityPreviewProvider);
+        expect(await again(), isNull);
+        verifyNever(() => projects.getTasksForProject(any()));
+      });
+
+      test('follows the project and its tasks: a notification naming either '
+          'reads it again, one naming neither does not', () async {
+        stubEntity('census', census);
+        when(() => projects.getTasksForProject('census')).thenAnswer(
+          (_) async => [
+            task('t1', TaskStatus.open(id: 's', createdAt: at, utcOffset: 0)),
+          ],
+        );
+        expect((await readCensus())?.completedTaskCount, 0);
+
+        when(() => projects.getTasksForProject('census')).thenAnswer(
+          (_) async => [
+            task('t1', TaskStatus.done(id: 's', createdAt: at, utcOffset: 0)),
+          ],
+        );
+        updates.add({'someone-else'});
+        await pumpEventQueue();
+        expect((await again())?.completedTaskCount, 0);
+
+        // The task finished: its notification names the task, not the
+        // project.
+        updates.add({'t1'});
+        await pumpEventQueue();
+        expect((await again())?.completedTaskCount, 1);
+
+        final renamed = makeTestProject(id: 'census', title: 'Census 2026');
+        stubEntity('census', renamed);
+        updates.add({'census'});
+        await pumpEventQueue();
+        expect((await again())?.project, renamed);
+      });
+    });
+
+    group('a person', () {
+      final anna = testRelationship.meta.id;
+      CheckInEntry checkIn(String id, DateTime at) =>
+          JournalEntity.checkIn(
+                meta: testRelationship.meta.copyWith(
+                  id: id,
+                  dateFrom: at,
+                  dateTo: at,
+                ),
+                data: CheckInData(
+                  relationshipId: anna,
+                  interactionType: CheckInInteractionType.call,
+                ),
+              )
+              as CheckInEntry;
+
+      setUp(() {
+        when(
+          () => journalDb.getCheckInsForRelationship(any()),
+        ).thenAnswer((_) async => const []);
+      });
+
+      test('is the person with their newest check-in', () async {
+        final newest = checkIn('c2', DateTime(2026, 11, 6));
+        stubEntity(anna, testRelationship);
+        when(() => journalDb.getCheckInsForRelationship(anna)).thenAnswer(
+          (_) async => [newest, checkIn('c1', DateTime(2026, 10))],
+        );
+
+        expect(
+          await read(FrontEntityKind.person, anna),
+          FrontPersonPreview(person: testRelationship, lastCheckIn: newest),
+        );
+      });
+
+      test('has no last check-in before the first', () async {
+        stubEntity(anna, testRelationship);
+
+        final preview =
+            await read(FrontEntityKind.person, anna) as FrontPersonPreview?;
+
+        expect(preview?.person, testRelationship);
+        expect(preview?.lastCheckIn, isNull);
+      });
+
+      test('is null once gone, deleted, or not a person at all', () async {
+        expect(await read(FrontEntityKind.person, 'gone'), isNull);
+
+        stubEntity(
+          'deleted',
+          testRelationship.copyWith(
+            meta: testRelationship.meta.copyWith(
+              id: 'deleted',
+              deletedAt: DateTime(2026, 11, 10),
+            ),
+          ),
+        );
+        expect(await read(FrontEntityKind.person, 'deleted'), isNull);
+
+        stubEntity(testTask.meta.id, testTask);
+        expect(await read(FrontEntityKind.person, testTask.meta.id), isNull);
+        verifyNever(() => journalDb.getCheckInsForRelationship(any()));
+      });
+
+      test('follows the person: a check-in about them shows', () async {
+        stubEntity(anna, testRelationship);
+        expect(
+          (await read(FrontEntityKind.person, anna) as FrontPersonPreview?)
+              ?.lastCheckIn,
+          isNull,
+        );
+
+        final call = checkIn('c3', DateTime(2026, 11, 9));
+        when(
+          () => journalDb.getCheckInsForRelationship(anna),
+        ).thenAnswer((_) async => [call]);
+        updates.add({anna});
+        await pumpEventQueue();
+
+        expect(
+          (await container.read(
+                    frontEntityPreviewProvider((
+                      FrontEntityKind.person,
+                      anna,
+                    )).future,
+                  )
+                  as FrontPersonPreview?)
+              ?.lastCheckIn,
+          call,
+        );
+      });
+    });
 
     group("a day's plan", () {
       final day = DateTime(2026, 11, 9);

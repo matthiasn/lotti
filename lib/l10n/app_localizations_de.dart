@@ -7543,8 +7543,20 @@ class AppLocalizationsDe extends AppLocalizations {
   String get frontPullRequestsLinesDeleted => 'Gelöschte Zeilen';
 
   @override
+  String get frontTaskActions => 'Aufgabenaktionen';
+
+  @override
+  String get frontTaskChangeStatus => 'Status ändern…';
+
+  @override
   String get frontTaskCreatedSpoken =>
       'So, mein Schatz, ich habe die Aufgabe angelegt.';
+
+  @override
+  String get frontTaskMoveToProject => 'In Projekt verschieben…';
+
+  @override
+  String get frontTaskReschedule => 'Verschieben…';
 
   @override
   String get geminiThinkingModeHighDescription =>

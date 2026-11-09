@@ -7497,8 +7497,20 @@ class AppLocalizationsSv extends AppLocalizations {
   String get frontPullRequestsLinesDeleted => 'Borttagna rader';
 
   @override
+  String get frontTaskActions => 'Uppgiftsåtgärder';
+
+  @override
+  String get frontTaskChangeStatus => 'Ändra status…';
+
+  @override
   String get frontTaskCreatedSpoken =>
       'Så där, raring, jag har skapat uppgiften.';
+
+  @override
+  String get frontTaskMoveToProject => 'Flytta till projekt…';
+
+  @override
+  String get frontTaskReschedule => 'Flytta datum…';
 
   @override
   String get geminiThinkingModeHighDescription =>

@@ -1,8 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/projects_overview_models.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/categories/ui/widgets/category_color_icon.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_timeline_models.dart';
+import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
+import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu_anchor.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
@@ -11,14 +15,19 @@ import 'package:lotti/features/front_agent/model/front_due_section.dart';
 import 'package:lotti/features/front_agent/model/front_entity_preview.dart';
 import 'package:lotti/features/front_agent/model/front_routing_index.dart';
 import 'package:lotti/features/front_agent/state/front_entity_preview_provider.dart';
+import 'package:lotti/features/projects/ui/widgets/project_list_row.dart';
+import 'package:lotti/features/relationships/ui/widgets/people_list_row.dart';
+import 'package:lotti/features/tasks/state/task_preview_provider.dart';
 import 'package:lotti/features/tasks/ui/cover_art_thumbnail.dart';
 import 'package:lotti/features/tasks/ui/due_date_text.dart';
+import 'package:lotti/features/tasks/ui/header/task_meta_pickers.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/linked_task_row.dart'
     show StatusGlyph;
 import 'package:lotti/features/tasks/ui/utils.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_chips.dart'
     show TaskShowcasePriorityGlyph;
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/logic/repositories/project_repository.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/utils/entry_tools.dart';
@@ -34,12 +43,14 @@ abstract final class FrontEntityPreviewKeys {
   static Key block(String id, int index) =>
       Key('front-entity-preview-block-$id-$index');
   static Key more(String id) => Key('front-entity-preview-more-$id');
+  static Key action(String id, String name) =>
+      Key('front-entity-preview-action-$id-$name');
 }
 
 /// Entities as a stack of preview cards under her words — what a turn made,
-/// or what her words list: a task as a compact card, an event as the app's
-/// event card, a day's plan as its blocks, a project as its title. [onOpen]
-/// is given the reference of the card tapped.
+/// or what her words list: a task as a compact card, an event, a project or
+/// a person as the app's own card or row for it, a day's plan as its
+/// blocks. [onOpen] is given the reference of the card tapped.
 class FrontEntityPreviewList extends StatelessWidget {
   const FrontEntityPreviewList({
     required this.references,
@@ -73,8 +84,12 @@ class FrontEntityPreviewList extends StatelessWidget {
             reference: reference,
             onTap: () => onOpen(reference),
           ),
-          // No preview of its own yet: its title, under the folder glyph.
-          FrontEntityKind.project => _TitleOnly(
+          FrontEntityKind.project => FrontEntityPreviewProjectCard(
+            key: FrontEntityPreviewKeys.card(reference.id),
+            reference: reference,
+            onTap: () => onOpen(reference),
+          ),
+          FrontEntityKind.person => FrontEntityPreviewPersonCard(
             key: FrontEntityPreviewKeys.card(reference.id),
             reference: reference,
             onTap: () => onOpen(reference),
@@ -84,11 +99,13 @@ class FrontEntityPreviewList extends StatelessWidget {
   );
 }
 
-/// One entity as a compact card: its cover or status, title, its agent's
+/// One task as a compact card: its cover or status, title, its agent's
 /// one-liner, then status, category, when it is due and how long it is
-/// estimated to take — kept current as it changes. A tap opens it. Until it
-/// has loaded, or if it is gone, the title it was made with stands alone,
-/// and still opens it.
+/// estimated to take — kept current as it changes. A tap opens it; a long
+/// press (or a secondary click) offers its quick actions — change its
+/// status, reschedule it, move it to a project — through the pickers its
+/// own page uses. Until it has loaded, or if it is gone, the title it was
+/// made with stands alone, and still opens it.
 class FrontEntityPreviewCompactCard extends ConsumerWidget {
   const FrontEntityPreviewCompactCard({
     required this.reference,
@@ -106,13 +123,13 @@ class FrontEntityPreviewCompactCard extends ConsumerWidget {
         .watch(frontEntityPreviewProvider((reference.kind, reference.id)))
         .value;
     return switch (preview) {
-      final FrontTaskPreview task => _PreviewSurface(
-        child: _TaskPreviewContent(task: task, onTap: onTap),
+      final FrontTaskPreview task => _TaskQuickActions(
+        task: task,
+        child: _PreviewSurface(
+          child: _TaskPreviewContent(task: task, onTap: onTap),
+        ),
       ),
-      FrontEventPreview() || FrontDayPlanPreview() || null => _TitleOnly(
-        reference: reference,
-        onTap: onTap,
-      ),
+      _ => _TitleOnly(reference: reference, onTap: onTap),
     };
   }
 }
@@ -142,11 +159,179 @@ class FrontEntityPreviewRichCard extends ConsumerWidget {
         event: event,
         onTap: onTap,
       ),
-      FrontTaskPreview() || FrontDayPlanPreview() || null => _TitleOnly(
-        reference: reference,
+      _ => _TitleOnly(reference: reference, onTap: onTap),
+    };
+  }
+}
+
+/// One project as the Projects list draws it — its title, its tasks'
+/// progress and its status — kept current as it and its tasks change. A tap
+/// opens it. Until it has loaded, or if it is gone, its title stands alone,
+/// and still opens it.
+class FrontEntityPreviewProjectCard extends ConsumerWidget {
+  const FrontEntityPreviewProjectCard({
+    required this.reference,
+    required this.onTap,
+    super.key,
+  });
+
+  final FrontEntityReference reference;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // `.value`: a reload keeps the card as it was until the new one lands.
+    final preview = ref
+        .watch(frontEntityPreviewProvider((reference.kind, reference.id)))
+        .value;
+    if (preview is! FrontProjectPreview) {
+      return _TitleOnly(reference: reference, onTap: onTap);
+    }
+    final project = preview.project;
+    return _PreviewSurface(
+      child: ProjectRow(
+        item: ProjectListItemData(
+          project: project,
+          category: ref
+              .watch(entitiesCacheServiceProvider)
+              ?.getCategoryById(project.meta.categoryId),
+          taskRollup: ProjectTaskRollupData(
+            totalTaskCount: preview.totalTaskCount,
+            completedTaskCount: preview.completedTaskCount,
+          ),
+        ),
+        // A card of its own, not a row of a grouped list.
+        selected: false,
+        topOverlap: 0,
+        bottomOverlap: 0,
+        onHoverChanged: (_) {},
         onTap: onTap,
       ),
+    );
+  }
+}
+
+/// One person as the People list draws them — their face, name, and when
+/// they were last in touch — kept current as they and their check-ins
+/// change. A tap opens them. Until they have loaded, or if they are gone,
+/// their name stands alone, and still opens them.
+class FrontEntityPreviewPersonCard extends ConsumerWidget {
+  const FrontEntityPreviewPersonCard({
+    required this.reference,
+    required this.onTap,
+    super.key,
+  });
+
+  final FrontEntityReference reference;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // `.value`: a reload keeps the card as it was until the new one lands.
+    final preview = ref
+        .watch(frontEntityPreviewProvider((reference.kind, reference.id)))
+        .value;
+    return switch (preview) {
+      FrontPersonPreview(:final person, :final lastCheckIn) => _PreviewSurface(
+        child: PeopleListRow(
+          item: (relationship: person, lastCheckIn: lastCheckIn),
+          onTap: onTap,
+        ),
+      ),
+      _ => _TitleOnly(reference: reference, onTap: onTap),
     };
+  }
+}
+
+/// A task card's quick actions: on a long press — or a secondary click —
+/// a menu to change its status, reschedule it, or move it to a project,
+/// each through the picker the task's own page opens, so an action here
+/// writes exactly what it would there. A task without a category has no
+/// project to move to, as on its page.
+class _TaskQuickActions extends ConsumerStatefulWidget {
+  const _TaskQuickActions({required this.task, required this.child});
+
+  final FrontTaskPreview task;
+  final Widget child;
+
+  @override
+  ConsumerState<_TaskQuickActions> createState() => _TaskQuickActionsState();
+}
+
+class _TaskQuickActionsState extends ConsumerState<_TaskQuickActions> {
+  final _menu = MenuController();
+
+  /// Runs [action] on the task as stored now — the pickers need all of it,
+  /// not the glance the card holds. Nothing happens once it is gone.
+  Future<void> _act(Future<void> Function(Task task) action) async {
+    final preview = await ref.read(
+      taskPreviewProvider(widget.task.entityId).future,
+    );
+    if (preview == null || !mounted) return;
+    await action(preview.task);
+  }
+
+  Future<void> _moveToProject(Task task, String categoryId) async {
+    final current = await ref
+        .read(projectRepositoryProvider)
+        .getProjectForTask(task.meta.id);
+    if (!mounted) return;
+    await TaskMetaPickers.showProjectPicker(
+      context,
+      ref,
+      taskId: task.meta.id,
+      categoryId: categoryId,
+      taskIsPrivate: task.meta.private ?? false,
+      current: current,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final messages = context.messages;
+    final id = widget.task.entityId;
+    final categoryId = widget.task.categoryId;
+    return DesignSystemContextMenuAnchor(
+      controller: _menu,
+      semanticsLabel: messages.frontTaskActions,
+      fitContent: true,
+      items: [
+        DesignSystemContextMenuItem(
+          key: FrontEntityPreviewKeys.action(id, 'status'),
+          label: messages.frontTaskChangeStatus,
+          icon: LottiIcons.checkboxChecked,
+          onTap: () => _act(
+            (task) => TaskMetaPickers.showStatusPicker(context, ref, task),
+          ),
+        ),
+        DesignSystemContextMenuItem(
+          key: FrontEntityPreviewKeys.action(id, 'due'),
+          label: messages.frontTaskReschedule,
+          icon: LottiIcons.calendar,
+          onTap: () => _act(
+            (task) => TaskMetaPickers.showDueDatePicker(context, ref, task),
+          ),
+        ),
+        if (categoryId != null)
+          DesignSystemContextMenuItem(
+            key: FrontEntityPreviewKeys.action(id, 'project'),
+            label: messages.frontTaskMoveToProject,
+            icon: LottiIcons.folder,
+            onTap: () => _act((task) => _moveToProject(task, categoryId)),
+          ),
+      ],
+      builder: (context, {required toggle, required isOpen}) => Semantics(
+        onLongPressHint: messages.frontTaskActions,
+        onLongPress: _menu.open,
+        child: GestureDetector(
+          onLongPressStart: (details) =>
+              _menu.open(position: details.localPosition),
+          onSecondaryTapUp: (details) =>
+              _menu.open(position: details.localPosition),
+          child: widget.child,
+        ),
+      ),
+    );
   }
 }
 
@@ -181,7 +366,7 @@ class _PreviewSurface extends StatelessWidget {
 /// kind's glyph, still opening it: what a card shows before its preview has
 /// loaded and after the entity is gone — and all a project shows yet.
 class _TitleOnly extends StatelessWidget {
-  const _TitleOnly({required this.reference, required this.onTap, super.key});
+  const _TitleOnly({required this.reference, required this.onTap});
 
   final FrontEntityReference reference;
   final VoidCallback onTap;
@@ -197,6 +382,7 @@ class _TitleOnly extends StatelessWidget {
         switch (reference.kind) {
           FrontEntityKind.task => LottiIcons.checkboxChecked,
           FrontEntityKind.project => LottiIcons.folder,
+          FrontEntityKind.person => LottiIcons.person,
           FrontEntityKind.event ||
           FrontEntityKind.dayPlan => LottiIcons.calendar,
         },

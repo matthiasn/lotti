@@ -1,8 +1,12 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter/gestures.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
@@ -22,14 +26,22 @@ import 'package:lotti/features/front_agent/model/front_routing_index.dart';
 import 'package:lotti/features/front_agent/state/front_entity_preview_provider.dart';
 import 'package:lotti/features/front_agent/ui/front_entity_preview_card.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
+import 'package:lotti/features/projects/ui/widgets/project_list_row.dart';
+import 'package:lotti/features/relationships/ui/widgets/people_list_row.dart';
 import 'package:lotti/features/tasks/state/task_preview_provider.dart';
 import 'package:lotti/features/tasks/ui/cover_art_thumbnail.dart';
 import 'package:lotti/features/tasks/ui/due_date_text.dart';
+import 'package:lotti/features/tasks/ui/header/project_selection_modal_content.dart';
+import 'package:lotti/features/tasks/ui/header/task_status_modal_content.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/linked_task_row.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_chips.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/logic/repositories/project_repository.dart';
+import 'package:lotti/providers/project_lookup_providers.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/providers/update_notifications_providers.dart';
+import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:material_ui/material_ui.dart';
@@ -40,6 +52,7 @@ import '../../../helpers/journal_image_fixtures.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
 import '../../../widget_test_utils.dart';
+import '../../projects/test_utils.dart';
 
 void main() {
   final at = DateTime(2026, 11, 9, 10);
@@ -116,6 +129,7 @@ void main() {
     Future<JournalEntity?> Function(String id)? loadEntity,
     Future<DraftPlan?> Function(DateTime day)? loadPlan,
     CategoryDefinition? category,
+    List<Override> extra = const [],
   }) async {
     opened = [];
     final cache = MockEntitiesCacheService();
@@ -165,6 +179,7 @@ void main() {
           ).overrideWithValue(const []),
           // A cover resolves its image entry; none is on disk here.
           createEntryControllerOverride(buildJournalImage(id: 'cover-1')),
+          ...extra,
         ],
       ),
     );
@@ -539,7 +554,9 @@ void main() {
         load: (key) async => switch (key.$1) {
           FrontEntityKind.event => ice(),
           FrontEntityKind.task => FrontEventPreview(testRehearsalEvent),
-          FrontEntityKind.project || FrontEntityKind.dayPlan => null,
+          FrontEntityKind.project ||
+          FrontEntityKind.person ||
+          FrontEntityKind.dayPlan => null,
         },
       );
 
@@ -923,5 +940,294 @@ void main() {
         );
       });
     }
+  });
+  group('FrontEntityPreviewProjectCard', () {
+    final census = makeTestProject(
+      id: 'census',
+      title: 'Colony census',
+      categoryId: 'launch',
+    );
+    const censusRef = FrontEntityReference(
+      kind: FrontEntityKind.project,
+      id: 'census',
+      title: 'Start the census (as said)',
+    );
+
+    testWidgets('a project is drawn as the Projects list draws it: its title, '
+        'category and how many of its tasks are done; a tap opens it', (
+      tester,
+    ) async {
+      await pump(
+        tester,
+        references: const [censusRef],
+        category: launch,
+        load: (_) async => FrontProjectPreview(
+          project: census,
+          totalTaskCount: 8,
+          completedTaskCount: 3,
+        ),
+      );
+
+      final row = tester.widget<ProjectRow>(find.byType(ProjectRow));
+      expect(row.item.project, census);
+      expect(row.item.category, launch);
+      expect(row.item.taskRollup.totalTaskCount, 8);
+      expect(row.item.taskRollup.completedTaskCount, 3);
+      expect(row.selected, isFalse);
+      expect(find.text('Colony census'), findsOneWidget);
+      expect(find.text(censusRef.title), findsNothing);
+
+      // Hovering it, as a row of the list would be, opens nothing.
+      final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      addTearDown(mouse.removePointer);
+      await mouse.addPointer(location: Offset.zero);
+      await mouse.moveTo(tester.getCenter(find.byType(ProjectRow)));
+      await tester.pump();
+      expect(opened, isEmpty);
+
+      await tester.tap(find.text('Colony census'));
+      expect(opened, [censusRef]);
+    });
+
+    testWidgets('a project that is gone keeps its title, under the folder '
+        'glyph, and still opens', (tester) async {
+      await pump(
+        tester,
+        references: const [censusRef],
+        load: (_) async => null,
+      );
+
+      expect(find.byType(ProjectRow), findsNothing);
+      final card = find.byKey(FrontEntityPreviewKeys.card('census'));
+      expect(
+        find.descendant(of: card, matching: find.byIcon(LottiIcons.folder)),
+        findsOneWidget,
+      );
+      await tester.tap(find.text(censusRef.title));
+      expect(opened, [censusRef]);
+    });
+  });
+
+  group('FrontEntityPreviewPersonCard', () {
+    final anna = testRelationship.meta.id;
+    final annaRef = FrontEntityReference(
+      kind: FrontEntityKind.person,
+      id: anna,
+      title: 'Anna',
+    );
+    final call =
+        JournalEntity.checkIn(
+              meta: testRelationship.meta.copyWith(
+                id: 'check-in',
+                dateFrom: DateTime(2026, 11, 6, 18),
+                dateTo: DateTime(2026, 11, 6, 18, 30),
+              ),
+              data: CheckInData(
+                relationshipId: anna,
+                interactionType: CheckInInteractionType.call,
+              ),
+            )
+            as CheckInEntry;
+
+    testWidgets('a person is drawn as the People list draws them, with their '
+        'newest check-in; a tap opens them', (tester) async {
+      await pump(
+        tester,
+        references: [annaRef],
+        load: (_) async =>
+            FrontPersonPreview(person: testRelationship, lastCheckIn: call),
+      );
+
+      final row = tester.widget<PeopleListRow>(find.byType(PeopleListRow));
+      expect(row.item.relationship, testRelationship);
+      expect(row.item.lastCheckIn, call);
+
+      await tester.tap(find.byType(PeopleListRow));
+      expect(opened, [annaRef]);
+    });
+
+    testWidgets('a person who is gone keeps their name, under the person '
+        'glyph, and still opens', (tester) async {
+      await pump(tester, references: [annaRef], load: (_) async => null);
+
+      expect(find.byType(PeopleListRow), findsNothing);
+      final card = find.byKey(FrontEntityPreviewKeys.card(anna));
+      expect(
+        find.descendant(of: card, matching: find.byIcon(LottiIcons.person)),
+        findsOneWidget,
+      );
+      await tester.tap(find.text('Anna'));
+      expect(opened, [annaRef]);
+    });
+  });
+
+  group('a task card, quick actions', () {
+    final stored = testTask.copyWith(
+      meta: testTask.meta.copyWith(id: 'ice-pad', categoryId: 'launch'),
+      data: testTask.data.copyWith(
+        title: 'Check the ice-pad weather window',
+        status: inProgress(),
+        due: DateTime(2026, 11, 9, 17),
+      ),
+    );
+    final census = makeTestProject(id: 'census', categoryId: 'launch');
+    late MockProjectRepository projects;
+
+    Future<void> pumpActions(
+      WidgetTester tester, {
+      String? categoryId = 'launch',
+      Task? task,
+    }) async {
+      projects = MockProjectRepository();
+      when(
+        () => projects.getProjectForTask('ice-pad'),
+      ).thenAnswer((_) async => census);
+      await pump(
+        tester,
+        load: (_) async => ice(categoryId: categoryId),
+        loadTask: (_) async => task == null ? null : TaskPreview(task: task),
+        extra: [
+          createEntryControllerOverride(stored),
+          projectRepositoryProvider.overrideWithValue(projects),
+          projectsForCategoryProvider.overrideWith(
+            (ref, categoryId) async => [census],
+          ),
+        ],
+      );
+      // The pickers write through the task's entry controller.
+      getIt
+        ..registerSingleton<EditorStateService>(MockEditorStateService())
+        ..registerSingleton<PersistenceLogic>(MockPersistenceLogic())
+        // The project picker can lead on to a new project's page.
+        ..registerSingleton<NavService>(MockNavService());
+    }
+
+    Finder action(String name) =>
+        find.byKey(FrontEntityPreviewKeys.action('ice-pad', name));
+
+    Future<void> settle(WidgetTester tester) async {
+      for (var i = 0; i < 8; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+    }
+
+    Future<void> longPress(WidgetTester tester) async {
+      await tester.longPress(
+        find.byKey(FrontEntityPreviewKeys.card('ice-pad')),
+      );
+      await settle(tester);
+    }
+
+    testWidgets('a long press offers changing its status, rescheduling it '
+        'and moving it to a project — and opens nothing', (tester) async {
+      await pumpActions(tester, task: stored);
+
+      await longPress(tester);
+
+      expect(find.text('Change status…'), findsOneWidget);
+      expect(find.text('Reschedule…'), findsOneWidget);
+      expect(find.text('Move to project…'), findsOneWidget);
+      expect(opened, isEmpty);
+    });
+
+    testWidgets('a secondary click offers them too', (tester) async {
+      await pumpActions(tester, task: stored);
+
+      await tester.tap(
+        find.byKey(FrontEntityPreviewKeys.card('ice-pad')),
+        buttons: kSecondaryButton,
+      );
+      await settle(tester);
+
+      expect(action('status'), findsOneWidget);
+      expect(opened, isEmpty);
+    });
+
+    testWidgets('a screen reader reaches them by the long-press action', (
+      tester,
+    ) async {
+      await pumpActions(tester, task: stored);
+
+      final handle = tester.ensureSemantics();
+      tester.semantics.performAction(
+        find.semantics.byAction(SemanticsAction.longPress).first,
+        SemanticsAction.longPress,
+      );
+      await settle(tester);
+
+      expect(action('due'), findsOneWidget);
+      handle.dispose();
+    });
+
+    testWidgets('a task with no category has nowhere to move to', (
+      tester,
+    ) async {
+      await pumpActions(tester, task: stored, categoryId: null);
+
+      await longPress(tester);
+
+      expect(action('status'), findsOneWidget);
+      expect(action('due'), findsOneWidget);
+      expect(action('project'), findsNothing);
+    });
+
+    testWidgets('changing its status opens the status picker its page opens, '
+        'on the task as stored now', (tester) async {
+      await pumpActions(tester, task: stored);
+
+      await longPress(tester);
+      await tester.tap(action('status'));
+      await settle(tester);
+
+      expect(
+        tester
+            .widget<TaskStatusModalContent>(
+              find.byType(TaskStatusModalContent),
+            )
+            .task,
+        stored,
+      );
+    });
+
+    testWidgets('rescheduling opens the due date picker its page opens', (
+      tester,
+    ) async {
+      await pumpActions(tester, task: stored);
+
+      await longPress(tester);
+      await tester.tap(action('due'));
+      await settle(tester);
+
+      expect(find.text('Due Date'), findsOneWidget);
+    });
+
+    testWidgets('moving it opens the project picker its page opens, in the '
+        "task's category, with its project now chosen", (tester) async {
+      await pumpActions(tester, task: stored);
+
+      await longPress(tester);
+      await tester.tap(action('project'));
+      await settle(tester);
+
+      final picker = tester.widget<ProjectSelectionModalContent>(
+        find.byType(ProjectSelectionModalContent),
+      );
+      expect(picker.categoryId, 'launch');
+      expect(picker.currentProjectId, 'census');
+      expect(picker.taskIsPrivate, isFalse);
+      verify(() => projects.getProjectForTask('ice-pad')).called(1);
+    });
+
+    testWidgets('a task gone by the time an action is chosen opens nothing', (
+      tester,
+    ) async {
+      await pumpActions(tester);
+
+      await longPress(tester);
+      await tester.tap(action('status'));
+      await settle(tester);
+
+      expect(find.byType(TaskStatusModalContent), findsNothing);
+    });
   });
 }

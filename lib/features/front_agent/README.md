@@ -40,8 +40,8 @@ completion. She knows the categories by name: one
 named in the question narrows the answer — there is nothing to pick. Two
 tasks or more — due, overdue, both, or what a search found, projects among
 them — come back as preview cards — a task's cover or status, the agent's
-one-liner, category, when it is due, its estimate and priority; a project's
-title — rather than a run of links, and an answer about what is due puts a
+one-liner, category, when it is due, its estimate and priority; a project as
+the Projects list draws it — rather than a run of links, and an answer about what is due puts a
 quiet label over them saying which window she read (*Due today*,
 *Overdue*, *Due through …*), taken from the call she made, never from her
 words. A
@@ -67,8 +67,12 @@ its words, make it an event titled with them, or save it as a note, or
 leave it. What a tap made is drawn under her reply as a **preview card**,
 read live so it follows the thing: a task as the same compact card, which
 her words do not list again; an event as the event card the app draws
-wherever an event is linked; a day replanned through her as that day's
-blocks — when each runs, what it is for, the done ones ticked. Whatever a
+wherever an event is linked; a project as the Projects list's row; a day
+replanned through her as that day's blocks — when each runs, what it is
+for, the done ones ticked. A person she hands words to is drawn as the
+People list's row for them. A long press on a task's card (a secondary
+click on desktop) offers *Change status…*, *Reschedule…* and *Move to
+project…*, through the pickers the task's own page opens. Whatever a
 tap wrote can be
 opened or undone,
 and a proposal she got wrong goes to the inbox rather than being retyped.

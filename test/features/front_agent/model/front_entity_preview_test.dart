@@ -1,9 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/check_in_data.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_timeline_models.dart';
 import 'package:lotti/features/front_agent/model/front_entity_preview.dart';
 
 import '../../../test_data/test_data.dart';
+import '../../projects/test_utils.dart';
 
 void main() {
   final at = DateTime(2026, 11, 9, 10);
@@ -301,6 +304,99 @@ void main() {
       expect(
         plan([block('Audit')]),
         isNot(plan([block('Audit'), block('Weather', hour: 11)])),
+      );
+    });
+  });
+
+  group('FrontProjectPreview', () {
+    final census = makeTestProject(id: 'census', title: 'Colony census');
+
+    test('is a project preview of the project it carries, with its counts', () {
+      final preview = FrontProjectPreview(
+        project: census,
+        totalTaskCount: 8,
+        completedTaskCount: 3,
+      );
+
+      expect(preview.entityKind, FrontEntityKind.project);
+      expect(preview.entityId, 'census');
+      expect(preview.toString(), 'FrontProjectPreview(census, 3/8)');
+    });
+
+    test('is equal, and hashes alike, exactly when project and counts are', () {
+      FrontProjectPreview preview({
+        ProjectEntry? project,
+        int total = 8,
+        int done = 3,
+      }) => FrontProjectPreview(
+        project: project ?? census,
+        totalTaskCount: total,
+        completedTaskCount: done,
+      );
+
+      expect(preview(), preview());
+      expect(preview().hashCode, preview().hashCode);
+      expect(
+        preview(
+          project: makeTestProject(id: 'census', title: 'Renamed'),
+        ),
+        isNot(preview()),
+      );
+      expect(preview(total: 9), isNot(preview()));
+      expect(preview(done: 4), isNot(preview()));
+    });
+  });
+
+  group('FrontPersonPreview', () {
+    final call =
+        JournalEntity.checkIn(
+              meta: testRelationship.meta.copyWith(id: 'check-in'),
+              data: CheckInData(
+                relationshipId: testRelationship.meta.id,
+                interactionType: CheckInInteractionType.call,
+              ),
+            )
+            as CheckInEntry;
+
+    test('is a person preview of the person it carries', () {
+      final preview = FrontPersonPreview(person: testRelationship);
+
+      expect(preview.entityKind, FrontEntityKind.person);
+      expect(preview.entityId, testRelationship.meta.id);
+      expect(preview.lastCheckIn, isNull);
+      expect(
+        preview.toString(),
+        'FrontPersonPreview(${testRelationship.meta.id}, Anna)',
+      );
+    });
+
+    test('is equal, and hashes alike, exactly when person and last check-in '
+        'are', () {
+      expect(
+        FrontPersonPreview(person: testRelationship, lastCheckIn: call),
+        FrontPersonPreview(person: testRelationship, lastCheckIn: call),
+      );
+      expect(
+        FrontPersonPreview(
+          person: testRelationship,
+          lastCheckIn: call,
+        ).hashCode,
+        FrontPersonPreview(
+          person: testRelationship,
+          lastCheckIn: call,
+        ).hashCode,
+      );
+      expect(
+        FrontPersonPreview(person: testRelationship),
+        isNot(FrontPersonPreview(person: testRelationship, lastCheckIn: call)),
+      );
+      expect(
+        FrontPersonPreview(
+          person: testRelationship.copyWith(
+            data: testRelationship.data.copyWith(title: 'Annie'),
+          ),
+        ),
+        isNot(FrontPersonPreview(person: testRelationship)),
       );
     });
   });

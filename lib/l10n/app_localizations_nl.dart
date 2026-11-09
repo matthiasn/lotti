@@ -7520,8 +7520,20 @@ class AppLocalizationsNl extends AppLocalizations {
   String get frontPullRequestsLinesDeleted => 'Verwijderde regels';
 
   @override
+  String get frontTaskActions => 'Taakacties';
+
+  @override
+  String get frontTaskChangeStatus => 'Status wijzigen…';
+
+  @override
   String get frontTaskCreatedSpoken =>
       'Zo, lieverd, ik heb die taak aangemaakt.';
+
+  @override
+  String get frontTaskMoveToProject => 'Naar project verplaatsen…';
+
+  @override
+  String get frontTaskReschedule => 'Verplaatsen…';
 
   @override
   String get geminiThinkingModeHighDescription =>

@@ -12779,11 +12779,35 @@ abstract class AppLocalizations {
   /// **'Lines deleted'**
   String get frontPullRequestsLinesDeleted;
 
+  /// No description provided for @frontTaskActions.
+  ///
+  /// In en, this message translates to:
+  /// **'Task actions'**
+  String get frontTaskActions;
+
+  /// No description provided for @frontTaskChangeStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Change status…'**
+  String get frontTaskChangeStatus;
+
   /// Said aloud by the companion, in her voice, right after the user's tap made a task from an inbox item
   ///
   /// In en, this message translates to:
   /// **'Hey, dear, I created that task.'**
   String get frontTaskCreatedSpoken;
+
+  /// No description provided for @frontTaskMoveToProject.
+  ///
+  /// In en, this message translates to:
+  /// **'Move to project…'**
+  String get frontTaskMoveToProject;
+
+  /// No description provided for @frontTaskReschedule.
+  ///
+  /// In en, this message translates to:
+  /// **'Reschedule…'**
+  String get frontTaskReschedule;
 
   /// No description provided for @geminiThinkingModeHighDescription.
   ///

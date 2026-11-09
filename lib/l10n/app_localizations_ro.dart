@@ -7609,7 +7609,19 @@ class AppLocalizationsRo extends AppLocalizations {
   String get frontPullRequestsLinesDeleted => 'Linii șterse';
 
   @override
+  String get frontTaskActions => 'Acțiuni pentru sarcină';
+
+  @override
+  String get frontTaskChangeStatus => 'Schimbați starea…';
+
+  @override
   String get frontTaskCreatedSpoken => 'Gata, am creat sarcina.';
+
+  @override
+  String get frontTaskMoveToProject => 'Mutați în proiect…';
+
+  @override
+  String get frontTaskReschedule => 'Reprogramați…';
 
   @override
   String get geminiThinkingModeHighDescription =>
