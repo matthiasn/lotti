@@ -436,10 +436,13 @@ class _AgentChatViewState extends ConsumerState<AgentChatView> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(
-                      context.messages.goalChatFailed,
-                      style: tokens.typography.styles.others.caption.copyWith(
-                        color: tokens.colors.alert.error.ink,
+                    Flexible(
+                      child: Text(
+                        widget.failedTurnLabel ??
+                            context.messages.goalChatFailed,
+                        style: tokens.typography.styles.others.caption.copyWith(
+                          color: tokens.colors.alert.error.ink,
+                        ),
                       ),
                     ),
                     SizedBox(width: tokens.spacing.step2),

@@ -7329,6 +7329,34 @@ class AppLocalizationsRo extends AppLocalizations {
       'Întrebați despre o sarcină, un obiectiv, un proiect sau o persoană, sau spuneți ce s-a întâmplat. Răspunde agentul potrivit și nimic nu se arhivează până nu atingeți.';
 
   @override
+  String get frontChatFailedAuthentication =>
+      'Furnizorul dumneavoastră de AI a refuzat cheia API. Verificați-o în Setări.';
+
+  @override
+  String get frontChatFailedNetwork =>
+      'Furnizorul dumneavoastră de AI nu poate fi contactat. Verificați conexiunea, apoi încercați din nou.';
+
+  @override
+  String get frontChatFailedNoAnswer =>
+      'Însoțitorul nu a terminat răspunsul. Încercați din nou sau formulați altfel.';
+
+  @override
+  String get frontChatFailedNoModel =>
+      'Nu este configurat niciun model AI pentru însoțitor. Alegeți unul în Setări.';
+
+  @override
+  String get frontChatFailedProvider =>
+      'Furnizorul dumneavoastră de AI a răspuns cu o eroare. Încercați din nou în câteva momente.';
+
+  @override
+  String get frontChatFailedRateLimit =>
+      'Furnizorul dumneavoastră de AI limitează cererile acum. Așteptați puțin, apoi încercați din nou.';
+
+  @override
+  String get frontChatFailedTimeout =>
+      'Furnizorul dumneavoastră de AI a răspuns prea greu. Încercați din nou.';
+
+  @override
   String frontChatInboxChip(int count) {
     return 'Primite $count';
   }

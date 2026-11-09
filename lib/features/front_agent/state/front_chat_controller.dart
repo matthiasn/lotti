@@ -1,6 +1,7 @@
 import 'package:clock/clock.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/front_agent/model/front_turn_failure.dart';
 import 'package:lotti/features/front_agent/service/front_chat_service.dart';
 import 'package:lotti/features/front_agent/service/front_filing_service.dart';
 import 'package:lotti/features/front_agent/state/front_agent_providers.dart';
@@ -18,6 +19,7 @@ class FrontChatComposerState {
     this.failedMessage,
     this.failedMessageId,
     this.failedConversationId,
+    this.failure,
     this.busyDoorIds = const {},
     this.failedDoorIds = const {},
   });
@@ -46,6 +48,9 @@ class FrontChatComposerState {
   /// even after the user opened another one.
   final String? failedConversationId;
 
+  /// Why that turn did not go through, so the chat can say what to do.
+  final FrontTurnFailure? failure;
+
   /// A copy never carries the send failure: an edit to the draft and the
   /// start of a send both clear it, and a failure is only ever set whole.
   /// The doors' state rides along untouched.
@@ -73,11 +78,13 @@ class FrontChatComposerState {
     String? failedMessage,
     String? failedMessageId,
     String? failedConversationId,
+    FrontTurnFailure? failure,
   }) => FrontChatComposerState(
     draft: draft,
     failedMessage: failedMessage,
     failedMessageId: failedMessageId,
     failedConversationId: failedConversationId,
+    failure: failedMessage == null ? null : failure ?? FrontTurnFailure.unknown,
     busyDoorIds: busyDoorIds,
     failedDoorIds: failedDoorIds,
   );
@@ -152,6 +159,7 @@ class FrontChatController extends Notifier<FrontChatComposerState> {
         failedMessage: message,
         failedMessageId: error.messageId,
         failedConversationId: conversationId,
+        failure: error.failure,
       );
     } catch (_) {
       ref.read(frontSpokenTurnProvider.notifier).settle();
@@ -213,6 +221,7 @@ class FrontChatController extends Notifier<FrontChatComposerState> {
         failedMessage: failed,
         failedMessageId: error.messageId ?? messageId,
         failedConversationId: typedIn,
+        failure: error.failure,
       );
     } catch (_) {
       state = state.settled(

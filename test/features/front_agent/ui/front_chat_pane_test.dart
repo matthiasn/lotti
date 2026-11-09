@@ -27,6 +27,7 @@ import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
 import 'package:lotti/features/front_agent/model/front_logged_time_chart.dart';
 import 'package:lotti/features/front_agent/model/front_pull_requests.dart';
+import 'package:lotti/features/front_agent/model/front_turn_failure.dart';
 import 'package:lotti/features/front_agent/service/front_chat_service.dart';
 import 'package:lotti/features/front_agent/state/front_agent_providers.dart';
 import 'package:lotti/features/front_agent/state/front_chat_thread_provider.dart';
@@ -444,6 +445,64 @@ void main() {
     verify(() => chatService.retryMessage(messageId: 'm-1')).called(1);
     expect(find.text("That didn't send."), findsNothing);
   });
+
+  for (final (failure, line) in [
+    (
+      FrontTurnFailure.rateLimit,
+      'Your AI provider is limiting requests right now. Wait a moment, '
+          'then try again.',
+    ),
+    (
+      FrontTurnFailure.noAnswer,
+      "The companion didn't finish an answer. Try again, or put it another "
+          'way.',
+    ),
+    (
+      FrontTurnFailure.timeout,
+      'Your AI provider took too long to answer. Try again.',
+    ),
+    (
+      FrontTurnFailure.network,
+      "Couldn't reach your AI provider. Check your connection, then try "
+          'again.',
+    ),
+    (
+      FrontTurnFailure.authentication,
+      'Your AI provider refused its API key. Check it in Settings.',
+    ),
+    (
+      FrontTurnFailure.provider,
+      'Your AI provider answered with an error. Try again in a moment.',
+    ),
+    (
+      FrontTurnFailure.noModel,
+      'No AI model is set up for the companion. Choose one in Settings.',
+    ),
+    (FrontTurnFailure.unknown, "That didn't send."),
+  ]) {
+    testWidgets('a turn that failed for $failure says why beside the retry, '
+        'instead of a bare "that did not send"', (tester) async {
+      when(
+        () => chatService.sendMessage(text: 'Hello', conversationId: 'c-1'),
+      ).thenThrow(
+        FrontChatTurnException('boom', messageId: 'm-1', failure: failure),
+      );
+      await pumpPane(tester);
+
+      await tester.enterText(find.byType(TextField), 'Hello');
+      await tester.pump();
+      await tester.tap(find.byIcon(LottiIcons.arrowUp));
+      await tester.pumpAndSettle();
+
+      expect(find.text(line), findsOneWidget);
+      // Only a cause nobody can act on falls back to the bare line.
+      expect(
+        find.text("That didn't send."),
+        failure == FrontTurnFailure.unknown ? findsOneWidget : findsNothing,
+      );
+      expect(find.text('Try Again'), findsOneWidget);
+    });
+  }
 
   testWidgets('the list of conversations takes the thread’s place while it '
       'is open', (tester) async {

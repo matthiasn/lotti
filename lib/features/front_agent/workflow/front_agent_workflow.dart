@@ -20,11 +20,13 @@ import 'package:lotti/features/front_agent/model/front_conversation.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
 import 'package:lotti/features/front_agent/model/front_routing_index.dart';
+import 'package:lotti/features/front_agent/model/front_turn_failure.dart';
 import 'package:lotti/features/front_agent/service/front_routing_index_builder.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_contract.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_model_resolution.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_strategy.dart';
 import 'package:lotti/features/front_agent/workflow/front_conversation_tasks.dart';
+import 'package:lotti/features/front_agent/workflow/front_inference_stall_guard.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:uuid/uuid.dart';
 
@@ -162,6 +164,14 @@ class FrontAgentWorkflow with AgentErrorLogging {
     final now = clock.now();
     final recordConsumption = canRecordAgentConsumption;
     String? conversationId;
+    // Where her turn spends its time, logged once per turn: elapsed
+    // milliseconds at the end of each phase.
+    final stopwatch = Stopwatch()..start();
+    final laps = <String>[];
+    void lap(String phase) =>
+        laps.add('$phase=${stopwatch.elapsedMilliseconds}ms');
+    // Only a failure while the provider is being called is the provider's.
+    var inferring = false;
     try {
       final resolved = await resolveFrontAgentModel(
         agentIdentity: agentIdentity,
@@ -169,17 +179,19 @@ class FrontAgentWorkflow with AgentErrorLogging {
         domainLogger: _domainLogger,
       );
       if (resolved == null) {
-        return const WakeResult(
+        return WakeResult(
           success: false,
-          error: 'front agent inference setup is unavailable',
+          error: FrontTurnFailure.noModel.wakeError(),
         );
       }
+      lap('model');
 
       final scope = FrontRoutingScope(
         allowedCategoryIds: agentIdentity.allowedCategoryIds,
         chosenCategoryIds: chosenCategoryIds,
       );
       final index = await _indexBuilder.build(scope: scope, now: now);
+      lap('index');
       final (:recent, :taskIds) = await _recentTurns(
         agentId,
         sourceMessageId,
@@ -188,6 +200,7 @@ class FrontAgentWorkflow with AgentErrorLogging {
         taskIds,
         scope,
       );
+      lap('history');
       final strategy = FrontAgentStrategy(
         syncService: _syncService,
         domainLogger: _domainLogger,
@@ -213,9 +226,19 @@ class FrontAgentWorkflow with AgentErrorLogging {
       final tools = [
         for (final tool in frontAgentTools) tool.toChatCompletionTool(),
       ];
-      final inferenceRepo = CloudInferenceWrapper(
-        cloudRepository: _cloudInferenceRepository,
-        geminiThinkingMode: resolved.geminiThinkingMode,
+      final inferenceRepo = FrontInferenceStallGuard(
+        CloudInferenceWrapper(
+          cloudRepository: _cloudInferenceRepository,
+          geminiThinkingMode: resolved.geminiThinkingMode,
+          // Every turn shares the system prompt, the tools and — until the
+          // record changes — the index: one key keeps them on one cache.
+          promptCacheKey: agentId,
+        ),
+        onRetry: () => _domainLogger.log(
+          LogDomain.agentWorkflow,
+          'front turn provider call stalled; sending it again',
+          subDomain: 'frontAgent',
+        ),
       );
       conversationId = _conversationRepository.createConversation(
         systemMessage:
@@ -223,6 +246,7 @@ class FrontAgentWorkflow with AgentErrorLogging {
         maxTurns: agentIdentity.config.maxTurnsPerWake,
       );
 
+      inferring = true;
       var usage = await _conversationRepository.sendMessage(
         conversationId: conversationId,
         message: renderFrontTurn(
@@ -271,10 +295,12 @@ class FrontAgentWorkflow with AgentErrorLogging {
           ),
         );
       }
+      inferring = false;
+      lap('inference(calls=${manager?.turnCount})');
       if (!strategy.hasTerminalOutput) {
         // Fail closed: no reply is invented. The message stays retryable
         // and the chat shows its retry bubble.
-        throw StateError('front turn produced no dispatch, question or reply');
+        throw const _UnfinishedTurn();
       }
 
       try {
@@ -302,6 +328,7 @@ class FrontAgentWorkflow with AgentErrorLogging {
           stackTrace: stackTrace,
         );
       }
+      lap('persist');
       // No report artifact carries a routing turn's attribution yet, so the
       // envelope is closed carrierless, as a no-report relationship wake is.
       if (recordConsumption) {
@@ -340,11 +367,23 @@ class FrontAgentWorkflow with AgentErrorLogging {
           errorSummary: error.toString(),
         );
       }
-      return WakeResult.failed(kind: 'Front agent', error: error);
+      final failure = switch (error) {
+        _UnfinishedTurn() => FrontTurnFailure.noAnswer,
+        _ when inferring => FrontTurnFailure.ofInference(error),
+        _ => FrontTurnFailure.unknown,
+      };
+      laps.add('failed=${failure.name}');
+      return WakeResult(success: false, error: failure.wakeError(error));
     } finally {
       if (conversationId != null) {
         _conversationRepository.deleteConversation(conversationId);
       }
+      _domainLogger.log(
+        LogDomain.agentWorkflow,
+        'front turn timings: ${laps.join(' ')} '
+        'total=${stopwatch.elapsedMilliseconds}ms',
+        subDomain: 'frontAgent',
+      );
     }
   }
 
@@ -594,6 +633,14 @@ String renderFrontTurn({
     ..writeln(input)
     ..write(frontPendingUserMessageFooter);
   return buffer.toString();
+}
+
+/// A turn that ended without a dispatch, a question or a reply.
+class _UnfinishedTurn implements Exception {
+  const _UnfinishedTurn();
+
+  @override
+  String toString() => 'front turn produced no dispatch, question or reply';
 }
 
 const _weekdays = [

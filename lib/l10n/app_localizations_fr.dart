@@ -7320,6 +7320,34 @@ class AppLocalizationsFr extends AppLocalizations {
       'Demande une tâche, un objectif, un projet ou une personne, ou raconte ce qui s’est passé. Le bon agent répond, et rien n’est rangé tant que tu ne touches pas.';
 
   @override
+  String get frontChatFailedAuthentication =>
+      'Ton fournisseur d\'IA a refusé sa clé API. Vérifie-la dans les Paramètres.';
+
+  @override
+  String get frontChatFailedNetwork =>
+      'Impossible de joindre ton fournisseur d\'IA. Vérifie ta connexion, puis réessaie.';
+
+  @override
+  String get frontChatFailedNoAnswer =>
+      'Le compagnon n\'a pas terminé sa réponse. Réessaie, ou formule-le autrement.';
+
+  @override
+  String get frontChatFailedNoModel =>
+      'Aucun modèle d\'IA n\'est configuré pour le compagnon. Choisis-en un dans les Paramètres.';
+
+  @override
+  String get frontChatFailedProvider =>
+      'Ton fournisseur d\'IA a répondu par une erreur. Réessaie dans un instant.';
+
+  @override
+  String get frontChatFailedRateLimit =>
+      'Ton fournisseur d\'IA limite les requêtes en ce moment. Attends un instant, puis réessaie.';
+
+  @override
+  String get frontChatFailedTimeout =>
+      'Ton fournisseur d\'IA a mis trop de temps à répondre. Réessaie.';
+
+  @override
   String frontChatInboxChip(int count) {
     return 'Boîte de réception $count';
   }

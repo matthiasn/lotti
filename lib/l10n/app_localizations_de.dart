@@ -7264,6 +7264,34 @@ class AppLocalizationsDe extends AppLocalizations {
       'Frag nach einer Aufgabe, einem Ziel, einem Projekt oder einer Person, oder erzähl, was passiert ist. Der passende Agent antwortet, und abgelegt wird erst, wenn du tippst.';
 
   @override
+  String get frontChatFailedAuthentication =>
+      'Dein KI-Anbieter hat den API-Schlüssel abgelehnt. Prüf ihn in den Einstellungen.';
+
+  @override
+  String get frontChatFailedNetwork =>
+      'Dein KI-Anbieter ist nicht erreichbar. Prüf deine Verbindung und versuch es dann noch einmal.';
+
+  @override
+  String get frontChatFailedNoAnswer =>
+      'Die Begleitung hat keine Antwort fertiggebracht. Versuch es noch einmal oder formulier es anders.';
+
+  @override
+  String get frontChatFailedNoModel =>
+      'Für die Begleitung ist kein KI-Modell eingerichtet. Wähl eines in den Einstellungen.';
+
+  @override
+  String get frontChatFailedProvider =>
+      'Dein KI-Anbieter hat mit einem Fehler geantwortet. Versuch es gleich noch einmal.';
+
+  @override
+  String get frontChatFailedRateLimit =>
+      'Dein KI-Anbieter begrenzt gerade die Anfragen. Warte kurz und versuch es dann noch einmal.';
+
+  @override
+  String get frontChatFailedTimeout =>
+      'Dein KI-Anbieter hat zu lange für die Antwort gebraucht. Versuch es noch einmal.';
+
+  @override
   String frontChatInboxChip(int count) {
     return 'Eingang $count';
   }

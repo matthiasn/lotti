@@ -320,6 +320,15 @@ outside it, then flush the fake continuation and assert completion before
 advancing time. See
 `test/services/time_service_test.dart`; no wall-clock delay is needed.
 
+The same SDK-owned future swallows two more things inside `fakeAsync`:
+`Stream.timeout(...)` never delivers its done event (no timers, no microtasks
+left, and still not done), and `await subscription.cancel()` on a controller
+without an `onCancel` never resumes. Time a stream out with `StreamIterator`
+and `moveNext().timeout(...)` instead, cancel only a stream that did not end on
+its own, and give a test's open controller an
+`onCancel: () => Future<void>.value()` so the cancel completes in the fake
+zone — see `test/features/front_agent/workflow/front_inference_stall_guard_test.dart`.
+
 Holding a `StreamController` open across `tester.runAsync(...)` and widget teardown causes a hard-to-debug hang that surfaces as:
 
 ```

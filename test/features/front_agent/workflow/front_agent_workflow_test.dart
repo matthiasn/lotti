@@ -13,6 +13,7 @@ import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
+import 'package:lotti/features/ai/repository/cloud_inference_wrapper.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
 import 'package:lotti/features/ai_consumption/service/ai_interaction_capture.dart';
@@ -21,12 +22,15 @@ import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
 import 'package:lotti/features/front_agent/model/front_conversation.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_routing_index.dart';
+import 'package:lotti/features/front_agent/model/front_turn_failure.dart';
 import 'package:lotti/features/front_agent/service/front_routing_index_builder.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_contract.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_strategy.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_workflow.dart';
+import 'package:lotti/features/front_agent/workflow/front_inference_stall_guard.dart';
 import 'package:lotti/features/insights/logic/time_bucketing.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -52,6 +56,7 @@ void main() {
   late MockConversationRepository conversationRepository;
   late List<AgentDomainEntity> upserts;
   late FrontAgentWorkflow workflow;
+  late MockDomainLogger domainLogger;
 
   final identity = makeTestIdentity(
     id: frontAgentId,
@@ -172,6 +177,7 @@ void main() {
     aiConfigRepository = MockAiConfigRepository();
     manager = MockConversationManager();
     conversationRepository = MockConversationRepository(manager);
+    domainLogger = MockDomainLogger();
     upserts = [];
     when(() => manager.turnCount).thenReturn(0);
     when(() => syncService.upsertEntity(any())).thenAnswer((invocation) async {
@@ -237,7 +243,7 @@ void main() {
         journalDb: journalDb,
         agentRepository: repository,
       ),
-      domainLogger: MockDomainLogger(),
+      domainLogger: domainLogger,
     );
   });
 
@@ -747,7 +753,24 @@ void main() {
       final result = await run();
 
       expect(result.success, isFalse);
-      expect(result.error, contains('Front agent workflow failed'));
+      expect(
+        FrontTurnFailure.fromWakeError(result.error),
+        FrontTurnFailure.noAnswer,
+      );
+      // The full log says what went wrong, not just the type.
+      final logged = verify(
+        () => domainLogger.error(
+          LogDomain.agentWorkflow,
+          captureAny(),
+          subDomain: 'frontAgent',
+          message: 'front agent turn failed',
+          stackTrace: any(named: 'stackTrace'),
+        ),
+      ).captured.single;
+      expect(
+        logged.toString(),
+        'front turn produced no dispatch, question or reply',
+      );
       expect(conversationRepository.turnBudgets, hasLength(1));
       expect(upserts.whereType<AgentMessageEntity>(), isEmpty);
       expect(conversationRepository.deletedConversationIds, ['test-conv-id']);
@@ -1468,7 +1491,10 @@ void main() {
         final result = await run();
 
         expect(result.success, isFalse);
-        expect(result.error, contains('inference setup is unavailable'));
+        expect(
+          FrontTurnFailure.fromWakeError(result.error),
+          FrontTurnFailure.noModel,
+        );
         verifyNever(
           () => journalDb.getOpenTasksForDayAgentCorpus(
             categoryIds: any(named: 'categoryIds'),
@@ -1569,8 +1595,139 @@ void main() {
 
         expect(result.success, isFalse);
         expect(result.error, contains('StateError'));
+        // A database failure is not the provider's: no provider line.
+        expect(
+          FrontTurnFailure.fromWakeError(result.error),
+          FrontTurnFailure.unknown,
+        );
       },
     );
+
+    test('a provider error names its cause, never its message', () async {
+      seedMessage();
+      conversationRepository.sendMessageDelegate =
+          ({
+            required conversationId,
+            required message,
+            required model,
+            required provider,
+            required inferenceRepo,
+            tools,
+            toolChoice,
+            temperature = 0.7,
+            strategy,
+          }) async => throw Exception(
+            'Mistral API error (HTTP 429, type=rate_limited, secret body)',
+          );
+
+      final result = await run();
+
+      expect(result.success, isFalse);
+      expect(
+        FrontTurnFailure.fromWakeError(result.error),
+        FrontTurnFailure.rateLimit,
+      );
+      expect(result.error, isNot(contains('secret body')));
+    });
+  });
+
+  group('latency', () {
+    test(
+      'her calls go through the stall guard, keyed to her prompt cache',
+      () async {
+        seedMessage();
+        Object? sentThrough;
+        conversationRepository.sendMessageDelegate =
+            ({
+              required conversationId,
+              required message,
+              required model,
+              required provider,
+              required inferenceRepo,
+              tools,
+              toolChoice,
+              temperature = 0.7,
+              strategy,
+            }) async {
+              sentThrough = inferenceRepo;
+              when(() => manager.turnCount).thenReturn(1);
+              await (strategy! as FrontAgentStrategy).processToolCalls(
+                toolCalls: [
+                  call('reply_to_user', {'message': 'Hi.'}),
+                ],
+                manager: manager,
+              );
+              return null;
+            };
+
+        await run();
+
+        final guard = sentThrough! as FrontInferenceStallGuard;
+        expect(guard.stallTimeout, frontInferenceStallTimeout);
+        expect(
+          (guard.delegate as CloudInferenceWrapper).promptCacheKey,
+          frontAgentId,
+        );
+
+        // A resend is logged, so a stall shows up beside the timings.
+        guard.onRetry!();
+        verify(
+          () => domainLogger.log(
+            LogDomain.agentWorkflow,
+            'front turn provider call stalled; sending it again',
+            subDomain: 'frontAgent',
+          ),
+        ).called(1);
+      },
+    );
+
+    test('one log line says where the turn spent its time', () async {
+      seedMessage();
+      stubModel((_) => [call('dispatch', dispatchArgs())]);
+
+      await run();
+
+      final line =
+          verify(
+                () => domainLogger.log(
+                  LogDomain.agentWorkflow,
+                  captureAny(that: startsWith('front turn timings:')),
+                  subDomain: 'frontAgent',
+                ),
+              ).captured.single
+              as String;
+      expect(
+        line,
+        matches(
+          RegExp(
+            r'^front turn timings: model=\d+ms index=\d+ms history=\d+ms '
+            r'inference\(calls=1\)=\d+ms persist=\d+ms total=\d+ms$',
+          ),
+        ),
+      );
+    });
+
+    test('a failed turn logs its timings with the failure', () async {
+      seedMessage();
+      when(() => repository.getAgentMessages(any())).thenThrow(
+        StateError('database closed'),
+      );
+
+      await run();
+
+      final line =
+          verify(
+                () => domainLogger.log(
+                  LogDomain.agentWorkflow,
+                  captureAny(that: startsWith('front turn timings:')),
+                  subDomain: 'frontAgent',
+                ),
+              ).captured.single
+              as String;
+      expect(line, contains('index='));
+      expect(line, isNot(contains('history=')));
+      expect(line, contains('failed=unknown'));
+    });
   });
 
   test('the turn names the weekday beside the clock, so "this weekend" is '
