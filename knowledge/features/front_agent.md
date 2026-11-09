@@ -1003,7 +1003,7 @@ stateDiagram-v2
 
 The entry a tap writes goes through the persistence logic — a text entry
 with the owner's `categoryId` and `linkedId`, a task through
-`createTaskEntry`, an event (`writeFrontEvent`) tentative and dated at the
+`createTaskEntry`, an event (`writeFrontEvent`) tentative, starred and dated at the
 tap as the Events page starts one — so an entry filed under a task wakes the task agent
 through its subscription exactly as dictation into the task does, one filed
 under a project shows in the project's timeline (`ProjectTimelineSection`)
@@ -1218,8 +1218,9 @@ filled action, and an overflow menu (`DesignSystemContextMenuButton`)
 holding every other way out. The filled action is always a tap that
 writes — *File it*, *Make it a task* — or, on a settled card, a secondary
 *Open*; the overflow holds *Somewhere else* on a proposal, *Start a goal…*
-/ *New project…* (the ellipsis says a wizard opens), *Make it an event*,
-*Save as a note* and *Leave it* on an inbox item with the router's guess
+/ *New project…* (the ellipsis says a wizard opens), *Make it an event*
+(only while `enable_events` is on — an event made where it is off would
+have no page to be found on), *Save as a note* and *Leave it* on an inbox item with the router's guess
 first, and *Undo* on
 anything settled. A busy card's action shows it loading; a failed one's
 status says so in the error ink and the tap reads *Try again*

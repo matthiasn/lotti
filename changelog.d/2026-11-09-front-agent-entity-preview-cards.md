@@ -6,8 +6,9 @@
   follows the task as it changes after the chat, and a tap opens the task on
   top of the conversation. A task the card already shows is not listed a
   second time in her reply.
-- **Make an event from the companion's inbox.** Something nothing holds yet
-  can now become an event with *Make it an event*, titled with your words.
+- **Make an event from the companion's inbox.** With Events turned on,
+  something nothing holds yet can now become an event with *Make it an
+  event*, titled with your words.
   Her reply shows it as the same event card the rest of the app uses — its
   cover, rating, category, date, status and summary, kept current — and a
   tap opens the event's page. *Undo* takes the event back out, and the item

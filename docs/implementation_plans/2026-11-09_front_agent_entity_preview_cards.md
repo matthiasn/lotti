@@ -211,7 +211,8 @@ implementation — these token choices are a starting point, not final.
 
 As built: none of the event sources above existed — the router has no
 `new(event)`, nothing files check-ins, and events are not in her index — so
-Phase 2 adds the one the user picks: *Make it an event* on an inbox item,
+Phase 2 adds the one the user picks: *Make it an event* on an inbox item
+(offered only while Events are turned on),
 which records `FrontDoorEventCreated` (Open goes to `/events/:id`, Undo
 deletes the event and the item waits again). A preview's kind is its own
 `FrontEntityKind { task, event }`, so `event` never becomes a routing

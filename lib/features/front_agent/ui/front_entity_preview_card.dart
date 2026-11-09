@@ -364,7 +364,7 @@ class _PreviewSurface extends StatelessWidget {
 
 /// The title an entity was made or named with, alone on a card under its
 /// kind's glyph, still opening it: what a card shows before its preview has
-/// loaded and after the entity is gone — and all a project shows yet.
+/// loaded and after the entity is gone.
 class _TitleOnly extends StatelessWidget {
   const _TitleOnly({required this.reference, required this.onTap});
 

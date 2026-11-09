@@ -24,11 +24,11 @@ class FrontDoorActions {
     required this.onTakeBack,
     required this.onOpen,
     required this.onMakeTask,
-    required this.onMakeEvent,
     required this.onSaveNote,
     required this.onStartGoal,
     required this.onNewProject,
     required this.onPlanDay,
+    this.onMakeEvent,
     this.onOpenEvidence,
     this.onOpenLink,
   });
@@ -54,8 +54,9 @@ class FrontDoorActions {
   /// Make a task of an inbox item.
   final ValueChanged<String> onMakeTask;
 
-  /// Make an event of an inbox item.
-  final ValueChanged<String> onMakeEvent;
+  /// Make an event of an inbox item; null where events are off, and the
+  /// item offers no such way.
+  final ValueChanged<String>? onMakeEvent;
 
   /// Save an inbox item as a note.
   final ValueChanged<String> onSaveNote;
@@ -351,12 +352,13 @@ class _DoorRow extends StatelessWidget {
                 LottiIcons.folder,
                 () => acting.onNewProject(door),
               ),
-            (
-              'event',
-              messages.frontDoorMakeEvent,
-              LottiIcons.calendar,
-              () => acting.onMakeEvent(id),
-            ),
+            if (acting.onMakeEvent case final makeEvent?)
+              (
+                'event',
+                messages.frontDoorMakeEvent,
+                LottiIcons.calendar,
+                () => makeEvent(id),
+              ),
             (
               'note',
               messages.frontDoorSaveNote,

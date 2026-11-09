@@ -225,7 +225,12 @@ Future<JournalEvent?> writeFrontEvent(
 }) async {
   final now = clock.now();
   final event = JournalEvent(
-    meta: await persistence.createMetadata(id: id, dateFrom: now, dateTo: now),
+    meta: await persistence.createMetadata(
+      id: id,
+      dateFrom: now,
+      dateTo: now,
+      starred: true,
+    ),
     data: EventData(title: title, stars: 0, status: EventStatus.tentative),
     entryText: const EntryText(plainText: ''),
   );

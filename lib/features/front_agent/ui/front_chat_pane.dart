@@ -291,6 +291,8 @@ class FrontChatThreadView extends ConsumerWidget {
       }
     }
 
+    final eventsEnabled =
+        ref.watch(configFlagProvider(enableEventsFlag)).value ?? false;
     final actions = FrontDoorActions(
       onOpenLink: (url) => openLink(url, ''),
       onFile: controller.fileUnderOwner,
@@ -299,7 +301,9 @@ class FrontChatThreadView extends ConsumerWidget {
       onTakeBack: controller.takeBack,
       onMakeTask: (doorId) =>
           FrontVoice.makeTask(ref, context, conversationId, doorId),
-      onMakeEvent: controller.makeEvent,
+      // Only where events are on: one made where they are off would be an
+      // event the user has no page to find it on.
+      onMakeEvent: eventsEnabled ? controller.makeEvent : null,
       onSaveNote: controller.saveAsNote,
       // What a door wrote lives on its own page: leave the sheet, then go.
       onOpen: (door) {

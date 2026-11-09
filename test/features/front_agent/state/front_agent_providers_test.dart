@@ -609,6 +609,7 @@ void main() {
           dateFrom: any(named: 'dateFrom'),
           dateTo: any(named: 'dateTo'),
           categoryId: any(named: 'categoryId'),
+          starred: any(named: 'starred'),
         ),
       ).thenAnswer(
         (invocation) async => meta(invocation.namedArguments[#id] as String),
@@ -790,7 +791,13 @@ void main() {
       expect(event.data.status, EventStatus.tentative);
       expect(event.data.stars, 0);
       verify(
-        () => persistence.createMetadata(id: id, dateFrom: at, dateTo: at),
+        () => persistence.createMetadata(
+          id: id,
+          dateFrom: at,
+          dateTo: at,
+          // Starred, as the Events page's own create makes one.
+          starred: true,
+        ),
       ).called(1);
       expect(eventCreated().eventId, id);
     });

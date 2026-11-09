@@ -167,6 +167,7 @@ void main() {
     List<NavigatorObserver> navigatorObservers = const [],
     List<CategoryDefinition>? mentionCategories,
     bool companion = false,
+    Set<String> flagsOn = const {},
     Future<FrontEntityPreview?> Function(FrontEntityKey key)? previews,
   }) async {
     // The project creation resolves categories through the locator.
@@ -231,8 +232,10 @@ void main() {
                 (ref) => Stream.value(journalAccess),
               ),
             configFlagProvider.overrideWith(
-              (ref, flag) =>
-                  Stream.value(companion && flag == enableCompanionFlag),
+              (ref, flag) => Stream.value(
+                (companion && flag == enableCompanionFlag) ||
+                    flagsOn.contains(flag),
+              ),
             ),
             if (mentionCategories != null)
               frontMentionCategoriesProvider.overrideWithValue(
@@ -2070,6 +2073,7 @@ void main() {
         tester,
         thread: () async => inbox(FrontNewKind.task),
         onClose: () => closed++,
+        flagsOn: {enableEventsFlag},
       );
 
       await tester.tap(find.byKey(const ValueKey('front-door-menu-0')));
@@ -2081,6 +2085,18 @@ void main() {
       verify(() => filing.makeEvent('d:door:0')).called(1);
       expect(closed, 0);
       expect(paths, isEmpty);
+    });
+
+    testWidgets('where events are off, an item offers no event to make', (
+      tester,
+    ) async {
+      await pumpPane(tester, thread: () async => inbox(FrontNewKind.task));
+
+      await tester.tap(find.byKey(const ValueKey('front-door-menu-0')));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const ValueKey('front-door-note-0')), findsOneWidget);
+      expect(find.byKey(const ValueKey('front-door-event-0')), findsNothing);
     });
 
     testWidgets('start a goal leaves the sheet and goes to the goal wizard, '

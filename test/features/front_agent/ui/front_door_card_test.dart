@@ -770,6 +770,46 @@ void main() {
       ]);
     });
 
+    testWidgets('without a way to make an event — events are off — an item '
+        'offers every other way', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          FrontDoorCard(
+            doors: [
+              entry(
+                record(
+                  index: 0,
+                  text: 'Hm.',
+                  kind: FrontDestinationKind.unrouted,
+                  ownerTitle: null,
+                  outcome: const FrontDoorInbox(),
+                ),
+              ),
+            ],
+            actions: FrontDoorActions(
+              onFile: (_) {},
+              onDecline: (_) {},
+              onUndoDecline: (_) {},
+              onTakeBack: (_) {},
+              onOpen: (_) {},
+              onMakeTask: (_) {},
+              onSaveNote: (_) {},
+              onStartGoal: (_) {},
+              onNewProject: (_) {},
+              onPlanDay: (_) {},
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(await openMenu(tester, 0), [
+        'Start a goal…',
+        'Save as a note',
+        'Leave it',
+      ]);
+    });
+
     testWidgets('a new project leads the overflow with its own way; an '
         'unrouted one has no project way; one sent back from a proposal asks '
         'where instead', (tester) async {
