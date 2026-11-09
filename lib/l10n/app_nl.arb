@@ -3284,6 +3284,8 @@
   "frontChatActionFailed": "Dat is niet gelukt. Probeer het opnieuw.",
   "frontChatArchivedRow": "Gearchiveerde chats · {count}",
   "frontChatArchivedToast": "Chat gearchiveerd.",
+  "frontChatCompanionHide": "Metgezel verbergen",
+  "frontChatCompanionShow": "Metgezel tonen",
   "frontChatDeleteExplanation": "Deze chat verwijderen? Zijn berichten worden op al je apparaten verborgen, niet gewist. Wat je uit deze chat hebt opgeslagen, blijft waar het is.",
   "frontChatEmpty": "Vraag naar een taak, een doel, een project of een persoon, of vertel wat er gebeurd is. De juiste agent antwoordt, en er wordt niets opgeborgen tot je tikt.",
   "frontChatInboxChip": "Inbox {count}",

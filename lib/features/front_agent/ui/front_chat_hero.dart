@@ -1,15 +1,19 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
+import 'package:lotti/features/companion/model/companion_gesture.dart';
 import 'package:lotti/features/companion/rig/companion_painter.dart';
+import 'package:lotti/features/companion/state/companion_card_controller.dart';
 import 'package:lotti/features/companion/state/companion_look_controller.dart';
+import 'package:lotti/features/companion/ui/companion_floating_card.dart';
 import 'package:lotti/features/companion/ui/companion_speaker.dart';
 import 'package:lotti/features/companion/ui/companion_view.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/front_agent/state/front_conversation_providers.dart';
 import 'package:lotti/features/front_agent/state/front_inbox_filter.dart';
+import 'package:lotti/features/front_agent/state/front_stage_pointing.dart';
 import 'package:lotti/features/front_agent/state/front_voice_providers.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_voice.dart';
-import 'package:lotti/features/front_agent/ui/front_voice_controls.dart';
+import 'package:lotti/features/tts/state/tts_playback_controller.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:material_ui/material_ui.dart';
@@ -19,7 +23,6 @@ import 'package:material_ui/material_ui.dart';
 abstract final class FrontChatHeroKeys {
   static const Key hero = Key('front-chat-hero');
   static const Key figure = Key('front-chat-figure');
-  static const Key openStage = Key('front-chat-figure-open-stage');
 }
 
 /// The open conversation, as the surface names it: the inbox while that
@@ -56,7 +59,10 @@ class FrontChatHero extends StatelessWidget {
     key: FrontChatHeroKeys.hero,
     padding: EdgeInsets.only(bottom: context.designTokens.spacing.step5),
     child: const Center(
-      child: FrontCompanionFigure(size: ControlSizes.avatarHero),
+      child: FrontCompanionFigure(
+        key: FrontChatHeroKeys.figure,
+        size: ControlSizes.avatarHero,
+      ),
     ),
   );
 }
@@ -76,7 +82,6 @@ class FrontCompanionFigure extends ConsumerWidget {
     final conversationId = ref.watch(frontActiveConversationProvider).value;
     return ExcludeSemantics(
       child: Container(
-        key: size == ControlSizes.avatarHero ? FrontChatHeroKeys.figure : null,
         width: size,
         height: size,
         clipBehavior: Clip.antiAlias,
@@ -98,11 +103,9 @@ class FrontCompanionFigure extends ConsumerWidget {
   }
 }
 
-/// Her bust speaking: her lips follow her voice in [conversationId], she
-/// holds a pose for the turn (listening, thinking), and a tap stands her up
-/// full screen, still speaking — stopping her is her voice's control
-/// ([FrontVoiceButton]). Before any conversation resolves, she simply
-/// stands.
+/// Her bust speaking: her lips follow her voice in [conversationId], and
+/// she holds a pose for the turn (listening, thinking). Before any
+/// conversation resolves, she simply stands.
 class _SpeakingFigure extends ConsumerWidget {
   const _SpeakingFigure({required this.conversationId});
 
@@ -122,19 +125,60 @@ class _SpeakingFigure extends ConsumerWidget {
       );
     }
     // One tree whatever she is doing, so her animator — and the sign-off at
-    // the end of an utterance — lives through it. Decorative to a screen
-    // reader: the stage control beside her carries the same action.
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        key: FrontChatHeroKeys.openStage,
-        behavior: HitTestBehavior.opaque,
-        onTap: () => openFrontStage(context, id).ignore(),
+    // the end of an utterance — lives through it.
+    return CompanionSpeaker(
+      sourceId: frontVoiceSourceId(id),
+      dressedFor: frontCompanionDressedFor,
+      framing: CompanionFraming.bust,
+      holding: holding,
+    );
+  }
+}
+
+/// Her, head to toe, in the glass card floating over [conversationId]'s
+/// thread ([CompanionFloatingCard]) — where the user moved her, at the size
+/// they left her in [form]. She speaks the conversation's answers, holds the
+/// turn's pose as her bust in the header does, and points at what her latest
+/// reply lists ([frontStagePointsProvider]) while the thread is to her right.
+class FrontCompanionCard extends ConsumerWidget {
+  const FrontCompanionCard({
+    required this.conversationId,
+    required this.form,
+    super.key,
+  });
+
+  final String conversationId;
+  final CompanionCardForm form;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final sourceId = frontVoiceSourceId(conversationId);
+    final leftHalf = ref.watch(
+      companionCardControllerProvider(form).select((p) => p.x < 0.5),
+    );
+    final pointing =
+        leftHalf && ref.watch(frontStagePointsProvider(conversationId));
+    final speaking = ref.watch(
+      ttsPlaybackControllerProvider.select((s) => s.isActiveFor(sourceId)),
+    );
+    final holding = FrontVoice.holdingOf(ref);
+    return CompanionFloatingCard(
+      form: form,
+      speaking: speaking,
+      onRestyle: () => ref
+          .read(companionOutfitProvider.notifier)
+          .next(
+            ref
+                .read(companionLookRollProvider)
+                .outfitFor(frontCompanionDressedFor),
+          ),
+      // Decorative: the card carries its own label, and she says nothing a
+      // reader would miss.
+      figure: ExcludeSemantics(
         child: CompanionSpeaker(
-          sourceId: frontVoiceSourceId(id),
+          sourceId: sourceId,
+          holding: pointing ? GestureName.pointRight : holding,
           dressedFor: frontCompanionDressedFor,
-          framing: CompanionFraming.bust,
-          holding: holding,
         ),
       ),
     );

@@ -7346,6 +7346,12 @@ class AppLocalizationsCs extends AppLocalizations {
   String get frontChatSearchChats => 'Hledat v chatech';
 
   @override
+  String get frontChatCompanionHide => 'Skrýt společníka';
+
+  @override
+  String get frontChatCompanionShow => 'Zobrazit společníka';
+
+  @override
   String get frontChatTitle => 'Společník';
 
   @override

@@ -2947,6 +2947,8 @@
   "frontChatActionFailed": "Nepovedlo se. Zkus to znovu.",
   "frontChatArchivedRow": "Archivované chaty · {count}",
   "frontChatArchivedToast": "Chat archivován.",
+  "frontChatCompanionHide": "Skrýt společníka",
+  "frontChatCompanionShow": "Zobrazit společníka",
   "frontChatDeleteExplanation": "Smazat tento chat? Jeho zprávy se skryjí na všech zařízeních, nevymažou se. Co sis z tohoto chatu uložil, zůstane, kde je.",
   "frontChatEmpty": "Zeptej se na úkol, cíl, projekt nebo osobu, nebo řekni, co se stalo. Odpoví správný agent a nic se neuloží, dokud neťukneš.",
   "frontChatInboxChip": "Příchozí {count}",

@@ -4430,6 +4430,14 @@
     }
   },
   "frontChatArchivedToast": "Chat archived.",
+  "frontChatCompanionHide": "Hide companion",
+  "@frontChatCompanionHide": {
+    "description": "Tooltip and screen-reader label on the companion's face in the chat header while her floating card is shown: a tap hides the card."
+  },
+  "frontChatCompanionShow": "Show companion",
+  "@frontChatCompanionShow": {
+    "description": "Tooltip and screen-reader label on the companion's face in the chat header while her floating card is hidden: a tap shows the card over the conversation."
+  },
   "frontChatDeleteExplanation": "Delete this chat? Its messages are hidden on every device, not erased. Whatever you filed from it stays where it is.",
   "frontChatEmpty": "Ask about a task, a goal, a project or a person, or tell what happened. The right agent answers, and nothing is filed until you tap.",
   "frontChatInboxChip": "Inbox {count}",

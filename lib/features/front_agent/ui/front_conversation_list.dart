@@ -320,23 +320,29 @@ class _FrontConversationListState extends ConsumerState<FrontConversationList> {
           ),
           child: Padding(
             padding: frontBandPadding(tokens),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Padding(
-                    // On the rows' text edge.
-                    padding: EdgeInsetsDirectional.only(start: textInset),
-                    child: Text(
-                      messages.queryChats,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: tokens.typography.styles.subtitle.subtitle2
-                          .copyWith(color: tokens.colors.text.highEmphasis),
+            // Her face's height, the tallest thing in her header.
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(
+                minHeight: ControlSizes.avatarHero,
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Padding(
+                      // On the rows' text edge.
+                      padding: EdgeInsetsDirectional.only(start: textInset),
+                      child: Text(
+                        messages.queryChats,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: tokens.typography.styles.subtitle.subtitle2
+                            .copyWith(color: tokens.colors.text.highEmphasis),
+                      ),
                     ),
                   ),
-                ),
-                ...FrontConversationListActions.of(context, ref),
-              ],
+                  ...FrontConversationListActions.of(context, ref),
+                ],
+              ),
             ),
           ),
         ),
@@ -347,8 +353,8 @@ class _FrontConversationListState extends ConsumerState<FrontConversationList> {
 }
 
 /// The inset of the sheet's top band — her header, and the list's own band
-/// beside it: with a tap target inside, both come out the same height, so
-/// their hairlines meet.
+/// beside it: with her face's height inside both, they come out the same
+/// height, so their hairlines meet.
 EdgeInsets frontBandPadding(DsTokens tokens) => EdgeInsets.symmetric(
   horizontal: tokens.spacing.step5,
   vertical: tokens.spacing.step2,

@@ -2940,6 +2940,8 @@
   "frontChatActionFailed": "Nu a reușit. Încercați din nou.",
   "frontChatArchivedRow": "Conversații arhivate · {count}",
   "frontChatArchivedToast": "Conversație arhivată.",
+  "frontChatCompanionHide": "Ascundeți însoțitorul",
+  "frontChatCompanionShow": "Afișați însoțitorul",
   "frontChatDeleteExplanation": "Ștergeți această conversație? Mesajele ei sunt ascunse pe toate dispozitivele, nu șterse definitiv. Ce ați salvat din această conversație rămâne unde este.",
   "frontChatEmpty": "Întrebați despre o sarcină, un obiectiv, un proiect sau o persoană, sau spuneți ce s-a întâmplat. Răspunde agentul potrivit și nimic nu se arhivează până nu atingeți.",
   "frontChatInboxChip": "Primite {count}",

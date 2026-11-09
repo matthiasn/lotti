@@ -7278,6 +7278,12 @@ class AppLocalizationsSv extends AppLocalizations {
   String get frontChatSearchChats => 'Sök i chattar';
 
   @override
+  String get frontChatCompanionHide => 'Dölj följeslagare';
+
+  @override
+  String get frontChatCompanionShow => 'Visa följeslagare';
+
+  @override
   String get frontChatTitle => 'Följeslagare';
 
   @override

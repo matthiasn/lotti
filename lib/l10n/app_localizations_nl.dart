@@ -7301,6 +7301,12 @@ class AppLocalizationsNl extends AppLocalizations {
   String get frontChatSearchChats => 'Chats doorzoeken';
 
   @override
+  String get frontChatCompanionHide => 'Metgezel verbergen';
+
+  @override
+  String get frontChatCompanionShow => 'Metgezel tonen';
+
+  @override
   String get frontChatTitle => 'Metgezel';
 
   @override

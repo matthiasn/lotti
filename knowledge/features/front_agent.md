@@ -106,7 +106,7 @@ sources:
     last_modified: 2026-10-31
   - id: conversation-state
     resource: ../../lib/features/front_agent/state/front_conversation_providers.dart
-    title: The conversation index, the picked and the active conversation
+    title: The conversation index, the picked and the active conversation, and whether her card is shown
     last_modified: 2026-10-31
   - id: conversation-list
     resource: ../../lib/features/front_agent/ui/front_conversation_list.dart
@@ -178,11 +178,15 @@ sources:
     last_modified: 2026-11-07
   - id: voice-controls
     resource: ../../lib/features/front_agent/ui/front_voice_controls.dart
-    title: Her voice's stop / say-it-again control, her full-screen page and the conversation with her there
+    title: Her voice's stop / say-it-again control
+    last_modified: 2026-11-09
+  - id: hero
+    resource: ../../lib/features/front_agent/ui/front_chat_hero.dart
+    title: Her bust in the header and the hero, and FrontCompanionCard — her glass card over the thread
     last_modified: 2026-11-09
   - id: stage-pointing
     resource: ../../lib/features/front_agent/state/front_stage_pointing.dart
-    title: frontStagePointsProvider — she points at the tasks she lists, on her page
+    title: frontStagePointsProvider — she points at the tasks she lists, from her card
     last_modified: 2026-11-09
   - id: conversation-actions
     resource: ../../lib/features/front_agent/ui/front_conversation_actions.dart
@@ -190,7 +194,7 @@ sources:
     last_modified: 2026-11-07
   - id: stage
     resource: ../../lib/features/agents/ui/ai_summary_card/companion_stage_page.dart
-    title: CompanionStagePage — the shared full-screen stage, or a conversation with her floating over it
+    title: CompanionStagePage — the full-screen stage a summary's or a goal read's bust opens
     last_modified: 2026-11-09
   - id: floating-card
     resource: ../../lib/features/companion/ui/companion_floating_card.dart
@@ -1130,23 +1134,27 @@ the sheet for the entry's or the task's page. The inbox filter keeps a
 waiting turn's words and the reply that carries its cards together.
 
 The header (`FrontChatHeader`) says who the conversation is with and what
-about, in one row: her face at `ControlSizes.avatarCompact` — the spark when
-`enable_companion` is off — her name, and under it the open conversation's
-title (the inbox's name while that view is on; her name alone for a
-conversation not begun), an archived conversation marked before its title.
-Then her voice while the companion is on, as one pair of AI discs:
-`FrontVoiceButton`, whose idle glyph is "again" rather than a speaker, and the
-`FrontVoiceSwitch` that mutes her — a speaker, struck through while muted, its
-state in the glyph's shape since the disc's accent means busy — then her
-stage, an overflow and close. The row is a tap target tall plus
+about. Her face leads it at `ControlSizes.avatarHero` — the spark when
+`enable_companion` is off — and a tap on it shows her glass card over the
+thread or hides it again, in place (see [her voice](#her-voice)); to a screen
+reader it is a toggle button named *Show companion* or *Hide companion*.
+Beside her face the row hangs from its top line: her name, then the controls,
+and under them, across the whole width beside her face, the open
+conversation's title on up to two lines (the inbox's name while that view is
+on; her name alone for a conversation not begun), an archived conversation
+marked before its title. The controls are her voice while the companion is
+on, as one pair of AI discs — `FrontVoiceButton`, whose idle glyph is "again"
+rather than a speaker, and the `FrontVoiceSwitch` that mutes her, a speaker
+struck through while muted, its state in the glyph's shape since the disc's
+accent means busy — then an overflow and close. The row is her face tall plus
 `frontBandPadding`.
 Where the list is a page over the conversation (a phone, a narrow window) the
 row opens with the *Chats* glyph and the inbox count, and the overflow
-leads with a new conversation, her stage and the switch that mutes her as a
-checked row (`frontVoiceMenuItem`), so the row fits a 360 dp phone with every
-control showing. Beside the list the switch sits on the row beside her replay,
-the stage has its own control, and a short vertical rule sets close apart from
-the conversation's controls. The overflow then
+leads with a new conversation and the switch that mutes her as a checked row
+(`frontVoiceMenuItem`), so the row fits a 360 dp phone with every control
+showing. Beside the list the switch sits on the row beside her replay, the
+list's own band is as tall as her face so the two hairlines meet, and a short
+vertical rule sets close apart from the conversation's controls. The overflow then
 holds her AI profile once she exists, her internals, where the thread's cost
 is accounted, and this conversation's rename, archive and delete as a group
 of their own — the same `FrontMenuButton` the list's rows have. A
@@ -1388,7 +1396,7 @@ records and `think` while a send is in flight or a spoken answer is owed
 microphone opens (`ChatRecorderController.start`), so she never records
 herself.
 
-**Her voice's controls and her stage** (`front_voice_controls.dart`,
+**Her voice's controls and her card** (`front_voice_controls.dart`,
 `front_voice_switch.dart`) ride the header while the companion is on.
 `FrontVoiceSwitch` mutes her: it writes the companion customization's
 `speaksReplies`, the same setting as the companion settings' switch, so a
@@ -1401,7 +1409,7 @@ reach — and once she has stopped, *Say it again* speaks her answer to the
 latest turn from the start (`frontLatestAnswer`, the same words
 `frontSpokenAnswer` gives a spoken turn) through `FrontVoice.speak`, so the
 mute and the take-over hold as for a spoken reply — the
-mute read at playback start from the app's container, so closing the stage
+mute read at playback start from the app's container, so closing her surface
 mid-synthesis does not cut her off. **An answer said again keeps its
 voice:** `FrontVoice.speak` records, per conversation, the answer it said
 and the cloud route it said it with (`frontSaidProvider`), and the same
@@ -1414,25 +1422,30 @@ after she was stopped mid-sentence too. It is gone while she may not speak, in
 the inbox, for a conversation other than the one on screen, while a send is
 in flight or a spoken reply is still owed, while the thread or its journal
 access is being read, and before that answer has landed.
-The header's stage control — or its overflow entry, and a tap on her
-face — opens `openFrontStage`: the shared full-screen `CompanionStagePage`
-on a phone and on a desktop window alike, still speaking on her source.
-**The page is her chat, with her floating over it**: its `conversation` is
-`FrontStageTranscript`, the conversation's own `FrontChatThreadView` — the
-same thread and the same `DesignSystemChatInput` the pane shows, so typing,
-`@` mentions, the microphone and Enter to send work there exactly as outside,
-and a send never leaves it. A row along the top, under the system bar and any
-notch (`SafeArea`), holds the outfit control, `FrontVoiceButton` (the page's
-`controls`, in place of a summary's read-aloud control) and close; the page
-wears the app's theme, not the stage's dark.
+A tap on her face in the header shows her card — **in place, never a page of
+its own**: `frontCompanionCardShownProvider` flips, and the pane's own
+`FrontChatThreadView` lays `FrontCompanionCard` over its thread, fading it in
+and out (`AnimatedSwitcher`, `MotionDurations.short4`), still speaking on her
+source. The thread, its field, the header and the list stay where they are,
+so typing, `@` mentions, the microphone and Enter to send go on as before.
+Whether she is shown is held for the app's session, not saved; she shows only
+while the companion is on, a conversation is open and the inbox is off.
+
+```mermaid
+stateDiagram-v2
+  [*] --> Hidden
+  Hidden --> Shown: tap her face
+  Shown --> Hidden: tap her face
+  note right of Shown: not drawn in the inbox or with the character off
+```
 
 She stands head to toe in a `CompanionFloatingCard`
 (`companion/ui/companion_floating_card.dart`): a glass card
 (`DsGlassChipSurface`'s shadow with its lighter `cardBlurSigma`, over
 `dsGlassCardFill` — far more see-through than a chip's fill, so the text
 scrolling under her shows through as frosted shapes), handed to `AgentChatView` as its `threadOverlay`, so it
-floats over the thread's area only — never over the top row, the notch or
-the field — and takes touches only where it paints; the thread scrolls
+floats over the thread's area only — never over the header, the notch above
+it or the field — and takes touches only where it paints; the thread scrolls
 everywhere else, and a plain mouse wheel over the card still scrolls the
 thread (`AgentChatView` forwards any wheel event the overlay leaves
 unclaimed). Its edge takes the interactive accent
@@ -1458,7 +1471,7 @@ in SettingsDb (`COMPANION_CARD_PHONE`, `COMPANION_CARD_DESKTOP`; device-local,
 not synced), as shares of the room it travels in plus a height, so a card in
 a corner stays in it when the window resizes or the phone turns. Demo size
 is never saved: it fills the area until its "Usual size" button, a double
-tap, or the page closes.
+tap, or the card is hidden.
 
 ```mermaid
 stateDiagram-v2
@@ -1471,31 +1484,20 @@ stateDiagram-v2
   Small --> Demo: menu
   Large --> Demo: menu
   Sized --> Demo: menu
-  Demo --> Saved: Usual size, double tap, page closed
+  Demo --> Saved: Usual size, double tap, card hidden
   Saved --> [*]
   note right of Demo: fills the thread's area, never saved
   note right of Saved: back to the saved size and place
 ```
 
-A task it links opens on top of the page, and back returns to it; its other
-ways out to a page close the page and her surface both. While her voice plays
-in the conversation and her latest reply lists tasks or charts logged time
-(`frontStagePointsProvider` over `frontLatestReplyHasVisual`, in
-`state/front_stage_pointing.dart`), the page's `pointsAtConversation` has her
-hold `GestureName.pointRight` at the task rows or the chart as she says them
-— only while her card is in the left half, the conversation to her right —
-and let her arm down when she stops. The bust keeps one tree whatever she
-does, so her animator lives through a start and a stop.
-
-The pane under the page stays mounted, its own composer included. A
-finished recording reaches only the composer on the current route
-(`AgentChatView` checks `ModalRoute.isCurrentOf`), so what is said on the
-stage lands once, in the stage's field; one that finishes while a page
-covers both lands in whichever is in front when the user comes back. The
-draft's spoken provenance is the composer state's (`draftSpoken`, cleared
-with an empty draft), not either view's, so a draft said in one view and
-sent from the other still goes out as a spoken turn, and her answer is
-spoken.
+While her voice plays in the conversation and her latest reply lists tasks
+or charts logged time (`frontStagePointsProvider` over
+`frontLatestReplyHasVisual`, in `state/front_stage_pointing.dart`), she
+holds `GestureName.pointRight` at the task rows or the chart as she says
+them — only while her card is in the left half, the conversation to her
+right — and lets her arm down when she stops. Otherwise she holds the turn's
+pose as her bust does (`FrontVoice.holdingOf`). The bust keeps one tree
+whatever she does, so her animator lives through a start and a stop.
 
 
 # Where it plugs in

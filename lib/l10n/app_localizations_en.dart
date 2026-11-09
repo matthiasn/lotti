@@ -7243,6 +7243,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get frontChatSearchChats => 'Search chats';
 
   @override
+  String get frontChatCompanionHide => 'Hide companion';
+
+  @override
+  String get frontChatCompanionShow => 'Show companion';
+
+  @override
   String get frontChatTitle => 'Companion';
 
   @override

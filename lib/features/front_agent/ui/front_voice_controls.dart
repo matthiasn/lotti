@@ -1,5 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/features/agents/ui/ai_summary_card/companion_stage_page.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/front_agent/model/front_chat_thread.dart';
 import 'package:lotti/features/front_agent/state/front_chat_controller.dart';
@@ -7,9 +6,7 @@ import 'package:lotti/features/front_agent/state/front_chat_thread_provider.dart
 import 'package:lotti/features/front_agent/state/front_conversation_providers.dart';
 import 'package:lotti/features/front_agent/state/front_inbox_filter.dart';
 import 'package:lotti/features/front_agent/state/front_journal_access_provider.dart';
-import 'package:lotti/features/front_agent/state/front_stage_pointing.dart';
 import 'package:lotti/features/front_agent/state/front_voice_providers.dart';
-import 'package:lotti/features/front_agent/ui/front_chat_pane.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_voice.dart';
 import 'package:lotti/features/tts/state/tts_playback_controller.dart';
 import 'package:lotti/features/tts/ui/widgets/tts_source_play_button.dart';
@@ -20,62 +17,6 @@ import 'package:material_ui/material_ui.dart';
 @visibleForTesting
 abstract final class FrontVoiceControlKeys {
   static const Key replay = Key('front-chat-voice-replay');
-  static const Key transcript = Key('front-chat-stage-transcript');
-}
-
-/// Opens her conversation full screen, her in a glass card floating over
-/// it ([CompanionStagePage]) — on a desktop window as on a phone — still
-/// speaking in [conversationId], her voice's control in the top row
-/// ([FrontVoiceButton]), and the conversation as it is outside, its field
-/// included ([FrontStageTranscript]), pointed at while she says the tasks it
-/// lists ([frontStagePointsProvider]).
-Future<void> openFrontStage(BuildContext context, String conversationId) =>
-    openCompanionStage(
-      context,
-      sourceId: frontVoiceSourceId(conversationId),
-      dressedFor: frontCompanionDressedFor,
-      controls: FrontVoiceButton(conversationId: conversationId),
-      conversation: ({required card, required bottomInset}) =>
-          FrontStageTranscript(card: card, bottomInset: bottomInset),
-      pointsAtConversation: frontStagePointsProvider(conversationId),
-    );
-
-/// The conversation on her stage: its thread and the field under it, on the
-/// conversation's own ground — the same chat as outside the stage, so
-/// whatever is typed or said is sent from here. Whatever leaves her for a
-/// page — a source, a project — closes the stage and her surface
-/// both, so the page opens on top rather than behind them; a task she names
-/// opens on top of the stage, and back returns to it. Her [card] floats over
-/// the thread, which keeps [bottomInset] of room after its last message.
-class FrontStageTranscript extends StatelessWidget {
-  const FrontStageTranscript({
-    required this.card,
-    required this.bottomInset,
-    super.key,
-  });
-
-  final Widget card;
-  final double bottomInset;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    return ColoredBox(
-      key: FrontVoiceControlKeys.transcript,
-      color: tokens.colors.background.level01,
-      child: SafeArea(
-        left: false,
-        child: FrontChatThreadView(
-          threadOverlay: card,
-          threadBottomInset: bottomInset,
-          onClose: () => Navigator.of(
-            context,
-            rootNavigator: true,
-          ).popUntil((route) => route.isFirst),
-        ),
-      ),
-    );
-  }
 }
 
 /// Her voice's control in [conversationId]: while she speaks it stops her;

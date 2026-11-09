@@ -1,17 +1,10 @@
-import 'package:flutter/services.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/query/query_source_access.dart';
 import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
-import 'package:lotti/features/agents/ui/ai_summary_card/companion_stage_page.dart';
 import 'package:lotti/features/companion/model/companion_customization.dart';
-import 'package:lotti/features/companion/model/companion_gesture.dart';
-import 'package:lotti/features/companion/state/companion_card_controller.dart';
 import 'package:lotti/features/companion/state/companion_customization_controller.dart';
-import 'package:lotti/features/companion/ui/companion_floating_card.dart';
-import 'package:lotti/features/companion/ui/companion_speaker.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/front_agent/model/front_chat_thread.dart';
 import 'package:lotti/features/front_agent/state/front_chat_controller.dart';
@@ -20,7 +13,6 @@ import 'package:lotti/features/front_agent/state/front_conversation_providers.da
 import 'package:lotti/features/front_agent/state/front_inbox_filter.dart';
 import 'package:lotti/features/front_agent/state/front_journal_access_provider.dart';
 import 'package:lotti/features/front_agent/state/front_voice_providers.dart';
-import 'package:lotti/features/front_agent/ui/front_chat_pane.dart';
 import 'package:lotti/features/front_agent/ui/front_voice_controls.dart';
 import 'package:lotti/features/tts/cloud/tts_cloud_route.dart';
 import 'package:lotti/features/tts/model/tts_playback_state.dart';
@@ -100,16 +92,8 @@ class _Composer extends FrontChatController {
   final bool sending;
 
   /// What was sent, as it was sent.
-  final sent = <String>[];
-
   @override
   FrontChatComposerState build() => FrontChatComposerState(isSending: sending);
-
-  @override
-  Future<void> sendText(String text, {bool spoken = false}) async {
-    sent.add(text);
-    updateDraft('');
-  }
 }
 
 /// A spoken reply still owed, or none.
@@ -151,9 +135,7 @@ void main() {
   );
 
   late _Voice voice;
-  late _Composer composer;
 
-  // Her card's placement is read from SettingsDb.
   setUp(setUpTestGetIt);
   tearDown(tearDownTestGetIt);
 
@@ -201,7 +183,7 @@ void main() {
             (ref) async => active,
           ),
           frontChatControllerProvider.overrideWith(
-            () => composer = _Composer(sending: sending),
+            () => _Composer(sending: sending),
           ),
           frontSpokenTurnProvider.overrideWith(
             () => _Spoken(owed: spokenOwed),
@@ -362,165 +344,4 @@ void main() {
       expect(find.byKey(FrontVoiceControlKeys.replay), findsNothing);
     });
   });
-
-  testWidgets('the stage control opens her conversation full screen, her '
-      'voice control in its top row', (tester) async {
-    await pump(tester, child: const _OpenStage());
-
-    await tester.tap(find.byType(_OpenStage));
-    for (var i = 0; i < 10; i++) {
-      await tester.pump(const Duration(milliseconds: 50));
-    }
-
-    final stage = tester.widget<CompanionStagePage>(
-      find.byType(CompanionStagePage),
-    );
-    expect(stage.sourceId, source);
-    expect(find.byKey(FrontVoiceControlKeys.replay), findsOneWidget);
-    await tester.tap(find.byTooltip('Say it again'));
-    await tester.pump();
-    expect(voice.spoken.single.sourceId, source);
-  });
-
-  Future<void> openStage(WidgetTester tester, Size size) async {
-    tester.view
-      ..physicalSize = size
-      ..devicePixelRatio = 1;
-    addTearDown(tester.view.reset);
-    await pump(tester, child: const _OpenStage());
-    await tester.tap(find.byType(_OpenStage));
-    for (var i = 0; i < 10; i++) {
-      await tester.pump(const Duration(milliseconds: 50));
-    }
-  }
-
-  Finder stageField() => find.descendant(
-    of: find.byKey(FrontVoiceControlKeys.transcript),
-    matching: find.byType(TextField),
-  );
-
-  for (final (form, size) in [
-    ('desktop window', const Size(1600, 1000)),
-    ('phone', const Size(390, 844)),
-  ]) {
-    testWidgets('on a $form what is typed on her stage is sent from it with '
-        'Enter, and the stage stays open', (tester) async {
-      await openStage(tester, size);
-
-      expect(stageField(), findsOne);
-      await tester.enterText(stageField(), 'Anything overdue?');
-      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
-      await tester.pump();
-
-      expect(composer.sent, ['Anything overdue?']);
-      expect(find.byType(CompanionStagePage), findsOne);
-    });
-  }
-
-  for (final (form, size) in [
-    ('desktop window', const Size(1600, 1000)),
-    ('phone', const Size(390, 844)),
-  ]) {
-    testWidgets('on a $form her card floats over the thread, above its field '
-        'and with room kept after its end', (tester) async {
-      await openStage(tester, size);
-
-      final card = tester.getRect(find.byKey(CompanionFloatingCardKeys.card));
-      expect(
-        card.bottom,
-        lessThanOrEqualTo(tester.getRect(stageField()).top),
-      );
-      final thread = tester.widget<FrontChatThreadView>(
-        find.byType(FrontChatThreadView),
-      );
-      expect(thread.threadOverlay, isA<CompanionFloatingCard>());
-      expect(thread.threadBottomInset, card.height + 16);
-    });
-  }
-
-  testWidgets('the page has one field, and a way out closes it', (
-    tester,
-  ) async {
-    await openStage(tester, const Size(1600, 1000));
-
-    // One field on the stage: the chat's own.
-    expect(
-      find.descendant(
-        of: find.byType(CompanionStagePage),
-        matching: find.byType(TextField),
-      ),
-      findsOne,
-    );
-
-    // A way out to a page closes the stage and everything under it.
-    tester
-        .widget<FrontChatThreadView>(find.byType(FrontChatThreadView))
-        .onClose();
-    await tester.pumpAndSettle();
-    expect(find.byType(CompanionStagePage), findsNothing);
-  });
-
-  testWidgets('moved to the left half, she points at the conversation while '
-      'she says the tasks her answer lists', (tester) async {
-    tester.view
-      ..physicalSize = const Size(1600, 1000)
-      ..devicePixelRatio = 1;
-    addTearDown(tester.view.reset);
-    await pump(
-      tester,
-      child: const _OpenStage(),
-      playing: const TtsPlaybackState(
-        status: TtsPlaybackStatus.playing,
-        sourceId: source,
-      ),
-      thread: FrontChatThread(
-        messages: [
-          message('u1', AgentChatRole.user, 'Anything overdue?', 0),
-          message(
-            'a1',
-            AgentChatRole.agent,
-            'Two:\n\n- [Count the eggs](lotti://task/t1)\n'
-                '- [Mend the nest](lotti://task/t2)',
-            1,
-          ),
-        ],
-      ),
-    );
-
-    await tester.tap(find.byType(_OpenStage));
-    for (var i = 0; i < 10; i++) {
-      await tester.pump(const Duration(milliseconds: 50));
-    }
-    GestureName? held() => tester
-        .widget<CompanionSpeaker>(
-          find.byKey(const ValueKey('companionStageFigure')),
-        )
-        .holding;
-    // In the corner she opens in, the conversation is to her left.
-    expect(held(), isNull);
-
-    ProviderScope.containerOf(tester.element(find.byType(CompanionSpeaker)))
-        .read(
-          companionCardControllerProvider(CompanionCardForm.desktop).notifier,
-        )
-        .moveBy(-1, 0);
-    await tester.pump();
-    expect(held(), GestureName.pointRight);
-
-    // Once she stops, her arm comes down.
-    await voice.stop();
-    await tester.pump();
-    expect(held(), isNull);
-  });
-}
-
-/// Opens her stage in conversation c-1, as the header's stage control does.
-class _OpenStage extends StatelessWidget {
-  const _OpenStage();
-
-  @override
-  Widget build(BuildContext context) => TextButton(
-    onPressed: () => openFrontStage(context, 'c-1'),
-    child: const Text('Open her stage'),
-  );
 }

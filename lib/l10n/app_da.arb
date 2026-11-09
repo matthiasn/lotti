@@ -3285,6 +3285,8 @@
   "frontChatActionFailed": "Det gik ikke igennem. Prøv igen.",
   "frontChatArchivedRow": "Arkiverede chats · {count}",
   "frontChatArchivedToast": "Chat arkiveret.",
+  "frontChatCompanionHide": "Skjul ledsager",
+  "frontChatCompanionShow": "Vis ledsager",
   "frontChatDeleteExplanation": "Slet denne chat? Dens beskeder skjules på alle enheder, men slettes ikke. Det, du har gemt fra chatten, bliver, hvor det er.",
   "frontChatEmpty": "Spørg om en opgave, et mål, et projekt eller en person, eller fortæl hvad der er sket. Den rette agent svarer, og intet arkiveres, før du trykker.",
   "frontChatInboxChip": "Indbakke {count}",

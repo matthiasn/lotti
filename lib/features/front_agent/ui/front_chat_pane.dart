@@ -2,10 +2,12 @@ import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/agents/query_chat_models.dart';
+import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/agents/ui/chat/agent_chat_view.dart';
 import 'package:lotti/features/agents/ui/chat/chat_recorder_controller.dart';
 import 'package:lotti/features/ai/state/subject_dictation_providers.dart';
+import 'package:lotti/features/companion/state/companion_card_controller.dart';
 import 'package:lotti/features/daily_os_next/state/selected_date_provider.dart';
 import 'package:lotti/features/design_system/components/chat_input/design_system_chat_input.dart';
 import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
@@ -37,6 +39,7 @@ import 'package:lotti/features/tasks/util/task_navigation.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/color.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/device_datetime.dart';
 import 'package:lotti/utils/goal_routes.dart';
 import 'package:lotti/widgets/markdown_link_utils.dart';
@@ -149,22 +152,12 @@ class FrontChatPane extends ConsumerWidget {
 }
 
 /// One conversation's thread and the field under it — or, while the inbox is
-/// on, every turn still waiting on the user. In the pane under her header,
-/// and on her full-screen page, with her floating over it.
+/// on, every turn still waiting on the user. In the pane under her header;
+/// while the header's face has it shown ([frontCompanionCardShownProvider]),
+/// her glass card floats over the thread ([FrontCompanionCard]), fading in
+/// and out where the user left it.
 class FrontChatThreadView extends ConsumerWidget {
-  const FrontChatThreadView({
-    required this.onClose,
-    this.threadOverlay,
-    this.threadBottomInset = 0,
-    super.key,
-  });
-
-  /// Floats over the thread: her card on her full-screen page
-  /// ([AgentChatView.threadOverlay]).
-  final Widget? threadOverlay;
-
-  /// Room after the last message for [threadOverlay].
-  final double threadBottomInset;
+  const FrontChatThreadView({required this.onClose, super.key});
 
   /// Closes her surface. Everything that leaves her for a page goes through
   /// this, never `maybePop`: while the list or the inbox is open, back is
@@ -216,6 +209,27 @@ class FrontChatThreadView extends ConsumerWidget {
     final inboxOnly = ref.watch(frontInboxFilterProvider);
     final conversationId = ref.watch(frontActiveConversationProvider).value;
     final inboxIds = thread?.inboxMessageIds ?? const <String>{};
+    // Her card goes with her figure and her voice: never with the character
+    // off, nor in the inbox, which gathers every conversation.
+    final cardFor =
+        ref.watch(frontCompanionCardShownProvider) &&
+            !inboxOnly &&
+            (ref.watch(configFlagProvider(enableCompanionFlag)).value ?? false)
+        ? conversationId
+        : null;
+    final cardForm = isDesktopLayout(context)
+        ? CompanionCardForm.desktop
+        : CompanionCardForm.phone;
+    // Room for her wherever she sits: an inset that came and went with her
+    // position would shift the thread under a drag.
+    final cardInset = cardFor == null
+        ? 0.0
+        : ref.watch(
+                companionCardControllerProvider(
+                  cardForm,
+                ).select((p) => p.height),
+              ) +
+              context.designTokens.spacing.step5;
     final shown = inboxOnly
         ? history.whenData(
             (messages) => [
@@ -303,8 +317,13 @@ class FrontChatThreadView extends ConsumerWidget {
 
     return AgentChatView(
       agentId: frontAgentId,
-      threadOverlay: threadOverlay,
-      threadBottomInset: threadBottomInset,
+      threadOverlay: AnimatedSwitcher(
+        duration: MotionDurations.short4,
+        child: cardFor == null
+            ? const SizedBox.shrink()
+            : FrontCompanionCard(conversationId: cardFor, form: cardForm),
+      ),
+      threadBottomInset: cardInset,
       agentName: messages.frontChatTitle,
       // Each conversation keeps its own scroll position.
       conversationId: inboxOnly

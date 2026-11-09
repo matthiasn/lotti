@@ -3285,6 +3285,8 @@
   "frontChatActionFailed": "Det gick inte. Försök igen.",
   "frontChatArchivedRow": "Arkiverade chattar · {count}",
   "frontChatArchivedToast": "Chatten arkiverad.",
+  "frontChatCompanionHide": "Dölj följeslagare",
+  "frontChatCompanionShow": "Visa följeslagare",
   "frontChatDeleteExplanation": "Radera den här chatten? Dess meddelanden döljs på alla enheter men raderas inte. Det du har sparat från chatten stannar där det är.",
   "frontChatEmpty": "Fråga om en uppgift, ett mål, ett projekt eller en person, eller berätta vad som hänt. Rätt agent svarar, och inget arkiveras förrän du trycker.",
   "frontChatInboxChip": "Inkorg {count}",

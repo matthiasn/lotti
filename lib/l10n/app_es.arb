@@ -2940,6 +2940,8 @@
   "frontChatActionFailed": "No se pudo hacer. Inténtalo de nuevo.",
   "frontChatArchivedRow": "Chats archivados · {count}",
   "frontChatArchivedToast": "Chat archivado.",
+  "frontChatCompanionHide": "Ocultar acompañante",
+  "frontChatCompanionShow": "Mostrar acompañante",
   "frontChatDeleteExplanation": "¿Borrar este chat? Sus mensajes se ocultan en todos los dispositivos, no se eliminan. Lo que guardaste desde este chat se queda donde está.",
   "frontChatEmpty": "Pregunta por una tarea, un objetivo, un proyecto o una persona, o cuenta lo que pasó. Responde el agente adecuado, y nada se archiva hasta que toques.",
   "frontChatInboxChip": "Bandeja {count}",

@@ -7390,6 +7390,12 @@ class AppLocalizationsRo extends AppLocalizations {
   String get frontChatSearchChats => 'Căutați în conversații';
 
   @override
+  String get frontChatCompanionHide => 'Ascundeți însoțitorul';
+
+  @override
+  String get frontChatCompanionShow => 'Afișați însoțitorul';
+
+  @override
   String get frontChatTitle => 'Însoțitor';
 
   @override

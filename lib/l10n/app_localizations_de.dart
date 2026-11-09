@@ -7324,6 +7324,12 @@ class AppLocalizationsDe extends AppLocalizations {
   String get frontChatSearchChats => 'Chats durchsuchen';
 
   @override
+  String get frontChatCompanionHide => 'Begleitung ausblenden';
+
+  @override
+  String get frontChatCompanionShow => 'Begleitung zeigen';
+
+  @override
   String get frontChatTitle => 'Begleitung';
 
   @override

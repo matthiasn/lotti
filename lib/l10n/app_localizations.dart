@@ -12407,6 +12407,18 @@ abstract class AppLocalizations {
   /// **'Search chats'**
   String get frontChatSearchChats;
 
+  /// Tooltip and screen-reader label on the companion's face in the chat header while her floating card is shown: a tap hides the card.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide companion'**
+  String get frontChatCompanionHide;
+
+  /// Tooltip and screen-reader label on the companion's face in the chat header while her floating card is hidden: a tap shows the card over the conversation.
+  ///
+  /// In en, this message translates to:
+  /// **'Show companion'**
+  String get frontChatCompanionShow;
+
   /// No description provided for @frontChatTitle.
   ///
   /// In en, this message translates to:
