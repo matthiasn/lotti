@@ -4,6 +4,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.95]
+
+### Changed
+
+- **The Manual now opens the manual of the version you have installed.** Every
+  link to it (Settings, the Contact Us row, the desktop Help menu and the sync
+  setup guide) used to open the newest unreleased text, which could describe
+  features your build did not have yet. It now opens the manual published with
+  your release, in your language.
+- **The companion sums logged time for any days you ask about.** "How much did
+  I log in the past 14 days?" or "from June 1st to June 5th" used to fall back
+  to a fixed span such as the past seven days. She now sums exactly the days
+  you name, up to a year, and the chart under her answer shows those days: one
+  bar per day, or one per week for more than 120 days. A range from another
+  year is titled with its year.
+- **The companion now floats over your conversation in a small glass card.**
+  The full-screen view used to split the screen, the companion on a panel of
+  its own above the chat. Now the chat fills the screen and the companion sits
+  in a card you can drag anywhere, double-tap to switch between small and
+  large, pinch to any size, or long-press (right-click on a desktop) for a
+  demo size, restyle and reset. It reopens where you left it, separately on
+  phone and desktop, and stays clear of the notch and the dynamic island.
+
 ## [1.1.94]
 
 ### Added
