@@ -2,6 +2,8 @@ import 'dart:convert';
 
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
+import 'package:lotti/classes/event_data.dart';
+import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -361,6 +363,25 @@ final testRelationship = RelationshipEntry(
     dateTo: DateTime(2026, 8, 1, 9),
     updatedAt: DateTime(2026, 8, 1, 9),
   ),
+);
+
+/// An event the penguin crew holds — tentative, unrated and without a
+/// cover, as a tap in the companion's inbox makes one. Shared by the suites
+/// that draw an event's preview.
+final testRehearsalEvent = JournalEvent(
+  data: const EventData(
+    title: 'Launch-day rehearsal at the ice pad',
+    stars: 0,
+    status: EventStatus.tentative,
+  ),
+  meta: Metadata(
+    id: '6c1f6c3e-9a4d-4b8e-8f0a-1d2e3f4a5b6c',
+    createdAt: DateTime(2026, 11, 9, 10),
+    dateFrom: DateTime(2026, 11, 9, 10),
+    dateTo: DateTime(2026, 11, 9, 10),
+    updatedAt: DateTime(2026, 11, 9, 10),
+  ),
+  entryText: const EntryText(plainText: ''),
 );
 
 final testWeightEntry = QuantitativeEntry(

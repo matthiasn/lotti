@@ -4,6 +4,7 @@ import 'package:lotti/features/categories/ui/widgets/category_color_icon.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
+import 'package:lotti/features/events/ui/widgets/linked_event_card.dart';
 import 'package:lotti/features/front_agent/model/front_entity_preview.dart';
 import 'package:lotti/features/front_agent/state/front_entity_preview_provider.dart';
 import 'package:lotti/features/tasks/ui/cover_art_thumbnail.dart';
@@ -26,8 +27,9 @@ abstract final class FrontEntityPreviewKeys {
   static Key estimate(String id) => Key('front-entity-preview-estimate-$id');
 }
 
-/// The entities a reply made, as a stack of compact preview cards under her
-/// words. [onOpen] is given the reference of the card tapped.
+/// The entities a reply made, as a stack of preview cards under her words —
+/// a task as a compact card, an event as the app's event card. [onOpen] is
+/// given the reference of the card tapped.
 class FrontEntityPreviewList extends StatelessWidget {
   const FrontEntityPreviewList({
     required this.references,
@@ -46,11 +48,18 @@ class FrontEntityPreviewList extends StatelessWidget {
     spacing: context.designTokens.spacing.step2,
     children: [
       for (final reference in references)
-        FrontEntityPreviewCompactCard(
-          key: FrontEntityPreviewKeys.card(reference.id),
-          reference: reference,
-          onTap: () => onOpen(reference),
-        ),
+        switch (reference.kind) {
+          FrontEntityKind.task => FrontEntityPreviewCompactCard(
+            key: FrontEntityPreviewKeys.card(reference.id),
+            reference: reference,
+            onTap: () => onOpen(reference),
+          ),
+          FrontEntityKind.event => FrontEntityPreviewRichCard(
+            key: FrontEntityPreviewKeys.card(reference.id),
+            reference: reference,
+            onTap: () => onOpen(reference),
+          ),
+        },
     ],
   );
 }
@@ -72,11 +81,65 @@ class FrontEntityPreviewCompactCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final tokens = context.designTokens;
     // `.value`: a reload keeps the card as it was until the new one lands.
     final preview = ref
         .watch(frontEntityPreviewProvider((reference.kind, reference.id)))
         .value;
+    return switch (preview) {
+      final FrontTaskPreview task => _PreviewSurface(
+        child: _TaskPreviewContent(task: task, onTap: onTap),
+      ),
+      FrontEventPreview() || null => _TitleOnly(
+        reference: reference,
+        onTap: onTap,
+      ),
+    };
+  }
+}
+
+/// One event as the app draws it wherever an event is linked — its cover,
+/// title and rating, category, date and status, and its summary — kept
+/// current as it changes. A tap opens it. Until it has loaded, or if it is
+/// gone, the title it was made with stands alone, and still opens it.
+class FrontEntityPreviewRichCard extends ConsumerWidget {
+  const FrontEntityPreviewRichCard({
+    required this.reference,
+    required this.onTap,
+    super.key,
+  });
+
+  final FrontEntityReference reference;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // `.value`: a reload keeps the card as it was until the new one lands.
+    final preview = ref
+        .watch(frontEntityPreviewProvider((reference.kind, reference.id)))
+        .value;
+    return switch (preview) {
+      FrontEventPreview(:final event) => LinkedEventCard(
+        event: event,
+        onTap: onTap,
+      ),
+      FrontTaskPreview() || null => _TitleOnly(
+        reference: reference,
+        onTap: onTap,
+      ),
+    };
+  }
+}
+
+/// A preview card's surface: the card colour, the medium radius and a
+/// hairline border.
+class _PreviewSurface extends StatelessWidget {
+  const _PreviewSurface({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
     return DecoratedBox(
       decoration: BoxDecoration(
         color: dsCardSurface(context),
@@ -88,22 +151,31 @@ class FrontEntityPreviewCompactCard extends ConsumerWidget {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(tokens.radii.m),
-        child: switch (preview) {
-          final FrontTaskPreview task => _TaskPreviewContent(
-            task: task,
-            onTap: onTap,
-          ),
-          null => DesignSystemListItem(
-            title: reference.title,
-            titleMaxLines: 2,
-            size: DesignSystemListItemSize.small,
-            onTap: onTap,
-            trailingExtra: const _Chevron(),
-          ),
-        },
+        child: child,
       ),
     );
   }
+}
+
+/// The title an entity was made with, alone on a card, still opening it:
+/// what a card shows before its preview has loaded and after the entity is
+/// gone.
+class _TitleOnly extends StatelessWidget {
+  const _TitleOnly({required this.reference, required this.onTap});
+
+  final FrontEntityReference reference;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => _PreviewSurface(
+    child: DesignSystemListItem(
+      title: reference.title,
+      titleMaxLines: 2,
+      size: DesignSystemListItemSize.small,
+      onTap: onTap,
+      trailingExtra: const _Chevron(),
+    ),
+  );
 }
 
 /// A task's card content, from its live [task] preview.

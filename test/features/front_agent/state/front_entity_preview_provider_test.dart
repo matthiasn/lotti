@@ -1,11 +1,17 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
-import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_entity_preview.dart';
 import 'package:lotti/features/front_agent/state/front_entity_preview_provider.dart';
 import 'package:lotti/features/tasks/state/task_preview_provider.dart';
+import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/providers/update_notifications_providers.dart';
+import 'package:mocktail/mocktail.dart';
 
+import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
 
 void main() {
@@ -26,23 +32,39 @@ void main() {
 
   late Map<String, TaskPreview?> previews;
   late List<String> taskReads;
+  late MockJournalDb journalDb;
+  late StreamController<Set<String>> updates;
   late ProviderContainer container;
 
   setUp(() {
     previews = {};
     taskReads = [];
+    journalDb = MockJournalDb();
+    when(
+      () => journalDb.journalEntityById(any()),
+    ).thenAnswer((_) async => null);
+    updates = StreamController<Set<String>>.broadcast();
+    addTearDown(updates.close);
+    final notifications = MockUpdateNotifications();
+    when(() => notifications.updateStream).thenAnswer((_) => updates.stream);
     container = ProviderContainer(
       overrides: [
         taskPreviewProvider.overrideWith((ref, id) async {
           taskReads.add(id);
           return previews[id];
         }),
+        journalDbProvider.overrideWithValue(journalDb),
+        updateNotificationsProvider.overrideWithValue(notifications),
       ],
     );
     addTearDown(container.dispose);
   });
 
-  Future<FrontEntityPreview?> read(FrontDestinationKind kind, String id) {
+  void stubEntity(String id, JournalEntity? entity) => when(
+    () => journalDb.journalEntityById(id),
+  ).thenAnswer((_) async => entity);
+
+  Future<FrontEntityPreview?> read(FrontEntityKind kind, String id) {
     final sub = container.listen(
       frontEntityPreviewProvider((kind, id)),
       (_, _) {},
@@ -88,7 +110,7 @@ void main() {
     test("resolves a task to its card's preview", () async {
       previews['ice-pad'] = TaskPreview(task: iceTask, oneLiner: 'Windy');
 
-      final preview = await read(FrontDestinationKind.task, 'ice-pad');
+      final preview = await read(FrontEntityKind.task, 'ice-pad');
 
       expect(
         preview,
@@ -99,14 +121,14 @@ void main() {
     });
 
     test('is null for a task that is gone', () async {
-      expect(await read(FrontDestinationKind.task, 'deleted'), isNull);
+      expect(await read(FrontEntityKind.task, 'deleted'), isNull);
       expect(taskReads, ['deleted']);
     });
 
     test('follows the task as it changes: a status set after the turn shows '
         'on the card', () async {
       previews['ice-pad'] = TaskPreview(task: iceTask);
-      final first = await read(FrontDestinationKind.task, 'ice-pad');
+      final first = await read(FrontEntityKind.task, 'ice-pad');
       expect((first! as FrontTaskPreview).settled, isFalse);
 
       previews['ice-pad'] = TaskPreview(
@@ -119,7 +141,7 @@ void main() {
       container.invalidate(taskPreviewProvider('ice-pad'));
       final again = await container.read(
         frontEntityPreviewProvider((
-          FrontDestinationKind.task,
+          FrontEntityKind.task,
           'ice-pad',
         )).future,
       );
@@ -127,16 +149,75 @@ void main() {
       expect((again! as FrontTaskPreview).settled, isTrue);
     });
 
-    for (final kind in FrontDestinationKind.values.where(
-      (kind) => kind != FrontDestinationKind.task,
-    )) {
-      test(
-        'has no preview yet for a ${kind.wireName}, and reads no task',
-        () async {
-          expect(await read(kind, 'x'), isNull);
-          expect(taskReads, isEmpty);
-        },
-      );
-    }
+    test('a task reference reads no event', () async {
+      await read(FrontEntityKind.task, 'ice-pad');
+
+      verifyNever(() => journalDb.journalEntityById(any()));
+    });
+
+    group('an event', () {
+      final eventId = testRehearsalEvent.meta.id;
+
+      test('resolves to the event as stored, and reads no task', () async {
+        stubEntity(eventId, testRehearsalEvent);
+
+        expect(
+          await read(FrontEntityKind.event, eventId),
+          FrontEventPreview(testRehearsalEvent),
+        );
+        expect(taskReads, isEmpty);
+      });
+
+      test('is null once gone, deleted, or not an event at all', () async {
+        expect(await read(FrontEntityKind.event, 'gone'), isNull);
+
+        stubEntity(
+          'deleted',
+          testRehearsalEvent.copyWith(
+            meta: testRehearsalEvent.meta.copyWith(
+              id: 'deleted',
+              deletedAt: DateTime(2026, 11, 10),
+            ),
+          ),
+        );
+        expect(await read(FrontEntityKind.event, 'deleted'), isNull);
+
+        stubEntity(testTask.meta.id, testTask);
+        expect(await read(FrontEntityKind.event, testTask.meta.id), isNull);
+      });
+
+      test('follows the event as it changes: a notification naming it reads '
+          'it again', () async {
+        stubEntity(eventId, testRehearsalEvent);
+        expect(
+          await read(FrontEntityKind.event, eventId),
+          FrontEventPreview(testRehearsalEvent),
+        );
+
+        final rated = testRehearsalEvent.copyWith(
+          data: testRehearsalEvent.data.copyWith(stars: 4),
+        );
+        stubEntity(eventId, rated);
+        updates.add({'another-entry'});
+        await pumpEventQueue();
+        expect(
+          container
+              .read(
+                frontEntityPreviewProvider((FrontEntityKind.event, eventId)),
+              )
+              .value,
+          FrontEventPreview(testRehearsalEvent),
+        );
+
+        updates.add({eventId});
+        await pumpEventQueue();
+        expect(
+          await container.read(
+            frontEntityPreviewProvider((FrontEntityKind.event, eventId)).future,
+          ),
+          FrontEventPreview(rated),
+        );
+      });
+    });
   });
 }

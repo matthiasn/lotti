@@ -4540,6 +4540,7 @@
   "frontDoorDayPlanned": "Today's plan changed",
   "frontDoorDayProposal": "Change today's plan?",
   "frontDoorDeclined": "Not filed",
+  "frontDoorEventCreated": "Made into an event",
   "frontDoorFailed": "Asking {owner} failed.",
   "@frontDoorFailed": {
     "placeholders": {
@@ -4583,6 +4584,7 @@
   "frontDoorKindTask": "the task",
   "frontDoorLeaveIt": "Leave it",
   "frontDoorLeft": "Left here in the thread",
+  "frontDoorMakeEvent": "Make it an event",
   "frontDoorMakeTask": "Make it a task",
   "frontDoorNewProject": "New project…",
   "frontDoorNoAgent": "{owner} has no agent to ask yet.",

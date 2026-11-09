@@ -765,6 +765,7 @@ void main() {
       when(() => filing.takeBack('d')).thenAnswer((_) async {});
       when(() => filing.makeTask('d')).thenAnswer((_) async {});
       when(() => filing.saveAsNote('d')).thenAnswer((_) async {});
+      when(() => filing.makeEvent('d')).thenAnswer((_) async {});
       final day = DateTime(2026, 11);
       when(() => filing.markDayPlanned('d', day)).thenAnswer((_) async {});
       when(() => filing.markProjectCreated('d', 'p')).thenAnswer((_) async {});
@@ -772,6 +773,7 @@ void main() {
       await controller().takeBack('d');
       await controller().makeTask('d');
       await controller().saveAsNote('d');
+      await controller().makeEvent('d');
       await controller().planDay('d', () async => day);
       await controller().newProject('d', () async => 'p');
       // Nothing accepted, nothing made: nothing settles.
@@ -782,6 +784,7 @@ void main() {
         () => filing.takeBack('d'),
         () => filing.makeTask('d'),
         () => filing.saveAsNote('d'),
+        () => filing.makeEvent('d'),
         () => filing.markDayPlanned('d', day),
         () => filing.markProjectCreated('d', 'p'),
       ]);

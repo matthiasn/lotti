@@ -1,7 +1,7 @@
 # Entity preview cards in the front agent chat
 
 **Date:** 2026-11-09
-**Status:** Draft
+**Status:** Phases 1 and 2 implemented
 
 ## Problem
 
@@ -208,6 +208,18 @@ implementation — these token choices are a starting point, not final.
 - Thread builder populates from doors and check-in filing
 - Navigation: tap closes surface and beams to event detail
 - Tests
+
+As built: none of the event sources above existed — the router has no
+`new(event)`, nothing files check-ins, and events are not in her index — so
+Phase 2 adds the one the user picks: *Make it an event* on an inbox item,
+which records `FrontDoorEventCreated` (Open goes to `/events/:id`, Undo
+deletes the event and the item waits again). A preview's kind is its own
+`FrontEntityKind { task, event }`, so `event` never becomes a routing
+destination. The rich card is `LinkedEventCard` → `EventSummaryCard`, the
+event card the app already draws wherever an event is linked (cover,
+rating, category, date, status pill, summary, counts); people are not on
+it, as they are not on that card anywhere else. Router guessing of events
+(`new(event)`) stays out of scope.
 
 ### Phase 3 — Section grouping and answer enrichment
 - Section labels in the reply body ("Due this week", "Upcoming events")

@@ -2,6 +2,8 @@ import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/entry_text.dart';
+import 'package:lotti/classes/event_data.dart';
+import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
@@ -30,6 +32,8 @@ void main() {
   late List<AgentDomainEntity> upserts;
   late List<(String, String, String?, String?)> written;
   late List<(String, String)> madeTasks;
+  late List<(String, String)> madeEvents;
+  late JournalEvent? Function(String title) eventFor;
   late List<(FrontTaskDraft, String)> madeDrafts;
   late List<String> deleted;
   late bool deleteResult;
@@ -111,6 +115,11 @@ void main() {
     upserts = [];
     written = [];
     madeTasks = [];
+    madeEvents = [];
+    eventFor = (title) => JournalEvent(
+      meta: meta('event-new'),
+      data: EventData(title: title, stars: 0, status: EventStatus.tentative),
+    );
     madeDrafts = [];
     deleted = [];
     deleteResult = true;
@@ -137,6 +146,10 @@ void main() {
         madeTasks.add((draft.title, id));
         madeDrafts.add((draft, words));
         return taskFor(draft.title);
+      },
+      makeEvent: (title, {required id}) async {
+        madeEvents.add((title, id));
+        return eventFor(title);
       },
       deleteEntry: (id) async {
         deleted.add(id);
@@ -494,6 +507,40 @@ void main() {
       },
     );
 
+    test('an event made of an inbox item is deleted and the item is back in '
+        'the inbox, one generation on, leading as it did', () async {
+      seed(
+        const FrontDoorEventCreated(
+          eventId: 'event-new',
+          newKind: FrontNewKind.goal,
+          generation: 1,
+        ),
+        kind: FrontDestinationKind.newThing,
+        destinationId: null,
+      );
+
+      await service.takeBack(doorId);
+
+      expect(deleted, ['event-new']);
+      final inbox = rewritten().outcome! as FrontDoorInbox;
+      expect(inbox.newKind, FrontNewKind.goal);
+      expect(inbox.generation, 2);
+    });
+
+    test(
+      'an event still there after the delete leaves the door as it was',
+      () async {
+        seed(const FrontDoorEventCreated(eventId: 'event-new'));
+        deleteResult = false;
+        when(() => journalDb.journalEntityById('event-new')).thenAnswer(
+          (_) async => eventFor('still here'),
+        );
+
+        await expectLater(service.takeBack(doorId), throwsStateError);
+        expect(upserts, isEmpty);
+      },
+    );
+
     test('a door that wrote nothing has nothing to take back', () async {
       seed(const FrontDoorDeclined(ownerId: 'garden'));
       await expectLater(
@@ -600,6 +647,68 @@ void main() {
       },
     );
 
+    test(
+      'makeEvent titles an event with the trimmed words under the id the '
+      "door names, and records it with the item's guess and generation",
+      () async {
+        seed(
+          const FrontDoorInbox(newKind: FrontNewKind.project, generation: 2),
+          kind: FrontDestinationKind.newThing,
+          destinationId: null,
+          text: '  Launch-day rehearsal on Friday. ',
+        );
+
+        await service.makeEvent(doorId);
+
+        expect(madeEvents, [
+          (
+            'Launch-day rehearsal on Friday.',
+            frontDoorEventId(doorId, generation: 2),
+          ),
+        ]);
+        final made = rewritten().outcome! as FrontDoorEventCreated;
+        expect(made.eventId, 'event-new');
+        expect(made.newKind, FrontNewKind.project);
+        expect(made.generation, 2);
+        verify(
+          () => notifications.notifyUiOnly({frontAgentId, agentNotification}),
+        ).called(1);
+      },
+    );
+
+    test(
+      'an event that was not created leaves the item in the inbox',
+      () async {
+        seed(
+          const FrontDoorInbox(),
+          kind: FrontDestinationKind.unrouted,
+          destinationId: null,
+        );
+        eventFor = (_) => null;
+
+        await expectLater(service.makeEvent(doorId), throwsStateError);
+        expect(upserts, isEmpty);
+      },
+    );
+
+    test('each generation of an item gets an event id of its own, and the '
+        'same door and generation the same one', () {
+      expect(
+        frontDoorEventId(doorId, generation: 0),
+        frontDoorEventId(doorId, generation: 0),
+      );
+      expect(
+        {
+          frontDoorEventId(doorId, generation: 0),
+          frontDoorEventId(doorId, generation: 1),
+          frontDoorEventId('other:door:0', generation: 0),
+          frontDoorTaskId(doorId),
+          frontDoorNoteId(doorId),
+        },
+        hasLength(5),
+      );
+    });
+
     test('a note that was not written leaves the item in the inbox', () async {
       seed(
         const FrontDoorInbox(),
@@ -622,7 +731,7 @@ void main() {
       expect(upserts, isEmpty);
     });
 
-    test('an item already taken somewhere refuses both actions', () async {
+    test('an item already taken somewhere refuses every action', () async {
       seed(const FrontDoorTaskCreated(taskId: 't'));
       await expectLater(
         service.saveAsNote(doorId),
@@ -632,6 +741,11 @@ void main() {
         service.makeTask(doorId),
         throwsA(isA<FrontDoorStateException>()),
       );
+      await expectLater(
+        service.makeEvent(doorId),
+        throwsA(isA<FrontDoorStateException>()),
+      );
+      expect(madeEvents, isEmpty);
     });
   });
 }

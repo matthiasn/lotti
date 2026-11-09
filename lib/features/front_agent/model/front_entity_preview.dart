@@ -1,6 +1,12 @@
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
-import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:meta/meta.dart';
+
+/// The kinds of entity her chat draws a preview card for.
+///
+/// Its own set, not the router's destinations: an event is something a tap
+/// makes, never somewhere the router sends words.
+enum FrontEntityKind { task, event }
 
 /// An entity a reply of hers shows as a preview card: which it is, and the
 /// title it had when the turn was walked — what the card says until the
@@ -17,7 +23,7 @@ class FrontEntityReference {
     required this.title,
   });
 
-  final FrontDestinationKind kind;
+  final FrontEntityKind kind;
   final String id;
   final String title;
 
@@ -32,17 +38,18 @@ class FrontEntityReference {
   int get hashCode => Object.hash(kind, id, title);
 
   @override
-  String toString() => 'FrontEntityReference(${kind.wireName}, $id, $title)';
+  String toString() => 'FrontEntityReference(${kind.name}, $id, $title)';
 }
 
-/// What a glance at an entity shows in her chat, before opening it: only the
-/// fields its card draws, not the whole domain object.
+/// What a glance at an entity shows in her chat, before opening it: what its
+/// card draws — a task's glance-level fields, an event as the app's own
+/// event card reads it.
 @immutable
 sealed class FrontEntityPreview {
   const FrontEntityPreview({required this.entityId, required this.entityKind});
 
   final String entityId;
-  final FrontDestinationKind entityKind;
+  final FrontEntityKind entityKind;
 }
 
 /// A task as its preview card shows it: its cover, title, its agent's
@@ -59,7 +66,7 @@ class FrontTaskPreview extends FrontEntityPreview {
     this.categoryId,
     this.coverArtId,
     this.coverArtCropX = 0.5,
-  }) : super(entityKind: FrontDestinationKind.task);
+  }) : super(entityKind: FrontEntityKind.task);
 
   final String title;
   final TaskStatus status;
@@ -106,4 +113,25 @@ class FrontTaskPreview extends FrontEntityPreview {
 
   @override
   String toString() => 'FrontTaskPreview($entityId, $title)';
+}
+
+/// An event as its preview card shows it: the event itself, because the
+/// card is the event card the app draws everywhere else an event is linked
+/// — cover, rating, category, date, status and summary resolved from it and
+/// its links the way its own page resolves them, so the two never disagree.
+class FrontEventPreview extends FrontEntityPreview {
+  FrontEventPreview(this.event)
+    : super(entityId: event.meta.id, entityKind: FrontEntityKind.event);
+
+  final JournalEvent event;
+
+  @override
+  bool operator ==(Object other) =>
+      other is FrontEventPreview && other.event == event;
+
+  @override
+  int get hashCode => event.hashCode;
+
+  @override
+  String toString() => 'FrontEventPreview($entityId, ${event.data.title})';
 }

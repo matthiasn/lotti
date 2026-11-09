@@ -150,6 +150,15 @@ sealed class FrontDoorOutcome {
             _ => null,
           },
         );
+      case 'eventCreated':
+        final eventId = map['eventId'];
+        if (eventId is! String) return null;
+        final generation = map['generation'];
+        return FrontDoorEventCreated(
+          eventId: eventId,
+          newKind: FrontNewKind.fromName(map['newKind']),
+          generation: generation is int ? generation : 0,
+        );
       default:
         return null;
     }
@@ -275,6 +284,28 @@ class FrontDoorTaskCreated extends FrontDoorOutcome {
     if (newKind != null) 'newKind': newKind!.name,
     if (generation > 0) 'generation': generation,
     if (at != null) 'at': at!.toUtc().toIso8601String(),
+  };
+}
+
+/// The user made an event of the segment, titled with their words.
+/// [newKind] and [generation] are the inbox item's, kept for a take-back.
+class FrontDoorEventCreated extends FrontDoorOutcome {
+  const FrontDoorEventCreated({
+    required this.eventId,
+    this.newKind,
+    this.generation = 0,
+  });
+
+  final String eventId;
+  final FrontNewKind? newKind;
+  final int generation;
+
+  @override
+  Map<String, Object?> toJson() => {
+    'type': 'eventCreated',
+    'eventId': eventId,
+    if (newKind != null) 'newKind': newKind!.name,
+    if (generation > 0) 'generation': generation,
   };
 }
 

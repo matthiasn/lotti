@@ -7459,6 +7459,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get frontDoorDeclined => 'Neînregistrat';
 
   @override
+  String get frontDoorEventCreated => 'Transformat în eveniment';
+
+  @override
   String frontDoorFailed(String owner) {
     return 'Întrebarea către $owner a eșuat.';
   }
@@ -7512,6 +7515,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get frontDoorLeft => 'Lăsat aici, în conversație';
+
+  @override
+  String get frontDoorMakeEvent => 'Transformați în eveniment';
 
   @override
   String get frontDoorMakeTask => 'Transformați în sarcină';

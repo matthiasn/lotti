@@ -7347,6 +7347,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get frontDoorDeclined => 'Inte sparat';
 
   @override
+  String get frontDoorEventCreated => 'Gjort till ett evenemang';
+
+  @override
   String frontDoorFailed(String owner) {
     return 'Det gick inte att fråga $owner.';
   }
@@ -7400,6 +7403,9 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get frontDoorLeft => 'Lämnat här i tråden';
+
+  @override
+  String get frontDoorMakeEvent => 'Gör till ett evenemang';
 
   @override
   String get frontDoorMakeTask => 'Gör till en uppgift';

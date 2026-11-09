@@ -1,18 +1,20 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
-import 'package:lotti/features/front_agent/model/front_dispatch.dart';
+import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/front_agent/model/front_entity_preview.dart';
 import 'package:lotti/features/tasks/state/task_preview_provider.dart';
+import 'package:lotti/providers/service_providers.dart';
 
 /// Which entity a preview is of: its kind and its id.
-typedef FrontEntityKey = (FrontDestinationKind kind, String id);
+typedef FrontEntityKey = (FrontEntityKind kind, String id);
 
 /// The live preview of an entity her chat shows a card for, or null when it
-/// is gone — deleted, not of the kind named — or of a kind that has no
-/// preview yet.
+/// is gone — deleted, or not of the kind named.
 ///
-/// A task's comes from [taskPreviewProvider], so it refreshes whenever a
-/// notification names the task: a new report, a rename, a status change.
+/// Both refresh whenever a notification names the entity. A task's comes
+/// from [taskPreviewProvider], so a new report, a rename or a status change
+/// shows; an event's is the event as stored now.
 final FutureProviderFamily<FrontEntityPreview?, FrontEntityKey>
 frontEntityPreviewProvider = FutureProvider.autoDispose
     .family<FrontEntityPreview?, FrontEntityKey>(
@@ -26,18 +28,14 @@ Future<FrontEntityPreview?> frontEntityPreview(
 ) async {
   final (kind, id) = key;
   switch (kind) {
-    case FrontDestinationKind.task:
+    case FrontEntityKind.task:
       final preview = await ref.watch(taskPreviewProvider(id).future);
       return preview == null ? null : frontTaskPreviewOf(preview);
-    // No preview card of their own yet.
-    case FrontDestinationKind.project:
-    case FrontDestinationKind.goal:
-    case FrontDestinationKind.person:
-    case FrontDestinationKind.day:
-    case FrontDestinationKind.newThing:
-    case FrontDestinationKind.journal:
-    case FrontDestinationKind.unrouted:
-      return null;
+    case FrontEntityKind.event:
+      ref.watch(agentUpdateStreamProvider(id));
+      final event = await ref.watch(journalDbProvider).journalEntityById(id);
+      if (event is! JournalEvent || event.meta.deletedAt != null) return null;
+      return FrontEventPreview(event);
   }
 }
 

@@ -83,7 +83,7 @@ sources:
   - id: filing
     resource: ../../lib/features/front_agent/service/front_filing_service.dart
     title: FrontFilingService — what the tap under a door writes
-    last_modified: 2026-11-08
+    last_modified: 2026-11-09
   - id: task-draft
     resource: ../../lib/features/front_agent/model/front_task_draft.dart
     title: FrontTaskDraft — the task the router read from the words
@@ -166,7 +166,7 @@ sources:
     last_modified: 2026-11-09
   - id: entity-preview-card
     resource: ../../lib/features/front_agent/ui/front_entity_preview_card.dart
-    title: FrontEntityPreviewList and FrontEntityPreviewCompactCard — what her turn made, as compact cards
+    title: FrontEntityPreviewList, FrontEntityPreviewCompactCard and FrontEntityPreviewRichCard — what her turn made, as cards
     last_modified: 2026-11-09
   - id: closed-task-card
     resource: ../../lib/features/front_agent/model/front_closed_task_card.dart
@@ -986,25 +986,28 @@ stateDiagram-v2
   [*] --> Inbox: new / journal / unrouted walked
   Inbox --> SavedNote: Save as a note — text entry, owned by nothing
   Inbox --> TaskCreated: Make it a task — from its draft, else titled with the words
+  Inbox --> EventCreated: Make it an event — tentative, titled with the words
   Inbox --> Left: Leave it — nothing written, nothing waits
   Left --> Proposal: Undo — when it came from a proposal
   Left --> Inbox: Undo — otherwise, same guess, same generation
   SavedNote --> Inbox: Undo — note deleted, next generation, same guess
   TaskCreated --> Inbox: Undo — task deleted, next generation, same guess
+  EventCreated --> Inbox: Undo — event deleted, next generation, same guess
   Inbox --> ProjectCreated: New project… — the form, titled with the words, created one
   Inbox --> Inbox: Start a goal… — the wizard opens with the words, nothing written
 ```
 
 The entry a tap writes goes through the persistence logic — a text entry
 with the owner's `categoryId` and `linkedId`, a task through
-`createTaskEntry` — so an entry filed under a task wakes the task agent
+`createTaskEntry`, an event (`writeFrontEvent`) tentative and dated at the
+tap as the Events page starts one — so an entry filed under a task wakes the task agent
 through its subscription exactly as dictation into the task does, one filed
 under a project shows in the project's timeline (`ProjectTimelineSection`)
 and lands in that project agent's log at its next scheduled
 update (a linked entry marks the report stale; it never wakes the agent
 itself), and a made task is a task like any other. **Every write is idempotent per door**: the entry or
 task is created under a deterministic id (`frontDoorEntryId`,
-`frontDoorNoteId`, `frontDoorTaskId` — a UUID v5 of the door id and the
+`frontDoorNoteId`, `frontDoorTaskId`, `frontDoorEventId` — a UUID v5 of the door id and the
 door's *generation*, how often it was written and taken back; generation
 zero keeps the ids from before generations were counted), and the adapters
 in `front_agent_providers.dart` read the write's own verdict: a rejected
@@ -1211,12 +1214,13 @@ filled action, and an overflow menu (`DesignSystemContextMenuButton`)
 holding every other way out. The filled action is always a tap that
 writes — *File it*, *Make it a task* — or, on a settled card, a secondary
 *Open*; the overflow holds *Somewhere else* on a proposal, *Start a goal…*
-/ *New project…* (the ellipsis says a wizard opens), *Save as a note* and
-*Leave it* on an inbox item with the router's guess first, and *Undo* on
+/ *New project…* (the ellipsis says a wizard opens), *Make it an event*,
+*Save as a note* and *Leave it* on an inbox item with the router's guess
+first, and *Undo* on
 anything settled. A busy card's action shows it loading; a failed one's
 status says so in the error ink and the tap reads *Try again*
 (`FrontChatComposerState.busyDoorIds` / `failedDoorIds`). *Open* leaves
-the sheet for the entry's or the task's page. The inbox filter keeps a
+the sheet for the entry's, the task's or the event's page. The inbox filter keeps a
 waiting turn's words and the reply that carries its cards together.
 
 The header (`FrontChatHeader`) says who the conversation is with and what
@@ -1320,27 +1324,39 @@ tap opens the task on top of her. A task her words also listed as task rows
 is drawn once, on the cards.
 
 **What her turn made is a preview card under her words.** When a door's
-outcome is `FrontDoorTaskCreated`, the thread builder adds a
-`FrontEntityReference` — kind, id, and the user's words the task was made
-of as its title — to `entityPreviewsByMessageId` under the reply that
-carries the door (`carrierOf`), once per task, in segment order. A turn
-she has not answered draws no card: its door card already says *Made into
-a task*. The thread stores only the reference, never the preview: each
-`FrontEntityPreviewCompactCard` reads `frontEntityPreviewProvider` — keyed
-by `(kind, id)`, a task's built on `taskPreviewProvider`, every other kind
-null for now — through `.value`, so a status set after the turn shows on
-the card and a reload keeps the card as it was until the new preview
-lands. The card is one `DesignSystemListItem` on the card surface
+outcome is `FrontDoorTaskCreated` or `FrontDoorEventCreated`, the thread
+builder adds a `FrontEntityReference` — its `FrontEntityKind` (task or
+event: a kind of its own, so an event never becomes a routing
+destination), its id, and the user's words it was made of as its title —
+to `entityPreviewsByMessageId` under the reply that carries the door
+(`carrierOf`), once per entity, in segment order. A turn she has not
+answered draws no card: its door card already says *Made into a task* or
+*Made into an event*. The thread stores only the reference, never the
+preview: each card reads `frontEntityPreviewProvider` — keyed by
+`(kind, id)`; a task's built on `taskPreviewProvider`, an event's the
+`JournalEvent` as stored, both re-read when a notification names the
+entity — through `.value`, so a change after the turn shows on the card and
+a reload keeps the card as it was until the new preview lands.
+`FrontEntityPreviewList` stacks the cards between her words and her door
+cards, a task as `FrontEntityPreviewCompactCard`, an event as
+`FrontEntityPreviewRichCard`.
+
+The compact card is one `DesignSystemListItem` on the card surface
 (`dsCardSurface`, `radii.m`, a 0.5 hairline in `decorative.level01`): the
 task's cover (`CoverArtThumbnail`, `ControlSizes.iconChip`) or else its
 `StatusGlyph`, its live title, the one-liner in the AI ink, then status,
 category swatch and name, `DueDateText` and the estimate
 (`formatRangeDuration`, a timer glyph) — neither of those two once it is
-done or rejected. Until it loads, or once it is gone, the title it was
-made with stands alone and still opens. `FrontEntityPreviewList` stacks
-the cards between her words and her door cards, and a tap opens the task
-on top of her. A task a card shows is taken out of her words' task rows,
-as the closed-task cards are, and a list left empty is not drawn.
+done or rejected. A tap opens the task on top of her. A task a card shows
+is taken out of her words' task rows, as the closed-task cards are, and a
+list left empty is not drawn. The rich card is `LinkedEventCard` — the
+`EventSummaryCard` the app draws wherever an event is linked, resolved
+from the event and its links as its page resolves them: cover, title and
+rating, category and date, a status pill, the summary and the photo and
+task counts. Its `onTap` is the chat's: she closes, then the event's page
+opens, as *Open* on its door does — `/events` is not a root her links may
+reach. Either card, until it loads or once the entity is gone, is the
+title it was made with alone on the card surface, still opening it.
 
 **Her answer about logged time is a chart under her words.** A reply in
 `loggedTimeByMessageId` gets the same `replyBodyBuilder` body, her words

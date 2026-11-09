@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -9,15 +10,21 @@ import 'package:lotti/features/categories/ui/widgets/category_color_icon.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
-import 'package:lotti/features/front_agent/model/front_dispatch.dart';
+import 'package:lotti/features/events/ui/widgets/event_summary_card.dart';
+import 'package:lotti/features/events/ui/widgets/linked_event_card.dart';
 import 'package:lotti/features/front_agent/model/front_entity_preview.dart';
 import 'package:lotti/features/front_agent/state/front_entity_preview_provider.dart';
 import 'package:lotti/features/front_agent/ui/front_entity_preview_card.dart';
+import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/tasks/state/task_preview_provider.dart';
 import 'package:lotti/features/tasks/ui/cover_art_thumbnail.dart';
 import 'package:lotti/features/tasks/ui/due_date_text.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/linked_task_row.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/providers/update_notifications_providers.dart';
+import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -41,12 +48,12 @@ void main() {
   );
 
   const iceRef = FrontEntityReference(
-    kind: FrontDestinationKind.task,
+    kind: FrontEntityKind.task,
     id: 'ice-pad',
     title: 'Check the ice-pad weather window (as said)',
   );
   const coldRef = FrontEntityReference(
-    kind: FrontDestinationKind.task,
+    kind: FrontEntityKind.task,
     id: 'cold-chain',
     title: 'Audit the cold-chain freezer logs',
   );
@@ -75,6 +82,21 @@ void main() {
   );
 
   late List<FrontEntityReference> opened;
+  late StreamController<Set<String>> updates;
+  late MockUpdateNotifications notifications;
+
+  setUp(() {
+    updates = StreamController<Set<String>>.broadcast();
+    addTearDown(updates.close);
+    notifications = MockUpdateNotifications();
+    when(() => notifications.updateStream).thenAnswer((_) => updates.stream);
+  });
+
+  final rehearsalRef = FrontEntityReference(
+    kind: FrontEntityKind.event,
+    id: testRehearsalEvent.meta.id,
+    title: 'Launch-day rehearsal (as said)',
+  );
 
   /// Pumps [references] as her list, each resolving through [load].
   Future<void> pump(
@@ -82,11 +104,26 @@ void main() {
     List<FrontEntityReference> references = const [iceRef],
     Future<FrontEntityPreview?> Function(FrontEntityKey key)? load,
     Future<TaskPreview?> Function(String id)? loadTask,
+    Future<JournalEntity?> Function(String id)? loadEntity,
     CategoryDefinition? category,
   }) async {
     opened = [];
     final cache = MockEntitiesCacheService();
     when(() => cache.getCategoryById(any())).thenReturn(category);
+    // An event card resolves its category and its photos' folder through
+    // the locator, as it does wherever an event is linked.
+    await setUpTestGetIt(
+      additionalSetup: () => getIt
+        ..registerSingleton<EntitiesCacheService>(cache)
+        ..registerSingleton<Directory>(Directory.systemTemp),
+    );
+    addTearDown(tearDownTestGetIt);
+    final journalDb = MockJournalDb();
+    when(
+      () => journalDb.journalEntityById(any()),
+    ).thenAnswer(
+      (i) async => loadEntity?.call(i.positionalArguments.single as String),
+    );
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
         Scaffold(
@@ -105,6 +142,13 @@ void main() {
           if (loadTask != null)
             taskPreviewProvider.overrideWith((ref, id) => loadTask(id)),
           entitiesCacheServiceProvider.overrideWithValue(cache),
+          // An event, for what follows the event as it changes.
+          journalDbProvider.overrideWithValue(journalDb),
+          updateNotificationsProvider.overrideWithValue(notifications),
+          // The rehearsal links nothing yet.
+          resolvedOutgoingLinkedEntriesProvider(
+            testRehearsalEvent.meta.id,
+          ).overrideWithValue(const []),
           // A cover resolves its image entry; none is on disk here.
           createEntryControllerOverride(buildJournalImage(id: 'cover-1')),
         ],
@@ -206,8 +250,8 @@ void main() {
       );
 
       expect(asked, [
-        (FrontDestinationKind.task, 'ice-pad'),
-        (FrontDestinationKind.task, 'cold-chain'),
+        (FrontEntityKind.task, 'ice-pad'),
+        (FrontEntityKind.task, 'cold-chain'),
       ]);
     });
 
@@ -406,6 +450,119 @@ void main() {
       final border = decoration.border! as Border;
       expect(border.top.width, 0.5);
       expect(border.top.color, tokens.colors.decorative.level01);
+    });
+  });
+
+  group('FrontEntityPreviewRichCard', () {
+    testWidgets('a list draws a task as the compact card and an event as the '
+        'rich one', (tester) async {
+      await pump(
+        tester,
+        references: [iceRef, rehearsalRef],
+        load: (_) async => null,
+      );
+
+      expect(
+        find.descendant(
+          of: find.byKey(FrontEntityPreviewKeys.card('ice-pad')),
+          matching: find.byType(FrontEntityPreviewCompactCard),
+          matchRoot: true,
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: find.byKey(FrontEntityPreviewKeys.card(rehearsalRef.id)),
+          matching: find.byType(FrontEntityPreviewRichCard),
+          matchRoot: true,
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('an event is drawn as the app draws a linked event, and a tap '
+        'is handed to the chat rather than opening the page behind it', (
+      tester,
+    ) async {
+      final beamed = <String>[];
+      beamToNamedOverride = beamed.add;
+      addTearDown(() => beamToNamedOverride = null);
+      await pump(
+        tester,
+        references: [rehearsalRef],
+        load: (_) async => FrontEventPreview(testRehearsalEvent),
+      );
+
+      final card = tester.widget<LinkedEventCard>(find.byType(LinkedEventCard));
+      expect(card.event, testRehearsalEvent);
+      expect(find.byType(EventSummaryCard), findsOneWidget);
+      expect(find.text('Launch-day rehearsal at the ice pad'), findsOneWidget);
+      expect(find.text(rehearsalRef.title), findsNothing);
+
+      await tester.tap(find.byType(EventSummaryCard));
+      await tester.pump();
+
+      expect(opened, [rehearsalRef]);
+      expect(beamed, isEmpty);
+    });
+
+    testWidgets('an event that is gone keeps the title it was made with, and '
+        'still opens', (tester) async {
+      await pump(tester, references: [rehearsalRef], load: (_) async => null);
+
+      expect(find.byType(LinkedEventCard), findsNothing);
+      expect(find.text(rehearsalRef.title), findsOneWidget);
+
+      await tester.tap(find.text(rehearsalRef.title));
+      expect(opened, [rehearsalRef]);
+    });
+
+    testWidgets("a preview of another kind than the card's draws only the "
+        'title', (tester) async {
+      await pump(
+        tester,
+        references: [rehearsalRef, iceRef],
+        load: (key) async => switch (key.$1) {
+          FrontEntityKind.event => ice(),
+          FrontEntityKind.task => FrontEventPreview(testRehearsalEvent),
+        },
+      );
+
+      expect(find.byType(LinkedEventCard), findsNothing);
+      expect(find.byType(StatusGlyph), findsNothing);
+      expect(find.text(rehearsalRef.title), findsOneWidget);
+      expect(find.text(iceRef.title), findsOneWidget);
+    });
+
+    testWidgets('stays on screen while the event under it reloads, then '
+        'changes in place', (tester) async {
+      final id = testRehearsalEvent.meta.id;
+      var reload = Completer<JournalEntity?>()..complete(testRehearsalEvent);
+      await pump(
+        tester,
+        references: [rehearsalRef],
+        loadEntity: (_) => reload.future,
+      );
+      expect(find.text('Launch-day rehearsal at the ice pad'), findsOneWidget);
+
+      // The event was renamed: a notification names it.
+      reload = Completer<JournalEntity?>();
+      updates.add({id});
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('Launch-day rehearsal at the ice pad'), findsOneWidget);
+      expect(find.text(rehearsalRef.title), findsNothing);
+
+      reload.complete(
+        testRehearsalEvent.copyWith(
+          data: testRehearsalEvent.data.copyWith(title: 'Rehearsal, moved'),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('Rehearsal, moved'), findsOneWidget);
     });
   });
 }

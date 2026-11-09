@@ -7370,6 +7370,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get frontDoorDeclined => 'Niet opgeborgen';
 
   @override
+  String get frontDoorEventCreated => 'Omgezet in een gebeurtenis';
+
+  @override
   String frontDoorFailed(String owner) {
     return 'Het vragen aan $owner is mislukt.';
   }
@@ -7423,6 +7426,9 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get frontDoorLeft => 'Hier in het gesprek gelaten';
+
+  @override
+  String get frontDoorMakeEvent => 'Maak er een gebeurtenis van';
 
   @override
   String get frontDoorMakeTask => 'Maak er een taak van';

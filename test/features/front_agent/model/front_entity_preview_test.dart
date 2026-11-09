@@ -1,7 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/task.dart';
-import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_entity_preview.dart';
+
+import '../../../test_data/test_data.dart';
 
 void main() {
   final at = DateTime(2026, 11, 9, 10);
@@ -9,7 +10,7 @@ void main() {
 
   group('FrontEntityReference', () {
     const reference = FrontEntityReference(
-      kind: FrontDestinationKind.task,
+      kind: FrontEntityKind.task,
       id: 't-1',
       title: 'Check the ice-pad weather window',
     );
@@ -19,7 +20,7 @@ void main() {
       // Not const: a canonical constant would be the very same instance.
       // ignore: prefer_const_constructors
       final same = FrontEntityReference(
-        kind: FrontDestinationKind.task,
+        kind: FrontEntityKind.task,
         id: 't-1',
         title: 'Check the ice-pad weather window',
       );
@@ -30,24 +31,24 @@ void main() {
         reference,
         same,
         const FrontEntityReference(
-          kind: FrontDestinationKind.project,
+          kind: FrontEntityKind.event,
           id: 't-1',
           title: 'Check the ice-pad weather window',
         ),
         const FrontEntityReference(
-          kind: FrontDestinationKind.task,
+          kind: FrontEntityKind.task,
           id: 't-2',
           title: 'Check the ice-pad weather window',
         ),
         const FrontEntityReference(
-          kind: FrontDestinationKind.task,
+          kind: FrontEntityKind.task,
           id: 't-1',
           title: 'Another title',
         ),
       }, hasLength(4));
     });
 
-    test('names its kind by wire name, its id and title', () {
+    test('names its kind, its id and title', () {
       expect(
         reference.toString(),
         'FrontEntityReference(task, t-1, Check the ice-pad weather window)',
@@ -79,7 +80,7 @@ void main() {
     test('is a task preview, whatever else it carries', () {
       final task = preview();
 
-      expect(task.entityKind, FrontDestinationKind.task);
+      expect(task.entityKind, FrontEntityKind.task);
       expect(task.entityId, 't-1');
     });
 
@@ -178,7 +179,7 @@ void main() {
 
     test('is not equal to something that is not a task preview', () {
       const Object reference = FrontEntityReference(
-        kind: FrontDestinationKind.task,
+        kind: FrontEntityKind.task,
         id: 't-1',
         title: 'Check the ice-pad weather window',
       );
@@ -190,6 +191,43 @@ void main() {
       expect(
         preview().toString(),
         'FrontTaskPreview(t-1, Check the ice-pad weather window)',
+      );
+    });
+  });
+
+  group('FrontEventPreview', () {
+    test('is an event preview of the event it carries', () {
+      final preview = FrontEventPreview(testRehearsalEvent);
+
+      expect(preview.entityKind, FrontEntityKind.event);
+      expect(preview.entityId, testRehearsalEvent.meta.id);
+      expect(preview.event, testRehearsalEvent);
+    });
+
+    test('is equal, and hashes alike, exactly when its event is', () {
+      final renamed = testRehearsalEvent.copyWith(
+        data: testRehearsalEvent.data.copyWith(title: 'Rehearsal, moved'),
+      );
+
+      expect(
+        FrontEventPreview(testRehearsalEvent),
+        FrontEventPreview(testRehearsalEvent),
+      );
+      expect(
+        FrontEventPreview(testRehearsalEvent).hashCode,
+        FrontEventPreview(testRehearsalEvent).hashCode,
+      );
+      expect(
+        FrontEventPreview(renamed),
+        isNot(FrontEventPreview(testRehearsalEvent)),
+      );
+    });
+
+    test('names its id and title', () {
+      expect(
+        FrontEventPreview(testRehearsalEvent).toString(),
+        'FrontEventPreview(${testRehearsalEvent.meta.id}, '
+        'Launch-day rehearsal at the ice pad)',
       );
     });
   });

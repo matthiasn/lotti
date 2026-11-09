@@ -7,7 +7,6 @@ import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
 import 'package:lotti/features/front_agent/model/front_chat_thread.dart';
 import 'package:lotti/features/front_agent/model/front_closed_task_card.dart';
 import 'package:lotti/features/front_agent/model/front_conversation.dart';
-import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
 import 'package:lotti/features/front_agent/model/front_entity_preview.dart';
 import 'package:lotti/features/front_agent/model/front_logged_time_chart.dart';
@@ -198,10 +197,10 @@ class FrontChatThreadBuilder {
     );
   }
 
-  /// What the doors made, as preview cards on the reply that carries them —
-  /// each entity once, in segment order. A turn no reply followed carries
-  /// its doors itself, and a user turn draws no cards: its doors say what
-  /// was made until she has answered.
+  /// What the doors made — a task or an event — as preview cards on the
+  /// reply that carries them, each entity once, in segment order. A turn no
+  /// reply followed carries its doors itself, and a user turn draws no
+  /// cards: its doors say what was made until she has answered.
   static Map<String, List<FrontEntityReference>> _entityPreviews(
     List<AgentChatMessage> visible,
     Map<String, List<FrontDoorEntry>> doors,
@@ -212,18 +211,26 @@ class FrontChatThreadBuilder {
       final carrier = carrying.carrierOf(turnId);
       if (carrier == turnId) continue;
       for (final door in entries) {
-        if (door.record.outcome case FrontDoorTaskCreated(:final taskId)) {
-          final cards = previews.putIfAbsent(carrier, () => []);
-          if (cards.any((card) => card.id == taskId)) continue;
-          cards.add(
-            FrontEntityReference(
-              kind: FrontDestinationKind.task,
-              id: taskId,
-              // The task was made with the user's words as its title.
-              title: door.record.text,
-            ),
-          );
-        }
+        final made = switch (door.record.outcome) {
+          FrontDoorTaskCreated(:final taskId) => (FrontEntityKind.task, taskId),
+          FrontDoorEventCreated(:final eventId) => (
+            FrontEntityKind.event,
+            eventId,
+          ),
+          _ => null,
+        };
+        if (made == null) continue;
+        final (kind, id) = made;
+        final cards = previews.putIfAbsent(carrier, () => []);
+        if (cards.any((card) => card.id == id)) continue;
+        cards.add(
+          FrontEntityReference(
+            kind: kind,
+            id: id,
+            // Made with the user's words as its title.
+            title: door.record.text,
+          ),
+        );
       }
     }
     return previews;

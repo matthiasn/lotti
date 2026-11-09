@@ -16,11 +16,16 @@ import 'package:material_ui/material_ui.dart';
 /// The compact, photo-led representation of an event when it appears inside
 /// another entry's linked list (e.g. a task's timeline). Resolves the event's
 /// cover and metadata the same way the detail page does — so the card and the
-/// detail never disagree — and taps through to the dedicated event page.
+/// detail never disagree — and taps through to the dedicated event page,
+/// or to [onTap] when the host needs to leave first.
 class LinkedEventCard extends ConsumerWidget {
-  const LinkedEventCard({required this.event, super.key});
+  const LinkedEventCard({required this.event, this.onTap, super.key});
 
   final JournalEvent event;
+
+  /// What a tap does instead of opening the event's page: a surface that
+  /// must close before the page shows, say.
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -48,7 +53,7 @@ class LinkedEventCard extends ConsumerWidget {
 
     return EventSummaryCard(
       data: data.card,
-      onTap: () => beamToNamed('/events/${event.meta.id}'),
+      onTap: onTap ?? () => beamToNamed('/events/${event.meta.id}'),
     );
   }
 }

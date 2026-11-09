@@ -12521,6 +12521,12 @@ abstract class AppLocalizations {
   /// **'Not filed'**
   String get frontDoorDeclined;
 
+  /// No description provided for @frontDoorEventCreated.
+  ///
+  /// In en, this message translates to:
+  /// **'Made into an event'**
+  String get frontDoorEventCreated;
+
   /// No description provided for @frontDoorFailed.
   ///
   /// In en, this message translates to:
@@ -12616,6 +12622,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Left here in the thread'**
   String get frontDoorLeft;
+
+  /// No description provided for @frontDoorMakeEvent.
+  ///
+  /// In en, this message translates to:
+  /// **'Make it an event'**
+  String get frontDoorMakeEvent;
 
   /// No description provided for @frontDoorMakeTask.
   ///

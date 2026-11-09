@@ -7415,6 +7415,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get frontDoorDeclined => 'Neuloženo';
 
   @override
+  String get frontDoorEventCreated => 'Vytvořena událost';
+
+  @override
   String frontDoorFailed(String owner) {
     return 'Dotaz na $owner selhal.';
   }
@@ -7468,6 +7471,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get frontDoorLeft => 'Ponecháno tady ve vlákně';
+
+  @override
+  String get frontDoorMakeEvent => 'Udělat z toho událost';
 
   @override
   String get frontDoorMakeTask => 'Udělat z toho úkol';

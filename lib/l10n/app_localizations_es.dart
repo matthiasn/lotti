@@ -7425,6 +7425,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get frontDoorDeclined => 'Sin archivar';
 
   @override
+  String get frontDoorEventCreated => 'Convertido en evento';
+
+  @override
   String frontDoorFailed(String owner) {
     return 'No se pudo preguntar a $owner.';
   }
@@ -7478,6 +7481,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get frontDoorLeft => 'Se queda aquí en el hilo';
+
+  @override
+  String get frontDoorMakeEvent => 'Convertir en evento';
 
   @override
   String get frontDoorMakeTask => 'Convertir en tarea';

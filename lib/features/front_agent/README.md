@@ -59,10 +59,12 @@ or Claude window: each a subject of its own, titled by its first question,
 listed newest first by recency behind the header's *Chats* glyph (beside
 the conversation on a desktop window), renamed, archived or deleted there. What nothing owns waits in the **inbox** — every conversation,
 filtered — with chips that make it a task, start a goal or project with
-its words, or save it as a note, or leave it. A task a tap made is drawn
-under her reply as a **preview card** — its cover or status, title,
-one-liner, category, due date and estimate, read live so it follows the
-task — and her words do not list it again. Whatever a tap wrote can be
+its words, make it an event titled with them, or save it as a note, or
+leave it. What a tap made is drawn under her reply as a **preview card**,
+read live so it follows the thing: a task as a compact card — its cover or
+status, title, one-liner, category, due date and estimate — that her words
+do not list again, an event as the event card the app draws wherever an
+event is linked. Whatever a tap wrote can be
 opened or undone,
 and a proposal she got wrong goes to the inbox rather than being retyped.
 

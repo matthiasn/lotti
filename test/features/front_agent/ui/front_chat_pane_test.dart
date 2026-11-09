@@ -36,6 +36,7 @@ import 'package:lotti/features/front_agent/service/front_chat_service.dart';
 import 'package:lotti/features/front_agent/state/front_agent_providers.dart';
 import 'package:lotti/features/front_agent/state/front_chat_thread_provider.dart';
 import 'package:lotti/features/front_agent/state/front_conversation_providers.dart';
+import 'package:lotti/features/front_agent/state/front_entity_preview_provider.dart';
 import 'package:lotti/features/front_agent/state/front_inbox_filter.dart';
 import 'package:lotti/features/front_agent/state/front_journal_access_provider.dart';
 import 'package:lotti/features/front_agent/state/front_mention_categories.dart';
@@ -142,6 +143,7 @@ void main() {
     List<NavigatorObserver> navigatorObservers = const [],
     List<CategoryDefinition>? mentionCategories,
     bool companion = false,
+    Future<FrontEntityPreview?> Function(FrontEntityKey key)? previews,
   }) async {
     // The project creation resolves categories through the locator.
     final cache = MockEntitiesCacheService();
@@ -215,6 +217,10 @@ void main() {
             // The tasks her lists name: none loads, so each row keeps the
             // title she gave it.
             taskPreviewProvider.overrideWith((ref, id) async => null),
+            if (previews != null)
+              frontEntityPreviewProvider.overrideWith(
+                (ref, key) => previews(key),
+              ),
             agentConsumptionTotalsProvider(
               frontAgentId,
             ).overrideWith((ref) => const Stream<ConsumptionTotals>.empty()),
@@ -937,6 +943,13 @@ void main() {
                   FrontDoorDayPlanned(day: DateTime(2026, 10, 30)),
                 ),
               ),
+              FrontDoorEntry(
+                doorId: 'd:door:4',
+                record: settled(
+                  4,
+                  const FrontDoorEventCreated(eventId: 'ev-1'),
+                ),
+              ),
             ],
           },
         ),
@@ -950,6 +963,8 @@ void main() {
       await tester.pump();
       await tester.tap(find.byKey(const ValueKey('front-door-open-3')));
       await tester.pump();
+      await tester.tap(find.byKey(const ValueKey('front-door-open-4')));
+      await tester.pump();
 
       // The day it planned is the Daily OS day surface, showing that day.
       expect(paths, [
@@ -957,6 +972,7 @@ void main() {
         '/tasks/t-1',
         '/projects/p-1',
         '/calendar',
+        '/events/ev-1',
       ]);
       expect(
         ProviderScope.containerOf(
@@ -1163,12 +1179,12 @@ void main() {
 
   group('entity previews', () {
     const iceRef = FrontEntityReference(
-      kind: FrontDestinationKind.task,
+      kind: FrontEntityKind.task,
       id: 't-9',
       title: 'Check the ice-pad weather window',
     );
     const coldRef = FrontEntityReference(
-      kind: FrontDestinationKind.task,
+      kind: FrontEntityKind.task,
       id: 't-8',
       title: 'Audit the cold-chain freezer logs',
     );
@@ -1297,6 +1313,37 @@ void main() {
         find.textContaining('Made them tasks:', findRichText: true),
         findsOneWidget,
       );
+    });
+
+    testWidgets('an event her turn made opens its page: she closes first, '
+        'then it goes there', (tester) async {
+      final order = <String>[];
+      beamToNamedOverride = order.add;
+      addTearDown(() => beamToNamedOverride = null);
+      const rehearsal = FrontEntityReference(
+        kind: FrontEntityKind.event,
+        id: 'ev-1',
+        title: 'Launch-day rehearsal',
+      );
+      await pumpPane(
+        tester,
+        onClose: () => order.add('closed'),
+        previews: (_) async => null,
+        thread: () async => FrontChatThread(
+          messages: [
+            message('u1', AgentChatRole.user, 'Rehearsal Friday.', now),
+            message('a1', AgentChatRole.agent, 'Made it an event.', now),
+          ],
+          entityPreviewsByMessageId: const {
+            'a1': [rehearsal],
+          },
+        ),
+      );
+
+      await tester.tap(find.byKey(FrontEntityPreviewKeys.card('ev-1')));
+      await tester.pump();
+
+      expect(order, ['closed', '/events/ev-1']);
     });
 
     testWidgets('only the reply the cards belong to draws them', (
@@ -1795,6 +1842,30 @@ void main() {
       await tester.pump();
 
       verify(() => filing.makeTask('d:door:0')).called(1);
+    });
+
+    testWidgets('make it an event makes the event through the filing '
+        'service, and leaves the sheet where it is', (tester) async {
+      final paths = <String>[];
+      beamToNamedOverride = paths.add;
+      addTearDown(() => beamToNamedOverride = null);
+      var closed = 0;
+      when(() => filing.makeEvent('d:door:0')).thenAnswer((_) async {});
+      await pumpPane(
+        tester,
+        thread: () async => inbox(FrontNewKind.task),
+        onClose: () => closed++,
+      );
+
+      await tester.tap(find.byKey(const ValueKey('front-door-menu-0')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('front-door-event-0')));
+      await tester.pump();
+      await tester.pump();
+
+      verify(() => filing.makeEvent('d:door:0')).called(1);
+      expect(closed, 0);
+      expect(paths, isEmpty);
     });
 
     testWidgets('start a goal leaves the sheet and goes to the goal wizard, '

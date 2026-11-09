@@ -660,7 +660,7 @@ void main() {
 
       FrontEntityReference task(String id, String title) =>
           FrontEntityReference(
-            kind: FrontDestinationKind.task,
+            kind: FrontEntityKind.task,
             id: id,
             title: title,
           );
@@ -687,7 +687,36 @@ void main() {
         });
       });
 
-      test('a door that made no task draws no card', () async {
+      test('an event a door made rides the reply too, as an event, beside '
+          'a task in segment order', () async {
+        userTurn('u1', 'Rehearsal? Ice pad?', at: DateTime(2026, 11, 9, 9));
+        replyTo('r1', 'u1', at: DateTime(2026, 11, 9, 9, 1));
+        doorRow(
+          'd:door:1',
+          'u1',
+          door(1, const FrontDoorTaskCreated(taskId: 'ice-pad')),
+        );
+        doorRow(
+          'd:door:0',
+          'u1',
+          door(0, const FrontDoorEventCreated(eventId: 'rehearsal')),
+        );
+
+        final thread = await builder.build();
+
+        expect(thread.entityPreviewsByMessageId, {
+          'r1': [
+            const FrontEntityReference(
+              kind: FrontEntityKind.event,
+              id: 'rehearsal',
+              title: 'segment 0',
+            ),
+            task('ice-pad', 'segment 1'),
+          ],
+        });
+      });
+
+      test('a door that made nothing draws no card', () async {
         userTurn('u1', 'Garden?', at: DateTime(2026, 11, 9, 9));
         replyTo('r1', 'u1', at: DateTime(2026, 11, 9, 9, 1));
         doorRow('d:door:0', 'u1', door(0, const FrontDoorInbox()));

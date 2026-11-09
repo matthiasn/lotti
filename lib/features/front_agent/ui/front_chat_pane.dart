@@ -16,6 +16,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
+import 'package:lotti/features/front_agent/model/front_entity_preview.dart';
 import 'package:lotti/features/front_agent/model/front_reference_links.dart';
 import 'package:lotti/features/front_agent/model/front_reply_parts.dart';
 import 'package:lotti/features/front_agent/model/front_turn_failure.dart';
@@ -258,6 +259,18 @@ class FrontChatThreadView extends ConsumerWidget {
       beamToNamed(route);
     }
 
+    // What her turn made: a task opens on top of her, as any task she names
+    // does; an event's page is the app's, so she closes first.
+    void openMade(FrontEntityReference made) {
+      switch (made.kind) {
+        case FrontEntityKind.task:
+          openLink(frontReferenceUrl(FrontDestinationKind.task, made.id), '');
+        case FrontEntityKind.event:
+          onClose();
+          beamToNamed('/events/${made.id}');
+      }
+    }
+
     final actions = FrontDoorActions(
       onOpenLink: (url) => openLink(url, ''),
       onFile: controller.fileUnderOwner,
@@ -266,12 +279,14 @@ class FrontChatThreadView extends ConsumerWidget {
       onTakeBack: controller.takeBack,
       onMakeTask: (doorId) =>
           FrontVoice.makeTask(ref, context, conversationId, doorId),
+      onMakeEvent: controller.makeEvent,
       onSaveNote: controller.saveAsNote,
       // What a door wrote lives on its own page: leave the sheet, then go.
       onOpen: (door) {
         final path = switch (door.record.outcome) {
           FrontDoorFiled(:final entryId) => '/journal/$entryId',
           FrontDoorTaskCreated(:final taskId) => '/tasks/$taskId',
+          FrontDoorEventCreated(:final eventId) => '/events/$eventId',
           FrontDoorProjectCreated(:final projectId) => '/projects/$projectId',
           FrontDoorDayPlanned() => '/calendar',
           _ => null,
@@ -477,8 +492,7 @@ class FrontChatThreadView extends ConsumerWidget {
               FrontEntityPreviewList(
                 key: ValueKey('front-entity-previews-${message.id}'),
                 references: previews,
-                onOpen: (preview) =>
-                    openLink(frontReferenceUrl(preview.kind, preview.id), ''),
+                onOpen: openMade,
               ),
             if (closedTasks != null)
               FrontClosedTaskList(

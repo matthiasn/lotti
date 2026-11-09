@@ -7422,6 +7422,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get frontDoorDeclined => 'Non archiviato';
 
   @override
+  String get frontDoorEventCreated => 'Trasformato in evento';
+
+  @override
   String frontDoorFailed(String owner) {
     return 'Chiedere a $owner non è riuscito.';
   }
@@ -7475,6 +7478,9 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get frontDoorLeft => 'Lasciato qui nella conversazione';
+
+  @override
+  String get frontDoorMakeEvent => 'Fanne un evento';
 
   @override
   String get frontDoorMakeTask => 'Fanne un’attività';

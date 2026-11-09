@@ -7336,6 +7336,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get frontDoorDeclined => 'Ikke gemt';
 
   @override
+  String get frontDoorEventCreated => 'Lavet til en begivenhed';
+
+  @override
   String frontDoorFailed(String owner) {
     return 'Det lykkedes ikke at spørge $owner.';
   }
@@ -7389,6 +7392,9 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get frontDoorLeft => 'Efterladt her i tråden';
+
+  @override
+  String get frontDoorMakeEvent => 'Lav det til en begivenhed';
 
   @override
   String get frontDoorMakeTask => 'Lav det til en opgave';
