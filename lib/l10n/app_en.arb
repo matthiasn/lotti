@@ -2541,6 +2541,10 @@
   "@companionCardDemo": {
     "description": "Menu row: the companion card fills the conversation area until dismissed, for demos"
   },
+  "companionCardHide": "Hide",
+  "@companionCardHide": {
+    "description": "Menu row and screen-reader tap hint on the floating companion card: puts the card away (a single tap on the card does the same)"
+  },
   "companionCardLabel": "Companion. Drag to move; change the size from its options.",
   "@companionCardLabel": {
     "description": "Screen-reader label of the companion's floating glass card over a conversation"
@@ -4430,6 +4434,10 @@
     }
   },
   "frontChatArchivedToast": "Chat archived.",
+  "frontChatCompanionShow": "Show companion",
+  "@frontChatCompanionShow": {
+    "description": "Tooltip and screen-reader label on the companion's face in the chat header: a tap shows the floating card over the conversation; the face is hidden while the card is shown."
+  },
   "frontChatDeleteExplanation": "Delete this chat? Its messages are hidden on every device, not erased. Whatever you filed from it stays where it is.",
   "frontChatEmpty": "Ask about a task, a goal, a project or a person, or tell what happened. The right agent answers, and nothing is filed until you tap.",
   "frontChatFailedAuthentication": "Your AI provider refused its API key. Check it in Settings.",

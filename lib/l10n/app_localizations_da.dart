@@ -3853,6 +3853,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get companionCardDemo => 'Demostørrelse';
 
   @override
+  String get companionCardHide => 'Skjul';
+
+  @override
   String get companionCardLabel =>
       'Følgesvend. Træk for at flytte; skift størrelse under indstillingerne.';
 
@@ -7197,6 +7200,9 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get frontChatArchivedToast => 'Chat arkiveret.';
+
+  @override
+  String get frontChatCompanionShow => 'Vis ledsager';
 
   @override
   String get frontChatDeleteExplanation =>

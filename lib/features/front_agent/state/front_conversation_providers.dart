@@ -85,6 +85,23 @@ class FrontConversationListOpen extends Notifier<bool> {
   void close() => state = false;
 }
 
+/// Whether her glass card floats over the open conversation: a tap on her
+/// face in the header shows it, another hides it. Held for the app's session,
+/// so she is where the user left her when the sheet opens again.
+final NotifierProvider<FrontCompanionCardShown, bool>
+frontCompanionCardShownProvider =
+    NotifierProvider<FrontCompanionCardShown, bool>(
+      FrontCompanionCardShown.new,
+      name: 'frontCompanionCardShownProvider',
+    );
+
+class FrontCompanionCardShown extends Notifier<bool> {
+  @override
+  bool build() => false;
+
+  void toggle() => state = !state;
+}
+
 /// Whether the conversation list's search field is open. The list's band —
 /// its own beside the conversation, the page header's on a phone — opens it,
 /// and the list shows the field; disposed with the list, so a list opened

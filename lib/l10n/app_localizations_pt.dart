@@ -3895,6 +3895,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get companionCardDemo => 'Tamanho de demonstração';
 
   @override
+  String get companionCardHide => 'Ocultar';
+
+  @override
   String get companionCardLabel =>
       'Acompanhante. Arrasta para mover; muda o tamanho nas opções.';
 
@@ -7272,6 +7275,9 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get frontChatArchivedToast => 'Chat arquivado.';
+
+  @override
+  String get frontChatCompanionShow => 'Mostrar acompanhante';
 
   @override
   String get frontChatDeleteExplanation =>

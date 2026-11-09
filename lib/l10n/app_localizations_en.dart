@@ -3838,6 +3838,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get companionCardDemo => 'Demo size';
 
   @override
+  String get companionCardHide => 'Hide';
+
+  @override
   String get companionCardLabel =>
       'Companion. Drag to move; change the size from its options.';
 
@@ -7174,6 +7177,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get frontChatArchivedToast => 'Chat archived.';
+
+  @override
+  String get frontChatCompanionShow => 'Show companion';
 
   @override
   String get frontChatDeleteExplanation =>

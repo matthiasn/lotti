@@ -95,17 +95,19 @@ and a proposal she got wrong goes to the inbox rather than being retyped.
   (`front_voice_providers.dart`), and the wake-runner,
   maintenance and
   setup-resolver contributions merged in `app_bootstrap.dart`.
-- `ui/` — her header (her face, her name and the conversation's title, her
-  voice's controls), the hero that greets a conversation not begun (her
+- `ui/` — her header (her face in a rounded tile, whose tap shows her glass
+  card over the thread in place and which steps aside while the card is out;
+  her name and the conversation's title, her voice's controls), the hero that greets a conversation not begun (her
   bust), the switch that mutes her (`front_voice_switch.dart`), the card her
   lists of tasks are drawn as (`front_task_list.dart`, over
   `model/front_reply_parts.dart`), her voice (`front_chat_voice.dart`: the spoken reply, when
-  she may speak, the pose she holds), her voice's control and her stage
+  she may speak, the pose she holds), her voice's control
   (`front_voice_controls.dart`: stop her, or have her say her latest answer
-  again from the start, in the voice she said it in; open the conversation
-  full screen on any form factor with her in a glass card floating over it,
-  moved and resized by the user, pointing at the tasks she lists as she says
-  them (`state/front_stage_pointing.dart`)),
+  again from the start, in the voice she said it in), her card
+  (`FrontCompanionCard` in `front_chat_hero.dart`: her, head to toe, in a
+  glass card floating over the thread, moved and resized by the user,
+  pointing at the tasks she lists as she says them
+  (`state/front_stage_pointing.dart`)),
   the
   list of conversations with each one's ⋯ on the agent pages' shared menu
   (`front_conversation_actions.dart`), her AI profile choice (`front_profile_choice.dart`: the

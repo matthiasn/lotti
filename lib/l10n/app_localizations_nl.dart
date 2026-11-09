@@ -3876,6 +3876,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get companionCardDemo => 'Demogrootte';
 
   @override
+  String get companionCardHide => 'Verbergen';
+
+  @override
   String get companionCardLabel =>
       'Metgezel. Sleep om te verplaatsen; wijzig de grootte via de opties.';
 
@@ -7231,6 +7234,9 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get frontChatArchivedToast => 'Chat gearchiveerd.';
+
+  @override
+  String get frontChatCompanionShow => 'Metgezel tonen';
 
   @override
   String get frontChatDeleteExplanation =>

@@ -6510,6 +6510,12 @@ abstract class AppLocalizations {
   /// **'Demo size'**
   String get companionCardDemo;
 
+  /// Menu row and screen-reader tap hint on the floating companion card: puts the card away (a single tap on the card does the same)
+  ///
+  /// In en, this message translates to:
+  /// **'Hide'**
+  String get companionCardHide;
+
   /// Screen-reader label of the companion's floating glass card over a conversation
   ///
   /// In en, this message translates to:
@@ -12286,6 +12292,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Chat archived.'**
   String get frontChatArchivedToast;
+
+  /// Tooltip and screen-reader label on the companion's face in the chat header: a tap shows the floating card over the conversation; the face is hidden while the card is shown.
+  ///
+  /// In en, this message translates to:
+  /// **'Show companion'**
+  String get frontChatCompanionShow;
 
   /// No description provided for @frontChatDeleteExplanation.
   ///

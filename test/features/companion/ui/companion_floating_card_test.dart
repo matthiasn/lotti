@@ -21,11 +21,13 @@ void main() {
   late TestGetItMocks mocks;
   late int behindTaps;
   late int restyles;
+  late int hides;
 
   setUp(() async {
     mocks = await setUpTestGetIt();
     behindTaps = 0;
     restyles = 0;
+    hides = 0;
   });
   tearDown(tearDownTestGetIt);
 
@@ -37,6 +39,7 @@ void main() {
     WidgetTester tester, {
     CompanionCardForm form = CompanionCardForm.phone,
     bool speaking = false,
+    bool hideable = false,
     Size area = _area,
   }) async {
     await tester.pumpWidget(
@@ -58,6 +61,7 @@ void main() {
                     form: form,
                     speaking: speaking,
                     onRestyle: () => restyles++,
+                    onHide: hideable ? () => hides++ : null,
                     figure: const ColoredBox(
                       key: Key('figure'),
                       color: Color(0xFF808080),
@@ -218,6 +222,73 @@ void main() {
     // The area's width binds first: 358 wide at her shape.
     expect(rect.width, closeTo(_area.width - 2 * _margin, 1e-6));
     expect(rect.topLeft, const Offset(_margin, _margin));
+  });
+
+  group('a host that can put it away', () {
+    testWidgets('has it hidden by a single tap, never by a double tap', (
+      tester,
+    ) async {
+      await pumpCard(tester, hideable: true);
+
+      await doubleTap(tester);
+      expect(hides, 0);
+      expect(cardRect(tester).height, CompanionCardForm.phone.largeHeight);
+
+      await tester.tap(card);
+      await tester.pump(kDoubleTapTimeout);
+      expect(hides, 1);
+      expect(behindTaps, 0);
+    });
+
+    testWidgets('a keyboard hides it too: focused, Space puts it away', (
+      tester,
+    ) async {
+      await pumpCard(tester, hideable: true);
+      Focus.of(tester.element(find.byKey(const Key('figure')))).requestFocus();
+      await tester.pump();
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.space);
+      await tester.pump();
+
+      expect(hides, 1);
+    });
+
+    testWidgets('has a Hide row last in its menu', (tester) async {
+      await pumpCard(tester, hideable: true);
+      await openMenu(tester);
+      await tester.tap(find.byKey(CompanionFloatingCardKeys.hide));
+      await tester.pump();
+
+      expect(hides, 1);
+    });
+
+    testWidgets('a screen reader hides it with the tap action', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+      await pumpCard(tester, hideable: true);
+      final label = find.semantics.byLabel(
+        'Companion. Drag to move; change the size from its options.',
+      );
+
+      tester.semantics.tap(label);
+      await tester.pump();
+
+      expect(hides, 1);
+      semantics.dispose();
+    });
+
+    testWidgets('without one, a tap does nothing and the menu has no Hide', (
+      tester,
+    ) async {
+      await pumpCard(tester);
+      await tester.tap(card);
+      await tester.pump(kDoubleTapTimeout);
+      await openMenu(tester);
+
+      expect(find.byKey(CompanionFloatingCardKeys.hide), findsNothing);
+      expect(behindTaps, 0);
+    });
   });
 
   group('its menu', () {

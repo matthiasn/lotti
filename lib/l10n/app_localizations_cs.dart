@@ -3901,6 +3901,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get companionCardDemo => 'Velikost pro ukázku';
 
   @override
+  String get companionCardHide => 'Skrýt';
+
+  @override
   String get companionCardLabel =>
       'Společník. Přetažením přesuneš, velikost změníš v jeho možnostech.';
 
@@ -7276,6 +7279,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get frontChatArchivedToast => 'Chat archivován.';
+
+  @override
+  String get frontChatCompanionShow => 'Zobrazit společníka';
 
   @override
   String get frontChatDeleteExplanation =>

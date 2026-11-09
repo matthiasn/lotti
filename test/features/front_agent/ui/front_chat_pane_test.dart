@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:clock/clock.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/query_chat_models.dart';
@@ -14,6 +15,8 @@ import 'package:lotti/features/ai/state/subject_dictation_providers.dart';
 import 'package:lotti/features/ai/util/inference_provider_resolver.dart';
 import 'package:lotti/features/ai_consumption/model/consumption_aggregation_models.dart';
 import 'package:lotti/features/ai_consumption/state/consumption_providers.dart';
+import 'package:lotti/features/companion/state/companion_card_controller.dart';
+import 'package:lotti/features/companion/ui/companion_floating_card.dart';
 import 'package:lotti/features/daily_os_next/state/selected_date_provider.dart';
 import 'package:lotti/features/design_system/components/chat_input/design_system_chat_input.dart';
 import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
@@ -53,6 +56,7 @@ import 'package:lotti/features/tasks/ui/pages/task_details_page.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/goal_routes.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
@@ -135,6 +139,7 @@ void main() {
     bool pushed = false,
     List<NavigatorObserver> navigatorObservers = const [],
     List<CategoryDefinition>? mentionCategories,
+    bool companion = false,
   }) async {
     // The project creation resolves categories through the locator.
     final cache = MockEntitiesCacheService();
@@ -197,7 +202,10 @@ void main() {
               frontJournalAccessProvider.overrideWith(
                 (ref) => Stream.value(journalAccess),
               ),
-            configFlagProvider.overrideWith((ref, _) => Stream.value(false)),
+            configFlagProvider.overrideWith(
+              (ref, flag) =>
+                  Stream.value(companion && flag == enableCompanionFlag),
+            ),
             if (mentionCategories != null)
               frontMentionCategoriesProvider.overrideWithValue(
                 mentionCategories,
@@ -1489,6 +1497,99 @@ void main() {
     }
 
     expect(paths, ['/projects/p-1', '/journal/e-1']);
+  });
+
+  group('her card', () {
+    final card = find.byKey(CompanionFloatingCardKeys.card);
+    final toggle = find.byKey(FrontChatHeaderKeys.companion);
+    // She animates, so no settle: frames past the card's fade.
+    Future<void> frames(WidgetTester tester) async {
+      for (var i = 0; i < 20; i++) {
+        await tester.pump(const Duration(milliseconds: 16));
+      }
+    }
+
+    double inset(WidgetTester tester) => tester
+        .widget<AgentChatView>(find.byType(AgentChatView))
+        .threadBottomInset;
+
+    testWidgets('a tap on her face fades her card in over the thread, in '
+        'place — no page is pushed — between the header and the field, the '
+        'thread keeping her height free after its end; a tap on the card '
+        'fades her out and gives the header her face back', (tester) async {
+      final observer = _PushObserver();
+      await pumpPane(tester, companion: true, navigatorObservers: [observer]);
+      final pushes = observer.pushed.length;
+      expect(card, findsNothing);
+      expect(inset(tester), 0);
+
+      await tester.tap(toggle);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      // Halfway through its fade.
+      final fade = tester.widget<FadeTransition>(
+        find
+            .ancestor(
+              of: find.byType(FrontCompanionCard),
+              matching: find.byType(FadeTransition),
+            )
+            .first,
+      );
+      expect(fade.opacity.value, inExclusiveRange(0, 1));
+      await frames(tester);
+
+      expect(observer.pushed, hasLength(pushes));
+      final rect = tester.getRect(card);
+      expect(
+        rect.top,
+        greaterThanOrEqualTo(
+          tester.getRect(find.byType(FrontChatHeader)).bottom,
+        ),
+      );
+      expect(
+        rect.bottom,
+        lessThanOrEqualTo(tester.getRect(find.byType(TextField)).top),
+      );
+      // An 800-wide window is no desktop: the phone placement.
+      expect(rect.height, CompanionCardForm.phone.smallHeight);
+      expect(inset(tester), CompanionCardForm.phone.smallHeight + 16);
+      expect(
+        tester
+            .widget<FrontCompanionCard>(find.byType(FrontCompanionCard))
+            .conversationId,
+        'c-1',
+      );
+
+      // The face is gone while she is out: the card puts itself away.
+      expect(toggle, findsNothing);
+      await tester.tap(card);
+      await tester.pump(kDoubleTapTimeout);
+      await frames(tester);
+      expect(card, findsNothing);
+      expect(inset(tester), 0);
+      expect(toggle, findsOne);
+    });
+
+    for (final (why, companion, inbox) in [
+      ('in the inbox', true, true),
+      ('with the character off', false, false),
+    ]) {
+      testWidgets('$why she stays away, though her card was shown', (
+        tester,
+      ) async {
+        await pumpPane(tester, companion: companion);
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(FrontChatPane)),
+        );
+        container.read(frontCompanionCardShownProvider.notifier).toggle();
+        if (inbox) container.read(frontInboxFilterProvider.notifier).toggle();
+        await frames(tester);
+
+        expect(container.read(frontCompanionCardShownProvider), isTrue);
+        expect(card, findsNothing);
+        expect(inset(tester), 0);
+      });
+    }
   });
 
   group('the wizard chips', () {
