@@ -78,40 +78,45 @@ class GenUiBridge {
     ),
   );
 
+  /// Surfaces created without an id of the model's own, for unique ids.
+  int _unnamedSurfaces = 0;
+
+  /// The widget types the controller's catalogs can draw.
+  late final Set<String> _drawableTypes = {
+    for (final catalog in processor.catalogs)
+      for (final item in catalog.items) item.name,
+  };
+
   /// Process a `render_surface` tool call.
   ///
   /// Sends a [CreateSurfaceMessage] followed by an [UpdateComponentsMessage]
   /// carrying the root component to the processor, and returns the surface
-  /// ID.
+  /// ID. A surface the model did not name gets an id of its own, so two such
+  /// surfaces never collide.
+  ///
+  /// Throws a [GenUiBridgeException] — nothing is drawn — for a `rootType`
+  /// the catalogs do not have or `data` that is not an object: a surface is
+  /// never drawn as a type the model did not ask for, or with properties it
+  /// did not give.
   String handleToolCall(Map<String, dynamic> args) {
+    final rootType = args['rootType'];
+    if (rootType is! String || !_drawableTypes.contains(rootType)) {
+      throw GenUiBridgeException(
+        'rootType "$rootType" is not a widget type; use one of the rootType '
+        'values render_surface lists.',
+      );
+    }
+    final rawData = args['data'];
+    if (rawData != null && rawData is! Map<String, dynamic>) {
+      throw GenUiBridgeException(
+        'data must be an object of the $rootType properties.',
+      );
+    }
+    final data = rawData as Map<String, dynamic>? ?? <String, dynamic>{};
     final surfaceIdValue = args['surfaceId'];
     final surfaceId = surfaceIdValue is String && surfaceIdValue.isNotEmpty
         ? surfaceIdValue
-        : 'surface-unknown';
-
-    const supportedRootTypes = {
-      'EvolutionProposal',
-      'SoulProposal',
-      'EvolutionNoteConfirmation',
-      'MetricsSummary',
-      'VersionComparison',
-      'FeedbackClassification',
-      'FeedbackCategoryBreakdown',
-      'SessionProgress',
-      'CategoryRatings',
-      'BinaryChoicePrompt',
-      'ABComparison',
-      'HighPriorityFeedback',
-    };
-    final rootTypeValue = args['rootType'];
-    final rootType =
-        rootTypeValue is String && supportedRootTypes.contains(rootTypeValue)
-        ? rootTypeValue
-        : 'EvolutionProposal';
-    final rawData = args['data'];
-    final data = rawData is Map<String, dynamic>
-        ? rawData
-        : <String, dynamic>{};
+        : 'surface-unnamed-${++_unnamedSurfaces}';
 
     const rootId = 'root';
 
@@ -141,4 +146,15 @@ class GenUiBridge {
     _pendingSurfaceIds.add(surfaceId);
     return surfaceId;
   }
+}
+
+/// A `render_surface` call the bridge did not draw, with the reason the
+/// model is told.
+class GenUiBridgeException implements Exception {
+  const GenUiBridgeException(this.message);
+
+  final String message;
+
+  @override
+  String toString() => message;
 }

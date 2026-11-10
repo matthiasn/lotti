@@ -18,6 +18,7 @@ import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
 import 'package:lotti/features/front_agent/model/front_entity_preview.dart';
 import 'package:lotti/features/front_agent/model/front_reference_links.dart';
+import 'package:lotti/features/front_agent/model/front_reply_components.dart';
 import 'package:lotti/features/front_agent/model/front_reply_layout.dart';
 import 'package:lotti/features/front_agent/model/front_turn_failure.dart';
 import 'package:lotti/features/front_agent/state/front_chat_controller.dart';
@@ -34,10 +35,9 @@ import 'package:lotti/features/front_agent/ui/front_conversation_list.dart';
 import 'package:lotti/features/front_agent/ui/front_door_card.dart';
 import 'package:lotti/features/front_agent/ui/front_door_wizards.dart';
 import 'package:lotti/features/front_agent/ui/front_entity_preview_card.dart';
-import 'package:lotti/features/front_agent/ui/front_logged_time_chart_card.dart';
-import 'package:lotti/features/front_agent/ui/front_pull_request_chart_card.dart';
-import 'package:lotti/features/front_agent/ui/front_task_list.dart';
 import 'package:lotti/features/front_agent/ui/front_turn_cost_line.dart';
+import 'package:lotti/features/front_agent/ui/genui/front_reply_catalog.dart';
+import 'package:lotti/features/front_agent/ui/genui/front_reply_surface.dart';
 import 'package:lotti/features/tasks/util/task_navigation.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -455,10 +455,11 @@ class FrontChatThreadView extends ConsumerWidget {
         settingsDefaultDictationTargetProvider,
       ),
       onLinkTap: (_, url, title) => openLink(url, title),
-      // Her reply is drawn part by part, in the order the turn stored them:
-      // her words, the tasks she listed as preview cards, the charts and
-      // closed-task cards where she placed them; then what her turn's doors
-      // made, as preview cards. A reply of words alone is drawn as usual.
+      // Her reply is a GenUI surface of her reply catalog: her words, the
+      // tasks she listed as preview cards, the charts and closed-task cards
+      // where she placed them, each component's data taken from the reply
+      // as stored; then what her turn's doors made, as preview cards. A
+      // reply of words alone is drawn as usual.
       replyBodyBuilder: (context, message, prose) {
         final parts = thread?.partsOf(message.id) ?? const <FrontReplyPart>[];
         final previews = thread?.entityPreviewsByMessageId[message.id];
@@ -466,77 +467,42 @@ class FrontChatThreadView extends ConsumerWidget {
           return null;
         }
         final closedTasks = thread?.closedTasksByMessageId[message.id];
-        final chart = thread?.loggedTimeByMessageId[message.id];
-        final pullRequests = thread?.pullRequestsByMessageId[message.id];
-        // A task a door made or a closed card shows is not drawn twice.
-        final shown = {
-          ...?closedTasks?.map((task) => task.id),
-          ...?previews?.map((preview) => preview.id),
-        };
-        final tokens = context.designTokens;
-        // A due answer's one list says which window it is; separate lists
-        // — overdue, then due — are named by her own words above each.
-        final due = parts.whereType<FrontReplyCards>().length == 1
-            ? thread?.dueSectionsByMessageId[message.id]
-            : null;
-        Widget? listed(int index, List<FrontEntityReference> cards) {
-          final references = [
-            for (final card in cards)
-              if (!shown.contains(card.id)) card,
-          ];
-          if (references.isEmpty) return null;
-          return Column(
-            key: ValueKey('front-reply-cards-${message.id}-$index'),
+        return FrontReplyScope(
+          prose: (markdown) => prose(deviceDays(markdown)),
+          onOpen: openMade,
+          onOpenTask: (id) => openLink(
+            frontReferenceUrl(FrontDestinationKind.task, id),
+            '',
+          ),
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
-            spacing: tokens.spacing.step2,
+            spacing: context.designTokens.spacing.step4,
             children: [
-              if (due != null) FrontDueSectionLabel(section: due),
-              FrontEntityPreviewList(references: references, onOpen: openMade),
-            ],
-          );
-        }
-
-        Widget? attached(FrontReplyAttachment attachment) =>
-            switch (attachment) {
-              FrontReplyAttachment.closedTasks when closedTasks != null =>
-                FrontClosedTaskList(
-                  key: ValueKey('front-closed-tasks-${message.id}'),
-                  tasks: closedTasks,
-                  onOpen: (id) => openLink(
-                    frontReferenceUrl(FrontDestinationKind.task, id),
-                    '',
-                  ),
+              FrontReplySurface(
+                key: ValueKey('front-reply-surface-${message.id}'),
+                surfaceId: message.id,
+                components: frontReplyComponents(
+                  parts: parts,
+                  closedTasks: closedTasks,
+                  loggedTime: thread?.loggedTimeByMessageId[message.id],
+                  pullRequests: thread?.pullRequestsByMessageId[message.id],
+                  due: thread?.dueSectionsByMessageId[message.id],
+                  // A task a door made or a closed card shows is not drawn
+                  // twice.
+                  shown: {
+                    ...?closedTasks?.map((task) => task.id),
+                    ...?previews?.map((preview) => preview.id),
+                  },
                 ),
-              FrontReplyAttachment.loggedTimeChart when chart != null =>
-                FrontLoggedTimeChartCard(
-                  key: ValueKey('front-logged-time-${message.id}'),
-                  chart: chart,
-                ),
-              FrontReplyAttachment.pullRequestChart when pullRequests != null =>
-                FrontPullRequestChartCard(
-                  key: ValueKey('front-pull-requests-${message.id}'),
-                  chart: pullRequests,
-                ),
-              _ => null,
-            };
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          spacing: tokens.spacing.step4,
-          children: [
-            for (final (index, part) in parts.indexed)
-              ?switch (part) {
-                FrontReplyText(:final markdown) => prose(deviceDays(markdown)),
-                FrontReplyCards(:final cards) => listed(index, cards),
-                FrontReplyShow(:final attachment) => attached(attachment),
-              },
-            if (previews != null)
-              FrontEntityPreviewList(
-                key: ValueKey('front-entity-previews-${message.id}'),
-                references: previews,
-                onOpen: openMade,
               ),
-          ],
+              if (previews != null)
+                FrontEntityPreviewList(
+                  key: ValueKey('front-entity-previews-${message.id}'),
+                  references: previews,
+                  onOpen: openMade,
+                ),
+            ],
+          ),
         );
       },
       onRetry: controller.retry,

@@ -1,7 +1,7 @@
 ---
 type: Feature Module
 title: Front agent
-description: The one agent the user talks to in one place — how a durable user turn becomes a routing wake, what the routing index holds, how the dispatch contract is validated in code, the capped lookups and the repair round, the deterministic records a turn leaves behind, how the door walker takes each segment to its owner and mirrors the answer, how a statement becomes a proposal the user's one tap files, how a dictated task is filled from her reading of the words and made on the tap, how "that one" finds the task a follow-up follows, what the inbox is, how an unanswered turn is recovered on any device, how turns form conversations, how she answers what is due, how much time was logged, with a chart under her words, what was completed or rejected, and how many pull requests the user opened and shipped, with charts under her words, and names tasks as links, how a reply is composed of words, cards and charts in her order and checked before it is stored, what the chat surface renders, how a stalled or failed turn is bounded, timed and named, and what she hears and says.
+description: The one agent the user talks to in one place — how a durable user turn becomes a routing wake, what the routing index holds, how the dispatch contract is validated in code, the capped lookups and the repair round, the deterministic records a turn leaves behind, how the door walker takes each segment to its owner and mirrors the answer, how a statement becomes a proposal the user's one tap files, how a dictated task is filled from her reading of the words and made on the tap, how "that one" finds the task a follow-up follows, what the inbox is, how an unanswered turn is recovered on any device, how turns form conversations, how she answers what is due, how much time was logged, with a chart under her words, what was completed or rejected, and how many pull requests the user opened and shipped, with charts under her words, and names tasks as links, how a reply is composed of words, cards and charts in her order, checked before it is stored, and drawn as a GenUI surface, what the chat surface renders, how a stalled or failed turn is bounded, timed and named, and what she hears and says.
 resource: ../../lib/features/front_agent
 tags: [agents, front-agent, routing, dispatch, doors, filing, inbox, companion, chat]
 status: draft
@@ -152,6 +152,18 @@ sources:
     resource: ../../lib/features/front_agent/model/front_reply_layout.dart
     title: FrontReplyPart — the catalog her reply is composed from (words, cards, what a lookup made)
     last_modified: 2026-11-10
+  - id: reply-components
+    resource: ../../lib/features/front_agent/model/front_reply_components.dart
+    title: frontReplyComponents — a reply's parts as A2UI components, their data from the reply as stored
+    last_modified: 2026-11-11
+  - id: reply-catalog
+    resource: ../../lib/features/front_agent/ui/genui/front_reply_catalog.dart
+    title: frontReplyCatalog and FrontReplyScope — her reply's GenUI catalog on the chat's own widgets
+    last_modified: 2026-11-11
+  - id: reply-surface
+    resource: ../../lib/features/front_agent/ui/genui/front_reply_surface.dart
+    title: FrontReplySurface — one reply as a GenUI surface, updated in place
+    last_modified: 2026-11-11
   - id: reply-layout-reader
     resource: ../../lib/features/front_agent/workflow/front_reply_layout_reader.dart
     title: readFrontReplyLayout — reply_to_user's parts checked against what the turn saw, nothing a lookup found lost
@@ -1362,14 +1374,30 @@ skipped), and `FrontChatThread.partsOf` is what the surface draws: those
 parts, or — for a reply stored before replies had parts — her words, then
 what it carries in catalog order. Her words are never cut into lists: a
 Markdown list of task links in a reply stays her words, its links still
-open. The pane hands `AgentChatView.replyBodyBuilder` a body for any reply
-whose parts are more than words: a text part through the view's own
-Markdown (with the device's dates), a cards part as a
-`FrontEntityPreviewList` — a task as `FrontEntityPreviewCompactCard`, a
-project as `FrontEntityPreviewProjectCard` (both below), a tap opening a
-task on top of her and a project after closing her — and a `show` part as
-its chart or closed-task card, or nothing when the reply does not carry
-it. `<conversation_tasks>` counts the tasks her cards listed as named.
+open.
+
+**Her reply is drawn as a GenUI surface.** The pane hands
+`AgentChatView.replyBodyBuilder` a body for any reply whose parts are more
+than words: a `FrontReplySurface` keyed by the reply, which holds a
+`SurfaceController` of `frontReplyCatalog` and draws GenUI's `Surface`.
+`frontReplyComponents` maps the parts to A2UI components — a root
+`FrontReply` listing, in order, `FrontText`, `FrontCards`,
+`FrontClosedTasks`, `FrontLoggedTimeChart` and `FrontPullRequestChart`
+components — and **every component's data is the reply as stored**, never
+the model's: a `show` whose data the reply does not carry draws nothing, a
+card a door's preview or a closed-task card already shows is left out (an
+emptied list with it), an attachment placed twice is drawn once, and the due
+window labels a reply's one list only. Each catalog item builds on the
+chat's own widgets: her words through the view's Markdown (with the
+device's dates), a cards list as a `FrontEntityPreviewList` — a task as
+`FrontEntityPreviewCompactCard`, a project as `FrontEntityPreviewProjectCard`
+(both below) — and the closed-task card and charts as they always were.
+What a tap does comes from `FrontReplyScope` above the surface (a task
+opens on top of her, a project after closing her), so the catalog itself is
+static. The surface is created once per reply and updated in place when its
+components change. GenUI checks the components against each item's schema
+after the update; the components the mapping draws pass it. What the doors
+made follows the surface as preview cards. it. `<conversation_tasks>` counts the tasks her cards listed as named.
 
 ```mermaid
 flowchart LR
@@ -1382,7 +1410,8 @@ flowchart LR
   R -->|"text + parts (undrawable parts dropped, named, logged)"| P[(reply payload: text, parts)]
   P --> B[FrontChatThreadBuilder]
   B --> T["FrontChatThread.partsOf(id)"]
-  T --> S[pane: words, cards, charts in order]
+  T --> C["frontReplyComponents: A2UI components, data from the reply"]
+  C --> G["FrontReplySurface: SurfaceController + Surface (frontReplyCatalog)"]
 ```
 
 **An answer about what is due says which window, quietly.** Her prompt has

@@ -106,7 +106,8 @@ void main() {
   /// Every list of cards her reply draws, in any reply.
   final herLists = find.byWidgetPredicate(
     (widget) => switch (widget.key) {
-      ValueKey<String>(:final value) => value.startsWith('front-reply-cards-'),
+      ValueKey<String>(:final value) =>
+        value.startsWith('front-reply-') && value.contains('-cards-'),
       _ => false,
     },
   );
@@ -117,7 +118,7 @@ void main() {
       tester
           .widget<FrontEntityPreviewList>(
             find.descendant(
-              of: find.byKey(ValueKey('front-reply-cards-$replyId-$part')),
+              of: find.byKey(ValueKey('front-reply-$replyId-cards-$part')),
               matching: find.byType(FrontEntityPreviewList),
             ),
           )
@@ -1080,7 +1081,7 @@ void main() {
       find.textContaining('Two things:', findRichText: true),
     );
     final card = tester.getRect(
-      find.byKey(const ValueKey('front-reply-cards-a1-1')),
+      find.byKey(const ValueKey('front-reply-a1-cards-1')),
     );
     final after = tester.getTopLeft(
       find.textContaining('Eggs first.', findRichText: true),
@@ -1156,7 +1157,7 @@ void main() {
         ], due: dueToday),
       );
 
-      final list = find.byKey(const ValueKey('front-reply-cards-a1-1'));
+      final list = find.byKey(const ValueKey('front-reply-a1-cards-1'));
       final label = find.descendant(
         of: list,
         matching: find.byType(FrontDueSectionLabel),
@@ -1190,7 +1191,7 @@ void main() {
       expect(find.byType(FrontDueSectionLabel), findsNothing);
       expect(
         tester
-            .getRect(find.byKey(const ValueKey('front-reply-cards-a1-1')))
+            .getRect(find.byKey(const ValueKey('front-reply-a1-cards-1')))
             .bottom,
         lessThan(
           tester
