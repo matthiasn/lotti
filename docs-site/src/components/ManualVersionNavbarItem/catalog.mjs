@@ -39,3 +39,30 @@ export async function fetchLiveCatalog(url, fetchImpl = globalThis.fetch) {
     return null;
   }
 }
+
+const escapeHtml = (text) =>
+  String(text)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;');
+
+/**
+ * One entry of the version dropdown. Another version is another site, so the
+ * link must be a plain page load in the same tab, with no baseUrl of its own:
+ *
+ * - `pathname://` keeps it out of the client router (which knows only this
+ *   build's pages) and out of the build's broken-link check;
+ * - `autoAddBaseUrl: false` stops `Link` prefixing this build's baseUrl — a
+ *   release build would otherwise link `/manual/<release>/manual/development/`;
+ * - `target: '_self'` undoes the new tab `Link` gives non-routed links, and
+ *   `html` (not `label`) leaves out the external-link icon a `label` gets.
+ */
+export function versionMenuItem({label, version, manualRootPath, localeSuffix}) {
+  return {
+    html: escapeHtml(label),
+    href: `pathname://${manualRootPath}/${version}${localeSuffix}/`,
+    autoAddBaseUrl: false,
+    target: '_self',
+  };
+}
