@@ -1123,6 +1123,21 @@ void main() {
             subDomain: any(named: 'subDomain'),
           ),
         ).thenReturn(null);
+        when(() => mockConversationManager.messages).thenReturn([
+          const ChatCompletionMessage.assistant(content: 'Looked it over.'),
+          const ChatCompletionMessage.assistant(
+            toolCalls: [
+              ChatCompletionMessageToolCall(
+                id: 'report-call',
+                type: ChatCompletionMessageToolCallType.function,
+                function: ChatCompletionMessageFunctionCall(
+                  name: TaskAgentToolNames.updateReport,
+                  arguments: '{}',
+                ),
+              ),
+            ],
+          ),
+        ]);
         final capturingRepo =
             MockConversationRepository(mockConversationManager)
               ..maxDelegateCalls = 2
@@ -1249,6 +1264,37 @@ void main() {
             reason: phase,
           );
         }
+
+        // The route names the model the profile resolved to, not the
+        // template's, and the completed line says how the conversation went.
+        final route =
+            verify(
+                  () => domainLogger.log(
+                    LogDomain.agentWorkflow,
+                    captureAny<String>(that: startsWith('route:')),
+                    subDomain: 'execute',
+                  ),
+                ).captured.single
+                as String;
+        expect(
+          route,
+          startsWith(
+            'route: model=$meliousQwen35122BA10BModelId, provider=melious, ',
+          ),
+        );
+        final completed =
+            verify(
+                  () => domainLogger.log(
+                    LogDomain.agentWorkflow,
+                    captureAny<String>(that: startsWith('Wake completed')),
+                    subDomain: 'TaskAgentWorkflow',
+                  ),
+                ).captured.single
+                as String;
+        expect(
+          completed,
+          contains('turns [text] → [update_report], report published, '),
+        );
 
         verify(
           () => domainLogger.log(

@@ -566,6 +566,22 @@ These context details are load-bearing:
   text is logged. The per-request token counts it is read against are the
   `consumption_events` rows (`wake_run_key`, `turn_index`,
   `cached_input_tokens`).
+- **Every wake logs the route it ran on and how its conversation went**
+  (subdomain `execute`, then `TaskAgentWorkflow`). `route:` names the model,
+  provider type, profile and resolution source the profile resolved to — a
+  setup that follows its category resolves afresh each wake, so this can move
+  without the agent's config changing, and the earlier `templateModel=` is
+  only the template's own. `Wake completed` carries
+  `wakeConversationTrace` (`wake_conversation_trace.dart`): one bracket per
+  assistant turn with the tool names it called, `[text]` for the reply that
+  ends the wake, and whether a report was published, missing or not needed.
+  A wake that did nothing reads `turns [text], report not needed`.
+- **A reply without a tool call ends the wake**
+  (`TaskAgentStrategy.getContinuationPrompt` is only asked after tool calls),
+  and the prompt says so in `TaskAgentReportPolicy.publicationRule`. The
+  observation rule's "most wakes record nothing" is worded as "never means
+  doing nothing", because a model can read permission to skip notes as
+  permission to skip the wake's tool calls and answer in prose on turn one.
 - **Observations follow one contract** (`task_observation_contract.dart`):
   `taskObservationRule` is interpolated into both scaffolds, and the
   `record_observations` handler applies `applyTaskObservationContract` against

@@ -11,8 +11,9 @@ abstract final class TaskAgentReportPolicy {
       'When no report exists yet or a material task change makes the existing '
       'report stale, call `update_report` exactly once as the final action. '
       'Otherwise finish with a brief plain-text note and do not republish '
-      'unchanged content. Label or language housekeeping alone does not '
-      'require a new report.';
+      'unchanged content. A reply without a tool call ends the wake, so send '
+      'it only after every tool call the evidence calls for. Label or '
+      'language housekeeping alone does not require a new report.';
 
   /// Existing-report context contains no prior report prose.
   static const existingReportContext = '''

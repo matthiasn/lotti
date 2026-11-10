@@ -318,7 +318,8 @@ final taskPlanningTools = <AgentToolDefinition>[
         'settled question, an anomaly, a tool failure. Never restate task '
         "state, never copy the user's words (cite the entry id) and never "
         'repeat an earlier observation: if it changed, record the change '
-        'with [[supersedes:<observationId>]]. Recording nothing is normal. '
+        'with [[supersedes:<observationId>]]. Recording nothing is normal, '
+        "and never a reason to skip the task's other tool calls. "
         'For grievances and excellence notes, set priority to "critical". '
         'Give "notable" and "critical" observations a category.',
     parameters: recordObservationsParameters(
