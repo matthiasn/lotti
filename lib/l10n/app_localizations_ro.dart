@@ -5275,6 +5275,20 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsNextDayMoreTooltip => 'Mai mult';
 
   @override
+  String dailyOsNextDayOverline(String lead, String detail) {
+    return '$lead · $detail';
+  }
+
+  @override
+  String get dailyOsNextDayRelationToday => 'Astăzi';
+
+  @override
+  String get dailyOsNextDayRelationTomorrow => 'Mâine';
+
+  @override
+  String get dailyOsNextDayRelationYesterday => 'Ieri';
+
+  @override
   String get dailyOsNextDayTitle => 'Ziua dvs.';
 
   @override
@@ -5883,6 +5897,17 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get dailyOsNextUncommitFailed =>
       'Anularea nu a reușit — planul rămâne confirmat.';
+
+  @override
+  String get dailyOsNextWeekStripNextWeek => 'Săptămâna următoare';
+
+  @override
+  String get dailyOsNextWeekStripPreviousWeek => 'Săptămâna anterioară';
+
+  @override
+  String dailyOsNextWeekStripSelectDay(String date) {
+    return 'Selectați $date';
+  }
 
   @override
   String get dailyOsOnboardingCoachCapture => 'Spuneți ce vă preocupă.';

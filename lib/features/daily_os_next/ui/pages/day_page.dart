@@ -36,6 +36,7 @@ import 'package:lotti/features/design_system/components/glass_strip.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -382,7 +383,7 @@ class _DayPageState extends ConsumerState<DayPage> {
         child: Column(
           children: [
             DayHeader(
-              dateStrip: widget.dateStrip,
+              navigation: widget.navigation,
               date: widget.draft.dayDate,
               selectedView: _view,
               hasPlan: widget.hasPlan,

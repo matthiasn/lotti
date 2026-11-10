@@ -2220,6 +2220,23 @@
   "dailyOsNextDayMenuInspectAgent": "Prozkoumat agenta",
   "dailyOsNextDayMenuSettings": "Nastavení Daily OS",
   "dailyOsNextDayMoreTooltip": "Více",
+  "dailyOsNextDayOverline": "{lead} · {detail}",
+  "@dailyOsNextDayOverline": {
+    "description": "The day page's overline: how the day relates to today (or its weekday), then the weekday (or the year).",
+    "placeholders": {
+      "lead": {
+        "type": "String",
+        "example": "Today"
+      },
+      "detail": {
+        "type": "String",
+        "example": "Sunday"
+      }
+    }
+  },
+  "dailyOsNextDayRelationToday": "Dnes",
+  "dailyOsNextDayRelationTomorrow": "Zítra",
+  "dailyOsNextDayRelationYesterday": "Včera",
   "dailyOsNextDayTitle": "Tvůj den",
   "dailyOsNextDayWhyChipLabel": "Proč",
   "dailyOsNextDayWrapUpCta": "Ukončit",
@@ -2446,6 +2463,18 @@
   "dailyOsNextTriageDrop": "Zahodit",
   "dailyOsNextTriageToday": "Dnes",
   "dailyOsNextUncommitFailed": "Vrátit to nešlo — plán zůstává potvrzený.",
+  "dailyOsNextWeekStripNextWeek": "Příští týden",
+  "dailyOsNextWeekStripPreviousWeek": "Předchozí týden",
+  "dailyOsNextWeekStripSelectDay": "Vybrat {date}",
+  "@dailyOsNextWeekStripSelectDay": {
+    "description": "Screen-reader label of one day in the day page's week strip.",
+    "placeholders": {
+      "date": {
+        "type": "String",
+        "example": "Sunday, November 9"
+      }
+    }
+  },
   "dailyOsOnboardingCoachCapture": "Řekni, co ti leží v hlavě.",
   "dailyOsOnboardingCoachDrafting": "Plánovač vytváří nové úkoly a zasazuje práci do tvého dne.",
   "dailyOsOnboardingCoachReconcile": "Vyber, co patří do dneška. Nové položky se stanou úkoly, až sestavíš den.",

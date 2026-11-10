@@ -35,10 +35,10 @@ import 'package:lotti/features/daily_os_next/state/day_activity_provider.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/state/refine_controller.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/day_page.dart';
+import 'package:lotti/features/daily_os_next/ui/pages/day_page_header.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/refine_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/shutdown_page.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/agenda_view.dart';
-import 'package:lotti/features/daily_os_next/ui/widgets/daily_os_date_strip.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_activity_view.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_briefing_companion.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline.dart';
@@ -836,12 +836,10 @@ Widget _dayShell(
     hasPlan: hasPlan,
     // What `DailyOsNextRoot` hands the page in production: the day's own
     // navigation as the header title.
-    dateStrip: rootChrome
-        ? DailyOsDateStrip(
-            selected: _day,
-            isToday: true,
-            onPrev: () {},
-            onNext: () {},
+    navigation: rootChrome
+        ? DayNavigation(
+            today: _day,
+            onSelect: (_) {},
             onPick: () {},
             onToday: () {},
           )

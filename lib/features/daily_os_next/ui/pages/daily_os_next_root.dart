@@ -8,6 +8,7 @@ import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_session_c
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/state/selected_date_provider.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/day_page.dart';
+import 'package:lotti/features/daily_os_next/ui/pages/day_page_header.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/day_planning_modal.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/day_planning_result.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/daily_os_date_strip.dart';
@@ -25,7 +26,7 @@ import 'package:material_ui/material_ui.dart';
 /// exists, otherwise the empty Day surface (its timeline still reflects
 /// any tracked time) whose footer CTA opens the day-planning modal
 /// ([showDayPlanningModal]) for the Capture → Reconcile → Drafting ritual.
-/// A small date strip lets the user pick the day first.
+/// The page's masthead and week strip pick the day ([DayNavigation]).
 class DailyOsNextRoot extends ConsumerStatefulWidget {
   const DailyOsNextRoot({super.key});
 
@@ -37,10 +38,6 @@ class _DailyOsNextRootState extends ConsumerState<DailyOsNextRoot> {
   DateTime get _today {
     final now = clock.now();
     return DateTime(now.year, now.month, now.day);
-  }
-
-  void _shiftDay(int days) {
-    ref.read(dailyOsNextSelectedDateProvider.notifier).shiftDays(days);
   }
 
   /// Opens the create ritual and routes its typed outcome through the Daily OS
@@ -150,11 +147,9 @@ class _DailyOsNextRootState extends ConsumerState<DailyOsNextRoot> {
   }
 
   Widget _buildSurface(DateTime selectedDate, DraftPlan? plan) {
-    final strip = DailyOsDateStrip(
-      selected: selectedDate,
-      isToday: selectedDate.isAtSameMomentAs(_today),
-      onPrev: () => _shiftDay(-1),
-      onNext: () => _shiftDay(1),
+    final navigation = DayNavigation(
+      today: _today,
+      onSelect: ref.read(dailyOsNextSelectedDateProvider.notifier).select,
       onPick: _pickDate,
       onToday: _goToToday,
     );
@@ -162,7 +157,7 @@ class _DailyOsNextRootState extends ConsumerState<DailyOsNextRoot> {
       return DayPage(
         key: ValueKey(selectedDate.toIso8601String()),
         draft: plan,
-        dateStrip: strip,
+        navigation: navigation,
       );
     }
     // No plan for the selected date — show the Day surface in its empty
@@ -177,7 +172,7 @@ class _DailyOsNextRootState extends ConsumerState<DailyOsNextRoot> {
       onCheckIn: () => unawaited(_runCheckIn(selectedDate)),
       onSubmitCheckIn: (words, {audioId}) =>
           _submitCheckIn(selectedDate, words, audioId: audioId),
-      dateStrip: strip,
+      navigation: navigation,
     );
   }
 }

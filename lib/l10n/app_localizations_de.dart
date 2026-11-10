@@ -5226,6 +5226,20 @@ class AppLocalizationsDe extends AppLocalizations {
   String get dailyOsNextDayMoreTooltip => 'Mehr';
 
   @override
+  String dailyOsNextDayOverline(String lead, String detail) {
+    return '$lead · $detail';
+  }
+
+  @override
+  String get dailyOsNextDayRelationToday => 'Heute';
+
+  @override
+  String get dailyOsNextDayRelationTomorrow => 'Morgen';
+
+  @override
+  String get dailyOsNextDayRelationYesterday => 'Gestern';
+
+  @override
   String get dailyOsNextDayTitle => 'Dein Tag';
 
   @override
@@ -5827,6 +5841,17 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get dailyOsNextUncommitFailed =>
       'Rückgängig ging nicht — der Plan bleibt festgelegt.';
+
+  @override
+  String get dailyOsNextWeekStripNextWeek => 'Nächste Woche';
+
+  @override
+  String get dailyOsNextWeekStripPreviousWeek => 'Vorige Woche';
+
+  @override
+  String dailyOsNextWeekStripSelectDay(String date) {
+    return '$date auswählen';
+  }
 
   @override
   String get dailyOsOnboardingCoachCapture => 'Sag, was dir im Kopf herumgeht.';

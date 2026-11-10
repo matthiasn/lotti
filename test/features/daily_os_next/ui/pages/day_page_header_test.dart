@@ -12,7 +12,9 @@ import 'package:lotti/features/companion/state/spoken_track.dart';
 import 'package:lotti/features/companion/ui/companion_speaker.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_persona_provider.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/day_page.dart';
+import 'package:lotti/features/daily_os_next/ui/pages/day_page_header.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_agent_status_chip.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/day_week_strip.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/plan_view_toggle.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/processing_category_filter_button.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
@@ -40,80 +42,76 @@ void main() {
   setUpAll(loadAppFonts);
 
   group('DayHeader layout', () {
-    testWidgets('header stacks the three-view toggle when it needs room', (
-      tester,
-    ) async {
-      // Just under the width at which the toggle joins the title row, so the
-      // assertion sits on the stacking side of a real break point rather than
-      // somewhere comfortably wide.
-      setTestSurfaceSize(tester, const Size(600, 844));
-      const label = 'May 31, 2026';
-      await tester.pumpWidget(
-        wrapDayPage(
-          DayPage(
-            draft: draftedPlan(),
-            dateStrip: dateStripLike(label),
-          ),
-          mediaQueryData: phoneMediaQueryData.copyWith(
-            size: const Size(600, 844),
-          ),
-        ),
-      );
-      await tester.pump();
-
-      final dateBottom = tester.getBottomLeft(find.text(label)).dy;
-      final toggleTop = tester.getTopLeft(find.byType(PlanViewToggle)).dy;
-
-      expect(toggleTop, greaterThan(dateBottom));
-      expect(tester.takeException(), isNull);
-    });
-
-    testWidgets('header moves the plan toggle below only when it cannot fit', (
-      tester,
-    ) async {
-      setTestSurfaceSize(tester, phoneMediaQueryData.size);
-      const label = 'May 31, 2026';
-      await tester.pumpWidget(
-        wrapDayPage(
-          DayPage(
-            draft: draftedPlan(),
-            dateStrip: dateStripLike(label),
-          ),
-          mediaQueryData: phoneMediaQueryData,
-        ),
-      );
-      await tester.pump();
-
-      final dateBottom = tester.getBottomLeft(find.text(label)).dy;
-      final toggleTop = tester.getTopLeft(find.byType(PlanViewToggle)).dy;
-
-      expect(find.text(label), findsOneWidget);
-      expect(toggleTop, greaterThan(dateBottom));
-      expect(tester.takeException(), isNull);
-    });
-
     testWidgets(
-      'a second row too narrow for both drops the actions below the toggle',
+      'phone: the masthead leads its row with the actions at its end; the '
+      'week strip, then the toggle, beneath',
       (tester) async {
-        // Narrow enough that the toggle and the trailing actions cannot sit
-        // side by side. Pinning them to opposite edges without a fit check
-        // overlapped them, hiding toggle segments behind the filter/menu
-        // cluster.
-        setTestSurfaceSize(tester, const Size(390, 900));
-        const label = 'May 31, 2026';
+        setTestSurfaceSize(tester, const Size(390, 844));
         await tester.pumpWidget(
           wrapDayPage(
-            DayPage(
-              draft: draftedPlan(),
-              dateStrip: dateStripLike(label),
+            DayPage(draft: draftedPlan(), navigation: _navigation()),
+            mediaQueryData: phoneMediaQueryData.copyWith(
+              size: const Size(390, 844),
             ),
+          ),
+        );
+        await tester.pump();
+
+        final masthead = tester.getRect(_masthead);
+        final filter = tester.getRect(
+          find.byType(ProcessingCategoryFilterButton),
+        );
+        final strip = tester.getRect(find.byType(DayWeekStrip));
+        final toggle = tester.getRect(find.byType(PlanViewToggle));
+
+        expect(filter.left, greaterThan(masthead.right));
+        expect(filter.top, lessThan(masthead.bottom));
+        expect(strip.top, greaterThanOrEqualTo(masthead.bottom));
+        expect(toggle.top, greaterThanOrEqualTo(strip.bottom));
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      'wide: the toggle joins the masthead row, the week strip beneath it',
+      (tester) async {
+        setTestSurfaceSize(tester, const Size(1024, 900));
+        await tester.pumpWidget(
+          wrapDayPage(
+            DayPage(draft: draftedPlan(), navigation: _navigation()),
+            mediaQueryData: phoneMediaQueryData.copyWith(
+              size: const Size(1024, 900),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        final masthead = tester.getRect(_masthead);
+        final toggle = tester.getRect(find.byType(PlanViewToggle));
+        final strip = tester.getRect(find.byType(DayWeekStrip));
+
+        expect(toggle.left, greaterThan(masthead.right));
+        expect(toggle.center.dy, closeTo(masthead.center.dy, 0.5));
+        expect(strip.top, greaterThanOrEqualTo(masthead.bottom));
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      'a masthead row too narrow for the actions sends them after the toggle, '
+      'never over it',
+      (tester) async {
+        // Large text and the "Needs attention" pill make the actions too
+        // wide to sit beside the masthead on a phone.
+        setTestSurfaceSize(tester, const Size(390, 900));
+        await tester.pumpWidget(
+          wrapDayPage(
+            DayPage(draft: draftedPlan(), navigation: _navigation()),
             mediaQueryData: phoneMediaQueryData.copyWith(
               size: const Size(390, 900),
               textScaler: const TextScaler.linear(1.3),
             ),
             overrides: [
-              // A non-idle agent renders the "Needs attention" pill, which is
-              // what makes the actions cluster wide enough to collide.
               dayAgentPersonaStateProvider.overrideWith(
                 (ref, date) async => DayAgentPersonaState.attention,
               ),
@@ -123,30 +121,44 @@ void main() {
         await tester.pump();
         await tester.pump();
 
+        final masthead = tester.getRect(_masthead);
+        final strip = tester.getRect(find.byType(DayWeekStrip));
         final toggle = tester.getRect(find.byType(PlanViewToggle));
         final actions = tester.getRect(
           find.byType(ProcessingCategoryFilterButton),
         );
+        expect(actions.top, greaterThanOrEqualTo(masthead.bottom));
+        expect(actions.top, greaterThanOrEqualTo(strip.bottom));
         expect(
           toggle.overlaps(actions),
           isFalse,
           reason: 'the toggle and the header actions must never overlap',
         );
-        // With no room for both, the actions take a row of their own rather
-        // than the toggle being squeezed below its shrink-wrapped width.
-        expect(
-          actions.top,
-          greaterThanOrEqualTo(toggle.bottom),
-          reason: 'the actions must drop below the toggle, not beside it',
-        );
         expect(tester.takeException(), isNull);
       },
     );
 
+    testWidgets('without day navigation there is no week strip', (
+      tester,
+    ) async {
+      setTestSurfaceSize(tester, phoneMediaQueryData.size);
+      await tester.pumpWidget(
+        wrapDayPage(
+          DayPage(draft: draftedPlan()),
+          mediaQueryData: phoneMediaQueryData,
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byType(DayWeekStrip), findsNothing);
+      expect(find.text('May 26'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
     group('the nav row', () {
       testWidgets(
-        'carries the chevron and the actions on one centre line, the title '
-        'and toggle beneath',
+        'carries the chevron and the actions on one centre line, the '
+        'masthead and toggle beneath',
         (tester) async {
           setTestSurfaceSize(tester, phoneMediaQueryData.size);
           await tester.pumpWidget(
@@ -165,23 +177,20 @@ void main() {
           final filter = tester.getRect(
             find.byType(ProcessingCategoryFilterButton),
           );
-          final title = tester.getRect(find.text('Your day'));
+          final title = tester.getRect(find.text('May 26'));
           final toggle = tester.getRect(find.byType(PlanViewToggle));
 
           expect(filter.center.dy, closeTo(back.center.dy, 0.5));
           expect(title.top, greaterThanOrEqualTo(back.bottom));
-          // The toggle rides the title's row, on its centre line.
           expect(toggle.left, greaterThan(title.right));
-          expect(toggle.top, lessThan(title.bottom));
-          // Not centred on the chevron and title together, as it once was.
           expect(toggle.top, greaterThanOrEqualTo(back.bottom));
           expect(tester.takeException(), isNull);
         },
       );
 
       testWidgets(
-        'keeps the title and the content below on one rail, and the actions '
-        'flush with the toolbar edge',
+        'keeps the masthead and the content below on one rail, and the '
+        'actions flush with the toolbar edge',
         (tester) async {
           setTestSurfaceSize(tester, phoneMediaQueryData.size);
           await tester.pumpWidget(
@@ -194,12 +203,10 @@ void main() {
 
           final tokens = tester.element(find.byType(DayPage)).designTokens;
           final rail = tokens.spacing.step5;
-          final title = tester.getRect(find.text('Your day'));
+          final title = tester.getRect(find.text('May 26'));
           final menu = tester.getRect(find.byIcon(LottiIcons.moreVertical));
 
           expect(title.left, closeTo(rail, 1));
-          // The menu glyph centres where the timeline toolbar's last icon
-          // button would: one 48 pt button in from the right rail.
           expect(
             phoneMediaQueryData.size.width - menu.center.dx,
             closeTo(rail + kMinInteractiveDimension / 2, 1),
@@ -213,40 +220,147 @@ void main() {
       tester,
     ) async {
       setTestSurfaceSize(tester, const Size(640, 844));
-      const label = 'May 31, 2026';
       final mediaQueryData = phoneMediaQueryData.copyWith(
         size: const Size(640, 844),
       );
-      await tester.pumpWidget(
-        wrapDayPage(
-          DayPage(
-            draft: draftedPlan(),
-            dateStrip: dateStripLike(label),
+      Future<double> titleTopAt(double step2) async {
+        await tester.pumpWidget(
+          wrapDayPage(
+            DayPage(draft: draftedPlan(), navigation: _navigation()),
+            mediaQueryData: mediaQueryData,
+            theme: themeWithHeaderSpacing(step2),
           ),
-          mediaQueryData: mediaQueryData,
-          theme: themeWithHeaderSpacing(20),
-        ),
-      );
-      await tester.pump();
-      final firstTop = tester.getTopLeft(find.text(label)).dy;
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 250));
+        return tester.getTopLeft(find.text('May 26')).dy;
+      }
 
-      await tester.pumpWidget(
-        wrapDayPage(
-          DayPage(
-            draft: draftedPlan(),
-            dateStrip: dateStripLike(label),
-          ),
-          mediaQueryData: mediaQueryData,
-          theme: themeWithHeaderSpacing(32),
-        ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 250));
-      final secondTop = tester.getTopLeft(find.text(label)).dy;
+      final first = await titleTopAt(20);
+      final second = await titleTopAt(32);
 
-      expect(secondTop, greaterThan(firstTop));
+      expect(second, greaterThan(first));
       expect(tester.takeException(), isNull);
     });
+  });
+
+  group('DayHeader masthead', () {
+    // The plan's day is Tuesday, May 26 2026; `today` moves around it.
+    for (final (today, overline) in [
+      (DateTime(2026, 5, 26), 'Today · Tuesday'),
+      (DateTime(2026, 5, 25), 'Tomorrow · Tuesday'),
+      (DateTime(2026, 5, 27), 'Yesterday · Tuesday'),
+      (DateTime(2026, 5, 20), 'Tuesday'),
+      (DateTime(2026, 6, 2), 'Tuesday'),
+      (DateTime(2027, 1, 4), 'Tuesday · 2026'),
+    ]) {
+      testWidgets('reads "$overline" over the date when today is '
+          '${today.toIso8601String().substring(0, 10)}', (tester) async {
+        await _pumpHeader(tester, navigation: _navigation(today: today));
+
+        expect(find.text(overline), findsOneWidget);
+        expect(find.text('May 26'), findsOneWidget);
+      });
+    }
+
+    testWidgets('a tomorrow across a new year is still Tomorrow, no year', (
+      tester,
+    ) async {
+      await _pumpHeader(
+        tester,
+        draftDay: DateTime(2027),
+        navigation: _navigation(today: DateTime(2026, 12, 31)),
+      );
+
+      expect(find.text('Tomorrow · Friday'), findsOneWidget);
+      expect(find.text('January 1'), findsOneWidget);
+    });
+
+    testWidgets('sets the date in heading2 with tabular figures', (
+      tester,
+    ) async {
+      await _pumpHeader(tester, navigation: _navigation());
+      final tokens = tester.element(find.byType(DayPage)).designTokens;
+
+      final title = tester.widget<Text>(find.text('May 26'));
+      expect(
+        title.style?.fontSize,
+        tokens.typography.styles.heading.heading2.fontSize,
+      );
+      expect(title.style?.color, tokens.colors.text.highEmphasis);
+      expect(
+        title.style?.fontFeatures,
+        contains(const FontFeature.tabularFigures()),
+      );
+    });
+
+    testWidgets('a tap opens the picker, a long press returns to today', (
+      tester,
+    ) async {
+      var picks = 0;
+      var todays = 0;
+      await _pumpHeader(
+        tester,
+        navigation: _navigation(
+          onPick: () => picks++,
+          onToday: () => todays++,
+        ),
+      );
+
+      await tester.tap(_masthead);
+      expect((picks, todays), (1, 0));
+
+      await tester.longPress(_masthead);
+      expect((picks, todays), (1, 1));
+    });
+
+    testWidgets('without day navigation the masthead is not a button', (
+      tester,
+    ) async {
+      await _pumpHeader(tester);
+
+      expect(find.text('May 26'), findsOneWidget);
+      expect(_masthead, findsNothing);
+    });
+  });
+
+  group('DayHeader week strip', () {
+    testWidgets('a tapped day is handed to the navigation', (tester) async {
+      final selected = <DateTime>[];
+      await _pumpHeader(
+        tester,
+        navigation: _navigation(onSelect: selected.add),
+      );
+
+      await tester.tap(
+        find.byKey(
+          ValueKey(
+            'daily_os_week_strip_${DateTime(2026, 5, 28).toIso8601String()}',
+          ),
+        ),
+      );
+
+      expect(selected, [DateTime(2026, 5, 28)]);
+    });
+
+    for (final (width, chevrons) in [(1400.0, true), (390.0, false)]) {
+      testWidgets(
+        '${chevrons ? 'carries' : 'leaves out'} the week chevrons at '
+        '${width.toInt()} px',
+        (tester) async {
+          await _pumpHeader(
+            tester,
+            size: Size(width, 900),
+            navigation: _navigation(),
+          );
+
+          expect(
+            find.byKey(const Key('daily_os_week_strip_next')),
+            chevrons ? findsOneWidget : findsNothing,
+          );
+        },
+      );
+    }
   });
 
   group('DayHeader menu', () {
@@ -347,4 +461,38 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   });
+}
+
+final Finder _masthead = find.byKey(const Key('daily_os_day_masthead'));
+
+DayNavigation _navigation({
+  DateTime? today,
+  ValueChanged<DateTime>? onSelect,
+  VoidCallback? onPick,
+  VoidCallback? onToday,
+}) => DayNavigation(
+  today: today ?? DateTime(2026, 5, 26),
+  onSelect: onSelect ?? (_) {},
+  onPick: onPick ?? () {},
+  onToday: onToday ?? () {},
+);
+
+Future<void> _pumpHeader(
+  WidgetTester tester, {
+  DayNavigation? navigation,
+  DateTime? draftDay,
+  Size size = const Size(1024, 900),
+}) async {
+  setTestSurfaceSize(tester, size);
+  final draft = draftedPlan();
+  await tester.pumpWidget(
+    wrapDayPage(
+      DayPage(
+        draft: draftDay == null ? draft : draft.copyWith(dayDate: draftDay),
+        navigation: navigation,
+      ),
+      mediaQueryData: phoneMediaQueryData.copyWith(size: size),
+    ),
+  );
+  await tester.pump();
 }

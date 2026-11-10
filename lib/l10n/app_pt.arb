@@ -2484,6 +2484,23 @@
   "dailyOsNextDayMenuInspectAgent": "Inspecionar agente",
   "dailyOsNextDayMenuSettings": "Configurações diárias do sistema operacional",
   "dailyOsNextDayMoreTooltip": "Mais",
+  "dailyOsNextDayOverline": "{lead} · {detail}",
+  "@dailyOsNextDayOverline": {
+    "description": "The day page's overline: how the day relates to today (or its weekday), then the weekday (or the year).",
+    "placeholders": {
+      "lead": {
+        "type": "String",
+        "example": "Today"
+      },
+      "detail": {
+        "type": "String",
+        "example": "Sunday"
+      }
+    }
+  },
+  "dailyOsNextDayRelationToday": "Hoje",
+  "dailyOsNextDayRelationTomorrow": "Amanhã",
+  "dailyOsNextDayRelationYesterday": "Ontem",
   "dailyOsNextDayTitle": "Seu dia",
   "dailyOsNextDayWhyChipLabel": "Por quê",
   "dailyOsNextDayWrapUpCta": "Concluir",
@@ -2755,6 +2772,18 @@
   "dailyOsNextTriageDrop": "Soltar",
   "dailyOsNextTriageToday": "Hoje",
   "dailyOsNextUncommitFailed": "Não foi possível desfazer: o plano continua confirmado.",
+  "dailyOsNextWeekStripNextWeek": "Próxima semana",
+  "dailyOsNextWeekStripPreviousWeek": "Semana anterior",
+  "dailyOsNextWeekStripSelectDay": "Selecionar {date}",
+  "@dailyOsNextWeekStripSelectDay": {
+    "description": "Screen-reader label of one day in the day page's week strip.",
+    "placeholders": {
+      "date": {
+        "type": "String",
+        "example": "Sunday, November 9"
+      }
+    }
+  },
   "dailyOsOnboardingCoachCapture": "Diga o que está chamando sua atenção.",
   "dailyOsOnboardingCoachDrafting": "O planejador está criando novas tarefas e adaptando o trabalho ao seu dia.",
   "dailyOsOnboardingCoachReconcile": "Escolha o que pertence hoje. Novos itens se tornam tarefas quando você constrói o dia.",

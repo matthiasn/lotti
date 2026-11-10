@@ -8,8 +8,11 @@ import 'package:material_ui/material_ui.dart';
 /// Day-header badge surfacing the day agent's observable state (ADR 0032
 /// phase 4): working / attention / day-closed, with the per-day token spend
 /// in the tooltip when the day has its own agent. Renders nothing while the
-/// agent is idle — silence means fine. Tapping routes to the agent's
-/// internals (same destination as the "Inspect agent" menu entry).
+/// agent is idle — silence means fine. Only the states that ask something of
+/// the user (working, attention) spell out their label; a closed day is the
+/// glyph alone, its words in the tooltip, so the header's actions stay quiet
+/// once the day is done. Tapping routes to the agent's internals (same
+/// destination as the "Inspect agent" menu entry).
 class DayAgentStatusChip extends ConsumerWidget {
   /// Creates the status chip for [date].
   const DayAgentStatusChip({
@@ -64,7 +67,7 @@ class DayAgentStatusChip extends ConsumerWidget {
         child: DsPill(
           variant: DsPillVariant.tinted,
           color: color,
-          label: label,
+          label: persona == DayAgentPersonaState.celebrating ? null : label,
           leading: Icon(
             icon,
             size: tokens.typography.size.caption,

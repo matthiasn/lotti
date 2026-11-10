@@ -20,6 +20,7 @@ import 'package:lotti/features/daily_os_next/ui/widgets/day_activity_view.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_block_task_picker.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_composer.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/day_week_strip.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/plan_view_toggle.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/chat_input/design_system_chat_input.dart';
@@ -162,14 +163,13 @@ void main() {
   });
 
   group('DayPage', () {
-    testWidgets('lands on the Day timeline by default, under the default '
-        'title, with Agenda a tap away', (tester) async {
+    testWidgets('lands on the Day timeline by default, under its date, '
+        'with Agenda a tap away', (tester) async {
       _setSurface(tester);
       await tester.pumpWidget(_wrap(DayPage(draft: _drafted())));
       await tester.pump();
 
-      final messages = tester.element(find.byType(DayPage)).messages;
-      expect(find.text(messages.dailyOsNextDayTitle), findsOneWidget);
+      expect(find.text('May 26'), findsOneWidget);
       expect(find.byType(DayTimeline), findsOneWidget);
       expect(find.byType(AgendaView), findsNothing);
       expect(find.byType(DayActivityView), findsNothing);
@@ -295,6 +295,34 @@ void main() {
           findsNWidgets(2),
         );
         expect(find.byType(DayComposer), findsNothing);
+
+        // A plain row in warning ink, not a card of its own.
+        final tokens = tester.element(find.byType(DayPage)).designTokens;
+        final nudge = find.byKey(const Key('daily_os_setup_nudge'));
+        expect(
+          tester
+              .widget<Icon>(
+                find.descendant(
+                  of: nudge,
+                  matching: find.byIcon(LottiIcons.warning),
+                ),
+              )
+              .color,
+          tokens.colors.alert.warning.ink,
+        );
+        expect(
+          tester
+              .widget<Text>(
+                find.text(messages.dailyOsSettingsSetupRequiredTitle),
+              )
+              .style
+              ?.color,
+          tokens.colors.alert.warning.ink,
+        );
+        expect(
+          find.descendant(of: nudge, matching: find.byType(DecoratedBox)),
+          findsNothing,
+        );
 
         await tester.tap(find.byIcon(LottiIcons.moreVertical));
         await tester.pump();
@@ -1307,22 +1335,30 @@ void main() {
       },
     );
 
-    testWidgets('dateStrip widget replaces the default title', (tester) async {
-      _setSurface(tester);
-      await tester.pumpWidget(
-        _wrap(
-          DayPage(
-            draft: _drafted(),
-            dateStrip: const Text('2026-05-26'),
+    testWidgets(
+      'day navigation brings the week strip and drops the back chevron',
+      (tester) async {
+        _setSurface(tester);
+        await tester.pumpWidget(
+          _wrap(
+            DayPage(
+              draft: _drafted(),
+              navigation: DayNavigation(
+                today: DateTime(2026, 5, 26),
+                onSelect: (_) {},
+                onPick: () {},
+                onToday: () {},
+              ),
+            ),
           ),
-        ),
-      );
-      await tester.pump();
+        );
+        await tester.pump();
 
-      final messages = tester.element(find.byType(DayPage)).messages;
-      expect(find.text(messages.dailyOsNextDayTitle), findsNothing);
-      expect(find.text('2026-05-26'), findsOneWidget);
-    });
+        expect(find.byType(DayWeekStrip), findsOneWidget);
+        expect(find.byIcon(LottiIcons.back), findsNothing);
+        expect(find.text('Today · Tuesday'), findsOneWidget);
+      },
+    );
 
     testWidgets('toggling the plan view switches DayTimeline → Agenda → '
         'DayTimeline', (tester) async {
@@ -1608,7 +1644,7 @@ void main() {
     );
 
     testWidgets(
-      'header back IconButton pops the navigator (no dateStrip)',
+      'header back IconButton pops the navigator (no day navigation)',
       (tester) async {
         _setSurface(tester);
         final agent = RecordingDayAgent();
@@ -1638,7 +1674,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 400));
         await tester.pump(const Duration(milliseconds: 200));
 
-        // The header shows a back button only when there's no dateStrip;
+        // The header shows a back button only without day navigation;
         // the popup-menu's more_vert icon stays in place.
         await tester.tap(find.byIcon(LottiIcons.back));
         await tester.pump();

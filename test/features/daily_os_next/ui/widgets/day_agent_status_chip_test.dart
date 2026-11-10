@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_persona_provider.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_agent_status_chip.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../widget_test_utils.dart';
@@ -64,15 +65,16 @@ void main() {
     expect(find.text('Needs attention'), findsOneWidget);
   });
 
-  testWidgets('day-closed state includes the per-day token spend in the '
-      'tooltip', (tester) async {
+  testWidgets('day-closed state is the glyph alone, its label and the '
+      'per-day token spend in the tooltip', (tester) async {
     await pumpChip(
       tester,
       persona: DayAgentPersonaState.celebrating,
       tokenSpend: 1850,
     );
 
-    expect(find.text('Day closed'), findsOneWidget);
+    expect(find.text('Day closed'), findsNothing);
+    expect(find.byIcon(LottiIcons.celebrate), findsOneWidget);
     final tooltip = tester.widget<Tooltip>(find.byType(Tooltip));
     expect(
       tooltip.message,

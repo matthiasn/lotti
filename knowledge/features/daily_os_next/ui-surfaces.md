@@ -1,7 +1,7 @@
 ---
 type: Feature Module
 title: Daily OS UI surfaces
-description: The Day page, the anchored voice template, timeline editing, the capacity ring, and the onboarding walkthrough substrate.
+description: The Day page — its masthead and week strip — the anchored voice template, timeline editing, the capacity ring, and the onboarding walkthrough substrate.
 resource: ../../../lib/features/daily_os_next/ui
 tags: [daily-os, ui, voice, timeline, onboarding]
 status: stable
@@ -11,7 +11,7 @@ sources:
   - id: ui
     resource: ../../../lib/features/daily_os_next/ui
     title: Daily OS widgets and pages
-    last_modified: 2026-09-02
+    last_modified: 2026-11-10
   - id: typography
     resource: ../../../lib/features/design_system/theme/typography_helpers.dart
     title: Calm typography helpers
@@ -141,54 +141,73 @@ arbitrary five or six lines.
 
 ## Day navigation and view memory
 
-`DailyOsNextRoot` renders one `DayPage` per selected day and injects a
-`_DateStrip` — prev chevron, tappable date label (tap opens the picker,
-long-press returns to today), next chevron, and a `Today` button shown when
-the selection has left today *and* the pane measures wide enough for it — as
-that page's header title. Nothing keys off a device class: a wide pane on a
-phone would carry the button, and a narrow pane on a desktop does not.
+`DailyOsNextRoot` renders one `DayPage` per selected day and hands it a
+`DayNavigation`
+([day_page_header.dart](../../../lib/features/daily_os_next/ui/pages/day_page_header.dart)):
+today's date and the select / pick / back-to-today callbacks. The header turns
+that into two controls, and the date is the page's title rather than a
+navigation control.
 
-Three invariants make repeated navigation cheap:
+- **The masthead.** An overline saying how the day relates to today —
+  *Today · Sunday*, *Tomorrow · Monday*, *Yesterday · Saturday*; any other day
+  its weekday alone, or *Wednesday · 2027* in another year — over the month and
+  day in `heading2`. The relation is counted with `daysBetween`, on dates
+  alone, so a DST change between the two days cannot shift it. Both lines use
+  tabular figures, so stepping days does not reflow them. A tap opens
+  `showDailyOsDayPicker`; a long press returns to today.
+- **The week strip** (`DayWeekStrip`,
+  [day_week_strip.dart](../../../lib/features/daily_os_next/ui/widgets/day_week_strip.dart))
+  is the primary day control: the selected day's week, starting on the
+  locale's `firstDayOfWeekIndex`, each cell the narrow weekday over the day
+  number. The selected day is a `surface.selected` pill with
+  `interactive.enabled` text; today, when not selected, carries a teal dot in
+  a slot every cell reserves, so no cell is taller than another. A tap selects
+  a day; a fling pages a week, keeping the weekday — a fling, not any drag, so
+  a slow pan that ends on a cell still reads as a tap. On a desktop-width
+  window a chevron at each end pages a week too, since flinging is awkward
+  with a mouse. Cells share a phone's width and stop growing at
+  `TapTargets.minimum + step3` on a wide pane. Each cell is one semantics
+  node, *Select Tuesday, May 26*, flagged selected, with the tap restated on
+  it because excluding the cell's two texts drops the ink's own. Days with a
+  plan show nothing extra: the strip is navigation, not a heat-map.
 
-- **The chevrons never move.** The date label reserves the width of the widest
-  string its date pattern can produce, measured with the real style and
-  `MediaQuery.textScalerOf` (`_stableDateLabelWidth`, cached per locale ×
-  pattern × style × scale) and rendered with tabular figures. The reservation
-  is measured rather than hardcoded, so it follows the user's font-size setting
-  instead of clipping at large text. Which pattern is reserved — `yMMMEd` or
-  year-less `MMMEd` — is itself a fit check against the pane (see below), not a
-  device class: the widest `yMMMEd` string plus two chevrons does not fit a
-  390 pt phone, but it does fit a wide pane on any device.
-- **The header is a nav row over a title row, on the page's rails.**
-  `_MeasuredDayHeader` lays out back chevron, title, toggle and actions in rows
-  whose items share the row's centre line: start items from the left rail,
-  end items right-aligned. With a chevron, it and the actions make a nav row
-  and the large title takes the row beneath, the toggle beside it. The title
-  and toggle lead in by step3 and the actions inset by step3, so both sit on
-  the step5 rail the timeline toolbar and briefing use. Without a chevron (a
-  date strip) everything shares one row when it fits.
-- **Day navigation owns its row when the header stacks.** The title never
-  gives up width to sit beside the actions — that is what truncated the date
-  to an ellipsis on a phone. The toggle joins the title only when the actions,
-  if still unplaced, fit there too; otherwise the toggle leads the next row and
-  the actions follow it, each item on a row **only if the room left covers its
-  measured width** — the segmented control shrink-wraps to a minimum and would
-  otherwise paint over them.
-- **The strip sizes itself against the pane, not the window.** A `LayoutBuilder`
-  supplies the width, because the desktop sidebar is resizable to
-  `maxSidebarWidth` (500 px) and a "desktop" `MediaQuery` can still leave this
-  pane under 500 px. The year is carried only when the widest `yMMMEd` string
-  plus both chevrons fit; the `Today` button only when that *and* the button's
-  own token-derived width fit. Where `Today` is dropped, the way back survives
-  in `showDesignSystemDatePicker`, which the label opens and which carries its
-  own Today quick action.
+Without a `DayNavigation` (a `DayPage` pushed on its own) the header leads with
+a back chevron instead, keeps the masthead as plain text, and has no strip.
+
+The header's row packing is `_MeasuredDayHeader`, a custom render object over
+five children — back, masthead, toggle, actions, week strip:
+
+- **Rows share a centre line, on the page's rails.** Start items hold the left
+  rail, end items are right-aligned. The masthead and the toggle lead in by
+  step3 and the actions inset by step3, so both sit on the step5 rail the
+  content below uses. With a back chevron, it and the actions make a nav row
+  above the masthead.
+- **The masthead never gives up width** to sit beside the actions — that is
+  what once ellipsized the date on a phone. The toggle joins the masthead's
+  row only when the actions, if still unplaced, fit there too; the actions
+  then take that row's end when they fit beside it.
+- **The week strip always takes a row of its own** under the masthead it
+  navigates. A toggle that did not fit the masthead's row follows the strip,
+  with any actions still to place after it. Every item joins a row **only if
+  the room left covers its measured width** — the segmented control
+  shrink-wraps to a minimum and would otherwise paint over its neighbours.
+
+Two nudges can sit in the slot under the header; both render nothing when
+there is nothing to say. `KnowledgeNudge` — proposed learnings awaiting
+confirmation — is a caption line with the `aiCard.accent` sparkle and no
+surface of its own, so the page has one violet surface, not two. The setup
+nudge (no inference route, or no name to address the user by) is a plain row
+in `alert.warning` ink with the action that fixes it. The header's
+`DayAgentStatusChip` renders nothing while the agent is idle and spells out
+its label only while it asks something of the user (working, attention); a
+closed day is the glyph alone, its words in the tooltip.
 
 ```mermaid
 stateDiagram-v2
   [*] --> NoExplicitPick: app start
   NoExplicitPick --> DefaultDay: render, with or without a plan
   DefaultDay --> ExplicitPick: user taps the toggle
-  ExplicitPick --> ExplicitPick: date changes (chevrons / Today / picker / sidebar)
+  ExplicitPick --> ExplicitPick: date changes (week strip / masthead / picker / sidebar)
   ExplicitPick --> [*]: app restart clears the in-memory provider
 ```
 
@@ -201,8 +220,9 @@ stateDiagram-v2
   to land on Activity so a failed recording was in view at once; that recovery
   path is now one tap away, while tracked time and events are visible at
   once.) The provider is in-memory, so a fresh app start lands on that default
-  again, while every date-change path (chevrons, `Today`, the picker, the
-  sidebar month calendar) keeps whichever view the user picked.
+  again, while every date-change path (the week strip, the masthead's long
+  press, the picker, the sidebar month calendar) keeps whichever view the user
+  picked.
 
 ## The day briefing
 
@@ -389,11 +409,15 @@ touching it:
   `currentDraftPlanProvider(day)` (falling back to `DraftPlan.emptyForDay`
   so tracked time shows even with no plan) and
   `dailyOsActualTimeBlocksProvider(day)`. It opens on today. Day navigation
-  is the same `DailyOsDateStrip`
+  is `DailyOsDateStrip`
   ([daily_os_date_strip.dart](../../../lib/features/daily_os_next/ui/widgets/daily_os_date_strip.dart))
-  the Day surface header uses — prev/next chevrons, a date label that opens
-  the shared picker (`showDailyOsDayPicker`; long press returns to today) —
-  in its `compact` form: a tighter label inset, weekday + month + day
+  — prev/next chevrons, a date label that opens the shared picker
+  (`showDailyOsDayPicker`; long press returns to today) — in its `compact`
+  form. The Day surface itself navigates with the masthead and week strip; the
+  chevron strip is this column's, where a week of cells would not fit beside
+  the timeline's buttons. The label reserves the width of the widest string its
+  pattern can produce, measured with the real style and text scale, so the
+  chevrons never move as days change. In compact form: a tighter label inset, weekday + month + day
   falling back to month + day, and no standalone Today button. The strip
   sits in the timeline toolbar's `toolbarLeading` slot, so stepping through
   days and the lane-format toggle share one row; the hide button takes

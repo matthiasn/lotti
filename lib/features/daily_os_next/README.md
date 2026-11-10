@@ -30,7 +30,9 @@ via the rail's calendar button and resized by its edge; both survive restarts.
 - **Opens on the calendar.** The Day timeline is the default view, plan or no
   plan: recorded time, imported workouts, check-ins with a length and events
   with a start and end sit on its recorded lane, and an event opens from its block. Agenda and Activity are
-  a tap away.
+  a tap away. The date is the page's title — *Today · Sunday* over *November 9* —
+  and a strip of the week's seven days under it picks another day; a swipe
+  pages a week.
 - **Briefs the day aloud.** With the companion on, she sits in the Day header;
   tap her and she says how many blocks are planned, what is next, the longest
   block and the time still free — from the plan alone, with the on-device

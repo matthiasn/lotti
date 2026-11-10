@@ -4,22 +4,50 @@
 import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:clock/clock.dart';
 import 'package:flutter/rendering.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/features/agents/ui/agent_surface_menu.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_agent_status_chip.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/day_week_strip.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/knowledge_nudge.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/plan_view_toggle.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/processing_category_filter_button.dart';
+import 'package:lotti/features/daily_os_next/util/day_arithmetic.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
+import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
+/// How the day page moves between days. The route-level root supplies it;
+/// without it the page shows its date with a back chevron and no week strip.
+@immutable
+class DayNavigation {
+  const DayNavigation({
+    required this.today,
+    required this.onSelect,
+    required this.onPick,
+    required this.onToday,
+  });
+
+  /// The current day, for the masthead's overline and the strip's dot.
+  final DateTime today;
+
+  /// Shows another day — a tapped cell, or the selection moved a week.
+  final ValueChanged<DateTime> onSelect;
+
+  /// Opens the date picker (a tap on the masthead).
+  final VoidCallback onPick;
+
+  /// Returns to today (a long press on the masthead).
+  final VoidCallback onToday;
+}
+
 class DayHeader extends StatelessWidget {
   const DayHeader({
-    required this.dateStrip,
+    required this.navigation,
     required this.date,
     required this.selectedView,
     required this.hasPlan,
@@ -32,10 +60,12 @@ class DayHeader extends StatelessWidget {
     super.key,
   });
 
-  final Widget? dateStrip;
+  /// Day navigation, when the page is the routed surface. With it the
+  /// masthead opens the picker and the week strip sits under it; without it
+  /// a back chevron leads the header instead.
+  final DayNavigation? navigation;
 
-  /// The day shown under the default title as a date overline
-  /// ("Thursday, June 11").
+  /// The day the page shows: the masthead's title and overline.
   final DateTime date;
 
   final PlanView selectedView;
@@ -65,7 +95,7 @@ class DayHeader extends StatelessWidget {
         verticalPadding: tokens.spacing.step2,
         itemGap: tokens.spacing.step3,
         rowGap: tokens.spacing.step2,
-        back: dateStrip != null
+        back: navigation != null
             ? const SizedBox.shrink()
             : IconButton(
                 icon: const Icon(LottiIcons.back, size: 20),
@@ -74,7 +104,12 @@ class DayHeader extends StatelessWidget {
                 tooltip: context.messages.dailyOsNextDayBack,
                 onPressed: onBack,
               ),
-        title: dateStrip ?? _DefaultDayHeaderTitle(date: date),
+        title: _DayMasthead(
+          date: date,
+          today: navigation?.today ?? clock.now(),
+          onPick: navigation?.onPick,
+          onToday: navigation?.onToday,
+        ),
         toggle: Padding(
           padding: EdgeInsets.only(left: tokens.spacing.step3),
           child: PlanViewToggle(
@@ -134,44 +169,100 @@ class DayHeader extends StatelessWidget {
             ),
           ],
         ),
+        weekStrip: switch (navigation) {
+          null => const SizedBox.shrink(),
+          final navigation => Padding(
+            padding: EdgeInsets.only(left: tokens.spacing.step3),
+            child: DayWeekStrip(
+              selected: date,
+              today: navigation.today,
+              onSelect: navigation.onSelect,
+              showWeekChevrons: isDesktopLayout(context),
+            ),
+          ),
+        },
       ),
     );
   }
 }
 
-class _DefaultDayHeaderTitle extends StatelessWidget {
-  const _DefaultDayHeaderTitle({required this.date});
+/// The date as the page's title: an overline saying how the day relates to
+/// today ("Today · Sunday", "Tomorrow · Monday"; another day's weekday, with
+/// its year when that is not this year's) over the month and day in
+/// heading2. Tabular figures keep the title from reflowing between days.
+///
+/// With [onPick] the title is a button that opens the date picker, and a
+/// long press runs [onToday].
+class _DayMasthead extends StatelessWidget {
+  const _DayMasthead({
+    required this.date,
+    required this.today,
+    this.onPick,
+    this.onToday,
+  });
 
   final DateTime date;
+  final DateTime today;
+  final VoidCallback? onPick;
+  final VoidCallback? onToday;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    final messages = context.messages;
     final locale = Localizations.localeOf(context).toString();
-    // Apple large-title anatomy: the chevron rides the nav row above in the
-    // gutter; the title and its date overline sit on the page's left rail
+    final weekday = DateFormat.EEEE(locale).format(date);
+    final relation = switch (daysBetween(today, date)) {
+      0 => messages.dailyOsNextDayRelationToday,
+      1 => messages.dailyOsNextDayRelationTomorrow,
+      -1 => messages.dailyOsNextDayRelationYesterday,
+      _ => null,
+    };
+    final overline = relation != null
+        ? messages.dailyOsNextDayOverline(relation, weekday)
+        : date.year != today.year
+        ? messages.dailyOsNextDayOverline(
+            weekday,
+            DateFormat.y(locale).format(date),
+          )
+        : weekday;
+    const tabular = [FontFeature.tabularFigures()];
+    final column = Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          overline,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: calmEyebrowStyle(tokens).copyWith(fontFeatures: tabular),
+        ),
+        SizedBox(height: tokens.spacing.step1),
+        Text(
+          DateFormat.MMMMd(locale).format(date),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: tokens.typography.styles.heading.heading2.copyWith(
+            color: tokens.colors.text.highEmphasis,
+            fontFeatures: tabular,
+          ),
+        ),
+      ],
+    );
+    // Apple large-title anatomy: the title sits on the page's left rail
     // (header padding step3 + step3 lead = step5, same as content).
+    final onPick = this.onPick;
     return Padding(
       padding: EdgeInsets.only(left: tokens.spacing.step3),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            context.messages.dailyOsNextDayTitle,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: calmPageTitleStyle(tokens),
-          ),
-          SizedBox(height: tokens.spacing.step1),
-          Text(
-            DateFormat.MMMMEEEEd(locale).format(date),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: calmEyebrowStyle(tokens),
-          ),
-        ],
-      ),
+      child: onPick == null
+          ? column
+          : InkWell(
+              key: const Key('daily_os_day_masthead'),
+              onTap: onPick,
+              onLongPress: onToday,
+              borderRadius: BorderRadius.circular(tokens.radii.m),
+              child: column,
+            ),
     );
   }
 }
@@ -182,12 +273,13 @@ class _MeasuredDayHeader extends MultiChildRenderObjectWidget {
     required Widget title,
     required Widget toggle,
     required Widget actions,
+    required Widget weekStrip,
     required this.horizontalPadding,
     required this.endInset,
     required this.verticalPadding,
     required this.itemGap,
     required this.rowGap,
-  }) : super(children: [back, title, toggle, actions]);
+  }) : super(children: [back, title, toggle, actions, weekStrip]);
 
   final double horizontalPadding;
 
@@ -291,6 +383,12 @@ class _RenderMeasuredDayHeader extends RenderBox
     return child!;
   }
 
+  RenderBox get _weekStrip {
+    final child = childAfter(_actions);
+    assert(child != null, 'Measured header week strip child is missing.');
+    return child!;
+  }
+
   @override
   void setupParentData(RenderBox child) {
     if (child.parentData is! _MeasuredDayHeaderParentData) {
@@ -317,10 +415,12 @@ class _RenderMeasuredDayHeader extends RenderBox
     final title = _title;
     final toggle = _toggle;
     final actions = _actions;
-    for (final child in [back, title, toggle, actions]) {
+    final weekStrip = _weekStrip;
+    for (final child in [back, title, toggle, actions, weekStrip]) {
       child.layout(looseContentConstraints, parentUsesSize: true);
     }
     final hasBack = back.size.width > 0;
+    final hasWeekStrip = weekStrip.size.width > 0;
 
     // Rows on two rails: items added to a row's start hold the left rail,
     // items added to its end are right-aligned in order, and every item sits
@@ -338,8 +438,8 @@ class _RenderMeasuredDayHeader extends RenderBox
     }
 
     // A nav row, when there is a chevron: it sits in the gutter and the
-    // actions across from it, so the large title and the toggle make the
-    // row beneath.
+    // actions across from it, so the masthead and the toggle make the row
+    // beneath.
     var actionsPlaced = false;
     if (hasBack) {
       final nav = _HeaderRow()..start.add(back);
@@ -349,20 +449,27 @@ class _RenderMeasuredDayHeader extends RenderBox
         actionsPlaced = true;
       }
     }
-    // Day navigation leads its row; it never gives up width to sit beside
-    // the actions, which is what pressed the date into an ellipsis on a
-    // phone. The toggle joins it only when the actions, if still to place,
-    // fit there too; otherwise the toggle leads the next row and the actions
-    // follow it, rather than being stranded on a row of their own.
+    // The masthead leads its row and never gives up width to sit beside the
+    // actions, which is what pressed the date into an ellipsis on a phone.
+    // The toggle joins it only when the actions, if still to place, fit
+    // there too; the actions then take the masthead row's end when they
+    // fit beside it.
     final titleRow = _HeaderRow()..start.add(title);
     rows.add(titleRow);
     final pendingWidth = actionsPlaced ? 0 : itemGap + actions.size.width;
-    if (titleRow.width(itemGap) + itemGap + toggle.size.width + pendingWidth <=
-        contentWidth - endInset) {
-      titleRow.start.add(toggle);
-    } else {
-      rows.add(_HeaderRow()..start.add(toggle));
+    final toggleOnTitleRow =
+        titleRow.width(itemGap) + itemGap + toggle.size.width + pendingWidth <=
+        contentWidth - endInset;
+    if (toggleOnTitleRow) titleRow.start.add(toggle);
+    if (!actionsPlaced && fits(titleRow, actions)) {
+      titleRow.end.add(actions);
+      actionsPlaced = true;
     }
+    // The week strip always takes a row of its own, under the masthead it
+    // navigates; a toggle that did not fit the masthead's row follows it,
+    // with any actions still to place after the toggle.
+    if (hasWeekStrip) rows.add(_HeaderRow()..start.add(weekStrip));
+    if (!toggleOnTitleRow) rows.add(_HeaderRow()..start.add(toggle));
     if (!actionsPlaced) addEnd(actions);
 
     final rowHeights = [for (final row in rows) row.height];

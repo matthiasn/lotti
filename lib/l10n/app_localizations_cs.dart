@@ -5246,6 +5246,20 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dailyOsNextDayMoreTooltip => 'Více';
 
   @override
+  String dailyOsNextDayOverline(String lead, String detail) {
+    return '$lead · $detail';
+  }
+
+  @override
+  String get dailyOsNextDayRelationToday => 'Dnes';
+
+  @override
+  String get dailyOsNextDayRelationTomorrow => 'Zítra';
+
+  @override
+  String get dailyOsNextDayRelationYesterday => 'Včera';
+
+  @override
   String get dailyOsNextDayTitle => 'Tvůj den';
 
   @override
@@ -5847,6 +5861,17 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get dailyOsNextUncommitFailed =>
       'Vrátit to nešlo — plán zůstává potvrzený.';
+
+  @override
+  String get dailyOsNextWeekStripNextWeek => 'Příští týden';
+
+  @override
+  String get dailyOsNextWeekStripPreviousWeek => 'Předchozí týden';
+
+  @override
+  String dailyOsNextWeekStripSelectDay(String date) {
+    return 'Vybrat $date';
+  }
 
   @override
   String get dailyOsOnboardingCoachCapture => 'Řekni, co ti leží v hlavě.';

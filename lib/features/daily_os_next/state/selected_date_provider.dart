@@ -16,12 +16,6 @@ class DailyOsNextSelectedDate extends Notifier<DateTime> {
     state = DateTime(day.year, day.month, day.day);
   }
 
-  /// Moves the selection by [days] (negative for backwards). Day
-  /// arithmetic via the `DateTime` constructor stays DST-safe.
-  void shiftDays(int days) {
-    state = DateTime(state.year, state.month, state.day + days);
-  }
-
   /// Returns the selection to today.
   void goToToday() {
     final now = clock.now();

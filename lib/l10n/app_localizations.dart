@@ -8753,6 +8753,30 @@ abstract class AppLocalizations {
   /// **'More'**
   String get dailyOsNextDayMoreTooltip;
 
+  /// The day page's overline: how the day relates to today (or its weekday), then the weekday (or the year).
+  ///
+  /// In en, this message translates to:
+  /// **'{lead} · {detail}'**
+  String dailyOsNextDayOverline(String lead, String detail);
+
+  /// No description provided for @dailyOsNextDayRelationToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get dailyOsNextDayRelationToday;
+
+  /// No description provided for @dailyOsNextDayRelationTomorrow.
+  ///
+  /// In en, this message translates to:
+  /// **'Tomorrow'**
+  String get dailyOsNextDayRelationTomorrow;
+
+  /// No description provided for @dailyOsNextDayRelationYesterday.
+  ///
+  /// In en, this message translates to:
+  /// **'Yesterday'**
+  String get dailyOsNextDayRelationYesterday;
+
   /// No description provided for @dailyOsNextDayTitle.
   ///
   /// In en, this message translates to:
@@ -9718,6 +9742,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Couldn\'t undo — the plan stays committed.'**
   String get dailyOsNextUncommitFailed;
+
+  /// No description provided for @dailyOsNextWeekStripNextWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'Next week'**
+  String get dailyOsNextWeekStripNextWeek;
+
+  /// No description provided for @dailyOsNextWeekStripPreviousWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous week'**
+  String get dailyOsNextWeekStripPreviousWeek;
+
+  /// Screen-reader label of one day in the day page's week strip.
+  ///
+  /// In en, this message translates to:
+  /// **'Select {date}'**
+  String dailyOsNextWeekStripSelectDay(String date);
 
   /// No description provided for @dailyOsOnboardingCoachCapture.
   ///

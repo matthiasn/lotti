@@ -2485,6 +2485,23 @@
   "dailyOsNextDayMenuInspectAgent": "Inspektera agent",
   "dailyOsNextDayMenuSettings": "Dagliga OS-inställningar",
   "dailyOsNextDayMoreTooltip": "Mer",
+  "dailyOsNextDayOverline": "{lead} · {detail}",
+  "@dailyOsNextDayOverline": {
+    "description": "The day page's overline: how the day relates to today (or its weekday), then the weekday (or the year).",
+    "placeholders": {
+      "lead": {
+        "type": "String",
+        "example": "Today"
+      },
+      "detail": {
+        "type": "String",
+        "example": "Sunday"
+      }
+    }
+  },
+  "dailyOsNextDayRelationToday": "I dag",
+  "dailyOsNextDayRelationTomorrow": "I morgon",
+  "dailyOsNextDayRelationYesterday": "I går",
   "dailyOsNextDayTitle": "Din dag",
   "dailyOsNextDayWhyChipLabel": "Varför",
   "dailyOsNextDayWrapUpCta": "Avslutning",
@@ -2756,6 +2773,18 @@
   "dailyOsNextTriageDrop": "Släpp",
   "dailyOsNextTriageToday": "Idag",
   "dailyOsNextUncommitFailed": "Det gick inte att ångra — planen ligger kvar.",
+  "dailyOsNextWeekStripNextWeek": "Nästa vecka",
+  "dailyOsNextWeekStripPreviousWeek": "Föregående vecka",
+  "dailyOsNextWeekStripSelectDay": "Välj {date}",
+  "@dailyOsNextWeekStripSelectDay": {
+    "description": "Screen-reader label of one day in the day page's week strip.",
+    "placeholders": {
+      "date": {
+        "type": "String",
+        "example": "Sunday, November 9"
+      }
+    }
+  },
   "dailyOsOnboardingCoachCapture": "Säg vad som fångar din uppmärksamhet.",
   "dailyOsOnboardingCoachDrafting": "Planeraren skapar nya uppgifter och anpassar arbetet till din dag.",
   "dailyOsOnboardingCoachReconcile": "Välj vad som hör hemma idag. Nya föremål blir uppgifter när du bygger dagen.",

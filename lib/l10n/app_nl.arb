@@ -2484,6 +2484,23 @@
   "dailyOsNextDayMenuInspectAgent": "Inspecteur",
   "dailyOsNextDayMenuSettings": "Dagelijkse OS-instellingen",
   "dailyOsNextDayMoreTooltip": "Meer",
+  "dailyOsNextDayOverline": "{lead} · {detail}",
+  "@dailyOsNextDayOverline": {
+    "description": "The day page's overline: how the day relates to today (or its weekday), then the weekday (or the year).",
+    "placeholders": {
+      "lead": {
+        "type": "String",
+        "example": "Today"
+      },
+      "detail": {
+        "type": "String",
+        "example": "Sunday"
+      }
+    }
+  },
+  "dailyOsNextDayRelationToday": "Vandaag",
+  "dailyOsNextDayRelationTomorrow": "Morgen",
+  "dailyOsNextDayRelationYesterday": "Gisteren",
   "dailyOsNextDayTitle": "Jouw dag",
   "dailyOsNextDayWhyChipLabel": "Waarom",
   "dailyOsNextDayWrapUpCta": "Afsluiten",
@@ -2755,6 +2772,18 @@
   "dailyOsNextTriageDrop": "Laat vallen",
   "dailyOsNextTriageToday": "Vandaag",
   "dailyOsNextUncommitFailed": "Ongedaan maken lukte niet — het plan blijft vastgelegd.",
+  "dailyOsNextWeekStripNextWeek": "Volgende week",
+  "dailyOsNextWeekStripPreviousWeek": "Vorige week",
+  "dailyOsNextWeekStripSelectDay": "{date} selecteren",
+  "@dailyOsNextWeekStripSelectDay": {
+    "description": "Screen-reader label of one day in the day page's week strip.",
+    "placeholders": {
+      "date": {
+        "type": "String",
+        "example": "Sunday, November 9"
+      }
+    }
+  },
   "dailyOsOnboardingCoachCapture": "Zeg wat je aandacht trekt.",
   "dailyOsOnboardingCoachDrafting": "De planner creëert nieuwe taken en past het werk in uw dag.",
   "dailyOsOnboardingCoachReconcile": "Kies wat er vandaag hoort. Nieuwe items worden taken als je de dag opbouwt.",

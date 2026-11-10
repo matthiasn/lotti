@@ -111,26 +111,3 @@ ThemeData themeWithHeaderSpacing(double step2) {
     ],
   );
 }
-
-Widget dateStripLike(String label) {
-  return Row(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      IconButton(
-        icon: const Icon(LottiIcons.chevronLeft),
-        onPressed: () {},
-      ),
-      Flexible(
-        child: Text(
-          label,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-      ),
-      IconButton(
-        icon: const Icon(LottiIcons.chevronRight),
-        onPressed: () {},
-      ),
-    ],
-  );
-}

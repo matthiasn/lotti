@@ -97,6 +97,44 @@ void main() {
     expect(find.byIcon(LottiIcons.chevronRight), findsOneWidget);
   });
 
+  testWidgets(
+    'is a caption line with no surface of its own: violet sparkle, '
+    'medium-emphasis words',
+    (tester) async {
+      await tester.pumpWidget(
+        nudge(
+          AgentKnowledgeView(confirmed: const [], proposed: [proposal('p1')]),
+        ),
+      );
+      await tester.pump();
+      final tokens = tester.element(find.byType(KnowledgeNudge)).designTokens;
+
+      // The only Material under the nudge is the transparent ink host — no
+      // pill fill competing with the briefing's violet surface.
+      final materials = tester.widgetList<Material>(
+        find.descendant(
+          of: find.byType(KnowledgeNudge),
+          matching: find.byType(Material),
+        ),
+      );
+      expect(materials.map((m) => m.type), [MaterialType.transparency]);
+
+      final spark = tester.widget<Icon>(find.byIcon(LottiIcons.aiSpark));
+      expect(spark.color, tokens.colors.aiCard.accent);
+      final text = tester.widget<Text>(
+        find.descendant(
+          of: find.byKey(KnowledgeNudge.nudgeKey),
+          matching: find.byType(Text),
+        ),
+      );
+      expect(
+        text.style?.fontSize,
+        tokens.typography.styles.others.caption.fontSize,
+      );
+      expect(text.style?.color, tokens.colors.text.mediumEmphasis);
+    },
+  );
+
   testWidgets('names how many proposals are waiting', (tester) async {
     // The count is the entire payload of the line; a nudge that said only
     // "review" would not be worth the row it costs.
