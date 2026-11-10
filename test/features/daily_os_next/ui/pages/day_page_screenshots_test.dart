@@ -40,6 +40,7 @@ import 'package:lotti/features/daily_os_next/ui/pages/refine_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/shutdown_page.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/agenda_view.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_activity_view.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/day_agenda_row.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_briefing_companion.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline.dart';
 import 'package:lotti/features/design_system/components/navigation/desktop_navigation_sidebar.dart';
@@ -54,7 +55,6 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:lotti/utils/consts.dart';
-import 'package:lotti/widgets/media/thumb_hash_image.dart';
 import 'package:lotti/widgets/nav_bar/mobile_navigation_launcher.dart';
 import 'package:lotti/widgets/settings/settings_picker_field.dart';
 import 'package:material_ui/material_ui.dart';
@@ -1149,47 +1149,11 @@ Future<void> _openBlockEditor(
   );
 }
 
-void _expectAgendaThumbnails(WidgetTester tester) {
-  final agendaThumbnails = find.descendant(
-    of: find.byType(AgendaView),
-    matching: find.byType(CoverArtThumbnail),
-  );
-  expect(agendaThumbnails, findsNWidgets(8));
-  final thumbnails = tester
-      .widgetList<CoverArtThumbnail>(agendaThumbnails)
-      .toList();
-  expect(
-    thumbnails.map((thumbnail) => thumbnail.imageId).toSet(),
-    <String>{
-      manualRollCallCoverImageId,
-      manualHabitatCoverImageId,
-      manualLaunchReviewCoverImageId,
-      manualLunchCoverImageId,
-      manualSardineFuturesCoverImageId,
-      manualFishFeederCoverImageId,
-      manualPenguinPassengerCoverImageId,
-      manualHeadsetWalkCoverImageId,
-    },
-  );
-  final container = ProviderScope.containerOf(
-    tester.element(find.byType(CoverArtThumbnail).first),
-  );
-  for (final thumbnail in thumbnails) {
-    expect(
-      container.read(entryControllerProvider(thumbnail.imageId)).value?.entry,
-      _manualWorld.coverImageById(thumbnail.imageId),
-    );
-  }
-  // Every thumbnail shows its picture (the file is installed) over its
-  // ThumbHash stand-in: one of each per slot.
-  final images = tester
-      .widgetList<Image>(
-        find.descendant(of: agendaThumbnails, matching: find.byType(Image)),
-      )
-      .map((image) => image.image)
-      .toList();
-  expect(images.whereType<ResizeImage>(), hasLength(8));
-  expect(images.whereType<ThumbHashImage>(), hasLength(8));
+/// The agenda shows every item as a row on one card, with no cover art:
+/// the category dot is the row's only mark.
+void _expectAgendaRows(WidgetTester tester) {
+  expect(find.byType(DayAgendaRow), findsNWidgets(8));
+  expect(find.byType(CoverArtThumbnail), findsNothing);
 }
 
 void main() {
@@ -1250,7 +1214,7 @@ void main() {
       );
       await _switchToAgendaView(tester);
       expect(find.byType(AgendaView), findsOneWidget);
-      _expectAgendaThumbnails(tester);
+      _expectAgendaRows(tester);
       await captureScreenshot(tester, 'day_${device.name}_01_agenda_dark');
     });
 
@@ -1412,7 +1376,7 @@ void main() {
     );
     await _switchToAgendaView(tester);
     expect(find.byType(AgendaView), findsOneWidget);
-    _expectAgendaThumbnails(tester);
+    _expectAgendaRows(tester);
     await captureScreenshot(tester, 'day_mini_04_agenda_light');
   });
 
@@ -1425,7 +1389,7 @@ void main() {
     );
     await _switchToAgendaView(tester);
     expect(find.byType(AgendaView), findsOneWidget);
-    _expectAgendaThumbnails(tester);
+    _expectAgendaRows(tester);
     await captureScreenshot(tester, 'day_desktop_03_agenda_light');
   });
 

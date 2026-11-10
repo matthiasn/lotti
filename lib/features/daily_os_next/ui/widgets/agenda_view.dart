@@ -1,15 +1,18 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/daily_os_next/logic/day_agenda_order.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
-import 'package:lotti/features/daily_os_next/ui/widgets/agenda_card.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/day_agenda_row.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/live_task_metadata.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/time_spent_card.dart';
+import 'package:lotti/features/design_system/components/cards/ds_rows_card.dart';
 import 'package:lotti/features/design_system/components/ds_dashed_border.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// Intent-first projection of the [DraftPlan]: one [AgendaCard] per task.
+/// Intent-first projection of the [DraftPlan]: its items as [DayAgendaRow]s
+/// on one [DsRowsCard], in the order of the day.
 /// How full the day is lives in the page's briefing strip above, shared with
 /// the other tabs.
 ///
@@ -60,18 +63,22 @@ class AgendaView extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              for (final (index, item) in draft.agendaItems.indexed) ...[
-                _LiveAgendaCard(
-                  index: index + 1,
-                  item: item,
-                  whyReason: _whyReasonFor(item),
-                  onTap: _taskTapFor(item),
-                  onRename: onRenameItem == null
-                      ? null
-                      : (title) => onRenameItem(item, title),
+              if (draft.agendaItems.isNotEmpty)
+                DsRowsCard(
+                  rows: [
+                    for (final (:item, :start) in agendaItemsByStart(draft))
+                      _LiveAgendaRow(
+                        key: ValueKey(item.id),
+                        item: item,
+                        start: start,
+                        whyReason: _whyReasonFor(item),
+                        onTap: _taskTapFor(item),
+                        onRename: onRenameItem == null
+                            ? null
+                            : (title) => onRenameItem(item, title),
+                      ),
+                  ],
                 ),
-                SizedBox(height: tokens.spacing.step3),
-              ],
               // "No plan yet" copy only when there genuinely is no plan;
               // a real plan with zero agenda items keeps just the strip.
               if (draft.agendaItems.isEmpty && !hasPlan)
@@ -103,17 +110,20 @@ class AgendaView extends StatelessWidget {
   }
 }
 
-class _LiveAgendaCard extends ConsumerWidget {
-  const _LiveAgendaCard({
-    required this.index,
+/// An agenda row that follows its linked task: the task's live category and
+/// title, or a visible fallback once the task is gone.
+class _LiveAgendaRow extends ConsumerWidget {
+  const _LiveAgendaRow({
     required this.item,
+    required this.start,
     required this.whyReason,
     required this.onTap,
     required this.onRename,
+    super.key,
   });
 
-  final int index;
   final AgendaItem item;
+  final DateTime? start;
   final String? whyReason;
   final VoidCallback? onTap;
   final ValueChanged<String>? onRename;
@@ -121,18 +131,13 @@ class _LiveAgendaCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final liveTask = watchLiveTaskMetadata(ref, item.taskId);
-    final effectiveItem = item.copyWith(
-      category: liveTask.categoryOr(item.category),
-    );
-    return AgendaCard(
-      index: index,
-      item: effectiveItem,
+    return DayAgendaRow(
+      item: item.copyWith(category: liveTask.categoryOr(item.category)),
+      start: start,
       displayTitle: liveTask.missing
           ? context.messages.conflictDetailEntryNotFoundTitle
           : liveTask.title,
       whyReason: whyReason,
-      coverArtId: liveTask.coverArtId,
-      coverArtCropX: liveTask.coverArtCropX,
       onTap: onTap,
       onRename: onRename,
     );

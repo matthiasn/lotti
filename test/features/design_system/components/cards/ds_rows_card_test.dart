@@ -50,23 +50,56 @@ void main() {
 
   setUp(() => _StatefulRow.created = 0);
 
-  testWidgets('paints a borderless level02 card at radii.l that clips', (
+  testWidgets('is a borderless level02 Material at radii.l that clips', (
     tester,
   ) async {
     final context = await pumpCard(tester, const [Text('only')]);
     final tokens = context.designTokens;
 
-    final container = tester.widget<Container>(
+    final material = tester.widget<Material>(
       find.descendant(
         of: find.byType(DsRowsCard),
-        matching: find.byType(Container),
+        matching: find.byType(Material),
       ),
     );
-    final decoration = container.decoration! as BoxDecoration;
-    expect(decoration.color, tokens.colors.background.level02);
-    expect(decoration.borderRadius, BorderRadius.circular(tokens.radii.l));
-    expect(decoration.border, isNull);
-    expect(container.clipBehavior, Clip.antiAlias);
+    expect(material.color, tokens.colors.background.level02);
+    expect(
+      material.shape,
+      RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(tokens.radii.l),
+      ),
+    );
+    expect(material.clipBehavior, Clip.antiAlias);
+  });
+
+  testWidgets('ink from a row paints on the card, not behind it', (
+    tester,
+  ) async {
+    // No Material above the card: an InkWell inside it must still find one.
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        Column(
+          children: [
+            DsRowsCard(
+              rows: [InkWell(onTap: () {}, child: const Text('tap me'))],
+            ),
+          ],
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('tap me'));
+    await tester.pump();
+
+    expect(tester.takeException(), isNull);
+    final nearest = find
+        .ancestor(of: find.text('tap me'), matching: find.byType(Material))
+        .first;
+    final card = find.descendant(
+      of: find.byType(DsRowsCard),
+      matching: find.byType(Material),
+    );
+    expect(tester.widget(nearest), same(tester.widget(card)));
   });
 
   testWidgets('a single row has no divider', (tester) async {

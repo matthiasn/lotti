@@ -267,8 +267,10 @@ grouping is structural; keep a container when the fill is information.
 
 **A short list read as one thing is a `DsRowsCard`**: its rows on one
 borderless `background.level02` card at `radii.l`, a `DesignSystemDivider`
-between each two and none outside, clipped so a row's ink and any full-bleed
-edge marker stop at the rounded corners. Each row travels with the divider
+between each two and none outside. The card is a `Material`, so a row's ink
+(a tap, an editable title) paints on the card rather than on whatever lies
+behind its opaque fill, and it clips, so that ink and any full-bleed edge
+marker stop at the rounded corners. Each row travels with the divider
 above it under the row's own key, so a keyed row inserted or removed above
 another keeps that row's state instead of rebuilding it as whatever now sits
 in its slot — the stay-while-reload rule, kept by the card rather than by

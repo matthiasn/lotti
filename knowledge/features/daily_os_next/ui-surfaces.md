@@ -473,13 +473,34 @@ touching it:
   a plan be emptied) — programmatically, so it is not counted as the swipe
   either.
 
+## The Agenda list
+
+The Agenda tab is one `DsRowsCard` of `DayAgendaRow`s
+([day_agenda_row.dart](../../../lib/features/daily_os_next/ui/widgets/day_agenda_row.dart)),
+keyed by item id, not a stack of bordered cards.
+
+- **The time column orders the list.** Each row leads with its item's first
+  block start (dropped blocks hold no time) in a `step10` column that grows
+  with the text size, so every row's dot and title share one line. Items are
+  sorted by that start; ties keep plan order, and items with no block sort
+  last behind a dash. There is no ordinal and no cover art: the category's
+  `step2` dot is the row's only mark of colour.
+- **A second line only when there is something to say**: the agent's reason
+  for the placement, one line in `aiCard.accent` behind its sparkle; then a
+  meta caption with the outcome, the linked task's live name when it differs
+  from the item's, and *Overdue* in error ink.
+- **States.** In progress: a `step1` `interactive.enabled` edge down the row,
+  the title in subtitle2, and a category-coloured progress bar while it is
+  part-way. Done: the row at half opacity, the title struck through, the
+  success check in place of the estimate.
+
 ## Task-linked versus standalone
 
 **Task-linked is the marked case; standalone is the unmarked default.** A
-task-linked agenda row carries a blue `LinkBadge` and a task-linked Day block
-prefixes an info-blue link icon. Standalone items carry **no** marker — there is
-no `StandaloneTag` in the codebase, and the absence of a badge is what identifies
-them.
+task-linked agenda row ends in a low-emphasis chevron, and the row opens the
+task; a task-linked Day block prefixes an info-blue link icon. Standalone items
+carry **no** marker — there is no `StandaloneTag` in the codebase, and the
+absence of a chevron is what identifies them; their title is click-to-edit.
 
 Both projections resolve task identity through the lightweight
 `liveTaskMetadataProvider`, which subscribes to task and category database

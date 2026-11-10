@@ -7,8 +7,9 @@ import 'package:material_ui/material_ui.dart';
 ///
 /// The surface for a short list read as one thing rather than a stack of
 /// boxed cards — the companion's lists of tasks and the day page's agenda
-/// share it. The card clips its rows, so a row's ink and a full-bleed edge
-/// marker stop at the rounded corners.
+/// share it. The card is a [Material], so a row's ink paints on it, and it
+/// clips its rows, so that ink and a full-bleed edge marker stop at the
+/// rounded corners.
 ///
 /// Each row travels with the divider above it under the row's own key (or
 /// its index when it has none). Keyed rows therefore keep their state when a
@@ -22,12 +23,15 @@ class DsRowsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    return Container(
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        color: tokens.colors.background.level02,
+    // A Material, not a decorated box: ink from a row (a tap, an editable
+    // title) paints on the card itself instead of on whatever lies behind
+    // the opaque fill.
+    return Material(
+      color: tokens.colors.background.level02,
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(tokens.radii.l),
       ),
+      clipBehavior: Clip.antiAlias,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
