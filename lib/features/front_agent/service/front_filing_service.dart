@@ -33,6 +33,11 @@ typedef FrontTaskMaker =
       required String words,
     });
 
+/// Makes an event titled [title] under [id]. Returns it — the one created,
+/// or the one already there — or null when nothing is stored.
+typedef FrontEventMaker =
+    Future<JournalEvent?> Function(String title, {required String id});
+
 /// Deletes an entry; true when it existed and is gone.
 typedef FrontEntryDeleter = Future<bool> Function(String entryId);
 
@@ -68,6 +73,7 @@ class FrontFilingService {
     required UpdateNotifications notifications,
     required FrontTextEntryWriter writeTextEntry,
     required FrontTaskMaker makeTask,
+    required FrontEventMaker makeEvent,
     required FrontEntryDeleter deleteEntry,
   }) : this._(
          repository,
@@ -76,6 +82,7 @@ class FrontFilingService {
          notifications,
          writeTextEntry,
          makeTask,
+         makeEvent,
          deleteEntry,
        );
 
@@ -86,6 +93,7 @@ class FrontFilingService {
     this._notifications,
     this._writeTextEntry,
     this._makeTask,
+    this._makeEvent,
     this._deleteEntry,
   );
 
@@ -95,6 +103,7 @@ class FrontFilingService {
   final UpdateNotifications _notifications;
   final FrontTextEntryWriter _writeTextEntry;
   final FrontTaskMaker _makeTask;
+  final FrontEventMaker _makeEvent;
   final FrontEntryDeleter _deleteEntry;
 
   /// Files the proposed segment under its owner — a task or a project: a
@@ -194,9 +203,10 @@ class FrontFilingService {
     );
   }
 
-  /// Takes back what a door wrote: the entry or task is deleted and the
-  /// door waits again, one generation on — a filed entry's door is a
-  /// proposal again, a note's or a task's is an inbox item again, leading
+  /// Takes back what a door wrote: the entry, task or event is deleted and
+  /// the door waits again, one generation on — a filed entry's door is a
+  /// proposal again, a note's, a task's or an event's is an inbox item
+  /// again, leading
   /// with the same chip. A delete that did not happen — the thing still
   /// there, undeleted — leaves the door as it was; one already gone
   /// (deleted from the journal itself) counts as taken back.
@@ -219,6 +229,13 @@ class FrontFilingService {
         :final generation,
       ):
         await _takeOut(taskId);
+        waiting = FrontDoorInbox(newKind: newKind, generation: generation + 1);
+      case FrontDoorEventCreated(
+        :final eventId,
+        :final newKind,
+        :final generation,
+      ):
+        await _takeOut(eventId);
         waiting = FrontDoorInbox(newKind: newKind, generation: generation + 1);
       case _:
         throw FrontDoorStateException(doorId);
@@ -269,6 +286,28 @@ class FrontFilingService {
           newKind: inbox.newKind,
           generation: inbox.generation,
           at: clock.now().toUtc(),
+        ),
+      ),
+    );
+  }
+
+  /// Makes an event of an inbox segment, titled with the words. The tap is
+  /// the approval.
+  Future<void> makeEvent(String doorId) async {
+    final (record, payload) = await _waiting<FrontDoorInbox>(doorId);
+    final inbox = record.outcome! as FrontDoorInbox;
+    final event = await _makeEvent(
+      record.text.trim(),
+      id: frontDoorEventId(doorId, generation: inbox.generation),
+    );
+    if (event == null) throw StateError('The event was not created.');
+    await _rewrite(
+      payload,
+      record.done(
+        FrontDoorEventCreated(
+          eventId: event.meta.id,
+          newKind: inbox.newKind,
+          generation: inbox.generation,
         ),
       ),
     );
@@ -330,6 +369,10 @@ String frontDoorNoteId(String doorId, {int generation = 0}) =>
 /// keeps the id tasks were made under before generations were counted.
 String frontDoorTaskId(String doorId, {int generation = 0}) =>
     _writtenId(generation == 0 ? '$doorId/task' : '$doorId/task/$generation');
+
+/// The id of the event an inbox item is made into, per generation.
+String frontDoorEventId(String doorId, {required int generation}) =>
+    _writtenId('$doorId/event/$generation');
 
 /// The id of the entry that keeps the user's words under a task made from
 /// them, and of the timer entry a dictated start runs on: derived from the

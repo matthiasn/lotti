@@ -7,7 +7,10 @@ import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
 import 'package:lotti/features/front_agent/model/front_chat_thread.dart';
 import 'package:lotti/features/front_agent/model/front_closed_task_card.dart';
 import 'package:lotti/features/front_agent/model/front_conversation.dart';
+import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
+import 'package:lotti/features/front_agent/model/front_due_section.dart';
+import 'package:lotti/features/front_agent/model/front_entity_preview.dart';
 import 'package:lotti/features/front_agent/model/front_logged_time_chart.dart';
 import 'package:lotti/features/front_agent/model/front_pull_requests.dart';
 import 'package:lotti/features/front_agent/service/front_chat_history_service.dart';
@@ -75,6 +78,7 @@ class FrontChatThreadBuilder {
     final charts = <String, FrontLoggedTimeChart>{};
     final pullRequestCharts = <String, FrontPullRequestChart>{};
     final closedTasks = <String, List<FrontClosedTaskCard>>{};
+    final dueSections = <String, FrontDueSection>{};
     final doorRecords = <String, List<(String, FrontDoorRecord)>>{};
 
     for (final row in rows) {
@@ -106,6 +110,8 @@ class FrontChatThreadBuilder {
               payload.content['closedTasks'],
             );
             if (cards.isNotEmpty) closedTasks[row.id] = cards;
+            final due = FrontDueSection.fromJson(payload.content['dueTasks']);
+            if (due != null) dueSections[row.id] = due;
           case FrontAgentToolNames.askUser:
             final payload = await _payload(row.contentEntryId);
             final question = payload?.content['question'];
@@ -192,7 +198,71 @@ class FrontChatThreadBuilder {
         for (final entry in closedTasks.entries)
           if (visibleIds.contains(entry.key)) entry.key: entry.value,
       },
+      entityPreviewsByMessageId: _entityPreviews(visible, doors),
+      dueSectionsByMessageId: {
+        for (final entry in dueSections.entries)
+          if (visibleIds.contains(entry.key)) entry.key: entry.value,
+      },
     );
+  }
+
+  /// What the doors made — a task, an event, a project, the plan of a day —
+  /// and the people they handed a turn to, as preview cards on the reply
+  /// that carries them, each entity once, in segment order. A turn no reply
+  /// followed carries its doors itself, and a user turn draws no cards: its
+  /// doors say what was made until she has answered.
+  static Map<String, List<FrontEntityReference>> _entityPreviews(
+    List<AgentChatMessage> visible,
+    Map<String, List<FrontDoorEntry>> doors,
+  ) {
+    final carrying = FrontChatThread(messages: visible);
+    final previews = <String, List<FrontEntityReference>>{};
+    for (final MapEntry(key: turnId, value: entries) in doors.entries) {
+      final carrier = carrying.carrierOf(turnId);
+      if (carrier == turnId) continue;
+      for (final door in entries) {
+        final record = door.record;
+        // What was made carries the user's words as its title; a person
+        // keeps their name.
+        final card = switch (record.outcome) {
+          FrontDoorTaskCreated(:final taskId) => (
+            FrontEntityKind.task,
+            taskId,
+            record.text,
+          ),
+          FrontDoorEventCreated(:final eventId) => (
+            FrontEntityKind.event,
+            eventId,
+            record.text,
+          ),
+          FrontDoorProjectCreated(:final projectId) => (
+            FrontEntityKind.project,
+            projectId,
+            record.text,
+          ),
+          FrontDoorDayPlanned(:final day) => (
+            FrontEntityKind.dayPlan,
+            frontDayPlanId(day),
+            record.text,
+          ),
+          FrontDoorChatTurn()
+              when record.kind == FrontDestinationKind.person &&
+                  record.destinationId != null =>
+            (
+              FrontEntityKind.person,
+              record.destinationId!,
+              record.ownerTitle ?? record.text,
+            ),
+          _ => null,
+        };
+        if (card == null) continue;
+        final (kind, id, title) = card;
+        final cards = previews.putIfAbsent(carrier, () => []);
+        if (cards.any((shown) => shown.id == id)) continue;
+        cards.add(FrontEntityReference(kind: kind, id: id, title: title));
+      }
+    }
+    return previews;
   }
 
   /// The reply a goal or person agent wrote for the turn [record] handed

@@ -3315,6 +3315,14 @@
   "frontChatSearchChats": "Chats doorzoeken",
   "frontChatTitle": "Metgezel",
   "frontChatYesterday": "Gisteren",
+  "frontDayPlanMore": "Nog {count}",
+  "@frontDayPlanMore": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "frontDoorActionFailed": "Dat is niet gelukt.",
   "frontDoorAnswerHidden": "Verborgen: het steunt op iets wat je niet meer kunt zien.",
   "frontDoorAttribution": "Van {owner}",
@@ -3323,6 +3331,7 @@
   "frontDoorDayPlanned": "Plan van vandaag aangepast",
   "frontDoorDayProposal": "Het plan van vandaag aanpassen?",
   "frontDoorDeclined": "Niet opgeborgen",
+  "frontDoorEventCreated": "Omgezet in een gebeurtenis",
   "frontDoorFailed": "Het vragen aan {owner} is mislukt.",
   "frontDoorFile": "Opbergen",
   "frontDoorFiledUnder": "Opgeborgen onder {owner}",
@@ -3339,6 +3348,7 @@
   "frontDoorKindTask": "de taak",
   "frontDoorLeaveIt": "Laat maar",
   "frontDoorLeft": "Hier in het gesprek gelaten",
+  "frontDoorMakeEvent": "Maak er een gebeurtenis van",
   "frontDoorMakeTask": "Maak er een taak van",
   "frontDoorNewProject": "Nieuw project…",
   "frontDoorNoAgent": "{owner} heeft nog geen agent om het aan te vragen.",
@@ -3357,10 +3367,31 @@
   "frontDoorUndo": "Ongedaan maken",
   "frontDoorUnfiled": "Uit {owner} gehaald. Opnieuw opbergen?",
   "frontDoorWalking": "Vraagt {owner}…",
+  "frontDueSectionOverdueAndThrough": "Te late taken en taken tot en met {date}",
+  "@frontDueSectionOverdueAndThrough": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "frontDueSectionOverdueAndToday": "Te late taken en taken voor vandaag",
+  "frontDueSectionThrough": "Vervalt uiterlijk {date}",
+  "@frontDueSectionThrough": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "frontLoggedTimeExpand": "Grafiek vergroten",
   "frontPullRequestsLinesAdded": "Toegevoegde regels",
   "frontPullRequestsLinesDeleted": "Verwijderde regels",
+  "frontTaskActions": "Taakacties",
+  "frontTaskChangeStatus": "Status wijzigen…",
   "frontTaskCreatedSpoken": "Zo, lieverd, ik heb die taak aangemaakt.",
+  "frontTaskMoveToProject": "Naar project verplaatsen…",
+  "frontTaskReschedule": "Vervaldatum wijzigen…",
   "geminiThinkingModeHighDescription": "De diepste redenering; kan latency en kosten verhogen.",
   "geminiThinkingModeHighLabel": "Hoog",
   "geminiThinkingModeLowDescription": "Lage redenatie voor snelle dagelijkse prompts.",

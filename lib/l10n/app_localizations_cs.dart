@@ -7386,6 +7386,18 @@ class AppLocalizationsCs extends AppLocalizations {
   String get frontChatYesterday => 'Včera';
 
   @override
+  String frontDayPlanMore(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count dalších',
+      few: '$count další',
+      one: '1 další',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get frontDoorActionFailed => 'To se nepovedlo.';
 
   @override
@@ -7413,6 +7425,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get frontDoorDeclined => 'Neuloženo';
+
+  @override
+  String get frontDoorEventCreated => 'Vytvořena událost';
 
   @override
   String frontDoorFailed(String owner) {
@@ -7468,6 +7483,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get frontDoorLeft => 'Ponecháno tady ve vlákně';
+
+  @override
+  String get frontDoorMakeEvent => 'Udělat z toho událost';
 
   @override
   String get frontDoorMakeTask => 'Udělat z toho úkol';
@@ -7532,6 +7550,19 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String frontDueSectionOverdueAndThrough(String date) {
+    return 'Po splatnosti a splatné do $date';
+  }
+
+  @override
+  String get frontDueSectionOverdueAndToday => 'Po splatnosti a dnes splatné';
+
+  @override
+  String frontDueSectionThrough(String date) {
+    return 'Splatné do $date';
+  }
+
+  @override
   String get frontLoggedTimeExpand => 'Zvětšit graf';
 
   @override
@@ -7541,8 +7572,20 @@ class AppLocalizationsCs extends AppLocalizations {
   String get frontPullRequestsLinesDeleted => 'Smazané řádky';
 
   @override
+  String get frontTaskActions => 'Akce úkolu';
+
+  @override
+  String get frontTaskChangeStatus => 'Změnit stav…';
+
+  @override
   String get frontTaskCreatedSpoken =>
       'Hotovo, zlatíčko, ten úkol jsem vytvořila.';
+
+  @override
+  String get frontTaskMoveToProject => 'Přesunout do projektu…';
+
+  @override
+  String get frontTaskReschedule => 'Přeplánovat…';
 
   @override
   String get geminiThinkingModeHighDescription =>

@@ -10,8 +10,11 @@ import 'package:lotti/features/front_agent/model/front_closed_task_card.dart';
 import 'package:lotti/features/front_agent/model/front_conversation.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
+import 'package:lotti/features/front_agent/model/front_due_section.dart';
+import 'package:lotti/features/front_agent/model/front_entity_preview.dart';
 import 'package:lotti/features/front_agent/model/front_logged_time_chart.dart';
 import 'package:lotti/features/front_agent/model/front_pull_requests.dart';
+import 'package:lotti/features/front_agent/model/front_routing_index.dart';
 import 'package:lotti/features/front_agent/service/front_chat_thread_builder.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_contract.dart';
 import 'package:lotti/features/insights/model/insights_models.dart';
@@ -336,6 +339,83 @@ void main() {
     },
   );
 
+  test('a reply about what is due carries the window its list was read '
+      'from; one this build cannot read carries none', () async {
+    userTurn('u1', 'Due this week?', at: DateTime(2026, 11, 9, 9));
+    row(
+      id: 'reply-1',
+      kind: AgentMessageKind.action,
+      toolName: FrontAgentToolNames.replyToUser,
+      operationId: 'u1',
+      content: {
+        'text': 'Two things.',
+        'dueTasks': {
+          'window': 'upcoming',
+          'today': '2026-11-09',
+          'through': '2026-11-13',
+        },
+      },
+      createdAt: DateTime(2026, 11, 9, 9, 1),
+    );
+    userTurn('u2', 'And overdue?', at: DateTime(2026, 11, 9, 10));
+    row(
+      id: 'reply-2',
+      kind: AgentMessageKind.action,
+      toolName: FrontAgentToolNames.replyToUser,
+      operationId: 'u2',
+      content: {
+        'text': 'Nothing.',
+        'dueTasks': {'window': 'soon'},
+      },
+      createdAt: DateTime(2026, 11, 9, 10, 1),
+    );
+
+    final thread = await builder.build();
+
+    expect(thread.dueSectionsByMessageId, {
+      'reply-1': FrontDueSection(
+        window: FrontDueWindow.upcoming,
+        today: DateTime(2026, 11, 9),
+        through: DateTime(2026, 11, 13),
+      ),
+    });
+  });
+
+  test('the window of a reply out of view goes with it', () async {
+    for (var i = 0; i < 60; i++) {
+      final at = DateTime(2026, 10).add(Duration(minutes: 2 * i));
+      final turn = 'u$i'.padLeft(4, '0');
+      userTurn(turn, 'turn $i', at: at);
+      row(
+        id: 'r$i'.padLeft(4, '0'),
+        kind: AgentMessageKind.action,
+        toolName: FrontAgentToolNames.replyToUser,
+        operationId: turn,
+        content: {
+          'text': 'reply $i',
+          'dueTasks': {
+            'window': 'today',
+            'today': '2026-10-01',
+            'through': '2026-10-01',
+          },
+        },
+        createdAt: at.add(const Duration(minutes: 1)),
+      );
+    }
+
+    final thread = await builder.build();
+
+    final shownReplies = {
+      for (final m in thread.messages)
+        if (m.role == AgentChatRole.agent) m.id,
+    };
+    expect(thread.dueSectionsByMessageId.keys.toSet(), shownReplies);
+    expect(
+      thread.dueSectionsByMessageId.containsKey('r0'.padLeft(4, '0')),
+      isFalse,
+    );
+  });
+
   test('a reply that charts pull requests carries its chart; one this build '
       'cannot read carries none', () async {
     userTurn('u1', 'PRs in two weeks?', at: DateTime(2026, 11, 8, 9));
@@ -646,6 +726,305 @@ void main() {
         expect(thread.specialistAgentIds, isEmpty);
       },
     );
+
+    group('entity previews', () {
+      void replyTo(String id, String turnId, {DateTime? at}) => row(
+        id: id,
+        kind: AgentMessageKind.action,
+        toolName: FrontAgentToolNames.replyToUser,
+        operationId: turnId,
+        content: {'text': 'Made it a task.'},
+        createdAt: at,
+      );
+
+      FrontEntityReference task(String id, String title) =>
+          FrontEntityReference(
+            kind: FrontEntityKind.task,
+            id: id,
+            title: title,
+          );
+
+      test('a task a door made rides the reply that carries the door, '
+          'titled with the words it was made of, in segment order', () async {
+        userTurn('u1', 'Ice pad? Freezers?', at: DateTime(2026, 11, 9, 9));
+        replyTo('r1', 'u1', at: DateTime(2026, 11, 9, 9, 1));
+        doorRow(
+          'd:door:1',
+          'u1',
+          door(1, const FrontDoorTaskCreated(taskId: 'cold-chain')),
+        );
+        doorRow(
+          'd:door:0',
+          'u1',
+          door(0, const FrontDoorTaskCreated(taskId: 'ice-pad')),
+        );
+
+        final thread = await builder.build();
+
+        expect(thread.entityPreviewsByMessageId, {
+          'r1': [task('ice-pad', 'segment 0'), task('cold-chain', 'segment 1')],
+        });
+      });
+
+      test('an event a door made rides the reply too, as an event, beside '
+          'a task in segment order', () async {
+        userTurn('u1', 'Rehearsal? Ice pad?', at: DateTime(2026, 11, 9, 9));
+        replyTo('r1', 'u1', at: DateTime(2026, 11, 9, 9, 1));
+        doorRow(
+          'd:door:1',
+          'u1',
+          door(1, const FrontDoorTaskCreated(taskId: 'ice-pad')),
+        );
+        doorRow(
+          'd:door:0',
+          'u1',
+          door(0, const FrontDoorEventCreated(eventId: 'rehearsal')),
+        );
+
+        final thread = await builder.build();
+
+        expect(thread.entityPreviewsByMessageId, {
+          'r1': [
+            const FrontEntityReference(
+              kind: FrontEntityKind.event,
+              id: 'rehearsal',
+              title: 'segment 0',
+            ),
+            task('ice-pad', 'segment 1'),
+          ],
+        });
+      });
+
+      test('a change to today the user planned rides the reply as that '
+          "day's plan, named by its date", () async {
+        userTurn('u1', 'Move the audit.', at: DateTime(2026, 11, 9, 9));
+        replyTo('r1', 'u1', at: DateTime(2026, 11, 9, 9, 1));
+        doorRow(
+          'd:door:0',
+          'u1',
+          door(0, FrontDoorDayPlanned(day: DateTime(2026, 11, 9))),
+        );
+
+        final thread = await builder.build();
+
+        expect(thread.entityPreviewsByMessageId, {
+          'r1': [
+            const FrontEntityReference(
+              kind: FrontEntityKind.dayPlan,
+              id: '2026-11-09',
+              title: 'segment 0',
+            ),
+          ],
+        });
+      });
+
+      test('a project a door made rides the reply too, titled with the '
+          'words it was made of', () async {
+        userTurn('u1', 'Start the census.', at: DateTime(2026, 11, 9, 9));
+        replyTo('r1', 'u1', at: DateTime(2026, 11, 9, 9, 1));
+        doorRow(
+          'd:door:0',
+          'u1',
+          door(0, const FrontDoorProjectCreated(projectId: 'census')),
+        );
+
+        final thread = await builder.build();
+
+        expect(thread.entityPreviewsByMessageId, {
+          'r1': [
+            const FrontEntityReference(
+              kind: FrontEntityKind.project,
+              id: 'census',
+              title: 'segment 0',
+            ),
+          ],
+        });
+      });
+
+      test('a person a turn was handed to rides the reply under their name — '
+          'the words when the walker found none', () async {
+        userTurn('u1', 'Pip and Anna.', at: DateTime(2026, 11, 9, 9));
+        replyTo('r1', 'u1', at: DateTime(2026, 11, 9, 9, 1));
+        const turn = FrontDoorChatTurn(
+          specialistAgentId: 'relationship_agent:pip',
+          specialistMessageId: 'pm',
+        );
+        doorRow(
+          'd:door:0',
+          'u1',
+          door(
+            0,
+            turn,
+            kind: FrontDestinationKind.person,
+            destinationId: 'pip',
+          ),
+        );
+        doorRow(
+          'd:door:1',
+          'u1',
+          FrontDoorRecord(
+            segmentIndex: 1,
+            text: 'segment 1',
+            kind: FrontDestinationKind.person,
+            destinationId: 'anna',
+            status: FrontDoorStatus.done,
+            claimedAt: claimedAt,
+            outcome: turn,
+          ),
+        );
+        // Handed to a person, but with no one named: nothing to open.
+        doorRow(
+          'd:door:2',
+          'u1',
+          door(2, turn, kind: FrontDestinationKind.person, destinationId: null),
+        );
+
+        final thread = await builder.build();
+
+        expect(thread.entityPreviewsByMessageId, {
+          'r1': [
+            const FrontEntityReference(
+              kind: FrontEntityKind.person,
+              id: 'pip',
+              title: 'Owner 0',
+            ),
+            const FrontEntityReference(
+              kind: FrontEntityKind.person,
+              id: 'anna',
+              title: 'segment 1',
+            ),
+          ],
+        });
+      });
+
+      test('a door that made nothing draws no card', () async {
+        userTurn('u1', 'Garden?', at: DateTime(2026, 11, 9, 9));
+        replyTo('r1', 'u1', at: DateTime(2026, 11, 9, 9, 1));
+        doorRow('d:door:0', 'u1', door(0, const FrontDoorInbox()));
+        doorRow('d:door:1', 'u1', door(1, const FrontDoorFiled(entryId: 'e')));
+        doorRow('d:door:2', 'u1', door(2, const FrontDoorDeclined()));
+        doorRow('d:door:4', 'u1', door(4, const FrontDoorDay()));
+        doorRow('d:door:3', 'u1', door(3, null));
+        // A turn handed to a goal's agent: not a person.
+        doorRow(
+          'd:door:5',
+          'u1',
+          door(
+            5,
+            const FrontDoorChatTurn(
+              specialistAgentId: 'goal-swim',
+              specialistMessageId: 'gm',
+            ),
+            kind: FrontDestinationKind.goal,
+          ),
+        );
+        // A person whose agent could not take the turn.
+        doorRow(
+          'd:door:6',
+          'u1',
+          door(
+            6,
+            const FrontDoorSkipped(FrontDoorSkipReason.noAgent),
+            kind: FrontDestinationKind.person,
+          ),
+        );
+
+        final thread = await builder.build();
+
+        expect(thread.doorsByMessageId['u1'], hasLength(7));
+        expect(thread.entityPreviewsByMessageId, isEmpty);
+      });
+
+      test('a turn she has not answered draws no card: its door says what '
+          'was made until she has', () async {
+        userTurn('u1', 'Ice pad?', at: DateTime(2026, 11, 9, 9));
+        doorRow(
+          'd:door:0',
+          'u1',
+          door(0, const FrontDoorTaskCreated(taskId: 'ice-pad')),
+        );
+        // The next turn is the user's, not her reply.
+        userTurn('u2', 'And the freezers?', at: DateTime(2026, 11, 9, 9, 5));
+
+        final thread = await builder.build();
+
+        expect(thread.carrierOf('u1'), 'u1');
+        expect(thread.entityPreviewsByMessageId, isEmpty);
+      });
+
+      test('a task two doors both made is drawn once', () async {
+        userTurn('u1', 'Ice pad, twice', at: DateTime(2026, 11, 9, 9));
+        replyTo('r1', 'u1', at: DateTime(2026, 11, 9, 9, 1));
+        doorRow(
+          'd:door:0',
+          'u1',
+          door(0, const FrontDoorTaskCreated(taskId: 'ice-pad')),
+        );
+        doorRow(
+          'd:door:1',
+          'u1',
+          door(1, const FrontDoorTaskCreated(taskId: 'ice-pad')),
+        );
+
+        final thread = await builder.build();
+
+        expect(thread.entityPreviewsByMessageId, {
+          'r1': [task('ice-pad', 'segment 0')],
+        });
+      });
+
+      test('each reply carries only the tasks of its own turn', () async {
+        userTurn('u1', 'Ice pad', at: DateTime(2026, 11, 9, 9));
+        replyTo('r1', 'u1', at: DateTime(2026, 11, 9, 9, 1));
+        userTurn('u2', 'Freezers', at: DateTime(2026, 11, 9, 10));
+        replyTo('r2', 'u2', at: DateTime(2026, 11, 9, 10, 1));
+        doorRow(
+          'd1:door:0',
+          'u1',
+          door(0, const FrontDoorTaskCreated(taskId: 'ice-pad')),
+        );
+        doorRow(
+          'd2:door:0',
+          'u2',
+          door(0, const FrontDoorTaskCreated(taskId: 'cold-chain')),
+        );
+
+        final thread = await builder.build();
+
+        expect(thread.entityPreviewsByMessageId, {
+          'r1': [task('ice-pad', 'segment 0')],
+          'r2': [task('cold-chain', 'segment 0')],
+        });
+      });
+
+      test('a turn of another conversation draws nothing here', () async {
+        userTurn(
+          'u1',
+          'Ice pad',
+          at: DateTime(2026, 11, 9, 9),
+          conversation: 'c-1',
+        );
+        replyTo('r1', 'u1', at: DateTime(2026, 11, 9, 9, 1));
+        doorRow(
+          'd:door:0',
+          'u1',
+          door(0, const FrontDoorTaskCreated(taskId: 'ice-pad')),
+        );
+
+        expect(
+          (await builder.build(
+            conversationId: 'c-2',
+          )).entityPreviewsByMessageId,
+          isEmpty,
+        );
+        expect(
+          (await builder.build(
+            conversationId: 'c-1',
+          )).entityPreviewsByMessageId.keys,
+          ['r1'],
+        );
+      });
+    });
   });
 }
 

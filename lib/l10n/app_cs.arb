@@ -2978,6 +2978,14 @@
   "frontChatSearchChats": "Hledat v chatech",
   "frontChatTitle": "Společník",
   "frontChatYesterday": "Včera",
+  "frontDayPlanMore": "{count, plural, =1{1 další} few{{count} další} other{{count} dalších}}",
+  "@frontDayPlanMore": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "frontDoorActionFailed": "To se nepovedlo.",
   "frontDoorAnswerHidden": "Skryto: vychází z něčeho, co už nevidíš.",
   "frontDoorAttribution": "Od: {owner}",
@@ -2986,6 +2994,7 @@
   "frontDoorDayPlanned": "Dnešní plán změněn",
   "frontDoorDayProposal": "Změnit dnešní plán?",
   "frontDoorDeclined": "Neuloženo",
+  "frontDoorEventCreated": "Vytvořena událost",
   "frontDoorFailed": "Dotaz na {owner} selhal.",
   "frontDoorFile": "Uložit",
   "frontDoorFiledUnder": "Uloženo pod {owner}",
@@ -3002,6 +3011,7 @@
   "frontDoorKindTask": "úkol",
   "frontDoorLeaveIt": "Nechat být",
   "frontDoorLeft": "Ponecháno tady ve vlákně",
+  "frontDoorMakeEvent": "Udělat z toho událost",
   "frontDoorMakeTask": "Udělat z toho úkol",
   "frontDoorNewProject": "Nový projekt…",
   "frontDoorNoAgent": "{owner} zatím nemá agenta, kterého by se dalo zeptat.",
@@ -3020,10 +3030,31 @@
   "frontDoorUndo": "Zpět",
   "frontDoorUnfiled": "Vyňato z: {owner}. Uložit znovu?",
   "frontDoorWalking": "Ptá se: {owner}…",
+  "frontDueSectionOverdueAndThrough": "Po splatnosti a splatné do {date}",
+  "@frontDueSectionOverdueAndThrough": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "frontDueSectionOverdueAndToday": "Po splatnosti a dnes splatné",
+  "frontDueSectionThrough": "Splatné do {date}",
+  "@frontDueSectionThrough": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "frontLoggedTimeExpand": "Zvětšit graf",
   "frontPullRequestsLinesAdded": "Přidané řádky",
   "frontPullRequestsLinesDeleted": "Smazané řádky",
+  "frontTaskActions": "Akce úkolu",
+  "frontTaskChangeStatus": "Změnit stav…",
   "frontTaskCreatedSpoken": "Hotovo, zlatíčko, ten úkol jsem vytvořila.",
+  "frontTaskMoveToProject": "Přesunout do projektu…",
+  "frontTaskReschedule": "Přeplánovat…",
   "geminiThinkingModeHighDescription": "Nejhlubší uvažování; může zvýšit latenci a cenu.",
   "geminiThinkingModeHighLabel": "Vysoké",
   "geminiThinkingModeLowDescription": "Nízké uvažování pro rychlé každodenní prompty.",

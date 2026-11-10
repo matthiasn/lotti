@@ -7,6 +7,7 @@ import 'package:lotti/features/agents/workflow/agent_tool_arg_parsing.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/front_agent/model/front_closed_task_card.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
+import 'package:lotti/features/front_agent/model/front_due_section.dart';
 import 'package:lotti/features/front_agent/model/front_logged_time_chart.dart';
 import 'package:lotti/features/front_agent/model/front_pull_requests.dart';
 import 'package:lotti/features/front_agent/model/front_reference_links.dart';
@@ -140,6 +141,7 @@ class FrontAgentStrategy extends ConversationStrategy
   FrontLoggedTimeChart? _loggedTimeChart;
   FrontPullRequestChart? _pullRequestChart;
   List<FrontClosedTaskCard>? _closedTaskCards;
+  FrontDueSection? _dueSection;
 
   FrontDispatch? get dispatch => _dispatch;
   FrontAskUser? get askUser => _askUser;
@@ -157,6 +159,10 @@ class FrontAgentStrategy extends ConversationStrategy
   /// The cards her reply draws: every task a `list_closed_tasks` this turn
   /// found, whatever her words name; null when it found none.
   List<FrontClosedTaskCard>? get closedTaskCards => _closedTaskCards;
+
+  /// The window a `list_due_tasks` this turn read and found tasks in, which
+  /// her reply's list of them is labelled with; null when none found any.
+  FrontDueSection? get dueSection => _dueSection;
 
   /// Whether the model ended the turn with one of the three terminal calls.
   bool get hasTerminalOutput =>
@@ -466,6 +472,13 @@ class FrontAgentStrategy extends ConversationStrategy
       categoryIds: categoryIds,
     ));
     _lookupRows.addAll(due.rows);
+    if (due.rows.isNotEmpty) {
+      _dueSection = FrontDueSection(
+        window: due.window,
+        today: due.today,
+        through: due.through,
+      );
+    }
     await _accept(call, manager, due.render());
   }
 

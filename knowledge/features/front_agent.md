@@ -83,7 +83,7 @@ sources:
   - id: filing
     resource: ../../lib/features/front_agent/service/front_filing_service.dart
     title: FrontFilingService — what the tap under a door writes
-    last_modified: 2026-11-08
+    last_modified: 2026-11-09
   - id: task-draft
     resource: ../../lib/features/front_agent/model/front_task_draft.dart
     title: FrontTaskDraft — the task the router read from the words
@@ -126,8 +126,8 @@ sources:
     last_modified: 2026-10-31
   - id: thread
     resource: ../../lib/features/front_agent/service/front_chat_thread_builder.dart
-    title: FrontChatThreadBuilder — the thread with doors, options and mirrored replies
-    last_modified: 2026-10-24
+    title: FrontChatThreadBuilder — the thread with doors, options, mirrored replies and the preview cards a reply carries
+    last_modified: 2026-11-09
   - id: controller
     resource: ../../lib/features/front_agent/state/front_chat_controller.dart
     title: FrontChatController — the composer
@@ -154,8 +154,24 @@ sources:
     last_modified: 2026-11-07
   - id: task-list
     resource: ../../lib/features/front_agent/ui/front_task_list.dart
-    title: FrontTaskList and FrontClosedTaskList — her lists of tasks and projects, and the tasks a closed-task answer found, as cards of rows
+    title: FrontClosedTaskList — the tasks a closed-task answer found, as a card of rows
     last_modified: 2026-11-08
+  - id: entity-preview
+    resource: ../../lib/features/front_agent/model/front_entity_preview.dart
+    title: FrontEntityReference and FrontEntityPreview — which entity a preview card is of, and what it shows
+    last_modified: 2026-11-09
+  - id: entity-preview-provider
+    resource: ../../lib/features/front_agent/state/front_entity_preview_provider.dart
+    title: frontEntityPreviewProvider — the live preview a card reads
+    last_modified: 2026-11-09
+  - id: entity-preview-card
+    resource: ../../lib/features/front_agent/ui/front_entity_preview_card.dart
+    title: FrontEntityPreviewList and its cards — her lists of tasks and what her turn made, as preview cards, a task card's quick actions, and the label over a due list
+    last_modified: 2026-11-09
+  - id: due-section
+    resource: ../../lib/features/front_agent/model/front_due_section.dart
+    title: FrontDueSection — the window a due list was read from, kept on her reply
+    last_modified: 2026-11-09
   - id: closed-task-card
     resource: ../../lib/features/front_agent/model/front_closed_task_card.dart
     title: FrontClosedTaskCard — one closed task her reply stores and draws as a card
@@ -886,7 +902,8 @@ flowchart LR
 | body | agent | `instructions`: what to do and how, without the turn's other topics |
 | category | agent | the category the user names, else her judgment from the work, the categories of `<conversation_tasks>` and what `<recent_turns>` were about — a task asked for in a conversation spent on one category's work, or its logged time, goes there, and her reply names it; left out only when the evidence points two ways or nowhere; dropped unless listed (and chosen, when the conversation is narrowed). Live eval scenarios `category_from_conversation` / `category_nowhere` |
 | priority, due day, estimate | agent, only when said | `P0`–`P3`, `YYYY-MM-DD`, minutes (≤ `frontTaskMaxEstimateMinutes`) |
-| status and timer | agent, only when said | `startedMinutesAgo` (0–`frontTaskMaxStartedMinutesAgo`): *in progress*, and a timer entry linked under the task from that instant, running |
+| status | agent, only when said | `inProgress`: *in progress*, and nothing more — "make it in progress" is a status, never a start |
+| timer | agent, only when a timer is asked for or a start is said | `startedMinutesAgo` (0–`frontTaskMaxStartedMinutesAgo`): *in progress*, and a timer entry linked under the task from that instant, running |
 | follows up on | agent, only for a follow-up | `followsUpTaskId`: a task in the index, a lookup this turn or `<conversation_tasks>`; anything else is dropped. Linked `followsUp` from the new task to it, and filed under its project |
 | task agent | category default | the category's `defaultTemplateId`; none without one |
 | provenance | always | the segment's verbatim words, a text entry linked under the task (`frontTaskWordsId`) |
@@ -900,8 +917,12 @@ workflow's `now`, handed to the strategy — so neither a slow inference nor a
 tap hours later moves when the user said the work began; a start after now
 runs from now. **Nothing is made without the tap**, asked for or only
 mentioned: the item waits in the inbox with its draft, and *Make it a task*
-makes the filled task under `frontDoorTaskId`. Without a stated start the
-task is open and no timer runs. *Undo* deletes the task and the copy of the
+makes the filled task under `frontDoorTaskId`. Without a stated start no
+timer runs, and the task is open unless the words put it in progress.
+Everything the user says about the task they ask for — its due day,
+priority, status, a timer — belongs to its one segment even as a sentence
+of its own (rule 10), so a trailing "make it due today and urgent" never
+becomes a second inbox item. *Undo* deletes the task and the copy of the
 words under it, and stops the timer running on it; the timer entry stays,
 as logged time does on any deleted task.
 
@@ -974,25 +995,28 @@ stateDiagram-v2
   [*] --> Inbox: new / journal / unrouted walked
   Inbox --> SavedNote: Save as a note — text entry, owned by nothing
   Inbox --> TaskCreated: Make it a task — from its draft, else titled with the words
+  Inbox --> EventCreated: Make it an event — tentative, titled with the words
   Inbox --> Left: Leave it — nothing written, nothing waits
   Left --> Proposal: Undo — when it came from a proposal
   Left --> Inbox: Undo — otherwise, same guess, same generation
   SavedNote --> Inbox: Undo — note deleted, next generation, same guess
   TaskCreated --> Inbox: Undo — task deleted, next generation, same guess
+  EventCreated --> Inbox: Undo — event deleted, next generation, same guess
   Inbox --> ProjectCreated: New project… — the form, titled with the words, created one
   Inbox --> Inbox: Start a goal… — the wizard opens with the words, nothing written
 ```
 
 The entry a tap writes goes through the persistence logic — a text entry
 with the owner's `categoryId` and `linkedId`, a task through
-`createTaskEntry` — so an entry filed under a task wakes the task agent
+`createTaskEntry`, an event (`writeFrontEvent`) tentative, starred and dated at the
+tap as the Events page starts one — so an entry filed under a task wakes the task agent
 through its subscription exactly as dictation into the task does, one filed
 under a project shows in the project's timeline (`ProjectTimelineSection`)
 and lands in that project agent's log at its next scheduled
 update (a linked entry marks the report stale; it never wakes the agent
 itself), and a made task is a task like any other. **Every write is idempotent per door**: the entry or
 task is created under a deterministic id (`frontDoorEntryId`,
-`frontDoorNoteId`, `frontDoorTaskId` — a UUID v5 of the door id and the
+`frontDoorNoteId`, `frontDoorTaskId`, `frontDoorEventId` — a UUID v5 of the door id and the
 door's *generation*, how often it was written and taken back; generation
 zero keeps the ids from before generations were counted), and the adapters
 in `front_agent_providers.dart` read the write's own verdict: a rejected
@@ -1199,12 +1223,14 @@ filled action, and an overflow menu (`DesignSystemContextMenuButton`)
 holding every other way out. The filled action is always a tap that
 writes — *File it*, *Make it a task* — or, on a settled card, a secondary
 *Open*; the overflow holds *Somewhere else* on a proposal, *Start a goal…*
-/ *New project…* (the ellipsis says a wizard opens), *Save as a note* and
-*Leave it* on an inbox item with the router's guess first, and *Undo* on
+/ *New project…* (the ellipsis says a wizard opens), *Make it an event*
+(only while `enable_events` is on — an event made where it is off would
+have no page to be found on), *Save as a note* and *Leave it* on an inbox item with the router's guess
+first, and *Undo* on
 anything settled. A busy card's action shows it loading; a failed one's
 status says so in the error ink and the tap reads *Try again*
 (`FrontChatComposerState.busyDoorIds` / `failedDoorIds`). *Open* leaves
-the sheet for the entry's or the task's page. The inbox filter keeps a
+the sheet for the entry's, the task's or the event's page. The inbox filter keeps a
 waiting turn's words and the reply that carries its cards together.
 
 The header (`FrontChatHeader`) says who the conversation is with and what
@@ -1269,7 +1295,7 @@ widening it (`frontNarrowedCategories`): with no allow-list those categories
 are the scope, and ones that fall outside the allow-list leave it as it is,
 since an empty scope would be the whole journal. New turns carry none.
 
-**Her lists of tasks are task rows.** The prompt asks her to write two
+**Her lists of tasks are preview cards.** The prompt asks her to write two
 tasks or projects or more — due tasks, what a search found, overdue and due
 together as one list — as a Markdown list, one link per line. How she
 phrases a line still varies from turn to turn, so the list does not hinge on
@@ -1279,24 +1305,30 @@ the runs of consecutive list lines that **lead** with a task or project link
 (`lotti://task/` or `lotti://project/`, plural paths too, emphasised or
 not); blank lines between them stay inside the run, and whatever follows the
 link on the line — a due date, `(overdue)`, a status, a few words — is
-dropped, since the row shows the task as it is now. The runs are drawn once
+dropped, since the card shows the task as it is now. The runs are drawn once
 the reply's list lines name `frontTaskListMinimum` (2) distinct records
-between them, so an answer split under *Overdue* and *Due today* headings,
-one task each, is rows under each heading. Each run is drawn as
-`FrontTaskList` — one card of rows, between her words as she wrote them
-(rendered by the view's own Markdown, so links and style are unchanged). A
-`FrontTaskRow` reads the task through `taskPreviewProvider` (through
-`.value`, so a reload keeps the row; it refreshes on every notification
-naming the task): its `StatusGlyph`, its title, its agent's one-liner (caption, in the `aiCard.accent` ink the tasks list gives it), its
-status and category, and — while it is not done or rejected — its
-priority as the tasks list shows it, beside the chevron and out of the subtitle so no truncation takes it (`TaskShowcasePriorityGlyph` and `P0`–`P3`,
-also in the row's semantics label) and the tasks list's own `DueDateText`. Until it loads, or if it is gone, the title she
-gave it stands alone. A project is a row of its title and a folder glyph.
-A tap opens either through the pane's link handler — a task on top of her
-(below), where its TL;DR is; a project closes her. A reply naming a single
-task leaves it a link in her words. The parts are cut from her reply as
-written, before `replaceIsoDays` turns its days into the device's format,
-and her words between the lists get the device's dates after the cut.
+between them, so an answer split in two, one task each, is cards under each
+part. Each run is drawn as a `FrontEntityPreviewList` between her words as
+she wrote them (rendered by the view's own Markdown, so links and style are
+unchanged): a task as `FrontEntityPreviewCompactCard`, a project as
+`FrontEntityPreviewProjectCard` (both below). A tap opens
+either through the pane — a task on top of her, where its TL;DR is; a
+project closes her. A reply naming a single task leaves it a link in her
+words. The parts are cut from her reply as written, before
+`replaceIsoDays` turns its days into the device's format, and her words
+between the lists get the device's dates after the cut.
+
+**An answer about what is due says which window, quietly.** Her prompt has
+no headings — her words may be read aloud — so the label over a due list
+never comes from her prose. The strategy keeps the window a
+`list_due_tasks` that found tasks read (`FrontDueSection`: the window, the
+day it was asked, the last day it reaches); the workflow stores it on her
+reply as `dueTasks`, and the thread builder reads it into
+`dueSectionsByMessageId` (an unreadable one is dropped, one out of view goes
+with its reply). `FrontDueSectionLabel` draws it in the caption's low ink
+over her first list: *Due today* and *Overdue* (the Tasks due view's own
+labels), *Due through* a day for the days ahead, *Overdue and due through*
+a day — or *today* for a window that ends on the day it was asked.
 
 **Her answer about what was closed is cards under her words.** A reply in
 `closedTasksByMessageId` gets `FrontClosedTaskList` under her words: one
@@ -1306,6 +1338,71 @@ category's colour swatch (`ColorIcon`) and name; a task reopened since
 reads `Done → In Progress`, its status now from `taskPreviewProvider`. A
 tap opens the task on top of her. A task her words also listed as task rows
 is drawn once, on the cards.
+
+**What her turn made is a preview card under her words.** When a door's
+outcome is `FrontDoorTaskCreated`, `FrontDoorEventCreated`,
+`FrontDoorProjectCreated` or `FrontDoorDayPlanned` — or it handed a person
+door's words to that person's agent (`FrontDoorChatTurn`, the person named
+by the door's `destinationId`) — the thread builder adds a
+`FrontEntityReference`: its `FrontEntityKind` (task, event, project, person
+or day plan: a set of its own, so an event never becomes a routing
+destination), its id (a day's is its date, `frontDayPlanId`), and as its
+title the user's words it was made of, or a person's name as the walker
+recorded it. It goes to `entityPreviewsByMessageId` under the reply that carries the door
+(`carrierOf`), once per entity, in segment order. A turn she has not
+answered draws no card: its door card already says *Made into a task* or
+*Made into an event*. The thread stores only the reference, never the
+preview: each card reads `frontEntityPreviewProvider` — keyed by
+`(kind, id)`; a task's built on `taskPreviewProvider`, an event's the
+`JournalEvent` as stored, both re-read when a notification names the
+entity; a project's the project and its tasks' counts, re-read when it or
+any of its tasks is named; a person's the person and their newest check-in,
+re-read when they are named (a check-in names them); a day's its plan from
+`currentDraftPlanProvider` — through
+`.value`, so a change after the turn shows on the card and
+a reload keeps the card as it was until the new preview lands.
+`FrontEntityPreviewList` stacks the cards between her words and her door
+cards, a task as `FrontEntityPreviewCompactCard`, an event as
+`FrontEntityPreviewRichCard`, a project as `FrontEntityPreviewProjectCard`,
+a person as `FrontEntityPreviewPersonCard`, a day as
+`FrontEntityPreviewDayCard`.
+
+The compact card is one `DesignSystemListItem` on the card surface
+(`dsCardSurface`, `radii.m`, a 0.5 hairline in `decorative.level01`): the
+task's cover (`CoverArtThumbnail`, `ControlSizes.iconChip`) or else its
+`StatusGlyph`, its live title, the one-liner in the AI ink, then status,
+category swatch and name, `DueDateText` and the estimate
+(`formatRangeDuration`, a timer glyph) — neither of those two once it is
+done or rejected — and, while it is still to do, its priority beside the
+chevron, out of the subtitle so no truncation takes it
+(`TaskShowcasePriorityGlyph` and `P0`–`P3`, also in its semantics label).
+A tap opens the task on top of her; a long press — a secondary click on
+desktop, the long-press action to a screen reader — opens a
+`DesignSystemContextMenuAnchor` at the press with *Change status…*,
+*Reschedule…* and *Move to project…* (only for a task with a category, as on
+its page), each reading the task as stored now and opening the picker its
+own page opens (`TaskMetaPickers`), so an action here writes exactly what it
+would there. A task a card shows
+is taken out of her words' task rows, as the closed-task cards are, and a
+list left empty is not drawn. The rich card is `LinkedEventCard` — the
+`EventSummaryCard` the app draws wherever an event is linked, resolved
+from the event and its links as its page resolves them: cover, title and
+rating, category and date, a status pill, the summary and the photo and
+task counts. Its `onTap` is the chat's: she closes, then the event's page
+opens, as *Open* on its door does — `/events` is not a root her links may
+reach. The day card says the day, then its blocks in the order they run —
+buffers and dropped blocks left out — each with when it starts and ends
+(tabular figures) and its title, a completed one ticked, at most
+`FrontEntityPreviewDayCard.maxBlocks` (5) and how many more; a tap opens
+the Daily OS day surface on that day, as *Open* on the day's door does.
+The project card is the Projects list's own `ProjectRow` — its title, its
+tasks' progress counted done-only as its page counts them, its status — and
+a tap opens the project, closing her. The person card is the People list's
+own `PeopleListRow` — their face, name and newest check-in — and a tap
+closes her and opens their page (`/people/<id>`).
+Every card, until it loads or once the entity is gone (a day with no plan
+left), is the title it was made with alone on the card surface under its
+kind's glyph, still opening it.
 
 **Her answer about logged time is a chart under her words.** A reply in
 `loggedTimeByMessageId` gets the same `replyBodyBuilder` body, her words

@@ -5,6 +5,8 @@ import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/front_chat_tokens.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
+import 'package:lotti/classes/event_data.dart';
+import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
@@ -186,6 +188,12 @@ final frontFilingServiceProvider = Provider<FrontFilingService>(
           categoryId: categoryId,
         ),
     makeTask: ref.watch(frontTaskMakerProvider),
+    makeEvent: (title, {required id}) => writeFrontEvent(
+      ref.read(persistenceLogicProvider),
+      ref.read(journalDbProvider),
+      title,
+      id: id,
+    ),
     deleteEntry: (entryId) async {
       // A task taken back stops the timer a dictated start ran on it, and
       // takes its copy of the words along, so a re-make files no second
@@ -201,6 +209,35 @@ final frontFilingServiceProvider = Provider<FrontFilingService>(
   ),
   name: 'frontFilingServiceProvider',
 );
+
+/// An event titled [title] under [id], tentative and dated now, as the
+/// Events page's own create starts one.
+///
+/// The write's own verdict decides, as for a text entry: `true` is the new
+/// event; `false` means a row under [id] already exists — the retry case —
+/// and that event is returned when it is there and not deleted; `null`, or a
+/// rejected write with no event behind it, is nothing stored.
+Future<JournalEvent?> writeFrontEvent(
+  PersistenceLogic persistence,
+  JournalDb journalDb,
+  String title, {
+  required String id,
+}) async {
+  final now = clock.now();
+  final event = JournalEvent(
+    meta: await persistence.createMetadata(
+      id: id,
+      dateFrom: now,
+      dateTo: now,
+      starred: true,
+    ),
+    data: EventData(title: title, stars: 0, status: EventStatus.tentative),
+    entryText: const EntryText(plainText: ''),
+  );
+  final saved = await persistence.createDbEntity(event);
+  final written = (saved ?? false) ? event : await _existing(journalDb, id);
+  return written is JournalEvent ? written : null;
+}
 
 /// A text entry with [text] under [id], linked under [linkedId] when given.
 ///
@@ -288,9 +325,10 @@ final frontTaskMakerProvider = Provider<FrontTaskMaker>(
 ///
 /// Once written, the user's [words] are filed under it as a linked text
 /// entry — where the task came from, and what its agent reads — a follow-up
-/// is linked `followsUp` to its task, a draft that says the work began puts
-/// it in progress with a timer running from that moment ([startTimer], on a
-/// linked entry starting then), and [assignAgent] hands it the category's
+/// is linked `followsUp` to its task, a draft that says the work is in
+/// progress makes it so, one that says when the work began also runs a
+/// timer from that moment ([startTimer], on a linked entry starting then),
+/// and [assignAgent] hands it the category's
 /// default agent, last, so the agent's first wake sees all of it.
 ///
 /// The creation path answers null for a rejected write, which for a
@@ -325,7 +363,9 @@ Future<Task?> makeFrontTask(
   final categoryId = draft.categoryId ?? followed?.meta.categoryId;
   final task = await persistence.createTaskEntry(
     data: TaskData(
-      status: taskStatusFromString(started == null ? '' : 'IN PROGRESS'),
+      status: taskStatusFromString(
+        draft.inProgress || started != null ? 'IN PROGRESS' : '',
+      ),
       title: draft.title,
       statusHistory: [],
       dateTo: now,

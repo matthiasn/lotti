@@ -101,6 +101,38 @@ void main() {
     expect(beamed, ['/events/evt-1']);
   });
 
+  testWidgets('a host that must leave first gets the tap instead, and '
+      'nothing is opened behind it', (tester) async {
+    final beamed = <String>[];
+    beamToNamedOverride = beamed.add;
+    var tapped = 0;
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          resolvedOutgoingLinkedEntriesProvider(
+            'evt-1',
+          ).overrideWithValue(const []),
+        ],
+        child: makeTestableWidget2(
+          Scaffold(
+            body: LinkedEventCard(
+              event: _event('evt-1'),
+              onTap: () => tapped++,
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    await tester.tap(find.byType(EventSummaryCard));
+    await tester.pump();
+
+    expect(tapped, 1);
+    expect(beamed, isEmpty);
+  });
+
   testWidgets('resolves the category name and a linked-photo cover', (
     tester,
   ) async {

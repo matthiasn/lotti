@@ -2971,6 +2971,14 @@
   "frontChatSearchChats": "Buscar chats",
   "frontChatTitle": "Acompañante",
   "frontChatYesterday": "Ayer",
+  "frontDayPlanMore": "{count} más",
+  "@frontDayPlanMore": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "frontDoorActionFailed": "Eso no se completó.",
   "frontDoorAnswerHidden": "Oculto: se basa en algo que ya no puedes ver.",
   "frontDoorAttribution": "De {owner}",
@@ -2979,6 +2987,7 @@
   "frontDoorDayPlanned": "Plan de hoy cambiado",
   "frontDoorDayProposal": "¿Cambiar el plan de hoy?",
   "frontDoorDeclined": "Sin archivar",
+  "frontDoorEventCreated": "Convertido en evento",
   "frontDoorFailed": "No se pudo preguntar a {owner}.",
   "frontDoorFile": "Archivar",
   "frontDoorFiledUnder": "Archivado bajo {owner}",
@@ -2995,6 +3004,7 @@
   "frontDoorKindTask": "la tarea",
   "frontDoorLeaveIt": "Dejarlo",
   "frontDoorLeft": "Se queda aquí en el hilo",
+  "frontDoorMakeEvent": "Convertir en evento",
   "frontDoorMakeTask": "Convertir en tarea",
   "frontDoorNewProject": "Nuevo proyecto…",
   "frontDoorNoAgent": "{owner} aún no tiene un agente al que preguntar.",
@@ -3013,10 +3023,31 @@
   "frontDoorUndo": "Deshacer",
   "frontDoorUnfiled": "Sacado de {owner}. ¿Archivar otra vez?",
   "frontDoorWalking": "Preguntando a {owner}…",
+  "frontDueSectionOverdueAndThrough": "Vencidas y que vencen hasta el {date}",
+  "@frontDueSectionOverdueAndThrough": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "frontDueSectionOverdueAndToday": "Vencidas y que vencen hoy",
+  "frontDueSectionThrough": "Vencen hasta el {date}",
+  "@frontDueSectionThrough": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "frontLoggedTimeExpand": "Ampliar gráfico",
   "frontPullRequestsLinesAdded": "Líneas añadidas",
   "frontPullRequestsLinesDeleted": "Líneas eliminadas",
+  "frontTaskActions": "Acciones de la tarea",
+  "frontTaskChangeStatus": "Cambiar estado…",
   "frontTaskCreatedSpoken": "Listo, cariño, he creado esa tarea.",
+  "frontTaskMoveToProject": "Mover a un proyecto…",
+  "frontTaskReschedule": "Reprogramar…",
   "geminiThinkingModeHighDescription": "Razonamiento más profundo; puede aumentar la latencia y el coste.",
   "geminiThinkingModeHighLabel": "Alto",
   "geminiThinkingModeLowDescription": "Razonamiento bajo para prompts cotidianos rápidos.",

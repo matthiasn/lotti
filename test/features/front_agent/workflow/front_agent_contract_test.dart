@@ -232,6 +232,47 @@ void main() {
     );
   });
 
+  test('what the user says about a task they ask for stays in its one '
+      'segment, even as a sentence of its own', () {
+    expect(
+      frontAgentSystemPrompt,
+      contains(
+        'is part of that one segment even when it is a sentence of its own',
+      ),
+    );
+    expect(
+      frontAgentSystemPrompt,
+      contains('never a segment or a task of its own'),
+    );
+  });
+
+  test('in progress is a status that starts no timer; only a start the '
+      'user asks for or names starts one', () {
+    expect(
+      frontAgentSystemPrompt,
+      contains('a status, which starts no timer'),
+    );
+    expect(
+      frontAgentSystemPrompt,
+      contains(
+        '"make it in progress" alone is `inProgress`, never '
+        '`startedMinutesAgo`',
+      ),
+    );
+    final task =
+        ((((frontAgentTools.first.parameters['properties'] as Map)['segments']
+                        as Map)['items']
+                    as Map)['properties']
+                as Map)['task']
+            as Map;
+    final fields = task['properties'] as Map;
+    expect((fields['inProgress'] as Map)['type'], 'boolean');
+    expect(
+      (fields['startedMinutesAgo'] as Map)['description'],
+      contains('Starts a timer.'),
+    );
+  });
+
   test('dates are written as the tools give them, and a misheard name '
       'as listed', () {
     expect(frontAgentSystemPrompt, contains('`YYYY-MM-DD`'));

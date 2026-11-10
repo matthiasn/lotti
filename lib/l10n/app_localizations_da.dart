@@ -7307,6 +7307,11 @@ class AppLocalizationsDa extends AppLocalizations {
   String get frontChatYesterday => 'I går';
 
   @override
+  String frontDayPlanMore(int count) {
+    return '$count mere';
+  }
+
+  @override
   String get frontDoorActionFailed => 'Det gik ikke igennem.';
 
   @override
@@ -7334,6 +7339,9 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get frontDoorDeclined => 'Ikke gemt';
+
+  @override
+  String get frontDoorEventCreated => 'Lavet til en begivenhed';
 
   @override
   String frontDoorFailed(String owner) {
@@ -7389,6 +7397,9 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get frontDoorLeft => 'Efterladt her i tråden';
+
+  @override
+  String get frontDoorMakeEvent => 'Lav det til en begivenhed';
 
   @override
   String get frontDoorMakeTask => 'Lav det til en opgave';
@@ -7453,6 +7464,20 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
+  String frontDueSectionOverdueAndThrough(String date) {
+    return 'Forfaldne opgaver og opgaver, der forfalder senest $date';
+  }
+
+  @override
+  String get frontDueSectionOverdueAndToday =>
+      'Forfaldne opgaver og opgaver, der forfalder i dag';
+
+  @override
+  String frontDueSectionThrough(String date) {
+    return 'Forfalder senest $date';
+  }
+
+  @override
   String get frontLoggedTimeExpand => 'Forstør diagram';
 
   @override
@@ -7462,7 +7487,19 @@ class AppLocalizationsDa extends AppLocalizations {
   String get frontPullRequestsLinesDeleted => 'Slettede linjer';
 
   @override
+  String get frontTaskActions => 'Opgavehandlinger';
+
+  @override
+  String get frontTaskChangeStatus => 'Skift status…';
+
+  @override
   String get frontTaskCreatedSpoken => 'Sådan, skat, jeg har oprettet opgaven.';
+
+  @override
+  String get frontTaskMoveToProject => 'Flyt til projekt…';
+
+  @override
+  String get frontTaskReschedule => 'Flyt dato…';
 
   @override
   String get geminiThinkingModeHighDescription =>

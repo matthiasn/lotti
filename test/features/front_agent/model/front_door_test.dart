@@ -98,6 +98,12 @@ void main() {
         taskId: 'task-3',
         at: DateTime.utc(2026, 11, 8, 9, 20),
       ),
+      const FrontDoorEventCreated(eventId: 'event-1'),
+      const FrontDoorEventCreated(
+        eventId: 'event-2',
+        newKind: FrontNewKind.goal,
+        generation: 2,
+      ),
       const FrontDoorDay(),
       FrontDoorDayPlanned(day: DateTime(2026, 11)),
       const FrontDoorProjectCreated(projectId: 'p-1'),
@@ -272,6 +278,19 @@ void main() {
     );
     expect(FrontDoorOutcome.fromJson({'type': 'filed'}), isNull);
     expect(FrontDoorOutcome.fromJson({'type': 'taskCreated'}), isNull);
+    expect(FrontDoorOutcome.fromJson({'type': 'eventCreated'}), isNull);
+    final event =
+        FrontDoorOutcome.fromJson({
+              'type': 'eventCreated',
+              'eventId': 'e',
+              'newKind': 'hologram',
+              'generation': 'two',
+            })!
+            as FrontDoorEventCreated;
+    expect(event.eventId, 'e');
+    expect(event.newKind, isNull);
+    expect(event.generation, 0);
+    expect(event.toJson(), {'type': 'eventCreated', 'eventId': 'e'});
     expect(
       (FrontDoorOutcome.fromJson({'type': 'inbox', 'newKind': 'hologram'})!
               as FrontDoorInbox)
@@ -291,6 +310,7 @@ void main() {
       const FrontDoorFiled(entryId: 'e'),
       const FrontDoorDeclined(),
       const FrontDoorTaskCreated(taskId: 't'),
+      const FrontDoorEventCreated(eventId: 'e'),
       FrontDoorDayPlanned(day: DateTime(2026, 11)),
       const FrontDoorProjectCreated(projectId: 'p'),
       const FrontDoorSkipped(FrontDoorSkipReason.noDoor),

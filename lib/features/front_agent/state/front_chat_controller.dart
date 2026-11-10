@@ -395,6 +395,10 @@ class FrontChatController extends Notifier<FrontChatComposerState> {
   Future<void> saveAsNote(String doorId) =>
       _doorAction(doorId, (filing) => filing.saveAsNote(doorId));
 
+  /// Makes an event of an inbox item.
+  Future<void> makeEvent(String doorId) =>
+      _doorAction(doorId, (filing) => filing.makeEvent(doorId));
+
   /// Runs one action on a door: the door is busy meanwhile, the thread is
   /// re-projected after, and a failure is kept on the door until its next
   /// action. A door already busy takes no second tap. Answers whether the

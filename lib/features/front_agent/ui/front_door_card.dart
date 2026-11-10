@@ -28,6 +28,7 @@ class FrontDoorActions {
     required this.onStartGoal,
     required this.onNewProject,
     required this.onPlanDay,
+    this.onMakeEvent,
     this.onOpenEvidence,
     this.onOpenLink,
   });
@@ -43,7 +44,8 @@ class FrontDoorActions {
   /// A left door waits again as what it was.
   final ValueChanged<String> onUndoDecline;
 
-  /// Take back what the door wrote: the filed entry, the note or the task.
+  /// Take back what the door wrote: the filed entry, the note, the task or
+  /// the event.
   final ValueChanged<String> onTakeBack;
 
   /// Open what the door wrote.
@@ -51,6 +53,10 @@ class FrontDoorActions {
 
   /// Make a task of an inbox item.
   final ValueChanged<String> onMakeTask;
+
+  /// Make an event of an inbox item; null where events are off, and the
+  /// item offers no such way.
+  final ValueChanged<String>? onMakeEvent;
 
   /// Save an inbox item as a note.
   final ValueChanged<String> onSaveNote;
@@ -346,6 +352,13 @@ class _DoorRow extends StatelessWidget {
                 LottiIcons.folder,
                 () => acting.onNewProject(door),
               ),
+            if (acting.onMakeEvent case final makeEvent?)
+              (
+                'event',
+                messages.frontDoorMakeEvent,
+                LottiIcons.calendar,
+                () => makeEvent(id),
+              ),
             (
               'note',
               messages.frontDoorSaveNote,
@@ -392,9 +405,11 @@ class _DoorRow extends StatelessWidget {
             ),
           );
         }
-      case FrontDoorTaskCreated():
+      case FrontDoorTaskCreated() || FrontDoorEventCreated():
         title = words;
-        status = messages.frontDoorTaskCreated;
+        status = record.outcome is FrontDoorEventCreated
+            ? messages.frontDoorEventCreated
+            : messages.frontDoorTaskCreated;
         glyph = LottiIcons.confirmCircled;
         ink = tokens.colors.alert.success.ink;
         if (acting != null) {

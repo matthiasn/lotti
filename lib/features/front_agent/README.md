@@ -39,8 +39,12 @@ day it was created, and a task reopened and finished again on its latest
 completion. She knows the categories by name: one
 named in the question narrows the answer — there is nothing to pick. Two
 tasks or more — due, overdue, both, or what a search found, projects among
-them — come back as a card of rows — status, the agent's one-liner,
-category, priority, when it is due — rather than a run of links. A
+them — come back as preview cards — a task's cover or status, the agent's
+one-liner, category, when it is due, its estimate and priority; a project as
+the Projects list draws it — rather than a run of links, and an answer about what is due puts a
+quiet label over them saying which window she read (*Due today*,
+*Overdue*, *Due through …*), taken from the call she made, never from her
+words. A
 task she names opens on top of her, and back returns to the conversation; a
 project she names closes her and opens it. Every
 answer is shown as the Markdown it was written in. A statement under a task or a project is a **proposal**: one tap
@@ -59,7 +63,18 @@ or Claude window: each a subject of its own, titled by its first question,
 listed newest first by recency behind the header's *Chats* glyph (beside
 the conversation on a desktop window), renamed, archived or deleted there. What nothing owns waits in the **inbox** — every conversation,
 filtered — with chips that make it a task, start a goal or project with
-its words, or save it as a note, or leave it. Whatever a tap wrote can be
+its words, make it an event titled with them (where Events are on), or save
+it as a note, or
+leave it. What a tap made is drawn under her reply as a **preview card**,
+read live so it follows the thing: a task as the same compact card, which
+her words do not list again; an event as the event card the app draws
+wherever an event is linked; a project as the Projects list's row; a day
+replanned through her as that day's blocks — when each runs, what it is
+for, the done ones ticked. A person she hands words to is drawn as the
+People list's row for them. A long press on a task's card (a secondary
+click on desktop) offers *Change status…*, *Reschedule…* and *Move to
+project…*, through the pickers the task's own page opens. Whatever a
+tap wrote can be
 opened or undone,
 and a proposal she got wrong goes to the inbox rather than being retyped.
 
@@ -70,7 +85,9 @@ and a proposal she got wrong goes to the inbox rather than being retyped.
   logged-time summary, a closed-task list and a pull request count hold,
   the links her words name tasks and projects with
   (`front_reference_links.dart`), the door record, the thread
-  projection the chat surface renders, and what a conversation is.
+  projection the chat surface renders, which entity a preview card is of
+  and what it shows (`front_entity_preview.dart`), and what a conversation
+  is.
 - `workflow/` — the tool contract and system prompt, the dispatch validator
   (the rules in code), the conversation strategy (count-and-refuse lookups,
   terminal calls, her words linked), the model resolution (its own setup, never a category's)
@@ -91,6 +108,7 @@ and a proposal she got wrong goes to the inbox rather than being retyped.
 - `runtime/` — the maintenance hook that re-arms an unanswered turn's
   recovery on every device.
 - `state/` — providers, the composer controller, the thread providers, the
+  live preview a card reads (`front_entity_preview_provider.dart`), the
   picked and active conversation, the spoken turn awaiting her spoken reply
   (`front_voice_providers.dart`), and the wake-runner,
   maintenance and
@@ -98,9 +116,12 @@ and a proposal she got wrong goes to the inbox rather than being retyped.
 - `ui/` — her header (her face in a rounded tile, whose tap shows her glass
   card over the thread in place and which steps aside while the card is out;
   her name and the conversation's title, her voice's controls), the hero that greets a conversation not begun (her
-  bust), the switch that mutes her (`front_voice_switch.dart`), the card her
-  lists of tasks are drawn as (`front_task_list.dart`, over
-  `model/front_reply_parts.dart`), her voice (`front_chat_voice.dart`: the spoken reply, when
+  bust), the switch that mutes her (`front_voice_switch.dart`), the card of
+  rows a closed-task answer is drawn as (`front_task_list.dart`), the preview
+  cards her lists of tasks and what her turn made are drawn as
+  (`front_entity_preview_card.dart`, her lists cut from her words by
+  `model/front_reply_parts.dart`, the window over a due list in
+  `model/front_due_section.dart`), her voice (`front_chat_voice.dart`: the spoken reply, when
   she may speak, the pose she holds), her voice's control
   (`front_voice_controls.dart`: stop her, or have her say her latest answer
   again from the start, in the voice she said it in), her card

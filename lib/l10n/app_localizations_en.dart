@@ -7283,6 +7283,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get frontChatYesterday => 'Yesterday';
 
   @override
+  String frontDayPlanMore(int count) {
+    return '$count more';
+  }
+
+  @override
   String get frontDoorActionFailed => 'That did not go through.';
 
   @override
@@ -7310,6 +7315,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get frontDoorDeclined => 'Not filed';
+
+  @override
+  String get frontDoorEventCreated => 'Made into an event';
 
   @override
   String frontDoorFailed(String owner) {
@@ -7365,6 +7373,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get frontDoorLeft => 'Left here in the thread';
+
+  @override
+  String get frontDoorMakeEvent => 'Make it an event';
 
   @override
   String get frontDoorMakeTask => 'Make it a task';
@@ -7429,6 +7440,19 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String frontDueSectionOverdueAndThrough(String date) {
+    return 'Overdue and due through $date';
+  }
+
+  @override
+  String get frontDueSectionOverdueAndToday => 'Overdue and due today';
+
+  @override
+  String frontDueSectionThrough(String date) {
+    return 'Due through $date';
+  }
+
+  @override
   String get frontLoggedTimeExpand => 'Expand chart';
 
   @override
@@ -7438,7 +7462,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get frontPullRequestsLinesDeleted => 'Lines deleted';
 
   @override
+  String get frontTaskActions => 'Task actions';
+
+  @override
+  String get frontTaskChangeStatus => 'Change status…';
+
+  @override
   String get frontTaskCreatedSpoken => 'Hey, dear, I created that task.';
+
+  @override
+  String get frontTaskMoveToProject => 'Move to project…';
+
+  @override
+  String get frontTaskReschedule => 'Reschedule…';
 
   @override
   String get geminiThinkingModeHighDescription =>

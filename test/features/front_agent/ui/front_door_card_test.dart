@@ -51,6 +51,7 @@ void main() {
     onTakeBack: (id) => acted.add(('take-back', id)),
     onOpen: (door) => acted.add(('open', door.doorId)),
     onMakeTask: (id) => acted.add(('task', id)),
+    onMakeEvent: (id) => acted.add(('event', id)),
     onSaveNote: (id) => acted.add(('note', id)),
     onStartGoal: (door) => acted.add(('goal', door.doorId)),
     onNewProject: (door) => acted.add(('project', door.doorId)),
@@ -610,6 +611,30 @@ void main() {
       expect(acted, [('open', 'd:door:1'), ('take-back', 'd:door:0')]);
     });
 
+    testWidgets('made into an event shows the done tile and says so, opens '
+        'on its one control, and undoes from the overflow', (tester) async {
+      await pump(tester, [
+        entry(
+          record(
+            index: 0,
+            text: 'Launch-day rehearsal on Friday.',
+            kind: FrontDestinationKind.unrouted,
+            ownerTitle: null,
+            outcome: const FrontDoorEventCreated(eventId: 'ev-1'),
+          ),
+        ),
+      ]);
+
+      expect(titleOf(tester, 0), 'Launch-day rehearsal on Friday.');
+      expect(statusOf(tester, 0), 'Made into an event');
+      expect(glyph(tester, 0).icon, LottiIcons.confirmCircled);
+      expect(button(tester, 'open', 0).label, 'Open');
+      await tester.tap(find.byKey(const ValueKey('front-door-open-0')));
+      expect(await openMenu(tester, 0), ['Undo']);
+      await tapItem(tester, 'take-back', 0);
+      expect(acted, [('open', 'd:door:0'), ('take-back', 'd:door:0')]);
+    });
+
     testWidgets('a proposal said no to, and an item left where it is, each '
         'say so with no control but an undo in the overflow', (tester) async {
       await pump(tester, [
@@ -724,11 +749,14 @@ void main() {
 
       expect(await openMenu(tester, 0), [
         'Start a goal…',
+        'Make it an event',
         'Save as a note',
         'Leave it',
       ]);
       await tapItem(tester, 'goal', 0);
       await tester.tap(find.byKey(const ValueKey('front-door-task-0')));
+      await openMenu(tester, 0);
+      await tapItem(tester, 'event', 0);
       await openMenu(tester, 0);
       await tapItem(tester, 'note', 0);
       await openMenu(tester, 0);
@@ -736,8 +764,49 @@ void main() {
       expect(acted, [
         ('goal', 'd:door:0'),
         ('task', 'd:door:0'),
+        ('event', 'd:door:0'),
         ('note', 'd:door:0'),
         ('decline', 'd:door:0'),
+      ]);
+    });
+
+    testWidgets('without a way to make an event — events are off — an item '
+        'offers every other way', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          FrontDoorCard(
+            doors: [
+              entry(
+                record(
+                  index: 0,
+                  text: 'Hm.',
+                  kind: FrontDestinationKind.unrouted,
+                  ownerTitle: null,
+                  outcome: const FrontDoorInbox(),
+                ),
+              ),
+            ],
+            actions: FrontDoorActions(
+              onFile: (_) {},
+              onDecline: (_) {},
+              onUndoDecline: (_) {},
+              onTakeBack: (_) {},
+              onOpen: (_) {},
+              onMakeTask: (_) {},
+              onSaveNote: (_) {},
+              onStartGoal: (_) {},
+              onNewProject: (_) {},
+              onPlanDay: (_) {},
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(await openMenu(tester, 0), [
+        'Start a goal…',
+        'Save as a note',
+        'Leave it',
       ]);
     });
 
@@ -778,12 +847,14 @@ void main() {
       expect(await openMenu(tester, 0), [
         'New project…',
         'Start a goal…',
+        'Make it an event',
         'Save as a note',
         'Leave it',
       ]);
       await tapItem(tester, 'project', 0);
       expect(await openMenu(tester, 1), [
         'Start a goal…',
+        'Make it an event',
         'Save as a note',
         'Leave it',
       ]);

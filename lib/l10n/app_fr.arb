@@ -2971,6 +2971,14 @@
   "frontChatSearchChats": "Rechercher dans les chats",
   "frontChatTitle": "Compagnon",
   "frontChatYesterday": "Hier",
+  "frontDayPlanMore": "{count} de plus",
+  "@frontDayPlanMore": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "frontDoorActionFailed": "Ça n’est pas passé.",
   "frontDoorAnswerHidden": "Masqué : cela s’appuie sur quelque chose que tu ne peux plus voir.",
   "frontDoorAttribution": "De {owner}",
@@ -2979,6 +2987,7 @@
   "frontDoorDayPlanned": "Plan du jour modifié",
   "frontDoorDayProposal": "Modifier le plan du jour ?",
   "frontDoorDeclined": "Non classé",
+  "frontDoorEventCreated": "Transformé en événement",
   "frontDoorFailed": "Impossible de demander à {owner}.",
   "frontDoorFile": "Classer",
   "frontDoorFiledUnder": "Classé sous {owner}",
@@ -2995,6 +3004,7 @@
   "frontDoorKindTask": "la tâche",
   "frontDoorLeaveIt": "Laisser",
   "frontDoorLeft": "Laissé ici dans le fil",
+  "frontDoorMakeEvent": "En faire un événement",
   "frontDoorMakeTask": "En faire une tâche",
   "frontDoorNewProject": "Nouveau projet…",
   "frontDoorNoAgent": "{owner} n’a pas encore d’agent à interroger.",
@@ -3013,10 +3023,31 @@
   "frontDoorUndo": "Annuler",
   "frontDoorUnfiled": "Retiré de {owner}. Classer à nouveau ?",
   "frontDoorWalking": "Question à {owner}…",
+  "frontDueSectionOverdueAndThrough": "En retard et échéance d’ici le {date}",
+  "@frontDueSectionOverdueAndThrough": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "frontDueSectionOverdueAndToday": "En retard et échéance aujourd’hui",
+  "frontDueSectionThrough": "Échéance d’ici le {date}",
+  "@frontDueSectionThrough": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "frontLoggedTimeExpand": "Agrandir le graphique",
   "frontPullRequestsLinesAdded": "Lignes ajoutées",
   "frontPullRequestsLinesDeleted": "Lignes supprimées",
+  "frontTaskActions": "Actions sur la tâche",
+  "frontTaskChangeStatus": "Changer le statut…",
   "frontTaskCreatedSpoken": "Voilà, mon chou, j'ai créé cette tâche.",
+  "frontTaskMoveToProject": "Déplacer vers un projet…",
+  "frontTaskReschedule": "Replanifier…",
   "geminiThinkingModeHighDescription": "Raisonnement le plus poussé ; peut augmenter la latence et le coût.",
   "geminiThinkingModeHighLabel": "Élevé",
   "geminiThinkingModeLowDescription": "Raisonnement faible pour des prompts quotidiens rapides.",

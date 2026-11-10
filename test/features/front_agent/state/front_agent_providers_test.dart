@@ -11,6 +11,8 @@ import 'package:lotti/classes/agents/front_chat_tokens.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
+import 'package:lotti/classes/event_data.dart';
+import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/query/query_chat_providers.dart';
@@ -607,6 +609,7 @@ void main() {
           dateFrom: any(named: 'dateFrom'),
           dateTo: any(named: 'dateTo'),
           categoryId: any(named: 'categoryId'),
+          starred: any(named: 'starred'),
         ),
       ).thenAnswer(
         (invocation) async => meta(invocation.namedArguments[#id] as String),
@@ -747,6 +750,97 @@ void main() {
       writeAnswers(verdict: null);
       await expectLater(
         wired.read(frontFilingServiceProvider).fileUnderOwner(doorId),
+        throwsStateError,
+      );
+      verifyNever(
+        () => wired.read(agentSyncServiceProvider).upsertEntity(any()),
+      );
+    });
+
+    FrontDoorEventCreated eventCreated() =>
+        FrontDoorRecord.fromJson(
+              (verify(
+                        () => wired
+                            .read(agentSyncServiceProvider)
+                            .upsertEntity(captureAny()),
+                      ).captured.single
+                      as AgentMessagePayloadEntity)
+                  .content,
+            )!.outcome!
+            as FrontDoorEventCreated;
+
+    test('making an event writes a tentative event titled with the words, '
+        'dated at the tap, under the id the door names', () async {
+      seed(const FrontDoorInbox());
+      writeAnswers(verdict: true);
+      final at = DateTime(2026, 11, 9, 10);
+
+      await withClock(
+        Clock.fixed(at),
+        () => wired.read(frontFilingServiceProvider).makeEvent(doorId),
+      );
+
+      final id = frontDoorEventId(doorId, generation: 0);
+      final event =
+          verify(
+                () => persistence.createDbEntity(captureAny()),
+              ).captured.single
+              as JournalEvent;
+      expect(event.meta.id, id);
+      expect(event.data.title, 'The hinge arrived.');
+      expect(event.data.status, EventStatus.tentative);
+      expect(event.data.stars, 0);
+      verify(
+        () => persistence.createMetadata(
+          id: id,
+          dateFrom: at,
+          dateTo: at,
+          // Starred, as the Events page's own create makes one.
+          starred: true,
+        ),
+      ).called(1);
+      expect(eventCreated().eventId, id);
+    });
+
+    test('an event already there — the retry — is the one recorded', () async {
+      seed(const FrontDoorInbox());
+      writeAnswers(verdict: false);
+      final id = frontDoorEventId(doorId, generation: 0);
+      when(() => journalDb.journalEntityById(id)).thenAnswer(
+        (_) async => JournalEvent(
+          meta: meta(id),
+          data: const EventData(
+            title: 'Written before',
+            stars: 0,
+            status: EventStatus.tentative,
+          ),
+        ),
+      );
+
+      await wired.read(frontFilingServiceProvider).makeEvent(doorId);
+
+      expect(eventCreated().eventId, id);
+    });
+
+    test('a write that stored nothing, or whose id holds something else, '
+        'makes no event and leaves the item waiting', () async {
+      seed(const FrontDoorInbox());
+      final id = frontDoorEventId(doorId, generation: 0);
+      writeAnswers(verdict: null);
+      await expectLater(
+        wired.read(frontFilingServiceProvider).makeEvent(doorId),
+        throwsStateError,
+      );
+
+      writeAnswers(verdict: false);
+      when(() => journalDb.journalEntityById(id)).thenAnswer(
+        (_) async => JournalEntity.journalEntry(
+          meta: meta(id),
+          entryText: const EntryText(plainText: 'not an event'),
+        ),
+      );
+      await expectLater(
+        wired.read(frontFilingServiceProvider).makeEvent(doorId),
         throwsStateError,
       );
       verifyNever(
@@ -1226,6 +1320,28 @@ void main() {
         ),
       );
       expect(timers.single.$1.meta.dateFrom, now);
+    });
+
+    test('a draft in progress without a start is made in progress, and no '
+        'timer runs', () async {
+      stubCreation(written: true);
+      await make(const FrontTaskDraft(title: 'Pack', inProgress: true));
+      final data =
+          verify(
+                () => persistence.createTaskEntry(
+                  data: captureAny(named: 'data'),
+                  entryText: any(named: 'entryText'),
+                  categoryId: any(named: 'categoryId'),
+                  id: taskId,
+                ),
+              ).captured.single
+              as TaskData;
+      expect(data.status, isA<TaskInProgress>());
+      expect(timers, isEmpty);
+      final entries = verify(
+        () => persistence.createDbEntity(captureAny(), linkedId: taskId),
+      ).captured.cast<JournalEntity>();
+      expect(entries.map((e) => e.meta.id), [frontTaskWordsId(taskId)]);
     });
 
     group('a follow-up', () {

@@ -12473,6 +12473,12 @@ abstract class AppLocalizations {
   /// **'Yesterday'**
   String get frontChatYesterday;
 
+  /// No description provided for @frontDayPlanMore.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} more'**
+  String frontDayPlanMore(int count);
+
   /// No description provided for @frontDoorActionFailed.
   ///
   /// In en, this message translates to:
@@ -12520,6 +12526,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Not filed'**
   String get frontDoorDeclined;
+
+  /// No description provided for @frontDoorEventCreated.
+  ///
+  /// In en, this message translates to:
+  /// **'Made into an event'**
+  String get frontDoorEventCreated;
 
   /// No description provided for @frontDoorFailed.
   ///
@@ -12616,6 +12628,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Left here in the thread'**
   String get frontDoorLeft;
+
+  /// No description provided for @frontDoorMakeEvent.
+  ///
+  /// In en, this message translates to:
+  /// **'Make it an event'**
+  String get frontDoorMakeEvent;
 
   /// No description provided for @frontDoorMakeTask.
   ///
@@ -12725,6 +12743,24 @@ abstract class AppLocalizations {
   /// **'Asking {owner}…'**
   String frontDoorWalking(String owner);
 
+  /// No description provided for @frontDueSectionOverdueAndThrough.
+  ///
+  /// In en, this message translates to:
+  /// **'Overdue and due through {date}'**
+  String frontDueSectionOverdueAndThrough(String date);
+
+  /// No description provided for @frontDueSectionOverdueAndToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Overdue and due today'**
+  String get frontDueSectionOverdueAndToday;
+
+  /// No description provided for @frontDueSectionThrough.
+  ///
+  /// In en, this message translates to:
+  /// **'Due through {date}'**
+  String frontDueSectionThrough(String date);
+
   /// No description provided for @frontLoggedTimeExpand.
   ///
   /// In en, this message translates to:
@@ -12743,11 +12779,35 @@ abstract class AppLocalizations {
   /// **'Lines deleted'**
   String get frontPullRequestsLinesDeleted;
 
+  /// No description provided for @frontTaskActions.
+  ///
+  /// In en, this message translates to:
+  /// **'Task actions'**
+  String get frontTaskActions;
+
+  /// No description provided for @frontTaskChangeStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Change status…'**
+  String get frontTaskChangeStatus;
+
   /// Said aloud by the companion, in her voice, right after the user's tap made a task from an inbox item
   ///
   /// In en, this message translates to:
   /// **'Hey, dear, I created that task.'**
   String get frontTaskCreatedSpoken;
+
+  /// No description provided for @frontTaskMoveToProject.
+  ///
+  /// In en, this message translates to:
+  /// **'Move to project…'**
+  String get frontTaskMoveToProject;
+
+  /// No description provided for @frontTaskReschedule.
+  ///
+  /// In en, this message translates to:
+  /// **'Reschedule…'**
+  String get frontTaskReschedule;
 
   /// No description provided for @geminiThinkingModeHighDescription.
   ///

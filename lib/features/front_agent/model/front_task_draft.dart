@@ -29,6 +29,7 @@ class FrontTaskDraft {
     this.priority,
     this.due,
     this.estimate,
+    this.inProgress = false,
     this.startedAt,
     this.followsUpTaskId,
   });
@@ -44,8 +45,13 @@ class FrontTaskDraft {
   final DateTime? due;
   final Duration? estimate;
 
+  /// Whether the user said the work is in progress: the task is made
+  /// in progress, with no timer — a status is not a start.
+  final bool inProgress;
+
   /// When the work began: set, the task is in progress and a timer runs
-  /// from here.
+  /// from here. Only a start the user said, or a timer they asked for,
+  /// sets it.
   final DateTime? startedAt;
 
   /// The task this one follows up on: linked `followsUp` when it is made.
@@ -85,6 +91,7 @@ class FrontTaskDraft {
       priority: _priority(args['priority']),
       due: _day(args['due']),
       estimate: estimate == null ? null : Duration(minutes: estimate),
+      inProgress: args['inProgress'] == true,
       startedAt: minutesAgo == null
           ? null
           : now.subtract(Duration(minutes: minutesAgo)),
@@ -102,6 +109,7 @@ class FrontTaskDraft {
     if (priority != null) 'priority': priority!.short,
     if (due != null) 'due': _isoDay(due!),
     if (estimate != null) 'estimateMinutes': estimate!.inMinutes,
+    if (inProgress) 'inProgress': true,
     if (startedAt != null) 'startedAt': startedAt!.toUtc().toIso8601String(),
     if (followsUpTaskId != null) 'followsUpTaskId': followsUpTaskId,
   };
@@ -119,6 +127,7 @@ class FrontTaskDraft {
       priority: _priority(json['priority']),
       due: _day(json['due']),
       estimate: estimate is int ? Duration(minutes: estimate) : null,
+      inProgress: json['inProgress'] == true,
       startedAt: switch (json['startedAt']) {
         final String iso => DateTime.tryParse(iso)?.toLocal(),
         _ => null,

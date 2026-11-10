@@ -7430,6 +7430,11 @@ class AppLocalizationsRo extends AppLocalizations {
   String get frontChatYesterday => 'Ieri';
 
   @override
+  String frontDayPlanMore(int count) {
+    return 'Încă $count';
+  }
+
+  @override
   String get frontDoorActionFailed => 'Nu a reușit.';
 
   @override
@@ -7457,6 +7462,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get frontDoorDeclined => 'Neînregistrat';
+
+  @override
+  String get frontDoorEventCreated => 'Transformat în eveniment';
 
   @override
   String frontDoorFailed(String owner) {
@@ -7512,6 +7520,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get frontDoorLeft => 'Lăsat aici, în conversație';
+
+  @override
+  String get frontDoorMakeEvent => 'Transformați în eveniment';
 
   @override
   String get frontDoorMakeTask => 'Transformați în sarcină';
@@ -7576,6 +7587,19 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String frontDueSectionOverdueAndThrough(String date) {
+    return 'Restante și scadente până la $date';
+  }
+
+  @override
+  String get frontDueSectionOverdueAndToday => 'Restante și scadente astăzi';
+
+  @override
+  String frontDueSectionThrough(String date) {
+    return 'Scadente până la $date';
+  }
+
+  @override
   String get frontLoggedTimeExpand => 'Măriți graficul';
 
   @override
@@ -7585,7 +7609,19 @@ class AppLocalizationsRo extends AppLocalizations {
   String get frontPullRequestsLinesDeleted => 'Linii șterse';
 
   @override
+  String get frontTaskActions => 'Acțiuni pentru sarcină';
+
+  @override
+  String get frontTaskChangeStatus => 'Schimbați starea…';
+
+  @override
   String get frontTaskCreatedSpoken => 'Gata, am creat sarcina.';
+
+  @override
+  String get frontTaskMoveToProject => 'Mutați în proiect…';
+
+  @override
+  String get frontTaskReschedule => 'Reprogramați…';
 
   @override
   String get geminiThinkingModeHighDescription =>
