@@ -520,6 +520,18 @@ keyed by item id, not a stack of bordered cards.
   part-way. Done: the row at half opacity, the title struck through, the
   success check in place of the estimate.
 
+## The Activity list
+
+The Activity tab shares the Agenda's shape: its entries are rows on one
+`DsRowsCard`, keyed by entry id, in time order, under the day's tracked time
+(`TimeSpentCard`), in a scroll view anchored at the bottom so the latest entry
+is in view. Each row leads with the same `step10` time column, then a
+low-emphasis glyph for the entry's kind beside its state, its words, and
+whatever it offers below them — the recording, the editable transcript, and
+Retry, Open setup, Use and Delete. *Use* is a secondary button: the footer's
+next step stays the page's one filled action. Error and empty states keep
+their copy.
+
 ## Task-linked versus standalone
 
 **Task-linked is the marked case on the Agenda; standalone is the unmarked

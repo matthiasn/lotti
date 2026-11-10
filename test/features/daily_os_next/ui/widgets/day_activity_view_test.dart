@@ -11,6 +11,9 @@ import 'package:lotti/features/daily_os_next/services/day_processing_job.dart';
 import 'package:lotti/features/daily_os_next/state/day_activity_provider.dart';
 import 'package:lotti/features/daily_os_next/state/day_processing_runtime_provider.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_activity_view.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/time_spent_card.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/cards/ds_rows_card.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/editor_widget.dart';
 import 'package:lotti/features/speech/state/audio_waveform_provider.dart';
@@ -20,6 +23,7 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/nav_service.dart' as nav_service;
+import 'package:lotti/themes/theme.dart' show numericBadgeFontFeatures;
 import 'package:lotti/widgets/modal/confirmation_modal.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
@@ -144,7 +148,13 @@ void main() {
       findsOneWidget,
     );
 
-    await tester.tap(find.text(messages.dailyOsNextActivityRetry).last);
+    // Each entry is one keyed row; Retry on the waiting one retries its job.
+    await tester.tap(
+      find.descendant(
+        of: find.byKey(const ValueKey('waiting')),
+        matching: find.text(messages.dailyOsNextActivityRetry),
+      ),
+    );
     await tester.pump();
     verify(() => outbox.retryNow('job-waiting')).called(1);
     verify(runtime.nudge).called(1);
@@ -972,4 +982,133 @@ void main() {
       );
     },
   );
+
+  group('rows', () {
+    DayActivityEntry recording(String id, int hour, {String? transcript}) =>
+        DayActivityEntry(
+          id: id,
+          kind: DayActivityEntryKind.recording,
+          createdAt: DateTime(2026, 7, 18, hour),
+          processingJob: job(
+            id: 'job-$id',
+            activityId: id,
+            status: DayProcessingJobStatus.succeeded,
+            transcript: transcript ?? 'Words of $id',
+          ),
+        );
+    final tracked = TimeBlock(
+      id: 'actual:walk',
+      title: 'Walk',
+      start: DateTime(2026, 7, 18, 7),
+      end: DateTime(2026, 7, 18, 8),
+      type: TimeBlockType.manual,
+      state: TimeBlockState.completed,
+      category: const DayAgentCategory(id: 'w', name: 'W', colorHex: '5ED4B7'),
+    );
+
+    Future<void> pump(
+      WidgetTester tester,
+      List<DayActivityEntry> entries, {
+      List<TimeBlock> actualBlocks = const [],
+    }) async {
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          DayActivityView(
+            date: date,
+            hasPlan: true,
+            actualBlocks: actualBlocks,
+            onUseEntry: (_) {},
+          ),
+          overrides: [
+            dayActivityProvider.overrideWith((ref, date) async => entries),
+          ],
+        ),
+      );
+      await tester.pump();
+    }
+
+    testWidgets('the entries share one card, keyed by entry, in time order', (
+      tester,
+    ) async {
+      await pump(tester, [recording('early', 8), recording('late', 11)]);
+
+      expect(find.byType(DsRowsCard), findsOneWidget);
+      final early = tester.getTopLeft(find.byKey(const ValueKey('early'))).dy;
+      final late = tester.getTopLeft(find.byKey(const ValueKey('late'))).dy;
+      expect(early, lessThan(late));
+    });
+
+    testWidgets("the day's tracked time sits above the entries", (
+      tester,
+    ) async {
+      await pump(tester, [recording('a', 9)], actualBlocks: [tracked]);
+
+      expect(
+        tester.getBottomLeft(find.byType(TimeSpentCard)).dy,
+        lessThanOrEqualTo(tester.getTopLeft(find.byType(DsRowsCard)).dy),
+      );
+    });
+
+    testWidgets('tracked time alone draws no entry card', (tester) async {
+      await pump(tester, const [], actualBlocks: [tracked]);
+
+      expect(find.byType(TimeSpentCard), findsOneWidget);
+      expect(find.byType(DsRowsCard), findsNothing);
+    });
+
+    testWidgets('the list is anchored at the latest entry', (tester) async {
+      await pump(tester, [recording('a', 9)]);
+
+      expect(
+        tester
+            .widget<SingleChildScrollView>(find.byType(SingleChildScrollView))
+            .reverse,
+        isTrue,
+      );
+    });
+
+    testWidgets('each row leads with its time, quiet and tabular', (
+      tester,
+    ) async {
+      await pump(tester, [recording('a', 9)]);
+      final tokens = tester.element(find.byType(DayActivityView)).designTokens;
+
+      final time = find.descendant(
+        of: find.byKey(const ValueKey('a')),
+        matching: find.text('9:00 AM'),
+      );
+      expect(time, findsOneWidget);
+      final style = tester.widget<Text>(time).style!;
+      expect(style.color, tokens.colors.text.lowEmphasis);
+      expect(style.fontFeatures, numericBadgeFontFeatures);
+      expect(
+        tester.getTopLeft(time).dx,
+        lessThan(tester.getTopLeft(find.text('Words of a')).dx),
+      );
+    });
+
+    testWidgets("an entry's kind is a quiet glyph, not teal", (tester) async {
+      await pump(tester, [recording('a', 9)]);
+      final tokens = tester.element(find.byType(DayActivityView)).designTokens;
+
+      expect(
+        tester.widget<Icon>(find.byIcon(LottiIcons.micIdle)).color,
+        tokens.colors.text.lowEmphasis,
+      );
+    });
+
+    testWidgets("Use is a secondary action, leaving the footer's the one "
+        'filled button', (tester) async {
+      await pump(tester, [recording('a', 9)]);
+      final messages = tester.element(find.byType(DayActivityView)).messages;
+
+      final use = tester.widget<DesignSystemButton>(
+        find.ancestor(
+          of: find.text(messages.dailyOsNextActivityUseToRefine),
+          matching: find.byType(DesignSystemButton),
+        ),
+      );
+      expect(use.variant, DesignSystemButtonVariant.secondary);
+    });
+  });
 }
