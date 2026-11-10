@@ -7394,7 +7394,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String frontDayPlanMore(int count) {
-    return 'Altri $count';
+    return '$count in più';
   }
 
   @override

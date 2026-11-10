@@ -3316,7 +3316,7 @@
   "frontChatSearchChats": "Cerca nelle chat",
   "frontChatTitle": "Compagno",
   "frontChatYesterday": "Ieri",
-  "frontDayPlanMore": "Altri {count}",
+  "frontDayPlanMore": "{count} in più",
   "@frontDayPlanMore": {
     "placeholders": {
       "count": {

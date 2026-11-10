@@ -3368,7 +3368,7 @@
   "frontDoorUndo": "Fortryd",
   "frontDoorUnfiled": "Taget ud af {owner}. Gem igen?",
   "frontDoorWalking": "Spørger {owner}…",
-  "frontDueSectionOverdueAndThrough": "Forfaldne og forfalder senest {date}",
+  "frontDueSectionOverdueAndThrough": "Forfaldne opgaver og opgaver, der forfalder senest {date}",
   "@frontDueSectionOverdueAndThrough": {
     "placeholders": {
       "date": {
@@ -3376,7 +3376,7 @@
       }
     }
   },
-  "frontDueSectionOverdueAndToday": "Forfaldne og forfalder i dag",
+  "frontDueSectionOverdueAndToday": "Forfaldne opgaver og opgaver, der forfalder i dag",
   "frontDueSectionThrough": "Forfalder senest {date}",
   "@frontDueSectionThrough": {
     "placeholders": {

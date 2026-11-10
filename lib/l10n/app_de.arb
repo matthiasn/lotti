@@ -3047,7 +3047,7 @@
   "frontTaskChangeStatus": "Status ändern…",
   "frontTaskCreatedSpoken": "So, mein Schatz, ich habe die Aufgabe angelegt.",
   "frontTaskMoveToProject": "In Projekt verschieben…",
-  "frontTaskReschedule": "Verschieben…",
+  "frontTaskReschedule": "Fälligkeit ändern…",
   "geminiThinkingModeHighDescription": "Tiefstes Reasoning; kann Latenz und Kosten erhöhen.",
   "geminiThinkingModeHighLabel": "Hoch",
   "geminiThinkingModeLowDescription": "Wenig Reasoning für schnelle Alltagsprompts.",

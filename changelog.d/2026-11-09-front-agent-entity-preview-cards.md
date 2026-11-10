@@ -23,11 +23,10 @@
   today into the Daily OS planning and accept it, her reply shows that day's
   blocks — when each runs, what it is for, the done ones ticked — and a tap
   opens the day.
-- **Projects and people show up in the companion's chat as cards too.** A
-  project you make from her inbox, or one she lists, is drawn as the Projects
-  list draws it — its progress, task count and status — and a person she
-  hands your words to is drawn as the People list draws them, with when you
-  were last in touch. Both stay current, and a tap opens their page.
+- **Projects show up in the companion's chat as cards too.** A project you
+  make from her inbox, or one she lists, is drawn as the Projects list draws
+  it — its progress, task count and status — kept current, and a tap opens
+  its page.
 - **Long-press a task card in her chat for quick actions.** *Change status…*,
   *Reschedule…* and *Move to project…* open the same pickers as the task's own
   page, without leaving the conversation. A right-click opens them on desktop.

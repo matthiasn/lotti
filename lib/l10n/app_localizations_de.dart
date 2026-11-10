@@ -7556,7 +7556,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get frontTaskMoveToProject => 'In Projekt verschieben…';
 
   @override
-  String get frontTaskReschedule => 'Verschieben…';
+  String get frontTaskReschedule => 'Fälligkeit ändern…';
 
   @override
   String get geminiThinkingModeHighDescription =>

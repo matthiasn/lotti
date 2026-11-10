@@ -2978,7 +2978,7 @@
   "frontChatSearchChats": "Hledat v chatech",
   "frontChatTitle": "Společník",
   "frontChatYesterday": "Včera",
-  "frontDayPlanMore": "{count} další",
+  "frontDayPlanMore": "{count, plural, =1{1 další} few{{count} další} other{{count} dalších}}",
   "@frontDayPlanMore": {
     "placeholders": {
       "count": {

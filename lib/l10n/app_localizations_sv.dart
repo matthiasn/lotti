@@ -7476,11 +7476,12 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String frontDueSectionOverdueAndThrough(String date) {
-    return 'Försenade och förfaller senast $date';
+    return 'Försenade uppgifter och uppgifter som förfaller senast $date';
   }
 
   @override
-  String get frontDueSectionOverdueAndToday => 'Försenade och förfaller i dag';
+  String get frontDueSectionOverdueAndToday =>
+      'Försenade uppgifter och uppgifter som förfaller i dag';
 
   @override
   String frontDueSectionThrough(String date) {

@@ -7499,11 +7499,12 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String frontDueSectionOverdueAndThrough(String date) {
-    return 'Te laat en vervalt uiterlijk $date';
+    return 'Te late taken en taken tot en met $date';
   }
 
   @override
-  String get frontDueSectionOverdueAndToday => 'Te laat en vervalt vandaag';
+  String get frontDueSectionOverdueAndToday =>
+      'Te late taken en taken voor vandaag';
 
   @override
   String frontDueSectionThrough(String date) {
@@ -7533,7 +7534,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get frontTaskMoveToProject => 'Naar project verplaatsen…';
 
   @override
-  String get frontTaskReschedule => 'Verplaatsen…';
+  String get frontTaskReschedule => 'Vervaldatum wijzigen…';
 
   @override
   String get geminiThinkingModeHighDescription =>

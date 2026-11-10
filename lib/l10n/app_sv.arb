@@ -3368,7 +3368,7 @@
   "frontDoorUndo": "Ångra",
   "frontDoorUnfiled": "Borttaget ur {owner}. Spara igen?",
   "frontDoorWalking": "Frågar {owner}…",
-  "frontDueSectionOverdueAndThrough": "Försenade och förfaller senast {date}",
+  "frontDueSectionOverdueAndThrough": "Försenade uppgifter och uppgifter som förfaller senast {date}",
   "@frontDueSectionOverdueAndThrough": {
     "placeholders": {
       "date": {
@@ -3376,7 +3376,7 @@
       }
     }
   },
-  "frontDueSectionOverdueAndToday": "Försenade och förfaller i dag",
+  "frontDueSectionOverdueAndToday": "Försenade uppgifter och uppgifter som förfaller i dag",
   "frontDueSectionThrough": "Förfaller senast {date}",
   "@frontDueSectionThrough": {
     "placeholders": {

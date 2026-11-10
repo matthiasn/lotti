@@ -7387,7 +7387,14 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String frontDayPlanMore(int count) {
-    return '$count další';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count dalších',
+      few: '$count další',
+      one: '1 další',
+    );
+    return '$_temp0';
   }
 
   @override
