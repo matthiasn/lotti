@@ -872,6 +872,8 @@ jobs:
           RUN_ID: ${{ github.run_id }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           FAILED: ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}
+          # A skipped release (already published) proves nothing either way.
+          DID_WORK: ${{ needs.build.result == 'success' || needs.publish_alias.result == 'success' }}
           KIND: ${{ github.event_name == 'schedule' && 'nightly' || 'release tag' }}
           REF_NAME: ${{ github.ref_name }}
           COMMIT: ${{ github.sha }}
@@ -883,16 +885,28 @@ jobs:
             --json number,title \
             --jq "map(select(.title == \"${TITLE}\")) | .[0].number // empty")
           if [[ "$FAILED" != "true" ]]; then
-            if [[ -n "$OPEN" ]]; then
-              gh issue close "$OPEN" --repo "$REPO" \
-                --comment "Green again: ${RUN_URL} (${REF_NAME} at ${COMMIT:0:10})."
+            if [[ -z "$OPEN" || "$DID_WORK" != "true" ]]; then
+              exit 0
             fi
+            # Runs overlap (two tags close together): only a run newer than
+            # the latest failure it would close may close it. Run ids grow
+            # with creation time; each failure report carries its own.
+            LAST_FAILED=$(gh issue view "$OPEN" --repo "$REPO" \
+                --json body,comments --jq '[.body, .comments[].body] | .[]' \
+              | grep -oE 'run-id: [0-9]+' | grep -oE '[0-9]+' | sort -n \
+              | tail -1 || true)
+            if [[ -n "$LAST_FAILED" && "$RUN_ID" -le "$LAST_FAILED" ]]; then
+              echo "Run ${RUN_ID} is older than failure ${LAST_FAILED}; leaving the issue open."
+              exit 0
+            fi
+            gh issue close "$OPEN" --repo "$REPO" \
+              --comment "Green again: ${RUN_URL} (${REF_NAME} at ${COMMIT:0:10})."
             exit 0
           fi
           JOBS=$(gh run view "$RUN_ID" --repo "$REPO" --json jobs \
             --jq '.jobs[] | select(.conclusion == "failure" or .conclusion == "cancelled") | "- \(.name): \(.conclusion)"')
-          BODY=$(printf 'Run: %s\nRef: %s at %s\n\nFailed jobs:\n%s\n' \
-            "$RUN_URL" "$REF_NAME" "${COMMIT:0:10}" "${JOBS:-- see the run}")
+          BODY=$(printf 'Run: %s\nRef: %s at %s\nrun-id: %s\n\nFailed jobs:\n%s\n' \
+            "$RUN_URL" "$REF_NAME" "${COMMIT:0:10}" "$RUN_ID" "${JOBS:-- see the run}")
           if [[ -n "$OPEN" ]]; then
             gh issue comment "$OPEN" --repo "$REPO" --body "$BODY"
           else
