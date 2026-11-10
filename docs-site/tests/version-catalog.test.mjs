@@ -4,6 +4,7 @@ import test from 'node:test';
 import {
   fetchLiveCatalog,
   isReleaseCatalog,
+  versionMenuItem,
 } from '../src/components/ManualVersionNavbarItem/catalog.mjs';
 
 const validCatalog = {
@@ -74,4 +75,34 @@ test('isReleaseCatalog accepts the shape the finalizer writes', () => {
   assert.equal(isReleaseCatalog(validCatalog), true);
   assert.equal(isReleaseCatalog({versions: []}), true);
   assert.equal(isReleaseCatalog([]), false);
+});
+
+test('a version entry is a same-tab page load to that version, never re-based', () => {
+  // A release build's baseUrl is /lotti/manual/1.1.96/; the link to another
+  // version must not be prefixed with it, routed client-side, or open a tab.
+  assert.deepEqual(
+    versionMenuItem({
+      label: 'Development',
+      version: 'development',
+      manualRootPath: '/lotti/manual',
+      localeSuffix: '/de',
+    }),
+    {
+      html: 'Development',
+      href: 'pathname:///lotti/manual/development/de/',
+      autoAddBaseUrl: false,
+      target: '_self',
+    },
+  );
+});
+
+test('a version entry escapes its label for the html slot', () => {
+  const item = versionMenuItem({
+    label: 'Entwicklung <&> "neu"',
+    version: '1.1.96',
+    manualRootPath: '/lotti/manual',
+    localeSuffix: '',
+  });
+  assert.equal(item.html, 'Entwicklung &lt;&amp;&gt; &quot;neu&quot;');
+  assert.equal(item.href, 'pathname:///lotti/manual/1.1.96/');
 });

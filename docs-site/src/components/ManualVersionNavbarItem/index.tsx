@@ -3,7 +3,7 @@ import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 import {translate} from '@docusaurus/Translate';
 import DropdownNavbarItem from '@theme/NavbarItem/DropdownNavbarItem';
 
-import {fetchLiveCatalog} from './catalog.mjs';
+import {fetchLiveCatalog, versionMenuItem} from './catalog.mjs';
 
 type Release = {
   label: string;
@@ -54,16 +54,20 @@ export default function ManualVersionNavbarItem(
   }, [manualRootPath]);
 
   const localeSuffix = currentLocale === defaultLocale ? '' : `/${currentLocale}`;
-  const items = catalog.versions.map((release) => ({
-    label:
-      release.status === 'development'
-        ? translate({
-            id: 'manual.version.development',
-            message: 'Development',
-          })
-        : release.label,
-    href: `${manualRootPath}/${release.version}${localeSuffix}/`,
-  }));
+  const items = catalog.versions.map((release) =>
+    versionMenuItem({
+      label:
+        release.status === 'development'
+          ? translate({
+              id: 'manual.version.development',
+              message: 'Development',
+            })
+          : release.label,
+      version: release.version,
+      manualRootPath,
+      localeSuffix,
+    }),
+  );
 
   return (
     <DropdownNavbarItem
