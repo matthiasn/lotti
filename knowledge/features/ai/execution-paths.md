@@ -846,6 +846,11 @@ of `(provider, modelId, model)` — the `model` field carries the resolved
 `AiConfigModel` row so per-model settings such as Gemini thinking mode survive
 resolution — preferring the override when it resolves to a real model plus parent
 provider, and falling back to the profile slot with a warning log otherwise.
+An image analysis needs no profile when a model was picked: an entry with no
+category resolves none, so the picker marks no default and every pick is an
+override, which `triggerSkillProvider` lets through without a profile; an
+override that then fails to resolve leaves the runner with no target, and it
+returns without running.
 The picker flow also carries an optional `geminiThinkingMode` on
 `TriggerSkillParams`: a Gemini 3 model opens a thinking-mode sheet after the
 model pick, and the chosen mode overrides the model row's saved default for
