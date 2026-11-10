@@ -399,7 +399,7 @@ Nine tools, never fewer (a single tool makes DeepSeek rewrite
 | `list_closed_tasks(period \| pastDays \| from+through, categoryIds?)` | no | 1 per turn | `frontClosedListExhaustedAnswer`; unavailable when no lister is wired |
 | `summarize_pull_requests(period \| pastDays \| from+through)` | no | 1 per turn | `frontPullRequestSummaryExhaustedAnswer`; unavailable when no summarizer is wired |
 | `ask_user(question, options ≤ 3)` | yes | once | refused |
-| `reply_to_user(message?, parts?)` | yes | once | refused; a part it cannot draw is refused as its error (see *Her reply is composed of parts*) |
+| `reply_to_user(message?, parts?)` | yes | once | refused without words; a part it cannot draw is dropped and named (see *Her reply is composed of parts*) |
 
 Lookups are capped by **count-and-refuse**, not by removing the tool:
 removing it changes the request prefix and voids the cache. Rows a
@@ -1341,12 +1341,15 @@ can lead with a sentence, list the overdue tasks, say a word about what is
 due, list those, and put a chart after them. A plain answer is `message`
 alone; a `message` beside `parts` leads them as words.
 
-`readFrontReplyLayout` checks the parts before anything is stored, and a
-refusal goes back to her as the tool's error so she corrects it in the same
-turn, as a bad `dispatch` does: a card must be a task or project the turn
-could see — `<routing_index>` or a lookup's rows, by `kind:id` — and a
-`show` must name something a lookup made this turn; a reply needs words.
-Nothing a lookup found is lost to a part she forgot: the tasks a
+`readFrontReplyLayout` checks the parts before anything is stored: a card
+must be a task or project the turn could see — `<routing_index>` or a
+lookup's rows, by `kind:id` — and a `show` must name something a lookup
+made this turn. A part that fails is **dropped, never a reason to lose her
+answer**: refusing it could end a turn that has no call left for a repair
+without any reply. Her tool result names what was left out, and the
+strategy logs a warning with the count, so a model that keeps naming what
+the turn never saw shows in the logs. Only a reply without words is
+refused, since there is nothing to deliver. Nothing a lookup found is lost to a part she forgot: the tasks a
 `list_due_tasks` found that no part lists follow as one more list, and
 what a lookup made that she did not place follows in catalog order. A task
 is listed once, where she first put it. Her words pass through
@@ -1375,8 +1378,8 @@ flowchart LR
   L -->|due rows| D[due tasks]
   M["reply_to_user(message?, parts?)"] --> R[readFrontReplyLayout]
   V & A & D --> R
-  R -->|refused| M
-  R -->|text + parts| P[(reply payload: text, parts)]
+  R -->|no words: refused| M
+  R -->|"text + parts (undrawable parts dropped, named, logged)"| P[(reply payload: text, parts)]
   P --> B[FrontChatThreadBuilder]
   B --> T["FrontChatThread.partsOf(id)"]
   T --> S[pane: words, cards, charts in order]

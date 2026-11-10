@@ -160,98 +160,83 @@ void main() {
     expect(reply.parts, [const FrontReplyText('<Done.>')]);
   });
 
-  group('refuses, so she can correct it in the same turn,', () {
-    test('a reply without words', () {
-      expect(() => read(message: ' '), refused('needs your words'));
-      expect(
-        () => read(
-          parts: [
-            {
-              'cards': ['task:t-1'],
-            },
-          ],
-        ),
-        refused('needs your words'),
-      );
-    });
+  test('a reply without words is refused: there is nothing to deliver', () {
+    expect(() => read(message: ' '), refused('needs your words'));
+    expect(
+      () => read(
+        parts: [
+          {
+            'cards': ['task:t-1'],
+          },
+        ],
+      ),
+      refused('needs your words'),
+    );
+  });
 
-    test('a card the turn could not see, or one of a kind not drawn', () {
-      expect(
-        () => read(
-          message: 'Hi',
+  group(
+    'drops what it cannot draw, names it, and still delivers her words:',
+    () {
+      test('a card the turn could not see, or one of a kind not drawn', () {
+        final reply = read(
+          message: 'Here:',
           parts: [
             {
-              'cards': ['task:made-up'],
+              'cards': ['task:made-up', 'goal:g-1', 7, 'task:t-1'],
             },
           ],
-        ),
-        refused('task:made-up in cards is not a task or project'),
-      );
-      expect(
-        () => read(
-          message: 'Hi',
-          parts: [
-            {
-              'cards': ['goal:g-1'],
-            },
-          ],
-        ),
-        refused('goal:g-1 in cards'),
-      );
-      expect(
-        () => read(
-          message: 'Hi',
-          parts: [
-            {
-              'cards': [7],
-            },
-          ],
-        ),
-        refused('7 in cards'),
-      );
-    });
+        );
 
-    test('a chart no lookup made this turn, naming what it could show', () {
-      expect(
-        () => read(
-          message: 'Hi',
+        expect(reply.parts, [
+          const FrontReplyText('<Here:>'),
+          FrontReplyCards([ref(tasks[0])]),
+        ]);
+        expect(reply.dropped, [
+          startsWith('task:made-up, not a task or project'),
+          startsWith('goal:g-1, not a task or project'),
+          startsWith('7, not a task or project'),
+        ]);
+      });
+
+      test('a chart no lookup made this turn', () {
+        final reply = read(
+          message: '12h.',
           parts: [
             {'show': 'logged_time_chart'},
-          ],
-          available: {FrontReplyAttachment.closedTasks},
-        ),
-        refused(
-          'show "logged_time_chart" has nothing to draw this turn; it can '
-          'show closed_tasks',
-        ),
-      );
-      expect(
-        () => read(
-          message: 'Hi',
-          parts: [
             {'show': 'weather'},
           ],
-        ),
-        refused('it can show nothing'),
-      );
-    });
+          available: {FrontReplyAttachment.closedTasks},
+        );
 
-    test('parts that are not a list, or a part of no known shape', () {
-      expect(
-        () => read(message: 'Hi', parts: 'cards'),
-        refused('parts is a list'),
-      );
-      expect(
-        () => read(
+        expect(reply.parts, [
+          const FrontReplyText('<12h.>'),
+          const FrontReplyShow(FrontReplyAttachment.closedTasks),
+        ]);
+        expect(reply.dropped, [
+          'show "logged_time_chart", which no lookup made this turn',
+          'show "weather", which no lookup made this turn',
+        ]);
+      });
+
+      test('parts that are not a list, or a part of no known shape', () {
+        expect(read(message: 'Hi', parts: 'cards').dropped, [
+          'parts, which is not a list',
+        ]);
+        final reply = read(
           message: 'Hi',
           parts: [
             {'heading': 'Due'},
           ],
-        ),
-        refused('is not a part'),
-      );
-    });
-  });
+        );
+        expect(reply.parts, [const FrontReplyText('<Hi>')]);
+        expect(reply.dropped.single, contains('not a part'));
+      });
+
+      test('a reply with everything drawable drops nothing', () {
+        expect(read(message: 'Hi').dropped, isEmpty);
+      });
+    },
+  );
 
   group('properties', () {
     const attachments = FrontReplyAttachment.values;
@@ -297,6 +282,8 @@ void main() {
           available: available,
           dueRows: dueRows,
         );
+        // Every part was drawable, so nothing was left out.
+        expect(reply.dropped, isEmpty);
 
         final cards = [
           for (final part in reply.parts.whereType<FrontReplyCards>())

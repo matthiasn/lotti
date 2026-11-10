@@ -38,7 +38,7 @@ today.
 | Package | [`genui` 0.10.4](https://pub.dev/packages/genui), labs.flutter.dev, Dart ≥ 3.10 |
 | Status | "highly experimental… the API will change (sometimes drastically)". A split into `a2ui_core` / `a2ui_agent` / `a2ui_flutter`, with a different API, is announced ([repo](https://github.com/flutter/genui)) |
 | Protocol | A2UI v0.9: `createSurface`, `updateComponents`, `updateDataModel`, `deleteSurface` |
-| How the model emits UI | **As JSON inside its text stream**: fenced json blocks or bare objects, read by `A2uiParserTransformer`. No tool calls and no structured output. Text that does not parse becomes `TextEvent`s |
+| How UI messages arrive | Through either of two channels. By default the model writes A2UI JSON inside its text stream (fenced json blocks or bare objects); `A2uiParserTransformer` reads it, and text that does not parse becomes `TextEvent`s. Alternatively the app builds the messages itself and passes them to `A2uiTransportAdapter.addMessage` or `SurfaceController.handleMessage`, for example from a tool call's arguments. Lotti's evolution bridge (§2.1) takes this second route |
 | Core types | `Catalog` of `CatalogItem(name, dataSchema: S.object(...), widgetBuilder)`, `SurfaceController(catalogs:)`, `A2uiTransportAdapter(onSend:)` (you call the LLM and feed it chunks), `Conversation(controller:, transport:)`, `Surface(surfaceContext:)` per surface id in your list |
 | Validation | Components are checked against the catalog schema **after** they are applied, asynchronously, with no rollback. Failures go back to the model as a user message (`VALIDATION_FAILED`) |
 | Interaction | Input widgets write to a `DataModel`. Actions become a user message with a `UiInteractionPart`, which starts a new request |
@@ -140,9 +140,9 @@ model the app already supports, and with no 3–5k-token A2UI protocol
 prompt. Two things in the bridge fall short of GenUI's own contract:
 
 - An unknown `rootType` silently becomes `EvolutionProposal`, and a missing
-  `surfaceId` becomes `'surface-unknown'`. A wrong pick should be rejected
-  back to the model, the way the front agent's strategy rejects a bad
-  dispatch, not rendered as something else.
+  `surfaceId` becomes `'surface-unknown'`. A wrong pick should not be
+  drawn, and the tool result should tell the model why, as the companion's
+  reply reader does. It should never be rendered as something else.
 - `data` is passed through unvalidated until GenUI's asynchronous schema
   check, which logs but does not roll back.
 
@@ -173,10 +173,10 @@ What #5057 did to the rendering path:
 |---|---|---|
 | Closed catalog of components with schemas | Implicit: a fixed set of payload keys (`loggedTime`, `pullRequests`, `closedTasks`, `dueTasks`) and `FrontEntityKind`, each with its own hand-written `fromJson` | Small. It is a catalog in all but name, typed and versionless. There is no registry, so adding a part means editing the workflow, the builder, `FrontChatThread` and the pane |
 | The model *selects* components; it does not write them as prose | Charts, closed cards and previews: the app selects, from tool results. **Task lists: inferred from prose** | **Large, for task lists only** |
-| Validation against the schema, with errors back to the model | The strategy already rejects bad tool arguments with `_reject` (`front_agent_strategy.dart:805`), which the model sees as a tool error. **Nothing validates the links in `reply_to_user.message`**: `linkFrontReferences` repairs what it can and leaves the rest as text | Missing for the one part that needs it |
+| Validation against the schema, with errors back to the model | Before this PR: the strategy already rejects bad tool arguments with `_reject` (`front_agent_strategy.dart:805`), which the model sees as a tool error. **Nothing validates the links in `reply_to_user.message`**: `linkFrontReferences` repairs what it can and leaves the rest as text | Missing for the one part that needs it |
 | One render path per component | Task cards come from two paths (door previews and regex lists), de-duplicated by id in the pane (`front_chat_pane.dart:473–487`). The stage view parses again (`state/front_stage_pointing.dart:30`) | Medium |
 | Text and UI kept separate | Task lists live *inside* the prose and are cut out of it. Text the model writes after a link (a time, a reason) is dropped by design | Anti-pattern: presentation is inferred from formatting |
-| Model writes A2UI JSON in its stream | Lotti uses tool calls, which every configured front-agent model already must support | **Lotti is ahead here.** Tool arguments arrive already parsed. Free-text JSON is the weaker channel, especially for small local models |
+| A2UI messages, by default from the model's text stream (`addChunk`) | Lotti uses tool calls, which every configured front-agent model must already support | **No gap: GenUI accepts app-built messages too** (`addMessage` / `handleMessage`). Tool arguments arrive already parsed, which suits small local models better than free-text JSON |
 
 GenUI's composition model is the right one for a flexible chat. The model
 should be free to combine sentences, card lists, charts, and later forms and
@@ -192,13 +192,17 @@ Where Lotti should hold a line:
   result. The app fills the component's data (GenUI's `DataModel`, or the
   component's properties) from that result. A model writing those numbers
   into `updateDataModel` would invite invented figures.
-- **Use tool calls, not A2UI in free text.** The evolution bridge already
-  does this. Tool arguments arrive parsed, need no protocol prompt (which
+- **Feed GenUI from tool calls, not from free text.** GenUI takes
+  app-built messages (`addMessage` / `handleMessage`), and the evolution
+  bridge already uses that route. Tool arguments arrive parsed, need no protocol prompt (which
   would cost 3–5k tokens and break the front agent's cache work, #5047 and
   #5059), and work with small local models that cannot reliably write
   A2UI v0.9 JSON.
-- **Reject, do not fall back.** A part the turn cannot draw goes back to the
-  model as a tool error, and it corrects the part in the same turn.
+- **Never substitute; drop and report.** A part the turn cannot draw is
+  left out and named back to the model, and the rest of the answer is
+  delivered. It is never swapped for a different component, as the
+  evolution bridge does with an unknown `rootType`, and never allowed to
+  cost the whole answer.
 - **Store your own catalog's JSON.** Replies persist and sync between
   devices, so the stored shape should be Lotti's, mapped onto A2UI
   components when rendered. The package is alpha and has announced a new
@@ -224,9 +228,11 @@ produces cards only when **all** of these hold:
 
 1. a line matches `_taskLine` (`:88`): a list bullet, optional emphasis, then
    **immediately** `[title](lotti://task|project/<id>)`;
-2. matching lines are consecutive (blank lines allowed);
-3. across the reply, those lines name **at least `frontTaskListMinimum = 2`**
-   distinct records (`:100`).
+2. matching lines that follow each other (blank lines allowed) form one
+   run, and each run becomes its own card list;
+3. but only once all the runs in the reply together name **at least
+   `frontTaskListMinimum = 2`** distinct records (`:100`). Two one-task
+   lists under separate headings are cards; one task alone stays a link.
 
 The model has to write exactly that shape, every turn, with only the prompt
 to guide it (`workflow/front_agent_contract.dart:184–186`). Links that are
@@ -332,10 +338,13 @@ catalog (`lib/features/front_agent/model/front_reply_layout.dart`):
 ```
 
 - **Validation with feedback.** `readFrontReplyLayout`
-  (`workflow/front_reply_layout_reader.dart`) refuses an unknown card, a
-  `show` with nothing to draw, a malformed part or a reply without words.
-  The refusal is sent back through the strategy's existing `_reject`, as a
-  tool error, and the model corrects it in the same turn.
+  (`workflow/front_reply_layout_reader.dart`) drops an unknown card, a
+  `show` with nothing to draw, or a malformed part. It delivers the rest of
+  the reply, and the tool result names what was left out. Rejecting the
+  reply instead could lose the whole answer: when the turn has no call
+  left for a repair, a refused reply ends the turn with `noAnswer`. This is
+  GenUI's own policy too, where validation reports and does not roll back.
+  Only a reply without words is refused, through the strategy's `_reject`.
 - **Nothing lost.**
   - Due tasks that no part lists are appended as one more list.
   - Attachments she didn't place are appended in catalog order.
@@ -389,7 +398,8 @@ Follow the evolution chat (§2.1):
    one-of-three chooser) and route their events back through
    `onSubmit`, the evolution chat's `GenUiEventHandler` pattern.
 5. Fix the bridge: replace `GenUiBridge`'s silent `rootType` and `surfaceId`
-   fallbacks with rejections, and check `data` against the item's schema
+   fallbacks with a dropped surface and a tool result that says why, and
+   check `data` against the item's schema
    before applying it.
 
 Persist Lotti's own part JSON, not A2UI messages, so the stored replies do
@@ -405,9 +415,10 @@ not follow the alpha package's coming API split.
   writes in words, a logged-time breakdown, keeps its times.
 - **The single-task case is settled.** One task in a `cards` part is a card.
   The `frontTaskListMinimum` heuristic went with the regex.
-- **Fail visibly (open).** Count refusals per part kind in the front
-  agent's turn logs. A model that keeps sending made-up ids, or charts it
-  never looked up, then shows up as a number rather than an anecdote.
+- **Fail visibly (done).** A reply that drops parts logs a warning with
+  the count (`FrontAgentStrategy`), so a model that keeps sending made-up
+  ids, or charts it never looked up, shows up as a number rather than an
+  anecdote.
 - **Cards stay live.** Entities are still read through
   `frontEntityPreviewProvider` with `.value`. A stored card holds only
   `{kind, id, title}`, and the title is just the fallback while the entity

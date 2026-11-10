@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/front_agent/model/front_closed_task_card.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
@@ -1650,50 +1651,17 @@ hologram:x: not listed''');
       );
     });
 
-    test('a card the turn could not see is refused and nothing is stored; '
-        'her corrected reply is taken', () async {
+    test('a card or chart the turn cannot draw is dropped and named to her, '
+        'logged, and her answer still delivered', () async {
       final s = strategy();
-      await s.processToolCalls(
+      final action = await s.processToolCalls(
         toolCalls: [
           _call('reply_to_user', {
             'message': 'Here:',
             'parts': [
               {
-                'cards': ['task:made-up'],
+                'cards': ['task:made-up', 'task:garden'],
               },
-            ],
-          }),
-        ],
-        manager: manager,
-      );
-      expect(s.replyToUser, isNull);
-      expect(s.replyParts, isEmpty);
-      expect(responses().single, contains('task:made-up in cards'));
-
-      await s.processToolCalls(
-        toolCalls: [
-          _call('reply_to_user', {
-            'message': 'Here:',
-            'parts': [
-              {
-                'cards': ['task:garden'],
-              },
-            ],
-          }, id: 'call-2'),
-        ],
-        manager: manager,
-      );
-      expect(s.replyToUser, 'Here:');
-      expect(s.replyParts.last, isA<FrontReplyCards>());
-    });
-
-    test('a chart is placed only after the lookup that makes it', () async {
-      final s = strategy();
-      await s.processToolCalls(
-        toolCalls: [
-          _call('reply_to_user', {
-            'parts': [
-              {'text': '12h.'},
               {'show': 'logged_time_chart'},
             ],
           }),
@@ -1701,9 +1669,55 @@ hologram:x: not listed''');
         manager: manager,
       );
 
-      expect(s.replyToUser, isNull);
-      expect(responses().single, contains('it can show nothing'));
+      // A refusal could end a turn with no call left without any answer.
+      expect(action, ConversationAction.complete);
+      expect(s.replyToUser, 'Here:');
+      expect(s.replyParts, [
+        const FrontReplyText('Here:'),
+        const FrontReplyCards([
+          FrontEntityReference(
+            kind: FrontEntityKind.task,
+            id: 'garden',
+            title: 'Garden',
+          ),
+        ]),
+      ]);
+      final answer = responses().single;
+      expect(answer, startsWith('Reply delivered without what could not be'));
+      expect(answer, contains('task:made-up, not a task or project'));
+      expect(answer, contains('show "logged_time_chart"'));
+      verify(
+        () => domainLogger.log(
+          any(),
+          'reply_to_user dropped 2 part(s) it could not draw',
+          subDomain: 'FrontAgentStrategy',
+          level: InsightLevel.warn,
+        ),
+      ).called(1);
     });
+
+    test(
+      'a reply without words is refused, and her corrected one taken',
+      () async {
+        final s = strategy();
+        await s.processToolCalls(
+          toolCalls: [
+            _call('reply_to_user', {
+              'parts': [
+                {
+                  'cards': ['task:garden'],
+                },
+              ],
+            }),
+            _call('reply_to_user', {'message': 'The garden.'}, id: 'call-2'),
+          ],
+          manager: manager,
+        );
+
+        expect(responses().first, contains('needs your words'));
+        expect(s.replyToUser, 'The garden.');
+      },
+    );
 
     test('one reply may accompany a dispatch; a second is refused', () async {
       final s = strategy();

@@ -809,7 +809,25 @@ class FrontAgentStrategy extends ConversationStrategy
     }
     _replyToUser = reply.text;
     _replyParts = reply.parts;
-    await _accept(call, manager, 'Reply delivered.');
+    if (reply.dropped.isNotEmpty) {
+      // Counted, so a model that keeps naming what the turn never saw shows
+      // up in the logs rather than as a card that quietly never appears.
+      domainLogger.log(
+        LogDomain.agentWorkflow,
+        'reply_to_user dropped ${reply.dropped.length} part(s) it could not '
+        'draw',
+        subDomain: 'FrontAgentStrategy',
+        level: InsightLevel.warn,
+      );
+    }
+    await _accept(
+      call,
+      manager,
+      reply.dropped.isEmpty
+          ? 'Reply delivered.'
+          : 'Reply delivered without what could not be drawn: '
+                '${reply.dropped.join('; ')}.',
+    );
   }
 
   String _trimmed(Object? value) => value is String ? value.trim() : '';
