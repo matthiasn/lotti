@@ -292,6 +292,21 @@ void main() {
       },
     );
 
+    testWidgets(
+      "the agenda's wording stays when it negates the task's name",
+      (tester) async {
+        await _pump(
+          tester,
+          _item(taskId: 'task-1', title: 'Do not call the vendor'),
+          displayTitle: 'Call the vendor',
+        );
+
+        expect(find.text('Call the vendor'), findsOneWidget);
+        // Dropping "not" would turn the row into the opposite instruction.
+        expect(find.text('Do not call the vendor'), findsOneWidget);
+      },
+    );
+
     testWidgets('a linked task named like the item is not repeated', (
       tester,
     ) async {

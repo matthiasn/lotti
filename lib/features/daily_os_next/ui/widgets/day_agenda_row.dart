@@ -225,17 +225,18 @@ class DayAgendaRow extends StatelessWidget {
   }
 }
 
-/// Whether [wording] says nothing [name] does not: every word of it that
-/// carries meaning — longer than three letters, so "is", "a" and "the" do
-/// not count — appears in [name], ignoring case and punctuation.
+/// Whether [wording] says nothing [name] does not: every word of it — short
+/// ones too, so a "not" or a "no" is never dropped — appears in [name],
+/// ignoring case and punctuation. "Legal: Is a penguin a passenger?" restates
+/// "Ask Legal whether a penguin is a passenger"; "Do not call vendor" does
+/// not restate "Call vendor".
 bool _restates(String wording, String name) {
   Set<String> words(String text) => {
     for (final word in text.toLowerCase().split(
       RegExp(r'[^\p{L}\p{N}]+', unicode: true),
     ))
-      if (word.length > 3) word,
+      if (word.isNotEmpty) word,
   };
-  final said = words(name);
   final meaning = words(wording);
-  return meaning.isNotEmpty && said.containsAll(meaning);
+  return meaning.isNotEmpty && words(name).containsAll(meaning);
 }
