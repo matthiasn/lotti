@@ -2311,7 +2311,7 @@
       }
     }
   },
-  "dailyOsNextAgendaNoPlanTitle": "Ingen plan endnu for i dag.",
+  "dailyOsNextAgendaNoPlanTitle": "Ingen plan for denne dag endnu.",
   "dailyOsNextAgendaNow": "Nu",
   "@dailyOsNextAgendaNow": {
     "description": "Marks the agenda row whose item is under way now, above its start time."
@@ -2361,7 +2361,7 @@
       }
     }
   },
-  "dailyOsNextBriefingDoneCaption": "{count} færdige",
+  "dailyOsNextBriefingDoneCaption": "{count, plural, one{{count} færdig} other{{count} færdige}}",
   "@dailyOsNextBriefingDoneCaption": {
     "description": "Caption under the bar on a day without a plan: recorded sessions that are done.",
     "placeholders": {
@@ -2786,7 +2786,7 @@
     }
   },
   "dailyOsNextStateRecurringMissed": "Tilbagevendende · Missede",
-  "dailyOsNextTimelineActual": "Nuværende",
+  "dailyOsNextTimelineActual": "Faktisk",
   "dailyOsNextTimelineArrange": "Arranger blokke",
   "dailyOsNextTimelineArrangeShort": "Arranger",
   "@dailyOsNextTimelineArrangeShort": {

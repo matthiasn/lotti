@@ -4816,7 +4816,14 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String dailyOsNextActivityHandledCount(int count) {
-    return '$count rezolvate';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de rezolvate',
+      few: '$count rezolvate',
+      one: '$count rezolvat',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -4916,12 +4923,19 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String dailyOsNextAgendaLeft(int count, String duration) {
-    return 'Rămân $count · $duration';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Rămân $count · $duration',
+      few: 'Rămân $count · $duration',
+      one: 'Rămâne $count · $duration',
+    );
+    return '$_temp0';
   }
 
   @override
   String get dailyOsNextAgendaNoPlanTitle =>
-      'Încă nu există un plan pentru azi.';
+      'Încă nu există un plan pentru această zi.';
 
   @override
   String get dailyOsNextAgendaNow => 'Acum';
@@ -5029,7 +5043,14 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String dailyOsNextBriefingDoneCaption(int count) {
-    return '$count finalizate';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de finalizate',
+      few: '$count finalizate',
+      one: '$count finalizată',
+    );
+    return '$_temp0';
   }
 
   @override

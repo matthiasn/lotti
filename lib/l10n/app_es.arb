@@ -1995,7 +1995,7 @@
   "dailyOsNextActivityDeleteRecording": "Eliminar",
   "dailyOsNextActivityEmpty": "Todavía no hay grabaciones ni registros.",
   "dailyOsNextActivityHandled": "Gestionado",
-  "dailyOsNextActivityHandledCount": "{count} gestionados",
+  "dailyOsNextActivityHandledCount": "{count, plural, one{{count} gestionado} other{{count} gestionados}}",
   "@dailyOsNextActivityHandledCount": {
     "description": "Summary beside the Activity tab's 'Handled' header: how many entries are dealt with.",
     "placeholders": {
@@ -2028,7 +2028,7 @@
   "@dailyOsNextActivityVoiceNote": {
     "description": "Name of an Activity row for a voice recording whose transcript is not ready yet."
   },
-  "dailyOsNextActivityWaitingCount": "{count} pendientes",
+  "dailyOsNextActivityWaitingCount": "{count, plural, one{{count} pendiente} other{{count} pendientes}}",
   "@dailyOsNextActivityWaitingCount": {
     "description": "Summary beside the Activity tab's 'Needs you' header: how many entries wait for the user.",
     "placeholders": {
@@ -2059,7 +2059,7 @@
     }
   },
   "dailyOsNextAgendaHideDone": "Ocultar elementos hechos",
-  "dailyOsNextAgendaLeft": "Quedan {count} · {duration}",
+  "dailyOsNextAgendaLeft": "{count, plural, one{Queda {count} · {duration}} other{Quedan {count} · {duration}}}",
   "@dailyOsNextAgendaLeft": {
     "description": "Summary beside the agenda's 'Plan' header: how many items are not done yet, followed by the time they are planned for.",
     "placeholders": {
@@ -2073,7 +2073,7 @@
       }
     }
   },
-  "dailyOsNextAgendaNoPlanTitle": "Aún no hay plan para hoy.",
+  "dailyOsNextAgendaNoPlanTitle": "Aún no hay plan para este día.",
   "dailyOsNextAgendaNow": "Ahora",
   "@dailyOsNextAgendaNow": {
     "description": "Marks the agenda row whose item is under way now, above its start time."
@@ -2123,7 +2123,7 @@
       }
     }
   },
-  "dailyOsNextBriefingDoneCaption": "{count} hechas",
+  "dailyOsNextBriefingDoneCaption": "{count, plural, one{{count} hecha} other{{count} hechas}}",
   "@dailyOsNextBriefingDoneCaption": {
     "description": "Caption under the bar on a day without a plan: recorded sessions that are done.",
     "placeholders": {

@@ -1995,7 +1995,7 @@
   "dailyOsNextActivityDeleteRecording": "Supprimer",
   "dailyOsNextActivityEmpty": "Pas encore d’enregistrement ni de check-in.",
   "dailyOsNextActivityHandled": "Traité",
-  "dailyOsNextActivityHandledCount": "{count} traités",
+  "dailyOsNextActivityHandledCount": "{count, plural, one{{count} traité} other{{count} traités}}",
   "@dailyOsNextActivityHandledCount": {
     "description": "Summary beside the Activity tab's 'Handled' header: how many entries are dealt with.",
     "placeholders": {
@@ -2059,7 +2059,7 @@
     }
   },
   "dailyOsNextAgendaHideDone": "Masquer les éléments terminés",
-  "dailyOsNextAgendaLeft": "{count} restants · {duration}",
+  "dailyOsNextAgendaLeft": "{count, plural, one{{count} restant · {duration}} other{{count} restants · {duration}}}",
   "@dailyOsNextAgendaLeft": {
     "description": "Summary beside the agenda's 'Plan' header: how many items are not done yet, followed by the time they are planned for.",
     "placeholders": {
@@ -2073,7 +2073,7 @@
       }
     }
   },
-  "dailyOsNextAgendaNoPlanTitle": "Pas encore de plan pour aujourd'hui.",
+  "dailyOsNextAgendaNoPlanTitle": "Pas encore de plan pour ce jour.",
   "dailyOsNextAgendaNow": "Maintenant",
   "@dailyOsNextAgendaNow": {
     "description": "Marks the agenda row whose item is under way now, above its start time."
@@ -2123,7 +2123,7 @@
       }
     }
   },
-  "dailyOsNextBriefingDoneCaption": "{count} terminées",
+  "dailyOsNextBriefingDoneCaption": "{count, plural, one{{count} terminée} other{{count} terminées}}",
   "@dailyOsNextBriefingDoneCaption": {
     "description": "Caption under the bar on a day without a plan: recorded sessions that are done.",
     "placeholders": {
@@ -2190,7 +2190,7 @@
       }
     }
   },
-  "dailyOsNextBriefingMoreCategories": "+{count} autres",
+  "dailyOsNextBriefingMoreCategories": "{count, plural, one{+{count} autre} other{+{count} autres}}",
   "@dailyOsNextBriefingMoreCategories": {
     "description": "Last entry of the capacity legend on a phone: how many categories are not named. Their time together follows it.",
     "placeholders": {

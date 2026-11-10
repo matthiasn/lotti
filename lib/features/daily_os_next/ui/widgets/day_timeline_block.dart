@@ -619,27 +619,55 @@ class DayBlock extends ConsumerWidget {
             // target — a full tap target tall, bounded by the block, over
             // the pencil's column at the block's top-end corner: the card's
             // inset, the glyph and the gap before it. It stops short of the
-            // agent's spark beside it, which keeps its own tap.
+            // agent's spark beside it, which keeps its own tap, and it is
+            // there only where the block is large enough to draw the pencil.
             if (openEditor != null)
-              PositionedDirectional(
-                top: 0,
-                end: 0,
-                width:
-                    tokens.spacing.step3 +
-                    tokens.typography.size.bodySmall +
-                    tokens.spacing.step1,
-                height: TapTargets.minimum,
-                // Screen readers reach the editor as the block's own custom
-                // action, so the corner adds no node of its own.
-                child: ExcludeSemantics(
-                  child: Tooltip(
-                    message: context.messages.dailyOsNextBlockEditTooltip,
-                    child: InkWell(
-                      key: Key('daily_os_edit_block_${block.id}'),
-                      borderRadius: borderRadius,
-                      onTap: openEditor,
-                    ),
-                  ),
+              Positioned.fill(
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final inset = seam?.top.width ?? 0;
+                    final showsPencil = _showsTitleRow(
+                      tokens,
+                      MediaQuery.textScalerOf(context),
+                      width:
+                          constraints.maxWidth -
+                          inset * 2 -
+                          tokens.spacing.step1 -
+                          tokens.spacing.step3 * 2,
+                      height:
+                          constraints.maxHeight -
+                          inset * 2 -
+                          tokens.spacing.step2 * 2,
+                    );
+                    if (!showsPencil) return const SizedBox.shrink();
+                    return Stack(
+                      children: [
+                        PositionedDirectional(
+                          top: 0,
+                          end: 0,
+                          width:
+                              tokens.spacing.step3 +
+                              tokens.typography.size.bodySmall +
+                              tokens.spacing.step1,
+                          height: TapTargets.minimum,
+                          // Screen readers reach the editor as the block's
+                          // own custom action, so the corner adds no node of
+                          // its own.
+                          child: ExcludeSemantics(
+                            child: Tooltip(
+                              message:
+                                  context.messages.dailyOsNextBlockEditTooltip,
+                              child: InkWell(
+                                key: Key('daily_os_edit_block_${block.id}'),
+                                borderRadius: borderRadius,
+                                onTap: openEditor,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
                 ),
               ),
           ],

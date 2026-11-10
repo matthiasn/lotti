@@ -4752,7 +4752,13 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String dailyOsNextActivityHandledCount(int count) {
-    return '$count hanterade';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count hanterade',
+      one: '$count hanterad',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -4853,7 +4859,7 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String get dailyOsNextAgendaNoPlanTitle => 'Ingen plan än för idag.';
+  String get dailyOsNextAgendaNoPlanTitle => 'Ingen plan än för den här dagen.';
 
   @override
   String get dailyOsNextAgendaNow => 'Nu';
@@ -4960,7 +4966,13 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String dailyOsNextBriefingDoneCaption(int count) {
-    return '$count klara';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count klara',
+      one: '$count klar',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -5233,13 +5245,13 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String get dailyOsNextDayRelationToday => 'I dag';
+  String get dailyOsNextDayRelationToday => 'Idag';
 
   @override
   String get dailyOsNextDayRelationTomorrow => 'I morgon';
 
   @override
-  String get dailyOsNextDayRelationYesterday => 'I går';
+  String get dailyOsNextDayRelationYesterday => 'Igår';
 
   @override
   String get dailyOsNextDayStartCheckIn => 'Starta incheckning';
@@ -5748,7 +5760,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get dailyOsNextStateRecurringMissed => 'Återkommande · Missade';
 
   @override
-  String get dailyOsNextTimelineActual => 'Nutid';
+  String get dailyOsNextTimelineActual => 'Faktiskt';
 
   @override
   String get dailyOsNextTimelineArrange => 'Arrangera block';

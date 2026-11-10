@@ -1477,14 +1477,17 @@ void main() {
       await tester.pump();
 
       expect(find.byType(PageView), findsNothing);
+      // Both lanes on a phone leave each lane too narrow for a worded
+      // button: the glyph, with its words as the tooltip.
+      expect(find.text(messages.dailyOsNextTimelineOneLane), findsNothing);
       expect(
-        find.text(messages.dailyOsNextTimelineOneLane),
+        findMaterialTooltip(messages.dailyOsNextTimelineOneLane),
         findsOneWidget,
       );
 
       // Tap again goes back to paged.
       await tester.tap(
-        find.text(messages.dailyOsNextTimelineOneLane),
+        findMaterialTooltip(messages.dailyOsNextTimelineOneLane),
       );
       await tester.pump();
 
@@ -3726,6 +3729,58 @@ void main() {
       },
     );
 
+    testWidgets(
+      'a block too small to draw its pencil keeps no edit target over it',
+      (tester) async {
+        final edited = await pumpDay(
+          tester,
+          planned: [
+            // A sliver: one fitted caption line, no title row, no pencil.
+            block('sliver', 9, 0, 12, type: TimeBlockType.ai),
+            block('roomy', 11, 0, 120, type: TimeBlockType.ai),
+          ],
+          now: day.add(const Duration(hours: 8)),
+        );
+
+        expect(
+          find.byKey(const Key('daily_os_edit_block_sliver')),
+          findsNothing,
+        );
+        expect(
+          find.byKey(const Key('daily_os_edit_block_roomy')),
+          findsOneWidget,
+        );
+        // The sliver's whole area does what the block does: here, open the
+        // editor, as a standalone planned block's tap does — not by way of a
+        // hidden corner.
+        await tester.tap(find.byKey(const Key('daily_os_day_block_sliver')));
+        expect(edited, ['sliver']);
+      },
+    );
+
+    testWidgets(
+      'a raised block, drawn over the one it overlaps, keeps its own edit '
+      'target in its corner',
+      (tester) async {
+        final edited = await pumpDay(
+          tester,
+          planned: [
+            block('under', 9, 0, 180, type: TimeBlockType.ai),
+            block('over', 10, 0, 90, type: TimeBlockType.ai),
+          ],
+          now: day.add(const Duration(hours: 8)),
+        );
+        final card = tester.getRect(
+          find.byKey(const Key('daily_os_day_block_over')),
+        );
+        final target = find.byKey(const Key('daily_os_edit_block_over'));
+
+        expect(tester.getRect(target).topRight, card.topRight);
+        await tester.tap(target);
+        expect(edited, ['over']);
+      },
+    );
+
     testWidgets("the agent's spark shows its reason on a tap", (
       tester,
     ) async {
@@ -3745,6 +3800,49 @@ void main() {
   });
 
   group('DayTimeline phone toolbar', () {
+    testWidgets(
+      'both lanes on a 320 pt phone at large text fit the toolbar, Done '
+      'keeping its word',
+      (tester) async {
+        _setView(tester, const Size(320, 900));
+        await tester.pumpWidget(
+          _wrap(
+            MediaQuery(
+              data: const MediaQueryData(
+                size: Size(320, 900),
+                textScaler: TextScaler.linear(1.3),
+              ),
+              child: DayTimeline(
+                draft: _draft(),
+                onRescheduleBlock: (block, start, end) async => true,
+                clock: () => DateTime(2026, 5, 25, 9, 15),
+              ),
+            ),
+            size: const Size(320, 900),
+          ),
+        );
+        await tester.pump();
+        final messages = tester.element(find.byType(DayTimeline)).messages;
+
+        await tester.tap(
+          find.byKey(const Key('daily_os_timeline_arrange_toggle')),
+        );
+        await tester.pump();
+        await tester.tap(
+          find.byKey(const Key('daily_os_timeline_mode_toggle')),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byType(PageView), findsNothing);
+        expect(find.text(messages.doneButton), findsOneWidget);
+        expect(
+          findMaterialTooltip(messages.dailyOsNextTimelineOneLane),
+          findsOneWidget,
+        );
+        expect(tester.takeException(), isNull);
+      },
+    );
+
     Future<void> pumpPhone(WidgetTester tester, double width) async {
       _setView(tester, Size(width, 900));
       await tester.pumpWidget(

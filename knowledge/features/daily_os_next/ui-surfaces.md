@@ -158,7 +158,9 @@ navigation control.
 - **The week strip** (`DayWeekStrip`,
   [day_week_strip.dart](../../../lib/features/daily_os_next/ui/widgets/day_week_strip.dart))
   is the primary day control: the selected day's week, starting on the
-  locale's `firstDayOfWeekIndex`, each cell the narrow weekday over the day
+  device region's first day (`firstDayOfWeekIndexProvider`, as the sidebar
+  calendar does; the locale's `firstDayOfWeekIndex` until it resolves), each
+  cell the narrow weekday over the day
   number. The selected day is a `surface.selected` pill with
   `interactive.enabled` text; today, when not selected, carries a teal dot in
   a slot every cell reserves, so no cell is taller than another. A tap selects
@@ -493,7 +495,10 @@ alone, with the words as tooltip and semantics; "Done" keeps its word.
 
 - **Side by side, the toolbar is the lanes' header**: "Plan" and "Actual" in
   subtitle1 over their own lanes, pinned while the day scrolls, with Arrange
-  over the plan it changes and the lane format over Actual. A host that takes
+  over the plan it changes and the lane format over Actual. A lane narrower
+  than 200 pt at the text scale (a phone shown both lanes, or large text)
+  takes the glyphs, and every header button shrinks to its lane rather than
+  overflow it — "Done" keeping its word. A host that takes
   the toolbar's leading slot (the docked panel's date strip) gets the old
   in-lane names back.
 - **Paged, on a phone, the lanes are named** "Plan" and "Actual" at the same
@@ -517,7 +522,9 @@ alone, with the words as tooltip and semantics; "Done" keeps its word.
   time on its own line leads with the time; a recording still running leads
   with "Now". The edit pencil is a quiet glyph whose target is the block's
   top-end corner, a tap target tall and stopping short of the agent's spark,
-  which shows its reason on a tap. Energy bands are a neutral wash.
+  which shows its reason on a tap. The target exists only where the block
+  draws the pencil (`_showsTitleRow`, the same test its content tiers by), so
+  a sliver or a peeking block keeps its own tap. Energy bands are a neutral wash.
 - **The content scrolls `step10` past the last hour**, the room the agenda
   leaves too, so the last fold pill clears the footer's fade.
 - **History.** Phase 5 moved the toggles into the briefing strip through a
@@ -714,7 +721,9 @@ sits under the header on all three tabs and is the page's one violet
 - **One sentence, shared with her voice.** `composeDayHeadline` — the block
   count and what is next, named by its task's live title as its agenda row
   is — is how the spoken `composeDayBriefing` begins, so the strip and the
-  companion never disagree. The strip sets a timer for the next block's start
+  companion never disagree. A tap after another block has become next reads
+  that block's live title then (`readLiveTaskTitle`), rather than the one
+  watched at the last build. The strip sets a timer for the next block's start
   and rewrites itself then. Without a plan the sentence is her invitation to
   check in.
 - **One line for the day's load.** `DayCapacityBar`

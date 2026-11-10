@@ -1,9 +1,10 @@
 ### Changed
 - **The Daily OS day page reads as one page.** The date is now the page's
   title — "Today · Monday" over "June 8" — with the week's seven days beneath
-  it: tap a day to open it, swipe to change week, and on a desktop use the
-  arrows at either end. Tapping the date still opens the calendar, and a long
-  press still returns to today.
+  it, starting on your region's first day of the week: tap a day to open it,
+  swipe to change week, and on a desktop use the arrows at either end.
+  Tapping the date still opens the calendar, and a long press still returns
+  to today.
 - **One sentence and one line sum up the day, on every tab.** The sentence is
   the opening of the companion's spoken briefing — how many blocks are planned
   and what comes next — and it moves on when the next block starts. Under it, a

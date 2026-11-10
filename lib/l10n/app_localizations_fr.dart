@@ -4811,7 +4811,13 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String dailyOsNextActivityHandledCount(int count) {
-    return '$count traités';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count traités',
+      one: '$count traité',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -4909,12 +4915,17 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String dailyOsNextAgendaLeft(int count, String duration) {
-    return '$count restants · $duration';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count restants · $duration',
+      one: '$count restant · $duration',
+    );
+    return '$_temp0';
   }
 
   @override
-  String get dailyOsNextAgendaNoPlanTitle =>
-      'Pas encore de plan pour aujourd\'hui.';
+  String get dailyOsNextAgendaNoPlanTitle => 'Pas encore de plan pour ce jour.';
 
   @override
   String get dailyOsNextAgendaNow => 'Maintenant';
@@ -5021,7 +5032,13 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String dailyOsNextBriefingDoneCaption(int count) {
-    return '$count terminées';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count terminées',
+      one: '$count terminée',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -5071,7 +5088,13 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String dailyOsNextBriefingMoreCategories(int count) {
-    return '+$count autres';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '+$count autres',
+      one: '+$count autre',
+    );
+    return '$_temp0';
   }
 
   @override

@@ -3,6 +3,19 @@
 // its placement, so neither file outgrows the repo's size limit.
 part of 'day_timeline_block.dart';
 
+/// Whether a block's content box of [width] × [height] draws its full title
+/// row — and with it the edit pencil — rather than nothing or the one fitted
+/// caption line. [_BlockContent] lays its tiers out by it, and [DayBlock]
+/// keeps the pencil's tap target only where the pencil is drawn.
+bool _showsTitleRow(
+  DsTokens tokens,
+  TextScaler textScaler, {
+  required double width,
+  required double height,
+}) =>
+    width >= TapTargets.minimum &&
+    height >= textScaler.scale(tokens.typography.lineHeight.bodySmall) + 2;
+
 String? _reasonFor(TimeBlock block) {
   final reason = block.reason?.trim();
   return reason == null || reason.isEmpty ? null : reason;
@@ -73,7 +86,12 @@ class _BlockContent extends StatelessWidget {
           // DayBlock still carries the title).
           return const SizedBox.shrink();
         }
-        if (constraints.maxHeight < lineHeight + 2) {
+        if (!_showsTitleRow(
+          tokens,
+          textScaler,
+          width: constraints.maxWidth,
+          height: constraints.maxHeight,
+        )) {
           // Sliver tier: one caption line so short recorded sessions
           // (the unplanned incident!) stay information, not just color.
           // The line is FITTED to the available height via a clamped

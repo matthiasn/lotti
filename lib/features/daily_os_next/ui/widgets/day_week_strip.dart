@@ -1,17 +1,21 @@
 import 'dart:math' as math;
 
 import 'package:flutter/gestures.dart' show kMinFlingVelocity;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_row_scaffold.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/utils/device_region.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// The seven days of [selected]'s week, as the day page's primary day
 /// control.
 ///
-/// The week starts on the locale's first day
-/// ([MaterialLocalizations.firstDayOfWeekIndex]). Each cell is the weekday's
+/// The week starts on the device region's first day
+/// ([firstDayOfWeekIndexProvider], as the sidebar calendar does), and on the
+/// locale's ([MaterialLocalizations.firstDayOfWeekIndex]) until that has
+/// resolved. Each cell is the weekday's
 /// initial over the day number; the selected day is a `surface.selected`
 /// pill with `interactive.enabled` text, and today — when it is not the
 /// selected day — carries a small teal dot under its number. A tap selects a
@@ -21,7 +25,7 @@ import 'package:material_ui/material_ui.dart';
 /// navigation, not a heat-map.
 ///
 /// Presentation only: the host owns the selected day.
-class DayWeekStrip extends StatelessWidget {
+class DayWeekStrip extends ConsumerWidget {
   const DayWeekStrip({
     required this.selected,
     required this.today,
@@ -65,11 +69,15 @@ class DayWeekStrip extends StatelessWidget {
   );
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
     final messages = context.messages;
     final material = MaterialLocalizations.of(context);
-    final days = weekOf(selected, material.firstDayOfWeekIndex);
+    final days = weekOf(
+      selected,
+      ref.watch(firstDayOfWeekIndexProvider).value ??
+          material.firstDayOfWeekIndex,
+    );
     final strip = LayoutBuilder(
       builder: (context, constraints) {
         // Cells share the width on a phone and stop growing on a wide pane,

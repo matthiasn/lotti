@@ -2002,7 +2002,7 @@
   "dailyOsNextActivityDeleteRecording": "Smazat",
   "dailyOsNextActivityEmpty": "Zatím tu nejsou žádné nahrávky ani check-iny.",
   "dailyOsNextActivityHandled": "Vyřízeno",
-  "dailyOsNextActivityHandledCount": "Vyřízeno {count}",
+  "dailyOsNextActivityHandledCount": "{count, plural, one{{count} vyřízená} few{{count} vyřízené} other{{count} vyřízených}}",
   "@dailyOsNextActivityHandledCount": {
     "description": "Summary beside the Activity tab's 'Handled' header: how many entries are dealt with.",
     "placeholders": {
@@ -2035,7 +2035,7 @@
   "@dailyOsNextActivityVoiceNote": {
     "description": "Name of an Activity row for a voice recording whose transcript is not ready yet."
   },
-  "dailyOsNextActivityWaitingCount": "Čeká {count}",
+  "dailyOsNextActivityWaitingCount": "{count, plural, one{Čeká {count}} few{Čekají {count}} other{Čeká {count}}}",
   "@dailyOsNextActivityWaitingCount": {
     "description": "Summary beside the Activity tab's 'Needs you' header: how many entries wait for the user.",
     "placeholders": {
@@ -2066,7 +2066,7 @@
     }
   },
   "dailyOsNextAgendaHideDone": "Skrýt hotové položky",
-  "dailyOsNextAgendaLeft": "Zbývá {count} · {duration}",
+  "dailyOsNextAgendaLeft": "{count, plural, one{Zbývá {count} · {duration}} few{Zbývají {count} · {duration}} other{Zbývá {count} · {duration}}}",
   "@dailyOsNextAgendaLeft": {
     "description": "Summary beside the agenda's 'Plan' header: how many items are not done yet, followed by the time they are planned for.",
     "placeholders": {
@@ -2080,7 +2080,7 @@
       }
     }
   },
-  "dailyOsNextAgendaNoPlanTitle": "Na dnešek zatím žádný plán.",
+  "dailyOsNextAgendaNoPlanTitle": "Pro tento den zatím žádný plán.",
   "dailyOsNextAgendaNow": "Teď",
   "@dailyOsNextAgendaNow": {
     "description": "Marks the agenda row whose item is under way now, above its start time."
@@ -2197,7 +2197,7 @@
       }
     }
   },
-  "dailyOsNextBriefingMoreCategories": "+{count} další",
+  "dailyOsNextBriefingMoreCategories": "{count, plural, one{+{count} další} few{+{count} další} other{+{count} dalších}}",
   "@dailyOsNextBriefingMoreCategories": {
     "description": "Last entry of the capacity legend on a phone: how many categories are not named. Their time together follows it.",
     "placeholders": {

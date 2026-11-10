@@ -1995,7 +1995,7 @@
   "dailyOsNextActivityDeleteRecording": "Ștergeți",
   "dailyOsNextActivityEmpty": "Nu există încă înregistrări sau check-in-uri.",
   "dailyOsNextActivityHandled": "Rezolvat",
-  "dailyOsNextActivityHandledCount": "{count} rezolvate",
+  "dailyOsNextActivityHandledCount": "{count, plural, one{{count} rezolvat} few{{count} rezolvate} other{{count} de rezolvate}}",
   "@dailyOsNextActivityHandledCount": {
     "description": "Summary beside the Activity tab's 'Handled' header: how many entries are dealt with.",
     "placeholders": {
@@ -2059,7 +2059,7 @@
     }
   },
   "dailyOsNextAgendaHideDone": "Ascundeți elementele finalizate",
-  "dailyOsNextAgendaLeft": "Rămân {count} · {duration}",
+  "dailyOsNextAgendaLeft": "{count, plural, one{Rămâne {count} · {duration}} few{Rămân {count} · {duration}} other{Rămân {count} · {duration}}}",
   "@dailyOsNextAgendaLeft": {
     "description": "Summary beside the agenda's 'Plan' header: how many items are not done yet, followed by the time they are planned for.",
     "placeholders": {
@@ -2073,7 +2073,7 @@
       }
     }
   },
-  "dailyOsNextAgendaNoPlanTitle": "Încă nu există un plan pentru azi.",
+  "dailyOsNextAgendaNoPlanTitle": "Încă nu există un plan pentru această zi.",
   "dailyOsNextAgendaNow": "Acum",
   "@dailyOsNextAgendaNow": {
     "description": "Marks the agenda row whose item is under way now, above its start time."
@@ -2123,7 +2123,7 @@
       }
     }
   },
-  "dailyOsNextBriefingDoneCaption": "{count} finalizate",
+  "dailyOsNextBriefingDoneCaption": "{count, plural, one{{count} finalizată} few{{count} finalizate} other{{count} de finalizate}}",
   "@dailyOsNextBriefingDoneCaption": {
     "description": "Caption under the bar on a day without a plan: recorded sessions that are done.",
     "placeholders": {

@@ -4844,7 +4844,7 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
-  String get dailyOsNextAgendaNoPlanTitle => 'Ingen plan endnu for i dag.';
+  String get dailyOsNextAgendaNoPlanTitle => 'Ingen plan for denne dag endnu.';
 
   @override
   String get dailyOsNextAgendaNow => 'Nu';
@@ -4951,7 +4951,13 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String dailyOsNextBriefingDoneCaption(int count) {
-    return '$count færdige';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count færdige',
+      one: '$count færdig',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -5739,7 +5745,7 @@ class AppLocalizationsDa extends AppLocalizations {
   String get dailyOsNextStateRecurringMissed => 'Tilbagevendende · Missede';
 
   @override
-  String get dailyOsNextTimelineActual => 'Nuværende';
+  String get dailyOsNextTimelineActual => 'Faktisk';
 
   @override
   String get dailyOsNextTimelineArrange => 'Arranger blokke';

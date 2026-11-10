@@ -8174,7 +8174,7 @@ abstract class AppLocalizations {
   /// No description provided for @dailyOsNextAgendaNoPlanTitle.
   ///
   /// In en, this message translates to:
-  /// **'No plan yet for today.'**
+  /// **'No plan for this day yet.'**
   String get dailyOsNextAgendaNoPlanTitle;
 
   /// Marks the agenda row whose item is under way now, above its start time.

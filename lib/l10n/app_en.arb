@@ -3271,7 +3271,7 @@
       }
     }
   },
-  "dailyOsNextAgendaNoPlanTitle": "No plan yet for today.",
+  "dailyOsNextAgendaNoPlanTitle": "No plan for this day yet.",
   "dailyOsNextAgendaNow": "Now",
   "@dailyOsNextAgendaNow": {
     "description": "Marks the agenda row whose item is under way now, above its start time."

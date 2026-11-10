@@ -41,22 +41,13 @@ class _TimelineToolbar extends StatelessWidget {
     final tokens = context.designTokens;
     final messages = context.messages;
     final showingBoth = mode == _TimelineComparisonMode.both;
-    final modeToggle = _ModeToggle(
-      showingBoth: showingBoth,
-      onToggle: onToggleMode,
-    );
-    final arrange = switch (onToggleArrange) {
-      final onToggle? => _ArrangeToggle(
-        arranging: arrangeMode,
-        onToggle: onToggle,
-      ),
-      null => null,
-    };
     if (showingBoth && leading == null) {
       // Side by side, the toolbar is the lanes' header: each name over its
       // own column, at the tier every group on the page is named at, and
       // pinned, so the names stay in view however far the day scrolls.
-      // Arrange sits over the lane it changes, the plan.
+      // Arrange sits over the lane it changes, the plan. A lane too narrow
+      // for a name and a worded button — a phone shown both lanes, or large
+      // text — takes the buttons' glyphs instead.
       Widget name(String text) => Padding(
         padding: EdgeInsets.only(left: tokens.spacing.step5),
         child: Text(
@@ -68,35 +59,64 @@ class _TimelineToolbar extends StatelessWidget {
           ),
         ),
       );
-      return Padding(
-        padding: EdgeInsets.only(
-          left: timeRailWidth,
-          right: tokens.spacing.step3,
-          top: tokens.spacing.step2,
-          bottom: tokens.spacing.step2,
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Row(
-                children: [
-                  Expanded(child: name(messages.dailyOsNextTimelinePlanned)),
-                  ?arrange,
-                ],
-              ),
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          final laneWidth =
+              (constraints.maxWidth -
+                  timeRailWidth -
+                  tokens.spacing.step3 * 2) /
+              2;
+          final compact =
+              laneWidth <
+              MediaQuery.textScalerOf(context).scale(_laneWordsMinWidth);
+          return Padding(
+            padding: EdgeInsets.only(
+              left: timeRailWidth,
+              right: tokens.spacing.step3,
+              top: tokens.spacing.step2,
+              bottom: tokens.spacing.step2,
             ),
-            SizedBox(width: tokens.spacing.step3),
-            Expanded(
-              child: Row(
-                children: [
-                  Expanded(child: name(messages.dailyOsNextTimelineActual)),
-                  modeToggle,
-                  ?trailing,
-                ],
-              ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: name(messages.dailyOsNextTimelinePlanned),
+                      ),
+                      if (onToggleArrange case final onToggle?)
+                        _fitted(
+                          _ArrangeToggle(
+                            arranging: arrangeMode,
+                            onToggle: onToggle,
+                            compact: compact,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                SizedBox(width: tokens.spacing.step3),
+                Expanded(
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: name(messages.dailyOsNextTimelineActual),
+                      ),
+                      _fitted(
+                        _ModeToggle(
+                          showingBoth: true,
+                          onToggle: onToggleMode,
+                          compact: compact,
+                        ),
+                      ),
+                      ?trailing,
+                    ],
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
+          );
+        },
       );
     }
     // Paged, on a phone: the lane names start where the rows' words would
@@ -160,6 +180,21 @@ class _TimelineToolbar extends StatelessWidget {
   /// The narrowest toolbar that fits the lane names and both buttons with
   /// their words; below it the buttons show their glyphs.
   static const double _wordsMinWidth = 340;
+
+  /// Side by side, the narrowest lane — at the default text size — that fits
+  /// its name and a worded button; the threshold grows with the text.
+  static const double _laneWordsMinWidth = 200;
+
+  /// A side-by-side header button that shrinks to its lane rather than
+  /// overflow it — "Done", which keeps its word, in a lane narrower than the
+  /// word at large text.
+  static Widget _fitted(Widget button) => Flexible(
+    child: FittedBox(
+      fit: BoxFit.scaleDown,
+      alignment: AlignmentDirectional.centerEnd,
+      child: button,
+    ),
+  );
 }
 
 class _TimelinePane extends StatelessWidget {

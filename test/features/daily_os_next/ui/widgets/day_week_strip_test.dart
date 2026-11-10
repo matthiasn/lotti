@@ -1,6 +1,10 @@
+import 'dart:async';
+
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_week_strip.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/utils/device_region.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../widget_test_utils.dart';
@@ -19,6 +23,7 @@ Future<void> _pump(
   ValueChanged<DateTime>? onSelect,
   bool showWeekChevrons = false,
   double width = 390,
+  List<Override> overrides = const [],
 }) async {
   await tester.pumpWidget(
     makeTestableWidgetNoScroll(
@@ -38,8 +43,10 @@ Future<void> _pump(
         ),
       ),
       mediaQueryData: const MediaQueryData(size: Size(1400, 900)),
+      overrides: overrides,
     ),
   );
+  await tester.pump();
 }
 
 DsTokens _tokens(WidgetTester tester) =>
@@ -340,6 +347,47 @@ void main() {
         ),
       );
       handle.dispose();
+    });
+  });
+
+  group('DayWeekStrip week start', () {
+    testWidgets(
+      "starts on the device region's first day, as the sidebar calendar "
+      "does, not the app locale's",
+      (tester) async {
+        // The en-US test locale starts on Sunday; a Monday-first region wins.
+        await _pump(
+          tester,
+          overrides: [
+            firstDayOfWeekIndexProvider.overrideWith(
+              (ref) async => DateTime.monday % 7,
+            ),
+          ],
+        );
+
+        expect(_cell(DateTime(2026, 5, 24)), findsNothing);
+        expect(_cell(DateTime(2026, 5, 31)), findsOneWidget);
+        expect(
+          tester.getTopLeft(_cell(DateTime(2026, 5, 25))).dx,
+          lessThan(tester.getTopLeft(_cell(DateTime(2026, 5, 31))).dx),
+        );
+      },
+    );
+
+    testWidgets("falls back to the locale's first day until the region "
+        'resolves', (tester) async {
+      await _pump(
+        tester,
+        overrides: [
+          firstDayOfWeekIndexProvider.overrideWith(
+            (ref) => Completer<int>().future,
+          ),
+        ],
+      );
+
+      // en-US: Sunday, May 24 to Saturday, May 30.
+      expect(_cell(DateTime(2026, 5, 24)), findsOneWidget);
+      expect(_cell(DateTime(2026, 5, 31)), findsNothing);
     });
   });
 }

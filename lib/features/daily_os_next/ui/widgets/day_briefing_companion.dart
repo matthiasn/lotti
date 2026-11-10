@@ -150,11 +150,19 @@ class DayBriefingVoice {
         hasPlan: hasPlan,
         now: clock.now(),
       );
+      // The block watched at the last build is still next unless one has
+      // started since; then the newly-next one's live title is read now, so
+      // she never names it by a title it has since outgrown.
+      final next = briefing.next;
+      final nextTitle = next?.id == upcoming?.id
+          ? upcomingTitle
+          : await readLiveTaskTitle(ref, next?.taskId);
+      if (!context.mounted) return;
       final text = composeDayBriefing(
         context.messages,
         briefing,
         (moment) => formatClock(context, moment),
-        nextTitle: briefing.next?.id == upcoming?.id ? upcomingTitle : null,
+        nextTitle: nextTitle,
       );
       if (ref.read(ttsPlaybackControllerProvider).isBusy) {
         await notifier.stop();

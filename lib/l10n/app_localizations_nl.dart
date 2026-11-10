@@ -4870,7 +4870,7 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String get dailyOsNextAgendaNoPlanTitle => 'Nog geen plan voor vandaag.';
+  String get dailyOsNextAgendaNoPlanTitle => 'Nog geen plan voor deze dag.';
 
   @override
   String get dailyOsNextAgendaNow => 'Nu';

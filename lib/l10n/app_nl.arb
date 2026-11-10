@@ -2310,7 +2310,7 @@
       }
     }
   },
-  "dailyOsNextAgendaNoPlanTitle": "Nog geen plan voor vandaag.",
+  "dailyOsNextAgendaNoPlanTitle": "Nog geen plan voor deze dag.",
   "dailyOsNextAgendaNow": "Nu",
   "@dailyOsNextAgendaNow": {
     "description": "Marks the agenda row whose item is under way now, above its start time."

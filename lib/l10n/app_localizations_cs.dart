@@ -4799,7 +4799,14 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String dailyOsNextActivityHandledCount(int count) {
-    return 'Vyřízeno $count';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count vyřízených',
+      few: '$count vyřízené',
+      one: '$count vyřízená',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -4869,7 +4876,14 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String dailyOsNextActivityWaitingCount(int count) {
-    return 'Čeká $count';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Čeká $count',
+      few: 'Čekají $count',
+      one: 'Čeká $count',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -4897,11 +4911,18 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String dailyOsNextAgendaLeft(int count, String duration) {
-    return 'Zbývá $count · $duration';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Zbývá $count · $duration',
+      few: 'Zbývají $count · $duration',
+      one: 'Zbývá $count · $duration',
+    );
+    return '$_temp0';
   }
 
   @override
-  String get dailyOsNextAgendaNoPlanTitle => 'Na dnešek zatím žádný plán.';
+  String get dailyOsNextAgendaNoPlanTitle => 'Pro tento den zatím žádný plán.';
 
   @override
   String get dailyOsNextAgendaNow => 'Teď';
@@ -5061,7 +5082,14 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String dailyOsNextBriefingMoreCategories(int count) {
-    return '+$count další';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '+$count dalších',
+      few: '+$count další',
+      one: '+$count další',
+    );
+    return '$_temp0';
   }
 
   @override

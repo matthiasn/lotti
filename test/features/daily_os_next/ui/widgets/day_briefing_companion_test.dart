@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/ai/ai_config.dart';
@@ -20,6 +21,7 @@ import 'package:lotti/features/daily_os_next/logic/day_agent_plan_models.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_timeline_models.dart';
 import 'package:lotti/features/daily_os_next/logic/day_briefing.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_briefing_companion.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/live_task_metadata.dart';
 import 'package:lotti/features/design_system/theme/sizing_tokens.dart';
 import 'package:lotti/features/tts/cloud/cloud_speech_synthesizer.dart';
 import 'package:lotti/features/tts/cloud/cloud_tts_exception.dart';
@@ -30,6 +32,7 @@ import 'package:lotti/features/tts/state/tts_playback_controller.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/utils/consts.dart';
 
+import '../../../../helpers/test_get_it.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_helper.dart';
 import '../../../agents/test_data/ai_config_factories.dart';
@@ -283,10 +286,13 @@ void main() {
       FakeTtsModelRepository? models,
       ResolvedAgentSetup? plannerSetup,
       Locale locale = const Locale('en'),
+      DraftPlan? draft,
+      List<Override> overrides = const [],
     }) async {
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
           overrides: [
+            ...overrides,
             configFlagProvider.overrideWith(
               (ref, flagName) => Stream.value(switch (flagName) {
                 enableCompanionFlag => companion,
@@ -317,7 +323,9 @@ void main() {
           child: Align(
             alignment: Alignment.topLeft,
             child: DayBriefingCompanion(
-              draft: _plan([_block('Review', 9, 60), _block('Write', 13, 90)]),
+              draft:
+                  draft ??
+                  _plan([_block('Review', 9, 60), _block('Write', 13, 90)]),
               hasPlan: hasPlan,
             ),
           ),
@@ -477,6 +485,45 @@ void main() {
       expect(player.playCount, 1);
       expect(find.byTooltip('Stop the briefing'), findsOneWidget);
     });
+
+    testWidgets(
+      "a block that became next since she last built is named by its task's "
+      'live title when she speaks',
+      (tester) async {
+        await setUpTestGetIt();
+        addTearDown(tearDownTestGetIt);
+        final write = _block('Write', 13, 90).copyWith(taskId: 'task-write');
+        // Built with no block ahead (a day already past at build time), so
+        // the block next at the tap is one she never watched.
+        await pump(
+          tester,
+          draft: _plan([_block('Review', 9, 60), write]),
+          overrides: [
+            liveTaskMetadataProvider.overrideWith(
+              (ref, taskId) async => const LiveTaskMetadata(
+                title: 'Write the launch memo',
+              ),
+            ),
+          ],
+        );
+
+        await withClock(
+          Clock.fixed(_day.add(const Duration(hours: 10))),
+          () async {
+            await tester.tap(find.byType(CompanionSpeaker));
+            await _pumpFrames(tester);
+          },
+        );
+
+        expect(
+          engine.calls.single.text,
+          startsWith(
+            'You have 2 blocks planned. Next up at 1:00 PM: '
+            'Write the launch memo.',
+          ),
+        );
+      },
+    );
 
     testWidgets('without the voice model, a tap asks first, showing its '
         'size', (tester) async {

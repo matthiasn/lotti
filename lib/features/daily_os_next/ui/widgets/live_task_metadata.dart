@@ -128,6 +128,25 @@ LiveTaskMetadata watchLiveTaskMetadata(WidgetRef ref, String? rawTaskId) {
   return value.value ?? const LiveTaskMetadata();
 }
 
+/// The live title of [rawTaskId], read once for a moment no build watches —
+/// a tap that acts on whatever is current then. Null when the id is blank,
+/// live task rows cannot be resolved, or the task has no title. The provider
+/// is held for the read, so an auto-disposing family does not drop it
+/// mid-flight.
+Future<String?> readLiveTaskTitle(WidgetRef ref, String? rawTaskId) async {
+  final taskId = rawTaskId?.trim();
+  if (taskId == null || taskId.isEmpty || !canResolveLiveTaskMetadata()) {
+    return null;
+  }
+  final provider = liveTaskMetadataProvider(taskId);
+  final hold = ref.listenManual(provider, (_, _) {});
+  try {
+    return (await ref.read(provider.future)).title;
+  } finally {
+    hold.close();
+  }
+}
+
 /// Whether the getIt graph can resolve live task rows.
 bool canResolveLiveTaskMetadata() {
   return getIt.isRegistered<JournalDb>() &&

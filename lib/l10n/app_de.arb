@@ -2073,7 +2073,7 @@
       }
     }
   },
-  "dailyOsNextAgendaNoPlanTitle": "Noch kein Plan für heute.",
+  "dailyOsNextAgendaNoPlanTitle": "Noch kein Plan für diesen Tag.",
   "dailyOsNextAgendaNow": "Jetzt",
   "@dailyOsNextAgendaNow": {
     "description": "Marks the agenda row whose item is under way now, above its start time."

@@ -2233,7 +2233,7 @@
   "dailyOsNextActivityDeleteRecording": "Elimina",
   "dailyOsNextActivityEmpty": "Ancora nessuna registrazione o check-in.",
   "dailyOsNextActivityHandled": "Gestito",
-  "dailyOsNextActivityHandledCount": "{count} gestiti",
+  "dailyOsNextActivityHandledCount": "{count, plural, one{{count} gestito} other{{count} gestiti}}",
   "@dailyOsNextActivityHandledCount": {
     "description": "Summary beside the Activity tab's 'Handled' header: how many entries are dealt with.",
     "placeholders": {
@@ -2311,7 +2311,7 @@
       }
     }
   },
-  "dailyOsNextAgendaNoPlanTitle": "Non c'e' ancora un piano per oggi.",
+  "dailyOsNextAgendaNoPlanTitle": "Ancora nessun piano per questo giorno.",
   "dailyOsNextAgendaNow": "Ora",
   "@dailyOsNextAgendaNow": {
     "description": "Marks the agenda row whose item is under way now, above its start time."
@@ -2361,7 +2361,7 @@
       }
     }
   },
-  "dailyOsNextBriefingDoneCaption": "{count} fatte",
+  "dailyOsNextBriefingDoneCaption": "{count, plural, one{{count} fatta} other{{count} fatte}}",
   "@dailyOsNextBriefingDoneCaption": {
     "description": "Caption under the bar on a day without a plan: recorded sessions that are done.",
     "placeholders": {
@@ -2428,7 +2428,7 @@
       }
     }
   },
-  "dailyOsNextBriefingMoreCategories": "+{count} altre",
+  "dailyOsNextBriefingMoreCategories": "{count, plural, one{+{count} altra} other{+{count} altre}}",
   "@dailyOsNextBriefingMoreCategories": {
     "description": "Last entry of the capacity legend on a phone: how many categories are not named. Their time together follows it.",
     "placeholders": {
@@ -2786,7 +2786,7 @@
     }
   },
   "dailyOsNextStateRecurringMissed": "Ripresa · mancato",
-  "dailyOsNextTimelineActual": "Attualità",
+  "dailyOsNextTimelineActual": "Effettivo",
   "dailyOsNextTimelineArrange": "Blocchi d'arrangiamento",
   "dailyOsNextTimelineArrangeShort": "Organizza",
   "@dailyOsNextTimelineArrangeShort": {

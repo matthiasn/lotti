@@ -4881,7 +4881,7 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get dailyOsNextAgendaNoPlanTitle => 'Noch kein Plan für heute.';
+  String get dailyOsNextAgendaNoPlanTitle => 'Noch kein Plan für diesen Tag.';
 
   @override
   String get dailyOsNextAgendaNow => 'Jetzt';

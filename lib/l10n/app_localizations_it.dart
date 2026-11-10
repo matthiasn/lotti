@@ -4803,7 +4803,13 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String dailyOsNextActivityHandledCount(int count) {
-    return '$count gestiti';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count gestiti',
+      one: '$count gestito',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -4907,7 +4913,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get dailyOsNextAgendaNoPlanTitle =>
-      'Non c\'e\' ancora un piano per oggi.';
+      'Ancora nessun piano per questo giorno.';
 
   @override
   String get dailyOsNextAgendaNow => 'Ora';
@@ -5014,7 +5020,13 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String dailyOsNextBriefingDoneCaption(int count) {
-    return '$count fatte';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count fatte',
+      one: '$count fatta',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -5064,7 +5076,13 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String dailyOsNextBriefingMoreCategories(int count) {
-    return '+$count altre';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '+$count altre',
+      one: '+$count altra',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -5805,7 +5823,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get dailyOsNextStateRecurringMissed => 'Ripresa · mancato';
 
   @override
-  String get dailyOsNextTimelineActual => 'Attualità';
+  String get dailyOsNextTimelineActual => 'Effettivo';
 
   @override
   String get dailyOsNextTimelineArrange => 'Blocchi d\'arrangiamento';
