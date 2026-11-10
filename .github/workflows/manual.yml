@@ -888,15 +888,16 @@ jobs:
             if [[ -z "$OPEN" || "$DID_WORK" != "true" ]]; then
               exit 0
             fi
-            # Runs overlap (two tags close together): only a run newer than
-            # the latest failure it would close may close it. Run ids grow
-            # with creation time; each failure report carries its own.
+            # Runs overlap (two tags close together): a failure reported by a
+            # newer run stays open. Run ids grow with creation time; each
+            # failure report carries its own. An equal id is a re-run of the
+            # failed run itself (attempts never overlap), so it may close it.
             LAST_FAILED=$(gh issue view "$OPEN" --repo "$REPO" \
                 --json body,comments --jq '[.body, .comments[].body] | .[]' \
               | grep -oE 'run-id: [0-9]+' | grep -oE '[0-9]+' | sort -n \
               | tail -1 || true)
-            if [[ -n "$LAST_FAILED" && "$RUN_ID" -le "$LAST_FAILED" ]]; then
-              echo "Run ${RUN_ID} is older than failure ${LAST_FAILED}; leaving the issue open."
+            if [[ -n "$LAST_FAILED" && "$RUN_ID" -lt "$LAST_FAILED" ]]; then
+              echo "Newer run ${LAST_FAILED} failed after ${RUN_ID}; leaving the issue open."
               exit 0
             fi
             gh issue close "$OPEN" --repo "$REPO" \

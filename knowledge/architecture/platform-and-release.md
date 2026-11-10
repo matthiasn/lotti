@@ -158,8 +158,8 @@ issue: `manual.yml`'s `report` job opens `CI red: Manual (nightly)` (or
 `… (release tag)`), labelled `ci-failure`, when an unattended run fails,
 comments on it while it stays red, and closes it on the next green run of
 that kind that did real work (a skipped, already-published tag proves
-nothing) and is newer than the last failure it reported (each report carries
-its `run-id`); a per-PR
+nothing) and is not older than the last failure it reported (each report
+carries its `run-id`; a successful re-run of the failed run itself closes it); a per-PR
 one-locale capture used to close that gap, and was dropped because it ran on
 nearly every pull request for about twenty minutes and rarely failed.
 
