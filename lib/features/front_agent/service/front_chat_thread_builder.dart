@@ -13,6 +13,7 @@ import 'package:lotti/features/front_agent/model/front_due_section.dart';
 import 'package:lotti/features/front_agent/model/front_entity_preview.dart';
 import 'package:lotti/features/front_agent/model/front_logged_time_chart.dart';
 import 'package:lotti/features/front_agent/model/front_pull_requests.dart';
+import 'package:lotti/features/front_agent/model/front_reply_layout.dart';
 import 'package:lotti/features/front_agent/service/front_chat_history_service.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_contract.dart';
 
@@ -79,6 +80,7 @@ class FrontChatThreadBuilder {
     final pullRequestCharts = <String, FrontPullRequestChart>{};
     final closedTasks = <String, List<FrontClosedTaskCard>>{};
     final dueSections = <String, FrontDueSection>{};
+    final replyParts = <String, List<FrontReplyPart>>{};
     final doorRecords = <String, List<(String, FrontDoorRecord)>>{};
 
     for (final row in rows) {
@@ -112,6 +114,8 @@ class FrontChatThreadBuilder {
             if (cards.isNotEmpty) closedTasks[row.id] = cards;
             final due = FrontDueSection.fromJson(payload.content['dueTasks']);
             if (due != null) dueSections[row.id] = due;
+            final parts = FrontReplyPart.listFromJson(payload.content['parts']);
+            if (parts.isNotEmpty) replyParts[row.id] = parts;
           case FrontAgentToolNames.askUser:
             final payload = await _payload(row.contentEntryId);
             final question = payload?.content['question'];
@@ -201,6 +205,10 @@ class FrontChatThreadBuilder {
       entityPreviewsByMessageId: _entityPreviews(visible, doors),
       dueSectionsByMessageId: {
         for (final entry in dueSections.entries)
+          if (visibleIds.contains(entry.key)) entry.key: entry.value,
+      },
+      partsByMessageId: {
+        for (final entry in replyParts.entries)
           if (visibleIds.contains(entry.key)) entry.key: entry.value,
       },
     );

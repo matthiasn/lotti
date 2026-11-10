@@ -3,6 +3,7 @@ import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/features/companion/model/companion_reaction.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_pull_requests.dart';
+import 'package:lotti/features/front_agent/model/front_reply_layout.dart';
 import 'package:lotti/features/front_agent/model/front_routing_index.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_contract.dart';
 
@@ -28,6 +29,27 @@ void main() {
       FrontAgentToolNames.replyToUser,
       AgentConversationToolNames.replyToUser,
     );
+  });
+
+  test('reply_to_user takes words or composed parts, a part showing only '
+      'what the catalog has; the prompt asks for lists as cards, never as '
+      'Markdown', () {
+    final reply = frontAgentTools.singleWhere(
+      (t) => t.name == FrontAgentToolNames.replyToUser,
+    );
+    final properties = reply.parameters['properties'] as Map<String, Object?>;
+    expect(properties.keys, ['message', 'parts']);
+    final part =
+        ((properties['parts']! as Map)['items'] as Map)['properties'] as Map;
+    expect(part.keys, ['text', 'cards', 'show']);
+    expect((part['show'] as Map)['enum'], [
+      for (final attachment in FrontReplyAttachment.values) attachment.wireName,
+    ]);
+    expect(reply.parameters.containsKey('required'), isFalse);
+
+    expect(frontAgentSystemPrompt, contains('`{"cards": ["task:<id>"'));
+    expect(frontAgentSystemPrompt, contains('overdue and due as two `cards`'));
+    expect(frontAgentSystemPrompt, isNot(contains('one markdown bullet list')));
   });
 
   test("the dispatch schema enumerates exactly the model's kinds", () {

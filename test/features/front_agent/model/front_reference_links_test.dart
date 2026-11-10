@@ -1,7 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_reference_links.dart';
-import 'package:lotti/features/front_agent/model/front_reply_parts.dart';
 import 'package:lotti/features/front_agent/model/front_routing_index.dart';
 
 void main() {
@@ -112,7 +111,7 @@ void main() {
       expect(linkFrontReferences(kept, rows), kept);
     });
 
-    test('a due list whose later lines link by task:<id> is all rows', () {
+    test('a list whose later lines link by task:<id> opens every task', () {
       final due = [
         for (var i = 1; i <= 5; i++)
           FrontIndexRow(
@@ -126,13 +125,10 @@ void main() {
         for (final row in due.skip(3)) '- [${row.title}](task:${row.id})',
       ].join('\n');
 
-      final parts = frontReplyParts(linkFrontReferences(reply, due));
-
-      expect(parts, [
-        FrontReplyTasks([
-          for (final row in due) FrontTaskMention(id: row.id, title: row.title),
-        ]),
-      ]);
+      expect(
+        linkFrontReferences(reply, due),
+        [for (final row in due) '- ${frontReferenceLink(row)}'].join('\n'),
+      );
     });
 
     test('links nothing the turn could not see, nor a goal', () {

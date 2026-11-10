@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
 import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/front_agent/model/front_closed_task_card.dart';
@@ -7,6 +8,7 @@ import 'package:lotti/features/front_agent/model/front_due_section.dart';
 import 'package:lotti/features/front_agent/model/front_entity_preview.dart';
 import 'package:lotti/features/front_agent/model/front_logged_time_chart.dart';
 import 'package:lotti/features/front_agent/model/front_pull_requests.dart';
+import 'package:lotti/features/front_agent/model/front_reply_layout.dart';
 
 /// One choice the front agent offered with a clarifying question: an owner
 /// the segment could belong to, by kind and id, labelled as the model
@@ -74,6 +76,7 @@ class FrontChatThread {
     this.closedTasksByMessageId = const {},
     this.entityPreviewsByMessageId = const {},
     this.dueSectionsByMessageId = const {},
+    this.partsByMessageId = const {},
   });
 
   static const empty = FrontChatThread(messages: []);
@@ -116,6 +119,31 @@ class FrontChatThread {
   /// The window a reply's list of due tasks was read from, by the reply's
   /// id: the quiet label over that list.
   final Map<String, FrontDueSection> dueSectionsByMessageId;
+
+  /// What a reply draws, in order, by the reply's id: her words, the cards
+  /// she listed, and where the charts and closed-task cards go, as the turn
+  /// validated them. Only replies stored with parts; read through
+  /// [partsOf]. Never read from how her words are formatted.
+  final Map<String, List<FrontReplyPart>> partsByMessageId;
+
+  /// What reply [messageId] draws, in order: the parts its turn stored —
+  /// or, for a reply stored before replies had parts, her words, then what
+  /// it carries in the order of [FrontReplyAttachment].
+  List<FrontReplyPart> partsOf(String messageId) {
+    if (partsByMessageId[messageId] case final parts?) return parts;
+    final text = messages.firstWhereOrNull((m) => m.id == messageId)?.text;
+    final carried = {
+      FrontReplyAttachment.closedTasks: closedTasksByMessageId,
+      FrontReplyAttachment.loggedTimeChart: loggedTimeByMessageId,
+      FrontReplyAttachment.pullRequestChart: pullRequestsByMessageId,
+    };
+    return [
+      if (text != null && text.isNotEmpty) FrontReplyText(text),
+      for (final attachment in FrontReplyAttachment.values)
+        if (carried[attachment]!.containsKey(messageId))
+          FrontReplyShow(attachment),
+    ];
+  }
 
   /// The message that carries a user turn's doors on the surface: her
   /// reply right after it, when there is one — the doors are her answer,

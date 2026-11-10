@@ -18,7 +18,7 @@ import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
 import 'package:lotti/features/front_agent/model/front_entity_preview.dart';
 import 'package:lotti/features/front_agent/model/front_reference_links.dart';
-import 'package:lotti/features/front_agent/model/front_reply_parts.dart';
+import 'package:lotti/features/front_agent/model/front_reply_layout.dart';
 import 'package:lotti/features/front_agent/model/front_turn_failure.dart';
 import 'package:lotti/features/front_agent/state/front_chat_controller.dart';
 import 'package:lotti/features/front_agent/state/front_chat_thread_provider.dart';
@@ -455,105 +455,86 @@ class FrontChatThreadView extends ConsumerWidget {
         settingsDefaultDictationTargetProvider,
       ),
       onLinkTap: (_, url, title) => openLink(url, title),
-      // A list of tasks in her words is drawn as preview cards — under the
-      // window an answer about what is due read — her words around it as
-      // she wrote them; an answer about what was completed
-      // gets every task it found as cards, and one about logged time or
-      // pull requests its chart, under her words; what her turn's doors
-      // made, as preview cards. Any other reply is drawn as usual.
+      // Her reply is drawn part by part, in the order the turn stored them:
+      // her words, the tasks she listed as preview cards, the charts and
+      // closed-task cards where she placed them; then what her turn's doors
+      // made, as preview cards. A reply of words alone is drawn as usual.
       replyBodyBuilder: (context, message, prose) {
-        // Cut from her words as written, before their dates became the
-        // device's: a list line may end in when it was due, in ISO.
-        final written = thread?.messages
-            .where((m) => m.id == message.id)
-            .firstOrNull
-            ?.text;
-        final closedTasks = thread?.closedTasksByMessageId[message.id];
+        final parts = thread?.partsOf(message.id) ?? const <FrontReplyPart>[];
         final previews = thread?.entityPreviewsByMessageId[message.id];
-        final carded = {
+        if (previews == null && parts.every((part) => part is FrontReplyText)) {
+          return null;
+        }
+        final closedTasks = thread?.closedTasksByMessageId[message.id];
+        final chart = thread?.loggedTimeByMessageId[message.id];
+        final pullRequests = thread?.pullRequestsByMessageId[message.id];
+        // A task a door made or a closed card shows is not drawn twice.
+        final shown = {
           ...?closedTasks?.map((task) => task.id),
           ...?previews?.map((preview) => preview.id),
         };
-        // A task the cards show is not drawn twice from her words.
-        final parts = [
-          for (final part in frontReplyParts(written ?? message.text))
-            switch (part) {
-              FrontReplyTasks(:final tasks) when carded.isNotEmpty =>
-                FrontReplyTasks([
-                  for (final task in tasks)
-                    if (!carded.contains(task.id)) task,
-                ]),
-              _ => part,
-            },
-        ]..removeWhere((part) => part is FrontReplyTasks && part.tasks.isEmpty);
-        final chart = thread?.loggedTimeByMessageId[message.id];
-        final pullRequests = thread?.pullRequestsByMessageId[message.id];
-        if (chart == null &&
-            pullRequests == null &&
-            closedTasks == null &&
-            previews == null &&
-            !parts.any((part) => part is FrontReplyTasks)) {
-          return null;
-        }
         final tokens = context.designTokens;
-        // An answer about what is due says which window its list is: over
-        // the first list of her words, the only one such an answer has.
-        final due = thread?.dueSectionsByMessageId[message.id];
-        final labelled = parts.indexWhere((part) => part is FrontReplyTasks);
+        // A due answer's one list says which window it is; separate lists
+        // — overdue, then due — are named by her own words above each.
+        final due = parts.whereType<FrontReplyCards>().length == 1
+            ? thread?.dueSectionsByMessageId[message.id]
+            : null;
+        Widget? listed(int index, List<FrontEntityReference> cards) {
+          final references = [
+            for (final card in cards)
+              if (!shown.contains(card.id)) card,
+          ];
+          if (references.isEmpty) return null;
+          return Column(
+            key: ValueKey('front-reply-cards-${message.id}-$index'),
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            spacing: tokens.spacing.step2,
+            children: [
+              if (due != null) FrontDueSectionLabel(section: due),
+              FrontEntityPreviewList(references: references, onOpen: openMade),
+            ],
+          );
+        }
+
+        Widget? attached(FrontReplyAttachment attachment) =>
+            switch (attachment) {
+              FrontReplyAttachment.closedTasks when closedTasks != null =>
+                FrontClosedTaskList(
+                  key: ValueKey('front-closed-tasks-${message.id}'),
+                  tasks: closedTasks,
+                  onOpen: (id) => openLink(
+                    frontReferenceUrl(FrontDestinationKind.task, id),
+                    '',
+                  ),
+                ),
+              FrontReplyAttachment.loggedTimeChart when chart != null =>
+                FrontLoggedTimeChartCard(
+                  key: ValueKey('front-logged-time-${message.id}'),
+                  chart: chart,
+                ),
+              FrontReplyAttachment.pullRequestChart when pullRequests != null =>
+                FrontPullRequestChartCard(
+                  key: ValueKey('front-pull-requests-${message.id}'),
+                  chart: pullRequests,
+                ),
+              _ => null,
+            };
+
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           spacing: tokens.spacing.step4,
           children: [
             for (final (index, part) in parts.indexed)
-              switch (part) {
+              ?switch (part) {
                 FrontReplyText(:final markdown) => prose(deviceDays(markdown)),
-                FrontReplyTasks(:final tasks) => Column(
-                  key: ValueKey('front-reply-tasks-${message.id}-$index'),
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  spacing: tokens.spacing.step2,
-                  children: [
-                    if (due != null && index == labelled)
-                      FrontDueSectionLabel(section: due),
-                    FrontEntityPreviewList(
-                      references: [
-                        for (final mention in tasks)
-                          FrontEntityReference(
-                            kind: mention.kind == FrontDestinationKind.project
-                                ? FrontEntityKind.project
-                                : FrontEntityKind.task,
-                            id: mention.id,
-                            title: mention.title,
-                          ),
-                      ],
-                      onOpen: openMade,
-                    ),
-                  ],
-                ),
+                FrontReplyCards(:final cards) => listed(index, cards),
+                FrontReplyShow(:final attachment) => attached(attachment),
               },
             if (previews != null)
               FrontEntityPreviewList(
                 key: ValueKey('front-entity-previews-${message.id}'),
                 references: previews,
                 onOpen: openMade,
-              ),
-            if (closedTasks != null)
-              FrontClosedTaskList(
-                key: ValueKey('front-closed-tasks-${message.id}'),
-                tasks: closedTasks,
-                onOpen: (id) => openLink(
-                  frontReferenceUrl(FrontDestinationKind.task, id),
-                  '',
-                ),
-              ),
-            if (chart != null)
-              FrontLoggedTimeChartCard(
-                key: ValueKey('front-logged-time-${message.id}'),
-                chart: chart,
-              ),
-            if (pullRequests != null)
-              FrontPullRequestChartCard(
-                key: ValueKey('front-pull-requests-${message.id}'),
-                chart: pullRequests,
               ),
           ],
         );

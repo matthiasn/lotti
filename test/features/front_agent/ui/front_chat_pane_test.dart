@@ -32,6 +32,7 @@ import 'package:lotti/features/front_agent/model/front_due_section.dart';
 import 'package:lotti/features/front_agent/model/front_entity_preview.dart';
 import 'package:lotti/features/front_agent/model/front_logged_time_chart.dart';
 import 'package:lotti/features/front_agent/model/front_pull_requests.dart';
+import 'package:lotti/features/front_agent/model/front_reply_layout.dart';
 import 'package:lotti/features/front_agent/model/front_routing_index.dart';
 import 'package:lotti/features/front_agent/model/front_turn_failure.dart';
 import 'package:lotti/features/front_agent/service/front_chat_service.dart';
@@ -102,21 +103,21 @@ void main() {
     runKey: runKey,
   );
 
-  /// Every list her words draw as cards, in any reply.
+  /// Every list of cards her reply draws, in any reply.
   final herLists = find.byWidgetPredicate(
     (widget) => switch (widget.key) {
-      ValueKey<String>(:final value) => value.startsWith('front-reply-tasks-'),
+      ValueKey<String>(:final value) => value.startsWith('front-reply-cards-'),
       _ => false,
     },
   );
 
-  /// The ids of the cards the list her words draw at [part] of reply
+  /// The ids of the cards the list her reply draws at [part] of reply
   /// [replyId] shows, in order.
   List<String> listedIds(WidgetTester tester, String replyId, {int part = 1}) =>
       tester
           .widget<FrontEntityPreviewList>(
             find.descendant(
-              of: find.byKey(ValueKey('front-reply-tasks-$replyId-$part')),
+              of: find.byKey(ValueKey('front-reply-cards-$replyId-$part')),
               matching: find.byType(FrontEntityPreviewList),
             ),
           )
@@ -1043,10 +1044,11 @@ void main() {
     );
   });
 
-  testWidgets('a list of tasks in her words is drawn as task rows, her words '
-      'around it kept; a row opens its task on top of her', (
-    tester,
-  ) async {
+  FrontEntityReference taskRef(String id, String title) =>
+      FrontEntityReference(kind: FrontEntityKind.task, id: id, title: title);
+
+  testWidgets('her cards sit between her words where she placed them, and a '
+      'card opens its task on top of her', (tester) async {
     final paths = <String>[];
     beamToNamedOverride = paths.add;
     addTearDown(() => beamToNamedOverride = null);
@@ -1058,16 +1060,18 @@ void main() {
       thread: () async => FrontChatThread(
         messages: [
           message('u1', AgentChatRole.user, 'What is due today?', now),
-          message(
-            'a1',
-            AgentChatRole.agent,
-            'Two things:\n\n'
-                '- [Feed the penguins](lotti://task/t-9)\n'
-                '- [Count the eggs](lotti://task/t-8)\n\n'
-                'Eggs first.',
-            now,
-          ),
+          message('a1', AgentChatRole.agent, 'Two things:\n\nEggs first.', now),
         ],
+        partsByMessageId: {
+          'a1': [
+            const FrontReplyText('Two things:'),
+            FrontReplyCards([
+              taskRef('t-9', 'Feed the penguins'),
+              taskRef('t-8', 'Count the eggs'),
+            ]),
+            const FrontReplyText('Eggs first.'),
+          ],
+        },
       ),
     );
 
@@ -1076,7 +1080,7 @@ void main() {
       find.textContaining('Two things:', findRichText: true),
     );
     final card = tester.getRect(
-      find.byKey(const ValueKey('front-reply-tasks-a1-1')),
+      find.byKey(const ValueKey('front-reply-cards-a1-1')),
     );
     final after = tester.getTopLeft(
       find.textContaining('Eggs first.', findRichText: true),
@@ -1093,15 +1097,43 @@ void main() {
     );
   });
 
+  testWidgets('a Markdown list of task links in her words stays her words: a '
+      'reply is never parsed into cards', (tester) async {
+    await pumpPane(
+      tester,
+      thread: () async => FrontChatThread(
+        messages: [
+          message('u1', AgentChatRole.user, 'Anything overdue?', now),
+          message(
+            'a1',
+            AgentChatRole.agent,
+            'Overdue:\n'
+                '- [Feed the penguins](lotti://task/t-9)\n'
+                '- [Count the eggs](lotti://task/t-8)',
+            now,
+          ),
+        ],
+      ),
+    );
+
+    expect(herLists, findsNothing);
+    expect(find.byType(FrontEntityPreviewList), findsNothing);
+    expect(
+      find.textContaining('Count the eggs', findRichText: true),
+      findsOneWidget,
+    );
+  });
+
   group('her lists', () {
     FrontChatThread answer(
-      String words, {
+      List<FrontReplyPart> parts, {
       FrontDueSection? due,
     }) => FrontChatThread(
       messages: [
         message('u1', AgentChatRole.user, 'What is on my plate?', now),
-        message('a1', AgentChatRole.agent, words, now),
+        message('a1', AgentChatRole.agent, 'Her words.', now),
       ],
+      partsByMessageId: {'a1': parts},
       dueSectionsByMessageId: {'a1': ?due},
     );
 
@@ -1115,15 +1147,16 @@ void main() {
         'over its list', (tester) async {
       await pumpPane(
         tester,
-        thread: () async => answer(
-          'Two things:\n\n'
-          '- [Feed the penguins](lotti://task/t-9)\n'
-          '- [Count the eggs](lotti://task/t-8)',
-          due: dueToday,
-        ),
+        thread: () async => answer([
+          const FrontReplyText('Two things:'),
+          FrontReplyCards([
+            taskRef('t-9', 'Feed the penguins'),
+            taskRef('t-8', 'Count the eggs'),
+          ]),
+        ], due: dueToday),
       );
 
-      final list = find.byKey(const ValueKey('front-reply-tasks-a1-1'));
+      final list = find.byKey(const ValueKey('front-reply-cards-a1-1'));
       final label = find.descendant(
         of: list,
         matching: find.byType(FrontDueSectionLabel),
@@ -1138,38 +1171,46 @@ void main() {
       );
     });
 
-    testWidgets('the label goes over the first list only, and a list of no '
-        'due answer has none', (tester) async {
+    testWidgets('overdue and due as two lists are named by her words, with '
+        'no window label; one list of no due answer has none either', (
+      tester,
+    ) async {
       await pumpPane(
         tester,
-        thread: () async => answer(
-          'Overdue:\n\n'
-          '- [Feed the penguins](lotti://task/t-9)\n\n'
-          'And today:\n\n'
-          '- [Count the eggs](lotti://task/t-8)',
-          due: dueToday,
-        ),
+        thread: () async => answer([
+          const FrontReplyText('One is overdue:'),
+          FrontReplyCards([taskRef('t-9', 'Feed the penguins')]),
+          const FrontReplyText('And one is due today:'),
+          FrontReplyCards([taskRef('t-8', 'Count the eggs')]),
+        ], due: dueToday),
       );
 
       expect(listedIds(tester, 'a1'), ['t-9']);
       expect(listedIds(tester, 'a1', part: 3), ['t-8']);
-      expect(find.byType(FrontDueSectionLabel), findsOneWidget);
+      expect(find.byType(FrontDueSectionLabel), findsNothing);
       expect(
-        find.descendant(
-          of: find.byKey(const ValueKey('front-reply-tasks-a1-1')),
-          matching: find.byType(FrontDueSectionLabel),
+        tester
+            .getRect(find.byKey(const ValueKey('front-reply-cards-a1-1')))
+            .bottom,
+        lessThan(
+          tester
+              .getTopLeft(
+                find.textContaining('And one is due', findRichText: true),
+              )
+              .dy,
         ),
-        findsOneWidget,
       );
 
       await tester.pumpWidget(const SizedBox.shrink());
       await pumpPane(
         tester,
-        thread: () async => answer(
-          'Two things:\n\n'
-          '- [Feed the penguins](lotti://task/t-9)\n'
-          '- [Count the eggs](lotti://task/t-8)',
-        ),
+        thread: () async => answer([
+          const FrontReplyText('Two things:'),
+          FrontReplyCards([
+            taskRef('t-9', 'Feed the penguins'),
+            taskRef('t-8', 'Count the eggs'),
+          ]),
+        ]),
       );
       expect(herLists, findsOneWidget);
       expect(find.byType(FrontDueSectionLabel), findsNothing);
@@ -1180,7 +1221,9 @@ void main() {
     ) async {
       await pumpPane(
         tester,
-        thread: () async => answer('Nothing is due today.', due: dueToday),
+        thread: () async => answer([
+          const FrontReplyText('Nothing is due today.'),
+        ], due: dueToday),
       );
 
       expect(find.byType(FrontDueSectionLabel), findsNothing);
@@ -1195,11 +1238,17 @@ void main() {
       await pumpPane(
         tester,
         onClose: () => closed++,
-        thread: () async => answer(
-          'Found these:\n\n'
-          '- [Colony census](lotti://project/p-1)\n'
-          '- [Count the eggs](lotti://task/t-8)',
-        ),
+        thread: () async => answer([
+          const FrontReplyText('Found these:'),
+          FrontReplyCards([
+            const FrontEntityReference(
+              kind: FrontEntityKind.project,
+              id: 'p-1',
+              title: 'Colony census',
+            ),
+            taskRef('t-8', 'Count the eggs'),
+          ]),
+        ]),
       );
 
       final card = find.byKey(FrontEntityPreviewKeys.card('p-1'));
@@ -1213,42 +1262,6 @@ void main() {
       expect(closed, 1);
       expect(paths, ['/projects/p-1']);
     });
-  });
-
-  testWidgets('an overdue list, emphasised and dated, is task rows too, and '
-      'a row opens its task on top of her', (tester) async {
-    final paths = <String>[];
-    beamToNamedOverride = paths.add;
-    addTearDown(() => beamToNamedOverride = null);
-    final observer = _PushObserver();
-    await pumpPane(
-      tester,
-      pushed: true,
-      navigatorObservers: [observer],
-      thread: () async => FrontChatThread(
-        messages: [
-          message('u1', AgentChatRole.user, 'Anything overdue?', now),
-          message(
-            'a1',
-            AgentChatRole.agent,
-            'Overdue:\n'
-                '- **[Feed the penguins](lotti://task/t-9)**, due 2026-10-20\n'
-                '- [Count the eggs](lotti://task/t-8) (overdue)',
-            now,
-          ),
-        ],
-      ),
-    );
-
-    expect(listedIds(tester, 'a1'), ['t-9', 't-8']);
-
-    await expectTaskOpensOverPane(
-      tester,
-      observer,
-      find.byKey(FrontEntityPreviewKeys.card('t-9')),
-      't-9',
-      paths,
-    );
   });
 
   testWidgets('an answer about what was closed draws every task it found as '
@@ -1404,22 +1417,21 @@ void main() {
       );
     });
 
-    testWidgets('a task the cards show is not drawn again as a row of her '
-        'list; the rest of the list stays', (tester) async {
+    testWidgets('a task the door cards show is not drawn again in her list; '
+        'the rest of the list stays', (tester) async {
       await pumpPane(
         tester,
         thread: () async => FrontChatThread(
           messages: [
             message('u1', AgentChatRole.user, 'Ice pad.', now),
-            message(
-              'a1',
-              AgentChatRole.agent,
-              'Made it a task. Also due:\n\n'
-                  '- [Check the ice-pad weather window](lotti://task/t-9)\n'
-                  '- [Feed the penguins](lotti://task/t-7)',
-              now,
-            ),
+            message('a1', AgentChatRole.agent, 'Made it a task.', now),
           ],
+          partsByMessageId: {
+            'a1': [
+              const FrontReplyText('Made it a task. Also due:'),
+              FrontReplyCards([iceRef, taskRef('t-7', 'Feed the penguins')]),
+            ],
+          },
           entityPreviewsByMessageId: const {
             'a1': [iceRef],
           },
@@ -1430,7 +1442,7 @@ void main() {
       expect(find.byKey(FrontEntityPreviewKeys.card('t-9')), findsOneWidget);
     });
 
-    testWidgets('a list the cards cover entirely is not drawn at all', (
+    testWidgets('a list the door cards cover entirely is not drawn at all', (
       tester,
     ) async {
       await pumpPane(
@@ -1438,23 +1450,20 @@ void main() {
         thread: () async => FrontChatThread(
           messages: [
             message('u1', AgentChatRole.user, 'Ice pad.', now),
-            message(
-              'a1',
-              AgentChatRole.agent,
-              'Made them tasks:\n\n'
-                  '- [Check the ice-pad weather window](lotti://task/t-9)\n'
-                  '- [Audit the cold-chain freezer logs](lotti://task/t-8)',
-              now,
-            ),
+            message('a1', AgentChatRole.agent, 'Made them tasks:', now),
           ],
+          partsByMessageId: const {
+            'a1': [
+              FrontReplyText('Made them tasks:'),
+              FrontReplyCards([iceRef, coldRef]),
+            ],
+          },
           entityPreviewsByMessageId: const {
             'a1': [iceRef, coldRef],
           },
         ),
       );
 
-      // Two lines name tasks, so her words are a list — and the cards
-      // carry both of them.
       expect(herLists, findsNothing);
       expect(find.byKey(FrontEntityPreviewKeys.card('t-9')), findsOneWidget);
       expect(find.byKey(FrontEntityPreviewKeys.card('t-8')), findsOneWidget);
@@ -1669,6 +1678,73 @@ void main() {
       lessThan(
         tester.getTopLeft(find.textContaining('Thanks', findRichText: true)).dy,
       ),
+    );
+  });
+
+  testWidgets('a chart she placed between her words is drawn there, and what '
+      'she did not place follows her words', (tester) async {
+    const chart = FrontLoggedTimeChart(
+      range: InsightsRange(startDay: 20396, endDayExclusive: 20403),
+      categoryIds: {},
+    );
+    const pullRequests = FrontPullRequestChart(
+      range: InsightsRange(startDay: 20396, endDayExclusive: 20403),
+      categoryIds: {},
+    );
+    await pumpPane(
+      tester,
+      thread: () async => FrontChatThread(
+        messages: [
+          message('u1', AgentChatRole.user, 'Time and PRs?', now),
+          message('a1', AgentChatRole.agent, '12h logged.', now),
+        ],
+        loggedTimeByMessageId: const {'a1': chart},
+        pullRequestsByMessageId: const {'a1': pullRequests},
+        partsByMessageId: const {
+          'a1': [
+            FrontReplyText('12h logged.'),
+            FrontReplyShow(FrontReplyAttachment.loggedTimeChart),
+            FrontReplyText('And 12 PRs.'),
+            FrontReplyShow(FrontReplyAttachment.pullRequestChart),
+          ],
+        },
+      ),
+    );
+
+    double top(Finder finder) => tester.getTopLeft(finder).dy;
+    final time = top(find.byType(FrontLoggedTimeChartCard));
+    final words = top(find.textContaining('And 12 PRs.', findRichText: true));
+    expect(
+      top(find.textContaining('12h logged.', findRichText: true)),
+      lessThan(time),
+    );
+    expect(time, lessThan(words));
+    expect(words, lessThan(top(find.byType(FrontPullRequestChartCard))));
+  });
+
+  testWidgets('a part whose data the reply does not carry draws nothing', (
+    tester,
+  ) async {
+    await pumpPane(
+      tester,
+      thread: () async => FrontChatThread(
+        messages: [
+          message('u1', AgentChatRole.user, 'Time?', now),
+          message('a1', AgentChatRole.agent, 'Nothing logged.', now),
+        ],
+        partsByMessageId: const {
+          'a1': [
+            FrontReplyText('Nothing logged.'),
+            FrontReplyShow(FrontReplyAttachment.loggedTimeChart),
+          ],
+        },
+      ),
+    );
+
+    expect(find.byType(FrontLoggedTimeChartCard), findsNothing);
+    expect(
+      find.textContaining('Nothing logged.', findRichText: true),
+      findsOneWidget,
     );
   });
 

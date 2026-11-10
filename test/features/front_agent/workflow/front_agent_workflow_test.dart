@@ -983,6 +983,16 @@ void main() {
           'today': '2026-11-02',
           'through': '2026-11-02',
         });
+        // What is drawn, stored with it: her words, then the due task she
+        // only linked, as a card — from the lookup, not from her words.
+        expect(reply.content['parts'], [
+          {'text': 'Due today: [Garden](lotti://task/garden).'},
+          {
+            'cards': [
+              {'kind': 'task', 'id': 'garden', 'title': 'Garden'},
+            ],
+          },
+        ]);
       },
     );
 

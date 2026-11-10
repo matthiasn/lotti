@@ -10,20 +10,27 @@ the fix.
 
 **Short version.** Charts, closed-task cards and door previews are built
 from data the app already holds (a tool result or a door record), so they
-render reliably. Task-list cards are the exception: the app finds them by
+render reliably. Task-list cards were the exception: the app found them by
 running a regex over the model's Markdown, and every turn the model writes
 that Markdown a little differently. Most "Markdown instead of cards" reports
-come from this. Adopting the `genui` package would not fix it, because
-GenUI also has the model write the UI as text. The fix is to give task lists
-the same data-driven path the other cards already use, with the GenUI idea
-of a typed catalog the model picks from, validated, in place of free-form
-Markdown.
+came from this. The fix is GenUI's model: the model *composes* a reply from
+a closed catalog of parts, the app checks every part against what the turn
+actually saw, and the app fills each part's data. **The same PR as this
+document implements it** (§5 P0). Lotti already ships `genui` 0.10.4 for the
+agent-evolution chat, through a tool-call bridge (§2.1). The next step is to
+put the companion's catalog on that same bridge.
 
 ## 1. Flutter GenUI today
 
-The API most write-ups describe (`GenUiManager`, `ContentGenerator`,
-`GenUiConversation`, tool calls such as `surfaceUpdate`/`beginRendering`) has
-been removed. Facts below are from pub.dev and the `flutter/genui` repo as of
+GenUI is Flutter's official generative-UI SDK. It is documented at
+[docs.flutter.dev/ai/genui](https://docs.flutter.dev/ai/genui), which calls
+it "an orchestration layer" that "uses a JSON-based format to compose a UI
+from your existing widget catalog". Google presented it at I/O 2026 as
+"Flutter + A2UI = GenUI". The same page labels it **Experimental**: "The
+`genui` package is in alpha and is likely to change." The API most
+write-ups describe (`GenUiManager`, `ContentGenerator`, `GenUiConversation`,
+tool calls such as `surfaceUpdate`/`beginRendering`) has been removed.
+Facts below are from that page, pub.dev and the `flutter/genui` repo as of
 today.
 
 | | |
@@ -37,7 +44,7 @@ today.
 | Interaction | Input widgets write to a `DataModel`. Actions become a user message with a `UiInteractionPart`, which starts a new request |
 | Backends | Backend-agnostic: you provide your own `onSend`. The Firebase, Google AI and dartantic adapters are deprecated |
 | Local models | The docs warn that `PromptBuilder` prompts run to 3,000–5,000+ tokens and suggest a compact custom prompt for small models |
-| Platforms (pub.dev) | Android, iOS, macOS, web. Linux and Windows are not listed |
+| Platforms (pub.dev) | Android, iOS, macOS and web are tagged; Linux and Windows are not. That is pub.dev metadata only: the package is pure Flutter, and Lotti already ships it on Linux (§2.1) |
 
 ```dart
 // The usage model the docs show (0.10.x).
@@ -77,6 +84,7 @@ The front agent's builder is in
 
 ```mermaid
 flowchart TD
+  %% main before this PR; §5 P0 replaces the regex edge with stored parts
   M[model turn] -->|tool calls| S[FrontAgentStrategy]
   S -->|summarize_logged_time| LT[_loggedTimeChart]
   S -->|summarize_pull_requests| PR[_pullRequestChart]
@@ -100,11 +108,43 @@ flowchart TD
 | Closed-task cards | `FrontClosedTaskList` (`ui/front_task_list.dart`) | `list_closed_tasks` → `_closedTaskCards` (`:588`) → payload `closedTasks` | Yes |
 | Due-window label | `FrontDueSectionLabel` | `list_due_tasks` → `_dueSection` (`:476`) → payload `dueTasks` (window only, **not the task ids**) | Yes, but labels a regex-found list |
 | Door previews (task, event, project, day plan, person; #5057) | `FrontEntityPreviewList` → `FrontEntityPreviewRichCard` / day / project / person cards (`ui/front_entity_preview_card.dart`) | door outcome records → `FrontChatThreadBuilder._entityPreviews` (`service/front_chat_thread_builder.dart:214`) | Yes |
-| **Task / project list cards** | `FrontEntityPreviewList` from `FrontReplyTasks` | **`frontReplyParts(reply text)`**, a regex over her Markdown (`model/front_reply_parts.dart:88`, `:112`) | **No** |
+| **Task / project list cards** (on `main` before this PR) | `FrontEntityPreviewList` from `FrontReplyTasks` | **`frontReplyParts(reply text)`**, a regex over her Markdown (`model/front_reply_parts.dart:88`, `:112`, deleted by this PR) | **No** |
 
 Each card reads its entity live through `frontEntityPreviewProvider`, using
 `.value` so the card stays on screen while it reloads. Only the reference is
 stored. That part is sound.
+
+### 2.1 Lotti already uses GenUI, in the evolution chat
+
+`pubspec.yaml` already depends on `genui: ^0.10.4`, `a2ui_core` and
+`json_schema_builder`. The agent-evolution chat (template and soul
+evolution) is built on them:
+
+- `lib/features/agents/genui/evolution_catalog.dart`: a `Catalog` of 12
+  `CatalogItem`s (proposals, metrics, ratings, A/B comparisons, binary
+  choices…), each with a `json_schema_builder` schema and a widget built on
+  the design system.
+- `lib/features/agents/genui/genui_bridge.dart`: **a tool-call bridge.**
+  The model calls `render_surface(surfaceId, rootType, data)`. The bridge
+  turns that into A2UI `CreateSurfaceMessage` and `UpdateComponentsMessage`
+  for a `SurfaceController`. The model never writes A2UI JSON in free text.
+- `lib/features/agents/genui/genui_event_handler.dart`: listens on
+  `SurfaceController.onSubmit` and routes the user's taps back into the
+  conversation.
+- It is wired in `template_evolution_session.dart` and
+  `soul_evolution_workflow.dart`.
+
+This is the shape §3 recommends: GenUI's catalog and renderer, with
+OpenAI-style tool calls as the transport. That keeps it working with every
+model the app already supports, and with no 3–5k-token A2UI protocol
+prompt. Two things in the bridge fall short of GenUI's own contract:
+
+- An unknown `rootType` silently becomes `EvolutionProposal`, and a missing
+  `surfaceId` becomes `'surface-unknown'`. A wrong pick should be rejected
+  back to the model, the way the front agent's strategy rejects a bad
+  dispatch, not rendered as something else.
+- `data` is passed through unvalidated until GenUI's asynchronous schema
+  check, which logs but does not roll back.
 
 ### The PR in question
 
@@ -138,31 +178,44 @@ What #5057 did to the rendering path:
 | Text and UI kept separate | Task lists live *inside* the prose and are cut out of it. Text the model writes after a link (a time, a reason) is dropped by design | Anti-pattern: presentation is inferred from formatting |
 | Model writes A2UI JSON in its stream | Lotti uses tool calls, which every configured front-agent model already must support | **Lotti is ahead here.** Tool arguments arrive already parsed. Free-text JSON is the weaker channel, especially for small local models |
 
-Where GenUI does **not** fit Lotti:
+GenUI's composition model is the right one for a flexible chat. The model
+should be free to combine sentences, card lists, charts, and later forms and
+choosers, in whatever order answers the question. It should be able to give
+overdue and due tasks as two lists, each led by a line. GenUI's catalog
+gives it that freedom, and the app keeps control.
 
-- **The model must not write data.** The chart data in Lotti (time by
-  category and day, PR counts) comes from local queries. Having a model put
-  those numbers into `updateDataModel` would invite invented figures.
-  Lotti's rule that tool results become cards and the model writes only the
-  words is the stricter design, and it should stay.
-- **Platforms.** Lotti ships on Linux (Flathub) and Windows. `genui` lists
-  neither.
-- **Local models.** A 3–5k-token protocol prompt on every turn works against
-  the front agent's prompt-cache work (#5047, #5059), and against small
-  on-device models.
-- **Stability.** It is alpha and announces a new API. Lotti's chat payloads
-  persist and sync between devices, so a wire format owned by a moving
-  external spec is a liability.
+Where Lotti should hold a line:
 
-**Recommendation: do not add the `genui` dependency now.** Bring in its
-catalog, selection and validation ideas through the tool-call contract the
-front agent already has. Look again once the `a2ui_flutter` split ships,
-lists desktop platforms and has a stable 1.x. The adapter in §6 P3 keeps that
-door open.
+- **The model composes; it does not supply data.** The chart data (time by
+  category and day, PR counts) and task state come from local queries.
+  The model picks a component and passes ids or the name of a lookup's
+  result. The app fills the component's data (GenUI's `DataModel`, or the
+  component's properties) from that result. A model writing those numbers
+  into `updateDataModel` would invite invented figures.
+- **Use tool calls, not A2UI in free text.** The evolution bridge already
+  does this. Tool arguments arrive parsed, need no protocol prompt (which
+  would cost 3–5k tokens and break the front agent's cache work, #5047 and
+  #5059), and work with small local models that cannot reliably write
+  A2UI v0.9 JSON.
+- **Reject, do not fall back.** A part the turn cannot draw goes back to the
+  model as a tool error, and it corrects the part in the same turn.
+- **Store your own catalog's JSON.** Replies persist and sync between
+  devices, so the stored shape should be Lotti's, mapped onto A2UI
+  components when rendered. The package is alpha and has announced a new
+  API; a stored A2UI shape would have to follow it.
+
+**Recommendation.** Converge the companion on GenUI the way the evolution
+chat already does. This PR lands the composed, validated catalog with its
+own renderer (§5 P0). Rendering it through a `SurfaceController` with a
+companion `Catalog` is the next step (§5 P3). It is mechanical once the
+catalog exists, and it unifies the app's two generative-UI paths.
 
 ## 4. Root cause of the Markdown fallback
 
 ### 4.1 The mechanism
+
+This section describes `main` at `3e99883a99`, before this PR.
+
 
 `replyBodyBuilder` (`front_chat_pane.dart:464`) returns `null`, which means
 plain Markdown, unless the reply has a stored attachment **or** `frontReplyParts`
@@ -258,106 +311,107 @@ output has an unbounded number of shapes, so this cannot converge.
 
 ## 5. Recommendations, in order
 
-### P0: task lists from data, not from prose
+### P0: composed, validated parts (done in this PR)
 
-Make due lists and search results work the way `closedTasks` already does.
+`reply_to_user` takes `parts`, an ordered list of parts from a closed
+catalog (`lib/features/front_agent/model/front_reply_layout.dart`):
 
-1. **Store the list on the reply.**
-   - `list_due_tasks`: extend `FrontDueSection` with `ids` (ordered).
-   - `match_to_corpus` and `summarize_logged_time(tasks: true)`: add a
-     payload key such as `listedTasks: [{kind, id, minutes?}]`, set in the
-     strategy where `_lookupRows.addAll` already runs (`:404`, `:474`,
-     `:539`).
-   - The thread builder reads it like `closedTasks`; the pane draws it
-     instead of the regex result.
-2. **Let the model choose a subset, validated.** Give `reply_to_user` an
-   optional `cards: [{kind: task|project, id}]` argument (a GenUI-style
-   catalog reference). The strategy accepts only ids in
-   `index.rows + _lookupRows`, the same check `linkFrontReferences` uses.
-   Anything else goes through `_reject` with an error that names the bad
-   id, and the model retries. This is GenUI's validate-and-feed-back loop in
-   the channel Lotti already uses. It needs no new model capability, and
-   local models already support tool calling for this agent.
-3. **Fix the prompt.**
-   - Replace *Naming things*' list rule with: "Never list tasks in your
-     words; pass them in `cards`. Name one task inline as a link."
-   - Remove the contradiction in rule 9: per-task time becomes card data
-     (`minutes`), not prose.
-4. **Keep `frontReplyParts` only for history**: replies stored before the
-   change have no `cards`. Gate it on "payload has no `cards` / `listedTasks`"
-   and do not widen the regex again. Delete it once old threads have aged
-   out, or keep it as read-only legacy.
+| Part | Meaning | Checked against |
+|---|---|---|
+| `{"text": "…"}` | her words (linked by `linkFrontReferences`) | at least one per reply |
+| `{"cards": ["task:<id>", "project:<id>", …]}` | preview cards, in her order | the routing index plus this turn's lookup rows |
+| `{"show": "closed_tasks" \| "logged_time_chart" \| "pull_request_chart"}` | where a lookup's result is drawn | only what a lookup made this turn |
 
-Expected effect: task-list cards render whenever the tool returned tasks,
-regardless of how the model words its reply. The 8 Markdown rows in §4.2 go
-away for new replies.
+```json
+{"parts": [
+  {"text": "Two are overdue:"},
+  {"cards": ["task:a1", "task:b2"]},
+  {"text": "And one is due today:"},
+  {"cards": ["task:c3"]}
+]}
+```
 
-### P1: tests that pin the contract
+- **Validation with feedback.** `readFrontReplyLayout`
+  (`workflow/front_reply_layout_reader.dart`) refuses an unknown card, a
+  `show` with nothing to draw, a malformed part or a reply without words.
+  The refusal is sent back through the strategy's existing `_reject`, as a
+  tool error, and the model corrects it in the same turn.
+- **Nothing lost.**
+  - Due tasks that no part lists are appended as one more list.
+  - Attachments she didn't place are appended in catalog order.
+  - A task is listed once, where she first put it.
+- **One renderer.**
+  - `FrontChatThread.partsOf(id)` returns the stored parts. For a reply
+    stored before this change, it returns her words followed by the
+    attachments the reply carries.
+  - The pane draws every reply from `partsOf`.
+  - Stage pointing and `<conversation_tasks>` read the same parts.
+- **The regex is deleted.** `front_reply_parts.dart` is gone, and a Markdown
+  list in her words now stays her words.
+- **The prompt says what the parts are.** Rule 8 now passes due tasks as
+  cards; with `all`, overdue and due can be two lists. The rule-9
+  contradiction is resolved: a logged-time breakdown is the one list she
+  writes in words, because it carries a time per task.
 
-- **Property tests (Glados, already a dependency)** for `frontReplyParts` while
-  it remains:
-  - generate replies from mixed segments: prose, headings, blank lines, task
-    lines in every bullet/emphasis/url shape, trailing text, fences;
-  - assert that the input survives (text parts plus list lines rebuild it);
-  - assert that a card id is always one the reply links;
-  - assert that no `lotti://` list line is left as text once cards are drawn.
-- **Property tests for the composition.** Generate subsets of
-  `{text, listedTasks, closedTasks, previews, loggedTime, pullRequests,
-  dueTasks}` and pump the pane. Assert:
-  - the order is fixed;
-  - no id appears twice across previews, closed cards and listed cards (the
-    de-duplication at `front_chat_pane.dart:473–487`);
-  - the due label sits over the first list;
-  - `replyBodyBuilder` returns `null` only when every set is empty.
+### P1: tests that pin the contract (mostly done in this PR)
 
-  Combinations of UI parts are where hand-picked cases miss things.
-- **A strategy test** for the `cards` validation: an unknown id is rejected
-  with a tool error, a valid id is stored in order, and duplicates collapse.
-- **An eval case** in the front-agent live evals: the same "what's due
-  today" asked N times must produce cards every time. Today that measures the
-  flake rate; after P0 it guards the fix.
+- **Done:**
+  - a Glados property test of the reader: any composition keeps her order,
+    loses nothing a lookup found, draws nothing twice and joins her words;
+  - unit tests for every refusal;
+  - widget tests for:
+    - placement (cards and charts between her words);
+    - the due label (one list gets it, split lists don't);
+    - de-duplication against door previews;
+    - a part whose data is missing drawing nothing;
+    - a regression guard that a Markdown list is never parsed into cards.
+- **Open:** a live eval that asks "what's due today?" N times and requires
+  cards every time, and the same for "overdue and due" producing two lists.
 
-### P2: one catalog, one renderer
+### P2: one catalog (done in this PR)
 
-- Introduce a sealed `FrontReplyAttachment` with one `fromJson` per variant
-  (`loggedTimeChart`, `pullRequestChart`, `closedTasks`, `taskCards`,
-  `entityPreviews`, `dueLabel`). Add a single `attachments: [...]` list to the
-  reply payload, each item `{type, version, data}`, alongside the current
-  keys for old rows.
-- `FrontChatThread` then holds `attachmentsByMessageId` instead of six maps,
-  and the pane switches on the sealed type. Adding a part touches one model
-  file and one widget.
-- `front_stage_pointing.dart` reads the attachments instead of parsing again.
-- An unknown `type` from a newer synced device is skipped, not fatal. That
-  is the forward-compatibility behaviour the per-key `fromJson` methods
-  already have.
+The sealed `FrontReplyPart` is that catalog. The payload keys `loggedTime`,
+`pullRequests` and `closedTasks` stay as each attachment's data store, and
+`show` parts reference them, so old replies and new ones read the same way.
 
-### P3: a seam for GenUI later (optional, after P2)
+### P3: render the companion's catalog through GenUI (next)
 
-If A2UI reaches a stable Flutter renderer with desktop support, a
-`FrontReplyAttachment` can be written as an A2UI surface (component name
-plus data) without changing storage: the catalog from P2 maps onto a
-`genui` `Catalog` almost one to one. Even then, keep the data coming from
-tools. The model would select components and the app would fill them.
+Follow the evolution chat (§2.1):
+
+1. Write a companion `Catalog` with one `CatalogItem` per part: text
+   (Markdown), task cards, closed tasks, the logged-time chart and the PR
+   charts. Each item's builder wraps the existing widget.
+2. At render time, map each reply's stored parts to A2UI components on a
+   `SurfaceController`. The app supplies the component data from the
+   payload; the model never does.
+3. Draw a `Surface` for each reply in the pane.
+4. Grow the catalog with interactive parts (a pre-filled task form, a
+   one-of-three chooser) and route their events back through
+   `onSubmit`, the evolution chat's `GenUiEventHandler` pattern.
+5. Fix the bridge: replace `GenUiBridge`'s silent `rootType` and `surfaceId`
+   fallbacks with rejections, and check `data` against the item's schema
+   before applying it.
+
+Persist Lotti's own part JSON, not A2UI messages, so the stored replies do
+not follow the alpha package's coming API split.
 
 ## 6. Keeping rich rendering stable
 
-- **The source of truth is structured.** A card exists because a tool
-  result or a validated `cards` argument says so, never because of how a
-  line is formatted.
-- **Fail visibly in development.** Log at `warning`, through the existing
-  logging service, when a reply's text has `lotti://task` links but no card
-  data is attached, so the remaining misses become a count rather than an
-  anecdote.
-- **No silent loss.** Remove the "trailing text is dropped" behaviour along
-  with the regex path. Anything worth showing becomes card data.
-- **The single-task case is a product decision.** Decide whether one listed
-  task is a card. With `cards` the model can say so explicitly, so the
-  `frontTaskListMinimum` heuristic can go.
-- **Cards stay live:** keep reading entities through
-  `frontEntityPreviewProvider` with `.value`. Store only `{kind, id}` (plus
-  scalar card data such as minutes), never titles or status, so a synced
-  reply never shows stale entity data.
-- **Local models:** P0 adds one optional array argument to a tool that every
+- **The source of truth is structured (done).** A card exists because a
+  lookup found it or a validated `cards` part names it, never because of
+  how a line is formatted.
+- **No silent loss (done).** The regex dropped any text after a link; it
+  is gone. Lookup results she forgets are appended. The one list she still
+  writes in words, a logged-time breakdown, keeps its times.
+- **The single-task case is settled.** One task in a `cards` part is a card.
+  The `frontTaskListMinimum` heuristic went with the regex.
+- **Fail visibly (open).** Count refusals per part kind in the front
+  agent's turn logs. A model that keeps sending made-up ids, or charts it
+  never looked up, then shows up as a number rather than an anecdote.
+- **Cards stay live.** Entities are still read through
+  `frontEntityPreviewProvider` with `.value`. A stored card holds only
+  `{kind, id, title}`, and the title is just the fallback while the entity
+  loads, so a synced reply never shows stale status.
+- **Local models.** `parts` is one optional array argument on a tool every
   supported model already calls. It does not grow the prompt the way an
   A2UI protocol prompt would, and it keeps the cache-stable prefix intact.

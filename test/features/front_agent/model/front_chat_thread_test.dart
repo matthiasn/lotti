@@ -3,6 +3,10 @@ import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/front_agent/model/front_chat_thread.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
+import 'package:lotti/features/front_agent/model/front_logged_time_chart.dart';
+import 'package:lotti/features/front_agent/model/front_pull_requests.dart';
+import 'package:lotti/features/front_agent/model/front_reply_layout.dart';
+import 'package:lotti/features/insights/model/insights_models.dart';
 
 void main() {
   FrontDoorEntry door(String id, FrontDoorOutcome? outcome) => FrontDoorEntry(
@@ -16,6 +20,46 @@ void main() {
       outcome: outcome,
     ),
   );
+
+  test('a reply draws the parts its turn stored; one stored before parts '
+      'draws her words, then what it carries in catalog order', () {
+    const range = InsightsRange(startDay: 20396, endDayExclusive: 20403);
+    const stored = [
+      FrontReplyText('Two charts:'),
+      FrontReplyShow(FrontReplyAttachment.pullRequestChart),
+    ];
+    final thread = FrontChatThread(
+      messages: [
+        AgentChatMessage(
+          id: 'old',
+          role: AgentChatRole.agent,
+          text: '12h and 3 PRs.',
+          createdAt: DateTime(2026, 11, 9),
+        ),
+        AgentChatMessage(
+          id: 'new',
+          role: AgentChatRole.agent,
+          text: 'Two charts:',
+          createdAt: DateTime(2026, 11, 9),
+        ),
+      ],
+      loggedTimeByMessageId: const {
+        'old': FrontLoggedTimeChart(range: range, categoryIds: {}),
+      },
+      pullRequestsByMessageId: const {
+        'old': FrontPullRequestChart(range: range, categoryIds: {}),
+      },
+      partsByMessageId: const {'new': stored},
+    );
+
+    expect(thread.partsOf('new'), stored);
+    expect(thread.partsOf('old'), const [
+      FrontReplyText('12h and 3 PRs.'),
+      FrontReplyShow(FrontReplyAttachment.loggedTimeChart),
+      FrontReplyShow(FrontReplyAttachment.pullRequestChart),
+    ]);
+    expect(thread.partsOf('unknown'), isEmpty);
+  });
 
   test('an option reads from the record, and nothing from a shape this '
       'build does not know', () {

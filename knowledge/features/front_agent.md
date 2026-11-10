@@ -1,7 +1,7 @@
 ---
 type: Feature Module
 title: Front agent
-description: The one agent the user talks to in one place — how a durable user turn becomes a routing wake, what the routing index holds, how the dispatch contract is validated in code, the capped lookups and the repair round, the deterministic records a turn leaves behind, how the door walker takes each segment to its owner and mirrors the answer, how a statement becomes a proposal the user's one tap files, how a dictated task is filled from her reading of the words and made on the tap, how "that one" finds the task a follow-up follows, what the inbox is, how an unanswered turn is recovered on any device, how turns form conversations, how she answers what is due, how much time was logged, with a chart under her words, what was completed or rejected, and how many pull requests the user opened and shipped, with charts under her words, and names tasks as links, what the chat surface renders, how a stalled or failed turn is bounded, timed and named, and what she hears and says.
+description: The one agent the user talks to in one place — how a durable user turn becomes a routing wake, what the routing index holds, how the dispatch contract is validated in code, the capped lookups and the repair round, the deterministic records a turn leaves behind, how the door walker takes each segment to its owner and mirrors the answer, how a statement becomes a proposal the user's one tap files, how a dictated task is filled from her reading of the words and made on the tap, how "that one" finds the task a follow-up follows, what the inbox is, how an unanswered turn is recovered on any device, how turns form conversations, how she answers what is due, how much time was logged, with a chart under her words, what was completed or rejected, and how many pull requests the user opened and shipped, with charts under her words, and names tasks as links, how a reply is composed of words, cards and charts in her order and checked before it is stored, what the chat surface renders, how a stalled or failed turn is bounded, timed and named, and what she hears and says.
 resource: ../../lib/features/front_agent
 tags: [agents, front-agent, routing, dispatch, doors, filing, inbox, companion, chat]
 status: draft
@@ -148,10 +148,14 @@ sources:
     resource: ../../lib/features/front_agent/ui/front_chat_voice.dart
     title: FrontVoice — her spoken reply, its gating, her pose, the voice an answer said again keeps
     last_modified: 2026-11-07
-  - id: reply-parts
-    resource: ../../lib/features/front_agent/model/front_reply_parts.dart
-    title: frontReplyParts — her words and the lists of tasks and projects in them
-    last_modified: 2026-11-07
+  - id: reply-layout
+    resource: ../../lib/features/front_agent/model/front_reply_layout.dart
+    title: FrontReplyPart — the catalog her reply is composed from (words, cards, what a lookup made)
+    last_modified: 2026-11-10
+  - id: reply-layout-reader
+    resource: ../../lib/features/front_agent/workflow/front_reply_layout_reader.dart
+    title: readFrontReplyLayout — reply_to_user's parts checked against what the turn saw, nothing a lookup found lost
+    last_modified: 2026-11-10
   - id: task-list
     resource: ../../lib/features/front_agent/ui/front_task_list.dart
     title: FrontClosedTaskList — the tasks a closed-task answer found, as a card of rows
@@ -167,7 +171,7 @@ sources:
   - id: entity-preview-card
     resource: ../../lib/features/front_agent/ui/front_entity_preview_card.dart
     title: FrontEntityPreviewList and its cards — her lists of tasks and what her turn made, as preview cards, a task card's quick actions, and the label over a due list
-    last_modified: 2026-11-09
+    last_modified: 2026-11-10
   - id: due-section
     resource: ../../lib/features/front_agent/model/front_due_section.dart
     title: FrontDueSection — the window a due list was read from, kept on her reply
@@ -395,7 +399,7 @@ Nine tools, never fewer (a single tool makes DeepSeek rewrite
 | `list_closed_tasks(period \| pastDays \| from+through, categoryIds?)` | no | 1 per turn | `frontClosedListExhaustedAnswer`; unavailable when no lister is wired |
 | `summarize_pull_requests(period \| pastDays \| from+through)` | no | 1 per turn | `frontPullRequestSummaryExhaustedAnswer`; unavailable when no summarizer is wired |
 | `ask_user(question, options ≤ 3)` | yes | once | refused |
-| `reply_to_user(text)` | yes | once | refused |
+| `reply_to_user(message?, parts?)` | yes | once | refused; a part it cannot draw is refused as its error (see *Her reply is composed of parts*) |
 
 Lookups are capped by **count-and-refuse**, not by removing the tool:
 removing it changes the request prefix and voids the cache. Rows a
@@ -668,8 +672,9 @@ YYYY-MM-DD | [reopened since |] category`, oldest first, at most
 `FrontClosedTasks.cards` is every task as a `FrontClosedTaskCard`, which the
 workflow stores on her `reply_to_user` payload as `closedTasks`; the thread
 builder reads it into `FrontChatThread.closedTasksByMessageId`, and the
-surface draws them as cards under her words (below), so the list never
-hinges on how she phrased it. The prompt therefore has her say only how
+surface draws them as cards under her words (below) — or where her
+`{"show": "closed_tasks"}` part puts them — so the list never hinges on
+how she phrased it. The prompt therefore has her say only how
 many were completed and rejected, never list or link the tasks herself.
 
 **How many pull requests the user opened, and what they shipped** — *how
@@ -1325,28 +1330,57 @@ widening it (`frontNarrowedCategories`): with no allow-list those categories
 are the scope, and ones that fall outside the allow-list leave it as it is,
 since an empty scope would be the whole journal. New turns carry none.
 
-**Her lists of tasks are preview cards.** The prompt asks her to write two
-tasks or projects or more — due tasks, what a search found, overdue and due
-together as one list — as a Markdown list, one link per line. How she
-phrases a line still varies from turn to turn, so the list does not hinge on
-it. The pane hands `AgentChatView.replyBodyBuilder` a body for any reply
-that holds such a list: `frontReplyParts` cuts the reply into her words and
-the runs of consecutive list lines that **lead** with a task or project link
-(`lotti://task/` or `lotti://project/`, plural paths too, emphasised or
-not); blank lines between them stay inside the run, and whatever follows the
-link on the line — a due date, `(overdue)`, a status, a few words — is
-dropped, since the card shows the task as it is now. The runs are drawn once
-the reply's list lines name `frontTaskListMinimum` (2) distinct records
-between them, so an answer split in two, one task each, is cards under each
-part. Each run is drawn as a `FrontEntityPreviewList` between her words as
-she wrote them (rendered by the view's own Markdown, so links and style are
-unchanged): a task as `FrontEntityPreviewCompactCard`, a project as
-`FrontEntityPreviewProjectCard` (both below). A tap opens
-either through the pane — a task on top of her, where its TL;DR is; a
-project closes her. A reply naming a single task leaves it a link in her
-words. The parts are cut from her reply as written, before
-`replaceIsoDays` turns its days into the device's format, and her words
-between the lists get the device's dates after the cut.
+**Her reply is composed of parts, never parsed from her words.** A reply
+that shows anything besides words is `reply_to_user`'s `parts`: what the
+user sees, in her order, each part one of the catalog `FrontReplyPart` —
+`{"text"}`, her words; `{"cards": ["task:<id>", "project:<id>", …]}`, tasks
+or projects drawn as preview cards; `{"show": "<attachment>"}`, where
+something this turn's lookup made is drawn (`FrontReplyAttachment`: the
+closed-task cards, the logged-time chart, the pull-request charts). So she
+can lead with a sentence, list the overdue tasks, say a word about what is
+due, list those, and put a chart after them. A plain answer is `message`
+alone; a `message` beside `parts` leads them as words.
+
+`readFrontReplyLayout` checks the parts before anything is stored, and a
+refusal goes back to her as the tool's error so she corrects it in the same
+turn, as a bad `dispatch` does: a card must be a task or project the turn
+could see — `<routing_index>` or a lookup's rows, by `kind:id` — and a
+`show` must name something a lookup made this turn; a reply needs words.
+Nothing a lookup found is lost to a part she forgot: the tasks a
+`list_due_tasks` found that no part lists follow as one more list, and
+what a lookup made that she did not place follows in catalog order. A task
+is listed once, where she first put it. Her words pass through
+`linkFrontReferences` as before; the reply's `text` — what is spoken, kept
+in `<recent_turns>`, and shown as her words — is her text parts joined.
+
+The workflow stores the parts on her reply as `parts`; the thread builder
+reads them into `partsByMessageId` (a part this build cannot read is
+skipped), and `FrontChatThread.partsOf` is what the surface draws: those
+parts, or — for a reply stored before replies had parts — her words, then
+what it carries in catalog order. Her words are never cut into lists: a
+Markdown list of task links in a reply stays her words, its links still
+open. The pane hands `AgentChatView.replyBodyBuilder` a body for any reply
+whose parts are more than words: a text part through the view's own
+Markdown (with the device's dates), a cards part as a
+`FrontEntityPreviewList` — a task as `FrontEntityPreviewCompactCard`, a
+project as `FrontEntityPreviewProjectCard` (both below), a tap opening a
+task on top of her and a project after closing her — and a `show` part as
+its chart or closed-task card, or nothing when the reply does not carry
+it. `<conversation_tasks>` counts the tasks her cards listed as named.
+
+```mermaid
+flowchart LR
+  L[lookups this turn] -->|rows| V[visible: index + lookup rows]
+  L -->|charts, closed cards| A[available attachments]
+  L -->|due rows| D[due tasks]
+  M["reply_to_user(message?, parts?)"] --> R[readFrontReplyLayout]
+  V & A & D --> R
+  R -->|refused| M
+  R -->|text + parts| P[(reply payload: text, parts)]
+  P --> B[FrontChatThreadBuilder]
+  B --> T["FrontChatThread.partsOf(id)"]
+  T --> S[pane: words, cards, charts in order]
+```
 
 **An answer about what is due says which window, quietly.** Her prompt has
 no headings — her words may be read aloud — so the label over a due list
@@ -1356,9 +1390,11 @@ day it was asked, the last day it reaches); the workflow stores it on her
 reply as `dueTasks`, and the thread builder reads it into
 `dueSectionsByMessageId` (an unreadable one is dropped, one out of view goes
 with its reply). `FrontDueSectionLabel` draws it in the caption's low ink
-over her first list: *Due today* and *Overdue* (the Tasks due view's own
+over a reply's one list: *Due today* and *Overdue* (the Tasks due view's own
 labels), *Due through* a day for the days ahead, *Overdue and due through*
-a day — or *today* for a window that ends on the day it was asked.
+a day — or *today* for a window that ends on the day it was asked. When she
+gives overdue and due as two lists, her text part above each names it and
+no label is drawn.
 
 **Her answer about what was closed is cards under her words.** A reply in
 `closedTasksByMessageId` gets `FrontClosedTaskList` under her words: one
@@ -1366,8 +1402,8 @@ card, a `FrontClosedTaskRow` per task found — all of them — with the Done
 or Rejected `StatusGlyph` and label it closed with and the day, then its
 category's colour swatch (`ColorIcon`) and name; a task reopened since
 reads `Done → In Progress`, its status now from `taskPreviewProvider`. A
-tap opens the task on top of her. A task her words also listed as task rows
-is drawn once, on the cards.
+tap opens the task on top of her. A task one of her cards parts also lists
+is drawn once, on the closed-task card.
 
 **What her turn made is a preview card under her words.** When a door's
 outcome is `FrontDoorTaskCreated`, `FrontDoorEventCreated`,
