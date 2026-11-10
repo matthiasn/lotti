@@ -121,7 +121,8 @@ and a proposal she got wrong goes to the inbox rather than being retyped.
   cards her lists of tasks and what her turn made are drawn as
   (`front_entity_preview_card.dart`; her reply is composed of the parts in
   `model/front_reply_layout.dart`, checked by
-  `workflow/front_reply_layout_reader.dart`, never cut from her words; the
+  `workflow/front_reply_layout_reader.dart`, never cut from her words, and
+  drawn as a GenUI surface of `ui/genui/front_reply_catalog.dart`; the
   window over a due list in `model/front_due_section.dart`), her voice (`front_chat_voice.dart`: the spoken reply, when
   she may speak, the pose she holds), her voice's control
   (`front_voice_controls.dart`: stop her, or have her say her latest answer

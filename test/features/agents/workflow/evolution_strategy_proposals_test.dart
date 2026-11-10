@@ -99,6 +99,36 @@ void main() {
       expect(throwing.latestProposal, isNull);
     });
 
+    test('a surface the bridge will not draw answers the tool call with '
+        'why, so she can draw it right', () async {
+      final bridged = EvolutionStrategy(
+        genUiBridge: GenUiBridge(
+          processor: SurfaceController(catalogs: [buildEvolutionCatalog()]),
+        ),
+      );
+      final toolCall = makeToolCall(
+        name: 'render_surface',
+        args: {'surfaceId': 'surf-x', 'rootType': 'Hologram'},
+      );
+      bridgeManager.addAssistantMessage(toolCalls: [toolCall]);
+
+      final action = await bridged.processToolCalls(
+        toolCalls: [toolCall],
+        manager: bridgeManager,
+      );
+
+      expect(action, ConversationAction.wait);
+      expect(
+        bridgeManager.messages.last,
+        const ChatCompletionMessage.tool(
+          toolCallId: 'call-1',
+          content:
+              'Error: surface not drawn — rootType "Hologram" is not a widget '
+              'type; use one of the rootType values render_surface lists.',
+        ),
+      );
+    });
+
     test('processes render_surface alongside other tools', () async {
       final surfaceCall = makeToolCall(
         name: 'render_surface',

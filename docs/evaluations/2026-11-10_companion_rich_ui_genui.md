@@ -383,27 +383,39 @@ The sealed `FrontReplyPart` is that catalog. The payload keys `loggedTime`,
 `pullRequests` and `closedTasks` stay as each attachment's data store, and
 `show` parts reference them, so old replies and new ones read the same way.
 
-### P3: render the companion's catalog through GenUI (next)
+### P3: render the companion's catalog through GenUI (done in the follow-up PR)
 
-Follow the evolution chat (§2.1):
+The companion's replies now render through GenUI, following the evolution
+chat (§2.1):
 
-1. Write a companion `Catalog` with one `CatalogItem` per part: text
-   (Markdown), task cards, closed tasks, the logged-time chart and the PR
-   charts. Each item's builder wraps the existing widget.
-2. At render time, map each reply's stored parts to A2UI components on a
-   `SurfaceController`. The app supplies the component data from the
-   payload; the model never does.
-3. Draw a `Surface` for each reply in the pane.
-4. Grow the catalog with interactive parts (a pre-filled task form, a
-   one-of-three chooser) and route their events back through
-   `onSubmit`, the evolution chat's `GenUiEventHandler` pattern.
-5. Fix the bridge: replace `GenUiBridge`'s silent `rootType` and `surfaceId`
-   fallbacks with a dropped surface and a tool result that says why, and
-   check `data` against the item's schema
-   before applying it.
+1. **`frontReplyCatalog`** (`ui/genui/front_reply_catalog.dart`) has one
+   `CatalogItem` per component type: `FrontReply` (the root, which lists
+   its parts), `FrontText`, `FrontCards`, `FrontClosedTasks`,
+   `FrontLoggedTimeChart` and `FrontPullRequestChart`. Each builder wraps
+   the chat's existing widget. What a tap does comes from an inherited
+   `FrontReplyScope`, so the catalog itself stays static.
+2. **`frontReplyComponents`** (`model/front_reply_components.dart`) maps a
+   reply's stored parts to A2UI components, and the app supplies every
+   component's data from the payload; the model never does. A property
+   test pins the root's order, unique ids and catalog types, and caught
+   duplicate ids for an attachment placed twice. A contract test runs
+   GenUI's own schema validation over everything the mapping produces,
+   with a negative case to prove the check reports.
+3. **`FrontReplySurface`** draws each reply as GenUI's `Surface` on its
+   own `SurfaceController`. The surface is created once and updated in
+   place when its components change.
+4. **Open:** interactive parts, such as a pre-filled task form or a
+   one-of-three chooser, with events routed back through `onSubmit`. These
+   need one controller shared across the conversation, so the per-reply
+   controller would move up a level.
+5. **The evolution bridge is fixed.** An unknown `rootType`, or `data` that
+   isn't an object, now draws nothing, and the model is told why. A missing
+   `surfaceId` gets a unique generated id, where every such surface used to
+   share `surface-unknown`. The types it accepts are read from the
+   controller's catalogs, not a hard-coded set.
 
-Persist Lotti's own part JSON, not A2UI messages, so the stored replies do
-not follow the alpha package's coming API split.
+Lotti still persists its own part JSON, not A2UI messages, and maps the
+parts to components when rendering.
 
 ## 6. Keeping rich rendering stable
 
