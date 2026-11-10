@@ -180,18 +180,20 @@ extension _SkillInferenceRunnerInternals on SkillInferenceRunner {
   /// path. Override resolution is identical: override must point at a
   /// real `AiConfigModel` with a resolvable parent
   /// `AiConfigInferenceProvider`, otherwise we fall back to the
-  /// profile slot with a warning log.
+  /// profile slot with a warning log. [profile] is null when the user picked
+  /// a model for an entry no profile reaches; an unresolvable override then
+  /// yields an empty target.
   Future<_InferenceTarget> _resolveImageAnalysisTarget({
-    required ResolvedProfile profile,
+    required ResolvedProfile? profile,
     required String? overrideModelId,
   }) {
     return _resolveOverrideTarget(
       overrideModelId: overrideModelId,
       slotKind: _OverrideSlotKind.imageAnalysis,
       fallback: () => (
-        provider: profile.imageRecognitionProvider,
-        modelId: profile.imageRecognitionModelId,
-        model: profile.imageRecognitionModel,
+        provider: profile?.imageRecognitionProvider,
+        modelId: profile?.imageRecognitionModelId,
+        model: profile?.imageRecognitionModel,
       ),
     );
   }

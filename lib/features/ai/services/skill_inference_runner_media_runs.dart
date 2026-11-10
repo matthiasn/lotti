@@ -11,7 +11,9 @@ extension _SkillMediaRuns on SkillInferenceRunner {
   }) async {
     final assignedSkill = automationResult.skill;
     final profile = automationResult.resolvedProfile;
-    if (assignedSkill == null || profile == null) {
+    // A model the user picked by hand needs no profile: an entry with no
+    // category resolves none, and the picker then offers no default.
+    if (assignedSkill == null || (profile == null && overrideModelId == null)) {
       throw StateError(
         'AutomationResult missing skill or profile for $imageEntryId: '
         'skill=${assignedSkill != null}, profile=${profile != null}',

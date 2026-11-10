@@ -77,8 +77,10 @@ not depend on the agents feature.
 the entry-link graph (outgoing links first, then incoming). With a task it
 calls `resolveForSubject`; otherwise it looks up the entry, reads its
 `categoryId`, and calls `resolveForCategory` — for every skill but
-transcription. An entry with neither declines the skill, except transcription
-and recording summaries. A transcription without a task, or whose task's
+transcription. An entry with neither declines the skill, except transcription,
+recording summaries, and an image analysis on a model picked in the popup
+(`overrideModelId`): that one runs with no profile, straight on the picked
+model, as does one whose task or event resolves no profile. A transcription without a task, or whose task's
 profile has no transcription slot, goes to
 `ProfileAutomationService.resolveTranscriptionFallback` with the recording's
 subject — the task, else the first live goal, person, project or event entry
@@ -100,6 +102,7 @@ flowchart TD
   IsStt -->|no| HasCategory{"Entry has categoryId?"}
   HasCategory -->|yes| CategoryProfile["resolveForCategory → resolveByProfileId(category.defaultProfileId)"]
   HasCategory -->|no, summary| Result
+  HasCategory -->|"no, image analysis on a picked model"| Result
   HasCategory -->|no, other skill| Decline["Decline: no profile configured"]
 
   SubjectBranch --> AgentPath{"Agent, template and active version found?"}
