@@ -19,6 +19,28 @@ void main() {
       title: 'Check the ice-pad weather window',
     );
 
+    test('round-trips through JSON; a shape this build does not know reads '
+        'as nothing, and a list skips it', () {
+      expect(FrontEntityReference.fromJson(reference.toJson()), reference);
+      for (final bad in <Object?>[
+        null,
+        'task:t-1',
+        {'kind': 'hologram', 'id': 't-1', 'title': 'x'},
+        {'kind': 'task', 'id': '', 'title': 'x'},
+        {'kind': 'task', 'id': 't-1'},
+      ]) {
+        expect(FrontEntityReference.fromJson(bad), isNull, reason: '$bad');
+      }
+      expect(
+        FrontEntityReference.listFromJson([
+          reference.toJson(),
+          {'kind': 'hologram'},
+        ]),
+        [reference],
+      );
+      expect(FrontEntityReference.listFromJson('nope'), isEmpty);
+    });
+
     test('is equal, and hashes alike, only with the same kind, id and '
         'title', () {
       // Not const: a canonical constant would be the very same instance.

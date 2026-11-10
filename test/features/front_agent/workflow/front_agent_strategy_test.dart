@@ -5,12 +5,15 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/front_agent/model/front_closed_task_card.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_due_section.dart';
+import 'package:lotti/features/front_agent/model/front_entity_preview.dart';
 import 'package:lotti/features/front_agent/model/front_logged_time_chart.dart';
 import 'package:lotti/features/front_agent/model/front_pull_requests.dart';
+import 'package:lotti/features/front_agent/model/front_reply_layout.dart';
 import 'package:lotti/features/front_agent/model/front_routing_index.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_contract.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_strategy.dart';
@@ -1593,6 +1596,129 @@ hologram:x: not listed''');
   });
 
   group('reply_to_user', () {
+    const shed = FrontIndexRow(
+      kind: FrontDestinationKind.task,
+      id: 'shed',
+      title: 'Paint the shed',
+    );
+    const roof = FrontIndexRow(
+      kind: FrontDestinationKind.task,
+      id: 'roof',
+      title: 'Fix the roof',
+    );
+    FrontEntityReference card(FrontIndexRow row) => FrontEntityReference(
+      kind: FrontEntityKind.task,
+      id: row.id,
+      title: row.title,
+    );
+    FrontDueTasks dueShedAndRoof(FrontDueQuery query) => FrontDueTasks(
+      window: query.window,
+      today: DateTime(2026, 11, 2),
+      through: DateTime(2026, 11, 2),
+      rows: const [shed, roof],
+    );
+
+    test('parts are stored as she composed them, cards from what the turn '
+        'saw; due tasks she did not list follow', () async {
+      final s = strategy(dueLister: (query) async => dueShedAndRoof(query));
+      await s.processToolCalls(
+        toolCalls: [
+          _call('list_due_tasks', {'which': 'all'}),
+          _call('reply_to_user', {
+            'parts': [
+              {'text': 'One is overdue:'},
+              {
+                'cards': ['task:shed'],
+              },
+              {'text': 'And the garden (task:garden) waits.'},
+            ],
+          }, id: 'call-2'),
+        ],
+        manager: manager,
+      );
+
+      expect(s.replyParts, [
+        const FrontReplyText('One is overdue:'),
+        FrontReplyCards([card(shed)]),
+        // A recited id beside its title folds into one link (see
+        // linkFrontReferences): her words pass through the same linking.
+        const FrontReplyText('And the [Garden](lotti://task/garden) waits.'),
+        FrontReplyCards([card(roof)]),
+      ]);
+      expect(
+        s.replyToUser,
+        'One is overdue:\n\nAnd the [Garden](lotti://task/garden) waits.',
+      );
+    });
+
+    test('a card or chart the turn cannot draw is dropped and named to her, '
+        'logged, and her answer still delivered', () async {
+      final s = strategy();
+      final action = await s.processToolCalls(
+        toolCalls: [
+          _call('reply_to_user', {
+            'message': 'Here:',
+            'parts': [
+              {
+                'cards': ['task:made-up', 'task:garden'],
+              },
+              {'show': 'logged_time_chart'},
+            ],
+          }),
+        ],
+        manager: manager,
+      );
+
+      // A refusal could end a turn with no call left without any answer.
+      expect(action, ConversationAction.complete);
+      expect(s.replyToUser, 'Here:');
+      expect(s.replyParts, [
+        const FrontReplyText('Here:'),
+        const FrontReplyCards([
+          FrontEntityReference(
+            kind: FrontEntityKind.task,
+            id: 'garden',
+            title: 'Garden',
+          ),
+        ]),
+      ]);
+      final answer = responses().single;
+      expect(answer, startsWith('Reply delivered without what could not be'));
+      expect(answer, contains('task:made-up, not a task or project'));
+      expect(answer, contains('show "logged_time_chart"'));
+      verify(
+        () => domainLogger.log(
+          any(),
+          'reply_to_user dropped 2 part(s) it could not draw',
+          subDomain: 'FrontAgentStrategy',
+          level: InsightLevel.warn,
+        ),
+      ).called(1);
+    });
+
+    test(
+      'a reply without words is refused, and her corrected one taken',
+      () async {
+        final s = strategy();
+        await s.processToolCalls(
+          toolCalls: [
+            _call('reply_to_user', {
+              'parts': [
+                {
+                  'cards': ['task:garden'],
+                },
+              ],
+            }),
+            _call('reply_to_user', {'message': 'The garden.'}, id: 'call-2'),
+          ],
+          manager: manager,
+        );
+
+        expect(responses().first, contains('needs your words'));
+        expect(s.replyToUser, 'The garden.');
+      },
+    );
+
     test('one reply may accompany a dispatch; a second is refused', () async {
       final s = strategy();
       final action = await s.processToolCalls(
@@ -1609,7 +1735,8 @@ hologram:x: not listed''');
       expect(s.dispatch, isNotNull);
       final answers = responses();
       expect(answers[2], contains('at most once per turn'));
-      expect(answers[3], contains('non-empty message'));
+      // A second reply is refused for being one, whatever it says.
+      expect(answers[3], contains('at most once per turn'));
     });
   });
 

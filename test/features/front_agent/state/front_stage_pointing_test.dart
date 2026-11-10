@@ -2,8 +2,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/front_agent/model/front_chat_thread.dart';
+import 'package:lotti/features/front_agent/model/front_entity_preview.dart';
 import 'package:lotti/features/front_agent/model/front_logged_time_chart.dart';
 import 'package:lotti/features/front_agent/model/front_pull_requests.dart';
+import 'package:lotti/features/front_agent/model/front_reply_layout.dart';
 import 'package:lotti/features/front_agent/state/front_chat_thread_provider.dart';
 import 'package:lotti/features/front_agent/state/front_stage_pointing.dart';
 import 'package:lotti/features/front_agent/state/front_voice_providers.dart';
@@ -28,15 +30,33 @@ void main() {
     createdAt: at.add(Duration(seconds: second)),
   );
 
-  const list = '''
-Two are due today:
-
-- [Count the hatchlings](lotti://task/t1)
-- [Check the nest cameras](lotti://task/t2)''';
+  const list = 'Two are due today:';
   const oneLink = 'Only [Count the hatchlings](lotti://task/t1) is due.';
 
-  FrontChatThread thread(List<AgentChatMessage> messages) =>
-      FrontChatThread(messages: messages);
+  /// The cards a reply of [list] draws; a reply of other words draws none.
+  const listed = [
+    FrontReplyText(list),
+    FrontReplyCards([
+      FrontEntityReference(
+        kind: FrontEntityKind.task,
+        id: 't1',
+        title: 'Count the hatchlings',
+      ),
+      FrontEntityReference(
+        kind: FrontEntityKind.task,
+        id: 't2',
+        title: 'Check the nest cameras',
+      ),
+    ]),
+  ];
+
+  FrontChatThread thread(List<AgentChatMessage> messages) => FrontChatThread(
+    messages: messages,
+    partsByMessageId: {
+      for (final m in messages)
+        if (m.text == list) m.id: listed,
+    },
+  );
 
   group('frontLatestReplyHasVisual', () {
     test('her reply to the latest turn lists tasks', () {

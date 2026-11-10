@@ -71,6 +71,26 @@ void main() {
     ]);
   });
 
+  test('the tasks her reply listed as cards are named, a project not', () {
+    final conversation = [
+      turn({
+        'text': 'Two are due.',
+        'parts': [
+          {'text': 'Two are due.'},
+          {
+            'cards': [
+              {'kind': 'task', 'id': 'eggs', 'title': 'Eggs'},
+              {'kind': 'project', 'id': 'census', 'title': 'Census'},
+              {'kind': 'task', 'id': 'shed', 'title': 'Shed'},
+            ],
+          },
+        ],
+      }, toolName: FrontAgentToolNames.replyToUser),
+    ];
+
+    expect(frontConversationTaskIds(conversation), ['eggs', 'shed']);
+  });
+
   test('a task the tap made counts as named at the tap, ahead of what '
       'was said after its inbox item was walked', () {
     Map<String, Object?> door({DateTime? tappedAt}) =>

@@ -46,6 +46,31 @@ class FrontEntityReference {
   final String id;
   final String title;
 
+  Map<String, Object?> toJson() => {
+    'kind': kind.name,
+    'id': id,
+    'title': title,
+  };
+
+  /// Reads a reference a reply stored; null for a shape this build does
+  /// not know, such as a kind a newer build added.
+  static FrontEntityReference? fromJson(Object? json) {
+    if (json is! Map) return null;
+    final kind = FrontEntityKind.values.asNameMap()[json['kind']];
+    final id = json['id'];
+    final title = json['title'];
+    if (kind == null || id is! String || id.isEmpty || title is! String) {
+      return null;
+    }
+    return FrontEntityReference(kind: kind, id: id, title: title);
+  }
+
+  /// Reads a stored list, skipping what [fromJson] does not know.
+  static List<FrontEntityReference> listFromJson(Object? json) => [
+    if (json is List)
+      for (final item in json) ?fromJson(item),
+  ];
+
   @override
   bool operator ==(Object other) =>
       other is FrontEntityReference &&

@@ -14,6 +14,7 @@ import 'package:lotti/features/front_agent/model/front_due_section.dart';
 import 'package:lotti/features/front_agent/model/front_entity_preview.dart';
 import 'package:lotti/features/front_agent/model/front_logged_time_chart.dart';
 import 'package:lotti/features/front_agent/model/front_pull_requests.dart';
+import 'package:lotti/features/front_agent/model/front_reply_layout.dart';
 import 'package:lotti/features/front_agent/model/front_routing_index.dart';
 import 'package:lotti/features/front_agent/service/front_chat_thread_builder.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_contract.dart';
@@ -379,6 +380,63 @@ void main() {
         through: DateTime(2026, 11, 13),
       ),
     });
+  });
+
+  test('a reply carries the parts its turn stored, skipping what this build '
+      'cannot read; one stored before parts reads as her words, then what it '
+      'carries', () async {
+    userTurn('u1', 'Due?', at: DateTime(2026, 11, 9, 9));
+    row(
+      id: 'reply-1',
+      kind: AgentMessageKind.action,
+      toolName: FrontAgentToolNames.replyToUser,
+      operationId: 'u1',
+      content: {
+        'text': 'One is due.',
+        'parts': [
+          {'text': 'One is due.'},
+          {
+            'cards': [
+              {'kind': 'task', 'id': 't1', 'title': 'Feed the penguins'},
+            ],
+          },
+          {'show': 'weather_map'},
+        ],
+      },
+      createdAt: DateTime(2026, 11, 9, 9, 1),
+    );
+    userTurn('u2', 'Closed?', at: DateTime(2026, 11, 9, 10));
+    row(
+      id: 'reply-2',
+      kind: AgentMessageKind.action,
+      toolName: FrontAgentToolNames.replyToUser,
+      operationId: 'u2',
+      content: {
+        'text': 'One closed.',
+        'closedTasks': [
+          {'id': 't2', 'title': 'Shed', 'closedAt': '2026-11-08T10:00:00Z'},
+        ],
+      },
+      createdAt: DateTime(2026, 11, 9, 10, 1),
+    );
+
+    final thread = await builder.build();
+
+    expect(thread.partsByMessageId.keys, ['reply-1']);
+    expect(thread.partsOf('reply-1'), const [
+      FrontReplyText('One is due.'),
+      FrontReplyCards([
+        FrontEntityReference(
+          kind: FrontEntityKind.task,
+          id: 't1',
+          title: 'Feed the penguins',
+        ),
+      ]),
+    ]);
+    expect(thread.partsOf('reply-2'), const [
+      FrontReplyText('One closed.'),
+      FrontReplyShow(FrontReplyAttachment.closedTasks),
+    ]);
   });
 
   test('the window of a reply out of view goes with it', () async {

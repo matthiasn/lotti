@@ -586,6 +586,7 @@ class FrontAgentWorkflow with AgentErrorLogging {
               'closedTasks': [for (final card in cards) card.toJson()],
             if (strategy.dueSection case final section?)
               'dueTasks': section.toJson(),
+            'parts': [for (final part in strategy.replyParts) part.toJson()],
           },
         );
       }

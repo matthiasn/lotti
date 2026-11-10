@@ -11,9 +11,11 @@ import 'package:lotti/features/front_agent/model/front_due_section.dart';
 import 'package:lotti/features/front_agent/model/front_logged_time_chart.dart';
 import 'package:lotti/features/front_agent/model/front_pull_requests.dart';
 import 'package:lotti/features/front_agent/model/front_reference_links.dart';
+import 'package:lotti/features/front_agent/model/front_reply_layout.dart';
 import 'package:lotti/features/front_agent/model/front_routing_index.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_contract.dart';
 import 'package:lotti/features/front_agent/workflow/front_dispatch_validator.dart';
+import 'package:lotti/features/front_agent/workflow/front_reply_layout_reader.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -142,6 +144,8 @@ class FrontAgentStrategy extends ConversationStrategy
   FrontPullRequestChart? _pullRequestChart;
   List<FrontClosedTaskCard>? _closedTaskCards;
   FrontDueSection? _dueSection;
+  List<FrontIndexRow> _dueRows = const [];
+  List<FrontReplyPart> _replyParts = const [];
 
   FrontDispatch? get dispatch => _dispatch;
   FrontAskUser? get askUser => _askUser;
@@ -163,6 +167,12 @@ class FrontAgentStrategy extends ConversationStrategy
   /// The window a `list_due_tasks` this turn read and found tasks in, which
   /// her reply's list of them is labelled with; null when none found any.
   FrontDueSection? get dueSection => _dueSection;
+
+  /// What her reply draws, in order: her words, the tasks and projects she
+  /// listed as cards, and where what this turn's lookups made goes — with
+  /// whatever a lookup found that she did not place after it (see
+  /// [readFrontReplyLayout]). Empty until she replied.
+  List<FrontReplyPart> get replyParts => _replyParts;
 
   /// Whether the model ended the turn with one of the three terminal calls.
   bool get hasTerminalOutput =>
@@ -472,6 +482,7 @@ class FrontAgentStrategy extends ConversationStrategy
       categoryIds: categoryIds,
     ));
     _lookupRows.addAll(due.rows);
+    _dueRows = due.rows;
     if (due.rows.isNotEmpty) {
       _dueSection = FrontDueSection(
         window: due.window,
@@ -761,15 +772,6 @@ class FrontAgentStrategy extends ConversationStrategy
     Map<String, dynamic> args,
     ConversationManager manager,
   ) async {
-    final message = _trimmed(args['message']);
-    if (message.isEmpty) {
-      await _reject(
-        call,
-        manager,
-        'Error: reply_to_user needs a non-empty message.',
-      );
-      return;
-    }
     if (_replyToUser != null) {
       await _reject(
         call,
@@ -787,8 +789,45 @@ class FrontAgentStrategy extends ConversationStrategy
       );
       return;
     }
-    _replyToUser = _linked(message);
-    await _accept(call, manager, 'Reply delivered.');
+    final FrontReplyLayout reply;
+    try {
+      reply = readFrontReplyLayout(
+        message: args['message'],
+        parts: args['parts'],
+        visible: frontVisibleRows([...index.rows, ..._lookupRows]),
+        available: {
+          if (_loggedTimeChart != null) FrontReplyAttachment.loggedTimeChart,
+          if (_pullRequestChart != null) FrontReplyAttachment.pullRequestChart,
+          if (_closedTaskCards != null) FrontReplyAttachment.closedTasks,
+        },
+        dueRows: _dueRows,
+        link: _linked,
+      );
+    } on FrontReplyLayoutException catch (e) {
+      await _reject(call, manager, e.message);
+      return;
+    }
+    _replyToUser = reply.text;
+    _replyParts = reply.parts;
+    if (reply.dropped.isNotEmpty) {
+      // Counted, so a model that keeps naming what the turn never saw shows
+      // up in the logs rather than as a card that quietly never appears.
+      domainLogger.log(
+        LogDomain.agentWorkflow,
+        'reply_to_user dropped ${reply.dropped.length} part(s) it could not '
+        'draw',
+        subDomain: 'FrontAgentStrategy',
+        level: InsightLevel.warn,
+      );
+    }
+    await _accept(
+      call,
+      manager,
+      reply.dropped.isEmpty
+          ? 'Reply delivered.'
+          : 'Reply delivered without what could not be drawn: '
+                '${reply.dropped.join('; ')}.',
+    );
   }
 
   String _trimmed(Object? value) => value is String ? value.trim() : '';
