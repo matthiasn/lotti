@@ -28,7 +28,8 @@ the task's status, checklist, time entries or pull requests, never copy the
 user's words (cite the entry as `(id: <entryId>)` instead), and never repeat
 an observation already in the log: if it still holds, record nothing; if it
 changed, record only the change and add `[[supersedes:<observationId>]]`.
-Most wakes record nothing, and that is fine.''';
+Most wakes record nothing, which never means doing nothing: a wake without a
+note still makes every change its evidence calls for.''';
 
 /// [records] after the task-agent observation contract, plus one reason per
 /// note it dropped, for the tool reply.

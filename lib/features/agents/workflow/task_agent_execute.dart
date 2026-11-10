@@ -88,7 +88,8 @@ extension TaskAgentExecute on TaskAgentWorkflow {
     logInfo(
       'template=${DomainLogger.sanitizeId(templateCtx.template.id)}, '
       'version=${DomainLogger.sanitizeId(templateCtx.version.id)}, '
-      'model=${templateCtx.version.modelId ?? templateCtx.template.modelId}',
+      // The template's own model; the one the wake runs on is in `route:`.
+      'templateModel=${templateCtx.version.modelId ?? templateCtx.template.modelId}',
       subDomain: 'execute',
     );
 
@@ -128,6 +129,16 @@ extension TaskAgentExecute on TaskAgentWorkflow {
     }
     final modelId = resolvedProfile.thinkingModelId;
     final provider = resolvedProfile.thinkingProvider;
+    // A setup that follows its category resolves afresh on every wake, so the
+    // model can change between wakes without the agent's config changing.
+    logInfo(
+      'route: model=$modelId, '
+      'provider=${provider.inferenceProviderType.name}, '
+      'profile=${DomainLogger.sanitizeId(resolvedProfile.profileId ?? '-')}, '
+      'source=${resolvedSetup.source?.name}, '
+      'origin=${resolvedSetup.setupOrigin?.name}',
+      subDomain: 'execute',
+    );
 
     // 3a. Unchanged-input gate: an automatic wake whose inputs match the last
     // completed wake's would show the model the same task again, so it ends
@@ -614,6 +625,12 @@ extension TaskAgentExecute on TaskAgentWorkflow {
       domainLogger.log(
         LogDomain.agentWorkflow,
         'Wake completed for agent ${DomainLogger.sanitizeId(agentId)}: '
+        'turns ${wakeConversationTrace(manager?.messages ?? const [])}, '
+        'report ${reportContent.isNotEmpty
+            ? 'published'
+            : reportWasRequired
+            ? 'missing'
+            : 'not needed'}, '
         '${observations.length} observations, '
         '${executor.mutatedEntries.length} mutations, '
         '${changeSetBuilder.items.length} deferred changes',

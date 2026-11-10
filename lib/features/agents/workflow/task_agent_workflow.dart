@@ -50,6 +50,7 @@ import 'package:lotti/features/agents/workflow/task_pull_request_candidates.dart
 import 'package:lotti/features/agents/workflow/task_source_renderer.dart';
 import 'package:lotti/features/agents/workflow/task_tool_dispatcher.dart';
 import 'package:lotti/features/agents/workflow/task_wake_input_fingerprint.dart';
+import 'package:lotti/features/agents/workflow/wake_conversation_trace.dart';
 import 'package:lotti/features/agents/workflow/wake_output_writer.dart';
 import 'package:lotti/features/agents/workflow/wake_result.dart';
 import 'package:lotti/features/agents/workflow/wake_token_usage.dart';
