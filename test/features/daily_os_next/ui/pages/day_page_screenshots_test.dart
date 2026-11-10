@@ -23,6 +23,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/day_agent_identity.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/knowledge/agent_knowledge_providers.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
@@ -44,6 +45,7 @@ import 'package:lotti/features/daily_os_next/ui/widgets/day_activity_view.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_agenda_row.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_briefing_companion.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/time_spent_card.dart';
 import 'package:lotti/features/design_system/components/navigation/desktop_navigation_sidebar.dart';
 import 'package:lotti/features/design_system/components/time_pickers/design_system_picker_wheels.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
@@ -78,26 +80,43 @@ late ManualDemoWorld _manualWorld;
 Directory? _manualDocumentsDirectory;
 String _t(String en, String de) => manualScreenshotText(en: en, de: de);
 
+// The plan's categories are the demo world's own — the same ids, names and
+// colours a task resolves to live — so every surface paints one task in one
+// hue. `_health` is the one category the demo world lacks; the fixture
+// defines it for the mocks below, in a hue no other category is near.
 final _deepWork = DayAgentCategory(
-  id: 'cat-penguin',
+  id: manualDemoCategoryId,
   name: _t('Penguin Operations', 'Pinguinbetrieb'),
-  colorHex: '8B5CF6',
+  colorHex: '4AB6E8',
 );
 final _client = DayAgentCategory(
-  id: 'cat-mission',
-  name: _t('Mission Control', 'Missionskontrolle'),
-  colorHex: '4F9DDE',
+  id: demoHabitatCategoryId,
+  name: _t('Habitat Engineering', 'Habitat-Technik'),
+  colorHex: '7BD3A0',
 );
 final _health = DayAgentCategory(
   id: 'cat-human',
   name: _t('Human Maintenance', 'Menschenwartung'),
-  colorHex: '34D399',
+  colorHex: 'E879F9',
 );
 final _admin = DayAgentCategory(
-  id: 'cat-diplomacy',
-  name: _t('Fish Diplomacy', 'Fischdiplomatie'),
-  colorHex: 'E8A33D',
+  id: demoLogisticsCategoryId,
+  name: _t('Logistics & Supply', 'Logistik & Nachschub'),
+  colorHex: 'F2A65A',
 );
+
+/// Each of the day's tasks in the category its plan block names, so the
+/// live category the page resolves agrees with the plan.
+Map<String, String> get _taskCategories => {
+  manualRollCallTaskId: _admin.id,
+  manualOrbitalHabitatTaskId: _deepWork.id,
+  manualLaunchReviewTaskId: _client.id,
+  manualLunchTaskId: _health.id,
+  manualSardineFuturesTaskId: _client.id,
+  manualFishFeederTaskId: _deepWork.id,
+  manualPenguinPassengerTaskId: _admin.id,
+  manualHeadsetWalkTaskId: _health.id,
+};
 
 DateTime _at(int hour, [int minute = 0]) => DateTime(2026, 6, 8, hour, minute);
 
@@ -132,8 +151,10 @@ TimeBlock _tracked(
   DateTime end,
   DayAgentCategory category, {
   TimeBlockState state = TimeBlockState.completed,
+  String? taskId,
 }) => TimeBlock(
   id: 'actual:$id',
+  taskId: taskId,
   title: title,
   start: start,
   end: end,
@@ -446,6 +467,7 @@ List<TimeBlock> _actuals() => [
     _at(8, 42),
     _at(9, 5),
     _admin,
+    taskId: manualRollCallTaskId,
   ),
   _tracked(
     'deep',
@@ -456,6 +478,7 @@ List<TimeBlock> _actuals() => [
     _at(9, 5),
     _at(10, 38),
     _deepWork,
+    taskId: manualOrbitalHabitatTaskId,
   ),
   _tracked(
     'incident',
@@ -473,6 +496,7 @@ List<TimeBlock> _actuals() => [
     _at(11, 18),
     _at(12, 5),
     _client,
+    taskId: manualLaunchReviewTaskId,
   ),
   _tracked(
     'lunch',
@@ -480,6 +504,7 @@ List<TimeBlock> _actuals() => [
     _at(12, 10),
     _at(12, 50),
     _health,
+    taskId: manualLunchTaskId,
   ),
   _tracked(
     'followup',
@@ -487,6 +512,7 @@ List<TimeBlock> _actuals() => [
     _at(13, 5),
     _at(14, 55),
     _client,
+    taskId: manualSardineFuturesTaskId,
   ),
   _tracked(
     'slides',
@@ -495,6 +521,7 @@ List<TimeBlock> _actuals() => [
     _at(15, 45),
     _deepWork,
     state: TimeBlockState.inProgress,
+    taskId: manualFishFeederTaskId,
   ),
 ];
 
@@ -1202,11 +1229,30 @@ void main() {
       () => mocks.journalDb.journalEntityById(any()),
     ).thenAnswer((invocation) async {
       final id = invocation.positionalArguments.first as String;
-      return _manualWorld.entityById(id);
+      final entity = _manualWorld.entityById(id);
+      final categoryId = _taskCategories[id];
+      return switch (entity) {
+        final Task task when categoryId != null => task.copyWith(
+          meta: task.meta.copyWith(categoryId: categoryId),
+        ),
+        _ => entity,
+      };
     });
-    when(
-      () => mocks.journalDb.getCategoryById(manualDemoCategoryId),
-    ).thenAnswer((_) async => _manualWorld.category);
+    final humanMaintenance = _manualWorld.category.copyWith(
+      id: _health.id,
+      name: _health.name,
+      color: '#${_health.colorHex}',
+      favorite: false,
+    );
+    when(() => mocks.journalDb.getCategoryById(any())).thenAnswer((
+      invocation,
+    ) async {
+      final id = invocation.positionalArguments.first as String;
+      return [
+        ..._manualWorld.categories,
+        humanMaintenance,
+      ].where((c) => c.id == id).firstOrNull;
+    });
   });
 
   tearDown(() async {
@@ -1567,12 +1613,13 @@ void main() {
               expect(find.byType(DayAgendaRow), findsNWidgets(3));
             case _RedesignSurface.agendaNoPlan:
               await _switchToAgendaView(tester);
-              // The Agenda says there is no plan; the recorded time is the
-              // Activity tab's.
+              // The Agenda's one row starts the check-in, and the day's
+              // tracked time follows it.
               expect(
-                find.text(_messages(tester).dailyOsNextAgendaNoPlanTitle),
+                find.byKey(const Key('daily_os_agenda_start_check_in')),
                 findsOneWidget,
               );
+              expect(find.byType(TimeSpentCard), findsOneWidget);
             case _RedesignSurface.day:
               await _switchToDayView(tester);
               expect(find.byType(DayTimeline), findsOneWidget);

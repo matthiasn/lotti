@@ -721,6 +721,59 @@ void main() {
       expect(started, 1);
     });
 
+    testWidgets(
+      'a day without a plan keeps the Plan header over its row and the '
+      "day's tracked time under it",
+      (tester) async {
+        final start = DateTime(2026, 5, 26, 9);
+        await tester.pumpWidget(
+          _wrap(
+            AgendaView(
+              draft: DraftPlan.emptyForDay(DateTime(2026, 5, 26)),
+              hasPlan: false,
+              actualBlocks: [
+                TimeBlock(
+                  id: 'actual:walk',
+                  title: 'Walk',
+                  start: start,
+                  end: start.add(const Duration(minutes: 40)),
+                  type: TimeBlockType.manual,
+                  state: TimeBlockState.completed,
+                  category: _category,
+                ),
+              ],
+            ),
+          ),
+        );
+        final messages = tester.element(find.byType(AgendaView)).messages;
+        double top(Finder f) => tester.getTopLeft(f).dy;
+
+        final header = find.text(messages.dailyOsNextTimelinePlanned);
+        final row = find.text(messages.dailyOsNextAgendaNoPlanTitle);
+        final tracked = find.byType(TimeSpentCard);
+        expect(header, findsOneWidget);
+        expect(tracked, findsOneWidget);
+        expect(top(header), lessThan(top(row)));
+        expect(top(row), lessThan(top(tracked)));
+        expect(find.text('Walk'), findsOneWidget);
+      },
+    );
+
+    testWidgets('a day without a plan or tracked time has no Today so far', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(
+          AgendaView(
+            draft: DraftPlan.emptyForDay(DateTime(2026, 5, 26)),
+            hasPlan: false,
+          ),
+        ),
+      );
+
+      expect(find.byType(TimeSpentCard), findsNothing);
+    });
+
     testWidgets('without a way to check in, the row is not a button', (
       tester,
     ) async {

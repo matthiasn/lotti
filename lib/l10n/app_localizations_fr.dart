@@ -4810,6 +4810,11 @@ class AppLocalizationsFr extends AppLocalizations {
   String get dailyOsNextActivityHandled => 'Traité';
 
   @override
+  String dailyOsNextActivityHandledCount(int count) {
+    return '$count traités';
+  }
+
+  @override
   String get dailyOsNextActivityLoadFailed =>
       'Ton activité enregistrée est toujours sur cet appareil, mais elle n’a pas pu être chargée pour le moment.';
 
@@ -4873,6 +4878,14 @@ class AppLocalizationsFr extends AppLocalizations {
   String get dailyOsNextActivityUseToRefine => 'Utiliser pour ajuster';
 
   @override
+  String get dailyOsNextActivityVoiceNote => 'Note vocale';
+
+  @override
+  String dailyOsNextActivityWaitingCount(int count) {
+    return '$count en attente';
+  }
+
+  @override
   String get dailyOsNextActivityWaitingForNetwork => 'En attente de connexion';
 
   @override
@@ -4893,6 +4906,11 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get dailyOsNextAgendaHideDone => 'Masquer les éléments terminés';
+
+  @override
+  String dailyOsNextAgendaLeft(int count, String duration) {
+    return '$count restants · $duration';
+  }
 
   @override
   String get dailyOsNextAgendaNoPlanTitle =>
@@ -5052,8 +5070,8 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String dailyOsNextBriefingMoreCategories(int count, String duration) {
-    return '+$count autres $duration';
+  String dailyOsNextBriefingMoreCategories(int count) {
+    return '+$count autres';
   }
 
   @override
@@ -5807,7 +5825,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get dailyOsNextTimelineArrange => 'Organiser les blocs';
 
   @override
-  String get dailyOsNextTimelineBoth => 'Plan et réel';
+  String get dailyOsNextTimelineArrangeShort => 'Organiser';
+
+  @override
+  String get dailyOsNextTimelineBothLanes => 'Deux colonnes';
+
+  @override
+  String get dailyOsNextTimelineOneLane => 'Une colonne';
 
   @override
   String get dailyOsNextTimelinePlanned => 'Plan';

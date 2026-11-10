@@ -15,6 +15,8 @@ Future<void> _pump(
   String time = '9:00 AM',
   String? overline,
   Widget? trailing,
+  Widget? below,
+  bool active = false,
   double? firstLine,
   double width = 600,
   double textScale = 1,
@@ -31,6 +33,8 @@ Future<void> _pump(
             firstLine: firstLine,
             leading: const SizedBox.square(key: _leading, dimension: 4),
             trailing: trailing,
+            below: below,
+            active: active,
             child: const Text('Words', key: _child),
           ),
         ),
@@ -64,9 +68,14 @@ void main() {
         final tokens = _tokens(tester);
         final time = tester.getRect(find.byKey(const Key('day_row_time')));
 
-        // A phone: the step4 inset.
+        // A phone: the step4 inset; the column as wide as the clock needs.
         expect(time.left, tokens.spacing.step4);
-        expect(time.width, tokens.spacing.step10);
+        expect(
+          time.width,
+          DayRowScaffold.timeColumnWidth(
+            tester.element(find.byType(DayRowScaffold)),
+          ),
+        );
         // The 4 px mark is centred in a caption-glyph-wide slot.
         final slot = tokens.typography.size.caption;
         final markLeft = time.right + tokens.spacing.step2;
@@ -77,6 +86,14 @@ void main() {
         expect(
           tester.getTopLeft(find.byKey(_child)).dx,
           closeTo(markLeft + slot + tokens.spacing.step3, 0.01),
+        );
+        // wordsInset names the same edge, from the row's inner edge.
+        expect(
+          tokens.spacing.step4 +
+              DayRowScaffold.wordsInset(
+                tester.element(find.byType(DayRowScaffold)),
+              ),
+          closeTo(tester.getTopLeft(find.byKey(_child)).dx, 0.01),
         );
       },
     );
@@ -93,14 +110,87 @@ void main() {
       );
     });
 
-    testWidgets('the time column grows with the text size', (tester) async {
-      await _pump(tester, textScale: 1.5);
-      final tokens = _tokens(tester);
+    testWidgets(
+      "the time column is as wide as the device clock's widest time, and "
+      'grows with the text size',
+      (tester) async {
+        // A 12-hour clock's widest time is a two-digit hour with its period.
+        await _pump(tester, time: '10:55 PM');
+        final width = tester
+            .getSize(find.byKey(const Key('day_row_time')))
+            .width;
+        final text = tester.getSize(find.text('10:55 PM')).width;
+        expect(width, greaterThanOrEqualTo(text));
+        expect(width, lessThan(text + 2), reason: 'no width spent on a guess');
 
+        await _pump(tester, time: '10:55 PM', textScale: 1.5);
+        expect(
+          tester.getSize(find.byKey(const Key('day_row_time'))).width,
+          greaterThan(width * 1.4),
+        );
+      },
+    );
+
+    testWidgets("the column fits a long 'Now' under the time", (tester) async {
+      await _pump(tester, overline: 'Now');
+      final column = tester.getSize(find.byKey(const Key('day_row_time')));
       expect(
-        tester.getSize(find.byKey(const Key('day_row_time'))).width,
-        closeTo(tokens.spacing.step10 * 1.5, 0.01),
+        column.width,
+        greaterThanOrEqualTo(tester.getSize(find.text('Now')).width),
       );
+    });
+
+    testWidgets(
+      'below starts under the words and runs under the trailing column',
+      (tester) async {
+        await _pump(
+          tester,
+          trailing: const SizedBox.square(key: _trailing, dimension: 10),
+          below: const SizedBox(key: Key('below'), height: 10),
+        );
+        final below = tester.getRect(find.byKey(const Key('below')));
+
+        expect(
+          below.left,
+          closeTo(tester.getTopLeft(find.byKey(_child)).dx, 0.01),
+        );
+        expect(
+          below.right,
+          closeTo(tester.getTopRight(find.byKey(_trailing)).dx, 0.01),
+        );
+        expect(
+          below.top,
+          greaterThan(tester.getBottomLeft(find.byKey(_child)).dy - 0.01),
+        );
+      },
+    );
+
+    testWidgets('an active row carries a teal edge at its start', (
+      tester,
+    ) async {
+      await _pump(tester, active: true);
+      final tokens = _tokens(tester);
+      final edge = find.byKey(const Key('day_row_active_edge'));
+
+      expect(edge, findsOneWidget);
+      expect(tester.getSize(edge).width, tokens.spacing.step1);
+      expect(
+        tester.getSize(edge).height,
+        tester.getSize(find.byType(DayRowScaffold)).height,
+      );
+      expect(
+        tester
+            .widget<ColoredBox>(
+              find.descendant(of: edge, matching: find.byType(ColoredBox)),
+            )
+            .color,
+        tokens.colors.interactive.enabled,
+      );
+    });
+
+    testWidgets('a row at rest has no edge', (tester) async {
+      await _pump(tester);
+      expect(find.byKey(const Key('day_row_active_edge')), findsNothing);
     });
 
     testWidgets('the time is a quiet, tabular, right-aligned caption', (
@@ -161,7 +251,8 @@ void main() {
       expect(
         tester.getTopLeft(find.byKey(_trailing)).dx,
         closeTo(
-          tester.getTopRight(find.byType(Expanded)).dx + tokens.spacing.step3,
+          tester.getTopRight(find.byType(Expanded).first).dx +
+              tokens.spacing.step3,
           0.01,
         ),
       );
@@ -182,6 +273,71 @@ void main() {
         tester.getCenter(find.byKey(_leading)).dy - rowTop,
         closeTo(tokens.spacing.step3 + (40 - slot) / 2 + slot / 2, 0.01),
       );
+    });
+  });
+
+  group('DayRowTrailing', () {
+    Future<void> pumpTrailing(WidgetTester tester, Widget child) =>
+        tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            Align(alignment: Alignment.topLeft, child: child),
+          ),
+        );
+
+    testWidgets('a figure, then the chevron slot', (tester) async {
+      await pumpTrailing(
+        tester,
+        const DayRowTrailing(figure: '1h 30m', icon: LottiIcons.chevronRight),
+      );
+      final tokens = tester.element(find.byType(DayRowTrailing)).designTokens;
+
+      final figure = tester.widget<Text>(find.text('1h 30m'));
+      expect(figure.style!.color, tokens.colors.text.mediumEmphasis);
+      expect(figure.style!.fontFeatures, dayFigures);
+      expect(
+        tester.getTopLeft(find.byIcon(LottiIcons.chevronRight)).dx -
+            tester.getTopRight(find.text('1h 30m')).dx,
+        closeTo(tokens.spacing.step2, 0.01),
+      );
+    });
+
+    testWidgets(
+      'an empty slot keeps its width, so figures end on one edge',
+      (tester) async {
+        await pumpTrailing(
+          tester,
+          const Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              DayRowTrailing(figure: '45m', icon: LottiIcons.chevronRight),
+              DayRowTrailing(figure: '45m'),
+            ],
+          ),
+        );
+        final tokens = tester.element(find.byType(Column)).designTokens;
+        final figures = tester.widgetList(find.text('45m')).toList();
+        expect(figures, hasLength(2));
+        final rights = [
+          for (final e in find.text('45m').evaluate())
+            tester.getTopRight(find.byWidget(e.widget)).dx,
+        ];
+        expect(rights.first, closeTo(rights.last, 0.01));
+        expect(
+          tester.getSize(find.byType(DayRowTrailing).last).width -
+              tester.getSize(find.text('45m').last).width,
+          closeTo(DayRowTrailing.slotWidth(tokens), 0.01),
+        );
+      },
+    );
+
+    testWidgets('a slot alone, with no figure', (tester) async {
+      await pumpTrailing(
+        tester,
+        const DayRowTrailing(icon: LottiIcons.chevronDown),
+      );
+
+      expect(find.byIcon(LottiIcons.chevronDown), findsOneWidget);
+      expect(find.byType(Text), findsNothing);
     });
   });
 }

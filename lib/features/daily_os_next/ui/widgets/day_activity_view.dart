@@ -106,18 +106,24 @@ class DayActivityView extends ConsumerWidget {
               children: [
                 DaySectionHeader(
                   label: messages.dailyOsNextActivityNeedsYou,
-                  summary: '${open.length}',
+                  summary: messages.dailyOsNextActivityWaitingCount(
+                    open.length,
+                  ),
                 ),
                 card(open),
               ],
             ),
-          if (actualBlocks.isNotEmpty)
-            TimeSpentCard(blocks: actualBlocks, showSummary: hasPlan),
+          if (actualBlocks.isNotEmpty) TimeSpentCard(blocks: actualBlocks),
           if (handled.isNotEmpty)
             Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                DaySectionHeader(label: messages.dailyOsNextActivityHandled),
+                DaySectionHeader(
+                  label: messages.dailyOsNextActivityHandled,
+                  summary: messages.dailyOsNextActivityHandledCount(
+                    handled.length,
+                  ),
+                ),
                 card(handled),
               ],
             ),
@@ -133,7 +139,7 @@ class DayActivityView extends ConsumerWidget {
                 // briefing.
                 padding: EdgeInsets.only(
                   left: tokens.spacing.step5,
-                  top: tokens.spacing.step4,
+                  top: tokens.spacing.sectionGap,
                   right: tokens.spacing.step5,
                 ),
                 child: Column(
@@ -292,8 +298,21 @@ class _ActivityRow extends StatelessWidget {
     final editorShowsText =
         inlineEditorEntryId != null &&
         (entry.audio?.entryText?.plainText.trim().isNotEmpty ?? false);
+    // A recording still waiting for its words is named as what it is; the
+    // wait itself is explained beneath.
+    final pendingRecording =
+        transcript == null && entry.kind == DayActivityEntryKind.recording;
+    final name = pendingRecording
+        ? context.messages.dailyOsNextActivityVoiceNote
+        : _body(context, entry, transcript);
+    final statusLine = Text(
+      status,
+      style: captionLabelStyle(tokens, color: _captionInk(tokens, entry)),
+    );
     // The page's shared row grid: the time, the entry's state as its mark,
-    // then its words and what it offers.
+    // its name on the first line — the agenda's anatomy — and below it,
+    // full width, where it stands and what it offers. With the editor open
+    // the editor shows the words, and the status leads instead.
     return DayRowScaffold(
       time: formatClock(context, entry.createdAt.toLocal()),
       leading: Icon(
@@ -301,15 +320,32 @@ class _ActivityRow extends StatelessWidget {
         size: tokens.typography.size.caption,
         color: _statusInk(tokens, entry),
       ),
-      firstLine: tokens.typography.lineHeight.caption,
-      child: _details(
+      firstLine: editorShowsText
+          ? tokens.typography.lineHeight.caption
+          : tokens.typography.lineHeight.bodySmall,
+      below: _details(
         context,
         tokens,
         transcript,
-        status,
+        statusLine,
+        pendingRecording,
         inlineEditorEntryId,
         editorShowsText,
       ),
+      child: editorShowsText
+          ? statusLine
+          : Text(
+              name,
+              // On a phone the words are a preview — three lines, enough to
+              // judge them before Use — so the groups below stay in view; a
+              // wide pane has room for them all.
+              maxLines: isDesktopLayout(context) ? null : 3,
+              overflow: isDesktopLayout(context) ? null : TextOverflow.ellipsis,
+              style: tokens.typography.styles.body.bodySmall.copyWith(
+                fontWeight: tokens.typography.weight.semiBold,
+                color: tokens.colors.text.highEmphasis,
+              ),
+            ),
     );
   }
 
@@ -317,29 +353,24 @@ class _ActivityRow extends StatelessWidget {
     BuildContext context,
     DsTokens tokens,
     String? transcript,
-    String status,
+    Widget statusLine,
+    bool pendingRecording,
     String? inlineEditorEntryId,
     bool editorShowsText,
   ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          status,
-          style: captionLabelStyle(tokens, color: _statusInk(tokens, entry)),
-        ),
         if (!editorShowsText) ...[
-          SizedBox(height: tokens.spacing.step2),
+          SizedBox(height: tokens.spacing.step1),
+          statusLine,
+        ],
+        if (pendingRecording && !editorShowsText) ...[
+          SizedBox(height: tokens.spacing.step1),
           Text(
             _body(context, entry, transcript),
-            // On a phone the words are a preview — two lines — so the
-            // groups below stay in view; a wide pane has room for them all.
-            maxLines: isDesktopLayout(context) ? null : 2,
-            overflow: isDesktopLayout(context) ? null : TextOverflow.ellipsis,
-            style: tokens.typography.styles.body.bodySmall.copyWith(
-              color: transcript == null
-                  ? tokens.colors.text.lowEmphasis
-                  : tokens.colors.text.highEmphasis,
+            style: tokens.typography.styles.others.caption.copyWith(
+              color: tokens.colors.text.lowEmphasis,
             ),
           ),
         ],
@@ -388,7 +419,7 @@ class _ActivityRow extends StatelessWidget {
                 DayProcessingFailureClass.setupRequired ||
             _canRetry(entry) ||
             transcript != null) ...[
-          SizedBox(height: tokens.spacing.step3),
+          SizedBox(height: tokens.spacing.step2),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -433,7 +464,6 @@ class _ActivityRow extends StatelessWidget {
                         ),
                         variant: DesignSystemButtonVariant.secondary,
                         size: DesignSystemButtonSize.dense,
-                        tapTargetSize: MaterialTapTargetSize.padded,
                         leadingIcon: LottiIcons.settings,
                       ),
                     if (transcript != null)
@@ -446,7 +476,6 @@ class _ActivityRow extends StatelessWidget {
                         // filled button.
                         variant: DesignSystemButtonVariant.secondary,
                         size: DesignSystemButtonSize.dense,
-                        tapTargetSize: MaterialTapTargetSize.padded,
                         // It sends the words on: the spark stays the companion's.
                         leadingIcon: LottiIcons.send,
                       ),
@@ -490,8 +519,20 @@ class _ActivityRow extends StatelessWidget {
     };
   }
 
-  /// The glyph's and the state's ink: error for what needs the user, warning
-  /// for what waits on the network, medium emphasis for everything at rest.
+  /// The status caption's ink. Attention goes where the user can act: a
+  /// stalled step in error ink, a recording ready to use in high emphasis;
+  /// a wait on the network is the glyph's to signal, so its words stay in
+  /// medium emphasis like everything at rest.
+  Color _captionInk(DsTokens tokens, DayActivityEntry entry) {
+    if (_needsAttention(entry)) return tokens.colors.alert.error.ink;
+    if (entry.transcript != null && !entry.isSubmitted) {
+      return tokens.colors.text.highEmphasis;
+    }
+    return tokens.colors.text.mediumEmphasis;
+  }
+
+  /// The glyph's ink: error for what needs the user, warning for what waits
+  /// on the network, medium emphasis for everything at rest.
   Color _statusInk(DsTokens tokens, DayActivityEntry entry) {
     if (_needsAttention(entry)) return tokens.colors.alert.error.ink;
     if (entry.processingJob?.status ==
@@ -647,7 +688,6 @@ class _AsyncActivityButtonState extends State<_AsyncActivityButton> {
     isLoading: _busy,
     variant: widget.variant,
     size: DesignSystemButtonSize.dense,
-    tapTargetSize: MaterialTapTargetSize.padded,
     leadingIcon: widget.leadingIcon,
   );
 

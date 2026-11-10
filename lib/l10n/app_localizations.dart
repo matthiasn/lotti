@@ -8009,6 +8009,12 @@ abstract class AppLocalizations {
   /// **'Handled'**
   String get dailyOsNextActivityHandled;
 
+  /// Summary beside the Activity tab's 'Handled' header: how many entries are dealt with.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} handled'**
+  String dailyOsNextActivityHandledCount(int count);
+
   /// No description provided for @dailyOsNextActivityLoadFailed.
   ///
   /// In en, this message translates to:
@@ -8123,6 +8129,18 @@ abstract class AppLocalizations {
   /// **'Use to refine'**
   String get dailyOsNextActivityUseToRefine;
 
+  /// Name of an Activity row for a voice recording whose transcript is not ready yet.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice note'**
+  String get dailyOsNextActivityVoiceNote;
+
+  /// Summary beside the Activity tab's 'Needs you' header: how many entries wait for the user.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} waiting'**
+  String dailyOsNextActivityWaitingCount(int count);
+
   /// No description provided for @dailyOsNextActivityWaitingForNetwork.
   ///
   /// In en, this message translates to:
@@ -8146,6 +8164,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Hide finished items'**
   String get dailyOsNextAgendaHideDone;
+
+  /// Summary beside the agenda's 'Plan' header: how many items are not done yet, followed by the time they are planned for.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} left · {duration}'**
+  String dailyOsNextAgendaLeft(int count, String duration);
 
   /// No description provided for @dailyOsNextAgendaNoPlanTitle.
   ///
@@ -8381,11 +8405,11 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{1 minute} other{{count} minutes}}'**
   String dailyOsNextBriefingMinutes(int count);
 
-  /// Last entry of the capacity legend on a phone: the categories not named, and their time together.
+  /// Last entry of the capacity legend on a phone: how many categories are not named. Their time together follows it.
   ///
   /// In en, this message translates to:
-  /// **'+{count} more {duration}'**
-  String dailyOsNextBriefingMoreCategories(int count, String duration);
+  /// **'+{count} more'**
+  String dailyOsNextBriefingMoreCategories(int count);
 
   /// No description provided for @dailyOsNextBriefingNext.
   ///
@@ -9611,11 +9635,23 @@ abstract class AppLocalizations {
   /// **'Arrange blocks'**
   String get dailyOsNextTimelineArrange;
 
-  /// No description provided for @dailyOsNextTimelineBoth.
+  /// Label of the Day timeline's button that turns on moving and resizing planned blocks.
   ///
   /// In en, this message translates to:
-  /// **'Plan and actual'**
-  String get dailyOsNextTimelineBoth;
+  /// **'Arrange'**
+  String get dailyOsNextTimelineArrangeShort;
+
+  /// Label of the Day timeline's button that shows the plan and actual lanes side by side, on a phone where they are shown one at a time.
+  ///
+  /// In en, this message translates to:
+  /// **'Both lanes'**
+  String get dailyOsNextTimelineBothLanes;
+
+  /// Label of the Day timeline's button that switches from the side-by-side plan and actual lanes to one lane at a time.
+  ///
+  /// In en, this message translates to:
+  /// **'One lane'**
+  String get dailyOsNextTimelineOneLane;
 
   /// No description provided for @dailyOsNextTimelinePlanned.
   ///

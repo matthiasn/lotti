@@ -4798,6 +4798,11 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dailyOsNextActivityHandled => 'Vyřízeno';
 
   @override
+  String dailyOsNextActivityHandledCount(int count) {
+    return 'Vyřízeno $count';
+  }
+
+  @override
   String get dailyOsNextActivityLoadFailed =>
       'Tvoje uložená aktivita je pořád v tomto zařízení, ale teď ji nejde načíst.';
 
@@ -4860,6 +4865,14 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dailyOsNextActivityUseToRefine => 'Použít k úpravě';
 
   @override
+  String get dailyOsNextActivityVoiceNote => 'Hlasová poznámka';
+
+  @override
+  String dailyOsNextActivityWaitingCount(int count) {
+    return 'Čeká $count';
+  }
+
+  @override
   String get dailyOsNextActivityWaitingForNetwork => 'Čekám na připojení';
 
   @override
@@ -4881,6 +4894,11 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get dailyOsNextAgendaHideDone => 'Skrýt hotové položky';
+
+  @override
+  String dailyOsNextAgendaLeft(int count, String duration) {
+    return 'Zbývá $count · $duration';
+  }
 
   @override
   String get dailyOsNextAgendaNoPlanTitle => 'Na dnešek zatím žádný plán.';
@@ -5042,8 +5060,8 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String dailyOsNextBriefingMoreCategories(int count, String duration) {
-    return '+$count další $duration';
+  String dailyOsNextBriefingMoreCategories(int count) {
+    return '+$count další';
   }
 
   @override
@@ -5791,7 +5809,13 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dailyOsNextTimelineArrange => 'Uspořádat bloky';
 
   @override
-  String get dailyOsNextTimelineBoth => 'Plán a skutečnost';
+  String get dailyOsNextTimelineArrangeShort => 'Uspořádat';
+
+  @override
+  String get dailyOsNextTimelineBothLanes => 'Oba pruhy';
+
+  @override
+  String get dailyOsNextTimelineOneLane => 'Jeden pruh';
 
   @override
   String get dailyOsNextTimelinePlanned => 'Plán';

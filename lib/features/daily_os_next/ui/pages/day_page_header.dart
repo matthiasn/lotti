@@ -9,6 +9,7 @@ import 'package:flutter/rendering.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/features/agents/ui/agent_surface_menu.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_agent_status_chip.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/day_row_scaffold.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_week_strip.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/knowledge_nudge.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/plan_view_toggle.dart';
@@ -99,9 +100,15 @@ class DayHeader extends StatelessWidget {
         back: navigation != null
             ? const SizedBox.shrink()
             : IconButton(
-                icon: const Icon(LottiIcons.back, size: 20),
+                icon: Icon(
+                  LottiIcons.back,
+                  size: tokens.typography.size.subtitle1,
+                ),
                 padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                constraints: const BoxConstraints(
+                  minWidth: TapTargets.minimum,
+                  minHeight: TapTargets.minimum,
+                ),
                 tooltip: context.messages.dailyOsNextDayBack,
                 onPressed: onBack,
               ),
@@ -243,7 +250,6 @@ class _DayMasthead extends StatelessWidget {
             DateFormat.y(locale).format(date),
           )
         : weekday;
-    const tabular = [FontFeature.tabularFigures()];
     final column = Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -252,7 +258,7 @@ class _DayMasthead extends StatelessWidget {
           overline,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: calmEyebrowStyle(tokens).copyWith(fontFeatures: tabular),
+          style: calmEyebrowStyle(tokens).copyWith(fontFeatures: dayFigures),
         ),
         SizedBox(height: tokens.spacing.step1),
         Text(
@@ -261,7 +267,7 @@ class _DayMasthead extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
           style: tokens.typography.styles.heading.heading2.copyWith(
             color: tokens.colors.text.highEmphasis,
-            fontFeatures: tabular,
+            fontFeatures: dayFigures,
           ),
         ),
       ],

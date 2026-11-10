@@ -196,6 +196,26 @@ void main() {
       );
     });
 
+    test("names the next block by its task's live name when given", () {
+      final briefing = DayBriefing.of(
+        draft: _plan([_block('Write', 13, 90)]),
+        hasPlan: true,
+        now: _day.add(const Duration(hours: 10)),
+      );
+
+      expect(
+        composeDayHeadline(_en, briefing, _clock, nextTitle: 'Draft memo'),
+        'You have one block planned. Next up at 13:00: Draft memo.',
+      );
+      // The spoken briefing opens with the same name.
+      expect(
+        composeDayBriefing(_en, briefing, _clock, nextTitle: 'Draft memo'),
+        startsWith(
+          'You have one block planned. Next up at 13:00: Draft memo.',
+        ),
+      );
+    });
+
     test('says when nothing is left today', () {
       expect(
         headline(_plan([_block('Review', 9, 60)]), nowHour: 20),

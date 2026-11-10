@@ -4743,6 +4743,11 @@ class AppLocalizationsDa extends AppLocalizations {
   String get dailyOsNextActivityHandled => 'Klaret';
 
   @override
+  String dailyOsNextActivityHandledCount(int count) {
+    return '$count klaret';
+  }
+
+  @override
   String get dailyOsNextActivityLoadFailed =>
       'Din gemte aktivitet er stadig på denne enhed, men den kunne ikke indlæses lige nu.';
 
@@ -4804,6 +4809,14 @@ class AppLocalizationsDa extends AppLocalizations {
   String get dailyOsNextActivityUseToRefine => 'Brug til at forfine';
 
   @override
+  String get dailyOsNextActivityVoiceNote => 'Talenote';
+
+  @override
+  String dailyOsNextActivityWaitingCount(int count) {
+    return '$count venter';
+  }
+
+  @override
   String get dailyOsNextActivityWaitingForNetwork => 'Venter på forbindelse';
 
   @override
@@ -4824,6 +4837,11 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get dailyOsNextAgendaHideDone => 'Skjul færdige punkter';
+
+  @override
+  String dailyOsNextAgendaLeft(int count, String duration) {
+    return '$count tilbage · $duration';
+  }
 
   @override
   String get dailyOsNextAgendaNoPlanTitle => 'Ingen plan endnu for i dag.';
@@ -4982,8 +5000,8 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
-  String dailyOsNextBriefingMoreCategories(int count, String duration) {
-    return '+$count mere $duration';
+  String dailyOsNextBriefingMoreCategories(int count) {
+    return '+$count mere';
   }
 
   @override
@@ -5727,7 +5745,13 @@ class AppLocalizationsDa extends AppLocalizations {
   String get dailyOsNextTimelineArrange => 'Arranger blokke';
 
   @override
-  String get dailyOsNextTimelineBoth => 'Plan og faktisk';
+  String get dailyOsNextTimelineArrangeShort => 'Arranger';
+
+  @override
+  String get dailyOsNextTimelineBothLanes => 'Begge baner';
+
+  @override
+  String get dailyOsNextTimelineOneLane => 'Én bane';
 
   @override
   String get dailyOsNextTimelinePlanned => 'Plan';

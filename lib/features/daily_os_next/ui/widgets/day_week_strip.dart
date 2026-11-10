@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/gestures.dart' show kMinFlingVelocity;
 import 'package:intl/intl.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/day_row_scaffold.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
@@ -174,8 +175,10 @@ class _DayCell extends StatelessWidget {
             borderRadius: radius,
             child: ConstrainedBox(
               constraints: const BoxConstraints(minHeight: TapTargets.minimum),
+              // step1: the 48 pt minimum already gives the cell its height,
+              // so the strip spends no more of a phone's screen than that.
               child: Padding(
-                padding: EdgeInsets.symmetric(vertical: tokens.spacing.step2),
+                padding: EdgeInsets.symmetric(vertical: tokens.spacing.step1),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -195,7 +198,7 @@ class _DayCell extends StatelessWidget {
                       style: tokens.typography.styles.subtitle.subtitle2
                           .copyWith(
                             color: ink,
-                            fontFeatures: const [FontFeature.tabularFigures()],
+                            fontFeatures: dayFigures,
                           ),
                     ),
                     SizedBox(height: tokens.spacing.step1),

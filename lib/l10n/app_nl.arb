@@ -2232,6 +2232,16 @@
   "dailyOsNextActivityDeleteRecording": "Verwijderen",
   "dailyOsNextActivityEmpty": "Nog geen opnames of check-ins.",
   "dailyOsNextActivityHandled": "Afgehandeld",
+  "dailyOsNextActivityHandledCount": "{count} afgehandeld",
+  "@dailyOsNextActivityHandledCount": {
+    "description": "Summary beside the Activity tab's 'Handled' header: how many entries are dealt with.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "4"
+      }
+    }
+  },
   "dailyOsNextActivityLoadFailed": "Je opgeslagen activiteit staat nog op dit apparaat, maar kon nu niet worden geladen.",
   "dailyOsNextActivityMissingAudio": "Dit item is bewaard, maar het audiobestand is niet beschikbaar op dit apparaat. Herstel het bestand en probeer het daarna opnieuw.",
   "dailyOsNextActivityNeedsAttention": "Vraagt aandacht",
@@ -2251,6 +2261,20 @@
   "dailyOsNextActivityTranscriptPending": "Je opname is opgeslagen. De transcriptie volgt nog.",
   "dailyOsNextActivityUseToPlan": "Gebruiken om het plan te maken",
   "dailyOsNextActivityUseToRefine": "Gebruiken om te verfijnen",
+  "dailyOsNextActivityVoiceNote": "Spraakmemo",
+  "@dailyOsNextActivityVoiceNote": {
+    "description": "Name of an Activity row for a voice recording whose transcript is not ready yet."
+  },
+  "dailyOsNextActivityWaitingCount": "{count} wachtend",
+  "@dailyOsNextActivityWaitingCount": {
+    "description": "Summary beside the Activity tab's 'Needs you' header: how many entries wait for the user.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "2"
+      }
+    }
+  },
   "dailyOsNextActivityWaitingForNetwork": "Wachten op verbinding",
   "dailyOsNextAgendaCapacityOf": "van {capacity}",
   "@dailyOsNextAgendaCapacityOf": {
@@ -2272,6 +2296,20 @@
     }
   },
   "dailyOsNextAgendaHideDone": "Verberg afgeronde items",
+  "dailyOsNextAgendaLeft": "{count} te gaan · {duration}",
+  "@dailyOsNextAgendaLeft": {
+    "description": "Summary beside the agenda's 'Plan' header: how many items are not done yet, followed by the time they are planned for.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      },
+      "duration": {
+        "type": "String",
+        "example": "2h 45m"
+      }
+    }
+  },
   "dailyOsNextAgendaNoPlanTitle": "Nog geen plan voor vandaag.",
   "dailyOsNextAgendaNow": "Nu",
   "@dailyOsNextAgendaNow": {
@@ -2389,17 +2427,13 @@
       }
     }
   },
-  "dailyOsNextBriefingMoreCategories": "+{count} meer {duration}",
+  "dailyOsNextBriefingMoreCategories": "+{count} meer",
   "@dailyOsNextBriefingMoreCategories": {
-    "description": "Last entry of the capacity legend on a phone: the categories not named, and their time together.",
+    "description": "Last entry of the capacity legend on a phone: how many categories are not named. Their time together follows it.",
     "placeholders": {
       "count": {
         "type": "int",
         "example": "2"
-      },
-      "duration": {
-        "type": "String",
-        "example": "1h 30m"
       }
     }
   },
@@ -2753,7 +2787,18 @@
   "dailyOsNextStateRecurringMissed": "Terugkerend · gemist",
   "dailyOsNextTimelineActual": "Werkelijk",
   "dailyOsNextTimelineArrange": "Blokjes ordenen",
-  "dailyOsNextTimelineBoth": "Plan en werkelijke",
+  "dailyOsNextTimelineArrangeShort": "Ordenen",
+  "@dailyOsNextTimelineArrangeShort": {
+    "description": "Label of the Day timeline's button that turns on moving and resizing planned blocks."
+  },
+  "dailyOsNextTimelineBothLanes": "Beide banen",
+  "@dailyOsNextTimelineBothLanes": {
+    "description": "Label of the Day timeline's button that shows the plan and actual lanes side by side, on a phone where they are shown one at a time."
+  },
+  "dailyOsNextTimelineOneLane": "Eén baan",
+  "@dailyOsNextTimelineOneLane": {
+    "description": "Label of the Day timeline's button that switches from the side-by-side plan and actual lanes to one lane at a time."
+  },
   "dailyOsNextTimelinePlanned": "Plan",
   "dailyOsNextTimelineSessionOf": "Directoraat {index} van {total}",
   "@dailyOsNextTimelineSessionOf": {

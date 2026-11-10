@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:lotti/features/daily_os_next/ui/widgets/day_row_scaffold.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline_folding.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:material_ui/material_ui.dart';
@@ -198,12 +199,12 @@ class _FoldRangePill extends StatelessWidget {
           horizontal: tokens.spacing.step2,
           vertical: tokens.spacing.step1,
         ),
+        // A control, so it reads as one: an opaque raised chip in the
+        // now-chip's pill shape, with medium-emphasis ink.
         decoration: BoxDecoration(
-          color: tokens.colors.background.level03.withValues(alpha: 0.88),
-          borderRadius: BorderRadius.circular(tokens.radii.xs),
-          border: Border.all(
-            color: tokens.colors.decorative.level01.withValues(alpha: 0.32),
-          ),
+          color: tokens.colors.background.level03,
+          borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
+          border: Border.all(color: tokens.colors.decorative.level02),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -211,7 +212,7 @@ class _FoldRangePill extends StatelessWidget {
             Icon(
               icon,
               size: tokens.spacing.step3,
-              color: tokens.colors.text.lowEmphasis,
+              color: tokens.colors.text.mediumEmphasis,
             ),
             SizedBox(width: tokens.spacing.step1),
             Flexible(
@@ -220,7 +221,8 @@ class _FoldRangePill extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: tokens.typography.styles.others.caption.copyWith(
-                  color: tokens.colors.text.lowEmphasis,
+                  color: tokens.colors.text.mediumEmphasis,
+                  fontFeatures: dayFigures,
                 ),
               ),
             ),

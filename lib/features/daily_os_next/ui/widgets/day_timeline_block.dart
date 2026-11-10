@@ -12,6 +12,7 @@ import 'package:lotti/features/daily_os_next/ui/widgets/editable_title.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/live_task_metadata.dart';
 import 'package:lotti/features/design_system/components/ds_dashed_border.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/task_focus_controller.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -54,10 +55,14 @@ class BlockPosition extends StatefulWidget {
     required this.horizontal,
     this.raised = false,
     this.redacted = false,
+    this.past = false,
     super.key,
   });
 
   final TimeBlock block;
+
+  /// See [DayBlock.past].
+  final bool past;
 
   /// Insets from the lane's left and right edges, in px, from
   /// `TimelineBlockSlot.horizontalInsets`.
@@ -154,6 +159,7 @@ class _BlockPositionState extends State<BlockPosition> {
       onEdit: widget.onEdit,
       raised: widget.raised,
       redacted: widget.redacted,
+      past: widget.past,
     );
     return Positioned(
       top: top + blockGap / 2,
@@ -396,11 +402,18 @@ class DayBlock extends ConsumerWidget {
     this.onEdit,
     this.raised = false,
     this.redacted = false,
+    this.past = false,
     super.key,
   });
 
   final TimeBlock block;
   final bool tracked;
+
+  /// Whether the block ended before now. A planned block still to come is
+  /// what "Looks good" approves, so its title reads at full strength; one
+  /// already past recedes a step. Recorded blocks read at full strength
+  /// either way.
+  final bool past;
 
   /// Whether the block is painted on top of another block it overlaps in
   /// time. Fills are opaque, so without a seam two tinted cards on the same
@@ -495,11 +508,12 @@ class DayBlock extends ConsumerWidget {
             ),
             canvas,
           );
+    // The stripe is the block's category at full strength, planned or
+    // recorded, so the briefing legend's hues can be found in either lane;
+    // a planned block's dashed outline is what says it is provisional.
     final leftStripeColor = isBuffer
         ? tokens.colors.text.lowEmphasis.withValues(alpha: 0.32)
-        : tracked
-        ? category
-        : category.withValues(alpha: kTimelinePlannedAccentAlpha);
+        : category;
 
     final borderRadius = BorderRadius.circular(tokens.radii.m);
     final seam = _raisedSeam(tokens, raised: raised);
@@ -530,8 +544,9 @@ class DayBlock extends ConsumerWidget {
                 child: _BlockContent(
                   block: effectiveBlock,
                   tracked: tracked,
+                  past: past,
                   onRename: onRename,
-                  onEdit: openEditor,
+                  showsEdit: openEditor != null,
                 ),
               ),
             ),
@@ -544,7 +559,9 @@ class DayBlock extends ConsumerWidget {
     // and tracked blocks read solid.
     final outlined = isDrafted
         ? DsDashedBorder(
-            color: category.withValues(alpha: kTimelinePlannedAccentAlpha),
+            color: category.withValues(
+              alpha: timelinePlannedOutlineAlpha(isLight: isLight),
+            ),
             radius: tokens.radii.m,
             child: card,
           )
@@ -588,11 +605,42 @@ class DayBlock extends ConsumerWidget {
             },
       child: Material(
         type: MaterialType.transparency,
-        child: InkWell(
-          onTap: primaryTap,
-          onLongPress: onTap == null ? null : openEditor,
-          borderRadius: borderRadius,
-          child: outlined,
+        child: Stack(
+          children: [
+            InkWell(
+              onTap: primaryTap,
+              onLongPress: onTap == null ? null : openEditor,
+              borderRadius: borderRadius,
+              child: outlined,
+            ),
+            // The pencil drawn in the title row is a glyph; this is its
+            // target — a full tap target tall, bounded by the block, over
+            // the pencil's column at the block's top-end corner: the card's
+            // inset, the glyph and the gap before it. It stops short of the
+            // agent's spark beside it, which keeps its own tap.
+            if (openEditor != null)
+              PositionedDirectional(
+                top: 0,
+                end: 0,
+                width:
+                    tokens.spacing.step3 +
+                    tokens.typography.size.bodySmall +
+                    tokens.spacing.step1,
+                height: TapTargets.minimum,
+                // Screen readers reach the editor as the block's own custom
+                // action, so the corner adds no node of its own.
+                child: ExcludeSemantics(
+                  child: Tooltip(
+                    message: context.messages.dailyOsNextBlockEditTooltip,
+                    child: InkWell(
+                      key: Key('daily_os_edit_block_${block.id}'),
+                      borderRadius: borderRadius,
+                      onTap: openEditor,
+                    ),
+                  ),
+                ),
+              ),
+          ],
         ),
       ),
     );
@@ -712,14 +760,19 @@ class _BlockContent extends StatelessWidget {
   const _BlockContent({
     required this.block,
     required this.tracked,
+    required this.past,
     required this.onRename,
-    required this.onEdit,
+    required this.showsEdit,
   });
 
   final TimeBlock block;
   final bool tracked;
+  final bool past;
   final ValueChanged<String>? onRename;
-  final VoidCallback? onEdit;
+
+  /// Whether the block can be edited: the title row then shows the pencil
+  /// glyph whose target [DayBlock] lays over the corner.
+  final bool showsEdit;
 
   @override
   Widget build(BuildContext context) {
@@ -729,15 +782,17 @@ class _BlockContent extends StatelessWidget {
     final isTaskLinked =
         block.taskId != null && block.taskId!.trim().isNotEmpty;
     final isDone = block.state == TimeBlockState.completed;
+    final running = tracked && block.state == TimeBlockState.inProgress;
     final reason = tracked ? null : _reasonFor(block);
     // Standalone ai/manual placements are click-to-edit; everything
     // else (cal events, buffers, task-linked, tracked) is read-only.
     final editable =
         !tracked && !isBuffer && !isCal && !isTaskLinked && onRename != null;
-    // Recorded titles read at full strength; planned ones recede a step —
-    // the plan is the sketch, the recording is the ink.
+    // Recorded titles and the plan still to come read at full strength —
+    // what is left of the plan is what "Looks good" approves; a planned
+    // block already past recedes a step.
     final titleStyle = tokens.typography.styles.body.bodySmall.copyWith(
-      color: tracked
+      color: tracked || !past
           ? tokens.colors.text.highEmphasis
           : tokens.colors.text.mediumEmphasis,
       fontWeight: tokens.typography.weight.semiBold,
@@ -826,8 +881,63 @@ class _BlockContent extends StatelessWidget {
                               onSubmitted: onRename!,
                               style: titleStyle,
                             )
-                          : Text(
+                          : !running && !(compact && !isBuffer)
+                          ? Text(
                               block.title,
+                              style: titleStyle,
+                              maxLines: titleMaxLines,
+                              overflow: TextOverflow.ellipsis,
+                              softWrap: true,
+                            )
+                          : Text.rich(
+                              TextSpan(
+                                children: [
+                                  // A recording still running says so in
+                                  // the rows' own word, ahead of its name.
+                                  if (running) ...[
+                                    TextSpan(
+                                      text:
+                                          context.messages.dailyOsNextAgendaNow,
+                                      style: captionLabelStyle(
+                                        tokens,
+                                        color: tokens.colors.text.highEmphasis,
+                                      ),
+                                    ),
+                                    WidgetSpan(
+                                      child: SizedBox(
+                                        width: tokens.spacing.step2,
+                                      ),
+                                    ),
+                                  ],
+                                  // Too short for the time on its own line,
+                                  // a block leads with it, as every list on
+                                  // the page does, so a long title cannot
+                                  // cut it off.
+                                  if (compact && !isBuffer) ...[
+                                    TextSpan(
+                                      text: formatClock(context, block.start),
+                                      style: tokens
+                                          .typography
+                                          .styles
+                                          .others
+                                          .caption
+                                          .copyWith(
+                                            color: tokens
+                                                .colors
+                                                .text
+                                                .mediumEmphasis,
+                                            fontFeatures: dayFigures,
+                                          ),
+                                    ),
+                                    WidgetSpan(
+                                      child: SizedBox(
+                                        width: tokens.spacing.step2,
+                                      ),
+                                    ),
+                                  ],
+                                  TextSpan(text: block.title),
+                                ],
+                              ),
                               style: titleStyle,
                               maxLines: titleMaxLines,
                               overflow: TextOverflow.ellipsis,
@@ -838,42 +948,32 @@ class _BlockContent extends StatelessWidget {
                       SizedBox(width: tokens.spacing.step1),
                       _BlockReasonIcon(reason: reason),
                     ],
-                    if (onEdit != null) ...[
+                    if (showsEdit) ...[
                       SizedBox(width: tokens.spacing.step1),
-                      // One pencil size in every block. Its button sits in a
-                      // slot one title line tall and overflows it, so it
-                      // never sets the row's height: the time sits the same
-                      // step under its title in both lanes.
-                      SizedBox(
-                        width: compact
-                            ? tokens.spacing.step5
-                            : tokens.spacing.step7,
-                        height: lineHeight,
-                        child: OverflowBox(
-                          maxHeight: double.infinity,
-                          child: SizedBox.square(
-                            dimension: compact
-                                ? tokens.spacing.step5
-                                : tokens.spacing.step7,
-                            child: IconButton(
-                              key: Key('daily_os_edit_block_${block.id}'),
-                              tooltip:
-                                  context.messages.dailyOsNextBlockEditTooltip,
-                              padding: EdgeInsets.zero,
-                              iconSize: tokens.typography.size.bodySmall,
-                              onPressed: onEdit,
-                              icon: const Icon(LottiIcons.edit),
-                            ),
+                      // The glyph only, quiet so the title reads first; its
+                      // tap target is the block's corner (see DayBlock). One
+                      // size in every block, in a slot one title line tall
+                      // that it never outgrows.
+                      ExcludeSemantics(
+                        child: SizedBox(
+                          width: tokens.typography.size.bodySmall,
+                          height: lineHeight,
+                          child: Icon(
+                            LottiIcons.edit,
+                            size: tokens.typography.size.bodySmall,
+                            color: tokens.colors.text.lowEmphasis,
                           ),
                         ),
                       ),
                     ],
                     if (tracked && isDone) ...[
                       SizedBox(width: tokens.spacing.step1),
+                      // In the title's ink: success green on a category's
+                      // tint would be two hues arguing on one block.
                       Icon(
                         LottiIcons.confirm,
                         size: tokens.typography.size.caption,
-                        color: tokens.colors.alert.success.defaultColor,
+                        color: tokens.colors.text.highEmphasis,
                       ),
                     ],
                   ],
@@ -924,8 +1024,12 @@ class _BlockReasonIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    // A tap shows the reason — on a touch screen a long press is not a
+    // gesture anyone looks for — and the tap stops here rather than opening
+    // the block.
     return Tooltip(
       message: reason,
+      triggerMode: TooltipTriggerMode.tap,
       child: Semantics(
         label: context.messages.dailyOsNextDayWhyChipLabel,
         child: Icon(

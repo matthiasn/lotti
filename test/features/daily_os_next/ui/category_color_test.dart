@@ -33,4 +33,20 @@ void main() {
       );
     });
   });
+
+  group('timelinePlannedOutlineAlpha', () {
+    test('a dark canvas takes the planned accent alpha', () {
+      expect(
+        timelinePlannedOutlineAlpha(isLight: false),
+        kTimelinePlannedAccentAlpha,
+      );
+    });
+
+    test('a light canvas takes the outline stronger, so it stays visible', () {
+      expect(
+        timelinePlannedOutlineAlpha(isLight: true),
+        greaterThan(timelinePlannedOutlineAlpha(isLight: false)),
+      );
+    });
+  });
 }

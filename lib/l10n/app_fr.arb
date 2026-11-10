@@ -1995,6 +1995,16 @@
   "dailyOsNextActivityDeleteRecording": "Supprimer",
   "dailyOsNextActivityEmpty": "Pas encore d’enregistrement ni de check-in.",
   "dailyOsNextActivityHandled": "Traité",
+  "dailyOsNextActivityHandledCount": "{count} traités",
+  "@dailyOsNextActivityHandledCount": {
+    "description": "Summary beside the Activity tab's 'Handled' header: how many entries are dealt with.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "4"
+      }
+    }
+  },
   "dailyOsNextActivityLoadFailed": "Ton activité enregistrée est toujours sur cet appareil, mais elle n’a pas pu être chargée pour le moment.",
   "dailyOsNextActivityMissingAudio": "Cette entrée est conservée, mais le fichier audio n’est pas disponible sur cet appareil. Restaure le fichier, puis réessaie.",
   "dailyOsNextActivityNeedsAttention": "À vérifier",
@@ -2014,6 +2024,20 @@
   "dailyOsNextActivityTranscriptPending": "Ton enregistrement est sauvegardé. La transcription est encore en attente.",
   "dailyOsNextActivityUseToPlan": "Utiliser pour créer le plan",
   "dailyOsNextActivityUseToRefine": "Utiliser pour ajuster",
+  "dailyOsNextActivityVoiceNote": "Note vocale",
+  "@dailyOsNextActivityVoiceNote": {
+    "description": "Name of an Activity row for a voice recording whose transcript is not ready yet."
+  },
+  "dailyOsNextActivityWaitingCount": "{count} en attente",
+  "@dailyOsNextActivityWaitingCount": {
+    "description": "Summary beside the Activity tab's 'Needs you' header: how many entries wait for the user.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "2"
+      }
+    }
+  },
   "dailyOsNextActivityWaitingForNetwork": "En attente de connexion",
   "dailyOsNextAgendaCapacityOf": "sur {capacity}",
   "@dailyOsNextAgendaCapacityOf": {
@@ -2035,6 +2059,20 @@
     }
   },
   "dailyOsNextAgendaHideDone": "Masquer les éléments terminés",
+  "dailyOsNextAgendaLeft": "{count} restants · {duration}",
+  "@dailyOsNextAgendaLeft": {
+    "description": "Summary beside the agenda's 'Plan' header: how many items are not done yet, followed by the time they are planned for.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      },
+      "duration": {
+        "type": "String",
+        "example": "2h 45m"
+      }
+    }
+  },
   "dailyOsNextAgendaNoPlanTitle": "Pas encore de plan pour aujourd'hui.",
   "dailyOsNextAgendaNow": "Maintenant",
   "@dailyOsNextAgendaNow": {
@@ -2152,17 +2190,13 @@
       }
     }
   },
-  "dailyOsNextBriefingMoreCategories": "+{count} autres {duration}",
+  "dailyOsNextBriefingMoreCategories": "+{count} autres",
   "@dailyOsNextBriefingMoreCategories": {
-    "description": "Last entry of the capacity legend on a phone: the categories not named, and their time together.",
+    "description": "Last entry of the capacity legend on a phone: how many categories are not named. Their time together follows it.",
     "placeholders": {
       "count": {
         "type": "int",
         "example": "2"
-      },
-      "duration": {
-        "type": "String",
-        "example": "1h 30m"
       }
     }
   },
@@ -2485,7 +2519,18 @@
   "dailyOsNextStateRecurringMissed": "Récurrent · manqué",
   "dailyOsNextTimelineActual": "Réel",
   "dailyOsNextTimelineArrange": "Organiser les blocs",
-  "dailyOsNextTimelineBoth": "Plan et réel",
+  "dailyOsNextTimelineArrangeShort": "Organiser",
+  "@dailyOsNextTimelineArrangeShort": {
+    "description": "Label of the Day timeline's button that turns on moving and resizing planned blocks."
+  },
+  "dailyOsNextTimelineBothLanes": "Deux colonnes",
+  "@dailyOsNextTimelineBothLanes": {
+    "description": "Label of the Day timeline's button that shows the plan and actual lanes side by side, on a phone where they are shown one at a time."
+  },
+  "dailyOsNextTimelineOneLane": "Une colonne",
+  "@dailyOsNextTimelineOneLane": {
+    "description": "Label of the Day timeline's button that switches from the side-by-side plan and actual lanes to one lane at a time."
+  },
   "dailyOsNextTimelinePlanned": "Plan",
   "dailyOsNextTimelineSessionOf": "Session {index} sur {total}",
   "dailyOsNextTimelineShowBoth": "Afficher plan et réel ensemble",

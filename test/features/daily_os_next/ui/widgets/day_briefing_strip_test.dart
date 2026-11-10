@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:clock/clock.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
@@ -11,15 +12,18 @@ import 'package:lotti/features/daily_os_next/ui/category_color.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_briefing_strip.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_capacity_bar.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_row_scaffold.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/live_task_metadata.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tts/state/tts_audio_player.dart';
 import 'package:lotti/features/tts/state/tts_engine_provider.dart';
 import 'package:lotti/features/tts/state/tts_model_repository.dart';
 import 'package:lotti/features/tts/state/tts_playback_controller.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../helpers/test_app.dart';
+import '../../../../helpers/test_get_it.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_helper.dart';
 import '../../../tts/test_utils.dart';
@@ -36,6 +40,7 @@ TimeBlock _block(
   DayAgentCategory category = _deep,
   TimeBlockState state = TimeBlockState.drafted,
   TimeBlockType type = TimeBlockType.ai,
+  String? taskId,
 }) {
   final start = _day.add(Duration(hours: startHour));
   return TimeBlock(
@@ -46,6 +51,7 @@ TimeBlock _block(
     type: type,
     state: state,
     category: category,
+    taskId: taskId,
   );
 }
 
@@ -77,6 +83,8 @@ class _Bench {
     List<TimeBlock> actualBlocks = const [],
     bool voice = false,
     double? width,
+    bool dense = false,
+    List<Override> overrides = const [],
   }) async {
     await tester.pumpWidget(
       RiverpodWidgetTestBench(
@@ -105,6 +113,7 @@ class _Bench {
           agentResolvedSetupProvider.overrideWith(
             (ref, agentId) async => null,
           ),
+          ...overrides,
         ],
         child: Align(
           alignment: Alignment.topCenter,
@@ -112,6 +121,7 @@ class _Bench {
             draft: draft ?? _plan(),
             hasPlan: hasPlan,
             actualBlocks: actualBlocks,
+            dense: dense,
           ),
         ),
       ),
@@ -130,6 +140,22 @@ Text _text(WidgetTester tester, String data) =>
 /// Runs [body] with the clock at [hour]:00 on the plan's day.
 Future<void> _at(int hour, Future<void> Function() body) =>
     withClock(Clock.fixed(_day.add(Duration(hours: hour))), body);
+
+/// The legend entry naming [name] with [minutes]: the two sit in one entry,
+/// the name free to shorten and the minutes never.
+Finder _legendEntry(String name, String minutes) => find.ancestor(
+  of: find.text(minutes),
+  matching: find.byWidgetPredicate(
+    (w) =>
+        w is Row &&
+        w.children.any(
+          (c) =>
+              c is Flexible &&
+              c.child is Text &&
+              (c.child as Text).data == name,
+        ),
+  ),
+);
 
 void main() {
   late _Bench bench;
@@ -410,8 +436,8 @@ void main() {
     ) async {
       await _at(10, () => bench.pump(tester));
 
-      expect(find.text('Deep 2h 30m'), findsOneWidget);
-      expect(find.text('Admin 30m'), findsOneWidget);
+      expect(_legendEntry('Deep', '2h 30m'), findsOneWidget);
+      expect(_legendEntry('Admin', '30m'), findsOneWidget);
     });
 
     DraftPlan fourCategories() {
@@ -432,17 +458,18 @@ void main() {
     ) async {
       await _at(10, () => bench.pump(tester, draft: fourCategories()));
 
-      expect(find.text('Deep 2h'), findsOneWidget);
-      expect(find.text('Admin 1h'), findsOneWidget);
-      expect(find.text('+2 more 1h'), findsOneWidget);
+      expect(_legendEntry('Deep', '2h'), findsOneWidget);
+      expect(_legendEntry('Admin', '1h'), findsOneWidget);
+      expect(_legendEntry('+2 more', '1h'), findsOneWidget);
       expect(find.textContaining('Calls'), findsNothing);
-      // The bar folds the same tail into one neutral segment, so every
-      // colour on it is named.
+      // The bar folds the same tail into one decorative segment, ranked
+      // below the category hues and set off from the free track by its
+      // gap, so every colour on it is named.
       final bar = tester.widget<DayCapacityBar>(find.byType(DayCapacityBar));
       expect(bar.segments.map((s) => s.minutes), [120, 60, 60]);
       expect(
         bar.segments.last.color,
-        _tokens(tester).colors.decorative.level03,
+        _tokens(tester).colors.decorative.level02,
       );
     });
 
@@ -452,8 +479,13 @@ void main() {
         () => bench.pump(tester, draft: fourCategories(), width: 1400),
       );
 
-      for (final label in ['Deep 2h', 'Admin 1h', 'Calls 45m', 'Desk 15m']) {
-        expect(find.text(label), findsOneWidget);
+      for (final (name, minutes) in [
+        ('Deep', '2h'),
+        ('Admin', '1h'),
+        ('Calls', '45m'),
+        ('Desk', '15m'),
+      ]) {
+        expect(_legendEntry(name, minutes), findsOneWidget);
       }
       final bar = tester.widget<DayCapacityBar>(find.byType(DayCapacityBar));
       expect(bar.segments, hasLength(4));
@@ -472,7 +504,149 @@ void main() {
         ),
       );
 
-      expect(find.text('Deep 1h 30m'), findsOneWidget);
+      expect(_legendEntry('Deep', '1h 30m'), findsOneWidget);
+    });
+
+    testWidgets(
+      'entries wrap rather than cut a name; the minutes read a step '
+      'stronger and never shorten',
+      (tester) async {
+        await _at(10, () => bench.pump(tester, draft: fourCategories()));
+        final tokens = _tokens(tester);
+
+        // The entries sit in a Wrap: a name that does not fit moves to the
+        // next line whole.
+        expect(
+          find.ancestor(of: find.text('Deep'), matching: find.byType(Wrap)),
+          findsOneWidget,
+        );
+        final name = tester.widget<Text>(find.text('Deep'));
+        expect(name.style!.color, tokens.colors.text.lowEmphasis);
+        expect(name.textWidthBasis, TextWidthBasis.longestLine);
+        final minutes = tester.widget<Text>(find.text('2h'));
+        expect(minutes.overflow, isNull);
+        expect(minutes.style!.color, tokens.colors.text.mediumEmphasis);
+        expect(
+          find.ancestor(of: find.text('2h'), matching: find.byType(Flexible)),
+          findsNothing,
+          reason: 'the minutes never yield width',
+        );
+        // A step2 between a name and its figure.
+        expect(
+          tester.getTopLeft(find.text('2h')).dx -
+              tester.getTopRight(find.text('Deep')).dx,
+          closeTo(tokens.spacing.step2, 0.01),
+        );
+      },
+    );
+
+    testWidgets('a long legend wraps to a second line on a phone', (
+      tester,
+    ) async {
+      const long = DayAgentCategory(
+        id: 'long',
+        name: 'Interplanetary penguin logistics and fish diplomacy',
+        colorHex: '00AAFF',
+      );
+      await tester.binding.setSurfaceSize(const Size(360, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await _at(
+        10,
+        () => bench.pump(
+          tester,
+          width: 360,
+          draft: _plan(
+            blocks: [
+              _block('a', 8, 120),
+              _block('b', 11, 60, category: long),
+            ],
+          ),
+        ),
+      );
+
+      final first = tester.getTopLeft(find.text('Deep')).dy;
+      final second = tester.getTopLeft(find.text(long.name)).dy;
+      expect(second, greaterThan(first));
+      expect(
+        tester.widget<Text>(find.text(long.name)).data,
+        long.name,
+        reason: 'the name is whole, on its own line',
+      );
+    });
+  });
+
+  group('DayBriefingStrip dense', () {
+    testWidgets(
+      'keeps the sentence, the line and its planned/free captions, and '
+      'leaves out the legend',
+      (tester) async {
+        await _at(10, () => bench.pump(tester, dense: true));
+
+        expect(find.textContaining('You have 3'), findsOneWidget);
+        expect(find.byType(DayCapacityBar), findsOneWidget);
+        final messages = tester.element(find.byType(DayBriefingStrip)).messages;
+        // 3h planned of an 8h day: 5h free.
+        expect(
+          find.text(messages.dailyOsNextBriefingPlannedCaption('3h')),
+          findsOneWidget,
+        );
+        expect(
+          find.text(messages.dailyOsNextBriefingFreeCaption('5h')),
+          findsOneWidget,
+        );
+        expect(_legendEntry('Deep', '2h 30m'), findsNothing);
+      },
+    );
+  });
+
+  group('DayBriefingStrip and the live task', () {
+    setUp(setUpTestGetIt);
+    tearDown(tearDownTestGetIt);
+
+    // The task was renamed and moved to another category since planning.
+    final live = liveTaskMetadataProvider.overrideWith(
+      (ref, taskId) async => const LiveTaskMetadata(
+        title: 'Ship the migration',
+        categoryId: 'ops',
+        categoryName: 'Operations',
+        categoryColorHex: '#00AA88',
+      ),
+    );
+
+    testWidgets("names the next block by its task's live title", (
+      tester,
+    ) async {
+      await _at(
+        10,
+        () => bench.pump(
+          tester,
+          draft: _plan(blocks: [_block('Write', 13, 90, taskId: 'task-1')]),
+          overrides: [live],
+        ),
+      );
+      await tester.pump();
+
+      expect(find.textContaining('Next up at'), findsOneWidget);
+      expect(find.textContaining('Ship the migration'), findsOneWidget);
+      expect(find.textContaining('Write'), findsNothing);
+    });
+
+    testWidgets("colours the bar and names the legend by the task's live "
+        'category, as the timeline and the agenda do', (tester) async {
+      await _at(
+        10,
+        () => bench.pump(
+          tester,
+          draft: _plan(blocks: [_block('Write', 13, 90, taskId: 'task-1')]),
+          overrides: [live],
+        ),
+      );
+      await tester.pump();
+
+      expect(_legendEntry('Operations', '1h 30m'), findsOneWidget);
+      expect(find.text('Deep'), findsNothing);
+      final bar = tester.widget<DayCapacityBar>(find.byType(DayCapacityBar));
+      expect(bar.segments.single.color, categoryColorFromHex('#00AA88'));
     });
   });
 

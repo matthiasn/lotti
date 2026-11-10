@@ -60,23 +60,42 @@ void main() {
         capacityMinutes: 480,
       );
 
-      expect(_widthOf(tester, 0), closeTo(_width * 120 / 480, 0.5));
-      expect(_widthOf(tester, 1), closeTo(_width * 60 / 480, 0.5));
+      // The shares of what the gap before the free track leaves.
+      final room = _width - _tokens(tester).spacing.step1;
+      expect(_widthOf(tester, 0), closeTo(room * 120 / 480, 0.5));
+      expect(_widthOf(tester, 1), closeTo(room * 60 / 480, 0.5));
     });
 
-    testWidgets('leaves the rest of the capacity as bare track', (
-      tester,
-    ) async {
-      await _pump(
-        tester,
-        segments: [_segment(_red, 240)],
-        capacityMinutes: 480,
-      );
+    testWidgets(
+      'leaves the rest of the capacity as bare track, a step1 gap after the '
+      'planned stretch',
+      (tester) async {
+        await _pump(
+          tester,
+          segments: [_segment(_red, 240)],
+          capacityMinutes: 480,
+        );
+        final gap = _tokens(tester).spacing.step1;
+        final free = find.byKey(const ValueKey('daily_os_capacity_free'));
 
-      expect(find.byType(Spacer), findsOneWidget);
+        expect(free, findsOneWidget);
+        // Planned and free share what the gap leaves, by their minutes.
+        expect(tester.getSize(free).width, closeTo((_width - gap) / 2, 0.5));
+        expect(
+          tester.getTopLeft(free).dx - tester.getTopRight(_segmentAt(0)).dx,
+          closeTo(gap, 0.01),
+        );
+      },
+    );
+
+    testWidgets('an empty plan is all track, with no gap', (tester) async {
+      await _pump(tester, segments: const [], capacityMinutes: 480);
+
       expect(
-        tester.getSize(find.byType(Spacer)).width,
-        closeTo(_width / 2, 0.5),
+        tester
+            .getSize(find.byKey(const ValueKey('daily_os_capacity_free')))
+            .width,
+        closeTo(_width, 0.5),
       );
     });
 
@@ -87,7 +106,10 @@ void main() {
         capacityMinutes: 480,
       );
 
-      expect(find.byType(Spacer), findsNothing);
+      expect(
+        find.byKey(const ValueKey('daily_os_capacity_free')),
+        findsNothing,
+      );
       expect(
         _widthOf(tester, 0) + _widthOf(tester, 1),
         closeTo(_width, 0.5),
@@ -103,7 +125,10 @@ void main() {
           capacityMinutes: 480,
         );
 
-        expect(find.byType(Spacer), findsNothing);
+        expect(
+          find.byKey(const ValueKey('daily_os_capacity_free')),
+          findsNothing,
+        );
         expect(_widthOf(tester, 0), closeTo(_width * 400 / 600, 0.5));
         expect(_widthOf(tester, 1), closeTo(_width * 200 / 600, 0.5));
       },
@@ -146,7 +171,7 @@ void main() {
   });
 
   group('DayCapacityBar paint', () {
-    testWidgets('segments are their own colour over a decorative track', (
+    testWidgets('segments are their own colour; the free track is decorative', (
       tester,
     ) async {
       await _pump(
@@ -165,7 +190,7 @@ void main() {
           )
           .map((b) => b.color)
           .toList();
-      expect(boxes, [tokens.colors.decorative.level01, _red]);
+      expect(boxes, [_red, tokens.colors.decorative.level01]);
     });
 
     testWidgets('every segment spans the full height of the line', (

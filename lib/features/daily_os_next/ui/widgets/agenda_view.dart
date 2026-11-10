@@ -4,7 +4,9 @@ import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/ui/time_format.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_agenda_row.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_row_scaffold.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/day_section_header.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/live_task_metadata.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/time_spent_card.dart';
 import 'package:lotti/features/design_system/components/cards/ds_rows_card.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -30,6 +32,7 @@ class AgendaView extends StatefulWidget {
     this.onRenameItem,
     this.header,
     this.onStartCheckIn,
+    this.actualBlocks = const [],
     super.key,
   });
 
@@ -42,6 +45,10 @@ class AgendaView extends StatefulWidget {
   /// Scrolls in above the list — the page's briefing on a phone, so it
   /// gives the screen back to the day as the list scrolls.
   final Widget? header;
+
+  /// The day's recorded sessions, shown under the check-in row on a day
+  /// without a plan.
+  final List<TimeBlock> actualBlocks;
 
   /// False when the day has no drafted plan (the [draft] is a
   /// synthetic empty aggregate so the surface can still render).
@@ -73,6 +80,9 @@ class _AgendaViewState extends State<AgendaView> {
         .takeWhile((e) => e.item.state == AgendaItemState.done)
         .toList();
     final folds = doneRun.length >= AgendaView.foldDoneFrom;
+    final open = ordered
+        .where((e) => e.item.state != AgendaItemState.done)
+        .toList();
     Widget row(({AgendaItem item, DateTime? start}) entry) => _LiveAgendaRow(
       key: ValueKey(entry.item.id),
       item: entry.item,
@@ -98,13 +108,28 @@ class _AgendaViewState extends State<AgendaView> {
             // rail with the masthead and the briefing.
             padding: EdgeInsets.only(
               left: tokens.spacing.step5,
-              top: tokens.spacing.step4,
+              top: tokens.spacing.sectionGap,
               right: tokens.spacing.step5,
             ),
             // The page sets the reading column (one for every tab).
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                // Named like every group on the page. The fold above already
+                // says what is done, so the label says what is left.
+                if (draft.agendaItems.isNotEmpty)
+                  DaySectionHeader(
+                    label: context.messages.dailyOsNextTimelinePlanned,
+                    summary: context.messages.dailyOsNextAgendaLeft(
+                      open.length,
+                      formatMinutesCompact(
+                        open.fold<int>(
+                          0,
+                          (sum, e) => sum + (_plannedMinutesFor(e.item) ?? 0),
+                        ),
+                      ),
+                    ),
+                  ),
                 if (draft.agendaItems.isNotEmpty)
                   DsRowsCard(
                     rows: [
@@ -125,8 +150,20 @@ class _AgendaViewState extends State<AgendaView> {
                   ),
                 // "No plan yet" copy only when there genuinely is no plan;
                 // a real plan with zero agenda items keeps just the strip.
-                if (draft.agendaItems.isEmpty && !hasPlan)
+                if (draft.agendaItems.isEmpty && !hasPlan) ...[
+                  // The same header as a planned day, so the empty row sits
+                  // in the page's label-then-card rhythm.
+                  DaySectionHeader(
+                    label: context.messages.dailyOsNextTimelinePlanned,
+                  ),
                   _AgendaEmptyState(onTap: widget.onStartCheckIn),
+                  // The day so far, so a day without a plan is not a blank
+                  // page.
+                  if (widget.actualBlocks.isNotEmpty) ...[
+                    SizedBox(height: tokens.spacing.sectionGap),
+                    TimeSpentCard(blocks: widget.actualBlocks),
+                  ],
+                ],
               ],
             ),
           ),
@@ -205,12 +242,10 @@ class _DoneRunRow extends StatelessWidget {
             leading: Icon(
               LottiIcons.confirm,
               size: tokens.typography.size.caption,
-              color: tokens.colors.alert.success.defaultColor,
+              color: tokens.colors.text.mediumEmphasis,
             ),
-            trailing: Icon(
-              expanded ? LottiIcons.chevronUp : LottiIcons.chevronDown,
-              size: tokens.typography.size.subtitle2,
-              color: tokens.colors.text.lowEmphasis,
+            trailing: DayRowTrailing(
+              icon: expanded ? LottiIcons.chevronUp : LottiIcons.chevronDown,
             ),
             child: Text(
               messages.dailyOsNextAgendaDoneRun(count),
@@ -263,8 +298,8 @@ class _LiveAgendaRow extends ConsumerWidget {
 }
 
 /// A day without a plan, on the Agenda: one row on the page's grid saying
-/// so, which starts the check-in when tapped. The recorded sessions are the
-/// Activity tab's, and the footer carries the filled action.
+/// so, which starts the check-in when tapped. The footer carries the filled
+/// action; the day's tracked time follows.
 class _AgendaEmptyState extends StatelessWidget {
   const _AgendaEmptyState({required this.onTap});
 
@@ -274,8 +309,10 @@ class _AgendaEmptyState extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final onTap = this.onTap;
+    // A statement of the day's state, with no time to give; the footer
+    // alone says "Start check-in", and this row is the same way in.
     final row = DayRowScaffold(
-      time: '—',
+      time: '',
       leading: Icon(
         LottiIcons.twilight,
         size: tokens.typography.size.caption,
@@ -283,15 +320,11 @@ class _AgendaEmptyState extends StatelessWidget {
       ),
       trailing: onTap == null
           ? null
-          : Icon(
-              LottiIcons.chevronRight,
-              size: tokens.typography.size.subtitle2,
-              color: tokens.colors.text.lowEmphasis,
-            ),
+          : const DayRowTrailing(icon: LottiIcons.chevronRight),
       child: Text(
         context.messages.dailyOsNextAgendaNoPlanTitle,
         style: tokens.typography.styles.body.bodySmall.copyWith(
-          color: tokens.colors.text.mediumEmphasis,
+          color: tokens.colors.text.highEmphasis,
         ),
       ),
     );

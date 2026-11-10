@@ -10,6 +10,7 @@ import 'package:lotti/features/daily_os_next/ui/time_format.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_briefing_companion.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_capacity_bar.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_row_scaffold.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/live_task_metadata.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -47,9 +48,9 @@ class DayBriefingStrip extends ConsumerStatefulWidget {
     super.key,
   });
 
-  /// Only the sentence and the line — no captions, no legend — where the
-  /// strip stays pinned over a tab that needs the room (the timeline on a
-  /// phone).
+  /// The sentence, the line and its planned/free captions, without the
+  /// legend, where the strip stays pinned over a tab that needs the room
+  /// (the timeline on a phone).
   final bool dense;
 
   final DraftPlan draft;
@@ -93,6 +94,8 @@ class _DayBriefingStripState extends ConsumerState<DayBriefingStrip> {
       now: now,
     );
     _rewriteWhenStarted(widget.hasPlan ? briefing.next : null, now);
+    // Name the next block as its agenda row does: by its task's live name.
+    final nextTitle = watchLiveTaskMetadata(ref, briefing.next?.taskId).title;
     final voice = DayBriefingVoice.watch(
       context,
       ref,
@@ -104,11 +107,26 @@ class _DayBriefingStripState extends ConsumerState<DayBriefingStrip> {
       fontFeatures: dayFigures,
     );
     final measure = widget.hasPlan
-        ? _planMeasure(context, caption)
-        : _trackedMeasure(context, caption);
+        ? _planMeasure(
+            context,
+            caption,
+            _withLiveCategories(widget.draft.blocks),
+          )
+        : _trackedMeasure(
+            context,
+            caption,
+            _withLiveCategories(widget.actualBlocks),
+          );
 
     final content = Padding(
-      padding: EdgeInsets.all(tokens.spacing.cardPadding),
+      // Inset as the rows below it are, so on a phone its words start on
+      // the same inner line as theirs.
+      padding: EdgeInsets.symmetric(
+        horizontal: isDesktopLayout(context)
+            ? tokens.spacing.cardPadding
+            : tokens.spacing.step4,
+        vertical: tokens.spacing.cardPadding,
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -141,6 +159,7 @@ class _DayBriefingStripState extends ConsumerState<DayBriefingStrip> {
                     // A no-break space keeps "4:15 PM" on one line.
                     (moment) =>
                         formatClock(context, moment).replaceAll(' ', '\u00A0'),
+                    nextTitle: nextTitle,
                   ),
                   style: tokens.typography.styles.body.bodySmall.copyWith(
                     color: tokens.colors.text.highEmphasis,
@@ -166,15 +185,16 @@ class _DayBriefingStripState extends ConsumerState<DayBriefingStrip> {
           ),
           SizedBox(height: tokens.spacing.step4),
           measure.bar,
-          if (!widget.dense) ...[
-            SizedBox(height: tokens.spacing.step2),
-            Row(
-              children: [
-                Expanded(child: measure.leading),
-                ?measure.trailing,
-              ],
-            ),
-          ],
+          // Dense keeps the captions, so every stretch of the line is named
+          // by what it is — planned or free — even where the legend is left
+          // out.
+          SizedBox(height: tokens.spacing.step2),
+          Row(
+            children: [
+              Expanded(child: measure.leading),
+              ?measure.trailing,
+            ],
+          ),
           if (!widget.dense && measure.legend.isNotEmpty) ...[
             SizedBox(height: tokens.spacing.step2),
             _CapacityLegend(totals: measure.legend),
@@ -217,20 +237,37 @@ class _DayBriefingStripState extends ConsumerState<DayBriefingStrip> {
         ),
       if (folds)
         DayCapacitySegment(
-          color: context.designTokens.colors.decorative.level03,
+          color: context.designTokens.colors.decorative.level02,
           minutes: restMinutes,
-          label: context.messages.dailyOsNextBriefingMoreCategories(
-            totals.length - _compactLegendEntries,
-            formatMinutesCompact(restMinutes),
-          ),
+          label:
+              '${context.messages.dailyOsNextBriefingMoreCategories(totals.length - _compactLegendEntries)}'
+              ' · ${formatMinutesCompact(restMinutes)}',
         ),
     ];
   }
 
-  _Measure _planMeasure(BuildContext context, TextStyle caption) {
+  /// [blocks] in the category each one's task has now — the colour its
+  /// block on the timeline and its agenda dot wear — so the bar and the
+  /// legend name the same hues the rest of the page paints. A block without
+  /// a task keeps its own.
+  List<TimeBlock> _withLiveCategories(List<TimeBlock> blocks) => [
+    for (final block in blocks)
+      block.copyWith(
+        category: watchLiveTaskMetadata(
+          ref,
+          block.taskId,
+        ).categoryOr(block.category),
+      ),
+  ];
+
+  _Measure _planMeasure(
+    BuildContext context,
+    TextStyle caption,
+    List<TimeBlock> blocks,
+  ) {
     final tokens = context.designTokens;
     final messages = context.messages;
-    final totals = categoryTotalsFor(widget.draft);
+    final totals = categoryTotalsFor(widget.draft.copyWith(blocks: blocks));
     final planned = totals.fold<int>(0, (sum, t) => sum + t.minutes);
     final capacity = widget.draft.capacityMinutes;
     final remaining = capacity - planned;
@@ -272,9 +309,12 @@ class _DayBriefingStripState extends ConsumerState<DayBriefingStrip> {
     );
   }
 
-  _Measure _trackedMeasure(BuildContext context, TextStyle caption) {
+  _Measure _trackedMeasure(
+    BuildContext context,
+    TextStyle caption,
+    List<TimeBlock> blocks,
+  ) {
     final messages = context.messages;
-    final blocks = widget.actualBlocks;
     final tracked = formatMinutesCompact(blocks.totalMinutes);
     final totals = recordedTotalsFor(blocks);
     return (
@@ -338,22 +378,21 @@ class _CapacityLegend extends StatelessWidget {
       for (final total in named)
         (
           color: categoryColorFromHex(total.category.colorHex),
-          text:
-              '${total.category.name} '
-              '${formatMinutesCompact(total.minutes)}',
+          name: total.category.name,
+          minutes: total.minutes,
         ),
       if (folds)
         (
-          color: tokens.colors.decorative.level03,
-          text: context.messages.dailyOsNextBriefingMoreCategories(
+          color: tokens.colors.decorative.level02,
+          name: context.messages.dailyOsNextBriefingMoreCategories(
             rest.length,
-            formatMinutesCompact(
-              rest.fold<int>(0, (sum, t) => sum + t.minutes),
-            ),
           ),
+          minutes: rest.fold<int>(0, (sum, t) => sum + t.minutes),
         ),
     ];
-    Widget entry(({Color color, String text}) entry) => Row(
+    // A name may shorten; its minutes never do, so every colour keeps its
+    // number however narrow the line.
+    Widget entry(({Color color, String name, int minutes}) entry) => Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         SizedBox.square(
@@ -368,32 +407,33 @@ class _CapacityLegend extends StatelessWidget {
         SizedBox(width: tokens.spacing.step2),
         Flexible(
           child: Text(
-            entry.text,
+            entry.name,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
+            // Sized to the words actually shown, so a shortened name keeps
+            // the same gap to its figure as a whole one.
+            textWidthBasis: TextWidthBasis.longestLine,
             style: caption,
           ),
+        ),
+        SizedBox(width: tokens.spacing.step2),
+        // The figure is what the eye looks for: a step stronger than the
+        // name it belongs to.
+        Text(
+          formatMinutesCompact(entry.minutes),
+          style: caption.copyWith(color: tokens.colors.text.mediumEmphasis),
         ),
       ],
     );
     return ExcludeSemantics(
-      // The bar already reads every category out.
-      // One line on a phone, its entries shortening rather than wrapping;
-      // a wide pane wraps them if it ever must.
-      child: folds
-          ? Row(
-              children: [
-                for (final (i, e) in entries.indexed) ...[
-                  if (i > 0) SizedBox(width: tokens.spacing.step4),
-                  Flexible(child: entry(e)),
-                ],
-              ],
-            )
-          : Wrap(
-              spacing: tokens.spacing.step4,
-              runSpacing: tokens.spacing.step1,
-              children: entries.map(entry).toList(),
-            ),
+      // The bar already reads every category out. Entries wrap rather than
+      // cut a name to a stub: on a phone the fold to "+N more" keeps it to
+      // a line or two.
+      child: Wrap(
+        spacing: tokens.spacing.step4,
+        runSpacing: tokens.spacing.step1,
+        children: entries.map(entry).toList(),
+      ),
     );
   }
 }

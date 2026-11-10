@@ -398,32 +398,51 @@ Where the code disagreed with the plan, the code won:
 ### Phase 8 — panel rounds
 
 The expert panel scored the phase-7 captures 5.83 against a 4.33 baseline,
-short of the 8.8 target. Five rounds of implement → re-capture → re-rate
-followed, with the persona panel joining from round 3; the scores plateaued
-(experts 6.0 → 6.75 → 6.42 → 6.42 → 6.58, personas 6.3 → 6.3 → 6.7, four of
-five would use it) and iteration stopped there by choice. What changed:
+short of the plan's 8.8. Ten rounds of implement → re-capture → re-rate
+followed, the persona panel joining from round 3, and the target was lowered
+to 7.5 for rounds 6–10:
 
-- **One row grid** (`DayRowScaffold`) under the agenda, its folded done run,
-  "Today so far" and Activity, and one group label (`DaySectionHeader`).
-- **One reading column** (`kDetailContentMaxWidth`) for the header, briefing,
-  Agenda, Activity and composer; the timeline keeps the full width. On a
-  phone the briefing scrolls away with Agenda and Activity; the Day tab pins
-  a dense strip.
-- **The timeline's controls return to its own toolbar**, and the controller
-  is deleted: in the strip they changed its shape per tab and read as the
-  briefing's. Paged lanes gain a *Plan | Actual* switch, the swipe hint goes,
-  and hour marks follow the device clock.
-- **Agenda:** the linked task's live name leads; finished items at the head
-  of the day fold; no plan is one row that starts the check-in, and the
-  footer's next step is *Start check-in*.
-- **Activity:** *Needs you* / tracked time / *Handled* groups, state glyphs,
-  *Delete* quiet at the row's end.
-- **Briefing:** a play button rather than a tappable strip, a category
-  legend (folding to "+N more" on a phone), the recorded time by category
-  without a plan.
-- **Header:** a *Today* button when the page shows another day; the
-  composer's refinement chips show only while it has focus.
+| Round | Experts | Personas |
+|---|---|---|
+| 1–5 | 6.0 → 6.75 → 6.42 → 6.42 → 6.58 | 6.3 → 6.3 → 6.7 |
+| 6 | 6.92 | 7.1 |
+| 7 | 7.1 (one reviewer lost to a network error) | 7.0 |
+| 8 | 6.67 (the fixture's categories contradicted the page) | 6.8 |
+| 9 | 7.0 | 6.8 |
+| 10 | 7.17 (every expert 7.0–7.5) | 7.0, all five would use it |
 
-Left for follow-ups, feature-sized: an editable plan straight from the agenda
-(reorder, drop, re-estimate), a week view, and a calmer timeline at a
-glance (blocks by category without the per-block chrome).
+Iteration stopped after round 10 by choice, short of 7.5. The defects the
+round-10 panel found in its own round were fixed afterwards and are not
+re-scored. What changed:
+
+- **One row grid** (`DayRowScaffold`, `DayRowTrailing`): a time column sized
+  to the device clock's widest time, the mark column for state, the name on
+  the first line, a figure and chevron slot every row keeps, and the rest
+  below, under the figure. One group tier (`DaySectionHeader`, subtitle1,
+  worded summaries on the figures' edge).
+- **One reading column and rail** for the header, briefing, every tab
+  including the timeline, and the composer; deliberate vertical steps.
+- **One name and one colour per task**: the briefing, agenda, "Today so far"
+  and the timeline all use the task's live title and category. The screenshot
+  fixture assigns the demo world's real categories to the day's tasks.
+- **The timeline's controls return to its own toolbar** (the phase-5
+  controller is deleted): labelled design-system buttons, lane names as the
+  pinned header side by side and as section-tier names on a phone, hour marks
+  in the device clock aligned with the rows' times, upcoming planned blocks at
+  full strength, a 48 pt edit corner, the spark's reason on a tap.
+- **Agenda:** the task's name leads, the wording only when it adds to it;
+  done runs fold; no plan is one row with the day's tracked time beneath.
+- **Activity:** *Needs you* / tracked time / *Handled*; rows lead with their
+  words (a pending recording is a "Voice note"); attention ink where the user
+  can act.
+- **Briefing:** a play button, a wrapping legend whose minutes never shorten,
+  a bar whose free track is set apart, captions kept in its dense form.
+
+Left for follow-ups, feature-sized or a design-system owner's call: guarding
+"Looks good" while a dictated refinement waits on Activity; scrolling the
+briefing away over the phone's timeline and collapsing the week strip on
+scroll; snapping the timeline's first scroll to an hour line; a single
+predictable block tap on a phone (edit, with "Open task" inside); the energy
+band as a labelled rail strip; adopting icon-size, border-width and overlay
+alpha tokens across the timeline; an editable plan straight from the agenda;
+and a week view.

@@ -1044,6 +1044,65 @@ void main() {
     double top(WidgetTester tester, Finder finder) =>
         tester.getTopLeft(finder).dy;
 
+    testWidgets(
+      'a row leads with its words as its name, its status as the caption '
+      'beneath; a recording still being transcribed is a Voice note',
+      (tester) async {
+        await pump(tester, [
+          recording('ready', 11, transcript: 'Protect the morning'),
+          recording(
+            'waiting',
+            8,
+            status: DayProcessingJobStatus.waitingForNetwork,
+          ),
+        ]);
+        final tokens = tester
+            .element(find.byType(DayActivityView))
+            .designTokens;
+        final messages = tester.element(find.byType(DayActivityView)).messages;
+        double top(Finder f) => tester.getTopLeft(f).dy;
+
+        // Ready: the words lead, semibold; "Ready to use" beneath, in the
+        // strongest ink, as what the user can act on.
+        final words = tester.widget<Text>(find.text('Protect the morning'));
+        expect(words.style!.fontWeight, tokens.typography.weight.semiBold);
+        final ready = find.text(messages.dailyOsNextActivityReady);
+        expect(top(find.text('Protect the morning')), lessThan(top(ready)));
+        expect(
+          tester.widget<Text>(ready).style!.color,
+          tokens.colors.text.highEmphasis,
+        );
+
+        // Waiting: named "Voice note"; the wait in medium emphasis, the
+        // warning ink kept to its glyph; the explanation below.
+        final voiceNote = find.text(messages.dailyOsNextActivityVoiceNote);
+        final waiting = find.text(
+          messages.dailyOsNextActivityWaitingForNetwork,
+        );
+        expect(voiceNote, findsOneWidget);
+        expect(top(voiceNote), lessThan(top(waiting)));
+        expect(
+          tester.widget<Text>(waiting).style!.color,
+          tokens.colors.text.mediumEmphasis,
+        );
+        expect(
+          tester
+              .widget<Icon>(
+                find.descendant(
+                  of: find.byKey(const ValueKey('waiting')),
+                  matching: find.byIcon(LottiIcons.cloudOff),
+                ),
+              )
+              .color,
+          tokens.colors.alert.warning.ink,
+        );
+        expect(
+          find.text(messages.dailyOsNextActivityTranscriptPending),
+          findsOneWidget,
+        );
+      },
+    );
+
     testWidgets('needs-you entries share one card, keyed, ready ones first', (
       tester,
     ) async {
@@ -1054,7 +1113,10 @@ void main() {
       final messages = tester.element(find.byType(DayActivityView)).messages;
 
       expect(find.text(messages.dailyOsNextActivityNeedsYou), findsOneWidget);
-      expect(find.text('2'), findsOneWidget);
+      expect(
+        find.text(messages.dailyOsNextActivityWaitingCount(2)),
+        findsOneWidget,
+      );
       expect(
         top(tester, find.byKey(const ValueKey('ready'))),
         lessThan(top(tester, find.byKey(const ValueKey('waiting')))),
@@ -1251,17 +1313,22 @@ void main() {
       expect(deleteRect.left - use.right, greaterThan(use.width));
     });
 
-    testWidgets('a phone previews the words in two lines; desktop shows all', (
-      tester,
-    ) async {
-      final long = List.filled(40, 'words').join(' ');
-      await pump(tester, [
-        recording('a', 9, transcript: long),
-      ], size: const Size(400, 900));
-      expect(tester.widget<Text>(find.text(long)).maxLines, 2);
+    testWidgets(
+      'a phone previews the words in three lines; desktop shows all',
+      (
+        tester,
+      ) async {
+        final long = List.filled(40, 'words').join(' ');
+        await pump(tester, [
+          recording('a', 9, transcript: long),
+        ], size: const Size(400, 900));
+        // Enough to judge the words before Use, short enough to keep the
+        // groups below in view.
+        expect(tester.widget<Text>(find.text(long)).maxLines, 3);
 
-      await pump(tester, [recording('a', 9, transcript: long)]);
-      expect(tester.widget<Text>(find.text(long)).maxLines, isNull);
-    });
+        await pump(tester, [recording('a', 9, transcript: long)]);
+        expect(tester.widget<Text>(find.text(long)).maxLines, isNull);
+      },
+    );
   });
 }

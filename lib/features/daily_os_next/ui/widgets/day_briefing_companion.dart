@@ -9,6 +9,7 @@ import 'package:lotti/features/companion/ui/companion_speaker.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_plan_models.dart';
 import 'package:lotti/features/daily_os_next/logic/day_briefing.dart';
 import 'package:lotti/features/daily_os_next/ui/time_format.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/live_task_metadata.dart';
 import 'package:lotti/features/design_system/theme/sizing_tokens.dart';
 import 'package:lotti/features/tts/cloud/tts_cloud_route.dart';
 import 'package:lotti/features/tts/state/tts_engine_provider.dart';
@@ -127,6 +128,14 @@ class DayBriefingVoice {
     if (!companionEnabled || !ttsEnabled || !hasVoice) return null;
 
     final sourceId = DayBriefingCompanion.sourceIdFor(draft.dayDate);
+    // The next block's task name, watched now so the spoken briefing names
+    // it as the strip and the agenda do.
+    final upcoming = DayBriefing.of(
+      draft: draft,
+      hasPlan: hasPlan,
+      now: clock.now(),
+    ).next;
+    final upcomingTitle = watchLiveTaskMetadata(ref, upcoming?.taskId).title;
     final active = ref.watch(
       ttsPlaybackControllerProvider.select((s) => s.isActiveFor(sourceId)),
     );
@@ -136,10 +145,16 @@ class DayBriefingVoice {
     // another is preparing or playing — another day's briefing, or a task
     // summary. A tap takes the voice over: whatever is speaking stops first.
     Future<void> brief() async {
+      final briefing = DayBriefing.of(
+        draft: draft,
+        hasPlan: hasPlan,
+        now: clock.now(),
+      );
       final text = composeDayBriefing(
         context.messages,
-        DayBriefing.of(draft: draft, hasPlan: hasPlan, now: clock.now()),
+        briefing,
         (moment) => formatClock(context, moment),
+        nextTitle: briefing.next?.id == upcoming?.id ? upcomingTitle : null,
       );
       if (ref.read(ttsPlaybackControllerProvider).isBusy) {
         await notifier.stop();
@@ -174,18 +189,24 @@ class DayBriefingVoice {
 /// comes next (or that nothing is left today). Without a plan, the
 /// invitation to check in. The briefing strip shows this, and the spoken
 /// [composeDayBriefing] begins with it, so the two never disagree.
+/// [nextTitle], when given, names the next block — its task's live name, the
+/// one its agenda row leads with — in place of the block's own title.
 String composeDayHeadline(
   AppLocalizations messages,
   DayBriefing briefing,
-  String Function(DateTime moment) clockLabel,
-) {
+  String Function(DateTime moment) clockLabel, {
+  String? nextTitle,
+}) {
   if (!briefing.hasPlan) return messages.dailyOsNextBriefingNoPlan;
   final next = briefing.next;
   return [
     messages.dailyOsNextBriefingBlockCount(briefing.blockCount),
     if (next != null)
       _withoutDoubledStop(
-        messages.dailyOsNextBriefingNext(clockLabel(next.start), next.title),
+        messages.dailyOsNextBriefingNext(
+          clockLabel(next.start),
+          nextTitle ?? next.title,
+        ),
       )
     else if (briefing.nothingLeftToday)
       messages.dailyOsNextBriefingNothingLeft,
@@ -203,13 +224,20 @@ String _withoutDoubledStop(String sentence) => sentence.replaceFirstMapped(
 /// The spoken briefing for [briefing] in [messages]' language: how many
 /// blocks are planned, what comes next (or that nothing is left today), the
 /// longest block, and the time still free. Without a plan, only the
-/// invitation to check in. [clockLabel] spells a time of day.
+/// invitation to check in. [clockLabel] spells a time of day; [nextTitle]
+/// is as in [composeDayHeadline].
 String composeDayBriefing(
   AppLocalizations messages,
   DayBriefing briefing,
-  String Function(DateTime moment) clockLabel,
-) {
-  final headline = composeDayHeadline(messages, briefing, clockLabel);
+  String Function(DateTime moment) clockLabel, {
+  String? nextTitle,
+}) {
+  final headline = composeDayHeadline(
+    messages,
+    briefing,
+    clockLabel,
+    nextTitle: nextTitle,
+  );
   if (!briefing.hasPlan) return headline;
   final longest = briefing.longest;
   return [

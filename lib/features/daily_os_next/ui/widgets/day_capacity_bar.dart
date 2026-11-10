@@ -17,9 +17,9 @@ class DayCapacitySegment {
   final String label;
 }
 
-/// How full the day is, in one thin line: [segments] laid end to end over a
-/// `decorative.level01` track, each as wide as its share of
-/// [capacityMinutes]; the rest of the track is what is still free.
+/// How full the day is, in one thin line: [segments] laid end to end, each
+/// as wide as its share of [capacityMinutes]; what is still free is the bare
+/// `decorative.level01` track after them, set off by a `step1` gap.
 ///
 /// Honest when over: segments that add up to more than the capacity fill
 /// the whole bar, scaled to their own total, so the bar never claims room
@@ -56,27 +56,33 @@ class DayCapacityBar extends StatelessWidget {
       child: ExcludeSemantics(
         child: ClipRRect(
           borderRadius: BorderRadius.circular(tokens.radii.xs),
-          child: ColoredBox(
-            color: tokens.colors.decorative.level01,
-            child: SizedBox(
-              height: tokens.spacing.step2,
-              child: Row(
-                // Segments are bare colour with no child of their own, so the
-                // line's height has to be handed to them.
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  for (final (index, segment) in shown.indexed)
-                    Expanded(
-                      key: ValueKey('daily_os_capacity_segment_$index'),
-                      flex: segment.minutes,
-                      child: Tooltip(
-                        message: segment.label,
-                        child: ColoredBox(color: segment.color),
-                      ),
+          child: SizedBox(
+            height: tokens.spacing.step2,
+            child: Row(
+              // Segments are bare colour with no child of their own, so the
+              // line's height has to be handed to them.
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (final (index, segment) in shown.indexed)
+                  Expanded(
+                    key: ValueKey('daily_os_capacity_segment_$index'),
+                    flex: segment.minutes,
+                    child: Tooltip(
+                      message: segment.label,
+                      child: ColoredBox(color: segment.color),
                     ),
-                  if (free > 0) Spacer(flex: free),
+                  ),
+                // What is free is the bare track, set off from the planned
+                // stretch by a gap, so no grey segment can pass for it.
+                if (free > 0) ...[
+                  if (shown.isNotEmpty) SizedBox(width: tokens.spacing.step1),
+                  Expanded(
+                    key: const ValueKey('daily_os_capacity_free'),
+                    flex: free,
+                    child: ColoredBox(color: tokens.colors.decorative.level01),
+                  ),
                 ],
-              ),
+              ],
             ),
           ),
         ),

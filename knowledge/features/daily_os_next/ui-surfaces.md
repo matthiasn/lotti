@@ -265,16 +265,19 @@ header lays out exactly as before.
 ## Tracked time
 
 "Today so far" is one shared widget, `TimeSpentCard`: a `DaySectionHeader`
-with an optional right-aligned summary (`4h 35m · 3 done`) over one
-`DsRowsCard` of sessions on the shared row grid (start time, category dot,
-title, length or the done check; a task's session opens the task behind a
-chevron). It is bounded to 3 rows on desktop / 2 on mobile; earlier sessions
-fold into the card's first row, "N earlier sessions", which unfolds them in
-place and keeps the most recent sessions visible.
+summed on every tab (`4h 35m · 3 done`) over one `DsRowsCard` of sessions on
+the shared row grid. Each session is named and coloured as its task is now
+(`watchLiveTaskMetadata` — the same name and hue its agenda row and timeline
+block wear), with its start time, its category dot (the check, in the time's
+ink, once done), its length and, when it belongs to a task, a chevron that
+opens it. The session under way carries the agenda's "Now" and teal edge. It
+is bounded to 3 rows on desktop / 2 on mobile; earlier sessions fold into the
+card's first row, "N earlier sessions", which unfolds them in place and keeps
+the most recent sessions visible.
 
 Capture pins it at the top of its column with a date-neutral title for non-today
 dates; the Activity tab sets it between its "Needs you" and "Handled" groups,
-without the summary on a day with no plan (the briefing already says it).
+and the Agenda shows it under the "No plan yet" row on a day without a plan.
 
 The Day timeline's **Actual** lane is the same recorded time, one block per
 entry, projected by `dailyOsActualTimeBlocksProvider`. Imported workouts count as
@@ -478,30 +481,48 @@ touching it:
 
 ## The Day timeline's chrome
 
-The timeline's toolbar is its own row on every tab that shows it: the
-lane-format and arrange toggles (`_TimelineControlButtons` in
-[day_timeline_widgets.dart](../../../lib/features/daily_os_next/ui/widgets/day_timeline_widgets.dart))
-at its end, and at its start whatever names the lanes.
+The Day tab's timeline sits in the page's reading column, on the same `step5`
+rail as the other tabs, and its lanes sit side by side down to
+`kDayViewSidePanelComparisonBreakpoint`, as in the docked panel. Its toolbar
+is its own row
+([day_timeline_widgets.dart](../../../lib/features/daily_os_next/ui/widgets/day_timeline_widgets.dart)),
+and its controls are dense design-system buttons with words: the lane format
+("One lane" side by side, "Both lanes" when paged) and "Arrange", which is the
+filled "Done" while arranging. Below a 340 pt toolbar they show their glyphs
+alone, with the words as tooltip and semantics; "Done" keeps its word.
 
-- **Paged lanes are named by a switch.** While the lanes are pages (a phone,
-  a narrow pane) the toolbar leads with a *Plan | Actual* `DsSegmentedToggle`
-  that follows the swipe and turns the pager when tapped
-  (`MotionDurations.medium1`, `MotionCurves.standard`), so the recorded lane
-  is a visible tap away rather than a gesture to discover. On a 320 pt phone
-  it scales down to fit beside the buttons rather than overflow. The page not
-  in view peeks in by `step3`, clipped, as a cue that there is another.
-- **Side by side, a one-shot line** — *Both* — names the two columns until
-  the gestures are learned; the host's `toolbarLeading` takes that slot when
-  given, and `toolbarTrailing` follows the buttons.
-- **Hour marks read in the device's clock.** `formatTimelineHourLabel` gives
-  `1 PM` on a 12-hour device and `13` on a 24-hour one; the end of the day is
-  `12 AM` or `24`. The folded-region pills use the same marks, as `8 AM–6 PM`.
-- **Blocks** print their time range in caption figures, ellipsize their
-  title, and drop their words entirely when narrower than a tap target.
-- **This reverses phase 5**, which moved the toggles into the briefing
-  strip's sentence through a `DayTimelineController`: the strip then changed
-  shape from tab to tab, and the panel read the buttons as the briefing's.
-  The controller is gone.
+- **Side by side, the toolbar is the lanes' header**: "Plan" and "Actual" in
+  subtitle1 over their own lanes, pinned while the day scrolls, with Arrange
+  over the plan it changes and the lane format over Actual. A host that takes
+  the toolbar's leading slot (the docked panel's date strip) gets the old
+  in-lane names back.
+- **Paged, on a phone, the lanes are named** "Plan" and "Actual" at the same
+  tier, on the rows' text edge — the lane in view in high emphasis over a teal
+  `step1` underline, as a selected tab is. The names follow the pager and a
+  tap pages to the lane named (`MotionDurations.medium1`,
+  `MotionCurves.standard`); where the row is a few points short they scale
+  down rather than overflow. The next lane peeks in by `step3` only
+  (`_horizontalPeekFraction` 0.96), clipped, so the lane in view keeps its
+  width.
+- **Hour marks read in the device's clock** (`formatTimelineHourLabel`: `1 PM`
+  or `13`, the day's end `12 AM` or `24`), and the rail is as wide as puts
+  the labels' edge on the rows' time column (`DayRowScaffold.timeColumnWidth`
+  plus the row inset), so the page's times stand on one vertical. Folded
+  ranges are `8 AM–6 PM` on an opaque raised pill.
+- **Blocks.** Ranges write a shared period once (`1:00–2:30 PM`,
+  `formatClockRange`). A planned block still to come reads at full strength —
+  what "Looks good" approves — and one already past recedes a step; its
+  category stripe is full strength and its dashed outline is stronger on a
+  light canvas (`timelinePlannedOutlineAlpha`). A block too short for its
+  time on its own line leads with the time; a recording still running leads
+  with "Now". The edit pencil is a quiet glyph whose target is the block's
+  top-end corner, a tap target tall and stopping short of the agent's spark,
+  which shows its reason on a tap. Energy bands are a neutral wash.
+- **The content scrolls `step10` past the last hour**, the room the agenda
+  leaves too, so the last fold pill clears the footer's fade.
+- **History.** Phase 5 moved the toggles into the briefing strip through a
+  `DayTimelineController`; the strip then changed shape from tab to tab and
+  the buttons read as the briefing's, so phase 8 deleted the controller.
 - **Paint.** The now-line and its dot are `interactive.enabled`, and the time
   rides a teal `badgesPills` pill in `text.onInteractiveAlert`: position, not
   an alarm. Hour lines are `decorative.level01` hairlines; hour labels stay
@@ -512,64 +533,79 @@ at its end, and at its start whatever names the lanes.
 Every list on the page — the agenda, its folded run of finished items, "Today
 so far" and the activity entries — sits on one grid, `DayRowScaffold`
 ([day_row_scaffold.dart](../../../lib/features/daily_os_next/ui/widgets/day_row_scaffold.dart)),
-so times, marks and words start on the same vertical lines on every tab: a
-right-aligned `step10` time column scaled with the text, a `step2` gutter, a
-mark slot one caption glyph wide, `step3`, the words, and an optional
-trailing. Rows are at least `TapTargets.minimum` tall and inset by
-`cardPadding` (`step4` on a phone); the time and the mark centre on the
-words' first line. Times and durations use `dayFigures` (tabular). Groups are
-named by `DaySectionHeader`
-([day_section_header.dart](../../../lib/features/daily_os_next/ui/widgets/day_section_header.dart)):
-a subtitle2 label with an optional caption summary, `step2` above its card.
+so times, marks and words start on the same vertical lines on every tab.
 
-The Agenda, Activity and the briefing share one reading column, capped at
-`kDetailContentMaxWidth` and aligned to the start; the Day timeline keeps the
-full width. On a phone, Agenda and Activity scroll the briefing away with
-their rows (passed in as their `header`); the Day tab and a desktop pin it,
-the Day tab in a dense form without the captions and legend.
+- **First line**: the time column — as wide as the widest time the device's
+  clock writes and the "Now" that sits under a running row's time
+  (`timeColumnWidth`), right-aligned, in `dayFigures` — a `step2` gutter, a
+  mark slot one caption glyph wide, `step3`, the row's semibold name, and the
+  trailing `DayRowTrailing`: the row's time figure and a chevron slot every
+  row keeps, filled when the row opens something.
+- **Below** (`below`): the row's meta, reason, status and actions, starting
+  under the name and running under the trailing column, so only the first
+  line gives up width to the figure. "Now" (`timeOverline`) sits level with
+  it under the time.
+- **One meaning per column**: the mark is the state — the category dot (with
+  the category's name as its tooltip), a status glyph, or the done check in
+  the time's neutral ink, never green — and the trailing figure is always a
+  time. The row under way (`active`) has a `step1` teal edge.
+- Rows are at least `TapTargets.minimum` tall, inset by `cardPadding`
+  (`step4` on a phone, `DayRowScaffold.inset`).
+
+Groups are named by `DaySectionHeader`
+([day_section_header.dart](../../../lib/features/daily_os_next/ui/widgets/day_section_header.dart)),
+one tier above the rows' names: a subtitle1 label and a baseline-aligned,
+worded caption summary ("3 left · 2h 45m", "2 waiting", "4 handled"), inset as
+the rows are and short of their chevron slot (`DayRowTrailing.slotWidth`), so
+every summary ends on the figures' edge, `step2` above its card.
+
+The briefing, every tab's content and the composer share one reading column,
+capped at `kDetailContentMaxWidth` and aligned to the start. Vertically: `step4`
+from the header to the briefing, the review nudge hanging under it on the rows'
+text edge, then `sectionGap` to the first section. On a phone, Agenda and
+Activity scroll the briefing away with their rows (passed in as their
+`header`); the Day tab and a desktop pin it, the Day tab in a dense form —
+sentence, line and its planned/free captions, without the legend.
 
 ## The Agenda list
 
-The Agenda tab is one `DsRowsCard` of `DayAgendaRow`s
+The Agenda tab is a "Plan" header ("N left · time", the fold above already
+saying what is done) over one `DsRowsCard` of `DayAgendaRow`s
 ([day_agenda_row.dart](../../../lib/features/daily_os_next/ui/widgets/day_agenda_row.dart)),
-keyed by item id, not a stack of bordered cards.
-
-- **Finished items at the head of the day fold.** Two or more leading done
-  items (`AgendaView.foldDoneFrom`) become one row — the first one's time, the
-  check, "N done", a chevron — that unfolds them in place; a single one is
-  shown as it is.
-- **No plan is one row**: a dash, "No plan yet" and, when the page can start
-  the check-in, a chevron that does.
+keyed by item id.
 
 - **The time column orders the list.** Each row leads with its item's first
-  block start (dropped blocks hold no time) in a `step10` column that grows
-  with the text size, so every row's dot and title share one line. Items are
-  sorted by that start; ties keep plan order, and items with no block sort
-  last behind a dash. There is no ordinal and no cover art: the category's
-  `step2` dot is the row's only mark of colour.
-- **The task's own name leads.** A linked row's title is the task's live
-  name when it differs from the item's; the agenda's wording then joins the
-  outcome on one meta line, with *Overdue* in error ink. The agent's reason
-  for the placement follows, up to two low-emphasis lines behind the
-  `aiCard.accent` sparkle. The estimate is the item's linked blocks' minutes.
-- **States.** In progress: *Now* above the time, a `step1`
-  `interactive.enabled` edge down the row, and a `decorative.level03`
-  progress line while it is part-way. Done: low-emphasis words struck
-  through, the success check in place of the estimate, no reason.
+  block start (dropped blocks hold no time); items are sorted by it, ties keep
+  plan order, and items with no block sort last behind a dash.
+- **Finished items at the head of the day fold.** Two or more leading done
+  items (`AgendaView.foldDoneFrom`) become one row — the first one's time,
+  the check, "N items done", a fold arrow — that unfolds them in place.
+- **The task's own name leads.** A linked row's name is the task's live title;
+  the agenda's wording joins the outcome on one meta line only when it says
+  something the name does not (every word longer than three letters already
+  in the name counts as said). The agent's reason follows, up to two
+  low-emphasis lines behind the `aiCard.accent` spark. The figure is the
+  item's linked blocks' minutes.
+- **States.** In progress: "Now" and the teal edge. Done: low-emphasis words
+  struck through, the check as its mark, no reason.
+- **No plan is one row** under the same header: "No plan yet for today.", a
+  chevron when the page can start the check-in, and the day's "Today so far"
+  beneath.
 
 ## The Activity list
 
 The Activity tab shares the Agenda's shape, in three groups a `sectionGap`
 apart: **Needs you** (unsubmitted recordings and agent jobs, the ones ready to
-use first, with their count), the day's tracked time (`TimeSpentCard`), and
-**Handled**. Entries are rows on the shared grid, keyed by entry id. Each row's
-glyph says where it stands — the error glyph for a stalled step or failed
-transcription (an agent job always), offline while it waits for the network,
-a waveform while it is transcribed, else its kind — in matching ink, then its
-words (two lines of transcript on a phone) and what it offers below them: the
-recording, the editable transcript, Retry, Open setup and *Use*, a secondary
-button, so the footer's next step stays the page's one filled action. *Delete*
-is quiet, at the row's end. Error and empty states keep their copy.
+use first, "N waiting"), the day's tracked time (`TimeSpentCard`), and
+**Handled** ("N handled"). Each row leads with its words as its semibold name
+— the transcript, a plan's label, or "Voice note" for a recording still being
+transcribed — then the status caption: error ink for what needs the user,
+high emphasis for a recording ready to use, medium emphasis otherwise; a wait
+on the network keeps its warning ink to the glyph. The glyph says where the
+row stands (error, offline, transcribing, else its kind). Below: on a phone,
+three lines of transcript at most; the recording, the editable transcript,
+Retry, Open setup and *Use* (secondary, so the footer's next step stays the
+page's one filled action); *Delete* quiet at the row's end.
 
 ## Task-linked versus standalone
 
@@ -673,40 +709,36 @@ the plan and shows a countdown Undo toast.
 `DayBriefingStrip`
 ([day_briefing_strip.dart](../../../lib/features/daily_os_next/ui/widgets/day_briefing_strip.dart))
 sits under the header on all three tabs and is the page's one violet
-(`aiCard`) surface.
+(`aiCard`) surface, inset as the rows below it are.
 
 - **One sentence, shared with her voice.** `composeDayHeadline` — the block
-  count and what is next, or that nothing is left today — is how the spoken
-  `composeDayBriefing` begins, so the strip and the companion never disagree.
-  The strip sets a timer for the next block's start and rewrites itself then,
-  so it never names a block already under way. Without a plan the sentence is
-  her invitation to check in.
+  count and what is next, named by its task's live title as its agenda row
+  is — is how the spoken `composeDayBriefing` begins, so the strip and the
+  companion never disagree. The strip sets a timer for the next block's start
+  and rewrites itself then. Without a plan the sentence is her invitation to
+  check in.
 - **One line for the day's load.** `DayCapacityBar`
   ([day_capacity_bar.dart](../../../lib/features/daily_os_next/ui/widgets/day_capacity_bar.dart))
-  is a `step2`-tall line: one segment per `categoryTotalsFor` entry in
-  category colour, each its share of the capacity, over a `decorative.level01`
-  track that stands for what is free. Segments adding up to more than the
-  capacity fill the bar scaled to their own total, so the bar never claims
-  room the day does not have; with no capacity they fill it as a mix. Each
-  segment's tooltip names its category and minutes, and the bar is one
-  semantics node listing all of them — where the old legend's numbers went.
-- **Two captions, honest about over.** The minutes planned (block-derived,
-  the same figures the bar draws) and either what is free or, in
-  `alert.error` ink, *N over*. A day without a capacity names only what is
-  planned. Without a plan the bar is the tracked time in
-  `interactive.enabled` and the captions are *N tracked* and *N done*.
-- **A legend names every colour.** Under the captions each category's dot,
-  name and minutes; on a phone the largest two and "+N more" with their time
-  together, and the bar folds the same tail into one `decorative.level03`
-  segment. Without a plan the bar and legend are the recorded time by
-  category (`recordedTotalsFor`).
-- **Her tap is a play button.** While the companion can speak, a play/stop
-  button at the sentence's end does what tapping her does; the strip itself
-  is not a button.
-- **It never crowds out the day.** The strip and the nudges under it share a
-  block capped at half the room between header and footer. On a short screen
-  at large text that block scrolls within its half; everywhere else it is
-  just its own height.
+  is a `step2`-tall line: one segment per category in its colour, each its
+  share of the capacity, then a `step1` gap and the bare `decorative.level01`
+  track that is free. Segments adding up to more than the capacity fill the
+  bar scaled to their own total. Each segment's tooltip names its category
+  and minutes, and the bar is one semantics node listing all of them.
+- **One colour source.** The totals are computed on the blocks re-coloured by
+  their task's live category, the hue the agenda dot and the timeline block
+  wear, so a recategorised task is one colour everywhere.
+- **Captions, honest about over.** The minutes planned and either what is free
+  or, in `alert.error` ink, *N over*. Without a plan the bar is the recorded
+  time by category (`recordedTotalsFor`) with *N tracked* and *N done*.
+- **A legend names every colour**: each category's dot, name and minutes —
+  the minutes a step stronger and never shortened, the entries wrapping
+  rather than cutting a name. On a phone the largest two and "+N more" with
+  their time; the bar folds that tail into one `decorative.level02` segment.
+- **Her tap is a play button** at the sentence's end, shown while the
+  companion can speak.
+- **It never crowds out the day.** Pinned, the strip and the nudges under it
+  take at most a third of the room between header and footer, scrolling
+  within it on a short screen at large text.
 
 ## Colour discipline
 
@@ -714,8 +746,10 @@ One table governs the page's colour: teal (`interactive.enabled`) only for the
 selected day and tab, the now-line, the in-progress edge, the mic and the one
 primary button; violet (`aiCard`) only for the briefing strip, the agent's
 reasons and the knowledge sparkle; a category's hue only on its dot, its bar
-segment and its block fills, never on text; `alert.success` for the done check;
-`alert.error`/`alert.warning` for over-capacity, overdue and the setup nudge;
+segment and its block fills, never on text; the done check in the time's
+neutral ink, so green never reads as a category; `alert.error`/`alert.warning`
+for over-capacity, overdue, a stalled step, a network wait's glyph and the
+setup nudge;
 everything else is `text.*` emphasis and `decorative.*` hairlines. Light mode
 keeps the violet `aiCard` surface. `day_page_palette_test.dart` renders every
 tab in both themes and fails on any colour painted outside that table —

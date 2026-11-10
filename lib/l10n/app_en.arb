@@ -3187,6 +3187,16 @@
   "dailyOsNextActivityDeleteRecording": "Delete",
   "dailyOsNextActivityEmpty": "No recordings or check-ins yet.",
   "dailyOsNextActivityHandled": "Handled",
+  "dailyOsNextActivityHandledCount": "{count} handled",
+  "@dailyOsNextActivityHandledCount": {
+    "description": "Summary beside the Activity tab's 'Handled' header: how many entries are dealt with.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "4"
+      }
+    }
+  },
   "dailyOsNextActivityLoadFailed": "Your saved activity is still on this device, but it couldn't be loaded right now.",
   "dailyOsNextActivityMissingAudio": "This entry is retained, but its audio file isn't available on this device. Restore the file, then retry.",
   "dailyOsNextActivityNeedsAttention": "Needs attention",
@@ -3212,6 +3222,20 @@
   "dailyOsNextActivityTranscriptPending": "Your recording is saved. The transcript is still pending.",
   "dailyOsNextActivityUseToPlan": "Use to build plan",
   "dailyOsNextActivityUseToRefine": "Use to refine",
+  "dailyOsNextActivityVoiceNote": "Voice note",
+  "@dailyOsNextActivityVoiceNote": {
+    "description": "Name of an Activity row for a voice recording whose transcript is not ready yet."
+  },
+  "dailyOsNextActivityWaitingCount": "{count} waiting",
+  "@dailyOsNextActivityWaitingCount": {
+    "description": "Summary beside the Activity tab's 'Needs you' header: how many entries wait for the user.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "2"
+      }
+    }
+  },
   "dailyOsNextActivityWaitingForNetwork": "Waiting for connection",
   "dailyOsNextAgendaCapacityOf": "of {capacity}",
   "@dailyOsNextAgendaCapacityOf": {
@@ -3233,6 +3257,20 @@
     }
   },
   "dailyOsNextAgendaHideDone": "Hide finished items",
+  "dailyOsNextAgendaLeft": "{count} left · {duration}",
+  "@dailyOsNextAgendaLeft": {
+    "description": "Summary beside the agenda's 'Plan' header: how many items are not done yet, followed by the time they are planned for.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      },
+      "duration": {
+        "type": "String",
+        "example": "2h 45m"
+      }
+    }
+  },
   "dailyOsNextAgendaNoPlanTitle": "No plan yet for today.",
   "dailyOsNextAgendaNow": "Now",
   "@dailyOsNextAgendaNow": {
@@ -3350,17 +3388,13 @@
       }
     }
   },
-  "dailyOsNextBriefingMoreCategories": "+{count} more {duration}",
+  "dailyOsNextBriefingMoreCategories": "+{count} more",
   "@dailyOsNextBriefingMoreCategories": {
-    "description": "Last entry of the capacity legend on a phone: the categories not named, and their time together.",
+    "description": "Last entry of the capacity legend on a phone: how many categories are not named. Their time together follows it.",
     "placeholders": {
       "count": {
         "type": "int",
         "example": "2"
-      },
-      "duration": {
-        "type": "String",
-        "example": "1h 30m"
       }
     }
   },
@@ -3802,7 +3836,18 @@
   "dailyOsNextStateRecurringMissed": "Recurring · missed",
   "dailyOsNextTimelineActual": "Actual",
   "dailyOsNextTimelineArrange": "Arrange blocks",
-  "dailyOsNextTimelineBoth": "Plan and actual",
+  "dailyOsNextTimelineArrangeShort": "Arrange",
+  "@dailyOsNextTimelineArrangeShort": {
+    "description": "Label of the Day timeline's button that turns on moving and resizing planned blocks."
+  },
+  "dailyOsNextTimelineBothLanes": "Both lanes",
+  "@dailyOsNextTimelineBothLanes": {
+    "description": "Label of the Day timeline's button that shows the plan and actual lanes side by side, on a phone where they are shown one at a time."
+  },
+  "dailyOsNextTimelineOneLane": "One lane",
+  "@dailyOsNextTimelineOneLane": {
+    "description": "Label of the Day timeline's button that switches from the side-by-side plan and actual lanes to one lane at a time."
+  },
   "dailyOsNextTimelinePlanned": "Plan",
   "dailyOsNextTimelineSessionOf": "Session {index} of {total}",
   "@dailyOsNextTimelineSessionOf": {

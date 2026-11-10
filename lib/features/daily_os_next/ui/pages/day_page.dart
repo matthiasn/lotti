@@ -27,7 +27,9 @@ import 'package:lotti/features/daily_os_next/ui/widgets/day_briefing_companion.d
 import 'package:lotti/features/daily_os_next/ui/widgets/day_briefing_strip.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_check_in_spotlight_host.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_composer.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/day_row_scaffold.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/day_view_side_panel.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/edge_fade.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/knowledge_nudge.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/plan_view_toggle.dart';
@@ -420,13 +422,14 @@ class _DayPageState extends ConsumerState<DayPage> {
                   final summary = Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // The day in a sentence and a line, every tab.
+                      // The day in a sentence and a line, every tab: step4
+                      // under the header; the nudge under it hangs from it,
+                      // and the list below opens a sectionGap further down.
                       Padding(
-                        padding: EdgeInsets.fromLTRB(
-                          tokens.spacing.step5,
-                          tokens.spacing.step2,
-                          tokens.spacing.step5,
-                          tokens.spacing.step2,
+                        padding: EdgeInsets.only(
+                          left: tokens.spacing.step5,
+                          top: tokens.spacing.step4,
+                          right: tokens.spacing.step5,
                         ),
                         child: DayBriefingStrip(
                           draft: widget.draft,
@@ -446,12 +449,18 @@ class _DayPageState extends ConsumerState<DayPage> {
                       // a phone's timeline, which needs the room — they are
                       // on the other tabs.
                       if (!(compact && _view == PlanView.day))
+                        // On the text edge the section headers and the rows'
+                        // times share; its tap target's own height is the
+                        // small step that ties it to the briefing.
                         Padding(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: tokens.spacing.step5,
+                          padding: EdgeInsetsDirectional.only(
+                            start:
+                                tokens.spacing.step5 +
+                                DayRowScaffold.inset(context),
+                            end: tokens.spacing.step5,
                           ),
                           child: const Align(
-                            alignment: Alignment.centerLeft,
+                            alignment: AlignmentDirectional.centerStart,
                             child: KnowledgeNudge(),
                           ),
                         ),
@@ -486,24 +495,37 @@ class _DayPageState extends ConsumerState<DayPage> {
                                 onRenameItem: onRenameItem,
                                 header: pinned ? null : summary,
                                 onStartCheckIn: widget.onCheckIn,
+                                actualBlocks: actualBlocks ?? const [],
                               ),
                             ),
-                            // The one full-width tab: the planned and
-                            // recorded lanes sit side by side once the pane
-                            // is wide.
-                            PlanView.day => DayTimeline(
-                              draft: widget.draft,
-                              actualBlocks: actualBlocks,
-                              onRenameBlock: onRenameBlock,
-                              onEditBlock: onEditBlock,
-                              onRescheduleBlock: onRescheduleBlock,
-                              showGestureHint: !prefs.timelineGesturesLearned,
-                              onGesturesLearned: ref
-                                  .read(
-                                    dailyOsPreferencesControllerProvider
-                                        .notifier,
-                                  )
-                                  .markTimelineGesturesLearned,
+                            // In the reading column like every tab, so the
+                            // page keeps one right edge; the lanes sit side
+                            // by side wherever the docked panel's would.
+                            PlanView.day => _OnPageColumn(
+                              // The step5 rail the Agenda and Activity keep,
+                              // so the page has one left and one right edge.
+                              child: Padding(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: tokens.spacing.step5,
+                                ),
+                                child: DayTimeline(
+                                  comparisonBreakpoint:
+                                      kDayViewSidePanelComparisonBreakpoint,
+                                  draft: widget.draft,
+                                  actualBlocks: actualBlocks,
+                                  onRenameBlock: onRenameBlock,
+                                  onEditBlock: onEditBlock,
+                                  onRescheduleBlock: onRescheduleBlock,
+                                  showGestureHint:
+                                      !prefs.timelineGesturesLearned,
+                                  onGesturesLearned: ref
+                                      .read(
+                                        dailyOsPreferencesControllerProvider
+                                            .notifier,
+                                      )
+                                      .markTimelineGesturesLearned,
+                                ),
+                              ),
                             ),
                             PlanView.activity => _OnPageColumn(
                               child: DayActivityView(

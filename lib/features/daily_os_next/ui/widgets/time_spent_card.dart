@@ -1,10 +1,13 @@
 import 'dart:math' as math;
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/ui/category_color.dart';
 import 'package:lotti/features/daily_os_next/ui/time_format.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_row_scaffold.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_section_header.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/live_task_metadata.dart';
 import 'package:lotti/features/design_system/components/cards/ds_rows_card.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -27,7 +30,6 @@ class TimeSpentCard extends StatefulWidget {
   const TimeSpentCard({
     required this.blocks,
     this.title,
-    this.showSummary = true,
     this.maxRows,
     super.key,
   });
@@ -39,11 +41,6 @@ class TimeSpentCard extends StatefulWidget {
   /// Eyebrow label override. Defaults to the localized "Today so far";
   /// callers rendering a non-today date pass a date-aware label.
   final String? title;
-
-  /// Whether the eyebrow carries the total and done count. A host that
-  /// already says them (the day page's briefing, without a plan) leaves them
-  /// out rather than repeat them.
-  final bool showSummary;
 
   /// Visible rows before the expander takes over. Defaults to 3 on
   /// desktop layouts and 2 otherwise.
@@ -86,12 +83,11 @@ class _TimeSpentCardState extends State<TimeSpentCard> {
       children: [
         DaySectionHeader(
           label: widget.title ?? messages.dailyOsNextTimeSpentTitle,
-          summary: widget.showSummary
-              ? messages.dailyOsNextTimeSpentSummary(
-                  formatMinutesCompact(totalMinutes),
-                  doneCount,
-                )
-              : null,
+          // Always summed, so the group reads alike on every tab.
+          summary: messages.dailyOsNextTimeSpentSummary(
+            formatMinutesCompact(totalMinutes),
+            doneCount,
+          ),
         ),
         DsRowsCard(
           rows: [
@@ -154,10 +150,8 @@ class _EarlierSessionsRow extends StatelessWidget {
               size: tokens.typography.size.caption,
               color: tokens.colors.text.lowEmphasis,
             ),
-            trailing: Icon(
-              expanded ? LottiIcons.chevronUp : LottiIcons.chevronDown,
-              size: tokens.typography.size.subtitle2,
-              color: tokens.colors.text.lowEmphasis,
+            trailing: DayRowTrailing(
+              icon: expanded ? LottiIcons.chevronUp : LottiIcons.chevronDown,
             ),
             child: Text(
               label,
@@ -172,62 +166,64 @@ class _EarlierSessionsRow extends StatelessWidget {
   }
 }
 
-/// One recorded session on the shared row grid. A session that belongs to a
-/// task opens it, and ends in the agenda's chevron to say so.
-class _TimeSpentRow extends StatelessWidget {
+/// One recorded session on the shared row grid, named and coloured as its
+/// task is now. The session under way carries the agenda's "Now" and teal
+/// edge. A session that belongs to a task opens it, and ends in the
+/// agenda's chevron to say so.
+class _TimeSpentRow extends ConsumerWidget {
   const _TimeSpentRow({required this.block, super.key});
 
   final TimeBlock block;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
     final done = block.state == TimeBlockState.completed;
+    final running = block.state == TimeBlockState.inProgress;
     final taskId = block.taskId?.trim();
     final opensTask = taskId != null && taskId.isNotEmpty;
-    final mark = done
-        ? Icon(
-            LottiIcons.confirm,
-            size: tokens.typography.size.bodySmall,
-            color: tokens.colors.alert.success.defaultColor,
-          )
-        : Text(
-            formatMinutesCompact(block.duration.inMinutes),
-            style: tokens.typography.styles.others.caption.copyWith(
-              color: tokens.colors.text.mediumEmphasis,
-              fontFeatures: dayFigures,
-            ),
-          );
+    // The task as it is now — its name and category — as the agenda row and
+    // the timeline block for the same work show it.
+    final live = watchLiveTaskMetadata(ref, block.taskId);
+    final category = live.categoryOr(block.category);
+    // As on the agenda: the mark is the state (category, or the check once
+    // done, in the time's ink), the trailing figure always the length.
     final row = DayRowScaffold(
       time: formatClock(context, block.start),
-      leading: SizedBox.square(
-        dimension: tokens.spacing.step2,
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: categoryColorFromHex(block.category.colorHex),
-            shape: BoxShape.circle,
-          ),
-        ),
-      ),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          mark,
-          if (opensTask) ...[
-            SizedBox(width: tokens.spacing.step2),
-            Icon(
-              LottiIcons.chevronRight,
-              size: tokens.typography.size.subtitle2,
-              color: tokens.colors.text.lowEmphasis,
+      timeOverline: running ? context.messages.dailyOsNextAgendaNow : null,
+      active: running,
+      leading: done
+          ? Icon(
+              LottiIcons.confirm,
+              size: tokens.typography.size.caption,
+              color: tokens.colors.text.mediumEmphasis,
+            )
+          // The dot names its category, to a pointer and to a screen reader.
+          : Tooltip(
+              message: category.name,
+              child: SizedBox.square(
+                dimension: tokens.spacing.step2,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: categoryColorFromHex(category.colorHex),
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
             ),
-          ],
-        ],
+      trailing: DayRowTrailing(
+        figure: formatMinutesCompact(block.duration.inMinutes),
+        icon: opensTask ? LottiIcons.chevronRight : null,
       ),
       child: Text(
-        block.title,
-        maxLines: 1,
+        live.title ?? block.title,
+        // Two lines, as every list's names take.
+        maxLines: 2,
         overflow: TextOverflow.ellipsis,
+        // The session's name in the weight its block and its agenda row
+        // use, so one item reads the same in every list.
         style: tokens.typography.styles.body.bodySmall.copyWith(
+          fontWeight: tokens.typography.weight.semiBold,
           color: tokens.colors.text.highEmphasis,
         ),
       ),

@@ -4751,6 +4751,11 @@ class AppLocalizationsSv extends AppLocalizations {
   String get dailyOsNextActivityHandled => 'Hanterat';
 
   @override
+  String dailyOsNextActivityHandledCount(int count) {
+    return '$count hanterade';
+  }
+
+  @override
   String get dailyOsNextActivityLoadFailed =>
       'Din sparade aktivitet finns kvar på den här enheten, men den kunde inte läsas in just nu.';
 
@@ -4813,6 +4818,14 @@ class AppLocalizationsSv extends AppLocalizations {
   String get dailyOsNextActivityUseToRefine => 'Använd för att förfina';
 
   @override
+  String get dailyOsNextActivityVoiceNote => 'Röstanteckning';
+
+  @override
+  String dailyOsNextActivityWaitingCount(int count) {
+    return '$count väntar';
+  }
+
+  @override
   String get dailyOsNextActivityWaitingForNetwork => 'Väntar på anslutning';
 
   @override
@@ -4833,6 +4846,11 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get dailyOsNextAgendaHideDone => 'Dölj klara punkter';
+
+  @override
+  String dailyOsNextAgendaLeft(int count, String duration) {
+    return '$count kvar · $duration';
+  }
 
   @override
   String get dailyOsNextAgendaNoPlanTitle => 'Ingen plan än för idag.';
@@ -4991,8 +5009,8 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String dailyOsNextBriefingMoreCategories(int count, String duration) {
-    return '+$count till $duration';
+  String dailyOsNextBriefingMoreCategories(int count) {
+    return '+$count till';
   }
 
   @override
@@ -5736,7 +5754,13 @@ class AppLocalizationsSv extends AppLocalizations {
   String get dailyOsNextTimelineArrange => 'Arrangera block';
 
   @override
-  String get dailyOsNextTimelineBoth => 'Plan och verklighet';
+  String get dailyOsNextTimelineArrangeShort => 'Ordna';
+
+  @override
+  String get dailyOsNextTimelineBothLanes => 'Båda kolumnerna';
+
+  @override
+  String get dailyOsNextTimelineOneLane => 'En kolumn';
 
   @override
   String get dailyOsNextTimelinePlanned => 'Plan';

@@ -4815,6 +4815,11 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsNextActivityHandled => 'Rezolvat';
 
   @override
+  String dailyOsNextActivityHandledCount(int count) {
+    return '$count rezolvate';
+  }
+
+  @override
   String get dailyOsNextActivityLoadFailed =>
       'Activitatea dvs. salvată se află în continuare pe acest dispozitiv, dar nu a putut fi încărcată acum.';
 
@@ -4879,6 +4884,14 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsNextActivityUseToRefine => 'Folosiți pentru ajustare';
 
   @override
+  String get dailyOsNextActivityVoiceNote => 'Notă vocală';
+
+  @override
+  String dailyOsNextActivityWaitingCount(int count) {
+    return '$count în așteptare';
+  }
+
+  @override
   String get dailyOsNextActivityWaitingForNetwork => 'Se așteaptă conexiunea';
 
   @override
@@ -4900,6 +4913,11 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get dailyOsNextAgendaHideDone => 'Ascundeți elementele finalizate';
+
+  @override
+  String dailyOsNextAgendaLeft(int count, String duration) {
+    return 'Rămân $count · $duration';
+  }
 
   @override
   String get dailyOsNextAgendaNoPlanTitle =>
@@ -5063,8 +5081,8 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String dailyOsNextBriefingMoreCategories(int count, String duration) {
-    return '+$count în plus $duration';
+  String dailyOsNextBriefingMoreCategories(int count) {
+    return '+$count în plus';
   }
 
   @override
@@ -5814,7 +5832,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsNextTimelineArrange => 'Aranjați blocurile';
 
   @override
-  String get dailyOsNextTimelineBoth => 'Plan și real';
+  String get dailyOsNextTimelineArrangeShort => 'Aranjați';
+
+  @override
+  String get dailyOsNextTimelineBothLanes => 'Ambele coloane';
+
+  @override
+  String get dailyOsNextTimelineOneLane => 'O singură coloană';
 
   @override
   String get dailyOsNextTimelinePlanned => 'Plan';

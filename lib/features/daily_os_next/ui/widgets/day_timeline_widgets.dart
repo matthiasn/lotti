@@ -6,13 +6,17 @@ class _TimelineToolbar extends StatelessWidget {
   const _TimelineToolbar({
     required this.mode,
     required this.arrangeMode,
-    required this.showHint,
     required this.onToggleMode,
     required this.onToggleArrange,
+    required this.timeRailWidth,
     this.leading,
     this.trailing,
     this.lanes,
   });
+
+  /// The hour rail's width: side by side, the toolbar names each lane over
+  /// its own column, so it starts its labels where the lanes start.
+  final double timeRailWidth;
 
   /// The paged lanes' controller, while the lanes are pages: the toolbar
   /// then names them with a Plan / Actual toggle that follows the swipe, so
@@ -20,7 +24,7 @@ class _TimelineToolbar extends StatelessWidget {
   /// discover.
   final PageController? lanes;
 
-  /// See [DayTimeline.toolbarLeading]. Takes the coaching line's room.
+  /// See [DayTimeline.toolbarLeading]. Takes the lane names' room.
   final Widget? leading;
 
   /// See [DayTimeline.toolbarTrailing].
@@ -28,11 +32,6 @@ class _TimelineToolbar extends StatelessWidget {
 
   final _TimelineComparisonMode mode;
   final bool arrangeMode;
-
-  /// One-shot coaching line; retired by the host once the user has
-  /// demonstrated the gestures. The mode-toggle icon stays — it is an
-  /// affordance, not narration.
-  final bool showHint;
 
   final VoidCallback onToggleMode;
   final VoidCallback? onToggleArrange;
@@ -42,51 +41,125 @@ class _TimelineToolbar extends StatelessWidget {
     final tokens = context.designTokens;
     final messages = context.messages;
     final showingBoth = mode == _TimelineComparisonMode.both;
-    return Padding(
-      padding: EdgeInsets.symmetric(
-        horizontal: tokens.spacing.step5,
-        vertical: tokens.spacing.step2,
+    final modeToggle = _ModeToggle(
+      showingBoth: showingBoth,
+      onToggle: onToggleMode,
+    );
+    final arrange = switch (onToggleArrange) {
+      final onToggle? => _ArrangeToggle(
+        arranging: arrangeMode,
+        onToggle: onToggle,
       ),
-      child: Row(
-        children: [
-          Expanded(
-            child: switch (leading) {
-              final leading? => Align(
-                alignment: AlignmentDirectional.centerStart,
-                child: leading,
+      null => null,
+    };
+    if (showingBoth && leading == null) {
+      // Side by side, the toolbar is the lanes' header: each name over its
+      // own column, at the tier every group on the page is named at, and
+      // pinned, so the names stay in view however far the day scrolls.
+      // Arrange sits over the lane it changes, the plan.
+      Widget name(String text) => Padding(
+        padding: EdgeInsets.only(left: tokens.spacing.step5),
+        child: Text(
+          text,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: tokens.typography.styles.subtitle.subtitle1.copyWith(
+            color: tokens.colors.text.highEmphasis,
+          ),
+        ),
+      );
+      return Padding(
+        padding: EdgeInsets.only(
+          left: timeRailWidth,
+          right: tokens.spacing.step3,
+          top: tokens.spacing.step2,
+          bottom: tokens.spacing.step2,
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Row(
+                children: [
+                  Expanded(child: name(messages.dailyOsNextTimelinePlanned)),
+                  ?arrange,
+                ],
               ),
-              // On a 320 pt phone the two labels and the control buttons
-              // want a few points more than the row has: the toggle shrinks
-              // to fit rather than overflow.
-              null when lanes != null => FittedBox(
-                fit: BoxFit.scaleDown,
-                alignment: AlignmentDirectional.centerStart,
-                child: _LaneToggle(lanes: lanes!),
+            ),
+            SizedBox(width: tokens.spacing.step3),
+            Expanded(
+              child: Row(
+                children: [
+                  Expanded(child: name(messages.dailyOsNextTimelineActual)),
+                  modeToggle,
+                  ?trailing,
+                ],
               ),
-              // Side by side, the lanes need no switch: a one-shot line
-              // names what the two columns are.
-              null when showHint && showingBoth => Text(
-                messages.dailyOsNextTimelineBoth,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: tokens.typography.styles.others.caption.copyWith(
-                  color: tokens.colors.text.lowEmphasis,
+            ),
+          ],
+        ),
+      );
+    }
+    // Paged, on a phone: the lane names start where the rows' words would
+    // — on the row inset, less the names' own tap padding — and the buttons
+    // keep their words unless the row is too narrow for them.
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = constraints.maxWidth < _wordsMinWidth;
+        return Padding(
+          padding: EdgeInsetsDirectional.only(
+            // Never negative, whatever the tokens.
+            start: leading == null
+                ? math.max(
+                    0,
+                    DayRowScaffold.inset(context) - tokens.spacing.step3,
+                  )
+                : tokens.spacing.step5,
+            end: tokens.spacing.step3,
+            top: tokens.spacing.step2,
+            bottom: tokens.spacing.step2,
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: switch (leading) {
+                  final leading? => Align(
+                    alignment: AlignmentDirectional.centerStart,
+                    child: leading,
+                  ),
+                  // Paged lanes always come with their controller. Where the
+                  // row is a few points short, the names shrink to fit
+                  // rather than overflow.
+                  null => FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: AlignmentDirectional.centerStart,
+                    child: _LaneToggle(lanes: lanes!),
+                  ),
+                },
+              ),
+              _ModeToggle(
+                showingBoth: showingBoth,
+                onToggle: onToggleMode,
+                compact: compact,
+              ),
+              if (onToggleArrange case final onToggle?) ...[
+                SizedBox(width: tokens.spacing.step2),
+                _ArrangeToggle(
+                  arranging: arrangeMode,
+                  onToggle: onToggle,
+                  compact: compact,
                 ),
-              ),
-              null => const SizedBox.shrink(),
-            },
+              ],
+              ?trailing,
+            ],
           ),
-          _TimelineControlButtons(
-            showingBoth: showingBoth,
-            arrangeMode: arrangeMode,
-            onToggleMode: onToggleMode,
-            onToggleArrange: onToggleArrange,
-          ),
-          ?trailing,
-        ],
-      ),
+        );
+      },
     );
   }
+
+  /// The narrowest toolbar that fits the lane names and both buttons with
+  /// their words; below it the buttons show their glyphs.
+  static const double _wordsMinWidth = 340;
 }
 
 class _TimelinePane extends StatelessWidget {
@@ -101,6 +174,7 @@ class _TimelinePane extends StatelessWidget {
     required this.windowStart,
     required this.pxPerMinute,
     required this.now,
+    required this.currentTime,
     required this.showBands,
     required this.tracked,
     required this.onRenameBlock,
@@ -110,7 +184,8 @@ class _TimelinePane extends StatelessWidget {
     required this.onRescheduleBlock,
   });
 
-  final String label;
+  /// The lane's name over its hours, or null when the toolbar names it.
+  final String? label;
   final List<TimeBlock> blocks;
   final List<EnergyBand> bands;
   final Key paneKey;
@@ -120,6 +195,10 @@ class _TimelinePane extends StatelessWidget {
   final DateTime windowStart;
   final double pxPerMinute;
   final DateTime? now;
+
+  /// The time now, whether or not the now-line is in this window: blocks
+  /// that ended before it are past (see [DayBlock.past]).
+  final DateTime currentTime;
   final bool showBands;
 
   /// True for the recorded-sessions pane — its blocks render in the
@@ -149,10 +228,10 @@ class _TimelinePane extends StatelessWidget {
             padding: EdgeInsets.only(left: tokens.spacing.step5),
             child: Align(
               alignment: Alignment.topLeft,
-              child: Text(
-                label,
-                style: calmEyebrowStyle(tokens),
-              ),
+              child: switch (label) {
+                final label? => Text(label, style: calmEyebrowStyle(tokens)),
+                null => null,
+              },
             ),
           ),
         ),
@@ -208,6 +287,7 @@ class _TimelinePane extends StatelessWidget {
                         arrangeMode: arrangeMode,
                         onReschedule: onRescheduleBlock,
                         redacted: isRedacted?.call(slot.block) ?? false,
+                        past: slot.block.end.isBefore(currentTime),
                       ),
                     if (now != null)
                       NowLine(
@@ -453,16 +533,20 @@ class _EnergyBandBox extends StatelessWidget {
     );
     final height = math.max(0, end - top).toDouble();
 
+    // A neutral wash, stronger where energy is high: teal and info blue
+    // already mean "now" and "selected" on this page, and a band is neither.
     final color = switch (band.level) {
-      EnergyLevel.high => tokens.colors.interactive.enabled,
+      EnergyLevel.high ||
+      EnergyLevel.secondWind => tokens.colors.text.mediumEmphasis,
       EnergyLevel.low => tokens.colors.text.lowEmphasis,
-      EnergyLevel.secondWind => tokens.colors.alert.info.defaultColor,
     };
 
+    // Inset by the lane's block edge, so a band sits under the blocks it
+    // tints rather than wider than them.
     return Positioned(
       top: top,
-      left: 4,
-      right: 4,
+      left: tokens.spacing.step3,
+      right: tokens.spacing.step3,
       height: height,
       child: IgnorePointer(
         child: Semantics(
@@ -484,55 +568,106 @@ class _EnergyBandBox extends StatelessWidget {
   }
 }
 
-/// The lane-format toggle and, when the timeline can arrange, the arrange
-/// toggle — the same two buttons wherever they are shown.
-class _TimelineControlButtons extends StatelessWidget {
-  const _TimelineControlButtons({
+/// The lane-format toggle, a design-system button like Arrange beside it:
+/// "One lane" side by side, "Both lanes" when paged. Where a phone is too
+/// narrow for words ([compact]), its glyph alone, with the words as its
+/// tooltip and semantics.
+class _ModeToggle extends StatelessWidget {
+  const _ModeToggle({
     required this.showingBoth,
-    required this.arrangeMode,
-    required this.onToggleMode,
-    required this.onToggleArrange,
+    required this.onToggle,
+    this.compact = false,
   });
 
   final bool showingBoth;
-  final bool arrangeMode;
-  final VoidCallback onToggleMode;
-  final VoidCallback? onToggleArrange;
+  final VoidCallback onToggle;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
     final messages = context.messages;
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Tooltip(
-          message: showingBoth
-              ? messages.dailyOsNextTimelineShowPaged
-              : messages.dailyOsNextTimelineShowBoth,
-          child: IconButton(
-            key: const Key('daily_os_timeline_mode_toggle'),
-            iconSize: context.designTokens.typography.size.subtitle1,
-            onPressed: onToggleMode,
-            icon: Icon(
-              showingBoth ? LottiIcons.viewCarousel : LottiIcons.viewColumns,
-            ),
-          ),
-        ),
-        if (onToggleArrange != null)
-          Tooltip(
-            message: messages.dailyOsNextTimelineArrange,
-            child: IconButton(
-              key: const Key('daily_os_timeline_arrange_toggle'),
-              iconSize: context.designTokens.typography.size.subtitle1,
-              isSelected: arrangeMode,
-              onPressed: onToggleArrange,
-              // Selected, the button says how to finish: done arranging.
-              selectedIcon: const Icon(LottiIcons.confirm),
-              icon: const Icon(LottiIcons.drag),
-            ),
-          ),
-      ],
+    return _ToolbarButton(
+      key: const Key('daily_os_timeline_mode_toggle'),
+      label: showingBoth
+          ? messages.dailyOsNextTimelineOneLane
+          : messages.dailyOsNextTimelineBothLanes,
+      description: showingBoth
+          ? messages.dailyOsNextTimelineShowPaged
+          : messages.dailyOsNextTimelineShowBoth,
+      icon: showingBoth ? LottiIcons.viewCarousel : LottiIcons.viewColumns,
+      compact: compact,
+      onPressed: onToggle,
     );
+  }
+}
+
+/// Arrange, in words wherever they fit — a touch screen has no tooltip to
+/// explain a glyph. While arranging it is the filled "Done", so the mode
+/// cannot be missed and the way out is in plain sight.
+class _ArrangeToggle extends StatelessWidget {
+  const _ArrangeToggle({
+    required this.arranging,
+    required this.onToggle,
+    this.compact = false,
+  });
+
+  final bool arranging;
+  final VoidCallback onToggle;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    final messages = context.messages;
+    return _ToolbarButton(
+      key: const Key('daily_os_timeline_arrange_toggle'),
+      label: arranging
+          ? messages.doneButton
+          : messages.dailyOsNextTimelineArrangeShort,
+      description: messages.dailyOsNextTimelineArrange,
+      icon: arranging ? LottiIcons.confirm : LottiIcons.drag,
+      primary: arranging,
+      // Done keeps its word even on the narrowest phone: it is the way out.
+      compact: compact && !arranging,
+      onPressed: onToggle,
+    );
+  }
+}
+
+/// One dense design-system button of the timeline toolbar, secondary unless
+/// [primary]; [compact] drops the label for the glyph, keeping the label's
+/// meaning in a tooltip and the [description] as its semantics.
+class _ToolbarButton extends StatelessWidget {
+  const _ToolbarButton({
+    required this.label,
+    required this.description,
+    required this.icon,
+    required this.onPressed,
+    this.primary = false,
+    this.compact = false,
+    super.key,
+  });
+
+  final String label;
+  final String description;
+  final IconData icon;
+  final VoidCallback onPressed;
+  final bool primary;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    final button = DesignSystemButton(
+      label: compact ? '' : label,
+      semanticsLabel: description,
+      leadingIcon: icon,
+      variant: primary
+          ? DesignSystemButtonVariant.primary
+          : DesignSystemButtonVariant.secondary,
+      size: DesignSystemButtonSize.dense,
+      tapTargetSize: MaterialTapTargetSize.padded,
+      onPressed: onPressed,
+    );
+    return compact ? Tooltip(message: label, child: button) : button;
   }
 }
 
@@ -594,8 +729,11 @@ class _LeadingClip extends CustomClipper<Rect> {
       oldClipper.open != open || oldClipper.minWidth != minWidth;
 }
 
-/// Plan | Actual over the phone's paged lanes: the selected segment follows
-/// the pager, and a tap pages to the other lane.
+/// Plan · Actual over the phone's paged lanes, named at the tier the page's
+/// groups are (subtitle1) — not a second pill under the page's tabs. The lane in view is
+/// high-emphasis over a teal `step1` underline, as a selected tab is; the
+/// other is low-emphasis. The names follow the pager, and a tap pages to
+/// the lane named.
 class _LaneToggle extends StatelessWidget {
   const _LaneToggle({required this.lanes});
 
@@ -603,25 +741,83 @@ class _LaneToggle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.designTokens;
     final messages = context.messages;
     return AnimatedBuilder(
       animation: lanes,
       builder: (context, _) {
         final page = lanes.hasClients && lanes.position.haveDimensions
-            ? lanes.page ?? lanes.initialPage.toDouble()
+            ? lanes.page!
             : lanes.initialPage.toDouble();
-        return DsSegmentedToggle<int>(
-          key: const Key('daily_os_timeline_lane_toggle'),
-          selected: page.round(),
-          onChanged: (lane) => lanes.animateToPage(
-            lane,
-            duration: MotionDurations.medium1,
-            curve: MotionCurves.standard,
+        final shown = page.round();
+        Widget lane(int index, String name) {
+          final selected = index == shown;
+          return Semantics(
+            key: Key('daily_os_timeline_lane_$index'),
+            button: true,
+            selected: selected,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(tokens.radii.s),
+              onTap: () => lanes.animateToPage(
+                index,
+                duration: MotionDurations.medium1,
+                curve: MotionCurves.standard,
+              ),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  minHeight: TapTargets.minimum,
+                ),
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: tokens.spacing.step3,
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        name,
+                        style: tokens.typography.styles.subtitle.subtitle1
+                            .copyWith(
+                              color: selected
+                                  ? tokens.colors.text.highEmphasis
+                                  : tokens.colors.text.lowEmphasis,
+                            ),
+                      ),
+                      SizedBox(height: tokens.spacing.step1),
+                      // Every name reserves the line, so selecting one
+                      // never shifts the other.
+                      Container(
+                        height: tokens.spacing.step1,
+                        width: tokens.spacing.step6,
+                        decoration: BoxDecoration(
+                          color: selected
+                              ? tokens.colors.interactive.enabled
+                              : null,
+                          borderRadius: BorderRadius.circular(
+                            tokens.radii.badgesPills,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          );
+        }
+
+        // Its own sheet for the names' ink, wherever the timeline is hosted.
+        return Material(
+          type: MaterialType.transparency,
+          child: Row(
+            key: const Key('daily_os_timeline_lane_toggle'),
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              lane(0, messages.dailyOsNextTimelinePlanned),
+              lane(1, messages.dailyOsNextTimelineActual),
+            ],
           ),
-          segments: [
-            DsSegment(0, messages.dailyOsNextTimelinePlanned),
-            DsSegment(1, messages.dailyOsNextTimelineActual),
-          ],
         );
       },
     );

@@ -16,7 +16,6 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../helpers/service_overrides.dart';
-import '../../../../test_utils/material_ui_finders.dart';
 import '../../../../widget_test_utils.dart';
 import '../../../lockdown/lockdown_test_utils.dart';
 
@@ -151,8 +150,14 @@ void main() {
           find.byKey(const Key('daily_os_timeline_actual_pane')),
           findsOneWidget,
         );
-        expect(find.text('Planned focus'), findsOneWidget);
-        expect(find.text('Recorded session'), findsOneWidget);
+        expect(
+          find.textContaining('Planned focus', findRichText: true),
+          findsOneWidget,
+        );
+        expect(
+          find.textContaining('Recorded session', findRichText: true),
+          findsOneWidget,
+        );
 
         // Toolbar: the strip reads Today, and the hide affordance is there.
         final messages = tester.element(find.byType(DayViewSidePanel)).messages;
@@ -192,7 +197,7 @@ void main() {
         final label = tester.getCenter(find.text(messages.dailyOsTodayButton));
         final next = tester.getCenter(find.byIcon(LottiIcons.chevronRight));
         final toggle = tester.getCenter(
-          findMaterialTooltip(messages.dailyOsNextTimelineShowPaged),
+          find.byKey(const Key('daily_os_timeline_mode_toggle')),
         );
         final hide = tester.getCenter(
           find.byKey(const Key('day_view_panel_hide_button')),
@@ -205,8 +210,8 @@ void main() {
         expect(label.dx, lessThan(next.dx));
         expect(next.dx, lessThan(toggle.dx));
         expect(toggle.dx, lessThan(hide.dx));
-        // The strip took the coaching line's room: no hint text beside it.
-        expect(find.text(messages.dailyOsNextTimelineBoth), findsNothing);
+        // The strip took the lane names' room: the lanes name themselves.
+        expect(find.text(messages.dailyOsNextTimelinePlanned), findsOneWidget);
         // The column's own date strip takes the slot the lane switch would use.
         expect(
           find.byKey(const Key('daily_os_timeline_lane_toggle')),
@@ -409,7 +414,10 @@ void main() {
         find.byKey(const Key('daily_os_timeline_actual_pane')),
         findsOneWidget,
       );
-      expect(find.text('Recorded session'), findsOneWidget);
+      expect(
+        find.textContaining('Recorded session', findRichText: true),
+        findsOneWidget,
+      );
     });
 
     testWidgets('narrow panel keeps the swipeable paged timeline', (
@@ -529,9 +537,7 @@ void main() {
       // the coaching hint; it must route to the same persisted preference
       // the Daily OS day surface uses. At 700 wide the lanes render side by
       // side, so the toggle offers the paged view.
-      final timeline = tester.element(find.byType(DayViewSidePanel));
-      final toggleTooltip = timeline.messages.dailyOsNextTimelineShowPaged;
-      await tester.tap(findMaterialTooltip(toggleTooltip));
+      await tester.tap(find.byKey(const Key('daily_os_timeline_mode_toggle')));
       await tester.pump();
       expect(prefs.markCalls, 1);
     });
@@ -615,8 +621,14 @@ void main() {
       await tester.pump();
       await tester.pump();
 
-      expect(find.text('Planned focus'), findsOneWidget);
-      expect(find.text('Recorded session'), findsOneWidget);
+      expect(
+        find.textContaining('Planned focus', findRichText: true),
+        findsOneWidget,
+      );
+      expect(
+        find.textContaining('Recorded session', findRichText: true),
+        findsOneWidget,
+      );
       // The other category's block is still on the timeline, textless.
       expect(
         find.byKey(const Key('daily_os_day_block_actual:secret')),

@@ -1,5 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
+import 'package:lotti/features/daily_os_next/ui/category_color.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/live_task_metadata.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/time_spent_card.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -143,26 +145,6 @@ void main() {
       },
     );
 
-    testWidgets('leaves the summary out when the host already says it', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        _wrap(
-          TimeSpentCard(
-            blocks: [_session(id: 's1', title: 'Session', startHour: 8)],
-            showSummary: false,
-          ),
-        ),
-      );
-
-      final messages = tester.element(find.byType(TimeSpentCard)).messages;
-      expect(find.text(messages.dailyOsNextTimeSpentTitle), findsOneWidget);
-      expect(
-        find.text(messages.dailyOsNextTimeSpentSummary('1h', 0)),
-        findsNothing,
-      );
-    });
-
     testWidgets("the folded earlier sessions are the card's first row", (
       tester,
     ) async {
@@ -192,6 +174,139 @@ void main() {
         findsOneWidget,
       );
     });
+
+    testWidgets(
+      "a session's dot wears its task's live category, as its timeline "
+      'block does',
+      (tester) async {
+        await setUpTestGetIt();
+        addTearDown(tearDownTestGetIt);
+        final start = DateTime(2026, 5, 26, 9);
+        await tester.pumpWidget(
+          makeTestableWidget2(
+            Material(
+              child: TimeSpentCard(
+                blocks: [
+                  TimeBlock(
+                    id: 'moved',
+                    title: 'Moved',
+                    start: start,
+                    end: start.add(const Duration(hours: 1)),
+                    type: TimeBlockType.manual,
+                    state: TimeBlockState.inProgress,
+                    category: _category,
+                    taskId: 'task-moved',
+                  ),
+                ],
+              ),
+            ),
+            mediaQueryData: const MediaQueryData(size: Size(1280, 900)),
+            overrides: [
+              liveTaskMetadataProvider.overrideWith(
+                (ref, taskId) async => const LiveTaskMetadata(
+                  title: 'Moved and renamed',
+                  categoryId: 'ops',
+                  categoryName: 'Operations',
+                  categoryColorHex: '#00AA88',
+                ),
+              ),
+            ],
+          ),
+        );
+        await tester.pump();
+
+        final dot = tester.widget<DecoratedBox>(
+          find.descendant(
+            of: find.byType(TimeSpentCard),
+            matching: find.byWidgetPredicate(
+              (w) =>
+                  w is DecoratedBox &&
+                  w.decoration is BoxDecoration &&
+                  (w.decoration as BoxDecoration).shape == BoxShape.circle,
+            ),
+          ),
+        );
+        expect(
+          (dot.decoration as BoxDecoration).color,
+          categoryColorFromHex('#00AA88'),
+        );
+        // Named as the task is now, as its agenda row and block are.
+        expect(find.text('Moved and renamed'), findsOneWidget);
+        expect(find.text('Moved'), findsNothing);
+        // The dot names its category.
+        expect(
+          find.byWidgetPredicate(
+            (w) => w is Tooltip && w.message == 'Operations',
+          ),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      "the session under way carries the agenda's Now and teal edge",
+      (tester) async {
+        final start = DateTime(2026, 5, 26, 9);
+        await tester.pumpWidget(
+          _wrap(
+            TimeSpentCard(
+              blocks: [
+                TimeBlock(
+                  id: 'running',
+                  title: 'Running',
+                  start: start,
+                  end: start.add(const Duration(minutes: 30)),
+                  type: TimeBlockType.manual,
+                  state: TimeBlockState.inProgress,
+                  category: _category,
+                ),
+                _session(id: 'done', title: 'Done', startHour: 7, done: true),
+              ],
+            ),
+          ),
+        );
+        final messages = tester.element(find.byType(TimeSpentCard)).messages;
+
+        expect(find.text(messages.dailyOsNextAgendaNow), findsOneWidget);
+        expect(
+          find.descendant(
+            of: find.byKey(const ValueKey('running')),
+            matching: find.byKey(const Key('day_row_active_edge')),
+          ),
+          findsOneWidget,
+        );
+        expect(find.byKey(const Key('day_row_active_edge')), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      "a done session wears the check in the time's ink, and every row "
+      'keeps its length',
+      (tester) async {
+        await tester.pumpWidget(
+          _wrap(
+            TimeSpentCard(
+              blocks: [
+                _session(
+                  id: 'done',
+                  title: 'Done',
+                  startHour: 7,
+                  durationMinutes: 50,
+                  done: true,
+                ),
+              ],
+            ),
+          ),
+        );
+        final tokens = tester.element(find.byType(TimeSpentCard)).designTokens;
+
+        expect(
+          tester.widget<Icon>(find.byIcon(LottiIcons.confirm)).color,
+          tokens.colors.text.mediumEmphasis,
+        );
+        expect(find.text('50m'), findsOneWidget);
+      },
+    );
 
     testWidgets('an unfinished session shows its length, a done one a check', (
       tester,

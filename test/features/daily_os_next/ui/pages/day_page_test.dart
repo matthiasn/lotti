@@ -1297,7 +1297,8 @@ void main() {
           find.byKey(const Key('daily_os_edit_block_blk_category_filter')),
         );
         await tester.pumpAndSettle();
-        await tester.tap(find.text(_category.name));
+        // The editor's category field, not the briefing legend's entry.
+        await tester.tap(find.text(_category.name).last);
         await tester.pumpAndSettle();
 
         final picker = tester.widget<CategoryPickerSheet>(

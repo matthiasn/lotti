@@ -14,19 +14,28 @@
   start time, a category dot, its estimate and, only when there is something to
   say, the planner's reason and the outcome. Items linked to a task lead with
   the task's name and end in an arrow that opens it. The item under way is
-  marked "Now" with a teal edge and its progress; finished items are struck
-  through, and two or more at the start of the day fold into one row you can
-  open. Numbers and cover pictures are gone from the list. With no plan yet,
-  the list and the footer both offer to start the check-in.
+  marked "Now" with a teal edge; finished items are struck through, and two
+  or more at the start of the day fold into one row you can open. Numbers and
+  cover pictures are gone from the list. With no plan yet, the list and the
+  footer both offer to start the check-in, and the time you have tracked so
+  far shows beneath.
 - **The Activity tab uses the same list**, grouped into what needs you, the
-  time tracked so far, and what is handled; each entry's icon says whether it
-  is waiting, transcribing or failed.
-- **On the Day timeline**, a Plan | Actual switch names the lanes on a phone,
-  hours read in your device's 12- or 24-hour clock, the current-time line is
-  teal, and planned blocks no longer carry a link icon.
+  time tracked so far, and what is handled. Each entry leads with its words,
+  and its icon says whether it is waiting, transcribing or failed.
+- **One name and one colour per task.** A task is called by its current name
+  and drawn in its current category's colour everywhere on the day — the
+  briefing, the agenda, "Today so far" and both timeline lanes — even after
+  it is renamed or moved to another category.
+- **On the Day timeline**, the lanes are named Plan and Actual, the buttons
+  say what they do ("Both lanes", "Arrange", "Done"), hours read in your
+  device's 12- or 24-hour clock, and times like "1:00–2:30 PM" write the
+  period once. The plan still ahead stands out over what has passed, a
+  running recording says "Now", the edit pencil is easier to hit, and tapping
+  the planner's spark shows its reason.
 - **The briefing names its colours.** Under the day's line, each category's
-  time is listed (the two largest and "+N more" on a phone), and a play button
-  starts the companion's spoken briefing.
+  time is listed (the two largest and "+N more" on a phone), what is still
+  free is set apart on the line, and a play button starts the companion's
+  spoken briefing.
 - **Easier to find your way back**: a Today button appears when you are looking
   at another day, and the quick refinements under the message field appear
   once you start typing a change.
