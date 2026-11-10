@@ -590,7 +590,7 @@ keyed by item id.
 - **The task's own name leads.** A linked row's name is the task's live title;
   the agenda's wording joins the outcome on one meta line only when it says
   something the name does not (when every one of its words, short ones and
-  negations included, is already in the name, it is said). The agent's reason follows, up to two
+  negations included, is already in the name, it is omitted). The agent's reason follows, up to two
   low-emphasis lines behind the `aiCard.accent` spark. The figure is the
   item's linked blocks' minutes.
 - **States.** In progress: "Now" and the teal edge. Done: low-emphasis words
