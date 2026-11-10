@@ -158,6 +158,18 @@ Future<void> _pumpDayPage(
   await tester.pump();
 }
 
+/// Focuses the planned day's composer, which is when its quick refinements
+/// show.
+Future<void> _focusRefineComposer(WidgetTester tester) async {
+  await tester.tap(
+    find.descendant(
+      of: find.byKey(const Key('daily_os_day_refine_composer')),
+      matching: find.byType(TextField),
+    ),
+  );
+  await tester.pump();
+}
+
 void main() {
   tearDown(() {
     nav_service.beamToNamedOverride = null;
@@ -1366,30 +1378,25 @@ void main() {
       });
     }
 
-    for (final view in PlanView.values) {
-      testWidgets('the timeline controls ride the briefing strip only on '
-          '${view.name}', (tester) async {
+    testWidgets(
+      "the timeline's controls sit in its own toolbar, never in the briefing",
+      (tester) async {
         _setSurface(tester);
         await tester.pumpWidget(_wrap(DayPage(draft: _drafted())));
         await tester.pump();
-        tester
-            .widget<PlanViewToggle>(find.byType(PlanViewToggle))
-            .onChanged(view);
-        await tester.pump();
-        await tester.pump();
 
-        final inStrip = find.descendant(
-          of: find.byType(DayBriefingStrip),
-          matching: find.byKey(const Key('daily_os_timeline_mode_toggle')),
-        );
-        expect(inStrip, view == PlanView.day ? findsOneWidget : findsNothing);
-        // Never twice: the timeline's own toolbar leaves them to the strip.
+        final toggle = find.byKey(const Key('daily_os_timeline_mode_toggle'));
+        expect(toggle, findsOneWidget);
         expect(
-          find.byKey(const Key('daily_os_timeline_mode_toggle')),
-          view == PlanView.day ? findsOneWidget : findsNothing,
+          find.descendant(of: find.byType(DayTimeline), matching: toggle),
+          findsOneWidget,
         );
-      });
-    }
+        expect(
+          find.descendant(of: find.byType(DayBriefingStrip), matching: toggle),
+          findsNothing,
+        );
+      },
+    );
 
     testWidgets(
       'day navigation brings the week strip and drops the back chevron',
@@ -1476,6 +1483,10 @@ void main() {
         ),
         findsOneWidget,
       );
+      // At rest the footer is just the field; the quick refinements come
+      // with its focus.
+      expect(find.text(messages.dailyOsNextReviewTooMuch), findsNothing);
+      await _focusRefineComposer(tester);
       for (final chip in [
         messages.dailyOsNextReviewTooMuch,
         messages.dailyOsNextReviewMoveLighter,
@@ -1572,7 +1583,11 @@ void main() {
 
         final messages = tester.element(find.byType(DayPage)).messages;
         expect(find.text(messages.dailyOsNextReviewLooksGood), findsOneWidget);
-        // Large text gives the chips' room back to the day.
+        // At rest the footer is the field alone.
+        expect(find.text(messages.dailyOsNextReviewTooMuch), findsNothing);
+        // Focused, the chips join it — except at large text, which gives
+        // their room back to the day.
+        await _focusRefineComposer(tester);
         expect(
           find.text(messages.dailyOsNextReviewTooMuch),
           scale < 1.5 ? findsOneWidget : findsNothing,
@@ -1840,6 +1855,7 @@ void main() {
         await _pumpDayPage(tester, draft: draft, agent: agent);
 
         final messages = tester.element(find.byType(DayPage)).messages;
+        await _focusRefineComposer(tester);
         await tester.tap(find.text(messages.dailyOsNextReviewTooMuch));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 600));
@@ -1882,6 +1898,7 @@ void main() {
           _ => throw StateError('unknown quick review scenario: $scenario'),
         };
 
+        await _focusRefineComposer(tester);
         await tester.tap(find.text(label));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 600));

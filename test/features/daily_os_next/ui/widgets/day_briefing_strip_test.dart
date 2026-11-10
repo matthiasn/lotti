@@ -10,15 +10,16 @@ import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/ui/category_color.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_briefing_strip.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_capacity_bar.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/day_row_scaffold.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tts/state/tts_audio_player.dart';
 import 'package:lotti/features/tts/state/tts_engine_provider.dart';
 import 'package:lotti/features/tts/state/tts_model_repository.dart';
 import 'package:lotti/features/tts/state/tts_playback_controller.dart';
-import 'package:lotti/themes/theme.dart' show numericBadgeFontFeatures;
 import 'package:lotti/utils/consts.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../../../helpers/test_app.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_helper.dart';
 import '../../../tts/test_utils.dart';
@@ -75,10 +76,13 @@ class _Bench {
     bool hasPlan = true,
     List<TimeBlock> actualBlocks = const [],
     bool voice = false,
-    Widget? trailing,
+    double? width,
   }) async {
     await tester.pumpWidget(
       RiverpodWidgetTestBench(
+        mediaQueryData: width == null
+            ? null
+            : phoneMediaQueryData.copyWith(size: Size(width, 900)),
         overrides: [
           configFlagProvider.overrideWith(
             (ref, flagName) => Stream.value(
@@ -108,7 +112,6 @@ class _Bench {
             draft: draft ?? _plan(),
             hasPlan: hasPlan,
             actualBlocks: actualBlocks,
-            trailing: trailing,
           ),
         ),
       ),
@@ -137,7 +140,7 @@ void main() {
       await _at(10, () => bench.pump(tester));
 
       expect(
-        find.text('You have 3 blocks planned. Next up at 1:00 PM: Write.'),
+        find.text('You have 3 blocks planned. Next up at 1:00\u00A0PM: Write.'),
         findsOneWidget,
       );
     });
@@ -148,12 +151,18 @@ void main() {
       var now = _day.add(const Duration(hours: 10));
       await withClock(Clock(() => now), () async {
         await bench.pump(tester);
-        expect(find.textContaining('Next up at 1:00 PM: Write.'), findsOne);
+        expect(
+          find.textContaining('Next up at 1:00\u00A0PM: Write.'),
+          findsOne,
+        );
 
         now = _day.add(const Duration(hours: 13, seconds: 1));
         await tester.pump(const Duration(hours: 3, seconds: 1));
 
-        expect(find.textContaining('Next up at 3:00 PM: Lunch.'), findsOne);
+        expect(
+          find.textContaining('Next up at 3:00\u00A0PM: Lunch.'),
+          findsOne,
+        );
       });
     });
 
@@ -180,7 +189,7 @@ void main() {
 
       expect(
         find.text(
-          "There's no plan for this day yet. A short check-in will make one.",
+          "There's no plan for this day yet. A short check\u2011in will make one.",
         ),
         findsOneWidget,
       );
@@ -273,14 +282,14 @@ void main() {
       expect(find.text('1h planned'), findsOneWidget);
     });
 
-    testWidgets('captions are low-emphasis with tabular figures', (
+    testWidgets('captions are medium-emphasis with tabular figures', (
       tester,
     ) async {
       await _at(10, () => bench.pump(tester));
 
       final style = _text(tester, '3h planned').style!;
-      expect(style.color, _tokens(tester).colors.text.lowEmphasis);
-      expect(style.fontFeatures, numericBadgeFontFeatures);
+      expect(style.color, _tokens(tester).colors.text.mediumEmphasis);
+      expect(style.fontFeatures, dayFigures);
     });
 
     testWidgets('without a plan, says what is tracked and how much is done', (
@@ -346,7 +355,111 @@ void main() {
       expect(find.text('0m planned'), findsOneWidget);
     });
 
-    testWidgets('without a plan, the bar is the tracked time in teal', (
+    testWidgets('without a plan, the bar is the recorded time by category', (
+      tester,
+    ) async {
+      await _at(
+        12,
+        () => bench.pump(
+          tester,
+          draft: DraftPlan.emptyForDay(_day),
+          hasPlan: false,
+          actualBlocks: [
+            _block('A', 8, 90, type: TimeBlockType.manual),
+            _block('B', 10, 30, type: TimeBlockType.manual, category: _admin),
+          ],
+        ),
+      );
+
+      final bar = tester.widget<DayCapacityBar>(find.byType(DayCapacityBar));
+      expect(bar.segments.map((s) => (s.color, s.minutes)), [
+        (categoryColorFromHex(_deep.colorHex), 90),
+        (categoryColorFromHex(_admin.colorHex), 30),
+      ]);
+      // No capacity to fill: one solid line, not progress towards a goal.
+      expect(bar.capacityMinutes, 0);
+    });
+  });
+
+  group('DayBriefingStrip surface', () {
+    testWidgets('is the aiCard surface at radii.l', (tester) async {
+      await _at(10, () => bench.pump(tester));
+      final tokens = _tokens(tester);
+
+      final decoration =
+          tester
+                  .widget<DecoratedBox>(
+                    find
+                        .descendant(
+                          of: find.byType(DayBriefingStrip),
+                          matching: find.byType(DecoratedBox),
+                        )
+                        .first,
+                  )
+                  .decoration
+              as BoxDecoration;
+      expect(decoration.color, tokens.colors.aiCard.background);
+      expect(decoration.border, Border.all(color: tokens.colors.aiCard.border));
+      expect(decoration.borderRadius, BorderRadius.circular(tokens.radii.l));
+    });
+  });
+
+  group('DayBriefingStrip legend', () {
+    testWidgets('names the largest categories with their minutes', (
+      tester,
+    ) async {
+      await _at(10, () => bench.pump(tester));
+
+      expect(find.text('Deep 2h 30m'), findsOneWidget);
+      expect(find.text('Admin 30m'), findsOneWidget);
+    });
+
+    DraftPlan fourCategories() {
+      const c = DayAgentCategory(id: 'c', name: 'Calls', colorHex: '00AAFF');
+      const d = DayAgentCategory(id: 'd', name: 'Desk', colorHex: 'AA00FF');
+      return _plan(
+        blocks: [
+          _block('a', 8, 120),
+          _block('b', 11, 60, category: _admin),
+          _block('c', 13, 45, category: c),
+          _block('d', 15, 15, category: d),
+        ],
+      );
+    }
+
+    testWidgets('on a phone, names the largest two and sums up the rest', (
+      tester,
+    ) async {
+      await _at(10, () => bench.pump(tester, draft: fourCategories()));
+
+      expect(find.text('Deep 2h'), findsOneWidget);
+      expect(find.text('Admin 1h'), findsOneWidget);
+      expect(find.text('+2 more 1h'), findsOneWidget);
+      expect(find.textContaining('Calls'), findsNothing);
+      // The bar folds the same tail into one neutral segment, so every
+      // colour on it is named.
+      final bar = tester.widget<DayCapacityBar>(find.byType(DayCapacityBar));
+      expect(bar.segments.map((s) => s.minutes), [120, 60, 60]);
+      expect(
+        bar.segments.last.color,
+        _tokens(tester).colors.decorative.level03,
+      );
+    });
+
+    testWidgets('on a wide pane, names every category', (tester) async {
+      await _at(
+        10,
+        () => bench.pump(tester, draft: fourCategories(), width: 1400),
+      );
+
+      for (final label in ['Deep 2h', 'Admin 1h', 'Calls 45m', 'Desk 15m']) {
+        expect(find.text(label), findsOneWidget);
+      }
+      final bar = tester.widget<DayCapacityBar>(find.byType(DayCapacityBar));
+      expect(bar.segments, hasLength(4));
+    });
+
+    testWidgets('a day without a plan names its recorded categories', (
       tester,
     ) async {
       await _at(
@@ -359,53 +472,64 @@ void main() {
         ),
       );
 
-      final bar = tester.widget<DayCapacityBar>(find.byType(DayCapacityBar));
-      expect(bar.segments.single.minutes, 90);
-      expect(
-        bar.segments.single.color,
-        _tokens(tester).colors.interactive.enabled,
-      );
-      expect(bar.capacityMinutes, DraftPlan.emptyForDay(_day).capacityMinutes);
+      expect(find.text('Deep 1h 30m'), findsOneWidget);
     });
   });
 
-  group('DayBriefingStrip surface', () {
-    testWidgets('is the aiCard surface at radii.l', (tester) async {
+  group('DayBriefingStrip headline typesetting', () {
+    testWidgets('keeps the time and its meridiem together', (tester) async {
       await _at(10, () => bench.pump(tester));
-      final tokens = _tokens(tester);
 
-      final decoration =
-          tester.widget<Ink>(find.byType(Ink)).decoration! as BoxDecoration;
-      expect(decoration.color, tokens.colors.aiCard.background);
-      expect(decoration.border, Border.all(color: tokens.colors.aiCard.border));
-      expect(decoration.borderRadius, BorderRadius.circular(tokens.radii.l));
+      final sentence = tester
+          .widget<Text>(find.textContaining('You have 3'))
+          .data!;
+      expect(sentence, contains('1:00\u00A0PM'));
+      expect(sentence, isNot(contains('1:00 PM')));
     });
 
-    testWidgets('puts the trailing controls at the end of the sentence row', (
+    testWidgets('a title ending in its own stop gets no second one', (
       tester,
     ) async {
       await _at(
         10,
-        () => bench.pump(tester, trailing: const Icon(LottiIcons.settings)),
+        () => bench.pump(
+          tester,
+          draft: _plan(blocks: [_block('Ready?', 13, 30)]),
+        ),
       );
 
-      final sentence = tester.getRect(find.textContaining('You have 3'));
-      final trailing = tester.getRect(find.byIcon(LottiIcons.settings));
-      expect(trailing.left, greaterThan(sentence.right));
-      expect(trailing.center.dy, closeTo(sentence.center.dy, 1));
+      expect(find.textContaining('Ready?'), findsOneWidget);
+      expect(find.textContaining('Ready?.'), findsNothing);
     });
   });
 
   group('DayBriefingStrip voice', () {
-    final tap = find.byKey(const Key('daily_os_briefing_strip_tap'));
+    final tap = find.byKey(const Key('daily_os_briefing_play'));
 
-    testWidgets('is inert while the companion cannot speak', (tester) async {
+    testWidgets('offers no play button while the companion cannot speak', (
+      tester,
+    ) async {
       await _at(10, () => bench.pump(tester));
 
       expect(tap, findsNothing);
+      // Nothing else on the strip is a tap target.
       await tester.tap(find.byType(DayBriefingStrip));
       await tester.pump();
       expect(bench.engine.calls, isEmpty);
+    });
+
+    testWidgets('the play button ends the sentence row, in the violet accent', (
+      tester,
+    ) async {
+      await _at(10, () => bench.pump(tester, voice: true));
+
+      final sentence = tester.getRect(find.textContaining('You have 3'));
+      final button = tester.getRect(tap);
+      expect(button.left, greaterThan(sentence.right));
+      expect(
+        tester.widget<Icon>(find.byIcon(LottiIcons.play)).color,
+        _tokens(tester).colors.aiCard.accent,
+      );
     });
 
     testWidgets('a tap briefs the day as the companion would', (tester) async {
@@ -420,9 +544,12 @@ void main() {
 
       expect(
         bench.engine.calls.single.text,
-        startsWith('You have 3 blocks planned. Next up at 1:00 PM: Write.'),
+        startsWith(
+          'You have 3 blocks planned. Next up at 1:00 PM: Write.',
+        ),
       );
       expect(find.byTooltip('Stop the briefing'), findsOneWidget);
+      expect(find.byIcon(LottiIcons.stop), findsOneWidget);
     });
 
     testWidgets('a second tap stops her', (tester) async {

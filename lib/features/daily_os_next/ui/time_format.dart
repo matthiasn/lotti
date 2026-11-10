@@ -39,8 +39,7 @@ String formatClockRange(BuildContext context, DateTime start, DateTime end) =>
 /// were hard-wired to 12-hour, so one and the same block read `14:30` on the
 /// timeline and `2:30p` in the diff that proposed it.
 ///
-/// Not for the hour rail: `formatTimelineHourLabel` stays a 24-hour axis
-/// because its `24:00` end-of-day marker has no 12-hour spelling that a reader
-/// could tell apart from midnight.
+/// The hour rail reads the same clock, compacted to the hour
+/// (`formatTimelineHourLabel`).
 String formatClock(BuildContext context, DateTime moment) =>
     TimeOfDay.fromDateTime(moment).format(context);

@@ -8003,6 +8003,12 @@ abstract class AppLocalizations {
   /// **'No recordings or check-ins yet.'**
   String get dailyOsNextActivityEmpty;
 
+  /// No description provided for @dailyOsNextActivityHandled.
+  ///
+  /// In en, this message translates to:
+  /// **'Handled'**
+  String get dailyOsNextActivityHandled;
+
   /// No description provided for @dailyOsNextActivityLoadFailed.
   ///
   /// In en, this message translates to:
@@ -8020,6 +8026,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Needs attention'**
   String get dailyOsNextActivityNeedsAttention;
+
+  /// No description provided for @dailyOsNextActivityNeedsYou.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs you'**
+  String get dailyOsNextActivityNeedsYou;
 
   /// Button on a stalled agent job that opens AI settings.
   ///
@@ -8123,17 +8135,35 @@ abstract class AppLocalizations {
   /// **'of {capacity}'**
   String dailyOsNextAgendaCapacityOf(String capacity);
 
-  /// No description provided for @dailyOsNextAgendaNoPlanBody.
+  /// Agenda summary row standing in for the day's finished items, folded together.
   ///
   /// In en, this message translates to:
-  /// **'Your tracked time is here either way — speak a check-in and I\'ll draft a day around it.'**
-  String get dailyOsNextAgendaNoPlanBody;
+  /// **'{count, plural, =1{1 item done} other{{count} items done}}'**
+  String dailyOsNextAgendaDoneRun(int count);
+
+  /// No description provided for @dailyOsNextAgendaHideDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide finished items'**
+  String get dailyOsNextAgendaHideDone;
 
   /// No description provided for @dailyOsNextAgendaNoPlanTitle.
   ///
   /// In en, this message translates to:
   /// **'No plan yet for today.'**
   String get dailyOsNextAgendaNoPlanTitle;
+
+  /// Marks the agenda row whose item is under way now, above its start time.
+  ///
+  /// In en, this message translates to:
+  /// **'Now'**
+  String get dailyOsNextAgendaNow;
+
+  /// No description provided for @dailyOsNextAgendaShowDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Show finished items'**
+  String get dailyOsNextAgendaShowDone;
 
   /// No description provided for @dailyOsNextAgendaStateDone.
   ///
@@ -8351,6 +8381,12 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{1 minute} other{{count} minutes}}'**
   String dailyOsNextBriefingMinutes(int count);
 
+  /// Last entry of the capacity legend on a phone: the categories not named, and their time together.
+  ///
+  /// In en, this message translates to:
+  /// **'+{count} more {duration}'**
+  String dailyOsNextBriefingMoreCategories(int count, String duration);
+
   /// No description provided for @dailyOsNextBriefingNext.
   ///
   /// In en, this message translates to:
@@ -8360,7 +8396,7 @@ abstract class AppLocalizations {
   /// No description provided for @dailyOsNextBriefingNoPlan.
   ///
   /// In en, this message translates to:
-  /// **'There\'s no plan for this day yet. A short check-in will make one.'**
+  /// **'There\'s no plan for this day yet. A short check‑in will make one.'**
   String get dailyOsNextBriefingNoPlan;
 
   /// No description provided for @dailyOsNextBriefingNothingLeft.
@@ -8666,7 +8702,7 @@ abstract class AppLocalizations {
   /// No description provided for @dailyOsNextDayComposerCheckInHint.
   ///
   /// In en, this message translates to:
-  /// **'Talk or type a check-in'**
+  /// **'Talk or type a check‑in'**
   String get dailyOsNextDayComposerCheckInHint;
 
   /// No description provided for @dailyOsNextDayDeleteDialogBody.
@@ -8746,6 +8782,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Yesterday'**
   String get dailyOsNextDayRelationYesterday;
+
+  /// No description provided for @dailyOsNextDayStartCheckIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Start check-in'**
+  String get dailyOsNextDayStartCheckIn;
 
   /// No description provided for @dailyOsNextDayTitle.
   ///
@@ -9598,18 +9640,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Show swipeable plan and actual'**
   String get dailyOsNextTimelineShowPaged;
-
-  /// No description provided for @dailyOsNextTimelineSwipeHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Swipe for actual · pinch vertically to zoom'**
-  String get dailyOsNextTimelineSwipeHint;
-
-  /// No description provided for @dailyOsNextTimelineSwipeHintToPlan.
-  ///
-  /// In en, this message translates to:
-  /// **'Swipe for plan · pinch vertically to zoom'**
-  String get dailyOsNextTimelineSwipeHintToPlan;
 
   /// No description provided for @dailyOsNextTimelineTracked.
   ///

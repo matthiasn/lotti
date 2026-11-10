@@ -4748,6 +4748,9 @@ class AppLocalizationsSv extends AppLocalizations {
       'Inga inspelningar eller avstämningar än.';
 
   @override
+  String get dailyOsNextActivityHandled => 'Hanterat';
+
+  @override
   String get dailyOsNextActivityLoadFailed =>
       'Din sparade aktivitet finns kvar på den här enheten, men den kunde inte läsas in just nu.';
 
@@ -4757,6 +4760,9 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get dailyOsNextActivityNeedsAttention => 'Behöver åtgärdas';
+
+  @override
+  String get dailyOsNextActivityNeedsYou => 'Väntar på dig';
 
   @override
   String get dailyOsNextActivityOpenAiSetup => 'Öppna Daily OS-inställningar';
@@ -4815,11 +4821,27 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String get dailyOsNextAgendaNoPlanBody =>
-      'Din registrerade tid är här oavsett — prata med en incheckning så skriver jag en dag runt den.';
+  String dailyOsNextAgendaDoneRun(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count punkter klara',
+      one: '1 punkt klar',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get dailyOsNextAgendaHideDone => 'Dölj klara punkter';
 
   @override
   String get dailyOsNextAgendaNoPlanTitle => 'Ingen plan än för idag.';
+
+  @override
+  String get dailyOsNextAgendaNow => 'Nu';
+
+  @override
+  String get dailyOsNextAgendaShowDone => 'Visa klara punkter';
 
   @override
   String get dailyOsNextAgendaStateDone => 'Klart';
@@ -4966,6 +4988,11 @@ class AppLocalizationsSv extends AppLocalizations {
       one: '1 minut',
     );
     return '$_temp0';
+  }
+
+  @override
+  String dailyOsNextBriefingMoreCategories(int count, String duration) {
+    return '+$count till $duration';
   }
 
   @override
@@ -5195,6 +5222,9 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get dailyOsNextDayRelationYesterday => 'I går';
+
+  @override
+  String get dailyOsNextDayStartCheckIn => 'Starta incheckning';
 
   @override
   String get dailyOsNextDayTitle => 'Din dag';
@@ -5722,14 +5752,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get dailyOsNextTimelineShowPaged => 'Visa swipebar plan och faktisk';
-
-  @override
-  String get dailyOsNextTimelineSwipeHint =>
-      'Svep för faktiska · nyp vertikalt för att zooma in';
-
-  @override
-  String get dailyOsNextTimelineSwipeHintToPlan =>
-      'Svep för plan · nyp vertikalt för att zooma in';
 
   @override
   String get dailyOsNextTimelineTracked => 'spårade';

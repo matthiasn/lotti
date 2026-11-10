@@ -387,11 +387,43 @@ Where the code disagreed with the plan, the code won:
   rows show the progress bar only.
 - **The capacity bar is `step2` (4 px), the today dot likewise** — the mock's
   4 px; `step1` is 2 px.
-- **The timeline's controls reach the strip through a `DayTimelineController`**
-  rather than by lifting the timeline's lane state into the page: the lane
-  mode depends on the timeline's own width and pinch gestures.
+- **The timeline's controls reached the strip through a `DayTimelineController`**
+  in phase 5, rather than by lifting the timeline's lane state into the page.
+  Phase 8 reversed it (below).
 - **The briefing block is capped at half the body's height** and scrolls there,
   so a short phone at large text keeps room for the day.
 - **Light mode keeps the `aiCard` surface** — the captures read as a calm tint,
   so the `dsCardSurface` fallback was not needed.
 
+### Phase 8 — panel rounds
+
+The expert panel scored the phase-7 captures 5.83 against a 4.33 baseline,
+short of the 8.8 target. Five rounds of implement → re-capture → re-rate
+followed, with the persona panel joining from round 3; the scores plateaued
+(experts 6.0 → 6.75 → 6.42 → 6.42 → 6.58, personas 6.3 → 6.3 → 6.7, four of
+five would use it) and iteration stopped there by choice. What changed:
+
+- **One row grid** (`DayRowScaffold`) under the agenda, its folded done run,
+  "Today so far" and Activity, and one group label (`DaySectionHeader`).
+- **One reading column** (`kDetailContentMaxWidth`) for the header, briefing,
+  Agenda, Activity and composer; the timeline keeps the full width. On a
+  phone the briefing scrolls away with Agenda and Activity; the Day tab pins
+  a dense strip.
+- **The timeline's controls return to its own toolbar**, and the controller
+  is deleted: in the strip they changed its shape per tab and read as the
+  briefing's. Paged lanes gain a *Plan | Actual* switch, the swipe hint goes,
+  and hour marks follow the device clock.
+- **Agenda:** the linked task's live name leads; finished items at the head
+  of the day fold; no plan is one row that starts the check-in, and the
+  footer's next step is *Start check-in*.
+- **Activity:** *Needs you* / tracked time / *Handled* groups, state glyphs,
+  *Delete* quiet at the row's end.
+- **Briefing:** a play button rather than a tappable strip, a category
+  legend (folding to "+N more" on a phone), the recorded time by category
+  without a plan.
+- **Header:** a *Today* button when the page shows another day; the
+  composer's refinement chips show only while it has focus.
+
+Left for follow-ups, feature-sized: an editable plan straight from the agenda
+(reorder, drop, re-estimate), a week view, and a calmer timeline at a
+glance (blocks by category without the per-block chrome).

@@ -191,7 +191,13 @@ class _NoPlanFooter extends StatelessWidget {
     required this.needsInferenceSetup,
     required this.setupResolved,
     required this.ctaKey,
+    this.onStartCheckIn,
   });
+
+  /// Opens the whole check-in from its first step: the empty day's one
+  /// filled action, beside the field where "Looks good" sits on a planned
+  /// day.
+  final VoidCallback? onStartCheckIn;
 
   final DateTime day;
   final DayComposerSubmitter? onSubmitCheckIn;
@@ -216,6 +222,15 @@ class _NoPlanFooter extends StatelessWidget {
         child: DayComposer(
           day: day,
           enabled: setupResolved && onSubmitCheckIn != null,
+          nextStep: switch (onStartCheckIn) {
+            final start? when setupResolved => DesignSystemButton(
+              key: const Key('daily_os_day_start_check_in'),
+              label: context.messages.dailyOsNextDayStartCheckIn,
+              size: DesignSystemButtonSize.large,
+              onPressed: start,
+            ),
+            _ => null,
+          },
           onSubmit: (words, {audioId}) async =>
               onSubmitCheckIn?.call(words, audioId: audioId),
         ),
@@ -315,4 +330,23 @@ class _DailyOsSetupNudge extends StatelessWidget {
       ),
     );
   }
+}
+
+/// The day page's one reading column: the page's shared measure
+/// ([kDetailContentMaxWidth]) from the left rail, so the briefing, the
+/// agenda, the activity and the composer share a left edge and a width on
+/// every tab instead of each finding its own. Non-binding on a phone.
+class _OnPageColumn extends StatelessWidget {
+  const _OnPageColumn({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => Align(
+    alignment: AlignmentDirectional.topStart,
+    child: ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: kDetailContentMaxWidth),
+      child: child,
+    ),
+  );
 }

@@ -3186,9 +3186,11 @@
   "dailyOsNextActivityDeleteDialogTitle": "Delete this recording?",
   "dailyOsNextActivityDeleteRecording": "Delete",
   "dailyOsNextActivityEmpty": "No recordings or check-ins yet.",
+  "dailyOsNextActivityHandled": "Handled",
   "dailyOsNextActivityLoadFailed": "Your saved activity is still on this device, but it couldn't be loaded right now.",
   "dailyOsNextActivityMissingAudio": "This entry is retained, but its audio file isn't available on this device. Restore the file, then retry.",
   "dailyOsNextActivityNeedsAttention": "Needs attention",
+  "dailyOsNextActivityNeedsYou": "Needs you",
   "dailyOsNextActivityOpenAiSetup": "Open Daily OS setup",
   "@dailyOsNextActivityOpenAiSetup": {
     "description": "Button on a stalled agent job that opens AI settings."
@@ -3220,8 +3222,23 @@
       }
     }
   },
-  "dailyOsNextAgendaNoPlanBody": "Your tracked time is here either way — speak a check-in and I'll draft a day around it.",
+  "dailyOsNextAgendaDoneRun": "{count, plural, =1{1 item done} other{{count} items done}}",
+  "@dailyOsNextAgendaDoneRun": {
+    "description": "Agenda summary row standing in for the day's finished items, folded together.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "5"
+      }
+    }
+  },
+  "dailyOsNextAgendaHideDone": "Hide finished items",
   "dailyOsNextAgendaNoPlanTitle": "No plan yet for today.",
+  "dailyOsNextAgendaNow": "Now",
+  "@dailyOsNextAgendaNow": {
+    "description": "Marks the agenda row whose item is under way now, above its start time."
+  },
+  "dailyOsNextAgendaShowDone": "Show finished items",
   "dailyOsNextAgendaStateDone": "Done",
   "dailyOsNextAgendaStateInProgress": "In progress",
   "dailyOsNextAgendaStateOpen": "Open",
@@ -3333,6 +3350,20 @@
       }
     }
   },
+  "dailyOsNextBriefingMoreCategories": "+{count} more {duration}",
+  "@dailyOsNextBriefingMoreCategories": {
+    "description": "Last entry of the capacity legend on a phone: the categories not named, and their time together.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "2"
+      },
+      "duration": {
+        "type": "String",
+        "example": "1h 30m"
+      }
+    }
+  },
   "dailyOsNextBriefingNext": "Next up at {time}: {title}.",
   "@dailyOsNextBriefingNext": {
     "placeholders": {
@@ -3344,7 +3375,7 @@
       }
     }
   },
-  "dailyOsNextBriefingNoPlan": "There's no plan for this day yet. A short check-in will make one.",
+  "dailyOsNextBriefingNoPlan": "There's no plan for this day yet. A short check‑in will make one.",
   "dailyOsNextBriefingNothingLeft": "Nothing else is planned for today.",
   "dailyOsNextBriefingOverCaption": "{duration} over",
   "@dailyOsNextBriefingOverCaption": {
@@ -3453,7 +3484,7 @@
     }
   },
   "dailyOsNextDayBack": "Back",
-  "dailyOsNextDayComposerCheckInHint": "Talk or type a check-in",
+  "dailyOsNextDayComposerCheckInHint": "Talk or type a check‑in",
   "dailyOsNextDayDeleteDialogBody": "The drafted blocks for this day will be removed. Captures and their audio recordings stay in your journal.",
   "dailyOsNextDayDeleteDialogCancel": "Cancel",
   "dailyOsNextDayDeleteDialogConfirm": "Delete",
@@ -3480,6 +3511,7 @@
   "dailyOsNextDayRelationToday": "Today",
   "dailyOsNextDayRelationTomorrow": "Tomorrow",
   "dailyOsNextDayRelationYesterday": "Yesterday",
+  "dailyOsNextDayStartCheckIn": "Start check-in",
   "dailyOsNextDayTitle": "Your day",
   "dailyOsNextDayWhyChipLabel": "Why",
   "dailyOsNextDayWrapUpCta": "Wrap up",
@@ -3785,8 +3817,6 @@
   },
   "dailyOsNextTimelineShowBoth": "Show plan and actual together",
   "dailyOsNextTimelineShowPaged": "Show swipeable plan and actual",
-  "dailyOsNextTimelineSwipeHint": "Swipe for actual · pinch vertically to zoom",
-  "dailyOsNextTimelineSwipeHintToPlan": "Swipe for plan · pinch vertically to zoom",
   "dailyOsNextTimelineTracked": "tracked",
   "dailyOsNextTimeSpentEarlierSessions": "{count, plural, one{1 earlier session} other{{count} earlier sessions}}",
   "@dailyOsNextTimeSpentEarlierSessions": {

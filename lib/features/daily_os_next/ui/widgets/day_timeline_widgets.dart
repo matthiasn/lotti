@@ -7,17 +7,18 @@ class _TimelineToolbar extends StatelessWidget {
     required this.mode,
     required this.arrangeMode,
     required this.showHint,
-    required this.recordedLaneFirst,
     required this.onToggleMode,
     required this.onToggleArrange,
-    this.showControls = true,
     this.leading,
     this.trailing,
+    this.lanes,
   });
 
-  /// False when a [DayTimelineController] hosts the lane-format and arrange
-  /// buttons elsewhere.
-  final bool showControls;
+  /// The paged lanes' controller, while the lanes are pages: the toolbar
+  /// then names them with a Plan / Actual toggle that follows the swipe, so
+  /// the recorded lane is one visible tap away rather than a gesture to
+  /// discover.
+  final PageController? lanes;
 
   /// See [DayTimeline.toolbarLeading]. Takes the coaching line's room.
   final Widget? leading;
@@ -32,10 +33,6 @@ class _TimelineToolbar extends StatelessWidget {
   /// demonstrated the gestures. The mode-toggle icon stays — it is an
   /// affordance, not narration.
   final bool showHint;
-
-  /// Whether the pager opened on the recorded lane (nothing planned), in
-  /// which case the swipe leads to the plan, and the coaching line says so.
-  final bool recordedLaneFirst;
 
   final VoidCallback onToggleMode;
   final VoidCallback? onToggleArrange;
@@ -58,12 +55,18 @@ class _TimelineToolbar extends StatelessWidget {
                 alignment: AlignmentDirectional.centerStart,
                 child: leading,
               ),
-              null when showHint => Text(
-                showingBoth
-                    ? messages.dailyOsNextTimelineBoth
-                    : recordedLaneFirst
-                    ? messages.dailyOsNextTimelineSwipeHintToPlan
-                    : messages.dailyOsNextTimelineSwipeHint,
+              // On a 320 pt phone the two labels and the control buttons
+              // want a few points more than the row has: the toggle shrinks
+              // to fit rather than overflow.
+              null when lanes != null => FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: AlignmentDirectional.centerStart,
+                child: _LaneToggle(lanes: lanes!),
+              ),
+              // Side by side, the lanes need no switch: a one-shot line
+              // names what the two columns are.
+              null when showHint && showingBoth => Text(
+                messages.dailyOsNextTimelineBoth,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: tokens.typography.styles.others.caption.copyWith(
@@ -73,13 +76,12 @@ class _TimelineToolbar extends StatelessWidget {
               null => const SizedBox.shrink(),
             },
           ),
-          if (showControls)
-            _TimelineControlButtons(
-              showingBoth: showingBoth,
-              arrangeMode: arrangeMode,
-              onToggleMode: onToggleMode,
-              onToggleArrange: onToggleArrange,
-            ),
+          _TimelineControlButtons(
+            showingBoth: showingBoth,
+            arrangeMode: arrangeMode,
+            onToggleMode: onToggleMode,
+            onToggleArrange: onToggleArrange,
+          ),
           ?trailing,
         ],
       ),
@@ -338,7 +340,7 @@ class _SharedHourRail extends StatelessWidget {
                         hourLabelCenterOffset,
                     right: tokens.spacing.step6,
                     child: Text(
-                      formatTimelineHourLabel(hour),
+                      formatTimelineHourLabel(context, hour),
                       style: hourLabelStyle,
                     ),
                   ),
@@ -375,10 +377,10 @@ class _SharedHourRail extends StatelessWidget {
                       ),
                     ),
                     child: Text(
-                      formatTimelineNowLabel(now!),
-                      style: tokens.typography.styles.body.bodySmall.copyWith(
+                      formatClock(context, now!),
+                      style: tokens.typography.styles.others.caption.copyWith(
                         color: tokens.colors.text.onInteractiveAlert,
-                        fontWeight: tokens.typography.weight.bold,
+                        fontWeight: tokens.typography.weight.semiBold,
                       ),
                     ),
                   ),
@@ -478,6 +480,150 @@ class _EnergyBandBox extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// The lane-format toggle and, when the timeline can arrange, the arrange
+/// toggle — the same two buttons wherever they are shown.
+class _TimelineControlButtons extends StatelessWidget {
+  const _TimelineControlButtons({
+    required this.showingBoth,
+    required this.arrangeMode,
+    required this.onToggleMode,
+    required this.onToggleArrange,
+  });
+
+  final bool showingBoth;
+  final bool arrangeMode;
+  final VoidCallback onToggleMode;
+  final VoidCallback? onToggleArrange;
+
+  @override
+  Widget build(BuildContext context) {
+    final messages = context.messages;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Tooltip(
+          message: showingBoth
+              ? messages.dailyOsNextTimelineShowPaged
+              : messages.dailyOsNextTimelineShowBoth,
+          child: IconButton(
+            key: const Key('daily_os_timeline_mode_toggle'),
+            iconSize: context.designTokens.typography.size.subtitle1,
+            onPressed: onToggleMode,
+            icon: Icon(
+              showingBoth ? LottiIcons.viewCarousel : LottiIcons.viewColumns,
+            ),
+          ),
+        ),
+        if (onToggleArrange != null)
+          Tooltip(
+            message: messages.dailyOsNextTimelineArrange,
+            child: IconButton(
+              key: const Key('daily_os_timeline_arrange_toggle'),
+              iconSize: context.designTokens.typography.size.subtitle1,
+              isSelected: arrangeMode,
+              onPressed: onToggleArrange,
+              // Selected, the button says how to finish: done arranging.
+              selectedIcon: const Icon(LottiIcons.confirm),
+              icon: const Icon(LottiIcons.drag),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+/// One lane of the phone's paged timeline, revealed in step with the swipe.
+///
+/// The pager shows a sliver of the next lane as a cue that there is one, but
+/// at full width that sliver cut its blocks to two-letter fragments. Here a
+/// lane that is a whole page away shows only its leading `step3` — the
+/// blocks' colour stripes — and opens up as it slides into view. The clip
+/// also bounds hit-testing, so the cue cannot be tapped by accident.
+class _PagedLane extends StatelessWidget {
+  const _PagedLane({
+    required this.controller,
+    required this.index,
+    required this.child,
+  });
+
+  final PageController controller;
+  final int index;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final cue = context.designTokens.spacing.step3;
+    return AnimatedBuilder(
+      animation: controller,
+      builder: (context, child) {
+        final page = controller.hasClients && controller.position.haveDimensions
+            ? controller.page ?? controller.initialPage.toDouble()
+            : controller.initialPage.toDouble();
+        final away = (page - index).abs().clamp(0.0, 1.0);
+        return ClipRect(
+          clipper: _LeadingClip(open: 1 - away, minWidth: cue),
+          child: child,
+        );
+      },
+      child: child,
+    );
+  }
+}
+
+class _LeadingClip extends CustomClipper<Rect> {
+  const _LeadingClip({required this.open, required this.minWidth});
+
+  /// How much of the lane is revealed, from 0 (only [minWidth]) to 1 (all).
+  final double open;
+  final double minWidth;
+
+  @override
+  Rect getClip(Size size) => Rect.fromLTWH(
+    0,
+    0,
+    math.max(minWidth, size.width * open),
+    size.height,
+  );
+
+  @override
+  bool shouldReclip(_LeadingClip oldClipper) =>
+      oldClipper.open != open || oldClipper.minWidth != minWidth;
+}
+
+/// Plan | Actual over the phone's paged lanes: the selected segment follows
+/// the pager, and a tap pages to the other lane.
+class _LaneToggle extends StatelessWidget {
+  const _LaneToggle({required this.lanes});
+
+  final PageController lanes;
+
+  @override
+  Widget build(BuildContext context) {
+    final messages = context.messages;
+    return AnimatedBuilder(
+      animation: lanes,
+      builder: (context, _) {
+        final page = lanes.hasClients && lanes.position.haveDimensions
+            ? lanes.page ?? lanes.initialPage.toDouble()
+            : lanes.initialPage.toDouble();
+        return DsSegmentedToggle<int>(
+          key: const Key('daily_os_timeline_lane_toggle'),
+          selected: page.round(),
+          onChanged: (lane) => lanes.animateToPage(
+            lane,
+            duration: MotionDurations.medium1,
+            curve: MotionCurves.standard,
+          ),
+          segments: [
+            DsSegment(0, messages.dailyOsNextTimelinePlanned),
+            DsSegment(1, messages.dailyOsNextTimelineActual),
+          ],
+        );
+      },
     );
   }
 }

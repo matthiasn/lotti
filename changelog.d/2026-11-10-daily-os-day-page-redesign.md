@@ -9,20 +9,27 @@
   and what comes next — and it moves on when the next block starts. Under it, a
   thin line shows how full the day is, coloured by category, with the time
   planned and what is still free, or by how much the day is over. It replaces
-  the capacity ring and its legend; hover a stretch of the line to see its
-  category. With the companion on, tapping the sentence plays or stops her
-  briefing.
+  the capacity ring; hover a stretch of the line to see its category.
 - **The agenda is a single list in the order of the day.** Each item shows its
   start time, a category dot, its estimate and, only when there is something to
-  say, the planner's reason and the outcome. The item under way has a teal edge
-  and its progress; finished items fade and are struck through. Items linked to
-  a task end in an arrow that opens the task. Numbers and cover pictures are
-  gone from the list.
-- **The Activity tab uses the same list**, each recording or plan with its time
-  in front, so all three tabs share one shape.
-- **On the Day timeline**, the lane-layout and arrange buttons sit beside the
-  day's sentence instead of in a separate toolbar, the current-time line is
+  say, the planner's reason and the outcome. Items linked to a task lead with
+  the task's name and end in an arrow that opens it. The item under way is
+  marked "Now" with a teal edge and its progress; finished items are struck
+  through, and two or more at the start of the day fold into one row you can
+  open. Numbers and cover pictures are gone from the list. With no plan yet,
+  the list and the footer both offer to start the check-in.
+- **The Activity tab uses the same list**, grouped into what needs you, the
+  time tracked so far, and what is handled; each entry's icon says whether it
+  is waiting, transcribing or failed.
+- **On the Day timeline**, a Plan | Actual switch names the lanes on a phone,
+  hours read in your device's 12- or 24-hour clock, the current-time line is
   teal, and planned blocks no longer carry a link icon.
+- **The briefing names its colours.** Under the day's line, each category's
+  time is listed (the two largest and "+N more" on a phone), and a play button
+  starts the companion's spoken briefing.
+- **Easier to find your way back**: a Today button appears when you are looking
+  at another day, and the quick refinements under the message field appear
+  once you start typing a change.
 - **One button stands out.** "Looks good" and "Wrap up" are now the page's only
   filled button, the setup action matches the rest of the app, and suggestions
   ("2 things I noticed", setup reminders) are quiet lines rather than boxes.

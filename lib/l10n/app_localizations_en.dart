@@ -4723,6 +4723,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dailyOsNextActivityEmpty => 'No recordings or check-ins yet.';
 
   @override
+  String get dailyOsNextActivityHandled => 'Handled';
+
+  @override
   String get dailyOsNextActivityLoadFailed =>
       'Your saved activity is still on this device, but it couldn\'t be loaded right now.';
 
@@ -4732,6 +4735,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dailyOsNextActivityNeedsAttention => 'Needs attention';
+
+  @override
+  String get dailyOsNextActivityNeedsYou => 'Needs you';
 
   @override
   String get dailyOsNextActivityOpenAiSetup => 'Open Daily OS setup';
@@ -4789,11 +4795,27 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get dailyOsNextAgendaNoPlanBody =>
-      'Your tracked time is here either way — speak a check-in and I\'ll draft a day around it.';
+  String dailyOsNextAgendaDoneRun(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count items done',
+      one: '1 item done',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get dailyOsNextAgendaHideDone => 'Hide finished items';
 
   @override
   String get dailyOsNextAgendaNoPlanTitle => 'No plan yet for today.';
+
+  @override
+  String get dailyOsNextAgendaNow => 'Now';
+
+  @override
+  String get dailyOsNextAgendaShowDone => 'Show finished items';
 
   @override
   String get dailyOsNextAgendaStateDone => 'Done';
@@ -4943,13 +4965,18 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String dailyOsNextBriefingMoreCategories(int count, String duration) {
+    return '+$count more $duration';
+  }
+
+  @override
   String dailyOsNextBriefingNext(String time, String title) {
     return 'Next up at $time: $title.';
   }
 
   @override
   String get dailyOsNextBriefingNoPlan =>
-      'There\'s no plan for this day yet. A short check-in will make one.';
+      'There\'s no plan for this day yet. A short check‑in will make one.';
 
   @override
   String get dailyOsNextBriefingNothingLeft =>
@@ -5124,7 +5151,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dailyOsNextDayBack => 'Back';
 
   @override
-  String get dailyOsNextDayComposerCheckInHint => 'Talk or type a check-in';
+  String get dailyOsNextDayComposerCheckInHint => 'Talk or type a check‑in';
 
   @override
   String get dailyOsNextDayDeleteDialogBody =>
@@ -5167,6 +5194,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dailyOsNextDayRelationYesterday => 'Yesterday';
+
+  @override
+  String get dailyOsNextDayStartCheckIn => 'Start check-in';
 
   @override
   String get dailyOsNextDayTitle => 'Your day';
@@ -5692,14 +5722,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dailyOsNextTimelineShowPaged => 'Show swipeable plan and actual';
-
-  @override
-  String get dailyOsNextTimelineSwipeHint =>
-      'Swipe for actual · pinch vertically to zoom';
-
-  @override
-  String get dailyOsNextTimelineSwipeHintToPlan =>
-      'Swipe for plan · pinch vertically to zoom';
 
   @override
   String get dailyOsNextTimelineTracked => 'tracked';

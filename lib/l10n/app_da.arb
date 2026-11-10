@@ -2232,9 +2232,11 @@
   "dailyOsNextActivityDeleteDialogTitle": "Slet denne optagelse?",
   "dailyOsNextActivityDeleteRecording": "Slet",
   "dailyOsNextActivityEmpty": "Ingen optagelser eller check-ins endnu.",
+  "dailyOsNextActivityHandled": "Klaret",
   "dailyOsNextActivityLoadFailed": "Din gemte aktivitet er stadig på denne enhed, men den kunne ikke indlæses lige nu.",
   "dailyOsNextActivityMissingAudio": "Denne post er bevaret, men lydfilen er ikke tilgængelig på denne enhed. Gendan filen, og prøv så igen.",
   "dailyOsNextActivityNeedsAttention": "Kræver opmærksomhed",
+  "dailyOsNextActivityNeedsYou": "Venter på dig",
   "dailyOsNextActivityOpenAiSetup": "Åbn Daily OS-opsætning",
   "dailyOsNextActivityOpenSetup": "Åbn opsætning af transskription",
   "dailyOsNextActivityPlanAvailable": "Din dagsplan er klar.",
@@ -2260,8 +2262,23 @@
       }
     }
   },
-  "dailyOsNextAgendaNoPlanBody": "Din registrerede tid er her uanset hvad — tal med et check-in, og jeg udarbejder en dag omkring det.",
+  "dailyOsNextAgendaDoneRun": "{count, plural, =1{1 punkt færdigt} other{{count} punkter færdige}}",
+  "@dailyOsNextAgendaDoneRun": {
+    "description": "Agenda summary row standing in for the day's finished items, folded together.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "5"
+      }
+    }
+  },
+  "dailyOsNextAgendaHideDone": "Skjul færdige punkter",
   "dailyOsNextAgendaNoPlanTitle": "Ingen plan endnu for i dag.",
+  "dailyOsNextAgendaNow": "Nu",
+  "@dailyOsNextAgendaNow": {
+    "description": "Marks the agenda row whose item is under way now, above its start time."
+  },
+  "dailyOsNextAgendaShowDone": "Vis færdige punkter",
   "dailyOsNextAgendaStateDone": "Færdig",
   "dailyOsNextAgendaStateInProgress": "Under udvikling",
   "dailyOsNextAgendaStateOpen": "Åben",
@@ -2373,6 +2390,20 @@
       }
     }
   },
+  "dailyOsNextBriefingMoreCategories": "+{count} mere {duration}",
+  "@dailyOsNextBriefingMoreCategories": {
+    "description": "Last entry of the capacity legend on a phone: the categories not named, and their time together.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "2"
+      },
+      "duration": {
+        "type": "String",
+        "example": "1h 30m"
+      }
+    }
+  },
   "dailyOsNextBriefingNext": "Næste kl. {time}: {title}.",
   "@dailyOsNextBriefingNext": {
     "placeholders": {
@@ -2384,7 +2415,7 @@
       }
     }
   },
-  "dailyOsNextBriefingNoPlan": "Der er ingen plan for denne dag endnu. Et kort check-in laver en.",
+  "dailyOsNextBriefingNoPlan": "Der er ingen plan for denne dag endnu. Et kort check‑in laver en.",
   "dailyOsNextBriefingNothingLeft": "Der er ikke mere planlagt i dag.",
   "dailyOsNextBriefingOverCaption": "{duration} for meget",
   "@dailyOsNextBriefingOverCaption": {
@@ -2476,7 +2507,7 @@
   "dailyOsNextDayAgentStatusWorking": "Planlægger…",
   "dailyOsNextDayAgentTokensToday": "{tokens} tokens brugt på at planlægge denne dag",
   "dailyOsNextDayBack": "Tilbage",
-  "dailyOsNextDayComposerCheckInHint": "Tal eller skriv et check-in",
+  "dailyOsNextDayComposerCheckInHint": "Tal eller skriv et check‑in",
   "dailyOsNextDayDeleteDialogBody": "De udkastede blokke for denne dag vil blive fjernet. Optagelser og deres lydoptagelser bliver i din dagbog.",
   "dailyOsNextDayDeleteDialogCancel": "Annuller",
   "dailyOsNextDayDeleteDialogConfirm": "Slet",
@@ -2503,6 +2534,7 @@
   "dailyOsNextDayRelationToday": "I dag",
   "dailyOsNextDayRelationTomorrow": "I morgen",
   "dailyOsNextDayRelationYesterday": "I går",
+  "dailyOsNextDayStartCheckIn": "Start check-in",
   "dailyOsNextDayTitle": "Din dag",
   "dailyOsNextDayWhyChipLabel": "Hvorfor",
   "dailyOsNextDayWrapUpCta": "Afslutning",
@@ -2737,8 +2769,6 @@
   },
   "dailyOsNextTimelineShowBoth": "Showplan og faktisk sammen",
   "dailyOsNextTimelineShowPaged": "Vis swipebar plan og faktisk",
-  "dailyOsNextTimelineSwipeHint": "Swipe for actual · klem lodret for at zoome ind",
-  "dailyOsNextTimelineSwipeHintToPlan": "Swipe for plan · klem lodret for at zoome ind",
   "dailyOsNextTimelineTracked": "sporet",
   "dailyOsNextTimeSpentEarlierSessions": "{count, plural, one{1 tidligere session} other{{count} tidligere sessioner}}",
   "@dailyOsNextTimeSpentEarlierSessions": {

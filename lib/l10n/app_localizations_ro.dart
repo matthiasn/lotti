@@ -4812,6 +4812,9 @@ class AppLocalizationsRo extends AppLocalizations {
       'Nu există încă înregistrări sau check-in-uri.';
 
   @override
+  String get dailyOsNextActivityHandled => 'Rezolvat';
+
+  @override
   String get dailyOsNextActivityLoadFailed =>
       'Activitatea dvs. salvată se află în continuare pe acest dispozitiv, dar nu a putut fi încărcată acum.';
 
@@ -4821,6 +4824,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get dailyOsNextActivityNeedsAttention => 'Necesită atenție';
+
+  @override
+  String get dailyOsNextActivityNeedsYou => 'Vă așteaptă';
 
   @override
   String get dailyOsNextActivityOpenAiSetup =>
@@ -4881,12 +4887,29 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get dailyOsNextAgendaNoPlanBody =>
-      'Timpul dvs. înregistrat este oricum aici — rostiți un check-in și voi schița o zi în jurul lui.';
+  String dailyOsNextAgendaDoneRun(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de elemente finalizate',
+      few: '$count elemente finalizate',
+      one: '1 element finalizat',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get dailyOsNextAgendaHideDone => 'Ascundeți elementele finalizate';
 
   @override
   String get dailyOsNextAgendaNoPlanTitle =>
       'Încă nu există un plan pentru azi.';
+
+  @override
+  String get dailyOsNextAgendaNow => 'Acum';
+
+  @override
+  String get dailyOsNextAgendaShowDone => 'Afișați elementele finalizate';
 
   @override
   String get dailyOsNextAgendaStateDone => 'Finalizat';
@@ -5040,13 +5063,18 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String dailyOsNextBriefingMoreCategories(int count, String duration) {
+    return '+$count în plus $duration';
+  }
+
+  @override
   String dailyOsNextBriefingNext(String time, String title) {
     return 'Urmează la $time: $title.';
   }
 
   @override
   String get dailyOsNextBriefingNoPlan =>
-      'Încă nu există un plan pentru această zi. Un scurt check-in va crea unul.';
+      'Încă nu există un plan pentru această zi. Un scurt check‑in va crea unul.';
 
   @override
   String get dailyOsNextBriefingNothingLeft =>
@@ -5224,7 +5252,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get dailyOsNextDayComposerCheckInHint =>
-      'Spuneți sau scrieți un check-in';
+      'Spuneți sau scrieți un check‑in';
 
   @override
   String get dailyOsNextDayDeleteDialogBody =>
@@ -5267,6 +5295,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get dailyOsNextDayRelationYesterday => 'Ieri';
+
+  @override
+  String get dailyOsNextDayStartCheckIn => 'Începeți check-in-ul';
 
   @override
   String get dailyOsNextDayTitle => 'Ziua dvs.';
@@ -5799,14 +5830,6 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get dailyOsNextTimelineShowPaged =>
       'Afișați planul și realul prin glisare';
-
-  @override
-  String get dailyOsNextTimelineSwipeHint =>
-      'Glisați spre real · ciupiți vertical pentru zoom';
-
-  @override
-  String get dailyOsNextTimelineSwipeHintToPlan =>
-      'Glisați spre plan · ciupiți vertical pentru zoom';
 
   @override
   String get dailyOsNextTimelineTracked => 'înregistrat';

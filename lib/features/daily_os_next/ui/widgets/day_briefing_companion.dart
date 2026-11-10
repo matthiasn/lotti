@@ -184,11 +184,21 @@ String composeDayHeadline(
   return [
     messages.dailyOsNextBriefingBlockCount(briefing.blockCount),
     if (next != null)
-      messages.dailyOsNextBriefingNext(clockLabel(next.start), next.title)
+      _withoutDoubledStop(
+        messages.dailyOsNextBriefingNext(clockLabel(next.start), next.title),
+      )
     else if (briefing.nothingLeftToday)
       messages.dailyOsNextBriefingNothingLeft,
   ].join(' ');
 }
+
+/// [sentence] without the full stop a template adds after a title that
+/// already ends its own sentence: "…: Is a penguin a passenger?" rather than
+/// "…passenger?.".
+String _withoutDoubledStop(String sentence) => sentence.replaceFirstMapped(
+  RegExp(r'([?!.…])\.$'),
+  (match) => match.group(1)!,
+);
 
 /// The spoken briefing for [briefing] in [messages]' language: how many
 /// blocks are planned, what comes next (or that nothing is left today), the

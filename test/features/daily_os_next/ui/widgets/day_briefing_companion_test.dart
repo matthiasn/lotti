@@ -97,7 +97,7 @@ void main() {
     test('without a plan, only invites a check-in', () {
       expect(
         _compose(DraftPlan.emptyForDay(_day), hasPlan: false, nowHour: 8),
-        "There's no plan for this day yet. A short check-in will make one.",
+        "There's no plan for this day yet. A short check\u2011in will make one.",
       );
     });
 
@@ -182,7 +182,7 @@ void main() {
     test('without a plan, is the invitation to check in', () {
       expect(
         headline(DraftPlan.emptyForDay(_day), hasPlan: false, nowHour: 8),
-        "There's no plan for this day yet. A short check-in will make one.",
+        "There's no plan for this day yet. A short check\u2011in will make one.",
       );
     });
 
@@ -215,6 +215,22 @@ void main() {
           _clock,
         ),
         'You have one block planned.',
+      );
+    });
+
+    for (final title in ['Ready?', 'Go!', 'Done.', 'Wait…']) {
+      test('a next title ending "$title" gets no second stop', () {
+        expect(
+          headline(_plan([_block(title, 13, 30)]), nowHour: 10),
+          'You have one block planned. Next up at 13:00: $title',
+        );
+      });
+    }
+
+    test('a title ending in a word keeps the template stop', () {
+      expect(
+        headline(_plan([_block('Write', 13, 30)]), nowHour: 10),
+        endsWith('Write.'),
       );
     });
 
@@ -530,7 +546,7 @@ void main() {
 
       expect(
         engine.calls.single.text,
-        "There's no plan for this day yet. A short check-in will make one.",
+        "There's no plan for this day yet. A short check\u2011in will make one.",
       );
     });
   });

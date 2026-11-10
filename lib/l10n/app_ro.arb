@@ -1994,9 +1994,11 @@
   "dailyOsNextActivityDeleteDialogTitle": "Ștergeți această înregistrare?",
   "dailyOsNextActivityDeleteRecording": "Ștergeți",
   "dailyOsNextActivityEmpty": "Nu există încă înregistrări sau check-in-uri.",
+  "dailyOsNextActivityHandled": "Rezolvat",
   "dailyOsNextActivityLoadFailed": "Activitatea dvs. salvată se află în continuare pe acest dispozitiv, dar nu a putut fi încărcată acum.",
   "dailyOsNextActivityMissingAudio": "Această intrare este păstrată, dar fișierul audio nu este disponibil pe acest dispozitiv. Restaurați fișierul, apoi încercați din nou.",
   "dailyOsNextActivityNeedsAttention": "Necesită atenție",
+  "dailyOsNextActivityNeedsYou": "Vă așteaptă",
   "dailyOsNextActivityOpenAiSetup": "Deschideți configurarea Daily OS",
   "dailyOsNextActivityOpenSetup": "Deschideți configurarea transcrierii",
   "dailyOsNextActivityPlanAvailable": "Planul dvs. pentru zi este disponibil.",
@@ -2022,8 +2024,23 @@
       }
     }
   },
-  "dailyOsNextAgendaNoPlanBody": "Timpul dvs. înregistrat este oricum aici — rostiți un check-in și voi schița o zi în jurul lui.",
+  "dailyOsNextAgendaDoneRun": "{count, plural, =1{1 element finalizat} few{{count} elemente finalizate} other{{count} de elemente finalizate}}",
+  "@dailyOsNextAgendaDoneRun": {
+    "description": "Agenda summary row standing in for the day's finished items, folded together.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "5"
+      }
+    }
+  },
+  "dailyOsNextAgendaHideDone": "Ascundeți elementele finalizate",
   "dailyOsNextAgendaNoPlanTitle": "Încă nu există un plan pentru azi.",
+  "dailyOsNextAgendaNow": "Acum",
+  "@dailyOsNextAgendaNow": {
+    "description": "Marks the agenda row whose item is under way now, above its start time."
+  },
+  "dailyOsNextAgendaShowDone": "Afișați elementele finalizate",
   "dailyOsNextAgendaStateDone": "Finalizat",
   "dailyOsNextAgendaStateInProgress": "În progres",
   "dailyOsNextAgendaStateOpen": "Deschis",
@@ -2135,6 +2152,20 @@
       }
     }
   },
+  "dailyOsNextBriefingMoreCategories": "+{count} în plus {duration}",
+  "@dailyOsNextBriefingMoreCategories": {
+    "description": "Last entry of the capacity legend on a phone: the categories not named, and their time together.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "2"
+      },
+      "duration": {
+        "type": "String",
+        "example": "1h 30m"
+      }
+    }
+  },
   "dailyOsNextBriefingNext": "Urmează la {time}: {title}.",
   "@dailyOsNextBriefingNext": {
     "placeholders": {
@@ -2146,7 +2177,7 @@
       }
     }
   },
-  "dailyOsNextBriefingNoPlan": "Încă nu există un plan pentru această zi. Un scurt check-in va crea unul.",
+  "dailyOsNextBriefingNoPlan": "Încă nu există un plan pentru această zi. Un scurt check‑in va crea unul.",
   "dailyOsNextBriefingNothingLeft": "Pentru astăzi nu mai este nimic planificat.",
   "dailyOsNextBriefingOverCaption": "{duration} peste",
   "@dailyOsNextBriefingOverCaption": {
@@ -2224,7 +2255,7 @@
   "dailyOsNextDayAgentStatusWorking": "Se planifică…",
   "dailyOsNextDayAgentTokensToday": "{tokens} tokenuri folosite pentru planificarea acestei zile",
   "dailyOsNextDayBack": "Înapoi",
-  "dailyOsNextDayComposerCheckInHint": "Spuneți sau scrieți un check-in",
+  "dailyOsNextDayComposerCheckInHint": "Spuneți sau scrieți un check‑in",
   "dailyOsNextDayDeleteDialogBody": "Blocurile schițate pentru această zi vor fi eliminate. Capturile dvs. și înregistrările audio rămân în jurnal.",
   "dailyOsNextDayDeleteDialogCancel": "Anulați",
   "dailyOsNextDayDeleteDialogConfirm": "Ștergeți",
@@ -2251,6 +2282,7 @@
   "dailyOsNextDayRelationToday": "Astăzi",
   "dailyOsNextDayRelationTomorrow": "Mâine",
   "dailyOsNextDayRelationYesterday": "Ieri",
+  "dailyOsNextDayStartCheckIn": "Începeți check-in-ul",
   "dailyOsNextDayTitle": "Ziua dvs.",
   "dailyOsNextDayWhyChipLabel": "De ce",
   "dailyOsNextDayWrapUpCta": "Încheie",
@@ -2458,8 +2490,6 @@
   "dailyOsNextTimelineSessionOf": "Sesiunea {index} din {total}",
   "dailyOsNextTimelineShowBoth": "Afișați planul și realul împreună",
   "dailyOsNextTimelineShowPaged": "Afișați planul și realul prin glisare",
-  "dailyOsNextTimelineSwipeHint": "Glisați spre real · ciupiți vertical pentru zoom",
-  "dailyOsNextTimelineSwipeHintToPlan": "Glisați spre plan · ciupiți vertical pentru zoom",
   "dailyOsNextTimelineTracked": "înregistrat",
   "dailyOsNextTimeSpentEarlierSessions": "{count, plural, one{1 sesiune anterioară} few{{count} sesiuni anterioare} other{{count} de sesiuni anterioare}}",
   "dailyOsNextTimeSpentShowLess": "Afișați mai puțin",

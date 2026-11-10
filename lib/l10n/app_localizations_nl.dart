@@ -4766,6 +4766,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get dailyOsNextActivityEmpty => 'Nog geen opnames of check-ins.';
 
   @override
+  String get dailyOsNextActivityHandled => 'Afgehandeld';
+
+  @override
   String get dailyOsNextActivityLoadFailed =>
       'Je opgeslagen activiteit staat nog op dit apparaat, maar kon nu niet worden geladen.';
 
@@ -4775,6 +4778,9 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get dailyOsNextActivityNeedsAttention => 'Vraagt aandacht';
+
+  @override
+  String get dailyOsNextActivityNeedsYou => 'Wacht op jou';
 
   @override
   String get dailyOsNextActivityOpenAiSetup => 'Daily OS-instellingen openen';
@@ -4832,11 +4838,27 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String get dailyOsNextAgendaNoPlanBody =>
-      'Je getraceerde tijd is hier, hoe dan ook. Spreek een check-in en ik zal er een dag omheen opstellen.';
+  String dailyOsNextAgendaDoneRun(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count items klaar',
+      one: '1 item klaar',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get dailyOsNextAgendaHideDone => 'Verberg afgeronde items';
 
   @override
   String get dailyOsNextAgendaNoPlanTitle => 'Nog geen plan voor vandaag.';
+
+  @override
+  String get dailyOsNextAgendaNow => 'Nu';
+
+  @override
+  String get dailyOsNextAgendaShowDone => 'Toon afgeronde items';
 
   @override
   String get dailyOsNextAgendaStateDone => 'Klaar';
@@ -4986,13 +5008,18 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String dailyOsNextBriefingMoreCategories(int count, String duration) {
+    return '+$count meer $duration';
+  }
+
+  @override
   String dailyOsNextBriefingNext(String time, String title) {
     return 'Hierna om $time: $title.';
   }
 
   @override
   String get dailyOsNextBriefingNoPlan =>
-      'Er is nog geen plan voor deze dag. Een korte check-in maakt er een.';
+      'Er is nog geen plan voor deze dag. Een korte check‑in maakt er een.';
 
   @override
   String get dailyOsNextBriefingNothingLeft =>
@@ -5169,7 +5196,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get dailyOsNextDayBack => 'Terug';
 
   @override
-  String get dailyOsNextDayComposerCheckInHint => 'Spreek of typ een check-in';
+  String get dailyOsNextDayComposerCheckInHint => 'Spreek of typ een check‑in';
 
   @override
   String get dailyOsNextDayDeleteDialogBody =>
@@ -5212,6 +5239,9 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get dailyOsNextDayRelationYesterday => 'Gisteren';
+
+  @override
+  String get dailyOsNextDayStartCheckIn => 'Check-in starten';
 
   @override
   String get dailyOsNextDayTitle => 'Jouw dag';
@@ -5737,14 +5767,6 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get dailyOsNextTimelineShowPaged =>
       'Bewegingsbaar plan en werkelijke tonen';
-
-  @override
-  String get dailyOsNextTimelineSwipeHint =>
-      'Veeg voor werkelijke · knijp verticaal naar zoom';
-
-  @override
-  String get dailyOsNextTimelineSwipeHintToPlan =>
-      'Veeg voor plan · knijp verticaal naar zoom';
 
   @override
   String get dailyOsNextTimelineTracked => 'traced';

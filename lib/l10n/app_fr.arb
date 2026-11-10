@@ -1994,9 +1994,11 @@
   "dailyOsNextActivityDeleteDialogTitle": "Supprimer cet enregistrement ?",
   "dailyOsNextActivityDeleteRecording": "Supprimer",
   "dailyOsNextActivityEmpty": "Pas encore d’enregistrement ni de check-in.",
+  "dailyOsNextActivityHandled": "Traité",
   "dailyOsNextActivityLoadFailed": "Ton activité enregistrée est toujours sur cet appareil, mais elle n’a pas pu être chargée pour le moment.",
   "dailyOsNextActivityMissingAudio": "Cette entrée est conservée, mais le fichier audio n’est pas disponible sur cet appareil. Restaure le fichier, puis réessaie.",
   "dailyOsNextActivityNeedsAttention": "À vérifier",
+  "dailyOsNextActivityNeedsYou": "T'attend",
   "dailyOsNextActivityOpenAiSetup": "Ouvrir la configuration Daily OS",
   "dailyOsNextActivityOpenSetup": "Configurer la transcription",
   "dailyOsNextActivityPlanAvailable": "Ton plan de journée est disponible.",
@@ -2022,8 +2024,23 @@
       }
     }
   },
-  "dailyOsNextAgendaNoPlanBody": "Ton temps suivi est là quoi qu'il arrive — dicte un point de situation et je construis ta journée autour.",
+  "dailyOsNextAgendaDoneRun": "{count, plural, =1{1 élément terminé} other{{count} éléments terminés}}",
+  "@dailyOsNextAgendaDoneRun": {
+    "description": "Agenda summary row standing in for the day's finished items, folded together.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "5"
+      }
+    }
+  },
+  "dailyOsNextAgendaHideDone": "Masquer les éléments terminés",
   "dailyOsNextAgendaNoPlanTitle": "Pas encore de plan pour aujourd'hui.",
+  "dailyOsNextAgendaNow": "Maintenant",
+  "@dailyOsNextAgendaNow": {
+    "description": "Marks the agenda row whose item is under way now, above its start time."
+  },
+  "dailyOsNextAgendaShowDone": "Afficher les éléments terminés",
   "dailyOsNextAgendaStateDone": "Fait",
   "dailyOsNextAgendaStateInProgress": "En cours",
   "dailyOsNextAgendaStateOpen": "Ouvert",
@@ -2132,6 +2149,20 @@
     "placeholders": {
       "count": {
         "type": "int"
+      }
+    }
+  },
+  "dailyOsNextBriefingMoreCategories": "+{count} autres {duration}",
+  "@dailyOsNextBriefingMoreCategories": {
+    "description": "Last entry of the capacity legend on a phone: the categories not named, and their time together.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "2"
+      },
+      "duration": {
+        "type": "String",
+        "example": "1h 30m"
       }
     }
   },
@@ -2251,6 +2282,7 @@
   "dailyOsNextDayRelationToday": "Aujourd'hui",
   "dailyOsNextDayRelationTomorrow": "Demain",
   "dailyOsNextDayRelationYesterday": "Hier",
+  "dailyOsNextDayStartCheckIn": "Commencer le check-in",
   "dailyOsNextDayTitle": "Ta journée",
   "dailyOsNextDayWhyChipLabel": "Pourquoi",
   "dailyOsNextDayWrapUpCta": "Clore",
@@ -2458,8 +2490,6 @@
   "dailyOsNextTimelineSessionOf": "Session {index} sur {total}",
   "dailyOsNextTimelineShowBoth": "Afficher plan et réel ensemble",
   "dailyOsNextTimelineShowPaged": "Afficher plan et réel en balayage",
-  "dailyOsNextTimelineSwipeHint": "Balaye vers le réel · pince verticalement pour zoomer",
-  "dailyOsNextTimelineSwipeHintToPlan": "Balaye vers le plan · pince verticalement pour zoomer",
   "dailyOsNextTimelineTracked": "suivi",
   "dailyOsNextTimeSpentEarlierSessions": "{count, plural, =1{1 session précédente} other{{count} sessions précédentes}}",
   "dailyOsNextTimeSpentShowLess": "Afficher moins",

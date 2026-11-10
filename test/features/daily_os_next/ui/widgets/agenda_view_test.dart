@@ -8,8 +8,10 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/agenda_view.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_agenda_row.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/day_row_scaffold.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/time_spent_card.dart';
 import 'package:lotti/features/design_system/components/cards/ds_rows_card.dart';
+import 'package:lotti/features/design_system/theme/icon_tokens.dart';
 import 'package:lotti/features/tasks/ui/cover_art_thumbnail.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -371,6 +373,141 @@ void main() {
           (row.item.id, row.start),
       ];
 
+      AgendaItem done(String id, List<String> blocks) => AgendaItem(
+        id: id,
+        title: 'Item $id',
+        category: _category,
+        linkedBlockIds: blocks,
+        state: AgendaItemState.done,
+      );
+      final doneRun = find.byKey(const ValueKey('daily_os_agenda_done_run'));
+
+      testWidgets(
+        'two or more finished items at the head of the day fold into one '
+        'row that unfolds them in place',
+        (tester) async {
+          await tester.pumpWidget(
+            _wrap(
+              AgendaView(
+                draft: plan(
+                  [block('b8', 8), block('b9', 9), block('b10', 10)],
+                  [
+                    done('first', ['b8']),
+                    done('second', ['b9']),
+                    item('open', ['b10']),
+                  ],
+                ),
+              ),
+            ),
+          );
+          final messages = tester.element(find.byType(AgendaView)).messages;
+
+          // Folded: the run is one row at the first item's time, and only
+          // the open item is listed.
+          expect(doneRun, findsOneWidget);
+          expect(find.text(messages.dailyOsNextAgendaDoneRun(2)), findsOne);
+          expect(
+            find.descendant(of: doneRun, matching: find.text('8:00 AM')),
+            findsOneWidget,
+          );
+          expect(rowsOf(tester).map((r) => r.$1), ['open']);
+          expect(find.byIcon(LottiIcons.chevronDown), findsOneWidget);
+          expect(
+            tester.getSemantics(doneRun),
+            matchesSemantics(
+              label: messages.dailyOsNextAgendaShowDone,
+              isButton: true,
+              hasExpandedState: true,
+              hasTapAction: true,
+            ),
+          );
+
+          await tester.tap(doneRun);
+          await tester.pump();
+
+          expect(rowsOf(tester).map((r) => r.$1), ['first', 'second', 'open']);
+          expect(find.byIcon(LottiIcons.chevronUp), findsOneWidget);
+          expect(
+            tester.getSemantics(doneRun),
+            matchesSemantics(
+              label: messages.dailyOsNextAgendaHideDone,
+              isButton: true,
+              hasExpandedState: true,
+              isExpanded: true,
+              hasTapAction: true,
+            ),
+          );
+
+          await tester.tap(doneRun);
+          await tester.pump();
+          expect(rowsOf(tester).map((r) => r.$1), ['open']);
+        },
+      );
+
+      testWidgets('a single finished item is listed as it is', (tester) async {
+        await tester.pumpWidget(
+          _wrap(
+            AgendaView(
+              draft: plan(
+                [block('b8', 8), block('b10', 10)],
+                [
+                  done('first', ['b8']),
+                  item('open', ['b10']),
+                ],
+              ),
+            ),
+          ),
+        );
+
+        expect(doneRun, findsNothing);
+        expect(rowsOf(tester).map((r) => r.$1), ['first', 'open']);
+      });
+
+      testWidgets('a folded run with no blocks shows a dash for its time', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          _wrap(
+            AgendaView(
+              draft: plan(const [], [done('a', const []), done('b', const [])]),
+            ),
+          ),
+        );
+
+        expect(
+          find.descendant(of: doneRun, matching: find.text('—')),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('the header scrolls in above the rows', (tester) async {
+        await tester.pumpWidget(
+          _wrap(
+            AgendaView(
+              draft: plan(
+                [block('b9', 9)],
+                [
+                  item('only', ['b9']),
+                ],
+              ),
+              header: const Text('briefing'),
+            ),
+          ),
+        );
+
+        expect(
+          find.descendant(
+            of: find.byType(SingleChildScrollView),
+            matching: find.text('briefing'),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          tester.getTopLeft(find.text('briefing')).dy,
+          lessThan(tester.getTopLeft(find.byType(DayAgendaRow)).dy),
+        );
+      });
+
       testWidgets('orders the rows by their first block, not plan order', (
         tester,
       ) async {
@@ -564,9 +701,48 @@ void main() {
       });
     });
 
+    testWidgets('the "No plan yet" row starts the check-in when tapped', (
+      tester,
+    ) async {
+      var started = 0;
+      await tester.pumpWidget(
+        _wrap(
+          AgendaView(
+            draft: DraftPlan.emptyForDay(DateTime(2026, 5, 26)),
+            hasPlan: false,
+            onStartCheckIn: () => started++,
+          ),
+        ),
+      );
+      final messages = tester.element(find.byType(AgendaView)).messages;
+
+      expect(find.byIcon(LottiIcons.chevronRight), findsOneWidget);
+      await tester.tap(find.text(messages.dailyOsNextAgendaNoPlanTitle));
+      expect(started, 1);
+    });
+
+    testWidgets('without a way to check in, the row is not a button', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(
+          AgendaView(
+            draft: DraftPlan.emptyForDay(DateTime(2026, 5, 26)),
+            hasPlan: false,
+          ),
+        ),
+      );
+
+      expect(find.byIcon(LottiIcons.chevronRight), findsNothing);
+      expect(
+        find.byKey(const Key('daily_os_agenda_start_check_in')),
+        findsNothing,
+      );
+    });
+
     testWidgets(
-      'no-plan day renders the dashed "No plan yet" hint card; a real '
-      'plan with zero agenda items does not',
+      'no-plan day shows one "No plan yet" row; a real plan with zero '
+      'agenda items does not',
       (tester) async {
         final draft = DraftPlan(
           dayDate: DateTime(2026, 5, 26),
@@ -585,10 +761,9 @@ void main() {
           find.text(messages.dailyOsNextAgendaNoPlanTitle),
           findsOneWidget,
         );
-        expect(
-          find.text(messages.dailyOsNextAgendaNoPlanBody),
-          findsOneWidget,
-        );
+        // The invitation to check in is the briefing's and the footer's;
+        // the row only says there is no plan.
+        expect(find.byType(DayRowScaffold), findsOneWidget);
         expect(find.byType(DayAgendaRow), findsNothing);
         // No tracked time -> no TimeSpentCard either.
         expect(find.byType(TimeSpentCard), findsNothing);
@@ -599,49 +774,6 @@ void main() {
           find.text(messages.dailyOsNextAgendaNoPlanTitle),
           findsNothing,
         );
-      },
-    );
-
-    testWidgets(
-      'no-plan day lists the recorded sessions in the TimeSpentCard',
-      (tester) async {
-        final day = DateTime(2026, 5, 26);
-        final tracked = [
-          TimeBlock(
-            id: 'tr1',
-            title: 'Build attention framework',
-            start: DateTime(2026, 5, 26, 8, 30),
-            end: DateTime(2026, 5, 26, 10),
-            type: TimeBlockType.manual,
-            state: TimeBlockState.completed,
-            category: _category,
-            taskId: 'task-tr1',
-          ),
-          TimeBlock(
-            id: 'tr2',
-            title: 'UI improvements',
-            start: DateTime(2026, 5, 26, 10, 30),
-            end: DateTime(2026, 5, 26, 11, 35),
-            type: TimeBlockType.manual,
-            state: TimeBlockState.inProgress,
-            category: _category,
-          ),
-        ];
-        final draft = DraftPlan.emptyForDay(day);
-        await tester.pumpWidget(
-          _wrap(
-            AgendaView(
-              draft: draft,
-              actualBlocks: tracked,
-              hasPlan: false,
-            ),
-          ),
-        );
-
-        // The recorded sessions are listed in the TimeSpentCard.
-        expect(find.byType(TimeSpentCard), findsOneWidget);
-        expect(find.text('Build attention framework'), findsOneWidget);
-        expect(find.text('UI improvements'), findsOneWidget);
       },
     );
   });

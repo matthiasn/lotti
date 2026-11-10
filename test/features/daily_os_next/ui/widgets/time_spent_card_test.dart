@@ -3,6 +3,7 @@ import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/time_spent_card.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/nav_service.dart' show beamToNamedOverride;
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../widget_test_utils.dart';
@@ -142,36 +143,107 @@ void main() {
       },
     );
 
-    testWidgets('compact mode tightens the horizontal padding', (
+    testWidgets('leaves the summary out when the host already says it', (
       tester,
     ) async {
-      EdgeInsetsGeometry paddingFor() => tester
-          .widget<Container>(
-            find.byKey(const Key('daily_os_time_spent_card')),
-          )
-          .padding!;
-
       await tester.pumpWidget(
         _wrap(
           TimeSpentCard(
             blocks: [_session(id: 's1', title: 'Session', startHour: 8)],
-            compact: true,
+            showSummary: false,
           ),
         ),
       );
-      final compactPadding = paddingFor().resolve(TextDirection.ltr);
 
+      final messages = tester.element(find.byType(TimeSpentCard)).messages;
+      expect(find.text(messages.dailyOsNextTimeSpentTitle), findsOneWidget);
+      expect(
+        find.text(messages.dailyOsNextTimeSpentSummary('1h', 0)),
+        findsNothing,
+      );
+    });
+
+    testWidgets("the folded earlier sessions are the card's first row", (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _wrap(
           TimeSpentCard(
-            blocks: [_session(id: 's1', title: 'Session', startHour: 8)],
+            blocks: [
+              _session(id: 's1', title: 'Early', startHour: 7),
+              _session(id: 's2', title: 'Late', startHour: 15),
+            ],
+            maxRows: 1,
           ),
         ),
       );
-      final regularPadding = paddingFor().resolve(TextDirection.ltr);
 
-      expect(compactPadding.left, lessThan(regularPadding.left));
-      expect(compactPadding.right, lessThan(regularPadding.right));
+      final fold = tester.getRect(
+        find.byKey(const Key('daily_os_time_spent_expander')),
+      );
+      final late = tester.getRect(find.text('Late'));
+      expect(fold.bottom, lessThanOrEqualTo(late.top));
+      // It starts at the first folded session's time.
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('daily_os_time_spent_expander')),
+          matching: find.text('7:00 AM'),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('an unfinished session shows its length, a done one a check', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(
+          TimeSpentCard(
+            blocks: [
+              _session(
+                id: 'open',
+                title: 'Open',
+                startHour: 8,
+                durationMinutes: 45,
+              ),
+              _session(id: 'done', title: 'Done', startHour: 10, done: true),
+            ],
+          ),
+        ),
+      );
+
+      expect(find.text('45m'), findsOneWidget);
+      expect(find.byIcon(LottiIcons.confirm), findsOneWidget);
+    });
+
+    testWidgets('a session with a task opens it; one without has no chevron', (
+      tester,
+    ) async {
+      final routes = <String>[];
+      beamToNamedOverride = routes.add;
+      addTearDown(() => beamToNamedOverride = null);
+      await tester.pumpWidget(
+        _wrap(
+          TimeSpentCard(
+            blocks: [
+              _session(id: 'loose', title: 'Loose', startHour: 8),
+              _session(
+                id: 'linked',
+                title: 'Linked',
+                startHour: 10,
+                done: true,
+              ),
+            ],
+          ),
+        ),
+      );
+
+      expect(find.byIcon(LottiIcons.chevronRight), findsOneWidget);
+      await tester.tap(find.text('Loose'));
+      expect(routes, isEmpty);
+
+      await tester.tap(find.text('Linked'));
+      expect(routes, ['/tasks/task-linked']);
     });
 
     testWidgets('no expander when the sessions fit within maxRows', (

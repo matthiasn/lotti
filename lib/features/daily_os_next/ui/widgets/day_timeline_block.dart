@@ -6,12 +6,12 @@ import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/ui/category_color.dart';
 import 'package:lotti/features/daily_os_next/ui/time_format.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/day_row_scaffold.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline_folding.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/editable_title.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/live_task_metadata.dart';
 import 'package:lotti/features/design_system/components/ds_dashed_border.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/task_focus_controller.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -740,7 +740,7 @@ class _BlockContent extends StatelessWidget {
       color: tracked
           ? tokens.colors.text.highEmphasis
           : tokens.colors.text.mediumEmphasis,
-      fontWeight: FontWeight.w600,
+      fontWeight: tokens.typography.weight.semiBold,
       fontStyle: isBuffer ? FontStyle.italic : FontStyle.normal,
     );
 
@@ -758,10 +758,12 @@ class _BlockContent extends StatelessWidget {
         );
         final unscaledSliverLine = tokens.typography.lineHeight.caption;
         final sliverLineHeight = textScaler.scale(unscaledSliverLine);
-        if (constraints.maxHeight < sliverLineHeight * 0.75) {
-          // Even a fitted caption line would be illegibly small — fill +
-          // stripe only (the Semantics label on DayBlock still carries
-          // the title).
+        if (constraints.maxHeight < sliverLineHeight * 0.75 ||
+            constraints.maxWidth < TapTargets.minimum) {
+          // Even a fitted caption line would be illegibly small, or the block
+          // is too narrow to hold a word (the phone's peeking lane) — fill +
+          // stripe only, never a two-letter fragment (the Semantics label on
+          // DayBlock still carries the title).
           return const SizedBox.shrink();
         }
         if (constraints.maxHeight < lineHeight + 2) {
@@ -812,7 +814,7 @@ class _BlockContent extends StatelessWidget {
                     if (isCal) ...[
                       Icon(
                         LottiIcons.calendar,
-                        size: 12,
+                        size: tokens.typography.size.caption,
                         color: tokens.colors.text.mediumEmphasis,
                       ),
                       SizedBox(width: tokens.spacing.step1),
@@ -828,7 +830,7 @@ class _BlockContent extends StatelessWidget {
                               block.title,
                               style: titleStyle,
                               maxLines: titleMaxLines,
-                              overflow: TextOverflow.fade,
+                              overflow: TextOverflow.ellipsis,
                               softWrap: true,
                             ),
                     ),
@@ -838,19 +840,31 @@ class _BlockContent extends StatelessWidget {
                     ],
                     if (onEdit != null) ...[
                       SizedBox(width: tokens.spacing.step1),
-                      SizedBox.square(
-                        dimension: compact
+                      // One pencil size in every block. Its button sits in a
+                      // slot one title line tall and overflows it, so it
+                      // never sets the row's height: the time sits the same
+                      // step under its title in both lanes.
+                      SizedBox(
+                        width: compact
                             ? tokens.spacing.step5
                             : tokens.spacing.step7,
-                        child: IconButton(
-                          key: Key('daily_os_edit_block_${block.id}'),
-                          tooltip: context.messages.dailyOsNextBlockEditTooltip,
-                          padding: EdgeInsets.zero,
-                          iconSize: compact
-                              ? tokens.spacing.step4
-                              : tokens.spacing.step5,
-                          onPressed: onEdit,
-                          icon: const Icon(LottiIcons.edit),
+                        height: lineHeight,
+                        child: OverflowBox(
+                          maxHeight: double.infinity,
+                          child: SizedBox.square(
+                            dimension: compact
+                                ? tokens.spacing.step5
+                                : tokens.spacing.step7,
+                            child: IconButton(
+                              key: Key('daily_os_edit_block_${block.id}'),
+                              tooltip:
+                                  context.messages.dailyOsNextBlockEditTooltip,
+                              padding: EdgeInsets.zero,
+                              iconSize: tokens.typography.size.bodySmall,
+                              onPressed: onEdit,
+                              icon: const Icon(LottiIcons.edit),
+                            ),
+                          ),
                         ),
                       ),
                     ],
@@ -858,7 +872,7 @@ class _BlockContent extends StatelessWidget {
                       SizedBox(width: tokens.spacing.step1),
                       Icon(
                         LottiIcons.confirm,
-                        size: 12,
+                        size: tokens.typography.size.caption,
                         color: tokens.colors.alert.success.defaultColor,
                       ),
                     ],
@@ -869,11 +883,12 @@ class _BlockContent extends StatelessWidget {
                     padding: EdgeInsets.only(top: tokens.spacing.step1),
                     child: Text(
                       _subTitle(context, block),
-                      // One mono voice for time metadata in both lanes.
-                      style: monoMetaStyle(
-                        tokens,
-                        tokens.colors,
-                      ).copyWith(fontSize: 10),
+                      // The page's one voice for times: the caption, with
+                      // the same figures as the agenda's time column.
+                      style: tokens.typography.styles.others.caption.copyWith(
+                        color: tokens.colors.text.mediumEmphasis,
+                        fontFeatures: dayFigures,
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),

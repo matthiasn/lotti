@@ -9,9 +9,10 @@ import 'package:lotti/features/daily_os_next/ui/category_color.dart';
 import 'package:lotti/features/daily_os_next/ui/time_format.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_briefing_companion.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_capacity_bar.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/day_row_scaffold.dart';
+import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/themes/theme.dart' show numericBadgeFontFeatures;
 import 'package:material_ui/material_ui.dart';
 
 /// The day in one sentence and one line, under the Day page's header on
@@ -26,29 +27,36 @@ import 'package:material_ui/material_ui.dart';
 /// is. Planned minutes come from [categoryTotalsFor], the same figures the
 /// bar draws, so the numbers and the line cannot tell different stories.
 ///
-/// Without a plan the sentence is her invitation to check in, the bar is the
-/// recorded time in `interactive.enabled`, and the captions are the time
-/// tracked and the sessions done.
+/// Under the captions, a legend of the largest categories (at most three)
+/// names the bar's colours, so they can be read without hovering.
 ///
-/// A tap does what a tap on the companion does ([DayBriefingVoice]) while
-/// she can speak; otherwise the strip is inert. [trailing] sits at the end of
-/// the sentence's row, for a tab's own controls.
+/// Without a plan the sentence is her invitation to check in, the bar is the
+/// recorded time in a quiet neutral, and the captions are the time tracked and
+/// the sessions done.
+///
+/// While the companion can speak, a play button at the end of the sentence
+/// does what a tap on her does ([DayBriefingVoice]) — it plays her briefing,
+/// and stops it while she speaks. Otherwise there is no button and nothing
+/// on the strip is tappable.
 class DayBriefingStrip extends ConsumerStatefulWidget {
   const DayBriefingStrip({
     required this.draft,
     required this.hasPlan,
     this.actualBlocks = const [],
-    this.trailing,
+    this.dense = false,
     super.key,
   });
+
+  /// Only the sentence and the line — no captions, no legend — where the
+  /// strip stays pinned over a tab that needs the room (the timeline on a
+  /// phone).
+  final bool dense;
 
   final DraftPlan draft;
   final bool hasPlan;
 
   /// The day's recorded sessions, for the strip of a day without a plan.
   final List<TimeBlock> actualBlocks;
-
-  final Widget? trailing;
 
   @override
   ConsumerState<DayBriefingStrip> createState() => _DayBriefingStripState();
@@ -92,14 +100,12 @@ class _DayBriefingStripState extends ConsumerState<DayBriefingStrip> {
       hasPlan: widget.hasPlan,
     );
     final caption = tokens.typography.styles.others.caption.copyWith(
-      color: tokens.colors.text.lowEmphasis,
-      fontFeatures: numericBadgeFontFeatures,
+      color: tokens.colors.text.mediumEmphasis,
+      fontFeatures: dayFigures,
     );
     final measure = widget.hasPlan
         ? _planMeasure(context, caption)
         : _trackedMeasure(context, caption);
-    final radius = BorderRadius.circular(tokens.radii.l);
-    final trailing = widget.trailing;
 
     final content = Padding(
       padding: EdgeInsets.all(tokens.spacing.cardPadding),
@@ -108,11 +114,23 @@ class _DayBriefingStripState extends ConsumerState<DayBriefingStrip> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(
-                LottiIcons.aiSpark,
-                size: tokens.typography.size.bodySmall,
-                color: tokens.colors.aiCard.accent,
+              // On the sentence's first line, however many lines it takes.
+              Padding(
+                padding: EdgeInsets.only(
+                  top:
+                      (MediaQuery.textScalerOf(
+                            context,
+                          ).scale(tokens.typography.lineHeight.bodySmall) -
+                          tokens.typography.size.bodySmall) /
+                      2,
+                ),
+                child: Icon(
+                  LottiIcons.aiSpark,
+                  size: tokens.typography.size.bodySmall,
+                  color: tokens.colors.aiCard.accent,
+                ),
               ),
               SizedBox(width: tokens.spacing.step3),
               Expanded(
@@ -120,55 +138,93 @@ class _DayBriefingStripState extends ConsumerState<DayBriefingStrip> {
                   composeDayHeadline(
                     messages,
                     briefing,
-                    (moment) => formatClock(context, moment),
+                    // A no-break space keeps "4:15 PM" on one line.
+                    (moment) =>
+                        formatClock(context, moment).replaceAll(' ', '\u00A0'),
                   ),
                   style: tokens.typography.styles.body.bodySmall.copyWith(
                     color: tokens.colors.text.highEmphasis,
                   ),
                 ),
               ),
-              if (trailing != null) ...[
+              if (voice != null) ...[
                 SizedBox(width: tokens.spacing.step2),
-                trailing,
+                IconButton(
+                  key: const Key('daily_os_briefing_play'),
+                  tooltip: voice.active
+                      ? messages.dailyOsNextBriefingStopTooltip
+                      : messages.dailyOsNextBriefingPlayTooltip,
+                  onPressed: voice.toggle,
+                  icon: Icon(
+                    voice.active ? LottiIcons.stop : LottiIcons.play,
+                    size: tokens.typography.size.subtitle1,
+                    color: tokens.colors.aiCard.accent,
+                  ),
+                ),
               ],
             ],
           ),
           SizedBox(height: tokens.spacing.step4),
           measure.bar,
-          SizedBox(height: tokens.spacing.step2),
-          Row(
-            children: [
-              Expanded(child: measure.leading),
-              ?measure.trailing,
-            ],
-          ),
+          if (!widget.dense) ...[
+            SizedBox(height: tokens.spacing.step2),
+            Row(
+              children: [
+                Expanded(child: measure.leading),
+                ?measure.trailing,
+              ],
+            ),
+          ],
+          if (!widget.dense && measure.legend.isNotEmpty) ...[
+            SizedBox(height: tokens.spacing.step2),
+            _CapacityLegend(totals: measure.legend),
+          ],
         ],
       ),
     );
 
-    return Material(
-      type: MaterialType.transparency,
-      child: Ink(
-        decoration: BoxDecoration(
-          color: tokens.colors.aiCard.background,
-          borderRadius: radius,
-          border: Border.all(color: tokens.colors.aiCard.border),
-        ),
-        child: voice == null
-            ? content
-            : Tooltip(
-                message: voice.active
-                    ? messages.dailyOsNextBriefingStopTooltip
-                    : messages.dailyOsNextBriefingPlayTooltip,
-                child: InkWell(
-                  key: const Key('daily_os_briefing_strip_tap'),
-                  onTap: voice.toggle,
-                  borderRadius: radius,
-                  child: content,
-                ),
-              ),
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: tokens.colors.aiCard.background,
+        borderRadius: BorderRadius.circular(tokens.radii.l),
+        border: Border.all(color: tokens.colors.aiCard.border),
       ),
+      child: content,
     );
+  }
+
+  /// The bar's segments for [totals], one per category in its colour. On a
+  /// phone, the categories past the largest [_compactLegendEntries] fold into
+  /// one neutral segment — the legend's "+N more" — so every colour on the
+  /// bar is one the legend names.
+  List<DayCapacitySegment> _segments(
+    BuildContext context,
+    List<DayCategoryTotal> totals,
+  ) {
+    final folds = _legendFolds(context, totals);
+    final named = folds ? totals.take(_compactLegendEntries) : totals;
+    final restMinutes = folds
+        ? totals
+              .skip(_compactLegendEntries)
+              .fold<int>(0, (sum, t) => sum + t.minutes)
+        : 0;
+    return [
+      for (final t in named)
+        DayCapacitySegment(
+          color: categoryColorFromHex(t.category.colorHex),
+          minutes: t.minutes,
+          label: '${t.category.name} · ${formatMinutesCompact(t.minutes)}',
+        ),
+      if (folds)
+        DayCapacitySegment(
+          color: context.designTokens.colors.decorative.level03,
+          minutes: restMinutes,
+          label: context.messages.dailyOsNextBriefingMoreCategories(
+            totals.length - _compactLegendEntries,
+            formatMinutesCompact(restMinutes),
+          ),
+        ),
+    ];
   }
 
   _Measure _planMeasure(BuildContext context, TextStyle caption) {
@@ -188,14 +244,7 @@ class _DayBriefingStripState extends ConsumerState<DayBriefingStrip> {
         semanticsLabel: totals.isEmpty
             ? null
             : messages.dailyOsNextBriefingCapacityLabel(breakdown),
-        segments: [
-          for (final t in totals)
-            DayCapacitySegment(
-              color: categoryColorFromHex(t.category.colorHex),
-              minutes: t.minutes,
-              label: '${t.category.name} · ${formatMinutesCompact(t.minutes)}',
-            ),
-        ],
+        segments: _segments(context, totals),
       ),
       leading: Text(
         messages.dailyOsNextBriefingPlannedCaption(
@@ -203,6 +252,7 @@ class _DayBriefingStripState extends ConsumerState<DayBriefingStrip> {
         ),
         style: caption,
       ),
+      legend: totals,
       // A day without a capacity has nothing to be free or over against.
       trailing: capacity <= 0
           ? null
@@ -223,20 +273,18 @@ class _DayBriefingStripState extends ConsumerState<DayBriefingStrip> {
   }
 
   _Measure _trackedMeasure(BuildContext context, TextStyle caption) {
-    final tokens = context.designTokens;
     final messages = context.messages;
     final blocks = widget.actualBlocks;
     final tracked = formatMinutesCompact(blocks.totalMinutes);
+    final totals = recordedTotalsFor(blocks);
     return (
+      legend: totals,
+      // No capacity to measure against without a plan: the recorded time is
+      // one line of its categories — the plan's own encoding — not progress
+      // towards a goal.
       bar: DayCapacityBar(
-        capacityMinutes: widget.draft.capacityMinutes,
-        segments: [
-          DayCapacitySegment(
-            color: tokens.colors.interactive.enabled,
-            minutes: blocks.totalMinutes,
-            label: messages.dailyOsNextBriefingTrackedCaption(tracked),
-          ),
-        ],
+        capacityMinutes: 0,
+        segments: _segments(context, totals),
       ),
       leading: Text(
         messages.dailyOsNextBriefingTrackedCaption(tracked),
@@ -252,4 +300,100 @@ class _DayBriefingStripState extends ConsumerState<DayBriefingStrip> {
 
 /// The strip's measure of the day: the bar and the captions either side of
 /// the row beneath it.
-typedef _Measure = ({Widget bar, Widget leading, Widget? trailing});
+typedef _Measure = ({
+  Widget bar,
+  Widget leading,
+  Widget? trailing,
+  List<DayCategoryTotal> legend,
+});
+
+/// How many categories the legend names on a phone before it sums the rest
+/// up as "+N more"; a wide pane names them all.
+const int _compactLegendEntries = 2;
+
+/// Whether [totals] fold their tail into "+N more": on a phone, when more
+/// than one category would be folded.
+bool _legendFolds(BuildContext context, List<DayCategoryTotal> totals) =>
+    !isDesktopLayout(context) && totals.length > _compactLegendEntries + 1;
+
+/// The bar's categories, each as its dot, name and minutes, so every colour
+/// on the bar is named: all of them on a wide pane, the largest two and
+/// "+N more" with their time together on a phone.
+class _CapacityLegend extends StatelessWidget {
+  const _CapacityLegend({required this.totals});
+
+  final List<DayCategoryTotal> totals;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final caption = tokens.typography.styles.others.caption.copyWith(
+      color: tokens.colors.text.lowEmphasis,
+      fontFeatures: dayFigures,
+    );
+    final folds = _legendFolds(context, totals);
+    final named = folds ? totals.take(_compactLegendEntries) : totals;
+    final rest = totals.skip(_compactLegendEntries);
+    final entries = [
+      for (final total in named)
+        (
+          color: categoryColorFromHex(total.category.colorHex),
+          text:
+              '${total.category.name} '
+              '${formatMinutesCompact(total.minutes)}',
+        ),
+      if (folds)
+        (
+          color: tokens.colors.decorative.level03,
+          text: context.messages.dailyOsNextBriefingMoreCategories(
+            rest.length,
+            formatMinutesCompact(
+              rest.fold<int>(0, (sum, t) => sum + t.minutes),
+            ),
+          ),
+        ),
+    ];
+    Widget entry(({Color color, String text}) entry) => Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SizedBox.square(
+          dimension: tokens.spacing.step2,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: entry.color,
+              shape: BoxShape.circle,
+            ),
+          ),
+        ),
+        SizedBox(width: tokens.spacing.step2),
+        Flexible(
+          child: Text(
+            entry.text,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: caption,
+          ),
+        ),
+      ],
+    );
+    return ExcludeSemantics(
+      // The bar already reads every category out.
+      // One line on a phone, its entries shortening rather than wrapping;
+      // a wide pane wraps them if it ever must.
+      child: folds
+          ? Row(
+              children: [
+                for (final (i, e) in entries.indexed) ...[
+                  if (i > 0) SizedBox(width: tokens.spacing.step4),
+                  Flexible(child: entry(e)),
+                ],
+              ],
+            )
+          : Wrap(
+              spacing: tokens.spacing.step4,
+              runSpacing: tokens.spacing.step1,
+              children: entries.map(entry).toList(),
+            ),
+    );
+  }
+}

@@ -4787,6 +4787,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get dailyOsNextActivityEmpty => 'Ainda sem gravações nem check-ins.';
 
   @override
+  String get dailyOsNextActivityHandled => 'Tratado';
+
+  @override
   String get dailyOsNextActivityLoadFailed =>
       'A tua atividade guardada continua neste dispositivo, mas não foi possível carregá-la agora.';
 
@@ -4796,6 +4799,9 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get dailyOsNextActivityNeedsAttention => 'Precisa de atenção';
+
+  @override
+  String get dailyOsNextActivityNeedsYou => 'Espera por ti';
 
   @override
   String get dailyOsNextActivityOpenAiSetup =>
@@ -4856,11 +4862,27 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String get dailyOsNextAgendaNoPlanBody =>
-      'Seu tempo monitorado está aqui de qualquer maneira - faça um check-in e eu elaborarei um rascunho do dia em torno dele.';
+  String dailyOsNextAgendaDoneRun(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count itens concluídos',
+      one: '1 item concluído',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get dailyOsNextAgendaHideDone => 'Ocultar itens concluídos';
 
   @override
   String get dailyOsNextAgendaNoPlanTitle => 'Nenhum plano ainda para hoje.';
+
+  @override
+  String get dailyOsNextAgendaNow => 'Agora';
+
+  @override
+  String get dailyOsNextAgendaShowDone => 'Mostrar itens concluídos';
 
   @override
   String get dailyOsNextAgendaStateDone => 'Concluído';
@@ -5010,13 +5032,18 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
+  String dailyOsNextBriefingMoreCategories(int count, String duration) {
+    return '+$count mais $duration';
+  }
+
+  @override
   String dailyOsNextBriefingNext(String time, String title) {
     return 'A seguir, às $time: $title.';
   }
 
   @override
   String get dailyOsNextBriefingNoPlan =>
-      'Ainda não há um plano para este dia. Um check-in rápido cria um.';
+      'Ainda não há um plano para este dia. Um check‑in rápido cria um.';
 
   @override
   String get dailyOsNextBriefingNothingLeft =>
@@ -5193,7 +5220,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get dailyOsNextDayBack => 'Voltar';
 
   @override
-  String get dailyOsNextDayComposerCheckInHint => 'Fala ou escreve um check-in';
+  String get dailyOsNextDayComposerCheckInHint => 'Fala ou escreve um check‑in';
 
   @override
   String get dailyOsNextDayDeleteDialogBody =>
@@ -5237,6 +5264,9 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get dailyOsNextDayRelationYesterday => 'Ontem';
+
+  @override
+  String get dailyOsNextDayStartCheckIn => 'Começar check-in';
 
   @override
   String get dailyOsNextDayTitle => 'Seu dia';
@@ -5766,14 +5796,6 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get dailyOsNextTimelineShowPaged => 'Mostrar plano deslizante e real';
-
-  @override
-  String get dailyOsNextTimelineSwipeHint =>
-      'Deslize para real · aperte verticalmente para ampliar';
-
-  @override
-  String get dailyOsNextTimelineSwipeHintToPlan =>
-      'Deslize para o plano · aperte verticalmente para ampliar';
 
   @override
   String get dailyOsNextTimelineTracked => 'rastreado';

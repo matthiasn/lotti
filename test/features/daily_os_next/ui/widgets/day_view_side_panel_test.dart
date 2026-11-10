@@ -207,7 +207,11 @@ void main() {
         expect(toggle.dx, lessThan(hide.dx));
         // The strip took the coaching line's room: no hint text beside it.
         expect(find.text(messages.dailyOsNextTimelineBoth), findsNothing);
-        expect(find.text(messages.dailyOsNextTimelineSwipeHint), findsNothing);
+        // The column's own date strip takes the slot the lane switch would use.
+        expect(
+          find.byKey(const Key('daily_os_timeline_lane_toggle')),
+          findsNothing,
+        );
       },
     );
 

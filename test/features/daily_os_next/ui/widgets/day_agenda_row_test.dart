@@ -2,9 +2,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/ui/category_color.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_agenda_row.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/day_row_scaffold.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/editable_title.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/themes/theme.dart' show numericBadgeFontFeatures;
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../widget_test_utils.dart';
@@ -86,7 +86,7 @@ void main() {
       expect(time, findsOneWidget);
       final style = _styleOf(tester, '10:00 AM');
       expect(style.color, _tokens(tester).colors.text.lowEmphasis);
-      expect(style.fontFeatures, numericBadgeFontFeatures);
+      expect(style.fontFeatures, dayFigures);
     });
 
     testWidgets('shows a dash for an item with no block', (tester) async {
@@ -95,7 +95,9 @@ void main() {
       expect(find.text('—'), findsOneWidget);
     });
 
-    testWidgets('is step10 wide, scaled with the text size', (tester) async {
+    testWidgets('is step10 wide, scaled with the text size, then a gutter', (
+      tester,
+    ) async {
       await _pump(tester, _item(), start: _ten, textScale: 1.5);
       final tokens = _tokens(tester);
 
@@ -105,7 +107,15 @@ void main() {
       final row = tester.getTopLeft(find.byType(DayAgendaRow));
       expect(
         dot.dx - row.dx,
-        closeTo(tokens.spacing.cardPadding + tokens.spacing.step10 * 1.5, 0.5),
+        closeTo(
+          // A phone-width row: the tighter step4 inset.
+          tokens.spacing.step4 +
+              tokens.spacing.step10 * 1.5 +
+              tokens.spacing.step2 +
+              // The dot is centred in a mark slot one caption glyph wide.
+              (tokens.typography.size.caption - tokens.spacing.step2) / 2,
+          0.5,
+        ),
       );
     });
   });
@@ -164,7 +174,7 @@ void main() {
       );
       final style = _styleOf(tester, '2h');
       expect(style.color, _tokens(tester).colors.text.mediumEmphasis);
-      expect(style.fontFeatures, numericBadgeFontFeatures);
+      expect(style.fontFeatures, dayFigures);
     });
 
     testWidgets('an item without an estimate shows none', (tester) async {
@@ -220,7 +230,7 @@ void main() {
   });
 
   group('DayAgendaRow second line', () {
-    testWidgets("the agent's reason, with its sparkle, in the violet accent", (
+    testWidgets("the agent's reason: a violet spark, quiet words, two lines", (
       tester,
     ) async {
       await _pump(
@@ -237,22 +247,28 @@ void main() {
       final reason = tester.widget<Text>(
         find.text('Your best hours; nothing else until noon.'),
       );
-      expect(reason.style?.color, accent);
-      expect(reason.maxLines, 1);
+      expect(reason.style?.color, _tokens(tester).colors.text.lowEmphasis);
+      expect(reason.maxLines, 2);
       expect(reason.overflow, TextOverflow.ellipsis);
     });
 
-    testWidgets('the outcome and the linked task name, on one meta line', (
-      tester,
-    ) async {
-      await _pump(
-        tester,
-        _item(taskId: 'task-1', outcome: 'Schema shipped'),
-        displayTitle: 'Migration project',
-      );
+    testWidgets(
+      "a linked row leads with its task's name; the agenda's wording joins "
+      'the outcome on the meta line',
+      (tester) async {
+        await _pump(
+          tester,
+          _item(taskId: 'task-1', outcome: 'Schema shipped'),
+          displayTitle: 'Migration project',
+        );
 
-      expect(find.text('Schema shipped · Migration project'), findsOneWidget);
-    });
+        expect(find.text('Migration project'), findsOneWidget);
+        expect(
+          find.text('Schema shipped · Deep work on the migration'),
+          findsOneWidget,
+        );
+      },
+    );
 
     testWidgets('a linked task named like the item is not repeated', (
       tester,
@@ -332,7 +348,7 @@ void main() {
       );
     });
 
-    testWidgets('a part-way item shows its progress in the category colour', (
+    testWidgets('a part-way item shows its progress as a quiet bar', (
       tester,
     ) async {
       await _pump(
@@ -345,9 +361,10 @@ void main() {
         find.byKey(const Key('daily_os_agenda_row_progress')),
       );
       expect(bar.value, 0.4);
+      // Quiet: the row's teal edge already says "now".
       expect(
         (bar.valueColor! as AlwaysStoppedAnimation<Color>).value,
-        categoryColorFromHex(_category.colorHex),
+        tokens.colors.decorative.level03,
       );
       expect(bar.backgroundColor, tokens.colors.decorative.level01);
     });
@@ -375,17 +392,23 @@ void main() {
   });
 
   group('DayAgendaRow done', () {
-    testWidgets('is half opacity, struck through, with the success check', (
+    testWidgets('is struck through in low-emphasis ink, with the check', (
       tester,
     ) async {
-      await _pump(tester, _item(state: AgendaItemState.done));
+      await _pump(
+        tester,
+        _item(state: AgendaItemState.done),
+        whyReason: 'A reason it no longer needs',
+      );
       final tokens = _tokens(tester);
 
-      expect(tester.widget<Opacity>(find.byType(Opacity)).opacity, 0.5);
-      expect(
-        _styleOf(tester, 'Deep work on the migration').decoration,
-        TextDecoration.lineThrough,
-      );
+      // Explicit ink, not a blanket opacity that fades the check too.
+      expect(find.byType(Opacity), findsNothing);
+      final title = _styleOf(tester, 'Deep work on the migration');
+      expect(title.decoration, TextDecoration.lineThrough);
+      expect(title.color, tokens.colors.text.lowEmphasis);
+      // A finished item drops its reason.
+      expect(find.text('A reason it no longer needs'), findsNothing);
       expect(
         tester.widget<Icon>(find.byIcon(LottiIcons.confirm)).color,
         tokens.colors.alert.success.defaultColor,

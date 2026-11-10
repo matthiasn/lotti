@@ -26,3 +26,19 @@ List<DayCategoryTotal> categoryTotalsFor(DraftPlan draft) {
   }
   return totals.values.toList()..sort((a, b) => b.minutes.compareTo(a.minutes));
 }
+
+/// Per-category recorded minutes for [blocks], largest first — the recorded
+/// day in the same shape [categoryTotalsFor] gives the plan, so the two can
+/// be drawn alike. Keyed by category id; the last block's category is the
+/// one reported.
+List<DayCategoryTotal> recordedTotalsFor(List<TimeBlock> blocks) {
+  final totals = <String, DayCategoryTotal>{};
+  for (final block in blocks) {
+    final key = block.category.id;
+    totals[key] = (
+      category: block.category,
+      minutes: (totals[key]?.minutes ?? 0) + block.duration.inMinutes,
+    );
+  }
+  return totals.values.toList()..sort((a, b) => b.minutes.compareTo(a.minutes));
+}

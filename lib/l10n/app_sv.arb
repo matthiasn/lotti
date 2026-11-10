@@ -2232,9 +2232,11 @@
   "dailyOsNextActivityDeleteDialogTitle": "Radera den här inspelningen?",
   "dailyOsNextActivityDeleteRecording": "Radera",
   "dailyOsNextActivityEmpty": "Inga inspelningar eller avstämningar än.",
+  "dailyOsNextActivityHandled": "Hanterat",
   "dailyOsNextActivityLoadFailed": "Din sparade aktivitet finns kvar på den här enheten, men den kunde inte läsas in just nu.",
   "dailyOsNextActivityMissingAudio": "Posten finns kvar, men ljudfilen är inte tillgänglig på den här enheten. Återställ filen och försök sedan igen.",
   "dailyOsNextActivityNeedsAttention": "Behöver åtgärdas",
+  "dailyOsNextActivityNeedsYou": "Väntar på dig",
   "dailyOsNextActivityOpenAiSetup": "Öppna Daily OS-inställningar",
   "dailyOsNextActivityOpenSetup": "Öppna inställningar för transkription",
   "dailyOsNextActivityPlanAvailable": "Din dagsplan är tillgänglig.",
@@ -2260,8 +2262,23 @@
       }
     }
   },
-  "dailyOsNextAgendaNoPlanBody": "Din registrerade tid är här oavsett — prata med en incheckning så skriver jag en dag runt den.",
+  "dailyOsNextAgendaDoneRun": "{count, plural, =1{1 punkt klar} other{{count} punkter klara}}",
+  "@dailyOsNextAgendaDoneRun": {
+    "description": "Agenda summary row standing in for the day's finished items, folded together.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "5"
+      }
+    }
+  },
+  "dailyOsNextAgendaHideDone": "Dölj klara punkter",
   "dailyOsNextAgendaNoPlanTitle": "Ingen plan än för idag.",
+  "dailyOsNextAgendaNow": "Nu",
+  "@dailyOsNextAgendaNow": {
+    "description": "Marks the agenda row whose item is under way now, above its start time."
+  },
+  "dailyOsNextAgendaShowDone": "Visa klara punkter",
   "dailyOsNextAgendaStateDone": "Klart",
   "dailyOsNextAgendaStateInProgress": "Pågående",
   "dailyOsNextAgendaStateOpen": "Öppet",
@@ -2370,6 +2387,20 @@
     "placeholders": {
       "count": {
         "type": "int"
+      }
+    }
+  },
+  "dailyOsNextBriefingMoreCategories": "+{count} till {duration}",
+  "@dailyOsNextBriefingMoreCategories": {
+    "description": "Last entry of the capacity legend on a phone: the categories not named, and their time together.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "2"
+      },
+      "duration": {
+        "type": "String",
+        "example": "1h 30m"
       }
     }
   },
@@ -2503,6 +2534,7 @@
   "dailyOsNextDayRelationToday": "I dag",
   "dailyOsNextDayRelationTomorrow": "I morgon",
   "dailyOsNextDayRelationYesterday": "I går",
+  "dailyOsNextDayStartCheckIn": "Starta incheckning",
   "dailyOsNextDayTitle": "Din dag",
   "dailyOsNextDayWhyChipLabel": "Varför",
   "dailyOsNextDayWrapUpCta": "Avslutning",
@@ -2737,8 +2769,6 @@
   },
   "dailyOsNextTimelineShowBoth": "Showplan och verklighet tillsammans",
   "dailyOsNextTimelineShowPaged": "Visa swipebar plan och faktisk",
-  "dailyOsNextTimelineSwipeHint": "Svep för faktiska · nyp vertikalt för att zooma in",
-  "dailyOsNextTimelineSwipeHintToPlan": "Svep för plan · nyp vertikalt för att zooma in",
   "dailyOsNextTimelineTracked": "spårade",
   "dailyOsNextTimeSpentEarlierSessions": "{count, plural, one{1 tidigare session} other{{count} tidigare sessioner}}",
   "@dailyOsNextTimeSpentEarlierSessions": {

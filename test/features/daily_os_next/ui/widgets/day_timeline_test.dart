@@ -7,13 +7,14 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:glados/glados.dart' as glados;
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/ui/category_color.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/day_row_scaffold.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline_fold_surface.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/editable_title.dart';
+import 'package:lotti/features/design_system/components/buttons/ds_segmented_toggle.dart';
 import 'package:lotti/features/design_system/components/ds_dashed_border.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -140,6 +141,13 @@ TimeBlock _timeBlock({
     relationshipId: relationshipId,
   );
 }
+
+/// The lane the phone's Plan | Actual switch shows: 0 planned, 1 actual.
+int _laneShown(WidgetTester tester) => tester
+    .widget<DsSegmentedToggle<int>>(
+      find.byKey(const Key('daily_os_timeline_lane_toggle')),
+    )
+    .selected;
 
 /// Sizes the physical test surface and registers the reset teardown —
 /// shared by every test in this file.
@@ -772,14 +780,14 @@ void main() {
         const Key('daily_os_timeline_fold_9_16'),
       );
       expect(foldedGap, findsOneWidget);
-      expect(find.text('09:00-16:00'), findsOneWidget);
-      expect(find.text('12:00'), findsNothing);
+      expect(find.text('9–16'), findsOneWidget);
+      expect(find.text('12'), findsNothing);
 
       await tester.tap(foldedGap.first);
       await tester.pump();
 
-      expect(find.text('09:00-16:00'), findsOneWidget);
-      expect(find.text('12:00'), findsOneWidget);
+      expect(find.text('9–16'), findsOneWidget);
+      expect(find.text('12'), findsOneWidget);
     });
 
     testWidgets('uses one sticky time rail for plan and actual', (
@@ -800,13 +808,13 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.text('09:00'), findsOneWidget);
-      expect(find.text('10:00'), findsOneWidget);
+      expect(find.text('9'), findsOneWidget);
+      expect(find.text('10'), findsOneWidget);
       expect(find.text('Deep work'), findsOneWidget);
       expect(find.text('Deep work actual'), findsOneWidget);
 
       final tokens = tester.element(find.byType(DayTimeline)).designTokens;
-      final hourLabel = tester.widget<Text>(find.text('09:00'));
+      final hourLabel = tester.widget<Text>(find.text('9'));
       expect(
         hourLabel.style?.fontSize,
         tokens.typography.styles.others.caption.fontSize,
@@ -843,24 +851,23 @@ void main() {
         expect(find.text('08:30–10:00'), findsNothing);
       });
 
-      testWidgets('the hour rail stays a 24-hour axis', (tester) async {
+      testWidgets('the hour rail follows a 12-hour device too', (tester) async {
         await pumpAt12Hour(tester);
 
-        // Deliberate: the rail's `24:00` end-of-day marker has no 12-hour
-        // spelling a reader could tell apart from midnight, so the axis keeps
-        // one fixed notation even when the chips on it do not.
-        expect(find.text('09:00'), findsOneWidget);
-        expect(find.text('10:00'), findsOneWidget);
+        // One clock on the page: the rail reads the device's clock,
+        // compacted to the hour.
+        expect(find.text('9 AM'), findsOneWidget);
+        expect(find.text('10 AM'), findsOneWidget);
+        expect(find.text('09:00'), findsNothing);
       });
 
-      testWidgets('the now-marker stays in the rail notation', (tester) async {
+      testWidgets('the now-marker reads the device clock', (tester) async {
         await pumpAt12Hour(tester);
 
-        // The now-marker substitutes for an hour label, so it follows the
-        // axis rather than the device. Making it device-aware also clipped
-        // it: `9:35 AM` is wider than the rail gutter it is positioned in.
-        expect(find.text('09:35'), findsAtLeastNWidgets(1));
-        expect(find.text('9:35 AM'), findsNothing);
+        // The rail is wide enough for the 12-hour reading.
+        expect(find.text('9:35 AM'), findsAtLeastNWidgets(1));
+        expect(find.text('09:35'), findsNothing);
+        expect(tester.takeException(), isNull);
       });
     });
 
@@ -882,8 +889,8 @@ void main() {
       await tester.pump();
 
       expect(find.text('09:55'), findsAtLeastNWidgets(1));
-      expect(find.text('10:00'), findsNothing);
-      expect(find.text('09:00'), findsOneWidget);
+      expect(find.text('10'), findsNothing);
+      expect(find.text('9'), findsOneWidget);
     });
 
     testWidgets('folded timelines still span midnight to midnight', (
@@ -919,8 +926,8 @@ void main() {
         find.byKey(const Key('daily_os_timeline_fold_9_24')),
         findsOneWidget,
       );
-      expect(find.text('00:00-08:00'), findsOneWidget);
-      expect(find.text('09:00-24:00'), findsOneWidget);
+      expect(find.text('0–8'), findsOneWidget);
+      expect(find.text('9–24'), findsOneWidget);
     });
 
     testWidgets('folds a long gap caused by actual blocks', (tester) async {
@@ -957,7 +964,7 @@ void main() {
         find.byKey(const Key('daily_os_timeline_fold_9_16')),
         findsOneWidget,
       );
-      expect(find.text('09:00-16:00'), findsOneWidget);
+      expect(find.text('9–16'), findsOneWidget);
       expect(find.text('Actual morning'), findsOneWidget);
       expect(find.text('Actual late'), findsOneWidget);
     });
@@ -977,7 +984,7 @@ void main() {
       );
       await tester.pump();
 
-      final tenAm = find.text('10:00').first;
+      final tenAm = find.text('10').first;
       final before = tester.getTopLeft(tenAm).dy;
       final center = tester.getCenter(find.byType(DayTimeline));
       final firstFinger = await tester.createGesture(pointer: 101);
@@ -1011,7 +1018,7 @@ void main() {
       );
       await tester.pump();
 
-      final tenAm = find.text('10:00').first;
+      final tenAm = find.text('10').first;
       final before = tester.getTopLeft(tenAm).dy;
       final center = tester.getCenter(find.byType(DayTimeline));
 
@@ -1115,6 +1122,56 @@ void main() {
     });
 
     testWidgets(
+      'the Plan | Actual switch turns the pager to the lane it names',
+      (tester) async {
+        _setView(tester, const Size(430, 900));
+        await tester.pumpWidget(
+          _wrap(
+            DayTimeline(
+              draft: _draft(),
+              clock: () => DateTime(2026, 5, 25, 9, 15),
+            ),
+            size: const Size(430, 900),
+          ),
+        );
+        await tester.pump();
+        final messages = tester.element(find.byType(DayTimeline)).messages;
+        final pager = tester.widget<PageView>(find.byType(PageView));
+        expect(_laneShown(tester), 0);
+
+        await tester.tap(
+          find
+              .descendant(
+                of: find.byKey(const Key('daily_os_timeline_lane_toggle')),
+                // The segment sets its label twice, one copy only to hold
+                // its width; both sit on the same spot.
+                matching: find.text(messages.dailyOsNextTimelineActual),
+              )
+              .first,
+        );
+        await tester.pumpAndSettle();
+
+        expect(pager.controller!.page, greaterThan(0.5));
+        expect(_laneShown(tester), 1);
+
+        await tester.tap(
+          find
+              .descendant(
+                of: find.byKey(const Key('daily_os_timeline_lane_toggle')),
+                // The segment sets its label twice, one copy only to hold
+                // its width; both sit on the same spot.
+                matching: find.text(messages.dailyOsNextTimelinePlanned),
+              )
+              .first,
+        );
+        await tester.pumpAndSettle();
+
+        expect(pager.controller!.page, lessThan(0.5));
+        expect(_laneShown(tester), 0);
+      },
+    );
+
+    testWidgets(
       'toolbarLeading takes the hint slot before the mode toggle and '
       'toolbarTrailing follows it; both are absent by default',
       (tester) async {
@@ -1133,10 +1190,7 @@ void main() {
         final messages = tester.element(find.byType(DayTimeline)).messages;
         expect(find.byKey(const Key('leading_probe')), findsNothing);
         expect(find.byKey(const Key('trailing_probe')), findsNothing);
-        expect(
-          find.text(messages.dailyOsNextTimelineSwipeHint),
-          findsOneWidget,
-        );
+        expect(_laneShown(tester), 0);
 
         await tester.pumpWidget(
           _wrap(
@@ -1174,10 +1228,13 @@ void main() {
         expect(leading.bottom, greaterThan(toggle.top));
         expect(trailing.top, lessThan(toggle.bottom));
         expect(trailing.bottom, greaterThan(toggle.top));
-        // The leading slot sits at the row's start, where the hint was, and
-        // the hint yields to it.
+        // The leading slot sits at the row's start, where the lane switch
+        // was, and the switch yields to it.
         expect(leading.left, lessThan(toggle.left - leading.width));
-        expect(find.text(messages.dailyOsNextTimelineSwipeHint), findsNothing);
+        expect(
+          find.byKey(const Key('daily_os_timeline_lane_toggle')),
+          findsNothing,
+        );
         // The timeline itself starts below the toolbar.
         expect(
           tester.getRect(find.byType(PageView)).top,
@@ -1222,7 +1279,6 @@ void main() {
         await tester.pump();
         await tester.pump();
 
-        final messages = tester.element(find.byType(DayTimeline)).messages;
         final pageView = tester.widget<PageView>(find.byType(PageView));
         expect(pageView.controller!.initialPage, 1);
         // The peeking page fraction settles the last page short of 1.0; what
@@ -1233,11 +1289,7 @@ void main() {
         );
         expect(actualPane.left, greaterThanOrEqualTo(0));
         expect(actualPane.right, lessThanOrEqualTo(430));
-        expect(
-          find.text(messages.dailyOsNextTimelineSwipeHintToPlan),
-          findsOneWidget,
-        );
-        expect(find.text(messages.dailyOsNextTimelineSwipeHint), findsNothing);
+        expect(_laneShown(tester), 1);
         expect(learned, 0, reason: 'opening on a lane is not a swipe');
 
         // Swiping back to the planned lane is the demonstration.
@@ -1254,7 +1306,7 @@ void main() {
     // provider is still loading; the real plan arrives into the same State.
     testWidgets(
       'a plan arriving after an empty first frame moves the pager to the '
-      'planned lane, the coaching line follows, and it is not a swipe',
+      'planned lane, the lane switch follows, and it is not a swipe',
       (tester) async {
         _setView(tester, const Size(430, 900));
         var learned = 0;
@@ -1271,26 +1323,15 @@ void main() {
           timeline(_draftWithBlocks(blocks: const [])),
         );
         await tester.pump();
-        final messages = tester.element(find.byType(DayTimeline)).messages;
         final pageView = tester.widget<PageView>(find.byType(PageView));
         expect(pageView.controller!.page, greaterThan(0.5));
-        expect(
-          find.text(messages.dailyOsNextTimelineSwipeHintToPlan),
-          findsOneWidget,
-        );
+        expect(_laneShown(tester), 1);
 
         await tester.pumpWidget(timeline(_draft()));
         await tester.pump();
 
         expect(pageView.controller!.page, 0);
-        expect(
-          find.text(messages.dailyOsNextTimelineSwipeHint),
-          findsOneWidget,
-        );
-        expect(
-          find.text(messages.dailyOsNextTimelineSwipeHintToPlan),
-          findsNothing,
-        );
+        expect(_laneShown(tester), 0);
         expect(learned, 0, reason: 'a programmatic jump is not a swipe');
       },
     );
@@ -1318,12 +1359,8 @@ void main() {
         );
         await tester.pump();
 
-        final messages = tester.element(find.byType(DayTimeline)).messages;
         expect(pageView.controller!.page, greaterThan(0.5));
-        expect(
-          find.text(messages.dailyOsNextTimelineSwipeHintToPlan),
-          findsOneWidget,
-        );
+        expect(_laneShown(tester), 1);
       },
     );
 
@@ -1345,16 +1382,11 @@ void main() {
       );
       await tester.pump();
 
-      final messages = tester.element(find.byType(DayTimeline)).messages;
       expect(
         tester.widget<PageView>(find.byType(PageView)).controller!.initialPage,
         0,
       );
-      expect(find.text(messages.dailyOsNextTimelineSwipeHint), findsOneWidget);
-      expect(
-        find.text(messages.dailyOsNextTimelineSwipeHintToPlan),
-        findsNothing,
-      );
+      expect(_laneShown(tester), 0);
       expect(learned, 0);
     });
 
@@ -1505,7 +1537,7 @@ void main() {
       );
       await tester.pump();
 
-      final tenAmBefore = tester.getTopLeft(find.text('10:00').first).dy;
+      final tenAmBefore = tester.getTopLeft(find.text('10').first).dy;
 
       // Rebuild with a larger pxPerMinute → blocks spread further apart.
       await tester.pumpWidget(
@@ -1520,13 +1552,13 @@ void main() {
       );
       await tester.pump();
 
-      final tenAmAfter = tester.getTopLeft(find.text('10:00').first).dy;
+      final tenAmAfter = tester.getTopLeft(find.text('10').first).dy;
       expect(tenAmAfter, greaterThan(tenAmBefore));
     });
 
     testWidgets(
       'tracked blocks are the alive treatment: full category stripe and '
-      'fill, green check when done, mono time range, no why affordance',
+      'fill, green check when done, caption time range, no why affordance',
       (tester) async {
         _setView(tester, const Size(1280, 900));
 
@@ -1580,10 +1612,14 @@ void main() {
         expect(find.byIcon(LottiIcons.confirm), findsOneWidget);
         // Tracked blocks never surface agent reasoning.
         expect(find.byIcon(LottiIcons.aiSpark), findsNothing);
-        // The mono time range carries the recorded voice (no suffix —
-        // the lane header already says Actual).
+        // The time range is in the page's caption voice, with the shared
+        // figures (no suffix — the lane header already says Actual).
         final subtitle = tester.widget<Text>(find.text('09:00\u201310:30'));
-        expect(subtitle.style?.fontFamily, 'Inconsolata');
+        expect(
+          subtitle.style?.fontSize,
+          tokens.typography.styles.others.caption.fontSize,
+        );
+        expect(subtitle.style?.fontFeatures, dayFigures);
       },
     );
 
@@ -2578,11 +2614,11 @@ void main() {
         await tester.pump();
 
         // When the gap between start(0) and cluster.startHour(1) is < 4,
-        // the cluster is extended back to 0, so "00:00" should be visible.
-        expect(find.text('00:00'), findsOneWidget);
+        // the cluster is extended back to 0, so the "0" label should show.
+        expect(find.text('0'), findsOneWidget);
         // When the gap between cluster.endHour(23) and end(24) is < 4,
-        // the cluster is extended to 24, so "24:00" should appear.
-        expect(find.text('24:00'), findsOneWidget);
+        // the cluster is extended to 24, so the "24" end label should show.
+        expect(find.text('24'), findsOneWidget);
       },
     );
 
@@ -2625,7 +2661,7 @@ void main() {
         await tester.pumpWidget(_wrap(DayTimeline(draft: draft)));
         await tester.pump();
 
-        // The teal now-badge (bold, on-interactive ink) carries the live
+        // The teal now-badge (semibold, on-interactive ink) carries the live
         // HH:mm. Read it back from the tree instead of recomputing, so a
         // minute rollover mid-test cannot make the assertion flaky.
         final tokens = tester.element(find.byType(DayTimeline)).designTokens;
@@ -2634,7 +2670,7 @@ void main() {
           (w) =>
               w is Text &&
               w.style?.color == badgeInk &&
-              w.style?.fontWeight == tokens.typography.weight.bold,
+              w.style?.fontWeight == tokens.typography.weight.semiBold,
         );
 
         expect(nowBadge(), findsOneWidget);
@@ -2784,35 +2820,74 @@ void main() {
   });
 
   group('formatTimelineHourLabel', () {
-    test('renders the exclusive end-of-day marker as 24:00, not 00:00', () {
-      // The 24 special case is the whole reason the formatter is not a plain
-      // `hour % 24` — fold ranges and the rail label use 24 to mean
-      // "end of day". Regressing this would collapse 24:00 to 00:00.
-      expect(formatTimelineHourLabel(24), '24:00');
-      expect(formatTimelineHourLabel(0), '00:00');
-      expect(formatTimelineHourLabel(9), '09:00');
-      expect(formatTimelineHourLabel(13), '13:00');
+    Future<BuildContext> contextFor(
+      WidgetTester tester, {
+      required bool use24Hour,
+    }) async {
+      late BuildContext captured;
+      await tester.pumpWidget(
+        makeTestableWidget2(
+          Builder(
+            builder: (context) {
+              captured = context;
+              return const SizedBox.shrink();
+            },
+          ),
+          mediaQueryData: MediaQueryData(alwaysUse24HourFormat: use24Hour),
+        ),
+      );
+      return captured;
+    }
+
+    testWidgets('a 24-hour device reads the bare hour, 24 for the end', (
+      tester,
+    ) async {
+      final context = await contextFor(tester, use24Hour: true);
+
+      expect(formatTimelineHourLabel(context, 0), '0');
+      expect(formatTimelineHourLabel(context, 9), '9');
+      expect(formatTimelineHourLabel(context, 13), '13');
+      expect(formatTimelineHourLabel(context, 24), '24');
     });
 
-    glados.Glados<int>(
-      glados.any.intInRange(0, 25),
-      glados.ExploreConfig(numRuns: 120),
-    ).test(
-      'always formats as HH:00 with a zero-padded hour in [00, 24]',
-      (hour) {
-        final label = formatTimelineHourLabel(hour);
+    testWidgets('a 12-hour device reads the hour and its half of the day', (
+      tester,
+    ) async {
+      final context = await contextFor(tester, use24Hour: false);
 
-        // Shape: exactly two digits, a colon, then the literal minutes 00.
-        expect(RegExp(r'^\d{2}:00$').hasMatch(label), isTrue);
+      expect(formatTimelineHourLabel(context, 0), '12 AM');
+      expect(formatTimelineHourLabel(context, 9), '9 AM');
+      expect(formatTimelineHourLabel(context, 12), '12 PM');
+      expect(formatTimelineHourLabel(context, 13), '1 PM');
+      // The end of the day: its place at the bottom of the rail tells it
+      // from the midnight at the top.
+      expect(formatTimelineHourLabel(context, 24), '12 AM');
+    });
 
-        final displayHour = int.parse(label.substring(0, 2));
-        // 24 stays 24 (end-of-day); every other value is on a 24-hour clock.
-        final expected = hour == 24 ? 24 : hour % 24;
-        expect(displayHour, expected);
-        expect(displayHour, inInclusiveRange(0, 24));
-      },
-      tags: 'glados',
-    );
+    testWidgets('every hour of the day has one well-formed label per clock', (
+      tester,
+    ) async {
+      final h24 = await contextFor(tester, use24Hour: true);
+      final labels24 = [
+        for (var hour = 0; hour <= 24; hour++)
+          formatTimelineHourLabel(h24, hour),
+      ];
+      expect(labels24, [for (var hour = 0; hour <= 24; hour++) '$hour']);
+
+      final h12 = await contextFor(tester, use24Hour: false);
+      for (var hour = 0; hour <= 24; hour++) {
+        expect(
+          formatTimelineHourLabel(h12, hour),
+          matches(RegExp(r'^(1[0-2]|[1-9]) (AM|PM)$')),
+        );
+      }
+    });
+
+    testWidgets('a wrap-around hour is read modulo 24', (tester) async {
+      final context = await contextFor(tester, use24Hour: true);
+
+      expect(formatTimelineHourLabel(context, 25), '1');
+    });
   });
 
   group('DayBlock height tiers', () {

@@ -147,7 +147,7 @@ void main() {
       );
     });
 
-    testWidgets('the other days have no fill and high-emphasis numbers', (
+    testWidgets('the other days have no fill and medium-emphasis numbers', (
       tester,
     ) async {
       await _pump(tester);
@@ -155,7 +155,10 @@ void main() {
       final monday = DateTime(2026, 5, 25);
 
       expect(_fillOf(tester, monday), isNull);
-      expect(_dayNumberColor(tester, monday), tokens.colors.text.highEmphasis);
+      expect(
+        _dayNumberColor(tester, monday),
+        tokens.colors.text.mediumEmphasis,
+      );
     });
 
     testWidgets('day numbers use tabular figures', (tester) async {

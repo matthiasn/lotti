@@ -147,9 +147,10 @@ class _DayCell extends StatelessWidget {
     final material = MaterialLocalizations.of(context);
     final locale = Localizations.localeOf(context).toString();
     final radius = BorderRadius.circular(tokens.radii.badgesPills);
+    // The selected day leads; the rest of the week stays a step quieter.
     final ink = selected
         ? tokens.colors.interactive.enabled
-        : tokens.colors.text.highEmphasis;
+        : tokens.colors.text.mediumEmphasis;
     final dotSize = tokens.spacing.step2;
     return Semantics(
       button: true,

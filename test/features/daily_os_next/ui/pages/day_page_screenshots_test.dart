@@ -30,6 +30,7 @@ import 'package:lotti/features/daily_os_next/services/day_activity_repository.da
 import 'package:lotti/features/daily_os_next/services/day_processing_job.dart';
 import 'package:lotti/features/daily_os_next/state/actual_time_blocks_provider.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
+import 'package:lotti/features/daily_os_next/state/daily_os_inference_providers.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_preferences_controller.dart';
 import 'package:lotti/features/daily_os_next/state/day_activity_provider.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
@@ -834,6 +835,10 @@ Widget _dayShell(
   final dayPage = DayPage(
     draft: draft,
     hasPlan: hasPlan,
+    // What the root wires for a day without a plan, so its composer is live
+    // (not drawn disabled) in the capture.
+    onSubmitCheckIn: hasPlan ? null : (words, {audioId}) async {},
+    onCheckIn: hasPlan ? null : () {},
     // What `DailyOsNextRoot` hands the page in production: the day's own
     // navigation as the header title.
     navigation: rootChrome
@@ -970,6 +975,14 @@ Future<void> _pumpDayPage(
           ),
           dailyOsPreferencesControllerProvider.overrideWith(
             _ScreenshotPreferencesController.new,
+          ),
+          // Daily OS is set up, as it is for anyone with a plan to look at:
+          // the composer is live rather than waiting on its setup check.
+          dailyOsSetupStatusProvider.overrideWith(
+            (ref) async => const DailyOsSetupStatus(
+              hasInferenceRoute: true,
+              hasPreferredName: true,
+            ),
           ),
           for (final coverImage in _manualWorld.coverImages)
             createEntryControllerOverride(coverImage),
@@ -1546,14 +1559,16 @@ void main() {
             case _RedesignSurface.agenda:
               await _switchToAgendaView(tester);
               expect(find.byType(AgendaView), findsOneWidget);
+              // The finished morning folds; the rest of the day is rows.
               expect(
-                find.text(
-                  _t('Zero-gravity fish feeder', 'Schwerelos-Futterautomat'),
-                ),
-                findsWidgets,
+                find.byKey(const ValueKey('daily_os_agenda_done_run')),
+                findsOneWidget,
               );
+              expect(find.byType(DayAgendaRow), findsNWidgets(3));
             case _RedesignSurface.agendaNoPlan:
               await _switchToAgendaView(tester);
+              // The Agenda says there is no plan; the recorded time is the
+              // Activity tab's.
               expect(
                 find.text(_messages(tester).dailyOsNextAgendaNoPlanTitle),
                 findsOneWidget,

@@ -148,8 +148,9 @@ class _DayViewSidePanelState extends ConsumerState<DayViewSidePanel> {
         bottom: false,
         // One line of chrome: the Daily OS date strip leads the timeline's
         // toolbar row, the lane-format toggle follows, the hide button ends
-        // it. The strip is the same widget the Daily OS surface header uses,
-        // so the two read and behave alike.
+        // it. The Daily OS surface itself navigates with its masthead and
+        // week strip; this chevron strip is the column's, where a week of
+        // cells would not fit beside the timeline's buttons.
         child: DayTimeline(
           draft: draft,
           actualBlocks: actualBlocks,

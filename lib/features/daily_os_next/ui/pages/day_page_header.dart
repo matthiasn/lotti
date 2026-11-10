@@ -14,6 +14,7 @@ import 'package:lotti/features/daily_os_next/ui/widgets/knowledge_nudge.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/plan_view_toggle.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/processing_category_filter_button.dart';
 import 'package:lotti/features/daily_os_next/util/day_arithmetic.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -92,9 +93,9 @@ class DayHeader extends StatelessWidget {
         // the right, so the menu lines up with the timeline toolbar.
         horizontalPadding: tokens.spacing.step3,
         endInset: tokens.spacing.step3,
-        verticalPadding: tokens.spacing.step2,
+        verticalPadding: tokens.spacing.step3,
         itemGap: tokens.spacing.step3,
-        rowGap: tokens.spacing.step2,
+        rowGap: tokens.spacing.step3,
         back: navigation != null
             ? const SizedBox.shrink()
             : IconButton(
@@ -120,6 +121,22 @@ class DayHeader extends StatelessWidget {
         actions: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // The way back to today, in sight whenever the page is on
+            // another day (the masthead's long press does the same).
+            if (navigation case final navigation?
+                when !DateUtils.isSameDay(date, navigation.today))
+              Padding(
+                padding: EdgeInsets.only(right: tokens.spacing.step2),
+                child: DesignSystemButton(
+                  key: const Key('daily_os_day_today'),
+                  label: context.messages.dailyOsTodayButton,
+                  leadingIcon: LottiIcons.today,
+                  variant: DesignSystemButtonVariant.outlined,
+                  size: DesignSystemButtonSize.dense,
+                  tapTargetSize: MaterialTapTargetSize.padded,
+                  onPressed: navigation.onToday,
+                ),
+              ),
             ?companion,
             // ADR 0032 phase 4: the day agent's observable state (working /
             // attention / day-closed), tappable straight into its internals.

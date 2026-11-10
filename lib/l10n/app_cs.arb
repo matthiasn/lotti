@@ -2001,9 +2001,11 @@
   "dailyOsNextActivityDeleteDialogTitle": "Smazat tuto nahrávku?",
   "dailyOsNextActivityDeleteRecording": "Smazat",
   "dailyOsNextActivityEmpty": "Zatím tu nejsou žádné nahrávky ani check-iny.",
+  "dailyOsNextActivityHandled": "Vyřízeno",
   "dailyOsNextActivityLoadFailed": "Tvoje uložená aktivita je pořád v tomto zařízení, ale teď ji nejde načíst.",
   "dailyOsNextActivityMissingAudio": "Tento záznam zůstal uložený, ale zvukový soubor v tomto zařízení není dostupný. Obnov soubor a pak to zkus znovu.",
   "dailyOsNextActivityNeedsAttention": "Vyžaduje pozornost",
+  "dailyOsNextActivityNeedsYou": "Čeká na tebe",
   "dailyOsNextActivityOpenAiSetup": "Otevřít nastavení Daily OS",
   "dailyOsNextActivityOpenSetup": "Otevřít nastavení přepisu",
   "dailyOsNextActivityPlanAvailable": "Tvůj denní plán je k dispozici.",
@@ -2029,8 +2031,23 @@
       }
     }
   },
-  "dailyOsNextAgendaNoPlanBody": "Tvůj zaznamenaný čas tu je tak jako tak — namluv check-in a já kolem něj navrhnu den.",
+  "dailyOsNextAgendaDoneRun": "{count, plural, =1{1 položka hotová} few{{count} položky hotové} other{{count} položek hotových}}",
+  "@dailyOsNextAgendaDoneRun": {
+    "description": "Agenda summary row standing in for the day's finished items, folded together.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "5"
+      }
+    }
+  },
+  "dailyOsNextAgendaHideDone": "Skrýt hotové položky",
   "dailyOsNextAgendaNoPlanTitle": "Na dnešek zatím žádný plán.",
+  "dailyOsNextAgendaNow": "Teď",
+  "@dailyOsNextAgendaNow": {
+    "description": "Marks the agenda row whose item is under way now, above its start time."
+  },
+  "dailyOsNextAgendaShowDone": "Zobrazit hotové položky",
   "dailyOsNextAgendaStateDone": "Hotovo",
   "dailyOsNextAgendaStateInProgress": "Probíhá",
   "dailyOsNextAgendaStateOpen": "Otevřené",
@@ -2142,6 +2159,20 @@
       }
     }
   },
+  "dailyOsNextBriefingMoreCategories": "+{count} další {duration}",
+  "@dailyOsNextBriefingMoreCategories": {
+    "description": "Last entry of the capacity legend on a phone: the categories not named, and their time together.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "2"
+      },
+      "duration": {
+        "type": "String",
+        "example": "1h 30m"
+      }
+    }
+  },
   "dailyOsNextBriefingNext": "Další v {time}: {title}.",
   "@dailyOsNextBriefingNext": {
     "placeholders": {
@@ -2153,7 +2184,7 @@
       }
     }
   },
-  "dailyOsNextBriefingNoPlan": "Pro tento den zatím nemáš plán. Krátký check-in ho vytvoří.",
+  "dailyOsNextBriefingNoPlan": "Pro tento den zatím nemáš plán. Krátký check‑in ho vytvoří.",
   "dailyOsNextBriefingNothingLeft": "Na dnešek už nemáš nic naplánováno.",
   "dailyOsNextBriefingOverCaption": "{duration} navíc",
   "@dailyOsNextBriefingOverCaption": {
@@ -2231,7 +2262,7 @@
   "dailyOsNextDayAgentStatusWorking": "Plánuji…",
   "dailyOsNextDayAgentTokensToday": "{tokens} tokenů spotřebováno na plánování tohoto dne",
   "dailyOsNextDayBack": "Zpět",
-  "dailyOsNextDayComposerCheckInHint": "Namluv nebo napiš check-in",
+  "dailyOsNextDayComposerCheckInHint": "Namluv nebo napiš check‑in",
   "dailyOsNextDayDeleteDialogBody": "Naplánované bloky pro tento den budou odstraněny. Tvoje záznamy a jejich audio nahrávky zůstávají v tvém deníku.",
   "dailyOsNextDayDeleteDialogCancel": "Zrušit",
   "dailyOsNextDayDeleteDialogConfirm": "Smazat",
@@ -2258,6 +2289,7 @@
   "dailyOsNextDayRelationToday": "Dnes",
   "dailyOsNextDayRelationTomorrow": "Zítra",
   "dailyOsNextDayRelationYesterday": "Včera",
+  "dailyOsNextDayStartCheckIn": "Začít check-in",
   "dailyOsNextDayTitle": "Tvůj den",
   "dailyOsNextDayWhyChipLabel": "Proč",
   "dailyOsNextDayWrapUpCta": "Ukončit",
@@ -2465,8 +2497,6 @@
   "dailyOsNextTimelineSessionOf": "Sezení {index} z {total}",
   "dailyOsNextTimelineShowBoth": "Zobrazit plán a skutečnost společně",
   "dailyOsNextTimelineShowPaged": "Zobrazit plán a skutečnost posouváním",
-  "dailyOsNextTimelineSwipeHint": "Přejeď na Skutečnost · svislým sevřením prstů přiblížíš",
-  "dailyOsNextTimelineSwipeHintToPlan": "Přejeď na Plán · svislým sevřením prstů přiblížíš",
   "dailyOsNextTimelineTracked": "zaznamenáno",
   "dailyOsNextTimeSpentEarlierSessions": "{count, plural, one{1 starší záznam} few{{count} starší záznamy} other{{count} starších záznamů}}",
   "dailyOsNextTimeSpentShowLess": "Zobrazit méně",

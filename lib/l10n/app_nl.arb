@@ -2231,9 +2231,11 @@
   "dailyOsNextActivityDeleteDialogTitle": "Deze opname verwijderen?",
   "dailyOsNextActivityDeleteRecording": "Verwijderen",
   "dailyOsNextActivityEmpty": "Nog geen opnames of check-ins.",
+  "dailyOsNextActivityHandled": "Afgehandeld",
   "dailyOsNextActivityLoadFailed": "Je opgeslagen activiteit staat nog op dit apparaat, maar kon nu niet worden geladen.",
   "dailyOsNextActivityMissingAudio": "Dit item is bewaard, maar het audiobestand is niet beschikbaar op dit apparaat. Herstel het bestand en probeer het daarna opnieuw.",
   "dailyOsNextActivityNeedsAttention": "Vraagt aandacht",
+  "dailyOsNextActivityNeedsYou": "Wacht op jou",
   "dailyOsNextActivityOpenAiSetup": "Daily OS-instellingen openen",
   "dailyOsNextActivityOpenSetup": "Transcriptie-instellingen openen",
   "dailyOsNextActivityPlanAvailable": "Je dagplan is beschikbaar.",
@@ -2259,8 +2261,23 @@
       }
     }
   },
-  "dailyOsNextAgendaNoPlanBody": "Je getraceerde tijd is hier, hoe dan ook. Spreek een check-in en ik zal er een dag omheen opstellen.",
+  "dailyOsNextAgendaDoneRun": "{count, plural, =1{1 item klaar} other{{count} items klaar}}",
+  "@dailyOsNextAgendaDoneRun": {
+    "description": "Agenda summary row standing in for the day's finished items, folded together.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "5"
+      }
+    }
+  },
+  "dailyOsNextAgendaHideDone": "Verberg afgeronde items",
   "dailyOsNextAgendaNoPlanTitle": "Nog geen plan voor vandaag.",
+  "dailyOsNextAgendaNow": "Nu",
+  "@dailyOsNextAgendaNow": {
+    "description": "Marks the agenda row whose item is under way now, above its start time."
+  },
+  "dailyOsNextAgendaShowDone": "Toon afgeronde items",
   "dailyOsNextAgendaStateDone": "Klaar",
   "dailyOsNextAgendaStateInProgress": "In behandeling",
   "dailyOsNextAgendaStateOpen": "Openen",
@@ -2372,6 +2389,20 @@
       }
     }
   },
+  "dailyOsNextBriefingMoreCategories": "+{count} meer {duration}",
+  "@dailyOsNextBriefingMoreCategories": {
+    "description": "Last entry of the capacity legend on a phone: the categories not named, and their time together.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "2"
+      },
+      "duration": {
+        "type": "String",
+        "example": "1h 30m"
+      }
+    }
+  },
   "dailyOsNextBriefingNext": "Hierna om {time}: {title}.",
   "@dailyOsNextBriefingNext": {
     "placeholders": {
@@ -2383,7 +2414,7 @@
       }
     }
   },
-  "dailyOsNextBriefingNoPlan": "Er is nog geen plan voor deze dag. Een korte check-in maakt er een.",
+  "dailyOsNextBriefingNoPlan": "Er is nog geen plan voor deze dag. Een korte check‑in maakt er een.",
   "dailyOsNextBriefingNothingLeft": "Voor vandaag staat er niets meer gepland.",
   "dailyOsNextBriefingOverCaption": "{duration} te veel",
   "@dailyOsNextBriefingOverCaption": {
@@ -2475,7 +2506,7 @@
   "dailyOsNextDayAgentStatusWorking": "Bezig met plannen…",
   "dailyOsNextDayAgentTokensToday": "{tokens} tokens gebruikt om deze dag te plannen",
   "dailyOsNextDayBack": "Terug",
-  "dailyOsNextDayComposerCheckInHint": "Spreek of typ een check-in",
+  "dailyOsNextDayComposerCheckInHint": "Spreek of typ een check‑in",
   "dailyOsNextDayDeleteDialogBody": "De opgestelde blokken voor deze dag zullen worden verwijderd. Opnames en hun audio opnames blijven in uw dagboek.",
   "dailyOsNextDayDeleteDialogCancel": "Annuleren",
   "dailyOsNextDayDeleteDialogConfirm": "Verwijderen",
@@ -2502,6 +2533,7 @@
   "dailyOsNextDayRelationToday": "Vandaag",
   "dailyOsNextDayRelationTomorrow": "Morgen",
   "dailyOsNextDayRelationYesterday": "Gisteren",
+  "dailyOsNextDayStartCheckIn": "Check-in starten",
   "dailyOsNextDayTitle": "Jouw dag",
   "dailyOsNextDayWhyChipLabel": "Waarom",
   "dailyOsNextDayWrapUpCta": "Afsluiten",
@@ -2736,8 +2768,6 @@
   },
   "dailyOsNextTimelineShowBoth": "Plan en werkelijke samen tonen",
   "dailyOsNextTimelineShowPaged": "Bewegingsbaar plan en werkelijke tonen",
-  "dailyOsNextTimelineSwipeHint": "Veeg voor werkelijke · knijp verticaal naar zoom",
-  "dailyOsNextTimelineSwipeHintToPlan": "Veeg voor plan · knijp verticaal naar zoom",
   "dailyOsNextTimelineTracked": "traced",
   "dailyOsNextTimeSpentEarlierSessions": "{count, plural, one{1 vorige zitting} other{{count} eerdere sessies}}",
   "@dailyOsNextTimeSpentEarlierSessions": {

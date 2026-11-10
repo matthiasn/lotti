@@ -4776,6 +4776,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get dailyOsNextActivityEmpty => 'Noch keine Aufnahmen oder Check-ins.';
 
   @override
+  String get dailyOsNextActivityHandled => 'Erledigt';
+
+  @override
   String get dailyOsNextActivityLoadFailed =>
       'Deine gespeicherte Aktivität ist weiterhin auf diesem Gerät, konnte aber gerade nicht geladen werden.';
 
@@ -4785,6 +4788,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get dailyOsNextActivityNeedsAttention => 'Prüfung nötig';
+
+  @override
+  String get dailyOsNextActivityNeedsYou => 'Wartet auf dich';
 
   @override
   String get dailyOsNextActivityOpenAiSetup => 'Daily-OS-Einrichtung öffnen';
@@ -4843,11 +4849,27 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get dailyOsNextAgendaNoPlanBody =>
-      'Deine erfasste Zeit ist trotzdem hier — sprich ein Check-in ein und ich entwerfe einen Tag darum.';
+  String dailyOsNextAgendaDoneRun(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Punkte erledigt',
+      one: '1 Punkt erledigt',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get dailyOsNextAgendaHideDone => 'Erledigte Punkte ausblenden';
 
   @override
   String get dailyOsNextAgendaNoPlanTitle => 'Noch kein Plan für heute.';
+
+  @override
+  String get dailyOsNextAgendaNow => 'Jetzt';
+
+  @override
+  String get dailyOsNextAgendaShowDone => 'Erledigte Punkte zeigen';
 
   @override
   String get dailyOsNextAgendaStateDone => 'Erledigt';
@@ -4994,6 +5016,11 @@ class AppLocalizationsDe extends AppLocalizations {
       one: '1 Minute',
     );
     return '$_temp0';
+  }
+
+  @override
+  String dailyOsNextBriefingMoreCategories(int count, String duration) {
+    return '+$count weitere $duration';
   }
 
   @override
@@ -5225,6 +5252,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get dailyOsNextDayRelationYesterday => 'Gestern';
+
+  @override
+  String get dailyOsNextDayStartCheckIn => 'Check-in starten';
 
   @override
   String get dailyOsNextDayTitle => 'Dein Tag';
@@ -5758,14 +5788,6 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get dailyOsNextTimelineShowPaged =>
       'Plan und Ist zum Wischen anzeigen';
-
-  @override
-  String get dailyOsNextTimelineSwipeHint =>
-      'Wische zu Ist · vertikal kneifen zum Zoomen';
-
-  @override
-  String get dailyOsNextTimelineSwipeHintToPlan =>
-      'Wische zum Plan · vertikal kneifen zum Zoomen';
 
   @override
   String get dailyOsNextTimelineTracked => 'erfasst';

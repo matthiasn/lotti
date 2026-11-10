@@ -5,10 +5,12 @@ import 'dart:ui' as ui;
 import 'package:clock/clock.dart';
 import 'package:flutter/gestures.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
+import 'package:lotti/features/daily_os_next/ui/time_format.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline_block.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline_fold_surface.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline_folding.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline_overlap.dart';
+import 'package:lotti/features/design_system/components/buttons/ds_segmented_toggle.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
@@ -17,7 +19,6 @@ import 'package:material_ui/material_ui.dart';
 
 export 'package:lotti/features/daily_os_next/ui/widgets/day_timeline_block.dart';
 
-part 'day_timeline_controls.dart';
 part 'day_timeline_widgets.dart';
 
 /// Hour-by-hour timeline rendering of a [DraftPlan].
@@ -46,7 +47,6 @@ class DayTimeline extends StatefulWidget {
     this.isRedacted,
     this.toolbarLeading,
     this.toolbarTrailing,
-    this.controller,
     super.key,
   }) : assert(pxPerMinute > 0, 'pxPerMinute must be positive');
 
@@ -119,13 +119,6 @@ class DayTimeline extends StatefulWidget {
   /// lane-mode toggle. The docked day-view column puts its hide button here.
   final Widget? toolbarTrailing;
 
-  /// Hands the lane-format and arrange controls to the host, which shows
-  /// them through [DayTimelineControls]. With a controller the toolbar
-  /// leaves those buttons out and keeps only the coaching line and the
-  /// host's own [toolbarLeading] and [toolbarTrailing] — and takes no row
-  /// at all when none of those has anything to show.
-  final DayTimelineController? controller;
-
   @override
   State<DayTimeline> createState() => _DayTimelineState();
 }
@@ -183,7 +176,6 @@ class _DayTimelineState extends State<DayTimeline> {
       // now-line tracks time. Skipped under test (fixed clock param).
       _scheduleNextMinute();
     }
-    widget.controller?._attach(this);
     // Open with the now-line framed in the upper half of the viewport so
     // "where am I in the day" needs no scrolling.
     WidgetsBinding.instance.addPostFrameCallback((_) => _centerOnNow());
@@ -194,10 +186,6 @@ class _DayTimelineState extends State<DayTimeline> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.pxPerMinute != widget.pxPerMinute) {
       _pxPerMinute = widget.pxPerMinute;
-    }
-    if (oldWidget.controller != widget.controller) {
-      oldWidget.controller?._detach(this);
-      widget.controller?._attach(this);
     }
     _reselectLaneIfPlanPresenceChanged();
   }
@@ -288,7 +276,6 @@ class _DayTimelineState extends State<DayTimeline> {
 
   @override
   void dispose() {
-    widget.controller?._detach(this);
     _timer?.cancel();
     _pageController
       ..removeListener(_onLanePageScroll)
@@ -344,38 +331,20 @@ class _DayTimelineState extends State<DayTimeline> {
         totalHeight +
         tokens.spacing.step5 +
         tokens.spacing.step4;
-    // Hour labels and the now-chip live on the rail; widen it with the
-    // user's text scale so "09:00" never clips at accessibility sizes.
+    // Hour labels and the now-chip live on the rail: wide enough for a
+    // 12-hour now-chip ("3:55 PM"), and widened with the user's text scale so
+    // nothing clips at accessibility sizes.
     final timeRailWidth = math.max(
-      tokens.spacing.step10,
-      MediaQuery.textScalerOf(context).scale(tokens.spacing.step10),
+      tokens.spacing.step11,
+      MediaQuery.textScalerOf(context).scale(tokens.spacing.step11),
     );
 
     return LayoutBuilder(
       builder: (context, constraints) {
         final comparisonMode = _comparisonModeForWidth(constraints.maxWidth);
         final toolbarHeight = tokens.spacing.step9 + tokens.spacing.step3;
-        final controller = widget.controller;
         final canArrange = widget.onRescheduleBlock != null;
-        if (controller != null) {
-          // Reported after the frame: the comparison mode is only known once
-          // the width is, and listeners must not rebuild mid-layout.
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (!mounted || !identical(widget.controller, controller)) return;
-            controller._report(
-              showingBoth: comparisonMode == _TimelineComparisonMode.both,
-              arrangeMode: _arrangeMode,
-              canArrange: canArrange,
-            );
-          });
-        }
-        final toolbarHasContent =
-            controller == null ||
-            widget.showGestureHint ||
-            widget.toolbarLeading != null ||
-            widget.toolbarTrailing != null;
-        final showToolbar =
-            toolbarHasContent && constraints.maxHeight >= toolbarHeight;
+        final showToolbar = constraints.maxHeight >= toolbarHeight;
         return Column(
           children: [
             if (showToolbar)
@@ -385,10 +354,11 @@ class _DayTimelineState extends State<DayTimeline> {
                 mode: comparisonMode,
                 arrangeMode: _arrangeMode,
                 showHint: widget.showGestureHint,
-                recordedLaneFirst: _recordedLaneFirst,
-                showControls: controller == null,
                 onToggleMode: _toggleComparisonMode,
                 onToggleArrange: canArrange ? _toggleArrangeMode : null,
+                lanes: comparisonMode == _TimelineComparisonMode.paged
+                    ? _pageController
+                    : null,
               ),
             Expanded(
               child: Listener(
@@ -484,61 +454,69 @@ class _DayTimelineState extends State<DayTimeline> {
                                     controller: _pageController,
                                     padEnds: false,
                                     children: [
-                                      Padding(
-                                        padding: EdgeInsets.only(
-                                          right: tokens.spacing.step3,
-                                        ),
-                                        child: _TimelinePane(
-                                          isRedacted: widget.isRedacted,
-                                          label: context
-                                              .messages
-                                              .dailyOsNextTimelinePlanned,
-                                          blocks: widget.draft.blocks,
-                                          bands: widget.draft.bands,
-                                          paneKey: const Key(
-                                            'daily_os_timeline_plan_pane',
+                                      _PagedLane(
+                                        controller: _pageController,
+                                        index: 0,
+                                        child: Padding(
+                                          padding: EdgeInsets.only(
+                                            right: tokens.spacing.step3,
                                           ),
-                                          foldingState: foldingState,
-                                          labelHeight: paneLabelHeight,
-                                          totalHeight: totalHeight,
-                                          windowStart: windowStart,
-                                          pxPerMinute: _pxPerMinute,
-                                          now: nowInWindow ? _now : null,
-                                          showBands: true,
-                                          tracked: false,
-                                          onRenameBlock: widget.onRenameBlock,
-                                          onEditBlock: widget.onEditBlock,
-                                          arrangeMode: _arrangeMode,
-                                          onRescheduleBlock:
-                                              widget.onRescheduleBlock,
+                                          child: _TimelinePane(
+                                            isRedacted: widget.isRedacted,
+                                            label: context
+                                                .messages
+                                                .dailyOsNextTimelinePlanned,
+                                            blocks: widget.draft.blocks,
+                                            bands: widget.draft.bands,
+                                            paneKey: const Key(
+                                              'daily_os_timeline_plan_pane',
+                                            ),
+                                            foldingState: foldingState,
+                                            labelHeight: paneLabelHeight,
+                                            totalHeight: totalHeight,
+                                            windowStart: windowStart,
+                                            pxPerMinute: _pxPerMinute,
+                                            now: nowInWindow ? _now : null,
+                                            showBands: true,
+                                            tracked: false,
+                                            onRenameBlock: widget.onRenameBlock,
+                                            onEditBlock: widget.onEditBlock,
+                                            arrangeMode: _arrangeMode,
+                                            onRescheduleBlock:
+                                                widget.onRescheduleBlock,
+                                          ),
                                         ),
                                       ),
-                                      Padding(
-                                        padding: EdgeInsets.only(
-                                          right: tokens.spacing.step3,
-                                        ),
-                                        child: _TimelinePane(
-                                          isRedacted: widget.isRedacted,
-                                          label: context
-                                              .messages
-                                              .dailyOsNextTimelineActual,
-                                          blocks: actualBlocks,
-                                          bands: const [],
-                                          paneKey: const Key(
-                                            'daily_os_timeline_actual_pane',
+                                      _PagedLane(
+                                        controller: _pageController,
+                                        index: 1,
+                                        child: Padding(
+                                          padding: EdgeInsets.only(
+                                            right: tokens.spacing.step3,
                                           ),
-                                          foldingState: foldingState,
-                                          labelHeight: paneLabelHeight,
-                                          totalHeight: totalHeight,
-                                          windowStart: windowStart,
-                                          pxPerMinute: _pxPerMinute,
-                                          now: nowInWindow ? _now : null,
-                                          showBands: false,
-                                          tracked: true,
-                                          onRenameBlock: null,
-                                          onEditBlock: null,
-                                          arrangeMode: false,
-                                          onRescheduleBlock: null,
+                                          child: _TimelinePane(
+                                            isRedacted: widget.isRedacted,
+                                            label: context
+                                                .messages
+                                                .dailyOsNextTimelineActual,
+                                            blocks: actualBlocks,
+                                            bands: const [],
+                                            paneKey: const Key(
+                                              'daily_os_timeline_actual_pane',
+                                            ),
+                                            foldingState: foldingState,
+                                            labelHeight: paneLabelHeight,
+                                            totalHeight: totalHeight,
+                                            windowStart: windowStart,
+                                            pxPerMinute: _pxPerMinute,
+                                            now: nowInWindow ? _now : null,
+                                            showBands: false,
+                                            tracked: true,
+                                            onRenameBlock: null,
+                                            onEditBlock: null,
+                                            arrangeMode: false,
+                                            onRescheduleBlock: null,
+                                          ),
                                         ),
                                       ),
                                     ],

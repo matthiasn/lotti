@@ -6,9 +6,13 @@ import 'package:lotti/features/daily_os_next/services/day_activity_repository.da
 import 'package:lotti/features/daily_os_next/services/day_processing_job.dart';
 import 'package:lotti/features/daily_os_next/state/day_activity_provider.dart';
 import 'package:lotti/features/daily_os_next/state/day_processing_runtime_provider.dart';
+import 'package:lotti/features/daily_os_next/ui/time_format.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/day_row_scaffold.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/day_section_header.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/time_spent_card.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/cards/ds_rows_card.dart';
+import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/editor_widget.dart';
@@ -16,68 +20,137 @@ import 'package:lotti/features/speech/ui/widgets/audio_player.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart';
 import 'package:lotti/services/nav_service.dart' as nav_service;
-import 'package:lotti/themes/theme.dart' show numericBadgeFontFeatures;
 import 'package:lotti/widgets/modal/confirmation_modal.dart';
 import 'package:material_ui/material_ui.dart';
 
+/// What the day has heard and done, from the top: the recordings and stalled
+/// steps that still need the user, as rows on one card; the day's tracked
+/// time; then everything already handled — plans, summaries, check-ins and
+/// used recordings — on a card of their own, oldest first.
 class DayActivityView extends ConsumerWidget {
   const DayActivityView({
     required this.date,
     required this.hasPlan,
     required this.onUseEntry,
     required this.actualBlocks,
+    this.header,
     super.key,
   });
+
+  /// Scrolls in above the activity — the page's briefing on a phone.
+  final Widget? header;
 
   final DateTime date;
   final bool hasPlan;
   final ValueChanged<DayActivityEntry> onUseEntry;
   final List<TimeBlock> actualBlocks;
 
+  /// Whether [entry] still waits on the user: a recording not yet used for
+  /// the day — ready, waiting or failed — or a stalled planning step.
+  static bool needsAction(DayActivityEntry entry) =>
+      !entry.isSubmitted &&
+      (entry.kind == DayActivityEntryKind.recording ||
+          entry.kind == DayActivityEntryKind.agentJob);
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final activity = ref.watch(dayActivityProvider(date));
+    final tokens = context.designTokens;
     return activity.when(
       skipLoadingOnReload: true,
       skipError: true,
-      data: (entries) => entries.isEmpty && actualBlocks.isEmpty
-          ? const _ActivityEmptyState()
-          // Anchored at the bottom, like a conversation: the latest entry is
-          // in view and earlier ones scroll up, with the day's tracked time
-          // above them all.
-          : SingleChildScrollView(
-              reverse: true,
-              padding: EdgeInsets.all(context.designTokens.spacing.step5),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  if (actualBlocks.isNotEmpty)
-                    TimeSpentCard(blocks: actualBlocks, compact: true),
-                  if (actualBlocks.isNotEmpty && entries.isNotEmpty)
-                    SizedBox(height: context.designTokens.spacing.step4),
-                  if (entries.isNotEmpty)
-                    DsRowsCard(
-                      rows: [
-                        for (final entry in entries)
-                          _ActivityRow(
-                            key: ValueKey(entry.id),
-                            entry: entry,
-                            hasPlan: hasPlan,
-                            onUse: () => onUseEntry(entry),
-                            onRetry: entry.processingJob == null
-                                ? null
-                                : () => _retry(ref, entry.processingJob!.id),
-                            onDelete:
-                                entry.kind != DayActivityEntryKind.recording ||
-                                    entry.isSubmitted
-                                ? null
-                                : () => _delete(context, ref, entry),
-                          ),
-                      ],
-                    ),
-                ],
+      data: (entries) {
+        if (entries.isEmpty && actualBlocks.isEmpty) {
+          final header = this.header;
+          return header == null
+              ? const _ActivityEmptyState()
+              : Column(
+                  children: [
+                    header,
+                    const Expanded(child: _ActivityEmptyState()),
+                  ],
+                );
+        }
+        // What can be used now leads what is still waiting.
+        final open = [
+          ...entries.where((e) => needsAction(e) && e.transcript != null),
+          ...entries.where((e) => needsAction(e) && e.transcript == null),
+        ];
+        final handled = entries.where((e) => !needsAction(e)).toList();
+        Widget card(List<DayActivityEntry> rows) => DsRowsCard(
+          rows: [
+            for (final entry in rows)
+              _ActivityRow(
+                key: ValueKey(entry.id),
+                entry: entry,
+                hasPlan: hasPlan,
+                onUse: () => onUseEntry(entry),
+                onRetry: entry.processingJob == null
+                    ? null
+                    : () => _retry(ref, entry.processingJob!.id),
+                onDelete:
+                    entry.kind != DayActivityEntryKind.recording ||
+                        entry.isSubmitted
+                    ? null
+                    : () => _delete(context, ref, entry),
               ),
+          ],
+        );
+        final messages = context.messages;
+        final sections = [
+          // What still needs the user leads, then the day's tracked time,
+          // then everything already handled — each group named.
+          if (open.isNotEmpty)
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                DaySectionHeader(
+                  label: messages.dailyOsNextActivityNeedsYou,
+                  summary: '${open.length}',
+                ),
+                card(open),
+              ],
             ),
+          if (actualBlocks.isNotEmpty)
+            TimeSpentCard(blocks: actualBlocks, showSummary: hasPlan),
+          if (handled.isNotEmpty)
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                DaySectionHeader(label: messages.dailyOsNextActivityHandled),
+                card(handled),
+              ],
+            ),
+        ];
+        return SingleChildScrollView(
+          padding: EdgeInsets.only(bottom: tokens.spacing.step10),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              ?header,
+              Padding(
+                // The agenda's insets: step5 on the rail, step4 below the
+                // briefing.
+                padding: EdgeInsets.only(
+                  left: tokens.spacing.step5,
+                  top: tokens.spacing.step4,
+                  right: tokens.spacing.step5,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    for (final (index, section) in sections.indexed) ...[
+                      if (index > 0)
+                        SizedBox(height: tokens.spacing.sectionGap),
+                      section,
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
       error: (_, _) => _ActivityErrorState(
         onRetry: () => ref.invalidate(dayActivityProvider(date)),
       ),
@@ -219,39 +292,23 @@ class _ActivityRow extends StatelessWidget {
     final editorShowsText =
         inlineEditorEntryId != null &&
         (entry.audio?.entryText?.plainText.trim().isNotEmpty ?? false);
-    final scaler = MediaQuery.textScalerOf(context);
-    return Padding(
-      padding: EdgeInsets.symmetric(
-        horizontal: tokens.spacing.cardPadding,
-        vertical: tokens.spacing.step4,
+    // The page's shared row grid: the time, the entry's state as its mark,
+    // then its words and what it offers.
+    return DayRowScaffold(
+      time: formatClock(context, entry.createdAt.toLocal()),
+      leading: Icon(
+        _glyph(entry),
+        size: tokens.typography.size.caption,
+        color: _statusInk(tokens, entry),
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // The same time column as the agenda's rows.
-          SizedBox(
-            width: scaler.scale(tokens.spacing.step10),
-            child: Text(
-              _formatTime(context, entry.createdAt),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: tokens.typography.styles.others.caption.copyWith(
-                color: tokens.colors.text.lowEmphasis,
-                fontFeatures: numericBadgeFontFeatures,
-              ),
-            ),
-          ),
-          Expanded(
-            child: _details(
-              context,
-              tokens,
-              transcript,
-              status,
-              inlineEditorEntryId,
-              editorShowsText,
-            ),
-          ),
-        ],
+      firstLine: tokens.typography.lineHeight.caption,
+      child: _details(
+        context,
+        tokens,
+        transcript,
+        status,
+        inlineEditorEntryId,
+        editorShowsText,
       ),
     );
   }
@@ -267,35 +324,19 @@ class _ActivityRow extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Icon(
-              switch (entry.kind) {
-                DayActivityEntryKind.plan => LottiIcons.aiSpark,
-                DayActivityEntryKind.summary => LottiIcons.summarize,
-                DayActivityEntryKind.checkIn => LottiIcons.note,
-                DayActivityEntryKind.recording => LottiIcons.micIdle,
-                DayActivityEntryKind.agentJob => LottiIcons.error,
-              },
-              // A quiet mark of the entry's kind, not an action: teal is
-              // kept for what can be acted on.
-              size: tokens.typography.size.subtitle2,
-              color: tokens.colors.text.lowEmphasis,
-            ),
-            SizedBox(width: tokens.spacing.step2),
-            Expanded(
-              child: Text(
-                status,
-                style: captionLabelStyle(tokens),
-              ),
-            ),
-          ],
+        Text(
+          status,
+          style: captionLabelStyle(tokens, color: _statusInk(tokens, entry)),
         ),
         if (!editorShowsText) ...[
           SizedBox(height: tokens.spacing.step2),
           Text(
             _body(context, entry, transcript),
-            style: tokens.typography.styles.body.bodyMedium.copyWith(
+            // On a phone the words are a preview — two lines — so the
+            // groups below stay in view; a wide pane has room for them all.
+            maxLines: isDesktopLayout(context) ? null : 2,
+            overflow: isDesktopLayout(context) ? null : TextOverflow.ellipsis,
+            style: tokens.typography.styles.body.bodySmall.copyWith(
               color: transcript == null
                   ? tokens.colors.text.lowEmphasis
                   : tokens.colors.text.highEmphasis,
@@ -347,69 +388,127 @@ class _ActivityRow extends StatelessWidget {
                 DayProcessingFailureClass.setupRequired ||
             _canRetry(entry) ||
             transcript != null) ...[
-          SizedBox(height: tokens.spacing.step4),
-          Wrap(
-            spacing: tokens.spacing.step3,
-            runSpacing: tokens.spacing.step3,
+          SizedBox(height: tokens.spacing.step3),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (_canRetry(entry))
-                _AsyncActivityButton(
-                  // The shared label reads "Retry transcription", which is
-                  // wrong on a draft, refine or capture-parse row — none of
-                  // them transcribes anything.
-                  label: entry.kind == DayActivityEntryKind.agentJob
-                      ? context.messages.dailyOsNextActivityRetryStep
-                      : context.messages.dailyOsNextActivityRetry,
-                  action: onRetry!,
-                  // A draft job has no recording to reassure the user about.
-                  failureMessage: entry.kind == DayActivityEntryKind.agentJob
-                      ? context.messages.dailyOsNextActivityAgentActionFailed
-                      : null,
-                  variant: DesignSystemButtonVariant.secondary,
-                  leadingIcon: LottiIcons.refresh,
+              Expanded(
+                child: Wrap(
+                  spacing: tokens.spacing.step3,
+                  runSpacing: tokens.spacing.step3,
+                  children: [
+                    if (_canRetry(entry))
+                      _AsyncActivityButton(
+                        // The shared label reads "Retry transcription", which is
+                        // wrong on a draft, refine or capture-parse row — none of
+                        // them transcribes anything.
+                        label: entry.kind == DayActivityEntryKind.agentJob
+                            ? context.messages.dailyOsNextActivityRetryStep
+                            : context.messages.dailyOsNextActivityRetry,
+                        action: onRetry!,
+                        // A draft job has no recording to reassure the user about.
+                        failureMessage:
+                            entry.kind == DayActivityEntryKind.agentJob
+                            ? context
+                                  .messages
+                                  .dailyOsNextActivityAgentActionFailed
+                            : null,
+                        variant: DesignSystemButtonVariant.secondary,
+                        leadingIcon: LottiIcons.refresh,
+                      ),
+                    if (entry.processingJob?.lastFailureClass ==
+                        DayProcessingFailureClass.setupRequired)
+                      DesignSystemButton(
+                        // A planning job blocked on setup needs the Daily OS
+                        // profile binding, which lives in Daily OS settings — the
+                        // generic AI list can create a profile but never assigns
+                        // one, so it would leave the job just as blocked.
+                        label: entry.kind == DayActivityEntryKind.agentJob
+                            ? context.messages.dailyOsNextActivityOpenAiSetup
+                            : context.messages.dailyOsNextActivityOpenSetup,
+                        onPressed: () => nav_service.beamToNamed(
+                          entry.kind == DayActivityEntryKind.agentJob
+                              ? '/settings/daily-os'
+                              : '/settings/ai',
+                        ),
+                        variant: DesignSystemButtonVariant.secondary,
+                        size: DesignSystemButtonSize.dense,
+                        tapTargetSize: MaterialTapTargetSize.padded,
+                        leadingIcon: LottiIcons.settings,
+                      ),
+                    if (transcript != null)
+                      DesignSystemButton(
+                        label: hasPlan
+                            ? context.messages.dailyOsNextActivityUseToRefine
+                            : context.messages.dailyOsNextActivityUseToPlan,
+                        onPressed: onUse,
+                        // Secondary: the footer's next step is the page's one
+                        // filled button.
+                        variant: DesignSystemButtonVariant.secondary,
+                        size: DesignSystemButtonSize.dense,
+                        tapTargetSize: MaterialTapTargetSize.padded,
+                        // It sends the words on: the spark stays the companion's.
+                        leadingIcon: LottiIcons.send,
+                      ),
+                  ],
                 ),
-              if (entry.processingJob?.lastFailureClass ==
-                  DayProcessingFailureClass.setupRequired)
-                DesignSystemButton(
-                  // A planning job blocked on setup needs the Daily OS
-                  // profile binding, which lives in Daily OS settings — the
-                  // generic AI list can create a profile but never assigns
-                  // one, so it would leave the job just as blocked.
-                  label: entry.kind == DayActivityEntryKind.agentJob
-                      ? context.messages.dailyOsNextActivityOpenAiSetup
-                      : context.messages.dailyOsNextActivityOpenSetup,
-                  onPressed: () => nav_service.beamToNamed(
-                    entry.kind == DayActivityEntryKind.agentJob
-                        ? '/settings/daily-os'
-                        : '/settings/ai',
-                  ),
-                  variant: DesignSystemButtonVariant.secondary,
-                  leadingIcon: LottiIcons.settings,
-                ),
-              if (transcript != null)
-                DesignSystemButton(
-                  label: hasPlan
-                      ? context.messages.dailyOsNextActivityUseToRefine
-                      : context.messages.dailyOsNextActivityUseToPlan,
-                  onPressed: onUse,
-                  // Secondary: the footer's next step is the page's one
-                  // filled button.
-                  variant: DesignSystemButtonVariant.secondary,
-                  leadingIcon: LottiIcons.aiSpark,
-                ),
-              if (onDelete != null)
+              ),
+              // Delete keeps to the far end, apart from the actions that move
+              // the entry on — never the easy tap beside them. It asks first.
+              if (onDelete != null) ...[
+                SizedBox(width: tokens.spacing.step3),
                 _AsyncActivityButton(
                   label: context.messages.dailyOsNextActivityDeleteRecording,
                   action: onDelete!,
-                  variant: DesignSystemButtonVariant.secondary,
+                  variant: DesignSystemButtonVariant.quiet,
                   leadingIcon: LottiIcons.delete,
                 ),
+              ],
             ],
           ),
         ],
       ],
     );
   }
+
+  /// The row's glyph says where the entry stands, not only what it is: a
+  /// stalled step or a failed transcription is an error, a recording waiting
+  /// for the network is offline, one being transcribed is a waveform.
+  IconData _glyph(DayActivityEntry entry) {
+    if (_needsAttention(entry)) return LottiIcons.error;
+    return switch (entry.processingJob?.status) {
+      DayProcessingJobStatus.waitingForNetwork => LottiIcons.cloudOff,
+      DayProcessingJobStatus.running => LottiIcons.waveform,
+      _ => switch (entry.kind) {
+        DayActivityEntryKind.plan => LottiIcons.aiSpark,
+        DayActivityEntryKind.summary => LottiIcons.summarize,
+        DayActivityEntryKind.checkIn => LottiIcons.note,
+        // A recording; an agent job never settles here, it always needs
+        // attention.
+        _ => LottiIcons.mic,
+      },
+    };
+  }
+
+  /// The glyph's and the state's ink: error for what needs the user, warning
+  /// for what waits on the network, medium emphasis for everything at rest.
+  Color _statusInk(DsTokens tokens, DayActivityEntry entry) {
+    if (_needsAttention(entry)) return tokens.colors.alert.error.ink;
+    if (entry.processingJob?.status ==
+        DayProcessingJobStatus.waitingForNetwork) {
+      return tokens.colors.alert.warning.ink;
+    }
+    return tokens.colors.text.mediumEmphasis;
+  }
+
+  bool _needsAttention(DayActivityEntry entry) =>
+      entry.kind == DayActivityEntryKind.agentJob ||
+      (!entry.isSubmitted &&
+          switch (entry.processingJob?.status) {
+            DayProcessingJobStatus.waitingForUser ||
+            DayProcessingJobStatus.failed => true,
+            _ => false,
+          });
 
   /// The row's main line: the entity's own wording when it has one, else an
   /// explanation of what this row is waiting on, in the user's language.
@@ -514,11 +613,6 @@ class _ActivityRow extends StatelessWidget {
       _ => context.messages.dailyOsNextActivitySaved,
     };
   }
-
-  String _formatTime(BuildContext context, DateTime value) =>
-      MaterialLocalizations.of(context).formatTimeOfDay(
-        TimeOfDay.fromDateTime(value.toLocal()),
-      );
 }
 
 class _AsyncActivityButton extends StatefulWidget {
@@ -552,6 +646,8 @@ class _AsyncActivityButtonState extends State<_AsyncActivityButton> {
     onPressed: _run,
     isLoading: _busy,
     variant: widget.variant,
+    size: DesignSystemButtonSize.dense,
+    tapTargetSize: MaterialTapTargetSize.padded,
     leadingIcon: widget.leadingIcon,
   );
 

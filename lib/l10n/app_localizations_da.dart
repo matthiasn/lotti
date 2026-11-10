@@ -4740,6 +4740,9 @@ class AppLocalizationsDa extends AppLocalizations {
       'Ingen optagelser eller check-ins endnu.';
 
   @override
+  String get dailyOsNextActivityHandled => 'Klaret';
+
+  @override
   String get dailyOsNextActivityLoadFailed =>
       'Din gemte aktivitet er stadig på denne enhed, men den kunne ikke indlæses lige nu.';
 
@@ -4749,6 +4752,9 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get dailyOsNextActivityNeedsAttention => 'Kræver opmærksomhed';
+
+  @override
+  String get dailyOsNextActivityNeedsYou => 'Venter på dig';
 
   @override
   String get dailyOsNextActivityOpenAiSetup => 'Åbn Daily OS-opsætning';
@@ -4806,11 +4812,27 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
-  String get dailyOsNextAgendaNoPlanBody =>
-      'Din registrerede tid er her uanset hvad — tal med et check-in, og jeg udarbejder en dag omkring det.';
+  String dailyOsNextAgendaDoneRun(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count punkter færdige',
+      one: '1 punkt færdigt',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get dailyOsNextAgendaHideDone => 'Skjul færdige punkter';
 
   @override
   String get dailyOsNextAgendaNoPlanTitle => 'Ingen plan endnu for i dag.';
+
+  @override
+  String get dailyOsNextAgendaNow => 'Nu';
+
+  @override
+  String get dailyOsNextAgendaShowDone => 'Vis færdige punkter';
 
   @override
   String get dailyOsNextAgendaStateDone => 'Færdig';
@@ -4960,13 +4982,18 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
+  String dailyOsNextBriefingMoreCategories(int count, String duration) {
+    return '+$count mere $duration';
+  }
+
+  @override
   String dailyOsNextBriefingNext(String time, String title) {
     return 'Næste kl. $time: $title.';
   }
 
   @override
   String get dailyOsNextBriefingNoPlan =>
-      'Der er ingen plan for denne dag endnu. Et kort check-in laver en.';
+      'Der er ingen plan for denne dag endnu. Et kort check‑in laver en.';
 
   @override
   String get dailyOsNextBriefingNothingLeft =>
@@ -5142,7 +5169,7 @@ class AppLocalizationsDa extends AppLocalizations {
   String get dailyOsNextDayBack => 'Tilbage';
 
   @override
-  String get dailyOsNextDayComposerCheckInHint => 'Tal eller skriv et check-in';
+  String get dailyOsNextDayComposerCheckInHint => 'Tal eller skriv et check‑in';
 
   @override
   String get dailyOsNextDayDeleteDialogBody =>
@@ -5185,6 +5212,9 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get dailyOsNextDayRelationYesterday => 'I går';
+
+  @override
+  String get dailyOsNextDayStartCheckIn => 'Start check-in';
 
   @override
   String get dailyOsNextDayTitle => 'Din dag';
@@ -5712,14 +5742,6 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get dailyOsNextTimelineShowPaged => 'Vis swipebar plan og faktisk';
-
-  @override
-  String get dailyOsNextTimelineSwipeHint =>
-      'Swipe for actual · klem lodret for at zoome ind';
-
-  @override
-  String get dailyOsNextTimelineSwipeHintToPlan =>
-      'Swipe for plan · klem lodret for at zoome ind';
 
   @override
   String get dailyOsNextTimelineTracked => 'sporet';

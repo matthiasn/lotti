@@ -2231,9 +2231,11 @@
   "dailyOsNextActivityDeleteDialogTitle": "Eliminar esta gravação?",
   "dailyOsNextActivityDeleteRecording": "Eliminar",
   "dailyOsNextActivityEmpty": "Ainda sem gravações nem check-ins.",
+  "dailyOsNextActivityHandled": "Tratado",
   "dailyOsNextActivityLoadFailed": "A tua atividade guardada continua neste dispositivo, mas não foi possível carregá-la agora.",
   "dailyOsNextActivityMissingAudio": "Esta entrada foi mantida, mas o ficheiro de áudio não está disponível neste dispositivo. Restaura o ficheiro e tenta novamente.",
   "dailyOsNextActivityNeedsAttention": "Precisa de atenção",
+  "dailyOsNextActivityNeedsYou": "Espera por ti",
   "dailyOsNextActivityOpenAiSetup": "Abrir a configuração do Daily OS",
   "dailyOsNextActivityOpenSetup": "Abrir a configuração da transcrição",
   "dailyOsNextActivityPlanAvailable": "O teu plano do dia está disponível.",
@@ -2259,8 +2261,23 @@
       }
     }
   },
-  "dailyOsNextAgendaNoPlanBody": "Seu tempo monitorado está aqui de qualquer maneira - faça um check-in e eu elaborarei um rascunho do dia em torno dele.",
+  "dailyOsNextAgendaDoneRun": "{count, plural, =1{1 item concluído} other{{count} itens concluídos}}",
+  "@dailyOsNextAgendaDoneRun": {
+    "description": "Agenda summary row standing in for the day's finished items, folded together.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "5"
+      }
+    }
+  },
+  "dailyOsNextAgendaHideDone": "Ocultar itens concluídos",
   "dailyOsNextAgendaNoPlanTitle": "Nenhum plano ainda para hoje.",
+  "dailyOsNextAgendaNow": "Agora",
+  "@dailyOsNextAgendaNow": {
+    "description": "Marks the agenda row whose item is under way now, above its start time."
+  },
+  "dailyOsNextAgendaShowDone": "Mostrar itens concluídos",
   "dailyOsNextAgendaStateDone": "Concluído",
   "dailyOsNextAgendaStateInProgress": "Em andamento",
   "dailyOsNextAgendaStateOpen": "Abrir",
@@ -2372,6 +2389,20 @@
       }
     }
   },
+  "dailyOsNextBriefingMoreCategories": "+{count} mais {duration}",
+  "@dailyOsNextBriefingMoreCategories": {
+    "description": "Last entry of the capacity legend on a phone: the categories not named, and their time together.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "2"
+      },
+      "duration": {
+        "type": "String",
+        "example": "1h 30m"
+      }
+    }
+  },
   "dailyOsNextBriefingNext": "A seguir, às {time}: {title}.",
   "@dailyOsNextBriefingNext": {
     "placeholders": {
@@ -2383,7 +2414,7 @@
       }
     }
   },
-  "dailyOsNextBriefingNoPlan": "Ainda não há um plano para este dia. Um check-in rápido cria um.",
+  "dailyOsNextBriefingNoPlan": "Ainda não há um plano para este dia. Um check‑in rápido cria um.",
   "dailyOsNextBriefingNothingLeft": "Não há mais nada planeado para hoje.",
   "dailyOsNextBriefingOverCaption": "{duration} a mais",
   "@dailyOsNextBriefingOverCaption": {
@@ -2475,7 +2506,7 @@
   "dailyOsNextDayAgentStatusWorking": "A planear…",
   "dailyOsNextDayAgentTokensToday": "{tokens} tokens gastos a planear este dia",
   "dailyOsNextDayBack": "Voltar",
-  "dailyOsNextDayComposerCheckInHint": "Fala ou escreve um check-in",
+  "dailyOsNextDayComposerCheckInHint": "Fala ou escreve um check‑in",
   "dailyOsNextDayDeleteDialogBody": "Os blocos elaborados para este dia serão removidos. As capturas e suas gravações de áudio permanecem em seu diário.",
   "dailyOsNextDayDeleteDialogCancel": "Cancelar",
   "dailyOsNextDayDeleteDialogConfirm": "Excluir",
@@ -2502,6 +2533,7 @@
   "dailyOsNextDayRelationToday": "Hoje",
   "dailyOsNextDayRelationTomorrow": "Amanhã",
   "dailyOsNextDayRelationYesterday": "Ontem",
+  "dailyOsNextDayStartCheckIn": "Começar check-in",
   "dailyOsNextDayTitle": "Seu dia",
   "dailyOsNextDayWhyChipLabel": "Por quê",
   "dailyOsNextDayWrapUpCta": "Concluir",
@@ -2736,8 +2768,6 @@
   },
   "dailyOsNextTimelineShowBoth": "Mostrar o plano e o real juntos",
   "dailyOsNextTimelineShowPaged": "Mostrar plano deslizante e real",
-  "dailyOsNextTimelineSwipeHint": "Deslize para real · aperte verticalmente para ampliar",
-  "dailyOsNextTimelineSwipeHintToPlan": "Deslize para o plano · aperte verticalmente para ampliar",
   "dailyOsNextTimelineTracked": "rastreado",
   "dailyOsNextTimeSpentEarlierSessions": "{count, plural, one{1 sessão anterior} other{{count} sessões anteriores}}",
   "@dailyOsNextTimeSpentEarlierSessions": {
