@@ -306,6 +306,22 @@ void main() {
       expect(title, 'Renamed since');
     });
 
+    testWidgets('a read that fails is no live title, so the caller keeps its '
+        'snapshot', (tester) async {
+      final mocks = await setUpTestGetIt();
+      addTearDown(tearDownTestGetIt);
+      when(
+        () => mocks.journalDb.journalEntityById('task-broken'),
+      ).thenThrow(StateError('database unavailable'));
+      final ref = await pumpRef(tester);
+
+      final title = await tester.runAsync(
+        () => readLiveTaskTitle(ref, 'task-broken'),
+      );
+
+      expect(title, isNull);
+    });
+
     testWidgets('a blank id or a graph without the services reads nothing', (
       tester,
     ) async {

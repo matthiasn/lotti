@@ -4796,6 +4796,7 @@ class AppLocalizationsPt extends AppLocalizations {
       locale: localeName,
       other: '$count tratados',
       one: '$count tratado',
+      zero: '$count tratados',
     );
     return '$_temp0';
   }
@@ -4874,6 +4875,7 @@ class AppLocalizationsPt extends AppLocalizations {
       locale: localeName,
       other: '$count pendentes',
       one: '$count pendente',
+      zero: '$count pendentes',
     );
     return '$_temp0';
   }
@@ -4907,6 +4909,7 @@ class AppLocalizationsPt extends AppLocalizations {
       locale: localeName,
       other: 'Faltam $count · $duration',
       one: 'Falta $count · $duration',
+      zero: 'Faltam $count · $duration',
     );
     return '$_temp0';
   }
@@ -5025,6 +5028,7 @@ class AppLocalizationsPt extends AppLocalizations {
       locale: localeName,
       other: '$count concluídas',
       one: '$count concluída',
+      zero: '$count concluídas',
     );
     return '$_temp0';
   }

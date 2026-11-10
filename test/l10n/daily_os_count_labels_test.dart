@@ -62,6 +62,15 @@ void main() {
     });
   }
 
+  test('Portuguese counts zero in the plural, not as one', () {
+    // intl's Portuguese rule puts 0 in `one`; each caption names zero.
+    final pt = l('pt');
+    expect(pt.dailyOsNextActivityHandledCount(0), '0 tratados');
+    expect(pt.dailyOsNextActivityWaitingCount(0), '0 pendentes');
+    expect(pt.dailyOsNextAgendaLeft(0, '0m'), 'Faltam 0 · 0m');
+    expect(pt.dailyOsNextBriefingDoneCaption(0), '0 concluídas');
+  });
+
   test('the plural forms still read at many', () {
     expect(l('es').dailyOsNextActivityHandledCount(3), '3 gestionados');
     expect(l('fr').dailyOsNextBriefingMoreCategories(2), '+2 autres');

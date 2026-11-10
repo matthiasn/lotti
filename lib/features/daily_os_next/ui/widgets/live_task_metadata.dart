@@ -130,7 +130,8 @@ LiveTaskMetadata watchLiveTaskMetadata(WidgetRef ref, String? rawTaskId) {
 
 /// The live title of [rawTaskId], read once for a moment no build watches —
 /// a tap that acts on whatever is current then. Null when the id is blank,
-/// live task rows cannot be resolved, or the task has no title. The provider
+/// live task rows cannot be resolved, the read fails, or the task has no
+/// title. The provider
 /// is held for the read, so an auto-disposing family does not drop it
 /// mid-flight.
 Future<String?> readLiveTaskTitle(WidgetRef ref, String? rawTaskId) async {
@@ -142,6 +143,10 @@ Future<String?> readLiveTaskTitle(WidgetRef ref, String? rawTaskId) async {
   final hold = ref.listenManual(provider, (_, _) {});
   try {
     return (await ref.read(provider.future)).title;
+  } on Object {
+    // As [watchLiveTaskMetadata] does: a failed read is no live title, so
+    // the caller keeps the snapshot it has.
+    return null;
   } finally {
     hold.close();
   }
