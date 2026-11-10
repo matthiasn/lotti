@@ -69,6 +69,26 @@ void main() {
       );
     });
 
+    test('in progress is a status apart from a start: it sets no timer', () {
+      final inProgress = read({'title': 'x', 'inProgress': true})!;
+      expect(inProgress.inProgress, isTrue);
+      expect(inProgress.startedAt, isNull);
+
+      final started = read({'title': 'x', 'startedMinutesAgo': 0})!;
+      expect(started.inProgress, isFalse);
+      expect(started.startedAt, now);
+    });
+
+    test('in progress is only a true the model gave', () {
+      for (final value in <Object?>[null, false, 'true', 1]) {
+        expect(
+          read({'title': 'x', 'inProgress': value})!.inProgress,
+          isFalse,
+          reason: '$value',
+        );
+      }
+    });
+
     test('a follow-up stands only on a task the turn may name', () {
       expect(
         read({
@@ -125,7 +145,19 @@ void main() {
     expect(read.estimate, draft.estimate);
     expect(read.startedAt, draft.startedAt);
     expect(read.followsUpTaskId, 'task-roses');
+    expect(read.inProgress, isFalse);
+    expect(json.containsKey('inProgress'), isFalse);
     expect(FrontTaskDraft.fromJson({'title': ''}), isNull);
     expect(FrontTaskDraft.fromJson('nope'), isNull);
+  });
+
+  test('round-trips a draft in progress without a start', () {
+    const draft = FrontTaskDraft(title: 'Pack', inProgress: true);
+    final json = draft.toJson();
+    expect(json, {'title': 'Pack', 'inProgress': true});
+
+    final read = FrontTaskDraft.fromJson(json)!;
+    expect(read.inProgress, isTrue);
+    expect(read.startedAt, isNull);
   });
 }

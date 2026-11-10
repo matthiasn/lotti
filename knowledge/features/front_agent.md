@@ -902,7 +902,8 @@ flowchart LR
 | body | agent | `instructions`: what to do and how, without the turn's other topics |
 | category | agent | the category the user names, else her judgment from the work, the categories of `<conversation_tasks>` and what `<recent_turns>` were about — a task asked for in a conversation spent on one category's work, or its logged time, goes there, and her reply names it; left out only when the evidence points two ways or nowhere; dropped unless listed (and chosen, when the conversation is narrowed). Live eval scenarios `category_from_conversation` / `category_nowhere` |
 | priority, due day, estimate | agent, only when said | `P0`–`P3`, `YYYY-MM-DD`, minutes (≤ `frontTaskMaxEstimateMinutes`) |
-| status and timer | agent, only when said | `startedMinutesAgo` (0–`frontTaskMaxStartedMinutesAgo`): *in progress*, and a timer entry linked under the task from that instant, running |
+| status | agent, only when said | `inProgress`: *in progress*, and nothing more — "make it in progress" is a status, never a start |
+| timer | agent, only when a timer is asked for or a start is said | `startedMinutesAgo` (0–`frontTaskMaxStartedMinutesAgo`): *in progress*, and a timer entry linked under the task from that instant, running |
 | follows up on | agent, only for a follow-up | `followsUpTaskId`: a task in the index, a lookup this turn or `<conversation_tasks>`; anything else is dropped. Linked `followsUp` from the new task to it, and filed under its project |
 | task agent | category default | the category's `defaultTemplateId`; none without one |
 | provenance | always | the segment's verbatim words, a text entry linked under the task (`frontTaskWordsId`) |
@@ -916,8 +917,12 @@ workflow's `now`, handed to the strategy — so neither a slow inference nor a
 tap hours later moves when the user said the work began; a start after now
 runs from now. **Nothing is made without the tap**, asked for or only
 mentioned: the item waits in the inbox with its draft, and *Make it a task*
-makes the filled task under `frontDoorTaskId`. Without a stated start the
-task is open and no timer runs. *Undo* deletes the task and the copy of the
+makes the filled task under `frontDoorTaskId`. Without a stated start no
+timer runs, and the task is open unless the words put it in progress.
+Everything the user says about the task they ask for — its due day,
+priority, status, a timer — belongs to its one segment even as a sentence
+of its own (rule 10), so a trailing "make it due today and urgent" never
+becomes a second inbox item. *Undo* deletes the task and the copy of the
 words under it, and stops the timer running on it; the timer entry stays,
 as logged time does on any deleted task.
 

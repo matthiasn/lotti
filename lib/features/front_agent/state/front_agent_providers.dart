@@ -325,9 +325,10 @@ final frontTaskMakerProvider = Provider<FrontTaskMaker>(
 ///
 /// Once written, the user's [words] are filed under it as a linked text
 /// entry — where the task came from, and what its agent reads — a follow-up
-/// is linked `followsUp` to its task, a draft that says the work began puts
-/// it in progress with a timer running from that moment ([startTimer], on a
-/// linked entry starting then), and [assignAgent] hands it the category's
+/// is linked `followsUp` to its task, a draft that says the work is in
+/// progress makes it so, one that says when the work began also runs a
+/// timer from that moment ([startTimer], on a linked entry starting then),
+/// and [assignAgent] hands it the category's
 /// default agent, last, so the agent's first wake sees all of it.
 ///
 /// The creation path answers null for a rejected write, which for a
@@ -362,7 +363,9 @@ Future<Task?> makeFrontTask(
   final categoryId = draft.categoryId ?? followed?.meta.categoryId;
   final task = await persistence.createTaskEntry(
     data: TaskData(
-      status: taskStatusFromString(started == null ? '' : 'IN PROGRESS'),
+      status: taskStatusFromString(
+        draft.inProgress || started != null ? 'IN PROGRESS' : '',
+      ),
       title: draft.title,
       statusHistory: [],
       dateTo: now,

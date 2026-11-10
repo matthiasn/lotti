@@ -1322,6 +1322,28 @@ void main() {
       expect(timers.single.$1.meta.dateFrom, now);
     });
 
+    test('a draft in progress without a start is made in progress, and no '
+        'timer runs', () async {
+      stubCreation(written: true);
+      await make(const FrontTaskDraft(title: 'Pack', inProgress: true));
+      final data =
+          verify(
+                () => persistence.createTaskEntry(
+                  data: captureAny(named: 'data'),
+                  entryText: any(named: 'entryText'),
+                  categoryId: any(named: 'categoryId'),
+                  id: taskId,
+                ),
+              ).captured.single
+              as TaskData;
+      expect(data.status, isA<TaskInProgress>());
+      expect(timers, isEmpty);
+      final entries = verify(
+        () => persistence.createDbEntity(captureAny(), linkedId: taskId),
+      ).captured.cast<JournalEntity>();
+      expect(entries.map((e) => e.meta.id), [frontTaskWordsId(taskId)]);
+    });
+
     group('a follow-up', () {
       const followedId = 'task-followed';
       late List<String> events;

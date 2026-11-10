@@ -30,3 +30,10 @@
 - **Long-press a task card in her chat for quick actions.** *Change status…*,
   *Reschedule…* and *Move to project…* open the same pickers as the task's own
   page, without leaving the conversation. A right-click opens them on desktop.
+
+### Fixed
+- **Asking the companion for a task "in progress" no longer starts a timer.**
+  The task is made in progress, and a timer runs only when you ask for one
+  or say when you started.
+- **What you say about a new task stays with it.** "Create a task to pack.
+  Make it due today and urgent." is one task in her inbox, not two items.
