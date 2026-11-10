@@ -71,11 +71,11 @@ void main() {
           await tester.pump();
 
           expect(tester.takeException(), isNull);
-          final label = find.text('08:00-18:00');
+          final label = find.text('8 AM–6 PM');
           expect(label, findsOneWidget);
           // What the ellipsis takes at this size is still one long-press
           // away.
-          expect(findMaterialTooltip('08:00-18:00'), findsOneWidget);
+          expect(findMaterialTooltip('8 AM–6 PM'), findsOneWidget);
           final region = find.byKey(const Key('daily_os_timeline_fold_8_18'));
           final regionRect = tester.getRect(region);
           final labelRect = tester.getRect(label);
@@ -92,9 +92,9 @@ void main() {
       );
       await tester.pump();
 
-      final text = tester.widget<Text>(find.text('08:00-18:00'));
+      final text = tester.widget<Text>(find.text('8 AM–6 PM'));
       final paragraph = tester.renderObject<RenderParagraph>(
-        find.text('08:00-18:00'),
+        find.text('8 AM–6 PM'),
       );
       expect(text.overflow, TextOverflow.ellipsis);
       expect(paragraph.didExceedMaxLines, isFalse);
@@ -122,18 +122,21 @@ void main() {
       }
     });
 
-    testWidgets('a fold that runs to midnight is labelled 24:00', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        _layer(
-          state: _stateWithFold(expanded: false, startHour: 18, endHour: 24),
-          onToggle: (_) {},
-        ),
-      );
-      await tester.pump();
+    testWidgets(
+      'a fold that runs to midnight ends at 12 AM on a 12-hour clock',
+      (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          _layer(
+            state: _stateWithFold(expanded: false, startHour: 18, endHour: 24),
+            onToggle: (_) {},
+          ),
+        );
+        await tester.pump();
 
-      expect(find.text('18:00-24:00'), findsOneWidget);
-    });
+        expect(find.text('6 PM–12 AM'), findsOneWidget);
+      },
+    );
   });
 }

@@ -1,30 +1,33 @@
 import 'dart:math' as math;
 
+import 'package:lotti/features/daily_os_next/ui/widgets/day_row_scaffold.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline_folding.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// Formats an absolute hour-of-day marker for the timeline rail and the
-/// fold-region range labels, e.g. `08:00`. Hour `24` is the exclusive
-/// end-of-day marker and renders as `24:00`; any other value is taken
-/// modulo 24 so wrap-around inputs collapse onto a 24-hour clock.
-String formatTimelineHourLabel(int hour) {
-  final displayHour = hour == 24 ? 24 : hour % 24;
-  return '${displayHour.toString().padLeft(2, '0')}:00';
-}
-
-/// The now-marker's label, in the rail's own 24-hour notation — `15:20`.
+/// An hour-of-day marker for the timeline rail and the fold-region range
+/// labels, in the device's own clock, compactly: `1 PM` on a 12-hour device,
+/// `13` on a 24-hour one — the same clock every other time on the day page is
+/// read in (`formatClock`), without the minutes an hour mark does not need.
 ///
-/// Deliberately *not* the device-aware `formatClock`, unlike the block chips
-/// and diff rows. The now-marker is a member of the hour-label set rather than
-/// a piece of content: it is drawn in the same gutter, at the same type tier,
-/// and suppresses the hour label it would occlude, so it has to be spelled the
-/// way the surrounding axis is. It is also sized for that gutter — a 12-hour
-/// `3:20 PM` is wide enough to be clipped by the rail.
-String formatTimelineNowLabel(DateTime now) {
-  final h = now.hour.toString().padLeft(2, '0');
-  final m = now.minute.toString().padLeft(2, '0');
-  return '$h:$m';
+/// Hour `24` is the exclusive end of the day: `24` on a 24-hour clock, and
+/// `12 AM` on a 12-hour one, where its place at the bottom of the rail tells
+/// it from the midnight at the top. Any other value is taken modulo 24.
+String formatTimelineHourLabel(BuildContext context, int hour) {
+  final localizations = MaterialLocalizations.of(context);
+  final format = localizations.timeOfDayFormat(
+    alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(context),
+  );
+  final twelveHour =
+      format == TimeOfDayFormat.h_colon_mm_space_a ||
+      format == TimeOfDayFormat.a_space_h_colon_mm;
+  if (!twelveHour) return hour == 24 ? '24' : '${hour % 24}';
+  final time = TimeOfDay(hour: hour % 24, minute: 0);
+  final meridiem = time.period == DayPeriod.am
+      ? localizations.anteMeridiemAbbreviation
+      : localizations.postMeridiemAbbreviation;
+  final h = time.hourOfPeriod == 0 ? 12 : time.hourOfPeriod;
+  return '$h $meridiem';
 }
 
 class FoldRegionLayer extends StatelessWidget {
@@ -85,7 +88,7 @@ class _FoldRegionToggle extends StatelessWidget {
           onTap: onTap,
           child: _CompressedFoldSurface(
             region: region,
-            label: _formatFoldRange(region),
+            label: _formatFoldRange(context, region),
           ),
         ),
       );
@@ -125,7 +128,7 @@ class _FoldRegionToggle extends StatelessWidget {
               Center(
                 child: _FoldRangePill(
                   icon: LottiIcons.collapseBoth,
-                  label: _formatFoldRange(region),
+                  label: _formatFoldRange(context, region),
                 ),
               ),
             ],
@@ -135,13 +138,9 @@ class _FoldRegionToggle extends StatelessWidget {
     );
   }
 
-  String _formatFoldRange(TimelineFoldRegion region) {
-    // A fold region's start is always in [0, 23] and its end in [1, 24], so the
-    // shared formatter reproduces the previous per-bound behaviour: the start
-    // never hits the 24 special case, and the end renders 24 as `24:00`.
-    return '${formatTimelineHourLabel(region.startHour)}-'
-        '${formatTimelineHourLabel(region.endHour)}';
-  }
+  String _formatFoldRange(BuildContext context, TimelineFoldRegion region) =>
+      '${formatTimelineHourLabel(context, region.startHour)}–'
+      '${formatTimelineHourLabel(context, region.endHour)}';
 }
 
 class _CompressedFoldSurface extends StatelessWidget {
@@ -200,12 +199,12 @@ class _FoldRangePill extends StatelessWidget {
           horizontal: tokens.spacing.step2,
           vertical: tokens.spacing.step1,
         ),
+        // A control, so it reads as one: an opaque raised chip in the
+        // now-chip's pill shape, with medium-emphasis ink.
         decoration: BoxDecoration(
-          color: tokens.colors.background.level03.withValues(alpha: 0.88),
-          borderRadius: BorderRadius.circular(tokens.radii.xs),
-          border: Border.all(
-            color: tokens.colors.decorative.level01.withValues(alpha: 0.32),
-          ),
+          color: tokens.colors.background.level03,
+          borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
+          border: Border.all(color: tokens.colors.decorative.level02),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -213,7 +212,7 @@ class _FoldRangePill extends StatelessWidget {
             Icon(
               icon,
               size: tokens.spacing.step3,
-              color: tokens.colors.text.lowEmphasis,
+              color: tokens.colors.text.mediumEmphasis,
             ),
             SizedBox(width: tokens.spacing.step1),
             Flexible(
@@ -222,7 +221,8 @@ class _FoldRangePill extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: tokens.typography.styles.others.caption.copyWith(
-                  color: tokens.colors.text.lowEmphasis,
+                  color: tokens.colors.text.mediumEmphasis,
+                  fontFeatures: dayFigures,
                 ),
               ),
             ),

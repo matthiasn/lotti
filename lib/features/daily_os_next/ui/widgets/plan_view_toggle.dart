@@ -25,9 +25,11 @@ class PlanViewToggle extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
+        // Words say what each view is; glyphs stand in only where large text
+        // or a 320 pt phone's slot leaves no room for all three labels.
         final useIcons =
             MediaQuery.textScalerOf(context).scale(1) > 1.3 ||
-            constraints.maxWidth < 400;
+            constraints.maxWidth < 340;
         return DsSegmentedToggle<PlanView>(
           selected: selected,
           onChanged: onChanged,

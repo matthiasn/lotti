@@ -7,10 +7,10 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:glados/glados.dart' as glados;
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/ui/category_color.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/day_row_scaffold.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline_fold_surface.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/editable_title.dart';
@@ -141,6 +141,17 @@ TimeBlock _timeBlock({
   );
 }
 
+/// The lane the phone's Plan · Actual names mark as shown: 0 planned, 1
+/// actual — the name flagged selected.
+int _laneShown(WidgetTester tester) => [0, 1].singleWhere(
+  (lane) =>
+      tester
+          .widget<Semantics>(find.byKey(Key('daily_os_timeline_lane_$lane')))
+          .properties
+          .selected ??
+      false,
+);
+
 /// Sizes the physical test surface and registers the reset teardown —
 /// shared by every test in this file.
 void _setView(WidgetTester tester, Size size) {
@@ -229,7 +240,11 @@ void main() {
       // One title per block on the timeline.
       expect(find.text('Deep work'), findsOneWidget);
       expect(find.text('Buffer'), findsOneWidget);
-      expect(find.text('Team sync'), findsOneWidget);
+      // A short block leads with its time, so its title sits in rich text.
+      expect(
+        find.textContaining('Team sync', findRichText: true),
+        findsOneWidget,
+      );
       expect(find.text('HIGH ENERGY'), findsNothing);
     });
 
@@ -654,10 +669,8 @@ void main() {
       expect(find.text(messages.dailyOsNextTimelinePlanned), findsOneWidget);
       expect(find.text(messages.dailyOsNextTimelineActual), findsOneWidget);
       expect(find.byType(PageView), findsNothing);
-      expect(
-        findMaterialTooltip(messages.dailyOsNextTimelineShowPaged),
-        findsOneWidget,
-      );
+      // Side by side the switch to one lane says so in words.
+      expect(find.text(messages.dailyOsNextTimelineOneLane), findsOneWidget);
     });
 
     testWidgets('compact layouts keep the swipeable plan-first view', (
@@ -679,7 +692,7 @@ void main() {
       final messages = tester.element(find.byType(DayTimeline)).messages;
       expect(find.byType(PageView), findsOneWidget);
       expect(
-        findMaterialTooltip(messages.dailyOsNextTimelineShowBoth),
+        find.text(messages.dailyOsNextTimelineBothLanes),
         findsOneWidget,
       );
     });
@@ -772,14 +785,14 @@ void main() {
         const Key('daily_os_timeline_fold_9_16'),
       );
       expect(foldedGap, findsOneWidget);
-      expect(find.text('09:00-16:00'), findsOneWidget);
-      expect(find.text('12:00'), findsNothing);
+      expect(find.text('9–16'), findsOneWidget);
+      expect(find.text('12'), findsNothing);
 
       await tester.tap(foldedGap.first);
       await tester.pump();
 
-      expect(find.text('09:00-16:00'), findsOneWidget);
-      expect(find.text('12:00'), findsOneWidget);
+      expect(find.text('9–16'), findsOneWidget);
+      expect(find.text('12'), findsOneWidget);
     });
 
     testWidgets('uses one sticky time rail for plan and actual', (
@@ -800,13 +813,16 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.text('09:00'), findsOneWidget);
-      expect(find.text('10:00'), findsOneWidget);
+      expect(find.text('9'), findsOneWidget);
+      expect(find.text('10'), findsOneWidget);
       expect(find.text('Deep work'), findsOneWidget);
-      expect(find.text('Deep work actual'), findsOneWidget);
+      expect(
+        find.textContaining('Deep work actual', findRichText: true),
+        findsOneWidget,
+      );
 
       final tokens = tester.element(find.byType(DayTimeline)).designTokens;
-      final hourLabel = tester.widget<Text>(find.text('09:00'));
+      final hourLabel = tester.widget<Text>(find.text('9'));
       expect(
         hourLabel.style?.fontSize,
         tokens.typography.styles.others.caption.fontSize,
@@ -839,28 +855,27 @@ void main() {
         // The bug: the chip built `HH:mm` by hand, so it read "08:30–10:00"
         // on every device — and disagreed with the diff row proposing it,
         // which was hard-wired the other way.
-        expect(find.text('8:30 AM–10:00 AM'), findsOneWidget);
+        expect(find.text('8:30–10:00 AM'), findsOneWidget);
         expect(find.text('08:30–10:00'), findsNothing);
       });
 
-      testWidgets('the hour rail stays a 24-hour axis', (tester) async {
+      testWidgets('the hour rail follows a 12-hour device too', (tester) async {
         await pumpAt12Hour(tester);
 
-        // Deliberate: the rail's `24:00` end-of-day marker has no 12-hour
-        // spelling a reader could tell apart from midnight, so the axis keeps
-        // one fixed notation even when the chips on it do not.
-        expect(find.text('09:00'), findsOneWidget);
-        expect(find.text('10:00'), findsOneWidget);
+        // One clock on the page: the rail reads the device's clock,
+        // compacted to the hour.
+        expect(find.text('9 AM'), findsOneWidget);
+        expect(find.text('10 AM'), findsOneWidget);
+        expect(find.text('09:00'), findsNothing);
       });
 
-      testWidgets('the now-marker stays in the rail notation', (tester) async {
+      testWidgets('the now-marker reads the device clock', (tester) async {
         await pumpAt12Hour(tester);
 
-        // The now-marker substitutes for an hour label, so it follows the
-        // axis rather than the device. Making it device-aware also clipped
-        // it: `9:35 AM` is wider than the rail gutter it is positioned in.
-        expect(find.text('09:35'), findsAtLeastNWidgets(1));
-        expect(find.text('9:35 AM'), findsNothing);
+        // The rail is wide enough for the 12-hour reading.
+        expect(find.text('9:35 AM'), findsAtLeastNWidgets(1));
+        expect(find.text('09:35'), findsNothing);
+        expect(tester.takeException(), isNull);
       });
     });
 
@@ -882,8 +897,8 @@ void main() {
       await tester.pump();
 
       expect(find.text('09:55'), findsAtLeastNWidgets(1));
-      expect(find.text('10:00'), findsNothing);
-      expect(find.text('09:00'), findsOneWidget);
+      expect(find.text('10'), findsNothing);
+      expect(find.text('9'), findsOneWidget);
     });
 
     testWidgets('folded timelines still span midnight to midnight', (
@@ -919,8 +934,8 @@ void main() {
         find.byKey(const Key('daily_os_timeline_fold_9_24')),
         findsOneWidget,
       );
-      expect(find.text('00:00-08:00'), findsOneWidget);
-      expect(find.text('09:00-24:00'), findsOneWidget);
+      expect(find.text('0–8'), findsOneWidget);
+      expect(find.text('9–24'), findsOneWidget);
     });
 
     testWidgets('folds a long gap caused by actual blocks', (tester) async {
@@ -957,7 +972,7 @@ void main() {
         find.byKey(const Key('daily_os_timeline_fold_9_16')),
         findsOneWidget,
       );
-      expect(find.text('09:00-16:00'), findsOneWidget);
+      expect(find.text('9–16'), findsOneWidget);
       expect(find.text('Actual morning'), findsOneWidget);
       expect(find.text('Actual late'), findsOneWidget);
     });
@@ -977,7 +992,7 @@ void main() {
       );
       await tester.pump();
 
-      final tenAm = find.text('10:00').first;
+      final tenAm = find.text('10').first;
       final before = tester.getTopLeft(tenAm).dy;
       final center = tester.getCenter(find.byType(DayTimeline));
       final firstFinger = await tester.createGesture(pointer: 101);
@@ -1011,7 +1026,7 @@ void main() {
       );
       await tester.pump();
 
-      final tenAm = find.text('10:00').first;
+      final tenAm = find.text('10').first;
       final before = tester.getTopLeft(tenAm).dy;
       final center = tester.getCenter(find.byType(DayTimeline));
 
@@ -1061,7 +1076,11 @@ void main() {
           .widget<SingleChildScrollView>(timelineScroll)
           .controller!;
       final planBefore = tester.getTopLeft(find.text('Deep work')).dy;
-      final actualBefore = tester.getTopLeft(find.text('Deep work actual')).dy;
+      final actualBefore = tester
+          .getTopLeft(
+            find.textContaining('Deep work actual', findRichText: true),
+          )
+          .dy;
 
       controller.jumpTo(120);
       await tester.pump();
@@ -1072,7 +1091,11 @@ void main() {
         lessThan(planBefore),
       );
       expect(
-        tester.getTopLeft(find.text('Deep work actual')).dy,
+        tester
+            .getTopLeft(
+              find.textContaining('Deep work actual', findRichText: true),
+            )
+            .dy,
         lessThan(actualBefore),
       );
     });
@@ -1115,6 +1138,56 @@ void main() {
     });
 
     testWidgets(
+      'the Plan | Actual switch turns the pager to the lane it names',
+      (tester) async {
+        _setView(tester, const Size(430, 900));
+        await tester.pumpWidget(
+          _wrap(
+            DayTimeline(
+              draft: _draft(),
+              clock: () => DateTime(2026, 5, 25, 9, 15),
+            ),
+            size: const Size(430, 900),
+          ),
+        );
+        await tester.pump();
+        final messages = tester.element(find.byType(DayTimeline)).messages;
+        final pager = tester.widget<PageView>(find.byType(PageView));
+        expect(_laneShown(tester), 0);
+
+        await tester.tap(
+          find
+              .descendant(
+                of: find.byKey(const Key('daily_os_timeline_lane_toggle')),
+                // The segment sets its label twice, one copy only to hold
+                // its width; both sit on the same spot.
+                matching: find.text(messages.dailyOsNextTimelineActual),
+              )
+              .first,
+        );
+        await tester.pumpAndSettle();
+
+        expect(pager.controller!.page, greaterThan(0.5));
+        expect(_laneShown(tester), 1);
+
+        await tester.tap(
+          find
+              .descendant(
+                of: find.byKey(const Key('daily_os_timeline_lane_toggle')),
+                // The segment sets its label twice, one copy only to hold
+                // its width; both sit on the same spot.
+                matching: find.text(messages.dailyOsNextTimelinePlanned),
+              )
+              .first,
+        );
+        await tester.pumpAndSettle();
+
+        expect(pager.controller!.page, lessThan(0.5));
+        expect(_laneShown(tester), 0);
+      },
+    );
+
+    testWidgets(
       'toolbarLeading takes the hint slot before the mode toggle and '
       'toolbarTrailing follows it; both are absent by default',
       (tester) async {
@@ -1133,10 +1206,7 @@ void main() {
         final messages = tester.element(find.byType(DayTimeline)).messages;
         expect(find.byKey(const Key('leading_probe')), findsNothing);
         expect(find.byKey(const Key('trailing_probe')), findsNothing);
-        expect(
-          find.text(messages.dailyOsNextTimelineSwipeHint),
-          findsOneWidget,
-        );
+        expect(_laneShown(tester), 0);
 
         await tester.pumpWidget(
           _wrap(
@@ -1164,7 +1234,7 @@ void main() {
           find.byKey(const Key('trailing_probe')),
         );
         final toggle = tester.getRect(
-          findMaterialTooltip(messages.dailyOsNextTimelineShowBoth),
+          find.text(messages.dailyOsNextTimelineBothLanes),
         );
         // Same row (vertical overlap): leading, then the toggle, then
         // trailing.
@@ -1174,10 +1244,13 @@ void main() {
         expect(leading.bottom, greaterThan(toggle.top));
         expect(trailing.top, lessThan(toggle.bottom));
         expect(trailing.bottom, greaterThan(toggle.top));
-        // The leading slot sits at the row's start, where the hint was, and
-        // the hint yields to it.
+        // The leading slot sits at the row's start, where the lane switch
+        // was, and the switch yields to it.
         expect(leading.left, lessThan(toggle.left - leading.width));
-        expect(find.text(messages.dailyOsNextTimelineSwipeHint), findsNothing);
+        expect(
+          find.byKey(const Key('daily_os_timeline_lane_toggle')),
+          findsNothing,
+        );
         // The timeline itself starts below the toolbar.
         expect(
           tester.getRect(find.byType(PageView)).top,
@@ -1222,7 +1295,6 @@ void main() {
         await tester.pump();
         await tester.pump();
 
-        final messages = tester.element(find.byType(DayTimeline)).messages;
         final pageView = tester.widget<PageView>(find.byType(PageView));
         expect(pageView.controller!.initialPage, 1);
         // The peeking page fraction settles the last page short of 1.0; what
@@ -1233,11 +1305,7 @@ void main() {
         );
         expect(actualPane.left, greaterThanOrEqualTo(0));
         expect(actualPane.right, lessThanOrEqualTo(430));
-        expect(
-          find.text(messages.dailyOsNextTimelineSwipeHintToPlan),
-          findsOneWidget,
-        );
-        expect(find.text(messages.dailyOsNextTimelineSwipeHint), findsNothing);
+        expect(_laneShown(tester), 1);
         expect(learned, 0, reason: 'opening on a lane is not a swipe');
 
         // Swiping back to the planned lane is the demonstration.
@@ -1254,7 +1322,7 @@ void main() {
     // provider is still loading; the real plan arrives into the same State.
     testWidgets(
       'a plan arriving after an empty first frame moves the pager to the '
-      'planned lane, the coaching line follows, and it is not a swipe',
+      'planned lane, the lane switch follows, and it is not a swipe',
       (tester) async {
         _setView(tester, const Size(430, 900));
         var learned = 0;
@@ -1271,26 +1339,15 @@ void main() {
           timeline(_draftWithBlocks(blocks: const [])),
         );
         await tester.pump();
-        final messages = tester.element(find.byType(DayTimeline)).messages;
         final pageView = tester.widget<PageView>(find.byType(PageView));
         expect(pageView.controller!.page, greaterThan(0.5));
-        expect(
-          find.text(messages.dailyOsNextTimelineSwipeHintToPlan),
-          findsOneWidget,
-        );
+        expect(_laneShown(tester), 1);
 
         await tester.pumpWidget(timeline(_draft()));
         await tester.pump();
 
         expect(pageView.controller!.page, 0);
-        expect(
-          find.text(messages.dailyOsNextTimelineSwipeHint),
-          findsOneWidget,
-        );
-        expect(
-          find.text(messages.dailyOsNextTimelineSwipeHintToPlan),
-          findsNothing,
-        );
+        expect(_laneShown(tester), 0);
         expect(learned, 0, reason: 'a programmatic jump is not a swipe');
       },
     );
@@ -1318,12 +1375,8 @@ void main() {
         );
         await tester.pump();
 
-        final messages = tester.element(find.byType(DayTimeline)).messages;
         expect(pageView.controller!.page, greaterThan(0.5));
-        expect(
-          find.text(messages.dailyOsNextTimelineSwipeHintToPlan),
-          findsOneWidget,
-        );
+        expect(_laneShown(tester), 1);
       },
     );
 
@@ -1345,16 +1398,11 @@ void main() {
       );
       await tester.pump();
 
-      final messages = tester.element(find.byType(DayTimeline)).messages;
       expect(
         tester.widget<PageView>(find.byType(PageView)).controller!.initialPage,
         0,
       );
-      expect(find.text(messages.dailyOsNextTimelineSwipeHint), findsOneWidget);
-      expect(
-        find.text(messages.dailyOsNextTimelineSwipeHintToPlan),
-        findsNothing,
-      );
+      expect(_laneShown(tester), 0);
       expect(learned, 0);
     });
 
@@ -1417,26 +1465,29 @@ void main() {
 
       // Compact screen starts in paged mode → button tooltip says "show both".
       expect(
-        findMaterialTooltip(messages.dailyOsNextTimelineShowBoth),
+        find.text(messages.dailyOsNextTimelineBothLanes),
         findsOneWidget,
       );
       expect(find.byType(PageView), findsOneWidget);
 
       // Tap toggles to "both" side-by-side mode.
       await tester.tap(
-        findMaterialTooltip(messages.dailyOsNextTimelineShowBoth),
+        find.text(messages.dailyOsNextTimelineBothLanes),
       );
       await tester.pump();
 
       expect(find.byType(PageView), findsNothing);
+      // Both lanes on a phone leave each lane too narrow for a worded
+      // button: the glyph, with its words as the tooltip.
+      expect(find.text(messages.dailyOsNextTimelineOneLane), findsNothing);
       expect(
-        findMaterialTooltip(messages.dailyOsNextTimelineShowPaged),
+        findMaterialTooltip(messages.dailyOsNextTimelineOneLane),
         findsOneWidget,
       );
 
       // Tap again goes back to paged.
       await tester.tap(
-        findMaterialTooltip(messages.dailyOsNextTimelineShowPaged),
+        findMaterialTooltip(messages.dailyOsNextTimelineOneLane),
       );
       await tester.pump();
 
@@ -1505,7 +1556,7 @@ void main() {
       );
       await tester.pump();
 
-      final tenAmBefore = tester.getTopLeft(find.text('10:00').first).dy;
+      final tenAmBefore = tester.getTopLeft(find.text('10').first).dy;
 
       // Rebuild with a larger pxPerMinute → blocks spread further apart.
       await tester.pumpWidget(
@@ -1520,13 +1571,13 @@ void main() {
       );
       await tester.pump();
 
-      final tenAmAfter = tester.getTopLeft(find.text('10:00').first).dy;
+      final tenAmAfter = tester.getTopLeft(find.text('10').first).dy;
       expect(tenAmAfter, greaterThan(tenAmBefore));
     });
 
     testWidgets(
       'tracked blocks are the alive treatment: full category stripe and '
-      'fill, green check when done, mono time range, no why affordance',
+      'fill, green check when done, caption time range, no why affordance',
       (tester) async {
         _setView(tester, const Size(1280, 900));
 
@@ -1580,10 +1631,14 @@ void main() {
         expect(find.byIcon(LottiIcons.confirm), findsOneWidget);
         // Tracked blocks never surface agent reasoning.
         expect(find.byIcon(LottiIcons.aiSpark), findsNothing);
-        // The mono time range carries the recorded voice (no suffix —
-        // the lane header already says Actual).
+        // The time range is in the page's caption voice, with the shared
+        // figures (no suffix — the lane header already says Actual).
         final subtitle = tester.widget<Text>(find.text('09:00\u201310:30'));
-        expect(subtitle.style?.fontFamily, 'Inconsolata');
+        expect(
+          subtitle.style?.fontSize,
+          tokens.typography.styles.others.caption.fontSize,
+        );
+        expect(subtitle.style?.fontFeatures, dayFigures);
       },
     );
 
@@ -1685,8 +1740,9 @@ void main() {
         );
         await tester.pump();
 
-        // Task-linked block carries the small info link icon.
-        expect(find.byIcon(LottiIcons.link), findsOneWidget);
+        // A task-linked block carries no link glyph: standalone is the
+        // unmarked default and linked blocks are not badged either.
+        expect(find.byIcon(LottiIcons.link), findsNothing);
         // Three pencils, not two: the two plan blocks plus the standalone
         // title's inline rename. Material drew them `edit_rounded` and
         // `edit_outlined`, so counting blocks alone used to work; Lucide has
@@ -2353,7 +2409,11 @@ void main() {
       expect(
         dashedColor(),
         categoryColorFromHex('A855F7').withValues(
-          alpha: kTimelinePlannedAccentAlpha,
+          alpha: timelinePlannedOutlineAlpha(
+            isLight:
+                Theme.of(tester.element(find.byType(DayTimeline))).brightness ==
+                Brightness.light,
+          ),
         ),
       );
     });
@@ -2577,11 +2637,11 @@ void main() {
         await tester.pump();
 
         // When the gap between start(0) and cluster.startHour(1) is < 4,
-        // the cluster is extended back to 0, so "00:00" should be visible.
-        expect(find.text('00:00'), findsOneWidget);
+        // the cluster is extended back to 0, so the "0" label should show.
+        expect(find.text('0'), findsOneWidget);
         // When the gap between cluster.endHour(23) and end(24) is < 4,
-        // the cluster is extended to 24, so "24:00" should appear.
-        expect(find.text('24:00'), findsOneWidget);
+        // the cluster is extended to 24, so the "24" end label should show.
+        expect(find.text('24'), findsOneWidget);
       },
     );
 
@@ -2624,16 +2684,16 @@ void main() {
         await tester.pumpWidget(_wrap(DayTimeline(draft: draft)));
         await tester.pump();
 
-        // The red now-badge (bold, error colour) carries the live HH:mm. Read
-        // it back from the tree instead of recomputing, so a minute rollover
-        // mid-test cannot make the assertion flaky.
+        // The teal now-badge (semibold, on-interactive ink) carries the live
+        // HH:mm. Read it back from the tree instead of recomputing, so a
+        // minute rollover mid-test cannot make the assertion flaky.
         final tokens = tester.element(find.byType(DayTimeline)).designTokens;
-        final errorColor = tokens.colors.alert.error.ink;
+        final badgeInk = tokens.colors.text.onInteractiveAlert;
         Finder nowBadge() => find.byWidgetPredicate(
           (w) =>
               w is Text &&
-              w.style?.color == errorColor &&
-              w.style?.fontWeight == tokens.typography.weight.bold,
+              w.style?.color == badgeInk &&
+              w.style?.fontWeight == tokens.typography.weight.semiBold,
         );
 
         expect(nowBadge(), findsOneWidget);
@@ -2708,43 +2768,149 @@ void main() {
         expect(find.byType(PageView), findsOneWidget);
         final messages = tester.element(find.byType(DayTimeline)).messages;
         expect(
-          findMaterialTooltip(messages.dailyOsNextTimelineShowBoth),
+          find.text(messages.dailyOsNextTimelineBothLanes),
           findsOneWidget,
         );
       },
     );
   });
 
-  group('formatTimelineHourLabel', () {
-    test('renders the exclusive end-of-day marker as 24:00, not 00:00', () {
-      // The 24 special case is the whole reason the formatter is not a plain
-      // `hour % 24` — fold ranges and the rail label use 24 to mean
-      // "end of day". Regressing this would collapse 24:00 to 00:00.
-      expect(formatTimelineHourLabel(24), '24:00');
-      expect(formatTimelineHourLabel(0), '00:00');
-      expect(formatTimelineHourLabel(9), '09:00');
-      expect(formatTimelineHourLabel(13), '13:00');
+  group('DayTimeline paint', () {
+    Future<DsTokens> pumpAt(WidgetTester tester, DateTime now) async {
+      _setView(tester, const Size(1280, 1200));
+      await tester.pumpWidget(
+        _wrap(DayTimeline(draft: _draft(), clock: () => now)),
+      );
+      await tester.pump();
+      return tester.element(find.byType(DayTimeline)).designTokens;
+    }
+
+    testWidgets('the now-line is teal, not an alarm', (tester) async {
+      final tokens = await pumpAt(tester, DateTime(2026, 5, 25, 11, 7));
+
+      final lines = tester.widgetList<ColoredBox>(
+        find.descendant(
+          of: find.byType(NowLine),
+          matching: find.byType(ColoredBox),
+        ),
+      );
+      expect(lines, isNotEmpty);
+      for (final line in lines) {
+        expect(line.color, tokens.colors.interactive.enabled);
+      }
     });
 
-    glados.Glados<int>(
-      glados.any.intInRange(0, 25),
-      glados.ExploreConfig(numRuns: 120),
-    ).test(
-      'always formats as HH:00 with a zero-padded hour in [00, 24]',
-      (hour) {
-        final label = formatTimelineHourLabel(hour);
+    testWidgets('the now time sits in a teal pill in on-interactive ink', (
+      tester,
+    ) async {
+      final tokens = await pumpAt(tester, DateTime(2026, 5, 25, 11, 7));
 
-        // Shape: exactly two digits, a colon, then the literal minutes 00.
-        expect(RegExp(r'^\d{2}:00$').hasMatch(label), isTrue);
+      final label = find.text('11:07');
+      expect(label, findsOneWidget);
+      expect(
+        tester.widget<Text>(label).style?.color,
+        tokens.colors.text.onInteractiveAlert,
+      );
+      final pill = tester.widget<Container>(
+        find.ancestor(of: label, matching: find.byType(Container)).first,
+      );
+      final decoration = pill.decoration! as BoxDecoration;
+      expect(decoration.color, tokens.colors.interactive.enabled);
+      expect(
+        decoration.borderRadius,
+        BorderRadius.circular(tokens.radii.badgesPills),
+      );
+    });
 
-        final displayHour = int.parse(label.substring(0, 2));
-        // 24 stays 24 (end-of-day); every other value is on a 24-hour clock.
-        final expected = hour == 24 ? 24 : hour % 24;
-        expect(displayHour, expected);
-        expect(displayHour, inInclusiveRange(0, 24));
-      },
-      tags: 'glados',
-    );
+    testWidgets('hour lines are decorative hairlines', (tester) async {
+      final tokens = await pumpAt(tester, DateTime(2026, 5, 25, 11, 7));
+
+      final hairlines = tester
+          .widgetList<Container>(find.byType(Container))
+          .where((c) => c.color == tokens.colors.decorative.level01);
+      expect(hairlines, isNotEmpty);
+      expect(
+        tester
+            .widgetList<Container>(find.byType(Container))
+            .where(
+              (c) =>
+                  c.color ==
+                  tokens.colors.text.lowEmphasis.withValues(alpha: 0.10),
+            ),
+        isEmpty,
+      );
+    });
+  });
+
+  group('formatTimelineHourLabel', () {
+    Future<BuildContext> contextFor(
+      WidgetTester tester, {
+      required bool use24Hour,
+    }) async {
+      late BuildContext captured;
+      await tester.pumpWidget(
+        makeTestableWidget2(
+          Builder(
+            builder: (context) {
+              captured = context;
+              return const SizedBox.shrink();
+            },
+          ),
+          mediaQueryData: MediaQueryData(alwaysUse24HourFormat: use24Hour),
+        ),
+      );
+      return captured;
+    }
+
+    testWidgets('a 24-hour device reads the bare hour, 24 for the end', (
+      tester,
+    ) async {
+      final context = await contextFor(tester, use24Hour: true);
+
+      expect(formatTimelineHourLabel(context, 0), '0');
+      expect(formatTimelineHourLabel(context, 9), '9');
+      expect(formatTimelineHourLabel(context, 13), '13');
+      expect(formatTimelineHourLabel(context, 24), '24');
+    });
+
+    testWidgets('a 12-hour device reads the hour and its half of the day', (
+      tester,
+    ) async {
+      final context = await contextFor(tester, use24Hour: false);
+
+      expect(formatTimelineHourLabel(context, 0), '12 AM');
+      expect(formatTimelineHourLabel(context, 9), '9 AM');
+      expect(formatTimelineHourLabel(context, 12), '12 PM');
+      expect(formatTimelineHourLabel(context, 13), '1 PM');
+      // The end of the day: its place at the bottom of the rail tells it
+      // from the midnight at the top.
+      expect(formatTimelineHourLabel(context, 24), '12 AM');
+    });
+
+    testWidgets('every hour of the day has one well-formed label per clock', (
+      tester,
+    ) async {
+      final h24 = await contextFor(tester, use24Hour: true);
+      final labels24 = [
+        for (var hour = 0; hour <= 24; hour++)
+          formatTimelineHourLabel(h24, hour),
+      ];
+      expect(labels24, [for (var hour = 0; hour <= 24; hour++) '$hour']);
+
+      final h12 = await contextFor(tester, use24Hour: false);
+      for (var hour = 0; hour <= 24; hour++) {
+        expect(
+          formatTimelineHourLabel(h12, hour),
+          matches(RegExp(r'^(1[0-2]|[1-9]) (AM|PM)$')),
+        );
+      }
+    });
+
+    testWidgets('a wrap-around hour is read modulo 24', (tester) async {
+      final context = await contextFor(tester, use24Hour: true);
+
+      expect(formatTimelineHourLabel(context, 25), '1');
+    });
   });
 
   group('DayBlock height tiers', () {
@@ -3422,6 +3588,329 @@ void main() {
       expect(pixel(raster, 1, 4), canvas);
       expect(pixel(raster, 1, 30), isNot(canvas));
       expect(pixel(raster, 1, 30), isNot(categoryColorFromHex(_work.colorHex)));
+    });
+  });
+
+  group('DayTimeline block cues', () {
+    final day = DateTime(2026, 5, 25);
+    TimeBlock block(
+      String id,
+      int startHour,
+      int startMinute,
+      int minutes, {
+      TimeBlockState state = TimeBlockState.drafted,
+      TimeBlockType type = TimeBlockType.manual,
+      String? reason,
+    }) {
+      final start = day.add(Duration(hours: startHour, minutes: startMinute));
+      return TimeBlock(
+        id: id,
+        title: 'Block $id',
+        start: start,
+        end: start.add(Duration(minutes: minutes)),
+        type: type,
+        state: state,
+        category: _work,
+        reason: reason,
+      );
+    }
+
+    Future<List<String>> pumpDay(
+      WidgetTester tester, {
+      required DateTime now,
+      List<TimeBlock> planned = const [],
+      List<TimeBlock> recorded = const [],
+    }) async {
+      final edited = <String>[];
+      _setView(tester, const Size(1280, 1200));
+      await tester.pumpWidget(
+        _wrap(
+          DayTimeline(
+            draft: _draftWithBlocks(blocks: planned, actualBlocks: recorded),
+            onEditBlock: (b) => edited.add(b.id),
+            clock: () => now,
+          ),
+        ),
+      );
+      await tester.pump();
+      return edited;
+    }
+
+    Finder inBlock(String id, Finder matching) => find.descendant(
+      of: find.byKey(Key('daily_os_day_block_$id')),
+      matching: matching,
+    );
+
+    testWidgets("a recording still running leads with the rows' Now", (
+      tester,
+    ) async {
+      await pumpDay(
+        tester,
+        recorded: [
+          block('live', 9, 0, 40, state: TimeBlockState.inProgress),
+          block('done', 7, 0, 60, state: TimeBlockState.completed),
+        ],
+        now: day.add(const Duration(hours: 9, minutes: 30)),
+      );
+      final messages = tester.element(find.byType(DayTimeline)).messages;
+      final now = find.textContaining(
+        messages.dailyOsNextAgendaNow,
+        findRichText: true,
+      );
+
+      expect(inBlock('live', now), findsOneWidget);
+      expect(inBlock('done', now), findsNothing);
+    });
+
+    testWidgets(
+      'a block too short for its time on its own line leads with it',
+      (tester) async {
+        await pumpDay(
+          tester,
+          planned: [block('short', 9, 0, 30), block('tall', 11, 0, 120)],
+          now: day.add(const Duration(hours: 8)),
+        );
+
+        expect(
+          inBlock('short', find.textContaining('09:00', findRichText: true)),
+          findsOneWidget,
+        );
+        // A tall block keeps the plain title and its range beneath.
+        expect(inBlock('tall', find.text('Block tall')), findsOneWidget);
+        expect(inBlock('tall', find.text('11:00–13:00')), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'planned blocks still to come read at full strength; past ones recede',
+      (tester) async {
+        await pumpDay(
+          tester,
+          planned: [block('past', 8, 0, 60), block('next', 14, 0, 60)],
+          now: day.add(const Duration(hours: 12)),
+        );
+        final tokens = tester.element(find.byType(DayTimeline)).designTokens;
+        Color? ink(String id) => tester
+            .widget<Text>(inBlock(id, find.text('Block $id')))
+            .style
+            ?.color;
+
+        expect(ink('next'), tokens.colors.text.highEmphasis);
+        expect(ink('past'), tokens.colors.text.mediumEmphasis);
+      },
+    );
+
+    testWidgets(
+      "the pencil's target is the block's top-end corner, a tap target "
+      'tall, and opens the editor',
+      (tester) async {
+        final edited = await pumpDay(
+          tester,
+          planned: [block('edit', 9, 0, 120, type: TimeBlockType.ai)],
+          now: day.add(const Duration(hours: 8)),
+        );
+        final tokens = tester.element(find.byType(DayTimeline)).designTokens;
+        final target = find.byKey(const Key('daily_os_edit_block_edit'));
+        final card = tester.getRect(
+          find.byKey(const Key('daily_os_day_block_edit')),
+        );
+        final rect = tester.getRect(target);
+
+        expect(rect.topRight, card.topRight);
+        expect(rect.height, TapTargets.minimum);
+        expect(
+          rect.width,
+          tokens.spacing.step3 +
+              tokens.typography.size.bodySmall +
+              tokens.spacing.step1,
+        );
+        await tester.tap(target);
+        expect(edited, ['edit']);
+      },
+    );
+
+    testWidgets(
+      'a block too small to draw its pencil keeps no edit target over it',
+      (tester) async {
+        final edited = await pumpDay(
+          tester,
+          planned: [
+            // A sliver: one fitted caption line, no title row, no pencil.
+            block('sliver', 9, 0, 12, type: TimeBlockType.ai),
+            block('roomy', 11, 0, 120, type: TimeBlockType.ai),
+          ],
+          now: day.add(const Duration(hours: 8)),
+        );
+
+        expect(
+          find.byKey(const Key('daily_os_edit_block_sliver')),
+          findsNothing,
+        );
+        expect(
+          find.byKey(const Key('daily_os_edit_block_roomy')),
+          findsOneWidget,
+        );
+        // The sliver's whole area does what the block does: here, open the
+        // editor, as a standalone planned block's tap does — not by way of a
+        // hidden corner.
+        await tester.tap(find.byKey(const Key('daily_os_day_block_sliver')));
+        expect(edited, ['sliver']);
+      },
+    );
+
+    testWidgets(
+      'a raised block, drawn over the one it overlaps, keeps its own edit '
+      'target in its corner',
+      (tester) async {
+        final edited = await pumpDay(
+          tester,
+          planned: [
+            block('under', 9, 0, 180, type: TimeBlockType.ai),
+            block('over', 10, 0, 90, type: TimeBlockType.ai),
+          ],
+          now: day.add(const Duration(hours: 8)),
+        );
+        final card = tester.getRect(
+          find.byKey(const Key('daily_os_day_block_over')),
+        );
+        final target = find.byKey(const Key('daily_os_edit_block_over'));
+
+        expect(tester.getRect(target).topRight, card.topRight);
+        await tester.tap(target);
+        expect(edited, ['over']);
+      },
+    );
+
+    testWidgets("the agent's spark shows its reason on a tap", (
+      tester,
+    ) async {
+      await pumpDay(
+        tester,
+        planned: [
+          block('why', 9, 0, 120, type: TimeBlockType.ai, reason: 'Quiet'),
+        ],
+        now: day.add(const Duration(hours: 8)),
+      );
+
+      final tooltip = tester.widget<Tooltip>(
+        find.byWidgetPredicate((w) => w is Tooltip && w.message == 'Quiet'),
+      );
+      expect(tooltip.triggerMode, TooltipTriggerMode.tap);
+    });
+  });
+
+  group('DayTimeline phone toolbar', () {
+    testWidgets(
+      'both lanes on a 320 pt phone at large text fit the toolbar, Done '
+      'keeping its word',
+      (tester) async {
+        _setView(tester, const Size(320, 900));
+        await tester.pumpWidget(
+          _wrap(
+            MediaQuery(
+              data: const MediaQueryData(
+                size: Size(320, 900),
+                textScaler: TextScaler.linear(1.3),
+              ),
+              child: DayTimeline(
+                draft: _draft(),
+                onRescheduleBlock: (block, start, end) async => true,
+                clock: () => DateTime(2026, 5, 25, 9, 15),
+              ),
+            ),
+            size: const Size(320, 900),
+          ),
+        );
+        await tester.pump();
+        final messages = tester.element(find.byType(DayTimeline)).messages;
+
+        await tester.tap(
+          find.byKey(const Key('daily_os_timeline_arrange_toggle')),
+        );
+        await tester.pump();
+        await tester.tap(
+          find.byKey(const Key('daily_os_timeline_mode_toggle')),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byType(PageView), findsNothing);
+        expect(find.text(messages.doneButton), findsOneWidget);
+        expect(
+          findMaterialTooltip(messages.dailyOsNextTimelineOneLane),
+          findsOneWidget,
+        );
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    Future<void> pumpPhone(WidgetTester tester, double width) async {
+      _setView(tester, Size(width, 900));
+      await tester.pumpWidget(
+        _wrap(
+          DayTimeline(
+            draft: _draft(),
+            onRescheduleBlock: (block, start, end) async => true,
+            clock: () => DateTime(2026, 5, 25, 9, 15),
+          ),
+          size: Size(width, 900),
+        ),
+      );
+      await tester.pump();
+    }
+
+    testWidgets('a phone wide enough names both buttons in words', (
+      tester,
+    ) async {
+      await pumpPhone(tester, 430);
+      final messages = tester.element(find.byType(DayTimeline)).messages;
+
+      expect(find.text(messages.dailyOsNextTimelineBothLanes), findsOneWidget);
+      expect(
+        find.text(messages.dailyOsNextTimelineArrangeShort),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets(
+      'a narrow phone shows the glyphs with their words as tooltips, and '
+      'Done keeps its word',
+      (tester) async {
+        await pumpPhone(tester, 320);
+        final messages = tester.element(find.byType(DayTimeline)).messages;
+
+        expect(find.text(messages.dailyOsNextTimelineBothLanes), findsNothing);
+        expect(
+          findMaterialTooltip(messages.dailyOsNextTimelineBothLanes),
+          findsOneWidget,
+        );
+        expect(
+          findMaterialTooltip(messages.dailyOsNextTimelineArrangeShort),
+          findsOneWidget,
+        );
+        expect(tester.takeException(), isNull);
+
+        await tester.tap(
+          find.byKey(const Key('daily_os_timeline_arrange_toggle')),
+        );
+        await tester.pump();
+        expect(find.text(messages.doneButton), findsOneWidget);
+      },
+    );
+
+    testWidgets("the lane names start on the rows' text edge", (
+      tester,
+    ) async {
+      await pumpPhone(tester, 430);
+      final context = tester.element(find.byType(DayTimeline));
+      final tokens = context.designTokens;
+      final messages = context.messages;
+
+      // The toolbar's own start inset plus the name's tap padding is the
+      // rows' inset: the name's text sits where a row's time starts.
+      expect(
+        tester.getTopLeft(find.text(messages.dailyOsNextTimelinePlanned)).dx,
+        closeTo(DayRowScaffold.inset(context), tokens.spacing.step1),
+      );
     });
   });
 }

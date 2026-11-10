@@ -1,39 +1,53 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/daily_os_next/logic/day_agenda_order.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
-import 'package:lotti/features/daily_os_next/ui/category_color.dart';
 import 'package:lotti/features/daily_os_next/ui/time_format.dart';
-import 'package:lotti/features/daily_os_next/ui/widgets/agenda_card.dart';
-import 'package:lotti/features/daily_os_next/ui/widgets/capacity_donut.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/day_agenda_row.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/day_row_scaffold.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/day_section_header.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/live_task_metadata.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/time_spent_card.dart';
-import 'package:lotti/features/design_system/components/ds_dashed_border.dart';
+import 'package:lotti/features/design_system/components/cards/ds_rows_card.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
-import 'package:lotti/themes/theme.dart' show numericBadgeFontFeatures;
 import 'package:material_ui/material_ui.dart';
 
-/// Intent-first projection of the [DraftPlan]. One [AgendaCard] per
-/// task, top stat strip with capacity donut + summary + category mix.
+/// Intent-first projection of the [DraftPlan]: its items as [DayAgendaRow]s
+/// on one [DsRowsCard], in the order of the day.
+/// How full the day is lives in the page's briefing strip above, shared with
+/// the other tabs.
 ///
-/// With no plan ([hasPlan] false) the strip stays honest — "No plan
-/// yet" eyebrow, tracked-time summary, neutral donut — and the body
-/// shows a dashed hint card plus the [TimeSpentCard] instead of a dead
-/// empty state (handoff v2 item 2).
-class AgendaView extends StatelessWidget {
+/// The list opens on now: when the day starts with two or more finished
+/// items, they fold into one summary row ("5 items done", with the time
+/// they spanned) that unfolds on a tap, so the item under way and the next
+/// one are in view without scrolling. The fold is this view's state, so a
+/// reload of the plan keeps it as the user left it.
+///
+/// With no plan ([hasPlan] false) the body is a dashed "No plan yet" card.
+class AgendaView extends StatefulWidget {
   const AgendaView({
     required this.draft,
-    this.actualBlocks = const [],
     this.hasPlan = true,
     this.onRenameItem,
+    this.header,
+    this.onStartCheckIn,
+    this.actualBlocks = const [],
     super.key,
   });
 
+  /// Starts the check-in from a day without a plan: what its "No plan yet"
+  /// row does on a tap.
+  final VoidCallback? onStartCheckIn;
+
   final DraftPlan draft;
 
-  /// Recorded sessions for the day — feeds the honest empty strip and
-  /// the empty-state [TimeSpentCard].
+  /// Scrolls in above the list — the page's briefing on a phone, so it
+  /// gives the screen back to the day as the list scrolls.
+  final Widget? header;
+
+  /// The day's recorded sessions, shown under the check-in row on a day
+  /// without a plan.
   final List<TimeBlock> actualBlocks;
 
   /// False when the day has no drafted plan (the [draft] is a
@@ -43,56 +57,131 @@ class AgendaView extends StatelessWidget {
   /// Inline rename for standalone agenda items (handoff v2 item 3).
   final void Function(AgendaItem item, String title)? onRenameItem;
 
+  /// The fewest leading finished items worth folding: one finished item is
+  /// shown as it is.
+  static const int foldDoneFrom = 2;
+
+  @override
+  State<AgendaView> createState() => _AgendaViewState();
+}
+
+class _AgendaViewState extends State<AgendaView> {
+  bool _showDone = false;
+
+  DraftPlan get draft => widget.draft;
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final onRenameItem = this.onRenameItem;
+    final onRenameItem = widget.onRenameItem;
+    final hasPlan = widget.hasPlan;
+    final ordered = agendaItemsByStart(draft);
+    final doneRun = ordered
+        .takeWhile((e) => e.item.state == AgendaItemState.done)
+        .toList();
+    final folds = doneRun.length >= AgendaView.foldDoneFrom;
+    final open = ordered
+        .where((e) => e.item.state != AgendaItemState.done)
+        .toList();
+    Widget row(({AgendaItem item, DateTime? start}) entry) => _LiveAgendaRow(
+      key: ValueKey(entry.item.id),
+      item: entry.item,
+      start: entry.start,
+      plannedMinutes: _plannedMinutesFor(entry.item),
+      whyReason: _whyReasonFor(entry.item),
+      onTap: _taskTapFor(entry.item),
+      onRename: onRenameItem == null
+          ? null
+          : (title) => onRenameItem(entry.item, title),
+    );
+    final header = widget.header;
     return SingleChildScrollView(
-      // step5 horizontal: the agenda shares the page's single left rail
-      // with the masthead, toggle, and nudge chip. Extra bottom inset:
-      // the host fades the last ~36px at the fold, so the final row must
-      // be able to scroll fully clear of the band.
-      padding: EdgeInsets.fromLTRB(
-        tokens.spacing.step5,
-        tokens.spacing.step6,
-        tokens.spacing.step5,
-        tokens.spacing.step10,
-      ),
-      // A reading-width column on desktop instead of a stretched phone
-      // list; phones are unaffected.
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 760),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _StatStrip(
-                draft: draft,
-                actualBlocks: actualBlocks,
-                hasPlan: hasPlan,
-              ),
-              SizedBox(height: tokens.spacing.step4),
-              for (final (index, item) in draft.agendaItems.indexed) ...[
-                _LiveAgendaCard(
-                  index: index + 1,
-                  item: item,
-                  whyReason: _whyReasonFor(item),
-                  onTap: _taskTapFor(item),
-                  onRename: onRenameItem == null
-                      ? null
-                      : (title) => onRenameItem(item, title),
-                ),
-                SizedBox(height: tokens.spacing.step3),
+      // Extra bottom inset: the host fades the last stretch at the fold, so
+      // the final row must be able to scroll fully clear of the band.
+      padding: EdgeInsets.only(bottom: tokens.spacing.step10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          ?header,
+          Padding(
+            // step5 horizontal: the agenda shares the page's single left
+            // rail with the masthead and the briefing.
+            padding: EdgeInsets.only(
+              left: tokens.spacing.step5,
+              top: tokens.spacing.sectionGap,
+              right: tokens.spacing.step5,
+            ),
+            // The page sets the reading column (one for every tab).
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Named like every group on the page. The fold above already
+                // says what is done, so the label says what is left.
+                if (draft.agendaItems.isNotEmpty)
+                  DaySectionHeader(
+                    label: context.messages.dailyOsNextTimelinePlanned,
+                    summary: context.messages.dailyOsNextAgendaLeft(
+                      open.length,
+                      formatMinutesCompact(
+                        open.fold<int>(
+                          0,
+                          (sum, e) => sum + (_plannedMinutesFor(e.item) ?? 0),
+                        ),
+                      ),
+                    ),
+                  ),
+                if (draft.agendaItems.isNotEmpty)
+                  DsRowsCard(
+                    rows: [
+                      if (folds) ...[
+                        _DoneRunRow(
+                          key: const ValueKey('daily_os_agenda_done_run'),
+                          count: doneRun.length,
+                          first: doneRun.first.start,
+                          expanded: _showDone,
+                          onToggle: () =>
+                              setState(() => _showDone = !_showDone),
+                        ),
+                        if (_showDone) ...doneRun.map(row),
+                        ...ordered.skip(doneRun.length).map(row),
+                      ] else
+                        ...ordered.map(row),
+                    ],
+                  ),
+                // "No plan yet" copy only when there genuinely is no plan;
+                // a real plan with zero agenda items keeps just the strip.
+                if (draft.agendaItems.isEmpty && !hasPlan) ...[
+                  // The same header as a planned day, so the empty row sits
+                  // in the page's label-then-card rhythm.
+                  DaySectionHeader(
+                    label: context.messages.dailyOsNextTimelinePlanned,
+                  ),
+                  _AgendaEmptyState(onTap: widget.onStartCheckIn),
+                  // The day so far, so a day without a plan is not a blank
+                  // page.
+                  if (widget.actualBlocks.isNotEmpty) ...[
+                    SizedBox(height: tokens.spacing.sectionGap),
+                    TimeSpentCard(blocks: widget.actualBlocks),
+                  ],
+                ],
               ],
-              // "No plan yet" copy only when there genuinely is no plan;
-              // a real plan with zero agenda items keeps just the strip.
-              if (draft.agendaItems.isEmpty && !hasPlan)
-                _AgendaEmptyState(actualBlocks: actualBlocks),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
+  }
+
+  /// The time the plan gives [item] today: its linked blocks' length, not
+  /// the task's whole estimate. Null when it has no block.
+  int? _plannedMinutesFor(AgendaItem item) {
+    final ids = item.linkedBlockIds.toSet();
+    final minutes = [
+      for (final block in draft.blocks)
+        if (ids.contains(block.id) && block.state != TimeBlockState.dropped)
+          block.duration.inMinutes,
+    ];
+    return minutes.isEmpty ? null : minutes.fold<int>(0, (a, b) => a + b);
   }
 
   String? _whyReasonFor(AgendaItem item) {
@@ -115,17 +204,78 @@ class AgendaView extends StatelessWidget {
   }
 }
 
-class _LiveAgendaCard extends ConsumerWidget {
-  const _LiveAgendaCard({
-    required this.index,
+/// The day's leading finished items, folded into one row: the first one's
+/// time, how many there are, and a chevron that unfolds them in place.
+class _DoneRunRow extends StatelessWidget {
+  const _DoneRunRow({
+    required this.count,
+    required this.first,
+    required this.expanded,
+    required this.onToggle,
+    super.key,
+  });
+
+  final int count;
+  final DateTime? first;
+  final bool expanded;
+  final VoidCallback onToggle;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final messages = context.messages;
+    final first = this.first;
+    return Semantics(
+      button: true,
+      expanded: expanded,
+      label: expanded
+          ? messages.dailyOsNextAgendaHideDone
+          : messages.dailyOsNextAgendaShowDone,
+      excludeSemantics: true,
+      onTap: onToggle,
+      child: Material(
+        type: MaterialType.transparency,
+        child: InkWell(
+          onTap: onToggle,
+          child: DayRowScaffold(
+            time: first == null ? '—' : formatClock(context, first),
+            leading: Icon(
+              LottiIcons.confirm,
+              size: tokens.typography.size.caption,
+              color: tokens.colors.text.mediumEmphasis,
+            ),
+            trailing: DayRowTrailing(
+              icon: expanded ? LottiIcons.chevronUp : LottiIcons.chevronDown,
+            ),
+            child: Text(
+              messages.dailyOsNextAgendaDoneRun(count),
+              style: tokens.typography.styles.body.bodySmall.copyWith(
+                color: tokens.colors.text.mediumEmphasis,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// An agenda row that follows its linked task: the task's live category and
+/// title, or a visible fallback once the task is gone.
+class _LiveAgendaRow extends ConsumerWidget {
+  const _LiveAgendaRow({
     required this.item,
+    required this.start,
+    required this.plannedMinutes,
     required this.whyReason,
     required this.onTap,
     required this.onRename,
+    super.key,
   });
 
-  final int index;
   final AgendaItem item;
+  final DateTime? start;
+  final int? plannedMinutes;
   final String? whyReason;
   final VoidCallback? onTap;
   final ValueChanged<String>? onRename;
@@ -133,345 +283,64 @@ class _LiveAgendaCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final liveTask = watchLiveTaskMetadata(ref, item.taskId);
-    final effectiveItem = item.copyWith(
-      category: liveTask.categoryOr(item.category),
-    );
-    return AgendaCard(
-      index: index,
-      item: effectiveItem,
+    return DayAgendaRow(
+      item: item.copyWith(category: liveTask.categoryOr(item.category)),
+      start: start,
+      plannedMinutes: plannedMinutes,
       displayTitle: liveTask.missing
           ? context.messages.conflictDetailEntryNotFoundTitle
           : liveTask.title,
       whyReason: whyReason,
-      coverArtId: liveTask.coverArtId,
-      coverArtCropX: liveTask.coverArtCropX,
       onTap: onTap,
       onRename: onRename,
     );
   }
 }
 
-/// Whether the committed/capacity ratio is still in the calm band — the
-/// remaining headline only takes the error tone once the day is genuinely
-/// over capacity.
-bool ratioIsCalm(double ratio) => ratio <= 1.0;
-
-class _StatStrip extends StatelessWidget {
-  const _StatStrip({
-    required this.draft,
-    required this.actualBlocks,
-    required this.hasPlan,
-  });
-
-  final DraftPlan draft;
-  final List<TimeBlock> actualBlocks;
-  final bool hasPlan;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final messages = context.messages;
-    final trackedMinutes = actualBlocks.totalMinutes;
-    // One source of truth: the same per-category totals drive the legend,
-    // the donut ring, and the headline minutes, so the three can never
-    // tell different numerical stories (stored scheduledMinutes can drift
-    // from the rendered blocks).
-    final categoryTotals = categoryTotalsFor(draft);
-    final committedMinutes = categoryTotals.fold<int>(
-      0,
-      (sum, entry) => sum + entry.minutes,
-    );
-    final ratio = CapacityDonut.ratioFor(
-      committedMinutes,
-      draft.capacityMinutes,
-    );
-    final hasCapacity = draft.capacityMinutes > 0;
-    final remaining = draft.capacityMinutes - committedMinutes;
-    final isOver = hasCapacity && remaining < 0;
-    final pressure = !hasPlan
-        ? messages.dailyOsNextAgendaCapacityNoPlan
-        : ratio < 0.9
-        ? messages.dailyOsNextAgendaCapacityComfortable
-        : ratio <= 1.0
-        ? messages.dailyOsNextAgendaCapacityNearFull
-        : messages.dailyOsNextAgendaCapacityOver;
-    final summary = hasPlan
-        ? messages.dailyOsNextAgendaSummary(
-            formatMinutesCompact(committedMinutes),
-            formatMinutesCompact(draft.capacityMinutes),
-          )
-        : messages.dailyOsNextAgendaNoPlanSummary(
-            formatMinutesCompact(trackedMinutes),
-          );
-    // One primary voice: the remainder leads ("15m left"), the committed
-    // total and the pressure word demote to a single supporting line —
-    // three competing headlines made the card read as prose, not an
-    // instrument.
-    final showRemainingHeadline = hasPlan && hasCapacity;
-    final headline = isOver
-        ? messages.dailyOsNextAgendaHeadlineOver(
-            formatMinutesCompact(remaining.abs()),
-          )
-        : messages.dailyOsNextAgendaHeadlineLeft(
-            formatMinutesCompact(remaining),
-          );
-
-    return Container(
-      decoration: BoxDecoration(
-        color: tokens.colors.background.level02,
-        borderRadius: BorderRadius.circular(tokens.radii.l),
-        border: Border.all(color: tokens.colors.decorative.level01),
-      ),
-      padding: EdgeInsets.all(tokens.spacing.cardPadding),
-      child: Row(
-        children: [
-          CapacityDonut(
-            scheduledMinutes: hasPlan ? committedMinutes : trackedMinutes,
-            capacityMinutes: draft.capacityMinutes,
-            neutral: !hasPlan,
-            // Reality marker: where the recorded day stands against the
-            // same capacity dial the plan is drawn on.
-            progressFraction: hasPlan && hasCapacity && trackedMinutes > 0
-                ? (trackedMinutes / draft.capacityMinutes).clamp(0.0, 1.0)
-                : null,
-            segments: [
-              if (hasPlan)
-                for (final entry in categoryTotals)
-                  CapacityDonutSegment(
-                    color: categoryColorFromHex(entry.category.colorHex),
-                    minutes: entry.minutes,
-                  ),
-            ],
-          ),
-          SizedBox(width: tokens.spacing.step5),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (showRemainingHeadline) ...[
-                  Text(
-                    headline,
-                    style: calmPageTitleStyle(
-                      tokens,
-                      color: !ratioIsCalm(ratio)
-                          ? tokens.colors.alert.error.ink
-                          : null,
-                    ),
-                  ),
-                  SizedBox(height: tokens.spacing.step1),
-                  Text(
-                    '$summary · $pressure',
-                    style: tokens.typography.styles.others.caption.copyWith(
-                      color: tokens.colors.text.lowEmphasis,
-                    ),
-                  ),
-                ] else ...[
-                  Text(pressure, style: calmEyebrowStyle(tokens)),
-                  SizedBox(height: tokens.spacing.step2),
-                  Text(
-                    summary,
-                    style: tokens.typography.styles.subtitle.subtitle2.copyWith(
-                      color: tokens.colors.text.highEmphasis,
-                    ),
-                  ),
-                ],
-                SizedBox(height: tokens.spacing.step3),
-                if (hasPlan)
-                  _CategoryMix(entries: categoryTotals)
-                else
-                  _TrackedLegend(blocks: actualBlocks),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Single neutral-teal legend chip for the no-plan strip: how much is
-/// tracked and how much of it is done.
-class _TrackedLegend extends StatelessWidget {
-  const _TrackedLegend({required this.blocks});
-
-  final List<TimeBlock> blocks;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        SizedBox.square(
-          dimension: tokens.spacing.step2,
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: tokens.colors.interactive.enabled,
-              shape: BoxShape.circle,
-            ),
-          ),
-        ),
-        SizedBox(width: tokens.spacing.step2),
-        Flexible(
-          child: Text(
-            context.messages.dailyOsNextAgendaTrackedLegend(
-              formatMinutesCompact(blocks.totalMinutes),
-              blocks.completedCount,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: tokens.typography.styles.others.caption.copyWith(
-              color: tokens.colors.text.lowEmphasis,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-/// Per-category planned minutes (dropped blocks excluded), largest first —
-/// drives both the legend rows and the donut's stacked ring so they can't
-/// disagree.
-List<({DayAgentCategory category, int minutes})> categoryTotalsFor(
-  DraftPlan draft,
-) {
-  final totals = <String, ({DayAgentCategory category, int minutes})>{};
-  for (final block in draft.blocks) {
-    if (block.state == TimeBlockState.dropped) continue;
-    final key = block.category.id;
-    final existing = totals[key];
-    totals[key] = (
-      category: block.category,
-      minutes: (existing?.minutes ?? 0) + block.duration.inMinutes,
-    );
-  }
-  return totals.values.toList()..sort((a, b) => b.minutes.compareTo(a.minutes));
-}
-
-class _CategoryMix extends StatelessWidget {
-  const _CategoryMix({required this.entries});
-
-  /// Shared with the donut by the stat strip so legend and ring cannot
-  /// disagree (and the per-build aggregation runs once, not twice).
-  final List<({DayAgentCategory category, int minutes})> entries;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    if (entries.isEmpty) return const SizedBox.shrink();
-    // Micro-table, not a Wrap: one full-width row per category so labels
-    // get the whole column before they ever truncate (at 2x text the old
-    // half-width Wrap cells degraded to "Dee…"/"Clien…"), and the
-    // durations set as a right-aligned ledger column.
-    return Column(
-      children: [
-        for (var i = 0; i < entries.length; i++) ...[
-          if (i > 0) SizedBox(height: tokens.spacing.step2),
-          _CategoryLegend(
-            category: entries[i].category,
-            minutes: entries[i].minutes,
-          ),
-        ],
-      ],
-    );
-  }
-}
-
-class _CategoryLegend extends StatelessWidget {
-  const _CategoryLegend({required this.category, required this.minutes});
-
-  final DayAgentCategory category;
-  final int minutes;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final color = categoryColorFromHex(category.colorHex);
-    // Receipt typesetting: dot + label lead, duration right-aligned in
-    // tabular figures so the column of values reads as one ledger. The
-    // duration is the data — protect it; the label truncates last.
-    return Row(
-      children: [
-        SizedBox.square(
-          dimension: tokens.spacing.step2,
-          child: DecoratedBox(
-            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-          ),
-        ),
-        SizedBox(width: tokens.spacing.step2),
-        Expanded(
-          child: Text(
-            category.name,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: tokens.typography.styles.others.caption.copyWith(
-              color: tokens.colors.text.lowEmphasis,
-            ),
-          ),
-        ),
-        SizedBox(width: tokens.spacing.step3),
-        Text(
-          formatMinutesCompact(minutes),
-          style: tokens.typography.styles.others.caption.copyWith(
-            color: tokens.colors.text.mediumEmphasis,
-            fontFeatures: numericBadgeFontFeatures,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-/// Dashed "No plan yet" hint card + the tracked-time card — the agenda
-/// tab is never a dead end on a day with recorded sessions.
+/// A day without a plan, on the Agenda: one row on the page's grid saying
+/// so, which starts the check-in when tapped. The footer carries the filled
+/// action; the day's tracked time follows.
 class _AgendaEmptyState extends StatelessWidget {
-  const _AgendaEmptyState({required this.actualBlocks});
+  const _AgendaEmptyState({required this.onTap});
 
-  final List<TimeBlock> actualBlocks;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        DsDashedBorder(
-          color: tokens.colors.decorative.level02,
-          radius: tokens.radii.l,
-          child: Padding(
-            padding: EdgeInsets.all(tokens.spacing.step6),
-            child: Column(
-              children: [
-                Icon(
-                  LottiIcons.twilight,
-                  size: tokens.spacing.step6,
-                  color: tokens.colors.text.lowEmphasis,
-                ),
-                SizedBox(height: tokens.spacing.step3),
-                Text(
-                  context.messages.dailyOsNextAgendaNoPlanTitle,
-                  style: tokens.typography.styles.subtitle.subtitle2.copyWith(
-                    color: tokens.colors.text.mediumEmphasis,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                SizedBox(height: tokens.spacing.step2),
-                Text(
-                  context.messages.dailyOsNextAgendaNoPlanBody,
-                  style: tokens.typography.styles.body.bodySmall.copyWith(
-                    color: tokens.colors.text.lowEmphasis,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
+    final onTap = this.onTap;
+    // A statement of the day's state, with no time to give; the footer
+    // alone says "Start check-in", and this row is the same way in.
+    final row = DayRowScaffold(
+      time: '',
+      leading: Icon(
+        LottiIcons.twilight,
+        size: tokens.typography.size.caption,
+        color: tokens.colors.text.lowEmphasis,
+      ),
+      trailing: onTap == null
+          ? null
+          : const DayRowTrailing(icon: LottiIcons.chevronRight),
+      child: Text(
+        context.messages.dailyOsNextAgendaNoPlanTitle,
+        style: tokens.typography.styles.body.bodySmall.copyWith(
+          color: tokens.colors.text.highEmphasis,
+        ),
+      ),
+    );
+    return DsRowsCard(
+      rows: [
+        if (onTap == null)
+          row
+        else
+          Material(
+            type: MaterialType.transparency,
+            child: InkWell(
+              key: const Key('daily_os_agenda_start_check_in'),
+              onTap: onTap,
+              child: row,
             ),
           ),
-        ),
-        if (actualBlocks.isNotEmpty) ...[
-          SizedBox(height: tokens.spacing.step5),
-          TimeSpentCard(blocks: actualBlocks),
-        ],
       ],
     );
   }

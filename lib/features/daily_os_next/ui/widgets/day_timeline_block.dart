@@ -6,6 +6,7 @@ import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/ui/category_color.dart';
 import 'package:lotti/features/daily_os_next/ui/time_format.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/day_row_scaffold.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline_folding.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/editable_title.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/live_task_metadata.dart';
@@ -17,6 +18,8 @@ import 'package:lotti/providers/task_focus_controller.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:material_ui/material_ui.dart';
+
+part 'day_timeline_block_content.dart';
 
 /// The shortest block that can still show one title line: a `bodySmall`
 /// line at the user's text scale plus the card's vertical padding. Below it
@@ -54,10 +57,14 @@ class BlockPosition extends StatefulWidget {
     required this.horizontal,
     this.raised = false,
     this.redacted = false,
+    this.past = false,
     super.key,
   });
 
   final TimeBlock block;
+
+  /// See [DayBlock.past].
+  final bool past;
 
   /// Insets from the lane's left and right edges, in px, from
   /// `TimelineBlockSlot.horizontalInsets`.
@@ -154,6 +161,7 @@ class _BlockPositionState extends State<BlockPosition> {
       onEdit: widget.onEdit,
       raised: widget.raised,
       redacted: widget.redacted,
+      past: widget.past,
     );
     return Positioned(
       top: top + blockGap / 2,
@@ -396,11 +404,18 @@ class DayBlock extends ConsumerWidget {
     this.onEdit,
     this.raised = false,
     this.redacted = false,
+    this.past = false,
     super.key,
   });
 
   final TimeBlock block;
   final bool tracked;
+
+  /// Whether the block ended before now. A planned block still to come is
+  /// what "Looks good" approves, so its title reads at full strength; one
+  /// already past recedes a step. Recorded blocks read at full strength
+  /// either way.
+  final bool past;
 
   /// Whether the block is painted on top of another block it overlaps in
   /// time. Fills are opaque, so without a seam two tinted cards on the same
@@ -495,11 +510,12 @@ class DayBlock extends ConsumerWidget {
             ),
             canvas,
           );
+    // The stripe is the block's category at full strength, planned or
+    // recorded, so the briefing legend's hues can be found in either lane;
+    // a planned block's dashed outline is what says it is provisional.
     final leftStripeColor = isBuffer
         ? tokens.colors.text.lowEmphasis.withValues(alpha: 0.32)
-        : tracked
-        ? category
-        : category.withValues(alpha: kTimelinePlannedAccentAlpha);
+        : category;
 
     final borderRadius = BorderRadius.circular(tokens.radii.m);
     final seam = _raisedSeam(tokens, raised: raised);
@@ -530,8 +546,9 @@ class DayBlock extends ConsumerWidget {
                 child: _BlockContent(
                   block: effectiveBlock,
                   tracked: tracked,
+                  past: past,
                   onRename: onRename,
-                  onEdit: openEditor,
+                  showsEdit: openEditor != null,
                 ),
               ),
             ),
@@ -544,7 +561,9 @@ class DayBlock extends ConsumerWidget {
     // and tracked blocks read solid.
     final outlined = isDrafted
         ? DsDashedBorder(
-            color: category.withValues(alpha: kTimelinePlannedAccentAlpha),
+            color: category.withValues(
+              alpha: timelinePlannedOutlineAlpha(isLight: isLight),
+            ),
             radius: tokens.radii.m,
             child: card,
           )
@@ -588,11 +607,70 @@ class DayBlock extends ConsumerWidget {
             },
       child: Material(
         type: MaterialType.transparency,
-        child: InkWell(
-          onTap: primaryTap,
-          onLongPress: onTap == null ? null : openEditor,
-          borderRadius: borderRadius,
-          child: outlined,
+        child: Stack(
+          children: [
+            InkWell(
+              onTap: primaryTap,
+              onLongPress: onTap == null ? null : openEditor,
+              borderRadius: borderRadius,
+              child: outlined,
+            ),
+            // The pencil drawn in the title row is a glyph; this is its
+            // target — a full tap target tall, bounded by the block, over
+            // the pencil's column at the block's top-end corner: the card's
+            // inset, the glyph and the gap before it. It stops short of the
+            // agent's spark beside it, which keeps its own tap, and it is
+            // there only where the block is large enough to draw the pencil.
+            if (openEditor != null)
+              Positioned.fill(
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final inset = seam?.top.width ?? 0;
+                    final showsPencil = _showsTitleRow(
+                      tokens,
+                      MediaQuery.textScalerOf(context),
+                      width:
+                          constraints.maxWidth -
+                          inset * 2 -
+                          tokens.spacing.step1 -
+                          tokens.spacing.step3 * 2,
+                      height:
+                          constraints.maxHeight -
+                          inset * 2 -
+                          tokens.spacing.step2 * 2,
+                    );
+                    if (!showsPencil) return const SizedBox.shrink();
+                    return Stack(
+                      children: [
+                        PositionedDirectional(
+                          top: 0,
+                          end: 0,
+                          width:
+                              tokens.spacing.step3 +
+                              tokens.typography.size.bodySmall +
+                              tokens.spacing.step1,
+                          height: TapTargets.minimum,
+                          // Screen readers reach the editor as the block's
+                          // own custom action, so the corner adds no node of
+                          // its own.
+                          child: ExcludeSemantics(
+                            child: Tooltip(
+                              message:
+                                  context.messages.dailyOsNextBlockEditTooltip,
+                              child: InkWell(
+                                key: Key('daily_os_edit_block_${block.id}'),
+                                borderRadius: borderRadius,
+                                onTap: openEditor,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ),
+          ],
         ),
       ),
     );
@@ -703,234 +781,6 @@ class _CategoryStripe extends StatelessWidget {
   }
 }
 
-String? _reasonFor(TimeBlock block) {
-  final reason = block.reason?.trim();
-  return reason == null || reason.isEmpty ? null : reason;
-}
-
-class _BlockContent extends StatelessWidget {
-  const _BlockContent({
-    required this.block,
-    required this.tracked,
-    required this.onRename,
-    required this.onEdit,
-  });
-
-  final TimeBlock block;
-  final bool tracked;
-  final ValueChanged<String>? onRename;
-  final VoidCallback? onEdit;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final isBuffer = block.type == TimeBlockType.buffer;
-    final isCal = block.type == TimeBlockType.cal;
-    final isTaskLinked =
-        block.taskId != null && block.taskId!.trim().isNotEmpty;
-    final isDone = block.state == TimeBlockState.completed;
-    final reason = tracked ? null : _reasonFor(block);
-    // Standalone ai/manual placements are click-to-edit; everything
-    // else (cal events, buffers, task-linked, tracked) is read-only.
-    final editable =
-        !tracked && !isBuffer && !isCal && !isTaskLinked && onRename != null;
-    // Recorded titles read at full strength; planned ones recede a step —
-    // the plan is the sketch, the recording is the ink.
-    final titleStyle = tokens.typography.styles.body.bodySmall.copyWith(
-      color: tracked
-          ? tokens.colors.text.highEmphasis
-          : tokens.colors.text.mediumEmphasis,
-      fontWeight: FontWeight.w600,
-      fontStyle: isBuffer ? FontStyle.italic : FontStyle.normal,
-    );
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        // Height-tiered content policy: never let text shear mid-glyph.
-        // Micro blocks (< ~3/4 caption line) show fill + stripe only;
-        // short blocks a single fitted title line; the subtitle joins
-        // from ~44px; two title lines from 64px. ALL thresholds use
-        // SCALED extents — at accessibility text sizes the text box
-        // grows, so the tier a block qualifies for must grow with it.
-        final textScaler = MediaQuery.textScalerOf(context);
-        final lineHeight = textScaler.scale(
-          tokens.typography.lineHeight.bodySmall,
-        );
-        final unscaledSliverLine = tokens.typography.lineHeight.caption;
-        final sliverLineHeight = textScaler.scale(unscaledSliverLine);
-        if (constraints.maxHeight < sliverLineHeight * 0.75) {
-          // Even a fitted caption line would be illegibly small — fill +
-          // stripe only (the Semantics label on DayBlock still carries
-          // the title).
-          return const SizedBox.shrink();
-        }
-        if (constraints.maxHeight < lineHeight + 2) {
-          // Sliver tier: one caption line so short recorded sessions
-          // (the unplanned incident!) stay information, not just color.
-          // The line is FITTED to the available height via a clamped
-          // linear scaler — a 22-minute block at default zoom (content
-          // shorter than a full caption line) shrinks its glyphs to fit
-          // instead of dropping the title or shearing it mid-x-height.
-          final fittedScale =
-              math.min(sliverLineHeight, constraints.maxHeight) /
-              unscaledSliverLine;
-          return Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              block.title,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              textScaler: TextScaler.linear(fittedScale),
-              style: tokens.typography.styles.others.caption.copyWith(
-                color: tracked
-                    ? tokens.colors.text.highEmphasis
-                    : tokens.colors.text.mediumEmphasis,
-              ),
-            ),
-          );
-        }
-        final compact = constraints.maxHeight < textScaler.scale(44);
-        final showSubtitle = !isBuffer && !compact;
-        final titleMaxLines = constraints.maxHeight >= textScaler.scale(64)
-            ? 2
-            : 1;
-        // OverflowBox + ClipRect: duration-sized boxes clip content
-        // gracefully at the block edge instead of throwing RenderFlex
-        // overflows when a height lands between the visibility thresholds.
-        return ClipRect(
-          child: OverflowBox(
-            alignment: compact ? Alignment.centerLeft : Alignment.topLeft,
-            minHeight: 0,
-            maxHeight: double.infinity,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (isCal) ...[
-                      Icon(
-                        LottiIcons.calendar,
-                        size: 12,
-                        color: tokens.colors.text.mediumEmphasis,
-                      ),
-                      SizedBox(width: tokens.spacing.step1),
-                    ],
-                    if (!tracked && isTaskLinked) ...[
-                      Icon(
-                        LottiIcons.link,
-                        size: 12,
-                        color: tokens.colors.alert.info.defaultColor,
-                      ),
-                      SizedBox(width: tokens.spacing.step1),
-                    ],
-                    Expanded(
-                      child: editable && !compact
-                          ? EditableTitle(
-                              value: block.title,
-                              onSubmitted: onRename!,
-                              style: titleStyle,
-                            )
-                          : Text(
-                              block.title,
-                              style: titleStyle,
-                              maxLines: titleMaxLines,
-                              overflow: TextOverflow.fade,
-                              softWrap: true,
-                            ),
-                    ),
-                    if (reason != null && !compact) ...[
-                      SizedBox(width: tokens.spacing.step1),
-                      _BlockReasonIcon(reason: reason),
-                    ],
-                    if (onEdit != null) ...[
-                      SizedBox(width: tokens.spacing.step1),
-                      SizedBox.square(
-                        dimension: compact
-                            ? tokens.spacing.step5
-                            : tokens.spacing.step7,
-                        child: IconButton(
-                          key: Key('daily_os_edit_block_${block.id}'),
-                          tooltip: context.messages.dailyOsNextBlockEditTooltip,
-                          padding: EdgeInsets.zero,
-                          iconSize: compact
-                              ? tokens.spacing.step4
-                              : tokens.spacing.step5,
-                          onPressed: onEdit,
-                          icon: const Icon(LottiIcons.edit),
-                        ),
-                      ),
-                    ],
-                    if (tracked && isDone) ...[
-                      SizedBox(width: tokens.spacing.step1),
-                      Icon(
-                        LottiIcons.confirm,
-                        size: 12,
-                        color: tokens.colors.alert.success.defaultColor,
-                      ),
-                    ],
-                  ],
-                ),
-                if (showSubtitle)
-                  Padding(
-                    padding: EdgeInsets.only(top: tokens.spacing.step1),
-                    child: Text(
-                      _subTitle(context, block),
-                      // One mono voice for time metadata in both lanes.
-                      style: monoMetaStyle(
-                        tokens,
-                        tokens.colors,
-                      ).copyWith(fontSize: 10),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  String _subTitle(BuildContext context, TimeBlock block) {
-    final parts = <String>[formatClockRange(context, block.start, block.end)];
-    if (block.sessionIndex != null && block.sessionTotal != null) {
-      parts.add(
-        context.messages.dailyOsNextTimelineSessionOf(
-          block.sessionIndex!,
-          block.sessionTotal!,
-        ),
-      );
-    }
-    if (block.location != null) parts.add(block.location!);
-    return parts.join(' · ');
-  }
-}
-
-class _BlockReasonIcon extends StatelessWidget {
-  const _BlockReasonIcon({required this.reason});
-
-  final String reason;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    return Tooltip(
-      message: reason,
-      child: Semantics(
-        label: context.messages.dailyOsNextDayWhyChipLabel,
-        child: Icon(
-          LottiIcons.aiSpark,
-          size: tokens.typography.size.caption,
-          color: tokens.colors.aiCard.accent.withValues(alpha: 0.8),
-        ),
-      ),
-    );
-  }
-}
-
 class NowLine extends StatelessWidget {
   const NowLine({
     required this.windowStart,
@@ -948,7 +798,9 @@ class NowLine extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final red = tokens.colors.alert.error.defaultColor;
+    // Teal, like every other "you are here" on the page (the selected day,
+    // the selected tab): the now-line is position, not an alarm.
+    final ink = tokens.colors.interactive.enabled;
     final top = foldingState.positionForDate(
       now,
       windowStart: windowStart,
@@ -962,7 +814,7 @@ class NowLine extends StatelessWidget {
       right: 0,
       height: 1.5,
       child: IgnorePointer(
-        child: ColoredBox(color: red),
+        child: ColoredBox(color: ink),
       ),
     );
   }

@@ -2001,9 +2001,21 @@
   "dailyOsNextActivityDeleteDialogTitle": "Smazat tuto nahrávku?",
   "dailyOsNextActivityDeleteRecording": "Smazat",
   "dailyOsNextActivityEmpty": "Zatím tu nejsou žádné nahrávky ani check-iny.",
+  "dailyOsNextActivityHandled": "Vyřízeno",
+  "dailyOsNextActivityHandledCount": "{count, plural, one{{count} vyřízená} few{{count} vyřízené} other{{count} vyřízených}}",
+  "@dailyOsNextActivityHandledCount": {
+    "description": "Summary beside the Activity tab's 'Handled' header: how many entries are dealt with.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "4"
+      }
+    }
+  },
   "dailyOsNextActivityLoadFailed": "Tvoje uložená aktivita je pořád v tomto zařízení, ale teď ji nejde načíst.",
   "dailyOsNextActivityMissingAudio": "Tento záznam zůstal uložený, ale zvukový soubor v tomto zařízení není dostupný. Obnov soubor a pak to zkus znovu.",
   "dailyOsNextActivityNeedsAttention": "Vyžaduje pozornost",
+  "dailyOsNextActivityNeedsYou": "Čeká na tebe",
   "dailyOsNextActivityOpenAiSetup": "Otevřít nastavení Daily OS",
   "dailyOsNextActivityOpenSetup": "Otevřít nastavení přepisu",
   "dailyOsNextActivityPlanAvailable": "Tvůj denní plán je k dispozici.",
@@ -2019,10 +2031,21 @@
   "dailyOsNextActivityTranscriptPending": "Nahrávka je uložená. Přepis ještě čeká.",
   "dailyOsNextActivityUseToPlan": "Použít k vytvoření plánu",
   "dailyOsNextActivityUseToRefine": "Použít k úpravě",
+  "dailyOsNextActivityVoiceNote": "Hlasová poznámka",
+  "@dailyOsNextActivityVoiceNote": {
+    "description": "Name of an Activity row for a voice recording whose transcript is not ready yet."
+  },
+  "dailyOsNextActivityWaitingCount": "{count, plural, one{Čeká {count}} few{Čekají {count}} other{Čeká {count}}}",
+  "@dailyOsNextActivityWaitingCount": {
+    "description": "Summary beside the Activity tab's 'Needs you' header: how many entries wait for the user.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "2"
+      }
+    }
+  },
   "dailyOsNextActivityWaitingForNetwork": "Čekám na připojení",
-  "dailyOsNextAgendaCapacityComfortable": "Pohodové",
-  "dailyOsNextAgendaCapacityNearFull": "Téměř plné",
-  "dailyOsNextAgendaCapacityNoPlan": "Zatím žádný plán",
   "dailyOsNextAgendaCapacityOf": "z {capacity}",
   "@dailyOsNextAgendaCapacityOf": {
     "placeholders": {
@@ -2032,48 +2055,41 @@
       }
     }
   },
-  "dailyOsNextAgendaCapacityOver": "Přeplněno",
-  "dailyOsNextAgendaDonutLeft": "volno",
-  "dailyOsNextAgendaDonutOver": "navíc",
-  "dailyOsNextAgendaHeadlineLeft": "{duration} zbývá",
-  "@dailyOsNextAgendaHeadlineLeft": {
+  "dailyOsNextAgendaDoneRun": "{count, plural, =1{1 položka hotová} few{{count} položky hotové} other{{count} položek hotových}}",
+  "@dailyOsNextAgendaDoneRun": {
+    "description": "Agenda summary row standing in for the day's finished items, folded together.",
     "placeholders": {
-      "duration": {
-        "type": "String",
-        "example": "15m"
+      "count": {
+        "type": "int",
+        "example": "5"
       }
     }
   },
-  "dailyOsNextAgendaHeadlineOver": "{duration} navíc",
-  "@dailyOsNextAgendaHeadlineOver": {
+  "dailyOsNextAgendaHideDone": "Skrýt hotové položky",
+  "dailyOsNextAgendaLeft": "{count, plural, one{Zbývá {count} · {duration}} few{Zbývají {count} · {duration}} other{Zbývá {count} · {duration}}}",
+  "@dailyOsNextAgendaLeft": {
+    "description": "Summary beside the agenda's 'Plan' header: how many items are not done yet, followed by the time they are planned for.",
     "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      },
       "duration": {
         "type": "String",
-        "example": "1h"
+        "example": "2h 45m"
       }
     }
   },
-  "dailyOsNextAgendaNoPlanBody": "Tvůj zaznamenaný čas tu je tak jako tak — namluv check-in a já kolem něj navrhnu den.",
-  "dailyOsNextAgendaNoPlanSummary": "{duration} zatím zaznamenáno. Namluv check-in a já kolem toho navrhnu den.",
-  "dailyOsNextAgendaNoPlanTitle": "Na dnešek zatím žádný plán.",
+  "dailyOsNextAgendaNoPlanTitle": "Pro tento den zatím žádný plán.",
+  "dailyOsNextAgendaNow": "Teď",
+  "@dailyOsNextAgendaNow": {
+    "description": "Marks the agenda row whose item is under way now, above its start time."
+  },
+  "dailyOsNextAgendaShowDone": "Zobrazit hotové položky",
   "dailyOsNextAgendaStateDone": "Hotovo",
   "dailyOsNextAgendaStateInProgress": "Probíhá",
   "dailyOsNextAgendaStateOpen": "Otevřené",
   "dailyOsNextAgendaStateOverdue": "Po termínu",
-  "dailyOsNextAgendaSummary": "{scheduled} z {capacity} naplánováno",
-  "@dailyOsNextAgendaSummary": {
-    "placeholders": {
-      "scheduled": {
-        "type": "String",
-        "example": "5h 15m"
-      },
-      "capacity": {
-        "type": "String",
-        "example": "8h"
-      }
-    }
-  },
-  "dailyOsNextAgendaTrackedLegend": "Zaznamenáno · {duration} · {completedCount} hotovo",
   "dailyOsNextBlockCreateTask": "Vytvořit úkol",
   "dailyOsNextBlockEditCategoryLabel": "Kategorie",
   "dailyOsNextBlockEditFailed": "Blok se nepodařilo upravit — zkus to znovu.",
@@ -2104,11 +2120,41 @@
       }
     }
   },
+  "dailyOsNextBriefingCapacityLabel": "Plánovaný čas podle kategorie: {breakdown}",
+  "@dailyOsNextBriefingCapacityLabel": {
+    "description": "Screen-reader label of the day's capacity bar: each category and its planned time.",
+    "placeholders": {
+      "breakdown": {
+        "type": "String",
+        "example": "Deep work 3h 30m, Admin 45m"
+      }
+    }
+  },
+  "dailyOsNextBriefingDoneCaption": "{count} hotovo",
+  "@dailyOsNextBriefingDoneCaption": {
+    "description": "Caption under the bar on a day without a plan: recorded sessions that are done.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "2"
+      }
+    }
+  },
   "dailyOsNextBriefingFree": "Ve tvém dni zbývá ještě {duration} volného času.",
   "@dailyOsNextBriefingFree": {
     "placeholders": {
       "duration": {
         "type": "String"
+      }
+    }
+  },
+  "dailyOsNextBriefingFreeCaption": "{duration} volno",
+  "@dailyOsNextBriefingFreeCaption": {
+    "description": "Caption under the day's capacity bar: capacity the plan leaves free.",
+    "placeholders": {
+      "duration": {
+        "type": "String",
+        "example": "2h 40m"
       }
     }
   },
@@ -2151,6 +2197,16 @@
       }
     }
   },
+  "dailyOsNextBriefingMoreCategories": "{count, plural, one{+{count} další} few{+{count} další} other{+{count} dalších}}",
+  "@dailyOsNextBriefingMoreCategories": {
+    "description": "Last entry of the capacity legend on a phone: how many categories are not named. Their time together follows it.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "2"
+      }
+    }
+  },
   "dailyOsNextBriefingNext": "Další v {time}: {title}.",
   "@dailyOsNextBriefingNext": {
     "placeholders": {
@@ -2162,10 +2218,40 @@
       }
     }
   },
-  "dailyOsNextBriefingNoPlan": "Pro tento den zatím nemáš plán. Krátký check-in ho vytvoří.",
+  "dailyOsNextBriefingNoPlan": "Pro tento den zatím nemáš plán. Krátký check‑in ho vytvoří.",
   "dailyOsNextBriefingNothingLeft": "Na dnešek už nemáš nic naplánováno.",
+  "dailyOsNextBriefingOverCaption": "{duration} navíc",
+  "@dailyOsNextBriefingOverCaption": {
+    "description": "Caption under the day's capacity bar when the plan books more than the day holds.",
+    "placeholders": {
+      "duration": {
+        "type": "String",
+        "example": "45m"
+      }
+    }
+  },
+  "dailyOsNextBriefingPlannedCaption": "{duration} naplánováno",
+  "@dailyOsNextBriefingPlannedCaption": {
+    "description": "Caption under the day's capacity bar: how much the plan books.",
+    "placeholders": {
+      "duration": {
+        "type": "String",
+        "example": "5h 20m"
+      }
+    }
+  },
   "dailyOsNextBriefingPlayTooltip": "Poslechni si svůj den",
   "dailyOsNextBriefingStopTooltip": "Zastavit přehled",
+  "dailyOsNextBriefingTrackedCaption": "{duration} zaznamenáno",
+  "@dailyOsNextBriefingTrackedCaption": {
+    "description": "Caption under the bar on a day without a plan: time recorded so far.",
+    "placeholders": {
+      "duration": {
+        "type": "String",
+        "example": "3h 10m"
+      }
+    }
+  },
   "dailyOsNextCaptureCaptured": "Rozumím.",
   "dailyOsNextCaptureDoneCta": "Hotovo",
   "dailyOsNextCaptureErrorAudioPersistFailed": "Nahrávku se nepodařilo uložit.",
@@ -2210,7 +2296,7 @@
   "dailyOsNextDayAgentStatusWorking": "Plánuji…",
   "dailyOsNextDayAgentTokensToday": "{tokens} tokenů spotřebováno na plánování tohoto dne",
   "dailyOsNextDayBack": "Zpět",
-  "dailyOsNextDayComposerCheckInHint": "Namluv nebo napiš check-in",
+  "dailyOsNextDayComposerCheckInHint": "Namluv nebo napiš check‑in",
   "dailyOsNextDayDeleteDialogBody": "Naplánované bloky pro tento den budou odstraněny. Tvoje záznamy a jejich audio nahrávky zůstávají v tvém deníku.",
   "dailyOsNextDayDeleteDialogCancel": "Zrušit",
   "dailyOsNextDayDeleteDialogConfirm": "Smazat",
@@ -2220,6 +2306,24 @@
   "dailyOsNextDayMenuInspectAgent": "Prozkoumat agenta",
   "dailyOsNextDayMenuSettings": "Nastavení Daily OS",
   "dailyOsNextDayMoreTooltip": "Více",
+  "dailyOsNextDayOverline": "{lead} · {detail}",
+  "@dailyOsNextDayOverline": {
+    "description": "The day page's overline: how the day relates to today (or its weekday), then the weekday (or the year).",
+    "placeholders": {
+      "lead": {
+        "type": "String",
+        "example": "Today"
+      },
+      "detail": {
+        "type": "String",
+        "example": "Sunday"
+      }
+    }
+  },
+  "dailyOsNextDayRelationToday": "Dnes",
+  "dailyOsNextDayRelationTomorrow": "Zítra",
+  "dailyOsNextDayRelationYesterday": "Včera",
+  "dailyOsNextDayStartCheckIn": "Začít check-in",
   "dailyOsNextDayTitle": "Tvůj den",
   "dailyOsNextDayWhyChipLabel": "Proč",
   "dailyOsNextDayWrapUpCta": "Ukončit",
@@ -2422,13 +2526,22 @@
   "dailyOsNextStateRecurringMissed": "Opakující · zmeškané",
   "dailyOsNextTimelineActual": "Skutečnost",
   "dailyOsNextTimelineArrange": "Uspořádat bloky",
-  "dailyOsNextTimelineBoth": "Plán a skutečnost",
+  "dailyOsNextTimelineArrangeShort": "Uspořádat",
+  "@dailyOsNextTimelineArrangeShort": {
+    "description": "Label of the Day timeline's button that turns on moving and resizing planned blocks."
+  },
+  "dailyOsNextTimelineBothLanes": "Oba pruhy",
+  "@dailyOsNextTimelineBothLanes": {
+    "description": "Label of the Day timeline's button that shows the plan and actual lanes side by side, on a phone where they are shown one at a time."
+  },
+  "dailyOsNextTimelineOneLane": "Jeden pruh",
+  "@dailyOsNextTimelineOneLane": {
+    "description": "Label of the Day timeline's button that switches from the side-by-side plan and actual lanes to one lane at a time."
+  },
   "dailyOsNextTimelinePlanned": "Plán",
   "dailyOsNextTimelineSessionOf": "Sezení {index} z {total}",
   "dailyOsNextTimelineShowBoth": "Zobrazit plán a skutečnost společně",
   "dailyOsNextTimelineShowPaged": "Zobrazit plán a skutečnost posouváním",
-  "dailyOsNextTimelineSwipeHint": "Přejeď na Skutečnost · svislým sevřením prstů přiblížíš",
-  "dailyOsNextTimelineSwipeHintToPlan": "Přejeď na Plán · svislým sevřením prstů přiblížíš",
   "dailyOsNextTimelineTracked": "zaznamenáno",
   "dailyOsNextTimeSpentEarlierSessions": "{count, plural, one{1 starší záznam} few{{count} starší záznamy} other{{count} starších záznamů}}",
   "dailyOsNextTimeSpentShowLess": "Zobrazit méně",
@@ -2446,6 +2559,18 @@
   "dailyOsNextTriageDrop": "Zahodit",
   "dailyOsNextTriageToday": "Dnes",
   "dailyOsNextUncommitFailed": "Vrátit to nešlo — plán zůstává potvrzený.",
+  "dailyOsNextWeekStripNextWeek": "Příští týden",
+  "dailyOsNextWeekStripPreviousWeek": "Předchozí týden",
+  "dailyOsNextWeekStripSelectDay": "Vybrat {date}",
+  "@dailyOsNextWeekStripSelectDay": {
+    "description": "Screen-reader label of one day in the day page's week strip.",
+    "placeholders": {
+      "date": {
+        "type": "String",
+        "example": "Sunday, November 9"
+      }
+    }
+  },
   "dailyOsOnboardingCoachCapture": "Řekni, co ti leží v hlavě.",
   "dailyOsOnboardingCoachDrafting": "Plánovač vytváří nové úkoly a zasazuje práci do tvého dne.",
   "dailyOsOnboardingCoachReconcile": "Vyber, co patří do dneška. Nové položky se stanou úkoly, až sestavíš den.",

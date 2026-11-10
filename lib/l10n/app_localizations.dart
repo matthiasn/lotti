@@ -8003,6 +8003,18 @@ abstract class AppLocalizations {
   /// **'No recordings or check-ins yet.'**
   String get dailyOsNextActivityEmpty;
 
+  /// No description provided for @dailyOsNextActivityHandled.
+  ///
+  /// In en, this message translates to:
+  /// **'Handled'**
+  String get dailyOsNextActivityHandled;
+
+  /// Summary beside the Activity tab's 'Handled' header: how many entries are dealt with.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} handled'**
+  String dailyOsNextActivityHandledCount(int count);
+
   /// No description provided for @dailyOsNextActivityLoadFailed.
   ///
   /// In en, this message translates to:
@@ -8020,6 +8032,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Needs attention'**
   String get dailyOsNextActivityNeedsAttention;
+
+  /// No description provided for @dailyOsNextActivityNeedsYou.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs you'**
+  String get dailyOsNextActivityNeedsYou;
 
   /// Button on a stalled agent job that opens AI settings.
   ///
@@ -8111,29 +8129,23 @@ abstract class AppLocalizations {
   /// **'Use to refine'**
   String get dailyOsNextActivityUseToRefine;
 
+  /// Name of an Activity row for a voice recording whose transcript is not ready yet.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice note'**
+  String get dailyOsNextActivityVoiceNote;
+
+  /// Summary beside the Activity tab's 'Needs you' header: how many entries wait for the user.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} waiting'**
+  String dailyOsNextActivityWaitingCount(int count);
+
   /// No description provided for @dailyOsNextActivityWaitingForNetwork.
   ///
   /// In en, this message translates to:
   /// **'Waiting for connection'**
   String get dailyOsNextActivityWaitingForNetwork;
-
-  /// No description provided for @dailyOsNextAgendaCapacityComfortable.
-  ///
-  /// In en, this message translates to:
-  /// **'Comfortable'**
-  String get dailyOsNextAgendaCapacityComfortable;
-
-  /// No description provided for @dailyOsNextAgendaCapacityNearFull.
-  ///
-  /// In en, this message translates to:
-  /// **'Near full'**
-  String get dailyOsNextAgendaCapacityNearFull;
-
-  /// No description provided for @dailyOsNextAgendaCapacityNoPlan.
-  ///
-  /// In en, this message translates to:
-  /// **'No plan yet'**
-  String get dailyOsNextAgendaCapacityNoPlan;
 
   /// No description provided for @dailyOsNextAgendaCapacityOf.
   ///
@@ -8141,53 +8153,41 @@ abstract class AppLocalizations {
   /// **'of {capacity}'**
   String dailyOsNextAgendaCapacityOf(String capacity);
 
-  /// No description provided for @dailyOsNextAgendaCapacityOver.
+  /// Agenda summary row standing in for the day's finished items, folded together.
   ///
   /// In en, this message translates to:
-  /// **'Over capacity'**
-  String get dailyOsNextAgendaCapacityOver;
+  /// **'{count, plural, =1{1 item done} other{{count} items done}}'**
+  String dailyOsNextAgendaDoneRun(int count);
 
-  /// No description provided for @dailyOsNextAgendaDonutLeft.
+  /// No description provided for @dailyOsNextAgendaHideDone.
   ///
   /// In en, this message translates to:
-  /// **'left'**
-  String get dailyOsNextAgendaDonutLeft;
+  /// **'Hide finished items'**
+  String get dailyOsNextAgendaHideDone;
 
-  /// No description provided for @dailyOsNextAgendaDonutOver.
+  /// Summary beside the agenda's 'Plan' header: how many items are not done yet, followed by the time they are planned for.
   ///
   /// In en, this message translates to:
-  /// **'over'**
-  String get dailyOsNextAgendaDonutOver;
-
-  /// No description provided for @dailyOsNextAgendaHeadlineLeft.
-  ///
-  /// In en, this message translates to:
-  /// **'{duration} left'**
-  String dailyOsNextAgendaHeadlineLeft(String duration);
-
-  /// No description provided for @dailyOsNextAgendaHeadlineOver.
-  ///
-  /// In en, this message translates to:
-  /// **'{duration} over'**
-  String dailyOsNextAgendaHeadlineOver(String duration);
-
-  /// No description provided for @dailyOsNextAgendaNoPlanBody.
-  ///
-  /// In en, this message translates to:
-  /// **'Your tracked time is here either way — speak a check-in and I\'ll draft a day around it.'**
-  String get dailyOsNextAgendaNoPlanBody;
-
-  /// No description provided for @dailyOsNextAgendaNoPlanSummary.
-  ///
-  /// In en, this message translates to:
-  /// **'{duration} tracked so far. Speak a check-in and I\'ll draft a day around it.'**
-  String dailyOsNextAgendaNoPlanSummary(String duration);
+  /// **'{count} left · {duration}'**
+  String dailyOsNextAgendaLeft(int count, String duration);
 
   /// No description provided for @dailyOsNextAgendaNoPlanTitle.
   ///
   /// In en, this message translates to:
-  /// **'No plan yet for today.'**
+  /// **'No plan for this day yet.'**
   String get dailyOsNextAgendaNoPlanTitle;
+
+  /// Marks the agenda row whose item is under way now, above its start time.
+  ///
+  /// In en, this message translates to:
+  /// **'Now'**
+  String get dailyOsNextAgendaNow;
+
+  /// No description provided for @dailyOsNextAgendaShowDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Show finished items'**
+  String get dailyOsNextAgendaShowDone;
 
   /// No description provided for @dailyOsNextAgendaStateDone.
   ///
@@ -8212,18 +8212,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Overdue'**
   String get dailyOsNextAgendaStateOverdue;
-
-  /// No description provided for @dailyOsNextAgendaSummary.
-  ///
-  /// In en, this message translates to:
-  /// **'{scheduled} of {capacity} committed'**
-  String dailyOsNextAgendaSummary(String scheduled, String capacity);
-
-  /// No description provided for @dailyOsNextAgendaTrackedLegend.
-  ///
-  /// In en, this message translates to:
-  /// **'Tracked · {duration} · {completedCount} done'**
-  String dailyOsNextAgendaTrackedLegend(String duration, int completedCount);
 
   /// No description provided for @dailyOsNextBlockCreateTask.
   ///
@@ -8363,11 +8351,29 @@ abstract class AppLocalizations {
   /// **'{count, plural, =0{Nothing is planned yet.} =1{You have one block planned.} other{You have {count} blocks planned.}}'**
   String dailyOsNextBriefingBlockCount(int count);
 
+  /// Screen-reader label of the day's capacity bar: each category and its planned time.
+  ///
+  /// In en, this message translates to:
+  /// **'Planned time by category: {breakdown}'**
+  String dailyOsNextBriefingCapacityLabel(String breakdown);
+
+  /// Caption under the bar on a day without a plan: recorded sessions that are done.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} done'**
+  String dailyOsNextBriefingDoneCaption(int count);
+
   /// No description provided for @dailyOsNextBriefingFree.
   ///
   /// In en, this message translates to:
   /// **'{duration} of your day is still free.'**
   String dailyOsNextBriefingFree(String duration);
+
+  /// Caption under the day's capacity bar: capacity the plan leaves free.
+  ///
+  /// In en, this message translates to:
+  /// **'{duration} free'**
+  String dailyOsNextBriefingFreeCaption(String duration);
 
   /// No description provided for @dailyOsNextBriefingFullyBooked.
   ///
@@ -8399,6 +8405,12 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{1 minute} other{{count} minutes}}'**
   String dailyOsNextBriefingMinutes(int count);
 
+  /// Last entry of the capacity legend on a phone: how many categories are not named. Their time together follows it.
+  ///
+  /// In en, this message translates to:
+  /// **'+{count} more'**
+  String dailyOsNextBriefingMoreCategories(int count);
+
   /// No description provided for @dailyOsNextBriefingNext.
   ///
   /// In en, this message translates to:
@@ -8408,7 +8420,7 @@ abstract class AppLocalizations {
   /// No description provided for @dailyOsNextBriefingNoPlan.
   ///
   /// In en, this message translates to:
-  /// **'There\'s no plan for this day yet. A short check-in will make one.'**
+  /// **'There\'s no plan for this day yet. A short check‑in will make one.'**
   String get dailyOsNextBriefingNoPlan;
 
   /// No description provided for @dailyOsNextBriefingNothingLeft.
@@ -8416,6 +8428,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Nothing else is planned for today.'**
   String get dailyOsNextBriefingNothingLeft;
+
+  /// Caption under the day's capacity bar when the plan books more than the day holds.
+  ///
+  /// In en, this message translates to:
+  /// **'{duration} over'**
+  String dailyOsNextBriefingOverCaption(String duration);
+
+  /// Caption under the day's capacity bar: how much the plan books.
+  ///
+  /// In en, this message translates to:
+  /// **'{duration} planned'**
+  String dailyOsNextBriefingPlannedCaption(String duration);
 
   /// No description provided for @dailyOsNextBriefingPlayTooltip.
   ///
@@ -8428,6 +8452,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Stop the briefing'**
   String get dailyOsNextBriefingStopTooltip;
+
+  /// Caption under the bar on a day without a plan: time recorded so far.
+  ///
+  /// In en, this message translates to:
+  /// **'{duration} tracked'**
+  String dailyOsNextBriefingTrackedCaption(String duration);
 
   /// No description provided for @dailyOsNextCaptureCaptured.
   ///
@@ -8696,7 +8726,7 @@ abstract class AppLocalizations {
   /// No description provided for @dailyOsNextDayComposerCheckInHint.
   ///
   /// In en, this message translates to:
-  /// **'Talk or type a check-in'**
+  /// **'Talk or type a check‑in'**
   String get dailyOsNextDayComposerCheckInHint;
 
   /// No description provided for @dailyOsNextDayDeleteDialogBody.
@@ -8752,6 +8782,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'More'**
   String get dailyOsNextDayMoreTooltip;
+
+  /// The day page's overline: how the day relates to today (or its weekday), then the weekday (or the year).
+  ///
+  /// In en, this message translates to:
+  /// **'{lead} · {detail}'**
+  String dailyOsNextDayOverline(String lead, String detail);
+
+  /// No description provided for @dailyOsNextDayRelationToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get dailyOsNextDayRelationToday;
+
+  /// No description provided for @dailyOsNextDayRelationTomorrow.
+  ///
+  /// In en, this message translates to:
+  /// **'Tomorrow'**
+  String get dailyOsNextDayRelationTomorrow;
+
+  /// No description provided for @dailyOsNextDayRelationYesterday.
+  ///
+  /// In en, this message translates to:
+  /// **'Yesterday'**
+  String get dailyOsNextDayRelationYesterday;
+
+  /// No description provided for @dailyOsNextDayStartCheckIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Start check-in'**
+  String get dailyOsNextDayStartCheckIn;
 
   /// No description provided for @dailyOsNextDayTitle.
   ///
@@ -9575,11 +9635,23 @@ abstract class AppLocalizations {
   /// **'Arrange blocks'**
   String get dailyOsNextTimelineArrange;
 
-  /// No description provided for @dailyOsNextTimelineBoth.
+  /// Label of the Day timeline's button that turns on moving and resizing planned blocks.
   ///
   /// In en, this message translates to:
-  /// **'Plan and actual'**
-  String get dailyOsNextTimelineBoth;
+  /// **'Arrange'**
+  String get dailyOsNextTimelineArrangeShort;
+
+  /// Label of the Day timeline's button that shows the plan and actual lanes side by side, on a phone where they are shown one at a time.
+  ///
+  /// In en, this message translates to:
+  /// **'Both lanes'**
+  String get dailyOsNextTimelineBothLanes;
+
+  /// Label of the Day timeline's button that switches from the side-by-side plan and actual lanes to one lane at a time.
+  ///
+  /// In en, this message translates to:
+  /// **'One lane'**
+  String get dailyOsNextTimelineOneLane;
 
   /// No description provided for @dailyOsNextTimelinePlanned.
   ///
@@ -9604,18 +9676,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Show swipeable plan and actual'**
   String get dailyOsNextTimelineShowPaged;
-
-  /// No description provided for @dailyOsNextTimelineSwipeHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Swipe for actual · pinch vertically to zoom'**
-  String get dailyOsNextTimelineSwipeHint;
-
-  /// No description provided for @dailyOsNextTimelineSwipeHintToPlan.
-  ///
-  /// In en, this message translates to:
-  /// **'Swipe for plan · pinch vertically to zoom'**
-  String get dailyOsNextTimelineSwipeHintToPlan;
 
   /// No description provided for @dailyOsNextTimelineTracked.
   ///
@@ -9718,6 +9778,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Couldn\'t undo — the plan stays committed.'**
   String get dailyOsNextUncommitFailed;
+
+  /// No description provided for @dailyOsNextWeekStripNextWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'Next week'**
+  String get dailyOsNextWeekStripNextWeek;
+
+  /// No description provided for @dailyOsNextWeekStripPreviousWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous week'**
+  String get dailyOsNextWeekStripPreviousWeek;
+
+  /// Screen-reader label of one day in the day page's week strip.
+  ///
+  /// In en, this message translates to:
+  /// **'Select {date}'**
+  String dailyOsNextWeekStripSelectDay(String date);
 
   /// No description provided for @dailyOsOnboardingCoachCapture.
   ///

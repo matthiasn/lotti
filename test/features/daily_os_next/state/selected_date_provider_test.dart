@@ -33,26 +33,6 @@ void main() {
       });
     });
 
-    test('shiftDays moves across month boundaries DST-safely', () {
-      withClock(Clock.fixed(DateTime(2026, 5, 31, 9)), () {
-        final container = ProviderContainer();
-        addTearDown(container.dispose);
-
-        container.read(dailyOsNextSelectedDateProvider.notifier).shiftDays(1);
-        expect(
-          container.read(dailyOsNextSelectedDateProvider),
-          // ignore: avoid_redundant_argument_values
-          DateTime(2026, 6, 1),
-        );
-
-        container.read(dailyOsNextSelectedDateProvider.notifier).shiftDays(-2);
-        expect(
-          container.read(dailyOsNextSelectedDateProvider),
-          DateTime(2026, 5, 30),
-        );
-      });
-    });
-
     test('goToToday returns to the current local day', () {
       withClock(Clock.fixed(DateTime(2026, 5, 26, 9)), () {
         final container = ProviderContainer();

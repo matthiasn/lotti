@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/ai/ai_config.dart';
@@ -20,6 +21,7 @@ import 'package:lotti/features/daily_os_next/logic/day_agent_plan_models.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_timeline_models.dart';
 import 'package:lotti/features/daily_os_next/logic/day_briefing.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_briefing_companion.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/live_task_metadata.dart';
 import 'package:lotti/features/design_system/theme/sizing_tokens.dart';
 import 'package:lotti/features/tts/cloud/cloud_speech_synthesizer.dart';
 import 'package:lotti/features/tts/cloud/cloud_tts_exception.dart';
@@ -30,6 +32,7 @@ import 'package:lotti/features/tts/state/tts_playback_controller.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/utils/consts.dart';
 
+import '../../../../helpers/test_get_it.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_helper.dart';
 import '../../../agents/test_data/ai_config_factories.dart';
@@ -97,7 +100,7 @@ void main() {
     test('without a plan, only invites a check-in', () {
       expect(
         _compose(DraftPlan.emptyForDay(_day), hasPlan: false, nowHour: 8),
-        "There's no plan for this day yet. A short check-in will make one.",
+        "There's no plan for this day yet. A short check\u2011in will make one.",
       );
     });
 
@@ -164,6 +167,105 @@ void main() {
     );
   });
 
+  group('composeDayHeadline', () {
+    String headline(
+      DraftPlan plan, {
+      required int nowHour,
+      bool hasPlan = true,
+    }) => composeDayHeadline(
+      _en,
+      DayBriefing.of(
+        draft: plan,
+        hasPlan: hasPlan,
+        now: _day.add(Duration(hours: nowHour)),
+      ),
+      _clock,
+    );
+
+    test('without a plan, is the invitation to check in', () {
+      expect(
+        headline(DraftPlan.emptyForDay(_day), hasPlan: false, nowHour: 8),
+        "There's no plan for this day yet. A short check\u2011in will make one.",
+      );
+    });
+
+    test('counts the blocks and names what is next', () {
+      expect(
+        headline(
+          _plan([_block('Review', 9, 60), _block('Write', 13, 90)]),
+          nowHour: 10,
+        ),
+        'You have 2 blocks planned. Next up at 13:00: Write.',
+      );
+    });
+
+    test("names the next block by its task's live name when given", () {
+      final briefing = DayBriefing.of(
+        draft: _plan([_block('Write', 13, 90)]),
+        hasPlan: true,
+        now: _day.add(const Duration(hours: 10)),
+      );
+
+      expect(
+        composeDayHeadline(_en, briefing, _clock, nextTitle: 'Draft memo'),
+        'You have one block planned. Next up at 13:00: Draft memo.',
+      );
+      // The spoken briefing opens with the same name.
+      expect(
+        composeDayBriefing(_en, briefing, _clock, nextTitle: 'Draft memo'),
+        startsWith(
+          'You have one block planned. Next up at 13:00: Draft memo.',
+        ),
+      );
+    });
+
+    test('says when nothing is left today', () {
+      expect(
+        headline(_plan([_block('Review', 9, 60)]), nowHour: 20),
+        'You have one block planned. Nothing else is planned for today.',
+      );
+    });
+
+    test('a past day only counts', () {
+      expect(
+        composeDayHeadline(
+          _en,
+          DayBriefing.of(
+            draft: _plan([_block('Review', 9, 60)]),
+            hasPlan: true,
+            now: _day.add(const Duration(days: 2)),
+          ),
+          _clock,
+        ),
+        'You have one block planned.',
+      );
+    });
+
+    for (final title in ['Ready?', 'Go!', 'Done.', 'Wait…']) {
+      test('a next title ending "$title" gets no second stop', () {
+        expect(
+          headline(_plan([_block(title, 13, 30)]), nowHour: 10),
+          'You have one block planned. Next up at 13:00: $title',
+        );
+      });
+    }
+
+    test('a title ending in a word keeps the template stop', () {
+      expect(
+        headline(_plan([_block('Write', 13, 30)]), nowHour: 10),
+        endsWith('Write.'),
+      );
+    });
+
+    test('is how the spoken briefing begins', () {
+      final plan = _plan([_block('Review', 9, 60), _block('Write', 13, 90)]);
+      expect(
+        _compose(plan, nowHour: 10),
+        startsWith(headline(plan, nowHour: 10)),
+      );
+    });
+  });
+
   group('DayBriefingCompanion', () {
     late FakeTtsEngine engine;
     late FakeTtsAudioPlayer player;
@@ -184,10 +286,13 @@ void main() {
       FakeTtsModelRepository? models,
       ResolvedAgentSetup? plannerSetup,
       Locale locale = const Locale('en'),
+      DraftPlan? draft,
+      List<Override> overrides = const [],
     }) async {
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
           overrides: [
+            ...overrides,
             configFlagProvider.overrideWith(
               (ref, flagName) => Stream.value(switch (flagName) {
                 enableCompanionFlag => companion,
@@ -218,7 +323,9 @@ void main() {
           child: Align(
             alignment: Alignment.topLeft,
             child: DayBriefingCompanion(
-              draft: _plan([_block('Review', 9, 60), _block('Write', 13, 90)]),
+              draft:
+                  draft ??
+                  _plan([_block('Review', 9, 60), _block('Write', 13, 90)]),
               hasPlan: hasPlan,
             ),
           ),
@@ -379,6 +486,45 @@ void main() {
       expect(find.byTooltip('Stop the briefing'), findsOneWidget);
     });
 
+    testWidgets(
+      "a block that became next since she last built is named by its task's "
+      'live title when she speaks',
+      (tester) async {
+        await setUpTestGetIt();
+        addTearDown(tearDownTestGetIt);
+        final write = _block('Write', 13, 90).copyWith(taskId: 'task-write');
+        // Built with no block ahead (a day already past at build time), so
+        // the block next at the tap is one she never watched.
+        await pump(
+          tester,
+          draft: _plan([_block('Review', 9, 60), write]),
+          overrides: [
+            liveTaskMetadataProvider.overrideWith(
+              (ref, taskId) async => const LiveTaskMetadata(
+                title: 'Write the launch memo',
+              ),
+            ),
+          ],
+        );
+
+        await withClock(
+          Clock.fixed(_day.add(const Duration(hours: 10))),
+          () async {
+            await tester.tap(find.byType(CompanionSpeaker));
+            await _pumpFrames(tester);
+          },
+        );
+
+        expect(
+          engine.calls.single.text,
+          startsWith(
+            'You have 2 blocks planned. Next up at 1:00 PM: '
+            'Write the launch memo.',
+          ),
+        );
+      },
+    );
+
     testWidgets('without the voice model, a tap asks first, showing its '
         'size', (tester) async {
       final models = FakeTtsModelRepository(installed: false);
@@ -467,7 +613,7 @@ void main() {
 
       expect(
         engine.calls.single.text,
-        "There's no plan for this day yet. A short check-in will make one.",
+        "There's no plan for this day yet. A short check\u2011in will make one.",
       );
     });
   });

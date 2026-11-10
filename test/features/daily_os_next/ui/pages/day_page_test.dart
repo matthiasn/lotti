@@ -18,8 +18,10 @@ import 'package:lotti/features/daily_os_next/ui/pages/refine_page.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/agenda_view.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_activity_view.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_block_task_picker.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/day_briefing_strip.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_composer.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/day_week_strip.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/plan_view_toggle.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/chat_input/design_system_chat_input.dart';
@@ -156,20 +158,31 @@ Future<void> _pumpDayPage(
   await tester.pump();
 }
 
+/// Focuses the planned day's composer, which is when its quick refinements
+/// show.
+Future<void> _focusRefineComposer(WidgetTester tester) async {
+  await tester.tap(
+    find.descendant(
+      of: find.byKey(const Key('daily_os_day_refine_composer')),
+      matching: find.byType(TextField),
+    ),
+  );
+  await tester.pump();
+}
+
 void main() {
   tearDown(() {
     nav_service.beamToNamedOverride = null;
   });
 
   group('DayPage', () {
-    testWidgets('lands on the Day timeline by default, under the default '
-        'title, with Agenda a tap away', (tester) async {
+    testWidgets('lands on the Day timeline by default, under its date, '
+        'with Agenda a tap away', (tester) async {
       _setSurface(tester);
       await tester.pumpWidget(_wrap(DayPage(draft: _drafted())));
       await tester.pump();
 
-      final messages = tester.element(find.byType(DayPage)).messages;
-      expect(find.text(messages.dailyOsNextDayTitle), findsOneWidget);
+      expect(find.text('May 26'), findsOneWidget);
       expect(find.byType(DayTimeline), findsOneWidget);
       expect(find.byType(AgendaView), findsNothing);
       expect(find.byType(DayActivityView), findsNothing);
@@ -295,6 +308,42 @@ void main() {
           findsNWidgets(2),
         );
         expect(find.byType(DayComposer), findsNothing);
+
+        // The footer's setup action is the design-system primary button.
+        final setup = tester.widget<DesignSystemButton>(
+          find.byKey(const Key('daily_os_day_check_in_cta')),
+        );
+        expect(setup.variant, DesignSystemButtonVariant.primary);
+        expect(setup.leadingIcon, LottiIcons.settings);
+        expect(setup.label, messages.dailyOsSettingsSetupAction);
+
+        // A plain row in warning ink, not a card of its own.
+        final tokens = tester.element(find.byType(DayPage)).designTokens;
+        final nudge = find.byKey(const Key('daily_os_setup_nudge'));
+        expect(
+          tester
+              .widget<Icon>(
+                find.descendant(
+                  of: nudge,
+                  matching: find.byIcon(LottiIcons.warning),
+                ),
+              )
+              .color,
+          tokens.colors.alert.warning.ink,
+        );
+        expect(
+          tester
+              .widget<Text>(
+                find.text(messages.dailyOsSettingsSetupRequiredTitle),
+              )
+              .style
+              ?.color,
+          tokens.colors.alert.warning.ink,
+        );
+        expect(
+          find.descendant(of: nudge, matching: find.byType(DecoratedBox)),
+          findsNothing,
+        );
 
         await tester.tap(find.byIcon(LottiIcons.moreVertical));
         await tester.pump();
@@ -1248,7 +1297,8 @@ void main() {
           find.byKey(const Key('daily_os_edit_block_blk_category_filter')),
         );
         await tester.pumpAndSettle();
-        await tester.tap(find.text(_category.name));
+        // The editor's category field, not the briefing legend's entry.
+        await tester.tap(find.text(_category.name).last);
         await tester.pumpAndSettle();
 
         final picker = tester.widget<CategoryPickerSheet>(
@@ -1307,22 +1357,72 @@ void main() {
       },
     );
 
-    testWidgets('dateStrip widget replaces the default title', (tester) async {
-      _setSurface(tester);
-      await tester.pumpWidget(
-        _wrap(
-          DayPage(
-            draft: _drafted(),
-            dateStrip: const Text('2026-05-26'),
-          ),
-        ),
-      );
-      await tester.pump();
+    for (final view in PlanView.values) {
+      testWidgets('the briefing strip sits under the header on '
+          '${view.name}', (tester) async {
+        _setSurface(tester);
+        await tester.pumpWidget(_wrap(DayPage(draft: _drafted())));
+        await tester.pump();
+        tester
+            .widget<PlanViewToggle>(find.byType(PlanViewToggle))
+            .onChanged(view);
+        await tester.pump();
+        await tester.pump();
 
-      final messages = tester.element(find.byType(DayPage)).messages;
-      expect(find.text(messages.dailyOsNextDayTitle), findsNothing);
-      expect(find.text('2026-05-26'), findsOneWidget);
-    });
+        expect(find.byType(DayBriefingStrip), findsOneWidget);
+        expect(
+          tester.getTopLeft(find.byType(DayBriefingStrip)).dy,
+          greaterThanOrEqualTo(
+            tester.getBottomLeft(find.byType(PlanViewToggle)).dy,
+          ),
+        );
+      });
+    }
+
+    testWidgets(
+      "the timeline's controls sit in its own toolbar, never in the briefing",
+      (tester) async {
+        _setSurface(tester);
+        await tester.pumpWidget(_wrap(DayPage(draft: _drafted())));
+        await tester.pump();
+
+        final toggle = find.byKey(const Key('daily_os_timeline_mode_toggle'));
+        expect(toggle, findsOneWidget);
+        expect(
+          find.descendant(of: find.byType(DayTimeline), matching: toggle),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(of: find.byType(DayBriefingStrip), matching: toggle),
+          findsNothing,
+        );
+      },
+    );
+
+    testWidgets(
+      'day navigation brings the week strip and drops the back chevron',
+      (tester) async {
+        _setSurface(tester);
+        await tester.pumpWidget(
+          _wrap(
+            DayPage(
+              draft: _drafted(),
+              navigation: DayNavigation(
+                today: DateTime(2026, 5, 26),
+                onSelect: (_) {},
+                onPick: () {},
+                onToday: () {},
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.byType(DayWeekStrip), findsOneWidget);
+        expect(find.byIcon(LottiIcons.back), findsNothing);
+        expect(find.text('Today · Tuesday'), findsOneWidget);
+      },
+    );
 
     testWidgets('toggling the plan view switches DayTimeline → Agenda → '
         'DayTimeline', (tester) async {
@@ -1384,6 +1484,10 @@ void main() {
         ),
         findsOneWidget,
       );
+      // At rest the footer is just the field; the quick refinements come
+      // with its focus.
+      expect(find.text(messages.dailyOsNextReviewTooMuch), findsNothing);
+      await _focusRefineComposer(tester);
       for (final chip in [
         messages.dailyOsNextReviewTooMuch,
         messages.dailyOsNextReviewMoveLighter,
@@ -1429,6 +1533,21 @@ void main() {
       expect(find.text(messages.dailyOsNextReviewTooMuch), findsNothing);
     });
 
+    for (final state in [DayState.drafted, DayState.committed]) {
+      testWidgets("the day's next step is the page's filled primary "
+          '(${state.name})', (tester) async {
+        _setSurface(tester);
+        await tester.pumpWidget(_wrap(DayPage(draft: _drafted(state: state))));
+        await tester.pump();
+
+        final action = tester.widget<DesignSystemButton>(
+          find.byKey(const Key('daily_os_day_stage_action')),
+        );
+        expect(action.variant, DesignSystemButtonVariant.primary);
+        expect(action.size, DesignSystemButtonSize.large);
+      });
+    }
+
     testWidgets('Wrap up opens the shutdown for the day', (tester) async {
       String? route;
       nav_service.beamToNamedOverride = (path) => route = path;
@@ -1465,7 +1584,11 @@ void main() {
 
         final messages = tester.element(find.byType(DayPage)).messages;
         expect(find.text(messages.dailyOsNextReviewLooksGood), findsOneWidget);
-        // Large text gives the chips' room back to the day.
+        // At rest the footer is the field alone.
+        expect(find.text(messages.dailyOsNextReviewTooMuch), findsNothing);
+        // Focused, the chips join it — except at large text, which gives
+        // their room back to the day.
+        await _focusRefineComposer(tester);
         expect(
           find.text(messages.dailyOsNextReviewTooMuch),
           scale < 1.5 ? findsOneWidget : findsNothing,
@@ -1477,6 +1600,35 @@ void main() {
         expect(tester.takeException(), isNull);
       });
     }
+
+    testWidgets(
+      'on a short screen at large text the briefing scrolls within half the '
+      'room, and the day keeps the rest',
+      (tester) async {
+        const size = Size(320, 568);
+        setTestSurfaceSize(tester, size);
+        await tester.pumpWidget(
+          _wrap(
+            DayPage(draft: _draftedWithReasons()),
+            mediaQueryData: phoneMediaQueryData.copyWith(
+              size: size,
+              textScaler: const TextScaler.linear(2),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        final summary = find.ancestor(
+          of: find.byType(DayBriefingStrip),
+          matching: find.byType(SingleChildScrollView),
+        );
+        final body = tester.getRect(find.byType(DayTimeline));
+        final summaryRect = tester.getRect(summary);
+        expect(body.height, greaterThanOrEqualTo(summaryRect.height));
+        expect(body.top, greaterThanOrEqualTo(summaryRect.bottom));
+        expect(tester.takeException(), isNull);
+      },
+    );
 
     testWidgets('syncs displayed agenda when the draft prop changes', (
       tester,
@@ -1608,7 +1760,7 @@ void main() {
     );
 
     testWidgets(
-      'header back IconButton pops the navigator (no dateStrip)',
+      'header back IconButton pops the navigator (no day navigation)',
       (tester) async {
         _setSurface(tester);
         final agent = RecordingDayAgent();
@@ -1638,7 +1790,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 400));
         await tester.pump(const Duration(milliseconds: 200));
 
-        // The header shows a back button only when there's no dateStrip;
+        // The header shows a back button only without day navigation;
         // the popup-menu's more_vert icon stays in place.
         await tester.tap(find.byIcon(LottiIcons.back));
         await tester.pump();
@@ -1704,6 +1856,7 @@ void main() {
         await _pumpDayPage(tester, draft: draft, agent: agent);
 
         final messages = tester.element(find.byType(DayPage)).messages;
+        await _focusRefineComposer(tester);
         await tester.tap(find.text(messages.dailyOsNextReviewTooMuch));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 600));
@@ -1746,6 +1899,7 @@ void main() {
           _ => throw StateError('unknown quick review scenario: $scenario'),
         };
 
+        await _focusRefineComposer(tester);
         await tester.tap(find.text(label));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 600));

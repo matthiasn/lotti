@@ -4766,6 +4766,14 @@ class AppLocalizationsNl extends AppLocalizations {
   String get dailyOsNextActivityEmpty => 'Nog geen opnames of check-ins.';
 
   @override
+  String get dailyOsNextActivityHandled => 'Afgehandeld';
+
+  @override
+  String dailyOsNextActivityHandledCount(int count) {
+    return '$count afgehandeld';
+  }
+
+  @override
   String get dailyOsNextActivityLoadFailed =>
       'Je opgeslagen activiteit staat nog op dit apparaat, maar kon nu niet worden geladen.';
 
@@ -4775,6 +4783,9 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get dailyOsNextActivityNeedsAttention => 'Vraagt aandacht';
+
+  @override
+  String get dailyOsNextActivityNeedsYou => 'Wacht op jou';
 
   @override
   String get dailyOsNextActivityOpenAiSetup => 'Daily OS-instellingen openen';
@@ -4824,16 +4835,15 @@ class AppLocalizationsNl extends AppLocalizations {
   String get dailyOsNextActivityUseToRefine => 'Gebruiken om te verfijnen';
 
   @override
+  String get dailyOsNextActivityVoiceNote => 'Spraakmemo';
+
+  @override
+  String dailyOsNextActivityWaitingCount(int count) {
+    return '$count wachtend';
+  }
+
+  @override
   String get dailyOsNextActivityWaitingForNetwork => 'Wachten op verbinding';
-
-  @override
-  String get dailyOsNextAgendaCapacityComfortable => 'Comfortabel';
-
-  @override
-  String get dailyOsNextAgendaCapacityNearFull => 'Bijna vol';
-
-  @override
-  String get dailyOsNextAgendaCapacityNoPlan => 'Nog geen plan';
 
   @override
   String dailyOsNextAgendaCapacityOf(String capacity) {
@@ -4841,35 +4851,32 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String get dailyOsNextAgendaCapacityOver => 'Overcapaciteit';
-
-  @override
-  String get dailyOsNextAgendaDonutLeft => 'links';
-
-  @override
-  String get dailyOsNextAgendaDonutOver => 'over';
-
-  @override
-  String dailyOsNextAgendaHeadlineLeft(String duration) {
-    return '$duration links';
+  String dailyOsNextAgendaDoneRun(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count items klaar',
+      one: '1 item klaar',
+    );
+    return '$_temp0';
   }
 
   @override
-  String dailyOsNextAgendaHeadlineOver(String duration) {
-    return '$duration over';
+  String get dailyOsNextAgendaHideDone => 'Verberg afgeronde items';
+
+  @override
+  String dailyOsNextAgendaLeft(int count, String duration) {
+    return '$count te gaan · $duration';
   }
 
   @override
-  String get dailyOsNextAgendaNoPlanBody =>
-      'Je getraceerde tijd is hier, hoe dan ook. Spreek een check-in en ik zal er een dag omheen opstellen.';
+  String get dailyOsNextAgendaNoPlanTitle => 'Nog geen plan voor deze dag.';
 
   @override
-  String dailyOsNextAgendaNoPlanSummary(String duration) {
-    return '$duration Spreek een check-in en ik zal er een dag omheen tekenen.';
-  }
+  String get dailyOsNextAgendaNow => 'Nu';
 
   @override
-  String get dailyOsNextAgendaNoPlanTitle => 'Nog geen plan voor vandaag.';
+  String get dailyOsNextAgendaShowDone => 'Toon afgeronde items';
 
   @override
   String get dailyOsNextAgendaStateDone => 'Klaar';
@@ -4882,16 +4889,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get dailyOsNextAgendaStateOverdue => 'Te laat';
-
-  @override
-  String dailyOsNextAgendaSummary(String scheduled, String capacity) {
-    return '$scheduled van $capacity vastgelegd';
-  }
-
-  @override
-  String dailyOsNextAgendaTrackedLegend(String duration, int completedCount) {
-    return 'Getraceerd · $duration · $completedCount klaar';
-  }
 
   @override
   String get dailyOsNextBlockCreateTask => 'Taak maken';
@@ -4974,8 +4971,23 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String dailyOsNextBriefingCapacityLabel(String breakdown) {
+    return 'Geplande tijd per categorie: $breakdown';
+  }
+
+  @override
+  String dailyOsNextBriefingDoneCaption(int count) {
+    return '$count klaar';
+  }
+
+  @override
   String dailyOsNextBriefingFree(String duration) {
     return 'Er is nog $duration van je dag vrij.';
+  }
+
+  @override
+  String dailyOsNextBriefingFreeCaption(String duration) {
+    return '$duration vrij';
   }
 
   @override
@@ -5014,23 +5026,43 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String dailyOsNextBriefingMoreCategories(int count) {
+    return '+$count meer';
+  }
+
+  @override
   String dailyOsNextBriefingNext(String time, String title) {
     return 'Hierna om $time: $title.';
   }
 
   @override
   String get dailyOsNextBriefingNoPlan =>
-      'Er is nog geen plan voor deze dag. Een korte check-in maakt er een.';
+      'Er is nog geen plan voor deze dag. Een korte check‑in maakt er een.';
 
   @override
   String get dailyOsNextBriefingNothingLeft =>
       'Voor vandaag staat er niets meer gepland.';
 
   @override
+  String dailyOsNextBriefingOverCaption(String duration) {
+    return '$duration te veel';
+  }
+
+  @override
+  String dailyOsNextBriefingPlannedCaption(String duration) {
+    return '$duration gepland';
+  }
+
+  @override
   String get dailyOsNextBriefingPlayTooltip => 'Luister naar je dag';
 
   @override
   String get dailyOsNextBriefingStopTooltip => 'Stop de briefing';
+
+  @override
+  String dailyOsNextBriefingTrackedCaption(String duration) {
+    return '$duration bijgehouden';
+  }
 
   @override
   String get dailyOsNextCaptureCaptured => 'Begrepen.';
@@ -5182,7 +5214,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get dailyOsNextDayBack => 'Terug';
 
   @override
-  String get dailyOsNextDayComposerCheckInHint => 'Spreek of typ een check-in';
+  String get dailyOsNextDayComposerCheckInHint => 'Spreek of typ een check‑in';
 
   @override
   String get dailyOsNextDayDeleteDialogBody =>
@@ -5211,6 +5243,23 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get dailyOsNextDayMoreTooltip => 'Meer';
+
+  @override
+  String dailyOsNextDayOverline(String lead, String detail) {
+    return '$lead · $detail';
+  }
+
+  @override
+  String get dailyOsNextDayRelationToday => 'Vandaag';
+
+  @override
+  String get dailyOsNextDayRelationTomorrow => 'Morgen';
+
+  @override
+  String get dailyOsNextDayRelationYesterday => 'Gisteren';
+
+  @override
+  String get dailyOsNextDayStartCheckIn => 'Check-in starten';
 
   @override
   String get dailyOsNextDayTitle => 'Jouw dag';
@@ -5720,7 +5769,13 @@ class AppLocalizationsNl extends AppLocalizations {
   String get dailyOsNextTimelineArrange => 'Blokjes ordenen';
 
   @override
-  String get dailyOsNextTimelineBoth => 'Plan en werkelijke';
+  String get dailyOsNextTimelineArrangeShort => 'Ordenen';
+
+  @override
+  String get dailyOsNextTimelineBothLanes => 'Beide banen';
+
+  @override
+  String get dailyOsNextTimelineOneLane => 'Eén baan';
 
   @override
   String get dailyOsNextTimelinePlanned => 'Plan';
@@ -5736,14 +5791,6 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get dailyOsNextTimelineShowPaged =>
       'Bewegingsbaar plan en werkelijke tonen';
-
-  @override
-  String get dailyOsNextTimelineSwipeHint =>
-      'Veeg voor werkelijke · knijp verticaal naar zoom';
-
-  @override
-  String get dailyOsNextTimelineSwipeHintToPlan =>
-      'Veeg voor plan · knijp verticaal naar zoom';
 
   @override
   String get dailyOsNextTimelineTracked => 'traced';
@@ -5806,6 +5853,17 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get dailyOsNextUncommitFailed =>
       'Ongedaan maken lukte niet — het plan blijft vastgelegd.';
+
+  @override
+  String get dailyOsNextWeekStripNextWeek => 'Volgende week';
+
+  @override
+  String get dailyOsNextWeekStripPreviousWeek => 'Vorige week';
+
+  @override
+  String dailyOsNextWeekStripSelectDay(String date) {
+    return '$date selecteren';
+  }
 
   @override
   String get dailyOsOnboardingCoachCapture => 'Zeg wat je aandacht trekt.';

@@ -100,36 +100,15 @@ Widget wrapDayPage(
   );
 }
 
-ThemeData themeWithHeaderSpacing(double step2) {
+/// A theme whose `step3` — the day header's vertical padding and row gap —
+/// is [step3], to prove the header lays out again when the token changes.
+ThemeData themeWithHeaderSpacing(double step3) {
   final theme = resolveTestTheme();
   final tokens = theme.extension<DsTokens>()!;
   return theme.copyWith(
     extensions: <ThemeExtension<dynamic>>[
       tokens.copyWith(
-        spacing: tokens.spacing.copyWith(step2: step2),
-      ),
-    ],
-  );
-}
-
-Widget dateStripLike(String label) {
-  return Row(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      IconButton(
-        icon: const Icon(LottiIcons.chevronLeft),
-        onPressed: () {},
-      ),
-      Flexible(
-        child: Text(
-          label,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-      ),
-      IconButton(
-        icon: const Icon(LottiIcons.chevronRight),
-        onPressed: () {},
+        spacing: tokens.spacing.copyWith(step3: step3),
       ),
     ],
   );

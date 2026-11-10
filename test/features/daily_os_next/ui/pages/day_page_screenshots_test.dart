@@ -23,6 +23,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/day_agent_identity.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/knowledge/agent_knowledge_providers.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
@@ -30,16 +31,21 @@ import 'package:lotti/features/daily_os_next/services/day_activity_repository.da
 import 'package:lotti/features/daily_os_next/services/day_processing_job.dart';
 import 'package:lotti/features/daily_os_next/state/actual_time_blocks_provider.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
+import 'package:lotti/features/daily_os_next/state/daily_os_inference_providers.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_preferences_controller.dart';
 import 'package:lotti/features/daily_os_next/state/day_activity_provider.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/state/refine_controller.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/day_page.dart';
+import 'package:lotti/features/daily_os_next/ui/pages/day_page_header.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/refine_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/shutdown_page.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/agenda_view.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/day_activity_view.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/day_agenda_row.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_briefing_companion.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/time_spent_card.dart';
 import 'package:lotti/features/design_system/components/navigation/desktop_navigation_sidebar.dart';
 import 'package:lotti/features/design_system/components/time_pickers/design_system_picker_wheels.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
@@ -52,7 +58,6 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:lotti/utils/consts.dart';
-import 'package:lotti/widgets/media/thumb_hash_image.dart';
 import 'package:lotti/widgets/nav_bar/mobile_navigation_launcher.dart';
 import 'package:lotti/widgets/settings/settings_picker_field.dart';
 import 'package:material_ui/material_ui.dart';
@@ -75,26 +80,43 @@ late ManualDemoWorld _manualWorld;
 Directory? _manualDocumentsDirectory;
 String _t(String en, String de) => manualScreenshotText(en: en, de: de);
 
+// The plan's categories are the demo world's own — the same ids, names and
+// colours a task resolves to live — so every surface paints one task in one
+// hue. `_health` is the one category the demo world lacks; the fixture
+// defines it for the mocks below, in a hue no other category is near.
 final _deepWork = DayAgentCategory(
-  id: 'cat-penguin',
+  id: manualDemoCategoryId,
   name: _t('Penguin Operations', 'Pinguinbetrieb'),
-  colorHex: '8B5CF6',
+  colorHex: '4AB6E8',
 );
 final _client = DayAgentCategory(
-  id: 'cat-mission',
-  name: _t('Mission Control', 'Missionskontrolle'),
-  colorHex: '4F9DDE',
+  id: demoHabitatCategoryId,
+  name: _t('Habitat Engineering', 'Habitat-Technik'),
+  colorHex: '7BD3A0',
 );
 final _health = DayAgentCategory(
   id: 'cat-human',
   name: _t('Human Maintenance', 'Menschenwartung'),
-  colorHex: '34D399',
+  colorHex: 'E879F9',
 );
 final _admin = DayAgentCategory(
-  id: 'cat-diplomacy',
-  name: _t('Fish Diplomacy', 'Fischdiplomatie'),
-  colorHex: 'E8A33D',
+  id: demoLogisticsCategoryId,
+  name: _t('Logistics & Supply', 'Logistik & Nachschub'),
+  colorHex: 'F2A65A',
 );
+
+/// Each of the day's tasks in the category its plan block names, so the
+/// live category the page resolves agrees with the plan.
+Map<String, String> get _taskCategories => {
+  manualRollCallTaskId: _admin.id,
+  manualOrbitalHabitatTaskId: _deepWork.id,
+  manualLaunchReviewTaskId: _client.id,
+  manualLunchTaskId: _health.id,
+  manualSardineFuturesTaskId: _client.id,
+  manualFishFeederTaskId: _deepWork.id,
+  manualPenguinPassengerTaskId: _admin.id,
+  manualHeadsetWalkTaskId: _health.id,
+};
 
 DateTime _at(int hour, [int minute = 0]) => DateTime(2026, 6, 8, hour, minute);
 
@@ -129,8 +151,10 @@ TimeBlock _tracked(
   DateTime end,
   DayAgentCategory category, {
   TimeBlockState state = TimeBlockState.completed,
+  String? taskId,
 }) => TimeBlock(
   id: 'actual:$id',
+  taskId: taskId,
   title: title,
   start: start,
   end: end,
@@ -443,6 +467,7 @@ List<TimeBlock> _actuals() => [
     _at(8, 42),
     _at(9, 5),
     _admin,
+    taskId: manualRollCallTaskId,
   ),
   _tracked(
     'deep',
@@ -453,6 +478,7 @@ List<TimeBlock> _actuals() => [
     _at(9, 5),
     _at(10, 38),
     _deepWork,
+    taskId: manualOrbitalHabitatTaskId,
   ),
   _tracked(
     'incident',
@@ -470,6 +496,7 @@ List<TimeBlock> _actuals() => [
     _at(11, 18),
     _at(12, 5),
     _client,
+    taskId: manualLaunchReviewTaskId,
   ),
   _tracked(
     'lunch',
@@ -477,6 +504,7 @@ List<TimeBlock> _actuals() => [
     _at(12, 10),
     _at(12, 50),
     _health,
+    taskId: manualLunchTaskId,
   ),
   _tracked(
     'followup',
@@ -484,6 +512,7 @@ List<TimeBlock> _actuals() => [
     _at(13, 5),
     _at(14, 55),
     _client,
+    taskId: manualSardineFuturesTaskId,
   ),
   _tracked(
     'slides',
@@ -492,6 +521,7 @@ List<TimeBlock> _actuals() => [
     _at(15, 45),
     _deepWork,
     state: TimeBlockState.inProgress,
+    taskId: manualFishFeederTaskId,
   ),
 ];
 
@@ -785,6 +815,9 @@ class _ManualDailyOsAgent extends MockDayAgent {
 
 enum _ManualDailyOsSurface { refine, shutdown }
 
+/// The day page states the redesign is reviewed on.
+enum _RedesignSurface { agenda, agendaNoPlan, day, activity }
+
 Widget _app({
   required Widget home,
   required Brightness brightness,
@@ -820,8 +853,30 @@ Widget _app({
   );
 }
 
-Widget _dayShell(ScreenshotDevice device, {required DraftPlan draft}) {
-  final dayPage = DayPage(draft: draft);
+Widget _dayShell(
+  ScreenshotDevice device, {
+  required DraftPlan draft,
+  bool hasPlan = true,
+  bool rootChrome = false,
+}) {
+  final dayPage = DayPage(
+    draft: draft,
+    hasPlan: hasPlan,
+    // What the root wires for a day without a plan, so its composer is live
+    // (not drawn disabled) in the capture.
+    onSubmitCheckIn: hasPlan ? null : (words, {audioId}) async {},
+    onCheckIn: hasPlan ? null : () {},
+    // What `DailyOsNextRoot` hands the page in production: the day's own
+    // navigation as the header title.
+    navigation: rootChrome
+        ? DayNavigation(
+            today: _day,
+            onSelect: (_) {},
+            onPick: () {},
+            onToday: () {},
+          )
+        : null,
+  );
   if (!device.isPhone) {
     DesktopSidebarDestination destination(
       String label,
@@ -899,6 +954,8 @@ Future<void> _pumpDayPage(
   List<DayActivityEntry> activityEntries = const [],
   List<TimeBlock>? actualBlocks,
   bool companion = false,
+  bool hasPlan = true,
+  bool rootChrome = false,
 }) async {
   applyScreenshotDevice(tester, device);
   final actuals = actualBlocks ?? _actuals();
@@ -907,7 +964,9 @@ Future<void> _pumpDayPage(
     throw StateError('Manual screenshot documents directory is unavailable.');
   }
   await withClock(Clock.fixed(_now), () async {
-    final draft = showPlannerReview
+    final draft = !hasPlan
+        ? DraftPlan.emptyForDay(_day)
+        : showPlannerReview
         ? _plan()
         : _plan().copyWith(state: DayState.committed);
     await primeManualDemoCoverArt(
@@ -944,6 +1003,14 @@ Future<void> _pumpDayPage(
           dailyOsPreferencesControllerProvider.overrideWith(
             _ScreenshotPreferencesController.new,
           ),
+          // Daily OS is set up, as it is for anyone with a plan to look at:
+          // the composer is live rather than waiting on its setup check.
+          dailyOsSetupStatusProvider.overrideWith(
+            (ref) async => const DailyOsSetupStatus(
+              hasInferenceRoute: true,
+              hasPreferredName: true,
+            ),
+          ),
           for (final coverImage in _manualWorld.coverImages)
             createEntryControllerOverride(coverImage),
           // The companion in the header, with her flag and read-aloud on
@@ -961,7 +1028,12 @@ Future<void> _pumpDayPage(
         // DayPage lives inside the app shell in production. Reuse the real
         // design-system mobile bar / desktop sidebar so the captures reflect
         // each breakpoint instead of showing a hollow reserved band.
-        home: _dayShell(device, draft: draft),
+        home: _dayShell(
+          device,
+          draft: draft,
+          hasPlan: hasPlan,
+          rootChrome: rootChrome,
+        ),
       ),
     );
     final container = ProviderScope.containerOf(
@@ -1117,47 +1189,11 @@ Future<void> _openBlockEditor(
   );
 }
 
-void _expectAgendaThumbnails(WidgetTester tester) {
-  final agendaThumbnails = find.descendant(
-    of: find.byType(AgendaView),
-    matching: find.byType(CoverArtThumbnail),
-  );
-  expect(agendaThumbnails, findsNWidgets(8));
-  final thumbnails = tester
-      .widgetList<CoverArtThumbnail>(agendaThumbnails)
-      .toList();
-  expect(
-    thumbnails.map((thumbnail) => thumbnail.imageId).toSet(),
-    <String>{
-      manualRollCallCoverImageId,
-      manualHabitatCoverImageId,
-      manualLaunchReviewCoverImageId,
-      manualLunchCoverImageId,
-      manualSardineFuturesCoverImageId,
-      manualFishFeederCoverImageId,
-      manualPenguinPassengerCoverImageId,
-      manualHeadsetWalkCoverImageId,
-    },
-  );
-  final container = ProviderScope.containerOf(
-    tester.element(find.byType(CoverArtThumbnail).first),
-  );
-  for (final thumbnail in thumbnails) {
-    expect(
-      container.read(entryControllerProvider(thumbnail.imageId)).value?.entry,
-      _manualWorld.coverImageById(thumbnail.imageId),
-    );
-  }
-  // Every thumbnail shows its picture (the file is installed) over its
-  // ThumbHash stand-in: one of each per slot.
-  final images = tester
-      .widgetList<Image>(
-        find.descendant(of: agendaThumbnails, matching: find.byType(Image)),
-      )
-      .map((image) => image.image)
-      .toList();
-  expect(images.whereType<ResizeImage>(), hasLength(8));
-  expect(images.whereType<ThumbHashImage>(), hasLength(8));
+/// The agenda shows every item as a row on one card, with no cover art:
+/// the category dot is the row's only mark.
+void _expectAgendaRows(WidgetTester tester) {
+  expect(find.byType(DayAgendaRow), findsNWidgets(8));
+  expect(find.byType(CoverArtThumbnail), findsNothing);
 }
 
 void main() {
@@ -1193,11 +1229,30 @@ void main() {
       () => mocks.journalDb.journalEntityById(any()),
     ).thenAnswer((invocation) async {
       final id = invocation.positionalArguments.first as String;
-      return _manualWorld.entityById(id);
+      final entity = _manualWorld.entityById(id);
+      final categoryId = _taskCategories[id];
+      return switch (entity) {
+        final Task task when categoryId != null => task.copyWith(
+          meta: task.meta.copyWith(categoryId: categoryId),
+        ),
+        _ => entity,
+      };
     });
-    when(
-      () => mocks.journalDb.getCategoryById(manualDemoCategoryId),
-    ).thenAnswer((_) async => _manualWorld.category);
+    final humanMaintenance = _manualWorld.category.copyWith(
+      id: _health.id,
+      name: _health.name,
+      color: '#${_health.colorHex}',
+      favorite: false,
+    );
+    when(() => mocks.journalDb.getCategoryById(any())).thenAnswer((
+      invocation,
+    ) async {
+      final id = invocation.positionalArguments.first as String;
+      return [
+        ..._manualWorld.categories,
+        humanMaintenance,
+      ].where((c) => c.id == id).firstOrNull;
+    });
   });
 
   tearDown(() async {
@@ -1218,7 +1273,7 @@ void main() {
       );
       await _switchToAgendaView(tester);
       expect(find.byType(AgendaView), findsOneWidget);
-      _expectAgendaThumbnails(tester);
+      _expectAgendaRows(tester);
       await captureScreenshot(tester, 'day_${device.name}_01_agenda_dark');
     });
 
@@ -1380,7 +1435,7 @@ void main() {
     );
     await _switchToAgendaView(tester);
     expect(find.byType(AgendaView), findsOneWidget);
-    _expectAgendaThumbnails(tester);
+    _expectAgendaRows(tester);
     await captureScreenshot(tester, 'day_mini_04_agenda_light');
   });
 
@@ -1393,7 +1448,7 @@ void main() {
     );
     await _switchToAgendaView(tester);
     expect(find.byType(AgendaView), findsOneWidget);
-    _expectAgendaThumbnails(tester);
+    _expectAgendaRows(tester);
     await captureScreenshot(tester, 'day_desktop_03_agenda_light');
   });
 
@@ -1518,6 +1573,67 @@ void main() {
           );
         },
       );
+    }
+  }
+
+  // The day page redesign's review set (docs/implementation_plans/
+  // 2026-11-10_daily_os_day_page_redesign.md): the page as the root mounts
+  // it, on all three tabs and a day without a plan, at phone and desktop
+  // width in both themes. Re-captured unchanged after every phase so the
+  // before/after pairs frame the same day.
+  for (final deviceCase in [
+    (device: proDevice, viewport: 'mobile'),
+    (device: desktopDevice, viewport: 'desktop'),
+  ]) {
+    for (final brightness in Brightness.values) {
+      for (final surface in _RedesignSurface.values) {
+        final name =
+            'day_redesign_${surface.name}_${deviceCase.viewport}_'
+            '${brightness.name}';
+        testWidgets(name, (tester) async {
+          await _pumpDayPage(
+            tester,
+            device: deviceCase.device,
+            brightness: brightness,
+            rootChrome: true,
+            hasPlan: surface != _RedesignSurface.agendaNoPlan,
+            activityEntries: surface == _RedesignSurface.activity
+                ? _activityEntries()
+                : const [],
+          );
+          switch (surface) {
+            case _RedesignSurface.agenda:
+              await _switchToAgendaView(tester);
+              expect(find.byType(AgendaView), findsOneWidget);
+              // The finished morning folds; the rest of the day is rows.
+              expect(
+                find.byKey(const ValueKey('daily_os_agenda_done_run')),
+                findsOneWidget,
+              );
+              expect(find.byType(DayAgendaRow), findsNWidgets(3));
+            case _RedesignSurface.agendaNoPlan:
+              await _switchToAgendaView(tester);
+              // The Agenda's one row starts the check-in, and the day's
+              // tracked time follows it.
+              expect(
+                find.byKey(const Key('daily_os_agenda_start_check_in')),
+                findsOneWidget,
+              );
+              expect(find.byType(TimeSpentCard), findsOneWidget);
+            case _RedesignSurface.day:
+              await _switchToDayView(tester);
+              expect(find.byType(DayTimeline), findsOneWidget);
+            case _RedesignSurface.activity:
+              await _switchToActivityView(tester);
+              expect(find.byType(DayActivityView), findsOneWidget);
+              expect(
+                find.text(_messages(tester).dailyOsNextActivityRetry),
+                findsOneWidget,
+              );
+          }
+          await captureScreenshot(tester, name);
+        });
+      }
     }
   }
 

@@ -4,6 +4,7 @@
 library;
 
 import 'package:clock/clock.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/intl.dart';
@@ -278,4 +279,124 @@ void main() {
       },
     );
   });
+
+  group('DailyOsDateStrip stepping through days', () {
+    /// A host that owns the selection the way the docked column does, so
+    /// the chevrons really move it.
+    Widget steppingHost({required DateTime start, double textScale = 1}) {
+      var day = start;
+      return makeTestableWidget2(
+        Material(
+          child: Center(
+            child: StatefulBuilder(
+              builder: (context, setState) => DailyOsDateStrip(
+                selected: day,
+                isToday: false,
+                onPrev: () => setState(
+                  () => day = DateTime(day.year, day.month, day.day - 1),
+                ),
+                onNext: () => setState(
+                  () => day = DateTime(day.year, day.month, day.day + 1),
+                ),
+                onPick: () {},
+                onToday: () {},
+              ),
+            ),
+          ),
+        ),
+        mediaQueryData: MediaQueryData(
+          size: const Size(1400, 900),
+          textScaler: TextScaler.linear(textScale),
+        ),
+      );
+    }
+
+    testWidgets(
+      'the chevrons hold their position across dates of different label '
+      'width',
+      (tester) async {
+        setView(tester);
+        await withClock(Clock.fixed(DateTime(2026, 5, 3, 9)), () async {
+          await tester.pumpWidget(steppingHost(start: DateTime(2026, 5, 3)));
+          Offset next() =>
+              tester.getTopLeft(find.byIcon(LottiIcons.chevronRight));
+          Offset prev() =>
+              tester.getTopLeft(find.byIcon(LottiIcons.chevronLeft));
+          final anchorNext = next();
+          final anchorPrev = prev();
+          final seen = <String>{};
+
+          for (var step = 0; step < 5; step++) {
+            await tester.tap(find.byIcon(LottiIcons.chevronRight));
+            await tester.pump();
+            seen.add(
+              tester
+                  .widgetList<Text>(find.byType(Text))
+                  .map((text) => text.data ?? '')
+                  .firstWhere((data) => data.contains('2026')),
+            );
+            expect(next(), anchorNext, reason: 'next chevron must hold still');
+            expect(prev(), anchorPrev);
+          }
+          // The labels really differed, so the assertion is not vacuous.
+          expect(seen, hasLength(5));
+        });
+      },
+    );
+
+    testWidgets(
+      'the reserved date width grows with the text scale instead of clipping',
+      (tester) async {
+        setView(tester);
+        Future<double> reservedAt(double scale) async {
+          await tester.pumpWidget(
+            steppingHost(start: DateTime(2026, 9, 30), textScale: scale),
+          );
+          final label = find.text('Wed, Sep 30, 2026');
+          expect(label, findsOneWidget);
+          _expectLabelNotTruncated(tester, label);
+          return tester
+              .widget<ConstrainedBox>(
+                find
+                    .ancestor(of: label, matching: find.byType(ConstrainedBox))
+                    .first,
+              )
+              .constraints
+              .minWidth;
+        }
+
+        final normal = await reservedAt(1);
+        final large = await reservedAt(1.8);
+        expect(
+          large,
+          greaterThan(normal),
+          reason: 'the reservation must follow the user font size',
+        );
+      },
+    );
+  });
+}
+
+/// Asserts the date label is rendered in full at its current layout.
+///
+/// Comparing the label's *laid-out* size against the reserved width proves
+/// nothing: the `Text` sits inside the production `ConstrainedBox`, so it
+/// reports the reserved width whether or not the string fit, and the ellipsis
+/// hides the difference. The honest check is the paragraph's own intrinsic
+/// width plus its overflow flag.
+void _expectLabelNotTruncated(WidgetTester tester, Finder label) {
+  final paragraph = tester.renderObject<RenderParagraph>(label);
+  final intrinsic = paragraph.getMaxIntrinsicWidth(double.infinity);
+  expect(
+    paragraph.didExceedMaxLines,
+    isFalse,
+    reason: 'the date label was ellipsized',
+  );
+  expect(
+    paragraph.size.width,
+    greaterThanOrEqualTo(intrinsic - 0.01),
+    reason:
+        'the reserved slot (${paragraph.size.width}) is narrower than the '
+        'string needs ($intrinsic)',
+  );
 }

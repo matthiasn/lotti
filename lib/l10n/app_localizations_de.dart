@@ -4776,6 +4776,14 @@ class AppLocalizationsDe extends AppLocalizations {
   String get dailyOsNextActivityEmpty => 'Noch keine Aufnahmen oder Check-ins.';
 
   @override
+  String get dailyOsNextActivityHandled => 'Erledigt';
+
+  @override
+  String dailyOsNextActivityHandledCount(int count) {
+    return '$count erledigt';
+  }
+
+  @override
   String get dailyOsNextActivityLoadFailed =>
       'Deine gespeicherte Aktivität ist weiterhin auf diesem Gerät, konnte aber gerade nicht geladen werden.';
 
@@ -4785,6 +4793,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get dailyOsNextActivityNeedsAttention => 'Prüfung nötig';
+
+  @override
+  String get dailyOsNextActivityNeedsYou => 'Wartet auf dich';
 
   @override
   String get dailyOsNextActivityOpenAiSetup => 'Daily-OS-Einrichtung öffnen';
@@ -4835,16 +4846,15 @@ class AppLocalizationsDe extends AppLocalizations {
   String get dailyOsNextActivityUseToRefine => 'Zum Anpassen verwenden';
 
   @override
+  String get dailyOsNextActivityVoiceNote => 'Sprachnotiz';
+
+  @override
+  String dailyOsNextActivityWaitingCount(int count) {
+    return '$count offen';
+  }
+
+  @override
   String get dailyOsNextActivityWaitingForNetwork => 'Warte auf Verbindung';
-
-  @override
-  String get dailyOsNextAgendaCapacityComfortable => 'Entspannt';
-
-  @override
-  String get dailyOsNextAgendaCapacityNearFull => 'Fast voll';
-
-  @override
-  String get dailyOsNextAgendaCapacityNoPlan => 'Noch kein Plan';
 
   @override
   String dailyOsNextAgendaCapacityOf(String capacity) {
@@ -4852,35 +4862,32 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get dailyOsNextAgendaCapacityOver => 'Überlastet';
-
-  @override
-  String get dailyOsNextAgendaDonutLeft => 'frei';
-
-  @override
-  String get dailyOsNextAgendaDonutOver => 'drüber';
-
-  @override
-  String dailyOsNextAgendaHeadlineLeft(String duration) {
-    return '$duration übrig';
+  String dailyOsNextAgendaDoneRun(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Punkte erledigt',
+      one: '1 Punkt erledigt',
+    );
+    return '$_temp0';
   }
 
   @override
-  String dailyOsNextAgendaHeadlineOver(String duration) {
-    return '$duration drüber';
+  String get dailyOsNextAgendaHideDone => 'Erledigte Punkte ausblenden';
+
+  @override
+  String dailyOsNextAgendaLeft(int count, String duration) {
+    return '$count offen · $duration';
   }
 
   @override
-  String get dailyOsNextAgendaNoPlanBody =>
-      'Deine erfasste Zeit ist trotzdem hier — sprich ein Check-in ein und ich entwerfe einen Tag darum.';
+  String get dailyOsNextAgendaNoPlanTitle => 'Noch kein Plan für diesen Tag.';
 
   @override
-  String dailyOsNextAgendaNoPlanSummary(String duration) {
-    return 'Bisher $duration erfasst. Sprich ein Check-in ein und ich entwerfe einen Tag darum.';
-  }
+  String get dailyOsNextAgendaNow => 'Jetzt';
 
   @override
-  String get dailyOsNextAgendaNoPlanTitle => 'Noch kein Plan für heute.';
+  String get dailyOsNextAgendaShowDone => 'Erledigte Punkte zeigen';
 
   @override
   String get dailyOsNextAgendaStateDone => 'Erledigt';
@@ -4893,16 +4900,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get dailyOsNextAgendaStateOverdue => 'Überfällig';
-
-  @override
-  String dailyOsNextAgendaSummary(String scheduled, String capacity) {
-    return '$scheduled von $capacity verplant';
-  }
-
-  @override
-  String dailyOsNextAgendaTrackedLegend(String duration, int completedCount) {
-    return 'Erfasst · $duration · $completedCount erledigt';
-  }
 
   @override
   String get dailyOsNextBlockCreateTask => 'Aufgabe erstellen';
@@ -4985,8 +4982,23 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String dailyOsNextBriefingCapacityLabel(String breakdown) {
+    return 'Geplante Zeit nach Kategorie: $breakdown';
+  }
+
+  @override
+  String dailyOsNextBriefingDoneCaption(int count) {
+    return '$count erledigt';
+  }
+
+  @override
   String dailyOsNextBriefingFree(String duration) {
     return 'Du hast noch $duration frei.';
+  }
+
+  @override
+  String dailyOsNextBriefingFreeCaption(String duration) {
+    return '$duration frei';
   }
 
   @override
@@ -5025,6 +5037,11 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String dailyOsNextBriefingMoreCategories(int count) {
+    return '+$count weitere';
+  }
+
+  @override
   String dailyOsNextBriefingNext(String time, String title) {
     return 'Als Nächstes um $time: $title.';
   }
@@ -5038,10 +5055,25 @@ class AppLocalizationsDe extends AppLocalizations {
       'Für heute ist nichts mehr geplant.';
 
   @override
+  String dailyOsNextBriefingOverCaption(String duration) {
+    return '$duration zu viel';
+  }
+
+  @override
+  String dailyOsNextBriefingPlannedCaption(String duration) {
+    return '$duration geplant';
+  }
+
+  @override
   String get dailyOsNextBriefingPlayTooltip => 'Deinen Tag anhören';
 
   @override
   String get dailyOsNextBriefingStopTooltip => 'Briefing stoppen';
+
+  @override
+  String dailyOsNextBriefingTrackedCaption(String duration) {
+    return '$duration erfasst';
+  }
 
   @override
   String get dailyOsNextCaptureCaptured => 'Hab\'s.';
@@ -5224,6 +5256,23 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get dailyOsNextDayMoreTooltip => 'Mehr';
+
+  @override
+  String dailyOsNextDayOverline(String lead, String detail) {
+    return '$lead · $detail';
+  }
+
+  @override
+  String get dailyOsNextDayRelationToday => 'Heute';
+
+  @override
+  String get dailyOsNextDayRelationTomorrow => 'Morgen';
+
+  @override
+  String get dailyOsNextDayRelationYesterday => 'Gestern';
+
+  @override
+  String get dailyOsNextDayStartCheckIn => 'Check-in starten';
 
   @override
   String get dailyOsNextDayTitle => 'Dein Tag';
@@ -5741,7 +5790,13 @@ class AppLocalizationsDe extends AppLocalizations {
   String get dailyOsNextTimelineArrange => 'Blöcke anordnen';
 
   @override
-  String get dailyOsNextTimelineBoth => 'Plan und Ist';
+  String get dailyOsNextTimelineArrangeShort => 'Anordnen';
+
+  @override
+  String get dailyOsNextTimelineBothLanes => 'Beide Spalten';
+
+  @override
+  String get dailyOsNextTimelineOneLane => 'Eine Spalte';
 
   @override
   String get dailyOsNextTimelinePlanned => 'Plan';
@@ -5757,14 +5812,6 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get dailyOsNextTimelineShowPaged =>
       'Plan und Ist zum Wischen anzeigen';
-
-  @override
-  String get dailyOsNextTimelineSwipeHint =>
-      'Wische zu Ist · vertikal kneifen zum Zoomen';
-
-  @override
-  String get dailyOsNextTimelineSwipeHintToPlan =>
-      'Wische zum Plan · vertikal kneifen zum Zoomen';
 
   @override
   String get dailyOsNextTimelineTracked => 'erfasst';
@@ -5827,6 +5874,17 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get dailyOsNextUncommitFailed =>
       'Rückgängig ging nicht — der Plan bleibt festgelegt.';
+
+  @override
+  String get dailyOsNextWeekStripNextWeek => 'Nächste Woche';
+
+  @override
+  String get dailyOsNextWeekStripPreviousWeek => 'Vorige Woche';
+
+  @override
+  String dailyOsNextWeekStripSelectDay(String date) {
+    return '$date auswählen';
+  }
 
   @override
   String get dailyOsOnboardingCoachCapture => 'Sag, was dir im Kopf herumgeht.';

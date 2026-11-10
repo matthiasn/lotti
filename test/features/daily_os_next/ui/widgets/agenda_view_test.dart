@@ -6,10 +6,12 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
-import 'package:lotti/features/daily_os_next/ui/widgets/agenda_card.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/agenda_view.dart';
-import 'package:lotti/features/daily_os_next/ui/widgets/capacity_donut.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/day_agenda_row.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/day_row_scaffold.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/time_spent_card.dart';
+import 'package:lotti/features/design_system/components/cards/ds_rows_card.dart';
+import 'package:lotti/features/design_system/theme/icon_tokens.dart';
 import 'package:lotti/features/tasks/ui/cover_art_thumbnail.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -19,7 +21,6 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/entity_factories.dart';
 import '../../../../helpers/fake_entry_controller.dart';
-import '../../../../test_utils/material_ui_finders.dart';
 import '../../../../widget_test_utils.dart';
 import '../../../categories/test_utils.dart';
 
@@ -35,18 +36,6 @@ const _category = DayAgentCategory(
   name: 'Work',
   colorHex: '5ED4B7',
 );
-
-List<TimeBlock> _blocksTotalling(int minutes) => [
-  TimeBlock(
-    id: 'b-total',
-    title: 'Planned work',
-    start: DateTime(2026, 5, 26, 9),
-    end: DateTime(2026, 5, 26, 9).add(Duration(minutes: minutes)),
-    type: TimeBlockType.ai,
-    state: TimeBlockState.drafted,
-    category: _category,
-  ),
-];
 
 DraftPlan _draft({String? taskId}) {
   final day = DateTime(2026, 5, 26);
@@ -92,72 +81,6 @@ void main() {
   tearDown(() => beamToNamedOverride = null);
 
   group('AgendaView', () {
-    testWidgets(
-      'stat strip derives one truth: headline, donut, and legend all use '
-      'the block-derived committed minutes, even when the stored '
-      'scheduledMinutes drifted',
-      (tester) async {
-        final day = DateTime(2026, 5, 26);
-        final drifted = DraftPlan(
-          dayDate: day,
-          // Blocks sum to 150m; the stored total lies (240m).
-          blocks: [
-            TimeBlock(
-              id: 'b1',
-              title: 'Deep work',
-              start: DateTime(2026, 5, 26, 9),
-              end: DateTime(2026, 5, 26, 10, 30),
-              type: TimeBlockType.ai,
-              state: TimeBlockState.drafted,
-              category: _category,
-            ),
-            TimeBlock(
-              id: 'b2',
-              title: 'Dropped — must not count',
-              start: DateTime(2026, 5, 26, 11),
-              end: DateTime(2026, 5, 26, 12),
-              type: TimeBlockType.ai,
-              state: TimeBlockState.dropped,
-              category: _category,
-            ),
-            TimeBlock(
-              id: 'b3',
-              title: 'Calls',
-              start: DateTime(2026, 5, 26, 13),
-              end: DateTime(2026, 5, 26, 14),
-              type: TimeBlockType.manual,
-              state: TimeBlockState.drafted,
-              category: _category,
-            ),
-          ],
-          bands: const [],
-          capacityMinutes: 480,
-          scheduledMinutes: 240,
-        );
-        await tester.pumpWidget(_wrap(AgendaView(draft: drifted)));
-        await tester.pump();
-
-        final messages = tester.element(find.byType(AgendaView)).messages;
-        // Remaining headline leads (480 - 150 = 5h 30m), derived from
-        // non-dropped blocks (not the 240m stored total).
-        expect(
-          find.text(messages.dailyOsNextAgendaHeadlineLeft('5h 30m')),
-          findsOneWidget,
-        );
-        // The committed/capacity summary demotes into the supporting line.
-        expect(
-          find.textContaining(
-            messages.dailyOsNextAgendaSummary('2h 30m', '8h'),
-          ),
-          findsOneWidget,
-        );
-        // Donut center: remaining = 480 - 150.
-        expect(find.text('5h 30m'), findsOneWidget);
-        // Legend agrees with both.
-        expect(find.textContaining('2h 30m'), findsWidgets);
-      },
-    );
-
     testWidgets('opens task-backed agenda items through app navigation', (
       tester,
     ) async {
@@ -212,7 +135,7 @@ void main() {
       );
       await tester.pump();
 
-      // The live task name renders on the link badge; the card title
+      // The live task name renders on the row's meta line; the row title
       // keeps the agenda intent line.
       expect(find.text('Updated task title'), findsOneWidget);
       expect(find.text('Complete client animation'), findsOneWidget);
@@ -280,8 +203,8 @@ void main() {
         );
         await tester.pump();
 
-        AgendaCard agendaCard() =>
-            tester.widget<AgendaCard>(find.byType(AgendaCard));
+        DayAgendaRow agendaCard() =>
+            tester.widget<DayAgendaRow>(find.byType(DayAgendaRow));
         expect(agendaCard().item.category.id, 'cat-work');
         expect(agendaCard().item.category.name, 'Work');
         expect(agendaCard().item.category.colorHex, '4F9DDE');
@@ -317,7 +240,7 @@ void main() {
       },
     );
 
-    testWidgets('passes linked task cover art through to agenda cards', (
+    testWidgets('leaves linked task cover art to the task page', (
       tester,
     ) async {
       final updates = StreamController<Set<String>>.broadcast();
@@ -350,11 +273,10 @@ void main() {
       );
       await tester.pump();
 
-      final thumbnail = tester.widget<CoverArtThumbnail>(
-        find.byType(CoverArtThumbnail),
-      );
-      expect(thumbnail.imageId, 'image-1');
-      expect(thumbnail.cropX, 0.25);
+      // The category dot is the row's only mark; the cover stays on the
+      // task page and in the companion's cards.
+      expect(find.byType(DayAgendaRow), findsOneWidget);
+      expect(find.byType(CoverArtThumbnail), findsNothing);
     });
 
     testWidgets('shows a visible fallback when a linked task is missing', (
@@ -378,7 +300,7 @@ void main() {
     });
 
     testWidgets(
-      'surfaces the linked AI block reason as the why pill',
+      "surfaces the linked AI block's reason on the row",
       (tester) async {
         final day = DateTime(2026, 5, 26);
         final draft = DraftPlan(
@@ -410,104 +332,470 @@ void main() {
         await tester.pumpWidget(_wrap(AgendaView(draft: draft)));
         await tester.pump();
 
-        // The AI placement's reason reaches the card as the why tooltip.
+        // The AI placement's reason reaches the row as its second line.
+        expect(find.text('High-energy window 8-10:30.'), findsOneWidget);
         expect(
-          findMaterialTooltip('High-energy window 8-10:30.'),
-          findsOneWidget,
+          tester.widget<DayAgendaRow>(find.byType(DayAgendaRow)).whyReason,
+          'High-energy window 8-10:30.',
         );
       },
     );
 
-    testWidgets('comfortable capacity (< 90%) shows comfortable overline', (
-      tester,
-    ) async {
-      final draft = DraftPlan(
-        dayDate: DateTime(2026, 5, 26),
-        blocks: const [],
-        bands: const [],
-        capacityMinutes: 600,
-        scheduledMinutes: 300, // 50% utilisation.
-        agendaItems: const [],
+    group('order and card', () {
+      TimeBlock block(String id, int hour, {bool dropped = false}) => TimeBlock(
+        id: id,
+        title: id,
+        start: DateTime(2026, 5, 26, hour),
+        end: DateTime(2026, 5, 26, hour + 1),
+        type: TimeBlockType.ai,
+        state: dropped ? TimeBlockState.dropped : TimeBlockState.drafted,
+        category: _category,
       );
-      await tester.pumpWidget(_wrap(AgendaView(draft: draft)));
+      AgendaItem item(String id, List<String> blocks) => AgendaItem(
+        id: id,
+        title: 'Item $id',
+        category: _category,
+        linkedBlockIds: blocks,
+      );
+      DraftPlan plan(List<TimeBlock> blocks, List<AgendaItem> items) =>
+          DraftPlan(
+            dayDate: DateTime(2026, 5, 26),
+            blocks: blocks,
+            bands: const [],
+            capacityMinutes: 480,
+            scheduledMinutes: 0,
+            agendaItems: items,
+          );
+      List<(String, DateTime?)> rowsOf(WidgetTester tester) => [
+        for (final row in tester.widgetList<DayAgendaRow>(
+          find.byType(DayAgendaRow),
+        ))
+          (row.item.id, row.start),
+      ];
 
-      final messages = tester.element(find.byType(AgendaView)).messages;
-      expect(
-        find.textContaining(messages.dailyOsNextAgendaCapacityComfortable),
-        findsOneWidget,
+      AgendaItem done(String id, List<String> blocks) => AgendaItem(
+        id: id,
+        title: 'Item $id',
+        category: _category,
+        linkedBlockIds: blocks,
+        state: AgendaItemState.done,
       );
-      expect(
-        find.textContaining(messages.dailyOsNextAgendaCapacityNearFull),
-        findsNothing,
+      final doneRun = find.byKey(const ValueKey('daily_os_agenda_done_run'));
+
+      testWidgets(
+        'two or more finished items at the head of the day fold into one '
+        'row that unfolds them in place',
+        (tester) async {
+          await tester.pumpWidget(
+            _wrap(
+              AgendaView(
+                draft: plan(
+                  [block('b8', 8), block('b9', 9), block('b10', 10)],
+                  [
+                    done('first', ['b8']),
+                    done('second', ['b9']),
+                    item('open', ['b10']),
+                  ],
+                ),
+              ),
+            ),
+          );
+          final messages = tester.element(find.byType(AgendaView)).messages;
+
+          // Folded: the run is one row at the first item's time, and only
+          // the open item is listed.
+          expect(doneRun, findsOneWidget);
+          expect(find.text(messages.dailyOsNextAgendaDoneRun(2)), findsOne);
+          expect(
+            find.descendant(of: doneRun, matching: find.text('8:00 AM')),
+            findsOneWidget,
+          );
+          expect(rowsOf(tester).map((r) => r.$1), ['open']);
+          expect(find.byIcon(LottiIcons.chevronDown), findsOneWidget);
+          expect(
+            tester.getSemantics(doneRun),
+            matchesSemantics(
+              label: messages.dailyOsNextAgendaShowDone,
+              isButton: true,
+              hasExpandedState: true,
+              hasTapAction: true,
+            ),
+          );
+
+          await tester.tap(doneRun);
+          await tester.pump();
+
+          expect(rowsOf(tester).map((r) => r.$1), ['first', 'second', 'open']);
+          expect(find.byIcon(LottiIcons.chevronUp), findsOneWidget);
+          expect(
+            tester.getSemantics(doneRun),
+            matchesSemantics(
+              label: messages.dailyOsNextAgendaHideDone,
+              isButton: true,
+              hasExpandedState: true,
+              isExpanded: true,
+              hasTapAction: true,
+            ),
+          );
+
+          await tester.tap(doneRun);
+          await tester.pump();
+          expect(rowsOf(tester).map((r) => r.$1), ['open']);
+        },
       );
-      expect(
-        find.textContaining(messages.dailyOsNextAgendaCapacityOver),
-        findsNothing,
-      );
+
+      testWidgets('a single finished item is listed as it is', (tester) async {
+        await tester.pumpWidget(
+          _wrap(
+            AgendaView(
+              draft: plan(
+                [block('b8', 8), block('b10', 10)],
+                [
+                  done('first', ['b8']),
+                  item('open', ['b10']),
+                ],
+              ),
+            ),
+          ),
+        );
+
+        expect(doneRun, findsNothing);
+        expect(rowsOf(tester).map((r) => r.$1), ['first', 'open']);
+      });
+
+      testWidgets('a folded run with no blocks shows a dash for its time', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          _wrap(
+            AgendaView(
+              draft: plan(const [], [done('a', const []), done('b', const [])]),
+            ),
+          ),
+        );
+
+        expect(
+          find.descendant(of: doneRun, matching: find.text('—')),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('the header scrolls in above the rows', (tester) async {
+        await tester.pumpWidget(
+          _wrap(
+            AgendaView(
+              draft: plan(
+                [block('b9', 9)],
+                [
+                  item('only', ['b9']),
+                ],
+              ),
+              header: const Text('briefing'),
+            ),
+          ),
+        );
+
+        expect(
+          find.descendant(
+            of: find.byType(SingleChildScrollView),
+            matching: find.text('briefing'),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          tester.getTopLeft(find.text('briefing')).dy,
+          lessThan(tester.getTopLeft(find.byType(DayAgendaRow)).dy),
+        );
+      });
+
+      testWidgets('orders the rows by their first block, not plan order', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          _wrap(
+            AgendaView(
+              draft: plan(
+                [block('b9', 9), block('b13', 13), block('b11', 11)],
+                [
+                  item('late', ['b13']),
+                  item('early', ['b9', 'b11']),
+                ],
+              ),
+            ),
+          ),
+        );
+
+        expect(rowsOf(tester), [
+          ('early', DateTime(2026, 5, 26, 9)),
+          ('late', DateTime(2026, 5, 26, 13)),
+        ]);
+      });
+
+      testWidgets('an item with several blocks takes the earliest start', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          _wrap(
+            AgendaView(
+              draft: plan(
+                [block('b14', 14), block('b8', 8)],
+                [
+                  item('split', ['b14', 'b8']),
+                ],
+              ),
+            ),
+          ),
+        );
+
+        expect(rowsOf(tester).single.$2, DateTime(2026, 5, 26, 8));
+      });
+
+      testWidgets('items with no block sort last, in plan order', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          _wrap(
+            AgendaView(
+              draft: plan(
+                [block('b10', 10)],
+                [
+                  item('loose-a', const []),
+                  item('timed', ['b10']),
+                  item('loose-b', ['missing']),
+                ],
+              ),
+            ),
+          ),
+        );
+
+        expect(rowsOf(tester), [
+          ('timed', DateTime(2026, 5, 26, 10)),
+          ('loose-a', null),
+          ('loose-b', null),
+        ]);
+      });
+
+      testWidgets('items starting together keep plan order', (tester) async {
+        await tester.pumpWidget(
+          _wrap(
+            AgendaView(
+              draft: plan(
+                [block('x', 9), block('y', 9)],
+                [
+                  item('second', ['y']),
+                  item('first', ['x']),
+                ],
+              ),
+            ),
+          ),
+        );
+
+        expect(rowsOf(tester).map((r) => r.$1), ['second', 'first']);
+      });
+
+      testWidgets('a dropped block holds no time', (tester) async {
+        await tester.pumpWidget(
+          _wrap(
+            AgendaView(
+              draft: plan(
+                [block('gone', 7, dropped: true), block('kept', 12)],
+                [
+                  item('moved', ['gone', 'kept']),
+                ],
+              ),
+            ),
+          ),
+        );
+
+        expect(rowsOf(tester).single.$2, DateTime(2026, 5, 26, 12));
+      });
+
+      testWidgets('the rows share one card, each keyed by its item', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          _wrap(
+            AgendaView(
+              draft: plan(
+                [block('b9', 9), block('b10', 10)],
+                [
+                  item('a', ['b9']),
+                  item('b', ['b10']),
+                ],
+              ),
+            ),
+          ),
+        );
+
+        expect(find.byType(DsRowsCard), findsOneWidget);
+        expect(find.byKey(const ValueKey('a')), findsOneWidget);
+        expect(find.byKey(const ValueKey('b')), findsOneWidget);
+      });
+
+      testWidgets('renaming a standalone row hands the item and its title up', (
+        tester,
+      ) async {
+        final renames = <(String, String)>[];
+        await tester.pumpWidget(
+          _wrap(
+            AgendaView(
+              draft: plan(
+                [block('b9', 9)],
+                [
+                  item('solo', ['b9']),
+                ],
+              ),
+              onRenameItem: (item, title) => renames.add((item.id, title)),
+            ),
+          ),
+        );
+
+        await tester.tap(find.text('Item solo'));
+        await tester.pump();
+        await tester.enterText(
+          find.byKey(const Key('daily_os_editable_title_field')),
+          'Renamed',
+        );
+        await tester.testTextInput.receiveAction(TextInputAction.done);
+        await tester.pump();
+
+        expect(renames, [('solo', 'Renamed')]);
+      });
+
+      testWidgets('renaming a standalone row hands the item and its title up', (
+        tester,
+      ) async {
+        final renames = <(String, String)>[];
+        await tester.pumpWidget(
+          _wrap(
+            AgendaView(
+              draft: plan(
+                [block('b9', 9)],
+                [
+                  item('solo', ['b9']),
+                ],
+              ),
+              onRenameItem: (item, title) => renames.add((item.id, title)),
+            ),
+          ),
+        );
+
+        await tester.tap(find.text('Item solo'));
+        await tester.pump();
+        await tester.enterText(
+          find.byKey(const Key('daily_os_editable_title_field')),
+          'Renamed',
+        );
+        await tester.testTextInput.receiveAction(TextInputAction.done);
+        await tester.pump();
+
+        expect(renames, [('solo', 'Renamed')]);
+      });
+
+      testWidgets('a plan with no items draws no card', (tester) async {
+        await tester.pumpWidget(
+          _wrap(AgendaView(draft: plan(const [], const []))),
+        );
+
+        expect(find.byType(DsRowsCard), findsNothing);
+      });
     });
 
-    testWidgets('near-full capacity (90–100%) shows near-full overline', (
+    testWidgets('the "No plan yet" row starts the check-in when tapped', (
       tester,
     ) async {
-      final draft = DraftPlan(
-        dayDate: DateTime(2026, 5, 26),
-        blocks: _blocksTotalling(570), // 95% of 600.
-        bands: const [],
-        capacityMinutes: 600,
-        scheduledMinutes: 570,
-        agendaItems: const [],
+      var started = 0;
+      await tester.pumpWidget(
+        _wrap(
+          AgendaView(
+            draft: DraftPlan.emptyForDay(DateTime(2026, 5, 26)),
+            hasPlan: false,
+            onStartCheckIn: () => started++,
+          ),
+        ),
       );
-      await tester.pumpWidget(_wrap(AgendaView(draft: draft)));
-
       final messages = tester.element(find.byType(AgendaView)).messages;
-      expect(
-        find.textContaining(messages.dailyOsNextAgendaCapacityNearFull),
-        findsOneWidget,
-      );
-    });
 
-    testWidgets('over-capacity (> 100%) shows over overline', (tester) async {
-      final draft = DraftPlan(
-        dayDate: DateTime(2026, 5, 26),
-        blocks: _blocksTotalling(720), // 120% of 600.
-        bands: const [],
-        capacityMinutes: 600,
-        scheduledMinutes: 720,
-        agendaItems: const [],
-      );
-      await tester.pumpWidget(_wrap(AgendaView(draft: draft)));
-
-      final messages = tester.element(find.byType(AgendaView)).messages;
-      expect(
-        find.textContaining(messages.dailyOsNextAgendaCapacityOver),
-        findsOneWidget,
-      );
-    });
-
-    testWidgets('summary string interpolates scheduled / capacity hours', (
-      tester,
-    ) async {
-      final draft = DraftPlan(
-        dayDate: DateTime(2026, 5, 26),
-        blocks: _blocksTotalling(90), // 1h 30m of 4h.
-        bands: const [],
-        capacityMinutes: 240,
-        scheduledMinutes: 90,
-        agendaItems: const [],
-      );
-      await tester.pumpWidget(_wrap(AgendaView(draft: draft)));
-
-      final messages = tester.element(find.byType(AgendaView)).messages;
-      expect(
-        find.textContaining(messages.dailyOsNextAgendaSummary('1h 30m', '4h')),
-        findsOneWidget,
-      );
-      expect(find.byType(CapacityDonut), findsOneWidget);
+      expect(find.byIcon(LottiIcons.chevronRight), findsOneWidget);
+      await tester.tap(find.text(messages.dailyOsNextAgendaNoPlanTitle));
+      expect(started, 1);
     });
 
     testWidgets(
-      'no-plan day renders the dashed "No plan yet" hint card; a real '
-      'plan with zero agenda items does not',
+      'a day without a plan keeps the Plan header over its row and the '
+      "day's tracked time under it",
+      (tester) async {
+        final start = DateTime(2026, 5, 26, 9);
+        await tester.pumpWidget(
+          _wrap(
+            AgendaView(
+              draft: DraftPlan.emptyForDay(DateTime(2026, 5, 26)),
+              hasPlan: false,
+              actualBlocks: [
+                TimeBlock(
+                  id: 'actual:walk',
+                  title: 'Walk',
+                  start: start,
+                  end: start.add(const Duration(minutes: 40)),
+                  type: TimeBlockType.manual,
+                  state: TimeBlockState.completed,
+                  category: _category,
+                ),
+              ],
+            ),
+          ),
+        );
+        final messages = tester.element(find.byType(AgendaView)).messages;
+        double top(Finder f) => tester.getTopLeft(f).dy;
+
+        final header = find.text(messages.dailyOsNextTimelinePlanned);
+        final row = find.text(messages.dailyOsNextAgendaNoPlanTitle);
+        final tracked = find.byType(TimeSpentCard);
+        expect(header, findsOneWidget);
+        expect(tracked, findsOneWidget);
+        expect(top(header), lessThan(top(row)));
+        expect(top(row), lessThan(top(tracked)));
+        expect(find.text('Walk'), findsOneWidget);
+      },
+    );
+
+    testWidgets('a day without a plan or tracked time has no Today so far', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(
+          AgendaView(
+            draft: DraftPlan.emptyForDay(DateTime(2026, 5, 26)),
+            hasPlan: false,
+          ),
+        ),
+      );
+
+      expect(find.byType(TimeSpentCard), findsNothing);
+    });
+
+    testWidgets('without a way to check in, the row is not a button', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(
+          AgendaView(
+            draft: DraftPlan.emptyForDay(DateTime(2026, 5, 26)),
+            hasPlan: false,
+          ),
+        ),
+      );
+
+      expect(find.byIcon(LottiIcons.chevronRight), findsNothing);
+      expect(
+        find.byKey(const Key('daily_os_agenda_start_check_in')),
+        findsNothing,
+      );
+    });
+
+    testWidgets(
+      'no-plan day shows one "No plan yet" row; a real plan with zero '
+      'agenda items does not',
       (tester) async {
         final draft = DraftPlan(
           dayDate: DateTime(2026, 5, 26),
@@ -526,16 +814,14 @@ void main() {
           find.text(messages.dailyOsNextAgendaNoPlanTitle),
           findsOneWidget,
         );
-        expect(
-          find.text(messages.dailyOsNextAgendaNoPlanBody),
-          findsOneWidget,
-        );
-        expect(find.byType(AgendaCard), findsNothing);
+        // The invitation to check in is the briefing's and the footer's;
+        // the row only says there is no plan.
+        expect(find.byType(DayRowScaffold), findsOneWidget);
+        expect(find.byType(DayAgendaRow), findsNothing);
         // No tracked time -> no TimeSpentCard either.
         expect(find.byType(TimeSpentCard), findsNothing);
 
-        // With a real (if empty) plan the no-plan copy would be a lie —
-        // only the stat strip remains.
+        // With a real (if empty) plan the no-plan copy would be a lie.
         await tester.pumpWidget(_wrap(AgendaView(draft: draft)));
         expect(
           find.text(messages.dailyOsNextAgendaNoPlanTitle),
@@ -543,190 +829,5 @@ void main() {
         );
       },
     );
-
-    testWidgets(
-      'no-plan day stays honest: eyebrow, tracked summary, legend, and '
-      'the TimeSpentCard with the recorded sessions',
-      (tester) async {
-        final day = DateTime(2026, 5, 26);
-        final tracked = [
-          TimeBlock(
-            id: 'tr1',
-            title: 'Build attention framework',
-            start: DateTime(2026, 5, 26, 8, 30),
-            end: DateTime(2026, 5, 26, 10),
-            type: TimeBlockType.manual,
-            state: TimeBlockState.completed,
-            category: _category,
-            taskId: 'task-tr1',
-          ),
-          TimeBlock(
-            id: 'tr2',
-            title: 'UI improvements',
-            start: DateTime(2026, 5, 26, 10, 30),
-            end: DateTime(2026, 5, 26, 11, 35),
-            type: TimeBlockType.manual,
-            state: TimeBlockState.inProgress,
-            category: _category,
-          ),
-        ];
-        final draft = DraftPlan.emptyForDay(day);
-        await tester.pumpWidget(
-          _wrap(
-            AgendaView(
-              draft: draft,
-              actualBlocks: tracked,
-              hasPlan: false,
-            ),
-          ),
-        );
-
-        final messages = tester.element(find.byType(AgendaView)).messages;
-        // Honest eyebrow + tracked-time summary (1h 30m + 1h 5m = 2h 35m).
-        expect(
-          find.text(messages.dailyOsNextAgendaCapacityNoPlan),
-          findsOneWidget,
-        );
-        expect(
-          find.text(messages.dailyOsNextAgendaNoPlanSummary('2h 35m')),
-          findsOneWidget,
-        );
-        // Neutral donut + single tracked legend (1 completed session).
-        final donut = tester.widget<CapacityDonut>(find.byType(CapacityDonut));
-        expect(donut.neutral, isTrue);
-        expect(donut.scheduledMinutes, 155);
-        expect(
-          find.text(messages.dailyOsNextAgendaTrackedLegend('2h 35m', 1)),
-          findsOneWidget,
-        );
-        // The recorded sessions are listed in the TimeSpentCard.
-        expect(find.byType(TimeSpentCard), findsOneWidget);
-        expect(find.text('Build attention framework'), findsOneWidget);
-        expect(find.text('UI improvements'), findsOneWidget);
-      },
-    );
-
-    testWidgets(
-      'a planned day marks recorded time on the capacity dial, capped at a '
-      'full dial',
-      (tester) async {
-        final draft = DraftPlan(
-          dayDate: DateTime(2026, 5, 26),
-          blocks: _blocksTotalling(90),
-          bands: const [],
-          capacityMinutes: 240,
-          scheduledMinutes: 90,
-          agendaItems: const [],
-        );
-        TimeBlock tracked(int minutes) => TimeBlock(
-          id: 'tracked-$minutes',
-          title: 'Sort the krill delivery',
-          start: DateTime(2026, 5, 26, 8),
-          end: DateTime(2026, 5, 26, 8).add(Duration(minutes: minutes)),
-          type: TimeBlockType.manual,
-          state: TimeBlockState.completed,
-          category: _category,
-        );
-        double? marker() => tester
-            .widget<CapacityDonut>(find.byType(CapacityDonut))
-            .progressFraction;
-
-        await tester.pumpWidget(_wrap(AgendaView(draft: draft)));
-        expect(marker(), isNull, reason: 'nothing recorded yet');
-
-        await tester.pumpWidget(
-          _wrap(AgendaView(draft: draft, actualBlocks: [tracked(60)])),
-        );
-        expect(marker(), 0.25);
-
-        await tester.pumpWidget(
-          _wrap(AgendaView(draft: draft, actualBlocks: [tracked(300)])),
-        );
-        expect(marker(), 1.0);
-      },
-    );
-
-    testWidgets(
-      'category mix renders one legend per used category, dropped blocks excluded',
-      (tester) async {
-        const work = DayAgentCategory(
-          id: 'w',
-          name: 'Work',
-          colorHex: '5ED4B7',
-        );
-        const personal = DayAgentCategory(
-          id: 'p',
-          name: 'Personal',
-          colorHex: 'FF00AA',
-        );
-        final start = DateTime(2026, 5, 26, 9);
-        final draft = DraftPlan(
-          dayDate: DateTime(2026, 5, 26),
-          blocks: [
-            TimeBlock(
-              id: 'b1',
-              title: 'Deep work',
-              start: start,
-              end: start.add(const Duration(minutes: 90)),
-              type: TimeBlockType.ai,
-              state: TimeBlockState.drafted,
-              category: work,
-            ),
-            TimeBlock(
-              id: 'b2',
-              title: 'Errands',
-              start: start.add(const Duration(hours: 2)),
-              end: start.add(const Duration(hours: 2, minutes: 30)),
-              type: TimeBlockType.manual,
-              state: TimeBlockState.drafted,
-              category: personal,
-            ),
-            TimeBlock(
-              id: 'b3',
-              title: 'Cancelled review',
-              start: start.add(const Duration(hours: 4)),
-              end: start.add(const Duration(hours: 5)),
-              type: TimeBlockType.ai,
-              state: TimeBlockState.dropped,
-              category: work,
-            ),
-          ],
-          bands: const [],
-          capacityMinutes: 480,
-          scheduledMinutes: 120,
-          agendaItems: const [],
-        );
-        await tester.pumpWidget(_wrap(AgendaView(draft: draft)));
-
-        // 90m of Work (dropped 60m excluded), 30m of Personal. The legend
-        // is a micro-table: label leads, duration sits right-aligned as a
-        // bare ledger value.
-        expect(find.text('Work'), findsOneWidget);
-        expect(find.text('1h 30m'), findsOneWidget);
-        expect(find.text('Personal'), findsOneWidget);
-        expect(find.text('30m'), findsOneWidget);
-      },
-    );
-
-    testWidgets('zero-capacity day computes ratio safely (no divide-by-zero)', (
-      tester,
-    ) async {
-      final draft = DraftPlan(
-        dayDate: DateTime(2026, 5, 26),
-        blocks: const [],
-        bands: const [],
-        capacityMinutes: 0,
-        scheduledMinutes: 0,
-        agendaItems: const [],
-      );
-      await tester.pumpWidget(_wrap(AgendaView(draft: draft)));
-
-      // Ratio defaults to 0 → comfortable overline.
-      final messages = tester.element(find.byType(AgendaView)).messages;
-      expect(
-        find.text(messages.dailyOsNextAgendaCapacityComfortable),
-        findsOneWidget,
-      );
-    });
   });
 }

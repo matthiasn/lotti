@@ -1994,9 +1994,21 @@
   "dailyOsNextActivityDeleteDialogTitle": "¿Eliminar esta grabación?",
   "dailyOsNextActivityDeleteRecording": "Eliminar",
   "dailyOsNextActivityEmpty": "Todavía no hay grabaciones ni registros.",
+  "dailyOsNextActivityHandled": "Gestionado",
+  "dailyOsNextActivityHandledCount": "{count, plural, one{{count} gestionado} other{{count} gestionados}}",
+  "@dailyOsNextActivityHandledCount": {
+    "description": "Summary beside the Activity tab's 'Handled' header: how many entries are dealt with.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "4"
+      }
+    }
+  },
   "dailyOsNextActivityLoadFailed": "Tu actividad guardada sigue en este dispositivo, pero ahora mismo no se pudo cargar.",
   "dailyOsNextActivityMissingAudio": "Esta entrada se conserva, pero el archivo de audio no está disponible en este dispositivo. Restaura el archivo y vuelve a intentarlo.",
   "dailyOsNextActivityNeedsAttention": "Requiere atención",
+  "dailyOsNextActivityNeedsYou": "Te espera",
   "dailyOsNextActivityOpenAiSetup": "Abrir la configuración de Daily OS",
   "dailyOsNextActivityOpenSetup": "Abrir configuración de transcripción",
   "dailyOsNextActivityPlanAvailable": "Tu plan del día está disponible.",
@@ -2012,10 +2024,21 @@
   "dailyOsNextActivityTranscriptPending": "Tu grabación está guardada. La transcripción sigue pendiente.",
   "dailyOsNextActivityUseToPlan": "Usar para crear el plan",
   "dailyOsNextActivityUseToRefine": "Usar para ajustar",
+  "dailyOsNextActivityVoiceNote": "Nota de voz",
+  "@dailyOsNextActivityVoiceNote": {
+    "description": "Name of an Activity row for a voice recording whose transcript is not ready yet."
+  },
+  "dailyOsNextActivityWaitingCount": "{count, plural, one{{count} pendiente} other{{count} pendientes}}",
+  "@dailyOsNextActivityWaitingCount": {
+    "description": "Summary beside the Activity tab's 'Needs you' header: how many entries wait for the user.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "2"
+      }
+    }
+  },
   "dailyOsNextActivityWaitingForNetwork": "Esperando conexión",
-  "dailyOsNextAgendaCapacityComfortable": "Cómodo",
-  "dailyOsNextAgendaCapacityNearFull": "Casi lleno",
-  "dailyOsNextAgendaCapacityNoPlan": "Aún sin plan",
   "dailyOsNextAgendaCapacityOf": "de {capacity}",
   "@dailyOsNextAgendaCapacityOf": {
     "placeholders": {
@@ -2025,48 +2048,41 @@
       }
     }
   },
-  "dailyOsNextAgendaCapacityOver": "Sobrecargado",
-  "dailyOsNextAgendaDonutLeft": "libre",
-  "dailyOsNextAgendaDonutOver": "de más",
-  "dailyOsNextAgendaHeadlineLeft": "{duration} restantes",
-  "@dailyOsNextAgendaHeadlineLeft": {
+  "dailyOsNextAgendaDoneRun": "{count, plural, =1{1 elemento hecho} other{{count} elementos hechos}}",
+  "@dailyOsNextAgendaDoneRun": {
+    "description": "Agenda summary row standing in for the day's finished items, folded together.",
     "placeholders": {
-      "duration": {
-        "type": "String",
-        "example": "15m"
+      "count": {
+        "type": "int",
+        "example": "5"
       }
     }
   },
-  "dailyOsNextAgendaHeadlineOver": "{duration} de más",
-  "@dailyOsNextAgendaHeadlineOver": {
+  "dailyOsNextAgendaHideDone": "Ocultar elementos hechos",
+  "dailyOsNextAgendaLeft": "{count, plural, one{Queda {count} · {duration}} other{Quedan {count} · {duration}}}",
+  "@dailyOsNextAgendaLeft": {
+    "description": "Summary beside the agenda's 'Plan' header: how many items are not done yet, followed by the time they are planned for.",
     "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      },
       "duration": {
         "type": "String",
-        "example": "1h"
+        "example": "2h 45m"
       }
     }
   },
-  "dailyOsNextAgendaNoPlanBody": "Tu tiempo registrado está aquí de todos modos: haz un check-in por voz y prepararé un día a tu alrededor.",
-  "dailyOsNextAgendaNoPlanSummary": "{duration} registrado hasta ahora. Haz un check-in por voz y prepararé un día a tu alrededor.",
-  "dailyOsNextAgendaNoPlanTitle": "Aún no hay plan para hoy.",
+  "dailyOsNextAgendaNoPlanTitle": "Aún no hay plan para este día.",
+  "dailyOsNextAgendaNow": "Ahora",
+  "@dailyOsNextAgendaNow": {
+    "description": "Marks the agenda row whose item is under way now, above its start time."
+  },
+  "dailyOsNextAgendaShowDone": "Mostrar elementos hechos",
   "dailyOsNextAgendaStateDone": "Hecho",
   "dailyOsNextAgendaStateInProgress": "En curso",
   "dailyOsNextAgendaStateOpen": "Abierto",
   "dailyOsNextAgendaStateOverdue": "Atrasado",
-  "dailyOsNextAgendaSummary": "{scheduled} de {capacity} comprometidos",
-  "@dailyOsNextAgendaSummary": {
-    "placeholders": {
-      "scheduled": {
-        "type": "String",
-        "example": "5h 15m"
-      },
-      "capacity": {
-        "type": "String",
-        "example": "8h"
-      }
-    }
-  },
-  "dailyOsNextAgendaTrackedLegend": "Registrado · {duration} · {completedCount, plural, =1{1 tarea completada} other{{completedCount} tareas completadas}}",
   "dailyOsNextBlockCreateTask": "Crear una tarea",
   "dailyOsNextBlockEditCategoryLabel": "Categoría",
   "dailyOsNextBlockEditFailed": "No se pudo actualizar el bloque — inténtalo de nuevo.",
@@ -2097,11 +2113,41 @@
       }
     }
   },
+  "dailyOsNextBriefingCapacityLabel": "Tiempo planificado por categoría: {breakdown}",
+  "@dailyOsNextBriefingCapacityLabel": {
+    "description": "Screen-reader label of the day's capacity bar: each category and its planned time.",
+    "placeholders": {
+      "breakdown": {
+        "type": "String",
+        "example": "Deep work 3h 30m, Admin 45m"
+      }
+    }
+  },
+  "dailyOsNextBriefingDoneCaption": "{count, plural, one{{count} hecha} other{{count} hechas}}",
+  "@dailyOsNextBriefingDoneCaption": {
+    "description": "Caption under the bar on a day without a plan: recorded sessions that are done.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "2"
+      }
+    }
+  },
   "dailyOsNextBriefingFree": "Todavía tienes {duration} sin planificar.",
   "@dailyOsNextBriefingFree": {
     "placeholders": {
       "duration": {
         "type": "String"
+      }
+    }
+  },
+  "dailyOsNextBriefingFreeCaption": "{duration} libre",
+  "@dailyOsNextBriefingFreeCaption": {
+    "description": "Caption under the day's capacity bar: capacity the plan leaves free.",
+    "placeholders": {
+      "duration": {
+        "type": "String",
+        "example": "2h 40m"
       }
     }
   },
@@ -2144,6 +2190,16 @@
       }
     }
   },
+  "dailyOsNextBriefingMoreCategories": "+{count} más",
+  "@dailyOsNextBriefingMoreCategories": {
+    "description": "Last entry of the capacity legend on a phone: how many categories are not named. Their time together follows it.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "2"
+      }
+    }
+  },
   "dailyOsNextBriefingNext": "A continuación, a las {time}: {title}.",
   "@dailyOsNextBriefingNext": {
     "placeholders": {
@@ -2155,10 +2211,40 @@
       }
     }
   },
-  "dailyOsNextBriefingNoPlan": "Todavía no hay un plan para este día. Un breve check-in creará uno.",
+  "dailyOsNextBriefingNoPlan": "Todavía no hay un plan para este día. Un breve check‑in creará uno.",
   "dailyOsNextBriefingNothingLeft": "No queda nada más planificado para hoy.",
+  "dailyOsNextBriefingOverCaption": "{duration} de más",
+  "@dailyOsNextBriefingOverCaption": {
+    "description": "Caption under the day's capacity bar when the plan books more than the day holds.",
+    "placeholders": {
+      "duration": {
+        "type": "String",
+        "example": "45m"
+      }
+    }
+  },
+  "dailyOsNextBriefingPlannedCaption": "{duration} planificado",
+  "@dailyOsNextBriefingPlannedCaption": {
+    "description": "Caption under the day's capacity bar: how much the plan books.",
+    "placeholders": {
+      "duration": {
+        "type": "String",
+        "example": "5h 20m"
+      }
+    }
+  },
   "dailyOsNextBriefingPlayTooltip": "Escuchar tu día",
   "dailyOsNextBriefingStopTooltip": "Detener el resumen",
+  "dailyOsNextBriefingTrackedCaption": "{duration} registrado",
+  "@dailyOsNextBriefingTrackedCaption": {
+    "description": "Caption under the bar on a day without a plan: time recorded so far.",
+    "placeholders": {
+      "duration": {
+        "type": "String",
+        "example": "3h 10m"
+      }
+    }
+  },
   "dailyOsNextCaptureCaptured": "Entendido.",
   "dailyOsNextCaptureDoneCta": "Listo",
   "dailyOsNextCaptureErrorAudioPersistFailed": "No se pudo guardar tu grabación.",
@@ -2203,7 +2289,7 @@
   "dailyOsNextDayAgentStatusWorking": "Planificando…",
   "dailyOsNextDayAgentTokensToday": "{tokens} tokens usados en planificar este día",
   "dailyOsNextDayBack": "Atrás",
-  "dailyOsNextDayComposerCheckInHint": "Habla o escribe un check-in",
+  "dailyOsNextDayComposerCheckInHint": "Habla o escribe un check‑in",
   "dailyOsNextDayDeleteDialogBody": "Los bloques planificados para este día se eliminarán. Tus capturas y sus grabaciones de audio se quedan en tu diario.",
   "dailyOsNextDayDeleteDialogCancel": "Cancelar",
   "dailyOsNextDayDeleteDialogConfirm": "Eliminar",
@@ -2213,6 +2299,24 @@
   "dailyOsNextDayMenuInspectAgent": "Inspeccionar agente",
   "dailyOsNextDayMenuSettings": "Ajustes de Daily OS",
   "dailyOsNextDayMoreTooltip": "Más",
+  "dailyOsNextDayOverline": "{lead} · {detail}",
+  "@dailyOsNextDayOverline": {
+    "description": "The day page's overline: how the day relates to today (or its weekday), then the weekday (or the year).",
+    "placeholders": {
+      "lead": {
+        "type": "String",
+        "example": "Today"
+      },
+      "detail": {
+        "type": "String",
+        "example": "Sunday"
+      }
+    }
+  },
+  "dailyOsNextDayRelationToday": "Hoy",
+  "dailyOsNextDayRelationTomorrow": "Mañana",
+  "dailyOsNextDayRelationYesterday": "Ayer",
+  "dailyOsNextDayStartCheckIn": "Empezar check-in",
   "dailyOsNextDayTitle": "Tu día",
   "dailyOsNextDayWhyChipLabel": "Por qué",
   "dailyOsNextDayWrapUpCta": "Cerrar día",
@@ -2415,13 +2519,22 @@
   "dailyOsNextStateRecurringMissed": "Recurrente · no realizada",
   "dailyOsNextTimelineActual": "Real",
   "dailyOsNextTimelineArrange": "Organizar bloques",
-  "dailyOsNextTimelineBoth": "Plan y real",
+  "dailyOsNextTimelineArrangeShort": "Ordenar",
+  "@dailyOsNextTimelineArrangeShort": {
+    "description": "Label of the Day timeline's button that turns on moving and resizing planned blocks."
+  },
+  "dailyOsNextTimelineBothLanes": "Ambos carriles",
+  "@dailyOsNextTimelineBothLanes": {
+    "description": "Label of the Day timeline's button that shows the plan and actual lanes side by side, on a phone where they are shown one at a time."
+  },
+  "dailyOsNextTimelineOneLane": "Un carril",
+  "@dailyOsNextTimelineOneLane": {
+    "description": "Label of the Day timeline's button that switches from the side-by-side plan and actual lanes to one lane at a time."
+  },
   "dailyOsNextTimelinePlanned": "Plan",
   "dailyOsNextTimelineSessionOf": "Sesión {index} de {total}",
   "dailyOsNextTimelineShowBoth": "Mostrar plan y real juntos",
   "dailyOsNextTimelineShowPaged": "Mostrar plan y real deslizable",
-  "dailyOsNextTimelineSwipeHint": "Desliza para ver lo real · pellizca verticalmente para zoom",
-  "dailyOsNextTimelineSwipeHintToPlan": "Desliza para ver el plan · pellizca verticalmente para zoom",
   "dailyOsNextTimelineTracked": "registrado",
   "dailyOsNextTimeSpentEarlierSessions": "{count, plural, one{1 sesión anterior} other{{count} sesiones anteriores}}",
   "dailyOsNextTimeSpentShowLess": "Mostrar menos",
@@ -2439,6 +2552,18 @@
   "dailyOsNextTriageDrop": "Descartar",
   "dailyOsNextTriageToday": "Hoy",
   "dailyOsNextUncommitFailed": "No se pudo deshacer: el plan sigue confirmado.",
+  "dailyOsNextWeekStripNextWeek": "Semana siguiente",
+  "dailyOsNextWeekStripPreviousWeek": "Semana anterior",
+  "dailyOsNextWeekStripSelectDay": "Seleccionar {date}",
+  "@dailyOsNextWeekStripSelectDay": {
+    "description": "Screen-reader label of one day in the day page's week strip.",
+    "placeholders": {
+      "date": {
+        "type": "String",
+        "example": "Sunday, November 9"
+      }
+    }
+  },
   "dailyOsOnboardingCoachCapture": "Di lo que te ronda la cabeza.",
   "dailyOsOnboardingCoachDrafting": "El planificador está creando tareas nuevas y encajando el trabajo en tu día.",
   "dailyOsOnboardingCoachReconcile": "Elige qué entra en el día de hoy. Los elementos nuevos se convierten en tareas cuando construyes el día.",

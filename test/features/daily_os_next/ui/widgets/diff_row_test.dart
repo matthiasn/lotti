@@ -347,7 +347,8 @@ void main() {
           use24Hour: false,
         );
 
-        expect(find.text('2:30 PM–4:05 PM'), findsOneWidget);
+        // One period for a range within it, written once at the end.
+        expect(find.text('2:30–4:05 PM'), findsOneWidget);
       });
 
       testWidgets('a 24-hour device gets 24-hour chips', (tester) async {

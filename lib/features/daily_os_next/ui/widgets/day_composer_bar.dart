@@ -1,5 +1,6 @@
 import 'package:lotti/features/design_system/components/chat_input/design_system_chat_input.dart';
 import 'package:lotti/features/design_system/components/glass_strip.dart';
+import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -19,8 +20,9 @@ import 'package:material_ui/material_ui.dart';
 /// ([onFinishRecording]) ends it and the host puts the words in the field
 /// to be read before sending. [errorText] reads above the field.
 ///
-/// Sized to the Day surface's reading column on wide screens, full width on a
-/// phone, on the same glass strip as the other Day footers.
+/// On the Day surface's reading column — the page's shared measure from the
+/// left rail — on wide screens, full width on a phone, on the same glass
+/// strip as the other Day footers.
 class DayComposerBar extends StatefulWidget {
   const DayComposerBar({
     required this.hintText,
@@ -41,8 +43,9 @@ class DayComposerBar extends StatefulWidget {
   });
 
   /// Shown above the field, inside the bar's reading column — quick
-  /// refinements on a planned day. Hidden while a take runs, so nothing
-  /// opens a flow over a take that is still recording.
+  /// refinements on a planned day — while the field has focus: at rest the
+  /// footer is just the field, so the day keeps the room. Hidden while a take
+  /// runs, so nothing opens a flow over a take that is still recording.
   final Widget? header;
 
   /// The day's next step, in the input's bottom row beside the mic while the
@@ -75,16 +78,16 @@ class DayComposerBar extends StatefulWidget {
 
   final String? errorText;
 
-  /// The Day surface's reading width, shared with the review footer so the
-  /// composer belongs to the content column rather than the page chrome.
-  static const double maxWidth = 760;
-
   @override
   State<DayComposerBar> createState() => _DayComposerBarState();
 }
 
 class _DayComposerBarState extends State<DayComposerBar> {
   TextEditingController? _ownController;
+
+  /// Whether the field has focus, which is when the [DayComposerBar.header]
+  /// shows.
+  final FocusNode _focus = FocusNode(debugLabel: 'DayComposerBar');
 
   TextEditingController get _controller =>
       widget.controller ?? (_ownController ??= TextEditingController());
@@ -93,6 +96,7 @@ class _DayComposerBarState extends State<DayComposerBar> {
   void initState() {
     super.initState();
     _controller.addListener(_onText);
+    _focus.addListener(_onText);
   }
 
   @override
@@ -107,12 +111,15 @@ class _DayComposerBarState extends State<DayComposerBar> {
   @override
   void dispose() {
     _controller.removeListener(_onText);
+    _focus
+      ..removeListener(_onText)
+      ..dispose();
     _ownController?.dispose();
     super.dispose();
   }
 
   /// The next step follows the draft, so text a host sets (a transcript)
-  /// hides it just as typing does.
+  /// hides it just as typing does; the header follows the field's focus.
   void _onText() => setState(() {});
 
   bool get _composing => widget.phase == DesignSystemChatInputPhase.compose;
@@ -134,21 +141,29 @@ class _DayComposerBarState extends State<DayComposerBar> {
           horizontal: tokens.spacing.step5,
           vertical: tokens.spacing.step4,
         ),
-        child: Center(
+        child: Align(
+          alignment: AlignmentDirectional.centerStart,
           child: ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxWidth: DayComposerBar.maxWidth,
+            // The page column, less this strip's own rail on each side, so
+            // the field's edges meet the briefing's and the agenda's.
+            constraints: BoxConstraints(
+              maxWidth: kDetailContentMaxWidth - tokens.spacing.step5 * 2,
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                if (widget.header case final header? when _composing) ...[
-                  header,
+                if (widget.header case final header?
+                    when _composing && _focus.hasFocus) ...[
+                  // Part of the field for tap-outside purposes, so tapping a
+                  // chip does not unfocus the field and take the chip away
+                  // before the tap lands.
+                  TextFieldTapRegion(child: header),
                   SizedBox(height: tokens.spacing.step3),
                 ],
                 DesignSystemChatInput(
                   controller: _controller,
+                  focusNode: _focus,
                   hintText: widget.hintText,
                   enabled: widget.enabled,
                   errorText: widget.errorText,

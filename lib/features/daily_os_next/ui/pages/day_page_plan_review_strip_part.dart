@@ -26,7 +26,7 @@ class DayPage extends ConsumerStatefulWidget {
     this.hasPlan = true,
     this.onCheckIn,
     this.onSubmitCheckIn,
-    this.dateStrip,
+    this.navigation,
     super.key,
   });
 
@@ -44,11 +44,10 @@ class DayPage extends ConsumerStatefulWidget {
   /// the words, and the recording behind them when they were spoken.
   final DayComposerSubmitter? onSubmitCheckIn;
 
-  /// Optional widget rendered in place of the default static title.
-  /// The route-level `DailyOsNextRoot` uses this to inject a date
-  /// strip so the user can navigate between days without losing the
-  /// Agenda/Day toggle in the trailing actions slot.
-  final Widget? dateStrip;
+  /// Day navigation for the header's masthead and week strip. The
+  /// route-level `DailyOsNextRoot` supplies it; without it the header leads
+  /// with a back chevron instead.
+  final DayNavigation? navigation;
 
   @override
   ConsumerState<DayPage> createState() => _DayPageState();
@@ -152,7 +151,8 @@ class _QuickRefinementChips extends StatelessWidget {
 
 /// The day's next step, beside the footer's field: "Looks good" commits a
 /// drafted day (with Undo on its toast); once committed, "Wrap up" opens the
-/// shutdown.
+/// shutdown. Either way it is the page's one filled button — the day's next
+/// step is always its primary action.
 class _DayStageAction extends StatelessWidget {
   const _DayStageAction({
     required this.draft,
@@ -173,9 +173,6 @@ class _DayStageAction extends StatelessWidget {
       label: drafted
           ? messages.dailyOsNextReviewLooksGood
           : messages.dailyOsNextDayWrapUpCta,
-      variant: drafted
-          ? DesignSystemButtonVariant.primary
-          : DesignSystemButtonVariant.secondary,
       size: DesignSystemButtonSize.large,
       onPressed: drafted ? onCommit : onShutdown,
     );
@@ -194,7 +191,13 @@ class _NoPlanFooter extends StatelessWidget {
     required this.needsInferenceSetup,
     required this.setupResolved,
     required this.ctaKey,
+    this.onStartCheckIn,
   });
+
+  /// Opens the whole check-in from its first step: the empty day's one
+  /// filled action, beside the field where "Looks good" sits on a planned
+  /// day.
+  final VoidCallback? onStartCheckIn;
 
   final DateTime day;
   final DayComposerSubmitter? onSubmitCheckIn;
@@ -219,32 +222,26 @@ class _NoPlanFooter extends StatelessWidget {
         child: DayComposer(
           day: day,
           enabled: setupResolved && onSubmitCheckIn != null,
+          nextStep: switch (onStartCheckIn) {
+            final start? when setupResolved => DesignSystemButton(
+              key: const Key('daily_os_day_start_check_in'),
+              label: context.messages.dailyOsNextDayStartCheckIn,
+              size: DesignSystemButtonSize.large,
+              onPressed: start,
+            ),
+            _ => null,
+          },
           onSubmit: (words, {audioId}) async =>
               onSubmitCheckIn?.call(words, audioId: audioId),
         ),
       );
     }
     final tokens = context.designTokens;
-    final button = FilledButton.icon(
+    final button = DesignSystemButton(
       key: const Key('daily_os_day_check_in_cta'),
+      label: context.messages.dailyOsSettingsSetupAction,
+      leadingIcon: LottiIcons.settings,
       onPressed: onOpenSetup,
-      icon: const Icon(LottiIcons.settings, size: 14),
-      label: Text(
-        context.messages.dailyOsSettingsSetupAction,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
-      style: FilledButton.styleFrom(
-        backgroundColor: tokens.colors.interactive.enabled,
-        foregroundColor: tokens.colors.text.onInteractiveAlert,
-        padding: EdgeInsets.symmetric(
-          horizontal: tokens.spacing.step5,
-          vertical: tokens.spacing.step2,
-        ),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
-        ),
-      ),
     );
     return DesignSystemGlassStrip(
       child: Padding(
@@ -265,6 +262,10 @@ class _NoPlanFooter extends StatelessWidget {
   }
 }
 
+/// Settings that need the user's attention — no inference route, or no
+/// name to address them by — as one plain row in the nudge slot under the
+/// header: a glyph and its words in `alert.warning` ink, and the action that
+/// fixes it. No card of its own, so it does not compete with the briefing.
 class _DailyOsSetupNudge extends StatelessWidget {
   const _DailyOsSetupNudge({
     required this.status,
@@ -277,63 +278,75 @@ class _DailyOsSetupNudge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    final messages = context.messages;
+    final ink = tokens.colors.alert.warning.ink;
     final inferenceMissing = !status.hasInferenceRoute;
     return Padding(
+      key: const Key('daily_os_setup_nudge'),
       padding: EdgeInsets.symmetric(horizontal: tokens.spacing.step5),
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: tokens.colors.background.level02,
-          borderRadius: BorderRadius.circular(tokens.radii.m),
-          border: Border.all(color: tokens.colors.decorative.level01),
-        ),
-        child: Padding(
-          padding: EdgeInsets.all(tokens.spacing.cardPadding),
-          child: Row(
-            children: [
-              Icon(
-                inferenceMissing ? LottiIcons.warning : LottiIcons.personAdd,
-                color: tokens.colors.interactive.enabled,
-              ),
-              SizedBox(width: tokens.spacing.step3),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      inferenceMissing
-                          ? context.messages.dailyOsSettingsSetupRequiredTitle
-                          : context.messages.dailyOsSettingsNameNudgeTitle,
-                      style: tokens.typography.styles.subtitle.subtitle2,
-                    ),
-                    SizedBox(height: tokens.spacing.step1),
-                    Text(
-                      inferenceMissing
-                          ? [
-                              context.messages.dailyOsSettingsSetupRequiredBody,
-                              if (!status.hasPreferredName)
-                                context.messages.dailyOsSettingsNameNudgeBody,
-                            ].join(' ')
-                          : context.messages.dailyOsSettingsNameNudgeBody,
-                      style: tokens.typography.styles.body.bodySmall.copyWith(
-                        color: tokens.colors.text.mediumEmphasis,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              SizedBox(width: tokens.spacing.step3),
-              TextButton(
-                onPressed: onOpenSettings,
-                child: Text(
-                  inferenceMissing
-                      ? context.messages.dailyOsSettingsSetupAction
-                      : context.messages.dailyOsSettingsNameNudgeAction,
-                ),
-              ),
-            ],
+      child: Row(
+        children: [
+          Icon(
+            inferenceMissing ? LottiIcons.warning : LottiIcons.personAdd,
+            size: tokens.typography.size.subtitle2,
+            color: ink,
           ),
-        ),
+          SizedBox(width: tokens.spacing.step3),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  inferenceMissing
+                      ? messages.dailyOsSettingsSetupRequiredTitle
+                      : messages.dailyOsSettingsNameNudgeTitle,
+                  style: captionLabelStyle(tokens, color: ink),
+                ),
+                Text(
+                  inferenceMissing
+                      ? [
+                          messages.dailyOsSettingsSetupRequiredBody,
+                          if (!status.hasPreferredName)
+                            messages.dailyOsSettingsNameNudgeBody,
+                        ].join(' ')
+                      : messages.dailyOsSettingsNameNudgeBody,
+                  style: tokens.typography.styles.others.caption.copyWith(
+                    color: tokens.colors.text.mediumEmphasis,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(width: tokens.spacing.step3),
+          TextButton(
+            onPressed: onOpenSettings,
+            child: Text(
+              inferenceMissing
+                  ? messages.dailyOsSettingsSetupAction
+                  : messages.dailyOsSettingsNameNudgeAction,
+            ),
+          ),
+        ],
       ),
     );
   }
+}
+
+/// The day page's one reading column: the page's shared measure
+/// ([kDetailContentMaxWidth]) from the left rail, so the briefing, the
+/// agenda, the activity and the composer share a left edge and a width on
+/// every tab instead of each finding its own. Non-binding on a phone.
+class _OnPageColumn extends StatelessWidget {
+  const _OnPageColumn({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => Align(
+    alignment: AlignmentDirectional.topStart,
+    child: ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: kDetailContentMaxWidth),
+      child: child,
+    ),
+  );
 }

@@ -11,6 +11,9 @@ import 'package:lotti/features/daily_os_next/services/day_processing_job.dart';
 import 'package:lotti/features/daily_os_next/state/day_activity_provider.dart';
 import 'package:lotti/features/daily_os_next/state/day_processing_runtime_provider.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_activity_view.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/day_row_scaffold.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/time_spent_card.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/editor_widget.dart';
 import 'package:lotti/features/speech/state/audio_waveform_provider.dart';
@@ -144,7 +147,13 @@ void main() {
       findsOneWidget,
     );
 
-    await tester.tap(find.text(messages.dailyOsNextActivityRetry).last);
+    // Each entry is one keyed row; Retry on the waiting one retries its job.
+    await tester.tap(
+      find.descendant(
+        of: find.byKey(const ValueKey('waiting')),
+        matching: find.text(messages.dailyOsNextActivityRetry),
+      ),
+    );
     await tester.pump();
     verify(() => outbox.retryNow('job-waiting')).called(1);
     verify(runtime.nudge).called(1);
@@ -972,4 +981,354 @@ void main() {
       );
     },
   );
+
+  group('rows', () {
+    DayActivityEntry recording(
+      String id,
+      int hour, {
+      String? transcript,
+      DayProcessingJobStatus status = DayProcessingJobStatus.succeeded,
+    }) => DayActivityEntry(
+      id: id,
+      kind: DayActivityEntryKind.recording,
+      createdAt: DateTime(2026, 7, 18, hour),
+      processingJob: job(
+        id: 'job-$id',
+        activityId: id,
+        status: status,
+        transcript: status == DayProcessingJobStatus.succeeded
+            ? transcript ?? 'Words of $id'
+            : null,
+      ),
+    );
+    DayActivityEntry plan(String id, int hour) => DayActivityEntry(
+      id: id,
+      kind: DayActivityEntryKind.plan,
+      createdAt: DateTime(2026, 7, 18, hour),
+    );
+    final tracked = TimeBlock(
+      id: 'actual:walk',
+      title: 'Walk',
+      start: DateTime(2026, 7, 18, 7),
+      end: DateTime(2026, 7, 18, 8),
+      type: TimeBlockType.manual,
+      state: TimeBlockState.completed,
+      category: const DayAgentCategory(id: 'w', name: 'W', colorHex: '5ED4B7'),
+    );
+
+    Future<void> pump(
+      WidgetTester tester,
+      List<DayActivityEntry> entries, {
+      List<TimeBlock> actualBlocks = const [],
+      Size size = const Size(1280, 1600),
+      Widget? header,
+    }) async {
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          DayActivityView(
+            date: date,
+            hasPlan: true,
+            actualBlocks: actualBlocks,
+            onUseEntry: (_) {},
+            header: header,
+          ),
+          mediaQueryData: MediaQueryData(size: size),
+          overrides: [
+            dayActivityProvider.overrideWith((ref, date) async => entries),
+          ],
+        ),
+      );
+      await tester.pump();
+    }
+
+    double top(WidgetTester tester, Finder finder) =>
+        tester.getTopLeft(finder).dy;
+
+    testWidgets(
+      'a row leads with its words as its name, its status as the caption '
+      'beneath; a recording still being transcribed is a Voice note',
+      (tester) async {
+        await pump(tester, [
+          recording('ready', 11, transcript: 'Protect the morning'),
+          recording(
+            'waiting',
+            8,
+            status: DayProcessingJobStatus.waitingForNetwork,
+          ),
+        ]);
+        final tokens = tester
+            .element(find.byType(DayActivityView))
+            .designTokens;
+        final messages = tester.element(find.byType(DayActivityView)).messages;
+        double top(Finder f) => tester.getTopLeft(f).dy;
+
+        // Ready: the words lead, semibold; "Ready to use" beneath, in the
+        // strongest ink, as what the user can act on.
+        final words = tester.widget<Text>(find.text('Protect the morning'));
+        expect(words.style!.fontWeight, tokens.typography.weight.semiBold);
+        final ready = find.text(messages.dailyOsNextActivityReady);
+        expect(top(find.text('Protect the morning')), lessThan(top(ready)));
+        expect(
+          tester.widget<Text>(ready).style!.color,
+          tokens.colors.text.highEmphasis,
+        );
+
+        // Waiting: named "Voice note"; the wait in medium emphasis, the
+        // warning ink kept to its glyph; the explanation below.
+        final voiceNote = find.text(messages.dailyOsNextActivityVoiceNote);
+        final waiting = find.text(
+          messages.dailyOsNextActivityWaitingForNetwork,
+        );
+        expect(voiceNote, findsOneWidget);
+        expect(top(voiceNote), lessThan(top(waiting)));
+        expect(
+          tester.widget<Text>(waiting).style!.color,
+          tokens.colors.text.mediumEmphasis,
+        );
+        expect(
+          tester
+              .widget<Icon>(
+                find.descendant(
+                  of: find.byKey(const ValueKey('waiting')),
+                  matching: find.byIcon(LottiIcons.cloudOff),
+                ),
+              )
+              .color,
+          tokens.colors.alert.warning.ink,
+        );
+        expect(
+          find.text(messages.dailyOsNextActivityTranscriptPending),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets('needs-you entries share one card, keyed, ready ones first', (
+      tester,
+    ) async {
+      await pump(tester, [
+        recording('waiting', 8, status: DayProcessingJobStatus.queued),
+        recording('ready', 11),
+      ]);
+      final messages = tester.element(find.byType(DayActivityView)).messages;
+
+      expect(find.text(messages.dailyOsNextActivityNeedsYou), findsOneWidget);
+      expect(
+        find.text(messages.dailyOsNextActivityWaitingCount(2)),
+        findsOneWidget,
+      );
+      expect(
+        top(tester, find.byKey(const ValueKey('ready'))),
+        lessThan(top(tester, find.byKey(const ValueKey('waiting')))),
+      );
+    });
+
+    testWidgets('needs you, then today so far, then handled', (tester) async {
+      await pump(
+        tester,
+        [plan('done', 7), recording('open', 9)],
+        actualBlocks: [tracked],
+      );
+      final messages = tester.element(find.byType(DayActivityView)).messages;
+
+      final needsYou = top(
+        tester,
+        find.text(messages.dailyOsNextActivityNeedsYou),
+      );
+      final soFar = top(tester, find.text(messages.dailyOsNextTimeSpentTitle));
+      final handled = top(
+        tester,
+        find.text(messages.dailyOsNextActivityHandled),
+      );
+      expect(needsYou, lessThan(soFar));
+      expect(soFar, lessThan(handled));
+      expect(
+        top(tester, find.byKey(const ValueKey('done'))),
+        greaterThan(handled),
+      );
+    });
+
+    testWidgets('tracked time alone shows no entry groups', (tester) async {
+      await pump(tester, const [], actualBlocks: [tracked]);
+      final messages = tester.element(find.byType(DayActivityView)).messages;
+
+      expect(find.byType(TimeSpentCard), findsOneWidget);
+      expect(find.text(messages.dailyOsNextActivityNeedsYou), findsNothing);
+      expect(find.text(messages.dailyOsNextActivityHandled), findsNothing);
+    });
+
+    testWidgets('opens at the top of the day', (tester) async {
+      await pump(tester, [
+        for (var h = 6; h < 20; h++) recording('r$h', h),
+      ], size: const Size(400, 700));
+
+      final scroll = tester.widget<SingleChildScrollView>(
+        find.byType(SingleChildScrollView),
+      );
+      expect(scroll.reverse, isFalse);
+      expect(
+        tester
+            .state<ScrollableState>(find.byType(Scrollable).first)
+            .position
+            .pixels,
+        0,
+      );
+    });
+
+    testWidgets(
+      'a settled entry wears the glyph of its kind; an agent job, always '
+      'awaiting the user, wears the error glyph',
+      (tester) async {
+        final at = DateTime(2026, 5, 26, 9);
+        final glyphs = {
+          DayActivityEntryKind.plan: LottiIcons.aiSpark,
+          DayActivityEntryKind.summary: LottiIcons.summarize,
+          DayActivityEntryKind.checkIn: LottiIcons.note,
+          DayActivityEntryKind.recording: LottiIcons.mic,
+          DayActivityEntryKind.agentJob: LottiIcons.error,
+        };
+        await pump(tester, [
+          for (final kind in glyphs.keys)
+            DayActivityEntry(id: kind.name, kind: kind, createdAt: at),
+        ]);
+
+        for (final MapEntry(key: kind, value: glyph) in glyphs.entries) {
+          expect(
+            find.descendant(
+              of: find.byKey(ValueKey(kind.name)),
+              matching: find.byIcon(glyph),
+            ),
+            findsOneWidget,
+            reason: kind.name,
+          );
+        }
+      },
+    );
+
+    testWidgets('an empty day keeps the header above its empty state', (
+      tester,
+    ) async {
+      await pump(tester, const [], header: const Text('briefing'));
+      final messages = tester.element(find.byType(DayActivityView)).messages;
+
+      expect(find.text('briefing'), findsOneWidget);
+      expect(find.text(messages.dailyOsNextActivityEmpty), findsOneWidget);
+      expect(
+        top(tester, find.text('briefing')),
+        lessThan(top(tester, find.text(messages.dailyOsNextActivityEmpty))),
+      );
+    });
+
+    testWidgets('a header scrolls in above the groups', (tester) async {
+      await pump(tester, [
+        recording('a', 9),
+      ], header: const Text('briefing'));
+      final messages = tester.element(find.byType(DayActivityView)).messages;
+
+      expect(
+        top(tester, find.text('briefing')),
+        lessThan(top(tester, find.text(messages.dailyOsNextActivityNeedsYou))),
+      );
+    });
+
+    testWidgets('each row leads with its time, quiet and tabular', (
+      tester,
+    ) async {
+      await pump(tester, [recording('a', 9)]);
+      final tokens = tester.element(find.byType(DayActivityView)).designTokens;
+
+      final time = find.descendant(
+        of: find.byKey(const ValueKey('a')),
+        matching: find.text('9:00 AM'),
+      );
+      expect(time, findsOneWidget);
+      final style = tester.widget<Text>(time).style!;
+      expect(style.color, tokens.colors.text.lowEmphasis);
+      expect(style.fontFeatures, dayFigures);
+    });
+
+    for (final (name, status, icon) in [
+      ('ready', DayProcessingJobStatus.succeeded, LottiIcons.mic),
+      (
+        'waiting',
+        DayProcessingJobStatus.waitingForNetwork,
+        LottiIcons.cloudOff,
+      ),
+      ('transcribing', DayProcessingJobStatus.running, LottiIcons.waveform),
+      ('failed', DayProcessingJobStatus.failed, LottiIcons.error),
+    ]) {
+      testWidgets('a $name recording is marked by where it stands', (
+        tester,
+      ) async {
+        await pump(tester, [recording(name, 9, status: status)]);
+        final tokens = tester
+            .element(find.byType(DayActivityView))
+            .designTokens;
+
+        final color = tester.widget<Icon>(find.byIcon(icon)).color;
+        expect(
+          color,
+          switch (status) {
+            DayProcessingJobStatus.failed => tokens.colors.alert.error.ink,
+            DayProcessingJobStatus.waitingForNetwork =>
+              tokens.colors.alert.warning.ink,
+            _ => tokens.colors.text.mediumEmphasis,
+          },
+        );
+      });
+    }
+
+    testWidgets("Use is a secondary action, leaving the footer's the one "
+        'filled button', (tester) async {
+      await pump(tester, [recording('a', 9)]);
+      final messages = tester.element(find.byType(DayActivityView)).messages;
+
+      final use = tester.widget<DesignSystemButton>(
+        find.ancestor(
+          of: find.text(messages.dailyOsNextActivityUseToRefine),
+          matching: find.byType(DesignSystemButton),
+        ),
+      );
+      expect(use.variant, DesignSystemButtonVariant.secondary);
+      expect(use.leadingIcon, LottiIcons.send);
+    });
+
+    testWidgets('Delete sits apart at the row end, quiet', (tester) async {
+      await pump(tester, [recording('a', 9)]);
+      final messages = tester.element(find.byType(DayActivityView)).messages;
+
+      final use = tester.getRect(
+        find.text(messages.dailyOsNextActivityUseToRefine),
+      );
+      final delete = find.ancestor(
+        of: find.text(messages.dailyOsNextActivityDeleteRecording),
+        matching: find.byType(DesignSystemButton),
+      );
+      expect(
+        tester.widget<DesignSystemButton>(delete).variant,
+        DesignSystemButtonVariant.quiet,
+      );
+      final deleteRect = tester.getRect(delete);
+      // Far from Use: at the end of the row, not beside it.
+      expect(deleteRect.left - use.right, greaterThan(use.width));
+    });
+
+    testWidgets(
+      'a phone previews the words in three lines; desktop shows all',
+      (
+        tester,
+      ) async {
+        final long = List.filled(40, 'words').join(' ');
+        await pump(tester, [
+          recording('a', 9, transcript: long),
+        ], size: const Size(400, 900));
+        // Enough to judge the words before Use, short enough to keep the
+        // groups below in view.
+        expect(tester.widget<Text>(find.text(long)).maxLines, 3);
+
+        await pump(tester, [recording('a', 9, transcript: long)]);
+        expect(tester.widget<Text>(find.text(long)).maxLines, isNull);
+      },
+    );
+  });
 }

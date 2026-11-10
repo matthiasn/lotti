@@ -1994,9 +1994,21 @@
   "dailyOsNextActivityDeleteDialogTitle": "Ștergeți această înregistrare?",
   "dailyOsNextActivityDeleteRecording": "Ștergeți",
   "dailyOsNextActivityEmpty": "Nu există încă înregistrări sau check-in-uri.",
+  "dailyOsNextActivityHandled": "Rezolvat",
+  "dailyOsNextActivityHandledCount": "{count, plural, one{{count} rezolvat} few{{count} rezolvate} other{{count} de rezolvate}}",
+  "@dailyOsNextActivityHandledCount": {
+    "description": "Summary beside the Activity tab's 'Handled' header: how many entries are dealt with.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "4"
+      }
+    }
+  },
   "dailyOsNextActivityLoadFailed": "Activitatea dvs. salvată se află în continuare pe acest dispozitiv, dar nu a putut fi încărcată acum.",
   "dailyOsNextActivityMissingAudio": "Această intrare este păstrată, dar fișierul audio nu este disponibil pe acest dispozitiv. Restaurați fișierul, apoi încercați din nou.",
   "dailyOsNextActivityNeedsAttention": "Necesită atenție",
+  "dailyOsNextActivityNeedsYou": "Vă așteaptă",
   "dailyOsNextActivityOpenAiSetup": "Deschideți configurarea Daily OS",
   "dailyOsNextActivityOpenSetup": "Deschideți configurarea transcrierii",
   "dailyOsNextActivityPlanAvailable": "Planul dvs. pentru zi este disponibil.",
@@ -2012,10 +2024,21 @@
   "dailyOsNextActivityTranscriptPending": "Înregistrarea dvs. este salvată. Transcrierea este încă în așteptare.",
   "dailyOsNextActivityUseToPlan": "Folosiți pentru a crea planul",
   "dailyOsNextActivityUseToRefine": "Folosiți pentru ajustare",
+  "dailyOsNextActivityVoiceNote": "Notă vocală",
+  "@dailyOsNextActivityVoiceNote": {
+    "description": "Name of an Activity row for a voice recording whose transcript is not ready yet."
+  },
+  "dailyOsNextActivityWaitingCount": "{count} în așteptare",
+  "@dailyOsNextActivityWaitingCount": {
+    "description": "Summary beside the Activity tab's 'Needs you' header: how many entries wait for the user.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "2"
+      }
+    }
+  },
   "dailyOsNextActivityWaitingForNetwork": "Se așteaptă conexiunea",
-  "dailyOsNextAgendaCapacityComfortable": "Confortabil",
-  "dailyOsNextAgendaCapacityNearFull": "Aproape plin",
-  "dailyOsNextAgendaCapacityNoPlan": "Încă fără plan",
   "dailyOsNextAgendaCapacityOf": "din {capacity}",
   "@dailyOsNextAgendaCapacityOf": {
     "placeholders": {
@@ -2025,48 +2048,41 @@
       }
     }
   },
-  "dailyOsNextAgendaCapacityOver": "Peste capacitate",
-  "dailyOsNextAgendaDonutLeft": "liber",
-  "dailyOsNextAgendaDonutOver": "în plus",
-  "dailyOsNextAgendaHeadlineLeft": "{duration} rămase",
-  "@dailyOsNextAgendaHeadlineLeft": {
+  "dailyOsNextAgendaDoneRun": "{count, plural, =1{1 element finalizat} few{{count} elemente finalizate} other{{count} de elemente finalizate}}",
+  "@dailyOsNextAgendaDoneRun": {
+    "description": "Agenda summary row standing in for the day's finished items, folded together.",
     "placeholders": {
-      "duration": {
-        "type": "String",
-        "example": "15m"
+      "count": {
+        "type": "int",
+        "example": "5"
       }
     }
   },
-  "dailyOsNextAgendaHeadlineOver": "{duration} peste",
-  "@dailyOsNextAgendaHeadlineOver": {
+  "dailyOsNextAgendaHideDone": "Ascundeți elementele finalizate",
+  "dailyOsNextAgendaLeft": "{count, plural, one{Rămâne {count} · {duration}} few{Rămân {count} · {duration}} other{Rămân {count} · {duration}}}",
+  "@dailyOsNextAgendaLeft": {
+    "description": "Summary beside the agenda's 'Plan' header: how many items are not done yet, followed by the time they are planned for.",
     "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      },
       "duration": {
         "type": "String",
-        "example": "1h"
+        "example": "2h 45m"
       }
     }
   },
-  "dailyOsNextAgendaNoPlanBody": "Timpul dvs. înregistrat este oricum aici — rostiți un check-in și voi schița o zi în jurul lui.",
-  "dailyOsNextAgendaNoPlanSummary": "{duration} înregistrat până acum. Rostiți un check-in și voi schița o zi în jurul lui.",
-  "dailyOsNextAgendaNoPlanTitle": "Încă nu există un plan pentru azi.",
+  "dailyOsNextAgendaNoPlanTitle": "Încă nu există un plan pentru această zi.",
+  "dailyOsNextAgendaNow": "Acum",
+  "@dailyOsNextAgendaNow": {
+    "description": "Marks the agenda row whose item is under way now, above its start time."
+  },
+  "dailyOsNextAgendaShowDone": "Afișați elementele finalizate",
   "dailyOsNextAgendaStateDone": "Finalizat",
   "dailyOsNextAgendaStateInProgress": "În progres",
   "dailyOsNextAgendaStateOpen": "Deschis",
   "dailyOsNextAgendaStateOverdue": "Întârziat",
-  "dailyOsNextAgendaSummary": "{scheduled} din {capacity} angajate",
-  "@dailyOsNextAgendaSummary": {
-    "placeholders": {
-      "scheduled": {
-        "type": "String",
-        "example": "5h 15m"
-      },
-      "capacity": {
-        "type": "String",
-        "example": "8h"
-      }
-    }
-  },
-  "dailyOsNextAgendaTrackedLegend": "Înregistrat · {duration} · {completedCount, plural, =1{1 finalizată} few{{completedCount} finalizate} other{{completedCount} de finalizate}}",
   "dailyOsNextBlockCreateTask": "Creați o sarcină",
   "dailyOsNextBlockEditCategoryLabel": "Categorie",
   "dailyOsNextBlockEditFailed": "Blocul nu a putut fi actualizat — încercați din nou.",
@@ -2097,11 +2113,41 @@
       }
     }
   },
+  "dailyOsNextBriefingCapacityLabel": "Timp planificat pe categorii: {breakdown}",
+  "@dailyOsNextBriefingCapacityLabel": {
+    "description": "Screen-reader label of the day's capacity bar: each category and its planned time.",
+    "placeholders": {
+      "breakdown": {
+        "type": "String",
+        "example": "Deep work 3h 30m, Admin 45m"
+      }
+    }
+  },
+  "dailyOsNextBriefingDoneCaption": "{count, plural, one{{count} finalizată} few{{count} finalizate} other{{count} de finalizate}}",
+  "@dailyOsNextBriefingDoneCaption": {
+    "description": "Caption under the bar on a day without a plan: recorded sessions that are done.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "2"
+      }
+    }
+  },
   "dailyOsNextBriefingFree": "Mai aveți {duration} la dispoziție.",
   "@dailyOsNextBriefingFree": {
     "placeholders": {
       "duration": {
         "type": "String"
+      }
+    }
+  },
+  "dailyOsNextBriefingFreeCaption": "{duration} liber",
+  "@dailyOsNextBriefingFreeCaption": {
+    "description": "Caption under the day's capacity bar: capacity the plan leaves free.",
+    "placeholders": {
+      "duration": {
+        "type": "String",
+        "example": "2h 40m"
       }
     }
   },
@@ -2144,6 +2190,16 @@
       }
     }
   },
+  "dailyOsNextBriefingMoreCategories": "+{count} în plus",
+  "@dailyOsNextBriefingMoreCategories": {
+    "description": "Last entry of the capacity legend on a phone: how many categories are not named. Their time together follows it.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "2"
+      }
+    }
+  },
   "dailyOsNextBriefingNext": "Urmează la {time}: {title}.",
   "@dailyOsNextBriefingNext": {
     "placeholders": {
@@ -2155,10 +2211,40 @@
       }
     }
   },
-  "dailyOsNextBriefingNoPlan": "Încă nu există un plan pentru această zi. Un scurt check-in va crea unul.",
+  "dailyOsNextBriefingNoPlan": "Încă nu există un plan pentru această zi. Un scurt check‑in va crea unul.",
   "dailyOsNextBriefingNothingLeft": "Pentru astăzi nu mai este nimic planificat.",
+  "dailyOsNextBriefingOverCaption": "{duration} peste",
+  "@dailyOsNextBriefingOverCaption": {
+    "description": "Caption under the day's capacity bar when the plan books more than the day holds.",
+    "placeholders": {
+      "duration": {
+        "type": "String",
+        "example": "45m"
+      }
+    }
+  },
+  "dailyOsNextBriefingPlannedCaption": "{duration} planificat",
+  "@dailyOsNextBriefingPlannedCaption": {
+    "description": "Caption under the day's capacity bar: how much the plan books.",
+    "placeholders": {
+      "duration": {
+        "type": "String",
+        "example": "5h 20m"
+      }
+    }
+  },
   "dailyOsNextBriefingPlayTooltip": "Ascultați ziua dvs.",
   "dailyOsNextBriefingStopTooltip": "Opriți rezumatul",
+  "dailyOsNextBriefingTrackedCaption": "{duration} înregistrat",
+  "@dailyOsNextBriefingTrackedCaption": {
+    "description": "Caption under the bar on a day without a plan: time recorded so far.",
+    "placeholders": {
+      "duration": {
+        "type": "String",
+        "example": "3h 10m"
+      }
+    }
+  },
   "dailyOsNextCaptureCaptured": "Am înțeles.",
   "dailyOsNextCaptureDoneCta": "Gata",
   "dailyOsNextCaptureErrorAudioPersistFailed": "Înregistrarea dvs. nu a putut fi salvată.",
@@ -2203,7 +2289,7 @@
   "dailyOsNextDayAgentStatusWorking": "Se planifică…",
   "dailyOsNextDayAgentTokensToday": "{tokens} tokenuri folosite pentru planificarea acestei zile",
   "dailyOsNextDayBack": "Înapoi",
-  "dailyOsNextDayComposerCheckInHint": "Spuneți sau scrieți un check-in",
+  "dailyOsNextDayComposerCheckInHint": "Spuneți sau scrieți un check‑in",
   "dailyOsNextDayDeleteDialogBody": "Blocurile schițate pentru această zi vor fi eliminate. Capturile dvs. și înregistrările audio rămân în jurnal.",
   "dailyOsNextDayDeleteDialogCancel": "Anulați",
   "dailyOsNextDayDeleteDialogConfirm": "Ștergeți",
@@ -2213,6 +2299,24 @@
   "dailyOsNextDayMenuInspectAgent": "Inspectare agent",
   "dailyOsNextDayMenuSettings": "Setări Daily OS",
   "dailyOsNextDayMoreTooltip": "Mai mult",
+  "dailyOsNextDayOverline": "{lead} · {detail}",
+  "@dailyOsNextDayOverline": {
+    "description": "The day page's overline: how the day relates to today (or its weekday), then the weekday (or the year).",
+    "placeholders": {
+      "lead": {
+        "type": "String",
+        "example": "Today"
+      },
+      "detail": {
+        "type": "String",
+        "example": "Sunday"
+      }
+    }
+  },
+  "dailyOsNextDayRelationToday": "Astăzi",
+  "dailyOsNextDayRelationTomorrow": "Mâine",
+  "dailyOsNextDayRelationYesterday": "Ieri",
+  "dailyOsNextDayStartCheckIn": "Începeți check-in-ul",
   "dailyOsNextDayTitle": "Ziua dvs.",
   "dailyOsNextDayWhyChipLabel": "De ce",
   "dailyOsNextDayWrapUpCta": "Încheie",
@@ -2415,13 +2519,22 @@
   "dailyOsNextStateRecurringMissed": "Recurent · ratat",
   "dailyOsNextTimelineActual": "Real",
   "dailyOsNextTimelineArrange": "Aranjați blocurile",
-  "dailyOsNextTimelineBoth": "Plan și real",
+  "dailyOsNextTimelineArrangeShort": "Aranjați",
+  "@dailyOsNextTimelineArrangeShort": {
+    "description": "Label of the Day timeline's button that turns on moving and resizing planned blocks."
+  },
+  "dailyOsNextTimelineBothLanes": "Ambele coloane",
+  "@dailyOsNextTimelineBothLanes": {
+    "description": "Label of the Day timeline's button that shows the plan and actual lanes side by side, on a phone where they are shown one at a time."
+  },
+  "dailyOsNextTimelineOneLane": "O singură coloană",
+  "@dailyOsNextTimelineOneLane": {
+    "description": "Label of the Day timeline's button that switches from the side-by-side plan and actual lanes to one lane at a time."
+  },
   "dailyOsNextTimelinePlanned": "Plan",
   "dailyOsNextTimelineSessionOf": "Sesiunea {index} din {total}",
   "dailyOsNextTimelineShowBoth": "Afișați planul și realul împreună",
   "dailyOsNextTimelineShowPaged": "Afișați planul și realul prin glisare",
-  "dailyOsNextTimelineSwipeHint": "Glisați spre real · ciupiți vertical pentru zoom",
-  "dailyOsNextTimelineSwipeHintToPlan": "Glisați spre plan · ciupiți vertical pentru zoom",
   "dailyOsNextTimelineTracked": "înregistrat",
   "dailyOsNextTimeSpentEarlierSessions": "{count, plural, one{1 sesiune anterioară} few{{count} sesiuni anterioare} other{{count} de sesiuni anterioare}}",
   "dailyOsNextTimeSpentShowLess": "Afișați mai puțin",
@@ -2439,6 +2552,18 @@
   "dailyOsNextTriageDrop": "Renunță",
   "dailyOsNextTriageToday": "Astăzi",
   "dailyOsNextUncommitFailed": "Anularea nu a reușit — planul rămâne confirmat.",
+  "dailyOsNextWeekStripNextWeek": "Săptămâna următoare",
+  "dailyOsNextWeekStripPreviousWeek": "Săptămâna anterioară",
+  "dailyOsNextWeekStripSelectDay": "Selectați {date}",
+  "@dailyOsNextWeekStripSelectDay": {
+    "description": "Screen-reader label of one day in the day page's week strip.",
+    "placeholders": {
+      "date": {
+        "type": "String",
+        "example": "Sunday, November 9"
+      }
+    }
+  },
   "dailyOsOnboardingCoachCapture": "Spuneți ce vă preocupă.",
   "dailyOsOnboardingCoachDrafting": "Planificatorul creează sarcinile noi și așază munca în ziua dvs.",
   "dailyOsOnboardingCoachReconcile": "Alegeți ce se potrivește pentru azi. Elementele noi devin sarcini când construiți ziua.",

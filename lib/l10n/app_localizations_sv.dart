@@ -4748,6 +4748,20 @@ class AppLocalizationsSv extends AppLocalizations {
       'Inga inspelningar eller avstämningar än.';
 
   @override
+  String get dailyOsNextActivityHandled => 'Hanterat';
+
+  @override
+  String dailyOsNextActivityHandledCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count hanterade',
+      one: '$count hanterad',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get dailyOsNextActivityLoadFailed =>
       'Din sparade aktivitet finns kvar på den här enheten, men den kunde inte läsas in just nu.';
 
@@ -4757,6 +4771,9 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get dailyOsNextActivityNeedsAttention => 'Behöver åtgärdas';
+
+  @override
+  String get dailyOsNextActivityNeedsYou => 'Väntar på dig';
 
   @override
   String get dailyOsNextActivityOpenAiSetup => 'Öppna Daily OS-inställningar';
@@ -4807,16 +4824,15 @@ class AppLocalizationsSv extends AppLocalizations {
   String get dailyOsNextActivityUseToRefine => 'Använd för att förfina';
 
   @override
+  String get dailyOsNextActivityVoiceNote => 'Röstanteckning';
+
+  @override
+  String dailyOsNextActivityWaitingCount(int count) {
+    return '$count väntar';
+  }
+
+  @override
   String get dailyOsNextActivityWaitingForNetwork => 'Väntar på anslutning';
-
-  @override
-  String get dailyOsNextAgendaCapacityComfortable => 'Bekvämt';
-
-  @override
-  String get dailyOsNextAgendaCapacityNearFull => 'Nästan full';
-
-  @override
-  String get dailyOsNextAgendaCapacityNoPlan => 'Ingen plan än';
 
   @override
   String dailyOsNextAgendaCapacityOf(String capacity) {
@@ -4824,35 +4840,32 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String get dailyOsNextAgendaCapacityOver => 'Överkapacitet';
-
-  @override
-  String get dailyOsNextAgendaDonutLeft => 'Vänster';
-
-  @override
-  String get dailyOsNextAgendaDonutOver => 'över';
-
-  @override
-  String dailyOsNextAgendaHeadlineLeft(String duration) {
-    return '$duration vänster';
+  String dailyOsNextAgendaDoneRun(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count punkter klara',
+      one: '1 punkt klar',
+    );
+    return '$_temp0';
   }
 
   @override
-  String dailyOsNextAgendaHeadlineOver(String duration) {
-    return '$duration över';
+  String get dailyOsNextAgendaHideDone => 'Dölj klara punkter';
+
+  @override
+  String dailyOsNextAgendaLeft(int count, String duration) {
+    return '$count kvar · $duration';
   }
 
   @override
-  String get dailyOsNextAgendaNoPlanBody =>
-      'Din registrerade tid är här oavsett — prata med en incheckning så skriver jag en dag runt den.';
+  String get dailyOsNextAgendaNoPlanTitle => 'Ingen plan än för den här dagen.';
 
   @override
-  String dailyOsNextAgendaNoPlanSummary(String duration) {
-    return '$duration har följt hittills. Håll en uppföljning så skriver jag en dag runt det.';
-  }
+  String get dailyOsNextAgendaNow => 'Nu';
 
   @override
-  String get dailyOsNextAgendaNoPlanTitle => 'Ingen plan än för idag.';
+  String get dailyOsNextAgendaShowDone => 'Visa klara punkter';
 
   @override
   String get dailyOsNextAgendaStateDone => 'Klart';
@@ -4865,16 +4878,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get dailyOsNextAgendaStateOverdue => 'Försenad';
-
-  @override
-  String dailyOsNextAgendaSummary(String scheduled, String capacity) {
-    return '$scheduled av $capacity begått';
-  }
-
-  @override
-  String dailyOsNextAgendaTrackedLegend(String duration, int completedCount) {
-    return 'Spårad · $duration · $completedCount klart';
-  }
 
   @override
   String get dailyOsNextBlockCreateTask => 'Skapa en uppgift';
@@ -4957,8 +4960,29 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String dailyOsNextBriefingCapacityLabel(String breakdown) {
+    return 'Planerad tid per kategori: $breakdown';
+  }
+
+  @override
+  String dailyOsNextBriefingDoneCaption(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count klara',
+      one: '$count klar',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String dailyOsNextBriefingFree(String duration) {
     return 'Du har fortfarande $duration ledigt under din dag.';
+  }
+
+  @override
+  String dailyOsNextBriefingFreeCaption(String duration) {
+    return '$duration ledigt';
   }
 
   @override
@@ -4997,6 +5021,11 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String dailyOsNextBriefingMoreCategories(int count) {
+    return '+$count till';
+  }
+
+  @override
   String dailyOsNextBriefingNext(String time, String title) {
     return 'Härnäst klockan $time: $title.';
   }
@@ -5010,10 +5039,25 @@ class AppLocalizationsSv extends AppLocalizations {
       'Inget mer är planerat för i dag.';
 
   @override
+  String dailyOsNextBriefingOverCaption(String duration) {
+    return '$duration för mycket';
+  }
+
+  @override
+  String dailyOsNextBriefingPlannedCaption(String duration) {
+    return '$duration planerat';
+  }
+
+  @override
   String get dailyOsNextBriefingPlayTooltip => 'Lyssna på din dag';
 
   @override
   String get dailyOsNextBriefingStopTooltip => 'Stoppa genomgången';
+
+  @override
+  String dailyOsNextBriefingTrackedCaption(String duration) {
+    return '$duration registrerat';
+  }
 
   @override
   String get dailyOsNextCaptureCaptured => 'Förstått.';
@@ -5194,6 +5238,23 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get dailyOsNextDayMoreTooltip => 'Mer';
+
+  @override
+  String dailyOsNextDayOverline(String lead, String detail) {
+    return '$lead · $detail';
+  }
+
+  @override
+  String get dailyOsNextDayRelationToday => 'Idag';
+
+  @override
+  String get dailyOsNextDayRelationTomorrow => 'I morgon';
+
+  @override
+  String get dailyOsNextDayRelationYesterday => 'Igår';
+
+  @override
+  String get dailyOsNextDayStartCheckIn => 'Starta incheckning';
 
   @override
   String get dailyOsNextDayTitle => 'Din dag';
@@ -5699,13 +5760,19 @@ class AppLocalizationsSv extends AppLocalizations {
   String get dailyOsNextStateRecurringMissed => 'Återkommande · Missade';
 
   @override
-  String get dailyOsNextTimelineActual => 'Nutid';
+  String get dailyOsNextTimelineActual => 'Faktiskt';
 
   @override
   String get dailyOsNextTimelineArrange => 'Arrangera block';
 
   @override
-  String get dailyOsNextTimelineBoth => 'Plan och verklighet';
+  String get dailyOsNextTimelineArrangeShort => 'Ordna';
+
+  @override
+  String get dailyOsNextTimelineBothLanes => 'Båda kolumnerna';
+
+  @override
+  String get dailyOsNextTimelineOneLane => 'En kolumn';
 
   @override
   String get dailyOsNextTimelinePlanned => 'Plan';
@@ -5721,14 +5788,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get dailyOsNextTimelineShowPaged => 'Visa swipebar plan och faktisk';
-
-  @override
-  String get dailyOsNextTimelineSwipeHint =>
-      'Svep för faktiska · nyp vertikalt för att zooma in';
-
-  @override
-  String get dailyOsNextTimelineSwipeHintToPlan =>
-      'Svep för plan · nyp vertikalt för att zooma in';
 
   @override
   String get dailyOsNextTimelineTracked => 'spårade';
@@ -5791,6 +5850,17 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get dailyOsNextUncommitFailed =>
       'Det gick inte att ångra — planen ligger kvar.';
+
+  @override
+  String get dailyOsNextWeekStripNextWeek => 'Nästa vecka';
+
+  @override
+  String get dailyOsNextWeekStripPreviousWeek => 'Föregående vecka';
+
+  @override
+  String dailyOsNextWeekStripSelectDay(String date) {
+    return 'Välj $date';
+  }
 
   @override
   String get dailyOsOnboardingCoachCapture =>

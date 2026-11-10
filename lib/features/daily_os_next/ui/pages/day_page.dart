@@ -24,9 +24,12 @@ import 'package:lotti/features/daily_os_next/ui/widgets/day_activity_view.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_block_edit_modal.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_block_task_picker.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_briefing_companion.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/day_briefing_strip.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_check_in_spotlight_host.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_composer.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/day_row_scaffold.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/day_view_side_panel.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/edge_fade.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/knowledge_nudge.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/plan_view_toggle.dart';
@@ -35,7 +38,9 @@ import 'package:lotti/features/design_system/components/chips/design_system_chip
 import 'package:lotti/features/design_system/components/glass_strip.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
+import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -381,77 +386,162 @@ class _DayPageState extends ConsumerState<DayPage> {
         padding: EdgeInsets.only(bottom: bottomNavHeight),
         child: Column(
           children: [
-            DayHeader(
-              dateStrip: widget.dateStrip,
-              date: widget.draft.dayDate,
-              selectedView: _view,
-              hasPlan: widget.hasPlan,
-              onViewChanged: ref
-                  .read(dailyOsNextPlanViewProvider.notifier)
-                  .select,
-              onBack: () => Navigator.of(context).maybePop(),
-              onInspectAgent: () => unawaited(_openAgentInternals()),
-              onSettings: () => nav_service.beamToNamed('/settings/daily-os'),
-              onDeletePlan: () => unawaited(_confirmDeletePlan()),
-              companion: DayBriefingCompanion(
-                draft: widget.draft,
+            // The masthead keeps to the reading column too, so its actions
+            // end where the content does.
+            _OnPageColumn(
+              child: DayHeader(
+                navigation: widget.navigation,
+                date: widget.draft.dayDate,
+                selectedView: _view,
                 hasPlan: widget.hasPlan,
-              ),
-            ),
-            if (setupStatus?.needsAttention ?? false)
-              _DailyOsSetupNudge(
-                status: setupStatus!,
-                onOpenSettings: () =>
-                    nav_service.beamToNamed('/settings/daily-os'),
-              ),
-            // Proposed learnings surface here on both views and both
-            // form factors; renders nothing when there is nothing to
-            // confirm.
-            Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: tokens.spacing.step5,
-              ),
-              child: const Align(
-                alignment: Alignment.centerLeft,
-                child: KnowledgeNudge(),
+                onViewChanged: ref
+                    .read(dailyOsNextPlanViewProvider.notifier)
+                    .select,
+                onBack: () => Navigator.of(context).maybePop(),
+                onInspectAgent: () => unawaited(_openAgentInternals()),
+                onSettings: () => nav_service.beamToNamed('/settings/daily-os'),
+                onDeletePlan: () => unawaited(_confirmDeletePlan()),
+                companion: DayBriefingCompanion(
+                  draft: widget.draft,
+                  hasPlan: widget.hasPlan,
+                ),
               ),
             ),
             // Goal-agent voices now live in the shell-level dock (one
             // rotating slot at the bottom of the content region), not
             // in-page — the day page no longer mounts a banner strip.
             Expanded(
-              // Rows meeting the fold dissolve instead of resting
-              // razor-cut against the footer's glass edge.
-              child: EdgeFade(
-                rampExtent: 36,
-                fadeTop: false,
-                minFraction: 0.04,
-                child: switch (_view) {
-                  PlanView.agenda => AgendaView(
-                    draft: widget.draft,
-                    actualBlocks: actualBlocks ?? const [],
-                    hasPlan: widget.hasPlan,
-                    onRenameItem: onRenameItem,
-                  ),
-                  PlanView.day => DayTimeline(
-                    draft: widget.draft,
-                    actualBlocks: actualBlocks,
-                    onRenameBlock: onRenameBlock,
-                    onEditBlock: onEditBlock,
-                    onRescheduleBlock: onRescheduleBlock,
-                    showGestureHint: !prefs.timelineGesturesLearned,
-                    onGesturesLearned: ref
-                        .read(
-                          dailyOsPreferencesControllerProvider.notifier,
-                        )
-                        .markTimelineGesturesLearned,
-                  ),
-                  PlanView.activity => DayActivityView(
-                    date: widget.draft.dayDate,
-                    hasPlan: widget.hasPlan,
-                    actualBlocks: actualBlocks ?? const [],
-                    onUseEntry: (entry) => unawaited(_useActivityEntry(entry)),
-                  ),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  // On a phone the summary scrolls away with the Agenda and
+                  // the Activity, giving the screen back to the day; over
+                  // the timeline it stays, reduced to its sentence and line.
+                  // On a wide pane it stays above every tab.
+                  final compact = !isDesktopLayout(context);
+                  final pinned = !compact || _view == PlanView.day;
+                  final summary = Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // The day in a sentence and a line, every tab: step4
+                      // under the header; the nudge under it hangs from it,
+                      // and the list below opens a sectionGap further down.
+                      Padding(
+                        padding: EdgeInsets.only(
+                          left: tokens.spacing.step5,
+                          top: tokens.spacing.step4,
+                          right: tokens.spacing.step5,
+                        ),
+                        child: DayBriefingStrip(
+                          draft: widget.draft,
+                          hasPlan: widget.hasPlan,
+                          actualBlocks: actualBlocks ?? const [],
+                          dense: compact && _view == PlanView.day,
+                        ),
+                      ),
+                      if (setupStatus?.needsAttention ?? false)
+                        _DailyOsSetupNudge(
+                          status: setupStatus!,
+                          onOpenSettings: () =>
+                              nav_service.beamToNamed('/settings/daily-os'),
+                        ),
+                      // Proposed learnings surface under the briefing;
+                      // nothing when there is nothing to confirm. Not over
+                      // a phone's timeline, which needs the room — they are
+                      // on the other tabs.
+                      if (!(compact && _view == PlanView.day))
+                        // On the text edge the section headers and the rows'
+                        // times share; its tap target's own height is the
+                        // small step that ties it to the briefing.
+                        Padding(
+                          padding: EdgeInsetsDirectional.only(
+                            start:
+                                tokens.spacing.step5 +
+                                DayRowScaffold.inset(context),
+                            end: tokens.spacing.step5,
+                          ),
+                          child: const Align(
+                            alignment: AlignmentDirectional.centerStart,
+                            child: KnowledgeNudge(),
+                          ),
+                        ),
+                    ],
+                  );
+                  return Column(
+                    children: [
+                      // Pinned, the summary never takes more than a third of
+                      // the room between header and footer: on a short screen
+                      // at large text it scrolls within its third.
+                      if (pinned)
+                        _OnPageColumn(
+                          child: ConstrainedBox(
+                            constraints: BoxConstraints(
+                              maxHeight: constraints.maxHeight / 3,
+                            ),
+                            child: SingleChildScrollView(child: summary),
+                          ),
+                        ),
+                      Expanded(
+                        // Rows meeting the fold dissolve instead of resting
+                        // razor-cut against the footer's glass edge.
+                        child: EdgeFade(
+                          rampExtent: tokens.spacing.step7,
+                          fadeTop: false,
+                          minFraction: 0.04,
+                          child: switch (_view) {
+                            PlanView.agenda => _OnPageColumn(
+                              child: AgendaView(
+                                draft: widget.draft,
+                                hasPlan: widget.hasPlan,
+                                onRenameItem: onRenameItem,
+                                header: pinned ? null : summary,
+                                onStartCheckIn: widget.onCheckIn,
+                                actualBlocks: actualBlocks ?? const [],
+                              ),
+                            ),
+                            // In the reading column like every tab, so the
+                            // page keeps one right edge; the lanes sit side
+                            // by side wherever the docked panel's would.
+                            PlanView.day => _OnPageColumn(
+                              // The step5 rail the Agenda and Activity keep,
+                              // so the page has one left and one right edge.
+                              child: Padding(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: tokens.spacing.step5,
+                                ),
+                                child: DayTimeline(
+                                  comparisonBreakpoint:
+                                      kDayViewSidePanelComparisonBreakpoint,
+                                  draft: widget.draft,
+                                  actualBlocks: actualBlocks,
+                                  onRenameBlock: onRenameBlock,
+                                  onEditBlock: onEditBlock,
+                                  onRescheduleBlock: onRescheduleBlock,
+                                  showGestureHint:
+                                      !prefs.timelineGesturesLearned,
+                                  onGesturesLearned: ref
+                                      .read(
+                                        dailyOsPreferencesControllerProvider
+                                            .notifier,
+                                      )
+                                      .markTimelineGesturesLearned,
+                                ),
+                              ),
+                            ),
+                            PlanView.activity => _OnPageColumn(
+                              child: DayActivityView(
+                                date: widget.draft.dayDate,
+                                hasPlan: widget.hasPlan,
+                                actualBlocks: actualBlocks ?? const [],
+                                onUseEntry: (entry) =>
+                                    unawaited(_useActivityEntry(entry)),
+                                header: pinned ? null : summary,
+                              ),
+                            ),
+                          },
+                        ),
+                      ),
+                    ],
+                  );
                 },
               ),
             ),
@@ -472,6 +562,7 @@ class _DayPageState extends ConsumerState<DayPage> {
                 needsInferenceSetup: setupStatus?.hasInferenceRoute == false,
                 setupResolved: setupStatus != null,
                 ctaKey: _checkInCtaKey,
+                onStartCheckIn: widget.onCheckIn,
               ),
           ],
         ),

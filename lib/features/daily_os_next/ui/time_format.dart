@@ -14,7 +14,7 @@ String formatMinutesCompact(int minutes) {
 }
 
 /// `start–end` clock range that follows both the app's language and the
-/// *device's* clock: `9:14 AM–10:05 AM` on a 12-hour device, `09:14–10:05` on
+/// *device's* clock: `9:14–10:05 AM` on a 12-hour device, `09:14–10:05` on
 /// a 24-hour one.
 ///
 /// Goes through [TimeOfDay.format] rather than `DateFormat.jm`, because only
@@ -26,8 +26,27 @@ String formatMinutesCompact(int minutes) {
 /// A locale with no AM/PM form (German, Czech, …) stays 24-hour regardless of
 /// the device flag — the locale wins, which is what [TimeOfDay.format] already
 /// encodes.
-String formatClockRange(BuildContext context, DateTime start, DateTime end) =>
-    '${formatClock(context, start)}–${formatClock(context, end)}';
+///
+/// A range within one half of the day writes its period once, at the end —
+/// `1:00–2:30 PM`, not `1:00 PM–2:30 PM` — and one that crosses noon or
+/// midnight keeps both.
+String formatClockRange(BuildContext context, DateTime start, DateTime end) {
+  final from = formatClock(context, start);
+  final to = formatClock(context, end);
+  final localizations = MaterialLocalizations.of(context);
+  final period = TimeOfDay.fromDateTime(start).period;
+  final meridiem = period == DayPeriod.am
+      ? localizations.anteMeridiemAbbreviation
+      : localizations.postMeridiemAbbreviation;
+  final samePeriod = TimeOfDay.fromDateTime(end).period == period;
+  // Only a clock that writes its period after the time ("2:30 PM") drops
+  // the first one; a 24-hour or period-first clock is left as it is.
+  if (samePeriod && from.endsWith(meridiem) && to.endsWith(meridiem)) {
+    return '${from.substring(0, from.length - meridiem.length).trimRight()}'
+        '–$to';
+  }
+  return '$from–$to';
+}
 
 /// A single clock reading on the app's language and the device's clock —
 /// `2:30 PM` or `14:30`.
@@ -39,8 +58,7 @@ String formatClockRange(BuildContext context, DateTime start, DateTime end) =>
 /// were hard-wired to 12-hour, so one and the same block read `14:30` on the
 /// timeline and `2:30p` in the diff that proposed it.
 ///
-/// Not for the hour rail: `formatTimelineHourLabel` stays a 24-hour axis
-/// because its `24:00` end-of-day marker has no 12-hour spelling that a reader
-/// could tell apart from midnight.
+/// The hour rail reads the same clock, compacted to the hour
+/// (`formatTimelineHourLabel`).
 String formatClock(BuildContext context, DateTime moment) =>
     TimeOfDay.fromDateTime(moment).format(context);

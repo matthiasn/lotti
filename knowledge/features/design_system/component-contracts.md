@@ -12,6 +12,10 @@ sources:
     resource: ../../../lib/features/design_system/components
     title: Design-system components
     last_modified: 2026-09-28
+  - id: rows-card
+    resource: ../../../lib/features/design_system/components/cards/ds_rows_card.dart
+    title: DsRowsCard — a short list of rows on one rounded card
+    last_modified: 2026-11-10
   - id: timeline-row
     resource: ../../../lib/features/design_system/components/timeline/design_system_timeline_row.dart
     title: DesignSystemTimelineRow — one row of a timeline, on its rail
@@ -259,7 +263,19 @@ worked example: each `MetricTile` tints itself by outcome — conflicts, drops,
 routine throughput — and moving it onto the section card would flatten that
 three-tone scale to one neutral. It stays a token-styled `Container`, taking
 `radii.m` and `decorative.level02` by hand. Reach for the section card when the
-grouping is structural; keep a container when the fill is information. See
+grouping is structural; keep a container when the fill is information.
+
+**A short list read as one thing is a `DsRowsCard`**: its rows on one
+borderless `background.level02` card at `radii.l`, a `DesignSystemDivider`
+between each two and none outside. The card is a `Material`, so a row's ink
+(a tap, an editable title) paints on the card rather than on whatever lies
+behind its opaque fill, and it clips, so that ink and any full-bleed edge
+marker stop at the rounded corners. Each row travels with the divider
+above it under the row's own key, so a keyed row inserted or removed above
+another keeps that row's state instead of rebuilding it as whatever now sits
+in its slot — the stay-while-reload rule, kept by the card rather than by
+each caller. The companion's lists of tasks (`FrontTaskList`,
+`FrontClosedTaskList`) are its first adopters. See
 [design tokens and theming](tokens-and-theming.md) for why the tint could not
 be expressed as a `colorScheme.*Container` either.
 

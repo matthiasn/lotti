@@ -1,6 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_composer_bar.dart';
 import 'package:lotti/features/design_system/components/chat_input/design_system_chat_input.dart';
+import 'package:lotti/features/design_system/theme/breakpoints.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -78,12 +80,21 @@ void main() {
     expect(find.text('  Finish the deck  '), findsOneWidget);
   });
 
-  testWidgets('keeps to the reading column on a wide window', (tester) async {
-    await pump(tester, size: const Size(1600, 900));
+  testWidgets(
+    "keeps to the page's reading column on a wide window, from the left rail",
+    (tester) async {
+      await pump(tester, size: const Size(1600, 900));
+      final tokens = tester.element(find.byType(DayComposerBar)).designTokens;
 
-    final width = tester.getSize(find.byType(DesignSystemChatInput)).width;
-    expect(width, lessThanOrEqualTo(DayComposerBar.maxWidth));
-  });
+      final field = tester.getRect(find.byType(DesignSystemChatInput));
+      expect(
+        field.width,
+        closeTo(kDetailContentMaxWidth - tokens.spacing.step5 * 2, 0.5),
+      );
+      // Starts on the step5 rail, like the briefing and the agenda.
+      expect(field.left, closeTo(tokens.spacing.step5, 0.5));
+    },
+  );
 
   testWidgets('spans a phone, inside the strip padding', (tester) async {
     const phone = Size(390, 844);

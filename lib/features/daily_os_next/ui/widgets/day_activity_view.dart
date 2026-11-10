@@ -6,8 +6,13 @@ import 'package:lotti/features/daily_os_next/services/day_activity_repository.da
 import 'package:lotti/features/daily_os_next/services/day_processing_job.dart';
 import 'package:lotti/features/daily_os_next/state/day_activity_provider.dart';
 import 'package:lotti/features/daily_os_next/state/day_processing_runtime_provider.dart';
+import 'package:lotti/features/daily_os_next/ui/time_format.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/day_row_scaffold.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/day_section_header.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/time_spent_card.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/cards/ds_rows_card.dart';
+import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/editor_widget.dart';
@@ -18,55 +23,140 @@ import 'package:lotti/services/nav_service.dart' as nav_service;
 import 'package:lotti/widgets/modal/confirmation_modal.dart';
 import 'package:material_ui/material_ui.dart';
 
+/// What the day has heard and done, from the top: the recordings and stalled
+/// steps that still need the user, as rows on one card; the day's tracked
+/// time; then everything already handled — plans, summaries, check-ins and
+/// used recordings — on a card of their own, oldest first.
 class DayActivityView extends ConsumerWidget {
   const DayActivityView({
     required this.date,
     required this.hasPlan,
     required this.onUseEntry,
     required this.actualBlocks,
+    this.header,
     super.key,
   });
+
+  /// Scrolls in above the activity — the page's briefing on a phone.
+  final Widget? header;
 
   final DateTime date;
   final bool hasPlan;
   final ValueChanged<DayActivityEntry> onUseEntry;
   final List<TimeBlock> actualBlocks;
 
+  /// Whether [entry] still waits on the user: a recording not yet used for
+  /// the day — ready, waiting or failed — or a stalled planning step.
+  static bool needsAction(DayActivityEntry entry) =>
+      !entry.isSubmitted &&
+      (entry.kind == DayActivityEntryKind.recording ||
+          entry.kind == DayActivityEntryKind.agentJob);
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final activity = ref.watch(dayActivityProvider(date));
+    final tokens = context.designTokens;
     return activity.when(
       skipLoadingOnReload: true,
       skipError: true,
-      data: (entries) => entries.isEmpty && actualBlocks.isEmpty
-          ? const _ActivityEmptyState()
-          : ListView.separated(
-              reverse: true,
-              padding: EdgeInsets.all(context.designTokens.spacing.step5),
-              itemCount: entries.length + (actualBlocks.isEmpty ? 0 : 1),
-              separatorBuilder: (_, _) => SizedBox(
-                height: context.designTokens.spacing.step4,
-              ),
-              itemBuilder: (context, index) {
-                if (index == entries.length) {
-                  return TimeSpentCard(blocks: actualBlocks, compact: true);
-                }
-                final entry = entries[entries.length - 1 - index];
-                return _ActivityCard(
-                  entry: entry,
-                  hasPlan: hasPlan,
-                  onUse: () => onUseEntry(entry),
-                  onRetry: entry.processingJob == null
-                      ? null
-                      : () => _retry(ref, entry.processingJob!.id),
-                  onDelete:
-                      entry.kind != DayActivityEntryKind.recording ||
-                          entry.isSubmitted
-                      ? null
-                      : () => _delete(context, ref, entry),
+      data: (entries) {
+        if (entries.isEmpty && actualBlocks.isEmpty) {
+          final header = this.header;
+          return header == null
+              ? const _ActivityEmptyState()
+              : Column(
+                  children: [
+                    header,
+                    const Expanded(child: _ActivityEmptyState()),
+                  ],
                 );
-              },
+        }
+        // What can be used now leads what is still waiting.
+        final open = [
+          ...entries.where((e) => needsAction(e) && e.transcript != null),
+          ...entries.where((e) => needsAction(e) && e.transcript == null),
+        ];
+        final handled = entries.where((e) => !needsAction(e)).toList();
+        Widget card(List<DayActivityEntry> rows) => DsRowsCard(
+          rows: [
+            for (final entry in rows)
+              _ActivityRow(
+                key: ValueKey(entry.id),
+                entry: entry,
+                hasPlan: hasPlan,
+                onUse: () => onUseEntry(entry),
+                onRetry: entry.processingJob == null
+                    ? null
+                    : () => _retry(ref, entry.processingJob!.id),
+                onDelete:
+                    entry.kind != DayActivityEntryKind.recording ||
+                        entry.isSubmitted
+                    ? null
+                    : () => _delete(context, ref, entry),
+              ),
+          ],
+        );
+        final messages = context.messages;
+        final sections = [
+          // What still needs the user leads, then the day's tracked time,
+          // then everything already handled — each group named.
+          if (open.isNotEmpty)
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                DaySectionHeader(
+                  label: messages.dailyOsNextActivityNeedsYou,
+                  summary: messages.dailyOsNextActivityWaitingCount(
+                    open.length,
+                  ),
+                ),
+                card(open),
+              ],
             ),
+          if (actualBlocks.isNotEmpty) TimeSpentCard(blocks: actualBlocks),
+          if (handled.isNotEmpty)
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                DaySectionHeader(
+                  label: messages.dailyOsNextActivityHandled,
+                  summary: messages.dailyOsNextActivityHandledCount(
+                    handled.length,
+                  ),
+                ),
+                card(handled),
+              ],
+            ),
+        ];
+        return SingleChildScrollView(
+          padding: EdgeInsets.only(bottom: tokens.spacing.step10),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              ?header,
+              Padding(
+                // The agenda's insets: step5 on the rail, step4 below the
+                // briefing.
+                padding: EdgeInsets.only(
+                  left: tokens.spacing.step5,
+                  top: tokens.spacing.sectionGap,
+                  right: tokens.spacing.step5,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    for (final (index, section) in sections.indexed) ...[
+                      if (index > 0)
+                        SizedBox(height: tokens.spacing.sectionGap),
+                      section,
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
       error: (_, _) => _ActivityErrorState(
         onRetry: () => ref.invalidate(dayActivityProvider(date)),
       ),
@@ -173,13 +263,18 @@ class _ActivityEmptyState extends StatelessWidget {
   }
 }
 
-class _ActivityCard extends StatelessWidget {
-  const _ActivityCard({
+/// One entry of the day's activity, as a row on the activity's one card:
+/// the time in a column of its own, then what the entry is — a quiet glyph
+/// for its kind and its state — over its words, and whatever it offers below
+/// them (its recording, its editable transcript, retry, set up, use, delete).
+class _ActivityRow extends StatelessWidget {
+  const _ActivityRow({
     required this.entry,
     required this.hasPlan,
     required this.onUse,
     this.onRetry,
     this.onDelete,
+    super.key,
   });
 
   final DayActivityEntry entry;
@@ -203,164 +298,260 @@ class _ActivityCard extends StatelessWidget {
     final editorShowsText =
         inlineEditorEntryId != null &&
         (entry.audio?.entryText?.plainText.trim().isNotEmpty ?? false);
-    return Container(
-      decoration: BoxDecoration(
-        color: tokens.colors.background.level02,
-        borderRadius: BorderRadius.circular(tokens.radii.l),
-        border: Border.all(color: tokens.colors.decorative.level01),
+    // A recording still waiting for its words is named as what it is; the
+    // wait itself is explained beneath.
+    final pendingRecording =
+        transcript == null && entry.kind == DayActivityEntryKind.recording;
+    final name = pendingRecording
+        ? context.messages.dailyOsNextActivityVoiceNote
+        : _body(context, entry, transcript);
+    final statusLine = Text(
+      status,
+      style: captionLabelStyle(tokens, color: _captionInk(tokens, entry)),
+    );
+    // The page's shared row grid: the time, the entry's state as its mark,
+    // its name on the first line — the agenda's anatomy — and below it,
+    // full width, where it stands and what it offers. With the editor open
+    // the editor shows the words, and the status leads instead.
+    return DayRowScaffold(
+      time: formatClock(context, entry.createdAt.toLocal()),
+      leading: Icon(
+        _glyph(entry),
+        size: tokens.typography.size.caption,
+        color: _statusInk(tokens, entry),
       ),
-      padding: EdgeInsets.all(tokens.spacing.step5),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                switch (entry.kind) {
-                  DayActivityEntryKind.plan => LottiIcons.aiSpark,
-                  DayActivityEntryKind.summary => LottiIcons.summarize,
-                  DayActivityEntryKind.checkIn => LottiIcons.note,
-                  DayActivityEntryKind.recording => LottiIcons.micIdle,
-                  DayActivityEntryKind.agentJob => LottiIcons.error,
-                },
-                color: entry.kind == DayActivityEntryKind.agentJob
-                    ? tokens.colors.text.lowEmphasis
-                    : tokens.colors.interactive.enabled,
-              ),
-              SizedBox(width: tokens.spacing.step3),
-              Expanded(
-                child: Text(
-                  _formatTime(context, entry.createdAt),
-                  style: calmEyebrowStyle(tokens),
-                ),
-              ),
-              Text(
-                status,
-                style: tokens.typography.styles.body.bodySmall.copyWith(
-                  color: tokens.colors.text.lowEmphasis,
-                ),
-              ),
-            ],
-          ),
-          if (!editorShowsText) ...[
-            SizedBox(height: tokens.spacing.step3),
-            Text(
-              _body(context, entry, transcript),
-              style: tokens.typography.styles.body.bodyMedium.copyWith(
-                color: transcript == null
-                    ? tokens.colors.text.lowEmphasis
-                    : tokens.colors.text.highEmphasis,
-              ),
-            ),
-          ],
-          if (entry.kind == DayActivityEntryKind.agentJob) ...[
-            SizedBox(height: tokens.spacing.step2),
-            Text(
-              '${_agentFailureDetail(context, entry)} '
-              '${context.messages.dailyOsNextActivityAgentJobRetryHint}',
-              style: tokens.typography.styles.body.bodySmall.copyWith(
-                color: tokens.colors.text.lowEmphasis,
-              ),
-            ),
-          ],
-          // Agent rows deliberately omit the raw provider string: it is
-          // hard-coded English written for a log, and this card is fully
-          // localized everywhere else. The durable text stays on the job for
-          // diagnostics.
-          if (entry.processingJob case final job?
-              when entry.kind != DayActivityEntryKind.agentJob &&
-                  job.lastError != null &&
-                  job.status != DayProcessingJobStatus.succeeded) ...[
-            SizedBox(height: tokens.spacing.step2),
-            Text(
-              job.lastError!,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: tokens.typography.styles.body.bodySmall.copyWith(
-                color: tokens.colors.text.lowEmphasis,
-              ),
-            ),
-          ],
-          if (entry.audio case final audio?
-              when entry.audioAvailableLocally != false) ...[
-            SizedBox(height: tokens.spacing.step4),
-            AudioPlayerWidget(audio),
-          ],
-          if (inlineEditorEntryId != null) ...[
-            SizedBox(height: tokens.spacing.step3),
-            EditorWidget(
-              entryId: inlineEditorEntryId,
-              margin: EdgeInsets.zero,
-            ),
-          ],
-          if (onDelete != null ||
-              entry.processingJob?.lastFailureClass ==
-                  DayProcessingFailureClass.setupRequired ||
-              _canRetry(entry) ||
-              transcript != null) ...[
-            SizedBox(height: tokens.spacing.step4),
-            Wrap(
-              spacing: tokens.spacing.step3,
-              runSpacing: tokens.spacing.step3,
-              children: [
-                if (_canRetry(entry))
-                  _AsyncActivityButton(
-                    // The shared label reads "Retry transcription", which is
-                    // wrong on a draft, refine or capture-parse row — none of
-                    // them transcribes anything.
-                    label: entry.kind == DayActivityEntryKind.agentJob
-                        ? context.messages.dailyOsNextActivityRetryStep
-                        : context.messages.dailyOsNextActivityRetry,
-                    action: onRetry!,
-                    // A draft job has no recording to reassure the user about.
-                    failureMessage: entry.kind == DayActivityEntryKind.agentJob
-                        ? context.messages.dailyOsNextActivityAgentActionFailed
-                        : null,
-                    variant: DesignSystemButtonVariant.secondary,
-                    leadingIcon: LottiIcons.refresh,
-                  ),
-                if (entry.processingJob?.lastFailureClass ==
-                    DayProcessingFailureClass.setupRequired)
-                  DesignSystemButton(
-                    // A planning job blocked on setup needs the Daily OS
-                    // profile binding, which lives in Daily OS settings — the
-                    // generic AI list can create a profile but never assigns
-                    // one, so it would leave the job just as blocked.
-                    label: entry.kind == DayActivityEntryKind.agentJob
-                        ? context.messages.dailyOsNextActivityOpenAiSetup
-                        : context.messages.dailyOsNextActivityOpenSetup,
-                    onPressed: () => nav_service.beamToNamed(
-                      entry.kind == DayActivityEntryKind.agentJob
-                          ? '/settings/daily-os'
-                          : '/settings/ai',
-                    ),
-                    variant: DesignSystemButtonVariant.secondary,
-                    leadingIcon: LottiIcons.settings,
-                  ),
-                if (transcript != null)
-                  DesignSystemButton(
-                    label: hasPlan
-                        ? context.messages.dailyOsNextActivityUseToRefine
-                        : context.messages.dailyOsNextActivityUseToPlan,
-                    onPressed: onUse,
-                    leadingIcon: LottiIcons.aiSpark,
-                  ),
-                if (onDelete != null)
-                  _AsyncActivityButton(
-                    label: context.messages.dailyOsNextActivityDeleteRecording,
-                    action: onDelete!,
-                    variant: DesignSystemButtonVariant.secondary,
-                    leadingIcon: LottiIcons.delete,
-                  ),
-              ],
-            ),
-          ],
-        ],
+      firstLine: editorShowsText
+          ? tokens.typography.lineHeight.caption
+          : tokens.typography.lineHeight.bodySmall,
+      below: _details(
+        context,
+        tokens,
+        transcript,
+        statusLine,
+        pendingRecording,
+        inlineEditorEntryId,
+        editorShowsText,
       ),
+      child: editorShowsText
+          ? statusLine
+          : Text(
+              name,
+              // On a phone the words are a preview — three lines, enough to
+              // judge them before Use — so the groups below stay in view; a
+              // wide pane has room for them all.
+              maxLines: isDesktopLayout(context) ? null : 3,
+              overflow: isDesktopLayout(context) ? null : TextOverflow.ellipsis,
+              style: tokens.typography.styles.body.bodySmall.copyWith(
+                fontWeight: tokens.typography.weight.semiBold,
+                color: tokens.colors.text.highEmphasis,
+              ),
+            ),
     );
   }
 
-  /// The card's main line: the entity's own wording when it has one, else an
+  Widget _details(
+    BuildContext context,
+    DsTokens tokens,
+    String? transcript,
+    Widget statusLine,
+    bool pendingRecording,
+    String? inlineEditorEntryId,
+    bool editorShowsText,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (!editorShowsText) ...[
+          SizedBox(height: tokens.spacing.step1),
+          statusLine,
+        ],
+        if (pendingRecording && !editorShowsText) ...[
+          SizedBox(height: tokens.spacing.step1),
+          Text(
+            _body(context, entry, transcript),
+            style: tokens.typography.styles.others.caption.copyWith(
+              color: tokens.colors.text.lowEmphasis,
+            ),
+          ),
+        ],
+        if (entry.kind == DayActivityEntryKind.agentJob) ...[
+          SizedBox(height: tokens.spacing.step2),
+          Text(
+            '${_agentFailureDetail(context, entry)} '
+            '${context.messages.dailyOsNextActivityAgentJobRetryHint}',
+            style: tokens.typography.styles.body.bodySmall.copyWith(
+              color: tokens.colors.text.lowEmphasis,
+            ),
+          ),
+        ],
+        // Agent rows deliberately omit the raw provider string: it is
+        // hard-coded English written for a log, and this card is fully
+        // localized everywhere else. The durable text stays on the job for
+        // diagnostics.
+        if (entry.processingJob case final job?
+            when entry.kind != DayActivityEntryKind.agentJob &&
+                job.lastError != null &&
+                job.status != DayProcessingJobStatus.succeeded) ...[
+          SizedBox(height: tokens.spacing.step2),
+          Text(
+            job.lastError!,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: tokens.typography.styles.body.bodySmall.copyWith(
+              color: tokens.colors.text.lowEmphasis,
+            ),
+          ),
+        ],
+        if (entry.audio case final audio?
+            when entry.audioAvailableLocally != false) ...[
+          SizedBox(height: tokens.spacing.step4),
+          AudioPlayerWidget(audio),
+        ],
+        if (inlineEditorEntryId != null) ...[
+          SizedBox(height: tokens.spacing.step3),
+          EditorWidget(
+            entryId: inlineEditorEntryId,
+            margin: EdgeInsets.zero,
+          ),
+        ],
+        if (onDelete != null ||
+            entry.processingJob?.lastFailureClass ==
+                DayProcessingFailureClass.setupRequired ||
+            _canRetry(entry) ||
+            transcript != null) ...[
+          SizedBox(height: tokens.spacing.step2),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Wrap(
+                  spacing: tokens.spacing.step3,
+                  runSpacing: tokens.spacing.step3,
+                  children: [
+                    if (_canRetry(entry))
+                      _AsyncActivityButton(
+                        // The shared label reads "Retry transcription", which is
+                        // wrong on a draft, refine or capture-parse row — none of
+                        // them transcribes anything.
+                        label: entry.kind == DayActivityEntryKind.agentJob
+                            ? context.messages.dailyOsNextActivityRetryStep
+                            : context.messages.dailyOsNextActivityRetry,
+                        action: onRetry!,
+                        // A draft job has no recording to reassure the user about.
+                        failureMessage:
+                            entry.kind == DayActivityEntryKind.agentJob
+                            ? context
+                                  .messages
+                                  .dailyOsNextActivityAgentActionFailed
+                            : null,
+                        variant: DesignSystemButtonVariant.secondary,
+                        leadingIcon: LottiIcons.refresh,
+                      ),
+                    if (entry.processingJob?.lastFailureClass ==
+                        DayProcessingFailureClass.setupRequired)
+                      DesignSystemButton(
+                        // A planning job blocked on setup needs the Daily OS
+                        // profile binding, which lives in Daily OS settings — the
+                        // generic AI list can create a profile but never assigns
+                        // one, so it would leave the job just as blocked.
+                        label: entry.kind == DayActivityEntryKind.agentJob
+                            ? context.messages.dailyOsNextActivityOpenAiSetup
+                            : context.messages.dailyOsNextActivityOpenSetup,
+                        onPressed: () => nav_service.beamToNamed(
+                          entry.kind == DayActivityEntryKind.agentJob
+                              ? '/settings/daily-os'
+                              : '/settings/ai',
+                        ),
+                        variant: DesignSystemButtonVariant.secondary,
+                        size: DesignSystemButtonSize.dense,
+                        leadingIcon: LottiIcons.settings,
+                      ),
+                    if (transcript != null)
+                      DesignSystemButton(
+                        label: hasPlan
+                            ? context.messages.dailyOsNextActivityUseToRefine
+                            : context.messages.dailyOsNextActivityUseToPlan,
+                        onPressed: onUse,
+                        // Secondary: the footer's next step is the page's one
+                        // filled button.
+                        variant: DesignSystemButtonVariant.secondary,
+                        size: DesignSystemButtonSize.dense,
+                        // It sends the words on: the spark stays the companion's.
+                        leadingIcon: LottiIcons.send,
+                      ),
+                  ],
+                ),
+              ),
+              // Delete keeps to the far end, apart from the actions that move
+              // the entry on — never the easy tap beside them. It asks first.
+              if (onDelete != null) ...[
+                SizedBox(width: tokens.spacing.step3),
+                _AsyncActivityButton(
+                  label: context.messages.dailyOsNextActivityDeleteRecording,
+                  action: onDelete!,
+                  variant: DesignSystemButtonVariant.quiet,
+                  leadingIcon: LottiIcons.delete,
+                ),
+              ],
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+
+  /// The row's glyph says where the entry stands, not only what it is: a
+  /// stalled step or a failed transcription is an error, a recording waiting
+  /// for the network is offline, one being transcribed is a waveform.
+  IconData _glyph(DayActivityEntry entry) {
+    if (_needsAttention(entry)) return LottiIcons.error;
+    return switch (entry.processingJob?.status) {
+      DayProcessingJobStatus.waitingForNetwork => LottiIcons.cloudOff,
+      DayProcessingJobStatus.running => LottiIcons.waveform,
+      _ => switch (entry.kind) {
+        DayActivityEntryKind.plan => LottiIcons.aiSpark,
+        DayActivityEntryKind.summary => LottiIcons.summarize,
+        DayActivityEntryKind.checkIn => LottiIcons.note,
+        // A recording; an agent job never settles here, it always needs
+        // attention.
+        _ => LottiIcons.mic,
+      },
+    };
+  }
+
+  /// The status caption's ink. Attention goes where the user can act: a
+  /// stalled step in error ink, a recording ready to use in high emphasis;
+  /// a wait on the network is the glyph's to signal, so its words stay in
+  /// medium emphasis like everything at rest.
+  Color _captionInk(DsTokens tokens, DayActivityEntry entry) {
+    if (_needsAttention(entry)) return tokens.colors.alert.error.ink;
+    if (entry.transcript != null && !entry.isSubmitted) {
+      return tokens.colors.text.highEmphasis;
+    }
+    return tokens.colors.text.mediumEmphasis;
+  }
+
+  /// The glyph's ink: error for what needs the user, warning for what waits
+  /// on the network, medium emphasis for everything at rest.
+  Color _statusInk(DsTokens tokens, DayActivityEntry entry) {
+    if (_needsAttention(entry)) return tokens.colors.alert.error.ink;
+    if (entry.processingJob?.status ==
+        DayProcessingJobStatus.waitingForNetwork) {
+      return tokens.colors.alert.warning.ink;
+    }
+    return tokens.colors.text.mediumEmphasis;
+  }
+
+  bool _needsAttention(DayActivityEntry entry) =>
+      entry.kind == DayActivityEntryKind.agentJob ||
+      (!entry.isSubmitted &&
+          switch (entry.processingJob?.status) {
+            DayProcessingJobStatus.waitingForUser ||
+            DayProcessingJobStatus.failed => true,
+            _ => false,
+          });
+
+  /// The row's main line: the entity's own wording when it has one, else an
   /// explanation of what this row is waiting on, in the user's language.
   String _body(
     BuildContext context,
@@ -463,11 +654,6 @@ class _ActivityCard extends StatelessWidget {
       _ => context.messages.dailyOsNextActivitySaved,
     };
   }
-
-  String _formatTime(BuildContext context, DateTime value) =>
-      MaterialLocalizations.of(context).formatTimeOfDay(
-        TimeOfDay.fromDateTime(value.toLocal()),
-      );
 }
 
 class _AsyncActivityButton extends StatefulWidget {
@@ -501,6 +687,7 @@ class _AsyncActivityButtonState extends State<_AsyncActivityButton> {
     onPressed: _run,
     isLoading: _busy,
     variant: widget.variant,
+    size: DesignSystemButtonSize.dense,
     leadingIcon: widget.leadingIcon,
   );
 

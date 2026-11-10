@@ -62,11 +62,13 @@ void main() {
       WidgetTester tester, {
       required bool use24Hour,
       Locale? locale,
+      DateTime? from,
+      DateTime? to,
     }) async {
       late String label;
       Widget probe = Builder(
         builder: (context) {
-          label = formatClockRange(context, start, end);
+          label = formatClockRange(context, from ?? start, to ?? end);
           return const SizedBox.shrink();
         },
       );
@@ -92,12 +94,27 @@ void main() {
       return label;
     }
 
-    testWidgets('a 12-hour device keeps the AM/PM range', (tester) async {
-      final label = await resolve(tester, use24Hour: false);
+    testWidgets(
+      'a 12-hour device writes a range within one period with it once, at '
+      'the end',
+      (tester) async {
+        final label = await resolve(tester, use24Hour: false);
 
-      expect(label, contains('9:14'));
-      expect(label, contains('AM'));
-      expect(label, isNot(contains('09:14')));
+        expect(label, '9:14–10:05 AM');
+      },
+    );
+
+    testWidgets('a range that crosses noon keeps both periods', (
+      tester,
+    ) async {
+      final label = await resolve(
+        tester,
+        use24Hour: false,
+        from: DateTime(2026, 5, 26, 11, 30),
+        to: DateTime(2026, 5, 26, 12, 15),
+      );
+
+      expect(label, '11:30 AM–12:15 PM');
     });
 
     testWidgets('a 24-hour device drops AM/PM entirely', (tester) async {

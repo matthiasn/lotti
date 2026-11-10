@@ -271,6 +271,69 @@ void main() {
     expect(find.text('Count the penguins again'), findsOneWidget);
   });
 
+  group('readLiveTaskTitle', () {
+    Future<WidgetRef> pumpRef(WidgetTester tester) async {
+      late WidgetRef captured;
+      await tester.pumpWidget(
+        makeTestableWidget(
+          Consumer(
+            builder: (context, ref, _) {
+              captured = ref;
+              return const SizedBox.shrink();
+            },
+          ),
+          overrides: getItServiceOverrides(),
+        ),
+      );
+      return captured;
+    }
+
+    testWidgets("reads the task's current title once, with nothing watching", (
+      tester,
+    ) async {
+      final mocks = await setUpTestGetIt();
+      addTearDown(tearDownTestGetIt);
+      when(() => mocks.journalDb.journalEntityById('task-read')).thenAnswer(
+        (_) async =>
+            TestTaskFactory.create(id: 'task-read', title: 'Renamed since'),
+      );
+      final ref = await pumpRef(tester);
+
+      final title = await tester.runAsync(
+        () => readLiveTaskTitle(ref, ' task-read '),
+      );
+
+      expect(title, 'Renamed since');
+    });
+
+    testWidgets('a read that fails is no live title, so the caller keeps its '
+        'snapshot', (tester) async {
+      final mocks = await setUpTestGetIt();
+      addTearDown(tearDownTestGetIt);
+      when(
+        () => mocks.journalDb.journalEntityById('task-broken'),
+      ).thenThrow(StateError('database unavailable'));
+      final ref = await pumpRef(tester);
+
+      final title = await tester.runAsync(
+        () => readLiveTaskTitle(ref, 'task-broken'),
+      );
+
+      expect(title, isNull);
+    });
+
+    testWidgets('a blank id or a graph without the services reads nothing', (
+      tester,
+    ) async {
+      final ref = await pumpRef(tester);
+
+      // No services registered: nothing to resolve against.
+      expect(await readLiveTaskTitle(ref, 'task-read'), isNull);
+      expect(await readLiveTaskTitle(ref, '   '), isNull);
+      expect(await readLiveTaskTitle(ref, null), isNull);
+    });
+  });
+
   test(
     'live resolution is available only with its two core services',
     () async {

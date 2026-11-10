@@ -4795,6 +4795,21 @@ class AppLocalizationsCs extends AppLocalizations {
       'Zatím tu nejsou žádné nahrávky ani check-iny.';
 
   @override
+  String get dailyOsNextActivityHandled => 'Vyřízeno';
+
+  @override
+  String dailyOsNextActivityHandledCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count vyřízených',
+      few: '$count vyřízené',
+      one: '$count vyřízená',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get dailyOsNextActivityLoadFailed =>
       'Tvoje uložená aktivita je pořád v tomto zařízení, ale teď ji nejde načíst.';
 
@@ -4804,6 +4819,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get dailyOsNextActivityNeedsAttention => 'Vyžaduje pozornost';
+
+  @override
+  String get dailyOsNextActivityNeedsYou => 'Čeká na tebe';
 
   @override
   String get dailyOsNextActivityOpenAiSetup => 'Otevřít nastavení Daily OS';
@@ -4854,16 +4872,22 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dailyOsNextActivityUseToRefine => 'Použít k úpravě';
 
   @override
+  String get dailyOsNextActivityVoiceNote => 'Hlasová poznámka';
+
+  @override
+  String dailyOsNextActivityWaitingCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Čeká $count',
+      few: 'Čekají $count',
+      one: 'Čeká $count',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get dailyOsNextActivityWaitingForNetwork => 'Čekám na připojení';
-
-  @override
-  String get dailyOsNextAgendaCapacityComfortable => 'Pohodové';
-
-  @override
-  String get dailyOsNextAgendaCapacityNearFull => 'Téměř plné';
-
-  @override
-  String get dailyOsNextAgendaCapacityNoPlan => 'Zatím žádný plán';
 
   @override
   String dailyOsNextAgendaCapacityOf(String capacity) {
@@ -4871,35 +4895,40 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String get dailyOsNextAgendaCapacityOver => 'Přeplněno';
-
-  @override
-  String get dailyOsNextAgendaDonutLeft => 'volno';
-
-  @override
-  String get dailyOsNextAgendaDonutOver => 'navíc';
-
-  @override
-  String dailyOsNextAgendaHeadlineLeft(String duration) {
-    return '$duration zbývá';
+  String dailyOsNextAgendaDoneRun(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count položek hotových',
+      few: '$count položky hotové',
+      one: '1 položka hotová',
+    );
+    return '$_temp0';
   }
 
   @override
-  String dailyOsNextAgendaHeadlineOver(String duration) {
-    return '$duration navíc';
+  String get dailyOsNextAgendaHideDone => 'Skrýt hotové položky';
+
+  @override
+  String dailyOsNextAgendaLeft(int count, String duration) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Zbývá $count · $duration',
+      few: 'Zbývají $count · $duration',
+      one: 'Zbývá $count · $duration',
+    );
+    return '$_temp0';
   }
 
   @override
-  String get dailyOsNextAgendaNoPlanBody =>
-      'Tvůj zaznamenaný čas tu je tak jako tak — namluv check-in a já kolem něj navrhnu den.';
+  String get dailyOsNextAgendaNoPlanTitle => 'Pro tento den zatím žádný plán.';
 
   @override
-  String dailyOsNextAgendaNoPlanSummary(String duration) {
-    return '$duration zatím zaznamenáno. Namluv check-in a já kolem toho navrhnu den.';
-  }
+  String get dailyOsNextAgendaNow => 'Teď';
 
   @override
-  String get dailyOsNextAgendaNoPlanTitle => 'Na dnešek zatím žádný plán.';
+  String get dailyOsNextAgendaShowDone => 'Zobrazit hotové položky';
 
   @override
   String get dailyOsNextAgendaStateDone => 'Hotovo';
@@ -4912,16 +4941,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get dailyOsNextAgendaStateOverdue => 'Po termínu';
-
-  @override
-  String dailyOsNextAgendaSummary(String scheduled, String capacity) {
-    return '$scheduled z $capacity naplánováno';
-  }
-
-  @override
-  String dailyOsNextAgendaTrackedLegend(String duration, int completedCount) {
-    return 'Zaznamenáno · $duration · $completedCount hotovo';
-  }
 
   @override
   String get dailyOsNextBlockCreateTask => 'Vytvořit úkol';
@@ -5005,8 +5024,23 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String dailyOsNextBriefingCapacityLabel(String breakdown) {
+    return 'Plánovaný čas podle kategorie: $breakdown';
+  }
+
+  @override
+  String dailyOsNextBriefingDoneCaption(int count) {
+    return '$count hotovo';
+  }
+
+  @override
   String dailyOsNextBriefingFree(String duration) {
     return 'Ve tvém dni zbývá ještě $duration volného času.';
+  }
+
+  @override
+  String dailyOsNextBriefingFreeCaption(String duration) {
+    return '$duration volno';
   }
 
   @override
@@ -5047,23 +5081,50 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String dailyOsNextBriefingMoreCategories(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '+$count dalších',
+      few: '+$count další',
+      one: '+$count další',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String dailyOsNextBriefingNext(String time, String title) {
     return 'Další v $time: $title.';
   }
 
   @override
   String get dailyOsNextBriefingNoPlan =>
-      'Pro tento den zatím nemáš plán. Krátký check-in ho vytvoří.';
+      'Pro tento den zatím nemáš plán. Krátký check‑in ho vytvoří.';
 
   @override
   String get dailyOsNextBriefingNothingLeft =>
       'Na dnešek už nemáš nic naplánováno.';
 
   @override
+  String dailyOsNextBriefingOverCaption(String duration) {
+    return '$duration navíc';
+  }
+
+  @override
+  String dailyOsNextBriefingPlannedCaption(String duration) {
+    return '$duration naplánováno';
+  }
+
+  @override
   String get dailyOsNextBriefingPlayTooltip => 'Poslechni si svůj den';
 
   @override
   String get dailyOsNextBriefingStopTooltip => 'Zastavit přehled';
+
+  @override
+  String dailyOsNextBriefingTrackedCaption(String duration) {
+    return '$duration zaznamenáno';
+  }
 
   @override
   String get dailyOsNextCaptureCaptured => 'Rozumím.';
@@ -5215,7 +5276,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dailyOsNextDayBack => 'Zpět';
 
   @override
-  String get dailyOsNextDayComposerCheckInHint => 'Namluv nebo napiš check-in';
+  String get dailyOsNextDayComposerCheckInHint => 'Namluv nebo napiš check‑in';
 
   @override
   String get dailyOsNextDayDeleteDialogBody =>
@@ -5244,6 +5305,23 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get dailyOsNextDayMoreTooltip => 'Více';
+
+  @override
+  String dailyOsNextDayOverline(String lead, String detail) {
+    return '$lead · $detail';
+  }
+
+  @override
+  String get dailyOsNextDayRelationToday => 'Dnes';
+
+  @override
+  String get dailyOsNextDayRelationTomorrow => 'Zítra';
+
+  @override
+  String get dailyOsNextDayRelationYesterday => 'Včera';
+
+  @override
+  String get dailyOsNextDayStartCheckIn => 'Začít check-in';
 
   @override
   String get dailyOsNextDayTitle => 'Tvůj den';
@@ -5759,7 +5837,13 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dailyOsNextTimelineArrange => 'Uspořádat bloky';
 
   @override
-  String get dailyOsNextTimelineBoth => 'Plán a skutečnost';
+  String get dailyOsNextTimelineArrangeShort => 'Uspořádat';
+
+  @override
+  String get dailyOsNextTimelineBothLanes => 'Oba pruhy';
+
+  @override
+  String get dailyOsNextTimelineOneLane => 'Jeden pruh';
 
   @override
   String get dailyOsNextTimelinePlanned => 'Plán';
@@ -5776,14 +5860,6 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get dailyOsNextTimelineShowPaged =>
       'Zobrazit plán a skutečnost posouváním';
-
-  @override
-  String get dailyOsNextTimelineSwipeHint =>
-      'Přejeď na Skutečnost · svislým sevřením prstů přiblížíš';
-
-  @override
-  String get dailyOsNextTimelineSwipeHintToPlan =>
-      'Přejeď na Plán · svislým sevřením prstů přiblížíš';
 
   @override
   String get dailyOsNextTimelineTracked => 'zaznamenáno';
@@ -5847,6 +5923,17 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get dailyOsNextUncommitFailed =>
       'Vrátit to nešlo — plán zůstává potvrzený.';
+
+  @override
+  String get dailyOsNextWeekStripNextWeek => 'Příští týden';
+
+  @override
+  String get dailyOsNextWeekStripPreviousWeek => 'Předchozí týden';
+
+  @override
+  String dailyOsNextWeekStripSelectDay(String date) {
+    return 'Vybrat $date';
+  }
 
   @override
   String get dailyOsOnboardingCoachCapture => 'Řekni, co ti leží v hlavě.';

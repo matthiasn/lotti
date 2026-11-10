@@ -2231,9 +2231,21 @@
   "dailyOsNextActivityDeleteDialogTitle": "Deze opname verwijderen?",
   "dailyOsNextActivityDeleteRecording": "Verwijderen",
   "dailyOsNextActivityEmpty": "Nog geen opnames of check-ins.",
+  "dailyOsNextActivityHandled": "Afgehandeld",
+  "dailyOsNextActivityHandledCount": "{count} afgehandeld",
+  "@dailyOsNextActivityHandledCount": {
+    "description": "Summary beside the Activity tab's 'Handled' header: how many entries are dealt with.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "4"
+      }
+    }
+  },
   "dailyOsNextActivityLoadFailed": "Je opgeslagen activiteit staat nog op dit apparaat, maar kon nu niet worden geladen.",
   "dailyOsNextActivityMissingAudio": "Dit item is bewaard, maar het audiobestand is niet beschikbaar op dit apparaat. Herstel het bestand en probeer het daarna opnieuw.",
   "dailyOsNextActivityNeedsAttention": "Vraagt aandacht",
+  "dailyOsNextActivityNeedsYou": "Wacht op jou",
   "dailyOsNextActivityOpenAiSetup": "Daily OS-instellingen openen",
   "dailyOsNextActivityOpenSetup": "Transcriptie-instellingen openen",
   "dailyOsNextActivityPlanAvailable": "Je dagplan is beschikbaar.",
@@ -2249,10 +2261,21 @@
   "dailyOsNextActivityTranscriptPending": "Je opname is opgeslagen. De transcriptie volgt nog.",
   "dailyOsNextActivityUseToPlan": "Gebruiken om het plan te maken",
   "dailyOsNextActivityUseToRefine": "Gebruiken om te verfijnen",
+  "dailyOsNextActivityVoiceNote": "Spraakmemo",
+  "@dailyOsNextActivityVoiceNote": {
+    "description": "Name of an Activity row for a voice recording whose transcript is not ready yet."
+  },
+  "dailyOsNextActivityWaitingCount": "{count} wachtend",
+  "@dailyOsNextActivityWaitingCount": {
+    "description": "Summary beside the Activity tab's 'Needs you' header: how many entries wait for the user.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "2"
+      }
+    }
+  },
   "dailyOsNextActivityWaitingForNetwork": "Wachten op verbinding",
-  "dailyOsNextAgendaCapacityComfortable": "Comfortabel",
-  "dailyOsNextAgendaCapacityNearFull": "Bijna vol",
-  "dailyOsNextAgendaCapacityNoPlan": "Nog geen plan",
   "dailyOsNextAgendaCapacityOf": "van {capacity}",
   "@dailyOsNextAgendaCapacityOf": {
     "placeholders": {
@@ -2262,68 +2285,41 @@
       }
     }
   },
-  "dailyOsNextAgendaCapacityOver": "Overcapaciteit",
-  "dailyOsNextAgendaDonutLeft": "links",
-  "dailyOsNextAgendaDonutOver": "over",
-  "dailyOsNextAgendaHeadlineLeft": "{duration} links",
-  "@dailyOsNextAgendaHeadlineLeft": {
+  "dailyOsNextAgendaDoneRun": "{count, plural, =1{1 item klaar} other{{count} items klaar}}",
+  "@dailyOsNextAgendaDoneRun": {
+    "description": "Agenda summary row standing in for the day's finished items, folded together.",
     "placeholders": {
-      "duration": {
-        "type": "String",
-        "example": "15m"
+      "count": {
+        "type": "int",
+        "example": "5"
       }
     }
   },
-  "dailyOsNextAgendaHeadlineOver": "{duration} over",
-  "@dailyOsNextAgendaHeadlineOver": {
+  "dailyOsNextAgendaHideDone": "Verberg afgeronde items",
+  "dailyOsNextAgendaLeft": "{count} te gaan · {duration}",
+  "@dailyOsNextAgendaLeft": {
+    "description": "Summary beside the agenda's 'Plan' header: how many items are not done yet, followed by the time they are planned for.",
     "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      },
       "duration": {
         "type": "String",
-        "example": "1h"
+        "example": "2h 45m"
       }
     }
   },
-  "dailyOsNextAgendaNoPlanBody": "Je getraceerde tijd is hier, hoe dan ook. Spreek een check-in en ik zal er een dag omheen opstellen.",
-  "dailyOsNextAgendaNoPlanSummary": "{duration} Spreek een check-in en ik zal er een dag omheen tekenen.",
-  "@dailyOsNextAgendaNoPlanSummary": {
-    "placeholders": {
-      "duration": {
-        "type": "String",
-        "example": "4h 35m"
-      }
-    }
+  "dailyOsNextAgendaNoPlanTitle": "Nog geen plan voor deze dag.",
+  "dailyOsNextAgendaNow": "Nu",
+  "@dailyOsNextAgendaNow": {
+    "description": "Marks the agenda row whose item is under way now, above its start time."
   },
-  "dailyOsNextAgendaNoPlanTitle": "Nog geen plan voor vandaag.",
+  "dailyOsNextAgendaShowDone": "Toon afgeronde items",
   "dailyOsNextAgendaStateDone": "Klaar",
   "dailyOsNextAgendaStateInProgress": "In behandeling",
   "dailyOsNextAgendaStateOpen": "Openen",
   "dailyOsNextAgendaStateOverdue": "Te laat",
-  "dailyOsNextAgendaSummary": "{scheduled} van {capacity} vastgelegd",
-  "@dailyOsNextAgendaSummary": {
-    "placeholders": {
-      "scheduled": {
-        "type": "String",
-        "example": "5h 15m"
-      },
-      "capacity": {
-        "type": "String",
-        "example": "8h"
-      }
-    }
-  },
-  "dailyOsNextAgendaTrackedLegend": "Getraceerd · {duration} · {completedCount} klaar",
-  "@dailyOsNextAgendaTrackedLegend": {
-    "placeholders": {
-      "duration": {
-        "type": "String",
-        "example": "4h 35m"
-      },
-      "completedCount": {
-        "type": "int",
-        "example": "3"
-      }
-    }
-  },
   "dailyOsNextBlockCreateTask": "Taak maken",
   "dailyOsNextBlockEditCategoryLabel": "Categorie",
   "dailyOsNextBlockEditFailed": "Kon het blok niet bijwerken . Probeer het opnieuw.",
@@ -2354,11 +2350,41 @@
       }
     }
   },
+  "dailyOsNextBriefingCapacityLabel": "Geplande tijd per categorie: {breakdown}",
+  "@dailyOsNextBriefingCapacityLabel": {
+    "description": "Screen-reader label of the day's capacity bar: each category and its planned time.",
+    "placeholders": {
+      "breakdown": {
+        "type": "String",
+        "example": "Deep work 3h 30m, Admin 45m"
+      }
+    }
+  },
+  "dailyOsNextBriefingDoneCaption": "{count} klaar",
+  "@dailyOsNextBriefingDoneCaption": {
+    "description": "Caption under the bar on a day without a plan: recorded sessions that are done.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "2"
+      }
+    }
+  },
   "dailyOsNextBriefingFree": "Er is nog {duration} van je dag vrij.",
   "@dailyOsNextBriefingFree": {
     "placeholders": {
       "duration": {
         "type": "String"
+      }
+    }
+  },
+  "dailyOsNextBriefingFreeCaption": "{duration} vrij",
+  "@dailyOsNextBriefingFreeCaption": {
+    "description": "Caption under the day's capacity bar: capacity the plan leaves free.",
+    "placeholders": {
+      "duration": {
+        "type": "String",
+        "example": "2h 40m"
       }
     }
   },
@@ -2401,6 +2427,16 @@
       }
     }
   },
+  "dailyOsNextBriefingMoreCategories": "+{count} meer",
+  "@dailyOsNextBriefingMoreCategories": {
+    "description": "Last entry of the capacity legend on a phone: how many categories are not named. Their time together follows it.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "2"
+      }
+    }
+  },
   "dailyOsNextBriefingNext": "Hierna om {time}: {title}.",
   "@dailyOsNextBriefingNext": {
     "placeholders": {
@@ -2412,10 +2448,40 @@
       }
     }
   },
-  "dailyOsNextBriefingNoPlan": "Er is nog geen plan voor deze dag. Een korte check-in maakt er een.",
+  "dailyOsNextBriefingNoPlan": "Er is nog geen plan voor deze dag. Een korte check‑in maakt er een.",
   "dailyOsNextBriefingNothingLeft": "Voor vandaag staat er niets meer gepland.",
+  "dailyOsNextBriefingOverCaption": "{duration} te veel",
+  "@dailyOsNextBriefingOverCaption": {
+    "description": "Caption under the day's capacity bar when the plan books more than the day holds.",
+    "placeholders": {
+      "duration": {
+        "type": "String",
+        "example": "45m"
+      }
+    }
+  },
+  "dailyOsNextBriefingPlannedCaption": "{duration} gepland",
+  "@dailyOsNextBriefingPlannedCaption": {
+    "description": "Caption under the day's capacity bar: how much the plan books.",
+    "placeholders": {
+      "duration": {
+        "type": "String",
+        "example": "5h 20m"
+      }
+    }
+  },
   "dailyOsNextBriefingPlayTooltip": "Luister naar je dag",
   "dailyOsNextBriefingStopTooltip": "Stop de briefing",
+  "dailyOsNextBriefingTrackedCaption": "{duration} bijgehouden",
+  "@dailyOsNextBriefingTrackedCaption": {
+    "description": "Caption under the bar on a day without a plan: time recorded so far.",
+    "placeholders": {
+      "duration": {
+        "type": "String",
+        "example": "3h 10m"
+      }
+    }
+  },
   "dailyOsNextCaptureCaptured": "Begrepen.",
   "dailyOsNextCaptureDoneCta": "Klaar",
   "dailyOsNextCaptureErrorAudioPersistFailed": "De opname kon niet worden opgeslagen.",
@@ -2474,7 +2540,7 @@
   "dailyOsNextDayAgentStatusWorking": "Bezig met plannen…",
   "dailyOsNextDayAgentTokensToday": "{tokens} tokens gebruikt om deze dag te plannen",
   "dailyOsNextDayBack": "Terug",
-  "dailyOsNextDayComposerCheckInHint": "Spreek of typ een check-in",
+  "dailyOsNextDayComposerCheckInHint": "Spreek of typ een check‑in",
   "dailyOsNextDayDeleteDialogBody": "De opgestelde blokken voor deze dag zullen worden verwijderd. Opnames en hun audio opnames blijven in uw dagboek.",
   "dailyOsNextDayDeleteDialogCancel": "Annuleren",
   "dailyOsNextDayDeleteDialogConfirm": "Verwijderen",
@@ -2484,6 +2550,24 @@
   "dailyOsNextDayMenuInspectAgent": "Inspecteur",
   "dailyOsNextDayMenuSettings": "Dagelijkse OS-instellingen",
   "dailyOsNextDayMoreTooltip": "Meer",
+  "dailyOsNextDayOverline": "{lead} · {detail}",
+  "@dailyOsNextDayOverline": {
+    "description": "The day page's overline: how the day relates to today (or its weekday), then the weekday (or the year).",
+    "placeholders": {
+      "lead": {
+        "type": "String",
+        "example": "Today"
+      },
+      "detail": {
+        "type": "String",
+        "example": "Sunday"
+      }
+    }
+  },
+  "dailyOsNextDayRelationToday": "Vandaag",
+  "dailyOsNextDayRelationTomorrow": "Morgen",
+  "dailyOsNextDayRelationYesterday": "Gisteren",
+  "dailyOsNextDayStartCheckIn": "Check-in starten",
   "dailyOsNextDayTitle": "Jouw dag",
   "dailyOsNextDayWhyChipLabel": "Waarom",
   "dailyOsNextDayWrapUpCta": "Afsluiten",
@@ -2703,7 +2787,18 @@
   "dailyOsNextStateRecurringMissed": "Terugkerend · gemist",
   "dailyOsNextTimelineActual": "Werkelijk",
   "dailyOsNextTimelineArrange": "Blokjes ordenen",
-  "dailyOsNextTimelineBoth": "Plan en werkelijke",
+  "dailyOsNextTimelineArrangeShort": "Ordenen",
+  "@dailyOsNextTimelineArrangeShort": {
+    "description": "Label of the Day timeline's button that turns on moving and resizing planned blocks."
+  },
+  "dailyOsNextTimelineBothLanes": "Beide banen",
+  "@dailyOsNextTimelineBothLanes": {
+    "description": "Label of the Day timeline's button that shows the plan and actual lanes side by side, on a phone where they are shown one at a time."
+  },
+  "dailyOsNextTimelineOneLane": "Eén baan",
+  "@dailyOsNextTimelineOneLane": {
+    "description": "Label of the Day timeline's button that switches from the side-by-side plan and actual lanes to one lane at a time."
+  },
   "dailyOsNextTimelinePlanned": "Plan",
   "dailyOsNextTimelineSessionOf": "Directoraat {index} van {total}",
   "@dailyOsNextTimelineSessionOf": {
@@ -2718,8 +2813,6 @@
   },
   "dailyOsNextTimelineShowBoth": "Plan en werkelijke samen tonen",
   "dailyOsNextTimelineShowPaged": "Bewegingsbaar plan en werkelijke tonen",
-  "dailyOsNextTimelineSwipeHint": "Veeg voor werkelijke · knijp verticaal naar zoom",
-  "dailyOsNextTimelineSwipeHintToPlan": "Veeg voor plan · knijp verticaal naar zoom",
   "dailyOsNextTimelineTracked": "traced",
   "dailyOsNextTimeSpentEarlierSessions": "{count, plural, one{1 vorige zitting} other{{count} eerdere sessies}}",
   "@dailyOsNextTimeSpentEarlierSessions": {
@@ -2755,6 +2848,18 @@
   "dailyOsNextTriageDrop": "Laat vallen",
   "dailyOsNextTriageToday": "Vandaag",
   "dailyOsNextUncommitFailed": "Ongedaan maken lukte niet — het plan blijft vastgelegd.",
+  "dailyOsNextWeekStripNextWeek": "Volgende week",
+  "dailyOsNextWeekStripPreviousWeek": "Vorige week",
+  "dailyOsNextWeekStripSelectDay": "{date} selecteren",
+  "@dailyOsNextWeekStripSelectDay": {
+    "description": "Screen-reader label of one day in the day page's week strip.",
+    "placeholders": {
+      "date": {
+        "type": "String",
+        "example": "Sunday, November 9"
+      }
+    }
+  },
   "dailyOsOnboardingCoachCapture": "Zeg wat je aandacht trekt.",
   "dailyOsOnboardingCoachDrafting": "De planner creëert nieuwe taken en past het werk in uw dag.",
   "dailyOsOnboardingCoachReconcile": "Kies wat er vandaag hoort. Nieuwe items worden taken als je de dag opbouwt.",

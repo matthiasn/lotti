@@ -12,8 +12,14 @@ double timelineBlockTintAlpha({required bool tracked, required bool isLight}) {
   return isLight ? 0.30 : 0.18;
 }
 
-/// Alpha for a planned block's category-colored accents (left stripe,
-/// dashed outline): strong enough to key the category, faint enough to
-/// keep the sketch reading provisional. Recorded blocks use the full
-/// category color instead.
+/// Alpha for a planned block's dashed category outline on a dark canvas:
+/// strong enough to key the category, faint enough to keep the sketch
+/// reading provisional. The left stripe, planned or recorded, is the full
+/// category color.
 const double kTimelinePlannedAccentAlpha = 0.45;
+
+/// The dashed outline's alpha for [isLight]: a hue at 45% all but vanishes
+/// on white, so a light canvas takes it stronger to keep "provisional"
+/// visible.
+double timelinePlannedOutlineAlpha({required bool isLight}) =>
+    isLight ? 0.75 : kTimelinePlannedAccentAlpha;
