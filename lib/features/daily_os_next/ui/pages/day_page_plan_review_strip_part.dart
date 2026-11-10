@@ -151,7 +151,8 @@ class _QuickRefinementChips extends StatelessWidget {
 
 /// The day's next step, beside the footer's field: "Looks good" commits a
 /// drafted day (with Undo on its toast); once committed, "Wrap up" opens the
-/// shutdown.
+/// shutdown. Either way it is the page's one filled button — the day's next
+/// step is always its primary action.
 class _DayStageAction extends StatelessWidget {
   const _DayStageAction({
     required this.draft,
@@ -172,9 +173,6 @@ class _DayStageAction extends StatelessWidget {
       label: drafted
           ? messages.dailyOsNextReviewLooksGood
           : messages.dailyOsNextDayWrapUpCta,
-      variant: drafted
-          ? DesignSystemButtonVariant.primary
-          : DesignSystemButtonVariant.secondary,
       size: DesignSystemButtonSize.large,
       onPressed: drafted ? onCommit : onShutdown,
     );
@@ -224,26 +222,11 @@ class _NoPlanFooter extends StatelessWidget {
       );
     }
     final tokens = context.designTokens;
-    final button = FilledButton.icon(
+    final button = DesignSystemButton(
       key: const Key('daily_os_day_check_in_cta'),
+      label: context.messages.dailyOsSettingsSetupAction,
+      leadingIcon: LottiIcons.settings,
       onPressed: onOpenSetup,
-      icon: const Icon(LottiIcons.settings, size: 14),
-      label: Text(
-        context.messages.dailyOsSettingsSetupAction,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
-      style: FilledButton.styleFrom(
-        backgroundColor: tokens.colors.interactive.enabled,
-        foregroundColor: tokens.colors.text.onInteractiveAlert,
-        padding: EdgeInsets.symmetric(
-          horizontal: tokens.spacing.step5,
-          vertical: tokens.spacing.step2,
-        ),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
-        ),
-      ),
     );
     return DesignSystemGlassStrip(
       child: Padding(

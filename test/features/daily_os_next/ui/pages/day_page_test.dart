@@ -297,6 +297,14 @@ void main() {
         );
         expect(find.byType(DayComposer), findsNothing);
 
+        // The footer's setup action is the design-system primary button.
+        final setup = tester.widget<DesignSystemButton>(
+          find.byKey(const Key('daily_os_day_check_in_cta')),
+        );
+        expect(setup.variant, DesignSystemButtonVariant.primary);
+        expect(setup.leadingIcon, LottiIcons.settings);
+        expect(setup.label, messages.dailyOsSettingsSetupAction);
+
         // A plain row in warning ink, not a card of its own.
         final tokens = tester.element(find.byType(DayPage)).designTokens;
         final nudge = find.byKey(const Key('daily_os_setup_nudge'));
@@ -1487,6 +1495,21 @@ void main() {
       );
       expect(find.text(messages.dailyOsNextReviewTooMuch), findsNothing);
     });
+
+    for (final state in [DayState.drafted, DayState.committed]) {
+      testWidgets("the day's next step is the page's filled primary "
+          '(${state.name})', (tester) async {
+        _setSurface(tester);
+        await tester.pumpWidget(_wrap(DayPage(draft: _drafted(state: state))));
+        await tester.pump();
+
+        final action = tester.widget<DesignSystemButton>(
+          find.byKey(const Key('daily_os_day_stage_action')),
+        );
+        expect(action.variant, DesignSystemButtonVariant.primary);
+        expect(action.size, DesignSystemButtonSize.large);
+      });
+    }
 
     testWidgets('Wrap up opens the shutdown for the day', (tester) async {
       String? route;

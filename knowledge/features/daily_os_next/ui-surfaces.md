@@ -554,7 +554,12 @@ no chip opens Refine over the shared recorder. The day's stage action sits in
 the input's bottom row, beside the mic (`DesignSystemChatInput.leading`) — the
 sticky bottom bar is where a screen's primary action lives, in thumb reach on
 a phone: *Looks good* while drafted, *Wrap up* (the shutdown) once committed.
-It shows while the field is empty and nothing records; words take its place.
+Either is the large primary `DesignSystemButton` — the page's one filled
+action — and it shows while the field is empty and nothing records; words take
+its place. The chips are `DesignSystemChip`s at `compactPillTouch`: outlined,
+caption labels, and the 48 pt target a footer chip owes a thumb. When Daily OS
+has no inference route the footer is instead a single primary
+`DesignSystemButton`, *Set up Daily OS*.
 The field keeps the full width either way, and nothing stacks under the card
 at large text on a narrow phone.
 When the timeline itself receives less height than its toolbar requires, the
