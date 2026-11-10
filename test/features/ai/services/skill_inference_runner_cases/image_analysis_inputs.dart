@@ -26,7 +26,8 @@ extension _ImageAnalysisInputCases on _SkillInferenceTestSetup {
     );
 
     test(
-      'throws StateError when profile is null in AutomationResult',
+      'throws StateError when profile is null in AutomationResult and no '
+      'model was picked',
       () async {
         final result = AutomationResult(
           handled: true,
@@ -668,7 +669,8 @@ extension _ImageAnalysisInputCases on _SkillInferenceTestSetup {
       'overrideModelId routes the run to the override model + its '
       'parent provider instead of the profile slot — the popup-menu '
       'picker uses this seam to send one photo to a non-default '
-      'model without mutating the profile',
+      'model without mutating the profile. It needs no profile at all: a '
+      'category-less entry resolves none and the picker offers no default',
       () async {
         final imageEntity = makeImageEntity();
         await createStubImageFile();
@@ -728,27 +730,32 @@ extension _ImageAnalysisInputCases on _SkillInferenceTestSetup {
         ).thenAnswer((_) async => true);
         stubLoggingEvent();
 
-        await runner.runImageAnalysis(
-          imageEntryId: 'img-1',
-          automationResult: makeImageAnalysisResult(),
-          overrideModelId: 'override-model-id',
-        );
+        for (final automationResult in [
+          makeImageAnalysisResult(),
+          AutomationResult(handled: true, skill: testImageSkill),
+        ]) {
+          await runner.runImageAnalysis(
+            imageEntryId: 'img-1',
+            automationResult: automationResult,
+            overrideModelId: 'override-model-id',
+          );
 
-        // Inference targeted the override model + provider, NOT the
-        // profile slot's `vision-model` / `p-vision`.
-        verify(
-          () => mockCloudRepo.generateWithImages(
-            any(),
-            baseUrl: 'https://override.example.com',
-            apiKey: any(named: 'apiKey'),
-            model: 'claude-sonnet',
-            temperature: null,
-            images: any(named: 'images'),
-            provider: overrideProvider,
-            systemMessage: any(named: 'systemMessage'),
-            impactCollector: any(named: 'impactCollector'),
-          ),
-        ).called(1);
+          // Inference targeted the override model + provider, NOT the
+          // profile slot's `vision-model` / `p-vision`.
+          verify(
+            () => mockCloudRepo.generateWithImages(
+              any(),
+              baseUrl: 'https://override.example.com',
+              apiKey: any(named: 'apiKey'),
+              model: 'claude-sonnet',
+              temperature: null,
+              images: any(named: 'images'),
+              provider: overrideProvider,
+              systemMessage: any(named: 'systemMessage'),
+              impactCollector: any(named: 'impactCollector'),
+            ),
+          ).called(1);
+        }
       },
     );
 

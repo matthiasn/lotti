@@ -158,7 +158,8 @@ typedef TriggerSkillParams = ({
 /// Provider to trigger a skill-based inference run.
 ///
 /// Resolves the profile via `ProfileAutomationResolver`, then routes to the
-/// appropriate `SkillInferenceRunner` method based on the skill type.
+/// appropriate `SkillInferenceRunner` method based on the skill type. An image
+/// analysis with an `overrideModelId` runs even when no profile resolves.
 final triggerSkillProvider = FutureProvider.autoDispose
     .family<void, TriggerSkillParams>(
       (ref, params) async {
@@ -220,6 +221,12 @@ final triggerSkillProvider = FutureProvider.autoDispose
           final resolver = ref.read(profileAutomationResolverProvider);
           final isTranscription = skill.skillType == SkillType.transcription;
           final isSummary = skill.skillType == SkillType.audioSummary;
+          // An image analysis on a model the user picked runs without a
+          // profile: an entry with no category resolves none, the picker
+          // offers no default, and the runner routes straight to that model.
+          final runsOnPickedModel =
+              skill.skillType == SkillType.imageAnalysis &&
+              params.overrideModelId != null;
           ResolvedProfile? resolvedProfile;
           String? entryCategoryId;
           if (linkedTaskId != null) {
@@ -236,7 +243,7 @@ final triggerSkillProvider = FutureProvider.autoDispose
                 resolvedProfile = await resolver.resolveForCategory(
                   categoryId,
                 );
-              } else if (!isSummary) {
+              } else if (!isSummary && !runsOnPickedModel) {
                 await _declineSkill(
                   ref,
                   entityId: params.entityId,
@@ -294,7 +301,8 @@ final triggerSkillProvider = FutureProvider.autoDispose
           // reproduces exactly the invisible stall this change exists to end.
           final noTranscriptionRoute =
               isTranscription && resolvedProfile?.transcriptionModelId == null;
-          if (resolvedProfile == null || noTranscriptionRoute) {
+          if ((resolvedProfile == null && !runsOnPickedModel) ||
+              noTranscriptionRoute) {
             await _declineSkill(
               ref,
               entityId: params.entityId,

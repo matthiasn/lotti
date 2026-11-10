@@ -1960,6 +1960,89 @@ void main() {
     );
 
     test(
+      'an image analysis on a model picked in the popup runs although no '
+      'profile resolves — category-less entry or category-less event',
+      () async {
+        final skill =
+            AiConfig.skill(
+                  id: 'skill-image-picked',
+                  name: 'Image analysis',
+                  createdAt: DateTime(2024, 3, 15),
+                  skillType: SkillType.imageAnalysis,
+                  requiredInputModalities: [Modality.image],
+                  systemInstructions: 'System',
+                  userInstructions: 'User',
+                )
+                as AiConfigSkill;
+        when(
+          () => mockJournalDb.journalEntityById('image-picked'),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockResolver.resolveForSubject('event-no-category'),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockRunner.runImageAnalysis(
+            imageEntryId: any(named: 'imageEntryId'),
+            automationResult: any(named: 'automationResult'),
+            linkedTaskId: any(named: 'linkedTaskId'),
+            overrideModelId: any(named: 'overrideModelId'),
+            geminiThinkingMode: any(named: 'geminiThinkingMode'),
+          ),
+        ).thenAnswer((_) async {});
+
+        for (final subjectId in [null, 'event-no-category']) {
+          final testContainer = ProviderContainer(
+            overrides: withServiceOverrides([
+              skillRegistryProvider.overrideWithValue([skill]),
+              profileAutomationResolverProvider.overrideWithValue(mockResolver),
+              profileAutomationServiceProvider.overrideWithValue(
+                mockAutomationService,
+              ),
+              skillInferenceRunnerProvider.overrideWithValue(mockRunner),
+              journalDbProvider.overrideWithValue(mockJournalDb),
+            ]),
+          );
+          containersToDispose.add(testContainer);
+
+          await testContainer.read(
+            triggerSkillProvider((
+              entityId: 'image-picked',
+              skillId: 'skill-image-picked',
+              linkedTaskId: subjectId,
+              referenceImages: null,
+              overrideModelId: 'picked-vision-model',
+              geminiThinkingMode: null,
+            )).future,
+          );
+
+          final automationResult =
+              verify(
+                    () => mockRunner.runImageAnalysis(
+                      imageEntryId: 'image-picked',
+                      automationResult: captureAny(named: 'automationResult'),
+                      linkedTaskId: subjectId,
+                      overrideModelId: 'picked-vision-model',
+                      geminiThinkingMode: any(named: 'geminiThinkingMode'),
+                    ),
+                  ).captured.single
+                  as AutomationResult;
+          expect(automationResult.skill, skill, reason: '$subjectId');
+          expect(automationResult.resolvedProfile, isNull);
+          expect(
+            testContainer.read(
+              inferenceErrorControllerProvider((
+                id: 'image-picked',
+                aiResponseType: AiResponseType.imageAnalysis,
+              )),
+            ),
+            isNot(AppLocalizationsEn().aiSkillNoProfileConfigured),
+            reason: '$subjectId',
+          );
+        }
+      },
+    );
+
+    test(
       'a profile with no transcription slot declines instead of stalling',
       () async {
         final skill =
