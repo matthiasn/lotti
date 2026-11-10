@@ -412,7 +412,7 @@ chat (§2.1):
    isn't an object, now draws nothing, and the model is told why. A missing
    `surfaceId` gets a unique generated id, where every such surface used to
    share `surface-unknown`. The types it accepts are read from the
-   controller's catalogs, not a hard-coded set.
+   evolution catalog, not a hard-coded set.
 
 Lotti still persists its own part JSON, not A2UI messages, and maps the
 parts to components when rendering.

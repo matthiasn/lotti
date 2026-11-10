@@ -129,7 +129,7 @@ void main() {
     });
 
     test('a type of its catalog that the tool enum omits is still drawn', () {
-      // SessionProgress is in the catalog the controller holds, so the
+      // SessionProgress is in the evolution catalog, so the
       // bridge draws it even though the LLM-facing enum omits it.
       expect(
         bridge.handleToolCall({
