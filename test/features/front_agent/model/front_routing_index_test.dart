@@ -358,6 +358,139 @@ void main() {
         'None: no time logged yesterday (2026-11-06).',
       );
     });
+
+    group('projects, days and tasks', () {
+      const row = FrontIndexRow(
+        kind: FrontDestinationKind.task,
+        id: 'release',
+        title: '  Cut the\nrelease ',
+        status: 'DONE',
+      );
+      // Sunday 2026-11-01 through Saturday 2026-11-07.
+      final logged = FrontLoggedTime(
+        period: FrontTimePeriod.past7Days,
+        from: DateTime(2026, 11),
+        through: DateTime(2026, 11, 7),
+        byCategory: const [(name: 'Work', seconds: 16200)],
+        byProject: const [
+          (name: 'Lotti', seconds: 7200),
+          (name: ' Garden\n', seconds: 1800),
+        ],
+        daily: const [3600, 0, 7200, 1800, 0, 0, 3600],
+        tasks: [
+          (
+            row: row,
+            seconds: 7200,
+            projectId: 'lotti',
+            project: 'Lotti',
+            lastDay: DateTime(2026, 11, 3),
+          ),
+          (
+            row: row,
+            seconds: 1800,
+            projectId: null,
+            project: null,
+            lastDay: DateTime(2026, 11, 4),
+          ),
+        ],
+        chart: _chart,
+      );
+      const summary =
+          'Time logged past 7 days (2026-11-01 through 2026-11-07): 4h 30m '
+          'in total, by category, largest first:\n'
+          '- Work: 4h 30m\n'
+          'By project, largest first:\n'
+          '- Lotti: 2h\n'
+          '- Garden: 30m\n'
+          // Weekends are Saturday and Sunday; ties go to the earlier day.
+          'By day: time on 4 of 7 days; 2h 30m on weekdays, 2h at weekends; '
+          'most on 2026-11-03 (Tuesday): 2h\n';
+
+      test('by default the tasks are only counted, so the answer is the '
+          'summary', () {
+        expect(logged.render(), '${summary}2 tasks had time; not listed.');
+      });
+
+      test('withTasks lists each task with its project, last day logged and '
+          'time', () {
+        expect(
+          logged.render(withTasks: true),
+          '${summary}Tasks the time went to (2), largest first:\n'
+          '- task:release | Cut the release | DONE | project Lotti | last '
+          'logged 2026-11-03 | 2h\n'
+          '- task:release | Cut the release | DONE | last logged 2026-11-04 '
+          '| 30m',
+        );
+      });
+
+      test('a project or task asked about is picked before the cap, so a '
+          'small one is never crowded out', () {
+        FrontLoggedTask task(String id, int seconds, String projectId) => (
+          row: FrontIndexRow(
+            kind: FrontDestinationKind.task,
+            id: id,
+            title: 'Task $id',
+          ),
+          seconds: seconds,
+          projectId: projectId,
+          project: 'Project $projectId',
+          lastDay: DateTime(2026, 11, 3),
+        );
+        final many = FrontLoggedTime(
+          from: DateTime(2026, 11, 3),
+          through: DateTime(2026, 11, 3),
+          byCategory: const [(name: 'Work', seconds: 99999)],
+          tasks: [
+            for (var i = 0; i < frontLoggedTaskLimit + 1; i++)
+              task('big-$i', 3600 - i, 'big'),
+            task('small', 60, 'small'),
+          ],
+          chart: _chart,
+        );
+
+        final all = many.listed();
+        expect(all.shown, hasLength(frontLoggedTaskLimit));
+        expect(all.omitted, 2);
+        expect(all.shown.map((t) => t.row.id), isNot(contains('small')));
+        expect(
+          many.render(withTasks: true),
+          contains('Tasks the time went to (30, +2 not shown), largest'),
+        );
+
+        expect(
+          many.render(withTasks: true, projectId: 'small'),
+          endsWith(
+            'Tasks the time went to in project:small (1), largest first:\n'
+            '- task:small | Task small | project Project small | last '
+            'logged 2026-11-03 | 1m',
+          ),
+        );
+        expect(
+          many.listed(taskId: 'small').shown.map((t) => t.row.id),
+          ['small'],
+        );
+        expect(
+          many.render(withTasks: true, taskId: 'gone'),
+          endsWith('No time went to tasks for task:gone.'),
+        );
+      });
+
+      test('a single day gets no day line', () {
+        final oneDay = FrontLoggedTime(
+          from: DateTime(2026, 11, 3),
+          through: DateTime(2026, 11, 3),
+          byCategory: const [(name: 'Work', seconds: 3600)],
+          daily: const [3600],
+          chart: _chart,
+        );
+        expect(
+          oneDay.render(),
+          'Time logged 2026-11-03: 1h in total, by category, largest '
+          'first:\n'
+          '- Work: 1h',
+        );
+      });
+    });
   });
 
   group('FrontClosedTasks.render', () {

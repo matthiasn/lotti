@@ -755,6 +755,12 @@ hologram:x: not listed''');
           title: 'Prune the roses',
           status: 'OPEN',
         );
+        const lawn = FrontIndexRow(
+          kind: FrontDestinationKind.task,
+          id: 'lawn',
+          title: 'Mow the lawn',
+          status: 'OPEN',
+        );
         final asked = <Set<String>>[];
         final s = strategy(
           routingIndex: FrontRoutingIndex(
@@ -774,7 +780,23 @@ hologram:x: not listed''');
                 (name: 'Home', seconds: 3600),
               ],
               named: const ['Home'],
-              tasks: const [(row: roses, seconds: 3600)],
+              tasks: [
+                // Larger, but of another project: picked out before the cap.
+                (
+                  row: lawn,
+                  seconds: 5400,
+                  projectId: 'yard',
+                  project: 'Yard',
+                  lastDay: DateTime(2026, 11, 7),
+                ),
+                (
+                  row: roses,
+                  seconds: 3600,
+                  projectId: 'garden',
+                  project: 'Garden',
+                  lastDay: DateTime(2026, 11, 7),
+                ),
+              ],
               chart: chart,
             );
           },
@@ -784,6 +806,9 @@ hologram:x: not listed''');
             _call('summarize_logged_time', {
               'period': 'past_7_days',
               'categoryIds': ['home'],
+              'tasks': true,
+              'projectId': 'garden',
+              'taskId': 'roses',
             }),
           ],
           manager: manager,
@@ -798,21 +823,89 @@ hologram:x: not listed''');
           'category is "Other categories", never to be broken down):\n'
           '- Other categories: 2h\n'
           '- Home: 1h\n'
-          'Tasks the time went to in Home (1), largest first:\n'
-          '- task:roses | Prune the roses | OPEN | 1h',
+          'Tasks the time went to in Home in project:garden for task:roses '
+          '(1), largest first:\n'
+          '- task:roses | Prune the roses | OPEN | project Garden | last '
+          'logged 2026-11-07 | 1h',
         );
 
         await s.processToolCalls(
           toolCalls: [
             _call('reply_to_user', {
-              'message': 'In Home:\n- Prune the roses',
+              'message': 'In Home:\n- Prune the roses\n\nNot Mow the lawn.',
+            }, id: 'call-2'),
+          ],
+          manager: manager,
+        );
+        // Only the task she was shown links; the one filtered out does not.
+        expect(
+          s.replyToUser,
+          'In Home:\n- [Prune the roses](lotti://task/roses)\n\n'
+          'Not Mow the lawn.',
+        );
+      },
+    );
+
+    test(
+      'without `tasks` the summary keeps its tasks back, counted only, and '
+      'a task she names anyway stays unlinked',
+      () async {
+        const roses = FrontIndexRow(
+          kind: FrontDestinationKind.task,
+          id: 'roses',
+          title: 'Prune the roses',
+          status: 'OPEN',
+        );
+        final s = strategy(
+          timeSummarizer: (query) async => FrontLoggedTime(
+            period: query.period,
+            from: DateTime(2026, 11, 6),
+            through: DateTime(2026, 11, 6),
+            byCategory: const [(name: 'Home', seconds: 3600)],
+            tasks: [
+              for (final id in ['roses', 'b', 'c'])
+                (
+                  row: id == 'roses'
+                      ? roses
+                      : FrontIndexRow(
+                          kind: FrontDestinationKind.task,
+                          id: id,
+                          title: 'Task $id',
+                        ),
+                  seconds: 600,
+                  projectId: null,
+                  project: null,
+                  lastDay: DateTime(2026, 11, 6),
+                ),
+            ],
+            chart: chart,
+          ),
+        );
+        await s.processToolCalls(
+          toolCalls: [
+            _call('summarize_logged_time', {'period': 'yesterday'}),
+          ],
+          manager: manager,
+        );
+        expect(
+          responses().single,
+          'Time logged yesterday (2026-11-06): 1h in total, by category, '
+          'largest first:\n'
+          '- Home: 1h\n'
+          '3 tasks had time; not listed.',
+        );
+
+        await s.processToolCalls(
+          toolCalls: [
+            _call('reply_to_user', {
+              'message': 'You logged 1h in Home on Prune the roses.',
             }, id: 'call-2'),
           ],
           manager: manager,
         );
         expect(
           s.replyToUser,
-          'In Home:\n- [Prune the roses](lotti://task/roses)',
+          'You logged 1h in Home on Prune the roses.',
         );
       },
     );

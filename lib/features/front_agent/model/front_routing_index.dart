@@ -206,9 +206,20 @@ typedef FrontTimeQuery = ({
   Set<String> categoryIds,
 });
 
+/// One task `summarize_logged_time` found time on: its row, its seconds in
+/// the window, its project's id and title (null for none) and the last
+/// local day it had time.
+typedef FrontLoggedTask = ({
+  FrontIndexRow row,
+  int seconds,
+  String? projectId,
+  String? project,
+  DateTime lastDay,
+});
+
 /// What one `summarize_logged_time` found: the time logged from [from]
-/// through [through], per category, largest first, and the tasks that time
-/// went to.
+/// through [through], per category, project and day, and the tasks that
+/// time went to.
 class FrontLoggedTime {
   const FrontLoggedTime({
     required this.from,
@@ -216,8 +227,9 @@ class FrontLoggedTime {
     required this.byCategory,
     required this.chart,
     this.named = const [],
+    this.byProject = const [],
+    this.daily = const [],
     this.tasks = const [],
-    this.omittedTasks = 0,
     this.period,
   });
 
@@ -239,19 +251,40 @@ class FrontLoggedTime {
   /// The names of the categories the user named; empty when none.
   final List<String> named;
 
-  /// The tasks the time went to and each one's seconds, largest first, at
-  /// most [frontLoggedTaskLimit] — in the named categories when some are.
-  final List<({FrontIndexRow row, int seconds})> tasks;
+  /// The time on tasks in each project, by the project's title, largest
+  /// first — of every task with time, not only the [tasks] listed. Time on
+  /// tasks in no project, and time on no task, is in none of them.
+  final List<({String name, int seconds})> byProject;
 
-  /// How many more tasks had time than [frontLoggedTaskLimit] let through.
-  final int omittedTasks;
+  /// The seconds logged on each day from [from] through [through], in
+  /// order, as the chart under her reply stacks them.
+  final List<int> daily;
+
+  /// Every task the time went to — each one's seconds, project and last day
+  /// with time — largest first, in the named categories when some are.
+  /// [listed] picks and caps what the model reads.
+  final List<FrontLoggedTask> tasks;
 
   /// The [byCategory] name of every category the user did not name.
   static const otherCategories = 'Other categories';
 
+  static const _weekdays = [
+    'Monday',
+    'Tuesday',
+    'Wednesday',
+    'Thursday',
+    'Friday',
+    'Saturday',
+    'Sunday',
+  ];
+
   /// The tool's answer: a heading naming the period, its days, any named
-  /// category and the total, one line per category, then one per task.
-  String render() {
+  /// category and the total, one line per category, then per project and
+  /// one on the days. The tasks are listed one per line only [withTasks] —
+  /// when the user asked for them, as [listed] picks them for [projectId]
+  /// or [taskId]; otherwise only how many there are, so the default answer
+  /// is the summary, short enough to be read aloud.
+  String render({bool withTasks = false, String? projectId, String? taskId}) {
     const day = FrontRoutingIndex._isoDay;
     const oneLine = FrontRoutingIndex._oneLine;
     final days = from == through
@@ -275,20 +308,84 @@ class FrontLoggedTime {
       final label = name == null ? 'No category' : oneLine(name);
       buffer.writeln('- $label: ${_hoursMinutes(seconds)}');
     }
-    if (tasks.isNotEmpty) {
+    if (byProject.isNotEmpty) {
+      buffer.writeln('By project, largest first:');
+      for (final (:name, :seconds) in byProject) {
+        buffer.writeln('- ${oneLine(name)}: ${_hoursMinutes(seconds)}');
+      }
+    }
+    if (daily.length > 1) _writeDays(buffer);
+    if (!withTasks) {
+      if (tasks.isNotEmpty) {
+        buffer.writeln('${tasks.length} tasks had time; not listed.');
+      }
+      return buffer.toString().trimRight();
+    }
+    final (:shown, :omitted) = listed(projectId: projectId, taskId: taskId);
+    final within = [
+      if (named.isNotEmpty) ' in ${named.join(', ')}',
+      if (projectId != null) ' in project:$projectId',
+      if (taskId != null) ' for task:$taskId',
+    ].join();
+    if (shown.isEmpty) {
+      if (tasks.isNotEmpty) buffer.writeln('No time went to tasks$within.');
+    } else {
       buffer.writeln(
-        'Tasks the time went to${named.isEmpty ? '' : ' in ${named.join(', ')}'}'
-        ' (${tasks.length}'
-        '${omittedTasks > 0 ? ', +$omittedTasks not shown' : ''}), '
-        'largest first:',
+        'Tasks the time went to$within (${shown.length}'
+        '${omitted > 0 ? ', +$omitted not shown' : ''}), largest first:',
       );
-      for (final (:row, :seconds) in tasks) {
+      for (final (:row, :seconds, :project, :lastDay, projectId: _) in shown) {
         buffer.write('- task:${row.id} | ${oneLine(row.title)}');
         if (row.status != null) buffer.write(' | ${row.status}');
-        buffer.writeln(' | ${_hoursMinutes(seconds)}');
+        if (project != null) buffer.write(' | project ${oneLine(project)}');
+        buffer.writeln(
+          ' | last logged ${day(lastDay)} | ${_hoursMinutes(seconds)}',
+        );
       }
     }
     return buffer.toString().trimRight();
+  }
+
+  /// The tasks of [projectId] or the one [taskId], when given, else all of
+  /// them — filtered before the cap, so a small project's tasks are never
+  /// crowded out — at most [frontLoggedTaskLimit] `shown`, the rest counted.
+  ({List<FrontLoggedTask> shown, int omitted}) listed({
+    String? projectId,
+    String? taskId,
+  }) {
+    final matching = [
+      for (final task in tasks)
+        if ((projectId == null || task.projectId == projectId) &&
+            (taskId == null || task.row.id == taskId))
+          task,
+    ];
+    return (
+      shown: matching.take(frontLoggedTaskLimit).toList(),
+      omitted: matching.length > frontLoggedTaskLimit
+          ? matching.length - frontLoggedTaskLimit
+          : 0,
+    );
+  }
+
+  /// One line on the days: how many had time, weekdays against weekends,
+  /// and the busiest day by date and weekday.
+  void _writeDays(StringBuffer buffer) {
+    DateTime dayAt(int i) => DateTime(from.year, from.month, from.day + i);
+    var weekend = 0;
+    var busiest = 0;
+    for (var i = 0; i < daily.length; i++) {
+      if (dayAt(i).weekday >= DateTime.saturday) weekend += daily[i];
+      if (daily[i] > daily[busiest]) busiest = i;
+    }
+    final sum = daily.fold(0, (total, seconds) => total + seconds);
+    final top = dayAt(busiest);
+    buffer.writeln(
+      'By day: time on ${daily.where((seconds) => seconds > 0).length} of '
+      '${daily.length} days; ${_hoursMinutes(sum - weekend)} on weekdays, '
+      '${_hoursMinutes(weekend)} at weekends; most on '
+      '${FrontRoutingIndex._isoDay(top)} (${_weekdays[top.weekday - 1]}): '
+      '${_hoursMinutes(daily[busiest])}',
+    );
   }
 
   /// `45m`, `2h`, `31h 5m`: hours never roll into days, so a month's total

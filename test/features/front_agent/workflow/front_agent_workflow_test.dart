@@ -1191,11 +1191,17 @@ void main() {
       when(
         () => journalDb.getJournalEntitiesForIdsUnordered({'dishes'}),
       ).thenAnswer((_) async => [dishes]);
+      when(
+        () => journalDb.getProjectIdMapForTasks({'dishes'}),
+      ).thenAnswer((_) async => const {});
       seedMessage(chips: ['home']);
       String? summed;
       stubModel(
         (_) => [
-          call('summarize_logged_time', {'period': 'yesterday'}),
+          call('summarize_logged_time', {
+            'period': 'yesterday',
+            'tasks': true,
+          }),
           call('reply_to_user', {'message': 'Yesterday: 1h 30m on Home.'}),
         ],
       );
@@ -1233,7 +1239,7 @@ void main() {
         'largest first:\n'
         '- Home: 1h 30m\n'
         'Tasks the time went to (1), largest first:\n'
-        '- task:dishes | Dishes | OPEN | 1h 30m',
+        '- task:dishes | Dishes | OPEN | last logged 2026-11-01 | 1h 30m',
       );
       final reply = upserts.whereType<AgentMessageEntity>().singleWhere(
         (m) => m.id == frontAgentReplyMessageId(frontAgentId, runKey),
