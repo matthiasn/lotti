@@ -886,7 +886,6 @@ void main() {
           [for (final task in logged.tasks) (task.row.id, task.seconds)],
           [('older', 2 * 3600), ('newer', 90 * 60), ('home-task', 3600)],
         );
-        expect(logged.omittedTasks, 0);
         expect(
           logged.render(withTasks: true),
           contains(
@@ -935,8 +934,10 @@ void main() {
               categoryIds: const {},
             ));
 
+        // Older's 9:00–11:00 and newer's 10:00–11:30 overlap: the project
+        // counts 9:00–11:30 once, as Work does, not 2h + 1h 30m.
         expect(logged.byProject, [
-          (name: 'Project pw', seconds: 2 * 3600 + 90 * 60),
+          (name: 'Project pw', seconds: 2 * 3600 + 30 * 60),
           (name: 'Project ph', seconds: 3600),
         ]);
         expect(
@@ -1077,8 +1078,8 @@ void main() {
             categoryIds: const {},
           ));
 
-      expect(logged.tasks, hasLength(frontLoggedTaskLimit));
-      expect(logged.omittedTasks, 1);
+      // Every task is kept; only what the model reads is capped.
+      expect(logged.tasks, hasLength(frontLoggedTaskLimit + 1));
       expect(
         logged.render(withTasks: true),
         contains('(30, +1 not shown)'),

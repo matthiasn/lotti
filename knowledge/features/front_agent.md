@@ -391,7 +391,7 @@ Nine tools, never fewer (a single tool makes DeepSeek rewrite
 | `read_tldr(ids ≤ 5)` | no | 1 per turn | `frontTldrExhaustedAnswer` — the tool stays listed |
 | `match_to_corpus(phrase)` | no | 1 per turn | `frontCorpusMatchExhaustedAnswer`; unavailable when no FTS index is wired |
 | `list_due_tasks(which, daysAhead 0–7, categoryIds)` | no | 1 per turn | `frontDueListExhaustedAnswer`; unavailable when no lister is wired |
-| `summarize_logged_time(period \| pastDays \| from+through, categoryIds?, tasks?)` | no | 1 per turn | `frontTimeSummaryExhaustedAnswer`; unavailable when no summarizer is wired |
+| `summarize_logged_time(period \| pastDays \| from+through, categoryIds?, tasks?, projectId?, taskId?)` | no | 1 per turn | `frontTimeSummaryExhaustedAnswer`; unavailable when no summarizer is wired |
 | `list_closed_tasks(period \| pastDays \| from+through, categoryIds?)` | no | 1 per turn | `frontClosedListExhaustedAnswer`; unavailable when no lister is wired |
 | `summarize_pull_requests(period \| pastDays \| from+through)` | no | 1 per turn | `frontPullRequestSummaryExhaustedAnswer`; unavailable when no summarizer is wired |
 | `ask_user(question, options ≤ 3)` | yes | once | refused |
@@ -540,7 +540,9 @@ down* after her offer (read from `<recent_turns>`) gets the list. *What did
 I work on?* alone gets the summary. With `tasks`, each task comes with its
 project and last day logged, so she orders the list as the user asks: by
 time, by last day, or grouped by project; a day's tasks come from querying
-that day. Whether to list is the model's call from the user's words, not a
+that day. A project the user names goes in `projectId`, one task in
+`taskId`; `FrontLoggedTime.listed` picks those before the cap, so a small
+project's tasks are never crowded out by 30 bigger ones elsewhere. Whether to list is the model's call from the user's words, not a
 keyword match in code, since the message may be dictated and in any
 language.
 
@@ -556,15 +558,18 @@ the lower id — so the task listed is the one whose category the time is
 summed in; only when none has a category, the latest started. Re-keyed by
 task id, the entries
 go through the same `bucketize` and `rankedCategoryTotals`, so a task's time
-is clipped to the days and merged like a category's. At most
-`frontLoggedTaskLimit` (30) are listed, the rest counted; only with `tasks`
-does each become a lookup row, so her reply may link one by title alone and
-a list of them is drawn as task rows. Each task carries its project's title
-— `JournalDb.getProjectIdMapForTasks`, named only when the project is among
+is clipped to the days and merged like a category's. `FrontLoggedTime.tasks`
+keeps every one; the model reads at most `frontLoggedTaskLimit` (30) of
+those `listed` picks, the rest counted, and only those it reads become
+lookup rows, so her reply may link one by title alone and a list of them is
+drawn as task rows. Each task carries its project's id and title —
+`JournalDb.getProjectIdMapForTasks`, kept only when the project is among
 `getVisibleProjects` inside the turn's scope, as the index lists projects —
 and its last day with time, from the same per-task daily buckets.
-`FrontLoggedTime.byProject` sums every task's time (not only the 30 listed)
-per project, largest first; time on tasks in no project, and on no task, is
+`FrontLoggedTime.byProject` re-keys the same credited entries by project and
+buckets them once more, largest first, so overlapping entries on two tasks
+of one project count once, as they do in their category, and a project
+never sums past the total; time on tasks in no project, and on no task, is
 in none. `FrontLoggedTime.daily` is each day's total, the buckets the chart
 stacks.
 

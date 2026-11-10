@@ -334,7 +334,7 @@ class FrontRoutingIndexBuilder {
         categoryIds,
         namedCategoryIds: named,
       );
-      final tasks = await _loggedTasks(
+      final (:tasks, :byProject) = await _loggedTasks(
         [
           for (final entry in entries)
             if (entry.row.categoryId != kInsightsOtherCategoryKey) entry,
@@ -343,12 +343,6 @@ class FrontRoutingIndexBuilder {
         scope,
       );
       final daily = dailyTotals(buckets, range);
-      final byProject = <String, int>{};
-      for (final task in tasks) {
-        if (task.project case final project?) {
-          byProject[project] = (byProject[project] ?? 0) + task.seconds;
-        }
-      }
       return FrontLoggedTime(
         period: query.range == null ? query.period : null,
         from: dayStart(range.startDay),
@@ -356,11 +350,7 @@ class FrontRoutingIndexBuilder {
         daily: [
           for (final day in daily) day.values.fold(0, (sum, s) => sum + s),
         ],
-        byProject: [
-          for (final MapEntry(key: name, value: seconds)
-              in byProject.entries.sortedBy<num>((entry) => -entry.value))
-            (name: name, seconds: seconds),
-        ],
+        byProject: byProject,
         byCategory: [
           for (final MapEntry(key: id, value: seconds) in rankedCategoryTotals(
             daily,
@@ -375,8 +365,7 @@ class FrontRoutingIndexBuilder {
             ),
         ],
         named: [for (final id in named) ?names[id]]..sort(),
-        tasks: tasks.take(frontLoggedTaskLimit).toList(),
-        omittedTasks: _omitted(tasks.length, frontLoggedTaskLimit),
+        tasks: tasks,
         chart: FrontLoggedTimeChart(
           range: range,
           categoryIds: categoryIds,
@@ -424,9 +413,17 @@ class FrontRoutingIndexBuilder {
   /// category the time is summed in; only when none has a category, the
   /// latest started. Its time is clipped and merged as the chart's is. A
   /// task hidden with private entries, or deleted, is never read. Each
-  /// task carries its project's title when that project is visible inside
-  /// [scope], as the index lists projects, and its last day with time.
-  Future<List<FrontLoggedTask>> _loggedTasks(
+  /// task carries its project when that project is visible inside [scope],
+  /// as the index lists projects, and its last day with time. `byProject`
+  /// buckets the same entries per project, so overlapping time on two tasks
+  /// of one project counts once, as it does in their category.
+  Future<
+    ({
+      List<FrontLoggedTask> tasks,
+      List<({String name, int seconds})> byProject,
+    })
+  >
+  _loggedTasks(
     List<({String entryId, InsightsTimeRow row})> entries,
     InsightsRange range,
     FrontRoutingScope scope,
@@ -464,26 +461,54 @@ class FrontRoutingIndexBuilder {
     ], windowStartDay: range.startDay);
     final daily = dailyTotals(buckets, range);
     final ranked = rankedCategoryTotals(daily);
-    if (ranked.isEmpty) return const [];
-    final projectIdByTask = await journalDb.getProjectIdMapForTasks({
-      for (final entry in ranked) entry.key!,
-    });
+    if (ranked.isEmpty) {
+      return (
+        tasks: const <FrontLoggedTask>[],
+        byProject: const <({String name, int seconds})>[],
+      );
+    }
     final projectTitles = {
       for (final project in await journalDb.getVisibleProjects())
         if (categoryAllowed(project.meta.categoryId, scope.categoryIds))
           project.id: project.data.title,
     };
-    return [
-      for (final MapEntry(key: id, value: seconds) in ranked)
-        (
-          row: _taskRow(tasksById[id]!, null),
-          seconds: seconds,
-          project: projectTitles[projectIdByTask[id]],
-          lastDay: dayStart(
-            range.startDay + daily.lastIndexWhere((day) => (day[id] ?? 0) > 0),
+    final projectIdByTask = {
+      for (final MapEntry(:key, :value)
+          in (await journalDb.getProjectIdMapForTasks({
+            for (final entry in ranked) entry.key!,
+          })).entries)
+        if (projectTitles.containsKey(value)) key: value,
+    };
+    final projectBuckets = bucketize([
+      for (final entry in entries)
+        if (projectIdByTask[taskByEntry[entry.entryId]?.id] case final id?)
+          InsightsTimeRow(
+            dateFrom: entry.row.dateFrom,
+            dateTo: entry.row.dateTo,
+            categoryId: id,
           ),
-        ),
-    ];
+    ], windowStartDay: range.startDay);
+    return (
+      tasks: [
+        for (final MapEntry(key: id, value: seconds) in ranked)
+          (
+            row: _taskRow(tasksById[id]!, null),
+            seconds: seconds,
+            projectId: projectIdByTask[id],
+            project: projectTitles[projectIdByTask[id]],
+            lastDay: dayStart(
+              range.startDay +
+                  daily.lastIndexWhere((day) => (day[id] ?? 0) > 0),
+            ),
+          ),
+      ],
+      byProject: [
+        for (final MapEntry(key: id, value: seconds) in rankedCategoryTotals(
+          dailyTotals(projectBuckets, range),
+        ))
+          (name: projectTitles[id]!, seconds: seconds),
+      ],
+    );
   }
 
   /// Whether [task] is credited with a linked entry's time before [other]:

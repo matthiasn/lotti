@@ -207,11 +207,12 @@ typedef FrontTimeQuery = ({
 });
 
 /// One task `summarize_logged_time` found time on: its row, its seconds in
-/// the window, its project's title (null for none) and the last local day
-/// it had time.
+/// the window, its project's id and title (null for none) and the last
+/// local day it had time.
 typedef FrontLoggedTask = ({
   FrontIndexRow row,
   int seconds,
+  String? projectId,
   String? project,
   DateTime lastDay,
 });
@@ -229,7 +230,6 @@ class FrontLoggedTime {
     this.byProject = const [],
     this.daily = const [],
     this.tasks = const [],
-    this.omittedTasks = 0,
     this.period,
   });
 
@@ -260,13 +260,10 @@ class FrontLoggedTime {
   /// order, as the chart under her reply stacks them.
   final List<int> daily;
 
-  /// The tasks the time went to — each one's seconds, project title and
-  /// last day with time — largest first, at most [frontLoggedTaskLimit],
-  /// in the named categories when some are.
+  /// Every task the time went to — each one's seconds, project and last day
+  /// with time — largest first, in the named categories when some are.
+  /// [listed] picks and caps what the model reads.
   final List<FrontLoggedTask> tasks;
-
-  /// How many more tasks had time than [frontLoggedTaskLimit] let through.
-  final int omittedTasks;
 
   /// The [byCategory] name of every category the user did not name.
   static const otherCategories = 'Other categories';
@@ -283,10 +280,11 @@ class FrontLoggedTime {
 
   /// The tool's answer: a heading naming the period, its days, any named
   /// category and the total, one line per category, then per project and
-  /// one on the days. The [tasks] are listed one per line only [withTasks]
-  /// — when the user asked for them; otherwise only how many there are, so
-  /// the default answer is the summary, short enough to be read aloud.
-  String render({bool withTasks = false}) {
+  /// one on the days. The tasks are listed one per line only [withTasks] —
+  /// when the user asked for them, as [listed] picks them for [projectId]
+  /// or [taskId]; otherwise only how many there are, so the default answer
+  /// is the summary, short enough to be read aloud.
+  String render({bool withTasks = false, String? projectId, String? taskId}) {
     const day = FrontRoutingIndex._isoDay;
     const oneLine = FrontRoutingIndex._oneLine;
     final days = from == through
@@ -318,16 +316,25 @@ class FrontLoggedTime {
     }
     if (daily.length > 1) _writeDays(buffer);
     if (!withTasks) {
-      final count = tasks.length + omittedTasks;
-      if (count > 0) buffer.writeln('$count tasks had time; not listed.');
-    } else if (tasks.isNotEmpty) {
+      if (tasks.isNotEmpty) {
+        buffer.writeln('${tasks.length} tasks had time; not listed.');
+      }
+      return buffer.toString().trimRight();
+    }
+    final (:shown, :omitted) = listed(projectId: projectId, taskId: taskId);
+    final within = [
+      if (named.isNotEmpty) ' in ${named.join(', ')}',
+      if (projectId != null) ' in project:$projectId',
+      if (taskId != null) ' for task:$taskId',
+    ].join();
+    if (shown.isEmpty) {
+      if (tasks.isNotEmpty) buffer.writeln('No time went to tasks$within.');
+    } else {
       buffer.writeln(
-        'Tasks the time went to${named.isEmpty ? '' : ' in ${named.join(', ')}'}'
-        ' (${tasks.length}'
-        '${omittedTasks > 0 ? ', +$omittedTasks not shown' : ''}), '
-        'largest first:',
+        'Tasks the time went to$within (${shown.length}'
+        '${omitted > 0 ? ', +$omitted not shown' : ''}), largest first:',
       );
-      for (final (:row, :seconds, :project, :lastDay) in tasks) {
+      for (final (:row, :seconds, :project, :lastDay, projectId: _) in shown) {
         buffer.write('- task:${row.id} | ${oneLine(row.title)}');
         if (row.status != null) buffer.write(' | ${row.status}');
         if (project != null) buffer.write(' | project ${oneLine(project)}');
@@ -337,6 +344,27 @@ class FrontLoggedTime {
       }
     }
     return buffer.toString().trimRight();
+  }
+
+  /// The tasks of [projectId] or the one [taskId], when given, else all of
+  /// them — filtered before the cap, so a small project's tasks are never
+  /// crowded out — at most [frontLoggedTaskLimit] `shown`, the rest counted.
+  ({List<FrontLoggedTask> shown, int omitted}) listed({
+    String? projectId,
+    String? taskId,
+  }) {
+    final matching = [
+      for (final task in tasks)
+        if ((projectId == null || task.projectId == projectId) &&
+            (taskId == null || task.row.id == taskId))
+          task,
+    ];
+    return (
+      shown: matching.take(frontLoggedTaskLimit).toList(),
+      omitted: matching.length > frontLoggedTaskLimit
+          ? matching.length - frontLoggedTaskLimit
+          : 0,
+    );
   }
 
   /// One line on the days: how many had time, weekdays against weekends,

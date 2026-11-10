@@ -525,13 +525,29 @@ class FrontAgentStrategy extends ConversationStrategy
       range: window.range,
       categoryIds: categoryIds,
     ));
-    // Only the tasks she was shown can be linked by title in her reply.
     final withTasks = args['tasks'] == true;
+    final projectId = args['projectId'] is String
+        ? args['projectId'] as String
+        : null;
+    final taskId = args['taskId'] is String ? args['taskId'] as String : null;
+    // Only the tasks she was shown can be linked by title in her reply.
     if (withTasks) {
-      _lookupRows.addAll([for (final task in logged.tasks) task.row]);
+      final (:shown, omitted: _) = logged.listed(
+        projectId: projectId,
+        taskId: taskId,
+      );
+      _lookupRows.addAll([for (final task in shown) task.row]);
     }
     if (logged.byCategory.isNotEmpty) _loggedTimeChart = logged.chart;
-    await _accept(call, manager, logged.render(withTasks: withTasks));
+    await _accept(
+      call,
+      manager,
+      logged.render(
+        withTasks: withTasks,
+        projectId: projectId,
+        taskId: taskId,
+      ),
+    );
   }
 
   Future<void> _handleListClosedTasks(

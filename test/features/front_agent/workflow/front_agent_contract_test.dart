@@ -86,6 +86,10 @@ void main() {
     expect((properties['through'] as Map)['type'], 'string');
     // The task list is opt-in: a summary is the default answer.
     expect((properties['tasks'] as Map)['type'], 'boolean');
+    // Picked before the cap, so the project or task asked about is listed.
+    expect((properties['projectId'] as Map)['type'], 'string');
+    expect((properties['taskId'] as Map)['type'], 'string');
+    expect(frontAgentSystemPrompt, contains('with `projectId` for a project'));
     // Exactly one window form, checked by the strategy, so none required.
     expect(summarize.parameters.containsKey('required'), isFalse);
     expect(frontAgentSystemPrompt, contains('call `summarize_logged_time`'));
