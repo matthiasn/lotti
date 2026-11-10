@@ -59,6 +59,16 @@ class _DayPageState extends ConsumerState<DayPage> {
   /// Measurement anchor for the onboarding spotlight over the empty-Day CTA.
   final GlobalKey _checkInCtaKey = GlobalKey();
 
+  /// Carries the Day timeline's lane-format and arrange controls up to the
+  /// briefing strip, so the Day tab has no toolbar row the others lack.
+  final DayTimelineController _timelineController = DayTimelineController();
+
+  @override
+  void dispose() {
+    _timelineController.dispose();
+    super.dispose();
+  }
+
   Future<void> _openRefine({String? initialTranscript}) async {
     await showDayPlanningModal(
       context: context,
@@ -431,6 +441,11 @@ class _DayPageState extends ConsumerState<DayPage> {
                                 draft: widget.draft,
                                 hasPlan: widget.hasPlan,
                                 actualBlocks: actualBlocks ?? const [],
+                                trailing: _view == PlanView.day
+                                    ? DayTimelineControls(
+                                        controller: _timelineController,
+                                      )
+                                    : null,
                               ),
                             ),
                             if (setupStatus?.needsAttention ?? false)
@@ -471,6 +486,7 @@ class _DayPageState extends ConsumerState<DayPage> {
                             onRenameItem: onRenameItem,
                           ),
                           PlanView.day => DayTimeline(
+                            controller: _timelineController,
                             draft: widget.draft,
                             actualBlocks: actualBlocks,
                             onRenameBlock: onRenameBlock,

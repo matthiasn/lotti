@@ -17,6 +17,7 @@ import 'package:material_ui/material_ui.dart';
 
 export 'package:lotti/features/daily_os_next/ui/widgets/day_timeline_block.dart';
 
+part 'day_timeline_controls.dart';
 part 'day_timeline_widgets.dart';
 
 /// Hour-by-hour timeline rendering of a [DraftPlan].
@@ -45,6 +46,7 @@ class DayTimeline extends StatefulWidget {
     this.isRedacted,
     this.toolbarLeading,
     this.toolbarTrailing,
+    this.controller,
     super.key,
   }) : assert(pxPerMinute > 0, 'pxPerMinute must be positive');
 
@@ -117,6 +119,13 @@ class DayTimeline extends StatefulWidget {
   /// lane-mode toggle. The docked day-view column puts its hide button here.
   final Widget? toolbarTrailing;
 
+  /// Hands the lane-format and arrange controls to the host, which shows
+  /// them through [DayTimelineControls]. With a controller the toolbar
+  /// leaves those buttons out and keeps only the coaching line and the
+  /// host's own [toolbarLeading] and [toolbarTrailing] — and takes no row
+  /// at all when none of those has anything to show.
+  final DayTimelineController? controller;
+
   @override
   State<DayTimeline> createState() => _DayTimelineState();
 }
@@ -174,6 +183,7 @@ class _DayTimelineState extends State<DayTimeline> {
       // now-line tracks time. Skipped under test (fixed clock param).
       _scheduleNextMinute();
     }
+    widget.controller?._attach(this);
     // Open with the now-line framed in the upper half of the viewport so
     // "where am I in the day" needs no scrolling.
     WidgetsBinding.instance.addPostFrameCallback((_) => _centerOnNow());
@@ -184,6 +194,10 @@ class _DayTimelineState extends State<DayTimeline> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.pxPerMinute != widget.pxPerMinute) {
       _pxPerMinute = widget.pxPerMinute;
+    }
+    if (oldWidget.controller != widget.controller) {
+      oldWidget.controller?._detach(this);
+      widget.controller?._attach(this);
     }
     _reselectLaneIfPlanPresenceChanged();
   }
@@ -274,6 +288,7 @@ class _DayTimelineState extends State<DayTimeline> {
 
   @override
   void dispose() {
+    widget.controller?._detach(this);
     _timer?.cancel();
     _pageController
       ..removeListener(_onLanePageScroll)
@@ -340,7 +355,27 @@ class _DayTimelineState extends State<DayTimeline> {
       builder: (context, constraints) {
         final comparisonMode = _comparisonModeForWidth(constraints.maxWidth);
         final toolbarHeight = tokens.spacing.step9 + tokens.spacing.step3;
-        final showToolbar = constraints.maxHeight >= toolbarHeight;
+        final controller = widget.controller;
+        final canArrange = widget.onRescheduleBlock != null;
+        if (controller != null) {
+          // Reported after the frame: the comparison mode is only known once
+          // the width is, and listeners must not rebuild mid-layout.
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted || !identical(widget.controller, controller)) return;
+            controller._report(
+              showingBoth: comparisonMode == _TimelineComparisonMode.both,
+              arrangeMode: _arrangeMode,
+              canArrange: canArrange,
+            );
+          });
+        }
+        final toolbarHasContent =
+            controller == null ||
+            widget.showGestureHint ||
+            widget.toolbarLeading != null ||
+            widget.toolbarTrailing != null;
+        final showToolbar =
+            toolbarHasContent && constraints.maxHeight >= toolbarHeight;
         return Column(
           children: [
             if (showToolbar)
@@ -351,10 +386,9 @@ class _DayTimelineState extends State<DayTimeline> {
                 arrangeMode: _arrangeMode,
                 showHint: widget.showGestureHint,
                 recordedLaneFirst: _recordedLaneFirst,
+                showControls: controller == null,
                 onToggleMode: _toggleComparisonMode,
-                onToggleArrange: widget.onRescheduleBlock == null
-                    ? null
-                    : _toggleArrangeMode,
+                onToggleArrange: canArrange ? _toggleArrangeMode : null,
               ),
             Expanded(
               child: Listener(

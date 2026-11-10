@@ -1685,8 +1685,9 @@ void main() {
         );
         await tester.pump();
 
-        // Task-linked block carries the small info link icon.
-        expect(find.byIcon(LottiIcons.link), findsOneWidget);
+        // A task-linked block carries no link glyph: standalone is the
+        // unmarked default and linked blocks are not badged either.
+        expect(find.byIcon(LottiIcons.link), findsNothing);
         // Three pencils, not two: the two plan blocks plus the standalone
         // title's inline rename. Material drew them `edit_rounded` and
         // `edit_outlined`, so counting blocks alone used to work; Lucide has
@@ -2624,15 +2625,15 @@ void main() {
         await tester.pumpWidget(_wrap(DayTimeline(draft: draft)));
         await tester.pump();
 
-        // The red now-badge (bold, error colour) carries the live HH:mm. Read
-        // it back from the tree instead of recomputing, so a minute rollover
-        // mid-test cannot make the assertion flaky.
+        // The teal now-badge (bold, on-interactive ink) carries the live
+        // HH:mm. Read it back from the tree instead of recomputing, so a
+        // minute rollover mid-test cannot make the assertion flaky.
         final tokens = tester.element(find.byType(DayTimeline)).designTokens;
-        final errorColor = tokens.colors.alert.error.ink;
+        final badgeInk = tokens.colors.text.onInteractiveAlert;
         Finder nowBadge() => find.byWidgetPredicate(
           (w) =>
               w is Text &&
-              w.style?.color == errorColor &&
+              w.style?.color == badgeInk &&
               w.style?.fontWeight == tokens.typography.weight.bold,
         );
 
@@ -2713,6 +2714,73 @@ void main() {
         );
       },
     );
+  });
+
+  group('DayTimeline paint', () {
+    Future<DsTokens> pumpAt(WidgetTester tester, DateTime now) async {
+      _setView(tester, const Size(1280, 1200));
+      await tester.pumpWidget(
+        _wrap(DayTimeline(draft: _draft(), clock: () => now)),
+      );
+      await tester.pump();
+      return tester.element(find.byType(DayTimeline)).designTokens;
+    }
+
+    testWidgets('the now-line is teal, not an alarm', (tester) async {
+      final tokens = await pumpAt(tester, DateTime(2026, 5, 25, 11, 7));
+
+      final lines = tester.widgetList<ColoredBox>(
+        find.descendant(
+          of: find.byType(NowLine),
+          matching: find.byType(ColoredBox),
+        ),
+      );
+      expect(lines, isNotEmpty);
+      for (final line in lines) {
+        expect(line.color, tokens.colors.interactive.enabled);
+      }
+    });
+
+    testWidgets('the now time sits in a teal pill in on-interactive ink', (
+      tester,
+    ) async {
+      final tokens = await pumpAt(tester, DateTime(2026, 5, 25, 11, 7));
+
+      final label = find.text('11:07');
+      expect(label, findsOneWidget);
+      expect(
+        tester.widget<Text>(label).style?.color,
+        tokens.colors.text.onInteractiveAlert,
+      );
+      final pill = tester.widget<Container>(
+        find.ancestor(of: label, matching: find.byType(Container)).first,
+      );
+      final decoration = pill.decoration! as BoxDecoration;
+      expect(decoration.color, tokens.colors.interactive.enabled);
+      expect(
+        decoration.borderRadius,
+        BorderRadius.circular(tokens.radii.badgesPills),
+      );
+    });
+
+    testWidgets('hour lines are decorative hairlines', (tester) async {
+      final tokens = await pumpAt(tester, DateTime(2026, 5, 25, 11, 7));
+
+      final hairlines = tester
+          .widgetList<Container>(find.byType(Container))
+          .where((c) => c.color == tokens.colors.decorative.level01);
+      expect(hairlines, isNotEmpty);
+      expect(
+        tester
+            .widgetList<Container>(find.byType(Container))
+            .where(
+              (c) =>
+                  c.color ==
+                  tokens.colors.text.lowEmphasis.withValues(alpha: 0.10),
+            ),
+        isEmpty,
+      );
+    });
   });
 
   group('formatTimelineHourLabel', () {

@@ -817,14 +817,6 @@ class _BlockContent extends StatelessWidget {
                       ),
                       SizedBox(width: tokens.spacing.step1),
                     ],
-                    if (!tracked && isTaskLinked) ...[
-                      Icon(
-                        LottiIcons.link,
-                        size: 12,
-                        color: tokens.colors.alert.info.defaultColor,
-                      ),
-                      SizedBox(width: tokens.spacing.step1),
-                    ],
                     Expanded(
                       child: editable && !compact
                           ? EditableTitle(
@@ -948,7 +940,9 @@ class NowLine extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final red = tokens.colors.alert.error.defaultColor;
+    // Teal, like every other "you are here" on the page (the selected day,
+    // the selected tab): the now-line is position, not an alarm.
+    final ink = tokens.colors.interactive.enabled;
     final top = foldingState.positionForDate(
       now,
       windowStart: windowStart,
@@ -962,7 +956,7 @@ class NowLine extends StatelessWidget {
       right: 0,
       height: 1.5,
       child: IgnorePointer(
-        child: ColoredBox(color: red),
+        child: ColoredBox(color: ink),
       ),
     );
   }

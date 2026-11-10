@@ -10,9 +10,14 @@ class _TimelineToolbar extends StatelessWidget {
     required this.recordedLaneFirst,
     required this.onToggleMode,
     required this.onToggleArrange,
+    this.showControls = true,
     this.leading,
     this.trailing,
   });
+
+  /// False when a [DayTimelineController] hosts the lane-format and arrange
+  /// buttons elsewhere.
+  final bool showControls;
 
   /// See [DayTimeline.toolbarLeading]. Takes the coaching line's room.
   final Widget? leading;
@@ -68,27 +73,12 @@ class _TimelineToolbar extends StatelessWidget {
               null => const SizedBox.shrink(),
             },
           ),
-          Tooltip(
-            message: showingBoth
-                ? messages.dailyOsNextTimelineShowPaged
-                : messages.dailyOsNextTimelineShowBoth,
-            child: IconButton(
-              onPressed: onToggleMode,
-              icon: Icon(
-                showingBoth ? LottiIcons.viewCarousel : LottiIcons.viewColumns,
-              ),
-            ),
-          ),
-          if (onToggleArrange != null)
-            Tooltip(
-              message: messages.dailyOsNextTimelineArrange,
-              child: IconButton(
-                key: const Key('daily_os_timeline_arrange_toggle'),
-                isSelected: arrangeMode,
-                onPressed: onToggleArrange,
-                selectedIcon: const Icon(LottiIcons.drag),
-                icon: const Icon(LottiIcons.drag),
-              ),
+          if (showControls)
+            _TimelineControlButtons(
+              showingBoth: showingBoth,
+              arrangeMode: arrangeMode,
+              onToggleMode: onToggleMode,
+              onToggleArrange: onToggleArrange,
             ),
           ?trailing,
         ],
@@ -364,7 +354,7 @@ class _SharedHourRail extends StatelessWidget {
                       width: _nowDotSize,
                       height: _nowDotSize,
                       decoration: BoxDecoration(
-                        color: tokens.colors.alert.error.defaultColor,
+                        color: tokens.colors.interactive.enabled,
                         shape: BoxShape.circle,
                       ),
                     ),
@@ -379,13 +369,15 @@ class _SharedHourRail extends StatelessWidget {
                       vertical: tokens.spacing.step1,
                     ),
                     decoration: BoxDecoration(
-                      color: tokens.colors.background.level01,
-                      borderRadius: BorderRadius.circular(tokens.radii.xs),
+                      color: tokens.colors.interactive.enabled,
+                      borderRadius: BorderRadius.circular(
+                        tokens.radii.badgesPills,
+                      ),
                     ),
                     child: Text(
                       formatTimelineNowLabel(now!),
                       style: tokens.typography.styles.body.bodySmall.copyWith(
-                        color: tokens.colors.alert.error.ink,
+                        color: tokens.colors.text.onInteractiveAlert,
                         fontWeight: tokens.typography.weight.bold,
                       ),
                     ),
@@ -422,7 +414,7 @@ class _GridLines extends StatelessWidget {
               right: 0,
               child: Container(
                 height: 1,
-                color: tokens.colors.text.lowEmphasis.withValues(alpha: 0.10),
+                color: tokens.colors.decorative.level01,
               ),
             ),
         ],

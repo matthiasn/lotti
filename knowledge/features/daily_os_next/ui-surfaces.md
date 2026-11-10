@@ -473,6 +473,32 @@ touching it:
   a plan be emptied) — programmatically, so it is not counted as the swipe
   either.
 
+## The Day timeline's chrome
+
+The timeline's lane-format toggle (paged or side by side) and its arrange
+toggle are not a toolbar row of their own on the Day tab: `DayPage` hands
+`DayTimeline` a `DayTimelineController`
+([day_timeline_controls.dart](../../../lib/features/daily_os_next/ui/widgets/day_timeline_controls.dart))
+and shows `DayTimelineControls` at the end of the briefing strip's sentence, so
+the Day tab carries no chrome the other tabs lack.
+
+- **The timeline attaches, the host shows.** Like a `ScrollController`, the
+  timeline attaches while mounted, reports after each frame whether its lanes
+  are side by side, whether arrange is on and whether it can arrange at all,
+  and forwards the toggles to its own state. The first report after attaching
+  and the detach always reach listeners, after the frame — attach and detach
+  happen mid-build, where listeners must not rebuild. One controller drives
+  one timeline at a time.
+- **The toolbar keeps the rest.** With a controller the toolbar leaves those
+  buttons out and keeps the one-shot coaching line and the host's own
+  `toolbarLeading`/`toolbarTrailing`; with none of those it takes no row.
+  Without a controller — the docked day-view column — the toolbar is
+  unchanged.
+- **Paint.** The now-line and its dot are `interactive.enabled`, and the time
+  rides a teal `badgesPills` pill in `text.onInteractiveAlert`: position, not
+  an alarm. Hour lines are `decorative.level01` hairlines; hour labels stay
+  `text.lowEmphasis`, legible beside the blocks.
+
 ## The Agenda list
 
 The Agenda tab is one `DsRowsCard` of `DayAgendaRow`s
@@ -496,11 +522,13 @@ keyed by item id, not a stack of bordered cards.
 
 ## Task-linked versus standalone
 
-**Task-linked is the marked case; standalone is the unmarked default.** A
-task-linked agenda row ends in a low-emphasis chevron, and the row opens the
-task; a task-linked Day block prefixes an info-blue link icon. Standalone items
-carry **no** marker — there is no `StandaloneTag` in the codebase, and the
-absence of a chevron is what identifies them; their title is click-to-edit.
+**Task-linked is the marked case on the Agenda; standalone is the unmarked
+default.** A task-linked agenda row ends in a low-emphasis chevron, and the row
+opens the task. Standalone items carry **no** marker — there is no
+`StandaloneTag` in the codebase, and the absence of a chevron is what
+identifies them; their title is click-to-edit. On the Day timeline neither kind
+carries a badge: a linked block's title is read-only, a standalone one's is
+click-to-edit.
 
 Both projections resolve task identity through the lightweight
 `liveTaskMetadataProvider`, which subscribes to task and category database

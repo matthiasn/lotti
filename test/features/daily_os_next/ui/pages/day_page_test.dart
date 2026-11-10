@@ -1366,6 +1366,31 @@ void main() {
       });
     }
 
+    for (final view in PlanView.values) {
+      testWidgets('the timeline controls ride the briefing strip only on '
+          '${view.name}', (tester) async {
+        _setSurface(tester);
+        await tester.pumpWidget(_wrap(DayPage(draft: _drafted())));
+        await tester.pump();
+        tester
+            .widget<PlanViewToggle>(find.byType(PlanViewToggle))
+            .onChanged(view);
+        await tester.pump();
+        await tester.pump();
+
+        final inStrip = find.descendant(
+          of: find.byType(DayBriefingStrip),
+          matching: find.byKey(const Key('daily_os_timeline_mode_toggle')),
+        );
+        expect(inStrip, view == PlanView.day ? findsOneWidget : findsNothing);
+        // Never twice: the timeline's own toolbar leaves them to the strip.
+        expect(
+          find.byKey(const Key('daily_os_timeline_mode_toggle')),
+          view == PlanView.day ? findsOneWidget : findsNothing,
+        );
+      });
+    }
+
     testWidgets(
       'day navigation brings the week strip and drops the back chevron',
       (tester) async {
