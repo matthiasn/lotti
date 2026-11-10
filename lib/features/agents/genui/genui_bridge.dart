@@ -81,10 +81,10 @@ class GenUiBridge {
   /// Surfaces created without an id of the model's own, for unique ids.
   int _unnamedSurfaces = 0;
 
-  /// The widget types the controller's catalogs can draw.
-  late final Set<String> _drawableTypes = {
-    for (final catalog in processor.catalogs)
-      for (final item in catalog.items) item.name,
+  /// The widget types the evolution catalog — the one every surface here is
+  /// created with — can draw.
+  static final Set<String> _drawableTypes = {
+    for (final item in buildEvolutionCatalog().items) item.name,
   };
 
   /// Process a `render_surface` tool call.
@@ -95,7 +95,7 @@ class GenUiBridge {
   /// surfaces never collide.
   ///
   /// Throws a [GenUiBridgeException] — nothing is drawn — for a `rootType`
-  /// the catalogs do not have or `data` that is not an object: a surface is
+  /// the evolution catalog does not have or `data` that is not an object: a surface is
   /// never drawn as a type the model did not ask for, or with properties it
   /// did not give.
   String handleToolCall(Map<String, dynamic> args) {

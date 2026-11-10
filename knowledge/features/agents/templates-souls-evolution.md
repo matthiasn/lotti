@@ -283,7 +283,7 @@ The model calls `render_surface(surfaceId, rootType, data)`; `GenUiBridge`
 turns it into A2UI `CreateSurface` and `UpdateComponents` messages for a
 `SurfaceController` of the evolution catalog (`buildEvolutionCatalog`), and
 `EvolutionMessageList` draws each as GenUI's `Surface`. The model never
-writes A2UI JSON in its text. A `rootType` the controller's catalogs do not
+writes A2UI JSON in its text. A `rootType` the evolution catalog does not
 have, or `data` that is not an object, draws nothing: the bridge throws a
 `GenUiBridgeException` and `EvolutionStrategy` answers the call with its
 reason (`Error: surface not drawn — …`), so a surface is never drawn as a
