@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
+import 'package:lotti/features/daily_os_next/logic/day_category_totals.dart';
 import 'package:lotti/features/daily_os_next/ui/category_color.dart';
 import 'package:lotti/features/daily_os_next/ui/time_format.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/agenda_card.dart';
@@ -330,31 +331,12 @@ class _TrackedLegend extends StatelessWidget {
   }
 }
 
-/// Per-category planned minutes (dropped blocks excluded), largest first —
-/// drives both the legend rows and the donut's stacked ring so they can't
-/// disagree.
-List<({DayAgentCategory category, int minutes})> categoryTotalsFor(
-  DraftPlan draft,
-) {
-  final totals = <String, ({DayAgentCategory category, int minutes})>{};
-  for (final block in draft.blocks) {
-    if (block.state == TimeBlockState.dropped) continue;
-    final key = block.category.id;
-    final existing = totals[key];
-    totals[key] = (
-      category: block.category,
-      minutes: (existing?.minutes ?? 0) + block.duration.inMinutes,
-    );
-  }
-  return totals.values.toList()..sort((a, b) => b.minutes.compareTo(a.minutes));
-}
-
 class _CategoryMix extends StatelessWidget {
   const _CategoryMix({required this.entries});
 
   /// Shared with the donut by the stat strip so legend and ring cannot
   /// disagree (and the per-build aggregation runs once, not twice).
-  final List<({DayAgentCategory category, int minutes})> entries;
+  final List<DayCategoryTotal> entries;
 
   @override
   Widget build(BuildContext context) {

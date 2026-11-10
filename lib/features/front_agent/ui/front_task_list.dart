@@ -2,7 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/categories/ui/widgets/category_color_icon.dart';
-import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
+import 'package:lotti/features/design_system/components/cards/ds_rows_card.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/front_agent/model/front_closed_task_card.dart';
@@ -35,7 +35,7 @@ class FrontClosedTaskList extends StatelessWidget {
   final ValueChanged<String> onOpen;
 
   @override
-  Widget build(BuildContext context) => _FrontRowsCard(
+  Widget build(BuildContext context) => DsRowsCard(
     key: FrontTaskListKeys.closedCard,
     rows: [
       for (final task in tasks)
@@ -46,35 +46,6 @@ class FrontClosedTaskList extends StatelessWidget {
         ),
     ],
   );
-}
-
-/// [rows] on one rounded card, a divider between each two.
-class _FrontRowsCard extends StatelessWidget {
-  const _FrontRowsCard({required this.rows, super.key});
-
-  final List<Widget> rows;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    return Container(
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        color: tokens.colors.background.level02,
-        borderRadius: BorderRadius.circular(tokens.radii.l),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          for (var i = 0; i < rows.length; i++) ...[
-            if (i > 0) const DesignSystemDivider(),
-            rows[i],
-          ],
-        ],
-      ),
-    );
-  }
 }
 
 /// One task of a closed-task answer: how it closed — the Done or Rejected

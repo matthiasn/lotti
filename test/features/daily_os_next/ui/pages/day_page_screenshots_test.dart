@@ -38,6 +38,8 @@ import 'package:lotti/features/daily_os_next/ui/pages/day_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/refine_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/shutdown_page.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/agenda_view.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/daily_os_date_strip.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/day_activity_view.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_briefing_companion.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline.dart';
 import 'package:lotti/features/design_system/components/navigation/desktop_navigation_sidebar.dart';
@@ -785,6 +787,9 @@ class _ManualDailyOsAgent extends MockDayAgent {
 
 enum _ManualDailyOsSurface { refine, shutdown }
 
+/// The day page states the redesign is reviewed on.
+enum _RedesignSurface { agenda, agendaNoPlan, day, activity }
+
 Widget _app({
   required Widget home,
   required Brightness brightness,
@@ -820,8 +825,28 @@ Widget _app({
   );
 }
 
-Widget _dayShell(ScreenshotDevice device, {required DraftPlan draft}) {
-  final dayPage = DayPage(draft: draft);
+Widget _dayShell(
+  ScreenshotDevice device, {
+  required DraftPlan draft,
+  bool hasPlan = true,
+  bool rootChrome = false,
+}) {
+  final dayPage = DayPage(
+    draft: draft,
+    hasPlan: hasPlan,
+    // What `DailyOsNextRoot` hands the page in production: the day's own
+    // navigation as the header title.
+    dateStrip: rootChrome
+        ? DailyOsDateStrip(
+            selected: _day,
+            isToday: true,
+            onPrev: () {},
+            onNext: () {},
+            onPick: () {},
+            onToday: () {},
+          )
+        : null,
+  );
   if (!device.isPhone) {
     DesktopSidebarDestination destination(
       String label,
@@ -899,6 +924,8 @@ Future<void> _pumpDayPage(
   List<DayActivityEntry> activityEntries = const [],
   List<TimeBlock>? actualBlocks,
   bool companion = false,
+  bool hasPlan = true,
+  bool rootChrome = false,
 }) async {
   applyScreenshotDevice(tester, device);
   final actuals = actualBlocks ?? _actuals();
@@ -907,7 +934,9 @@ Future<void> _pumpDayPage(
     throw StateError('Manual screenshot documents directory is unavailable.');
   }
   await withClock(Clock.fixed(_now), () async {
-    final draft = showPlannerReview
+    final draft = !hasPlan
+        ? DraftPlan.emptyForDay(_day)
+        : showPlannerReview
         ? _plan()
         : _plan().copyWith(state: DayState.committed);
     await primeManualDemoCoverArt(
@@ -961,7 +990,12 @@ Future<void> _pumpDayPage(
         // DayPage lives inside the app shell in production. Reuse the real
         // design-system mobile bar / desktop sidebar so the captures reflect
         // each breakpoint instead of showing a hollow reserved band.
-        home: _dayShell(device, draft: draft),
+        home: _dayShell(
+          device,
+          draft: draft,
+          hasPlan: hasPlan,
+          rootChrome: rootChrome,
+        ),
       ),
     );
     final container = ProviderScope.containerOf(
@@ -1518,6 +1552,64 @@ void main() {
           );
         },
       );
+    }
+  }
+
+  // The day page redesign's review set (docs/implementation_plans/
+  // 2026-11-10_daily_os_day_page_redesign.md): the page as the root mounts
+  // it, on all three tabs and a day without a plan, at phone and desktop
+  // width in both themes. Re-captured unchanged after every phase so the
+  // before/after pairs frame the same day.
+  for (final deviceCase in [
+    (device: proDevice, viewport: 'mobile'),
+    (device: desktopDevice, viewport: 'desktop'),
+  ]) {
+    for (final brightness in Brightness.values) {
+      for (final surface in _RedesignSurface.values) {
+        final name =
+            'day_redesign_${surface.name}_${deviceCase.viewport}_'
+            '${brightness.name}';
+        testWidgets(name, (tester) async {
+          await _pumpDayPage(
+            tester,
+            device: deviceCase.device,
+            brightness: brightness,
+            rootChrome: true,
+            hasPlan: surface != _RedesignSurface.agendaNoPlan,
+            activityEntries: surface == _RedesignSurface.activity
+                ? _activityEntries()
+                : const [],
+          );
+          switch (surface) {
+            case _RedesignSurface.agenda:
+              await _switchToAgendaView(tester);
+              expect(find.byType(AgendaView), findsOneWidget);
+              expect(
+                find.text(
+                  _t('Zero-gravity fish feeder', 'Schwerelos-Futterautomat'),
+                ),
+                findsWidgets,
+              );
+            case _RedesignSurface.agendaNoPlan:
+              await _switchToAgendaView(tester);
+              expect(
+                find.text(_messages(tester).dailyOsNextAgendaNoPlanTitle),
+                findsOneWidget,
+              );
+            case _RedesignSurface.day:
+              await _switchToDayView(tester);
+              expect(find.byType(DayTimeline), findsOneWidget);
+            case _RedesignSurface.activity:
+              await _switchToActivityView(tester);
+              expect(find.byType(DayActivityView), findsOneWidget);
+              expect(
+                find.text(_messages(tester).dailyOsNextActivityRetry),
+                findsOneWidget,
+              );
+          }
+          await captureScreenshot(tester, name);
+        });
+      }
     }
   }
 
