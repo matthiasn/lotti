@@ -1,7 +1,7 @@
 # Daily OS day page redesign
 
 **Date:** 2026-11-10
-**Status:** Proposed — awaiting the user's review of this plan
+**Status:** Implemented on the stacked branches `feat/daily-os-redesign-0-foundation` … `feat/daily-os-redesign-7-polish` (see "Implementation notes" at the end)
 **Design reference:** the "Combined" direction in the designs page delivered on
 2026-11-09 (`daily_os_designs.html`, scratchpad), which draws on three
 explorations — *Ledger* (header + list card), *Blocks* (timeline) and
@@ -363,3 +363,35 @@ enforces it.
 4. **The ordinal.** Dropped in favour of the time column. An item with no
    linked block has no time; it sorts last with `—`. If the agent commonly
    produces such items, revisit.
+
+## Implementation notes
+
+The open questions were settled with the plan's own defaults: week chevrons at
+the strip's ends on desktop width only (they page a week, the mouse stand-in
+for the fling); the fixture keeps the penguin world's category colours;
+per-category minutes live in the bar's segment tooltips and its semantics
+label; the ordinal is gone and block-less items sort last behind a dash.
+
+Where the code disagreed with the plan, the code won:
+
+- **Quick-refinement chips stay `compactPillTouch`.** `compact` has a bodySmall
+  label, a small radius and no minimum height; `compactPillTouch` already is
+  the caption-sized, outlined pill the plan describes, and keeps the 48 pt
+  target.
+- **The composer is not restyled.** It is the shared `DesignSystemChatInput`
+  (a `radii.l` shell, teal mic); a pill for one page would fork every
+  conversation's input. The strip's hairline was already `decorative.level01`.
+- **Hour labels stay `text.lowEmphasis`.** `decorative.level03` measures about
+  2.3:1 on the dark canvas — too faint for labels people read.
+- **Agenda rows have no "n of m".** `AgendaItem` carries no sub-progress count;
+  rows show the progress bar only.
+- **The capacity bar is `step2` (4 px), the today dot likewise** — the mock's
+  4 px; `step1` is 2 px.
+- **The timeline's controls reach the strip through a `DayTimelineController`**
+  rather than by lifting the timeline's lane state into the page: the lane
+  mode depends on the timeline's own width and pinch gestures.
+- **The briefing block is capped at half the body's height** and scrolls there,
+  so a short phone at large text keeps room for the day.
+- **Light mode keeps the `aiCard` surface** — the captures read as a calm tint,
+  so the `dsCardSurface` fallback was not needed.
+

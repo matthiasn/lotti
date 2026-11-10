@@ -663,6 +663,19 @@ sits under the header on all three tabs and is the page's one violet
   at large text that block scrolls within its half; everywhere else it is
   just its own height.
 
+## Colour discipline
+
+One table governs the page's colour: teal (`interactive.enabled`) only for the
+selected day and tab, the now-line, the in-progress edge, the mic and the one
+primary button; violet (`aiCard`) only for the briefing strip, the agent's
+reasons and the knowledge sparkle; a category's hue only on its dot, its bar
+segment and its block fills, never on text; `alert.success` for the done check;
+`alert.error`/`alert.warning` for over-capacity, overdue and the setup nudge;
+everything else is `text.*` emphasis and `decorative.*` hairlines. Light mode
+keeps the violet `aiCard` surface. `day_page_palette_test.dart` renders every
+tab in both themes and fails on any colour painted outside that table —
+including category hues on text — so a stray link blue cannot creep back.
+
 ## Typography
 
 Daily OS follows the calm system through the design-system helpers:
