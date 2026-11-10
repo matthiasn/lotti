@@ -80,7 +80,6 @@
     "lib/features/daily_os_next/ui/pages/reconcile_page.dart": {"spacing":1},
     "lib/features/daily_os_next/ui/pages/refine_page.dart": {"spacing":2},
     "lib/features/daily_os_next/ui/pages/shutdown_page.dart": {"spacing":1},
-    "lib/features/daily_os_next/ui/widgets/capacity_donut.dart": {"typography":2},
     "lib/features/daily_os_next/ui/widgets/category_chip.dart": {"spacing":1},
     "lib/features/daily_os_next/ui/widgets/day_timeline_block.dart": {"typography":1},
     "lib/features/daily_os_next/ui/widgets/diff_row.dart": {"spacing":2},

@@ -164,6 +164,69 @@ void main() {
     );
   });
 
+  group('composeDayHeadline', () {
+    String headline(
+      DraftPlan plan, {
+      required int nowHour,
+      bool hasPlan = true,
+    }) => composeDayHeadline(
+      _en,
+      DayBriefing.of(
+        draft: plan,
+        hasPlan: hasPlan,
+        now: _day.add(Duration(hours: nowHour)),
+      ),
+      _clock,
+    );
+
+    test('without a plan, is the invitation to check in', () {
+      expect(
+        headline(DraftPlan.emptyForDay(_day), hasPlan: false, nowHour: 8),
+        "There's no plan for this day yet. A short check-in will make one.",
+      );
+    });
+
+    test('counts the blocks and names what is next', () {
+      expect(
+        headline(
+          _plan([_block('Review', 9, 60), _block('Write', 13, 90)]),
+          nowHour: 10,
+        ),
+        'You have 2 blocks planned. Next up at 13:00: Write.',
+      );
+    });
+
+    test('says when nothing is left today', () {
+      expect(
+        headline(_plan([_block('Review', 9, 60)]), nowHour: 20),
+        'You have one block planned. Nothing else is planned for today.',
+      );
+    });
+
+    test('a past day only counts', () {
+      expect(
+        composeDayHeadline(
+          _en,
+          DayBriefing.of(
+            draft: _plan([_block('Review', 9, 60)]),
+            hasPlan: true,
+            now: _day.add(const Duration(days: 2)),
+          ),
+          _clock,
+        ),
+        'You have one block planned.',
+      );
+    });
+
+    test('is how the spoken briefing begins', () {
+      final plan = _plan([_block('Review', 9, 60), _block('Write', 13, 90)]);
+      expect(
+        _compose(plan, nowHour: 10),
+        startsWith(headline(plan, nowHour: 10)),
+      );
+    });
+  });
+
   group('DayBriefingCompanion', () {
     late FakeTtsEngine engine;
     late FakeTtsAudioPlayer player;

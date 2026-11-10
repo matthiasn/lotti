@@ -4857,46 +4857,13 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dailyOsNextActivityWaitingForNetwork => 'Čekám na připojení';
 
   @override
-  String get dailyOsNextAgendaCapacityComfortable => 'Pohodové';
-
-  @override
-  String get dailyOsNextAgendaCapacityNearFull => 'Téměř plné';
-
-  @override
-  String get dailyOsNextAgendaCapacityNoPlan => 'Zatím žádný plán';
-
-  @override
   String dailyOsNextAgendaCapacityOf(String capacity) {
     return 'z $capacity';
   }
 
   @override
-  String get dailyOsNextAgendaCapacityOver => 'Přeplněno';
-
-  @override
-  String get dailyOsNextAgendaDonutLeft => 'volno';
-
-  @override
-  String get dailyOsNextAgendaDonutOver => 'navíc';
-
-  @override
-  String dailyOsNextAgendaHeadlineLeft(String duration) {
-    return '$duration zbývá';
-  }
-
-  @override
-  String dailyOsNextAgendaHeadlineOver(String duration) {
-    return '$duration navíc';
-  }
-
-  @override
   String get dailyOsNextAgendaNoPlanBody =>
       'Tvůj zaznamenaný čas tu je tak jako tak — namluv check-in a já kolem něj navrhnu den.';
-
-  @override
-  String dailyOsNextAgendaNoPlanSummary(String duration) {
-    return '$duration zatím zaznamenáno. Namluv check-in a já kolem toho navrhnu den.';
-  }
 
   @override
   String get dailyOsNextAgendaNoPlanTitle => 'Na dnešek zatím žádný plán.';
@@ -4912,16 +4879,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get dailyOsNextAgendaStateOverdue => 'Po termínu';
-
-  @override
-  String dailyOsNextAgendaSummary(String scheduled, String capacity) {
-    return '$scheduled z $capacity naplánováno';
-  }
-
-  @override
-  String dailyOsNextAgendaTrackedLegend(String duration, int completedCount) {
-    return 'Zaznamenáno · $duration · $completedCount hotovo';
-  }
 
   @override
   String get dailyOsNextBlockCreateTask => 'Vytvořit úkol';
@@ -5005,8 +4962,23 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String dailyOsNextBriefingCapacityLabel(String breakdown) {
+    return 'Plánovaný čas podle kategorie: $breakdown';
+  }
+
+  @override
+  String dailyOsNextBriefingDoneCaption(int count) {
+    return '$count hotovo';
+  }
+
+  @override
   String dailyOsNextBriefingFree(String duration) {
     return 'Ve tvém dni zbývá ještě $duration volného času.';
+  }
+
+  @override
+  String dailyOsNextBriefingFreeCaption(String duration) {
+    return '$duration volno';
   }
 
   @override
@@ -5060,10 +5032,25 @@ class AppLocalizationsCs extends AppLocalizations {
       'Na dnešek už nemáš nic naplánováno.';
 
   @override
+  String dailyOsNextBriefingOverCaption(String duration) {
+    return '$duration navíc';
+  }
+
+  @override
+  String dailyOsNextBriefingPlannedCaption(String duration) {
+    return '$duration naplánováno';
+  }
+
+  @override
   String get dailyOsNextBriefingPlayTooltip => 'Poslechni si svůj den';
 
   @override
   String get dailyOsNextBriefingStopTooltip => 'Zastavit přehled';
+
+  @override
+  String dailyOsNextBriefingTrackedCaption(String duration) {
+    return '$duration zaznamenáno';
+  }
 
   @override
   String get dailyOsNextCaptureCaptured => 'Rozumím.';

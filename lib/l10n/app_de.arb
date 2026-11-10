@@ -2013,9 +2013,6 @@
   "dailyOsNextActivityUseToPlan": "Für den Tagesplan verwenden",
   "dailyOsNextActivityUseToRefine": "Zum Anpassen verwenden",
   "dailyOsNextActivityWaitingForNetwork": "Warte auf Verbindung",
-  "dailyOsNextAgendaCapacityComfortable": "Entspannt",
-  "dailyOsNextAgendaCapacityNearFull": "Fast voll",
-  "dailyOsNextAgendaCapacityNoPlan": "Noch kein Plan",
   "dailyOsNextAgendaCapacityOf": "von {capacity}",
   "@dailyOsNextAgendaCapacityOf": {
     "placeholders": {
@@ -2025,48 +2022,12 @@
       }
     }
   },
-  "dailyOsNextAgendaCapacityOver": "Überlastet",
-  "dailyOsNextAgendaDonutLeft": "frei",
-  "dailyOsNextAgendaDonutOver": "drüber",
-  "dailyOsNextAgendaHeadlineLeft": "{duration} übrig",
-  "@dailyOsNextAgendaHeadlineLeft": {
-    "placeholders": {
-      "duration": {
-        "type": "String",
-        "example": "15m"
-      }
-    }
-  },
-  "dailyOsNextAgendaHeadlineOver": "{duration} drüber",
-  "@dailyOsNextAgendaHeadlineOver": {
-    "placeholders": {
-      "duration": {
-        "type": "String",
-        "example": "1h"
-      }
-    }
-  },
   "dailyOsNextAgendaNoPlanBody": "Deine erfasste Zeit ist trotzdem hier — sprich ein Check-in ein und ich entwerfe einen Tag darum.",
-  "dailyOsNextAgendaNoPlanSummary": "Bisher {duration} erfasst. Sprich ein Check-in ein und ich entwerfe einen Tag darum.",
   "dailyOsNextAgendaNoPlanTitle": "Noch kein Plan für heute.",
   "dailyOsNextAgendaStateDone": "Erledigt",
   "dailyOsNextAgendaStateInProgress": "In Arbeit",
   "dailyOsNextAgendaStateOpen": "Offen",
   "dailyOsNextAgendaStateOverdue": "Überfällig",
-  "dailyOsNextAgendaSummary": "{scheduled} von {capacity} verplant",
-  "@dailyOsNextAgendaSummary": {
-    "placeholders": {
-      "scheduled": {
-        "type": "String",
-        "example": "5h 15m"
-      },
-      "capacity": {
-        "type": "String",
-        "example": "8h"
-      }
-    }
-  },
-  "dailyOsNextAgendaTrackedLegend": "Erfasst · {duration} · {completedCount} erledigt",
   "dailyOsNextBlockCreateTask": "Aufgabe erstellen",
   "dailyOsNextBlockEditCategoryLabel": "Kategorie",
   "dailyOsNextBlockEditFailed": "Der Block konnte nicht aktualisiert werden — versuch es nochmal.",
@@ -2097,11 +2058,41 @@
       }
     }
   },
+  "dailyOsNextBriefingCapacityLabel": "Geplante Zeit nach Kategorie: {breakdown}",
+  "@dailyOsNextBriefingCapacityLabel": {
+    "description": "Screen-reader label of the day's capacity bar: each category and its planned time.",
+    "placeholders": {
+      "breakdown": {
+        "type": "String",
+        "example": "Deep work 3h 30m, Admin 45m"
+      }
+    }
+  },
+  "dailyOsNextBriefingDoneCaption": "{count} erledigt",
+  "@dailyOsNextBriefingDoneCaption": {
+    "description": "Caption under the bar on a day without a plan: recorded sessions that are done.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "2"
+      }
+    }
+  },
   "dailyOsNextBriefingFree": "Du hast noch {duration} frei.",
   "@dailyOsNextBriefingFree": {
     "placeholders": {
       "duration": {
         "type": "String"
+      }
+    }
+  },
+  "dailyOsNextBriefingFreeCaption": "{duration} frei",
+  "@dailyOsNextBriefingFreeCaption": {
+    "description": "Caption under the day's capacity bar: capacity the plan leaves free.",
+    "placeholders": {
+      "duration": {
+        "type": "String",
+        "example": "2h 40m"
       }
     }
   },
@@ -2157,8 +2148,38 @@
   },
   "dailyOsNextBriefingNoPlan": "Für diesen Tag gibt es noch keinen Plan. Ein kurzes Check-in erstellt einen.",
   "dailyOsNextBriefingNothingLeft": "Für heute ist nichts mehr geplant.",
+  "dailyOsNextBriefingOverCaption": "{duration} zu viel",
+  "@dailyOsNextBriefingOverCaption": {
+    "description": "Caption under the day's capacity bar when the plan books more than the day holds.",
+    "placeholders": {
+      "duration": {
+        "type": "String",
+        "example": "45m"
+      }
+    }
+  },
+  "dailyOsNextBriefingPlannedCaption": "{duration} geplant",
+  "@dailyOsNextBriefingPlannedCaption": {
+    "description": "Caption under the day's capacity bar: how much the plan books.",
+    "placeholders": {
+      "duration": {
+        "type": "String",
+        "example": "5h 20m"
+      }
+    }
+  },
   "dailyOsNextBriefingPlayTooltip": "Deinen Tag anhören",
   "dailyOsNextBriefingStopTooltip": "Briefing stoppen",
+  "dailyOsNextBriefingTrackedCaption": "{duration} erfasst",
+  "@dailyOsNextBriefingTrackedCaption": {
+    "description": "Caption under the bar on a day without a plan: time recorded so far.",
+    "placeholders": {
+      "duration": {
+        "type": "String",
+        "example": "3h 10m"
+      }
+    }
+  },
   "dailyOsNextCaptureCaptured": "Hab's.",
   "dailyOsNextCaptureDoneCta": "Fertig",
   "dailyOsNextCaptureErrorAudioPersistFailed": "Deine Aufnahme konnte nicht gespeichert werden.",

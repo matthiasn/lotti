@@ -1,7 +1,7 @@
 ---
 type: Feature Module
 title: Daily OS UI surfaces
-description: The Day page — its masthead and week strip — the anchored voice template, timeline editing, the capacity ring, and the onboarding walkthrough substrate.
+description: The Day page — its masthead and week strip — the anchored voice template, timeline editing, the briefing strip, and the onboarding walkthrough substrate.
 resource: ../../../lib/features/daily_os_next/ui
 tags: [daily-os, ui, voice, timeline, onboarding]
 status: stable
@@ -238,9 +238,15 @@ header lays out exactly as before.
   sentences: how many blocks are planned, the next block and its start, the
   longest block, and the time still free. Without a plan she only invites a
   check-in. There is no model call.
-- **What counts.** Buffers and dropped blocks are not planned work. Free time
-  is `capacityMinutes − scheduledMinutes`, the same numbers the capacity ring
-  reads. "Nothing else is planned" is said only on today.
+- **What counts.** Buffers and dropped blocks are not planned work. Spoken
+  free time is `capacityMinutes − scheduledMinutes`, the plan's *stored*
+  total — not the block-derived minutes the briefing strip's captions show
+  (`categoryTotalsFor`), so the two can differ when the stored total has
+  drifted from the blocks. "Nothing else is planned" is said only on today.
+- **Her tap is shared.** `DayBriefingVoice.watch` owns when she can speak and
+  what a tap does (stop her, or brief the day), so the briefing strip offers
+  the same tap. Only the companion registers the playback-failure toast; the
+  strip is tappable only while she is shown, so a failure is reported once.
 - **One utterance per day.** The `sourceId` is `day-briefing:<yyyy-MM-dd>`,
   so stepping to another day never animates her for the last day's words. A
   tap while the voice is preparing or playing her utterance stops it. The
@@ -557,20 +563,39 @@ Both the modal and the drag path persist through the **same atomic `editBlock`
 contract**. A failed or cancelled gesture rolls back; a successful edit refreshes
 the plan and shows a countdown Undo toast.
 
-## The capacity ring
+## The briefing strip
 
-The Agenda stat strip draws `CapacityDonut` at 86 px: a 5 px stacked **category
-ring** whose slices mirror the legend dots — via `categoryTotalsFor` — over a
-faint remainder track, with the **remaining** capacity in the centre over a
-"left"/"over" eyebrow whose word is always honest. Days without a capacity show
-the scheduled total with no eyebrow. Callers without segments get a single teal
-arc.
+`DayBriefingStrip`
+([day_briefing_strip.dart](../../../lib/features/daily_os_next/ui/widgets/day_briefing_strip.dart))
+sits under the header on all three tabs and is the page's one violet
+(`aiCard`) surface.
 
-Pressure wording lives in the stat card's line beside the ring: *Comfortable*
-under 90 % of capacity, *Near full* up to 100 %, *Over capacity* beyond. The
-ring **only changes colour when the day is genuinely over capacity** (error
-tone, half-alpha over-arc). The honest no-plan strip passes `neutral: true`,
-which keeps the calm colour but never flips "over" into "left".
+- **One sentence, shared with her voice.** `composeDayHeadline` — the block
+  count and what is next, or that nothing is left today — is how the spoken
+  `composeDayBriefing` begins, so the strip and the companion never disagree.
+  The strip sets a timer for the next block's start and rewrites itself then,
+  so it never names a block already under way. Without a plan the sentence is
+  her invitation to check in.
+- **One line for the day's load.** `DayCapacityBar`
+  ([day_capacity_bar.dart](../../../lib/features/daily_os_next/ui/widgets/day_capacity_bar.dart))
+  is a `step2`-tall line: one segment per `categoryTotalsFor` entry in
+  category colour, each its share of the capacity, over a `decorative.level01`
+  track that stands for what is free. Segments adding up to more than the
+  capacity fill the bar scaled to their own total, so the bar never claims
+  room the day does not have; with no capacity they fill it as a mix. Each
+  segment's tooltip names its category and minutes, and the bar is one
+  semantics node listing all of them — where the old legend's numbers went.
+- **Two captions, honest about over.** The minutes planned (block-derived,
+  the same figures the bar draws) and either what is free or, in
+  `alert.error` ink, *N over*. A day without a capacity names only what is
+  planned. Without a plan the bar is the tracked time in
+  `interactive.enabled` and the captions are *N tracked* and *N done*.
+- **A tap is her tap.** While the companion can speak, tapping the strip does
+  what tapping her does; otherwise it is inert.
+- **It never crowds out the day.** The strip and the nudges under it share a
+  block capped at half the room between header and footer. On a short screen
+  at large text that block scrolls within its half; everywhere else it is
+  just its own height.
 
 ## Typography
 

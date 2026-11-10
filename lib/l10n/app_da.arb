@@ -2251,9 +2251,6 @@
   "dailyOsNextActivityUseToPlan": "Brug til at lave planen",
   "dailyOsNextActivityUseToRefine": "Brug til at forfine",
   "dailyOsNextActivityWaitingForNetwork": "Venter på forbindelse",
-  "dailyOsNextAgendaCapacityComfortable": "Behageligt",
-  "dailyOsNextAgendaCapacityNearFull": "Næsten fuld",
-  "dailyOsNextAgendaCapacityNoPlan": "Ingen plan endnu",
   "dailyOsNextAgendaCapacityOf": "af {capacity}",
   "@dailyOsNextAgendaCapacityOf": {
     "placeholders": {
@@ -2263,68 +2260,12 @@
       }
     }
   },
-  "dailyOsNextAgendaCapacityOver": "Overkapacitet",
-  "dailyOsNextAgendaDonutLeft": "Venstre",
-  "dailyOsNextAgendaDonutOver": "Over",
-  "dailyOsNextAgendaHeadlineLeft": "{duration} forlod",
-  "@dailyOsNextAgendaHeadlineLeft": {
-    "placeholders": {
-      "duration": {
-        "type": "String",
-        "example": "15m"
-      }
-    }
-  },
-  "dailyOsNextAgendaHeadlineOver": "{duration} over",
-  "@dailyOsNextAgendaHeadlineOver": {
-    "placeholders": {
-      "duration": {
-        "type": "String",
-        "example": "1h"
-      }
-    }
-  },
   "dailyOsNextAgendaNoPlanBody": "Din registrerede tid er her uanset hvad — tal med et check-in, og jeg udarbejder en dag omkring det.",
-  "dailyOsNextAgendaNoPlanSummary": "{duration} har indtil videre fulgt med på det. Tal et check-in, og jeg laver en dag omkring det.",
-  "@dailyOsNextAgendaNoPlanSummary": {
-    "placeholders": {
-      "duration": {
-        "type": "String",
-        "example": "4h 35m"
-      }
-    }
-  },
   "dailyOsNextAgendaNoPlanTitle": "Ingen plan endnu for i dag.",
   "dailyOsNextAgendaStateDone": "Færdig",
   "dailyOsNextAgendaStateInProgress": "Under udvikling",
   "dailyOsNextAgendaStateOpen": "Åben",
   "dailyOsNextAgendaStateOverdue": "Forsinket",
-  "dailyOsNextAgendaSummary": "{scheduled} af {capacity} begået",
-  "@dailyOsNextAgendaSummary": {
-    "placeholders": {
-      "scheduled": {
-        "type": "String",
-        "example": "5h 15m"
-      },
-      "capacity": {
-        "type": "String",
-        "example": "8h"
-      }
-    }
-  },
-  "dailyOsNextAgendaTrackedLegend": "Sporet · {duration} · {completedCount} færdig",
-  "@dailyOsNextAgendaTrackedLegend": {
-    "placeholders": {
-      "duration": {
-        "type": "String",
-        "example": "4h 35m"
-      },
-      "completedCount": {
-        "type": "int",
-        "example": "3"
-      }
-    }
-  },
   "dailyOsNextBlockCreateTask": "Opret en opgave",
   "dailyOsNextBlockEditCategoryLabel": "Kategori",
   "dailyOsNextBlockEditFailed": "Kunne ikke opdatere blokeringen — prøv igen.",
@@ -2355,11 +2296,41 @@
       }
     }
   },
+  "dailyOsNextBriefingCapacityLabel": "Planlagt tid efter kategori: {breakdown}",
+  "@dailyOsNextBriefingCapacityLabel": {
+    "description": "Screen-reader label of the day's capacity bar: each category and its planned time.",
+    "placeholders": {
+      "breakdown": {
+        "type": "String",
+        "example": "Deep work 3h 30m, Admin 45m"
+      }
+    }
+  },
+  "dailyOsNextBriefingDoneCaption": "{count} færdige",
+  "@dailyOsNextBriefingDoneCaption": {
+    "description": "Caption under the bar on a day without a plan: recorded sessions that are done.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "2"
+      }
+    }
+  },
   "dailyOsNextBriefingFree": "Du har stadig {duration} fri i din dag.",
   "@dailyOsNextBriefingFree": {
     "placeholders": {
       "duration": {
         "type": "String"
+      }
+    }
+  },
+  "dailyOsNextBriefingFreeCaption": "{duration} fri",
+  "@dailyOsNextBriefingFreeCaption": {
+    "description": "Caption under the day's capacity bar: capacity the plan leaves free.",
+    "placeholders": {
+      "duration": {
+        "type": "String",
+        "example": "2h 40m"
       }
     }
   },
@@ -2415,8 +2386,38 @@
   },
   "dailyOsNextBriefingNoPlan": "Der er ingen plan for denne dag endnu. Et kort check-in laver en.",
   "dailyOsNextBriefingNothingLeft": "Der er ikke mere planlagt i dag.",
+  "dailyOsNextBriefingOverCaption": "{duration} for meget",
+  "@dailyOsNextBriefingOverCaption": {
+    "description": "Caption under the day's capacity bar when the plan books more than the day holds.",
+    "placeholders": {
+      "duration": {
+        "type": "String",
+        "example": "45m"
+      }
+    }
+  },
+  "dailyOsNextBriefingPlannedCaption": "{duration} planlagt",
+  "@dailyOsNextBriefingPlannedCaption": {
+    "description": "Caption under the day's capacity bar: how much the plan books.",
+    "placeholders": {
+      "duration": {
+        "type": "String",
+        "example": "5h 20m"
+      }
+    }
+  },
   "dailyOsNextBriefingPlayTooltip": "Hør din dag",
   "dailyOsNextBriefingStopTooltip": "Stop briefingen",
+  "dailyOsNextBriefingTrackedCaption": "{duration} registreret",
+  "@dailyOsNextBriefingTrackedCaption": {
+    "description": "Caption under the bar on a day without a plan: time recorded so far.",
+    "placeholders": {
+      "duration": {
+        "type": "String",
+        "example": "3h 10m"
+      }
+    }
+  },
   "dailyOsNextCaptureCaptured": "Forstået.",
   "dailyOsNextCaptureDoneCta": "Færdig",
   "dailyOsNextCaptureErrorAudioPersistFailed": "Optagelsen kunne ikke gemmes.",

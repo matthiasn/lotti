@@ -2250,9 +2250,6 @@
   "dailyOsNextActivityUseToPlan": "Gebruiken om het plan te maken",
   "dailyOsNextActivityUseToRefine": "Gebruiken om te verfijnen",
   "dailyOsNextActivityWaitingForNetwork": "Wachten op verbinding",
-  "dailyOsNextAgendaCapacityComfortable": "Comfortabel",
-  "dailyOsNextAgendaCapacityNearFull": "Bijna vol",
-  "dailyOsNextAgendaCapacityNoPlan": "Nog geen plan",
   "dailyOsNextAgendaCapacityOf": "van {capacity}",
   "@dailyOsNextAgendaCapacityOf": {
     "placeholders": {
@@ -2262,68 +2259,12 @@
       }
     }
   },
-  "dailyOsNextAgendaCapacityOver": "Overcapaciteit",
-  "dailyOsNextAgendaDonutLeft": "links",
-  "dailyOsNextAgendaDonutOver": "over",
-  "dailyOsNextAgendaHeadlineLeft": "{duration} links",
-  "@dailyOsNextAgendaHeadlineLeft": {
-    "placeholders": {
-      "duration": {
-        "type": "String",
-        "example": "15m"
-      }
-    }
-  },
-  "dailyOsNextAgendaHeadlineOver": "{duration} over",
-  "@dailyOsNextAgendaHeadlineOver": {
-    "placeholders": {
-      "duration": {
-        "type": "String",
-        "example": "1h"
-      }
-    }
-  },
   "dailyOsNextAgendaNoPlanBody": "Je getraceerde tijd is hier, hoe dan ook. Spreek een check-in en ik zal er een dag omheen opstellen.",
-  "dailyOsNextAgendaNoPlanSummary": "{duration} Spreek een check-in en ik zal er een dag omheen tekenen.",
-  "@dailyOsNextAgendaNoPlanSummary": {
-    "placeholders": {
-      "duration": {
-        "type": "String",
-        "example": "4h 35m"
-      }
-    }
-  },
   "dailyOsNextAgendaNoPlanTitle": "Nog geen plan voor vandaag.",
   "dailyOsNextAgendaStateDone": "Klaar",
   "dailyOsNextAgendaStateInProgress": "In behandeling",
   "dailyOsNextAgendaStateOpen": "Openen",
   "dailyOsNextAgendaStateOverdue": "Te laat",
-  "dailyOsNextAgendaSummary": "{scheduled} van {capacity} vastgelegd",
-  "@dailyOsNextAgendaSummary": {
-    "placeholders": {
-      "scheduled": {
-        "type": "String",
-        "example": "5h 15m"
-      },
-      "capacity": {
-        "type": "String",
-        "example": "8h"
-      }
-    }
-  },
-  "dailyOsNextAgendaTrackedLegend": "Getraceerd · {duration} · {completedCount} klaar",
-  "@dailyOsNextAgendaTrackedLegend": {
-    "placeholders": {
-      "duration": {
-        "type": "String",
-        "example": "4h 35m"
-      },
-      "completedCount": {
-        "type": "int",
-        "example": "3"
-      }
-    }
-  },
   "dailyOsNextBlockCreateTask": "Taak maken",
   "dailyOsNextBlockEditCategoryLabel": "Categorie",
   "dailyOsNextBlockEditFailed": "Kon het blok niet bijwerken . Probeer het opnieuw.",
@@ -2354,11 +2295,41 @@
       }
     }
   },
+  "dailyOsNextBriefingCapacityLabel": "Geplande tijd per categorie: {breakdown}",
+  "@dailyOsNextBriefingCapacityLabel": {
+    "description": "Screen-reader label of the day's capacity bar: each category and its planned time.",
+    "placeholders": {
+      "breakdown": {
+        "type": "String",
+        "example": "Deep work 3h 30m, Admin 45m"
+      }
+    }
+  },
+  "dailyOsNextBriefingDoneCaption": "{count} klaar",
+  "@dailyOsNextBriefingDoneCaption": {
+    "description": "Caption under the bar on a day without a plan: recorded sessions that are done.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "2"
+      }
+    }
+  },
   "dailyOsNextBriefingFree": "Er is nog {duration} van je dag vrij.",
   "@dailyOsNextBriefingFree": {
     "placeholders": {
       "duration": {
         "type": "String"
+      }
+    }
+  },
+  "dailyOsNextBriefingFreeCaption": "{duration} vrij",
+  "@dailyOsNextBriefingFreeCaption": {
+    "description": "Caption under the day's capacity bar: capacity the plan leaves free.",
+    "placeholders": {
+      "duration": {
+        "type": "String",
+        "example": "2h 40m"
       }
     }
   },
@@ -2414,8 +2385,38 @@
   },
   "dailyOsNextBriefingNoPlan": "Er is nog geen plan voor deze dag. Een korte check-in maakt er een.",
   "dailyOsNextBriefingNothingLeft": "Voor vandaag staat er niets meer gepland.",
+  "dailyOsNextBriefingOverCaption": "{duration} te veel",
+  "@dailyOsNextBriefingOverCaption": {
+    "description": "Caption under the day's capacity bar when the plan books more than the day holds.",
+    "placeholders": {
+      "duration": {
+        "type": "String",
+        "example": "45m"
+      }
+    }
+  },
+  "dailyOsNextBriefingPlannedCaption": "{duration} gepland",
+  "@dailyOsNextBriefingPlannedCaption": {
+    "description": "Caption under the day's capacity bar: how much the plan books.",
+    "placeholders": {
+      "duration": {
+        "type": "String",
+        "example": "5h 20m"
+      }
+    }
+  },
   "dailyOsNextBriefingPlayTooltip": "Luister naar je dag",
   "dailyOsNextBriefingStopTooltip": "Stop de briefing",
+  "dailyOsNextBriefingTrackedCaption": "{duration} bijgehouden",
+  "@dailyOsNextBriefingTrackedCaption": {
+    "description": "Caption under the bar on a day without a plan: time recorded so far.",
+    "placeholders": {
+      "duration": {
+        "type": "String",
+        "example": "3h 10m"
+      }
+    }
+  },
   "dailyOsNextCaptureCaptured": "Begrepen.",
   "dailyOsNextCaptureDoneCta": "Klaar",
   "dailyOsNextCaptureErrorAudioPersistFailed": "De opname kon niet worden opgeslagen.",

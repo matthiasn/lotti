@@ -2013,9 +2013,6 @@
   "dailyOsNextActivityUseToPlan": "Folosiți pentru a crea planul",
   "dailyOsNextActivityUseToRefine": "Folosiți pentru ajustare",
   "dailyOsNextActivityWaitingForNetwork": "Se așteaptă conexiunea",
-  "dailyOsNextAgendaCapacityComfortable": "Confortabil",
-  "dailyOsNextAgendaCapacityNearFull": "Aproape plin",
-  "dailyOsNextAgendaCapacityNoPlan": "Încă fără plan",
   "dailyOsNextAgendaCapacityOf": "din {capacity}",
   "@dailyOsNextAgendaCapacityOf": {
     "placeholders": {
@@ -2025,48 +2022,12 @@
       }
     }
   },
-  "dailyOsNextAgendaCapacityOver": "Peste capacitate",
-  "dailyOsNextAgendaDonutLeft": "liber",
-  "dailyOsNextAgendaDonutOver": "în plus",
-  "dailyOsNextAgendaHeadlineLeft": "{duration} rămase",
-  "@dailyOsNextAgendaHeadlineLeft": {
-    "placeholders": {
-      "duration": {
-        "type": "String",
-        "example": "15m"
-      }
-    }
-  },
-  "dailyOsNextAgendaHeadlineOver": "{duration} peste",
-  "@dailyOsNextAgendaHeadlineOver": {
-    "placeholders": {
-      "duration": {
-        "type": "String",
-        "example": "1h"
-      }
-    }
-  },
   "dailyOsNextAgendaNoPlanBody": "Timpul dvs. înregistrat este oricum aici — rostiți un check-in și voi schița o zi în jurul lui.",
-  "dailyOsNextAgendaNoPlanSummary": "{duration} înregistrat până acum. Rostiți un check-in și voi schița o zi în jurul lui.",
   "dailyOsNextAgendaNoPlanTitle": "Încă nu există un plan pentru azi.",
   "dailyOsNextAgendaStateDone": "Finalizat",
   "dailyOsNextAgendaStateInProgress": "În progres",
   "dailyOsNextAgendaStateOpen": "Deschis",
   "dailyOsNextAgendaStateOverdue": "Întârziat",
-  "dailyOsNextAgendaSummary": "{scheduled} din {capacity} angajate",
-  "@dailyOsNextAgendaSummary": {
-    "placeholders": {
-      "scheduled": {
-        "type": "String",
-        "example": "5h 15m"
-      },
-      "capacity": {
-        "type": "String",
-        "example": "8h"
-      }
-    }
-  },
-  "dailyOsNextAgendaTrackedLegend": "Înregistrat · {duration} · {completedCount, plural, =1{1 finalizată} few{{completedCount} finalizate} other{{completedCount} de finalizate}}",
   "dailyOsNextBlockCreateTask": "Creați o sarcină",
   "dailyOsNextBlockEditCategoryLabel": "Categorie",
   "dailyOsNextBlockEditFailed": "Blocul nu a putut fi actualizat — încercați din nou.",
@@ -2097,11 +2058,41 @@
       }
     }
   },
+  "dailyOsNextBriefingCapacityLabel": "Timp planificat pe categorii: {breakdown}",
+  "@dailyOsNextBriefingCapacityLabel": {
+    "description": "Screen-reader label of the day's capacity bar: each category and its planned time.",
+    "placeholders": {
+      "breakdown": {
+        "type": "String",
+        "example": "Deep work 3h 30m, Admin 45m"
+      }
+    }
+  },
+  "dailyOsNextBriefingDoneCaption": "{count} finalizate",
+  "@dailyOsNextBriefingDoneCaption": {
+    "description": "Caption under the bar on a day without a plan: recorded sessions that are done.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "2"
+      }
+    }
+  },
   "dailyOsNextBriefingFree": "Mai aveți {duration} la dispoziție.",
   "@dailyOsNextBriefingFree": {
     "placeholders": {
       "duration": {
         "type": "String"
+      }
+    }
+  },
+  "dailyOsNextBriefingFreeCaption": "{duration} liber",
+  "@dailyOsNextBriefingFreeCaption": {
+    "description": "Caption under the day's capacity bar: capacity the plan leaves free.",
+    "placeholders": {
+      "duration": {
+        "type": "String",
+        "example": "2h 40m"
       }
     }
   },
@@ -2157,8 +2148,38 @@
   },
   "dailyOsNextBriefingNoPlan": "Încă nu există un plan pentru această zi. Un scurt check-in va crea unul.",
   "dailyOsNextBriefingNothingLeft": "Pentru astăzi nu mai este nimic planificat.",
+  "dailyOsNextBriefingOverCaption": "{duration} peste",
+  "@dailyOsNextBriefingOverCaption": {
+    "description": "Caption under the day's capacity bar when the plan books more than the day holds.",
+    "placeholders": {
+      "duration": {
+        "type": "String",
+        "example": "45m"
+      }
+    }
+  },
+  "dailyOsNextBriefingPlannedCaption": "{duration} planificat",
+  "@dailyOsNextBriefingPlannedCaption": {
+    "description": "Caption under the day's capacity bar: how much the plan books.",
+    "placeholders": {
+      "duration": {
+        "type": "String",
+        "example": "5h 20m"
+      }
+    }
+  },
   "dailyOsNextBriefingPlayTooltip": "Ascultați ziua dvs.",
   "dailyOsNextBriefingStopTooltip": "Opriți rezumatul",
+  "dailyOsNextBriefingTrackedCaption": "{duration} înregistrat",
+  "@dailyOsNextBriefingTrackedCaption": {
+    "description": "Caption under the bar on a day without a plan: time recorded so far.",
+    "placeholders": {
+      "duration": {
+        "type": "String",
+        "example": "3h 10m"
+      }
+    }
+  },
   "dailyOsNextCaptureCaptured": "Am înțeles.",
   "dailyOsNextCaptureDoneCta": "Gata",
   "dailyOsNextCaptureErrorAudioPersistFailed": "Înregistrarea dvs. nu a putut fi salvată.",

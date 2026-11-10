@@ -18,6 +18,7 @@ import 'package:lotti/features/daily_os_next/ui/pages/refine_page.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/agenda_view.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_activity_view.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_block_task_picker.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/day_briefing_strip.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_composer.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_week_strip.dart';
@@ -1335,6 +1336,28 @@ void main() {
       },
     );
 
+    for (final view in PlanView.values) {
+      testWidgets('the briefing strip sits under the header on '
+          '${view.name}', (tester) async {
+        _setSurface(tester);
+        await tester.pumpWidget(_wrap(DayPage(draft: _drafted())));
+        await tester.pump();
+        tester
+            .widget<PlanViewToggle>(find.byType(PlanViewToggle))
+            .onChanged(view);
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.byType(DayBriefingStrip), findsOneWidget);
+        expect(
+          tester.getTopLeft(find.byType(DayBriefingStrip)).dy,
+          greaterThanOrEqualTo(
+            tester.getBottomLeft(find.byType(PlanViewToggle)).dy,
+          ),
+        );
+      });
+    }
+
     testWidgets(
       'day navigation brings the week strip and drops the back chevron',
       (tester) async {
@@ -1513,6 +1536,35 @@ void main() {
         expect(tester.takeException(), isNull);
       });
     }
+
+    testWidgets(
+      'on a short screen at large text the briefing scrolls within half the '
+      'room, and the day keeps the rest',
+      (tester) async {
+        const size = Size(320, 568);
+        setTestSurfaceSize(tester, size);
+        await tester.pumpWidget(
+          _wrap(
+            DayPage(draft: _draftedWithReasons()),
+            mediaQueryData: phoneMediaQueryData.copyWith(
+              size: size,
+              textScaler: const TextScaler.linear(2),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        final summary = find.ancestor(
+          of: find.byType(DayBriefingStrip),
+          matching: find.byType(SingleChildScrollView),
+        );
+        final body = tester.getRect(find.byType(DayTimeline));
+        final summaryRect = tester.getRect(summary);
+        expect(body.height, greaterThanOrEqualTo(summaryRect.height));
+        expect(body.top, greaterThanOrEqualTo(summaryRect.bottom));
+        expect(tester.takeException(), isNull);
+      },
+    );
 
     testWidgets('syncs displayed agenda when the draft prop changes', (
       tester,

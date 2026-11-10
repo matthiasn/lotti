@@ -219,9 +219,11 @@ void main() {
     testWidgets('header relayouts when design-system spacing changes', (
       tester,
     ) async {
-      setTestSurfaceSize(tester, const Size(640, 844));
+      // Tall enough that the inflated spacing — which every surface on the
+      // page also uses — still leaves the body below room of its own.
+      setTestSurfaceSize(tester, const Size(640, 1200));
       final mediaQueryData = phoneMediaQueryData.copyWith(
-        size: const Size(640, 844),
+        size: const Size(640, 1200),
       );
       Future<double> titleTopAt(double step2) async {
         await tester.pumpWidget(

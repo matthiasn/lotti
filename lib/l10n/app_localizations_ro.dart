@@ -4876,46 +4876,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsNextActivityWaitingForNetwork => 'Se așteaptă conexiunea';
 
   @override
-  String get dailyOsNextAgendaCapacityComfortable => 'Confortabil';
-
-  @override
-  String get dailyOsNextAgendaCapacityNearFull => 'Aproape plin';
-
-  @override
-  String get dailyOsNextAgendaCapacityNoPlan => 'Încă fără plan';
-
-  @override
   String dailyOsNextAgendaCapacityOf(String capacity) {
     return 'din $capacity';
   }
 
   @override
-  String get dailyOsNextAgendaCapacityOver => 'Peste capacitate';
-
-  @override
-  String get dailyOsNextAgendaDonutLeft => 'liber';
-
-  @override
-  String get dailyOsNextAgendaDonutOver => 'în plus';
-
-  @override
-  String dailyOsNextAgendaHeadlineLeft(String duration) {
-    return '$duration rămase';
-  }
-
-  @override
-  String dailyOsNextAgendaHeadlineOver(String duration) {
-    return '$duration peste';
-  }
-
-  @override
   String get dailyOsNextAgendaNoPlanBody =>
       'Timpul dvs. înregistrat este oricum aici — rostiți un check-in și voi schița o zi în jurul lui.';
-
-  @override
-  String dailyOsNextAgendaNoPlanSummary(String duration) {
-    return '$duration înregistrat până acum. Rostiți un check-in și voi schița o zi în jurul lui.';
-  }
 
   @override
   String get dailyOsNextAgendaNoPlanTitle =>
@@ -4932,23 +4899,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get dailyOsNextAgendaStateOverdue => 'Întârziat';
-
-  @override
-  String dailyOsNextAgendaSummary(String scheduled, String capacity) {
-    return '$scheduled din $capacity angajate';
-  }
-
-  @override
-  String dailyOsNextAgendaTrackedLegend(String duration, int completedCount) {
-    String _temp0 = intl.Intl.pluralLogic(
-      completedCount,
-      locale: localeName,
-      other: '$completedCount de finalizate',
-      few: '$completedCount finalizate',
-      one: '1 finalizată',
-    );
-    return 'Înregistrat · $duration · $_temp0';
-  }
 
   @override
   String get dailyOsNextBlockCreateTask => 'Creați o sarcină';
@@ -5032,8 +4982,23 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String dailyOsNextBriefingCapacityLabel(String breakdown) {
+    return 'Timp planificat pe categorii: $breakdown';
+  }
+
+  @override
+  String dailyOsNextBriefingDoneCaption(int count) {
+    return '$count finalizate';
+  }
+
+  @override
   String dailyOsNextBriefingFree(String duration) {
     return 'Mai aveți $duration la dispoziție.';
+  }
+
+  @override
+  String dailyOsNextBriefingFreeCaption(String duration) {
+    return '$duration liber';
   }
 
   @override
@@ -5088,10 +5053,25 @@ class AppLocalizationsRo extends AppLocalizations {
       'Pentru astăzi nu mai este nimic planificat.';
 
   @override
+  String dailyOsNextBriefingOverCaption(String duration) {
+    return '$duration peste';
+  }
+
+  @override
+  String dailyOsNextBriefingPlannedCaption(String duration) {
+    return '$duration planificat';
+  }
+
+  @override
   String get dailyOsNextBriefingPlayTooltip => 'Ascultați ziua dvs.';
 
   @override
   String get dailyOsNextBriefingStopTooltip => 'Opriți rezumatul';
+
+  @override
+  String dailyOsNextBriefingTrackedCaption(String duration) {
+    return '$duration înregistrat';
+  }
 
   @override
   String get dailyOsNextCaptureCaptured => 'Am înțeles.';

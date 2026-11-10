@@ -8,7 +8,6 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/agenda_card.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/agenda_view.dart';
-import 'package:lotti/features/daily_os_next/ui/widgets/capacity_donut.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/time_spent_card.dart';
 import 'package:lotti/features/tasks/ui/cover_art_thumbnail.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -35,18 +34,6 @@ const _category = DayAgentCategory(
   name: 'Work',
   colorHex: '5ED4B7',
 );
-
-List<TimeBlock> _blocksTotalling(int minutes) => [
-  TimeBlock(
-    id: 'b-total',
-    title: 'Planned work',
-    start: DateTime(2026, 5, 26, 9),
-    end: DateTime(2026, 5, 26, 9).add(Duration(minutes: minutes)),
-    type: TimeBlockType.ai,
-    state: TimeBlockState.drafted,
-    category: _category,
-  ),
-];
 
 DraftPlan _draft({String? taskId}) {
   final day = DateTime(2026, 5, 26);
@@ -92,72 +79,6 @@ void main() {
   tearDown(() => beamToNamedOverride = null);
 
   group('AgendaView', () {
-    testWidgets(
-      'stat strip derives one truth: headline, donut, and legend all use '
-      'the block-derived committed minutes, even when the stored '
-      'scheduledMinutes drifted',
-      (tester) async {
-        final day = DateTime(2026, 5, 26);
-        final drifted = DraftPlan(
-          dayDate: day,
-          // Blocks sum to 150m; the stored total lies (240m).
-          blocks: [
-            TimeBlock(
-              id: 'b1',
-              title: 'Deep work',
-              start: DateTime(2026, 5, 26, 9),
-              end: DateTime(2026, 5, 26, 10, 30),
-              type: TimeBlockType.ai,
-              state: TimeBlockState.drafted,
-              category: _category,
-            ),
-            TimeBlock(
-              id: 'b2',
-              title: 'Dropped — must not count',
-              start: DateTime(2026, 5, 26, 11),
-              end: DateTime(2026, 5, 26, 12),
-              type: TimeBlockType.ai,
-              state: TimeBlockState.dropped,
-              category: _category,
-            ),
-            TimeBlock(
-              id: 'b3',
-              title: 'Calls',
-              start: DateTime(2026, 5, 26, 13),
-              end: DateTime(2026, 5, 26, 14),
-              type: TimeBlockType.manual,
-              state: TimeBlockState.drafted,
-              category: _category,
-            ),
-          ],
-          bands: const [],
-          capacityMinutes: 480,
-          scheduledMinutes: 240,
-        );
-        await tester.pumpWidget(_wrap(AgendaView(draft: drifted)));
-        await tester.pump();
-
-        final messages = tester.element(find.byType(AgendaView)).messages;
-        // Remaining headline leads (480 - 150 = 5h 30m), derived from
-        // non-dropped blocks (not the 240m stored total).
-        expect(
-          find.text(messages.dailyOsNextAgendaHeadlineLeft('5h 30m')),
-          findsOneWidget,
-        );
-        // The committed/capacity summary demotes into the supporting line.
-        expect(
-          find.textContaining(
-            messages.dailyOsNextAgendaSummary('2h 30m', '8h'),
-          ),
-          findsOneWidget,
-        );
-        // Donut center: remaining = 480 - 150.
-        expect(find.text('5h 30m'), findsOneWidget);
-        // Legend agrees with both.
-        expect(find.textContaining('2h 30m'), findsWidgets);
-      },
-    );
-
     testWidgets('opens task-backed agenda items through app navigation', (
       tester,
     ) async {
@@ -418,93 +339,6 @@ void main() {
       },
     );
 
-    testWidgets('comfortable capacity (< 90%) shows comfortable overline', (
-      tester,
-    ) async {
-      final draft = DraftPlan(
-        dayDate: DateTime(2026, 5, 26),
-        blocks: const [],
-        bands: const [],
-        capacityMinutes: 600,
-        scheduledMinutes: 300, // 50% utilisation.
-        agendaItems: const [],
-      );
-      await tester.pumpWidget(_wrap(AgendaView(draft: draft)));
-
-      final messages = tester.element(find.byType(AgendaView)).messages;
-      expect(
-        find.textContaining(messages.dailyOsNextAgendaCapacityComfortable),
-        findsOneWidget,
-      );
-      expect(
-        find.textContaining(messages.dailyOsNextAgendaCapacityNearFull),
-        findsNothing,
-      );
-      expect(
-        find.textContaining(messages.dailyOsNextAgendaCapacityOver),
-        findsNothing,
-      );
-    });
-
-    testWidgets('near-full capacity (90–100%) shows near-full overline', (
-      tester,
-    ) async {
-      final draft = DraftPlan(
-        dayDate: DateTime(2026, 5, 26),
-        blocks: _blocksTotalling(570), // 95% of 600.
-        bands: const [],
-        capacityMinutes: 600,
-        scheduledMinutes: 570,
-        agendaItems: const [],
-      );
-      await tester.pumpWidget(_wrap(AgendaView(draft: draft)));
-
-      final messages = tester.element(find.byType(AgendaView)).messages;
-      expect(
-        find.textContaining(messages.dailyOsNextAgendaCapacityNearFull),
-        findsOneWidget,
-      );
-    });
-
-    testWidgets('over-capacity (> 100%) shows over overline', (tester) async {
-      final draft = DraftPlan(
-        dayDate: DateTime(2026, 5, 26),
-        blocks: _blocksTotalling(720), // 120% of 600.
-        bands: const [],
-        capacityMinutes: 600,
-        scheduledMinutes: 720,
-        agendaItems: const [],
-      );
-      await tester.pumpWidget(_wrap(AgendaView(draft: draft)));
-
-      final messages = tester.element(find.byType(AgendaView)).messages;
-      expect(
-        find.textContaining(messages.dailyOsNextAgendaCapacityOver),
-        findsOneWidget,
-      );
-    });
-
-    testWidgets('summary string interpolates scheduled / capacity hours', (
-      tester,
-    ) async {
-      final draft = DraftPlan(
-        dayDate: DateTime(2026, 5, 26),
-        blocks: _blocksTotalling(90), // 1h 30m of 4h.
-        bands: const [],
-        capacityMinutes: 240,
-        scheduledMinutes: 90,
-        agendaItems: const [],
-      );
-      await tester.pumpWidget(_wrap(AgendaView(draft: draft)));
-
-      final messages = tester.element(find.byType(AgendaView)).messages;
-      expect(
-        find.textContaining(messages.dailyOsNextAgendaSummary('1h 30m', '4h')),
-        findsOneWidget,
-      );
-      expect(find.byType(CapacityDonut), findsOneWidget);
-    });
-
     testWidgets(
       'no-plan day renders the dashed "No plan yet" hint card; a real '
       'plan with zero agenda items does not',
@@ -534,8 +368,7 @@ void main() {
         // No tracked time -> no TimeSpentCard either.
         expect(find.byType(TimeSpentCard), findsNothing);
 
-        // With a real (if empty) plan the no-plan copy would be a lie —
-        // only the stat strip remains.
+        // With a real (if empty) plan the no-plan copy would be a lie.
         await tester.pumpWidget(_wrap(AgendaView(draft: draft)));
         expect(
           find.text(messages.dailyOsNextAgendaNoPlanTitle),
@@ -545,8 +378,7 @@ void main() {
     );
 
     testWidgets(
-      'no-plan day stays honest: eyebrow, tracked summary, legend, and '
-      'the TimeSpentCard with the recorded sessions',
+      'no-plan day lists the recorded sessions in the TimeSpentCard',
       (tester) async {
         final day = DateTime(2026, 5, 26);
         final tracked = [
@@ -581,152 +413,11 @@ void main() {
           ),
         );
 
-        final messages = tester.element(find.byType(AgendaView)).messages;
-        // Honest eyebrow + tracked-time summary (1h 30m + 1h 5m = 2h 35m).
-        expect(
-          find.text(messages.dailyOsNextAgendaCapacityNoPlan),
-          findsOneWidget,
-        );
-        expect(
-          find.text(messages.dailyOsNextAgendaNoPlanSummary('2h 35m')),
-          findsOneWidget,
-        );
-        // Neutral donut + single tracked legend (1 completed session).
-        final donut = tester.widget<CapacityDonut>(find.byType(CapacityDonut));
-        expect(donut.neutral, isTrue);
-        expect(donut.scheduledMinutes, 155);
-        expect(
-          find.text(messages.dailyOsNextAgendaTrackedLegend('2h 35m', 1)),
-          findsOneWidget,
-        );
         // The recorded sessions are listed in the TimeSpentCard.
         expect(find.byType(TimeSpentCard), findsOneWidget);
         expect(find.text('Build attention framework'), findsOneWidget);
         expect(find.text('UI improvements'), findsOneWidget);
       },
     );
-
-    testWidgets(
-      'a planned day marks recorded time on the capacity dial, capped at a '
-      'full dial',
-      (tester) async {
-        final draft = DraftPlan(
-          dayDate: DateTime(2026, 5, 26),
-          blocks: _blocksTotalling(90),
-          bands: const [],
-          capacityMinutes: 240,
-          scheduledMinutes: 90,
-          agendaItems: const [],
-        );
-        TimeBlock tracked(int minutes) => TimeBlock(
-          id: 'tracked-$minutes',
-          title: 'Sort the krill delivery',
-          start: DateTime(2026, 5, 26, 8),
-          end: DateTime(2026, 5, 26, 8).add(Duration(minutes: minutes)),
-          type: TimeBlockType.manual,
-          state: TimeBlockState.completed,
-          category: _category,
-        );
-        double? marker() => tester
-            .widget<CapacityDonut>(find.byType(CapacityDonut))
-            .progressFraction;
-
-        await tester.pumpWidget(_wrap(AgendaView(draft: draft)));
-        expect(marker(), isNull, reason: 'nothing recorded yet');
-
-        await tester.pumpWidget(
-          _wrap(AgendaView(draft: draft, actualBlocks: [tracked(60)])),
-        );
-        expect(marker(), 0.25);
-
-        await tester.pumpWidget(
-          _wrap(AgendaView(draft: draft, actualBlocks: [tracked(300)])),
-        );
-        expect(marker(), 1.0);
-      },
-    );
-
-    testWidgets(
-      'category mix renders one legend per used category, dropped blocks excluded',
-      (tester) async {
-        const work = DayAgentCategory(
-          id: 'w',
-          name: 'Work',
-          colorHex: '5ED4B7',
-        );
-        const personal = DayAgentCategory(
-          id: 'p',
-          name: 'Personal',
-          colorHex: 'FF00AA',
-        );
-        final start = DateTime(2026, 5, 26, 9);
-        final draft = DraftPlan(
-          dayDate: DateTime(2026, 5, 26),
-          blocks: [
-            TimeBlock(
-              id: 'b1',
-              title: 'Deep work',
-              start: start,
-              end: start.add(const Duration(minutes: 90)),
-              type: TimeBlockType.ai,
-              state: TimeBlockState.drafted,
-              category: work,
-            ),
-            TimeBlock(
-              id: 'b2',
-              title: 'Errands',
-              start: start.add(const Duration(hours: 2)),
-              end: start.add(const Duration(hours: 2, minutes: 30)),
-              type: TimeBlockType.manual,
-              state: TimeBlockState.drafted,
-              category: personal,
-            ),
-            TimeBlock(
-              id: 'b3',
-              title: 'Cancelled review',
-              start: start.add(const Duration(hours: 4)),
-              end: start.add(const Duration(hours: 5)),
-              type: TimeBlockType.ai,
-              state: TimeBlockState.dropped,
-              category: work,
-            ),
-          ],
-          bands: const [],
-          capacityMinutes: 480,
-          scheduledMinutes: 120,
-          agendaItems: const [],
-        );
-        await tester.pumpWidget(_wrap(AgendaView(draft: draft)));
-
-        // 90m of Work (dropped 60m excluded), 30m of Personal. The legend
-        // is a micro-table: label leads, duration sits right-aligned as a
-        // bare ledger value.
-        expect(find.text('Work'), findsOneWidget);
-        expect(find.text('1h 30m'), findsOneWidget);
-        expect(find.text('Personal'), findsOneWidget);
-        expect(find.text('30m'), findsOneWidget);
-      },
-    );
-
-    testWidgets('zero-capacity day computes ratio safely (no divide-by-zero)', (
-      tester,
-    ) async {
-      final draft = DraftPlan(
-        dayDate: DateTime(2026, 5, 26),
-        blocks: const [],
-        bands: const [],
-        capacityMinutes: 0,
-        scheduledMinutes: 0,
-        agendaItems: const [],
-      );
-      await tester.pumpWidget(_wrap(AgendaView(draft: draft)));
-
-      // Ratio defaults to 0 → comfortable overline.
-      final messages = tester.element(find.byType(AgendaView)).messages;
-      expect(
-        find.text(messages.dailyOsNextAgendaCapacityComfortable),
-        findsOneWidget,
-      );
-    });
   });
 }

@@ -4801,46 +4801,13 @@ class AppLocalizationsDa extends AppLocalizations {
   String get dailyOsNextActivityWaitingForNetwork => 'Venter på forbindelse';
 
   @override
-  String get dailyOsNextAgendaCapacityComfortable => 'Behageligt';
-
-  @override
-  String get dailyOsNextAgendaCapacityNearFull => 'Næsten fuld';
-
-  @override
-  String get dailyOsNextAgendaCapacityNoPlan => 'Ingen plan endnu';
-
-  @override
   String dailyOsNextAgendaCapacityOf(String capacity) {
     return 'af $capacity';
   }
 
   @override
-  String get dailyOsNextAgendaCapacityOver => 'Overkapacitet';
-
-  @override
-  String get dailyOsNextAgendaDonutLeft => 'Venstre';
-
-  @override
-  String get dailyOsNextAgendaDonutOver => 'Over';
-
-  @override
-  String dailyOsNextAgendaHeadlineLeft(String duration) {
-    return '$duration forlod';
-  }
-
-  @override
-  String dailyOsNextAgendaHeadlineOver(String duration) {
-    return '$duration over';
-  }
-
-  @override
   String get dailyOsNextAgendaNoPlanBody =>
       'Din registrerede tid er her uanset hvad — tal med et check-in, og jeg udarbejder en dag omkring det.';
-
-  @override
-  String dailyOsNextAgendaNoPlanSummary(String duration) {
-    return '$duration har indtil videre fulgt med på det. Tal et check-in, og jeg laver en dag omkring det.';
-  }
 
   @override
   String get dailyOsNextAgendaNoPlanTitle => 'Ingen plan endnu for i dag.';
@@ -4856,16 +4823,6 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get dailyOsNextAgendaStateOverdue => 'Forsinket';
-
-  @override
-  String dailyOsNextAgendaSummary(String scheduled, String capacity) {
-    return '$scheduled af $capacity begået';
-  }
-
-  @override
-  String dailyOsNextAgendaTrackedLegend(String duration, int completedCount) {
-    return 'Sporet · $duration · $completedCount færdig';
-  }
 
   @override
   String get dailyOsNextBlockCreateTask => 'Opret en opgave';
@@ -4948,8 +4905,23 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
+  String dailyOsNextBriefingCapacityLabel(String breakdown) {
+    return 'Planlagt tid efter kategori: $breakdown';
+  }
+
+  @override
+  String dailyOsNextBriefingDoneCaption(int count) {
+    return '$count færdige';
+  }
+
+  @override
   String dailyOsNextBriefingFree(String duration) {
     return 'Du har stadig $duration fri i din dag.';
+  }
+
+  @override
+  String dailyOsNextBriefingFreeCaption(String duration) {
+    return '$duration fri';
   }
 
   @override
@@ -5001,10 +4973,25 @@ class AppLocalizationsDa extends AppLocalizations {
       'Der er ikke mere planlagt i dag.';
 
   @override
+  String dailyOsNextBriefingOverCaption(String duration) {
+    return '$duration for meget';
+  }
+
+  @override
+  String dailyOsNextBriefingPlannedCaption(String duration) {
+    return '$duration planlagt';
+  }
+
+  @override
   String get dailyOsNextBriefingPlayTooltip => 'Hør din dag';
 
   @override
   String get dailyOsNextBriefingStopTooltip => 'Stop briefingen';
+
+  @override
+  String dailyOsNextBriefingTrackedCaption(String duration) {
+    return '$duration registreret';
+  }
 
   @override
   String get dailyOsNextCaptureCaptured => 'Forstået.';

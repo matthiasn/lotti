@@ -4863,46 +4863,13 @@ class AppLocalizationsIt extends AppLocalizations {
   String get dailyOsNextActivityWaitingForNetwork => 'In attesa di connessione';
 
   @override
-  String get dailyOsNextAgendaCapacityComfortable => 'Confortevole';
-
-  @override
-  String get dailyOsNextAgendaCapacityNearFull => 'Vicino a tutto';
-
-  @override
-  String get dailyOsNextAgendaCapacityNoPlan => 'Nessun piano ancora';
-
-  @override
   String dailyOsNextAgendaCapacityOf(String capacity) {
     return 'di $capacity';
   }
 
   @override
-  String get dailyOsNextAgendaCapacityOver => 'Capacità superiore';
-
-  @override
-  String get dailyOsNextAgendaDonutLeft => 'sinistra';
-
-  @override
-  String get dailyOsNextAgendaDonutOver => 'sopra.';
-
-  @override
-  String dailyOsNextAgendaHeadlineLeft(String duration) {
-    return '$duration sinistra';
-  }
-
-  @override
-  String dailyOsNextAgendaHeadlineOver(String duration) {
-    return '$duration sopra';
-  }
-
-  @override
   String get dailyOsNextAgendaNoPlanBody =>
       'Il vostro tempo tracciato è qui in entrambi i casi — parlare un check-in e io abbozzerò un giorno intorno a esso.';
-
-  @override
-  String dailyOsNextAgendaNoPlanSummary(String duration) {
-    return 'Ho rintracciato $duration, ho detto un check-in e ho preparato un giorno.';
-  }
 
   @override
   String get dailyOsNextAgendaNoPlanTitle =>
@@ -4919,16 +4886,6 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get dailyOsNextAgendaStateOverdue => 'Scaduto';
-
-  @override
-  String dailyOsNextAgendaSummary(String scheduled, String capacity) {
-    return '$scheduled di $capacity impegnata';
-  }
-
-  @override
-  String dailyOsNextAgendaTrackedLegend(String duration, int completedCount) {
-    return 'Tracciato · $duration · $completedCount fatto';
-  }
 
   @override
   String get dailyOsNextBlockCreateTask => 'Crea un\'attività';
@@ -5011,8 +4968,23 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
+  String dailyOsNextBriefingCapacityLabel(String breakdown) {
+    return 'Tempo pianificato per categoria: $breakdown';
+  }
+
+  @override
+  String dailyOsNextBriefingDoneCaption(int count) {
+    return '$count fatte';
+  }
+
+  @override
   String dailyOsNextBriefingFree(String duration) {
     return 'Hai ancora $duration a disposizione.';
+  }
+
+  @override
+  String dailyOsNextBriefingFreeCaption(String duration) {
+    return '$duration libero';
   }
 
   @override
@@ -5064,10 +5036,25 @@ class AppLocalizationsIt extends AppLocalizations {
       'Per oggi non c\'è più niente in programma.';
 
   @override
+  String dailyOsNextBriefingOverCaption(String duration) {
+    return '$duration in eccesso';
+  }
+
+  @override
+  String dailyOsNextBriefingPlannedCaption(String duration) {
+    return '$duration pianificato';
+  }
+
+  @override
   String get dailyOsNextBriefingPlayTooltip => 'Ascolta la tua giornata';
 
   @override
   String get dailyOsNextBriefingStopTooltip => 'Ferma il riepilogo';
+
+  @override
+  String dailyOsNextBriefingTrackedCaption(String duration) {
+    return '$duration registrato';
+  }
 
   @override
   String get dailyOsNextCaptureCaptured => 'Ricevuto.';
