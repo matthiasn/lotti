@@ -838,3 +838,67 @@ jobs:
         if: steps.mirror.outputs.ready == 'true'
         id: deployment
         uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4
+
+  # Nobody watches a nightly or a release-tag run, and a red one used to go
+  # unseen for weeks (the screenshot capture failed every night from
+  # 2026-09-23 to 2026-11-08). An unattended run that fails opens one issue per
+  # kind — or comments on the one already open — and the next green run of
+  # the same kind closes it. Pull requests and dispatches are watched by
+  # whoever started them, so they report nothing.
+  report:
+    name: Report unattended result
+    needs:
+      - metadata
+      - build
+      - publish_site
+      - screenshots
+      - screenshot_catalog
+      - deploy
+      - publish_alias
+      - deploy_release
+    if: >-
+      always() &&
+      (github.event_name == 'schedule' || github.ref_type == 'tag')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: read
+      issues: write
+    steps:
+      - name: Open, update or close the failure issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          FAILED: ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}
+          KIND: ${{ github.event_name == 'schedule' && 'nightly' || 'release tag' }}
+          REF_NAME: ${{ github.ref_name }}
+          COMMIT: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          TITLE="CI red: Manual (${KIND})"
+          LABEL="ci-failure"
+          OPEN=$(gh issue list --repo "$REPO" --state open --label "$LABEL" \
+            --json number,title \
+            --jq "map(select(.title == \"${TITLE}\")) | .[0].number // empty")
+          if [[ "$FAILED" != "true" ]]; then
+            if [[ -n "$OPEN" ]]; then
+              gh issue close "$OPEN" --repo "$REPO" \
+                --comment "Green again: ${RUN_URL} (${REF_NAME} at ${COMMIT:0:10})."
+            fi
+            exit 0
+          fi
+          JOBS=$(gh run view "$RUN_ID" --repo "$REPO" --json jobs \
+            --jq '.jobs[] | select(.conclusion == "failure" or .conclusion == "cancelled") | "- \(.name): \(.conclusion)"')
+          BODY=$(printf 'Run: %s\nRef: %s at %s\n\nFailed jobs:\n%s\n' \
+            "$RUN_URL" "$REF_NAME" "${COMMIT:0:10}" "${JOBS:-- see the run}")
+          if [[ -n "$OPEN" ]]; then
+            gh issue comment "$OPEN" --repo "$REPO" --body "$BODY"
+          else
+            # The label must exist before an issue can carry it.
+            gh label create "$LABEL" --repo "$REPO" --color B60205 \
+              --description "An unattended CI run failed" --force
+            gh issue create --repo "$REPO" --title "$TITLE" --label "$LABEL" \
+              --body "$BODY"
+          fi

@@ -153,7 +153,11 @@ the way to check a packaging change before it ships.
 No pull request lane runs the screenshot harnesses. They render real
 production widgets, so app code is what usually breaks them, but `manual.yml`
 does not watch `lib/` and captures only nightly and on dispatch. A harness
-broken by a merge therefore surfaces in the next nightly capture; a per-PR
+broken by a merge therefore surfaces in the next nightly capture — as an
+issue: `manual.yml`'s `report` job opens `CI red: Manual (nightly)` (or
+`… (release tag)`), labelled `ci-failure`, when an unattended run fails,
+comments on it while it stays red, and closes it on the next green run of
+that kind; a per-PR
 one-locale capture used to close that gap, and was dropped because it ran on
 nearly every pull request for about twenty minutes and rarely failed.
 
