@@ -84,9 +84,24 @@ void main() {
     expect((properties['pastDays'] as Map)['maximum'], frontLoggedTimeMaxDays);
     expect((properties['from'] as Map)['type'], 'string');
     expect((properties['through'] as Map)['type'], 'string');
+    // The task list is opt-in: a summary is the default answer.
+    expect((properties['tasks'] as Map)['type'], 'boolean');
     // Exactly one window form, checked by the strategy, so none required.
     expect(summarize.parameters.containsKey('required'), isFalse);
     expect(frontAgentSystemPrompt, contains('call `summarize_logged_time`'));
+    expect(
+      frontAgentSystemPrompt,
+      contains('"what did I work on?" alone is answered with the summary'),
+    );
+    expect(frontAgentSystemPrompt, contains('read aloud in under thirty'));
+    expect(
+      frontAgentSystemPrompt,
+      contains('end by offering to break them down'),
+    );
+    expect(
+      frontAgentSystemPrompt,
+      isNot(contains('list every task the summary gives')),
+    );
     expect(frontAgentSystemPrompt, contains('at most 366 days'));
     expect(
       frontAgentSystemPrompt,

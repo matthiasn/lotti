@@ -334,17 +334,36 @@ class FrontRoutingIndexBuilder {
         categoryIds,
         namedCategoryIds: named,
       );
-      final tasks = await _loggedTasks([
-        for (final entry in entries)
-          if (entry.row.categoryId != kInsightsOtherCategoryKey) entry,
-      ], range);
+      final tasks = await _loggedTasks(
+        [
+          for (final entry in entries)
+            if (entry.row.categoryId != kInsightsOtherCategoryKey) entry,
+        ],
+        range,
+        scope,
+      );
+      final daily = dailyTotals(buckets, range);
+      final byProject = <String, int>{};
+      for (final task in tasks) {
+        if (task.project case final project?) {
+          byProject[project] = (byProject[project] ?? 0) + task.seconds;
+        }
+      }
       return FrontLoggedTime(
         period: query.range == null ? query.period : null,
         from: dayStart(range.startDay),
         through: dayStart(range.endDayExclusive - 1),
+        daily: [
+          for (final day in daily) day.values.fold(0, (sum, s) => sum + s),
+        ],
+        byProject: [
+          for (final MapEntry(key: name, value: seconds)
+              in byProject.entries.sortedBy<num>((entry) => -entry.value))
+            (name: name, seconds: seconds),
+        ],
         byCategory: [
           for (final MapEntry(key: id, value: seconds) in rankedCategoryTotals(
-            dailyTotals(buckets, range),
+            daily,
           ))
             (
               name: switch (id) {
@@ -404,10 +423,13 @@ class FrontRoutingIndexBuilder {
   /// started of those with a category — so the task listed is the one whose
   /// category the time is summed in; only when none has a category, the
   /// latest started. Its time is clipped and merged as the chart's is. A
-  /// task hidden with private entries, or deleted, is never read.
-  Future<List<({FrontIndexRow row, int seconds})>> _loggedTasks(
+  /// task hidden with private entries, or deleted, is never read. Each
+  /// task carries its project's title when that project is visible inside
+  /// [scope], as the index lists projects, and its last day with time.
+  Future<List<FrontLoggedTask>> _loggedTasks(
     List<({String entryId, InsightsTimeRow row})> entries,
     InsightsRange range,
+    FrontRoutingScope scope,
   ) async {
     final links = [
       for (final link in await journalDb.basicLinksForEntryIds({
@@ -440,11 +462,27 @@ class FrontRoutingIndexBuilder {
             categoryId: task.id,
           ),
     ], windowStartDay: range.startDay);
+    final daily = dailyTotals(buckets, range);
+    final ranked = rankedCategoryTotals(daily);
+    if (ranked.isEmpty) return const [];
+    final projectIdByTask = await journalDb.getProjectIdMapForTasks({
+      for (final entry in ranked) entry.key!,
+    });
+    final projectTitles = {
+      for (final project in await journalDb.getVisibleProjects())
+        if (categoryAllowed(project.meta.categoryId, scope.categoryIds))
+          project.id: project.data.title,
+    };
     return [
-      for (final MapEntry(key: id, value: seconds) in rankedCategoryTotals(
-        dailyTotals(buckets, range),
-      ))
-        (row: _taskRow(tasksById[id]!, null), seconds: seconds),
+      for (final MapEntry(key: id, value: seconds) in ranked)
+        (
+          row: _taskRow(tasksById[id]!, null),
+          seconds: seconds,
+          project: projectTitles[projectIdByTask[id]],
+          lastDay: dayStart(
+            range.startDay + daily.lastIndexWhere((day) => (day[id] ?? 0) > 0),
+          ),
+        ),
     ];
   }
 

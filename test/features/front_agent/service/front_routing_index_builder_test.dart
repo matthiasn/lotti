@@ -820,6 +820,9 @@ void main() {
       when(() => journalDb.getJournalEntitiesForIdsUnordered(any())).thenAnswer(
         (_) async => const [],
       );
+      when(
+        () => journalDb.getProjectIdMapForTasks(any()),
+      ).thenAnswer((_) async => const {});
     });
 
     EntryLink link(String taskId, String entryId, {bool hidden = false}) =>
@@ -885,14 +888,73 @@ void main() {
         );
         expect(logged.omittedTasks, 0);
         expect(
-          logged.render(),
+          logged.render(withTasks: true),
           contains(
             'Tasks the time went to (3), largest first:\n'
-            '- task:older | Task older | OPEN | 2h\n'
-            '- task:newer | Task newer | OPEN | 1h 30m\n'
-            '- task:home-task | Task home-task | OPEN | 1h',
+            '- task:older | Task older | OPEN | last logged 2026-10-22 | 2h\n'
+            '- task:newer | Task newer | OPEN | last logged 2026-10-22 | '
+            '1h 30m\n'
+            '- task:home-task | Task home-task | OPEN | last logged '
+            '2026-10-22 | 1h',
           ),
         );
+      },
+    );
+
+    test(
+      'sums task time per visible project in scope, largest first, and '
+      'gives each day its total and each task its last day',
+      () async {
+        stubTasks();
+        when(() => journalDb.getProjectIdMapForTasks(any())).thenAnswer(
+          (_) async => {
+            'older': 'pw',
+            'newer': 'pw',
+            'home-task': 'ph',
+            'hidden-task': 'hidden',
+          },
+        );
+        when(() => journalDb.getVisibleProjects()).thenAnswer(
+          (_) async => [
+            _project('pw'),
+            _project('ph', categoryId: 'home'),
+            // Outside the scope below: its title is never read.
+            _project('hidden', categoryId: 'secret'),
+          ],
+        );
+        final logged =
+            await builder().loggedTimeSummarizer(
+              const FrontRoutingScope(allowedCategoryIds: {'work', 'home'}),
+              now: _now,
+            )((
+              period: null,
+              range: InsightsRange(
+                startDay: epochDay(DateTime(2026, 10, 21)),
+                endDayExclusive: epochDay(DateTime(2026, 10, 23)),
+              ),
+              categoryIds: const {},
+            ));
+
+        expect(logged.byProject, [
+          (name: 'Project pw', seconds: 2 * 3600 + 90 * 60),
+          (name: 'Project ph', seconds: 3600),
+        ]);
+        expect(
+          [for (final task in logged.tasks) (task.row.id, task.project)],
+          [
+            ('older', 'Project pw'),
+            ('newer', 'Project pw'),
+            ('home-task', 'Project ph'),
+          ],
+        );
+        expect(
+          {for (final task in logged.tasks) task.lastDay},
+          {DateTime(2026, 10, 22)},
+        );
+        // The 21st holds the first hour of the entry that ran past
+        // midnight; the 22nd its last half hour, 2h 30m more Work and 1h
+        // in Home.
+        expect(logged.daily, [3600, 4 * 3600]);
       },
     );
 
@@ -1017,7 +1079,10 @@ void main() {
 
       expect(logged.tasks, hasLength(frontLoggedTaskLimit));
       expect(logged.omittedTasks, 1);
-      expect(logged.render(), contains('(30, +1 not shown)'));
+      expect(
+        logged.render(withTasks: true),
+        contains('(30, +1 not shown)'),
+      );
     });
 
     test(

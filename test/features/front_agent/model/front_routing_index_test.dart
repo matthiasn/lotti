@@ -358,6 +358,87 @@ void main() {
         'None: no time logged yesterday (2026-11-06).',
       );
     });
+
+    group('projects, days and tasks', () {
+      const row = FrontIndexRow(
+        kind: FrontDestinationKind.task,
+        id: 'release',
+        title: '  Cut the\nrelease ',
+        status: 'DONE',
+      );
+      // Sunday 2026-11-01 through Saturday 2026-11-07.
+      final logged = FrontLoggedTime(
+        period: FrontTimePeriod.past7Days,
+        from: DateTime(2026, 11),
+        through: DateTime(2026, 11, 7),
+        byCategory: const [(name: 'Work', seconds: 16200)],
+        byProject: const [
+          (name: 'Lotti', seconds: 7200),
+          (name: ' Garden\n', seconds: 1800),
+        ],
+        daily: const [3600, 0, 7200, 1800, 0, 0, 3600],
+        tasks: [
+          (
+            row: row,
+            seconds: 7200,
+            project: 'Lotti',
+            lastDay: DateTime(2026, 11, 3),
+          ),
+          (
+            row: row,
+            seconds: 1800,
+            project: null,
+            lastDay: DateTime(2026, 11, 4),
+          ),
+        ],
+        omittedTasks: 4,
+        chart: _chart,
+      );
+      const summary =
+          'Time logged past 7 days (2026-11-01 through 2026-11-07): 4h 30m '
+          'in total, by category, largest first:\n'
+          '- Work: 4h 30m\n'
+          'By project, largest first:\n'
+          '- Lotti: 2h\n'
+          '- Garden: 30m\n'
+          // Weekends are Saturday and Sunday; ties go to the earlier day.
+          'By day: time on 4 of 7 days; 2h 30m on weekdays, 2h at weekends; '
+          'most on 2026-11-03 (Tuesday): 2h\n';
+
+      test('by default the tasks are only counted, so the answer is the '
+          'summary', () {
+        expect(logged.render(), '${summary}6 tasks had time; not listed.');
+      });
+
+      test('withTasks lists each task with its project, last day logged and '
+          'time', () {
+        expect(
+          logged.render(withTasks: true),
+          '${summary}Tasks the time went to (2, +4 not shown), largest '
+          'first:\n'
+          '- task:release | Cut the release | DONE | project Lotti | last '
+          'logged 2026-11-03 | 2h\n'
+          '- task:release | Cut the release | DONE | last logged 2026-11-04 '
+          '| 30m',
+        );
+      });
+
+      test('a single day gets no day line', () {
+        final oneDay = FrontLoggedTime(
+          from: DateTime(2026, 11, 3),
+          through: DateTime(2026, 11, 3),
+          byCategory: const [(name: 'Work', seconds: 3600)],
+          daily: const [3600],
+          chart: _chart,
+        );
+        expect(
+          oneDay.render(),
+          'Time logged 2026-11-03: 1h in total, by category, largest '
+          'first:\n'
+          '- Work: 1h',
+        );
+      });
+    });
   });
 
   group('FrontClosedTasks.render', () {
