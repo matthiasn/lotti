@@ -1,5 +1,5 @@
+import 'package:a2ui_core/a2ui_core.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:genui/genui.dart';
 import 'package:lotti/features/agents/genui/evolution_catalog.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -164,7 +164,7 @@ void main() {
       ('Reject', 'proposal_rejected'),
     ]) {
       testWidgets('dispatches $expectedEvent on $label tap', (tester) async {
-        final events = <UiEvent>[];
+        final events = <A2uiRendererAction>[];
 
         await tester.pumpWidget(
           makeTestableWidget(
@@ -184,7 +184,7 @@ void main() {
         await tester.pump();
 
         expect(events, hasLength(1));
-        final event = events.first as UserActionEvent;
+        final event = events.first;
         expect(event.name, expectedEvent);
       });
     }
@@ -405,7 +405,7 @@ void main() {
     testWidgets('dispatches soul_proposal_approved on approve tap', (
       tester,
     ) async {
-      final events = <UiEvent>[];
+      final events = <A2uiRendererAction>[];
 
       await tester.pumpWidget(
         makeTestableWidget(
@@ -424,14 +424,14 @@ void main() {
       await tester.pump();
 
       expect(events, hasLength(1));
-      final event = events.first as UserActionEvent;
+      final event = events.first;
       expect(event.name, 'soul_proposal_approved');
     });
 
     testWidgets('dispatches soul_proposal_rejected on reject tap', (
       tester,
     ) async {
-      final events = <UiEvent>[];
+      final events = <A2uiRendererAction>[];
 
       await tester.pumpWidget(
         makeTestableWidget(
@@ -450,7 +450,7 @@ void main() {
       await tester.pump();
 
       expect(events, hasLength(1));
-      final event = events.first as UserActionEvent;
+      final event = events.first;
       expect(event.name, 'soul_proposal_rejected');
     });
 
@@ -495,36 +495,6 @@ void main() {
       // No approve/reject buttons should be shown.
       expect(find.text('Approve & Save'), findsNothing);
       expect(find.text('Reject'), findsNothing);
-    });
-
-    testWidgets('returns shrink widget for non-map data', (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidget(
-          Builder(
-            builder: (context) {
-              final itemContext = CatalogItemContext(
-                data: 'not a map', // Non-map data triggers is! Map guard
-                id: 'test-component',
-                type: 'SoulProposal',
-                buildChild: (id, [dataContext]) => const SizedBox.shrink(),
-                dispatchEvent: (_) {},
-                buildContext: context,
-                dataContext: DataContext(InMemoryDataModel(), DataPath.root),
-                getComponent: (_) => null,
-                getCatalogItem: (_) => null,
-                surfaceId: 'test-surface',
-                reportError: (_, _) {},
-              );
-              return soulProposalItem.widgetBuilder(itemContext);
-            },
-          ),
-        ),
-      );
-
-      // Should render a zero-size SizedBox from the is! Map guard.
-      expect(find.byType(SizedBox), findsWidgets);
-      // No proposal card content should be present.
-      expect(find.text('Approve & Save'), findsNothing);
     });
   });
 }

@@ -20,6 +20,7 @@ import 'package:lotti/features/companion/state/companion_card_controller.dart';
 import 'package:lotti/features/companion/ui/companion_floating_card.dart';
 import 'package:lotti/features/daily_os_next/state/selected_date_provider.dart';
 import 'package:lotti/features/design_system/components/chat_input/design_system_chat_input.dart';
+import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
 import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -33,7 +34,7 @@ import 'package:lotti/features/front_agent/model/front_due_section.dart';
 import 'package:lotti/features/front_agent/model/front_entity_preview.dart';
 import 'package:lotti/features/front_agent/model/front_logged_time_chart.dart';
 import 'package:lotti/features/front_agent/model/front_pull_requests.dart';
-import 'package:lotti/features/front_agent/model/front_reply_layout.dart';
+import 'package:lotti/features/front_agent/model/front_reply_surface.dart';
 import 'package:lotti/features/front_agent/model/front_routing_index.dart';
 import 'package:lotti/features/front_agent/model/front_turn_failure.dart';
 import 'package:lotti/features/front_agent/service/front_chat_service.dart';
@@ -105,14 +106,15 @@ void main() {
     runKey: runKey,
   );
 
-  /// Every list of cards her reply draws, in any reply.
+  /// Every list of cards her reply draws, in any reply — not the previews
+  /// of what her doors made, which sit under it.
   final herLists = find.byWidgetPredicate(
-    (widget) => switch (widget.key) {
-      ValueKey<String>(:final value) =>
-        value.startsWith('front-reply-') && value.contains('-cards-'),
-      _ => false,
-    },
+    (widget) => widget is FrontEntityPreviewList && widget.key == null,
   );
+
+  /// The component of reply [replyId] drawn at [part] of its surface.
+  Finder replyPart(String replyId, int part) =>
+      find.byKey(ValueKey('front-reply-$replyId-c$part'));
 
   /// The ids of the cards the list her reply draws at [part] of reply
   /// [replyId] shows, in order.
@@ -120,13 +122,46 @@ void main() {
       tester
           .widget<FrontEntityPreviewList>(
             find.descendant(
-              of: find.byKey(ValueKey('front-reply-$replyId-cards-$part')),
+              of: replyPart(replyId, part),
               matching: find.byType(FrontEntityPreviewList),
             ),
           )
           .references
           .map((reference) => reference.id)
           .toList();
+
+  // What a reply's surface is composed of.
+  Map<String, Object?> text(String words) => {
+    'component': FrontReplyComponents.text,
+    'text': words,
+  };
+  Map<String, Object?> cards(List<FrontEntityReference> references) => {
+    'component': FrontReplyComponents.taskCards,
+    'items': [for (final reference in references) reference.toJson()],
+  };
+  const closedTasksPart = {'component': FrontReplyComponents.closedTasks};
+  const loggedTimePart = {'component': FrontReplyComponents.loggedTimeChart};
+  const pullRequestsPart = {
+    'component': FrontReplyComponents.pullRequestChart,
+  };
+
+  /// The surfaces of a thread whose reply a1 draws [components].
+  Map<String, FrontReplySurface> surfaces(
+    List<Map<String, Object?>> components, {
+    FrontDueSection? due,
+    List<FrontClosedTaskCard>? closedTasks,
+    FrontLoggedTimeChart? loggedTime,
+    FrontPullRequestChart? pullRequests,
+  }) => {
+    'a1': FrontReplySurface.compose(
+      surfaceId: 'a1',
+      components: components,
+      due: due,
+      closedTasks: closedTasks,
+      loggedTime: loggedTime,
+      pullRequests: pullRequests,
+    ),
+  };
 
   /// Taps [target] and expects [taskId]'s page pushed on top of her, nothing
   /// beamed, and back — a pop — landing on her conversation again.
@@ -535,6 +570,97 @@ void main() {
     // the drawer's to say.
     expect(find.textContaining('Companion · '), findsNothing);
     expect(find.textContaining('tokens'), findsNothing);
+  });
+
+  testWidgets('a quick reply she offered answers in its own words through '
+      'the composer; one under an earlier reply cannot be tapped', (
+    tester,
+  ) async {
+    when(
+      () => chatService.sendMessage(
+        text: 'Break it down',
+        conversationId: 'c-1',
+      ),
+    ).thenAnswer((_) async {});
+    Map<String, Object?> offer(String option) => {
+      'component': FrontReplyComponents.quickReplies,
+      'options': [option],
+    };
+    await pumpPane(
+      tester,
+      thread: () async => FrontChatThread(
+        messages: [
+          message('a0', AgentChatRole.agent, 'Earlier.', now),
+          message('u1', AgentChatRole.user, 'Time this week?', now),
+          message('a1', AgentChatRole.agent, '12h. Break it down?', now),
+        ],
+        // A door of the turn still waits on the user, so her reply to it is
+        // in the inbox too.
+        doorsByMessageId: {
+          'u1': [
+            FrontDoorEntry(
+              doorId: 'd:door:0',
+              record: FrontDoorRecord(
+                segmentIndex: 0,
+                text: 'Time this week?',
+                kind: FrontDestinationKind.task,
+                destinationId: 'garden',
+                ownerTitle: 'Garden',
+                status: FrontDoorStatus.done,
+                claimedAt: now.toUtc(),
+                outcome: const FrontDoorProposal(ownerId: 'garden'),
+              ),
+            ),
+          ],
+        },
+        surfacesByMessageId: {
+          for (final (id, option) in [
+            ('a0', 'An old offer'),
+            ('a1', 'Break it down'),
+          ])
+            id: FrontReplySurface.compose(
+              surfaceId: id,
+              components: [
+                const {
+                  'component': FrontReplyComponents.text,
+                  'text': 'Words.',
+                },
+                offer(option),
+              ],
+            ),
+        },
+      ),
+    );
+
+    DesignSystemChip chip(String label) => tester.widget<DesignSystemChip>(
+      find.widgetWithText(DesignSystemChip, label),
+    );
+    expect(chip('An old offer').onPressed, isNull);
+    expect(chip('Break it down').onPressed, isNotNull);
+
+    // In the inbox, which gathers every conversation, none can be tapped: a
+    // tap would answer in the conversation picked, not the reply's own.
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(FrontChatPane)),
+    );
+    container.read(frontInboxFilterProvider.notifier).toggle();
+    await tester.pump();
+    await tester.pump();
+    expect(chip('Break it down').onPressed, isNull);
+    container.read(frontInboxFilterProvider.notifier).clear();
+    await tester.pump();
+    await tester.pump();
+
+    await tester.tap(find.text('Break it down'));
+    await tester.pumpAndSettle();
+
+    verifyInOrder([
+      () => agentService.getOrCreate(),
+      () => chatService.sendMessage(
+        text: 'Break it down',
+        conversationId: 'c-1',
+      ),
+    ]);
   });
 
   testWidgets('a chip answers in its own words through the composer', (
@@ -1355,16 +1481,14 @@ void main() {
           message('u1', AgentChatRole.user, 'What is due today?', now),
           message('a1', AgentChatRole.agent, 'Two things:\n\nEggs first.', now),
         ],
-        partsByMessageId: {
-          'a1': [
-            const FrontReplyText('Two things:'),
-            FrontReplyCards([
-              taskRef('t-9', 'Feed the penguins'),
-              taskRef('t-8', 'Count the eggs'),
-            ]),
-            const FrontReplyText('Eggs first.'),
-          ],
-        },
+        surfacesByMessageId: surfaces([
+          text('Two things:'),
+          cards([
+            taskRef('t-9', 'Feed the penguins'),
+            taskRef('t-8', 'Count the eggs'),
+          ]),
+          text('Eggs first.'),
+        ]),
       ),
     );
 
@@ -1373,7 +1497,7 @@ void main() {
       find.textContaining('Two things:', findRichText: true),
     );
     final card = tester.getRect(
-      find.byKey(const ValueKey('front-reply-a1-cards-1')),
+      replyPart('a1', 1),
     );
     final after = tester.getTopLeft(
       find.textContaining('Eggs first.', findRichText: true),
@@ -1390,8 +1514,10 @@ void main() {
     );
   });
 
-  testWidgets('a Markdown list of task links in her words stays her words: a '
-      'reply is never parsed into cards', (tester) async {
+  testWidgets('a reply stored with a Markdown list of task links draws it as '
+      'her words: the pane draws what was stored, it never parses', (
+    tester,
+  ) async {
     await pumpPane(
       tester,
       thread: () async => FrontChatThread(
@@ -1419,15 +1545,14 @@ void main() {
 
   group('her lists', () {
     FrontChatThread answer(
-      List<FrontReplyPart> parts, {
+      List<Map<String, Object?>> parts, {
       FrontDueSection? due,
     }) => FrontChatThread(
       messages: [
         message('u1', AgentChatRole.user, 'What is on my plate?', now),
         message('a1', AgentChatRole.agent, 'Her words.', now),
       ],
-      partsByMessageId: {'a1': parts},
-      dueSectionsByMessageId: {'a1': ?due},
+      surfacesByMessageId: surfaces(parts, due: due),
     );
 
     final dueToday = FrontDueSection(
@@ -1441,15 +1566,15 @@ void main() {
       await pumpPane(
         tester,
         thread: () async => answer([
-          const FrontReplyText('Two things:'),
-          FrontReplyCards([
+          text('Two things:'),
+          cards([
             taskRef('t-9', 'Feed the penguins'),
             taskRef('t-8', 'Count the eggs'),
           ]),
         ], due: dueToday),
       );
 
-      final list = find.byKey(const ValueKey('front-reply-a1-cards-1'));
+      final list = replyPart('a1', 1);
       final label = find.descendant(
         of: list,
         matching: find.byType(FrontDueSectionLabel),
@@ -1471,10 +1596,10 @@ void main() {
       await pumpPane(
         tester,
         thread: () async => answer([
-          const FrontReplyText('One is overdue:'),
-          FrontReplyCards([taskRef('t-9', 'Feed the penguins')]),
-          const FrontReplyText('And one is due today:'),
-          FrontReplyCards([taskRef('t-8', 'Count the eggs')]),
+          text('One is overdue:'),
+          cards([taskRef('t-9', 'Feed the penguins')]),
+          text('And one is due today:'),
+          cards([taskRef('t-8', 'Count the eggs')]),
         ], due: dueToday),
       );
 
@@ -1482,9 +1607,7 @@ void main() {
       expect(listedIds(tester, 'a1', part: 3), ['t-8']);
       expect(find.byType(FrontDueSectionLabel), findsNothing);
       expect(
-        tester
-            .getRect(find.byKey(const ValueKey('front-reply-a1-cards-1')))
-            .bottom,
+        tester.getRect(replyPart('a1', 1)).bottom,
         lessThan(
           tester
               .getTopLeft(
@@ -1498,8 +1621,8 @@ void main() {
       await pumpPane(
         tester,
         thread: () async => answer([
-          const FrontReplyText('Two things:'),
-          FrontReplyCards([
+          text('Two things:'),
+          cards([
             taskRef('t-9', 'Feed the penguins'),
             taskRef('t-8', 'Count the eggs'),
           ]),
@@ -1515,7 +1638,7 @@ void main() {
       await pumpPane(
         tester,
         thread: () async => answer([
-          const FrontReplyText('Nothing is due today.'),
+          text('Nothing is due today.'),
         ], due: dueToday),
       );
 
@@ -1532,8 +1655,8 @@ void main() {
         tester,
         onClose: () => closed++,
         thread: () async => answer([
-          const FrontReplyText('Found these:'),
-          FrontReplyCards([
+          text('Found these:'),
+          cards([
             const FrontEntityReference(
               kind: FrontEntityKind.project,
               id: 'p-1',
@@ -1605,7 +1728,10 @@ void main() {
             now,
           ),
         ],
-        closedTasksByMessageId: {'a1': cards},
+        surfacesByMessageId: surfaces(
+          [text('Two completed, one rejected.'), closedTasksPart],
+          closedTasks: cards,
+        ),
       ),
     );
 
@@ -1719,12 +1845,10 @@ void main() {
             message('u1', AgentChatRole.user, 'Ice pad.', now),
             message('a1', AgentChatRole.agent, 'Made it a task.', now),
           ],
-          partsByMessageId: {
-            'a1': [
-              const FrontReplyText('Made it a task. Also due:'),
-              FrontReplyCards([iceRef, taskRef('t-7', 'Feed the penguins')]),
-            ],
-          },
+          surfacesByMessageId: surfaces([
+            text('Made it a task. Also due:'),
+            cards([iceRef, taskRef('t-7', 'Feed the penguins')]),
+          ]),
           entityPreviewsByMessageId: const {
             'a1': [iceRef],
           },
@@ -1745,12 +1869,10 @@ void main() {
             message('u1', AgentChatRole.user, 'Ice pad.', now),
             message('a1', AgentChatRole.agent, 'Made them tasks:', now),
           ],
-          partsByMessageId: const {
-            'a1': [
-              FrontReplyText('Made them tasks:'),
-              FrontReplyCards([iceRef, coldRef]),
-            ],
-          },
+          surfacesByMessageId: surfaces([
+            text('Made them tasks:'),
+            cards([iceRef, coldRef]),
+          ]),
           entityPreviewsByMessageId: const {
             'a1': [iceRef, coldRef],
           },
@@ -1911,7 +2033,10 @@ void main() {
           message('u2', AgentChatRole.user, 'Thanks', now),
           message('a2', AgentChatRole.agent, 'Any time.', now),
         ],
-        loggedTimeByMessageId: const {'a1': chart},
+        surfacesByMessageId: surfaces(
+          [text('12h this week.'), loggedTimePart],
+          loggedTime: chart,
+        ),
       ),
     );
 
@@ -1950,7 +2075,10 @@ void main() {
           message('u2', AgentChatRole.user, 'Thanks', now),
           message('a2', AgentChatRole.agent, 'Any time.', now),
         ],
-        pullRequestsByMessageId: const {'a1': chart},
+        surfacesByMessageId: surfaces(
+          [text('You created 12 PRs.'), pullRequestsPart],
+          pullRequests: chart,
+        ),
       ),
     );
 
@@ -1991,16 +2119,16 @@ void main() {
           message('u1', AgentChatRole.user, 'Time and PRs?', now),
           message('a1', AgentChatRole.agent, '12h logged.', now),
         ],
-        loggedTimeByMessageId: const {'a1': chart},
-        pullRequestsByMessageId: const {'a1': pullRequests},
-        partsByMessageId: const {
-          'a1': [
-            FrontReplyText('12h logged.'),
-            FrontReplyShow(FrontReplyAttachment.loggedTimeChart),
-            FrontReplyText('And 12 PRs.'),
-            FrontReplyShow(FrontReplyAttachment.pullRequestChart),
+        surfacesByMessageId: surfaces(
+          [
+            text('12h logged.'),
+            loggedTimePart,
+            text('And 12 PRs.'),
+            pullRequestsPart,
           ],
-        },
+          loggedTime: chart,
+          pullRequests: pullRequests,
+        ),
       ),
     );
 
@@ -2025,12 +2153,10 @@ void main() {
           message('u1', AgentChatRole.user, 'Time?', now),
           message('a1', AgentChatRole.agent, 'Nothing logged.', now),
         ],
-        partsByMessageId: const {
-          'a1': [
-            FrontReplyText('Nothing logged.'),
-            FrontReplyShow(FrontReplyAttachment.loggedTimeChart),
-          ],
-        },
+        surfacesByMessageId: surfaces([
+          text('Nothing logged.'),
+          loggedTimePart,
+        ]),
       ),
     );
 

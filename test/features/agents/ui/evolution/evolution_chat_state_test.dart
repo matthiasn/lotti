@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:genui/genui.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/features/agents/genui/evolution_catalog.dart';
@@ -205,7 +204,7 @@ void main() {
       test(
         'suppresses opening assistant bubble when a proposal surface is rendered',
         () async {
-          final processor = SurfaceController(
+          final processor = EvolutionSurfaces(
             catalogs: [buildEvolutionCatalog()],
           );
           final bridge = GenUiBridge(processor: processor)
@@ -342,7 +341,7 @@ void main() {
       test(
         'suppresses assistant response when the same turn renders a proposal surface',
         () async {
-          final processor = SurfaceController(
+          final processor = EvolutionSurfaces(
             catalogs: [buildEvolutionCatalog()],
           );
           final bridge = GenUiBridge(processor: processor);
@@ -745,7 +744,7 @@ void main() {
 
     group('GenUI surface drain', () {
       test('drains surface IDs from opening turn into messages', () async {
-        final processor = SurfaceController(
+        final processor = EvolutionSurfaces(
           catalogs: [buildEvolutionCatalog()],
         );
         final bridge = GenUiBridge(processor: processor)
@@ -795,7 +794,7 @@ void main() {
       });
 
       test('drains surface IDs after sendMessage', () async {
-        final processor = SurfaceController(
+        final processor = EvolutionSurfaces(
           catalogs: [buildEvolutionCatalog()],
         );
         final bridge = GenUiBridge(processor: processor);
@@ -869,7 +868,7 @@ void main() {
       test(
         'proposal_rejected callback routes through rejectProposal',
         () async {
-          final processor = SurfaceController(
+          final processor = EvolutionSurfaces(
             catalogs: [buildEvolutionCatalog()],
           );
           final bridge = GenUiBridge(processor: processor);
@@ -932,7 +931,7 @@ void main() {
       test(
         'proposal_approved callback routes through approveProposal',
         () async {
-          final processor = SurfaceController(
+          final processor = EvolutionSurfaces(
             catalogs: [buildEvolutionCatalog()],
           );
           final bridge = GenUiBridge(processor: processor);
@@ -1016,7 +1015,7 @@ void main() {
       test(
         'soul_proposal_approved callback routes through approveSoulProposal',
         () async {
-          final processor = SurfaceController(
+          final processor = EvolutionSurfaces(
             catalogs: [buildEvolutionCatalog()],
           );
           final bridge = GenUiBridge(processor: processor);
@@ -1077,7 +1076,7 @@ void main() {
       test(
         'soul_proposal_rejected callback routes through rejectSoulProposal',
         () async {
-          final processor = SurfaceController(
+          final processor = EvolutionSurfaces(
             catalogs: [buildEvolutionCatalog()],
           );
           final bridge = GenUiBridge(processor: processor);
@@ -1136,7 +1135,7 @@ void main() {
       test(
         'unknown soul proposal action is ignored',
         () async {
-          final processor = SurfaceController(
+          final processor = EvolutionSurfaces(
             catalogs: [buildEvolutionCatalog()],
           );
           final bridge = GenUiBridge(processor: processor);
@@ -1189,7 +1188,7 @@ void main() {
       test(
         'ratings_submitted callback formats ratings and sends message',
         () async {
-          final processor = SurfaceController(
+          final processor = EvolutionSurfaces(
             catalogs: [buildEvolutionCatalog()],
           );
           final bridge = GenUiBridge(processor: processor);
@@ -1246,7 +1245,7 @@ void main() {
       test(
         'binary choice callback forwards semantic value as user message',
         () async {
-          final processor = SurfaceController(
+          final processor = EvolutionSurfaces(
             catalogs: [buildEvolutionCatalog()],
           );
           final bridge = GenUiBridge(processor: processor);
@@ -1432,7 +1431,7 @@ void main() {
       test(
         'rebuilds the proposal surface when a proposal exists but no surface was drained',
         () async {
-          final processor = SurfaceController(
+          final processor = EvolutionSurfaces(
             catalogs: [buildEvolutionCatalog()],
           );
           final bridge = GenUiBridge(processor: processor);
@@ -1671,7 +1670,9 @@ void main() {
       'copyWith preserves the three nullable fields when their function '
       'params are omitted',
       () {
-        final processor = MockSurfaceController();
+        final processor = EvolutionSurfaces(
+          catalogs: [buildEvolutionCatalog()],
+        );
         final data = EvolutionChatData(
           sessionId: 'session-1',
           messages: const [],
@@ -1695,7 +1696,7 @@ void main() {
         final data = EvolutionChatData(
           sessionId: 'session-1',
           messages: const [],
-          processor: MockSurfaceController(),
+          processor: EvolutionSurfaces(catalogs: [buildEvolutionCatalog()]),
           lastSurfacedProposalKey: 'key-1',
         );
 
@@ -1722,7 +1723,9 @@ void main() {
           messages: [],
           lastSurfacedProposalKey: 'key-1',
         );
-        final newProcessor = MockSurfaceController();
+        final newProcessor = EvolutionSurfaces(
+          catalogs: [buildEvolutionCatalog()],
+        );
 
         final updated = data.copyWith(
           sessionId: () => 'session-2',

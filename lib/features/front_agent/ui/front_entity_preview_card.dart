@@ -126,7 +126,11 @@ class FrontEntityPreviewCompactCard extends ConsumerWidget {
       final FrontTaskPreview task => _TaskQuickActions(
         task: task,
         child: _PreviewSurface(
-          child: _TaskPreviewContent(task: task, onTap: onTap),
+          child: _TaskPreviewContent(
+            task: task,
+            note: reference.note,
+            onTap: onTap,
+          ),
         ),
       ),
       _ => _TitleOnly(reference: reference, onTap: onTap),
@@ -396,9 +400,17 @@ class _TitleOnly extends StatelessWidget {
 
 /// A task's card content, from its live [task] preview.
 class _TaskPreviewContent extends ConsumerWidget {
-  const _TaskPreviewContent({required this.task, required this.onTap});
+  const _TaskPreviewContent({
+    required this.task,
+    required this.onTap,
+    this.note,
+  });
 
   final FrontTaskPreview task;
+
+  /// What she said of this task where she listed it, such as its logged
+  /// time: the first line under the title.
+  final String? note;
   final VoidCallback onTap;
 
   @override
@@ -428,6 +440,7 @@ class _TaskPreviewContent extends ConsumerWidget {
       onTap: onTap,
       semanticsLabel: [
         task.title,
+        ?note,
         ?oneLiner,
         statusLabel,
         ?category?.name,
@@ -448,6 +461,13 @@ class _TaskPreviewContent extends ConsumerWidget {
               ),
             ),
       subtitleSpans: [
+        if (note case final note?)
+          TextSpan(
+            text: '$note\n',
+            style: tokens.typography.styles.others.caption.copyWith(
+              color: tokens.colors.text.highEmphasis,
+            ),
+          ),
         // In the AI ink the tasks list gives a one-liner.
         if (oneLiner != null)
           TextSpan(

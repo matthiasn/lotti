@@ -1,8 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
+import 'package:lotti/features/front_agent/model/front_closed_task_card.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
+import 'package:lotti/features/front_agent/model/front_reply_surface.dart';
 import 'package:lotti/features/front_agent/model/front_task_draft.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_contract.dart';
 import 'package:lotti/features/front_agent/workflow/front_conversation_tasks.dart';
@@ -71,24 +73,37 @@ void main() {
     ]);
   });
 
-  test('the tasks her reply listed as cards are named, a project not', () {
+  test("the tasks her reply's surface shows are named: her cards', then "
+      'the closed ones; a project is not', () {
     final conversation = [
       turn({
         'text': 'Two are due.',
-        'parts': [
-          {'text': 'Two are due.'},
-          {
-            'cards': [
-              {'kind': 'task', 'id': 'eggs', 'title': 'Eggs'},
-              {'kind': 'project', 'id': 'census', 'title': 'Census'},
-              {'kind': 'task', 'id': 'shed', 'title': 'Shed'},
-            ],
-          },
-        ],
+        'surface': FrontReplySurface.compose(
+          surfaceId: 'reply-1',
+          components: const [
+            {'component': 'Text', 'text': 'Two are due.'},
+            {
+              'component': 'TaskCards',
+              'items': [
+                {'kind': 'task', 'id': 'eggs', 'title': 'Eggs'},
+                {'kind': 'project', 'id': 'census', 'title': 'Census'},
+                {'kind': 'task', 'id': 'shed', 'title': 'Shed'},
+              ],
+            },
+            {'component': 'ClosedTasks'},
+          ],
+          closedTasks: [
+            FrontClosedTaskCard(
+              id: 'roof',
+              title: 'Roof',
+              closedAt: DateTime.utc(2026, 11, 8),
+            ),
+          ],
+        ).message,
       }, toolName: FrontAgentToolNames.replyToUser),
     ];
 
-    expect(frontConversationTaskIds(conversation), ['eggs', 'shed']);
+    expect(frontConversationTaskIds(conversation), ['eggs', 'shed', 'roof']);
   });
 
   test('a task the tap made counts as named at the tap, ahead of what '

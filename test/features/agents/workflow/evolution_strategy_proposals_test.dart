@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:genui/genui.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/agents/genui/evolution_catalog.dart';
 import 'package:lotti/features/agents/genui/genui_bridge.dart';
@@ -103,7 +102,7 @@ void main() {
         'why, so she can draw it right', () async {
       final bridged = EvolutionStrategy(
         genUiBridge: GenUiBridge(
-          processor: SurfaceController(catalogs: [buildEvolutionCatalog()]),
+          processor: EvolutionSurfaces(catalogs: [buildEvolutionCatalog()]),
         ),
       );
       final toolCall = makeToolCall(
@@ -514,7 +513,7 @@ void main() {
     test('bridge exception does not prevent proposal recording', () async {
       // Create a strategy with a bridge that has no catalog items,
       // causing handleToolCall to fail on unknown rootType processing.
-      final emptyProcessor = SurfaceController(catalogs: []);
+      final emptyProcessor = EvolutionSurfaces(catalogs: []);
       final brokenBridge = GenUiBridge(processor: emptyProcessor);
       final strat = EvolutionStrategy(genUiBridge: brokenBridge);
       final mgr = ConversationManager()..initialize();
@@ -580,7 +579,7 @@ void main() {
 /// payload does inside the GenUI processor.
 class _ThrowingGenUiBridge extends GenUiBridge {
   _ThrowingGenUiBridge()
-    : super(processor: SurfaceController(catalogs: [buildEvolutionCatalog()]));
+    : super(processor: EvolutionSurfaces(catalogs: [buildEvolutionCatalog()]));
 
   @override
   String handleToolCall(Map<String, dynamic> args) =>

@@ -19,7 +19,8 @@ environment:
   flutter: '>=3.47.0'
 
 dependencies:
-  a2ui_core: ^0.1.1
+  a2ui_core: ^0.7.0
+  a2ui_flutter: ^0.3.0
   async: ^2.13.1
   audio_decoder: ^0.8.1
   audio_session: ^0.1.25
@@ -79,7 +80,6 @@ dependencies:
   formz: ^0.8.1
   freezed_annotation: ^3.1.0
   gal: ^2.3.3
-  genui: ^0.10.4
   # CoreLocation on iOS and macOS, used without the geolocator front end so
   # its Play Services based Android implementation is never linked; Android
   # reads location through the app's own LottiLocationPlugin.

@@ -1,7 +1,5 @@
-import 'dart:convert';
-
+import 'package:a2ui_core/a2ui_core.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:genui/genui.dart';
 import 'package:lotti/features/agents/genui/evolution_catalog.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -30,32 +28,20 @@ void main() {
     testWidgets(
       'submits selected category ratings as ratings_submitted event',
       (tester) async {
-        final events = <UiEvent>[];
+        final events = <A2uiRendererAction>[];
 
         await tester.pumpWidget(
           makeTestableWidget(
-            Builder(
-              builder: (context) {
-                final itemContext = CatalogItemContext(
-                  data: <String, Object?>{
-                    'categories': <Map<String, Object?>>[
-                      {'name': 'accuracy', 'label': 'Accuracy'},
-                      {'name': 'communication', 'label': 'Communication'},
-                    ],
-                  },
-                  id: 'ratings-component',
-                  type: 'CategoryRatings',
-                  buildChild: (id, [dataContext]) => const SizedBox.shrink(),
-                  dispatchEvent: events.add,
-                  buildContext: context,
-                  dataContext: DataContext(InMemoryDataModel(), DataPath.root),
-                  getComponent: (_) => null,
-                  getCatalogItem: (_) => null,
-                  surfaceId: 'ratings-surface',
-                  reportError: (_, _) {},
-                );
-                return categoryRatingsItem.widgetBuilder(itemContext);
+            buildCatalogWidgetWithEvents(
+              categoryRatingsItem,
+              <String, Object?>{
+                'categories': <Map<String, Object?>>[
+                  {'name': 'accuracy', 'label': 'Accuracy'},
+                  {'name': 'communication', 'label': 'Communication'},
+                ],
               },
+              events: events,
+              surfaceId: 'ratings-surface',
             ),
           ),
         );
@@ -115,12 +101,11 @@ void main() {
         await tester.pump();
 
         expect(events, hasLength(1));
-        final event = events.first as UserActionEvent;
+        final event = events.first;
         expect(event.name, 'ratings_submitted');
         expect(event.surfaceId, 'ratings-surface');
 
-        final ratings =
-            jsonDecode(event.sourceComponentId) as Map<String, dynamic>;
+        final ratings = event.context['ratings'];
         expect(ratings, {'accuracy': 4, 'communication': 2});
 
         // After submit, the button is replaced by a confirmation row.
@@ -138,33 +123,21 @@ void main() {
     testWidgets('disambiguates duplicate and empty category names on submit', (
       tester,
     ) async {
-      final events = <UiEvent>[];
+      final events = <A2uiRendererAction>[];
 
       await tester.pumpWidget(
         makeTestableWidget(
-          Builder(
-            builder: (context) {
-              final itemContext = CatalogItemContext(
-                data: <String, Object?>{
-                  'categories': <Map<String, Object?>>[
-                    {'name': 'accuracy', 'label': 'Accuracy A'},
-                    {'name': 'accuracy', 'label': 'Accuracy B'},
-                    {'name': '', 'label': 'Unlabeled'},
-                  ],
-                },
-                id: 'ratings-component',
-                type: 'CategoryRatings',
-                buildChild: (id, [dataContext]) => const SizedBox.shrink(),
-                dispatchEvent: events.add,
-                buildContext: context,
-                dataContext: DataContext(InMemoryDataModel(), DataPath.root),
-                getComponent: (_) => null,
-                getCatalogItem: (_) => null,
-                surfaceId: 'ratings-surface',
-                reportError: (_, _) {},
-              );
-              return categoryRatingsItem.widgetBuilder(itemContext);
+          buildCatalogWidgetWithEvents(
+            categoryRatingsItem,
+            <String, Object?>{
+              'categories': <Map<String, Object?>>[
+                {'name': 'accuracy', 'label': 'Accuracy A'},
+                {'name': 'accuracy', 'label': 'Accuracy B'},
+                {'name': '', 'label': 'Unlabeled'},
+              ],
             },
+            events: events,
+            surfaceId: 'ratings-surface',
           ),
         ),
       );
@@ -214,9 +187,8 @@ void main() {
       // Submit only flips `_submitted` via setState — no animation to settle.
       await tester.pump();
 
-      final event = events.single as UserActionEvent;
-      final ratings =
-          jsonDecode(event.sourceComponentId) as Map<String, dynamic>;
+      final event = events.single;
+      final ratings = event.context['ratings'];
       expect(ratings, {
         'accuracy': 1,
         'accuracy_1': 5,
@@ -266,31 +238,19 @@ void main() {
     testWidgets('dispatches binary_choice_submitted with semantic payload', (
       tester,
     ) async {
-      final events = <UiEvent>[];
+      final events = <A2uiRendererAction>[];
 
       await tester.pumpWidget(
         makeTestableWidget(
-          Builder(
-            builder: (context) {
-              final itemContext = CatalogItemContext(
-                data: const <String, Object?>{
-                  'question': 'Want to rate me?',
-                  'confirmValue': 'Yes, show the rating form.',
-                  'dismissValue': 'No, skip ratings for now.',
-                },
-                id: 'binary-choice-component',
-                type: 'BinaryChoicePrompt',
-                buildChild: (id, [dataContext]) => const SizedBox.shrink(),
-                dispatchEvent: events.add,
-                buildContext: context,
-                dataContext: DataContext(InMemoryDataModel(), DataPath.root),
-                getComponent: (_) => null,
-                getCatalogItem: (_) => null,
-                surfaceId: 'binary-choice-surface',
-                reportError: (_, _) {},
-              );
-              return binaryChoicePromptItem.widgetBuilder(itemContext);
+          buildCatalogWidgetWithEvents(
+            binaryChoicePromptItem,
+            const <String, Object?>{
+              'question': 'Want to rate me?',
+              'confirmValue': 'Yes, show the rating form.',
+              'dismissValue': 'No, skip ratings for now.',
             },
+            events: events,
+            surfaceId: 'binary-choice-surface',
           ),
         ),
       );
@@ -299,11 +259,11 @@ void main() {
       // Choosing an option only flips `_submitted` via setState — no animation.
       await tester.pump();
 
-      final event = events.single as UserActionEvent;
+      final event = events.single;
       expect(event.name, 'binary_choice_submitted');
       expect(event.surfaceId, 'binary-choice-surface');
       expect(
-        jsonDecode(event.sourceComponentId),
+        event.context,
         {'value': 'Yes, show the rating form.'},
       );
     });
@@ -548,7 +508,7 @@ void main() {
     });
 
     testWidgets('dispatches event on selection', (tester) async {
-      final events = <UiEvent>[];
+      final events = <A2uiRendererAction>[];
       final widget = buildCatalogWidgetWithEvents(
         abComparisonCardItem,
         {
@@ -569,11 +529,10 @@ void main() {
       await tester.pump();
 
       expect(events, hasLength(1));
-      final event = events.first as UserActionEvent;
+      final event = events.first;
       expect(event.name, 'ab_comparison_submitted');
 
-      final payload =
-          jsonDecode(event.sourceComponentId) as Map<String, dynamic>;
+      final payload = event.context;
       expect(payload['value'], contains('Option A'));
     });
   });

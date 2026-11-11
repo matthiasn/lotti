@@ -1,16 +1,15 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:genui/genui.dart';
 import 'package:lotti/features/agents/genui/evolution_catalog.dart';
 import 'package:lotti/features/agents/genui/genui_bridge.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 void main() {
-  late SurfaceController processor;
+  late EvolutionSurfaces processor;
   late GenUiBridge bridge;
 
   setUp(() {
     final catalog = buildEvolutionCatalog();
-    processor = SurfaceController(catalogs: [catalog]);
+    processor = EvolutionSurfaces(catalogs: [catalog]);
     bridge = GenUiBridge(processor: processor);
   });
 
@@ -112,33 +111,127 @@ void main() {
 
       expect(first, isNot(second));
       expect(bridge.drainPendingSurfaceIds(), [first, second]);
-      expect(processor.registry.getSurface(first), isNotNull);
-      expect(processor.registry.getSurface(second), isNotNull);
-    });
-
-    test('missing data draws the type with none of its properties', () {
-      final id = bridge.handleToolCall({
-        'surfaceId': 'surf-empty',
-        'rootType': 'MetricsSummary',
-      });
-
-      expect(
-        processor.registry.getSurface(id)!.components['root']!.type,
-        'MetricsSummary',
-      );
+      expect(processor.model.getSurface(first), isNotNull);
+      expect(processor.model.getSurface(second), isNotNull);
     });
 
     test('a type of its catalog that the tool enum omits is still drawn', () {
       // SessionProgress is in the evolution catalog, so the
       // bridge draws it even though the LLM-facing enum omits it.
+      final id = bridge.handleToolCall({
+        'surfaceId': 'surf-progress',
+        'rootType': 'SessionProgress',
+        'data': {
+          'sessionNumber': 2,
+          'totalSessions': 5,
+          'feedbackCount': 3,
+          'status': 'active',
+        },
+      });
+
       expect(
-        bridge.handleToolCall({
-          'surfaceId': 'surf-progress',
-          'rootType': 'SessionProgress',
+        processor.model.getSurface(id)!.componentsModel.get('root')!.type,
+        'SessionProgress',
+      );
+    });
+
+    test('an id made for an unnamed surface skips one the model already '
+        'used, so the new card never overwrites that one', () {
+      const metrics = {'totalWakes': 1, 'successRate': 1.0, 'failureCount': 0};
+      bridge.handleToolCall({
+        'surfaceId': 'surface-unnamed-1',
+        'rootType': 'EvolutionNoteConfirmation',
+        'data': {'kind': 'reflection', 'content': 'A note'},
+      });
+
+      final made = bridge.handleToolCall({
+        'rootType': 'MetricsSummary',
+        'data': metrics,
+      });
+
+      expect(made, 'surface-unnamed-2');
+      expect(
+        processor.model
+            .getSurface('surface-unnamed-1')!
+            .componentsModel
+            .get('root')!
+            .type,
+        'EvolutionNoteConfirmation',
+      );
+      expect(bridge.drainPendingSurfaceIds(), ['surface-unnamed-1', made]);
+    });
+
+    test('a null property is one not given: a proposal that leaves out its '
+        'optional parts is still drawn', () {
+      final id = bridge.handleToolCall({
+        'surfaceId': 'proposal-1',
+        'rootType': 'EvolutionProposal',
+        'data': {
+          'generalDirective': 'Be brief.',
+          'reportDirective': 'Lead with the outcome.',
+          'rationale': 'Reports ran long.',
+          'currentGeneralDirective': null,
+          'currentReportDirective': null,
+        },
+      });
+
+      expect(processor.model.getSurface(id), isNotNull);
+      expect(bridge.drainPendingSurfaceIds(), ['proposal-1']);
+    });
+
+    test('a surface named again is replaced, not doubled', () {
+      const first = {'totalWakes': 1, 'successRate': 1.0, 'failureCount': 0};
+      const second = {'kind': 'reflection', 'content': 'A note'};
+      bridge
+        ..handleToolCall({
+          'surfaceId': 'surf-again',
+          'rootType': 'MetricsSummary',
+          'data': first,
+        })
+        ..handleToolCall({
+          'surfaceId': 'surf-again',
+          'rootType': 'EvolutionNoteConfirmation',
+          'data': second,
+        });
+
+      expect(
+        processor.model
+            .getSurface('surf-again')!
+            .componentsModel
+            .get('root')!
+            .type,
+        'EvolutionNoteConfirmation',
+      );
+      // Announced once: the chat already shows it, and it redraws itself.
+      expect(bridge.drainPendingSurfaceIds(), ['surf-again']);
+    });
+
+    test('a replacement its schema refuses leaves the card already on '
+        'screen as it was', () {
+      bridge
+        ..handleToolCall({
+          'surfaceId': 'surf-kept',
+          'rootType': 'EvolutionNoteConfirmation',
+          'data': {'kind': 'reflection', 'content': 'A note'},
+        })
+        ..drainPendingSurfaceIds();
+
+      expect(
+        () => bridge.handleToolCall({
+          'surfaceId': 'surf-kept',
+          'rootType': 'MetricsSummary',
           'data': <String, dynamic>{},
         }),
-        'surf-progress',
+        throwsA(isA<GenUiBridgeException>()),
       );
+
+      final root = processor.model
+          .getSurface('surf-kept')!
+          .componentsModel
+          .get('root')!;
+      expect(root.type, 'EvolutionNoteConfirmation');
+      expect(root.properties['content'], 'A note');
+      expect(bridge.drainPendingSurfaceIds(), isEmpty);
     });
 
     group('draws nothing, and says why, for', () {
@@ -161,7 +254,32 @@ void main() {
           () => bridge.handleToolCall(<String, dynamic>{}),
           refused('rootType "null" is not a widget type'),
         );
-        expect(processor.registry.getSurface('surf-unknown-root'), isNull);
+        expect(processor.model.getSurface('surf-unknown-root'), isNull);
+        expect(bridge.drainPendingSurfaceIds(), isEmpty);
+      });
+
+      test('properties its schema refuses, naming each one', () {
+        expect(
+          () => bridge.handleToolCall({
+            'surfaceId': 'surf-empty',
+            'rootType': 'MetricsSummary',
+          }),
+          refused('Required property "totalWakes" is missing'),
+        );
+        expect(
+          () => bridge.handleToolCall({
+            'surfaceId': 'surf-typed',
+            'rootType': 'MetricsSummary',
+            'data': {
+              'totalWakes': 'many',
+              'successRate': 1.0,
+              'failureCount': 0,
+            },
+          }),
+          refused("does not match the 'MetricsSummary' schema"),
+        );
+        expect(processor.model.getSurface('surf-empty'), isNull);
+        expect(processor.model.getSurface('surf-typed'), isNull);
         expect(bridge.drainPendingSurfaceIds(), isEmpty);
       });
 
@@ -174,7 +292,7 @@ void main() {
           }),
           refused('data must be an object of the MetricsSummary properties'),
         );
-        expect(processor.registry.getSurface('surf-bad'), isNull);
+        expect(processor.model.getSurface('surf-bad'), isNull);
       });
     });
   });

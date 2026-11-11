@@ -3898,6 +3898,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get commonUnknown => 'Neznámé';
 
   @override
+  String get companionCardCustomize => 'Přizpůsobit';
+
+  @override
   String get companionCardDemo => 'Velikost pro ukázku';
 
   @override
@@ -3918,9 +3921,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get companionCardResize => 'Změnit velikost';
-
-  @override
-  String get companionCardCustomize => 'Přizpůsobit';
 
   @override
   String get companionCardSmall => 'Malý';

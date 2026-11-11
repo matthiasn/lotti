@@ -1,6 +1,4 @@
-import 'dart:convert';
-
-import 'package:genui/genui.dart';
+import 'package:a2ui_flutter/a2ui_flutter.dart';
 import 'package:lotti/features/agents/genui/ab_comparison_card.dart';
 import 'package:lotti/features/agents/genui/binary_choice_prompt_card.dart';
 import 'package:lotti/features/agents/genui/category_ratings_card.dart';
@@ -13,44 +11,37 @@ import 'package:lotti/widgets/cards/modern_base_card.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Interactive category ratings widget for Phase 1 of the two-phase dialog.
-final categoryRatingsItem = CatalogItem(
+final categoryRatingsItem = ComponentImplementation(
   name: 'CategoryRatings',
-  dataSchema: categoryRatingsSchema,
-  widgetBuilder: (itemContext) {
-    final json = itemContext.data;
-    if (json is! Map<String, Object?>) return const SizedBox.shrink();
+  schema: categoryRatingsSchema,
+  builder: (buildContext, node, props, _) {
+    final json = evolutionProps(props);
     final categories = readMapList(json, 'categories');
     if (categories.isEmpty) return const SizedBox.shrink();
 
     return CategoryRatingsCard(
       categories: categories,
       onSubmit: (ratings) {
-        final ratingsJson = jsonEncode(ratings);
-        itemContext.dispatchEvent(
-          UserActionEvent(
-            name: 'ratings_submitted',
-            sourceComponentId: ratingsJson,
-            surfaceId: itemContext.surfaceId,
-          ),
-        );
+        evolutionAction(buildContext, node, 'ratings_submitted', {
+          'ratings': ratings,
+        });
       },
     );
   },
 );
 
 /// Lightweight yes/no prompt for quick conversational branching.
-final binaryChoicePromptItem = CatalogItem(
+final binaryChoicePromptItem = ComponentImplementation(
   name: 'BinaryChoicePrompt',
-  dataSchema: binaryChoicePromptSchema,
-  widgetBuilder: (itemContext) {
-    final json = itemContext.data;
-    if (json is! Map<String, Object?>) return const SizedBox.shrink();
+  schema: binaryChoicePromptSchema,
+  builder: (buildContext, node, props, _) {
+    final json = evolutionProps(props);
 
     final question = readString(json, 'question').trim();
     if (question.isEmpty) return const SizedBox.shrink();
 
     final detail = readString(json, 'detail').trim();
-    final context = itemContext.buildContext;
+    final context = buildContext;
 
     final confirmLabelRaw = readStringOrNull(json, 'confirmLabel')?.trim();
     final dismissLabelRaw = readStringOrNull(json, 'dismissLabel')?.trim();
@@ -77,12 +68,11 @@ final binaryChoicePromptItem = CatalogItem(
       dismissLabel: dismissLabel,
       confirmValue: confirmValue,
       dismissValue: dismissValue,
-      onSelect: (value) => itemContext.dispatchEvent(
-        UserActionEvent(
-          name: 'binary_choice_submitted',
-          sourceComponentId: jsonEncode({'value': value}),
-          surfaceId: itemContext.surfaceId,
-        ),
+      onSelect: (value) => evolutionAction(
+        buildContext,
+        node,
+        'binary_choice_submitted',
+        {'value': value},
       ),
     );
   },
@@ -93,12 +83,11 @@ final binaryChoicePromptItem = CatalogItem(
 /// Self-contained A/B comparison widget showing two full option phrasings
 /// as tappable cards. Used in soul evolution sessions for personality
 /// preference exploration.
-final abComparisonCardItem = CatalogItem(
+final abComparisonCardItem = ComponentImplementation(
   name: 'ABComparison',
-  dataSchema: abComparisonSchema,
-  widgetBuilder: (itemContext) {
-    final json = itemContext.data;
-    if (json is! Map<String, Object?>) return const SizedBox.shrink();
+  schema: abComparisonSchema,
+  builder: (buildContext, node, props, _) {
+    final json = evolutionProps(props);
 
     final question = readString(json, 'question').trim();
     if (question.isEmpty) return const SizedBox.shrink();
@@ -116,12 +105,11 @@ final abComparisonCardItem = CatalogItem(
       optionB: optionB,
       labelA: labelA,
       labelB: labelB,
-      onSelect: (value) => itemContext.dispatchEvent(
-        UserActionEvent(
-          name: 'ab_comparison_submitted',
-          sourceComponentId: jsonEncode({'value': value}),
-          surfaceId: itemContext.surfaceId,
-        ),
+      onSelect: (value) => evolutionAction(
+        buildContext,
+        node,
+        'ab_comparison_submitted',
+        {'value': value},
       ),
     );
   },
@@ -129,12 +117,11 @@ final abComparisonCardItem = CatalogItem(
 
 /// High-priority feedback card showing grievances (red) and excellence notes
 /// (green) with full untruncated text.
-final highPriorityFeedbackItem = CatalogItem(
+final highPriorityFeedbackItem = ComponentImplementation(
   name: 'HighPriorityFeedback',
-  dataSchema: highPriorityFeedbackSchema,
-  widgetBuilder: (itemContext) {
-    final json = itemContext.data;
-    if (json is! Map<String, Object?>) return const SizedBox.shrink();
+  schema: highPriorityFeedbackSchema,
+  builder: (buildContext, node, props, _) {
+    final json = evolutionProps(props);
     final grievances = readMapList(
       json,
       'grievances',
@@ -146,7 +133,7 @@ final highPriorityFeedbackItem = CatalogItem(
     if (grievances.isEmpty && excellenceNotes.isEmpty) {
       return const SizedBox.shrink();
     }
-    final context = itemContext.buildContext;
+    final context = buildContext;
     final messages = context.messages;
 
     return Padding(

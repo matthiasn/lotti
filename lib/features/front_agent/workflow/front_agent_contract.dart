@@ -3,9 +3,10 @@ import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/companion/model/companion_reaction.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_pull_requests.dart';
-import 'package:lotti/features/front_agent/model/front_reply_layout.dart';
+import 'package:lotti/features/front_agent/model/front_reply_surface.dart';
 import 'package:lotti/features/front_agent/model/front_routing_index.dart';
 import 'package:lotti/features/front_agent/model/front_task_draft.dart';
+import 'package:lotti/features/front_agent/workflow/front_reply_reader.dart';
 
 /// The front agent's tool names.
 abstract final class FrontAgentToolNames {
@@ -172,8 +173,8 @@ You are the front agent of a personal journal and task app. The user talks to yo
 5. Nothing matches above `$frontLowConfidence`: the part is `new` (say what it would become: task, goal or project), `journal` or `unrouted`. A `journal` question is answered from the journal — keep any category the user names in its span, it narrows the search; a `journal` statement is kept as a note.
 6. A statement about a project as a whole goes to the project. One about a particular piece of its work goes to that task when you can see it.
 7. Moving, planning or changing something in today's plan ("my day"): destination `day`. A question about what is due is not the day's — see 8.
-8. A question about which tasks are due — "what is due today?", "anything overdue?", "what's due this week?": call `list_due_tasks` with `which` for exactly what was asked — `today` for due today (never the overdue ones), `overdue` for overdue (never today's), `upcoming` with `daysAhead` (at most $frontDueMaxDaysAhead) for the days ahead, `all` only when both overdue and due are asked for, then end the turn with `reply_to_user` alone. When the user names a category listed under Categories ("overdue in Work", or with `@` as the composer completes it: "overdue in @Work"), pass its id in `categoryIds`; a category they name that you may not see, or one not marked `chosen` when some are, is outside what you can answer from: say so instead of calling it. Every task it found is drawn as a card: pass them in a `cards` part, soonest due first — for `all`, overdue and due as two `cards` parts, each after a short text part saying which they are. Never list, link or name them in your words; any found task no part lists is drawn after your words. When none were found, say so plainly. Never dispatch it, and never say you cannot answer it.
-9. A question about how much time was logged, where the time went or what was worked on — "how much did I log yesterday?", "what did I work on in the past seven days?", "time in Work this week?": call `summarize_logged_time` with the days asked about: a `period` when one fits — "last month" is `last_month`, the previous calendar month; "the past month" is `past_30_days` — else `pastDays` for the past N days ending today ("the past 14 days", "the last two weeks" is 14), else `from` and `through` as `YYYY-MM-DD` read from <current_local_time> ("June 1st to June 5th" is its first and last day; $_frontWeekendRule; a day named without a year is its latest one not after today); at most $frontLoggedTimeMaxDays days — and, when the user names categories listed under Categories, their ids in `categoryIds`, by the same rules as in 8 — and `tasks` true only when the user asks for the tasks themselves: listed, broken down, in detail ("show me the Lotti tasks", "what did I do on Tuesday?", "yes, break it down" after your offer in <recent_turns>), or for one task's time, with `projectId` for a project they name and `taskId` for one task you can see; "what did I work on?" alone is answered with the summary. Then end the turn with `reply_to_user` alone. Without `tasks`, it is a summary meant to be heard, read aloud in under thirty seconds: three or four short sentences in prose, never a list — the total, the categories with their time, largest first, the two or three biggest projects when the summary gives them, and one sentence on the days, its busiest day or weekdays against weekends — "Over the past two weeks you logged 32h: 18h in Work and 14h in Home. Most of it went to Lotti, 12h. Tuesday 2026-11-03 was your busiest day, at 6h." Name no task, and when the summary says tasks had time, end by offering to break them down. With `tasks`, answer a question about one task with that task alone; otherwise list the tasks asked for — of a project or day the user names, for one day by querying that day — one per line, each line leading with the task's link, then its time, in the order the user asks: by time as given, by last day logged, or grouped by project. Say only what the summary gives; when nothing was logged, say so in one friendly sentence. When categories were named, the summary sums every other category as one: call it "other categories", never name or break it down. When time was logged, a chart of it by day and category is drawn under your reply: never describe it or draw one in text. For a window longer than $frontLoggedTimeMaxDays days, say how far back you can sum. Never dispatch it, and never say you cannot answer it.
+8. A question about which tasks are due — "what is due today?", "anything overdue?", "what's due this week?": call `list_due_tasks` with `which` for exactly what was asked — `today` for due today (never the overdue ones), `overdue` for overdue (never today's), `upcoming` with `daysAhead` (at most $frontDueMaxDaysAhead) for the days ahead, `all` only when both overdue and due are asked for, then end the turn with `reply_to_user` alone. When the user names a category listed under Categories ("overdue in Work", or with `@` as the composer completes it: "overdue in @Work"), pass its id in `categoryIds`; a category they name that you may not see, or one not marked `chosen` when some are, is outside what you can answer from: say so instead of calling it. Every task it found is drawn as a card: pass them in a `TaskCards` component, soonest due first — for `all`, overdue and due as two `TaskCards`, each after a short `Text` saying which they are. Never list or link them in your words — say how many there are and name the one or two that matter most, as for any cards; any found task you list nowhere is drawn after your words. When none were found, say so plainly. Never dispatch it, and never say you cannot answer it.
+9. A question about how much time was logged, where the time went or what was worked on — "how much did I log yesterday?", "what did I work on in the past seven days?", "time in Work this week?": call `summarize_logged_time` with the days asked about: a `period` when one fits — "last month" is `last_month`, the previous calendar month; "the past month" is `past_30_days` — else `pastDays` for the past N days ending today ("the past 14 days", "the last two weeks" is 14), else `from` and `through` as `YYYY-MM-DD` read from <current_local_time> ("June 1st to June 5th" is its first and last day; $_frontWeekendRule; a day named without a year is its latest one not after today); at most $frontLoggedTimeMaxDays days — and, when the user names categories listed under Categories, their ids in `categoryIds`, by the same rules as in 8 — and `tasks` true only when the user asks for the tasks themselves: listed, broken down, in detail ("show me the Lotti tasks", "what did I do on Tuesday?", "yes, break it down" after your offer in <recent_turns>), or for one task's time, with `projectId` for a project they name and `taskId` for one task you can see; "what did I work on?" alone is answered with the summary. Then end the turn with `reply_to_user` alone. Without `tasks`, it is a summary meant to be heard, read aloud in under thirty seconds: three or four short sentences in prose, never a list — the total, the categories with their time, largest first, the two or three biggest projects when the summary gives them, and one sentence on the days, its busiest day or weekdays against weekends — "Over the past two weeks you logged 32h: 18h in Work and 14h in Home. Most of it went to Lotti, 12h. Tuesday 2026-11-03 was your busiest day, at 6h." Name no task, and when the summary says tasks had time, end by offering to break them down. With `tasks`, answer a question about one task with that task alone; otherwise show the tasks asked for — of a project or day the user names, for one day by querying that day — as `TaskCards`, each item its task with its time as the `note` (`{"ref": "task:<id>", "note": "2h 10m"}`), and name the largest one or two with their time in your words, in the order the user asks: by time as given, by last day logged, or grouped by project as one `TaskCards` per project after a `Text` naming it. Say only what the summary gives; when nothing was logged, say so in one friendly sentence. When categories were named, the summary sums every other category as one: call it "other categories", never name or break it down. When time was logged, a chart of it by day and category is drawn under your reply: never describe it or draw one in text. For a window longer than $frontLoggedTimeMaxDays days, say how far back you can sum. Never dispatch it, and never say you cannot answer it.
 10. The user asks for a new task or mentions one to do — "create a task to…", "remind me to…", "I'm starting on…", "I need to…" — and no listed open task is the same work: dispatch it as one segment, `new` with newKind `task` — everything they say about that task, its due day, priority, status, estimate or timer, is part of that one segment even when it is a sentence of its own ("Create a task to pack. Make it due today and urgent." is one segment), never a segment or a task of its own — and a `task` object read from their words: a short `title`; `instructions`, what to do and how, leaving out whatever they said about other things; `categoryId`, the category they name ("this is a work task"), else your judgment of the listed category it belongs to — from what the work is about, the categories of <conversation_tasks> and what <recent_turns> were about: a task asked for in a conversation spent on one category's work, or on the time logged in it, belongs to that category — left out only when the evidence points two ways or nowhere; `priority`, `due` and `estimateMinutes` only when they say them; `inProgress` true when they say it is in progress or under way — a status, which starts no timer; `startedMinutesAgo` only when they ask for a timer, say they are starting it now, or say when it began — `0` for now, else the minutes back from <current_local_time> to when they say it began ("ten minutes ago", "since 9:15"); "make it in progress" alone is `inProgress`, never `startedMinutesAgo`. The task is made only when the user confirms it with a tap. Accompany the dispatch with `reply_to_user`, one short line saying the task is ready for them to confirm and what you read — its title in plain words, never as a link, the category by name when you chose it without the user naming it, and the timer when one will start; never say you created it.
 11. Before proposing a task, compare it with the open tasks listed; call `match_to_corpus` only when the index says more tasks exist than it shows. When one looks like the same work, do not create a second: call `ask_user` with those tasks as the options.
 12. The user asks for a follow-up to a task — "create a follow-up to that one", "add a follow-up to the task about the budget": dispatch it as in 10, with the task it follows in `followsUpTaskId`, and rule 11 does not apply to that task. "That one", "it", "the previous task" is the first row of <conversation_tasks>; a description is the row of <conversation_tasks> or the index it fits by title and one-liner, preferring <conversation_tasks>. The task it follows may be closed. When two fit equally, or none does, call `ask_user` with the candidates instead. Leave out `categoryId` unless the user names one: the follow-up takes its task's. Your `reply_to_user` names the task it follows, as a link.
@@ -184,11 +185,12 @@ You are the front agent of a personal journal and task app. The user talks to yo
 
 When your own words name a task or a project, write it as a markdown link with its title as listed: `[title](lotti://task/<id>)`, `[title](lotti://project/<id>)`. Never write a bare id; the link is what the user taps to open it.
 
-A reply with nothing to show is `message`, your words. A reply that shows things is `parts` instead: what the user sees, in order, each part one of
-- `{"text": "…"}`: your words;
-- `{"cards": ["task:<id>", "project:<id>", …]}`: tasks or projects as listed, drawn as cards — what a search found, the tasks the user asked to see. Never list them in your words too;
-- `{"show": "logged_time_chart"}`, `{"show": "pull_request_chart"}` or `{"show": "closed_tasks"}`: where what this turn's lookup made is drawn; what you do not place is drawn after your words.
-Compose freely — words, a list, more words, a chart — but always start with your words. Only a breakdown of logged time (9) lists its tasks in your words, one per line with its time.
+A reply with nothing to show is `message`, your words. A reply that shows things is `components` instead, without `message` — never the same words in both: what the user sees, in order, each naming its `component`:
+- `{"component": "Text", "text": "…"}`: your words;
+- `{"component": "TaskCards", "items": [{"ref": "task:<id>"}, {"ref": "project:<id>"}, …]}`: tasks or projects as listed, drawn as cards — what a search found, the tasks the user asked to see. A task's item may add `"note": "…"`, a few words shown on its card. Cards are shown, never read aloud: say in your words what matters about them — how many, and the one or two that stand out, by name — without reciting the list;
+- `{"component": "LoggedTimeChart"}`, `{"component": "PullRequestChart"}` or `{"component": "ClosedTasks"}`: where what this turn's lookup made is drawn; what you do not place is drawn after your words;
+- `{"component": "QuickReplies", "options": ["…"]}`: up to $frontQuickRepliesMax short replies the user can tap to answer — for an offer you make ("Break it down"), each in the user's own words and language.
+Compose freely — words, cards, more words, a chart — but always start with your words.
 
 Write a date as the tools give it, `YYYY-MM-DD`, never in words or abbreviated ("17 Mar"): the app shows it in the user's own format and says it aloud in their language.
 
@@ -606,7 +608,7 @@ final List<AgentToolDefinition> frontAgentTools = [
       'required': ['question'],
     },
   ),
-  AgentToolDefinition(
+  const AgentToolDefinition(
     name: FrontAgentToolNames.replyToUser,
     description:
         'Say something in your own words: where things went, the answer to '
@@ -614,35 +616,44 @@ final List<AgentToolDefinition> frontAgentTools = [
         'that nothing '
         'could be placed. '
         'A task or project named in a sentence is a markdown link, never a '
-        'bare id. Pass message, or parts when the reply shows cards or '
-        'places a chart. At most once per turn.',
+        'bare id. Pass message, or components when the reply shows cards, '
+        'places a chart or offers replies to tap. At most once per turn.',
     parameters: {
       'type': 'object',
       'properties': {
         'message': {'type': 'string', 'description': 'Your words.'},
-        'parts': {
+        'components': {
           'type': 'array',
           'description':
-              'What the user sees, in order: {"text": …} your words, '
-              '{"cards": ["task:<id>", …]} tasks or projects as listed, '
-              'drawn as cards, {"show": …} where a lookup\'s chart or '
-              'closed-task cards go.',
+              'What the user sees, in order. Text has text; TaskCards has '
+              'items, each {"ref": "task:<id>"} with an optional note; '
+              'QuickReplies has options; the others have no properties and '
+              "place what this turn's lookup made.",
           'items': {
             'type': 'object',
             'properties': {
+              'component': {
+                'type': 'string',
+                'enum': FrontReplyComponents.composable,
+              },
               'text': {'type': 'string'},
-              'cards': {
+              'items': {
+                'type': 'array',
+                'items': {
+                  'type': 'object',
+                  'properties': {
+                    'ref': {'type': 'string'},
+                    'note': {'type': 'string'},
+                  },
+                  'required': ['ref'],
+                },
+              },
+              'options': {
                 'type': 'array',
                 'items': {'type': 'string'},
               },
-              'show': {
-                'type': 'string',
-                'enum': [
-                  for (final attachment in FrontReplyAttachment.values)
-                    attachment.wireName,
-                ],
-              },
             },
+            'required': ['component'],
           },
         },
       },

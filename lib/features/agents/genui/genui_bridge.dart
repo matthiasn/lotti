@@ -1,18 +1,16 @@
-import 'package:a2ui_core/a2ui_core.dart'
-    show CreateSurfaceMessage, UpdateComponentsMessage;
-import 'package:genui/genui.dart';
+import 'package:a2ui_core/a2ui_core.dart';
 import 'package:lotti/features/agents/genui/evolution_catalog.dart';
 import 'package:openai_dart/openai_dart.dart';
 
-/// Bridges Lotti's OpenAI tool-calling layer to GenUI's A2UI message protocol.
+/// Bridges Lotti's OpenAI tool-calling layer to the A2UI message protocol.
 ///
-/// When the LLM calls the `render_surface` tool, this bridge constructs the
-/// necessary [CreateSurfaceMessage] and [UpdateComponentsMessage] messages
-/// and feeds them to the [SurfaceController].
+/// When the LLM calls the `render_surface` tool, this bridge builds the A2UI
+/// `createSurface` message and feeds it to the [EvolutionSurfaces]. The model
+/// never writes A2UI itself.
 class GenUiBridge {
   GenUiBridge({required this.processor});
 
-  final SurfaceController processor;
+  final EvolutionSurfaces processor;
 
   /// Tool name constant.
   static const toolName = 'render_surface';
@@ -84,20 +82,21 @@ class GenUiBridge {
   /// The widget types the evolution catalog — the one every surface here is
   /// created with — can draw.
   static final Set<String> _drawableTypes = {
-    for (final item in buildEvolutionCatalog().items) item.name,
+    for (final item in buildEvolutionCatalog().components.values) item.name,
   };
 
   /// Process a `render_surface` tool call.
   ///
-  /// Sends a [CreateSurfaceMessage] followed by an [UpdateComponentsMessage]
-  /// carrying the root component to the processor, and returns the surface
-  /// ID. A surface the model did not name gets an id of its own, so two such
-  /// surfaces never collide.
+  /// Creates the surface with its root component in one v1.0 `createSurface`
+  /// message — checked as a whole, so a surface that fails creates nothing —
+  /// and returns the surface ID. A surface the model did not name gets an id
+  /// of its own, so two such surfaces never collide; one it names again is
+  /// updated in place, and keeps what it showed when the update fails.
   ///
   /// Throws a [GenUiBridgeException] — nothing is drawn — for a `rootType`
-  /// the evolution catalog does not have or `data` that is not an object: a surface is
-  /// never drawn as a type the model did not ask for, or with properties it
-  /// did not give.
+  /// the evolution catalog does not have, `data` that is not an object, or
+  /// properties the type's schema refuses: a surface is never drawn as a
+  /// type the model did not ask for.
   String handleToolCall(Map<String, dynamic> args) {
     final rootType = args['rootType'];
     if (rootType is! String || !_drawableTypes.contains(rootType)) {
@@ -114,36 +113,58 @@ class GenUiBridge {
     }
     final data = rawData as Map<String, dynamic>? ?? <String, dynamic>{};
     final surfaceIdValue = args['surfaceId'];
-    final surfaceId = surfaceIdValue is String && surfaceIdValue.isNotEmpty
+    var surfaceId = surfaceIdValue is String && surfaceIdValue.isNotEmpty
         ? surfaceIdValue
-        : 'surface-unnamed-${++_unnamedSurfaces}';
-
-    const rootId = 'root';
+        : null;
+    // An id made here must be free: one the model happened to use already
+    // would turn this new surface into an update of that one.
+    while (surfaceId == null) {
+      final candidate = 'surface-unnamed-${++_unnamedSurfaces}';
+      if (processor.model.getSurface(candidate) == null) surfaceId = candidate;
+    }
 
     // A2UI components are flat JSON: the id and type sit beside the
     // widget's own properties. The fixed keys come last so a stray `id` or
     // `component` in the LLM's data cannot rename the root.
+    // A null property is one not given: the app's own proposal surfaces
+    // pass null for what a proposal leaves out, which a schema would refuse.
     final component = <String, dynamic>{
-      ...data,
-      'id': rootId,
+      for (final MapEntry(:key, :value) in data.entries) key: ?value,
+      'id': 'root',
       'component': rootType,
     };
+    const version = '1.0';
+    final existed = processor.model.getSurface(surfaceId) != null;
+    try {
+      processor.processMessages([
+        // A surface she names again is updated in place: the update is
+        // checked before it is applied, so one that fails leaves the card
+        // already on screen as it was.
+        if (existed)
+          {
+            'version': version,
+            'updateComponents': {
+              'surfaceId': surfaceId,
+              'components': [component],
+            },
+          }
+        else
+          {
+            'version': version,
+            'createSurface': {
+              'surfaceId': surfaceId,
+              'catalogId': evolutionCatalogId,
+              'components': [component],
+            },
+          },
+      ]);
+    } on A2uiError catch (e) {
+      throw GenUiBridgeException(e.message);
+    }
 
-    processor
-      ..handleMessage(
-        CreateSurfaceMessage(
-          surfaceId: surfaceId,
-          catalogId: evolutionCatalogId,
-        ),
-      )
-      ..handleMessage(
-        UpdateComponentsMessage(
-          surfaceId: surfaceId,
-          components: [component],
-        ),
-      );
-
-    _pendingSurfaceIds.add(surfaceId);
+    // An updated surface is already in the chat, where it redraws itself:
+    // only a new one is announced.
+    if (!existed) _pendingSurfaceIds.add(surfaceId);
     return surfaceId;
   }
 }

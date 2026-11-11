@@ -1,7 +1,7 @@
 ---
 type: Feature Module
 title: Front agent
-description: The one agent the user talks to in one place — how a durable user turn becomes a routing wake, what the routing index holds, how the dispatch contract is validated in code, the capped lookups and the repair round, the deterministic records a turn leaves behind, how the door walker takes each segment to its owner and mirrors the answer, how a statement becomes a proposal the user's one tap files, how a dictated task is filled from her reading of the words and made on the tap, how "that one" finds the task a follow-up follows, what the inbox is, how an unanswered turn is recovered on any device, how turns form conversations, how she answers what is due, how much time was logged, with a chart under her words, what was completed or rejected, and how many pull requests the user opened and shipped, with charts under her words, and names tasks as links, how a reply is composed of words, cards and charts in her order, checked before it is stored, and drawn as a GenUI surface, what the chat surface renders, how a stalled or failed turn is bounded, timed and named, and what she hears and says.
+description: The one agent the user talks to in one place — how a durable user turn becomes a routing wake, what the routing index holds, how the dispatch contract is validated in code, the capped lookups and the repair round, the deterministic records a turn leaves behind, how the door walker takes each segment to its owner and mirrors the answer, how a statement becomes a proposal the user's one tap files, how a dictated task is filled from her reading of the words and made on the tap, how "that one" finds the task a follow-up follows, what the inbox is, how an unanswered turn is recovered on any device, how turns form conversations, how she answers what is due, how much time was logged, with a chart under her words, what was completed or rejected, and how many pull requests the user opened and shipped, with charts under her words, and names tasks as links, how a reply is composed of catalog components in her order, checked, stored as an A2UI surface and drawn by `a2ui_flutter`, what the chat surface renders, how a stalled or failed turn is bounded, timed and named, and what she hears and says.
 resource: ../../lib/features/front_agent
 tags: [agents, front-agent, routing, dispatch, doors, filing, inbox, companion, chat]
 status: draft
@@ -148,26 +148,22 @@ sources:
     resource: ../../lib/features/front_agent/ui/front_chat_voice.dart
     title: FrontVoice — her spoken reply, its gating, her pose, the voice an answer said again keeps
     last_modified: 2026-11-07
-  - id: reply-layout
-    resource: ../../lib/features/front_agent/model/front_reply_layout.dart
-    title: FrontReplyPart — the catalog her reply is composed from (words, cards, what a lookup made)
-    last_modified: 2026-11-10
-  - id: reply-components
-    resource: ../../lib/features/front_agent/model/front_reply_components.dart
-    title: frontReplyComponents — a reply's parts as A2UI components, their data from the reply as stored
+  - id: reply-surface
+    resource: ../../lib/features/front_agent/model/front_reply_surface.dart
+    title: FrontReplySurface — a reply as its stored A2UI v1.0 createSurface message, its components and the data the app bound
+    last_modified: 2026-11-11
+  - id: reply-reader
+    resource: ../../lib/features/front_agent/workflow/front_reply_reader.dart
+    title: readFrontReply — reply_to_user's components checked against what the turn saw, task lists in her words made cards, nothing a lookup found lost
     last_modified: 2026-11-11
   - id: reply-catalog
-    resource: ../../lib/features/front_agent/ui/genui/front_reply_catalog.dart
-    title: frontReplyCatalog and FrontReplyScope — her reply's GenUI catalog on the chat's own widgets
+    resource: ../../lib/features/front_agent/ui/a2ui/front_reply_catalog.dart
+    title: frontReplyCatalog and FrontReplyScope — her reply's A2UI catalog on the chat's own widgets
     last_modified: 2026-11-11
-  - id: reply-surface
-    resource: ../../lib/features/front_agent/ui/genui/front_reply_surface.dart
-    title: FrontReplySurface — one reply as a GenUI surface, updated in place
+  - id: reply-surfaces
+    resource: ../../lib/features/front_agent/ui/a2ui/front_reply_surfaces.dart
+    title: FrontReplySurfaces — one A2UI message processor per conversation, fed each reply's stored surface
     last_modified: 2026-11-11
-  - id: reply-layout-reader
-    resource: ../../lib/features/front_agent/workflow/front_reply_layout_reader.dart
-    title: readFrontReplyLayout — reply_to_user's parts checked against what the turn saw, nothing a lookup found lost
-    last_modified: 2026-11-10
   - id: task-list
     resource: ../../lib/features/front_agent/ui/front_task_list.dart
     title: FrontClosedTaskList — the tasks a closed-task answer found, as a card of rows
@@ -431,7 +427,7 @@ Nine tools, never fewer (a single tool makes DeepSeek rewrite
 | `list_closed_tasks(period \| pastDays \| from+through, categoryIds?)` | no | 1 per turn | `frontClosedListExhaustedAnswer`; unavailable when no lister is wired |
 | `summarize_pull_requests(period \| pastDays \| from+through)` | no | 1 per turn | `frontPullRequestSummaryExhaustedAnswer`; unavailable when no summarizer is wired |
 | `ask_user(question, options ≤ 3)` | yes | once | refused |
-| `reply_to_user(message?, parts?)` | yes | once | refused without words; a part it cannot draw is dropped and named (see *Her reply is composed of parts*) |
+| `reply_to_user(message?, components?)` | yes | once | refused without words; a component it cannot draw is dropped and named (see *Her reply is an A2UI surface*) |
 
 Lookups are capped by **count-and-refuse**, not by removing the tool:
 removing it changes the request prefix and voids the cache. Rows a
@@ -624,8 +620,8 @@ found time, the strategy keeps its `FrontLoggedTimeChart` — the days summed
 (`InsightsRange`), the turn's category scope and the categories the user
 named (`namedCategoryIds`, absent from older replies, read back as none),
 never the figures — and
-the workflow stores it on her `reply_to_user` payload as `loggedTime`. The
-thread builder reads it back into `FrontChatThread.loggedTimeByMessageId`,
+the workflow writes it into the data model of her reply's surface, at
+`/loggedTime` (below). The chart component is bound to that path,
 and the chart reads the numbers again when drawn
 (`frontLoggedTimeChartProvider`, through the same `readFrontLoggedTime`
 and the Insights page's `buildChartData`), so time in a private category
@@ -644,8 +640,8 @@ flowchart LR
   Tool["summarize_logged_time"] --> Read["readFrontLoggedTime"]
   Read --> Text["FrontLoggedTime.render: text the model reads"]
   Tool --> Spec["FrontLoggedTimeChart: days + scope + named"]
-  Spec --> Payload["reply_to_user payload: loggedTime"]
-  Payload --> Thread["FrontChatThread.loggedTimeByMessageId"]
+  Spec --> Payload["reply surface data model: /loggedTime"]
+  Payload --> Thread["LoggedTimeChart component, bound to it"]
   Thread --> Card["FrontLoggedTimeChartCard"]
   Card --> Read
   Card --> Bars["Insights StackedBarChart + ChartLegend"]
@@ -702,11 +698,10 @@ rejected, then each task as `task:<id> | title | completed|rejected
 YYYY-MM-DD | [reopened since |] category`, oldest first, at most
 `frontClosedTaskLimit` lines with the rest counted — or a plain *None*.
 `FrontClosedTasks.cards` is every task as a `FrontClosedTaskCard`, which the
-workflow stores on her `reply_to_user` payload as `closedTasks`; the thread
-builder reads it into `FrontChatThread.closedTasksByMessageId`, and the
-surface draws them as cards under her words (below) — or where her
-`{"show": "closed_tasks"}` part puts them — so the list never hinges on
-how she phrased it. The prompt therefore has her say only how
+workflow writes into the data model of her reply's surface, at
+`/closedTasks`; the `ClosedTasks` component is bound to it, and the
+surface draws them as cards under her words (below) — or where she
+places the component — so the list never hinges on how she phrased it. The prompt therefore has her say only how
 many were completed and rejected, never list or link the tasks herself.
 
 **How many pull requests the user opened, and what they shipped** — *how
@@ -739,8 +734,8 @@ lines, then each pull request (`owner/repo#n | title | opened | merged |
 
 When some were opened, the strategy keeps the `FrontPullRequestChart` — the
 days, the scope and the login, never the figures — and the workflow stores
-it on her `reply_to_user` payload as `pullRequests`; the thread builder
-reads it into `FrontChatThread.pullRequestsByMessageId`.
+it into the data model of her reply's surface, at `/pullRequests`, which
+the `PullRequestChart` component is bound to.
 `frontPullRequestChartProvider` reads the same rows again when drawn, on
 the pull request, task, link and private-toggle notifications, and
 `frontPullRequestDays` sums them per local day.
@@ -751,8 +746,8 @@ flowchart LR
   Query --> Read["readFrontPullRequests over pullRequestStatRows"]
   Read --> Text["FrontPullRequests.render: text the model reads"]
   Read --> Spec["FrontPullRequestChart: days + scope + login"]
-  Spec --> Payload["reply_to_user payload: pullRequests"]
-  Payload --> Thread["FrontChatThread.pullRequestsByMessageId"]
+  Spec --> Payload["reply surface data model: /pullRequests"]
+  Payload --> Thread["PullRequestChart component, bound to it"]
   Thread --> Card["FrontPullRequestChartCard"]
   Card --> Read
   Card --> Days["frontPullRequestDays"]
@@ -1446,100 +1441,111 @@ stateDiagram-v2
 narrows that answer, as `list_due_tasks`' `categoryIds` and the journal
 door's scope show, and sets nothing standing — the sheet says so.
 
-**Her reply is composed of parts, never parsed from her words.** A reply
-that shows anything besides words is `reply_to_user`'s `parts`: what the
-user sees, in her order, each part one of the catalog `FrontReplyPart` —
-`{"text"}`, her words; `{"cards": ["task:<id>", "project:<id>", …]}`, tasks
-or projects drawn as preview cards; `{"show": "<attachment>"}`, where
-something this turn's lookup made is drawn (`FrontReplyAttachment`: the
-closed-task cards, the logged-time chart, the pull-request charts). So she
-can lead with a sentence, list the overdue tasks, say a word about what is
-due, list those, and put a chart after them. A plain answer is `message`
-alone; a `message` beside `parts` leads them as words.
+**Her reply is an A2UI surface she composes from a catalog.** A reply that
+shows anything besides words is `reply_to_user`'s `components`: what the
+user sees, in her order, each naming one of `FrontReplyComponents` —
+`Text`, her words; `TaskCards` with `items`, each `task:<id>` or
+`project:<id>` (or `{"ref", "note"}` to say a few words on its card, such
+as its logged time); `ClosedTasks`, `LoggedTimeChart` and
+`PullRequestChart`, placing what a lookup of the turn made; and
+`QuickReplies` with up to `frontQuickRepliesMax` short `options` the user
+can tap. A plain answer is `message` alone. Her words are said once: a `message`
+leads the components, unless it repeats what their `Text` says, as a
+model that composes tends to. She composes and references; **she never passes data
+to a component**: a card reads its task live by id, and a lookup's
+component is bound to what the app wrote from that lookup.
 
-`readFrontReplyLayout` checks the parts before anything is stored: a card
+`readFrontReply` checks the components before anything is stored: a card
 must be a task or project the turn could see — `<routing_index>` or a
-lookup's rows, by `kind:id` — and a `show` must name something a lookup
-made this turn. A part that fails is **dropped, never a reason to lose her
-answer**: refusing it could end a turn that has no call left for a repair
-without any reply. Her tool result names what was left out, and the
-strategy logs a warning with the count, so a model that keeps naming what
-the turn never saw shows in the logs. Only a reply without words is
-refused, since there is nothing to deliver. Nothing a lookup found is lost to a part she forgot: the tasks a
-`list_due_tasks` found that no part lists follow as one more list, and
-what a lookup made that she did not place follows in catalog order. A task
-is listed once, where she first put it. Her words pass through
-`linkFrontReferences` as before; the reply's `text` — what is spoken, kept
-in `<recent_turns>`, and shown as her words — is her text parts joined.
+lookup's rows, by `kind:id` — and a lookup's component must have a lookup
+behind it this turn. One that fails is **dropped, never a reason to lose
+her answer**: refusing it could end a turn that has no call left for a
+repair without any reply. Her tool result names what was left out, and the
+strategy logs a warning with the count. Only a reply without words is
+refused. **Cards never hinge on her remembering the component**: a list in
+her words whose lines each hold one link to a task or project the turn saw
+is cut out of her words and drawn as `TaskCards` in its place, what else
+the line says kept as the card's note (a project line that says more
+stays her words, since only a task's card shows a note; so does a line
+that says a sentence, longer than `frontCardNoteMax`). The tasks a `list_due_tasks` found that she listed
+nowhere follow as one more list, and a lookup's component she did not
+place follows in catalog order. A task is listed once, and never when a
+closed-task card shows it. The reply's `text` — what is spoken, kept in
+`<recent_turns>` — is her words as she wrote them, a list she wrote
+included: cards are shown, never read aloud, so her prompt has her say
+what matters about them in her words.
 
-The workflow stores the parts on her reply as `parts`; the thread builder
-reads them into `partsByMessageId` (a part this build cannot read is
-skipped), and `FrontChatThread.partsOf` is what the surface draws: those
-parts, or — for a reply stored before replies had parts — her words, then
-what it carries in catalog order. Her words are never cut into lists: a
-Markdown list of task links in a reply stays her words, its links still
-open.
+The workflow stores the reply as **one A2UI v1.0 `createSurface` message**
+(`FrontReplySurface.compose`, the payload's `surface`), named for the
+reply: a root `Reply` listing her components by id, and a `dataModel` the
+app fills — `/due`, `/closedTasks`, `/loggedTime`, `/pullRequests`. A
+lookup's component is bound to its path (`{"@path": …}`) and left out when
+the turn has no such data; the due window labels the reply's cards only
+when it has exactly one list. The thread builder reads it into
+`surfacesByMessageId`; a reply stored before replies had surfaces gets one
+composed from her words and the `closedTasks`, `loggedTime` and
+`pullRequests` it carried. `<conversation_tasks>` and the stage's pointing
+read the surface (`taskIds`, `hasVisual`).
 
-**Her reply is drawn as a GenUI surface.** The pane hands
-`AgentChatView.replyBodyBuilder` a body for any reply whose parts are more
-than words: a `FrontReplySurface` keyed by the reply, which holds a
-`SurfaceController` of `frontReplyCatalog` and draws GenUI's `Surface`.
-`frontReplyComponents` maps the parts to A2UI components — a root
-`FrontReply` listing, in order, `FrontText`, `FrontCards`,
-`FrontClosedTasks`, `FrontLoggedTimeChart` and `FrontPullRequestChart`
-components — and **every component's data is the reply as stored**, never
-the model's: a `show` whose data the reply does not carry draws nothing, a
-card a door's preview or a closed-task card already shows is left out (an
-emptied list with it), an attachment placed twice is drawn once, and the due
-window labels a reply's one list only. Each catalog item builds on the
-chat's own widgets: her words through the view's Markdown (with the
-device's dates), a cards list as a `FrontEntityPreviewList` — a task as
-`FrontEntityPreviewCompactCard`, a project as `FrontEntityPreviewProjectCard`
-(both below) — and the closed-task card and charts as they always were.
-What a tap does comes from `FrontReplyScope` above the surface (a task
-opens on top of her, a project after closing her), so the catalog itself is
-static. The surface is created once per reply and updated in place when its
-components change. GenUI checks the components against each item's schema
-after the update; the components the mapping draws pass it. What the doors
-made follows the surface as preview cards. it. `<conversation_tasks>` counts the tasks her cards listed as named.
+**The surface is drawn by `a2ui_flutter`.** `FrontReplySurfaces` holds one
+`MessageProcessor` of `frontReplyCatalog` for the conversation and feeds it
+each reply's stored message: a new reply is created, one whose surface
+changed is replaced, one that left the thread is deleted, and a reply of
+words alone gets none. A stored message the processor refuses is logged
+(its code only) and left out, so the reply falls back to her words. The
+pane hands `AgentChatView.replyBodyBuilder` an `A2uiSurface` inside a
+`FrontReplyScope` for any reply with a live surface. Each catalog component
+is built on the chat's own widgets: `Text` through the view's Markdown
+(with the device's dates), `TaskCards` as a `FrontEntityPreviewList` — a
+task as `FrontEntityPreviewCompactCard`, a project as
+`FrontEntityPreviewProjectCard` (both below) — the lookups' components as
+the closed-task card and the charts, and `QuickReplies` as design-system
+chips. What a tap does comes from the scope (a task opens on top of her, a
+project after closing her), so the catalog itself is static; a card a
+door's preview already shows is left out of her lists. A tapped quick
+reply goes out as an A2UI action (`quick_reply`) on the surface, arrives
+on the processor's `onAction`, and is sent as the user's next turn in its
+own words — only under her latest reply, not while a turn is in flight,
+and not in the inbox, which gathers every conversation. What the doors made follows the surface as preview cards.
 
 ```mermaid
 flowchart LR
   L[lookups this turn] -->|rows| V[visible: index + lookup rows]
-  L -->|charts, closed cards| A[available attachments]
-  L -->|due rows| D[due tasks]
-  M["reply_to_user(message?, parts?)"] --> R[readFrontReplyLayout]
-  V & A & D --> R
+  L -->|charts, closed cards, due window| D[data the app writes]
+  M["reply_to_user(message?, components?)"] --> R[readFrontReply]
+  V --> R
   R -->|no words: refused| M
-  R -->|"text + parts (undrawable parts dropped, named, logged)"| P[(reply payload: text, parts)]
+  R -->|"components (undrawable dropped, lists in words made cards)"| C[FrontReplySurface.compose]
+  D --> C
+  C --> P[("payload: text + surface (A2UI v1.0 createSurface)")]
   P --> B[FrontChatThreadBuilder]
-  B --> T["FrontChatThread.partsOf(id)"]
-  T --> C["frontReplyComponents: A2UI components, data from the reply"]
-  C --> G["FrontReplySurface: SurfaceController + Surface (frontReplyCatalog)"]
+  B --> T[FrontChatThread.surfacesByMessageId]
+  T --> S["FrontReplySurfaces: one MessageProcessor per conversation"]
+  S --> A["A2uiSurface in FrontReplyScope (frontReplyCatalog)"]
+  A -->|quick_reply action| U[user's next turn]
 ```
 
 **An answer about what is due says which window, quietly.** Her prompt has
 no headings — her words may be read aloud — so the label over a due list
 never comes from her prose. The strategy keeps the window a
 `list_due_tasks` that found tasks read (`FrontDueSection`: the window, the
-day it was asked, the last day it reaches); the workflow stores it on her
-reply as `dueTasks`, and the thread builder reads it into
-`dueSectionsByMessageId` (an unreadable one is dropped, one out of view goes
-with its reply). `FrontDueSectionLabel` draws it in the caption's low ink
+day it was asked, the last day it reaches); the workflow writes it into
+the surface's data model at `/due`, and the reply's `TaskCards` is bound
+to it. `FrontDueSectionLabel` draws it in the caption's low ink
 over a reply's one list: *Due today* and *Overdue* (the Tasks due view's own
 labels), *Due through* a day for the days ahead, *Overdue and due through*
 a day — or *today* for a window that ends on the day it was asked. When she
-gives overdue and due as two lists, her text part above each names it and
+gives overdue and due as two lists, her `Text` above each names it and
 no label is drawn.
 
-**Her answer about what was closed is cards under her words.** A reply in
-`closedTasksByMessageId` gets `FrontClosedTaskList` under her words: one
+**Her answer about what was closed is cards under her words.** A reply
+whose surface has a `ClosedTasks` component gets `FrontClosedTaskList`: one
 card, a `FrontClosedTaskRow` per task found — all of them — with the Done
 or Rejected `StatusGlyph` and label it closed with and the day, then its
 category's colour swatch (`ColorIcon`) and name; a task reopened since
 reads `Done → In Progress`, its status now from `taskPreviewProvider`. A
-tap opens the task on top of her. A task one of her cards parts also lists
-is drawn once, on the closed-task card.
+tap opens the task on top of her. A task her own lists also name is drawn
+once, on the closed-task card.
 
 **What her turn made is a preview card under her words.** When a door's
 outcome is `FrontDoorTaskCreated`, `FrontDoorEventCreated`,
@@ -1606,9 +1612,9 @@ Every card, until it loads or once the entity is gone (a day with no plan
 left), is the title it was made with alone on the card surface under its
 kind's glyph, still opening it.
 
-**Her answer about logged time is a chart under her words.** A reply in
-`loggedTimeByMessageId` gets the same `replyBodyBuilder` body, her words
-first, then `FrontLoggedTimeChartCard`: the Insights page's
+**Her answer about logged time is a chart under her words.** A reply
+whose surface has a `LoggedTimeChart` component draws
+`FrontLoggedTimeChartCard` where she placed it: the Insights page's
 `StackedBarChart` — one bar per day, per hour for a single day — each split
 into the categories' colours (one category is one colour), an empty day a
 bar of zero, a tap on a bar reading out every category and its time; under
@@ -1626,8 +1632,9 @@ series, never a second one. That slice takes none of the category slots
 rollup does, and its `+N` rollup count counts only real categories folded
 in, so the legend gives no count of what the slice holds.
 
-**Her answer about pull requests is a chart under her words.** A reply in
-`pullRequestsByMessageId` gets `FrontPullRequestChartCard` under her words:
+**Her answer about pull requests is a chart under her words.** A reply
+whose surface has a `PullRequestChart` component draws
+`FrontPullRequestChartCard` where she placed it:
 a toggle between pull requests opened, lines added and lines deleted, the
 AI consumption dashboard's `ImpactStackedBars` — one bar per day — and,
 once two days have begun, a *Per day* / *Running total* toggle that swaps in

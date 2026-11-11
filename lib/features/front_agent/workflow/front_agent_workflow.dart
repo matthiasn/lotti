@@ -19,6 +19,7 @@ import 'package:lotti/features/companion/model/companion_reaction.dart';
 import 'package:lotti/features/front_agent/model/front_conversation.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
+import 'package:lotti/features/front_agent/model/front_reply_surface.dart';
 import 'package:lotti/features/front_agent/model/front_routing_index.dart';
 import 'package:lotti/features/front_agent/model/front_turn_failure.dart';
 import 'package:lotti/features/front_agent/service/front_routing_index_builder.dart';
@@ -572,21 +573,23 @@ class FrontAgentWorkflow with AgentErrorLogging {
         );
       }
       if (strategy.replyToUser case final reply?) {
+        final replyId = frontAgentReplyMessageId(agentId, runKey);
         await action(
-          messageId: frontAgentReplyMessageId(agentId, runKey),
+          messageId: replyId,
           payloadId: _replyPayloadId(agentId, runKey),
           toolName: FrontAgentToolNames.replyToUser,
           content: {
             'text': reply,
-            if (strategy.loggedTimeChart case final chart?)
-              'loggedTime': chart.toJson(),
-            if (strategy.pullRequestChart case final chart?)
-              'pullRequests': chart.toJson(),
-            if (strategy.closedTaskCards case final cards?)
-              'closedTasks': [for (final card in cards) card.toJson()],
-            if (strategy.dueSection case final section?)
-              'dueTasks': section.toJson(),
-            'parts': [for (final part in strategy.replyParts) part.toJson()],
+            // What is drawn: an A2UI surface of her components, its data
+            // model filled here with what the turn's lookups made.
+            'surface': FrontReplySurface.compose(
+              surfaceId: replyId,
+              components: strategy.replyComponents,
+              due: strategy.dueSection,
+              closedTasks: strategy.closedTaskCards,
+              loggedTime: strategy.loggedTimeChart,
+              pullRequests: strategy.pullRequestChart,
+            ).message,
           },
         );
       }

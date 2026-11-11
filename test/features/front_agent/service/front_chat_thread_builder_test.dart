@@ -6,19 +6,13 @@ import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
 import 'package:lotti/features/front_agent/model/front_chat_thread.dart';
-import 'package:lotti/features/front_agent/model/front_closed_task_card.dart';
 import 'package:lotti/features/front_agent/model/front_conversation.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
-import 'package:lotti/features/front_agent/model/front_due_section.dart';
 import 'package:lotti/features/front_agent/model/front_entity_preview.dart';
-import 'package:lotti/features/front_agent/model/front_logged_time_chart.dart';
-import 'package:lotti/features/front_agent/model/front_pull_requests.dart';
-import 'package:lotti/features/front_agent/model/front_reply_layout.dart';
-import 'package:lotti/features/front_agent/model/front_routing_index.dart';
+import 'package:lotti/features/front_agent/model/front_reply_surface.dart';
 import 'package:lotti/features/front_agent/service/front_chat_thread_builder.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_contract.dart';
-import 'package:lotti/features/insights/model/insights_models.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -232,290 +226,115 @@ void main() {
     expect(thread.optionsByMessageId.containsKey('u2'), isFalse);
   });
 
-  test('a reply that charts logged time carries its chart; one without, '
-      'or with a chart this build cannot read, carries none', () async {
-    userTurn('u1', 'Time this week?', at: DateTime(2026, 11, 8, 9));
-    row(
-      id: 'reply-1',
+  group('reply surfaces', () {
+    List<Object?> drawn(FrontReplySurface surface) => [
+      for (final component
+          in ((surface.message['createSurface']! as Map)['components']! as List)
+              .skip(1))
+        (component! as Map)['component'],
+    ];
+    Object? data(FrontReplySurface surface) =>
+        (surface.message['createSurface']! as Map)['dataModel'];
+
+    void reply(String id, String turnId, Map<String, Object?> content) => row(
+      id: id,
       kind: AgentMessageKind.action,
       toolName: FrontAgentToolNames.replyToUser,
-      operationId: 'u1',
-      content: {
-        'text': '12h this week.',
-        'loggedTime': {
-          'startDay': 20396,
-          'endDayExclusive': 20401,
-          'categoryIds': ['work'],
-        },
-      },
-      createdAt: DateTime(2026, 11, 8, 9, 1),
-    );
-    userTurn('u2', 'And the garden?', at: DateTime(2026, 11, 8, 10));
-    row(
-      id: 'reply-2',
-      kind: AgentMessageKind.action,
-      toolName: FrontAgentToolNames.replyToUser,
-      operationId: 'u2',
-      content: {
-        'text': 'Asked it.',
-        'loggedTime': {'startDay': 'soon'},
-      },
-      createdAt: DateTime(2026, 11, 8, 10, 1),
-    );
-
-    final thread = await builder.build();
-
-    expect(thread.loggedTimeByMessageId, {
-      'reply-1': const FrontLoggedTimeChart(
-        range: InsightsRange(startDay: 20396, endDayExclusive: 20401),
-        categoryIds: {'work'},
-      ),
-    });
-  });
-
-  test(
-    'a reply about what was closed carries every task it found as cards; '
-    'one without, or with cards this build cannot read, carries none',
-    () async {
-      userTurn(
-        'u1',
-        'What was closed this weekend?',
-        at: DateTime(2026, 11, 8, 9),
-      );
-      row(
-        id: 'reply-1',
-        kind: AgentMessageKind.action,
-        toolName: FrontAgentToolNames.replyToUser,
-        operationId: 'u1',
-        content: {
-          'text': 'You completed one and rejected one.',
-          'closedTasks': [
-            {
-              'id': 't1',
-              'title': 'Paint the shed',
-              'closedAt': '2026-11-07T10:00:00.000Z',
-              'categoryId': 'home',
-            },
-            {
-              'id': 't2',
-              'title': 'Prune the roses',
-              'closedAt': '2026-11-08T11:00:00.000Z',
-              'rejected': true,
-              'reopened': true,
-            },
-            {'id': 't3'},
-          ],
-        },
-        createdAt: DateTime(2026, 11, 8, 9, 1),
-      );
-      userTurn('u2', 'And today?', at: DateTime(2026, 11, 8, 10));
-      row(
-        id: 'reply-2',
-        kind: AgentMessageKind.action,
-        toolName: FrontAgentToolNames.replyToUser,
-        operationId: 'u2',
-        content: {'text': 'Nothing.', 'closedTasks': 'soon'},
-        createdAt: DateTime(2026, 11, 8, 10, 1),
-      );
-
-      final thread = await builder.build();
-
-      expect(thread.closedTasksByMessageId, {
-        'reply-1': [
-          FrontClosedTaskCard(
-            id: 't1',
-            title: 'Paint the shed',
-            closedAt: DateTime.utc(2026, 11, 7, 10),
-            categoryId: 'home',
-          ),
-          FrontClosedTaskCard(
-            id: 't2',
-            title: 'Prune the roses',
-            closedAt: DateTime.utc(2026, 11, 8, 11),
-            rejected: true,
-            reopened: true,
-          ),
-        ],
-      });
-    },
-  );
-
-  test('a reply about what is due carries the window its list was read '
-      'from; one this build cannot read carries none', () async {
-    userTurn('u1', 'Due this week?', at: DateTime(2026, 11, 9, 9));
-    row(
-      id: 'reply-1',
-      kind: AgentMessageKind.action,
-      toolName: FrontAgentToolNames.replyToUser,
-      operationId: 'u1',
-      content: {
-        'text': 'Two things.',
-        'dueTasks': {
-          'window': 'upcoming',
-          'today': '2026-11-09',
-          'through': '2026-11-13',
-        },
-      },
+      operationId: turnId,
+      content: content,
       createdAt: DateTime(2026, 11, 9, 9, 1),
     );
-    userTurn('u2', 'And overdue?', at: DateTime(2026, 11, 9, 10));
-    row(
-      id: 'reply-2',
-      kind: AgentMessageKind.action,
-      toolName: FrontAgentToolNames.replyToUser,
-      operationId: 'u2',
-      content: {
-        'text': 'Nothing.',
-        'dueTasks': {'window': 'soon'},
-      },
-      createdAt: DateTime(2026, 11, 9, 10, 1),
-    );
 
-    final thread = await builder.build();
-
-    expect(thread.dueSectionsByMessageId, {
-      'reply-1': FrontDueSection(
-        window: FrontDueWindow.upcoming,
-        today: DateTime(2026, 11, 9),
-        through: DateTime(2026, 11, 13),
-      ),
-    });
-  });
-
-  test('a reply carries the parts its turn stored, skipping what this build '
-      'cannot read; one stored before parts reads as her words, then what it '
-      'carries', () async {
-    userTurn('u1', 'Due?', at: DateTime(2026, 11, 9, 9));
-    row(
-      id: 'reply-1',
-      kind: AgentMessageKind.action,
-      toolName: FrontAgentToolNames.replyToUser,
-      operationId: 'u1',
-      content: {
-        'text': 'One is due.',
-        'parts': [
-          {'text': 'One is due.'},
+    test('a reply carries the surface its turn stored', () async {
+      final stored = FrontReplySurface.compose(
+        surfaceId: 'reply-1',
+        components: const [
+          {'component': 'Text', 'text': 'One is due.'},
           {
-            'cards': [
+            'component': 'TaskCards',
+            'items': [
               {'kind': 'task', 'id': 't1', 'title': 'Feed the penguins'},
             ],
           },
-          {'show': 'weather_map'},
         ],
-      },
-      createdAt: DateTime(2026, 11, 9, 9, 1),
-    );
-    userTurn('u2', 'Closed?', at: DateTime(2026, 11, 9, 10));
-    row(
-      id: 'reply-2',
-      kind: AgentMessageKind.action,
-      toolName: FrontAgentToolNames.replyToUser,
-      operationId: 'u2',
-      content: {
-        'text': 'One closed.',
+      );
+      userTurn('u1', 'Due?', at: DateTime(2026, 11, 9, 9));
+      reply('reply-1', 'u1', {
+        'text': 'One is due.',
+        'surface': stored.message,
+        // Ignored beside a surface: it is what draws the reply.
+        'loggedTime': {
+          'startDay': 1,
+          'endDayExclusive': 2,
+          'categoryIds': <String>[],
+        },
+      });
+
+      final thread = await builder.build();
+
+      expect(thread.surfacesByMessageId.keys, ['reply-1']);
+      expect(thread.surfacesByMessageId['reply-1']!.message, stored.message);
+    });
+
+    test('a reply stored before replies had surfaces, or whose surface this '
+        'build cannot read, draws her words, then what it carried', () async {
+      userTurn('u1', 'Closed and time?', at: DateTime(2026, 11, 9, 9));
+      reply('reply-1', 'u1', {
+        'text': ' One closed, 2h logged. ',
+        'surface': {'version': '9.9'},
         'closedTasks': [
           {'id': 't2', 'title': 'Shed', 'closedAt': '2026-11-08T10:00:00Z'},
         ],
-      },
-      createdAt: DateTime(2026, 11, 9, 10, 1),
-    );
-
-    final thread = await builder.build();
-
-    expect(thread.partsByMessageId.keys, ['reply-1']);
-    expect(thread.partsOf('reply-1'), const [
-      FrontReplyText('One is due.'),
-      FrontReplyCards([
-        FrontEntityReference(
-          kind: FrontEntityKind.task,
-          id: 't1',
-          title: 'Feed the penguins',
-        ),
-      ]),
-    ]);
-    expect(thread.partsOf('reply-2'), const [
-      FrontReplyText('One closed.'),
-      FrontReplyShow(FrontReplyAttachment.closedTasks),
-    ]);
-  });
-
-  test('the window of a reply out of view goes with it', () async {
-    for (var i = 0; i < 60; i++) {
-      final at = DateTime(2026, 10).add(Duration(minutes: 2 * i));
-      final turn = 'u$i'.padLeft(4, '0');
-      userTurn(turn, 'turn $i', at: at);
-      row(
-        id: 'r$i'.padLeft(4, '0'),
-        kind: AgentMessageKind.action,
-        toolName: FrontAgentToolNames.replyToUser,
-        operationId: turn,
-        content: {
-          'text': 'reply $i',
-          'dueTasks': {
-            'window': 'today',
-            'today': '2026-10-01',
-            'through': '2026-10-01',
-          },
-        },
-        createdAt: at.add(const Duration(minutes: 1)),
-      );
-    }
-
-    final thread = await builder.build();
-
-    final shownReplies = {
-      for (final m in thread.messages)
-        if (m.role == AgentChatRole.agent) m.id,
-    };
-    expect(thread.dueSectionsByMessageId.keys.toSet(), shownReplies);
-    expect(
-      thread.dueSectionsByMessageId.containsKey('r0'.padLeft(4, '0')),
-      isFalse,
-    );
-  });
-
-  test('a reply that charts pull requests carries its chart; one this build '
-      'cannot read carries none', () async {
-    userTurn('u1', 'PRs in two weeks?', at: DateTime(2026, 11, 8, 9));
-    row(
-      id: 'reply-1',
-      kind: AgentMessageKind.action,
-      toolName: FrontAgentToolNames.replyToUser,
-      operationId: 'u1',
-      content: {
-        'text': 'You created 12 PRs.',
-        'pullRequests': {
+        'loggedTime': {
           'startDay': 20396,
-          'endDayExclusive': 20410,
-          'categoryIds': ['work'],
-          'authorLogin': 'pingu',
+          'endDayExclusive': 20403,
+          'categoryIds': <String>[],
         },
-      },
-      createdAt: DateTime(2026, 11, 8, 9, 1),
-    );
-    userTurn('u2', 'And this weekend?', at: DateTime(2026, 11, 8, 10));
-    row(
-      id: 'reply-2',
-      kind: AgentMessageKind.action,
-      toolName: FrontAgentToolNames.replyToUser,
-      operationId: 'u2',
-      content: {
-        'text': 'None.',
+        // A chart this build cannot read is left out, not fatal.
         'pullRequests': {'startDay': 'soon'},
-      },
-      createdAt: DateTime(2026, 11, 8, 10, 1),
-    );
+      });
+      userTurn('u2', 'Thanks', at: DateTime(2026, 11, 9, 10));
+      reply('reply-2', 'u2', {'text': 'Any time.'});
 
-    final thread = await builder.build();
+      final thread = await builder.build();
 
-    expect(thread.pullRequestsByMessageId, {
-      'reply-1': const FrontPullRequestChart(
-        range: InsightsRange(startDay: 20396, endDayExclusive: 20410),
-        categoryIds: {'work'},
-        authorLogin: 'pingu',
-      ),
+      final rich = thread.surfacesByMessageId['reply-1']!;
+      expect(rich.surfaceId, 'reply-1');
+      expect(drawn(rich), ['Text', 'ClosedTasks', 'LoggedTimeChart']);
+      expect((data(rich)! as Map).keys, ['closedTasks', 'loggedTime']);
+      expect(rich.taskIds, ['t2']);
+      final plain = thread.surfacesByMessageId['reply-2']!;
+      expect(plain.wordsOnly, isTrue);
+      expect(drawn(plain), ['Text']);
     });
-    expect(thread.loggedTimeByMessageId, isEmpty);
+
+    test('the surface of a reply out of view goes with it', () async {
+      for (var i = 0; i < 60; i++) {
+        final at = DateTime(2026, 10).add(Duration(minutes: 2 * i));
+        final turn = 'u$i'.padLeft(4, '0');
+        userTurn(turn, 'turn $i', at: at);
+        row(
+          id: 'r$i'.padLeft(4, '0'),
+          kind: AgentMessageKind.action,
+          toolName: FrontAgentToolNames.replyToUser,
+          operationId: turn,
+          content: {'text': 'reply $i'},
+          createdAt: at.add(const Duration(minutes: 1)),
+        );
+      }
+
+      final thread = await builder.build();
+
+      final shownReplies = {
+        for (final m in thread.messages)
+          if (m.role == AgentChatRole.agent) m.id,
+      };
+      expect(thread.surfacesByMessageId.keys.toSet(), shownReplies);
+      expect(
+        thread.surfacesByMessageId.containsKey('r0'.padLeft(4, '0')),
+        isFalse,
+      );
+    });
   });
 
   test('a row without a payload, or with an empty text, is left out', () async {

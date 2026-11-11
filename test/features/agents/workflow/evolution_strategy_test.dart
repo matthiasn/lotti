@@ -3,14 +3,13 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/agents/agent_enums.dart';
+import 'package:lotti/features/agents/genui/evolution_catalog.dart';
 import 'package:lotti/features/agents/genui/genui_bridge.dart';
 import 'package:lotti/features/agents/workflow/evolution_strategy.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
-import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 import '../../../helpers/fallbacks.dart';
-import '../../../mocks/mocks.dart';
 import 'evolution_strategy_test_helpers.dart';
 
 void main() {
@@ -397,13 +396,11 @@ void main() {
   });
 
   test(
-    'answers a render_surface call the surface controller rejects with an '
-    'error tool response instead of failing the turn',
+    'answers a render_surface call whose data the schema refuses with why, '
+    'instead of failing the turn or drawing it',
     () async {
-      final processor = MockSurfaceController();
-      when(
-        () => processor.handleMessage(any()),
-      ).thenThrow(StateError('surface controller disposed'));
+      final processor = EvolutionSurfaces(catalogs: [buildEvolutionCatalog()]);
+      addTearDown(processor.dispose);
       final bridge = GenUiBridge(processor: processor);
       final bridgedStrategy = EvolutionStrategy(genUiBridge: bridge);
       final toolCall = makeToolCall(
@@ -423,9 +420,13 @@ void main() {
 
       expect(
         manager.messages.last.content,
-        'Error rendering surface (StateError)',
+        allOf(
+          startsWith('Error: surface not drawn — '),
+          contains('Required property "totalWakes" is missing'),
+        ),
       );
       expect(bridge.drainPendingSurfaceIds(), isEmpty);
+      expect(processor.model.getSurface('metrics-1'), isNull);
     },
   );
 

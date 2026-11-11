@@ -3,9 +3,10 @@ import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/features/companion/model/companion_reaction.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_pull_requests.dart';
-import 'package:lotti/features/front_agent/model/front_reply_layout.dart';
+import 'package:lotti/features/front_agent/model/front_reply_surface.dart';
 import 'package:lotti/features/front_agent/model/front_routing_index.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_contract.dart';
+import 'package:lotti/features/front_agent/workflow/front_reply_reader.dart';
 
 void main() {
   test('nine tools, never one, in a fixed order', () {
@@ -31,24 +32,59 @@ void main() {
     );
   });
 
-  test('reply_to_user takes words or composed parts, a part showing only '
-      'what the catalog has; the prompt asks for lists as cards, never as '
-      'Markdown', () {
+  test('reply_to_user takes words or composed components, each one of the '
+      "catalog's; the prompt asks for lists as cards, never as Markdown", () {
     final reply = frontAgentTools.singleWhere(
       (t) => t.name == FrontAgentToolNames.replyToUser,
     );
     final properties = reply.parameters['properties'] as Map<String, Object?>;
-    expect(properties.keys, ['message', 'parts']);
-    final part =
-        ((properties['parts']! as Map)['items'] as Map)['properties'] as Map;
-    expect(part.keys, ['text', 'cards', 'show']);
-    expect((part['show'] as Map)['enum'], [
-      for (final attachment in FrontReplyAttachment.values) attachment.wireName,
+    expect(properties.keys, ['message', 'components']);
+    final component = (properties['components']! as Map)['items'] as Map;
+    expect((component['properties'] as Map).keys, [
+      'component',
+      'text',
+      'items',
+      'options',
     ]);
+    expect(
+      ((component['properties'] as Map)['component'] as Map)['enum'],
+      FrontReplyComponents.composable,
+    );
+    // She never writes the root: the app adds it.
+    expect(
+      FrontReplyComponents.composable,
+      isNot(contains(FrontReplyComponents.reply)),
+    );
+    expect(component['required'], ['component']);
+    // Every array says what it holds: a provider may refuse one that does
+    // not.
+    expect(((component['properties'] as Map)['items'] as Map)['items'], {
+      'type': 'object',
+      'properties': {
+        'ref': {'type': 'string'},
+        'note': {'type': 'string'},
+      },
+      'required': ['ref'],
+    });
+    expect(
+      frontAgentSystemPrompt,
+      contains('Cards are shown, never read aloud'),
+    );
     expect(reply.parameters.containsKey('required'), isFalse);
 
-    expect(frontAgentSystemPrompt, contains('`{"cards": ["task:<id>"'));
-    expect(frontAgentSystemPrompt, contains('overdue and due as two `cards`'));
+    expect(
+      frontAgentSystemPrompt,
+      contains('`{"component": "TaskCards", "items": [{"ref": "task:<id>"}'),
+    );
+    expect(
+      frontAgentSystemPrompt,
+      contains('overdue and due as two `TaskCards`'),
+    );
+    expect(frontAgentSystemPrompt, contains('its time as the `note`'));
+    expect(
+      frontAgentSystemPrompt,
+      contains('up to $frontQuickRepliesMax short replies the user can tap'),
+    );
     expect(frontAgentSystemPrompt, isNot(contains('one markdown bullet list')));
   });
 

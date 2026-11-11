@@ -3857,6 +3857,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get commonUnknown => 'Okänt';
 
   @override
+  String get companionCardCustomize => 'Anpassa';
+
+  @override
   String get companionCardDemo => 'Demostorlek';
 
   @override
@@ -3877,9 +3880,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get companionCardResize => 'Ändra storlek';
-
-  @override
-  String get companionCardCustomize => 'Anpassa';
 
   @override
   String get companionCardSmall => 'Liten';

@@ -6504,6 +6504,12 @@ abstract class AppLocalizations {
   /// **'Unknown'**
   String get commonUnknown;
 
+  /// Menu row on the companion's floating card: closes the chat and opens her settings page, where her look is customized
+  ///
+  /// In en, this message translates to:
+  /// **'Customize'**
+  String get companionCardCustomize;
+
   /// Menu row: the companion card fills the conversation area until dismissed, for demos
   ///
   /// In en, this message translates to:
@@ -6545,12 +6551,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Resize'**
   String get companionCardResize;
-
-  /// Menu row on the companion's floating card: closes the chat and opens her settings page, where her look is customized
-  ///
-  /// In en, this message translates to:
-  /// **'Customize'**
-  String get companionCardCustomize;
 
   /// Menu row: shows the companion card small
   ///

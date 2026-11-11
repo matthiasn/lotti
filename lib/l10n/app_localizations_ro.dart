@@ -3917,6 +3917,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get commonUnknown => 'Necunoscut';
 
   @override
+  String get companionCardCustomize => 'Personalizați';
+
+  @override
   String get companionCardDemo => 'Dimensiune pentru demonstrație';
 
   @override
@@ -3937,9 +3940,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get companionCardResize => 'Redimensionați';
-
-  @override
-  String get companionCardCustomize => 'Personalizați';
 
   @override
   String get companionCardSmall => 'Mic';

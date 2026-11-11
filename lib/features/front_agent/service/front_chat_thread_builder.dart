@@ -9,11 +9,10 @@ import 'package:lotti/features/front_agent/model/front_closed_task_card.dart';
 import 'package:lotti/features/front_agent/model/front_conversation.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
-import 'package:lotti/features/front_agent/model/front_due_section.dart';
 import 'package:lotti/features/front_agent/model/front_entity_preview.dart';
 import 'package:lotti/features/front_agent/model/front_logged_time_chart.dart';
 import 'package:lotti/features/front_agent/model/front_pull_requests.dart';
-import 'package:lotti/features/front_agent/model/front_reply_layout.dart';
+import 'package:lotti/features/front_agent/model/front_reply_surface.dart';
 import 'package:lotti/features/front_agent/service/front_chat_history_service.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_contract.dart';
 
@@ -76,11 +75,7 @@ class FrontChatThreadBuilder {
 
     final messages = <AgentChatMessage>[];
     final options = <String, List<FrontAskOption>>{};
-    final charts = <String, FrontLoggedTimeChart>{};
-    final pullRequestCharts = <String, FrontPullRequestChart>{};
-    final closedTasks = <String, List<FrontClosedTaskCard>>{};
-    final dueSections = <String, FrontDueSection>{};
-    final replyParts = <String, List<FrontReplyPart>>{};
+    final surfaces = <String, FrontReplySurface>{};
     final doorRecords = <String, List<(String, FrontDoorRecord)>>{};
 
     for (final row in rows) {
@@ -98,24 +93,30 @@ class FrontChatThreadBuilder {
             final text = payload?.content['text'];
             if (text is! String || text.trim().isEmpty) continue;
             messages.add(_message(row, AgentChatRole.agent, text));
-            final chart = FrontLoggedTimeChart.fromJson(
-              payload!.content['loggedTime'],
-            );
-            if (chart != null) charts[row.id] = chart;
-            final pullRequests = FrontPullRequestChart.fromJson(
-              payload.content['pullRequests'],
-            );
-            if (pullRequests != null) {
-              pullRequestCharts[row.id] = pullRequests;
-            }
-            final cards = FrontClosedTaskCard.listFromJson(
-              payload.content['closedTasks'],
-            );
-            if (cards.isNotEmpty) closedTasks[row.id] = cards;
-            final due = FrontDueSection.fromJson(payload.content['dueTasks']);
-            if (due != null) dueSections[row.id] = due;
-            final parts = FrontReplyPart.listFromJson(payload.content['parts']);
-            if (parts.isNotEmpty) replyParts[row.id] = parts;
+            // A reply stored before replies had surfaces draws her words,
+            // then what it carried.
+            surfaces[row.id] =
+                FrontReplySurface.fromJson(payload!.content['surface']) ??
+                FrontReplySurface.compose(
+                  surfaceId: row.id,
+                  components: [
+                    {
+                      'component': FrontReplyComponents.text,
+                      'text': text.trim(),
+                    },
+                    for (final type in FrontReplyComponents.fromLookups)
+                      {'component': type},
+                  ],
+                  closedTasks: FrontClosedTaskCard.listFromJson(
+                    payload.content['closedTasks'],
+                  ),
+                  loggedTime: FrontLoggedTimeChart.fromJson(
+                    payload.content['loggedTime'],
+                  ),
+                  pullRequests: FrontPullRequestChart.fromJson(
+                    payload.content['pullRequests'],
+                  ),
+                );
           case FrontAgentToolNames.askUser:
             final payload = await _payload(row.contentEntryId);
             final question = payload?.content['question'];
@@ -195,25 +196,9 @@ class FrontChatThreadBuilder {
       },
       doorsByMessageId: doors,
       specialistAgentIds: specialists,
-      loggedTimeByMessageId: {
-        for (final entry in charts.entries)
-          if (visibleIds.contains(entry.key)) entry.key: entry.value,
-      },
-      pullRequestsByMessageId: {
-        for (final entry in pullRequestCharts.entries)
-          if (visibleIds.contains(entry.key)) entry.key: entry.value,
-      },
-      closedTasksByMessageId: {
-        for (final entry in closedTasks.entries)
-          if (visibleIds.contains(entry.key)) entry.key: entry.value,
-      },
       entityPreviewsByMessageId: _entityPreviews(visible, doors),
-      dueSectionsByMessageId: {
-        for (final entry in dueSections.entries)
-          if (visibleIds.contains(entry.key)) entry.key: entry.value,
-      },
-      partsByMessageId: {
-        for (final entry in replyParts.entries)
+      surfacesByMessageId: {
+        for (final entry in surfaces.entries)
           if (visibleIds.contains(entry.key)) entry.key: entry.value,
       },
     );

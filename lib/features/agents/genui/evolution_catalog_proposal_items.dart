@@ -1,4 +1,4 @@
-import 'package:genui/genui.dart';
+import 'package:a2ui_flutter/a2ui_flutter.dart';
 import 'package:lotti/features/agents/genui/evolution_catalog_helpers.dart';
 import 'package:lotti/features/agents/genui/evolution_catalog_schemas.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
@@ -9,12 +9,11 @@ import 'package:lotti/widgets/cards/modern_icon_container.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Proposal card with approve/reject actions.
-final evolutionProposalItem = CatalogItem(
+final evolutionProposalItem = ComponentImplementation(
   name: 'EvolutionProposal',
-  dataSchema: proposalSchema,
-  widgetBuilder: (itemContext) {
-    final json = itemContext.data;
-    if (json is! Map<String, Object?>) return const SizedBox.shrink();
+  schema: proposalSchema,
+  builder: (buildContext, node, props, _) {
+    final json = evolutionProps(props);
     final generalDirective = readString(json, 'generalDirective').trim();
     final reportDirective = readString(json, 'reportDirective').trim();
     final rationale = readString(json, 'rationale').trim();
@@ -26,7 +25,7 @@ final evolutionProposalItem = CatalogItem(
       json,
       'currentReportDirective',
     )?.trim();
-    final context = itemContext.buildContext;
+    final context = buildContext;
     final colorScheme = Theme.of(context).colorScheme;
     final theme = Theme.of(context);
     final tokens = context.designTokens;
@@ -155,23 +154,13 @@ final evolutionProposalItem = CatalogItem(
                   label: context.messages.agentTemplateEvolveReject,
                   variant: DesignSystemButtonVariant.dangerSecondary,
                   size: DesignSystemButtonSize.medium,
-                  onPressed: () => itemContext.dispatchEvent(
-                    UserActionEvent(
-                      name: 'proposal_rejected',
-                      sourceComponentId: itemContext.id,
-                      surfaceId: itemContext.surfaceId,
-                    ),
-                  ),
+                  onPressed: () =>
+                      evolutionAction(buildContext, node, 'proposal_rejected'),
                 ),
                 primaryActionButton(
                   label: context.messages.agentTemplateEvolveApprove,
-                  onPressed: () => itemContext.dispatchEvent(
-                    UserActionEvent(
-                      name: 'proposal_approved',
-                      sourceComponentId: itemContext.id,
-                      surfaceId: itemContext.surfaceId,
-                    ),
-                  ),
+                  onPressed: () =>
+                      evolutionAction(buildContext, node, 'proposal_approved'),
                 ),
               ],
             ),
@@ -183,12 +172,11 @@ final evolutionProposalItem = CatalogItem(
 );
 
 /// Soul personality proposal card with approve/reject actions.
-final soulProposalItem = CatalogItem(
+final soulProposalItem = ComponentImplementation(
   name: 'SoulProposal',
-  dataSchema: soulProposalSchema,
-  widgetBuilder: (itemContext) {
-    final json = itemContext.data;
-    if (json is! Map<String, Object?>) return const SizedBox.shrink();
+  schema: soulProposalSchema,
+  builder: (buildContext, node, props, _) {
+    final json = evolutionProps(props);
     final voiceDirective =
         readStringOrNull(json, 'voiceDirective')?.trim() ?? '';
     final toneBounds = readStringOrNull(json, 'toneBounds')?.trim() ?? '';
@@ -213,7 +201,7 @@ final soulProposalItem = CatalogItem(
       json,
       'currentAntiSycophancyPolicy',
     )?.trim();
-    final context = itemContext.buildContext;
+    final context = buildContext;
     final colorScheme = Theme.of(context).colorScheme;
     final theme = Theme.of(context);
     final tokens = context.designTokens;
@@ -361,22 +349,18 @@ final soulProposalItem = CatalogItem(
                   label: context.messages.agentTemplateEvolveReject,
                   variant: DesignSystemButtonVariant.dangerSecondary,
                   size: DesignSystemButtonSize.medium,
-                  onPressed: () => itemContext.dispatchEvent(
-                    UserActionEvent(
-                      name: 'soul_proposal_rejected',
-                      sourceComponentId: itemContext.id,
-                      surfaceId: itemContext.surfaceId,
-                    ),
+                  onPressed: () => evolutionAction(
+                    buildContext,
+                    node,
+                    'soul_proposal_rejected',
                   ),
                 ),
                 primaryActionButton(
                   label: context.messages.agentTemplateEvolveApprove,
-                  onPressed: () => itemContext.dispatchEvent(
-                    UserActionEvent(
-                      name: 'soul_proposal_approved',
-                      sourceComponentId: itemContext.id,
-                      surfaceId: itemContext.surfaceId,
-                    ),
+                  onPressed: () => evolutionAction(
+                    buildContext,
+                    node,
+                    'soul_proposal_approved',
                   ),
                 ),
               ],

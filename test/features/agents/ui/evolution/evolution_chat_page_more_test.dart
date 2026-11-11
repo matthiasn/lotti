@@ -3,8 +3,9 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:genui/genui.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
+import 'package:lotti/features/agents/genui/evolution_catalog.dart';
+import 'package:lotti/features/agents/genui/evolution_note_confirmation_card.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/ui/chat/agent_typing_indicator.dart';
 import 'package:lotti/features/agents/ui/evolution/evolution_chat_message.dart';
@@ -343,9 +344,28 @@ void main() {
     );
 
     testWidgets(
-      'Surface widget rendered for EvolutionSurfaceMessage when processor set',
+      'a surface message draws its surface from the processor',
       (tester) async {
-        final processor = SurfaceController(catalogs: const []);
+        final processor =
+            EvolutionSurfaces(
+              catalogs: [buildEvolutionCatalog()],
+            )..processMessages([
+              {
+                'version': '1.0',
+                'createSurface': {
+                  'surfaceId': 'surf-test-1',
+                  'catalogId': evolutionCatalogId,
+                  'components': [
+                    {
+                      'id': 'root',
+                      'component': 'EvolutionNoteConfirmation',
+                      'kind': 'reflection',
+                      'content': 'Shorter reports landed well.',
+                    },
+                  ],
+                },
+              },
+            ]);
         addTearDown(processor.dispose);
 
         await tester.pumpWidget(
@@ -364,22 +384,16 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        // Verify the Surface branch was taken (processor != null, lines 187-188).
-        // Since Surface renders as SizedBox.shrink without a registered
-        // definition, we verify indirectly:
-        //  1. No EvolutionChatBubble — confirms message was NOT rendered as a
-        //     text bubble, i.e. the EvolutionSurfaceMessage branch was taken.
-        //  2. We verify the processor was accessed by confirming no null-branch
-        //     SizedBox.shrink children exist outside the Surface widget subtree
-        //     (the Surface itself renders SizedBox.shrink internally but is
-        //     wrapped by Surface — the EvolutionChatBubble check is sufficient).
+        // The surface's component is drawn by its catalog widget, not as a
+        // text bubble.
         expect(find.byType(EvolutionChatBubble), findsNothing);
-        // Confirm the Surface type is in the tree by checking the widget at the
-        // exact position that _buildMessage(context, EvolutionSurfaceMessage)
-        // would produce. Use skipOffstage:false to see off-screen items too.
         expect(
-          find.byWidgetPredicate((w) => w is Surface, skipOffstage: false),
-          findsOneWidget,
+          tester
+              .widget<EvolutionNoteConfirmationCard>(
+                find.byType(EvolutionNoteConfirmationCard),
+              )
+              .content,
+          'Shorter reports landed well.',
         );
       },
     );

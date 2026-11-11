@@ -5,11 +5,11 @@ void main() {
   group('buildEvolutionCatalog', () {
     test('contains all catalog items', () {
       final catalog = buildEvolutionCatalog();
-      final items = catalog.items;
+      final items = catalog.components.values;
 
       expect(items, hasLength(12));
       expect(
-        items.map((i) => i.name),
+        items.map((item) => item.name),
         containsAll([
           'EvolutionProposal',
           'SoulProposal',
@@ -29,7 +29,7 @@ void main() {
 
     test('has the correct catalog ID', () {
       final catalog = buildEvolutionCatalog();
-      expect(catalog.catalogId, evolutionCatalogId);
+      expect(catalog.id, evolutionCatalogId);
     });
   });
 }

@@ -11,11 +11,11 @@ import 'package:lotti/features/front_agent/model/front_due_section.dart';
 import 'package:lotti/features/front_agent/model/front_logged_time_chart.dart';
 import 'package:lotti/features/front_agent/model/front_pull_requests.dart';
 import 'package:lotti/features/front_agent/model/front_reference_links.dart';
-import 'package:lotti/features/front_agent/model/front_reply_layout.dart';
+import 'package:lotti/features/front_agent/model/front_reply_surface.dart';
 import 'package:lotti/features/front_agent/model/front_routing_index.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_contract.dart';
 import 'package:lotti/features/front_agent/workflow/front_dispatch_validator.dart';
-import 'package:lotti/features/front_agent/workflow/front_reply_layout_reader.dart';
+import 'package:lotti/features/front_agent/workflow/front_reply_reader.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -145,7 +145,7 @@ class FrontAgentStrategy extends ConversationStrategy
   List<FrontClosedTaskCard>? _closedTaskCards;
   FrontDueSection? _dueSection;
   List<FrontIndexRow> _dueRows = const [];
-  List<FrontReplyPart> _replyParts = const [];
+  List<Map<String, Object?>> _replyComponents = const [];
 
   FrontDispatch? get dispatch => _dispatch;
   FrontAskUser? get askUser => _askUser;
@@ -168,11 +168,11 @@ class FrontAgentStrategy extends ConversationStrategy
   /// her reply's list of them is labelled with; null when none found any.
   FrontDueSection? get dueSection => _dueSection;
 
-  /// What her reply draws, in order: her words, the tasks and projects she
-  /// listed as cards, and where what this turn's lookups made goes — with
-  /// whatever a lookup found that she did not place after it (see
-  /// [readFrontReplyLayout]). Empty until she replied.
-  List<FrontReplyPart> get replyParts => _replyParts;
+  /// What her reply draws, in order, as the catalog components she
+  /// composed — with any list of task links in her words made cards, and
+  /// whatever a lookup found that she did not place after them (see
+  /// [readFrontReply]). Empty until she replied.
+  List<Map<String, Object?>> get replyComponents => _replyComponents;
 
   /// Whether the model ended the turn with one of the three terminal calls.
   bool get hasTerminalOutput =>
@@ -789,33 +789,35 @@ class FrontAgentStrategy extends ConversationStrategy
       );
       return;
     }
-    final FrontReplyLayout reply;
+    final closed = _closedTaskCards;
+    final FrontReply reply;
     try {
-      reply = readFrontReplyLayout(
+      reply = readFrontReply(
         message: args['message'],
-        parts: args['parts'],
+        components: args['components'],
         visible: frontVisibleRows([...index.rows, ..._lookupRows]),
         available: {
-          if (_loggedTimeChart != null) FrontReplyAttachment.loggedTimeChart,
-          if (_pullRequestChart != null) FrontReplyAttachment.pullRequestChart,
-          if (_closedTaskCards != null) FrontReplyAttachment.closedTasks,
+          if (closed != null) FrontReplyComponents.closedTasks,
+          if (_loggedTimeChart != null) FrontReplyComponents.loggedTimeChart,
+          if (_pullRequestChart != null) FrontReplyComponents.pullRequestChart,
         },
         dueRows: _dueRows,
+        closedTaskIds: {...?closed?.map((card) => card.id)},
         link: _linked,
       );
-    } on FrontReplyLayoutException catch (e) {
+    } on FrontReplyException catch (e) {
       await _reject(call, manager, e.message);
       return;
     }
     _replyToUser = reply.text;
-    _replyParts = reply.parts;
+    _replyComponents = reply.components;
     if (reply.dropped.isNotEmpty) {
       // Counted, so a model that keeps naming what the turn never saw shows
       // up in the logs rather than as a card that quietly never appears.
       domainLogger.log(
         LogDomain.agentWorkflow,
-        'reply_to_user dropped ${reply.dropped.length} part(s) it could not '
-        'draw',
+        'reply_to_user dropped ${reply.dropped.length} component(s) it could '
+        'not draw',
         subDomain: 'FrontAgentStrategy',
         level: InsightLevel.warn,
       );

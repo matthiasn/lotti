@@ -4,7 +4,6 @@
 
 list(APPEND FLUTTER_PLUGIN_LIST
   audio_decoder
-  audioplayers_windows
   camera_desktop
   connectivity_plus
   file_selector_windows
@@ -20,7 +19,6 @@ list(APPEND FLUTTER_PLUGIN_LIST
   share_plus
   super_native_extensions
   url_launcher_windows
-  video_player_win
   window_manager
 )
 

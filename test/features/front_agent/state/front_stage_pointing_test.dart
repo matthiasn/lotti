@@ -2,10 +2,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/front_agent/model/front_chat_thread.dart';
-import 'package:lotti/features/front_agent/model/front_entity_preview.dart';
 import 'package:lotti/features/front_agent/model/front_logged_time_chart.dart';
 import 'package:lotti/features/front_agent/model/front_pull_requests.dart';
-import 'package:lotti/features/front_agent/model/front_reply_layout.dart';
+import 'package:lotti/features/front_agent/model/front_reply_surface.dart';
 import 'package:lotti/features/front_agent/state/front_chat_thread_provider.dart';
 import 'package:lotti/features/front_agent/state/front_stage_pointing.dart';
 import 'package:lotti/features/front_agent/state/front_voice_providers.dart';
@@ -33,30 +32,47 @@ void main() {
   const list = 'Two are due today:';
   const oneLink = 'Only [Count the hatchlings](lotti://task/t1) is due.';
 
-  /// The cards a reply of [list] draws; a reply of other words draws none.
-  const listed = [
-    FrontReplyText(list),
-    FrontReplyCards([
-      FrontEntityReference(
-        kind: FrontEntityKind.task,
-        id: 't1',
-        title: 'Count the hatchlings',
-      ),
-      FrontEntityReference(
-        kind: FrontEntityKind.task,
-        id: 't2',
-        title: 'Check the nest cameras',
-      ),
-    ]),
-  ];
+  /// The surface of a reply that lists two tasks under her words.
+  FrontReplySurface listed(String id) => FrontReplySurface.compose(
+    surfaceId: id,
+    components: const [
+      {'component': 'Text', 'text': list},
+      {
+        'component': 'TaskCards',
+        'items': [
+          {'kind': 'task', 'id': 't1', 'title': 'Count the hatchlings'},
+          {'kind': 'task', 'id': 't2', 'title': 'Check the nest cameras'},
+        ],
+      },
+    ],
+  );
 
+  /// A thread whose replies of [list] draw their cards; other replies draw
+  /// only their words.
   FrontChatThread thread(List<AgentChatMessage> messages) => FrontChatThread(
     messages: messages,
-    partsByMessageId: {
+    surfacesByMessageId: {
       for (final m in messages)
-        if (m.text == list) m.id: listed,
+        if (m.text == list) m.id: listed(m.id),
     },
   );
+
+  /// The surface of reply a1 charting [chart] under its words.
+  Map<String, FrontReplySurface> charting({
+    FrontLoggedTimeChart? loggedTime,
+    FrontPullRequestChart? pullRequests,
+  }) => {
+    'a1': FrontReplySurface.compose(
+      surfaceId: 'a1',
+      components: const [
+        {'component': 'Text', 'text': 'Here.'},
+        {'component': 'LoggedTimeChart'},
+        {'component': 'PullRequestChart'},
+      ],
+      loggedTime: loggedTime,
+      pullRequests: pullRequests,
+    ),
+  };
 
   group('frontLatestReplyHasVisual', () {
     test('her reply to the latest turn lists tasks', () {
@@ -85,7 +101,7 @@ void main() {
         frontLatestReplyHasVisual(
           FrontChatThread(
             messages: turns,
-            loggedTimeByMessageId: const {'a1': chart},
+            surfacesByMessageId: charting(loggedTime: chart),
           ),
         ),
         isTrue,
@@ -98,7 +114,7 @@ void main() {
               message('u2', AgentChatRole.user, 'Thanks', second: 2),
               message('a2', AgentChatRole.agent, 'Any time.', second: 3),
             ],
-            loggedTimeByMessageId: const {'a1': chart},
+            surfacesByMessageId: charting(loggedTime: chart),
           ),
         ),
         isFalse,
@@ -118,7 +134,7 @@ void main() {
         frontLatestReplyHasVisual(
           FrontChatThread(
             messages: turns,
-            pullRequestsByMessageId: const {'a1': chart},
+            surfacesByMessageId: charting(pullRequests: chart),
           ),
         ),
         isTrue,
@@ -164,6 +180,32 @@ void main() {
         isFalse,
       );
     });
+  });
+
+  test('replies to tap alone are nothing to point at', () {
+    expect(
+      frontLatestReplyHasVisual(
+        FrontChatThread(
+          messages: [
+            message('u1', AgentChatRole.user, 'Time?'),
+            message('a1', AgentChatRole.agent, 'Break it down?', second: 1),
+          ],
+          surfacesByMessageId: {
+            'a1': FrontReplySurface.compose(
+              surfaceId: 'a1',
+              components: const [
+                {'component': 'Text', 'text': 'Break it down?'},
+                {
+                  'component': 'QuickReplies',
+                  'options': ['Yes'],
+                },
+              ],
+            ),
+          },
+        ),
+      ),
+      isFalse,
+    );
   });
 
   group('frontStagePointsProvider', () {

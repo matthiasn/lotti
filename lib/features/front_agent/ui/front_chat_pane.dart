@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:a2ui_flutter/a2ui_flutter.dart';
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -20,8 +21,6 @@ import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
 import 'package:lotti/features/front_agent/model/front_entity_preview.dart';
 import 'package:lotti/features/front_agent/model/front_reference_links.dart';
-import 'package:lotti/features/front_agent/model/front_reply_components.dart';
-import 'package:lotti/features/front_agent/model/front_reply_layout.dart';
 import 'package:lotti/features/front_agent/model/front_turn_failure.dart';
 import 'package:lotti/features/front_agent/state/front_chat_controller.dart';
 import 'package:lotti/features/front_agent/state/front_chat_thread_provider.dart';
@@ -29,6 +28,8 @@ import 'package:lotti/features/front_agent/state/front_conversation_providers.da
 import 'package:lotti/features/front_agent/state/front_inbox_filter.dart';
 import 'package:lotti/features/front_agent/state/front_journal_access_provider.dart';
 import 'package:lotti/features/front_agent/state/front_mention_categories.dart';
+import 'package:lotti/features/front_agent/ui/a2ui/front_reply_catalog.dart';
+import 'package:lotti/features/front_agent/ui/a2ui/front_reply_surfaces.dart';
 import 'package:lotti/features/front_agent/ui/front_ask_options_row.dart';
 import 'package:lotti/features/front_agent/ui/front_category_chip.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_drawer.dart';
@@ -38,10 +39,9 @@ import 'package:lotti/features/front_agent/ui/front_chat_voice.dart';
 import 'package:lotti/features/front_agent/ui/front_door_card.dart';
 import 'package:lotti/features/front_agent/ui/front_door_wizards.dart';
 import 'package:lotti/features/front_agent/ui/front_entity_preview_card.dart';
-import 'package:lotti/features/front_agent/ui/genui/front_reply_catalog.dart';
-import 'package:lotti/features/front_agent/ui/genui/front_reply_surface.dart';
 import 'package:lotti/features/tasks/util/task_navigation.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/utils/consts.dart';
@@ -560,156 +560,155 @@ class _FrontChatThreadViewState extends ConsumerState<FrontChatThreadView> {
       },
     );
 
-    return AgentChatView(
-      agentId: frontAgentId,
-      threadOverlay: AnimatedSwitcher(
-        duration: MotionDurations.short4,
-        child: cardFor == null
-            ? const SizedBox.shrink()
-            : FrontCompanionCard(
-                conversationId: cardFor,
-                form: cardForm,
-                // Her settings are a page of the app: she closes first.
-                onCustomize: () {
-                  onClose();
-                  beamToNamed('/settings/companion');
-                },
-              ),
-      ),
-      threadBottomInset: cardInset,
-      agentName: messages.frontChatTitle,
-      // Each conversation keeps its own scroll position.
-      conversationId: inboxOnly
-          ? 'front-chat-inbox'
-          : 'front-chat:${conversationId ?? ''}',
-      history: shown,
-      // A conversation with her, not a log: her words as prose, the user's
-      // in a soft bubble; what was said goes out as it stops.
-      conversational: true,
-      // One reading column for the thread and the field under it, so the
-      // field's edges line up with the messages on a wide window.
-      contentMaxWidth: kProseMeasureWidth,
-      voiceFirst: true,
-      // The conversation's category, picked where the words are typed; `@`
-      // still names one for a single question.
-      composerLeading: mentions.isEmpty ? null : const FrontCategoryChip(),
-      mentionOptions: [
-        for (final category in mentions)
-          DesignSystemChatInputMention(
-            label: category.name,
-            color: colorFromCssHex(category.color),
-          ),
-      ],
-      // A conversation not begun opens on her, and what she can do, in the
-      // middle of where the thread will be.
-      emptyState: inboxOnly
-          ? null
-          : Center(
-              child: SingleChildScrollView(
-                padding: EdgeInsets.all(context.designTokens.spacing.step5),
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(
-                    maxWidth: kProseMeasureWidth,
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const FrontChatHero(),
-                      Text(
-                        messages.frontChatEmpty,
-                        textAlign: TextAlign.center,
-                        style: context
-                            .designTokens
-                            .typography
-                            .styles
-                            .body
-                            .bodyMedium
-                            .copyWith(
-                              color: context
-                                  .designTokens
-                                  .colors
-                                  .text
-                                  .mediumEmphasis,
-                            ),
-                      ),
-                    ],
+    return FrontReplySurfaces(
+      surfaces: thread?.surfacesByMessageId ?? const {},
+      logger: ref.watch(domainLoggerProvider),
+      // A reply she offered and the user tapped is their next turn, in its
+      // own words — as a chip under a clarifying question is.
+      onQuickReply: controller.sendText,
+      child: AgentChatView(
+        agentId: frontAgentId,
+        threadOverlay: AnimatedSwitcher(
+          duration: MotionDurations.short4,
+          child: cardFor == null
+              ? const SizedBox.shrink()
+              : FrontCompanionCard(
+                  conversationId: cardFor,
+                  form: cardForm,
+                  // Her settings are a page of the app: she closes first.
+                  onCustomize: () {
+                    onClose();
+                    beamToNamed('/settings/companion');
+                  },
+                ),
+        ),
+        threadBottomInset: cardInset,
+        agentName: messages.frontChatTitle,
+        // Each conversation keeps its own scroll position.
+        conversationId: inboxOnly
+            ? 'front-chat-inbox'
+            : 'front-chat:${conversationId ?? ''}',
+        history: shown,
+        // A conversation with her, not a log: her words as prose, the user's
+        // in a soft bubble; what was said goes out as it stops.
+        conversational: true,
+        // One reading column for the thread and the field under it, so the
+        // field's edges line up with the messages on a wide window.
+        contentMaxWidth: kProseMeasureWidth,
+        voiceFirst: true,
+        // The conversation's category, picked where the words are typed; `@`
+        // still names one for a single question.
+        composerLeading: mentions.isEmpty ? null : const FrontCategoryChip(),
+        mentionOptions: [
+          for (final category in mentions)
+            DesignSystemChatInputMention(
+              label: category.name,
+              color: colorFromCssHex(category.color),
+            ),
+        ],
+        // A conversation not begun opens on her, and what she can do, in the
+        // middle of where the thread will be.
+        emptyState: inboxOnly
+            ? null
+            : Center(
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.all(context.designTokens.spacing.step5),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(
+                      maxWidth: kProseMeasureWidth,
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const FrontChatHero(),
+                        Text(
+                          messages.frontChatEmpty,
+                          textAlign: TextAlign.center,
+                          style: context
+                              .designTokens
+                              .typography
+                              .styles
+                              .body
+                              .bodyMedium
+                              .copyWith(
+                                color: context
+                                    .designTokens
+                                    .colors
+                                    .text
+                                    .mediumEmphasis,
+                              ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
-      emptyMessage: inboxOnly
-          ? messages.frontChatInboxEmpty
-          : messages.frontChatEmpty,
-      composerHint: messages.frontChatPlaceholder,
-      sendingLabel: messages.frontChatResponding,
-      draft: composer.draft,
-      isSending: composer.isSending,
-      hasFailedTurn: composer.failedMessage != null,
-      failedTurnLabel: switch (composer.failure) {
-        FrontTurnFailure.rateLimit => messages.frontChatFailedRateLimit,
-        FrontTurnFailure.timeout => messages.frontChatFailedTimeout,
-        FrontTurnFailure.network => messages.frontChatFailedNetwork,
-        FrontTurnFailure.authentication =>
-          messages.frontChatFailedAuthentication,
-        FrontTurnFailure.provider => messages.frontChatFailedProvider,
-        FrontTurnFailure.noModel => messages.frontChatFailedNoModel,
-        FrontTurnFailure.noAnswer => messages.frontChatFailedNoAnswer,
-        FrontTurnFailure.unknown || null => null,
-      },
-      onDraftChanged: controller.updateDraft,
-      onSend: controller.send,
-      // A spoken question gets a spoken answer, whichever of her views —
-      // chat or stage — it was said in and is sent from.
-      onSendSpoken: controller.sendSpoken,
-      draftSpoken: composer.draftSpoken,
-      onDraftSpoken: controller.markDraftSpoken,
-      // Her ears are the Settings default's transcription slot, the words
-      // as heard: never a discovered on-device engine, never a correction
-      // pass that keeps the question waiting.
-      resolveTranscriptionTarget: ref.watch(
-        settingsDefaultDictationTargetProvider,
-      ),
-      onLinkTap: (_, url, title) => openLink(url, title),
-      // Her reply is a GenUI surface of her reply catalog: her words, the
-      // tasks she listed as preview cards, the charts and closed-task cards
-      // where she placed them, each component's data taken from the reply
-      // as stored; then what her turn's doors made, as preview cards. A
-      // reply of words alone is drawn as usual.
-      replyBodyBuilder: (context, message, prose) {
-        final parts = thread?.partsOf(message.id) ?? const <FrontReplyPart>[];
-        final previews = thread?.entityPreviewsByMessageId[message.id];
-        if (previews == null && parts.every((part) => part is FrontReplyText)) {
-          return null;
-        }
-        final closedTasks = thread?.closedTasksByMessageId[message.id];
-        return FrontReplyScope(
-          prose: (markdown) => prose(deviceDays(markdown)),
-          onOpen: openMade,
-          onOpenTask: (id) => openLink(
-            frontReferenceUrl(FrontDestinationKind.task, id),
-            '',
-          ),
-          child: Column(
+        emptyMessage: inboxOnly
+            ? messages.frontChatInboxEmpty
+            : messages.frontChatEmpty,
+        composerHint: messages.frontChatPlaceholder,
+        sendingLabel: messages.frontChatResponding,
+        draft: composer.draft,
+        isSending: composer.isSending,
+        hasFailedTurn: composer.failedMessage != null,
+        failedTurnLabel: switch (composer.failure) {
+          FrontTurnFailure.rateLimit => messages.frontChatFailedRateLimit,
+          FrontTurnFailure.timeout => messages.frontChatFailedTimeout,
+          FrontTurnFailure.network => messages.frontChatFailedNetwork,
+          FrontTurnFailure.authentication =>
+            messages.frontChatFailedAuthentication,
+          FrontTurnFailure.provider => messages.frontChatFailedProvider,
+          FrontTurnFailure.noModel => messages.frontChatFailedNoModel,
+          FrontTurnFailure.noAnswer => messages.frontChatFailedNoAnswer,
+          FrontTurnFailure.unknown || null => null,
+        },
+        onDraftChanged: controller.updateDraft,
+        onSend: controller.send,
+        // A spoken question gets a spoken answer, whichever of her views —
+        // chat or stage — it was said in and is sent from.
+        onSendSpoken: controller.sendSpoken,
+        draftSpoken: composer.draftSpoken,
+        onDraftSpoken: controller.markDraftSpoken,
+        // Her ears are the Settings default's transcription slot, the words
+        // as heard: never a discovered on-device engine, never a correction
+        // pass that keeps the question waiting.
+        resolveTranscriptionTarget: ref.watch(
+          settingsDefaultDictationTargetProvider,
+        ),
+        onLinkTap: (_, url, title) => openLink(url, title),
+        // Her reply is an A2UI surface of her reply catalog: her words, the
+        // tasks she listed as preview cards, the charts and closed-task cards
+        // where she placed them, replies to tap — then what her turn's doors
+        // made, as preview cards. A reply of words alone is drawn as usual.
+        replyBodyBuilder: (context, message, prose) {
+          final surface = FrontReplySurfaces.surfaceOf(context, message.id);
+          final previews = thread?.entityPreviewsByMessageId[message.id];
+          if (surface == null && previews == null) return null;
+          return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             spacing: context.designTokens.spacing.step4,
             children: [
-              FrontReplySurface(
-                key: ValueKey('front-reply-surface-${message.id}'),
-                surfaceId: message.id,
-                components: frontReplyComponents(
-                  parts: parts,
-                  closedTasks: closedTasks,
-                  loggedTime: thread?.loggedTimeByMessageId[message.id],
-                  pullRequests: thread?.pullRequestsByMessageId[message.id],
-                  due: thread?.dueSectionsByMessageId[message.id],
-                  // A task a door made or a closed card shows is not drawn
-                  // twice.
-                  shown: {
-                    ...?closedTasks?.map((task) => task.id),
-                    ...?previews?.map((preview) => preview.id),
-                  },
+              if (surface == null)
+                prose(message.text)
+              else
+                FrontReplyScope(
+                  surface: surface,
+                  prose: (markdown) => prose(deviceDays(markdown)),
+                  onOpen: openMade,
+                  onOpenTask: (id) => openLink(
+                    frontReferenceUrl(FrontDestinationKind.task, id),
+                    '',
+                  ),
+                  // A task a door made is not drawn twice.
+                  shownIds: {...?previews?.map((preview) => preview.id)},
+                  // Not in the inbox: it gathers every conversation, and a
+                  // tap would answer in the one picked, not the reply's own.
+                  canReply:
+                      !inboxOnly &&
+                      !composer.isSending &&
+                      message.id == latestId,
+                  child: A2uiSurface(key: ObjectKey(surface), surface: surface),
                 ),
-              ),
               if (previews != null)
                 FrontEntityPreviewList(
                   key: ValueKey('front-entity-previews-${message.id}'),
@@ -717,61 +716,61 @@ class _FrontChatThreadViewState extends ConsumerState<FrontChatThreadView> {
                   onOpen: openMade,
                 ),
             ],
-          ),
-        );
-      },
-      onRetry: controller.retry,
-      attachmentBuilder: (context, message) {
-        if (thread == null) return null;
-        final isHers = message.role == AgentChatRole.agent;
-        // The doors ride her reply, as the stack of cards under her bubble;
-        // until she has replied they sit under the user's.
-        final doors = thread.doorsCarriedBy(message.id);
-        final card = doors == null || doors.isEmpty
-            ? null
-            : FrontDoorCard(
-                key: ValueKey('front-doors-${message.id}'),
-                doors: doors,
-                actions: actions,
-                busyDoorIds: composer.busyDoorIds,
-                failedDoorIds: composer.failedDoorIds,
-                journalAccess: journalAccess,
-              );
-        // Chips only under her latest question: an older one has been
-        // answered, or walked away from, and its options would send a reply
-        // to a question nobody is asking any more.
-        final options = isHers && message.id == latestId
-            ? thread.optionsByMessageId[message.id]
-            : null;
-        final chips = options == null || options.isEmpty
-            ? null
-            : FrontAskOptionsRow(
-                key: ValueKey('front-options-${message.id}'),
-                options: options,
-                enabled: !composer.isSending,
-                onChosen: (option) => controller.sendText(option.label),
-              );
-        if (card != null && chips != null) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              card,
-              SizedBox(height: context.designTokens.spacing.step2),
-              chips,
-            ],
           );
-        }
-        return card ?? chips;
-      },
-      dividerBuilder: (context, message, previous) {
-        if (previous != null &&
-            _sameDay(previous.createdAt, message.createdAt)) {
-          return null;
-        }
-        return DesignSystemDivider(
-          label: _dayLabel(context, message.createdAt, locale),
-        );
-      },
+        },
+        onRetry: controller.retry,
+        attachmentBuilder: (context, message) {
+          if (thread == null) return null;
+          final isHers = message.role == AgentChatRole.agent;
+          // The doors ride her reply, as the stack of cards under her bubble;
+          // until she has replied they sit under the user's.
+          final doors = thread.doorsCarriedBy(message.id);
+          final card = doors == null || doors.isEmpty
+              ? null
+              : FrontDoorCard(
+                  key: ValueKey('front-doors-${message.id}'),
+                  doors: doors,
+                  actions: actions,
+                  busyDoorIds: composer.busyDoorIds,
+                  failedDoorIds: composer.failedDoorIds,
+                  journalAccess: journalAccess,
+                );
+          // Chips only under her latest question: an older one has been
+          // answered, or walked away from, and its options would send a reply
+          // to a question nobody is asking any more.
+          final options = isHers && message.id == latestId
+              ? thread.optionsByMessageId[message.id]
+              : null;
+          final chips = options == null || options.isEmpty
+              ? null
+              : FrontAskOptionsRow(
+                  key: ValueKey('front-options-${message.id}'),
+                  options: options,
+                  enabled: !composer.isSending,
+                  onChosen: (option) => controller.sendText(option.label),
+                );
+          if (card != null && chips != null) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                card,
+                SizedBox(height: context.designTokens.spacing.step2),
+                chips,
+              ],
+            );
+          }
+          return card ?? chips;
+        },
+        dividerBuilder: (context, message, previous) {
+          if (previous != null &&
+              _sameDay(previous.createdAt, message.createdAt)) {
+            return null;
+          }
+          return DesignSystemDivider(
+            label: _dayLabel(context, message.createdAt, locale),
+          );
+        },
+      ),
     );
   }
 
