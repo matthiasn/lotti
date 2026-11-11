@@ -133,6 +133,34 @@ void main() {
     ]);
   });
 
+  test('her words are said once: a message beside Text components repeats '
+      'them, so the components stand alone', () {
+    final reply = read(
+      message: 'You opened 12 pull requests.',
+      components: [
+        {'component': 'Text', 'text': 'You opened 12 pull requests.'},
+        {'component': 'PullRequestChart'},
+      ],
+      available: {FrontReplyComponents.pullRequestChart},
+    );
+
+    expect(reply.text, 'You opened 12 pull requests.');
+    expect(reply.components, [
+      text('You opened 12 pull requests.'),
+      {'component': 'PullRequestChart'},
+    ]);
+    // A blank Text is no words of hers: the message still leads.
+    expect(
+      read(
+        message: 'Here.',
+        components: [
+          {'component': 'Text', 'text': '  '},
+        ],
+      ).text,
+      'Here.',
+    );
+  });
+
   group('a list of task links in her words is drawn as cards anyway:', () {
     test("whatever the line says around a task's link becomes its note; "
         'her text keeps the list, since cards are not read aloud', () {

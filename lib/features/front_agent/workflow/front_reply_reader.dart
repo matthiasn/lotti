@@ -38,8 +38,9 @@ const int frontQuickRepliesMax = 3;
 /// `project:<id>` — or `{"ref": …, "note": …}` to say a few words on its
 /// card; `ClosedTasks`, `LoggedTimeChart` and `PullRequestChart`, placing
 /// what a lookup made; and `QuickReplies` with up to
-/// [frontQuickRepliesMax] `options`. A [message] given beside [components]
-/// leads them as words. Her words pass through [link].
+/// [frontQuickRepliesMax] `options`. Her words are said once: a [message]
+/// leads [components] that have no `Text`, and is left out beside ones
+/// that do, since it then repeats them. Her words pass through [link].
 ///
 /// A card must be a task or project of [visible] — what the turn could see,
 /// by `kind:id` — and a lookup's component one of [available]: nothing is
@@ -99,7 +100,21 @@ FrontReply readFrontReply({
     }
   }
 
-  if (message is String && message.trim().isNotEmpty) words(message);
+  // A model that composes components tends to repeat its words in
+  // `message` too. Her words are said once: the components' when they have
+  // any, else the message.
+  final composedWords =
+      components is List &&
+      components.any(
+        (component) =>
+            component is Map &&
+            component['component'] == FrontReplyComponents.text &&
+            component['text'] is String &&
+            (component['text'] as String).trim().isNotEmpty,
+      );
+  if (!composedWords && message is String && message.trim().isNotEmpty) {
+    words(message);
+  }
   if (components != null && components is! List) {
     dropped.add('components, which is not a list');
   }

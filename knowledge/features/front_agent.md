@@ -1449,8 +1449,9 @@ user sees, in her order, each naming one of `FrontReplyComponents` —
 as its logged time); `ClosedTasks`, `LoggedTimeChart` and
 `PullRequestChart`, placing what a lookup of the turn made; and
 `QuickReplies` with up to `frontQuickRepliesMax` short `options` the user
-can tap. A plain answer is `message` alone; a `message` beside `components`
-leads them as words. She composes and references; **she never passes data
+can tap. A plain answer is `message` alone. Her words are said once: a `message`
+leads components that have no `Text`, and is left out beside ones that do,
+since a model that composes tends to repeat its words there. She composes and references; **she never passes data
 to a component**: a card reads its task live by id, and a lookup's
 component is bound to what the app wrote from that lookup.
 
