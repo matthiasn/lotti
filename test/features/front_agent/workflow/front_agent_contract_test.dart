@@ -57,11 +57,17 @@ void main() {
     // A turn that looked something up is asked for its answer; one that has
     // not is asked to route.
     expect(
-      frontContinuationInstruction(answerLookups: 1),
+      frontContinuationInstruction(answerLookups: 1, rejectedDispatches: 0),
       frontAnswerInstruction,
     );
     expect(
-      frontContinuationInstruction(answerLookups: 0),
+      frontContinuationInstruction(answerLookups: 0, rejectedDispatches: 0),
+      frontDispatchRepairInstruction,
+    );
+    // A rejected dispatch meant to route: it is repaired even after a
+    // lookup, never told not to dispatch.
+    expect(
+      frontContinuationInstruction(answerLookups: 1, rejectedDispatches: 1),
       frontDispatchRepairInstruction,
     );
     expect(frontAnswerInstruction, contains('Do not dispatch'));
