@@ -149,6 +149,28 @@ void main() {
       text('You opened 12 pull requests.'),
       {'component': 'PullRequestChart'},
     ]);
+    // So is a message the Text is only part of.
+    expect(
+      read(
+        message: 'You opened 12 pull requests. Nice week.',
+        components: [
+          {'component': 'Text', 'text': 'you opened 12  pull requests.'},
+        ],
+      ).text,
+      'you opened 12  pull requests.',
+    );
+    // A message that adds words leads them: nothing she said is lost.
+    final both = read(
+      message: 'The total is 4h.',
+      components: [
+        {'component': 'Text', 'text': 'Here are the tasks:'},
+      ],
+    );
+    expect(both.components, [
+      text('The total is 4h.'),
+      text('Here are the tasks:'),
+    ]);
+    expect(both.text, 'The total is 4h.\n\nHere are the tasks:');
     // A blank Text is no words of hers: the message still leads.
     expect(
       read(
@@ -188,6 +210,19 @@ void main() {
         text('Tell me if you want more.'),
       ]);
       expect(reply.text, said);
+    });
+
+    test('a line that says a sentence about its task stays her words, '
+        'where it can be read whole', () {
+      final sentence =
+          '- ${link(tasks[0])} is blocked until the supplier confirms the '
+          'new delivery date';
+      final said = 'Two:\n$sentence\n- ${link(tasks[1])} — 2h';
+
+      expect(read(message: said).components, [
+        text('Two:\n$sentence'),
+        cards([item(tasks[1], note: '2h')]),
+      ]);
     });
 
     test("a project line that says more stays her words: only a task's "

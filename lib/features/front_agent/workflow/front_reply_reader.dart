@@ -39,8 +39,8 @@ const int frontQuickRepliesMax = 3;
 /// card; `ClosedTasks`, `LoggedTimeChart` and `PullRequestChart`, placing
 /// what a lookup made; and `QuickReplies` with up to
 /// [frontQuickRepliesMax] `options`. Her words are said once: a [message]
-/// leads [components] that have no `Text`, and is left out beside ones
-/// that do, since it then repeats them. Her words pass through [link].
+/// leads [components], unless it repeats what their `Text` says. Her words
+/// pass through [link].
 ///
 /// A card must be a task or project of [visible] — what the turn could see,
 /// by `kind:id` — and a lookup's component one of [available]: nothing is
@@ -52,8 +52,9 @@ const int frontQuickRepliesMax = 3;
 /// **Cards never hinge on her remembering the component.** A list in her
 /// words whose lines each link one task or project of [visible] is drawn as
 /// `TaskCards` in its place, what else the line says kept as the card's
-/// note (a project line that says more stays her words: only a task's card
-/// shows a note). The list stays in `text`, so it is still spoken. Nothing a lookup found is lost either: the tasks of [dueRows] she
+/// note (a project line that says more stays her words, since only a
+/// task's card shows a note; so does a line that says more than
+/// [frontCardNoteMax] characters, a sentence rather than a label). The list stays in `text`, so it is still spoken. Nothing a lookup found is lost either: the tasks of [dueRows] she
 /// listed nowhere follow as one more list, and [available] components she
 /// did not place follow in catalog order. A task is listed once, where it
 /// first stands, and never when it is one of [closedTaskIds], whose cards
@@ -101,20 +102,26 @@ FrontReply readFrontReply({
   }
 
   // A model that composes components tends to repeat its words in
-  // `message` too. Her words are said once: the components' when they have
-  // any, else the message.
-  final composedWords =
-      components is List &&
-      components.any(
-        (component) =>
-            component is Map &&
-            component['component'] == FrontReplyComponents.text &&
-            component['text'] is String &&
-            (component['text'] as String).trim().isNotEmpty,
-      );
-  if (!composedWords && message is String && message.trim().isNotEmpty) {
-    words(message);
-  }
+  // `message` too. Her words are said once: a message that says what the
+  // Text components say — or that they are part of — is left out; one that
+  // adds words leads them.
+  final composed = _normalized(
+    [
+      if (components is List)
+        for (final component in components)
+          if (component case {
+            'component': FrontReplyComponents.text,
+            'text': final String text,
+          })
+            text,
+    ].join(' '),
+  );
+  final lead = message is String ? message.trim() : '';
+  final repeats =
+      composed.isNotEmpty &&
+      (composed.contains(_normalized(lead)) ||
+          _normalized(lead).contains(composed));
+  if (lead.isNotEmpty && !repeats) words(lead);
   if (components != null && components is! List) {
     dropped.add('components, which is not a list');
   }
@@ -185,6 +192,15 @@ FrontReply readFrontReply({
     dropped: dropped,
   );
 }
+
+/// [text] for comparing what was said: lower case, whitespace collapsed.
+String _normalized(String text) =>
+    text.toLowerCase().replaceAll(RegExp(r'\s+'), ' ').trim();
+
+/// The longest a list line's other words may be to become a card's note: a
+/// time, a label. A line that says a sentence stays her words, where it
+/// can be read whole.
+const int frontCardNoteMax = 40;
 
 /// Records [note] in [dropped]; null, so it can stand where a value would.
 Never? _drop(List<String> dropped, String note) {
@@ -311,6 +327,7 @@ FrontEntityReference? _cardOfLine(
   // Only a task's card shows a note: a project line that says more stays
   // her words, so nothing she wrote is lost.
   if (note.isNotEmpty && kind != FrontEntityKind.task) return null;
+  if (note.length > frontCardNoteMax) return null;
   return FrontEntityReference(
     kind: kind,
     id: row.id,

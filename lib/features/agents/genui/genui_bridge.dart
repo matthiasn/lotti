@@ -113,9 +113,15 @@ class GenUiBridge {
     }
     final data = rawData as Map<String, dynamic>? ?? <String, dynamic>{};
     final surfaceIdValue = args['surfaceId'];
-    final surfaceId = surfaceIdValue is String && surfaceIdValue.isNotEmpty
+    var surfaceId = surfaceIdValue is String && surfaceIdValue.isNotEmpty
         ? surfaceIdValue
-        : 'surface-unnamed-${++_unnamedSurfaces}';
+        : null;
+    // An id made here must be free: one the model happened to use already
+    // would turn this new surface into an update of that one.
+    while (surfaceId == null) {
+      final candidate = 'surface-unnamed-${++_unnamedSurfaces}';
+      if (processor.model.getSurface(candidate) == null) surfaceId = candidate;
+    }
 
     // A2UI components are flat JSON: the id and type sit beside the
     // widget's own properties. The fixed keys come last so a stray `id` or

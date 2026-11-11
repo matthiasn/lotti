@@ -135,6 +135,32 @@ void main() {
       );
     });
 
+    test('an id made for an unnamed surface skips one the model already '
+        'used, so the new card never overwrites that one', () {
+      const metrics = {'totalWakes': 1, 'successRate': 1.0, 'failureCount': 0};
+      bridge.handleToolCall({
+        'surfaceId': 'surface-unnamed-1',
+        'rootType': 'EvolutionNoteConfirmation',
+        'data': {'kind': 'reflection', 'content': 'A note'},
+      });
+
+      final made = bridge.handleToolCall({
+        'rootType': 'MetricsSummary',
+        'data': metrics,
+      });
+
+      expect(made, 'surface-unnamed-2');
+      expect(
+        processor.model
+            .getSurface('surface-unnamed-1')!
+            .componentsModel
+            .get('root')!
+            .type,
+        'EvolutionNoteConfirmation',
+      );
+      expect(bridge.drainPendingSurfaceIds(), ['surface-unnamed-1', made]);
+    });
+
     test('a null property is one not given: a proposal that leaves out its '
         'optional parts is still drawn', () {
       final id = bridge.handleToolCall({

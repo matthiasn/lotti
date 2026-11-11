@@ -1450,8 +1450,8 @@ as its logged time); `ClosedTasks`, `LoggedTimeChart` and
 `PullRequestChart`, placing what a lookup of the turn made; and
 `QuickReplies` with up to `frontQuickRepliesMax` short `options` the user
 can tap. A plain answer is `message` alone. Her words are said once: a `message`
-leads components that have no `Text`, and is left out beside ones that do,
-since a model that composes tends to repeat its words there. She composes and references; **she never passes data
+leads the components, unless it repeats what their `Text` says, as a
+model that composes tends to. She composes and references; **she never passes data
 to a component**: a card reads its task live by id, and a lookup's
 component is bound to what the app wrote from that lookup.
 
@@ -1466,7 +1466,8 @@ refused. **Cards never hinge on her remembering the component**: a list in
 her words whose lines each hold one link to a task or project the turn saw
 is cut out of her words and drawn as `TaskCards` in its place, what else
 the line says kept as the card's note (a project line that says more
-stays her words, since only a task's card shows a note). The tasks a `list_due_tasks` found that she listed
+stays her words, since only a task's card shows a note; so does a line
+that says a sentence, longer than `frontCardNoteMax`). The tasks a `list_due_tasks` found that she listed
 nowhere follow as one more list, and a lookup's component she did not
 place follows in catalog order. A task is listed once, and never when a
 closed-task card shows it. The reply's `text` — what is spoken, kept in
