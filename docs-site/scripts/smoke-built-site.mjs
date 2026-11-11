@@ -7,6 +7,9 @@ import {resolve} from 'node:path';
 import {readJson, siteDirectory} from './manual-lib.mjs';
 
 const buildDirectory = resolve(siteDirectory, 'build');
+// The build names its screenshots by the version it was built as, the way
+// docusaurus.config.ts resolves it: a release build has no `development` path.
+const manualVersion = process.env.MANUAL_VERSION ?? 'development';
 const features = await readJson(resolve(siteDirectory, 'metadata/features.json'));
 const screenshotRegistry = await readJson(
   resolve(siteDirectory, 'metadata/screenshot-cases.json'),
@@ -153,9 +156,11 @@ assert.match(settingsHtml, /aria-label="Screenshot layout for all images"/);
 assert.match(settingsHtml, />All screenshots</);
 assert.match(settingsHtml, />Mobile</);
 assert.match(settingsHtml, />Desktop</);
-assert.match(
-  settingsHtml,
-  /manual\/screenshots\/development\/settings\/home\/mobile-dark\.webp/,
+assert.ok(
+  settingsHtml.includes(
+    `manual/screenshots/${manualVersion}/settings/home/mobile-dark.webp`,
+  ),
+  `The settings page must show the ${manualVersion} screenshots.`,
 );
 
 assert.doesNotMatch(settingsHtml, /data-translation-notice=/);
@@ -199,11 +204,11 @@ for (const locale of translatedLocales) {
   assert.match(translatedSettingsHtml, new RegExp(`>${expected.allScreenshots}<`));
   assert.match(translatedSettingsHtml, new RegExp(`>${expected.mobile}<`));
   assert.match(translatedSettingsHtml, new RegExp(`>${expected.desktop}<`));
-  assert.match(
-    translatedSettingsHtml,
-    new RegExp(
-      `manual/screenshots/development/${locale}/settings/home/mobile-dark\\.webp`,
+  assert.ok(
+    translatedSettingsHtml.includes(
+      `manual/screenshots/${manualVersion}/${locale}/settings/home/mobile-dark.webp`,
     ),
+    `The ${locale} settings page must show the ${manualVersion} screenshots.`,
   );
 }
 

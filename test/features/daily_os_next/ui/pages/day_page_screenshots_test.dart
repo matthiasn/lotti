@@ -1178,9 +1178,9 @@ Future<void> _openBlockEditor(
 }) async {
   await withClock(Clock.fixed(_now), () async {
     final editButton = find.byKey(Key('daily_os_edit_block_$blockId'));
-    final iconButton = tester.widget<IconButton>(editButton);
-    expect(iconButton.onPressed, isNotNull);
-    iconButton.onPressed!();
+    final editCorner = tester.widget<InkWell>(editButton);
+    expect(editCorner.onTap, isNotNull);
+    editCorner.onTap!();
     await settleFrames(tester);
   });
   expect(
@@ -1189,10 +1189,20 @@ Future<void> _openBlockEditor(
   );
 }
 
-/// The agenda shows every item as a row on one card, with no cover art:
-/// the category dot is the row's only mark.
+/// A task-linked block's title as the page shows it: the task's live title
+/// from the demo world, not the plan's shorter one.
+String _liveTaskTitle(String taskId) =>
+    (_manualWorld.entityById(taskId)! as Task).data.title;
+
+/// The agenda folds the finished morning into one row and shows the rest of
+/// the day as rows on the same card, with no cover art: the category dot is
+/// the row's only mark.
 void _expectAgendaRows(WidgetTester tester) {
-  expect(find.byType(DayAgendaRow), findsNWidgets(8));
+  expect(
+    find.byKey(const ValueKey('daily_os_agenda_done_run')),
+    findsOneWidget,
+  );
+  expect(find.byType(DayAgendaRow), findsNWidgets(3));
   expect(find.byType(CoverArtThumbnail), findsNothing);
 }
 
@@ -1387,10 +1397,7 @@ void main() {
     await _pumpDayPage(tester, device: proDevice);
     await _switchToDayView(tester);
     await _openBlockEditor(tester, blockId: 'blk-slides');
-    expect(
-      find.text(_t('Zero-gravity fish feeder', 'Schwerelos-Futterautomat')),
-      findsWidgets,
-    );
+    expect(find.text(_liveTaskTitle(manualFishFeederTaskId)), findsWidgets);
     expect(
       find.text(_messages(tester).dailyOsNextBlockEditTimeLabel),
       findsOneWidget,
@@ -1422,7 +1429,11 @@ void main() {
       find.text(_messages(tester).dailyOsNextBlockEditOpenTask),
       findsOneWidget,
     );
-    expect(find.byType(TextField), findsNothing);
+    // The task owns its title: the editor shows it, but not in a field. (The
+    // page's own composer stays mounted behind the modal.)
+    final title = _liveTaskTitle(manualOrbitalHabitatTaskId);
+    expect(find.text(title), findsWidgets);
+    expect(find.widgetWithText(TextField, title), findsNothing);
     await captureScreenshot(tester, 'day_pro_06_block_edit_linked_dark');
   });
 
@@ -1558,9 +1569,7 @@ void main() {
           await _switchToDayView(tester);
           await _openBlockEditor(tester, blockId: 'blk-slides');
           expect(
-            find.text(
-              _t('Zero-gravity fish feeder', 'Schwerelos-Futterautomat'),
-            ),
+            find.text(_liveTaskTitle(manualFishFeederTaskId)),
             findsWidgets,
           );
           expect(
@@ -1605,12 +1614,7 @@ void main() {
             case _RedesignSurface.agenda:
               await _switchToAgendaView(tester);
               expect(find.byType(AgendaView), findsOneWidget);
-              // The finished morning folds; the rest of the day is rows.
-              expect(
-                find.byKey(const ValueKey('daily_os_agenda_done_run')),
-                findsOneWidget,
-              );
-              expect(find.byType(DayAgendaRow), findsNWidgets(3));
+              _expectAgendaRows(tester);
             case _RedesignSurface.agendaNoPlan:
               await _switchToAgendaView(tester);
               // The Agenda's one row starts the check-in, and the day's
