@@ -11,7 +11,7 @@ sources:
   - id: chat
     resource: ../../../lib/features/agents/ui/chat
     title: Shared agent chat components
-    last_modified: 2026-11-07
+    last_modified: 2026-11-11
   - id: evolution
     resource: ../../../lib/features/agents/ui/evolution/widgets
     title: Agent improvement conversation widgets
@@ -107,7 +107,8 @@ Its composer and the agent improvement input widgets use
 the same voice-input primitives under `agents/ui/chat/`:
 
 - `ChatRecorderController` and `ChatRecorderState` manage a temporary recording,
-  streamed transcript feedback, and typed errors.
+  streamed transcript feedback, and typed errors. A take runs until Done, as
+  a recording on a task does: the controller never stops one on its own.
 - `chat_amplitude_history.dart` provides bounded history and normalization
   functions; the design system's `DesignSystemVoiceWaveform` renders the
   normalized samples (the evolution chat and the goal charter sheet use it

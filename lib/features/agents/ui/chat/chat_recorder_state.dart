@@ -100,16 +100,15 @@ class ChatRecorderState {
 
 /// Tuning for the batch (file-based) recording path.
 ///
-/// [maxSeconds] is a safety cap after which `ChatRecorderController` auto-stops
-/// and transcribes; [amplitudeIntervalMs] throttles waveform sampling.
+/// [sampleRate] is the recorder's; [amplitudeIntervalMs] throttles waveform
+/// sampling. There is no cap on a take's length: it runs until the user ends
+/// it, as a recording on a task does.
 class ChatRecorderConfig {
   const ChatRecorderConfig({
     this.sampleRate = 48000,
-    this.maxSeconds = 120,
     this.amplitudeIntervalMs = 100,
   });
 
   final int sampleRate;
-  final int maxSeconds;
   final int amplitudeIntervalMs;
 }

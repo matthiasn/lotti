@@ -116,15 +116,6 @@ extension _AnyChatRecorderState on glados.Any {
       );
 }
 
-/// Drains the event queue repeatedly so a zero-duration safety timer and
-/// the multi-await async chain behind it (stop → transcribe → state write)
-/// can settle deterministically — no wall-clock waiting involved.
-Future<void> drainAsyncChain() async {
-  for (var i = 0; i < 10; i++) {
-    await pumpEventQueue();
-  }
-}
-
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -912,7 +903,6 @@ void main() {
           () => ChatRecorderController(
             recorderFactory: () => mockRecorder,
             tempDirectoryProvider: () async => Directory.systemTemp,
-            config: const ChatRecorderConfig(maxSeconds: 2),
           ),
         ),
       ],
@@ -954,7 +944,6 @@ void main() {
             () => ChatRecorderController(
               recorderFactory: () => mockRecorder,
               tempDirectoryProvider: () async => Directory.systemTemp,
-              config: const ChatRecorderConfig(maxSeconds: 2),
             ),
           ),
         ],
@@ -1005,12 +994,8 @@ void main() {
         (_) => const Stream<record.Amplitude>.empty(),
       );
 
-      // A large maxSeconds keeps the safety timer pending so it cannot fire
-      // during the test — proving the non-default value (not the 0 default
-      // tested elsewhere) is what drives the Timer.
       const config = ChatRecorderConfig(
         sampleRate: 16000,
-        maxSeconds: 3600,
         amplitudeIntervalMs: 250,
       );
 
@@ -1056,8 +1041,7 @@ void main() {
               as Duration;
       expect(interval, Duration(milliseconds: config.amplitudeIntervalMs));
 
-      // The 1-hour safety timer is still pending, so stop() has not been
-      // triggered automatically (it would have for the maxSeconds: 0 case).
+      // Nothing stops a take but the user: no stop() of the recorder's own.
       await pumpEventQueue();
       verifyNever(() => mockRecorder.stop());
       expect(
@@ -1145,7 +1129,6 @@ void main() {
           () => ChatRecorderController(
             recorderFactory: () => mockRecorder,
             tempDirectoryProvider: () async => Directory.systemTemp,
-            config: const ChatRecorderConfig(maxSeconds: 2),
             transcriptionService: mockTranscriptionService,
           ),
         ),
@@ -1206,7 +1189,6 @@ void main() {
           () => ChatRecorderController(
             recorderFactory: () => mockRecorder,
             tempDirectoryProvider: () async => Directory.systemTemp,
-            config: const ChatRecorderConfig(maxSeconds: 2),
             transcriptionService: mockTranscriptionService,
           ),
         ),
@@ -1257,7 +1239,6 @@ void main() {
             recorderFactory: () => mockRecorder,
             nowMillisProvider: () => now,
             tempDirectoryProvider: () async => baseTemp,
-            config: const ChatRecorderConfig(maxSeconds: 1),
           ),
         ),
         audioTranscriptionServiceProvider.overrideWithValue(
@@ -1332,7 +1313,6 @@ void main() {
             recorderFactory: () => mockRecorder,
             nowMillisProvider: () => now,
             tempDirectoryProvider: () async => baseTemp,
-            config: const ChatRecorderConfig(maxSeconds: 10),
           ),
         ),
         audioTranscriptionServiceProvider.overrideWithValue(
@@ -1406,7 +1386,6 @@ void main() {
           () => ChatRecorderController(
             recorderFactory: () => mockRecorder,
             tempDirectoryProvider: () async => baseTemp,
-            config: const ChatRecorderConfig(maxSeconds: 10),
           ),
         ),
       ],
@@ -1466,7 +1445,6 @@ void main() {
           () => ChatRecorderController(
             recorderFactory: () => mockRecorder,
             tempDirectoryProvider: () async => baseTemp,
-            config: const ChatRecorderConfig(maxSeconds: 10),
           ),
         ),
       ],
@@ -1499,7 +1477,6 @@ void main() {
             recorderFactory: () => mockRecorder,
             tempDirectoryProvider: () async =>
                 throw const FileSystemException('No space left on device'),
-            config: const ChatRecorderConfig(maxSeconds: 2),
           ),
         ),
       ],
@@ -1545,7 +1522,6 @@ void main() {
           return ChatRecorderController(
             recorderFactory: () => mockRecorder,
             tempDirectoryProvider: () async => baseTemp,
-            config: const ChatRecorderConfig(maxSeconds: 2),
           );
         }),
         audioTranscriptionServiceProvider.overrideWithValue(
@@ -1604,7 +1580,6 @@ void main() {
           return ChatRecorderController(
             recorderFactory: () => mockRecorder,
             tempDirectoryProvider: () async => baseTemp,
-            config: const ChatRecorderConfig(maxSeconds: 2),
           );
         }),
         audioTranscriptionServiceProvider.overrideWithValue(
@@ -1671,7 +1646,6 @@ void main() {
           return ChatRecorderController(
             recorderFactory: () => mockRecorder,
             tempDirectoryProvider: () async => baseTemp,
-            config: const ChatRecorderConfig(maxSeconds: 2),
           );
         }),
         audioTranscriptionServiceProvider.overrideWithValue(
@@ -1806,7 +1780,6 @@ void main() {
           () => ChatRecorderController(
             recorderFactory: () => mockRecorder,
             tempDirectoryProvider: () async => baseTemp,
-            config: const ChatRecorderConfig(maxSeconds: 60),
           ),
         ),
         audioTranscriptionServiceProvider.overrideWithValue(
@@ -1898,7 +1871,6 @@ void main() {
             () => ChatRecorderController(
               recorderFactory: () => mockRecorder,
               tempDirectoryProvider: () async => baseTemp,
-              config: const ChatRecorderConfig(maxSeconds: 10),
             ),
           ),
         ],
@@ -1977,7 +1949,6 @@ void main() {
           () => ChatRecorderController(
             recorderFactory: () => mockRecorder,
             tempDirectoryProvider: () async => baseTemp,
-            config: const ChatRecorderConfig(maxSeconds: 10),
           ),
         ),
       ],
@@ -2030,7 +2001,6 @@ void main() {
           () => ChatRecorderController(
             recorderFactory: () => mockRecorder,
             tempDirectoryProvider: () async => baseTemp,
-            config: const ChatRecorderConfig(maxSeconds: 10),
           ),
         ),
       ],
@@ -2118,7 +2088,6 @@ void main() {
             () => ChatRecorderController(
               recorderFactory: () => mockRecorder,
               tempDirectoryProvider: () async => Directory.systemTemp,
-              config: const ChatRecorderConfig(maxSeconds: 10),
             ),
           ),
           audioTranscriptionServiceProvider.overrideWithValue(
@@ -2160,22 +2129,19 @@ void main() {
     },
   );
 
-  group('max timer safety stop', () {
-    test('fires and calls stopAndTranscribe for batch recording', () async {
+  test(
+    'a take with the default config runs until it is stopped, however long',
+    () async {
       final baseTemp = await Directory.systemTemp.createTemp('rec_test_');
-      // Pre-create subdirectory to minimize real I/O during fakeAsync
-      await Directory(
-        '${baseTemp.path}/lotti_chat_rec',
-      ).create(recursive: true);
+      addTearDown(() async {
+        if (baseTemp.existsSync()) {
+          await baseTemp.delete(recursive: true);
+        }
+      });
 
       final mockRecorder = MockAudioRecorder();
       when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
       when(() => mockRecorder.dispose()).thenAnswer((_) async {});
-      when(
-        () => mockRecorder.onAmplitudeChanged(any()),
-      ).thenAnswer((_) => Stream<record.Amplitude>.empty());
-      // Avoid real file I/O in recorder mock — file existence is not needed
-      // since transcription service is mocked
       when(
         () => mockRecorder.start(
           any<record.RecordConfig>(),
@@ -2183,51 +2149,53 @@ void main() {
         ),
       ).thenAnswer((_) async {});
       when(() => mockRecorder.stop()).thenAnswer((_) async => null);
-
-      final mockSvc = MockAudioTranscriptionService();
+      final amplitude = StreamController<record.Amplitude>();
+      addTearDown(amplitude.close);
       when(
-        () => mockSvc.transcribeStream(any()),
-      ).thenAnswer((_) => Stream.value('timer transcript'));
+        () => mockRecorder.onAmplitudeChanged(any()),
+      ).thenAnswer((_) => amplitude.stream);
 
-      // Use maxSeconds: 0 so the safety timer fires immediately (zero-duration
-      // Timer), which can be triggered by pumping the event queue instead of
-      // waiting real wall-clock time.
+      // The recorder's clock, moved by hand: the take is as long as it says.
+      var nowMillis = 1000;
       final container = ProviderContainer(
         overrides: [
-          audioTranscriptionServiceProvider.overrideWithValue(mockSvc),
           chatRecorderControllerProvider.overrideWith(
             () => ChatRecorderController(
               recorderFactory: () => mockRecorder,
               tempDirectoryProvider: () async => baseTemp,
-              config: const ChatRecorderConfig(maxSeconds: 0),
+              nowMillisProvider: () => nowMillis,
             ),
+          ),
+          audioTranscriptionServiceProvider.overrideWithValue(
+            MockAudioTranscriptionService(),
           ),
         ],
       );
       addTearDown(container.dispose);
-
       final sub = container.listen(chatRecorderControllerProvider, (_, _) {});
       addTearDown(sub.close);
-
       final controller = container.read(
         chatRecorderControllerProvider.notifier,
       );
-      await controller.start();
 
+      await controller.start();
       expect(
         container.read(chatRecorderControllerProvider).status,
         ChatRecorderStatus.recording,
       );
 
-      // Pump the event queue to let the zero-duration safety timer fire
-      // and the subsequent stopAndTranscribe processing complete.
-      await drainAsyncChain();
-
+      // Ten minutes in — five times the cap the recorder used to impose, and
+      // as long as a recording on a task may run — the take is still going
+      // and shows its true length: nothing stopped it and nothing clamped it.
+      nowMillis += const Duration(minutes: 10).inMilliseconds;
+      amplitude.add(record.Amplitude(current: -40, max: -30));
+      await pumpEventQueue();
       final state = container.read(chatRecorderControllerProvider);
-      expect(state.status, ChatRecorderStatus.idle);
-      expect(state.transcript, 'timer transcript');
-    });
-  });
+      expect(state.status, ChatRecorderStatus.recording);
+      expect(state.elapsed, const Duration(minutes: 10));
+      verifyNever(() => mockRecorder.stop());
+    },
+  );
 
   // ─────────────────────────────────────────────────────────────────────────
   // Error-path coverage for _cleanupInternal
@@ -2285,7 +2253,6 @@ void main() {
               () => ChatRecorderController(
                 recorderFactory: () => mockRecorder,
                 tempDirectoryProvider: () async => baseTemp,
-                config: const ChatRecorderConfig(maxSeconds: 10),
               ),
             ),
             audioTranscriptionServiceProvider.overrideWithValue(
@@ -2373,7 +2340,6 @@ void main() {
                 recorderFactory: () => mockRecorder,
                 nowMillisProvider: () => now,
                 tempDirectoryProvider: () async => baseTemp,
-                config: const ChatRecorderConfig(maxSeconds: 10),
               ),
             ),
             audioTranscriptionServiceProvider.overrideWithValue(
@@ -2459,7 +2425,6 @@ void main() {
                 recorderFactory: () => mockRecorder,
                 nowMillisProvider: () => now,
                 tempDirectoryProvider: () async => baseTemp,
-                config: const ChatRecorderConfig(maxSeconds: 10),
               ),
             ),
             audioTranscriptionServiceProvider.overrideWithValue(
@@ -2635,7 +2600,6 @@ void main() {
               () => ChatRecorderController(
                 recorderFactory: () => mockRecorder,
                 tempDirectoryProvider: () async => Directory.systemTemp,
-                config: const ChatRecorderConfig(maxSeconds: 60),
               ),
             ),
           ],
@@ -2713,7 +2677,6 @@ void main() {
             () => ChatRecorderController(
               recorderFactory: () => mockRecorder,
               nowMillisProvider: () => 7777,
-              config: const ChatRecorderConfig(maxSeconds: 60),
             ),
           ),
           audioTranscriptionServiceProvider.overrideWithValue(
