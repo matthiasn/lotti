@@ -13,6 +13,7 @@ import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_wrapper.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
+import 'package:lotti/features/companion/model/companion_reaction.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_contract.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_strategy.dart';
@@ -124,7 +125,7 @@ void main() {
         corpusMatcher: (_) async => const [],
       );
       final conversationId = conversations.createConversation(
-        systemMessage: frontAgentSystemPrompt,
+        systemMessage: frontAgentSystemMessage(CompanionSass.warm),
       );
       final watch = Stopwatch()..start();
       InferenceUsage? usage;
@@ -152,6 +153,9 @@ void main() {
         failure = error;
       }
       final manager = conversations.getConversation(conversationId);
+      // Her answer is the message she ended on, taken as the workflow
+      // takes it.
+      frontTakeAnswer(strategy, manager);
       final providerCalls = manager?.turnCount ?? 0;
       conversations.deleteConversation(conversationId);
       watch.stop();
@@ -246,7 +250,7 @@ List<String> _judge(FrontEvalScenario scenario, FrontAgentStrategy strategy) {
         failed.add('offered an option outside the candidates');
       }
     case FrontEvalOutcome.reply:
-      if (strategy.replyToUser == null) failed.add('expected reply_to_user');
+      if (strategy.replyToUser == null) failed.add('expected an answer');
       if (dispatch?.routed.isNotEmpty ?? false) {
         failed.add('dispatched to an existing owner');
       }

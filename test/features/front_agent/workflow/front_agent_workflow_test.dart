@@ -1890,16 +1890,15 @@ Here is the garden task.'''),
             }) async {
               sentThrough = inferenceRepo;
               when(() => manager.turnCount).thenReturn(1);
-              await (strategy! as FrontAgentStrategy).processToolCalls(
-                toolCalls: [
-                  answer('Hi.'),
-                ],
-                manager: manager,
-              );
+              when(() => manager.messages).thenReturn([
+                const ChatCompletionMessage.assistant(content: 'Hi.'),
+              ]);
               return null;
             };
 
-        await run();
+        final result = await run();
+
+        expect(result.success, isTrue);
 
         final guard = sentThrough! as FrontInferenceStallGuard;
         expect(guard.stallTimeout, frontInferenceStallTimeout);

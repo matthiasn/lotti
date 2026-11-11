@@ -216,22 +216,29 @@ FrontStreamedReply parseFrontReplyStream(String content) {
   );
 }
 
-/// The parts of one surface, top to bottom: the children of a root `Reply`,
-/// or the root itself — each without the ids that only wired them together.
+/// The parts of one surface, top to bottom: the children of a root `Reply`
+/// — a `Reply` among them standing for its own children — or the root
+/// itself, each without the ids that only wired them together.
 List<Map<String, Object?>> _topToBottom(List<Map<String, dynamic>> components) {
   final byId = {
     for (final component in components) component['id']: component,
   };
-  final root = byId['root'];
-  if (root == null) return const [];
-  final ordered = root['component'] == FrontReplyComponents.reply
-      ? [
-          if (root['children'] case final List<Object?> children)
-            for (final child in children) ?byId[child],
-        ]
-      : [root];
+  final seen = <Object?>{};
+  Iterable<Map<String, dynamic>> partsOf(Object? id) sync* {
+    final component = byId[id];
+    // `seen` ends a Reply that lists itself, directly or through a child.
+    if (component == null || !seen.add(id)) return;
+    if (component['component'] != FrontReplyComponents.reply) {
+      yield component;
+    } else if (component['children'] case final List<Object?> children) {
+      for (final child in children) {
+        yield* partsOf(child);
+      }
+    }
+  }
+
   return [
-    for (final component in ordered)
+    for (final component in partsOf('root'))
       {
         for (final MapEntry(:key, :value) in component.entries)
           if (key != 'id' && key != 'catalogId') key: value,
