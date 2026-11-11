@@ -92,23 +92,17 @@ void main() {
     FrontChatThread thread = FrontChatThread.empty,
     ConsumptionTotals Function(String runKey)? runTotals,
     List<Override> extra = const [],
-    EdgeInsets keyboard = EdgeInsets.zero,
+    bool keyboardUp = false,
   }) async {
     await setUpTestGetIt();
     addTearDown(tearDownTestGetIt);
     return withClock(Clock.fixed(now), () async {
       await tester.pumpWidget(
         makeTestableWidgetNoScroll(
-          Builder(
-            builder: (context) => MediaQuery(
-              data: MediaQuery.of(context).copyWith(viewInsets: keyboard),
-              child: Scaffold(
-                resizeToAvoidBottomInset: false,
-                body: SizedBox(
-                  width: 360,
-                  child: FrontChatDrawer(beside: beside),
-                ),
-              ),
+          Scaffold(
+            body: SizedBox(
+              width: 360,
+              child: FrontChatDrawer(beside: beside, keyboardUp: keyboardUp),
             ),
           ),
           overrides: [
@@ -325,7 +319,7 @@ void main() {
         'room for what it finds', (tester) async {
       await pumpDrawer(
         tester,
-        keyboard: const EdgeInsets.only(bottom: 300),
+        keyboardUp: true,
       );
 
       expect(find.byType(FrontChatDrawerFooter), findsNothing);

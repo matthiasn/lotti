@@ -1208,7 +1208,9 @@ and, over a phone's thread, a glyph back to the conversation — then a
 *New chat* row in the accent, the drawer's one action, then the list, then
 her settings (`FrontChatDrawerFooter`, [below](#the-chat-surface)), which
 step aside while the keyboard is up so a short screen keeps room for what
-the search finds. On a phone
+the search finds. Whether it is up is read by `FrontChatSurface`, above the
+`Dialog` — which pads by the keyboard and removes the inset from everything
+it holds — and handed down as `keyboardUp`. On a phone
 or a narrow window the header's toggle opens it over the thread
 (`frontConversationListOpenProvider`, off every time the sheet opens): it
 slides in from the leading edge over the shared modal scrim

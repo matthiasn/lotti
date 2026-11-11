@@ -23,6 +23,7 @@ void main() {
     WidgetTester tester,
     Size window, {
     EdgeInsets padding = EdgeInsets.zero,
+    EdgeInsets keyboard = EdgeInsets.zero,
   }) async {
     await setUpTestGetIt();
     addTearDown(tearDownTestGetIt);
@@ -39,6 +40,7 @@ void main() {
           size: window,
           padding: padding,
           viewPadding: padding,
+          viewInsets: keyboard,
         ),
         overrides: [
           frontChatThreadProvider.overrideWith(
@@ -131,6 +133,47 @@ void main() {
     final rect = tester.getRect(find.byType(FrontChatPane));
     expect(rect.width, moreOrLessEquals(phone.width, epsilon: 1));
     expect(rect.height, moreOrLessEquals(phone.height, epsilon: 1));
+  });
+
+  group('the drawer settings step aside while the keyboard is up, '
+      'though the dialog hides its inset from everything inside it', () {
+    const keyboard = EdgeInsets.only(bottom: 300);
+
+    for (final up in [false, true]) {
+      testWidgets('on a phone, over the thread (keyboard up: $up)', (
+        tester,
+      ) async {
+        await open(
+          tester,
+          const Size(390, 844),
+          keyboard: up ? keyboard : .zero,
+        );
+        await tester.tap(find.byKey(FrontChatHeaderKeys.drawer));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(FrontChatDrawer), findsOne);
+        expect(
+          find.byType(FrontChatDrawerFooter),
+          up ? findsNothing : findsOne,
+        );
+      });
+
+      testWidgets('on a desktop window, beside the thread (keyboard up: $up)', (
+        tester,
+      ) async {
+        await open(
+          tester,
+          const Size(1400, 900),
+          keyboard: up ? keyboard : .zero,
+        );
+
+        expect(find.byType(FrontChatDrawer), findsOne);
+        expect(
+          find.byType(FrontChatDrawerFooter),
+          up ? findsNothing : findsOne,
+        );
+      });
+    }
   });
 
   testWidgets('on a phone with a notch and a home indicator she still reaches '

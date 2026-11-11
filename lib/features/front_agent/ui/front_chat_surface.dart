@@ -37,10 +37,17 @@ class FrontChatSurface extends StatelessWidget {
     final tokens = context.designTokens;
     final window = MediaQuery.sizeOf(context);
     void close() => Navigator.of(context).pop();
+    // Read here, above the dialog: it pads by the keyboard and removes the
+    // inset from everything it holds.
+    final keyboardUp = MediaQuery.viewInsetsOf(context).bottom > 0;
     // The composer's field needs a Material ancestor; the Scaffold also keeps
     // the keyboard inset honest on a phone.
     Widget pane({double? listWidth, bool underSystemBars = false}) {
-      final chat = FrontChatPane(onClose: close, listWidth: listWidth);
+      final chat = FrontChatPane(
+        onClose: close,
+        listWidth: listWidth,
+        keyboardUp: keyboardUp,
+      );
       return ModalEscapeScope(
         // Full screen, its ground runs under the system bars and what it
         // draws stays clear of them.

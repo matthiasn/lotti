@@ -65,7 +65,12 @@ final RegExp _taskRoute = RegExp(r'^/tasks/([^/?]+)$');
 /// question, the choices as chips. A day divider sits between messages of
 /// different days.
 class FrontChatPane extends ConsumerStatefulWidget {
-  const FrontChatPane({required this.onClose, this.listWidth, super.key});
+  const FrontChatPane({
+    required this.onClose,
+    this.listWidth,
+    this.keyboardUp = false,
+    super.key,
+  });
 
   /// The share of a wide panel the drawer beside the conversation takes:
   /// room for a preview that says something, the conversation keeping the
@@ -77,6 +82,10 @@ class FrontChatPane extends ConsumerStatefulWidget {
   /// The width of the drawer kept beside the conversation, on a window wide
   /// enough for both; null where the drawer slides over the conversation.
   final double? listWidth;
+
+  /// Whether the on-screen keyboard is up, as her surface sees it above the
+  /// dialog that hides the inset: the drawer's settings step aside for it.
+  final bool keyboardUp;
 
   @override
   ConsumerState<FrontChatPane> createState() => _FrontChatPaneState();
@@ -186,7 +195,10 @@ class _FrontChatPaneState extends ConsumerState<FrontChatPane>
                   color: tokens.colors.background.level02,
                   child: SizedBox(
                     width: listWidth,
-                    child: const FrontChatDrawer(beside: true),
+                    child: FrontChatDrawer(
+                      beside: true,
+                      keyboardUp: widget.keyboardUp,
+                    ),
                   ),
                 ),
                 const DesignSystemDivider(
@@ -222,6 +234,7 @@ class _FrontChatPaneState extends ConsumerState<FrontChatPane>
                   _DrawerLayer(
                     animation: _drawer,
                     focusNode: _drawerFocus,
+                    keyboardUp: widget.keyboardUp,
                     // Room beside it for the scrim, a tap target wide, and
                     // never wider than it is beside a wide panel's thread.
                     width: math.min(
@@ -244,11 +257,13 @@ class _DrawerLayer extends ConsumerWidget {
   const _DrawerLayer({
     required this.animation,
     required this.focusNode,
+    required this.keyboardUp,
     required this.width,
   });
 
   final Animation<double> animation;
   final FocusScopeNode focusNode;
+  final bool keyboardUp;
   final double width;
 
   @override
@@ -266,7 +281,7 @@ class _DrawerLayer extends ConsumerWidget {
         node: focusNode,
         child: Material(
           color: tokens.colors.background.level02,
-          child: const FrontChatDrawer(),
+          child: FrontChatDrawer(keyboardUp: keyboardUp),
         ),
       ),
     );

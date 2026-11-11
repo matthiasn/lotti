@@ -42,10 +42,19 @@ abstract final class FrontChatDrawerKeys {
 /// desktop window it sits [beside] it, always open, holding the same things
 /// in the same order.
 class FrontChatDrawer extends ConsumerStatefulWidget {
-  const FrontChatDrawer({this.beside = false, super.key});
+  const FrontChatDrawer({
+    this.beside = false,
+    this.keyboardUp = false,
+    super.key,
+  });
 
   /// Always open beside the conversation: there is nothing to close.
   final bool beside;
+
+  /// Whether the on-screen keyboard is up. Passed in rather than read here:
+  /// the dialog she opens in pads by the keyboard and removes the inset from
+  /// everything inside it, so only her surface, above the dialog, sees it.
+  final bool keyboardUp;
 
   @override
   ConsumerState<FrontChatDrawer> createState() => _FrontChatDrawerState();
@@ -144,7 +153,7 @@ class _FrontChatDrawerState extends ConsumerState<FrontChatDrawer> {
         // While the keyboard is up the search is what is being used: her
         // settings step aside, so a short or landscape screen keeps room
         // for what it finds.
-        if (MediaQuery.viewInsetsOf(context).bottom == 0) ...[
+        if (!widget.keyboardUp) ...[
           Padding(
             padding: EdgeInsets.symmetric(horizontal: textInset),
             child: const DesignSystemDivider(),
