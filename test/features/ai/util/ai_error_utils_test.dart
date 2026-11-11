@@ -6,7 +6,10 @@ import 'package:lotti/features/ai/model/inference_error.dart';
 import 'package:lotti/features/ai/repository/inference_http_exception.dart';
 import 'package:lotti/features/ai/repository/ollama_inference_repository.dart'
     show ModelNotInstalledException;
+import 'package:lotti/features/ai/repository/transcription_exception.dart';
 import 'package:lotti/features/ai/util/ai_error_utils.dart';
+import 'package:openai_dart/openai_dart.dart' show OpenAIClientException;
+import 'package:openai_dart/src/generated/client.dart' show HttpMethod;
 
 // A generic error class that might have a body or message
 class TestErrorWithMessage {
@@ -1149,6 +1152,238 @@ OpenAIClientException({
         ).type,
         InferenceErrorType.rateLimit,
       );
+    });
+  });
+
+  group('isOutOfCredit', () {
+    OpenAIClientException openAiCompatible(int code, Object body) =>
+        OpenAIClientException(
+          message: 'Unsuccessful response',
+          uri: Uri.parse('https://api.example.com/v1/chat/completions'),
+          method: HttpMethod.post,
+          code: code,
+          body: body,
+        );
+
+    // One real failure shape per prepaid provider, as each repository
+    // reports it (researched from the providers' error docs, 2026-11-11).
+    final emptyAccounts = <String, Object>{
+      'OpenAI 429 insufficient_quota': openAiCompatible(429, {
+        'error': {
+          'message':
+              'You exceeded your current quota, please check your plan and '
+              'billing details.',
+          'type': 'insufficient_quota',
+          'code': 'insufficient_quota',
+        },
+      }),
+      'OpenAI credit_balance_exhausted': openAiCompatible(429, {
+        'error': {'code': 'credit_balance_exhausted'},
+      }),
+      'OpenAI project spend limit': openAiCompatible(429, {
+        'error': {'code': 'project_spend_limit_exceeded'},
+      }),
+      'Anthropic 400 credit balance': Exception(
+        'Anthropic error 400: Your credit balance is too low to access the '
+        'Anthropic API. Please go to Plans & Billing to upgrade or purchase '
+        'credits.',
+      ),
+      'OpenRouter 402': openAiCompatible(402, {
+        'error': {
+          'code': 402,
+          'message':
+              'Insufficient credits. Add more using '
+              'https://openrouter.ai/credits',
+        },
+      }),
+      'OpenRouter budget 403': openAiCompatible(403, {
+        'error': {'message': 'Budget limit exceeded for this key'},
+      }),
+      'Melious 429 billing_error': openAiCompatible(429, {
+        'error': {
+          'type': 'billing_error',
+          'code': 'billing_insufficient_balance',
+          'message': 'Insufficient balance for request',
+        },
+      }),
+      'Mistral bare 402': Exception(
+        'MistralInferenceException: Mistral API error (HTTP 402)',
+      ),
+      'Gemini 402 prepay': Exception(
+        'Exception: Gemini streaming error 402 for model gemini-3-flash: '
+        '{"message": "Your Prepay credit balance is depleted"}. If '
+        'rate-limited (429), wait and retry.',
+      ),
+      'Gemini 429 prepayment': Exception(
+        'Exception: Gemini streaming error 429 for model gemini-3-flash: '
+        '{"message": "Your prepayment credits are depleted"}',
+      ),
+      'DashScope Arrearage': openAiCompatible(403, {
+        'error': {
+          'message':
+              'Access denied, please make sure your account is in good '
+              'standing.',
+          'type': 'Arrearage',
+          'code': 'Arrearage',
+        },
+      }),
+      'ElevenLabs 402 typed': const InferenceHttpException(
+        'Payment required',
+        provider: 'ElevenLabs',
+        statusCode: 402,
+      ),
+      'ElevenLabs 401 quota': Exception(
+        'ElevenLabs error 401: {"detail": {"status": "quota_exceeded", '
+        '"message": "This request exceeds your quota of 10000. You have 3 '
+        'credits remaining, while 20 credits are required for this '
+        'request."}}',
+      ),
+      'transcription 402 by status': TranscriptionException(
+        'Transcription failed',
+        provider: 'Mistral',
+        statusCode: 402,
+      ),
+      'transcription body in the cause': TranscriptionException(
+        'Transcription failed',
+        provider: 'OpenAI',
+        originalError: Exception('insufficient_quota'),
+      ),
+    };
+
+    test("recognises every prepaid provider's empty account", () {
+      for (final MapEntry(key: name, value: error) in emptyAccounts.entries) {
+        expect(AiErrorUtils.isOutOfCredit(error), isTrue, reason: name);
+        expect(AiErrorUtils.needsUserAction(error), isTrue, reason: name);
+      }
+    });
+
+    test('does not mistake a passing limit or another failure for an empty '
+        'account', () {
+      for (final error in <Object?>[
+        // Gemini words its ordinary free-tier rate limit like OpenAI's quota.
+        Exception(
+          'Gemini streaming error 429: {"status": "RESOURCE_EXHAUSTED", '
+          '"message": "You exceeded your current quota, please check your '
+          'plan and billing details.", "code": "quota_exceeded"}',
+        ),
+        // DashScope's insufficient_quota is a throughput throttle.
+        openAiCompatible(429, {
+          'error': {
+            'code': 'insufficient_quota',
+            'message':
+                'Allocated quota exceeded, please increase your quota limit.',
+          },
+        }),
+        // OpenRouter's in-flight budget 402 clears on its own.
+        openAiCompatible(402, {
+          'error': {
+            'code': 402,
+            'metadata': {'limit_source': 'openrouter_in_flight_budget'},
+          },
+        }),
+        openAiCompatible(429, {
+          'error': {'code': 'rate_limit_exceeded'},
+        }),
+        Exception('MistralInferenceException: Mistral API error (HTTP 429)'),
+        Exception('request 4021 timed out'),
+        const InferenceHttpException('gone', provider: 'oMLX', statusCode: 404),
+        null,
+      ]) {
+        expect(AiErrorUtils.isOutOfCredit(error), isFalse, reason: '$error');
+      }
+    });
+
+    // Regression: OpenAI's empty account arrives as a 429 and read as a rate
+    // limit — "wait a moment" for something only a top-up fixes.
+    test('categorizes an empty account as out of credit, with the '
+        "provider's own words", () {
+      final result = AiErrorUtils.categorizeError(
+        emptyAccounts['OpenAI 429 insufficient_quota'],
+      );
+      expect(result.type, InferenceErrorType.outOfCredit);
+      expect(
+        result.message,
+        'You exceeded your current quota, please check your plan and '
+        'billing details.',
+      );
+      expect(
+        AiErrorUtils.categorizeError(
+          emptyAccounts['Anthropic 400 credit '
+              'balance'],
+        ).type,
+        InferenceErrorType.outOfCredit,
+      );
+    });
+
+    test('needsUserAction covers a refused key, not a busy provider', () {
+      expect(AiErrorUtils.needsUserAction(Exception('HTTP 401')), isTrue);
+      expect(
+        AiErrorUtils.needsUserAction(
+          openAiCompatible(429, {
+            'error': {'code': 'rate_limit_exceeded'},
+          }),
+        ),
+        isFalse,
+      );
+    });
+  });
+
+  group('providerMessage', () {
+    test("relays a provider's own words", () {
+      expect(
+        AiErrorUtils.providerMessage(
+          OpenAIClientException(
+            message: 'Unsuccessful response',
+            uri: Uri.parse('https://openrouter.ai/api/v1/chat/completions'),
+            method: HttpMethod.post,
+            code: 402,
+            body:
+                '{"error": {"code": 402, "message": "Insufficient credits. '
+                'Add more using https://openrouter.ai/credits"}}',
+          ),
+        ),
+        'Insufficient credits. Add more using https://openrouter.ai/credits',
+      );
+    });
+
+    test('reads the message ElevenLabs nests under detail', () {
+      expect(
+        AiErrorUtils.extractDetailedErrorMessage(
+          _StringBodyError(
+            '{"detail": {"status": "quota_exceeded", "message": "You have 3 '
+            'credits remaining."}}',
+          ),
+        ),
+        'You have 3 credits remaining.',
+      );
+    });
+
+    test('says nothing for a failure no provider answered', () {
+      expect(AiErrorUtils.providerMessage(null), isNull);
+      expect(
+        AiErrorUtils.providerMessage(
+          const SocketException('Failed host lookup'),
+        ),
+        isNull,
+      );
+      expect(
+        AiErrorUtils.providerMessage(Exception('TimeoutException after 0:01')),
+        isNull,
+      );
+      // The app's own errors can carry tool names; they are not relayed.
+      expect(
+        AiErrorUtils.providerMessage(StateError('unknown tool foo')),
+        isNull,
+      );
+    });
+
+    test('bounds a long provider message', () {
+      final message = AiErrorUtils.providerMessage(
+        Exception('Insufficient credits ${'x' * 400}'),
+      )!;
+      expect(message.length, AiErrorUtils.providerMessageMaxLength);
+      expect(message, endsWith('…'));
+      expect(message, startsWith('Insufficient credits xxx'));
     });
   });
 

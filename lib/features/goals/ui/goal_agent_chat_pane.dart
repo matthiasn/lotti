@@ -5,6 +5,7 @@ import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/agents/ui/chat/agent_chat_view.dart';
+import 'package:lotti/features/agents/ui/chat/agent_turn_failure_label.dart';
 import 'package:lotti/features/dashboards/ui/pages/measurables/measurables_page.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/model/goal_measurable_record_offer.dart';
@@ -173,6 +174,10 @@ class GoalAgentChatPane extends ConsumerWidget {
             draft: composer.draft,
             isSending: composer.isSending,
             hasFailedTurn: composer.failedMessage != null,
+            failedTurnLabel: agentTurnFailureLabel(
+              context.messages,
+              composer.failureCause,
+            ),
             onDraftChanged: controller.updateDraft,
             onSend: controller.send,
             onRetry: controller.retry,

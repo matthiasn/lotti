@@ -8,6 +8,7 @@ import 'package:lotti/classes/agents/query_chat_models.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/agents/ui/chat/agent_chat_view.dart';
+import 'package:lotti/features/agents/ui/chat/agent_turn_failure_label.dart';
 import 'package:lotti/features/agents/ui/chat/chat_recorder_controller.dart';
 import 'package:lotti/features/ai/state/subject_dictation_providers.dart';
 import 'package:lotti/features/companion/state/companion_card_controller.dart';
@@ -657,7 +658,10 @@ class _FrontChatThreadViewState extends ConsumerState<FrontChatThreadView> {
           FrontTurnFailure.network => messages.frontChatFailedNetwork,
           FrontTurnFailure.authentication =>
             messages.frontChatFailedAuthentication,
-          FrontTurnFailure.provider => messages.frontChatFailedProvider,
+          // The provider's own words say which account and what to do.
+          FrontTurnFailure.outOfCredit || FrontTurnFailure.provider =>
+            agentTurnFailureLabel(messages, composer.failureCause) ??
+                messages.frontChatFailedProvider,
           FrontTurnFailure.noModel => messages.frontChatFailedNoModel,
           FrontTurnFailure.noAnswer => messages.frontChatFailedNoAnswer,
           FrontTurnFailure.unknown || null => null,

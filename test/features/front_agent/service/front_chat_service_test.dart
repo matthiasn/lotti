@@ -348,22 +348,32 @@ void main() {
 
     test("a failed wake's cause rides the turn exception, for the chat to "
         'say', () async {
+      final cause = Exception('Insufficient credits');
       stubWake(
         WakeRunStatus.failed,
         error: WakeFailedException(
           kind: 'front',
-          reason: FrontTurnFailure.rateLimit.wakeError(),
+          reason: FrontTurnFailure.outOfCredit.wakeError(),
+          cause: cause,
         ),
       );
 
       await expectLater(
         service.retryMessage(messageId: 'm-1'),
         throwsA(
-          isA<FrontChatTurnException>().having(
-            (e) => e.failure,
-            'failure',
-            FrontTurnFailure.rateLimit,
-          ),
+          isA<FrontChatTurnException>()
+              .having(
+                (e) => e.failure,
+                'failure',
+                FrontTurnFailure.outOfCredit,
+              )
+              // The provider's words travel in memory, never in the text.
+              .having((e) => e.cause, 'cause', same(cause))
+              .having(
+                (e) => e.toString(),
+                'detail',
+                isNot(contains('Insufficient')),
+              ),
         ),
       );
     });

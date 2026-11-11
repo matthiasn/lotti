@@ -33,6 +33,8 @@ import 'package:lotti/features/agents/ui/ai_summary_card/tldr_section_part.dart'
 import 'package:lotti/features/agents/ui/change_set_summary_card.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart'
     show WakeRunCompletion;
+import 'package:lotti/features/agents/workflow/wake_result.dart';
+import 'package:lotti/features/ai/repository/inference_http_exception.dart';
 import 'package:lotti/features/ai_consumption/state/consumption_providers.dart';
 import 'package:lotti/features/categories/ui/widgets/category_crumb.dart';
 import 'package:lotti/features/companion/animation/mouth_track.dart';
@@ -661,6 +663,40 @@ void main() {
       expect(find.textContaining('Last update failed'), findsOneWidget);
       expect(find.textContaining('Insufficient balance'), findsOneWidget);
       expect(find.textContaining('Bad state'), findsNothing);
+    });
+
+    // Regression: a real failed wake reaches the card as a type-only
+    // WakeFailedException, so the card said "workflow failed
+    // (InferenceHttpException)" instead of the provider's words.
+    testWidgets("a failed wake's provider words reach the read card", (
+      tester,
+    ) async {
+      await pump(
+        tester,
+        outcome: WakeRunCompletion(
+          runKey: 'run-fail',
+          agentId: 'goal-1',
+          status: WakeRunStatus.failed,
+          triggerTokens: const {goalReportRefreshTriggerToken},
+          finishedAt: DateTime(2026, 8, 16, 19, 14),
+          error: const WakeFailedException(
+            kind: 'goal',
+            reason: 'Goal Phase B workflow failed (InferenceHttpException)',
+            cause: InferenceHttpException(
+              'Insufficient balance for request',
+              provider: 'Melious',
+              statusCode: 429,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Last update failed — Insufficient balance for request'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('workflow failed'), findsNothing);
     });
 
     testWidgets('a successful update surfaces nothing — completed outcomes '

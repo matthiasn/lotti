@@ -304,6 +304,15 @@ DayProcessingFailure classifyDayProcessingFailure(Object error) {
   if (error is AttributedTranscriptionException) {
     return classifyDayProcessingFailure(error.cause);
   }
+  // An empty provider balance before any status reading: OpenAI and Melious
+  // send it as a 429, which would otherwise read as a busy provider and be
+  // retried every few minutes. Only a top-up fixes it.
+  if (AiErrorUtils.isOutOfCredit(error)) {
+    return (
+      failureClass: DayProcessingFailureClass.setupRequired,
+      retryAfter: null,
+    );
+  }
   if (error is SocketException) {
     return (
       failureClass: DayProcessingFailureClass.network,

@@ -141,6 +141,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get agentCategoryRatingsTitle => 'Help Me Prioritize';
 
   @override
+  String agentChatFailedOutOfCredit(String message) {
+    return 'Your AI provider account is out of credit: $message';
+  }
+
+  @override
+  String agentChatFailedProviderSaid(String message) {
+    return 'Your AI provider answered: $message';
+  }
+
+  @override
   String agentControlsActionError(String error) {
     return 'Action failed: $error';
   }
@@ -2001,6 +2011,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aiInferenceErrorInvalidRequestTitle => 'Invalid Request';
+
+  @override
+  String get aiInferenceErrorOutOfCreditSuggestion =>
+      'Top up your account with this provider, or pick a model from another provider in Settings.';
+
+  @override
+  String get aiInferenceErrorOutOfCreditTitle => 'Out of credit';
 
   @override
   String get aiInferenceErrorRateLimitTitle => 'Rate Limit Exceeded';

@@ -201,6 +201,7 @@ void main() {
   );
 
   test('keeps the durable source turn when the wake fails', () async {
+    final cause = Exception('Insufficient credits');
     when(
       () => orchestrator.enqueueManualWake(
         agentId: any(named: 'agentId'),
@@ -212,10 +213,14 @@ void main() {
     ).thenAnswer((_) {
       scheduleMicrotask(
         () => completions.add(
-          const WakeRunCompletion(
+          WakeRunCompletion(
             runKey: 'failed-run',
             status: WakeRunStatus.failed,
-            error: 'offline',
+            error: WakeFailedException(
+              kind: 'goal',
+              reason: 'offline',
+              cause: cause,
+            ),
           ),
         ),
       );
@@ -225,11 +230,14 @@ void main() {
     await expectLater(
       service.sendMessage(agentId: 'goal-1', text: 'Try me'),
       throwsA(
-        isA<GoalChatTurnException>().having(
-          (error) => error.messageId,
-          'durable message id',
-          isNotNull,
-        ),
+        isA<GoalChatTurnException>()
+            .having(
+              (error) => error.messageId,
+              'durable message id',
+              isNotNull,
+            )
+            // For the chat to relay the provider's own words.
+            .having((error) => error.cause, 'cause', same(cause)),
       ),
     );
     expect(upserts.whereType<AgentMessageEntity>(), hasLength(1));

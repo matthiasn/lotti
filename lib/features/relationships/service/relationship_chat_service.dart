@@ -8,6 +8,7 @@ import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/database/agents/agent_repository.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
+import 'package:lotti/features/agents/workflow/wake_result.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:uuid/uuid.dart';
 
@@ -170,6 +171,7 @@ class RelationshipChatService {
         throw RelationshipChatTurnException(
           result.error?.toString(),
           messageId: messageId,
+          cause: wakeFailureCause(result.error),
         );
       }
     } finally {
@@ -179,10 +181,18 @@ class RelationshipChatService {
 }
 
 class RelationshipChatTurnException implements Exception {
-  const RelationshipChatTurnException(this.detail, {this.messageId});
+  const RelationshipChatTurnException(
+    this.detail, {
+    this.messageId,
+    this.cause,
+  });
 
   final String? detail;
   final String? messageId;
+
+  /// The exception the failed wake caught, for the chat to relay the
+  /// provider's own words; never part of [toString].
+  final Object? cause;
 
   @override
   String toString() => detail ?? 'The relationship-agent turn failed.';

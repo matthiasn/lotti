@@ -782,9 +782,10 @@ class GoalAgentWorkflow with AgentErrorLogging {
           agentId: agentId,
           workspaceKey: goalEscalationWorkspaceKey(derivation.periodKey),
           triggerTokens: triggerTokens,
-          // A refused API key cannot succeed until the user changes it:
-          // retry a few times a day rather than on every scheduler pass.
-          scheduledAt: AiErrorUtils.isAuthenticationFailure(error)
+          // A refused API key or an empty balance cannot succeed until the
+          // user acts: retry a few times a day rather than on every
+          // scheduler pass.
+          scheduledAt: AiErrorUtils.needsUserAction(error)
               ? now.add(authenticationFailureRetryDelay)
               : now,
           updatedAt: now,
@@ -798,8 +799,8 @@ class GoalAgentWorkflow with AgentErrorLogging {
     }
   }
 
-  /// How long a Phase B wake that failed on a refused API key waits before
-  /// its escalation is retried.
+  /// How long a Phase B wake that failed on a refused API key or an empty
+  /// provider balance waits before its escalation is retried.
   static const authenticationFailureRetryDelay = Duration(hours: 6);
 
   /// Whether a nudge row belongs in THIS wake's view: rows from another

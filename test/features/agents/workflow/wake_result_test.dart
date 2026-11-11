@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -62,6 +63,40 @@ void main() {
 
       expect(result.error, 'Task agent workflow failed (FileSystemException)');
       expect(result.error, isNot(contains('secret')));
+    });
+
+    test('keeps the caught exception in memory for the waiting surface', () {
+      final error = Exception('Insufficient credits');
+      final result = WakeResult.failed(kind: 'Goal Phase B', error: error);
+
+      expect(result.cause, same(error));
+      expect(result.error, isNot(contains('Insufficient')));
+    });
+  });
+
+  group('wakeFailureCause', () {
+    test("reads the cause off a failed wake's exception, never its text", () {
+      final cause = Exception('Insufficient credits');
+      final exception = WakeFailedException(
+        kind: 'goal',
+        reason: 'Goal Phase B workflow failed (_Exception)',
+        cause: cause,
+      );
+
+      expect(wakeFailureCause(exception), same(cause));
+      // The PII-safe error log records toString: the cause stays out of it.
+      expect(exception.toString(), isNot(contains('Insufficient')));
+    });
+
+    test('is null for anything but a failed wake', () {
+      expect(wakeFailureCause(null), isNull);
+      expect(wakeFailureCause(TimeoutException('timeout')), isNull);
+      expect(
+        wakeFailureCause(
+          const WakeFailedException(kind: 'task', reason: 'wake failed'),
+        ),
+        isNull,
+      );
     });
   });
 

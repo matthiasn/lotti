@@ -196,6 +196,16 @@ void main() {
           TranscriptionException('busy', statusCode: 429),
           DayProcessingFailureClass.providerBusy,
         ),
+        // Regression: an empty account sent as a 429 read as a busy
+        // provider and was retried every few minutes; only a top-up fixes it.
+        (
+          TranscriptionException(
+            'busy',
+            statusCode: 429,
+            originalError: Exception('insufficient_quota'),
+          ),
+          DayProcessingFailureClass.setupRequired,
+        ),
         (
           TranscriptionException('server', statusCode: 503),
           DayProcessingFailureClass.timeout,

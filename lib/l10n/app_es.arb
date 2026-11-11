@@ -71,6 +71,8 @@
   "agentCategoryRatingsSubmit": "Usar estas prioridades",
   "agentCategoryRatingsSubtitle": "¿Qué tan importante es que arregle cada uno de estos puntos? 1 significa déjalo así, 5 significa arréglalo primero.",
   "agentCategoryRatingsTitle": "Ayúdame a priorizar",
+  "agentChatFailedOutOfCredit": "Tu cuenta del proveedor de IA se ha quedado sin saldo: {message}",
+  "agentChatFailedProviderSaid": "Tu proveedor de IA respondió: {message}",
   "agentControlsActionError": "La acción falló: {error}",
   "@agentControlsActionError": {
     "placeholders": {
@@ -792,6 +794,8 @@
   "aiInferenceErrorAuthenticationTitle": "Autenticación fallida",
   "aiInferenceErrorConnectionFailedTitle": "Conexión fallida",
   "aiInferenceErrorInvalidRequestTitle": "Solicitud no válida",
+  "aiInferenceErrorOutOfCreditSuggestion": "Recarga saldo en tu cuenta de este proveedor o elige en Ajustes un modelo de otro proveedor.",
+  "aiInferenceErrorOutOfCreditTitle": "Sin saldo",
   "aiInferenceErrorRateLimitTitle": "Límite de solicitudes excedido",
   "aiInferenceErrorRetryButton": "Reintentar",
   "aiInferenceErrorServerTitle": "Error del servidor",

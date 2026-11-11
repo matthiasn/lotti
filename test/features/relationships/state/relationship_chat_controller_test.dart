@@ -38,17 +38,21 @@ void main() {
   });
 
   test('composer copyWith retains a failure until explicitly cleared', () {
-    final failed = const RelationshipChatComposerState().copyWith(
+    final cause = Exception('Insufficient credits');
+    final failed = RelationshipChatComposerState(
       failedMessage: 'How is Anna?',
       failedMessageId: 'message-1',
+      failureCause: cause,
     );
     final retained = failed.copyWith(draft: 'Still here');
     final cleared = retained.copyWith(clearFailure: true);
 
     expect(retained.failedMessage, 'How is Anna?');
     expect(retained.failedMessageId, 'message-1');
+    expect(retained.failureCause, same(cause));
     expect(cleared.failedMessage, isNull);
     expect(cleared.failedMessageId, isNull);
+    expect(cleared.failureCause, isNull);
   });
 
   test('an unexpected send failure keeps the draft with no turn id', () async {
@@ -93,10 +97,16 @@ void main() {
 
   test('retry preserves the durable turn id across typed and unknown '
       'errors — the turn is never re-persisted', () async {
+    final sendCause = Exception('Insufficient credits');
+    final retryCause = Exception('still no credits');
     when(
       () => service.sendMessage(agentId: agentId, text: 'Keep trying.'),
     ).thenThrow(
-      const RelationshipChatTurnException('offline', messageId: 'message-1'),
+      RelationshipChatTurnException(
+        'offline',
+        messageId: 'message-1',
+        cause: sendCause,
+      ),
     );
     var retryAttempts = 0;
     when(
@@ -104,7 +114,7 @@ void main() {
     ).thenAnswer((_) async {
       retryAttempts++;
       if (retryAttempts == 1) {
-        throw const RelationshipChatTurnException('still offline');
+        throw RelationshipChatTurnException('still offline', cause: retryCause);
       }
       throw StateError('database unavailable');
     });
@@ -113,17 +123,22 @@ void main() {
       relationshipChatControllerProvider(agentId).notifier,
     )..updateDraft('Keep trying.');
     await controller.send();
+    var state = c.read(relationshipChatControllerProvider(agentId));
+    // The provider's words stay with the failure, for the chat to relay.
+    expect(state.failureCause, same(sendCause));
 
     await controller.retry();
-    var state = c.read(relationshipChatControllerProvider(agentId));
+    state = c.read(relationshipChatControllerProvider(agentId));
     expect(state.failedMessage, 'Keep trying.');
     expect(state.failedMessageId, 'message-1');
+    expect(state.failureCause, same(retryCause));
 
     await controller.retry();
     state = c.read(relationshipChatControllerProvider(agentId));
     expect(state.draft, 'Keep trying.');
     expect(state.failedMessage, 'Keep trying.');
     expect(state.failedMessageId, 'message-1');
+    expect(state.failureCause, isNull);
     expect(retryAttempts, 2);
     verify(
       () => service.retryMessage(agentId: agentId, messageId: 'message-1'),

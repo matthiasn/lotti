@@ -144,6 +144,16 @@ class AppLocalizationsIt extends AppLocalizations {
   String get agentCategoryRatingsTitle => 'Aiutami a Prioritize';
 
   @override
+  String agentChatFailedOutOfCredit(String message) {
+    return 'Il credito del tuo account presso il provider di IA è esaurito: $message';
+  }
+
+  @override
+  String agentChatFailedProviderSaid(String message) {
+    return 'Il tuo provider di IA ha risposto: $message';
+  }
+
+  @override
   String agentControlsActionError(String error) {
     return 'Azione fallita: $error';
   }
@@ -2038,6 +2048,13 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get aiInferenceErrorInvalidRequestTitle => 'Richiesta non valida';
+
+  @override
+  String get aiInferenceErrorOutOfCreditSuggestion =>
+      'Ricarica il credito del tuo account presso questo provider, oppure scegli nelle Impostazioni un modello di un altro provider.';
+
+  @override
+  String get aiInferenceErrorOutOfCreditTitle => 'Credito esaurito';
 
   @override
   String get aiInferenceErrorRateLimitTitle => 'Limite di Tasso Escluso';

@@ -71,6 +71,8 @@
   "agentCategoryRatingsSubmit": "Diese Prioritäten nutzen",
   "agentCategoryRatingsSubtitle": "Wie wichtig ist es, dass ich das jeweils behebe? 1 heißt: so lassen. 5 heißt: als Erstes beheben.",
   "agentCategoryRatingsTitle": "Hilf mir beim Priorisieren",
+  "agentChatFailedOutOfCredit": "Das Guthaben bei deinem KI-Anbieter ist aufgebraucht: {message}",
+  "agentChatFailedProviderSaid": "Dein KI-Anbieter hat geantwortet: {message}",
   "agentControlsActionError": "Aktion fehlgeschlagen: {error}",
   "@agentControlsActionError": {
     "placeholders": {
@@ -792,6 +794,8 @@
   "aiInferenceErrorAuthenticationTitle": "Authentifizierung fehlgeschlagen",
   "aiInferenceErrorConnectionFailedTitle": "Verbindung fehlgeschlagen",
   "aiInferenceErrorInvalidRequestTitle": "Ungültige Anfrage",
+  "aiInferenceErrorOutOfCreditSuggestion": "Lade dein Guthaben bei diesem Anbieter auf oder wähle in den Einstellungen ein Modell eines anderen Anbieters.",
+  "aiInferenceErrorOutOfCreditTitle": "Guthaben aufgebraucht",
   "aiInferenceErrorRateLimitTitle": "Ratenlimit überschritten",
   "aiInferenceErrorRetryButton": "Erneut versuchen",
   "aiInferenceErrorServerTitle": "Serverfehler",

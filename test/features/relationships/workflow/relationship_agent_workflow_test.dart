@@ -1415,6 +1415,35 @@ void main() {
     });
   });
 
+  // An empty account cannot succeed until the user tops it up: re-arming at
+  // once retried it on every scheduler pass.
+  test('an inference refused for an empty account re-arms the escalation '
+      'with a back-off, not at once', () async {
+    stubGlmResolution();
+    conversationRepository.sendMessageDelegate =
+        ({
+          required conversationId,
+          required message,
+          required model,
+          required provider,
+          required inferenceRepo,
+          tools,
+          toolChoice,
+          temperature = 0,
+          strategy,
+        }) async => throw Exception(
+          'Mistral API error (HTTP 402, Insufficient credits)',
+        );
+
+    final result = await run(
+      tokens: {relationshipEscalationWorkspaceKey('2026-08-08')},
+    );
+
+    expect(result.success, isFalse);
+    final rearmed = upserts.whereType<ScheduledWakeEntity>().single;
+    expect(rearmed.scheduledAt, now.toUtc().add(const Duration(hours: 1)));
+  });
+
   test('a facts-message write that fails returns a failed WakeResult, '
       'deletes the conversation and re-arms the consumed escalation — '
       'it used to throw out of execute past all three', () async {

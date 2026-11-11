@@ -71,6 +71,8 @@
   "agentCategoryRatingsSubmit": "Utilizzare queste priorità",
   "agentCategoryRatingsSubtitle": "Quanto è importante che fissi ciascuno di questi? 1 significa lasciarlo da solo, 5 significa risolverlo prima.",
   "agentCategoryRatingsTitle": "Aiutami a Prioritize",
+  "agentChatFailedOutOfCredit": "Il credito del tuo account presso il provider di IA è esaurito: {message}",
+  "agentChatFailedProviderSaid": "Il tuo provider di IA ha risposto: {message}",
   "agentControlsActionError": "Azione fallita: {error}",
   "@agentControlsActionError": {
     "placeholders": {
@@ -999,6 +1001,8 @@
   "aiInferenceErrorAuthenticationTitle": "Autenticazione non riuscita",
   "aiInferenceErrorConnectionFailedTitle": "Connessione non riuscita",
   "aiInferenceErrorInvalidRequestTitle": "Richiesta non valida",
+  "aiInferenceErrorOutOfCreditSuggestion": "Ricarica il credito del tuo account presso questo provider, oppure scegli nelle Impostazioni un modello di un altro provider.",
+  "aiInferenceErrorOutOfCreditTitle": "Credito esaurito",
   "aiInferenceErrorRateLimitTitle": "Limite di Tasso Escluso",
   "aiInferenceErrorRetryButton": "Prova di nuovo",
   "aiInferenceErrorServerTitle": "Errore del server",

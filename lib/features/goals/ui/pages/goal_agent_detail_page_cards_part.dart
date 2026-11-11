@@ -335,6 +335,11 @@ class _AgentReadCardState extends ConsumerState<_AgentReadCard> {
   /// part — a bare "failed" would leave the user exactly as stranded as the
   /// silence this line replaces.
   static String _failureReason(WakeRunCompletion completion) {
+    // A provider's own words first: an empty balance names where to top up.
+    final providerMessage = AiErrorUtils.providerMessage(
+      wakeFailureCause(completion.error),
+    );
+    if (providerMessage != null) return providerMessage;
     final raw = completion.error?.toString().trim();
     if (raw == null || raw.isEmpty) return '';
     const wrappers = [

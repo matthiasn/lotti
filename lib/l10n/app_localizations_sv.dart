@@ -143,6 +143,16 @@ class AppLocalizationsSv extends AppLocalizations {
   String get agentCategoryRatingsTitle => 'Hjälp mig att prioritera';
 
   @override
+  String agentChatFailedOutOfCredit(String message) {
+    return 'Ditt konto hos AI-leverantören har slut på kredit: $message';
+  }
+
+  @override
+  String agentChatFailedProviderSaid(String message) {
+    return 'Din AI-leverantör svarade: $message';
+  }
+
+  @override
   String agentControlsActionError(String error) {
     return 'Åtgärden misslyckades: $error';
   }
@@ -2018,6 +2028,13 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get aiInferenceErrorInvalidRequestTitle => 'Ogiltig begäran';
+
+  @override
+  String get aiInferenceErrorOutOfCreditSuggestion =>
+      'Fyll på krediten på ditt konto hos leverantören, eller välj en modell från en annan leverantör i Inställningar.';
+
+  @override
+  String get aiInferenceErrorOutOfCreditTitle => 'Slut på kredit';
 
   @override
   String get aiInferenceErrorRateLimitTitle => 'Hastighetsgräns överskriden';

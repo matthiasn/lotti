@@ -70,6 +70,26 @@
   "agentCategoryRatingsSubmit": "Use These Priorities",
   "agentCategoryRatingsSubtitle": "How important is it that I fix each of these? 1 means leave it alone, 5 means fix it first.",
   "agentCategoryRatingsTitle": "Help Me Prioritize",
+  "agentChatFailedOutOfCredit": "Your AI provider account is out of credit: {message}",
+  "@agentChatFailedOutOfCredit": {
+    "description": "Agent chat: a turn failed because the provider account is out of credit; message is the provider's own error text.",
+    "placeholders": {
+      "message": {
+        "type": "String",
+        "example": "Insufficient credits. Add more using https://openrouter.ai/credits"
+      }
+    }
+  },
+  "agentChatFailedProviderSaid": "Your AI provider answered: {message}",
+  "@agentChatFailedProviderSaid": {
+    "description": "Agent chat: a turn failed with a provider error; message is the provider's own error text.",
+    "placeholders": {
+      "message": {
+        "type": "String",
+        "example": "The model is overloaded."
+      }
+    }
+  },
   "agentControlsActionError": "Action failed: {error}",
   "@agentControlsActionError": {
     "placeholders": {
@@ -1467,6 +1487,14 @@
   "aiInferenceErrorAuthenticationTitle": "Authentication Failed",
   "aiInferenceErrorConnectionFailedTitle": "Connection Failed",
   "aiInferenceErrorInvalidRequestTitle": "Invalid Request",
+  "aiInferenceErrorOutOfCreditSuggestion": "Top up your account with this provider, or pick a model from another provider in Settings.",
+  "@aiInferenceErrorOutOfCreditSuggestion": {
+    "description": "AI error panel suggestion when the provider account is out of credit."
+  },
+  "aiInferenceErrorOutOfCreditTitle": "Out of credit",
+  "@aiInferenceErrorOutOfCreditTitle": {
+    "description": "AI error panel title when the provider account has no credit left or hit its spend limit."
+  },
   "aiInferenceErrorRateLimitTitle": "Rate Limit Exceeded",
   "aiInferenceErrorRetryButton": "Try Again",
   "aiInferenceErrorServerTitle": "Server Error",

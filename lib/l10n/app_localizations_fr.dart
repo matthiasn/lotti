@@ -146,6 +146,16 @@ class AppLocalizationsFr extends AppLocalizations {
   String get agentCategoryRatingsTitle => 'Aide-moi à prioriser';
 
   @override
+  String agentChatFailedOutOfCredit(String message) {
+    return 'Le crédit de ton compte chez ton fournisseur d\'IA est épuisé : $message';
+  }
+
+  @override
+  String agentChatFailedProviderSaid(String message) {
+    return 'Ton fournisseur d\'IA a répondu : $message';
+  }
+
+  @override
   String agentControlsActionError(String error) {
     return 'L\'action a échoué : $error';
   }
@@ -2041,6 +2051,13 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get aiInferenceErrorInvalidRequestTitle => 'Requête invalide';
+
+  @override
+  String get aiInferenceErrorOutOfCreditSuggestion =>
+      'Recharge le crédit de ton compte chez ce fournisseur, ou choisis dans les Réglages un modèle d\'un autre fournisseur.';
+
+  @override
+  String get aiInferenceErrorOutOfCreditTitle => 'Crédit épuisé';
 
   @override
   String get aiInferenceErrorRateLimitTitle => 'Limite de requêtes dépassée';

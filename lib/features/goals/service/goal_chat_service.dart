@@ -9,6 +9,7 @@ import 'package:lotti/classes/goal_trigger_tokens.dart';
 import 'package:lotti/database/agents/agent_repository.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
+import 'package:lotti/features/agents/workflow/wake_result.dart';
 import 'package:lotti/features/goals/service/goal_chat_history_service.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:uuid/uuid.dart';
@@ -213,6 +214,7 @@ class GoalChatService {
         throw GoalChatTurnException(
           result.error?.toString(),
           messageId: messageId,
+          cause: wakeFailureCause(result.error),
         );
       }
     } finally {
@@ -324,10 +326,14 @@ class GoalChatService {
 }
 
 class GoalChatTurnException implements Exception {
-  const GoalChatTurnException(this.detail, {this.messageId});
+  const GoalChatTurnException(this.detail, {this.messageId, this.cause});
 
   final String? detail;
   final String? messageId;
+
+  /// The exception the failed wake caught, for the chat to relay the
+  /// provider's own words; never part of [toString].
+  final Object? cause;
 
   @override
   String toString() => detail ?? 'The goal-agent turn failed.';

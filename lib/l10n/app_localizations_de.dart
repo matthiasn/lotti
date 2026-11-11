@@ -145,6 +145,16 @@ class AppLocalizationsDe extends AppLocalizations {
   String get agentCategoryRatingsTitle => 'Hilf mir beim Priorisieren';
 
   @override
+  String agentChatFailedOutOfCredit(String message) {
+    return 'Das Guthaben bei deinem KI-Anbieter ist aufgebraucht: $message';
+  }
+
+  @override
+  String agentChatFailedProviderSaid(String message) {
+    return 'Dein KI-Anbieter hat geantwortet: $message';
+  }
+
+  @override
   String agentControlsActionError(String error) {
     return 'Aktion fehlgeschlagen: $error';
   }
@@ -2027,6 +2037,13 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get aiInferenceErrorInvalidRequestTitle => 'Ungültige Anfrage';
+
+  @override
+  String get aiInferenceErrorOutOfCreditSuggestion =>
+      'Lade dein Guthaben bei diesem Anbieter auf oder wähle in den Einstellungen ein Modell eines anderen Anbieters.';
+
+  @override
+  String get aiInferenceErrorOutOfCreditTitle => 'Guthaben aufgebraucht';
 
   @override
   String get aiInferenceErrorRateLimitTitle => 'Ratenlimit überschritten';

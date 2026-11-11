@@ -70,6 +70,8 @@
   "agentCategoryRatingsSubmit": "Gebruik deze prioriteiten",
   "agentCategoryRatingsSubtitle": "Hoe belangrijk is het dat ik elk van deze repareer? 1 betekent laat het met rust, 5 betekent het eerst oplossen.",
   "agentCategoryRatingsTitle": "Help me prioriteren",
+  "agentChatFailedOutOfCredit": "Het tegoed bij je AI-provider is op: {message}",
+  "agentChatFailedProviderSaid": "Je AI-provider antwoordde: {message}",
   "agentControlsActionError": "Actie mislukt: {error}",
   "@agentControlsActionError": {
     "placeholders": {
@@ -998,6 +1000,8 @@
   "aiInferenceErrorAuthenticationTitle": "Aanmelding mislukt",
   "aiInferenceErrorConnectionFailedTitle": "Verbinding mislukt",
   "aiInferenceErrorInvalidRequestTitle": "Ongeldig verzoek",
+  "aiInferenceErrorOutOfCreditSuggestion": "Waardeer je tegoed bij deze provider op, of kies in Instellingen een model van een andere provider.",
+  "aiInferenceErrorOutOfCreditTitle": "Tegoed op",
   "aiInferenceErrorRateLimitTitle": "Maximumwaarde overschreden",
   "aiInferenceErrorRetryButton": "Opnieuw proberen",
   "aiInferenceErrorServerTitle": "Serverfout",

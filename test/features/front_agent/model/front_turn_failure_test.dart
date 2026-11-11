@@ -16,6 +16,7 @@ void main() {
     final cases = <String, (Object, FrontTurnFailure)>{
       'HTTP 429': (http(429), FrontTurnFailure.rateLimit),
       'HTTP 401': (http(401), FrontTurnFailure.authentication),
+      'HTTP 402': (http(402), FrontTurnFailure.outOfCredit),
       'HTTP 503': (http(503), FrontTurnFailure.provider),
       'HTTP 400': (http(400), FrontTurnFailure.provider),
       'a stalled stream': (

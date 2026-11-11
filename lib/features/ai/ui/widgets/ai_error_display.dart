@@ -169,6 +169,8 @@ class _AiErrorDisplayState extends State<AiErrorDisplay> {
         return LottiIcons.lock;
       case InferenceErrorType.rateLimit:
         return LottiIcons.speed;
+      case InferenceErrorType.outOfCredit:
+        return LottiIcons.block;
       case InferenceErrorType.invalidRequest:
         return LottiIcons.error;
       case InferenceErrorType.serverError:
@@ -206,6 +208,8 @@ class _AiErrorDisplayState extends State<AiErrorDisplay> {
           'Consider upgrading your API plan',
           'Reduce the frequency of requests',
         ];
+      case InferenceErrorType.outOfCredit:
+        return [context.messages.aiInferenceErrorOutOfCreditSuggestion];
       case InferenceErrorType.invalidRequest:
         if (error.message.contains('not found') &&
             error.message.contains('model')) {
@@ -250,7 +254,10 @@ class _AiErrorDisplayState extends State<AiErrorDisplay> {
   }
 
   bool _canRetry() {
+    // Neither a refused key, an empty balance nor a bad request changes on a
+    // retry.
     return widget.error.type != InferenceErrorType.authentication &&
+        widget.error.type != InferenceErrorType.outOfCredit &&
         widget.error.type != InferenceErrorType.invalidRequest;
   }
 }

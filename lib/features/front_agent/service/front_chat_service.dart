@@ -8,6 +8,7 @@ import 'package:lotti/classes/agents/front_chat_tokens.dart';
 import 'package:lotti/database/agents/agent_repository.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
+import 'package:lotti/features/agents/workflow/wake_result.dart';
 import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
 import 'package:lotti/features/front_agent/model/front_conversation.dart';
 import 'package:lotti/features/front_agent/model/front_turn_failure.dart';
@@ -224,6 +225,7 @@ class FrontChatService {
           result.error?.toString(),
           messageId: messageId,
           failure: FrontTurnFailure.fromWakeError(result.error),
+          cause: wakeFailureCause(result.error),
         );
       }
     } finally {
@@ -348,6 +350,7 @@ class FrontChatTurnException implements Exception {
     this.detail, {
     this.messageId,
     this.failure = FrontTurnFailure.unknown,
+    this.cause,
   });
 
   final String? detail;
@@ -355,6 +358,10 @@ class FrontChatTurnException implements Exception {
 
   /// Why the turn did not go through, for the chat to say.
   final FrontTurnFailure failure;
+
+  /// The exception the failed wake caught, for the chat to relay the
+  /// provider's own words; never part of [toString].
+  final Object? cause;
 
   @override
   String toString() => detail ?? 'The front-agent turn failed.';

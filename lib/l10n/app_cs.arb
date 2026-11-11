@@ -71,6 +71,8 @@
   "agentCategoryRatingsSubmit": "Použít tyto priority",
   "agentCategoryRatingsSubtitle": "Jak důležité je, abych každou z těchto věcí opravil? 1 znamená nechat být, 5 znamená opravit jako první.",
   "agentCategoryRatingsTitle": "Pomoz mi s prioritami",
+  "agentChatFailedOutOfCredit": "Tvůj účet u poskytovatele AI nemá kredit: {message}",
+  "agentChatFailedProviderSaid": "Tvůj poskytovatel AI odpověděl: {message}",
   "agentControlsActionError": "Akce se nezdařila: {error}",
   "@agentControlsActionError": {
     "placeholders": {
@@ -799,6 +801,8 @@
   "aiInferenceErrorAuthenticationTitle": "Autentizace selhala",
   "aiInferenceErrorConnectionFailedTitle": "Připojení selhalo",
   "aiInferenceErrorInvalidRequestTitle": "Neplatný požadavek",
+  "aiInferenceErrorOutOfCreditSuggestion": "Dobij si kredit u tohoto poskytovatele, nebo si v Nastavení vyber model od jiného poskytovatele.",
+  "aiInferenceErrorOutOfCreditTitle": "Kredit vyčerpán",
   "aiInferenceErrorRateLimitTitle": "Limit rychlosti překročen",
   "aiInferenceErrorRetryButton": "Zkusit znovu",
   "aiInferenceErrorServerTitle": "Chyba serveru",

@@ -98,6 +98,7 @@ void main() {
         InferenceErrorType.timeout: LottiIcons.schedule,
         InferenceErrorType.authentication: LottiIcons.lock,
         InferenceErrorType.rateLimit: LottiIcons.speed,
+        InferenceErrorType.outOfCredit: LottiIcons.block,
         InferenceErrorType.invalidRequest: LottiIcons.error,
         InferenceErrorType.serverError: LottiIcons.cloudOff,
         InferenceErrorType.unknown: LottiIcons.help,
@@ -152,6 +153,17 @@ void main() {
             type: InferenceErrorType.rateLimit,
           ),
           ['Wait a few minutes before trying again'],
+        ),
+        'out of credit errors': (
+          InferenceError(
+            message: 'Insufficient credits',
+            type: InferenceErrorType.outOfCredit,
+          ),
+          [
+            // ignore: no_adjacent_strings_in_list
+            'Top up your account with this provider, or pick a model from '
+                'another provider in Settings.',
+          ],
         ),
         'Ollama model not found': (
           InferenceError(
@@ -222,6 +234,26 @@ void main() {
         );
         await tester.pump();
 
+        expect(find.byType(DesignSystemButton), findsNothing);
+      });
+
+      // A retry cannot fill an empty account.
+      testWidgets('hides retry button for out of credit errors', (
+        WidgetTester tester,
+      ) async {
+        await tester.pumpWidget(
+          createTestWidget(
+            error: InferenceError(
+              message: 'Insufficient credits',
+              type: InferenceErrorType.outOfCredit,
+            ),
+            onRetry: () {},
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text('Out of credit'), findsOneWidget);
+        expect(find.text('Insufficient credits'), findsOneWidget);
         expect(find.byType(DesignSystemButton), findsNothing);
       });
 

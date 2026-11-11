@@ -2,7 +2,10 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:lotti/features/ai/model/inference_error.dart';
+import 'package:lotti/features/ai/repository/inference_http_exception.dart';
 import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
+import 'package:lotti/features/ai/repository/transcription_exception.dart';
+import 'package:openai_dart/openai_dart.dart' show OpenAIClientException;
 
 /// Utility class for AI feature error handling.
 class AiErrorUtils {
@@ -42,6 +45,118 @@ class AiErrorUtils {
     if (_authStatus.hasMatch(text)) return true;
     final lower = text.toLowerCase();
     return _authPhrases.any(lower.contains);
+  }
+
+  /// HTTP 402 Payment Required, in the same textual forms as [_authStatus].
+  static final _paymentRequiredStatus = RegExp(
+    r'(?:error|status(?:\s*code)?|http)[\s:=(]*(?:http\s*)?402\b',
+    caseSensitive: false,
+  );
+
+  /// What providers say when the account has no money left, or a spend
+  /// limit stops it spending more (researched 2026-11-11 from each
+  /// provider's error docs):
+  ///
+  /// - OpenAI: 429 `insufficient_quota`, `credit_balance_exhausted`, and the
+  ///   `*_spend_limit_exceeded` / `organization_usage_limit_exceeded` codes;
+  /// - Anthropic: 400 "Your credit balance is too low …";
+  /// - OpenRouter: 402 "Insufficient credits", 403 "Budget limit exceeded";
+  /// - Melious: 429 `billing_error` with `billing_insufficient_balance`;
+  /// - Gemini: 402 or 429 "Your prepayment credits are depleted";
+  /// - Alibaba DashScope: 403 `Arrearage`, and a model's exhausted free tier;
+  /// - ElevenLabs: 402 `insufficient_credits`, or 401 `quota_exceeded`
+  ///   "… You have 3 credits remaining …";
+  /// - Mistral: a bare 402, caught by [_paymentRequiredStatus].
+  ///
+  /// Never "exceeded your current quota" or `quota_exceeded` alone: Gemini
+  /// words its ordinary free-tier rate limit that way.
+  static const _outOfCreditPhrases = [
+    'insufficient_quota',
+    'credit_balance_exhausted',
+    'spend_limit_exceeded',
+    'organization_usage_limit_exceeded',
+    'credit balance is too low',
+    'insufficient credits',
+    'insufficient_credits',
+    'billing_insufficient_balance',
+    'insufficient balance',
+    'credits are depleted',
+    'credit balance is depleted',
+    'budget limit exceeded',
+    'arrearage',
+    'free tier of the model has been exhausted',
+    'credits remaining',
+    'payment required',
+    'payment_required',
+  ];
+
+  /// What makes an out-of-credit phrase or a 402 a passing limit instead:
+  /// DashScope's `insufficient_quota` is a throughput throttle ("Allocated
+  /// quota exceeded"), and OpenRouter's in-flight budget 402 carries a
+  /// Retry-After.
+  static const _transientLimitPhrases = [
+    'throttling',
+    'allocated quota exceeded',
+    'openrouter_in_flight_budget',
+  ];
+
+  /// Whether [error] says the provider account is out of credit — a prepaid
+  /// balance spent, a billing or spend limit reached, a payment overdue.
+  ///
+  /// Like a refused key, only the user can fix it (in the provider's
+  /// billing page), so callers surface it and back off instead of retrying
+  /// on a short timer. Typed exceptions are read by their status as well,
+  /// and a [TranscriptionException] by its cause, which its `toString` leaves
+  /// out.
+  static bool isOutOfCredit(Object? error) {
+    if (error == null) return false;
+    final status = switch (error) {
+      OpenAIClientException(:final code) => code,
+      InferenceHttpException(:final statusCode) => statusCode,
+      TranscriptionException(:final statusCode) => statusCode,
+      _ => null,
+    };
+    final text = [
+      error,
+      if (error is TranscriptionException) error.originalError,
+    ].whereType<Object>().join(' ');
+    final lower = text.toLowerCase();
+    if (_transientLimitPhrases.any(lower.contains)) return false;
+    return status == 402 ||
+        _paymentRequiredStatus.hasMatch(text) ||
+        _outOfCreditPhrases.any(lower.contains);
+  }
+
+  /// Whether [error] is a failure only the user can fix in their provider
+  /// account or Settings — a refused key or an empty balance — so a
+  /// background retry should back off rather than run on a short timer.
+  static bool needsUserAction(Object? error) =>
+      isAuthenticationFailure(error) || isOutOfCredit(error);
+
+  /// The longest provider message [providerMessage] relays.
+  static const providerMessageMaxLength = 300;
+
+  /// The provider's own words about a failed call, for an on-device surface
+  /// to relay — "Insufficient credits. Add more using …" — or null when
+  /// [error] is no provider answer: a network failure, a timeout, or an
+  /// error of the app's own, whose text is not the user's to read.
+  static String? providerMessage(Object? error) {
+    if (error == null) return null;
+    switch (categorizeError(error).type) {
+      case InferenceErrorType.networkConnection:
+      case InferenceErrorType.timeout:
+      case InferenceErrorType.unknown:
+        return null;
+      case InferenceErrorType.authentication:
+      case InferenceErrorType.rateLimit:
+      case InferenceErrorType.outOfCredit:
+      case InferenceErrorType.invalidRequest:
+      case InferenceErrorType.serverError:
+        final message = extractDetailedErrorMessage(error).trim();
+        return message.length <= providerMessageMaxLength
+            ? message
+            : '${message.substring(0, providerMessageMaxLength - 1)}…';
+    }
   }
 
   /// Extracts a detailed error message from various error object structures.
@@ -114,6 +229,11 @@ class AiErrorUtils {
         }
       }
 
+      // ElevenLabs nests its words one level down: `{"detail": {"message"}}`.
+      if (detailContent is Map && detailContent['message'] != null) {
+        detailContent = detailContent['message'];
+      }
+
       if (specificFieldWasAccessed && detailContent != null) {
         extractedMessage = detailContent.toString();
       } else if (specificFieldWasAccessed && detailContent == null) {
@@ -169,6 +289,17 @@ class AiErrorUtils {
       return InferenceError(
         message: 'An unknown error occurred',
         type: InferenceErrorType.unknown,
+      );
+    }
+
+    // An empty account first: OpenAI reports it as a 429 and Anthropic as a
+    // 400, which would otherwise read as a rate limit or a bad request. The
+    // provider's own words say which account and how to top it up.
+    if (isOutOfCredit(error)) {
+      return InferenceError(
+        message: extractDetailedErrorMessage(error),
+        type: InferenceErrorType.outOfCredit,
+        originalError: error,
       );
     }
 

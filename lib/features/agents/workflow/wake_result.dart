@@ -10,7 +10,11 @@ import 'package:lotti/classes/vector_clock.dart';
 /// workflows' reasons it was. [reason] is a workflow-authored string, never
 /// user content — see the contract on [WakeResult.error].
 class WakeFailedException implements Exception {
-  const WakeFailedException({required this.kind, required this.reason});
+  const WakeFailedException({
+    required this.kind,
+    required this.reason,
+    this.cause,
+  });
 
   /// The agent kind whose workflow failed, e.g. `task` or `goal`.
   final String kind;
@@ -18,9 +22,20 @@ class WakeFailedException implements Exception {
   /// The workflow's [WakeResult.error], or a kind-specific default.
   final String reason;
 
+  /// The workflow's [WakeResult.cause]: in memory only, for an on-device
+  /// surface to show the provider's own words. Left out of [toString], which
+  /// the PII-safe error log records.
+  final Object? cause;
+
   @override
   String toString() => 'WakeFailedException($kind): $reason';
 }
+
+/// The exception behind a failed wake's [error] (a run completion's), when
+/// its workflow caught one — what an on-device surface explains the failure
+/// with.
+Object? wakeFailureCause(Object? error) =>
+    error is WakeFailedException ? error.cause : null;
 
 /// Result of a wake cycle execution.
 class WakeResult {
@@ -29,6 +44,7 @@ class WakeResult {
     this.mutatedEntries = const {},
     this.reportUpdated = false,
     this.error,
+    this.cause,
   });
 
   /// A failed wake whose workflow caught [error], with a bounded [WakeResult.error].
@@ -43,6 +59,7 @@ class WakeResult {
       WakeResult(
         success: false,
         error: '$kind workflow failed (${error.runtimeType})',
+        cause: error,
       );
 
   /// Whether the wake completed successfully.
@@ -69,4 +86,10 @@ class WakeResult {
   /// `'Task agent workflow failed (InferenceHttpException)'` — and logged
   /// in full, with its stack trace, at the catch site.
   final String? error;
+
+  /// The exception a failed wake caught, kept in memory so the surface that
+  /// waits on the wake can show the provider's own words — an empty balance,
+  /// a refused key. Never written to a log by the wake runtime: [error] is
+  /// what the PII-safe log records.
+  final Object? cause;
 }

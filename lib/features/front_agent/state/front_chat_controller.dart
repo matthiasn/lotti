@@ -25,6 +25,7 @@ class FrontChatComposerState {
     this.failedConversationId,
     this.failedCategoryIds = const {},
     this.failure,
+    this.failureCause,
     this.busyDoorIds = const {},
     this.failedDoorIds = const {},
   });
@@ -60,6 +61,10 @@ class FrontChatComposerState {
   /// Why that turn did not go through, so the chat can say what to do.
   final FrontTurnFailure? failure;
 
+  /// The exception behind [failure], in memory only, for the chat to relay
+  /// the provider's own words (an empty balance names where to top up).
+  final Object? failureCause;
+
   /// A copy never carries the send failure: an edit to the draft and the
   /// start of a send both clear it, and a failure is only ever set whole.
   /// The doors' state rides along untouched.
@@ -89,6 +94,7 @@ class FrontChatComposerState {
     String? failedConversationId,
     Set<String> failedCategoryIds = const {},
     FrontTurnFailure? failure,
+    Object? failureCause,
   }) => FrontChatComposerState(
     draft: draft,
     failedMessage: failedMessage,
@@ -96,6 +102,7 @@ class FrontChatComposerState {
     failedConversationId: failedConversationId,
     failedCategoryIds: failedCategoryIds,
     failure: failedMessage == null ? null : failure ?? FrontTurnFailure.unknown,
+    failureCause: failedMessage == null ? null : failureCause,
     busyDoorIds: busyDoorIds,
     failedDoorIds: failedDoorIds,
   );
@@ -179,6 +186,7 @@ class FrontChatController extends Notifier<FrontChatComposerState> {
         failedConversationId: conversationId,
         failedCategoryIds: categoryIds,
         failure: error.failure,
+        failureCause: error.cause,
       );
     } catch (_) {
       ref.read(frontSpokenTurnProvider.notifier).settle();
@@ -299,6 +307,7 @@ class FrontChatController extends Notifier<FrontChatComposerState> {
         failedConversationId: typedIn,
         failedCategoryIds: scopedTo,
         failure: error.failure,
+        failureCause: error.cause,
       );
     } catch (_) {
       state = state.settled(

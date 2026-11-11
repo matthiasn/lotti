@@ -22,6 +22,9 @@ enum FrontTurnFailure {
   /// The provider refused the API key.
   authentication,
 
+  /// The provider account is out of credit or over its spend limit.
+  outOfCredit,
+
   /// The provider answered with an error of its own (4xx/5xx).
   provider,
 
@@ -42,6 +45,7 @@ enum FrontTurnFailure {
         InferenceErrorType.timeout => timeout,
         InferenceErrorType.networkConnection => network,
         InferenceErrorType.authentication => authentication,
+        InferenceErrorType.outOfCredit => outOfCredit,
         InferenceErrorType.invalidRequest ||
         InferenceErrorType.serverError => provider,
         InferenceErrorType.unknown => unknown,

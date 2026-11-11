@@ -141,6 +141,16 @@ class AppLocalizationsDa extends AppLocalizations {
   String get agentCategoryRatingsTitle => 'Hjælp mig med at prioritere';
 
   @override
+  String agentChatFailedOutOfCredit(String message) {
+    return 'Din konto hos AI-udbyderen er løbet tør for kredit: $message';
+  }
+
+  @override
+  String agentChatFailedProviderSaid(String message) {
+    return 'Din AI-udbyder svarede: $message';
+  }
+
+  @override
   String agentControlsActionError(String error) {
     return 'Handling mislykkedes: $error';
   }
@@ -2010,6 +2020,13 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get aiInferenceErrorInvalidRequestTitle => 'Ugyldig anmodning';
+
+  @override
+  String get aiInferenceErrorOutOfCreditSuggestion =>
+      'Fyld kredit på din konto hos udbyderen, eller vælg en model fra en anden udbyder i Indstillinger.';
+
+  @override
+  String get aiInferenceErrorOutOfCreditTitle => 'Ingen kredit tilbage';
 
   @override
   String get aiInferenceErrorRateLimitTitle => 'Hastighedsgrænse overskredet';

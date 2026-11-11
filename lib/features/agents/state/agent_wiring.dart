@@ -78,6 +78,7 @@ void wireWakeExecutor(
         throw WakeFailedException(
           kind: 'improver',
           reason: result.error ?? 'wake failed',
+          cause: result.cause,
         );
       }
 
@@ -103,6 +104,7 @@ void wireWakeExecutor(
         throw WakeFailedException(
           kind: 'project',
           reason: result.error ?? 'wake failed',
+          cause: result.cause,
         );
       }
 
@@ -128,6 +130,7 @@ void wireWakeExecutor(
         throw WakeFailedException(
           kind: 'event',
           reason: result.error ?? 'wake failed',
+          cause: result.cause,
         );
       }
 
@@ -157,6 +160,7 @@ void wireWakeExecutor(
         throw WakeFailedException(
           kind: identity.kind,
           reason: result.error ?? 'wake failed',
+          cause: result.cause,
         );
       }
 
@@ -203,6 +207,7 @@ void wireWakeExecutor(
       throw WakeFailedException(
         kind: 'task',
         reason: result.error ?? 'wake failed',
+        cause: result.cause,
       );
     }
 
