@@ -567,78 +567,79 @@ class _FrontChatThreadViewState extends ConsumerState<FrontChatThreadView> {
       // own words — as a chip under a clarifying question is.
       onQuickReply: controller.sendText,
       child: AgentChatView(
-      agentId: frontAgentId,
-      threadOverlay: AnimatedSwitcher(
-        duration: MotionDurations.short4,
-        child: cardFor == null
-            ? const SizedBox.shrink()
-            : FrontCompanionCard(
-                conversationId: cardFor,
-                form: cardForm,
-                // Her settings are a page of the app: she closes first.
-                onCustomize: () {
-                  onClose();
-                  beamToNamed('/settings/companion');
-                },
-              ),
-      ),
-      threadBottomInset: cardInset,
-      agentName: messages.frontChatTitle,
-      // Each conversation keeps its own scroll position.
-      conversationId: inboxOnly
-          ? 'front-chat-inbox'
-          : 'front-chat:${conversationId ?? ''}',
-      history: shown,
-      // A conversation with her, not a log: her words as prose, the user's
-      // in a soft bubble; what was said goes out as it stops.
-      conversational: true,
-      // One reading column for the thread and the field under it, so the
-      // field's edges line up with the messages on a wide window.
-      contentMaxWidth: kProseMeasureWidth,
-      voiceFirst: true,
-      // The conversation's category, picked where the words are typed; `@`
-      // still names one for a single question.
-      composerLeading: mentions.isEmpty ? null : const FrontCategoryChip(),
-      mentionOptions: [
-        for (final category in mentions)
-          DesignSystemChatInputMention(
-            label: category.name,
-            color: colorFromCssHex(category.color),
-          ),
-      ],
-      // A conversation not begun opens on her, and what she can do, in the
-      // middle of where the thread will be.
-      emptyState: inboxOnly
-          ? null
-          : Center(
-              child: SingleChildScrollView(
-                padding: EdgeInsets.all(context.designTokens.spacing.step5),
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(
-                    maxWidth: kProseMeasureWidth,
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const FrontChatHero(),
-                      Text(
-                        messages.frontChatEmpty,
-                        textAlign: TextAlign.center,
-                        style: context
-                            .designTokens
-                            .typography
-                            .styles
-                            .body
-                            .bodyMedium
-                            .copyWith(
-                              color: context
-                                  .designTokens
-                                  .colors
-                                  .text
-                                  .mediumEmphasis,
-                            ),
-                      ),
-                    ],
+        agentId: frontAgentId,
+        threadOverlay: AnimatedSwitcher(
+          duration: MotionDurations.short4,
+          child: cardFor == null
+              ? const SizedBox.shrink()
+              : FrontCompanionCard(
+                  conversationId: cardFor,
+                  form: cardForm,
+                  // Her settings are a page of the app: she closes first.
+                  onCustomize: () {
+                    onClose();
+                    beamToNamed('/settings/companion');
+                  },
+                ),
+        ),
+        threadBottomInset: cardInset,
+        agentName: messages.frontChatTitle,
+        // Each conversation keeps its own scroll position.
+        conversationId: inboxOnly
+            ? 'front-chat-inbox'
+            : 'front-chat:${conversationId ?? ''}',
+        history: shown,
+        // A conversation with her, not a log: her words as prose, the user's
+        // in a soft bubble; what was said goes out as it stops.
+        conversational: true,
+        // One reading column for the thread and the field under it, so the
+        // field's edges line up with the messages on a wide window.
+        contentMaxWidth: kProseMeasureWidth,
+        voiceFirst: true,
+        // The conversation's category, picked where the words are typed; `@`
+        // still names one for a single question.
+        composerLeading: mentions.isEmpty ? null : const FrontCategoryChip(),
+        mentionOptions: [
+          for (final category in mentions)
+            DesignSystemChatInputMention(
+              label: category.name,
+              color: colorFromCssHex(category.color),
+            ),
+        ],
+        // A conversation not begun opens on her, and what she can do, in the
+        // middle of where the thread will be.
+        emptyState: inboxOnly
+            ? null
+            : Center(
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.all(context.designTokens.spacing.step5),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(
+                      maxWidth: kProseMeasureWidth,
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const FrontChatHero(),
+                        Text(
+                          messages.frontChatEmpty,
+                          textAlign: TextAlign.center,
+                          style: context
+                              .designTokens
+                              .typography
+                              .styles
+                              .body
+                              .bodyMedium
+                              .copyWith(
+                                color: context
+                                    .designTokens
+                                    .colors
+                                    .text
+                                    .mediumEmphasis,
+                              ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),

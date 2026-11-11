@@ -3850,6 +3850,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get commonUnknown => 'Ukendt';
 
   @override
+  String get companionCardCustomize => 'Tilpas';
+
+  @override
   String get companionCardDemo => 'Demostørrelse';
 
   @override
@@ -3870,9 +3873,6 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get companionCardResize => 'Ændr størrelse';
-
-  @override
-  String get companionCardCustomize => 'Tilpas';
 
   @override
   String get companionCardSmall => 'Lille';

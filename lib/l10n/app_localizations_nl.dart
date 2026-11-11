@@ -3873,6 +3873,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get commonUnknown => 'Onbekend';
 
   @override
+  String get companionCardCustomize => 'Aanpassen';
+
+  @override
   String get companionCardDemo => 'Demogrootte';
 
   @override
@@ -3893,9 +3896,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get companionCardResize => 'Formaat wijzigen';
-
-  @override
-  String get companionCardCustomize => 'Aanpassen';
 
   @override
   String get companionCardSmall => 'Klein';

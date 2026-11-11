@@ -3910,6 +3910,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get commonUnknown => 'Inconnu';
 
   @override
+  String get companionCardCustomize => 'Personnaliser';
+
+  @override
   String get companionCardDemo => 'Taille démo';
 
   @override
@@ -3930,9 +3933,6 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get companionCardResize => 'Redimensionner';
-
-  @override
-  String get companionCardCustomize => 'Personnaliser';
 
   @override
   String get companionCardSmall => 'Petit';
