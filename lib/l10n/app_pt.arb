@@ -1000,7 +1000,7 @@
   "aiInferenceErrorAuthenticationTitle": "Falha na autenticação",
   "aiInferenceErrorConnectionFailedTitle": "Falha na conexão",
   "aiInferenceErrorInvalidRequestTitle": "Solicitação inválida",
-  "aiInferenceErrorOutOfCreditSuggestion": "Carrega crédito na tua conta deste fornecedor ou escolhe nas Definições um modelo de outro fornecedor.",
+  "aiInferenceErrorOutOfCreditSuggestion": "Carrega crédito na tua conta deste fornecedor ou escolhe nas Configurações um modelo de outro fornecedor.",
   "aiInferenceErrorOutOfCreditTitle": "Sem crédito",
   "aiInferenceErrorRateLimitTitle": "Limite de taxa excedido",
   "aiInferenceErrorRetryButton": "Tente novamente",

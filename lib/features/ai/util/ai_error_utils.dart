@@ -31,6 +31,14 @@ class AiErrorUtils {
     'invalid x-api-key',
   ];
 
+  /// [error]'s text, with a [TranscriptionException]'s cause, which its
+  /// `toString` leaves out — the Melious path wraps the provider's answer
+  /// there under a generic message.
+  static String _textWithCause(Object error) => [
+    error,
+    if (error is TranscriptionException) error.originalError,
+  ].whereType<Object>().join(' ');
+
   /// Whether [error] says the provider refused the credentials — an invalid,
   /// revoked or restricted API key.
   ///
@@ -38,10 +46,11 @@ class AiErrorUtils {
   /// so callers treat it as a setup problem: they surface it and stop, or
   /// back off, instead of retrying on a short timer. Checked before rate
   /// limits, because a provider error can mention 429 in boilerplate (the
-  /// Gemini streaming error does) while carrying a 403.
+  /// Gemini streaming error does) while carrying a 403. A
+  /// [TranscriptionException] is read with its cause.
   static bool isAuthenticationFailure(Object? error) {
     if (error == null) return false;
-    final text = error.toString();
+    final text = _textWithCause(error);
     if (_authStatus.hasMatch(text)) return true;
     final lower = text.toLowerCase();
     return _authPhrases.any(lower.contains);
@@ -116,10 +125,7 @@ class AiErrorUtils {
       TranscriptionException(:final statusCode) => statusCode,
       _ => null,
     };
-    final text = [
-      error,
-      if (error is TranscriptionException) error.originalError,
-    ].whereType<Object>().join(' ');
+    final text = _textWithCause(error);
     final lower = text.toLowerCase();
     if (_transientLimitPhrases.any(lower.contains)) return false;
     return status == 402 ||
@@ -142,6 +148,12 @@ class AiErrorUtils {
   /// error of the app's own, whose text is not the user's to read.
   static String? providerMessage(Object? error) {
     if (error == null) return null;
+    // A transcription wrapper's own message can be generic; the provider's
+    // words, when there are any, are in its cause.
+    if (error is TranscriptionException) {
+      final cause = providerMessage(error.originalError);
+      if (cause != null) return cause;
+    }
     switch (categorizeError(error).type) {
       case InferenceErrorType.networkConnection:
       case InferenceErrorType.timeout:

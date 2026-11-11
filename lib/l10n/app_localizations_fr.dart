@@ -2054,7 +2054,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get aiInferenceErrorOutOfCreditSuggestion =>
-      'Recharge le crédit de ton compte chez ce fournisseur, ou choisis dans les Réglages un modèle d\'un autre fournisseur.';
+      'Recharge le crédit de ton compte chez ce fournisseur, ou choisis dans les Paramètres un modèle d\'un autre fournisseur.';
 
   @override
   String get aiInferenceErrorOutOfCreditTitle => 'Crédit épuisé';

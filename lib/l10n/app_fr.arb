@@ -794,7 +794,7 @@
   "aiInferenceErrorAuthenticationTitle": "Échec de l'authentification",
   "aiInferenceErrorConnectionFailedTitle": "Échec de la connexion",
   "aiInferenceErrorInvalidRequestTitle": "Requête invalide",
-  "aiInferenceErrorOutOfCreditSuggestion": "Recharge le crédit de ton compte chez ce fournisseur, ou choisis dans les Réglages un modèle d'un autre fournisseur.",
+  "aiInferenceErrorOutOfCreditSuggestion": "Recharge le crédit de ton compte chez ce fournisseur, ou choisis dans les Paramètres un modèle d'un autre fournisseur.",
   "aiInferenceErrorOutOfCreditTitle": "Crédit épuisé",
   "aiInferenceErrorRateLimitTitle": "Limite de requêtes dépassée",
   "aiInferenceErrorRetryButton": "Réessayer",

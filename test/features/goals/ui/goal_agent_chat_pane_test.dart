@@ -29,8 +29,6 @@ import 'package:mocktail/mocktail.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 
-class _MockGoalChatService extends Mock implements GoalChatService {}
-
 void main() {
   testWidgets('identifies the agent and its goal above the durable composer', (
     tester,
@@ -84,7 +82,7 @@ void main() {
   // Regression: a goal chat turn that failed on an empty provider account
   // showed only "That didn't send." — the provider's own words say why.
   testWidgets("a failed turn relays the provider's own words", (tester) async {
-    final service = _MockGoalChatService();
+    final service = MockGoalChatService();
     when(
       () => service.sendMessage(agentId: 'goal-1', text: 'How am I doing?'),
     ).thenThrow(

@@ -2041,7 +2041,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get aiInferenceErrorOutOfCreditSuggestion =>
-      'Carrega crédito na tua conta deste fornecedor ou escolhe nas Definições um modelo de outro fornecedor.';
+      'Carrega crédito na tua conta deste fornecedor ou escolhe nas Configurações um modelo de outro fornecedor.';
 
   @override
   String get aiInferenceErrorOutOfCreditTitle => 'Sem crédito';

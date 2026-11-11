@@ -27,9 +27,6 @@ import '../../../../test_data/test_data.dart';
 import '../../../../widget_test_utils.dart';
 import '../../helpers/person_timeline_fakes.dart';
 
-class _MockRelationshipChatService extends Mock
-    implements RelationshipChatService {}
-
 void main() {
   const relationshipId = 'person-1';
   final agentId = relationshipAgentIdFor(relationshipId);
@@ -184,7 +181,7 @@ void main() {
   // Regression: a turn that failed on an empty provider account showed only
   // "That didn't send." — the provider's own words say why.
   testWidgets("a failed turn relays the provider's own words", (tester) async {
-    final service = _MockRelationshipChatService();
+    final service = MockRelationshipChatService();
     when(
       () => service.sendMessage(agentId: agentId, text: 'Any news?'),
     ).thenThrow(

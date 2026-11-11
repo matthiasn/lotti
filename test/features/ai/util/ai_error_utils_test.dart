@@ -1315,6 +1315,49 @@ OpenAIClientException({
       );
     });
 
+    // The Melious transcription path wraps the provider's answer under a
+    // generic message; the cause is what says why.
+    test('reads a refused key or an empty account in a transcription '
+        "wrapper's cause, and relays the provider's words from it", () {
+      final refused = TranscriptionException(
+        'Transcription failed',
+        provider: 'Melious',
+        originalError: const InferenceHttpException(
+          'Unauthorized',
+          provider: 'Melious',
+          statusCode: 401,
+        ),
+      );
+      expect(AiErrorUtils.isAuthenticationFailure(refused), isTrue);
+      expect(AiErrorUtils.needsUserAction(refused), isTrue);
+
+      final empty = TranscriptionException(
+        'Transcription failed',
+        provider: 'Melious',
+        originalError: const InferenceHttpException(
+          'Insufficient balance for request',
+          provider: 'Melious',
+          statusCode: 429,
+        ),
+      );
+      expect(
+        AiErrorUtils.providerMessage(empty),
+        'Insufficient balance for request',
+      );
+      // A cause with no provider words leaves the wrapper's own message.
+      expect(
+        AiErrorUtils.providerMessage(
+          TranscriptionException(
+            'Insufficient credits',
+            provider: 'Mistral',
+            statusCode: 402,
+            originalError: const SocketException('reset'),
+          ),
+        ),
+        'Insufficient credits',
+      );
+    });
+
     test('needsUserAction covers a refused key, not a busy provider', () {
       expect(AiErrorUtils.needsUserAction(Exception('HTTP 401')), isTrue);
       expect(
