@@ -192,7 +192,9 @@ void main() {
                 formatFailures.add(message);
               }
             });
-            final strategy = FrontAgentStrategy(
+            // A retry after a 429 is a new turn: a strategy kept from the
+            // failed attempt would still count its lookups.
+            FrontAgentStrategy newStrategy() => FrontAgentStrategy(
               syncService: syncService,
               domainLogger: logger,
               agentId: 'front-answer-eval',
@@ -223,11 +225,14 @@ void main() {
               ),
             );
 
+            var strategy = newStrategy();
             final watch = Stopwatch()..start();
             Object? failure;
             var providerCalls = 0;
             try {
               await _withBackoff(() async {
+                strategy = newStrategy();
+                formatFailures.clear();
                 final conversationId = conversations.createConversation(
                   systemMessage: frontAgentSystemMessage(CompanionSass.warm),
                 );
@@ -264,6 +269,7 @@ void main() {
                     await send(
                       frontContinuationInstruction(
                         answerLookups: strategy.answerLookupCalls,
+                        rejectedDispatches: strategy.rejectedDispatches,
                       ),
                       frontProviderCallsPerTurn - calls,
                     );

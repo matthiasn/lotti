@@ -287,6 +287,7 @@ class FrontAgentWorkflow with AgentErrorLogging {
             conversationId: conversationId,
             message: frontContinuationInstruction(
               answerLookups: strategy.answerLookupCalls,
+              rejectedDispatches: strategy.rejectedDispatches,
             ),
             model: resolved.modelId,
             provider: resolved.provider,

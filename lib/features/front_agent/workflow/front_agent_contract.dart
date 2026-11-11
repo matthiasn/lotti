@@ -125,8 +125,16 @@ const String frontAnswerInstruction =
 /// The instruction a turn that has not ended is sent: for her answer when
 /// [answerLookups] lookups were made to answer with (due or closed tasks,
 /// logged time, pull requests), otherwise the dispatch repair.
-String frontContinuationInstruction({required int answerLookups}) =>
-    answerLookups > 0 ? frontAnswerInstruction : frontDispatchRepairInstruction;
+///
+/// A turn with [rejectedDispatches] meant to route something, whatever it
+/// also looked up: it gets the repair, since being told not to dispatch
+/// would let it end on prose and lose the action.
+String frontContinuationInstruction({
+  required int answerLookups,
+  required int rejectedDispatches,
+}) => answerLookups > 0 && rejectedDispatches == 0
+    ? frontAnswerInstruction
+    : frontDispatchRepairInstruction;
 
 /// The header above the pending message in the wake's user turn.
 const String frontPendingUserMessageHeader = '<pending_user_message>';

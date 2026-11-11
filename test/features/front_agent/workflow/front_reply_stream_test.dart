@@ -53,6 +53,28 @@ One is overdue.''');
     expect(reply.prose, 'One is overdue.');
   });
 
+  test('a Reply inside a Reply stands for its children, in order', () {
+    final reply = parseFrontReplyStream('''
+<a2ui>
+surface("reply")
+root = Reply([
+  Text("Overdue"),
+  Reply([TaskCards("Overdue tasks", ["task:t-ice"]), Text("Due today")]),
+  TaskCards("Tasks due today", ["task:t-seal"])
+])
+</a2ui>
+One is overdue, one is due.''');
+
+    expect(reply.errors, isEmpty);
+    expect(
+      [
+        for (final component in reply.components)
+          component['text'] ?? component['caption'],
+      ],
+      ['Overdue', 'Overdue tasks', 'Due today', 'Tasks due today'],
+    );
+  });
+
   test('a plain answer is prose alone', () {
     final reply = parseFrontReplyStream('All right, talk soon.');
 

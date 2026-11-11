@@ -1517,9 +1517,11 @@ answer.** The send loop stops after a lookup batch, so a lookup answer is
 always a second call. `frontContinuationInstruction` picks what that call
 is told: `frontAnswerInstruction` when the turn ran a lookup made for an
 answer (`answerLookupCalls`: due or closed tasks, logged time, pull
-requests), otherwise `frontDispatchRepairInstruction`. A TLDR read or a
-corpus match serves routing as much as answering and keeps the repair
-wording. Leading with *dispatch* after a due lookup had a model route, now
+requests) and rejected no dispatch, otherwise
+`frontDispatchRepairInstruction`. A TLDR read or a corpus match serves
+routing as much as answering and keeps the repair wording; so does a turn
+whose dispatch was rejected, which meant to route something and would lose
+that action if told not to dispatch. Leading with *dispatch* after a due lookup had a model route, now
 and then, the question it had just looked up
 (`test/features/ai/eval/front_agent_answer_eval_live_test.dart` runs the
 production strategy, prompt and parser against live models).
