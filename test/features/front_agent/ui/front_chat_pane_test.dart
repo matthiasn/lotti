@@ -594,6 +594,25 @@ void main() {
           message('u1', AgentChatRole.user, 'Time this week?', now),
           message('a1', AgentChatRole.agent, '12h. Break it down?', now),
         ],
+        // A door of the turn still waits on the user, so her reply to it is
+        // in the inbox too.
+        doorsByMessageId: {
+          'u1': [
+            FrontDoorEntry(
+              doorId: 'd:door:0',
+              record: FrontDoorRecord(
+                segmentIndex: 0,
+                text: 'Time this week?',
+                kind: FrontDestinationKind.task,
+                destinationId: 'garden',
+                ownerTitle: 'Garden',
+                status: FrontDoorStatus.done,
+                claimedAt: now.toUtc(),
+                outcome: const FrontDoorProposal(ownerId: 'garden'),
+              ),
+            ),
+          ],
+        },
         surfacesByMessageId: {
           for (final (id, option) in [
             ('a0', 'An old offer'),
@@ -617,6 +636,20 @@ void main() {
       find.widgetWithText(DesignSystemChip, label),
     );
     expect(chip('An old offer').onPressed, isNull);
+    expect(chip('Break it down').onPressed, isNotNull);
+
+    // In the inbox, which gathers every conversation, none can be tapped: a
+    // tap would answer in the conversation picked, not the reply's own.
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(FrontChatPane)),
+    );
+    container.read(frontInboxFilterProvider.notifier).toggle();
+    await tester.pump();
+    await tester.pump();
+    expect(chip('Break it down').onPressed, isNull);
+    container.read(frontInboxFilterProvider.notifier).clear();
+    await tester.pump();
+    await tester.pump();
 
     await tester.tap(find.text('Break it down'));
     await tester.pumpAndSettle();

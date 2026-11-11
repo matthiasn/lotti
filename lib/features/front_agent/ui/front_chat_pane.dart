@@ -700,7 +700,12 @@ class _FrontChatThreadViewState extends ConsumerState<FrontChatThreadView> {
                   ),
                   // A task a door made is not drawn twice.
                   shownIds: {...?previews?.map((preview) => preview.id)},
-                  canReply: !composer.isSending && message.id == latestId,
+                  // Not in the inbox: it gathers every conversation, and a
+                  // tap would answer in the one picked, not the reply's own.
+                  canReply:
+                      !inboxOnly &&
+                      !composer.isSending &&
+                      message.id == latestId,
                   child: A2uiSurface(key: ObjectKey(surface), surface: surface),
                 ),
               if (previews != null)

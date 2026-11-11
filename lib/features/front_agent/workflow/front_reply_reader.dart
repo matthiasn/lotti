@@ -245,8 +245,7 @@ final RegExp _joiners = RegExp(r'^[\s—–\-:·,;()|]+|[\s—–\-:·,;()|.]+$'
 /// A list is consecutive list lines — blank lines between them included —
 /// that each hold exactly one link to a task or project of [visible],
 /// wherever on the line it stands. What else the line says becomes the
-/// card's note. Any other line stays her words. When cutting would leave no
-/// words at all, nothing is cut: a reply must still say something.
+/// card's note. Any other line stays her words.
 List<Object> _wordsAndLists(String text, Map<String, FrontIndexRow> visible) {
   final pieces = <Object>[];
   final words = <String>[];
@@ -285,7 +284,7 @@ List<Object> _wordsAndLists(String text, Map<String, FrontIndexRow> visible) {
   }
   flushRun();
   flushWords();
-  return pieces.any((piece) => piece is String) ? pieces : [text];
+  return pieces;
 }
 
 /// The card a list [line] is, or null when it is not a list line with

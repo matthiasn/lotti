@@ -128,12 +128,13 @@ class GenUiBridge {
       'component': rootType,
     };
     const version = '1.0';
+    final existed = processor.model.getSurface(surfaceId) != null;
     try {
       processor.processMessages([
         // A surface she names again is updated in place: the update is
         // checked before it is applied, so one that fails leaves the card
         // already on screen as it was.
-        if (processor.model.getSurface(surfaceId) != null)
+        if (existed)
           {
             'version': version,
             'updateComponents': {
@@ -155,7 +156,9 @@ class GenUiBridge {
       throw GenUiBridgeException(e.message);
     }
 
-    _pendingSurfaceIds.add(surfaceId);
+    // An updated surface is already in the chat, where it redraws itself:
+    // only a new one is announced.
+    if (!existed) _pendingSurfaceIds.add(surfaceId);
     return surfaceId;
   }
 }

@@ -293,7 +293,9 @@ surface is never drawn as a type the model did not ask for. A null property
 counts as not given, which the app's own proposal surfaces rely on. A
 surface the model did not name gets an id of its own
 (`surface-unnamed-<n>`); one it names again is updated in place, and an
-update the schema refuses leaves the card already on screen as it was. A card's widgets
+update the schema refuses leaves the card already on screen as it was. An
+updated surface is not announced to the chat again: its card redraws
+itself. A card's widgets
 send the user's choice as an A2UI action on the surface
 (`evolutionAction`, through `EvolutionSurfaceScope`), what was chosen in
 the action's `context`; `GenUiEventHandler` routes it from the processor's

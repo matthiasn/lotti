@@ -176,6 +176,8 @@ void main() {
             .type,
         'EvolutionNoteConfirmation',
       );
+      // Announced once: the chat already shows it, and it redraws itself.
+      expect(bridge.drainPendingSurfaceIds(), ['surf-again']);
     });
 
     test('a replacement its schema refuses leaves the card already on '

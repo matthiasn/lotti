@@ -255,11 +255,27 @@ void main() {
       expect(read(message: said).components, [text(said)]);
     });
 
-    test('a reply that is nothing but the list keeps it as her words: a '
-        'reply must say something', () {
+    test('words that are nothing but the list are cards too, and her text '
+        'still says them', () {
       final said = '- ${link(tasks[0])}\n- ${link(tasks[1])}';
 
-      expect(read(message: said).components, [text(said)]);
+      final alone = read(message: said);
+      expect(alone.components, [
+        cards([item(tasks[0]), item(tasks[1])]),
+      ]);
+      expect(alone.text, said);
+
+      // The same in one Text among others.
+      final among = read(
+        components: [
+          {'component': 'Text', 'text': 'Two are due:'},
+          {'component': 'Text', 'text': said},
+        ],
+      );
+      expect(among.components, [
+        text('Two are due:'),
+        cards([item(tasks[0]), item(tasks[1])]),
+      ]);
     });
 
     test('it applies to a Text component as to a message', () {

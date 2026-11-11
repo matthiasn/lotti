@@ -1465,9 +1465,8 @@ strategy logs a warning with the count. Only a reply without words is
 refused. **Cards never hinge on her remembering the component**: a list in
 her words whose lines each hold one link to a task or project the turn saw
 is cut out of her words and drawn as `TaskCards` in its place, what else
-the line says kept as the card's note (when that would leave no words at
-all, nothing is cut; a project line that says more stays her words, since
-only a task's card shows a note). The tasks a `list_due_tasks` found that she listed
+the line says kept as the card's note (a project line that says more
+stays her words, since only a task's card shows a note). The tasks a `list_due_tasks` found that she listed
 nowhere follow as one more list, and a lookup's component she did not
 place follows in catalog order. A task is listed once, and never when a
 closed-task card shows it. The reply's `text` — what is spoken, kept in
@@ -1505,8 +1504,8 @@ project after closing her), so the catalog itself is static; a card a
 door's preview already shows is left out of her lists. A tapped quick
 reply goes out as an A2UI action (`quick_reply`) on the surface, arrives
 on the processor's `onAction`, and is sent as the user's next turn in its
-own words — only under her latest reply, and not while a turn is in
-flight. What the doors made follows the surface as preview cards.
+own words — only under her latest reply, not while a turn is in flight,
+and not in the inbox, which gathers every conversation. What the doors made follows the surface as preview cards.
 
 ```mermaid
 flowchart LR
