@@ -23,7 +23,7 @@ abstract final class CompanionFloatingCardKeys {
   static const Key small = Key('companion-floating-card-small');
   static const Key large = Key('companion-floating-card-large');
   static const Key demo = Key('companion-floating-card-demo');
-  static const Key restyle = Key('companion-floating-card-restyle');
+  static const Key customize = Key('companion-floating-card-customize');
   static const Key reset = Key('companion-floating-card-reset');
   static const Key hide = Key('companion-floating-card-hide');
 }
@@ -39,7 +39,7 @@ abstract final class CompanionFloatingCardKeys {
 ///
 /// Drag the card to move it; double-tap Small ⇄ Large; pinch it to any size
 /// in between; a long press (a right-click on a desktop) opens its menu —
-/// Small, Large, Demo size, restyle, reset, and Hide when the host gives
+/// Small, Large, Demo size, customize, reset, and Hide when the host gives
 /// [onHide], which a single tap calls too. A desktop also resizes from a
 /// grip on the card's corner that faces the open screen, shown on hover,
 /// and with Ctrl/⌘ + scroll. Demo size fills the area and is never saved:
@@ -50,7 +50,7 @@ class CompanionFloatingCard extends ConsumerStatefulWidget {
   const CompanionFloatingCard({
     required this.form,
     required this.figure,
-    required this.onRestyle,
+    required this.onCustomize,
     this.onHide,
     this.speaking = false,
     super.key,
@@ -61,8 +61,8 @@ class CompanionFloatingCard extends ConsumerStatefulWidget {
   /// Her figure, head to toe ([CompanionFraming.full]); it fills the card.
   final Widget figure;
 
-  /// Changes her look — the menu's restyle row.
-  final VoidCallback onRestyle;
+  /// Opens the page that customizes her — the menu's customize row.
+  final VoidCallback onCustomize;
 
   /// Puts the card away — a single tap, and the menu's last row.
   final VoidCallback? onHide;
@@ -267,11 +267,11 @@ class _CompanionFloatingCardState extends ConsumerState<CompanionFloatingCard> {
           onTap: () => setState(() => _demo = true),
         ),
         DesignSystemContextMenuItem(
-          key: CompanionFloatingCardKeys.restyle,
-          label: messages.companionCardRestyle,
+          key: CompanionFloatingCardKeys.customize,
+          label: messages.companionCardCustomize,
           icon: LottiIcons.palette,
           startsGroup: true,
-          onTap: widget.onRestyle,
+          onTap: widget.onCustomize,
         ),
         DesignSystemContextMenuItem(
           key: CompanionFloatingCardKeys.reset,

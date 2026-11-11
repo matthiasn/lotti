@@ -56,12 +56,16 @@ Future<void> _pumpFrames(WidgetTester tester) async {
 }
 
 void main() {
-  /// Lotti's outfits, in order: what the card's restyle steps through.
+  /// Lotti's outfits, in order.
   final outfits = CompanionLook.of(CompanionSpecies.grandma);
   const area = Size(390, 600);
   late TestGetItMocks mocks;
+  late int customizes;
 
-  setUp(() async => mocks = await setUpTestGetIt());
+  setUp(() async {
+    mocks = await setUpTestGetIt();
+    customizes = 0;
+  });
   tearDown(tearDownTestGetIt);
 
   void stored(CompanionCardForm form, Map<String, num> placement) => when(
@@ -82,7 +86,11 @@ void main() {
             alignment: Alignment.topLeft,
             child: SizedBox.fromSize(
               size: area,
-              child: FrontCompanionCard(conversationId: 'c-1', form: form),
+              child: FrontCompanionCard(
+                conversationId: 'c-1',
+                form: form,
+                onCustomize: () => customizes++,
+              ),
             ),
           ),
         ),
@@ -138,7 +146,7 @@ void main() {
       'again', (tester) async {
     await pumpCard(tester);
     final container = ProviderScope.containerOf(tester.element(card));
-    container.read(frontCompanionCardShownProvider.notifier).toggle();
+    expect(container.read(frontCompanionCardShownProvider), isTrue);
 
     await tester.tap(card);
     await tester.pump(kDoubleTapTimeout);
@@ -146,17 +154,18 @@ void main() {
     expect(container.read(frontCompanionCardShownProvider), isFalse);
   });
 
-  testWidgets('the card restyles her: the next outfit', (tester) async {
+  testWidgets("the card's Customize row asks for her settings, her outfit "
+      'left as it is', (tester) async {
     await pumpCard(tester);
     final container = ProviderScope.containerOf(tester.element(card));
-    expect(container.read(companionOutfitProvider)?.id, outfits.first.id);
 
     await tester.longPress(card);
     await tester.pump();
-    await tester.tap(find.byKey(CompanionFloatingCardKeys.restyle));
+    await tester.tap(find.byKey(CompanionFloatingCardKeys.customize));
     await _pumpFrames(tester);
 
-    expect(container.read(companionOutfitProvider)?.id, outfits[1].id);
+    expect(customizes, 1);
+    expect(container.read(companionOutfitProvider)?.id, outfits.first.id);
   });
 
   for (final (speaking, accent) in [('c-1', true), ('c-2', false)]) {

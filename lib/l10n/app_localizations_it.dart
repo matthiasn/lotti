@@ -3924,7 +3924,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get companionCardResize => 'Ridimensiona';
 
   @override
-  String get companionCardRestyle => 'Cambia stile';
+  String get companionCardCustomize => 'Personalizza';
 
   @override
   String get companionCardSmall => 'Piccolo';

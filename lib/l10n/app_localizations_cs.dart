@@ -3920,7 +3920,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get companionCardResize => 'Změnit velikost';
 
   @override
-  String get companionCardRestyle => 'Změnit styl';
+  String get companionCardCustomize => 'Přizpůsobit';
 
   @override
   String get companionCardSmall => 'Malý';

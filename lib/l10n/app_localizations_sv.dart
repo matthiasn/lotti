@@ -3879,7 +3879,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get companionCardResize => 'Ändra storlek';
 
   @override
-  String get companionCardRestyle => 'Byt stil';
+  String get companionCardCustomize => 'Anpassa';
 
   @override
   String get companionCardSmall => 'Liten';

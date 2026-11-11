@@ -20,13 +20,13 @@ const _margin = 16.0;
 void main() {
   late TestGetItMocks mocks;
   late int behindTaps;
-  late int restyles;
+  late int customizes;
   late int hides;
 
   setUp(() async {
     mocks = await setUpTestGetIt();
     behindTaps = 0;
-    restyles = 0;
+    customizes = 0;
     hides = 0;
   });
   tearDown(tearDownTestGetIt);
@@ -60,7 +60,7 @@ void main() {
                   child: CompanionFloatingCard(
                     form: form,
                     speaking: speaking,
-                    onRestyle: () => restyles++,
+                    onCustomize: () => customizes++,
                     onHide: hideable ? () => hides++ : null,
                     figure: const ColoredBox(
                       key: Key('figure'),
@@ -292,7 +292,7 @@ void main() {
   });
 
   group('its menu', () {
-    testWidgets('opens on a long press with the sizes, restyle and reset', (
+    testWidgets('opens on a long press with the sizes, customize and reset', (
       tester,
     ) async {
       await pumpCard(tester);
@@ -302,7 +302,7 @@ void main() {
         'Small',
         'Large',
         'Demo size',
-        'Restyle',
+        'Customize',
         'Reset position and size',
       ]) {
         expect(find.text(label), findsOneWidget, reason: label);
@@ -322,13 +322,15 @@ void main() {
       expect(cardRect(tester).height, CompanionCardForm.phone.smallHeight);
     });
 
-    testWidgets('Restyle asks the host to restyle her', (tester) async {
+    testWidgets('Customize asks the host to open her settings', (
+      tester,
+    ) async {
       await pumpCard(tester);
       await openMenu(tester);
-      await tester.tap(find.byKey(CompanionFloatingCardKeys.restyle));
+      await tester.tap(find.byKey(CompanionFloatingCardKeys.customize));
       await tester.pump();
 
-      expect(restyles, 1);
+      expect(customizes, 1);
     });
 
     testWidgets('Demo size fills the area, unsaved, until Usual size', (
