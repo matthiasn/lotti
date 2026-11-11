@@ -11,7 +11,7 @@ sources:
   - id: chat
     resource: ../../../lib/features/agents/ui/chat
     title: Shared agent chat components
-    last_modified: 2026-11-07
+    last_modified: 2026-11-11
   - id: evolution
     resource: ../../../lib/features/agents/ui/evolution/widgets
     title: Agent improvement conversation widgets
@@ -43,20 +43,18 @@ test of a sending thread pumps frames rather than settling.
 `groupAttachmentsWithReply` places a consumer's supporting widgets inside the
 reply surface and its reading width, under a transparent Material ancestor for
 interactive disclosures; other hosts keep separate attachments.
-`composerHelper` is the line the composer says under its field — only what
-the chat supports — and `mentionOptions` what `@` offers there (the front
-agent's categories); without them the composer says nothing about `@`.
-`footerTrailingBuilder` lets a host tail a bubble's footer line — after the
-author and the time, on the same line — with a widget of its own, so a turn's
-metadata stays one row.
+`composerLeading` is a host's own control at the start of the composer's
+controls row, in its helper line's place (the front agent's category chip),
+and `mentionOptions` what `@` offers there (the front agent's categories);
+every other chat passes neither, so its composer is unchanged.
 
 Three opt-ins turn the surface into a conversation with someone rather than a
 log; the front agent uses all three, every other host keeps the defaults.
 `conversational` sets the agent's replies as unboxed prose (her thinking
 state too, so a turn never changes shape on answering), keeps the user's
-words in a soft bubble capped short of the far edge on a phone, and drops the
-author-and-time line, leaving the footer only for what `footerTrailingBuilder`
-adds. `voiceFirst` makes talking lead: on a desktop-width window the field
+words in a soft, neutral bubble (`background.level02` — a log's keeps
+`surface.selected`) capped short of the far edge on a phone, and drops the
+author-and-time line. `voiceFirst` makes talking lead: on a desktop-width window the field
 takes the keyboard at once, while a phone keeps its keyboard down until the
 field is tapped, so talking stays one tap. **Nothing said goes out by
 itself**, in any chat: Done ends a take and its words land in the field —

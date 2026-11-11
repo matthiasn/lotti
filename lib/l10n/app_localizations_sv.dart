@@ -7283,11 +7283,36 @@ class AppLocalizationsSv extends AppLocalizations {
   String get frontChatArchivedToast => 'Chatten arkiverad.';
 
   @override
+  String get frontChatCategoriesHeading => 'Kategorier';
+
+  @override
+  String frontChatCategoryChip(String name) {
+    return 'Kategori för den här chatten: $name';
+  }
+
+  @override
+  String get frontChatCategoryEverything => 'Allt';
+
+  @override
+  String get frontChatCategorySheetBody =>
+      'Från och med nu bygger svaren i den här chatten bara på den här kategorin.';
+
+  @override
+  String get frontChatCategorySheetMention =>
+      'Skriver du @ i ett meddelande avgränsar du bara just den frågan.';
+
+  @override
+  String get frontChatCategorySheetTitle => 'Chatt i en kategori';
+
+  @override
   String get frontChatCompanionShow => 'Visa följeslagare';
 
   @override
   String get frontChatDeleteExplanation =>
       'Radera den här chatten? Dess meddelanden döljs på alla enheter men raderas inte. Det du har sparat från chatten stannar där det är.';
+
+  @override
+  String get frontChatDrawerClose => 'Stäng chattar';
 
   @override
   String get frontChatEmpty =>
@@ -7331,9 +7356,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get frontChatInboxTitle => 'Inkorg';
-
-  @override
-  String get frontChatMentionHint => 'Skriv @ för att nämna en kategori';
 
   @override
   String get frontChatNoChats =>
@@ -7380,6 +7402,9 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get frontChatSearchChats => 'Sök i chattar';
+
+  @override
+  String get frontChatSpokenAnswers => 'Upplästa svar';
 
   @override
   String get frontChatTitle => 'Följeslagare';

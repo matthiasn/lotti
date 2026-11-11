@@ -313,9 +313,9 @@ void main() {
     );
   });
 
-  testWidgets('a footer trailing builder tails the bubble footer line, and '
-      'a null one leaves it alone', (tester) async {
-    await tester.pumpWidget(
+  testWidgets("a host's composer leading takes the helper line's place, "
+      'and without one the composer is as it was', (tester) async {
+    Future<void> pump({Widget? leading}) => tester.pumpWidget(
       makeTestableWidgetNoScroll(
         Scaffold(
           body: AgentChatView(
@@ -326,50 +326,34 @@ void main() {
             onDraftChanged: (_) {},
             onSend: () {},
             onRetry: () {},
-            history: AsyncData([
-              AgentChatMessage(
-                id: 'question',
-                role: AgentChatRole.user,
-                text: 'Which feeder?',
-                createdAt: DateTime(2026, 9, 12),
-              ),
-              AgentChatMessage(
-                id: 'reply',
-                role: AgentChatRole.agent,
-                text: 'The north one.',
-                createdAt: DateTime(2026, 9, 12, 0, 1),
-              ),
-            ]),
-            conversationId: 'query',
-            composerEnabled: false,
-            footerTrailingBuilder: (_, message) =>
-                message.role == AgentChatRole.agent
-                ? const Text(' · 2 calls', key: ValueKey('cost'))
-                : null,
+            history: const AsyncData([]),
+            composerLeading: leading,
           ),
         ),
       ),
     );
+
+    await pump(leading: const Text('Penguin Operations', key: Key('chip')));
     await tester.pump();
-    final cost = find.byKey(const ValueKey('cost'));
-    final footer = find.textContaining('Habitat Watcher · ');
-    expect(cost, findsOneWidget);
-    expect(tester.getCenter(cost).dy, tester.getCenter(footer).dy);
-    expect(tester.getTopLeft(cost).dx, tester.getTopRight(footer).dx);
     expect(
       find.descendant(
-        of: find.byKey(const ValueKey('goal-chat-message-reply')),
-        matching: cost,
+        of: find.byType(DesignSystemChatInput),
+        matching: find.byKey(const Key('chip')),
       ),
       findsOneWidget,
     );
-    // The user's bubble got nothing, and its footer is one plain text.
+    expect(find.byKey(DesignSystemChatInputKeys.helper), findsNothing);
+
+    await pump();
+    await tester.pump();
+    expect(find.byKey(const Key('chip')), findsNothing);
     expect(
-      find.descendant(
-        of: find.byKey(const ValueKey('goal-chat-message-question')),
-        matching: find.byType(Text),
-      ),
-      findsNWidgets(2),
+      tester
+          .widget<DesignSystemChatInput>(
+            find.byType(DesignSystemChatInput),
+          )
+          .leading,
+      isNull,
     );
   });
 

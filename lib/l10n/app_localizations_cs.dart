@@ -7368,11 +7368,36 @@ class AppLocalizationsCs extends AppLocalizations {
   String get frontChatArchivedToast => 'Chat archivován.';
 
   @override
+  String get frontChatCategoriesHeading => 'Kategorie';
+
+  @override
+  String frontChatCategoryChip(String name) {
+    return 'Kategorie tohoto chatu: $name';
+  }
+
+  @override
+  String get frontChatCategoryEverything => 'Vše';
+
+  @override
+  String get frontChatCategorySheetBody =>
+      'Od teď vycházejí odpovědi v tomto chatu jen z této kategorie.';
+
+  @override
+  String get frontChatCategorySheetMention =>
+      'Když ve zprávě napíšeš @, zúžíš jen tu jednu otázku.';
+
+  @override
+  String get frontChatCategorySheetTitle => 'Chat v kategorii';
+
+  @override
   String get frontChatCompanionShow => 'Zobrazit společníka';
 
   @override
   String get frontChatDeleteExplanation =>
       'Smazat tento chat? Jeho zprávy se skryjí na všech zařízeních, nevymažou se. Co sis z tohoto chatu uložil, zůstane, kde je.';
+
+  @override
+  String get frontChatDrawerClose => 'Zavřít chaty';
 
   @override
   String get frontChatEmpty =>
@@ -7416,9 +7441,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get frontChatInboxTitle => 'Příchozí';
-
-  @override
-  String get frontChatMentionHint => 'Napiš @ a pojmenuj kategorii';
 
   @override
   String get frontChatNoChats =>
@@ -7465,6 +7487,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get frontChatSearchChats => 'Hledat v chatech';
+
+  @override
+  String get frontChatSpokenAnswers => 'Mluvené odpovědi';
 
   @override
   String get frontChatTitle => 'Společník';

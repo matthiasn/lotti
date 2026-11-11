@@ -4539,11 +4539,25 @@
     }
   },
   "frontChatArchivedToast": "Chat archived.",
+  "frontChatCategoriesHeading": "Categories",
+  "frontChatCategoryChip": "Category for this chat: {name}",
+  "@frontChatCategoryChip": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "frontChatCategoryEverything": "Everything",
+  "frontChatCategorySheetBody": "From here on, the answers in this chat draw on this category only.",
+  "frontChatCategorySheetMention": "Typing @ in a message narrows just that one question.",
+  "frontChatCategorySheetTitle": "Chat in a category",
   "frontChatCompanionShow": "Show companion",
   "@frontChatCompanionShow": {
     "description": "Tooltip and screen-reader label on the companion's face in the chat header: a tap shows the floating card over the conversation; the face is hidden while the card is shown."
   },
   "frontChatDeleteExplanation": "Delete this chat? Its messages are hidden on every device, not erased. Whatever you filed from it stays where it is.",
+  "frontChatDrawerClose": "Close chats",
   "frontChatEmpty": "Ask about a task, a goal, a project or a person, or tell what happened. The right agent answers, and nothing is filed until you tap.",
   "frontChatFailedAuthentication": "Your AI provider refused its API key. Check it in Settings.",
   "@frontChatFailedAuthentication": {
@@ -4583,7 +4597,6 @@
   },
   "frontChatInboxEmpty": "Nothing is waiting for you.",
   "frontChatInboxTitle": "Inbox",
-  "frontChatMentionHint": "Type @ to name a category",
   "frontChatNoChats": "No chats yet. Ask something to start one.",
   "frontChatNoMatchingChats": "No chat title matches.",
   "frontChatOlder": "Older",
@@ -4618,6 +4631,7 @@
   "frontChatResponding": "Finding who knows…",
   "frontChatRowMenuHint": "Chat actions",
   "frontChatSearchChats": "Search chats",
+  "frontChatSpokenAnswers": "Spoken answers",
   "frontChatTitle": "Companion",
   "frontChatYesterday": "Yesterday",
   "frontDayPlanMore": "{count} more",

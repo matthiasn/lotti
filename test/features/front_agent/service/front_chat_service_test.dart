@@ -187,8 +187,8 @@ void main() {
     );
 
     test(
-      'a turn names no categories of its own: a category named in the '
-      'question narrows it',
+      'a turn in a conversation in no category writes no categories: only '
+      'one named in the question narrows it',
       () async {
         await service.appendMessage(
           text: 'How is the garden?',
@@ -198,6 +198,29 @@ void main() {
         final payload = upserts.whereType<AgentMessagePayloadEntity>().single;
         expect(payload.content.containsKey(frontCategoriesKey), isFalse);
         expect(frontCategoriesOf(payload.content), isEmpty);
+      },
+    );
+
+    test(
+      "a turn carries its conversation's category, in a stable order, so "
+      'her answer is narrowed to it',
+      () async {
+        await service.appendMessage(
+          text: 'How is the garden?',
+          conversationId: 'c-1',
+          categoryIds: {'cat-habitat', 'cat-garden'},
+        );
+
+        final payload = upserts.whereType<AgentMessagePayloadEntity>().single;
+        expect(payload.content[frontCategoriesKey], [
+          'cat-garden',
+          'cat-habitat',
+        ]);
+        expect(frontCategoriesOf(payload.content), {
+          'cat-garden',
+          'cat-habitat',
+        });
+        expect(frontConversationOf(payload.content), 'c-1');
       },
     );
 
@@ -282,12 +305,23 @@ void main() {
         return null;
       });
 
-      await service.sendMessage(text: 'Hello', conversationId: 'c-1');
+      await service.sendMessage(
+        text: 'Hello',
+        conversationId: 'c-1',
+        categoryIds: {'cat-penguins'},
+      );
 
       final message = upserts.whereType<AgentMessageEntity>().single;
       final record = recoveryOf(message.id);
       expect(record.status, ScheduledWakeStatus.consumed);
       expect(record.consumedAt, isNotNull);
+      // The scope goes through to the turn the wake reads.
+      expect(
+        frontCategoriesOf(
+          upserts.whereType<AgentMessagePayloadEntity>().single.content,
+        ),
+        {'cat-penguins'},
+      );
     });
 
     test('a failed wake surfaces as a turn exception naming the message and '

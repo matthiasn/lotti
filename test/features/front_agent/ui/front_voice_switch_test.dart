@@ -1,16 +1,23 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
+import 'package:lotti/features/agents/query/query_source_access.dart';
+import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
 import 'package:lotti/features/companion/model/companion_customization.dart';
 import 'package:lotti/features/companion/state/companion_customization_controller.dart';
-import 'package:lotti/features/design_system/components/buttons/ds_ai_disc_button.dart';
-import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
+import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/front_agent/model/front_chat_thread.dart';
+import 'package:lotti/features/front_agent/state/front_chat_thread_provider.dart';
+import 'package:lotti/features/front_agent/state/front_conversation_providers.dart';
+import 'package:lotti/features/front_agent/state/front_journal_access_provider.dart';
+import 'package:lotti/features/front_agent/ui/front_voice_controls.dart';
 import 'package:lotti/features/front_agent/ui/front_voice_switch.dart';
+import 'package:lotti/features/tts/state/tts_engine_provider.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../widget_test_utils.dart';
+import '../../tts/test_utils.dart';
 
 /// Her saved customization, loaded or not, recording what was set.
 class _Custom extends CompanionCustomizationController {
@@ -34,25 +41,12 @@ class _Custom extends CompanionCustomizationController {
   }
 }
 
-/// Builds the overflow row the way a header does, keeping the last one built.
-class _MenuRow extends ConsumerWidget {
-  const _MenuRow({required this.onBuilt});
-
-  final ValueChanged<DesignSystemContextMenuItem?> onBuilt;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    onBuilt(frontVoiceMenuItem(context, ref, startsGroup: true));
-    return const SizedBox.shrink();
-  }
-}
-
 void main() {
   late _Custom custom;
 
   Future<void> pump(
-    WidgetTester tester,
-    Widget child, {
+    WidgetTester tester, {
+    String? conversationId,
     bool companion = true,
     bool speaks = true,
     bool loaded = true,
@@ -60,135 +54,129 @@ void main() {
     custom = _Custom(speaks: speaks, isLoaded: loaded);
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
-        Scaffold(body: Center(child: child)),
+        Scaffold(
+          body: Center(
+            child: SizedBox(
+              width: 320,
+              child: FrontVoiceSwitch(conversationId: conversationId),
+            ),
+          ),
+        ),
         overrides: [
           configFlagProvider.overrideWith(
             (ref, flag) =>
                 Stream.value(flag == enableCompanionFlag && companion),
           ),
           companionCustomizationProvider.overrideWith(() => custom),
+          // What her replay beside the switch reads.
+          ttsEngineProvider.overrideWithValue(FakeTtsEngine()),
+          agentResolvedSetupProvider.overrideWith((ref, id) async => null),
+          frontJournalAccessProvider.overrideWith(
+            (ref) => Stream.value(
+              const QueryAccessSnapshot(
+                showPrivate: false,
+                categories: {},
+                entries: {},
+              ),
+            ),
+          ),
+          frontActiveConversationProvider.overrideWith((ref) async => 'c-1'),
+          frontChatThreadProvider.overrideWith(
+            (ref) async => FrontChatThread.empty,
+          ),
         ],
       ),
     );
     await tester.pump();
   }
 
-  group('the switch', () {
-    DsAiDiscButton disc(WidgetTester tester) =>
-        tester.widget<DsAiDiscButton>(find.byKey(FrontVoiceSwitchKeys.toggle));
+  DesignSystemToggle toggle(WidgetTester tester) => tester
+      .widget<DesignSystemToggle>(find.byKey(FrontVoiceSwitchKeys.toggle));
 
-    testWidgets('is a disc like her replay that says by its glyph whether '
-        'she answers aloud, and is announced as a toggle', (tester) async {
-      final semantics = tester.ensureSemantics();
-      await pump(tester, const FrontVoiceSwitch());
+  Icon glyph(WidgetTester tester) => tester.widget<Icon>(
+    find.descendant(
+      of: find.byKey(FrontVoiceSwitchKeys.row),
+      matching: find.byWidgetPredicate(
+        (widget) =>
+            widget is Icon &&
+            (widget.icon == LottiIcons.volume ||
+                widget.icon == LottiIcons.volumeOff),
+      ),
+    ),
+  );
 
-      expect(disc(tester).icon, LottiIcons.volume);
-      expect(disc(tester).label, 'Answer spoken questions aloud');
-      // Its accent means busy, never "on": the state is the glyph's shape.
-      expect(disc(tester).active, isFalse);
-      expect(
-        tester.getSemantics(find.byKey(FrontVoiceSwitchKeys.toggle)),
-        isSemantics(
-          label: 'Answer spoken questions aloud',
-          isButton: true,
-          hasToggledState: true,
-          isToggled: true,
-          hasTapAction: true,
-        ),
-      );
-      semantics.dispose();
-    });
+  testWidgets('is the "Spoken answers" row, announced as a toggle that is on '
+      'while she answers aloud', (tester) async {
+    final semantics = tester.ensureSemantics();
+    await pump(tester);
 
-    testWidgets('switched off, she is muted — the same setting as the '
-        "companion settings' switch", (tester) async {
-      await pump(tester, const FrontVoiceSwitch());
-
-      await tester.tap(find.byKey(FrontVoiceSwitchKeys.toggle));
-      await tester.pump();
-
-      expect(custom.saved.single.speaksReplies, isFalse);
-      // Muted, the speaker is struck through.
-      expect(disc(tester).icon, LottiIcons.volumeOff);
-    });
-
-    testWidgets('switched on again, she speaks again', (tester) async {
-      await pump(tester, const FrontVoiceSwitch(), speaks: false);
-
-      await tester.tap(find.byKey(FrontVoiceSwitchKeys.toggle));
-      await tester.pump();
-
-      expect(custom.saved.single.speaksReplies, isTrue);
-    });
-
-    testWidgets('is not offered before her saved setting is known: a mute '
-        'is never guessed at', (tester) async {
-      await pump(tester, const FrontVoiceSwitch(), loaded: false);
-      expect(find.byKey(FrontVoiceSwitchKeys.toggle), findsNothing);
-    });
-
-    testWidgets('is not offered with the companion off: she never speaks', (
-      tester,
-    ) async {
-      await pump(tester, const FrontVoiceSwitch(), companion: false);
-      expect(find.byKey(FrontVoiceSwitchKeys.toggle), findsNothing);
-    });
+    expect(find.text('Spoken answers'), findsOneWidget);
+    expect(toggle(tester).value, isTrue);
+    expect(glyph(tester).icon, LottiIcons.volume);
+    expect(
+      tester.getSemantics(find.byKey(FrontVoiceSwitchKeys.row)),
+      isSemantics(
+        label: 'Spoken answers',
+        hasToggledState: true,
+        isToggled: true,
+        hasTapAction: true,
+      ),
+    );
+    semantics.dispose();
   });
 
-  group('the overflow row', () {
-    DesignSystemContextMenuItem? row;
+  testWidgets('a tap on the row mutes her — the same setting as the '
+      "companion settings' switch — and strikes the speaker through", (
+    tester,
+  ) async {
+    await pump(tester);
 
-    Future<void> pumpRow(
-      WidgetTester tester, {
-      bool companion = true,
-      bool speaks = true,
-      bool loaded = true,
-    }) => pump(
-      tester,
-      _MenuRow(onBuilt: (item) => row = item),
-      companion: companion,
-      speaks: speaks,
-      loaded: loaded,
+    await tester.tap(find.text('Spoken answers'));
+    await tester.pump();
+
+    expect(custom.saved.single.speaksReplies, isFalse);
+    expect(toggle(tester).value, isFalse);
+    expect(glyph(tester).icon, LottiIcons.volumeOff);
+  });
+
+  testWidgets('the switch itself is a second target for the same change', (
+    tester,
+  ) async {
+    await pump(tester, speaks: false);
+
+    toggle(tester).onChanged(true);
+    await tester.pump();
+
+    expect(custom.saved.single.speaksReplies, isTrue);
+  });
+
+  testWidgets('her replay sits beside the switch for the open conversation, '
+      'and is left out where there is none', (tester) async {
+    await pump(tester, conversationId: 'c-1');
+    expect(
+      tester.widget<FrontVoiceButton>(find.byType(FrontVoiceButton)),
+      isA<FrontVoiceButton>().having(
+        (button) => button.conversationId,
+        'conversationId',
+        'c-1',
+      ),
     );
 
-    setUp(() => row = null);
+    await pump(tester);
+    expect(find.byType(FrontVoiceButton), findsNothing);
+    expect(find.byKey(FrontVoiceSwitchKeys.row), findsOneWidget);
+  });
 
-    testWidgets('is a checked row saying what it switches, in a group of '
-        'its own when asked', (tester) async {
-      await pumpRow(tester);
+  testWidgets('is not offered before her saved setting is known: a mute '
+      'is never guessed at', (tester) async {
+    await pump(tester, loaded: false);
+    expect(find.byKey(FrontVoiceSwitchKeys.row), findsNothing);
+  });
 
-      expect(row?.key, FrontVoiceSwitchKeys.menuItem);
-      expect(row?.label, 'Answer spoken questions aloud');
-      expect(row?.checked, isTrue);
-      expect(row?.startsGroup, isTrue);
-    });
-
-    testWidgets('a tap mutes her, and the row follows', (tester) async {
-      await pumpRow(tester);
-
-      row!.onTap!();
-      await tester.pump();
-
-      expect(custom.saved.single.speaksReplies, isFalse);
-      expect(row?.checked, isFalse);
-    });
-
-    testWidgets('a tap on a muted row lets her speak again', (tester) async {
-      await pumpRow(tester, speaks: false);
-      expect(row?.checked, isFalse);
-
-      row!.onTap!();
-      await tester.pump();
-
-      expect(custom.saved.single.speaksReplies, isTrue);
-    });
-
-    testWidgets('is left out before her saved setting is known, and with the '
-        'companion off', (tester) async {
-      await pumpRow(tester, loaded: false);
-      expect(row, isNull);
-
-      await pumpRow(tester, companion: false);
-      expect(row, isNull);
-    });
+  testWidgets('is not offered with the companion off: she never speaks', (
+    tester,
+  ) async {
+    await pump(tester, companion: false);
+    expect(find.byKey(FrontVoiceSwitchKeys.row), findsNothing);
   });
 }

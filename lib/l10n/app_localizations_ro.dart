@@ -7397,11 +7397,36 @@ class AppLocalizationsRo extends AppLocalizations {
   String get frontChatArchivedToast => 'Conversație arhivată.';
 
   @override
+  String get frontChatCategoriesHeading => 'Categorii';
+
+  @override
+  String frontChatCategoryChip(String name) {
+    return 'Categoria acestei conversații: $name';
+  }
+
+  @override
+  String get frontChatCategoryEverything => 'Tot';
+
+  @override
+  String get frontChatCategorySheetBody =>
+      'De acum înainte, răspunsurile din această conversație se bazează doar pe această categorie.';
+
+  @override
+  String get frontChatCategorySheetMention =>
+      'Dacă tastați @ într-un mesaj, restrângeți doar acea întrebare.';
+
+  @override
+  String get frontChatCategorySheetTitle => 'Conversație într-o categorie';
+
+  @override
   String get frontChatCompanionShow => 'Afișați însoțitorul';
 
   @override
   String get frontChatDeleteExplanation =>
       'Ștergeți această conversație? Mesajele ei sunt ascunse pe toate dispozitivele, nu șterse definitiv. Ce ați salvat din această conversație rămâne unde este.';
+
+  @override
+  String get frontChatDrawerClose => 'Închideți conversațiile';
 
   @override
   String get frontChatEmpty =>
@@ -7445,9 +7470,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get frontChatInboxTitle => 'Primite';
-
-  @override
-  String get frontChatMentionHint => 'Tastați @ pentru a numi o categorie';
 
   @override
   String get frontChatNoChats =>
@@ -7495,6 +7517,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get frontChatSearchChats => 'Căutați în conversații';
+
+  @override
+  String get frontChatSpokenAnswers => 'Răspunsuri rostite';
 
   @override
   String get frontChatTitle => 'Însoțitor';

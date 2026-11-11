@@ -70,10 +70,12 @@ class FrontChatService {
   Future<void> sendMessage({
     required String text,
     required String conversationId,
+    Set<String> categoryIds = const {},
   }) async {
     final messageId = await appendMessage(
       text: text,
       conversationId: conversationId,
+      categoryIds: categoryIds,
     );
     if (messageId == null) return;
     await retryMessage(messageId: messageId);
@@ -85,7 +87,9 @@ class FrontChatService {
   ///
   /// The conversation is named in the turn's payload, which nothing ever
   /// rewrites — an older build ignores the key and shows the turn in its
-  /// one thread.
+  /// one thread. So are the [categoryIds] the conversation is scoped to,
+  /// which narrow her answer to them (`frontNarrowedCategories`); none
+  /// writes no key.
   ///
   /// The turn is durable before the wake, so a process that dies while
   /// routing still leaves it a way to be routed — by the lease, after the
@@ -95,6 +99,7 @@ class FrontChatService {
   Future<String?> appendMessage({
     required String text,
     required String conversationId,
+    Set<String> categoryIds = const {},
   }) async {
     final trimmed = text.trim();
     if (trimmed.isEmpty) return null;
@@ -119,6 +124,8 @@ class FrontChatService {
         content: <String, Object?>{
           'text': trimmed,
           frontConversationKey: conversationId,
+          if (categoryIds.isNotEmpty)
+            frontCategoriesKey: [...categoryIds]..sort(),
         },
       ),
     );

@@ -22,8 +22,9 @@ or statement, becomes a turn in that agent's own chat, whose reply the front
 thread mirrors. The user sees each answer under the name of the agent that
 gave it, never reworded. A question about their records that no single owner
 holds — what was decided, where something was noted — she answers herself
-from the journal, within the categories she may see (a category named in the
-question narrows it), with the passages she relied on, each opening its
+from the journal, within the categories she may see (the conversation's
+category, picked in the composer, narrows it for every turn; one named in a
+question, for that question), with the passages she relied on, each opening its
 source. A question about what is due — today, overdue, this week — is
 hers too: she reads only what was asked (due today is never mixed with
 overdue) and answers in her own words. So is how much time was logged —
@@ -60,8 +61,10 @@ category's agent assigned. A follow-up ("a follow-up to that one") names
 the task it follows — any task the conversation named, finished ones too —
 and the tap links the two as *follows up on*. The user keeps many **conversations** with her, as in a ChatGPT
 or Claude window: each a subject of its own, titled by its first question,
-listed newest first by recency behind the header's *Chats* glyph (beside
-the conversation on a desktop window), renamed, archived or deleted there. What nothing owns waits in the **inbox** — every conversation,
+listed newest first by recency in her **drawer** — slid over the thread
+from the header's toggle on a phone, beside it on a desktop window — with
+its search, a new chat, the categories they are in, and her settings at its
+foot, renamed, archived or deleted there. What nothing owns waits in the **inbox** — every conversation,
 filtered — with chips that make it a task, start a goal or project with
 its words, make it an event titled with them (where Events are on), or save
 it as a note, or
@@ -107,16 +110,21 @@ and a proposal she got wrong goes to the inbox rather than being retyped.
   the filing service behind every tap under a door.
 - `runtime/` — the maintenance hook that re-arms an unanswered turn's
   recovery on every device.
-- `state/` — providers, the composer controller, the thread providers, the
+- `state/` — providers, the composer controller, the open conversation's
+  category (`front_chat_category.dart`) and what it has cost
+  (`front_conversation_cost.dart`), the thread providers, the
   live preview a card reads (`front_entity_preview_provider.dart`), the
   picked and active conversation, the spoken turn awaiting her spoken reply
   (`front_voice_providers.dart`), and the wake-runner,
   maintenance and
   setup-resolver contributions merged in `app_bootstrap.dart`.
-- `ui/` — her header (her face in a rounded tile, whose tap shows her glass
-  card over the thread in place and which steps aside while the card is out;
-  her name and the conversation's title, her voice's controls), the hero that greets a conversation not begun (her
-  bust), the switch that mutes her (`front_voice_switch.dart`), the card of
+- `ui/` — her one-row header (the drawer toggle, her face in a rounded tile,
+  whose tap shows her glass card over the thread in place and which steps
+  aside while the card is out, her name, a new chat, close), her drawer
+  (`front_chat_drawer.dart`: search, new chat, the conversations, her
+  settings), the composer's category chip and its sheet
+  (`front_category_chip.dart`), the hero that greets a conversation not begun
+  (her bust), the drawer's row that mutes her (`front_voice_switch.dart`), the card of
   rows a closed-task answer is drawn as (`front_task_list.dart`), the preview
   cards her lists of tasks and what her turn made are drawn as
   (`front_entity_preview_card.dart`; her reply is composed of the parts in
@@ -131,12 +139,12 @@ and a proposal she got wrong goes to the inbox rather than being retyped.
   glass card floating over the thread, moved and resized by the user,
   pointing at the tasks she lists as she says them
   (`state/front_stage_pointing.dart`)),
-  the
+  the drawer's
   list of conversations with each one's ⋯ on the agent pages' shared menu
   (`front_conversation_actions.dart`), her AI profile choice (`front_profile_choice.dart`: the
   profile she thinks with, whose read-aloud model is her voice), the door
   card with its proposals and inbox chips, the
-  clarifying chips, the per-turn cost line, the pane on the shared
+  clarifying chips, the pane on the shared
   `AgentChatView`, and her surface over the app (`front_chat_surface.dart`)
   that the sidebar row, the phone launcher button and the keyboard command
   open.

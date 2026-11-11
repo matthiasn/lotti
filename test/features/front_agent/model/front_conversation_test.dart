@@ -37,4 +37,24 @@ void main() {
       expect(frontNarrowedCategories({'work'}, {'secret'}), {'work'});
     });
   });
+
+  test('a conversation is in no category until a turn says so', () {
+    final conversation = FrontConversation(
+      id: 'c-1',
+      title: 'Plan the census',
+      lastActivity: DateTime(2026, 11, 11),
+      archived: false,
+    );
+    expect(conversation.categoryIds, isEmpty);
+    expect(
+      FrontConversation(
+        id: 'c-2',
+        title: 'Fix the heat pump',
+        lastActivity: DateTime(2026, 11, 11),
+        archived: false,
+        categoryIds: const {'cat-habitat'},
+      ).categoryIds,
+      {'cat-habitat'},
+    );
+  });
 }

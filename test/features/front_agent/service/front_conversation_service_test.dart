@@ -33,6 +33,7 @@ void main() {
     String id,
     String text, {
     String? conversation,
+    List<String>? categories,
     int minute = 0,
   }) async {
     final at = start.add(Duration(minutes: minute));
@@ -45,6 +46,7 @@ void main() {
         content: {
           'text': text,
           'conversationId': ?conversation,
+          frontCategoriesKey: ?categories,
         },
       ),
     );
@@ -125,6 +127,46 @@ void main() {
     );
     expect(index.latest!.id, 'c-1');
     expect(index.deletedIds, isEmpty);
+  });
+
+  test("a conversation's category is its newest turn's scope: a later "
+      'pick moves it, and a turn in no category leaves it in none', () async {
+    await turn(
+      'u1',
+      'Plan the census',
+      conversation: 'c-1',
+      categories: ['cat-penguins'],
+    );
+    await turn(
+      'u2',
+      'Fix the heat pump',
+      conversation: 'c-2',
+      categories: ['cat-penguins'],
+      minute: 1,
+    );
+    await turn(
+      'u3',
+      'And the vents?',
+      conversation: 'c-2',
+      categories: ['cat-habitat'],
+      minute: 2,
+    );
+    await turn('u4', 'Say hello', conversation: 'c-3', minute: 3);
+    await turn(
+      'u5',
+      'Count them',
+      conversation: 'c-4',
+      categories: ['cat-penguins'],
+      minute: 4,
+    );
+    await turn('u6', 'Anything else?', conversation: 'c-4', minute: 5);
+
+    final index = await service.load();
+
+    expect(index.byId('c-1')!.categoryIds, {'cat-penguins'});
+    expect(index.byId('c-2')!.categoryIds, {'cat-habitat'});
+    expect(index.byId('c-3')!.categoryIds, isEmpty);
+    expect(index.byId('c-4')!.categoryIds, isEmpty);
   });
 
   test("a turn synced in UTC is dated in the user's own time, so the list "

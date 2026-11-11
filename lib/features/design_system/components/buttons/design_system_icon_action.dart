@@ -29,6 +29,7 @@ class DesignSystemIconAction extends StatelessWidget {
     required this.onPressed,
     this.isBusy = false,
     this.tone,
+    this.focusNode,
     super.key,
   });
 
@@ -50,6 +51,10 @@ class DesignSystemIconAction extends StatelessWidget {
   /// second tap start a duplicate refresh; a caller must not have to remember
   /// to null [onPressed] as well.
   final bool isBusy;
+
+  /// The control's own focus, for a host that hands focus back to it — a
+  /// drawer returning focus to the toggle that opened it.
+  final FocusNode? focusNode;
 
   @override
   Widget build(BuildContext context) {
@@ -79,6 +84,7 @@ class DesignSystemIconAction extends StatelessWidget {
           child: Material(
             color: Colors.transparent,
             child: InkWell(
+              focusNode: focusNode,
               borderRadius: BorderRadius.circular(tokens.radii.smallChips),
               onTap: interactable ? handleTap : null,
               child: ConstrainedBox(

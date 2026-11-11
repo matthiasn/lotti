@@ -56,6 +56,22 @@ class ConsumptionTotals {
   final double waterLiters;
   final int durationMs;
 
+  /// Both totals together: what several runs cost, from each run's own.
+  ConsumptionTotals operator +(ConsumptionTotals other) => ConsumptionTotals(
+    callCount: callCount + other.callCount,
+    impactCallCount: impactCallCount + other.impactCallCount,
+    inputTokens: inputTokens + other.inputTokens,
+    outputTokens: outputTokens + other.outputTokens,
+    cachedInputTokens: cachedInputTokens + other.cachedInputTokens,
+    thoughtsTokens: thoughtsTokens + other.thoughtsTokens,
+    totalTokens: totalTokens + other.totalTokens,
+    credits: credits + other.credits,
+    energyKwh: energyKwh + other.energyKwh,
+    carbonGCo2: carbonGCo2 + other.carbonGCo2,
+    waterLiters: waterLiters + other.waterLiters,
+    durationMs: durationMs + other.durationMs,
+  );
+
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||

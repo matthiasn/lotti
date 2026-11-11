@@ -10,10 +10,10 @@ import 'package:lotti/features/front_agent/model/front_chat_thread.dart';
 import 'package:lotti/features/front_agent/model/front_conversation.dart';
 import 'package:lotti/features/front_agent/state/front_chat_thread_provider.dart';
 import 'package:lotti/features/front_agent/state/front_conversation_providers.dart';
+import 'package:lotti/features/front_agent/ui/front_chat_drawer.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_header.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_pane.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_surface.dart';
-import 'package:lotti/features/front_agent/ui/front_conversation_list.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../widget_test_utils.dart';
@@ -69,47 +69,59 @@ void main() {
     final rect = tester.getRect(find.byType(FrontChatPane));
     expect(rect.width, moreOrLessEquals(kDetailContentMaxWidth, epsilon: 1));
     expect(rect.center.dx, moreOrLessEquals(desktop.width / 2, epsilon: 1));
-    final list = tester.getRect(find.byType(FrontConversationList));
+    final drawer = tester.getRect(find.byType(FrontChatDrawer));
     expect(
-      list.width,
-      moreOrLessEquals(rect.width * FrontChatSurface.listShare, epsilon: 1),
+      drawer.width,
+      moreOrLessEquals(rect.width * FrontChatPane.listShare, epsilon: 1),
     );
-    expect(list.left, moreOrLessEquals(rect.left, epsilon: 1));
-    // The list carries the way to it and a new conversation.
-    expect(find.byKey(FrontChatHeaderKeys.chats), findsNothing);
+    expect(drawer.left, moreOrLessEquals(rect.left, epsilon: 1));
+    // The drawer carries a new conversation, and needs no toggle.
+    expect(find.byKey(FrontChatHeaderKeys.drawer), findsNothing);
     expect(find.byKey(FrontChatHeaderKeys.newChat), findsNothing);
-    expect(find.byKey(FrontConversationListKeys.newChat), findsOne);
+    expect(find.byKey(FrontChatDrawerKeys.newChat), findsOne);
+    expect(find.byKey(FrontChatDrawerKeys.close), findsNothing);
 
     // The list is the sheet's sidebar, a step off the conversation's ground.
     final tokens = tester.element(find.byType(FrontChatPane)).designTokens;
     final ground = tester.widget<ColoredBox>(
       find
           .ancestor(
-            of: find.byType(FrontConversationList),
+            of: find.byType(FrontChatDrawer),
             matching: find.byType(ColoredBox),
           )
           .first,
     );
     expect(ground.color, tokens.colors.background.level02);
-    // Its band and her header end on one line: one hairline across.
-    final band = find
-        .ancestor(of: find.text('Chats'), matching: find.byType(DecoratedBox))
-        .first;
+    // Its top row and her header end on one line: one hairline across.
+    // The drawer's band: a hairline under it and nothing over it.
+    final band = find.ancestor(
+      of: find.byKey(FrontChatDrawerKeys.search),
+      matching: find.byWidgetPredicate(
+        (widget) =>
+            widget is DecoratedBox &&
+            widget.decoration is BoxDecoration &&
+            switch ((widget.decoration as BoxDecoration).border) {
+              Border(:final top, :final bottom) =>
+                top == BorderSide.none && bottom != BorderSide.none,
+              _ => false,
+            },
+      ),
+    );
     expect(
       tester.getRect(band).bottom,
       tester.getRect(find.byType(FrontChatHeader)).bottom,
     );
   });
 
-  testWidgets('between a phone and a desktop she is a panel with the list a '
-      'tap away', (tester) async {
+  testWidgets('between a phone and a desktop she is a panel with the drawer '
+      'a tap away', (tester) async {
     const tablet = Size(800, 900);
     await open(tester, tablet);
 
     final rect = tester.getRect(find.byType(FrontChatPane));
     expect(rect.width, lessThan(tablet.width));
-    expect(find.byType(FrontConversationList), findsNothing);
-    expect(find.byKey(FrontChatHeaderKeys.chats), findsOne);
+    expect(find.byType(FrontChatDrawer), findsNothing);
+    expect(find.byKey(FrontChatHeaderKeys.drawer), findsOne);
   });
 
   testWidgets('on a phone she takes the whole screen', (tester) async {

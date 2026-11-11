@@ -184,6 +184,11 @@ class FrontChatThreadBuilder {
 
     return FrontChatThread(
       messages: visible,
+      // Before the window: what the whole conversation cost.
+      runKeys: {
+        for (final m in messages)
+          if (m.role == AgentChatRole.agent) ?m.runKey,
+      },
       optionsByMessageId: {
         for (final entry in options.entries)
           if (visibleIds.contains(entry.key)) entry.key: entry.value,

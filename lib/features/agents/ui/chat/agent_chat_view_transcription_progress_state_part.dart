@@ -52,8 +52,7 @@ class AgentChatView extends ConsumerStatefulWidget {
     this.scrollOnReplies = true,
     this.conversationId,
     this.groupAttachmentsWithReply = false,
-    this.footerTrailingBuilder,
-    this.composerHelper,
+    this.composerLeading,
     this.mentionOptions = const [],
     this.replyTextStyle,
     this.onLinkTap,
@@ -82,8 +81,7 @@ class AgentChatView extends ConsumerStatefulWidget {
 
   /// Her replies as unboxed prose and the user's words in a soft bubble,
   /// with no author-and-time line on each message — a conversation with
-  /// someone rather than a log. The footer line stays only for what
-  /// [footerTrailingBuilder] adds.
+  /// someone rather than a log.
   final bool conversational;
 
   /// Talking leads: on a desktop the field takes the keyboard at once, and
@@ -131,12 +129,6 @@ class AgentChatView extends ConsumerStatefulWidget {
   final VoidCallback? onDraftSpoken;
   final AgentChatMessageAttachmentBuilder? attachmentBuilder;
 
-  /// Builds what a bubble's footer line carries after the author and the
-  /// time — a per-turn cost, say — on the same line, so a turn's metadata
-  /// is one row. Null, or a builder returning null, leaves the footer as it
-  /// is.
-  final AgentChatMessageAttachmentBuilder? footerTrailingBuilder;
-
   /// Rendered above a message, between it and the one before — the front
   /// thread's day dividers. Null renders nothing between messages.
   final AgentChatMessageDividerBuilder? dividerBuilder;
@@ -173,9 +165,10 @@ class AgentChatView extends ConsumerStatefulWidget {
   /// Keeps supporting evidence inside the reply's surface and reading width.
   final bool groupAttachmentsWithReply;
 
-  /// What the composer says under its field — only what this chat
-  /// supports (that `@` names a category, say).
-  final String? composerHelper;
+  /// The host's own control at the start of the composer's controls row,
+  /// in place of its helper line — the companion's category chip, say.
+  /// None for every other chat.
+  final Widget? composerLeading;
 
   /// What `@` offers in the composer; none, no `@`.
   final List<DesignSystemChatInputMention> mentionOptions;
@@ -219,7 +212,7 @@ class _ChatComposer extends ConsumerWidget {
     required this.allowDraftWhileSending,
     required this.sendingLabel,
     required this.onSend,
-    this.helperText,
+    this.leading,
     this.mentionOptions = const [],
     this.voiceFirst = false,
     this.contentMaxWidth,
@@ -235,7 +228,7 @@ class _ChatComposer extends ConsumerWidget {
   final double? contentMaxWidth;
   final TextEditingController controller;
   final String hintText;
-  final String? helperText;
+  final Widget? leading;
   final List<DesignSystemChatInputMention> mentionOptions;
   final bool isSending;
   final bool allowDraftWhileSending;
@@ -256,7 +249,7 @@ class _ChatComposer extends ConsumerWidget {
     final input = DesignSystemChatInput(
       controller: controller,
       hintText: hintText,
-      helperText: helperText,
+      leading: leading,
       mentionOptions: mentionOptions,
       busyText: blocked ? sendingLabel : null,
       phase: switch (recorderState.status) {
@@ -310,7 +303,6 @@ class _MessageBubble extends StatelessWidget {
     required this.agentName,
     required this.measuredHeights,
     this.attachment,
-    this.footerTrailing,
     this.replyTextStyle,
     this.onLinkTap,
     this.conversational = false,
@@ -324,8 +316,6 @@ class _MessageBubble extends StatelessWidget {
   final String agentName;
   final Widget? attachment;
 
-  /// What follows the author and the time on the footer line.
-  final Widget? footerTrailing;
   final TextStyle? replyTextStyle;
   final void Function(String url, String title)? onLinkTap;
 
@@ -368,9 +358,12 @@ class _MessageBubble extends StatelessWidget {
           child: DecoratedBox(
             decoration: BoxDecoration(
               // In a conversation her words are unboxed prose; the user's
-              // keep a soft bubble.
+              // keep a soft, neutral bubble, a step off the ground — the
+              // accent stays for what can be pressed.
               color: isUser
-                  ? tokens.colors.surface.selected
+                  ? conversational
+                        ? tokens.colors.background.level02
+                        : tokens.colors.surface.selected
                   : conversational
                   ? null
                   : tokens.colors.background.level02,
@@ -427,25 +420,14 @@ class _MessageBubble extends StatelessWidget {
                       child: attachment,
                     ),
                   ],
-                  if (!conversational || footerTrailing != null) ...[
+                  if (!conversational) ...[
                     SizedBox(height: tokens.spacing.step1),
                     ExcludeSemantics(
-                      child: Wrap(
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        children: [
-                          if (!conversational)
-                            Text(
-                              context.messages.goalChatMessageFooter(
-                                author,
-                                time,
-                              ),
-                              style: tokens.typography.styles.others.caption
-                                  .copyWith(
-                                    color: tokens.colors.text.lowEmphasis,
-                                  ),
-                            ),
-                          ?footerTrailing,
-                        ],
+                      child: Text(
+                        context.messages.goalChatMessageFooter(author, time),
+                        style: tokens.typography.styles.others.caption.copyWith(
+                          color: tokens.colors.text.lowEmphasis,
+                        ),
                       ),
                     ),
                   ],

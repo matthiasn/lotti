@@ -20,6 +20,43 @@ void main() {
       expect(e.durationMs, 0);
     });
 
+    test('+ adds every field, call counts and durations included', () {
+      final sum =
+          _makeTotals() +
+          _makeTotals(
+            callCount: 1,
+            impactCallCount: 0,
+            inputTokens: 10,
+            outputTokens: 20,
+            cachedInputTokens: 30,
+            thoughtsTokens: 40,
+            totalTokens: 100,
+            credits: 0.5,
+            energyKwh: 0.25,
+            carbonGCo2: 2,
+            waterLiters: 1,
+            durationMs: 200,
+          );
+
+      expect(sum.callCount, 8);
+      expect(sum.impactCallCount, 5);
+      expect(sum.inputTokens, 1010);
+      expect(sum.outputTokens, 520);
+      expect(sum.cachedInputTokens, 230);
+      expect(sum.thoughtsTokens, 90);
+      expect(sum.totalTokens, 1850);
+      expect(sum.credits, closeTo(0.52, 1e-9));
+      expect(sum.energyKwh, closeTo(0.253, 1e-9));
+      expect(sum.carbonGCo2, closeTo(3.2, 1e-9));
+      expect(sum.waterLiters, closeTo(1.4, 1e-9));
+      expect(sum.durationMs, 2000);
+    });
+
+    test('empty is the identity of +', () {
+      expect(ConsumptionTotals.empty + _makeTotals(), _makeTotals());
+      expect(_makeTotals() + ConsumptionTotals.empty, _makeTotals());
+    });
+
     test('equality and hashCode are structural, not identity-based', () {
       final a = _makeTotals();
       final b = _makeTotals();

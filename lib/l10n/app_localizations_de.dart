@@ -7317,11 +7317,36 @@ class AppLocalizationsDe extends AppLocalizations {
   String get frontChatArchivedToast => 'Chat archiviert.';
 
   @override
+  String get frontChatCategoriesHeading => 'Kategorien';
+
+  @override
+  String frontChatCategoryChip(String name) {
+    return 'Kategorie für diesen Chat: $name';
+  }
+
+  @override
+  String get frontChatCategoryEverything => 'Alles';
+
+  @override
+  String get frontChatCategorySheetBody =>
+      'Ab jetzt stützen sich die Antworten in diesem Chat nur auf diese Kategorie.';
+
+  @override
+  String get frontChatCategorySheetMention =>
+      'Mit @ in einer Nachricht grenzt du nur diese eine Frage ein.';
+
+  @override
+  String get frontChatCategorySheetTitle => 'Chat in einer Kategorie';
+
+  @override
   String get frontChatCompanionShow => 'Begleitung zeigen';
 
   @override
   String get frontChatDeleteExplanation =>
       'Diesen Chat löschen? Seine Nachrichten werden auf allen Geräten ausgeblendet, nicht gelöscht. Was du aus diesem Chat abgelegt hast, bleibt, wo es ist.';
+
+  @override
+  String get frontChatDrawerClose => 'Chats schließen';
 
   @override
   String get frontChatEmpty =>
@@ -7365,9 +7390,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get frontChatInboxTitle => 'Eingang';
-
-  @override
-  String get frontChatMentionHint => 'Tippe @, um eine Kategorie zu nennen';
 
   @override
   String get frontChatNoChats =>
@@ -7414,6 +7436,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get frontChatSearchChats => 'Chats durchsuchen';
+
+  @override
+  String get frontChatSpokenAnswers => 'Gesprochene Antworten';
 
   @override
   String get frontChatTitle => 'Begleitung';

@@ -6,26 +6,18 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
-import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
-import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
-import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/companion_stage_page.dart';
-import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/companion/model/companion_customization.dart';
 import 'package:lotti/features/companion/state/companion_customization_controller.dart';
 import 'package:lotti/features/companion/state/companion_look_controller.dart';
 import 'package:lotti/features/companion/ui/companion_speaker.dart';
 import 'package:lotti/features/companion/ui/companion_view.dart';
 import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
-import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
-import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
-import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
 import 'package:lotti/features/front_agent/model/front_chat_thread.dart';
 import 'package:lotti/features/front_agent/model/front_conversation.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
@@ -37,21 +29,15 @@ import 'package:lotti/features/front_agent/state/front_voice_providers.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_header.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_hero.dart';
 import 'package:lotti/features/front_agent/ui/front_conversation_actions.dart';
-import 'package:lotti/features/front_agent/ui/front_conversation_list.dart';
-import 'package:lotti/features/front_agent/ui/front_profile_choice.dart';
 import 'package:lotti/features/front_agent/ui/front_voice_controls.dart';
 import 'package:lotti/features/front_agent/ui/front_voice_switch.dart';
 import 'package:lotti/features/tts/model/tts_playback_state.dart';
 import 'package:lotti/features/tts/state/tts_playback_controller.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:mocktail/mocktail.dart';
 
-import '../../../mocks/mocks.dart';
 import '../../../test_utils/screenshot_harness.dart';
 import '../../../widget_test_utils.dart';
-import '../../agents/test_data/ai_config_factories.dart';
-import '../../agents/test_data/entity_factories.dart';
 
 void main() {
   // The title's room on a phone is asserted in real glyphs: the test font
@@ -72,6 +58,7 @@ void main() {
     AgentDomainEntity? identity,
     List<Override> extra = const [],
     List<NavigatorObserver> observers = const [],
+    FocusNode? drawerFocus,
   }) async {
     await setUpTestGetIt();
     addTearDown(tearDownTestGetIt);
@@ -91,6 +78,7 @@ void main() {
                     FrontChatHeader(
                       onClose: onClose ?? () {},
                       listBeside: listBeside,
+                      drawerFocusNode: drawerFocus,
                     ),
                     const FrontChatHero(),
                   ],
@@ -140,7 +128,7 @@ void main() {
     });
   }
 
-  group('conversations', () {
+  group('the row', () {
     final census = FrontConversationIndex(
       conversations: [
         FrontConversation(
@@ -151,438 +139,161 @@ void main() {
         ),
       ],
     );
-    String titleOf(WidgetTester tester) =>
-        tester.widget<Text>(find.byKey(FrontChatHeaderKeys.title)).data!;
     ProviderContainer containerOf(WidgetTester tester) =>
         ProviderScope.containerOf(
           tester.element(find.byType(FrontChatHeader)),
         );
-    List<DesignSystemContextMenuItem> overflow(WidgetTester tester) => tester
-        .widget<FrontMenuButton>(find.byKey(FrontChatHeaderKeys.more))
-        .items;
+    DesignSystemIconAction action(WidgetTester tester, Key key) =>
+        tester.widget<DesignSystemIconAction>(find.byKey(key));
 
-    testWidgets('names her, and under her the open conversation by its '
-        'title, whole on hover however much of it is cut', (tester) async {
-      await pumpHeader(tester, conversations: census);
-      expect(
-        tester.widget<Text>(find.byKey(FrontChatHeaderKeys.name)).data,
-        'Companion',
-      );
-      expect(titleOf(tester), 'Plan the census');
-      final name = tester.getRect(find.byKey(FrontChatHeaderKeys.name));
-      final title = tester.getRect(find.byKey(FrontChatHeaderKeys.title));
-      expect(title.top, greaterThanOrEqualTo(name.bottom));
-      final tooltip = tester.widget<Tooltip>(
-        find.ancestor(
-          of: find.byKey(FrontChatHeaderKeys.title),
-          matching: find.byType(Tooltip),
+    testWidgets('is one line: the drawer toggle, her face, her name, a new '
+        'chat and close, in that order', (tester) async {
+      var closed = 0;
+      await pumpHeader(tester, conversations: census, onClose: () => closed++);
+
+      Rect at(Key key) => tester.getRect(find.byKey(key));
+      final order = [
+        FrontChatHeaderKeys.drawer,
+        FrontChatHeaderKeys.figure,
+        FrontChatHeaderKeys.title,
+        FrontChatHeaderKeys.newChat,
+        FrontChatHeaderKeys.close,
+      ].map(at).toList();
+      for (var i = 1; i < order.length; i++) {
+        expect(order[i].left, greaterThanOrEqualTo(order[i - 1].right));
+        expect(order[i].center.dy, closeTo(order[0].center.dy, 0.5));
+      }
+      // Her face, a rounded tile.
+      expect(order[1].width, ControlSizes.avatar);
+      final tile = tester.widget<Container>(
+        find.descendant(
+          of: find.byKey(FrontChatHeaderKeys.figure),
+          matching: find.byType(Container),
         ),
       );
-      expect(tooltip.message, 'Plan the census');
+      final shape = tile.decoration! as BoxDecoration;
+      expect(shape.shape, BoxShape.rectangle);
+      expect(shape.borderRadius, isNotNull);
+      // Each control says what it does.
+      expect(action(tester, FrontChatHeaderKeys.drawer).tooltip, 'Chats');
+      expect(action(tester, FrontChatHeaderKeys.newChat).tooltip, 'New chat');
+      expect(action(tester, FrontChatHeaderKeys.close).tooltip, 'Close');
+
+      await tester.tap(find.byKey(FrontChatHeaderKeys.close));
+      expect(closed, 1);
     });
 
-    testWidgets('names her alone for a conversation not begun, whose '
-        'new-chat action has nothing to start', (tester) async {
-      await pumpHeader(tester);
-      expect(titleOf(tester), 'Companion');
-      expect(find.byKey(FrontChatHeaderKeys.name), findsNothing);
-      final newChat = overflow(
-        tester,
-      ).singleWhere((item) => item.key == FrontChatHeaderKeys.newChat);
-      expect(newChat.onTap, isNull);
-    });
-
-    testWidgets('the title opens the list, whose header is back, Chats and '
-        'close; back returns to the conversation', (tester) async {
-      await pumpHeader(tester, conversations: census);
-      final container = containerOf(tester);
-      final listOpen = container.listen(
-        frontConversationListOpenProvider,
-        (_, _) {},
-      );
-      addTearDown(listOpen.close);
-
-      await tester.tap(find.byKey(FrontChatHeaderKeys.chats));
-      await tester.pump();
-      expect(listOpen.read(), isTrue);
-      expect(titleOf(tester), 'Chats');
-      // Nothing that would duplicate the list's own new-chat row.
-      expect(find.byKey(FrontChatHeaderKeys.more), findsNothing);
-      expect(find.byKey(FrontChatHeaderKeys.close), findsOneWidget);
-
-      await tester.tap(find.byKey(FrontChatHeaderKeys.back));
-      await tester.pump();
-      expect(listOpen.read(), isFalse);
-      expect(titleOf(tester), 'Plan the census');
-    });
-
-    testWidgets("the list's page header carries the list's search and a new "
-        'chat, which starts one and leaves the list', (tester) async {
-      await pumpHeader(tester, conversations: census);
-      final container = containerOf(tester);
-      final listOpen = container.listen(
-        frontConversationListOpenProvider,
-        (_, _) {},
-      );
-      addTearDown(listOpen.close);
-      final searchOpen = container.listen(
-        frontConversationSearchOpenProvider,
-        (_, _) {},
-      );
-      addTearDown(searchOpen.close);
-      await tester.tap(find.byKey(FrontChatHeaderKeys.chats));
-      await tester.pump();
-
-      // Back, Chats, the search, a new chat, close — in that order.
-      final back = tester.getCenter(find.byKey(FrontChatHeaderKeys.back));
-      final search = tester.getCenter(
-        find.byKey(FrontConversationListKeys.search),
-      );
-      final newChat = tester.getCenter(
-        find.byKey(FrontConversationListKeys.newChat),
-      );
-      final close = tester.getCenter(find.byKey(FrontChatHeaderKeys.close));
-      expect(back.dx, lessThan(search.dx));
-      expect(search.dx, lessThan(newChat.dx));
-      expect(newChat.dx, lessThan(close.dx));
-
-      await tester.tap(find.byKey(FrontConversationListKeys.search));
-      await tester.pump();
-      expect(searchOpen.read(), isTrue);
-
-      await tester.tap(find.byKey(FrontConversationListKeys.newChat));
-      await tester.pump();
-      expect(listOpen.read(), isFalse);
-      expect(container.read(frontPickedConversationProvider), isNot('c-1'));
-    });
-
-    for (final (what, index) in [
-      ('a conversation', census),
-      ('one not begun, no title under her name', FrontConversationIndex.empty),
-    ]) {
-      testWidgets('on $what her header is a tap target over a title line and '
-          "the band inset tall, the list's band's height", (tester) async {
-        await pumpHeader(tester, conversations: index);
-        final tokens = tester
-            .element(find.byType(FrontChatHeader))
-            .designTokens;
-        expect(
-          tester.getSize(find.byType(FrontChatHeader)).height,
-          TapTargets.minimum +
-              tokens.typography.lineHeight.bodySmall +
-              2 * tokens.spacing.step2,
-        );
-      });
-    }
-
-    testWidgets('her name in the list title size, the conversation quietly '
-        'under it', (tester) async {
+    testWidgets('her name is its one title, in the subtitle size: no line '
+        "for the conversation's title and no overflow menu", (tester) async {
       await pumpHeader(tester, conversations: census);
       final tokens = tester.element(find.byType(FrontChatHeader)).designTokens;
-      // Her name in the list's title size, the conversation quietly under it.
+
+      final title = tester.widget<Text>(find.byKey(FrontChatHeaderKeys.title));
+      expect(title.data, 'Companion');
       expect(
-        tester
-            .widget<Text>(find.byKey(FrontChatHeaderKeys.name))
-            .style!
-            .fontSize,
-        tokens.typography.styles.subtitle.subtitle2.fontSize,
+        title.style!.fontSize,
+        tokens.typography.styles.subtitle.subtitle1.fontSize,
       );
+      expect(find.text('Plan the census'), findsNothing);
+      expect(find.byType(FrontMenuButton), findsNothing);
+      // A tap target and the band inset tall: the drawer's top row's height.
       expect(
-        tester.widget<Text>(find.byKey(FrontChatHeaderKeys.title)).style!.color,
-        tokens.colors.text.mediumEmphasis,
+        tester.getSize(find.byType(FrontChatHeader)).height,
+        TapTargets.minimum + 2 * tokens.spacing.step2,
       );
     });
 
-    testWidgets('the overflow leads with a new chat, then her internals, '
-        "then the open conversation's own ways out, the destructive one "
-        'last', (tester) async {
-      await pumpHeader(tester, conversations: census);
-
-      final items = overflow(tester);
-      expect(items.map((item) => item.label).toList(), [
-        'New chat',
-        'Agent internals',
-        'Rename chat',
-        'Archive chat',
-        'Delete chat',
-      ]);
-      // Her own entries a group of their own after the new chat.
-      expect(items[1].startsGroup, isTrue);
-    });
-
-    testWidgets('beside the list the overflow leaves the new chat to it', (
+    testWidgets('the toggle opens the drawer, and closes it again', (
       tester,
     ) async {
-      await pumpHeader(tester, conversations: census, listBeside: true);
-
-      expect(overflow(tester).map((item) => item.label).toList(), [
-        'Agent internals',
-        'Rename chat',
-        'Archive chat',
-        'Delete chat',
-      ]);
-      expect(find.byKey(FrontChatHeaderKeys.chats), findsNothing);
-    });
-
-    testWidgets('a conversation not begun has a new chat and her internals '
-        'in the overflow', (tester) async {
-      await pumpHeader(tester);
-
-      expect(overflow(tester).map((item) => item.label), [
-        'New chat',
-        'Agent internals',
-      ]);
-    });
-
-    testWidgets('the inbox, which gathers every conversation, is named and '
-        "offers no single conversation's actions", (tester) async {
       await pumpHeader(tester, conversations: census);
-      final container = containerOf(tester);
-      final filter = container.listen(frontInboxFilterProvider, (_, _) {});
-      addTearDown(filter.close);
-
-      container.read(frontInboxFilterProvider.notifier).toggle();
-      await tester.pump();
-
-      expect(titleOf(tester), 'Inbox');
-      expect(overflow(tester).map((item) => item.label), [
-        'New chat',
-        'Agent internals',
-      ]);
-    });
-
-    testWidgets('an archived conversation says so before its title', (
-      tester,
-    ) async {
-      await pumpHeader(
+      final listOpen = containerOf(
         tester,
-        conversations: FrontConversationIndex(
-          conversations: [
-            FrontConversation(
-              id: 'c-0',
-              title: 'Ice shelf survey',
-              lastActivity: DateTime(2026, 9, 2),
-              archived: true,
-            ),
-          ],
+      ).listen(frontConversationListOpenProvider, (_, _) {});
+      addTearDown(listOpen.close);
+
+      await tester.tap(find.byKey(FrontChatHeaderKeys.drawer));
+      await tester.pump();
+      expect(listOpen.read(), isTrue);
+
+      await tester.tap(find.byKey(FrontChatHeaderKeys.drawer));
+      await tester.pump();
+      expect(listOpen.read(), isFalse);
+    });
+
+    testWidgets('hands its focus node to the toggle, so the drawer can give '
+        'focus back to it', (tester) async {
+      final focus = FocusNode();
+      addTearDown(focus.dispose);
+      await pumpHeader(tester, conversations: census, drawerFocus: focus);
+
+      // The toggle's own focus, not one around it.
+      expect(
+        focus.context?.findAncestorWidgetOfExactType<DesignSystemIconAction>(),
+        isA<DesignSystemIconAction>().having(
+          (action) => action.key,
+          'key',
+          FrontChatHeaderKeys.drawer,
         ),
       );
-      containerOf(
-        tester,
-      ).read(frontPickedConversationProvider.notifier).picked = 'c-0';
+      focus.requestFocus();
       await tester.pump();
-      await tester.pump();
-
-      expect(titleOf(tester), 'Ice shelf survey');
-      final glyph = tester.getRect(find.byKey(FrontChatHeaderKeys.archived));
-      final title = tester.getRect(find.byKey(FrontChatHeaderKeys.title));
-      expect(glyph.right, lessThanOrEqualTo(title.left));
+      expect(focus.hasPrimaryFocus, isTrue);
     });
 
     testWidgets('a new chat starts an empty conversation', (tester) async {
       await pumpHeader(tester, conversations: census);
       final container = containerOf(tester);
 
-      overflow(
-        tester,
-      ).singleWhere((item) => item.key == FrontChatHeaderKeys.newChat).onTap!();
-      await tester.pump();
+      await tester.tap(find.byKey(FrontChatHeaderKeys.newChat));
       await tester.pump();
 
-      final picked = container.read(frontPickedConversationProvider);
-      expect(picked, isNot(anyOf(isNull, 'c-1')));
-      expect(titleOf(tester), 'Companion');
-    });
-  });
-
-  testWidgets('one row: the way to the list, her face and who she is, then '
-      'the overflow and close trail, all on its top line', (tester) async {
-    var closed = 0;
-    await pumpHeader(tester, onClose: () => closed++);
-
-    Rect at(Key key) => tester.getRect(find.byKey(key));
-    final order = [
-      FrontChatHeaderKeys.chats,
-      FrontChatHeaderKeys.title,
-      FrontChatHeaderKeys.more,
-      FrontChatHeaderKeys.close,
-    ].map(at).toList();
-    for (var i = 1; i < order.length; i++) {
-      expect(order[i].left, greaterThanOrEqualTo(order[i - 1].right));
-      expect(order[i].top, lessThan(order[0].bottom));
-    }
-    // Her face, a rounded tile, sits between the way to the list and her
-    // name, on the controls' line.
-    final face = tester.getRect(find.byKey(FrontChatHeaderKeys.figure));
-    expect(face.left, greaterThanOrEqualTo(order[0].right));
-    expect(face.right, lessThanOrEqualTo(order[1].left));
-    expect(face.width, ControlSizes.avatar);
-    expect(face.center.dy, closeTo(order[0].center.dy, 0.5));
-    expect(face.center.dy, closeTo(order[3].center.dy, 0.5));
-    final tile = tester.widget<Container>(
-      find.descendant(
-        of: find.byKey(FrontChatHeaderKeys.figure),
-        matching: find.byType(Container),
-      ),
-    );
-    final shape = tile.decoration! as BoxDecoration;
-    expect(shape.shape, BoxShape.rectangle);
-    expect(shape.borderRadius, isNotNull);
-
-    await tester.tap(find.byKey(FrontChatHeaderKeys.close));
-    expect(closed, 1);
-  });
-
-  group('her AI profile', () {
-    final her = makeTestIdentity(
-      id: frontAgentId,
-      agentId: frontAgentId,
-      kind: AgentKinds.frontAgent,
-    );
-
-    List<String> overflow(WidgetTester tester) => tester
-        .widget<FrontMenuButton>(
-          find.byKey(FrontChatHeaderKeys.more),
-        )
-        .items
-        .map((item) => item.label)
-        .toList();
-
-    final catalog = agentSetupOptionsProvider.overrideWith(
-      (ref) async => TaskAgentSetupOptions(
-        profiles: [testInferenceProfile(id: 'p', name: 'Mistral (EU)')],
-        models: const [],
-        providers: const [],
-      ),
-    );
-
-    testWidgets('leads the overflow once she exists and the profiles are '
-        'loaded', (tester) async {
-      await pumpHeader(tester, identity: her, extra: [catalog]);
-
-      // After the new chat, her own group leads.
-      expect(overflow(tester), ['New chat', 'AI profile', 'Agent internals']);
-    });
-
-    testWidgets('waits for the profiles: offered before they load, it would '
-        'open an empty picker', (tester) async {
-      await pumpHeader(
-        tester,
-        identity: her,
-        extra: [
-          agentSetupOptionsProvider.overrideWith(
-            (ref) => Completer<TaskAgentSetupOptions>().future,
-          ),
-        ],
+      expect(
+        container.read(frontPickedConversationProvider),
+        isNot(anyOf(isNull, 'c-1')),
       );
-
-      expect(overflow(tester), ['New chat', 'Agent internals']);
     });
 
-    testWidgets('is not offered before she exists: nothing to write it on', (
-      tester,
-    ) async {
+    testWidgets('in a conversation not begun a new chat has nothing to '
+        'start', (tester) async {
       await pumpHeader(tester);
-
-      expect(overflow(tester), isNot(contains('AI profile')));
+      expect(action(tester, FrontChatHeaderKeys.newChat).onPressed, isNull);
     });
 
-    testWidgets('opens the profile picker, marking the Settings default '
-        'she follows', (tester) async {
-      final aiConfigs = MockAiConfigRepository();
-      when(
-        aiConfigs.getDefaultProfileId,
-      ).thenAnswer((_) async => 'profile-mistral');
+    testWidgets('in the inbox a new chat is offered even before any '
+        'conversation: it leaves the inbox', (tester) async {
       await pumpHeader(
         tester,
-        identity: her,
-        extra: [
-          aiConfigRepositoryProvider.overrideWithValue(aiConfigs),
-          agentSetupOptionsProvider.overrideWith(
-            (ref) async => TaskAgentSetupOptions(
-              profiles: [
-                testInferenceProfile(
-                  id: 'profile-mistral',
-                  name: 'Mistral (EU)',
-                ),
-              ],
-              models: const [],
-              providers: const [],
-            ),
-          ),
-        ],
+        extra: [frontInboxFilterProvider.overrideWith(_InboxOn.new)],
+      );
+      expect(action(tester, FrontChatHeaderKeys.newChat).onPressed, isNotNull);
+    });
+
+    testWidgets('beside the drawer the row is her face, her name and close: '
+        'the drawer has the rest', (tester) async {
+      await pumpHeader(tester, conversations: census, listBeside: true);
+
+      expect(find.byKey(FrontChatHeaderKeys.drawer), findsNothing);
+      expect(find.byKey(FrontChatHeaderKeys.newChat), findsNothing);
+      expect(find.byKey(FrontChatHeaderKeys.figure), findsOne);
+      expect(find.byKey(FrontChatHeaderKeys.title), findsOne);
+      expect(find.byKey(FrontChatHeaderKeys.close), findsOne);
+    });
+
+    testWidgets('carries none of her voice, her profile or her internals: '
+        "they are the drawer's", (tester) async {
+      await pumpHeader(
+        tester,
+        companion: true,
+        conversations: census,
+        extra: [companionCustomizationProvider.overrideWith(_KnownCustom.new)],
       );
 
-      await tester.tap(find.byKey(FrontChatHeaderKeys.more));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(FrontChatHeaderKeys.profile));
-      for (var i = 0; i < 20; i++) {
-        await tester.pump(const Duration(milliseconds: 50));
-      }
-
-      expect(find.text('Choose an inference profile'), findsOneWidget);
-      bool selected(Key key) =>
-          tester.widget<DesignSystemSelectionRow>(find.byKey(key)).selected;
-      expect(selected(FrontProfileChoiceKeys.useDefault), isTrue);
-      expect(selected(const ValueKey('profile-mistral')), isFalse);
+      expect(find.byType(FrontVoiceButton), findsNothing);
+      expect(find.byType(FrontVoiceSwitch), findsNothing);
+      expect(find.text('AI profile'), findsNothing);
+      expect(find.text('Agent internals'), findsNothing);
     });
-  });
-
-  testWidgets('her AI profile opens the picker though the profile catalog '
-      'changed while it loaded: a one-off read of it never settled, and '
-      'the tap did nothing', (tester) async {
-    final her = makeTestIdentity(
-      id: frontAgentId,
-      agentId: frontAgentId,
-      kind: AgentKinds.frontAgent,
-    );
-    final aiConfigs = MockAiConfigRepository();
-    when(aiConfigs.getDefaultProfileId).thenAnswer((_) async => null);
-    final profiles = StreamController<List<AiConfig>>();
-    addTearDown(profiles.close);
-    // The catalog emits twice as it loads, as a sync or a seed makes it.
-    profiles
-      ..add([testInferenceProfile(id: 'a', name: 'First')])
-      ..add([testInferenceProfile(id: 'a', name: 'Mistral (EU)')]);
-    await pumpHeader(
-      tester,
-      identity: her,
-      extra: [
-        aiConfigRepositoryProvider.overrideWithValue(aiConfigs),
-        aiConfigsByTypeProvider.overrideWith(
-          (ref, type) => type == AiConfigType.inferenceProfile
-              ? profiles.stream
-              : Stream.value(const <AiConfig>[]),
-        ),
-      ],
-    );
-
-    await tester.tap(find.byKey(FrontChatHeaderKeys.more));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(FrontChatHeaderKeys.profile));
-    for (var i = 0; i < 20; i++) {
-      await tester.pump(const Duration(milliseconds: 50));
-    }
-
-    expect(find.text('Mistral (EU)'), findsOneWidget);
-    expect(find.text('Choose an inference profile'), findsOneWidget);
-  });
-
-  testWidgets('her internals open from the overflow', (tester) async {
-    await pumpHeader(tester);
-
-    await tester.tap(find.byKey(FrontChatHeaderKeys.more));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(FrontChatHeaderKeys.internals));
-    for (var i = 0; i < 10; i++) {
-      await tester.pump(const Duration(milliseconds: 50));
-    }
-
-    final panel = tester.widget<AgentInternalsPanel>(
-      find.byType(AgentInternalsPanel),
-    );
-    expect(panel.agentId, frontAgentId);
-    expect(panel.agentName, 'Companion');
   });
 
   testWidgets('with the companion off the spark every agent wears stands '
@@ -744,47 +455,6 @@ void main() {
       expect(container.read(frontCompanionCardShownProvider), isTrue);
     });
 
-    testWidgets("her name shares the controls' line so the title under them "
-        'has the width beside her face, on one line', (tester) async {
-      await pumpHeader(
-        tester,
-        companion: true,
-        conversations: FrontConversationIndex(
-          conversations: [
-            FrontConversation(
-              id: 'c-1',
-              title:
-                  'Plan the colony census on the outer islands before the '
-                  'boats are booked',
-              lastActivity: DateTime(2026, 10, 31, 9),
-              archived: false,
-            ),
-          ],
-        ),
-      );
-
-      final face = tester.getRect(find.byKey(FrontChatHeaderKeys.figure));
-      final name = tester.getRect(find.byKey(FrontChatHeaderKeys.name));
-      final more = tester.getRect(find.byKey(FrontChatHeaderKeys.more));
-      final close = tester.getRect(find.byKey(FrontChatHeaderKeys.close));
-      final title = find.byKey(FrontChatHeaderKeys.title);
-      final titleRect = tester.getRect(title);
-      // Name and controls on one line, beside her face.
-      expect(name.center.dy, closeTo(more.center.dy, 1));
-      expect(name.left, greaterThan(face.right));
-      // The title under them, reaching past where the controls start.
-      expect(titleRect.top, greaterThanOrEqualTo(more.bottom));
-      expect(titleRect.left, name.left);
-      expect(titleRect.right, greaterThan(more.left));
-      expect(titleRect.right, lessThanOrEqualTo(close.right));
-      // One line, cut with an ellipsis, whole on hover.
-      expect(tester.widget<Text>(title).maxLines, 1);
-      final paragraph = tester.renderObject<RenderParagraph>(
-        find.descendant(of: title, matching: find.byType(RichText)),
-      );
-      expect(paragraph.didExceedMaxLines, isTrue);
-    });
-
     testWidgets('in the inbox her face is no toggle: she has no card there', (
       tester,
     ) async {
@@ -820,44 +490,14 @@ void main() {
       );
     });
 
-    List<DesignSystemContextMenuItem> overflowOf(WidgetTester tester) => tester
-        .widget<FrontMenuButton>(find.byKey(FrontChatHeaderKeys.more))
-        .items;
-    // Her saved setting, known: the switch that mutes her is offered.
-    final known = companionCustomizationProvider.overrideWith(_KnownCustom.new);
-
-    testWidgets('on a phone, say it again rides the row; the switch that '
-        'mutes her is a row of the overflow', (tester) async {
-      await pumpHeader(
-        tester,
-        companion: true,
-        conversations: census,
-        extra: [known],
-      );
-
-      expect(
-        tester
-            .widget<FrontVoiceButton>(find.byType(FrontVoiceButton))
-            .conversationId,
-        'c-1',
-      );
-      expect(find.byType(FrontVoiceSwitch), findsNothing);
-      final voice = overflowOf(
-        tester,
-      ).singleWhere((item) => item.key == FrontVoiceSwitchKeys.menuItem);
-      expect(voice.checked, isTrue);
-    });
-
-    testWidgets('fits a 360 dp phone with every control showing: the inbox '
-        'count, her voice speaking, her name and the title', (tester) async {
-      final voice = _Voice(const TtsPlaybackState());
+    testWidgets('fits a 360 dp phone with every control showing: the drawer '
+        'toggle and the inbox count, her face, her name, a new chat and '
+        'close', (tester) async {
       await pumpHeader(
         tester,
         companion: true,
         conversations: census,
         width: 360,
-        voice: () => voice,
-        extra: [known],
         thread: FrontChatThread(
           messages: const [],
           doorsByMessageId: {
@@ -877,132 +517,24 @@ void main() {
           },
         ),
       );
-      voice.play('front-chat:c-1');
-      await tester.pump();
 
       // A row that overflows reports it as an exception; none was.
       expect(tester.takeException(), isNull);
       expect(find.byKey(FrontChatHeaderKeys.inbox), findsOne);
-      expect(find.byType(FrontVoiceButton), findsOne);
+      expect(find.byKey(FrontChatHeaderKeys.newChat), findsOne);
       final header = tester.getRect(find.byType(FrontChatHeader));
       expect(
         tester.getRect(find.byKey(FrontChatHeaderKeys.close)).right,
         lessThanOrEqualTo(header.right),
       );
-      expect(
-        tester.getSize(find.byKey(FrontChatHeaderKeys.title)).width,
-        greaterThan(0),
-      );
-    });
-
-    testWidgets('on a 390 dp phone the way to the list is a glyph named by '
-        'its tooltip, so the title shows whole', (tester) async {
-      // The full phone row: her voice speaking rides it too.
-      final voice = _Voice(const TtsPlaybackState());
-      await pumpHeader(
-        tester,
-        companion: true,
-        width: 390,
-        voice: () => voice,
-        extra: [known],
-        conversations: FrontConversationIndex(
-          conversations: [
-            FrontConversation(
-              id: 'c-1',
-              title: 'What is due today',
-              lastActivity: DateTime(2026, 10, 31, 9),
-              archived: false,
-            ),
-          ],
-        ),
-      );
-
-      voice.play('front-chat:c-1');
-      await tester.pump();
-      expect(find.byType(FrontVoiceButton), findsOne);
-
-      final title = find.byKey(FrontChatHeaderKeys.title);
-      expect(tester.widget<Text>(title).data, 'What is due today');
-      // The room her name and the title share, not the text's own width.
-      final room = find
-          .ancestor(of: title, matching: find.byType(Expanded))
-          .first;
-      expect(tester.getSize(room).width, greaterThanOrEqualTo(100));
-      // Laid out whole: the paragraph does not overflow its box, so no
-      // ellipsis is drawn.
+      // Her name laid out whole: no ellipsis drawn.
       final paragraph = tester.renderObject<RenderParagraph>(
-        find.descendant(of: title, matching: find.byType(RichText)),
+        find.descendant(
+          of: find.byKey(FrontChatHeaderKeys.title),
+          matching: find.byType(RichText),
+        ),
       );
       expect(paragraph.didExceedMaxLines, isFalse);
-      expect(
-        find.descendant(
-          of: find.byKey(FrontChatHeaderKeys.chats),
-          matching: find.text('Chats'),
-        ),
-        findsNothing,
-      );
-
-      final container = ProviderScope.containerOf(
-        tester.element(find.byType(FrontChatHeader)),
-      );
-      final listOpen = container.listen(
-        frontConversationListOpenProvider,
-        (_, _) {},
-      );
-      addTearDown(listOpen.close);
-      await tester.tap(find.byTooltip('Chats'));
-      await tester.pump();
-      expect(listOpen.read(), isTrue);
-    });
-
-    testWidgets('beside the list, with room, her mute rides the row beside '
-        'her replay, and close stands apart behind a rule', (
-      tester,
-    ) async {
-      await pumpHeader(
-        tester,
-        companion: true,
-        conversations: census,
-        listBeside: true,
-        width: 900,
-        extra: [known],
-      );
-
-      expect(find.byKey(FrontVoiceSwitchKeys.toggle), findsOne);
-      expect(
-        overflowOf(tester).map((item) => item.key),
-        isNot(contains(FrontVoiceSwitchKeys.menuItem)),
-      );
-      final rule = find.descendant(
-        of: find.byType(FrontChatHeader),
-        matching: find.byWidgetPredicate(
-          (w) =>
-              w is DesignSystemDivider &&
-              w.orientation == DesignSystemDividerOrientation.vertical,
-        ),
-      );
-      expect(rule, findsOne);
-      expect(
-        tester.getCenter(find.byKey(FrontChatHeaderKeys.more)).dx,
-        lessThan(tester.getCenter(rule).dx),
-      );
-      expect(
-        tester.getCenter(rule).dx,
-        lessThan(tester.getCenter(find.byKey(FrontChatHeaderKeys.close)).dx),
-      );
-    });
-
-    testWidgets('with the companion off she has no voice, and the spark in '
-        'her place is no toggle', (tester) async {
-      await pumpHeader(tester, conversations: census);
-      expect(find.byType(FrontVoiceButton), findsNothing);
-      expect(find.byType(FrontVoiceSwitch), findsNothing);
-      expect(
-        overflowOf(tester).map((item) => item.key),
-        isNot(contains(FrontVoiceSwitchKeys.menuItem)),
-      );
-      expect(find.byKey(FrontChatHeaderKeys.figure), findsOne);
-      expect(find.byKey(FrontChatHeaderKeys.companion), findsNothing);
     });
   });
 
@@ -1032,32 +564,37 @@ void main() {
       expect(find.byKey(FrontChatHeaderKeys.inbox), findsNothing);
     });
 
-    testWidgets('its count on the way to the list says what waits', (
+    testWidgets('is a dot on the drawer toggle, never a count in the '
+        'header, and still says how many to assistive technology', (
       tester,
     ) async {
       await pumpHeader(tester, thread: waiting(2));
 
-      // After the glyph, never over it, on its line.
-      final dot = tester.getRect(find.byKey(FrontChatHeaderKeys.inbox));
-      final list = tester.getRect(find.byKey(FrontChatHeaderKeys.chats));
-      expect(dot.left, greaterThanOrEqualTo(list.right));
-      expect(dot.center.dy, closeTo(list.center.dy, 1));
-      expect(
-        tester
-            .widget<DesignSystemBadge>(find.byKey(FrontChatHeaderKeys.inbox))
-            .semanticLabel,
-        'Inbox 2',
-      );
-      // The count itself, as the list's Inbox row shows it.
+      final dot = find.byKey(FrontChatHeaderKeys.inbox);
+      final badge = tester.widget<DesignSystemBadge>(dot);
+      expect(badge.tone, DesignSystemBadgeTone.warning);
+      expect(badge.semanticLabel, 'Inbox 2');
+      // On the glyph, inside its tap target, not beside it.
+      final glyph = tester.getRect(find.byKey(FrontChatHeaderKeys.drawer));
+      final rect = tester.getRect(dot);
+      expect(glyph.contains(rect.topLeft), isTrue);
+      expect(glyph.contains(rect.bottomRight), isTrue);
+      // No number anywhere in the header: the drawer's Inbox row counts.
       expect(
         find.descendant(
-          of: find.byKey(FrontChatHeaderKeys.inbox),
+          of: find.byType(FrontChatHeader),
           matching: find.text('2'),
         ),
-        findsOne,
+        findsNothing,
+      );
+      expect(
+        tester.getRect(find.byKey(FrontChatHeaderKeys.figure)).left,
+        greaterThanOrEqualTo(glyph.right),
       );
     });
-    testWidgets('a tap on the count opens the list too', (tester) async {
+
+    testWidgets('a tap on the dot is a tap on the toggle: it opens the '
+        'drawer', (tester) async {
       await pumpHeader(tester, thread: waiting(2));
       final listOpen =
           ProviderScope.containerOf(

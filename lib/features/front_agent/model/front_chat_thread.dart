@@ -77,6 +77,7 @@ class FrontChatThread {
     this.entityPreviewsByMessageId = const {},
     this.dueSectionsByMessageId = const {},
     this.partsByMessageId = const {},
+    this.runKeys = const {},
   });
 
   static const empty = FrontChatThread(messages: []);
@@ -119,6 +120,11 @@ class FrontChatThread {
   /// The window a reply's list of due tasks was read from, by the reply's
   /// id: the quiet label over that list.
   final Map<String, FrontDueSection> dueSectionsByMessageId;
+
+  /// The run of every reply and question of hers in the conversation, the
+  /// ones older than [messages] keeps too: what the conversation has cost
+  /// is summed over all of them, so it never shrinks as the window moves.
+  final Set<String> runKeys;
 
   /// What a reply draws, in order, by the reply's id: her words, the cards
   /// she listed, and where the charts and closed-task cards go, as the turn

@@ -1,13 +1,17 @@
 import 'package:clock/clock.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/categories/state/categories_list_controller.dart';
+import 'package:lotti/features/front_agent/model/front_conversation.dart';
 import 'package:lotti/features/front_agent/model/front_turn_failure.dart';
 import 'package:lotti/features/front_agent/service/front_chat_service.dart';
 import 'package:lotti/features/front_agent/service/front_filing_service.dart';
 import 'package:lotti/features/front_agent/state/front_agent_providers.dart';
+import 'package:lotti/features/front_agent/state/front_chat_category.dart';
 import 'package:lotti/features/front_agent/state/front_chat_thread_provider.dart';
 import 'package:lotti/features/front_agent/state/front_conversation_providers.dart';
 import 'package:lotti/features/front_agent/state/front_inbox_filter.dart';
+import 'package:lotti/features/front_agent/state/front_mention_categories.dart';
 import 'package:lotti/features/front_agent/state/front_voice_providers.dart';
 
 @immutable
@@ -19,6 +23,7 @@ class FrontChatComposerState {
     this.failedMessage,
     this.failedMessageId,
     this.failedConversationId,
+    this.failedCategoryIds = const {},
     this.failure,
     this.busyDoorIds = const {},
     this.failedDoorIds = const {},
@@ -47,6 +52,10 @@ class FrontChatComposerState {
   /// The conversation the failed turn was typed in, so a retry lands there
   /// even after the user opened another one.
   final String? failedConversationId;
+
+  /// The categories the failed turn was scoped to, so a retry carries the
+  /// scope it was typed under, whatever is picked since.
+  final Set<String> failedCategoryIds;
 
   /// Why that turn did not go through, so the chat can say what to do.
   final FrontTurnFailure? failure;
@@ -78,12 +87,14 @@ class FrontChatComposerState {
     String? failedMessage,
     String? failedMessageId,
     String? failedConversationId,
+    Set<String> failedCategoryIds = const {},
     FrontTurnFailure? failure,
   }) => FrontChatComposerState(
     draft: draft,
     failedMessage: failedMessage,
     failedMessageId: failedMessageId,
     failedConversationId: failedConversationId,
+    failedCategoryIds: failedCategoryIds,
     failure: failedMessage == null ? null : failure ?? FrontTurnFailure.unknown,
     busyDoorIds: busyDoorIds,
     failedDoorIds: failedDoorIds,
@@ -121,7 +132,8 @@ class FrontChatController extends Notifier<FrontChatComposerState> {
 
   /// Sends [text] as the user's next turn — the draft, or the label of a
   /// chip the user tapped under a clarifying question. A [spoken] turn's
-  /// reply is spoken back; any other turn's only written.
+  /// reply is spoken back; any other turn's only written. The turn carries
+  /// the category its conversation is scoped to ([frontChatCategoryOf]).
   Future<void> sendText(String text, {bool spoken = false}) async {
     final message = text.trim();
     if (state.isSending || message.isEmpty) return;
@@ -131,8 +143,11 @@ class FrontChatController extends Notifier<FrontChatComposerState> {
     // straight away — and come back only if the send fails.
     state = state.copyWith(isSending: true, draft: '');
     String? conversationId;
+    var categoryIds = const <String>{};
     try {
       final landing = conversationId = await _landingConversation();
+      categoryIds = _categoryIdsOf(landing);
+      final pick = ref.read(frontChatCategoryPickProvider);
       // Marked before the turn is written: her reply can land before the
       // send returns.
       final voice = ref.read(frontSpokenTurnProvider.notifier);
@@ -145,8 +160,11 @@ class FrontChatController extends Notifier<FrontChatComposerState> {
           .sendMessage(
             text: message,
             conversationId: landing,
+            categoryIds: categoryIds,
           );
       await _unarchive(landing);
+      // Listened before the index reloads, so the reload is seen.
+      _expirePickOnceStored(landing, pick);
       _reproject();
       // What the user typed while it was on its way stays in the box.
       state = state.settled(draft: state.draft);
@@ -159,6 +177,7 @@ class FrontChatController extends Notifier<FrontChatComposerState> {
         failedMessage: message,
         failedMessageId: error.messageId,
         failedConversationId: conversationId,
+        failedCategoryIds: categoryIds,
         failure: error.failure,
       );
     } catch (_) {
@@ -167,8 +186,63 @@ class FrontChatController extends Notifier<FrontChatComposerState> {
         draft: _draftAfterFailure(message),
         failedMessage: message,
         failedConversationId: conversationId,
+        failedCategoryIds: categoryIds,
       );
     }
+  }
+
+  /// The categories a turn sent in [conversationId] carries: the one the
+  /// composer's chip shows, as a set of one, or none for "Everything".
+  /// While the categories are still loading nothing can be checked, so the
+  /// scope goes out as it stands rather than being dropped — her workflow
+  /// never widens to one she may not see.
+  Set<String> _categoryIdsOf(String conversationId) {
+    final pick = ref.read(frontChatCategoryPickProvider);
+    final conversation = ref
+        .read(frontConversationsProvider)
+        .value
+        ?.byId(conversationId);
+    if (!ref.read(categoriesStreamProvider).hasValue) {
+      return {
+        ?frontChatCategoryIdOf(
+          conversationId,
+          pick: pick,
+          conversation: conversation,
+        ),
+      };
+    }
+    return {
+      ?frontChatCategoryOf(
+        conversationId,
+        pick: pick,
+        conversation: conversation,
+        options: ref.read(frontMentionCategoriesProvider),
+      )?.id,
+    };
+  }
+
+  /// A pick sent in [conversationId] is the conversation's own scope once
+  /// the index has reloaded after the send, so [sent] is dropped there and
+  /// the stored scope speaks: the turn that carries it, or a newer one from
+  /// another device in another category, which wins as the newest turn
+  /// does. A pick made since is the user's newer word and is kept.
+  ///
+  /// Listened before [_reproject] invalidates the index, with no await
+  /// between: the first index settled after it is read after the turn was
+  /// written, never one that misses it.
+  void _expirePickOnceStored(
+    String conversationId,
+    FrontChatCategoryPick? sent,
+  ) {
+    if (sent == null || sent.conversationId != conversationId) return;
+    ProviderSubscription<AsyncValue<FrontConversationIndex>>? subscription;
+    subscription = ref.listen(frontConversationsProvider, (_, next) {
+      if (next.isLoading || !next.hasValue) return;
+      subscription?.close();
+      if (identical(ref.read(frontChatCategoryPickProvider), sent)) {
+        ref.read(frontChatCategoryPickProvider.notifier).reset();
+      }
+    });
   }
 
   /// The box after a send of [message] failed: what the user typed since,
@@ -198,6 +272,7 @@ class FrontChatController extends Notifier<FrontChatComposerState> {
     final failed = state.failedMessage;
     final messageId = state.failedMessageId;
     final typedIn = state.failedConversationId;
+    final scopedTo = state.failedCategoryIds;
     if (failed == null || state.isSending) return;
     state = state.copyWith(isSending: true);
     try {
@@ -208,6 +283,7 @@ class FrontChatController extends Notifier<FrontChatComposerState> {
         await service.sendMessage(
           text: failed,
           conversationId: conversationId,
+          categoryIds: scopedTo,
         );
       } else {
         await service.retryMessage(messageId: messageId);
@@ -221,6 +297,7 @@ class FrontChatController extends Notifier<FrontChatComposerState> {
         failedMessage: failed,
         failedMessageId: error.messageId ?? messageId,
         failedConversationId: typedIn,
+        failedCategoryIds: scopedTo,
         failure: error.failure,
       );
     } catch (_) {
@@ -229,6 +306,7 @@ class FrontChatController extends Notifier<FrontChatComposerState> {
         failedMessage: failed,
         failedMessageId: messageId,
         failedConversationId: typedIn,
+        failedCategoryIds: scopedTo,
       );
     }
   }
@@ -294,7 +372,9 @@ class FrontChatController extends Notifier<FrontChatComposerState> {
   }
 
   /// Switches the surface with [pick], parking the draft of the conversation
-  /// left and taking up the one of the conversation opened.
+  /// left and taking up the one of the conversation opened. A category
+  /// picked and not yet sent stays behind: the one opened is in the scope
+  /// its own turns say.
   void _switch(void Function() pick) {
     ref.read(frontInboxFilterProvider.notifier).clear();
     final from = _open;
@@ -303,6 +383,7 @@ class FrontChatController extends Notifier<FrontChatComposerState> {
     final to = ref.read(frontPickedConversationProvider);
     if (to != from) {
       state = state.copyWith(draft: _drafts.remove(to) ?? '');
+      ref.read(frontChatCategoryPickProvider.notifier).reset();
     }
   }
 
